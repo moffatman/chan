@@ -1630,7 +1630,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				// Wait to hit the real item and not its stub footer
 				continue;
 			}
-			if (_refreshableTreeItems.isItemHidden(item._key) != TreeItemCollapseType.newInsertCollapsed) {
+			if (!_refreshableTreeItems.isItemHidden(item._key).isHidden) {
 				break;
 			}
 			_refreshableTreeItems.revealNewInsert(item, quiet: true);
