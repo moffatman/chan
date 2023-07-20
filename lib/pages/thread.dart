@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
@@ -152,6 +153,8 @@ class _ThreadPageState extends State<ThreadPage> {
 	final _indicatorKey = GlobalKey<_ThreadPositionIndicatorState>();
 	(ThreadIdentifier, String)? _suggestedNewGeneral;
 	ThreadIdentifier? _rejectedNewGeneralSuggestion;
+	late final EasyListenable _glowingPostsAnimation;
+	int? _glowingPostId;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -199,17 +202,67 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	bool get useTree => persistentState.useTree ?? context.read<Persistence>().browserState.useTree ?? context.read<ImageboardSite>().useTree;
 
+	Future<void> _ensurePostLoaded(int postId) async {
+		Post? post = persistentState.thread?.posts_.tryFirstWhere((p) => p.id == postId);
+		final usesStubs = persistentState.thread?.posts_.any((p) => p.isStub) ?? false;
+		if (usesStubs) {
+			if (post?.isStub ?? true) {
+				post = (await _updateWithStubItems([ParentAndChildIdentifier(
+					parentId: -1, // Should be ignored
+					childId: postId
+				)])).tryFirstWhere((p) => p.id == postId);
+				_listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+			}
+			if (post == null) {
+				throw Exception('Could not get post');
+			}
+			if (post.parentId != null) {
+				// Load up the chain
+				if (post.parentId == -1) {
+					if (mounted) {
+						showToast(
+							context: context,
+							icon: CupertinoIcons.exclamationmark_triangle,
+							message: 'Comment not found in thread!'
+						);
+					}
+					throw Exception('No parent for post');
+				}
+				else {
+					await _ensurePostLoaded(post.parentId!);
+				}
+			}
+		}
+		else if (post == null) {
+			// Maybe not loaded yet?
+			await _listController.update();
+		}
+	}
+
+	Future<void> _glowPost(int postId, {Duration duration = const Duration(seconds: 2)}) async {
+		_glowingPostId = postId;
+		_glowingPostsAnimation.didUpdate();
+		await Future.delayed(duration);
+		if (_glowingPostId == postId) {
+			_glowingPostId = null;
+			_glowingPostsAnimation.didUpdate();
+		}
+	}
+
 	Future<void> _blockAndScrollToPostIfNeeded([Duration delayBeforeScroll = Duration.zero]) async {
 		if (persistentState.thread == null) {
 			// too early to try to scroll
 			return;
 		}
 		final (int, double)? scrollTo;
+		bool glow = false;
 		if (widget.initialPostId != null) {
 			scrollTo = (widget.initialPostId!, 0);
+			glow = true;
 		}
 		else if (context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread] != null) {
 			scrollTo = (context.read<PersistentBrowserTab>().initialPostId[widget.thread]!, 0);
+			glow = true;
 			context.read<PersistentBrowserTab?>()?.initialPostId.remove(widget.thread);
 		}
 		else if (persistentState.firstVisiblePostId != null) {
@@ -222,11 +275,25 @@ class _ThreadPageState extends State<ThreadPage> {
 			scrollTo = null;
 		}
 		if (persistentState.thread != null && scrollTo != null) {
+			Post? target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
+			if (target != null && _listController.isOnscreen(target)) {
+				return;
+			}
 			setState(() {
 				blocked = true;
 			});
-			await Future.delayed(delayBeforeScroll);
 			try {
+				await _ensurePostLoaded(scrollTo.$1);
+				setState(() {});
+				await WidgetsBinding.instance.endOfFrame;
+				target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
+				if (target != null && _listController.isOnscreen(target)) {
+					setState(() {
+						blocked = false;
+					});
+					return;
+				}
+				await Future.delayed(delayBeforeScroll);
 				await WidgetsBinding.instance.endOfFrame;
 				await _listController.animateTo(
 					(post) => post.id == scrollTo!.$1,
@@ -236,10 +303,13 @@ class _ThreadPageState extends State<ThreadPage> {
 				);
 				await WidgetsBinding.instance.endOfFrame;
 				final remainingPx = (_listController.scrollController?.position.extentAfter ?? 9999) -
-					((_listController.state?.updatingNow.value ?? false) ? 64 : 0);
+					((_listController.state?.updatingNow.value != null) ? 64 : 0);
 				if (remainingPx < 32) {
 					// Close to the end, just round-to there
 					_listController.scrollController!.position.jumpTo(_listController.scrollController!.position.maxScrollExtent);
+				}
+				if (glow) {
+					_glowPost(scrollTo.$1);
 				}
 			}
 			catch (e, st) {
@@ -353,6 +423,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	@override
 	void initState() {
 		super.initState();
+		_glowingPostsAnimation = EasyListenable();
 		_listController = RefreshableListController();
 		persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 		persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
@@ -370,10 +441,17 @@ class _ThreadPageState extends State<ThreadPage> {
 			],
 			imageboard: imageboard,
 			semanticRootIds: [widget.boardSemanticId, 0],
-			onNeedScrollToPost: (post) {
+			onNeedScrollToPost: (post) async {
 				_weakNavigatorKey.currentState!.popAllExceptFirst();
 				if (post.threadIdentifier == widget.thread) {
-					Future.delayed(const Duration(milliseconds: 150), () => _listController.animateTo((val) => val.id == post.id));
+					await Future.wait([
+						Future.delayed(const Duration(milliseconds: 150)),
+						_ensurePostLoaded(post.id)
+					]);
+					setState(() {});
+					await WidgetsBinding.instance.endOfFrame;
+					await _listController.animateTo((val) => val.id == post.id);
+					await _glowPost(post.id);
 				}
 				else {
 					(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
@@ -472,7 +550,12 @@ class _ThreadPageState extends State<ThreadPage> {
 			setState(() {});
 		}
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
-			_listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: const Duration(milliseconds: 500));
+			_ensurePostLoaded(widget.initialPostId!).then((_) async {
+				setState(() {});
+				await WidgetsBinding.instance.endOfFrame;
+				await _listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: const Duration(milliseconds: 500));
+				await _glowPost(widget.initialPostId!);
+			});
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 	}
@@ -818,6 +901,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		final site = context.read<ImageboardSite>();
 		final newChildren = await site.getStubPosts(thread.identifier, ids, interactive: true);
+		if (widget.thread != thread.identifier) {
+			throw Exception('Thread changed');
+		}
 		thread.mergePosts(null, newChildren, site.placeOrphanPost);
 		if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
 			// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
@@ -1330,16 +1416,33 @@ class _ThreadPageState extends State<ThreadPage> {
 																},
 																controller: _listController,
 																itemBuilder: (context, post) {
-																	return PostRow(
-																		post: post,
-																		onThumbnailTap: (attachment) {
-																			_showGallery(initialAttachment: TaggedAttachment(
-																				attachment: attachment,
-																				semanticParentIds: context.read<PostSpanZoneData>().stackIds
-																			));
+																	return AnimatedBuilder(
+																		animation: _glowingPostsAnimation,
+																		builder: (context, child) {
+																			return TweenAnimationBuilder<double>(
+																				tween: Tween(begin: 0, end: _glowingPostId == post.id ? 0.2 : 0),
+																				duration: const Duration(milliseconds: 350),
+																				child: child,
+																				builder: (context, factor, child) => factor == 0 ? child! : ColorFiltered(
+																					colorFilter: ui.ColorFilter.mode(
+																						theme.secondaryColor.withOpacity(factor),
+																						BlendMode.srcOver
+																					),
+																					child: child
+																				)
+																			);
 																		},
-																		onRequestArchive: () => _replacePostFromArchive(post),
-																		highlight: newPostIds.contains(post.id),
+																		child: PostRow(
+																			post: post,
+																			onThumbnailTap: (attachment) {
+																				_showGallery(initialAttachment: TaggedAttachment(
+																					attachment: attachment,
+																					semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																				));
+																			},
+																			onRequestArchive: () => _replacePostFromArchive(post),
+																			highlight: newPostIds.contains(post.id),
+																		)
 																	);
 																},
 																filteredItemBuilder: (context, post, resetPage, filterText) {
@@ -1352,9 +1455,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																			));
 																		},
 																		onRequestArchive: () => _replacePostFromArchive(post),
-																		onTap: () {
+																		onTap: () async {
 																			resetPage();
-																			Future.delayed(const Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
+																			await Future.delayed(const Duration(milliseconds: 250));
+																			await _listController.animateTo((val) => val.id == post.id);
+																			await _glowPost(post.id);
 																		},
 																		baseOptions: PostSpanRenderOptions(
 																			highlightString: filterText
@@ -1591,6 +1696,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		zone.dispose();
 		_cachingQueue.clear();
+		_glowingPostsAnimation.dispose();
 	}
 }
 
@@ -1663,7 +1769,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _lastLastVisibleIndex = -1;
 	int _lastItemsLength = 0;
 	final _animatedPaddingKey = GlobalKey(debugLabel: '_ThreadPositionIndicatorState._animatedPaddingKey');
-	ValueNotifier<bool>? _lastUpdatingNow;
+	ValueNotifier<String?>? _lastUpdatingNow;
 	late bool _useCatalogCache;
 
 	Future<bool> _updateCounts() async {
@@ -2390,7 +2496,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											),
 											const SizedBox(width: 8)
 										],
-										if (!widget.blocked && (widget.listController.state?.updatingNow.value ?? false) && widget.listController.state?.originalList != null) ...[
+										if (!widget.blocked && (widget.listController.state?.updatingNow.value != null) && widget.listController.state?.originalList != null) ...[
 											const SizedBox(
 												width: 16,
 												height: 16,

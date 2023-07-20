@@ -257,7 +257,7 @@ class _TreeNode<T extends Object> {
 	}
 
 	@override
-	String toString() => '_TreeNode<$T>(item: $item, id: $id, # children: ${children.length}, # parents: ${parents.length}';
+	String toString() => '_TreeNode<$T>(item: $item, id: $id, ${children.length > 5 ? '# children: ${children.length}' : 'children: $children'}, ${parents.length > 5 ? '# parents: ${parents.length}' : 'parents: $parents'}';
 
 	@override
 	bool operator == (Object o) => (o is _TreeNode<T>) && (o.item == item);
@@ -295,7 +295,7 @@ class RefreshableListItem<T extends Object> {
 	}) : treeDescendantIds = treeDescendantIds ?? {}, _depth = depth, _key = _RefreshableTreeItemsCacheKey(parentIds, id, representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty);
 
 	@override
-	String toString() => 'RefreshableListItem<$T>(item: $item, id: $id, representsKnownStubChildren: $representsKnownStubChildren, treeDescendantIds: $treeDescendantIds)';
+	String toString() => 'RefreshableListItem<$T>(item: $item, id: $id, representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}, treeDescendantIds: $treeDescendantIds)';
 
 	@override
 	bool operator == (Object other) => (other is RefreshableListItem<T>) &&
@@ -847,7 +847,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	String? errorMessage;
 	Type? errorType;
 	SearchFilter? _searchFilter;
-	late final ValueNotifier<bool> updatingNow;
+	late final ValueNotifier<String?> updatingNow;
 	late final TextEditingController _searchController;
 	late final FocusNode _searchFocusNode;
 	bool get searchHasFocus => _searchFocusNode.hasFocus;
@@ -881,7 +881,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	@override
 	void initState() {
 		super.initState();
-		updatingNow = ValueNotifier(false);
+		updatingNow = ValueNotifier(null);
 		_searchController = TextEditingController();
 		_searchFocusNode = FocusNode();
 		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
@@ -962,7 +962,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				resetTimer();
 			}
 		}
-		else if ((widget.disableUpdates || originalList == null) && !listEquals(oldWidget.initialList, widget.initialList)) {
+		else if ((widget.disableUpdates || originalList == null) && !listEquals(oldWidget.initialList, widget.initialList) && (updatingNow.value != widget.id)) {
 			originalList = widget.initialList;
 			sortedList = originalList?.toList();
 			if (originalList != null) {
@@ -1080,7 +1080,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> update({bool hapticFeedback = false, bool extend = false}) async {
-		if (updatingNow.value) {
+		if (updatingNow.value == widget.id) {
 			return;
 		}
 		final updatingWithId = widget.id;
@@ -1089,7 +1089,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			setState(() {
 				errorMessage = null;
 				errorType = null;
-				updatingNow.value = true;
+				updatingNow.value = widget.id;
 			});
 			Duration minUpdateDuration = widget.minUpdateDuration;
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
@@ -1117,7 +1117,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			if (!mounted) return;
 			if (updatingWithId != widget.id) {
-				updatingNow.value = false;
+				if (updatingNow.value == updatingWithId) {
+					updatingNow.value = null;
+				}
 				return;
 			}
 			resetTimer();
@@ -1160,12 +1162,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (!mounted) return;
 			widget.controller?.scrollController?.position.isScrollingNotifier.removeListener(listener);
 			if (updatingWithId != widget.id) {
-				updatingNow.value = false;
+				if (updatingNow.value == updatingWithId) {
+					updatingNow.value = null;
+				}
 				return;
 			}
 		}
 		if (!mounted) return;
-		updatingNow.value = false;
+		updatingNow.value = null;
 		if (mounted && (newList != null || originalList == null || errorMessage != null)) {
 			if (hapticFeedback) {
 				mediumHapticFeedback();
@@ -1206,8 +1210,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (widget.treeAdapter != null && (useTree || value.representsStubChildren)) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
-		if (_searchFilter != null && widget.filteredItemBuilder != null) {
-			child = Builder(
+		if ((_searchFilter?.text.isNotEmpty ?? false) && widget.filteredItemBuilder != null) {
+			child = value.representsStubChildren ? const SizedBox.shrink() : Builder(
 				builder: (context) => widget.filteredItemBuilder!(context, value.item, closeSearch, _searchFilter!.text)
 			);
 		}
@@ -1778,7 +1782,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					child: NotificationListener<ScrollNotification>(
 					key: ValueKey(widget.id),
 					onNotification: (notification) {
-						if (updatingNow.value) {
+						if (updatingNow.value != null) {
 							return false;
 						}
 						final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
@@ -2115,7 +2119,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												child: RepaintBoundary(
 													child: GestureDetector(
 														behavior: HitTestBehavior.opaque,
-														onTap: (!widget.canTapFooter || updatingNow.value) ? null : () {
+														onTap: (!widget.canTapFooter || (updatingNow.value != null)) ? null : () {
 															lightHapticFeedback();
 															Future.delayed(const Duration(milliseconds: 17), () {
 																widget.controller?.scrollController?.animateTo(
@@ -2151,7 +2155,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														child: RefreshableListFooter(
 															key: _footerKey,
 															updater: _updateOrExtendWithHapticFeedback,
-															updatingNow: updatingNow.value,
+															updatingNow: updatingNow.value != null,
 															lastUpdateTime: lastUpdateTime,
 															nextUpdateTime: nextUpdateTime,
 															errorMessage: errorMessage,
