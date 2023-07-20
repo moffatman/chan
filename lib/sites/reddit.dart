@@ -111,6 +111,17 @@ extension _ExtractGiphyGIFs on String {
 	}
 }
 
+extension _RedditApiId on ImageboardArchiveSearchResult {
+	String get redditApiId {
+		if (thread == null) {
+			return 't1_${SiteReddit.toRedditId(post!.id)}';
+		}
+		else {
+			return 't3_${SiteReddit.toRedditId(thread!.id)}';
+		}
+	}
+}
+
 const _loginFieldRedGifsTokenKey = '_rgt';
 
 class SiteReddit extends ImageboardSite {
@@ -913,6 +924,45 @@ class SiteReddit extends ImageboardSite {
 		return null;
 	}
 
+	Post _makePost(Map<String, dynamic> child, {int? parentId, required ThreadIdentifier thread}) {
+		final id = fromRedditId(child['id']);
+		final List<(String, String)> inlineImageUrls = [];
+		final text = unescape.convert(child['body'])._matchReplaceAndAddGiphyImages(inlineImageUrls).replaceAllMapped(RegExp(r'https:\/\/(?:preview|i).redd.it\/\S+'), (match) {
+			inlineImageUrls.add((
+				match.group(0)!,
+				match.group(0)!
+			));
+			return '';
+		});
+		return Post(
+			board: thread.board,
+			text: text,
+			name: child['author'],
+			flag: _makeAuthorFlag(child),
+			time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
+			threadId: thread.id,
+			id: id,
+			spanFormat: PostSpanFormat.reddit,
+			attachments: inlineImageUrls.map((url) => Attachment(
+				type: AttachmentType.image,
+				board: thread.board,
+				id: '${id}_${url.$2}',
+				ext: url.$2.substring(url.$2.lastIndexOf('.')).split('?').first,
+				filename: url.$2.substring(url.$2.lastIndexOf('/') + 1).split('?').first,
+				url: url.$2,
+				thumbnailUrl: url.$1,
+				md5: '',
+				width: null,
+				height: null,
+				threadId: thread.id,
+				sizeInBytes: null
+			)).toList(),
+			parentId: parentId,
+			upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
+			capcode: child['distinguished']
+		);
+	}
+
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
@@ -927,46 +977,11 @@ class SiteReddit extends ImageboardSite {
 			for (final childContainer in childData) {
 				final child = childContainer['data'];
 				if (childContainer['kind'] == 't1') {
-					final id = fromRedditId(child['id']);
-					final List<(String, String)> inlineImageUrls = [];
-					final text = unescape.convert(child['body'])._matchReplaceAndAddGiphyImages(inlineImageUrls).replaceAllMapped(RegExp(r'https:\/\/(?:preview|i).redd.it\/\S+'), (match) {
-						inlineImageUrls.add((
-							match.group(0)!,
-							match.group(0)!
-						));
-						return '';
-					});
-					final post = Post(
-						board: thread.board,
-						text: text,
-						name: child['author'],
-						flag: _makeAuthorFlag(child),
-						time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
-						threadId: thread.id,
-						id: id,
-						spanFormat: PostSpanFormat.reddit,
-						attachments: inlineImageUrls.map((url) => Attachment(
-							type: AttachmentType.image,
-							board: thread.board,
-							id: '${id}_${url.$2}',
-							ext: url.$2.substring(url.$2.lastIndexOf('.')).split('?').first,
-							filename: url.$2.substring(url.$2.lastIndexOf('/') + 1).split('?').first,
-							url: url.$2,
-							thumbnailUrl: url.$1,
-							md5: '',
-							width: null,
-							height: null,
-							threadId: thread.id,
-							sizeInBytes: null
-						)).toList(),
-						parentId: parentId,
-						upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
-						capcode: child['distinguished']
-					);
+					final post = _makePost(child, parentId: parentId, thread: thread);
 					ret.posts_.add(post);
 					_updateTimeEstimateData(post.id, post.time);
 					if (child['replies'] != '') {
-						addChildren(id, child['replies']['data']['children'], post);
+						addChildren(post.id, child['replies']['data']['children'], post);
 					}
 				}
 				else if (childContainer['kind'] == 'more') {
@@ -1027,20 +1042,42 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
-		final response = await client.getUri(Uri.https(baseUrl, query.boards.isEmpty ? '/search.json' : '/r/${query.boards.first}/search.json', {
-			'q': query.query,
-			'restrict_sr': 'true',
-			if (lastResult != null)
-				if (page > lastResult.page)
-					'after': 't3_${toRedditId(lastResult.posts.last.thread!.id)}'
-				else if (page < lastResult.page)
-					'before': 't3_${toRedditId(lastResult.posts.first.thread!.id)}'
-		}));
+		final Response response;
+		if (query.name != null) {
+			response = await client.getUri(Uri.https(baseUrl, '/user/${query.name}.json', {
+				if (lastResult != null)
+					if (page > lastResult.page)
+						'after': lastResult.posts.last.redditApiId
+					else if (page < lastResult.page)
+						'before': lastResult.posts.first.redditApiId
+			}));
+		}
+		else {
+			response = await client.getUri(Uri.https(baseUrl, query.boards.isEmpty ? '/search.json' : '/r/${query.boards.first}/search.json', {
+				'q': [
+					query.query
+				].join(' '),
+				'restrict_sr': 'true',
+				if (lastResult != null)
+					if (page > lastResult.page)
+						'after': lastResult.posts.last.redditApiId
+					else if (page < lastResult.page)
+						'before': lastResult.posts.first.redditApiId
+			}));
+		}
 		return ImageboardArchiveSearchResultPage(
 			page: page,
 			maxPage: response.data['data']['after'] == null ? page : null,
 			posts: await Future.wait((response.data['data']['children'] as List<dynamic>).map((c) async {
-				return ImageboardArchiveSearchResult.thread(await _makeThread(c['data']));
+				if (c['kind'] == 't3') {
+					return ImageboardArchiveSearchResult.thread(await _makeThread(c['data']));
+				}
+				else if (c['kind'] == 't1') {
+					return ImageboardArchiveSearchResult.post(_makePost(c['data'], thread: ThreadIdentifier(c['data']['subreddit'], fromRedditId((c['data']['link_id'] as String).split('_').last))));
+				}
+				else {
+					throw FormatException('Unrecognized search result [kind]', c['kind']);
+				}
 			})),
 			archive: this
 		);
@@ -1063,13 +1100,13 @@ class SiteReddit extends ImageboardSite {
 	@override
 	bool get showImageCount => false;
 	@override
-	bool get supportsSearch => true;
+	ImageboardSearchOptions supportsSearch(String? board) {
+		return ImageboardSearchOptions.nameAndTextOnly;
+	}
 	@override
 	bool get supportsPosting => false;
 	@override
 	bool get isReddit => true;
-	@override
-	bool get supportsSearchOptions => false;
 	@override
 	bool get hasPagedCatalog => true;
 
@@ -1136,6 +1173,25 @@ class SiteReddit extends ImageboardSite {
 		// No idea where to put it
 		posts.add(post);
 		return posts.length - 1;
+	}
+
+	@override
+	bool get supportsUserInfo => true;
+	@override
+	bool get supportsUserAvatars => true;
+
+	@override
+	Future<ImageboardUserInfo> getUserInfo(String username) async {
+		final aboutResponse = await client.getUri(Uri.https(baseUrl, '/user/$username/about.json'));
+		return ImageboardUserInfo(
+			username: username,
+			avatar: Uri.parse(unescape.convert(aboutResponse.data['data']['icon_img'])),
+			webUrl: Uri.https(baseUrl, '/user/$username'),
+			createdAt: DateTime.fromMillisecondsSinceEpoch((aboutResponse.data['data']['created'] as num).toInt() * 1000),
+			totalKarma: aboutResponse.data['data']['total_karma'],
+			commentKarma: aboutResponse.data['data']['comment_karma'],
+			linkKarma: aboutResponse.data['data']['link_karma']
+		);
 	}
 
 	@override

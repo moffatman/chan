@@ -552,13 +552,13 @@ class SiteHackerNews extends ImageboardSite {
 	@override
 	bool get showImageCount => false;
 	@override
-	bool get supportsSearch => true;
+	ImageboardSearchOptions supportsSearch(String? board) {
+		return ImageboardSearchOptions.nameAndTextOnly;
+	}
 	@override
 	bool get supportsPosting => false;
 	@override
 	bool get isHackerNews => true;
-	@override
-	bool get supportsSearchOptions => false;
 	@override
 	bool get supportsMultipleBoards => false;
 	@override
@@ -603,7 +603,8 @@ class SiteHackerNews extends ImageboardSite {
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
 		final response = await client.get('https://hn.algolia.com/api/v1/search', queryParameters: {
 			'query': query.query,
-			'page': page - 1
+			'page': page - 1,
+			if (query.name != null) 'tags': 'author_${query.name}'
 		});
 		return ImageboardArchiveSearchResultPage(
 			page: response.data['page'] + 1,
@@ -611,6 +612,18 @@ class SiteHackerNews extends ImageboardSite {
 			archive: this,
 			posts: (response.data['hits'] as List).map((hit) {
 				final id = int.parse(hit['objectID']);
+				if (hit['comment_text'] != null) {
+					return ImageboardArchiveSearchResult.post(Post(
+						board: '',
+						text: hit['comment_text'],
+						name: hit['author'],
+						time: DateTime.fromMillisecondsSinceEpoch(hit['created_at_i'] * 1000),
+						threadId: hit['story_id'],
+						id: id,
+						spanFormat: PostSpanFormat.hackerNews,
+						attachments: []
+					));
+				}
 				final op = Post(
 					board: '',
 					text: hit['story_text'] ?? '',
@@ -646,6 +659,25 @@ class SiteHackerNews extends ImageboardSite {
 		// No idea where to put it
 		posts.add(post);
 		return posts.length - 1;
+	}
+
+	@override
+	bool get supportsUserInfo => true;
+
+	@override
+	Future<ImageboardUserInfo> getUserInfo(String username) async {
+		final response = await client.get('https://hn.algolia.com/api/v1/users/$username');
+		if (response.data['error'] != null) {
+			throw Exception(response.data['error']);
+		}
+		return ImageboardUserInfo(
+			username: username,
+			webUrl: Uri.https('news.ycombinator.com', '/user', {
+				'id': username
+			}),
+			createdAt: DateTime.parse(response.data['created_at']),
+			totalKarma: response.data['karma']
+		);
 	}
 
 	@override

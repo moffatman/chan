@@ -1009,6 +1009,14 @@ class Site4Chan extends ImageboardSite {
 	];
 
 	@override
+	ImageboardSearchOptions supportsSearch(String? board) {
+		if (board == null) {
+			return ImageboardSearchOptions.textOnly;
+		}
+		return super.supportsSearch(board);
+	}
+
+	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
 		if (query.boards.isNotEmpty) {
 			return searchArchives(query, page: page, lastResult: lastResult);

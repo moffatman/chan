@@ -232,14 +232,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final firstCompatibleImageboard = ImageboardRegistry.instance.imageboards.tryFirstWhere((i) => i.site.supportsSearch);
+		final firstCompatibleImageboard = ImageboardRegistry.instance.imageboards.tryFirstWhere((i) => i.site.supportsSearch(null).text || i.site.supportsSearch('').text);
 		if (firstCompatibleImageboard == null) {
 			return const Center(
 				child: ErrorMessageCard('No added sites with search support')
 			);
 		}
 		final currentImageboard = Persistence.tabs[Persistence.currentTabIndex].imageboard ?? firstCompatibleImageboard;
-		if (currentImageboard.key != _lastImageboardKey && currentImageboard.site.supportsSearch) {
+		if (currentImageboard.key != _lastImageboardKey && (currentImageboard.site.supportsSearch(null).text || currentImageboard.site.supportsSearch('').text)) {
 			if (query.imageboardKey == _lastImageboardKey) {
 				query.imageboardKey = currentImageboard.key;
 			}
@@ -293,7 +293,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 						builder: (ctx) => BoardSwitcherPage(
 							initialImageboardKey: query.imageboardKey,
-							filterImageboards: (b) => b.site.supportsSearch,
+							filterImageboards: (b) => b.site.supportsSearch('').text,
 							allowPickingWholeSites: true
 						)
 					));
@@ -306,6 +306,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				}
 			)
 		);
+		final support = ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsSearch(query.boards.tryFirst);
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			bar: AdaptiveBar(
@@ -498,120 +499,121 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				switchOutCurve: Curves.easeOut,
 				child: (_searchFocused &&
 				        query.imageboardKey != null &&
-								(ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsSearchOptions ?? false) &&
-								(query.boards.isNotEmpty || (ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsGlobalSearchOptions ?? false))
+								(support?.name ?? false)
 								) ? ListView(
 					key: const ValueKey(true),
 					children: [
 						const SizedBox(height: 16),
-						AdaptiveChoiceControl<PostTypeFilter>(
-							children: const {
-								PostTypeFilter.none: (null, 'All posts'),
-								PostTypeFilter.onlyOPs: (null, 'Threads'),
-								PostTypeFilter.onlyReplies: (null, 'Replies'),
-								PostTypeFilter.onlyStickies: (null, 'Stickies')
-							},
-							groupValue: query.postTypeFilter,
-							onValueChanged: (newValue) {
-								query.postTypeFilter = newValue;
-								setState(() {});
-							}
-						),
-						const SizedBox(height: 16),
-						AdaptiveChoiceControl<_MediaFilter>(
-							children: const {
-								_MediaFilter.none: (null, 'All posts'),
-								_MediaFilter.onlyWithMedia: (null, 'With images'),
-								_MediaFilter.onlyWithNoMedia: (null, 'Without images'),
-								_MediaFilter.withSpecificMedia: (null, 'With MD5')
-							},
-							groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
-							onValueChanged: (newValue) async {
-								if (newValue.value != null) {
-									query.md5 = null;
-									query.mediaFilter = newValue.value!;
+						if (support == ImageboardSearchOptions.all) ...[
+							AdaptiveChoiceControl<PostTypeFilter>(
+								children: const {
+									PostTypeFilter.none: (null, 'All posts'),
+									PostTypeFilter.onlyOPs: (null, 'Threads'),
+									PostTypeFilter.onlyReplies: (null, 'Replies'),
+									PostTypeFilter.onlyStickies: (null, 'Stickies')
+								},
+								groupValue: query.postTypeFilter,
+								onValueChanged: (newValue) {
+									query.postTypeFilter = newValue;
+									setState(() {});
 								}
-								else {
-									_showingPicker = true;
-									final file = await pickAttachment(context: context);
-									_showingPicker = false;
-									if (file != null) {
-										query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
-										query.mediaFilter = MediaFilter.none;
+							),
+							const SizedBox(height: 16),
+							AdaptiveChoiceControl<_MediaFilter>(
+								children: const {
+									_MediaFilter.none: (null, 'All posts'),
+									_MediaFilter.onlyWithMedia: (null, 'With images'),
+									_MediaFilter.onlyWithNoMedia: (null, 'Without images'),
+									_MediaFilter.withSpecificMedia: (null, 'With MD5')
+								},
+								groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
+								onValueChanged: (newValue) async {
+									if (newValue.value != null) {
+										query.md5 = null;
+										query.mediaFilter = newValue.value!;
 									}
+									else {
+										_showingPicker = true;
+										final file = await pickAttachment(context: context);
+										_showingPicker = false;
+										if (file != null) {
+											query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
+											query.mediaFilter = MediaFilter.none;
+										}
+									}
+									setState(() {});
 								}
-								setState(() {});
-							}
-						),
-						const SizedBox(height: 16),
-						AdaptiveChoiceControl<PostDeletionStatusFilter>(
-							children: const {
-								PostDeletionStatusFilter.none: (null, 'All posts'),
-								PostDeletionStatusFilter.onlyDeleted: (null, 'Only deleted'),
-								PostDeletionStatusFilter.onlyNonDeleted: (null, 'Only non-deleted')
-							},
-							groupValue: query.deletionStatusFilter,
-							onValueChanged: (newValue) {
-								query.deletionStatusFilter = newValue;
-								setState(() {});
-							}
-						),
-						const SizedBox(height: 16),
-						Wrap(
-							runSpacing: 16,
-							alignment: WrapAlignment.center,
-							runAlignment: WrapAlignment.center,
-							children: [
-								Container(
-									padding: const EdgeInsets.symmetric(horizontal: 8),
-									child: AdaptiveThinButton(
-										filled: query.startDate != null,
-										child: Text(
-											(query.startDate != null) ? 'Posted after ${query.startDate!.toISO8601Date}' : 'Posted after...',
-											textAlign: TextAlign.center
-										),
-										onPressed: () async {
-											_showingPicker = true;
-											final newDate = await pickDate(
-												context: context,
-												initialDate: query.startDate
-											);
-											_showingPicker = false;
-											setState(() {
-												query.startDate = newDate;
-											});
-										}
+							),
+							const SizedBox(height: 16),
+							AdaptiveChoiceControl<PostDeletionStatusFilter>(
+								children: const {
+									PostDeletionStatusFilter.none: (null, 'All posts'),
+									PostDeletionStatusFilter.onlyDeleted: (null, 'Only deleted'),
+									PostDeletionStatusFilter.onlyNonDeleted: (null, 'Only non-deleted')
+								},
+								groupValue: query.deletionStatusFilter,
+								onValueChanged: (newValue) {
+									query.deletionStatusFilter = newValue;
+									setState(() {});
+								}
+							),
+							const SizedBox(height: 16),
+							Wrap(
+								runSpacing: 16,
+								alignment: WrapAlignment.center,
+								runAlignment: WrapAlignment.center,
+								children: [
+									Container(
+										padding: const EdgeInsets.symmetric(horizontal: 8),
+										child: AdaptiveThinButton(
+											filled: query.startDate != null,
+											child: Text(
+												(query.startDate != null) ? 'Posted after ${query.startDate!.toISO8601Date}' : 'Posted after...',
+												textAlign: TextAlign.center
+											),
+											onPressed: () async {
+												_showingPicker = true;
+												final newDate = await pickDate(
+													context: context,
+													initialDate: query.startDate
+												);
+												_showingPicker = false;
+												setState(() {
+													query.startDate = newDate;
+												});
+											}
+										)
+									),
+									Container(
+										padding: const EdgeInsets.symmetric(horizontal: 8),
+										child: AdaptiveThinButton(
+											filled: query.endDate != null,
+											child: Text(
+												(query.endDate != null) ? 'Posted before ${query.endDate!.toISO8601Date}' : 'Posted before...',
+												textAlign: TextAlign.center
+											),
+											onPressed: () async {
+												_showingPicker = true;
+												final newDate = await pickDate(
+													context: context,
+													initialDate: query.endDate
+												);
+												_showingPicker = false;
+												setState(() {
+													query.endDate = newDate;
+												});
+											}
+										)
 									)
-								),
-								Container(
-									padding: const EdgeInsets.symmetric(horizontal: 8),
-									child: AdaptiveThinButton(
-										filled: query.endDate != null,
-										child: Text(
-											(query.endDate != null) ? 'Posted before ${query.endDate!.toISO8601Date}' : 'Posted before...',
-											textAlign: TextAlign.center
-										),
-										onPressed: () async {
-											_showingPicker = true;
-											final newDate = await pickDate(
-												context: context,
-												initialDate: query.endDate
-											);
-											_showingPicker = false;
-											setState(() {
-												query.endDate = newDate;
-											});
-										}
-									)
-								)
-							]
-						),
+								]
+							),
+						],
 						Wrap(
 							alignment: WrapAlignment.center,
 							runAlignment: WrapAlignment.center,
 							children: [
 								for (final field in [
-									(
+									if (support == ImageboardSearchOptions.all) (
 										name: 'Subject',
 										cb: (String s) => query.subject = s,
 										controller: _subjectFieldController
@@ -621,7 +623,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										cb: (String s) => query.name = s,
 										controller: _nameFieldController
 									),
-									(
+									if (support == ImageboardSearchOptions.all) (
 										name: 'Trip',
 										cb: (String s) => query.trip = s,
 										controller: _tripFieldController
@@ -643,7 +645,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								)
 							]
 						),
-						if (query.md5 != null) Container(
+						if (support == ImageboardSearchOptions.all && query.md5 != null) Container(
 							padding: const EdgeInsets.only(top: 16),
 							alignment: Alignment.center,
 							child: Text('MD5: ${query.md5}')

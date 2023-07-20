@@ -26,6 +26,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/tex.dart';
 import 'package:chan/widgets/thread_spans.dart';
+import 'package:chan/widgets/user_info.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -1276,7 +1277,7 @@ class PostSpanZone extends StatelessWidget {
 }
 
 abstract class PostSpanZoneData extends ChangeNotifier {
-	final Map<(int, bool, int?), PostSpanZoneData> _children = {};
+	final Map<(int, bool?, int?), PostSpanZoneData> _children = {};
 	String get board;
 	int get primaryThreadId;
 	ThreadIdentifier get primaryThread => ThreadIdentifier(board, primaryThreadId);
@@ -1288,7 +1289,6 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	bool disposed = false;
 	List<Comparator<Post>> get postSortingMethods;
 	bool get tree;
-	bool get inTree;
 
 	final Map<int, bool> _shouldExpandPost = {};
 	bool shouldExpandPost(int id) {
@@ -1351,12 +1351,12 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		return _futures[id] as AsyncSnapshot<T>;
 	}
 
-	PostSpanZoneData childZoneFor(int postId, {bool inTree = false, int? fakeHoistedRootId}) {
+	PostSpanZoneData childZoneFor(int postId, {bool? tree, int? fakeHoistedRootId}) {
 		// Assuming that when a new childZone is requested, there will be some old one to cleanup
 		for (final child in _children.values) {
 			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 		}
-		final key = (postId, inTree, fakeHoistedRootId);
+		final key = (postId, tree, fakeHoistedRootId);
 		final existingZone = _children[key];
 		if (existingZone != null) {
 			return existingZone;
@@ -1364,16 +1364,14 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		final newZone = PostSpanChildZoneData(
 			parent: this,
 			postId: postId,
-			inTree: inTree,
+			tree: tree,
 			fakeHoistedRootId: fakeHoistedRootId
 		);
 		_children[key] = newZone;
 		return newZone;
 	}
 
-	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId) {
-		throw Exception('not possible');
-	}
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {bool? tree, bool clearStack = false});
 
 	void notifyAllListeners() {
 		notifyListeners();
@@ -1441,21 +1439,22 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 			notifyListeners();
 		}
 	}
+
+	PostSpanZoneData get _root;
 }
 
 class PostSpanChildZoneData extends PostSpanZoneData {
 	final int postId;
 	final PostSpanZoneData parent;
-	@override
-	final bool inTree;
+	final bool? _tree;
 	final int? fakeHoistedRootId;
 
 	PostSpanChildZoneData({
 		required this.parent,
 		required this.postId,
-		required this.inTree,
+		bool? tree,
 		this.fakeHoistedRootId
-	});
+	}) : _tree = tree;
 
 	@override
 	String get board => parent.board;
@@ -1526,11 +1525,15 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	List<Comparator<Post>> get postSortingMethods => parent.postSortingMethods;
 	@override
-	bool get tree => parent.tree;
+	bool get tree => _tree ?? parent.tree;
+	@override
+	PostSpanZoneData get _root => parent._root;
 
 	@override
-	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId) {
-		return parent.childZoneFor(postId, fakeHoistedRootId: fakeHoistedRootId);
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {bool? tree, bool clearStack = false}) {
+		return clearStack ?
+			_root.childZoneFor(fakeHoistedRootId, tree: tree) :
+			parent.childZoneFor(postId, fakeHoistedRootId: fakeHoistedRootId, tree: tree);
 	}
 }
 
@@ -1555,8 +1558,6 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	List<Comparator<Post>> postSortingMethods;
 	@override
 	bool tree;
-	@override
-	bool get inTree => false;
 	final Map<int, Thread> _threads = {};
 	final Map<int, Post> _postLookupTable = {};
 
@@ -1695,8 +1696,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	}
 
 	@override
-	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId) {
-		return childZoneFor(0, fakeHoistedRootId: fakeHoistedRootId);
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {bool? tree, bool clearStack = false}) {
+		return childZoneFor(0, fakeHoistedRootId: fakeHoistedRootId, tree: tree);
 	}
 
 	@override
@@ -1704,6 +1705,9 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 
 	@override
 	Post? findPost(int postId) => _postLookupTable[postId];
+
+	@override
+	PostSpanZoneData get _root => this;
 }
 
 class ExpandingPost extends StatelessWidget {
@@ -1810,6 +1814,7 @@ List<InlineSpan> buildPostInfoRow({
 		postIdNonRepeatingSegment = digits;
 		postIdRepeatingSegment = null;
 	}
+	final isOP = site.supportsUserInfo && post.name == thread?.posts_.tryFirst?.name;
 	return [
 		if (post.deleted) ...[
 			TextSpan(
@@ -1844,8 +1849,25 @@ List<InlineSpan> buildPostInfoRow({
 			]
 			else if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername)) TextSpan(
-					text: settings.filterProfanity(post.name) + (isYourPost ? ' (You)' : ''),
-					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : null)
+					text: settings.filterProfanity(post.name) + (isYourPost ? ' (You)' : '') + (isOP ? ' (OP)' : ''),
+					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : (isOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
+					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
+						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
+						if (postIdsToShow.isEmpty) {
+							alertError(context, 'Could not find any posts with name "${post.name}". This is likely a problem with Chance...');
+						}
+						else {
+							WeakNavigator.push(context, PostsPage(
+								postsIdsToShow: postIdsToShow,
+								zone: zone,
+								clearStack: true,
+								header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(post.board).name || zone.imageboard.site.supportsSearch(null).name) ? UserInfoPanel(
+									username: post.name,
+									board: post.board
+								) : null
+							));
+						}
+					}) : null
 				)
 				else if (isYourPost) TextSpan(
 					text: '(You)',

@@ -727,6 +727,44 @@ class ImageboardSnippet {
 	});
 }
 
+enum ImageboardSearchOptions {
+	none,
+	textOnly,
+	nameAndTextOnly,
+	all;
+	bool get name => switch (this) {
+		none || textOnly => false,
+		nameAndTextOnly || all => true
+	};
+	bool get text => switch (this) {
+		none => false,
+		textOnly || nameAndTextOnly || all => true
+	};
+}
+
+class ImageboardUserInfo {
+	final String username;
+	final Uri webUrl;
+	final Uri? avatar;
+	final DateTime createdAt;
+	final int? commentKarma;
+	final int? linkKarma;
+	final int totalKarma;
+
+	const ImageboardUserInfo({
+		required this.username,
+		required this.webUrl,
+		this.avatar,
+		required this.createdAt,
+		this.commentKarma,
+		this.linkKarma,
+		required this.totalKarma
+	});
+
+	@override
+	String toString() => 'ImageboardUserInfo($username)';
+}
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
@@ -977,15 +1015,20 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get explicitIds => true;
 	bool get useTree => false;
 	bool get showImageCount => true;
-	bool get supportsSearch => archives.isNotEmpty;
+	ImageboardSearchOptions supportsSearch(String? board) {
+		if (board != null && archives.isNotEmpty) {
+			return ImageboardSearchOptions.all;
+		}
+		return ImageboardSearchOptions.none;
+	}
 	bool get supportsPosting => true;
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required bool interactive}) async => throw UnimplementedError();
 	bool get isHackerNews => false;
 	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;
-	bool get supportsSearchOptions => true;
-	bool get supportsGlobalSearchOptions => false;
 	bool get supportsPushNotifications => false;
+	bool get supportsUserInfo => false;
+	bool get supportsUserAvatars => false;
 	List<CatalogVariantGroup> get catalogVariantGroups => const [
 		CatalogVariantGroup(
 			name: 'Bump order',
@@ -1061,6 +1104,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		await Future.wait(theThread.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
 		return theThread;
 	}
+	Future<ImageboardUserInfo> getUserInfo(String username) async => throw UnimplementedError();
 }
 
 abstract class ImageboardSiteLoginSystem {

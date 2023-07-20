@@ -169,7 +169,20 @@ class PostRow extends StatelessWidget {
 						child: Text.rich(
 							TextSpan(
 								children: [
-									if ((!parentZone.tree || (post.parentId != latestPost.threadId && (baseOptions?.highlightString?.isNotEmpty ?? false))) && !site.explicitIds && post.parentId != null) ...[
+									if (
+										(
+											// We are not in tree view OR
+											!parentZone.tree ||
+											// We are filtering and this is not a reply to OP
+											(post.parentId != latestPost.threadId && (baseOptions?.highlightString?.isNotEmpty ?? false))
+										) &&
+										// The site uses parentIds
+										!site.explicitIds &&
+										// The post has a parentId
+										post.parentId != null &&
+										// The parentId is not obvious based on context
+										post.parentId != parentZone.stackIds.tryLast
+									) ...[
 										PostQuoteLinkSpan(
 											board: latestPost.board,
 											threadId: latestPost.threadId,
@@ -512,7 +525,7 @@ class PostRow extends StatelessWidget {
 						);
 					}
 				),
-				if (!parentZone.inTree && parentZone.stackIds.length > 2 && parentZone.onNeedScrollToPost != null) ContextMenuAction(
+				if (!parentZone.tree && parentZone.stackIds.length > 2 && parentZone.onNeedScrollToPost != null) ContextMenuAction(
 					child: const Text('Scroll to post'),
 					trailingIcon: CupertinoIcons.return_icon,
 					onPressed: () => parentZone.onNeedScrollToPost!(latestPost)

@@ -37,6 +37,8 @@ class PostsPage extends StatefulWidget {
 	final List<int> postsIdsToShow;
 	final ValueChanged<Post>? onTap;
 	final int? isRepliesForPostId;
+	final bool clearStack;
+	final Widget? header;
 
 	const PostsPage({
 		required this.postsIdsToShow,
@@ -44,6 +46,8 @@ class PostsPage extends StatefulWidget {
 		required this.zone,
 		this.onTap,
 		this.isRepliesForPostId,
+		this.clearStack = false,
+		this.header,
 		Key? key
 	}) : super(key: key);
 
@@ -114,7 +118,7 @@ class _PostsPageState extends State<PostsPage> {
 	@override
 	Widget build(BuildContext context) {
 		final attachments = replies.expand<Attachment>((a) => a.post?.attachments ?? []).toList();
-		final subzone = widget.zone.hoistFakeRootZoneFor(0); // To avoid conflict with same semanticIds in tree
+		final subzone = widget.zone.hoistFakeRootZoneFor(0, tree: false, clearStack: widget.clearStack); // To avoid conflict with same semanticIds in tree
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.findPost(widget.postIdForBackground!);
 		final doubleTapScrollToReplies = context.select<EffectiveSettings, bool>((s) => s.doubleTapScrollToReplies);
 		final isRepliesForPostId = widget.isRepliesForPostId;
@@ -155,9 +159,12 @@ class _PostsPageState extends State<PostsPage> {
 						addRepaintBoundaries: false,
 						list: effectiveReplies,
 						id: _forceRebuildId.toString(),
-						childCount: max(0, (replies.length * 2) - 1),
+						childCount: max(0, ((replies.length + (widget.header != null ? 1 : 0)) * 2) - 1),
 						(context, i) {
-							final reply = effectiveReplies[i];
+							if (widget.header != null && i == 0) {
+								return widget.header;
+							}
+							final reply = effectiveReplies[widget.header == null ? i : (i - 1)];
 							return Container(
 								color: theme.backgroundColor,
 								key: ValueKey(reply.post?.id ?? 0),
