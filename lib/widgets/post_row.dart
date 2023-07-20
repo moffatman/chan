@@ -321,8 +321,7 @@ class PostRow extends StatelessWidget {
 											backgroundColor: theme.backgroundColor,
 											borderColor: theme.primaryColorWithBrightness(0.2),
 											size: null
-										),
-										heroScale: MediaQuery.textScaleFactorOf(context)
+										)
 									)
 								),
 								onPressed: () {
