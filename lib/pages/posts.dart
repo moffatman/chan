@@ -26,6 +26,9 @@ class _PostsPageItem {
 	_PostsPageItem.post(this.post) : stubIds = null, stub = false;
 	_PostsPageItem.primaryStub(List<ParentAndChildIdentifier> this.stubIds) : post = null, stub = true;
 	_PostsPageItem.secondaryStub(this.post) : stubIds = null, stub = true;
+
+	@override
+	String toString() => '_PostsPageItem(post: $post, stub: $stub, stubIds: $stubIds)';
 }
 
 class PostsPage extends StatefulWidget {
@@ -49,6 +52,7 @@ class PostsPage extends StatefulWidget {
 }
 
 class _PostsPageState extends State<PostsPage> {
+	int _forceRebuildId = 0;
 	final List<_PostsPageItem> replies = [];
 
 	@override
@@ -72,6 +76,7 @@ class _PostsPageState extends State<PostsPage> {
 			alertError(context, e.toStringDio());
 		}
 		reply.loading = false;
+		_forceRebuildId++; // We are mutating [replies], so need to force sliver delegate to rebuild
 		setState(() {});
 	}
 
@@ -149,6 +154,7 @@ class _PostsPageState extends State<PostsPage> {
 					delegate: SliverDontRebuildChildBuilderDelegate(
 						addRepaintBoundaries: false,
 						list: effectiveReplies,
+						id: _forceRebuildId.toString(),
 						childCount: max(0, (replies.length * 2) - 1),
 						(context, i) {
 							final reply = effectiveReplies[i];

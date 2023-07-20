@@ -142,6 +142,9 @@ class Post implements Filterable {
 
 	@override
 	String toString() {
+		if (isStub) {
+			return 'Stub Post $id (parentId: $parentId)';
+		}
 		return 'Post $id ($name): ${text.length > 23 ? '${text.substring(0, 20)}...' : text}';
 	}
 
