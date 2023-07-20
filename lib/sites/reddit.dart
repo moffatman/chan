@@ -886,7 +886,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	Flag? _makeAuthorFlag(Map<String, dynamic> data) {
-		if (data['author_flair_richtext'] != null) {
+		if ((data['author_flair_richtext'] as List?)?.isNotEmpty ?? false) {
 			return ImageboardMultiFlag(
 				parts: (data['author_flair_richtext'] as List).map((part) {
 					if (part['e'] == 'text') {
