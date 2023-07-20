@@ -375,8 +375,7 @@ class ThreadRow extends StatelessWidget {
 										showIconInCorner: (
 											backgroundColor: backgroundColor,
 											borderColor: borderColor
-										),
-										heroScale: MediaQuery.textScaleFactorOf(context)
+										)
 									)
 								)
 							)
