@@ -394,8 +394,7 @@ class ThreadRow extends StatelessWidget {
 											backgroundColor: backgroundColor,
 											borderColor: borderColor,
 											size: null
-										),
-										heroScale: MediaQuery.textScaleFactorOf(context)
+										)
 									)
 								)
 							)
