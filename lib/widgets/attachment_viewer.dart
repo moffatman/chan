@@ -1193,7 +1193,6 @@ class AttachmentViewer extends StatelessWidget {
 					ContextMenuAction(
 						trailingIcon: CupertinoIcons.cloud_download,
 						onPressed: () async {
-							Navigator.of(context, rootNavigator: true).pop();
 							final download = !controller.isDownloaded || (await confirm(context, 'Redownload?'));
 							if (!download) return;
 							await controller.download(force: true);
@@ -1208,8 +1207,6 @@ class AttachmentViewer extends StatelessWidget {
 							final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 							final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
 							await controller.share((offset != null && size != null) ? offset & size : null);
-							// ignore: use_build_context_synchronously
-							Navigator.of(context, rootNavigator: true).pop();
 						},
 						key: controller.contextMenuShareButtonKey,
 						child: const Text('Share')
@@ -1225,9 +1222,6 @@ class AttachmentViewer extends StatelessWidget {
 									alertError(context, e.toStringDio());
 								}
 							}
-							if (context.mounted) {
-								Navigator.pop(context);
-							}
 						},
 						child: const Text('Translate')
 					),
@@ -1242,7 +1236,6 @@ class AttachmentViewer extends StatelessWidget {
 						onPressed: () {
 							context.read<EffectiveSettings>().unHideByMD5s([attachment.md5]);
 							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
-							Navigator.pop(context);
 						},
 						child: const Text('Unhide by image')
 					)
@@ -1251,7 +1244,6 @@ class AttachmentViewer extends StatelessWidget {
 						onPressed: () async {
 							context.read<EffectiveSettings>().hideByMD5(attachment.md5);
 							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
-							Navigator.pop(context);
 						},
 						child: const Text('Hide by image')
 					),

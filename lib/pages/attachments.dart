@@ -266,7 +266,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 														trailingIcon: CupertinoIcons.return_icon,
 														onPressed: () {
 															Navigator.of(context, rootNavigator: true).pop();
-															Navigator.of(context, rootNavigator: true).pop();
 															Navigator.pop(context, attachment);
 														},
 														child: const Text('Scroll to post')
@@ -312,7 +311,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 															ContextMenuAction(
 																trailingIcon: CupertinoIcons.return_icon,
 																onPressed: () {
-																	Navigator.of(context, rootNavigator: true).pop();
 																	Navigator.pop(context, attachment);
 																},
 																child: const Text('Scroll to post')
