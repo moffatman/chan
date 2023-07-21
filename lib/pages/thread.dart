@@ -2198,7 +2198,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													)
 												));
 												if (dest != null) {
-													widget.listController.animateTo((p) => p.attachments.contains(dest.attachment));
+													final destPost = widget.thread?.posts.tryFirstWhere((p) => p.attachments.contains(dest.attachment));
+													if (destPost != null) {
+														widget.zone.onNeedScrollToPost?.call(destPost);
+													}
 												}
 											}
 										), (
