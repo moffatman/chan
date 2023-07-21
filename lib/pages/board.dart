@@ -833,6 +833,7 @@ class _BoardPageState extends State<BoardPage> {
 															});
 															return list;
 														}),
+														autoExtendDuringScroll: true,
 														listExtender: (after) => site.getMoreCatalog(after, variant: variant, interactive: true).then((list) async {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);

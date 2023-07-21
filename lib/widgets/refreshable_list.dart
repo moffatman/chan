@@ -870,6 +870,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool canTapFooter;
 	final double minCacheExtent;
 	final bool shrinkWrap;
+	final bool autoExtendDuringScroll;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -905,6 +906,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.canTapFooter = true,
 		this.minCacheExtent = 0,
 		this.shrinkWrap = false,
+		this.autoExtendDuringScroll = false,
 		Key? key
 	}) : super(key: key);
 
@@ -1152,7 +1154,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
-	Future<void> update({bool hapticFeedback = false, bool extend = false}) async {
+	void _autoExtendTrigger() {
+		if (widget.autoExtendDuringScroll && !widget.disableBottomUpdates) {
+			update(extend: true, overrideMinUpdateDuration: Duration.zero);
+		}
+	}
+
+	Future<void> update({bool hapticFeedback = false, bool extend = false, Duration? overrideMinUpdateDuration}) async {
 		if (updatingNow.value == widget.id) {
 			return;
 		}
@@ -1168,6 +1176,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
 				minUpdateDuration *= 2;
 			}
+			minUpdateDuration = overrideMinUpdateDuration ?? minUpdateDuration;
 			final lastItem = widget.controller?._items.tryLast?.item;
 			if (extend && widget.treeAdapter != null && ((lastItem?.representsStubChildren ?? false))) {
 				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem!.parentIds, lastItem.id);
@@ -2476,6 +2485,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	int? currentTargetIndex;
 	bool? _useTree;
 	final Map<int, RefreshableListItem<T>> _newInsertIndices = {};
+	bool _autoExtendEnabled = true;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
@@ -2521,6 +2531,16 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 	}
 	Future<void> _onSlowScroll(void update) async {
+		final extentAfter = scrollController?.position.extentAfter;
+		if (extentAfter != null) {
+			if (extentAfter < 1000 && _autoExtendEnabled) {
+				state?._autoExtendTrigger();
+				_autoExtendEnabled = false;
+			}
+			else if (extentAfter > 2000) {
+				_autoExtendEnabled = true;
+			}
+		}
 		for (final item in _items) {
 			if (item.context?.mounted == false) {
 				item.context = null;
