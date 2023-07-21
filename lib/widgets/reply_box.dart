@@ -848,28 +848,29 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			bool spamFiltered = false;
 			if (_captchaSolution is Chan4CustomCaptchaSolution) {
 				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
-				// ignore: use_build_context_synchronously
-				settings.contributeCaptchas ??= await showAdaptiveDialog<bool>(
-					context: context,
-					builder: (context) => AdaptiveAlertDialog(
-						title: const Text('Contribute captcha solutions?'),
-						content: const Text('The captcha images you solve will be collected to improve the automated solver'),
-						actions: [
-							AdaptiveDialogAction(
-								child: const Text('Contribute'),
-								onPressed: () {
-									Navigator.of(context).pop(true);
-								}
-							),
-							AdaptiveDialogAction(
-								child: const Text('No'),
-								onPressed: () {
-									Navigator.of(context).pop(false);
-								}
-							)
-						]
-					)
-				);
+				if (context.mounted) {
+					settings.contributeCaptchas ??= await showAdaptiveDialog<bool>(
+						context: context,
+						builder: (context) => AdaptiveAlertDialog(
+							title: const Text('Contribute captcha solutions?'),
+							content: const Text('The captcha images you solve will be collected to improve the automated solver'),
+							actions: [
+								AdaptiveDialogAction(
+									child: const Text('Contribute'),
+									onPressed: () {
+										Navigator.of(context).pop(true);
+									}
+								),
+								AdaptiveDialogAction(
+									child: const Text('No'),
+									onPressed: () {
+										Navigator.of(context).pop(false);
+									}
+								)
+							]
+						)
+					);
+				}
 				if (settings.contributeCaptchas == true) {
 					final bytes = await solution.alignedImage?.toByteData(format: ImageByteFormat.png);
 					if (bytes == null) {

@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 
 import 'package:auto_size_text/auto_size_text.dart';
@@ -201,12 +199,14 @@ Future<File?> pickAttachment({
 													final path = await entry.pick();
 													loadingPick = false;
 													setPickerDialogState(() {});
-													if (path != null) {
+													if (path != null && context.mounted) {
 														Navigator.of(context).pop<File>(File(path));
 													}
 												}
 												catch (e) {
-													alertError(context, e.toStringDio());
+													if (context.mounted) {
+														alertError(context, e.toStringDio());
+													}
 													loadingPick = false;
 													setPickerDialogState(() {});
 												}

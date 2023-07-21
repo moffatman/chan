@@ -1196,8 +1196,9 @@ class AttachmentViewer extends StatelessWidget {
 							final download = !controller.isDownloaded || (await confirm(context, 'Redownload?'));
 							if (!download) return;
 							await controller.download(force: true);
-							// ignore: use_build_context_synchronously
-							showToast(context: context, message: 'Downloaded ${controller.downloadFilename}', icon: CupertinoIcons.cloud_download);
+							if (context.mounted) {
+								showToast(context: context, message: 'Downloaded ${controller.downloadFilename}', icon: CupertinoIcons.cloud_download);
+							}
 						},
 						child: const Text('Download')
 					),

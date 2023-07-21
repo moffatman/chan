@@ -728,8 +728,9 @@ class PostRow extends StatelessWidget {
 					isDestructiveAction: true,
 					onPressed: () async {
 						await site.deletePost(latestPost.board, latestPost.threadId, receipt);
-						// ignore: use_build_context_synchronously
-						showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
+						if (context.mounted) {
+							showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
+						}
 					}
 				),
 				if (latestPost.attachments.isNotEmpty) ...buildImageSearchActions(context, () => whichAttachment(context, latestPost.attachments))

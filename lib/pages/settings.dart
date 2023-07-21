@@ -269,12 +269,13 @@ class SettingsPage extends StatelessWidget {
 								),
 								onPressed: () async {
 									await modalLoad(context, 'Synchronizing...', (_) => settings.updateContentSettings());
-									// ignore: use_build_context_synchronously
-									showToast(
-										context: context,
-										icon: CupertinoIcons.check_mark,
-										message: 'Synchronized'
-									);
+									if (context.mounted) {
+										showToast(
+											context: context,
+											icon: CupertinoIcons.check_mark,
+											message: 'Synchronized'
+										);
+									}
 								}
 							),
 							if (settings.contentSettings.sites.length > 1) ...[
