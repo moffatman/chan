@@ -746,7 +746,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	Future<File> _moveToShareCache() async {
 		final systemTempDirectory = Persistence.temporaryDirectory;
 		final shareDirectory = await (Directory('${systemTempDirectory.path}/sharecache')).create(recursive: true);
-		final newFilename = '${attachment.id}$downloadExt';
+		final newFilename = '${Uri.encodeComponent(attachment.id)}$downloadExt';
 		return await getFile().copy('${shareDirectory.path}/$newFilename');
 	}
 
