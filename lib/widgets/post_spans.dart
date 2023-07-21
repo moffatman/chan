@@ -562,7 +562,8 @@ class PostQuoteLinkSpan extends PostSpan {
 					),
 					key: ValueKey(thisPostInThread),
 					child: Text.rich(
-						span.$1
+						span.$1,
+						textScaler: TextScaler.noScaling
 					)
 				);
 				return (WidgetSpan(
@@ -883,7 +884,7 @@ class PostLinkSpan extends PostSpan {
 							height: 75,
 							child: CircularProgressIndicator.adaptive()
 						),
-						center: Flexible(child: Text(url, style: const TextStyle(decoration: TextDecoration.underline)))
+						center: Flexible(child: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaler: TextScaler.noScaling))
 					);
 				}
 				String? byline = snapshot.data?.provider;
@@ -915,11 +916,11 @@ class PostLinkSpan extends PostSpan {
 									if (name != null && !url.contains(name!)) Text(name!),
 									if (snapshot.data?.title?.isNotEmpty ?? false) Text(snapshot.data!.title!, style: TextStyle(
 										color: theme.primaryColor
-									))
+									), textScaler: TextScaler.noScaling)
 									else if (name == null) Text(url, style: TextStyle(
 										color: theme.primaryColor
-									)),
-									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
+									), textScaler: TextScaler.noScaling),
+									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey), textScaler: TextScaler.noScaling)
 								]
 							)
 						),
@@ -1193,7 +1194,8 @@ class PostTableSpan extends PostSpan {
 					children: row.map((col) => TableCell(
 						child: Text.rich(
 							col.build(context, zone, settings, theme, options),
-							textAlign: TextAlign.left
+							textAlign: TextAlign.left,
+							textScaler: TextScaler.noScaling
 						)
 					)).toList()
 				)).toList()
@@ -1719,35 +1721,38 @@ class ExpandingPost extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData>();
 		final post = zone.findPost(id) ?? zone.postFromArchive(id);
-		return zone.shouldExpandPost(id) ? ((post == null) ? Center(
-			child: Text('Could not find /${zone.board}/$id')
-		) : Row(
-			children: [
-				Flexible(
-					child: Padding(
-						padding: const EdgeInsets.only(top: 8, bottom: 8),
-						child: DecoratedBox(
-							decoration: BoxDecoration(
-								border: Border.all(color: ChanceTheme.primaryColorOf(context))
-							),
-							position: DecorationPosition.foreground,
-							child: PostRow(
-								post: post,
-								onThumbnailTap: (attachment) {
-									showGallery(
-										context: context,
-										attachments: [attachment],
-										semanticParentIds: zone.stackIds,
-										heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
-									);
-								},
-								shrinkWrap: true
+		return zone.shouldExpandPost(id) ? TransformedMediaQuery(
+			transformation: (mq) => mq.copyWith(textScaler: TextScaler.noScaling),
+			child: (post == null) ? Center(
+				child: Text('Could not find /${zone.board}/$id')
+			) : Row(
+				children: [
+					Flexible(
+						child: Padding(
+							padding: const EdgeInsets.only(top: 8, bottom: 8),
+							child: DecoratedBox(
+								decoration: BoxDecoration(
+									border: Border.all(color: ChanceTheme.primaryColorOf(context))
+								),
+								position: DecorationPosition.foreground,
+								child: PostRow(
+									post: post,
+									onThumbnailTap: (attachment) {
+										showGallery(
+											context: context,
+											attachments: [attachment],
+											semanticParentIds: zone.stackIds,
+											heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+										);
+									},
+									shrinkWrap: true
+								)
 							)
 						)
 					)
-				)
-			]
-		)) : const SizedBox.shrink();
+				]
+			)
+		) : const SizedBox.shrink();
 	}
 }
 
