@@ -279,7 +279,10 @@ class _ChanAppState extends State<ChanApp> {
 									return MediaQuery(
 										data: mq.copyWith(
 											boldText: false,
-											textScaleFactor: mq.textScaleFactor * settings.textScale,
+											textScaler: ChainedLinearTextScaler(
+												parent: mq.textScaler,
+												textScaleFactor: settings.textScale
+											),
 											padding: (mq.padding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null),
 											viewPadding: (mq.viewPadding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null)
 										),
@@ -770,7 +773,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					);
 				}
 				catch (e) {
-					alertError(context, 'Error adding theme: $e');
+					if (mounted) {
+						alertError(context, 'Error adding theme: $e');
+					}
 				}
 			}
 			else if (uri.pathSegments.length >= 2 && uri.pathSegments[1] == 'thread') {
@@ -817,7 +822,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					);
 				}
 				catch (e) {
-					alertError(context, 'Error adding site: $e');
+					if (mounted) {
+						alertError(context, 'Error adding site: $e');
+					}
 				}
 			}
 			else if (link != 'chance://') {

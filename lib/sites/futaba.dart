@@ -48,7 +48,7 @@ Future<dom.Document> parse(Uint8List html, {bool workaroundApplied = false}) asy
 			return parse(html, workaroundApplied: true);
 		}
 		final context = ImageboardRegistry.instance.context;
-		if (context != null) {
+		if (context != null && context.mounted) {
 			showToast(
 				context: context,
 				message: 'Corrupt Shift-JIS text encoding',

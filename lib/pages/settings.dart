@@ -329,7 +329,9 @@ class SettingsPage extends StatelessWidget {
 											}
 										}
 										catch (e) {
-											alertError(context, e.toStringDio());
+											if (context.mounted) {
+												alertError(context, e.toStringDio());
+											}
 										}
 									}
 								)
@@ -1590,7 +1592,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																			Navigator.pop(context, await getInstalledFontFamilies());
 																		}
 																		catch (e) {
-																			alertError(context, e.toStringDio());
+																			if (context.mounted) {
+																				alertError(context, e.toStringDio());
+																			}
 																		}
 																	}
 																),
@@ -2460,7 +2464,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															AdaptiveIconButton(
 																onPressed: (settings.catalogGridModeTextLinesLimit ?? 2) <= 1 ? null : () {
 																	setDialogState(() {
-																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * 14 * MediaQuery.textScaleFactorOf(context))).round()) - 1;
+																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * MediaQuery.textScalerOf(context).scale(14))).round()) - 1;
 																	});
 																},
 																icon: const Icon(CupertinoIcons.minus)
@@ -3208,11 +3212,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 								}
 								catch (e, st) {
 									Future.error(e, st); // Report to crashlytics
-									showToast(
-										context: context,
-										icon: CupertinoIcons.lock_slash,
-										message: 'Error authenticating'
-									);
+									if (context.mounted) {
+										showToast(
+											context: context,
+											icon: CupertinoIcons.lock_slash,
+											message: 'Error authenticating'
+										);
+									}
 								}
 							}
 						)
@@ -3509,7 +3515,9 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		}
 		catch (e, st) {
 			Future.error(e, st); // Report to Crashlytics
-			alertError(context, e.toStringDio());
+			if (context.mounted) {
+				alertError(context, e.toStringDio());
+			}
 		}
 		await _readFilesystemInfo();
 		setState(() {
@@ -3970,7 +3978,9 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 										await widget.loginSystem.clearSavedLoginFields();
 									}
 									catch (e) {
-										await alertError(context, e.toStringDio());
+										if (context.mounted) {
+											await alertError(context, e.toStringDio());
+										}
 									}
 									await _updateStatus();
 								}
@@ -3986,7 +3996,9 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 								await _login();
 							}
 							catch (e) {
-								await alertError(context, e.toStringDio());
+								if (context.mounted) {
+									await alertError(context, e.toStringDio());
+								}
 							}
 						}
 					)

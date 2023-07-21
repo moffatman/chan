@@ -709,7 +709,9 @@ class PostRow extends StatelessWidget {
 							await parentZone.translatePost(post);
 						}
 						catch (e) {
-							alertError(context, e.toStringDio());
+							if (context.mounted) {
+								alertError(context, e.toStringDio());
+							}
 						}
 					}
 				),

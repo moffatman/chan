@@ -17,8 +17,7 @@ class TexWidget extends StatelessWidget {
 			colorFilter: ColorFilter.mode(color ?? ChanceTheme.primaryColorOf(context), BlendMode.srcIn),
 			child: Image(
 				image: TeXImageProvider(
-					tex,
-					textScaleFactor: MediaQuery.textScaleFactorOf(context)
+					tex
 				),
 				loadingBuilder: (context, child, chunk) {
 					if (chunk == null) {

@@ -384,27 +384,24 @@ class ThreadRow extends StatelessWidget {
 													)
 												),
 												...thread.posts.skip(max(1, thread.posts.length - 3)).map((post) => WidgetSpan(
-													child: TransformedMediaQuery(
-														transformation: (mq) => mq.copyWith(textScaleFactor: 1),
-														child: Padding(
-															padding: const EdgeInsets.only(bottom: 16),
-															child: Row(
-																mainAxisSize: MainAxisSize.min,
-																crossAxisAlignment: CrossAxisAlignment.start,
-																children: [
-																	Text('>>', style: TextStyle(color: theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
-																	const SizedBox(width: 4),
-																	Flexible(
-																		child: PostRow(
-																			post: post,
-																			baseOptions: baseOptions,
-																			shrinkWrap: true,
-																			highlight: true,
-																			showPostNumber: true
-																		)
+													child: Padding(
+														padding: const EdgeInsets.only(bottom: 16),
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															crossAxisAlignment: CrossAxisAlignment.start,
+															children: [
+																Text('>>', style: TextStyle(color: theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
+																const SizedBox(width: 4),
+																Flexible(
+																	child: PostRow(
+																		post: post,
+																		baseOptions: baseOptions,
+																		shrinkWrap: true,
+																		highlight: true,
+																		showPostNumber: true
 																	)
-																]
-															)
+																)
+															]
 														)
 													)
 												))

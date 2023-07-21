@@ -1459,3 +1459,28 @@ class GreedySizeCachingBox extends SingleChildRenderObjectWidget {
 		renderObject.heightResetThreshold = heightResetThreshold;
 	}
 }
+
+class ChainedLinearTextScaler extends TextScaler {
+	final TextScaler parent;
+	@override
+	final double textScaleFactor;
+
+	const ChainedLinearTextScaler({
+		required this.parent,
+		required this.textScaleFactor
+	});
+
+	@override
+	double scale(double fontSize) {
+		return parent.scale(textScaleFactor * fontSize);
+	}
+
+	@override
+	bool operator == (Object other) =>
+		other is ChainedLinearTextScaler &&
+		other.parent == parent &&
+		other.textScaleFactor == textScaleFactor;
+	
+	@override
+	int get hashCode => Object.hash(parent, textScaleFactor);
+}

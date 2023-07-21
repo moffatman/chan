@@ -562,8 +562,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					),
 					key: ValueKey(thisPostInThread),
 					child: Text.rich(
-						span.$1,
-						textScaleFactor: 1
+						span.$1
 					)
 				);
 				return (WidgetSpan(
@@ -884,7 +883,7 @@ class PostLinkSpan extends PostSpan {
 							height: 75,
 							child: CircularProgressIndicator.adaptive()
 						),
-						center: Flexible(child: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaleFactor: 1))
+						center: Flexible(child: Text(url, style: const TextStyle(decoration: TextDecoration.underline)))
 					);
 				}
 				String? byline = snapshot.data?.provider;
@@ -916,11 +915,11 @@ class PostLinkSpan extends PostSpan {
 									if (name != null && !url.contains(name!)) Text(name!),
 									if (snapshot.data?.title?.isNotEmpty ?? false) Text(snapshot.data!.title!, style: TextStyle(
 										color: theme.primaryColor
-									), textScaleFactor: 1)
+									))
 									else if (name == null) Text(url, style: TextStyle(
 										color: theme.primaryColor
-									), textScaleFactor: 1),
-									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey), textScaleFactor: 1)
+									)),
+									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
 								]
 							)
 						),
@@ -1194,8 +1193,7 @@ class PostTableSpan extends PostSpan {
 					children: row.map((col) => TableCell(
 						child: Text.rich(
 							col.build(context, zone, settings, theme, options),
-							textAlign: TextAlign.left,
-							textScaleFactor: 1
+							textAlign: TextAlign.left
 						)
 					)).toList()
 				)).toList()
@@ -1721,38 +1719,35 @@ class ExpandingPost extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData>();
 		final post = zone.findPost(id) ?? zone.postFromArchive(id);
-		return zone.shouldExpandPost(id) ? TransformedMediaQuery(
-			transformation: (mq) => mq.copyWith(textScaleFactor: 1),
-			child: (post == null) ? Center(
-				child: Text('Could not find /${zone.board}/$id')
-			) : Row(
-				children: [
-					Flexible(
-						child: Padding(
-							padding: const EdgeInsets.only(top: 8, bottom: 8),
-							child: DecoratedBox(
-								decoration: BoxDecoration(
-									border: Border.all(color: ChanceTheme.primaryColorOf(context))
-								),
-								position: DecorationPosition.foreground,
-								child: PostRow(
-									post: post,
-									onThumbnailTap: (attachment) {
-										showGallery(
-											context: context,
-											attachments: [attachment],
-											semanticParentIds: zone.stackIds,
-											heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
-										);
-									},
-									shrinkWrap: true
-								)
+		return zone.shouldExpandPost(id) ? ((post == null) ? Center(
+			child: Text('Could not find /${zone.board}/$id')
+		) : Row(
+			children: [
+				Flexible(
+					child: Padding(
+						padding: const EdgeInsets.only(top: 8, bottom: 8),
+						child: DecoratedBox(
+							decoration: BoxDecoration(
+								border: Border.all(color: ChanceTheme.primaryColorOf(context))
+							),
+							position: DecorationPosition.foreground,
+							child: PostRow(
+								post: post,
+								onThumbnailTap: (attachment) {
+									showGallery(
+										context: context,
+										attachments: [attachment],
+										semanticParentIds: zone.stackIds,
+										heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+									);
+								},
+								shrinkWrap: true
 							)
 						)
 					)
-				]
-			)
-		) : const SizedBox.shrink();
+				)
+			]
+		)) : const SizedBox.shrink();
 	}
 }
 

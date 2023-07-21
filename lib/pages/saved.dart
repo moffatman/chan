@@ -1117,7 +1117,9 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 											}
 										}
 										catch (e) {
-											alertError(context, e.toStringDio());
+											if (mounted) {
+												alertError(context, e.toStringDio());
+											}
 											Notifications.registerUnifiedPush();
 										}
 									},
@@ -1176,19 +1178,23 @@ class MissingThreadsControls extends StatelessWidget {
 								newThread = await thread.imageboard.site.getThreadFromArchive(thread.item, interactive: true);
 							}
 							catch (e) {
-								showToast(
-									context: context,
-									icon: CupertinoIcons.exclamationmark_triangle,
-									message: 'Failed to get ${thread.item} from archive: ${e.toStringDio()}'
-								);
+								if (context.mounted) {
+									showToast(
+										context: context,
+										icon: CupertinoIcons.exclamationmark_triangle,
+										message: 'Failed to get ${thread.item} from archive: ${e.toStringDio()}'
+									);
+								}
 							}
 						}
 						catch (e) {
-							showToast(
-								context: context,
-								icon: CupertinoIcons.exclamationmark_triangle,
-								message: 'Failed to get ${thread.item}: ${e.toStringDio()}'
-							);
+							if (context.mounted) {
+								showToast(
+									context: context,
+									icon: CupertinoIcons.exclamationmark_triangle,
+									message: 'Failed to get ${thread.item}: ${e.toStringDio()}'
+								);
+							}
 						}
 						if (newThread != null) {
 							final state = thread.imageboard.persistence.getThreadState(thread.item);

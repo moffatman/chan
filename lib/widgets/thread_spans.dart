@@ -82,7 +82,7 @@ class PassSinceSpan extends TextSpan {
 								enableLoadState: false
 							)
 						),
-						Text(sinceYear.toString(), textScaleFactor: 1)
+						Text(sinceYear.toString())
 					]
 				),
 				alignment: PlaceholderAlignment.bottom
@@ -131,8 +131,7 @@ class IDSpan extends WidgetSpan {
 					id,
 					style: TextStyle(
 						color: _calculateIdColor(id).foreground
-					),
-					textScaleFactor: 1
+					)
 				)
 			)
 		),

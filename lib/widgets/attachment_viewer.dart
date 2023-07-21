@@ -814,7 +814,9 @@ class AttachmentViewerController extends ChangeNotifier {
 			onDownloaded?.call();
 		}
 		catch (e) {
-			alertError(context, e.toStringDio());
+			if (context.mounted) {
+				alertError(context, e.toStringDio());
+			}
 			rethrow;
 		}
 		notifyListeners();
@@ -1217,7 +1219,9 @@ class AttachmentViewer extends StatelessWidget {
 								await modalLoad(context, 'Translating...', (c) => controller.translate().timeout(const Duration(seconds: 10)));
 							}
 							catch (e) {
-								alertError(context, e.toStringDio());
+								if (context.mounted) {
+									alertError(context, e.toStringDio());
+								}
 							}
 							if (context.mounted) {
 								Navigator.pop(context);

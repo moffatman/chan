@@ -1062,7 +1062,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			setState(() { });
 		}
 		catch (e) {
-			alertError(context, e.toStringDio());
+			if (context.mounted) {
+				alertError(context, e.toStringDio());
+			}
 		}
 		finally {
 			_refreshableTreeItems.itemLoadingOmittedItemsEnded(value);
@@ -1102,7 +1104,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					newList = await widget.treeAdapter!.updateWithStubItems(originalList!, lastItem.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(lastItem.id)] : lastItem.representsKnownStubChildren);
 				}
 				catch (e) {
-					alertError(context, e.toStringDio());
+					if (context.mounted) {
+						alertError(context, e.toStringDio());
+					}
 				}
 				finally {
 					_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem);

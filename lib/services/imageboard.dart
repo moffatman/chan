@@ -245,11 +245,13 @@ class ImageboardRegistry extends ChangeNotifier {
 								print('Auto-logged in');
 							}
 							catch (e) {
-								showToast(
-									context: context,
-									icon: CupertinoIcons.exclamationmark_triangle,
-									message: 'Failed to log in to ${site.loginSystem?.name}'
-								);
+								if (context.mounted) {
+									showToast(
+										context: context,
+										icon: CupertinoIcons.exclamationmark_triangle,
+										message: 'Failed to log in to ${site.loginSystem?.name}'
+									);
+								}
 								print('Problem auto-logging in: $e');
 							}
 						}

@@ -602,10 +602,12 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		catch (e, st) {
 			print(e);
 			print(st);
-			alertError(context, e.toStringDio());
-			setState(() {
-				_attachmentProgress = null;
-			});
+			if (mounted) {
+				alertError(context, e.toStringDio());
+				setState(() {
+					_attachmentProgress = null;
+				});
+			}
 		}
 		progress.dispose();
 	}
@@ -945,6 +947,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		catch (e, st) {
 			print(e);
 			print(st);
+			if (!mounted) {
+				return;
+			}
 			setState(() {
 				loading = false;
 			});
@@ -1800,7 +1805,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										catch (e, st) {
 											print(e);
 											print(st);
-											alertError(context, e.toStringDio());
+											if (context.mounted) {
+												alertError(context, e.toStringDio());
+											}
 										}
 									}
 								)),

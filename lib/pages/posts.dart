@@ -77,7 +77,9 @@ class _PostsPageState extends State<PostsPage> {
 			_setReplies();
 		}
 		catch (e) {
-			alertError(context, e.toStringDio());
+			if (mounted) {
+				alertError(context, e.toStringDio());
+			}
 		}
 		reply.loading = false;
 		_forceRebuildId++; // We are mutating [replies], so need to force sliver delegate to rebuild

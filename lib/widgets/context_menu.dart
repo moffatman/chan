@@ -155,7 +155,9 @@ class _ContextMenuState extends State<ContextMenu> {
 																await action.onPressed();
 															}
 															catch (e) {
-																alertError(context, e.toStringDio());
+																if (context.mounted) {
+																	alertError(context, e.toStringDio());
+																}
 															}
 														},
 														child: Row(
@@ -191,7 +193,9 @@ class _ContextMenuState extends State<ContextMenu> {
 								await action.onPressed();
 							}
 							catch (e) {
-								alertError(context, e.toStringDio());
+								if (context.mounted) {
+									alertError(context, e.toStringDio());
+								}
 							}
 						},
 						isDestructiveAction: action.isDestructiveAction,

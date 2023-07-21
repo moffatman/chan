@@ -389,6 +389,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		_cachingQueue.clear();
 		_cachingQueue.addAll(_cached.entries.where((e) => !e.value).map((e) => e.key));
 		while (_cachingQueue.isNotEmpty) {
+			if (!mounted) {
+				break;
+			}
 			if (automatic && !settings.autoCacheAttachments) {
 				_cachingQueue.clear();
 				showToast(
@@ -409,11 +412,13 @@ class _ThreadPageState extends State<ThreadPage> {
 				await controller.preloadFullAttachment();
 			}
 			catch (e) {
-				showToast(
-					context: context,
-					message: 'Error getting attachment: ${e.toStringDio()}',
-					icon: CupertinoIcons.exclamationmark_triangle
-				);
+				if (mounted) {
+					showToast(
+						context: context,
+						message: 'Error getting attachment: ${e.toStringDio()}',
+						icon: CupertinoIcons.exclamationmark_triangle
+					);
+				}
 			}
 			_cached[attachment] = true;
 			_indicatorKey.currentState?.setState(() {});
@@ -2422,7 +2427,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													children: [
 														Container(
 															constraints: BoxConstraints(
-																minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _whiteCountAbove.toString().length)
+																minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountAbove.toString().length)
 															),
 															child: Text(
 																_whiteCountAbove.toString(),
@@ -2484,7 +2489,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 														Icon(Adaptive.icons.photo, size: 19),
 														ConstrainedBox(
 															constraints: BoxConstraints(
-																minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * cachingButtonLabel.length)
+																minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * cachingButtonLabel.length)
 															),
 															child: Text(cachingButtonLabel, textAlign: TextAlign.center),
 														),
@@ -2547,7 +2552,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 																padding: const EdgeInsets.all(8),
 																child: Container(
 																	constraints: BoxConstraints(
-																		minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _greyCount.toString().length)
+																		minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _greyCount.toString().length)
 																	),
 																	child: Text(
 																		_greyCount.toString(),
@@ -2566,7 +2571,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 																padding: const EdgeInsets.all(8),
 																child: Container(
 																	constraints: BoxConstraints(
-																		minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _whiteCountBelow.toString().length)
+																		minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountBelow.toString().length)
 																	),
 																	child: Text(
 																		_whiteCountBelow.toString(),
