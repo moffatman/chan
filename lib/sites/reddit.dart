@@ -573,34 +573,34 @@ class SiteReddit extends ImageboardSite {
 				}
 				else {
 					final urls = await _resolveUrl(data['url']);
-					attachments.addAll(urls.map((url) => Attachment(
-						type: url.type,
+					attachments.addAll(urls.indexed.map((url) => Attachment(
+						type: url.$2.type,
 						board: data['subreddit'],
 						threadId: id,
-						id: url.url,
-						ext: url.ext,
-						filename: Uri.tryParse(url.url)?.pathSegments.tryLast ?? '',
-						url: url.url,
+						id: '${data['name']}_${url.$1}',
+						ext: url.$2.ext,
+						filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
+						url: url.$2.url,
 						width: urls.length > 1 ? null : data['preview']['images'][0]['source']['width'],
 						height:  urls.length > 1 ? null : data['preview']['images'][0]['source']['height'],
 						md5: '',
 						sizeInBytes: null,
-						thumbnailUrl: url.thumbnailUrl ?? (data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : imageUrl)
+						thumbnailUrl: url.$2.thumbnailUrl ?? (data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : imageUrl)
 					)));
 				}
 			}
 			else if (!(data['is_self'] ?? false) && data['url'] != null) {
 				final urls = await _resolveUrl(data['url']);
-				attachments.addAll(urls.map((url) => Attachment(
-					type: url.type,
+				attachments.addAll(urls.indexed.map((url) => Attachment(
+					type: url.$2.type,
 					board: data['subreddit'],
 					threadId: id,
-					id: url.url,
-					ext: url.ext,
-					filename: Uri.tryParse(url.url)?.pathSegments.tryLast ?? '',
-					url: url.url,
-					thumbnailUrl: url.thumbnailUrl ?? Uri.https('thumbs.chance.surf', '/', {
-						'url': url.url
+					id: '${data['name']}_${url.$1}',
+					ext: url.$2.ext,
+					filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
+					url: url.$2.url,
+					thumbnailUrl: url.$2.thumbnailUrl ?? Uri.https('thumbs.chance.surf', '/', {
+						'url': url.$2.url
 					}).toString(),
 					md5: '',
 					width: null,

@@ -14,7 +14,7 @@ description: A new Flutter project.
 version: 1.0.33+49 # Remember to update version.dart
 
 environment:
-  sdk: ">=3.0.0-179.0.dev <4.0.0"
+  sdk: ">=3.0.0 <4.0.0"
 
 publish_to: none
 dependencies:
