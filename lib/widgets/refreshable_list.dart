@@ -2531,7 +2531,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 	}
 	Future<void> _onSlowScroll(void update) async {
-		final extentAfter = scrollController?.position.extentAfter;
+		final extentAfter = scrollController?.tryPosition?.extentAfter;
 		if (extentAfter != null) {
 			if (extentAfter < 1000 && _autoExtendEnabled) {
 				state?._autoExtendTrigger();

@@ -1168,6 +1168,12 @@ class _ConditionalOnTapUpState extends State<ConditionalOnTapUp> {
 extension HasOnePosition on ScrollController {
 	// ignore: INVALID_USE_OF_PROTECTED_MEMBER
 	bool get hasOnePosition => positions.length == 1;
+	ScrollPosition? get tryPosition {
+		if (positions.length == 1) {
+			return position;
+		}
+		return null;
+	}
 }
 
 Future<bool> confirm(BuildContext context, String message) async {
