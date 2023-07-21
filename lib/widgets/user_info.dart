@@ -98,6 +98,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 								]
 							),
 							if (site.supportsUserInfo) SizedBox(
+								height: 100,
 								child: Row(
 									mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 									children: [
@@ -109,7 +110,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 														const Icon(CupertinoIcons.exclamationmark_triangle),
 														const SizedBox(width: 8),
 														Flexible(
-															child: Text('Errror looking up user data: ${snapshot.error?.toStringDio() ?? 'Unknown'}')
+															child: Text('Error looking up user data: ${snapshot.error?.toStringDio() ?? 'Unknown'}')
 														)
 													]
 												),
@@ -130,7 +131,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 										)
 										else if (data == null) const CircularProgressIndicator.adaptive()
 										else ...[
-											('Created', formatRelativeTime(data.createdAt)),
+											('Age', formatRelativeTime(data.createdAt)),
 											('Total Score', data.totalKarma.toString()),
 											if (data.commentKarma != null) ('Comment Score', data.commentKarma.toString()),
 											if (data.linkKarma != null) ('Link Score', data.linkKarma.toString()),
@@ -140,7 +141,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 												children: [
 													Text(stat.$2),
 													const SizedBox(height: 4),
-													AutoSizeText(stat.$1)
+													AutoSizeText(stat.$1, minFontSize: 10, textAlign: TextAlign.center)
 												]
 											)
 										))
