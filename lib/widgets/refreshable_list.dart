@@ -409,7 +409,7 @@ extension Convenience on TreeItemCollapseType? {
 
 class _RefreshableTreeItemsCacheKey {
 	final List<int> parentIds;
-	final int? thisId;
+	final int thisId;
 	final bool representsStubChildren;
 	final String _cacheKey;
 
@@ -426,6 +426,10 @@ class _RefreshableTreeItemsCacheKey {
 
 	@override
 	String toString() => '_RefreshableTreeItemsCacheKey($_cacheKey)';
+
+	bool isPeerOf(_RefreshableTreeItemsCacheKey other) {
+		return thisId == other.thisId && listEquals(other.parentIds, parentIds);
+	}
 
 	bool isDescendantOf(_RefreshableTreeItemsCacheKey ancestor) {
 		if (parentIds.length < (ancestor.parentIds.length + 1)) {
@@ -456,6 +460,8 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	/// Don't show the indicator on the parent.
 	/// That's because its child might end up being shown.
 	final Map<List<int>, bool> newlyInsertedItems = {};
+	final Map<List<int>, bool> newlyInsertedStubRepliesForItem = {};
+	final Set<int> itemsWithUnknownStubReplies = {};
 
 	_RefreshableTreeItems({
 		required this.manuallyCollapsedItems,
@@ -481,6 +487,24 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			if (key.parentIds.isNotEmpty) {
 				if (automaticallyCollapsedTopLevelItems.contains(key.parentIds.first)) {
 					return TreeItemCollapseType.childCollapsed;
+				}
+			}
+			if (key.representsStubChildren) {
+				for (final newlyInserted in newlyInsertedStubRepliesForItem.keys) {
+					if (newlyInserted.length != key.parentIds.length + 1) {
+						continue;
+					}
+					// Possible this is the new insert
+					if (newlyInserted.last != key.thisId) {
+						continue;
+					}
+					bool keepGoing = true;
+					for (int i = 0; i < newlyInserted.length - 1 && keepGoing; i++) {
+						keepGoing = newlyInserted[i] == key.parentIds[i];
+					}
+					if (keepGoing) {
+						return TreeItemCollapseType.newInsertCollapsed;
+					}
 				}
 			}
 			for (final newlyInserted in newlyInsertedItems.keys) {
@@ -549,6 +573,24 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 				}
 				if (keepGoing && newlyInserted[newlyInserted.length - 2] == key.thisId && newlyInsertedItems[newlyInserted] == true) {
 					return TreeItemCollapseType.parentOfNewInsert;
+				}
+			}
+			if (!key.representsStubChildren) {
+				for (final newlyInserted in newlyInsertedStubRepliesForItem.keys) {
+					if (newlyInserted.length != key.parentIds.length + 1) {
+						continue;
+					}
+					// Possible this is the new insert
+					if (newlyInserted.last != key.thisId) {
+						continue;
+					}
+					bool keepGoing = true;
+					for (int i = 0; i < newlyInserted.length - 1 && keepGoing; i++) {
+						keepGoing = newlyInserted[i] == key.parentIds[i];
+					}
+					if (keepGoing) {
+						return TreeItemCollapseType.parentOfNewInsert;
+					}
 				}
 			}
 			return null;
@@ -632,6 +674,17 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			}
 			return true;
 		});
+		newlyInsertedStubRepliesForItem.removeWhere((w, _) {
+			if (w.length < x.length) {
+				return false;
+			}
+			for (int i = 0; i < x.length; i++) {
+				if (w[i] != x[i]) {
+					return false;
+				}
+			}
+			return true;
+		});
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
 	}
@@ -656,19 +709,36 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			}
 			return true;
 		});
+		newlyInsertedStubRepliesForItem.removeWhere((w, _) {
+			if (w.length < x.length) {
+				return false;
+			}
+			for (int i = 0; i < x.length; i++) {
+				if (w[i] != x[i]) {
+					return false;
+				}
+			}
+			return true;
+		});
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
 	}
 
-	void revealNewInsert(RefreshableListItem<T> item, {bool quiet = false}) async {
+	void revealNewInsert(RefreshableListItem<T> item, {bool quiet = false, bool stubOnly = false}) async {
 		final x = [
 			...item.parentIds,
 			item.id
 		];
-		_cache.removeWhere((key, value) {
-			return key == item._key || key.isDescendantOf(item._key);
-		});
-		newlyInsertedItems.removeWhere((w, _) => listEquals(w, x));
+		if (stubOnly) {
+			_cache.removeWhere((key, value) => key.isPeerOf(item._key));
+		}
+		else {
+			_cache.removeWhere((key, value) {
+				return key.isPeerOf(item._key) || key.isDescendantOf(item._key);
+			});
+			newlyInsertedItems.removeWhere((w, _) => listEquals(w, x));
+		}
+		newlyInsertedStubRepliesForItem.removeWhere((w, _) => listEquals(w, x));
 		if (!quiet) {
 			onCollapseOrExpand?.call(item, false);
 			await SchedulerBinding.instance.endOfFrame;
@@ -693,6 +763,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			}
 			return true;
 		});
+		newlyInsertedStubRepliesForItem.removeWhere((w, _) => listEquals(w, x));
 		onCollapseOrExpand?.call(item, false);
 		await SchedulerBinding.instance.endOfFrame;
 		notifyListeners();
@@ -1439,11 +1510,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 
 		int maxIdFound = 0;
+		final Set<int> itemsWithOmittedReplies = {};
 
 		for (final item in linear) {
 			final id = adapter.getId(item.item);
 			maxIdFound = max(maxIdFound, id);
 			final node = _TreeNode(item.copyWith(), id, adapter.getHasOmittedReplies(item.item));
+			if (node.hasOmittedReplies) {
+				itemsWithOmittedReplies.add(id);
+			}
 			treeMap[id] = node;
 			node.children.addAll(orphans[id] ?? []);
 			orphans.remove(id);
@@ -1570,6 +1645,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				item.treeDescendantIds.addAll(dumpNode(child, ids.toList()));
 			}
 			if (willAddOmittedChildNode) {
+				if (
+					// Node has has unknown further replies, and didn't in the previous tree
+					node.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(node.id) ||
+					// Node has known further replies, and didn't have any in the previous tree
+					!node.stubChildIds.any((c) => c <= _lastKnownTreeMaxItemId)) {
+					_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent(ids, () => false);
+					_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == node.id);
+				}
 				out.add(item.copyWith(
 					representsKnownStubChildren: node.stubChildIds.map((childId) => ParentAndChildIdentifier(
 						parentId: node.id,
@@ -1615,6 +1698,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			dumpNode(root, []);
 		}
 		if (firstRoot != null && (firstRoot.stubChildIds.isNotEmpty || firstRoot.hasOmittedReplies)) {
+			if (
+				// Node has has unknown further replies, and didn't in the previous treeTODO: FIX THIS!!!!
+				firstRoot.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(firstRoot.id) ||
+				// Node has known further replies, and didn't have any in the previous tree
+				!firstRoot.stubChildIds.any((c) => c <= _lastKnownTreeMaxItemId)) {
+				_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent([firstRoot.id], () => false);
+				_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == firstRoot?.id);
+			}
 			out.add(firstRoot.item.copyWith(
 				parentIds: [],
 				representsKnownStubChildren: firstRoot.stubChildIds.map((childId) => ParentAndChildIdentifier(
@@ -1626,22 +1717,19 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			));
 		}
 		_lastKnownTreeMaxItemId = maxIdFound;
+		_refreshableTreeItems.itemsWithUnknownStubReplies.addAll(itemsWithOmittedReplies);
 		_needToTransitionNewlyInsertedItems = true;
 		// Reveal all new inserts at the bottom of the list
 		// Showing them won't cause any offset jumps since they are below the existing scroll position.
 		for (final item in out.reversed) {
-			if (item.parentIds.isEmpty) {
+			if (item.parentIds.isEmpty && !item.representsStubChildren) {
 				// Parentless items are never set to "newly-inserted" state
-				continue;
-			}
-			if (item.representsStubChildren) {
-				// Wait to hit the real item and not its stub footer
 				continue;
 			}
 			if (!_refreshableTreeItems.isItemHidden(item._key).isHidden) {
 				break;
 			}
-			_refreshableTreeItems.revealNewInsert(item, quiet: true);
+			_refreshableTreeItems.revealNewInsert(item, quiet: true, stubOnly: item.representsStubChildren);
 		}
 		return (tree: out, automaticallyCollapsed: automaticallyCollapsed, automaticallyTopLevelCollapsed: automaticallyTopLevelCollapsed);
 	}
@@ -2775,6 +2863,14 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				if (state?._refreshableTreeItems.newlyInsertedItems[key] == false) {
 					state?._refreshableTreeItems.newlyInsertedItems[key] = true;
 					state?._refreshableTreeItems._cache.removeWhere((k, value) => k.thisId == key[key.length - 2]);
+					removedAnyCaches = true;
+				}
+			}
+			for (final key in state?._refreshableTreeItems.newlyInsertedStubRepliesForItem.keys ?? const Iterable<List<int>>.empty()) {
+				// Laid-out
+				if (state?._refreshableTreeItems.newlyInsertedStubRepliesForItem[key] == false) {
+					state?._refreshableTreeItems.newlyInsertedStubRepliesForItem[key] = true;
+					state?._refreshableTreeItems._cache.removeWhere((k, value) => k.thisId == key[key.length - 1]);
 					removedAnyCaches = true;
 				}
 			}

@@ -15,24 +15,30 @@ class TreeDebuggingPage extends StatefulWidget {
 class _DebuggingItem {
 	final int id;
 	final List<int> parentIds;
+	final bool isStub;
+	final bool hasUnknownStubChildren;
+
 	const _DebuggingItem({
 		required this.id,
-		required this.parentIds
+		required this.parentIds,
+		required this.isStub,
+		required this.hasUnknownStubChildren
 	});
 
 	@override
-	String toString() => '_DebuggingItem(id: $id, parentIds: $parentIds)';
+	String toString() => '_DebuggingItem(id: $id, parentIds: $parentIds, isStub: $isStub, hasUnknownStubChildren: $hasUnknownStubChildren)';
 }
 
 class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 	late final RefreshableListController<_DebuggingItem> controller;
 	final List<_DebuggingItem> items = [];
+	int _unknownStubId = 9000;
 
 	@override
 	void initState() {
 		super.initState();
 		controller = RefreshableListController();
-		items.add(const _DebuggingItem(id: 0, parentIds: []));
+		items.add(const _DebuggingItem(id: 0, parentIds: [], isStub: false, hasUnknownStubChildren: false));
 	}
 
 	@override
@@ -45,19 +51,51 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				child: Stack(
 					alignment: Alignment.center,
 					children: [
-						Text('Item ${item.id}'),
+						Text('Item ${item.id}${item.isStub ? ' [STUB]}' : ''}'),
 						Positioned.fill(
 							child: Align(
 								alignment: Alignment.bottomLeft,
-								child: CupertinoButton(
-									onPressed: () {
-										items.add(_DebuggingItem(
-											id: items.last.id + 1,
-											parentIds: [item.id]
-										));
-										setState(() {});
-									},
-									child: const Icon(CupertinoIcons.add)
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										CupertinoButton(
+											onPressed: () {
+												items.add(_DebuggingItem(
+													id: items.last.id + 1,
+													parentIds: [item.id],
+													isStub: false,
+													hasUnknownStubChildren: false
+												));
+												setState(() {});
+											},
+											child: const Icon(CupertinoIcons.add)
+										),
+										CupertinoButton(
+											onPressed: () {
+												items.add(_DebuggingItem(
+													id: items.last.id + 1,
+													parentIds: [item.id],
+													isStub: true,
+													hasUnknownStubChildren: false
+												));
+												setState(() {});
+											},
+											child: const Icon(CupertinoIcons.add_circled)
+										),
+										CupertinoButton(
+											onPressed: () {
+												final i = items.indexOf(item);
+												items[i] = _DebuggingItem(
+													id: item.id,
+													parentIds: item.parentIds,
+													isStub: false,
+													hasUnknownStubChildren: !item.hasUnknownStubChildren
+												);
+												setState(() {});
+											},
+											child: const Icon(CupertinoIcons.asterisk_circle)
+										)
+									]
 								)
 							)
 						)
@@ -73,12 +111,31 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 			treeAdapter: RefreshableTreeAdapter(
 				getId: (i) => i.id,
 				getParentIds: (i) => i.parentIds,
-				getHasOmittedReplies: (i) => false,
-				updateWithStubItems: (_, __) async => throw UnimplementedError(),
+				getHasOmittedReplies: (i) => i.hasUnknownStubChildren,
+				updateWithStubItems: (input, stubIds) async {
+					final output = input.map((item) {
+						if (stubIds.any((i) => i.childId == item.id)) {
+							return _DebuggingItem(id: item.id, parentIds: item.parentIds, isStub: false, hasUnknownStubChildren: false);
+						}
+						return item;
+					}).toList();
+					if (stubIds.length == 1 && stubIds.single.childId == stubIds.single.parentId) {
+						// Expanding unknownStubChildren
+						output.add(_DebuggingItem(
+							id: ++_unknownStubId,
+							parentIds: [stubIds.single.childId],
+							isStub: false,
+							hasUnknownStubChildren: false
+						));
+					}
+					items.clear();
+					items.addAll(output);
+					return output;
+				},
 				opId: 0,
 				wrapTreeChild: (c, l) => c,
 				estimateHeight: (i, w) => 50,
-				getIsStub: (i) => false,
+				getIsStub: (i) => i.isStub,
 				initiallyCollapseSecondLevelReplies: false,
 				collapsedItemsShowBody: false
 			),
@@ -96,7 +153,9 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 					if (ids.isNotEmpty) {
 						items.add(_DebuggingItem(
 							id: ids.last,
-							parentIds: ids.sublist(0, list.length - 1)
+							parentIds: ids.sublist(0, ids.length - 1),
+							isStub: list.last == 's',
+							hasUnknownStubChildren: false
 						));
 						setState(() {});
 					}
