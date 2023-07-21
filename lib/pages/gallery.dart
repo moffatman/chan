@@ -801,7 +801,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													onPressed: currentController.canShare ? () async {
 														final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));
 														if (!download) return;
-														await currentController.download();
+														await currentController.download(force: true);
 														if (!mounted) return;
 														showToast(context: context, message: 'Downloaded ${currentController.downloadFilename}', icon: CupertinoIcons.cloud_download);
 													} : null,

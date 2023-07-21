@@ -770,8 +770,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Future<void> download() async {
-		if (_isDownloaded) return;
+	Future<void> download({bool force = false}) async {
+		if (_isDownloaded && !force) return;
 		final settings = context.read<EffectiveSettings>();
 		try {
 			if (Platform.isIOS) {
@@ -1194,7 +1194,9 @@ class AttachmentViewer extends StatelessWidget {
 						trailingIcon: CupertinoIcons.cloud_download,
 						onPressed: () async {
 							Navigator.of(context, rootNavigator: true).pop();
-							await controller.download();
+							final download = !controller.isDownloaded || (await confirm(context, 'Redownload?'));
+							if (!download) return;
+							await controller.download(force: true);
 							// ignore: use_build_context_synchronously
 							showToast(context: context, message: 'Downloaded ${controller.downloadFilename}', icon: CupertinoIcons.cloud_download);
 						},
