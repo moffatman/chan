@@ -177,6 +177,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	final _lock = Mutex();
 	bool _hideVideoPlayerController = false;
 	List<RecognizedTextBlock> _textBlocks = [];
+	bool _soundSourceFailed = false;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -411,7 +412,27 @@ class AttachmentViewerController extends ChangeNotifier {
 			notifyListeners();
 		});
 		try {
-			final soundSource = attachment.soundSource;
+			Uri? soundSource = attachment.soundSource;
+			if (soundSource != null) {
+				try {
+					await site.client.headUri(soundSource, options: Options(
+						extra: {
+							kInteractive: !background
+						}
+					));
+				}
+				catch (e) {
+					if (context.mounted) {
+						showToast(
+							context: context,
+							message: 'Soundpost not working: ${e.toStringDio()}',
+							icon: CupertinoIcons.volume_off
+						);
+					}
+					_soundSourceFailed = true;
+					soundSource = null;
+				}
+			}
 			if (soundSource == null && (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf)) {
 				_goodImageSource = await _getGoodSource(interactive: !background);
 				_recordUrlTime(_goodImageSource!, DateTime.now().difference(startTime));
@@ -1500,7 +1521,7 @@ class AttachmentViewer extends StatelessWidget {
 						if (!fill && attachment.width != null && attachment.height != null && constraints.hasBoundedHeight && constraints.hasBoundedWidth) {
 							targetSize = applyBoxFit(BoxFit.scaleDown, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), constraints.biggest).destination;
 						}
-						if (attachment.type == AttachmentType.image && attachment.soundSource == null) {
+						if (attachment.type == AttachmentType.image && (attachment.soundSource == null || controller._soundSourceFailed)) {
 							return _buildImage(context, targetSize, passedFirstBuild);
 						}
 						else if (attachment.type == AttachmentType.pdf) {
