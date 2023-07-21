@@ -480,6 +480,7 @@ Future<bool> updateDynamicColors() async {
 			primaryColor: Color(colors.primary.get(10)),
 			secondaryColor: Color(colors.primary.get(40)),
 			quoteColor: _defaultQuoteColor,
+			titleColor: Color(colors.tertiary.get(40)),
 			locked: true
 		);
 		final dark = SavedTheme(
@@ -488,6 +489,7 @@ Future<bool> updateDynamicColors() async {
 			primaryColor: Color(colors.primary.get(99)),
 			secondaryColor: Color(colors.primary.get(70)),
 			quoteColor: _defaultQuoteColor,
+			titleColor: Color(colors.tertiary.get(70)),
 			locked: true
 		);
 		final updated = ((Persistence.settings.lightThemeKey == _dynamicLightKey) && (light != Persistence.settings.themes[_dynamicLightKey])) ||
