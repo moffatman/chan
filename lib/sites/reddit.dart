@@ -683,12 +683,24 @@ class SiteReddit extends ImageboardSite {
 	Future<void> _updateBoardIfNeeded(String board, {required bool interactive}) async {
 		final boardAge = DateTime.now().difference(persistence.maybeGetBoard(board)?.additionalDataTime ?? DateTime(2000));
 		if (boardAge > const Duration(days: 3)) {
-			final response = await client.getUri(Uri.https(baseUrl, '/r/$board/about.json'), options: Options(
-				extra: {
-					kInteractive: interactive
-				}
-			));
-			final newBoard = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
+			final ImageboardBoard newBoard;
+			if (board == 'popular' || board == 'all') {
+				newBoard = ImageboardBoard(
+					name: board,
+					title: 'Top posts across $board subreddits',
+					isWorksafe: true,
+					webmAudioAllowed: true,
+					additionalDataTime: DateTime.now()
+				);
+			}
+			else {
+				final response = await client.getUri(Uri.https(baseUrl, '/r/$board/about.json'), options: Options(
+					extra: {
+						kInteractive: interactive
+					}
+				));
+				newBoard = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
+			}
 			await persistence.setBoard(board, newBoard);
 			persistence.didUpdateBrowserState();
 		}
@@ -718,9 +730,7 @@ class SiteReddit extends ImageboardSite {
 			await _updateBoardIfNeeded(board, interactive: interactive);
 		}
 		catch (e, st) {
-			if (board != 'popular') {
-				Future.error(e, st);
-			}
+			Future.error(e, st);
 		}
 		final suffix = _getCatalogSuffix(variant);
 		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', suffix.$2), options: Options(
