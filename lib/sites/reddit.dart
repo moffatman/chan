@@ -368,7 +368,7 @@ class SiteReddit extends ImageboardSite {
 	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl(String url) async {
 		final uri = Uri.parse(url);
 		try {
-			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io') && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
+			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io' || uri.host == 'i.imgur.com' || uri.host == 'i.imgur.io') && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
 				final hash = uri.pathSegments.single.split('.').first;
 				final response = await client.getUri(Uri.https('api.imgur.com', '/3/image/$hash'), options: Options(
 					headers: {
