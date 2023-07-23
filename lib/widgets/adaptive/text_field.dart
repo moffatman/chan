@@ -58,6 +58,18 @@ class AdaptiveTextField extends StatelessWidget {
 		super.key
 	});
 
+	 static Widget _defaultMaterialContextMenuBuilder(BuildContext context, EditableTextState editableTextState) {
+		return AdaptiveTextSelectionToolbar.editableText(
+			editableTextState: editableTextState,
+		);
+	}
+
+	Widget _defaultCupertinoContextMenuBuilder(BuildContext context, EditableTextState editableTextState) {
+		return CupertinoAdaptiveTextSelectionToolbar.editableText(
+			editableTextState: editableTextState,
+		);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		if (ChanceTheme.materialOf(context)) {
@@ -65,7 +77,7 @@ class AdaptiveTextField extends StatelessWidget {
 				autocorrect: autocorrect,
 				autofillHints: autofillHints,
 				autofocus: autofocus,
-				contextMenuBuilder: contextMenuBuilder,
+				contextMenuBuilder: contextMenuBuilder ?? _defaultMaterialContextMenuBuilder,
 				controller: controller,
 				decoration: InputDecoration(
 					fillColor: ChanceTheme.textFieldColorOf(context),
@@ -111,7 +123,7 @@ class AdaptiveTextField extends StatelessWidget {
 			autocorrect: autocorrect,
 			autofillHints: autofillHints,
 			autofocus: autofocus,
-			contextMenuBuilder: contextMenuBuilder,
+			contextMenuBuilder: contextMenuBuilder ?? _defaultCupertinoContextMenuBuilder,
 			controller: controller,
 			decoration: BoxDecoration(
 				color: ChanceTheme.textFieldColorOf(context),
