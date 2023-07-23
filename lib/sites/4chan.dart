@@ -834,7 +834,7 @@ class Site4Chan extends ImageboardSite {
 				cooldownSeconds = b.threadCooldown ?? 0;
 				break;
 		}
-		if (loginSystem._passEnabled.putIfAbsent(Persistence.cellularCookies, () => false)) {
+		if (loginSystem._passEnabled.putIfAbsent(Persistence.currentCookies, () => false)) {
 			cooldownSeconds ~/= 2;
 		}
 		return lastActionTime?.add(Duration(seconds: cooldownSeconds));
