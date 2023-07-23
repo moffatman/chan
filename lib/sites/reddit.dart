@@ -380,7 +380,7 @@ class SiteReddit extends ImageboardSite {
 					return [(
 						url: link,
 						thumbnailUrl: link.replaceFirstMapped(RegExp(r'\.([^.]+)$'), (m) {
-							return 'b.${m.group(1)}';
+							return 'm.${m.group(1)}';
 						}),
 						type: AttachmentType.image,
 						ext: link.split('.').last
@@ -401,7 +401,7 @@ class SiteReddit extends ImageboardSite {
 						return [(
 							url: link,
 							thumbnailUrl: link.replaceFirstMapped(RegExp(r'\.([^.]+)$'), (m) {
-								return 'b.${m.group(1)}';
+								return 'm.${m.group(1)}';
 							}),
 							type: AttachmentType.image,
 							ext: link.split('.').last
