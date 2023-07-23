@@ -41,6 +41,7 @@ import 'package:chan/widgets/tab_menu.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/tab_widget_builder.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -1273,70 +1274,85 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			)
 		);
 		final child = Builder(
-			builder: (context) => AdaptiveButton(
-				padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
-				child: content,
-				onPressed: () async {
-					lightHapticFeedback();
-					if (index <= 0) {
-						if (_tabs.browseTabIndex == -1 * index && _tabs.mainTabIndex == 0) {
-							final ro = context.findRenderObject()! as RenderBox;
-							showTabMenu(
-								context: context,
-								direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
-								origin: Rect.fromPoints(
-									ro.localToGlobal(ro.semanticBounds.topLeft),
-									ro.localToGlobal(ro.semanticBounds.bottomRight)
-								),
-								actions: [
-									TabMenuAction(
-										icon: CupertinoIcons.xmark,
-										title: 'Close',
-										isDestructiveAction: true,
-										disabled: Persistence.tabs.length == 1,
-										onPressed: () => _tabs.closeBrowseTab(-1 * index)
-									),
-									TabMenuAction(
-										icon: CupertinoIcons.doc_on_doc,
-										title: 'Clone',
-										onPressed: () {
-											final i = -1 * index;
-											_tabs.addNewTab(
-												withImageboardKey: Persistence.tabs[i].imageboardKey,
-												atPosition: i + 1,
-												withBoard: Persistence.tabs[i].board?.name,
-												withThread: Persistence.tabs[i].thread,
-												incognito: Persistence.tabs[i].incognito,
-												withInitialSearch: Persistence.tabs[i].initialSearch,
-												activate: true
-											);
-										}
-									)
-								]
-							);
-						}
-						else {
-							_tabs.browseTabIndex = -1 * index;
-							if (Persistence.settings.closeTabSwitcherAfterUse) {
-								setState(() {
-									showTabPopup = false;
-								});
-							}
-						}
-					}
-					else if (index == _tabs._lastIndex) {
-						if (index == 4) {
-							_settingsNavigatorKey.currentState?.maybePop();
-						}
-						else {
-							_tabletWillPopZones[index]?.callback?.call();
-						}
-					} else if (index == 2) {
-						await _historyPageKey.currentState?.updateList();
-					}
-					_tabs.mainTabIndex = max(0, index);
+			builder: (context) {
+				void showThisTabMenu() {
+					final ro = context.findRenderObject()! as RenderBox;
+					showTabMenu(
+						context: context,
+						direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+						origin: Rect.fromPoints(
+							ro.localToGlobal(ro.semanticBounds.topLeft),
+							ro.localToGlobal(ro.semanticBounds.bottomRight)
+						),
+						actions: [
+							TabMenuAction(
+								icon: CupertinoIcons.xmark,
+								title: 'Close',
+								isDestructiveAction: true,
+								disabled: Persistence.tabs.length == 1,
+								onPressed: () => _tabs.closeBrowseTab(-1 * index)
+							),
+							TabMenuAction(
+								icon: CupertinoIcons.doc_on_doc,
+								title: 'Clone',
+								onPressed: () {
+									final i = -1 * index;
+									_tabs.addNewTab(
+										withImageboardKey: Persistence.tabs[i].imageboardKey,
+										atPosition: i + 1,
+										withBoard: Persistence.tabs[i].board?.name,
+										withThread: Persistence.tabs[i].thread,
+										incognito: Persistence.tabs[i].incognito,
+										withInitialSearch: Persistence.tabs[i].initialSearch,
+										activate: true
+									);
+								}
+							)
+						]
+					);
 				}
-			)
+				return RawGestureDetector(
+					gestures: {
+						WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
+							() => WeakVerticalDragGestureRecognizer(weakness: 1, sign: -1),
+							(recognizer) {
+								recognizer.onEnd = (details) => showThisTabMenu();
+							}
+						)
+					},
+					child: AdaptiveButton(
+						padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
+						child: content,
+						onPressed: () async {
+							lightHapticFeedback();
+							if (index <= 0) {
+								if (_tabs.browseTabIndex == -1 * index && _tabs.mainTabIndex == 0) {
+									showThisTabMenu();
+								}
+								else {
+									_tabs.browseTabIndex = -1 * index;
+									if (Persistence.settings.closeTabSwitcherAfterUse) {
+										setState(() {
+											showTabPopup = false;
+										});
+									}
+								}
+							}
+							else if (index == _tabs._lastIndex) {
+								if (index == 4) {
+									_settingsNavigatorKey.currentState?.maybePop();
+								}
+								else {
+									_tabletWillPopZones[index]?.callback?.call();
+								}
+							} else if (index == 2) {
+								await _historyPageKey.currentState?.updateList();
+							}
+							_tabs.mainTabIndex = max(0, index);
+						}
+					)
+				);
+			}
 		);
 		if (reorderable) {
 			return ReorderableDelayedDragStartListener(
