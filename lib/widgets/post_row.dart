@@ -415,8 +415,8 @@ class PostRow extends StatelessWidget {
 												begin: Alignment.centerRight,
 												end: Alignment.centerLeft,
 												colors: [
-													backgroundColor,
-													backgroundColor.withOpacity(0)
+													Color.alphaBlend(backgroundColor, theme.backgroundColor),
+													Color.alphaBlend(backgroundColor, theme.backgroundColor).withOpacity(0)
 												]
 											)
 										),
