@@ -393,6 +393,7 @@ class _BoardPageState extends State<BoardPage> {
 							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
 							threadState.savedTime = null;
 							threadState.save();
+							context.read<Persistence>().didUpdateBrowserState();
 							setState(() {});
 						}
 					)
@@ -404,6 +405,7 @@ class _BoardPageState extends State<BoardPage> {
 							threadState.thread = thread;
 							threadState.savedTime = DateTime.now();
 							threadState.save();
+							context.read<Persistence>().didUpdateBrowserState();
 							setState(() {});
 						}
 					),
