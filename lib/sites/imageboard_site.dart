@@ -27,6 +27,7 @@ import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/soyjak.dart';
+import 'package:chan/sites/wizchan.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -1149,6 +1150,12 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'frenschan') {
 		return SiteFrenschan(
+			name: data['name'],
+			baseUrl: data['baseUrl']
+		);
+	}
+	else if (data['type'] == 'wizchan') {
+		return SiteWizchan(
 			name: data['name'],
 			baseUrl: data['baseUrl']
 		);

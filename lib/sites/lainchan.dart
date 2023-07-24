@@ -20,6 +20,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:string_similarity/string_similarity.dart';
 
 class SiteLainchan extends ImageboardSite {
 	@override
@@ -330,36 +331,42 @@ class SiteLainchan extends ImageboardSite {
 			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'HTTP Error ${response.statusCode}');
 		}
 		if (response.isRedirect ?? false) {
-			return PostReceipt(
-				id: int.parse(RegExp(r'\d+').allMatches(response.redirects.last.location.toString()).last.group(0)!),
-				password: password
-			);
+			final digitMatches = RegExp(r'\d+').allMatches(response.redirects.last.location.toString());
+			if (digitMatches.isNotEmpty) {
+				return PostReceipt(
+					id: int.parse(digitMatches.last.group(0)!),
+					password: password
+				);
+			}
 		}
-		else {
-			// This doesn't work if user has quoted someone, but it shouldn't be needed
-			int? newPostId;
-			while (newPostId == null) {
-				await Future.delayed(const Duration(seconds: 2));
-				if (threadId == null) {
-					for (final thread in (await getCatalog(board, interactive: true)).reversed) {
-						if (thread.title == subject && thread.posts[0].text == text && (thread.time.compareTo(now) >= 0)) {
-							newPostId = thread.id;
-						}
-					}
-				}
-				else {
-					for (final post in (await getThread(ThreadIdentifier(board, threadId), interactive: true)).posts) {
-						if (post.text == text && (post.time.compareTo(now) >= 0)) {
-							newPostId = post.id;
-						}
+		final doc = parse(response.data);
+		final ban = doc.querySelector('.ban');
+		if (ban != null) {
+			throw PostFailedException(ban.text);
+		}
+		// This doesn't work if user has quoted someone, but it shouldn't be needed
+		int? newPostId;
+		while (newPostId == null) {
+			await Future.delayed(const Duration(seconds: 2));
+			if (threadId == null) {
+				for (final thread in (await getCatalog(board, interactive: true)).reversed) {
+					if (thread.title == subject && (thread.posts[0].span.buildText().similarityTo(text) > 0.9) && (thread.time.compareTo(now) >= 0)) {
+						newPostId = thread.id;
 					}
 				}
 			}
-			return PostReceipt(
-				id: newPostId,
-				password: password
-			);
+			else {
+				for (final post in (await getThread(ThreadIdentifier(board, threadId), interactive: true)).posts) {
+					if ((post.span.buildText().similarityTo(text) > 0.9) && (post.time.compareTo(now) >= 0)) {
+						newPostId = post.id;
+					}
+				}
+			}
 		}
+		return PostReceipt(
+			id: newPostId,
+			password: password
+		);
 	}
 
 	@override
