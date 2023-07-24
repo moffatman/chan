@@ -22,7 +22,6 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/widgets.dart';
@@ -119,10 +118,10 @@ class Persistence extends ChangeNotifier {
 	static late final PersistCookieJar wifiCookies;
 	static late final PersistCookieJar cellularCookies;
 	static PersistCookieJar get currentCookies {
-		if (main.settings.connectivity == ConnectivityResult.mobile) {
-			return cellularCookies;
+		if (main.settings.isConnectedToWifi) {
+			return wifiCookies;
 		}
-		return wifiCookies;
+		return cellularCookies;
 	}
 	static final globalTabMutator = ValueNotifier(0);
 	static final recentSearchesListenable = EasyListenable();

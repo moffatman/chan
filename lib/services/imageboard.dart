@@ -11,7 +11,6 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:mutex/mutex.dart';
 
@@ -239,7 +238,7 @@ class ImageboardRegistry extends ChangeNotifier {
 						}
 						final site = _sites[entry.key]!.site;
 						final savedFields = site.loginSystem?.getSavedLoginFields();
-						if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
+						if (savedFields != null && settings.isConnectedToWifi) {
 							try {
 								await site.loginSystem!.login(savedFields);
 								print('Auto-logged in');

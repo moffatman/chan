@@ -1330,6 +1330,10 @@ class EffectiveSettings extends ChangeNotifier {
 		_connectivity = newConnectivity;
 		notifyListeners();
 	}
+	bool get isConnectedToWifi => switch (_connectivity) {
+		ConnectivityResult.mobile || null => false,
+		_ => true
+	};
 	Brightness? _systemBrightness;
 	set systemBrightness(Brightness? newBrightness) {
 		_systemBrightness = newBrightness;
@@ -1345,7 +1349,7 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 	bool get autoloadAttachments {
 		return (_settings.autoloadAttachments == AutoloadAttachmentsSetting.always) ||
-			((_settings.autoloadAttachments == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
+			((_settings.autoloadAttachments == AutoloadAttachmentsSetting.wifi) && isConnectedToWifi);
 	}
 	TristateSystemSetting get themeSetting => _settings.theme;
 	set themeSetting(TristateSystemSetting setting) {
@@ -2181,7 +2185,7 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 	bool get fullQualityThumbnails {
 		return (fullQualityThumbnailsSetting == AutoloadAttachmentsSetting.always) ||
-			((fullQualityThumbnailsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
+			((fullQualityThumbnailsSetting == AutoloadAttachmentsSetting.wifi) && isConnectedToWifi);
 	}
 
 	bool get recordThreadsInHistory => _settings.recordThreadsInHistory;
@@ -2206,7 +2210,7 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 	bool get autoCacheAttachments {
 		return (autoCacheAttachmentsSetting == AutoloadAttachmentsSetting.always) ||
-			((autoCacheAttachmentsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
+			((autoCacheAttachmentsSetting == AutoloadAttachmentsSetting.wifi) && isConnectedToWifi);
 	}
 
 	bool get exactTimeIsISO8601 => _settings.exactTimeIsISO8601;
@@ -2245,7 +2249,7 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 	bool get loadThumbnails {
 		return (loadThumbnailsSetting == AutoloadAttachmentsSetting.always) ||
-			((loadThumbnailsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
+			((loadThumbnailsSetting == AutoloadAttachmentsSetting.wifi) && isConnectedToWifi);
 	}
 
 	bool get applyImageFilterToThreads => _settings.applyImageFilterToThreads;
