@@ -534,7 +534,7 @@ class FilterZone extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return Provider<Filter>.value(
-			value: FilterCache(FilterGroup([Filter.of(context), FilterCache(filter)])),
+			value: FilterCache(FilterGroup([FilterCache(filter), Filter.of(context)])),
 			child: child
 		);
 	}
