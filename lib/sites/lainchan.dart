@@ -522,7 +522,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
+  Future<void> clearLoginCookies(String? board, bool fromBothWifiAndCellular) async {
 		final jars = fromBothWifiAndCellular ? [
 			Persistence.wifiCookies,
 			Persistence.cellularCookies
@@ -537,7 +537,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+  Future<void> login(String? board, Map<ImageboardSiteLoginField, String> fields) async {
     final response = await parent.client.postUri(
 			Uri.https(parent.baseUrl, '/mod.php'),
 			data: {
@@ -552,7 +552,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 		);
 		final document = parse(response.data);
 		if (document.querySelector('h2') != null) {
-			await clearLoginCookies(false);
+			await clearLoginCookies(board, false);
 			throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
 		}
 		_adminEnabled[Persistence.currentCookies] = true;

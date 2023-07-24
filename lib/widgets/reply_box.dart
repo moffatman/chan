@@ -658,7 +658,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			}
 			if (shouldAutoLogin) {
 				try {
-					await site.loginSystem?.login(savedFields);
+					await site.loginSystem?.login(widget.board, savedFields);
 				}
 				catch (e) {
 					if (mounted) {
@@ -672,7 +672,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				}
 			}
 			else {
-				await site.loginSystem?.clearLoginCookies(false);
+				await site.loginSystem?.clearLoginCookies(widget.board, false);
 			}
 		}
 		try {

@@ -1111,7 +1111,7 @@ abstract class ImageboardSiteLoginSystem {
 	ImageboardSite get parent;
 	String get name;
 	List<ImageboardSiteLoginField> getLoginFields();
-	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
+	Future<void> login(String? board, Map<ImageboardSiteLoginField, String> fields);
 	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {
 		 if (parent.persistence.browserState.loginFields.isNotEmpty) {
 			 try {
@@ -1130,7 +1130,7 @@ abstract class ImageboardSiteLoginSystem {
 		parent.persistence.browserState.loginFields.clear();
 		await parent.persistence.didUpdateBrowserState();
 	}
-	Future<void> clearLoginCookies(bool fromBothWifiAndCellular);
+	Future<void> clearLoginCookies(String? board, bool fromBothWifiAndCellular);
 }
 
 ImageboardSite makeSite(dynamic data) {

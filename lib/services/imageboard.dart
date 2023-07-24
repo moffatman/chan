@@ -240,7 +240,7 @@ class ImageboardRegistry extends ChangeNotifier {
 						final savedFields = site.loginSystem?.getSavedLoginFields();
 						if (savedFields != null && settings.isConnectedToWifi) {
 							try {
-								await site.loginSystem!.login(savedFields);
+								await site.loginSystem!.login(null, savedFields);
 								print('Auto-logged in');
 							}
 							catch (e) {
