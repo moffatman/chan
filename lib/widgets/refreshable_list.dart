@@ -279,9 +279,11 @@ class RefreshableListItem<T extends Object> {
 	final Set<int> treeDescendantIds;
 	final int? _depth;
 	final _RefreshableTreeItemsCacheKey _key;
+	final RefreshableListState _state;
 
 	RefreshableListItem({
 		required this.item,
+		required RefreshableListState state,
 		this.highlighted = false,
 		this.pinned = false,
 		this.filterCollapsed = false,
@@ -292,7 +294,10 @@ class RefreshableListItem<T extends Object> {
 		this.representsUnknownStubChildren = false,
 		this.representsKnownStubChildren = const [],
 		int? depth
-	}) : treeDescendantIds = treeDescendantIds ?? {}, _depth = depth, _key = _RefreshableTreeItemsCacheKey(parentIds, id, representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty);
+	}) : treeDescendantIds = treeDescendantIds ?? {},
+	     _depth = depth,
+			 _key = _RefreshableTreeItemsCacheKey(parentIds, id, representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty),
+			 _state = state;
 
 	@override
 	String toString() => 'RefreshableListItem<$T>(item: $item, id: $id, representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}, treeDescendantIds: $treeDescendantIds)';
@@ -309,10 +314,11 @@ class RefreshableListItem<T extends Object> {
 		(other.filterReason == filterReason) &&
 		listEquals(other.parentIds, parentIds) &&
 		setEquals(other.treeDescendantIds, treeDescendantIds) &&
-		(other._depth == _depth);
+		(other._depth == _depth) &&
+		(other._state == _state);
 
 	@override
-	int get hashCode => Object.hash(item, representsUnknownStubChildren, representsKnownStubChildren.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth);
+	int get hashCode => Object.hash(item, representsUnknownStubChildren, representsKnownStubChildren.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth, _state);
 
 	RefreshableListItem<T> copyWith({
 		List<int>? parentIds,
@@ -331,16 +337,18 @@ class RefreshableListItem<T extends Object> {
 		representsUnknownStubChildren: representsUnknownStubChildren ?? this.representsUnknownStubChildren,
 		representsKnownStubChildren: representsKnownStubChildren ?? this.representsKnownStubChildren,
 		depth: depth,
+		state: _state
 	);
 
 	int get depth {
 		if (_depth != null) {
 			return _depth!;
 		}
+		final offset = ((_state.widget.treeAdapter?.repliesToOPAreTopLevel ?? false) && parentIds.tryFirst == _state.widget.treeAdapter?.opId) ? -1 : 0;
 		if (representsStubChildren) {
-			return parentIds.length + 1;
+			return max(0, parentIds.length + 1 + offset);
 		}
-		return parentIds.length;
+		return max(0, parentIds.length + offset);
 	}
 
 	bool get representsStubChildren => representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty;
@@ -358,6 +366,7 @@ class RefreshableTreeAdapter<T extends Object> {
 	final bool initiallyCollapseSecondLevelReplies;
 	final bool collapsedItemsShowBody;
 	final bool Function(RefreshableListItem<T> item)? filter;
+	final bool repliesToOPAreTopLevel;
 
 	const RefreshableTreeAdapter({
 		required this.getId,
@@ -370,6 +379,7 @@ class RefreshableTreeAdapter<T extends Object> {
 		required this.getIsStub,
 		required this.initiallyCollapseSecondLevelReplies,
 		required this.collapsedItemsShowBody,
+		required this.repliesToOPAreTopLevel,
 		this.filter
 	});
 }
@@ -1475,9 +1485,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				)
 			);
 		}
-		if (value.depth > 0 && useTree) {
+		final depth = value.depth;
+		if (depth > 0 && useTree) {
 			child = Container(
-				margin: EdgeInsets.only(left: (pow(value.depth, 0.70) * 20) - 5),
+				margin: EdgeInsets.only(left: (pow(depth, 0.70) * 20) - 5),
 				decoration: BoxDecoration(
 					border: Border(left: BorderSide(
 						width: 5,
@@ -1537,7 +1548,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (id == adapter.opId) {
 				treeRoots.insert(0, node);
 			}
-			else if (parentIds.isEmpty || (parentIds.length == 1 && parentIds.single == adapter.opId)) {
+			else if (parentIds.isEmpty) {
+				treeRoots.add(node);
+			}
+			else if (adapter.repliesToOPAreTopLevel && parentIds.trySingle == adapter.opId) {
 				treeRoots.add(node);
 				final op = treeMap[adapter.opId];
 				if (op != null) {
@@ -1587,7 +1601,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				bool foundAParent = false;
 				final orphanParents = <int>[];
 				for (final parentId in parentIds) {
-					if (parentId == adapter.opId) {
+					if (adapter.repliesToOPAreTopLevel && parentId == adapter.opId) {
 						foundAParent = true;
 						continue;
 					}
@@ -1680,7 +1694,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_TreeNode<RefreshableListItem<T>>? firstRoot;
 		if (treeRoots.isNotEmpty) {
 			firstRoot = treeRoots.removeAt(0);
-			dumpNode(firstRoot, [], addOmittedChildNode: false);
+			dumpNode(firstRoot, firstRoot.parents.map((t) => t.id).toList(), addOmittedChildNode: false);
 		}
 		final Set<int> orphanEncountered = {};
 		for (final pair in orphans.entries) {
@@ -1704,7 +1718,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (adapter.getIsStub(root.item.item)) {
 				continue;
 			}
-			dumpNode(root, []);
+			dumpNode(root, root.parents.map((t) => t.id).toList());
 		}
 		if (firstRoot != null && (firstRoot.stubChildIds.isNotEmpty || firstRoot.hasOmittedReplies)) {
 			if (
@@ -1768,7 +1782,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 								item: item,
 								id: widget.treeAdapter?.getId(item) ?? 0,
 								highlighted: result.type.highlight,
-								pinned: true
+								pinned: true,
+								state: this
 							));
 						}
 						if (result.type.autoSave) {
@@ -1778,7 +1793,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							filteredValues.add(RefreshableListItem(
 								item: item,
 								id: widget.treeAdapter?.getId(item) ?? 0,
-								filterReason: result.reason
+								filterReason: result.reason,
+								state: this
 							));
 						}
 						else if (!pinned) {
@@ -1786,7 +1802,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 								item: item,
 								id: widget.treeAdapter?.getId(item) ?? 0,
 								highlighted: result.type.highlight,
-								filterCollapsed: result.type.collapse
+								filterCollapsed: result.type.collapse,
+								state: this
 							));
 						}
 						handled = true;
@@ -1794,7 +1811,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 				}
 				if (!handled) {
-					values.add(RefreshableListItem(item: item, id: widget.treeAdapter?.getId(item) ?? 0));
+					values.add(RefreshableListItem(
+						item: item,
+						id: widget.treeAdapter?.getId(item) ?? 0,
+						state: this
+					));
 				}
 			}
 			_treeBuildingFailed = false;
@@ -1834,7 +1855,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						stubItem ??= RefreshableListItem(
 							item: item.item, // Arbitrary
 							id: item.id, // Arbitrary
-							representsKnownStubChildren: []
+							representsKnownStubChildren: [],
+							state: this
 						);
 						stubItem.representsKnownStubChildren.add(ParentAndChildIdentifier(
 							parentId: adapter.getParentIds(item.item).tryFirst ?? adapter.opId,
@@ -1851,7 +1873,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							stubItem ??= RefreshableListItem(
 								item: item.item, // Arbitrary
 								id: item.id, // Arbitrary
-								representsKnownStubChildren: []
+								representsKnownStubChildren: [],
+								state: this
 							);
 							stubItem.representsKnownStubChildren.add(ParentAndChildIdentifier(
 								parentId: adapter.getId(item.item),

@@ -1282,6 +1282,8 @@ class PersistentBrowserState {
 	final Map<String, bool> useCatalogGridPerBoard;
 	@HiveField(23, defaultValue: {})
 	Map<ThreadIdentifier, ThreadWatch> threadWatches;
+	@HiveField(24, defaultValue: true)
+	bool treeModeRepliesToOPAreTopLevel;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1302,6 +1304,7 @@ class PersistentBrowserState {
 		this.useTree,
 		this.treeModeInitiallyCollapseSecondLevelReplies = false,
 		this.treeModeCollapsedPostsShowBody = false,
+		this.treeModeRepliesToOPAreTopLevel = true,
 		this.useCatalogGrid,
 		required this.useCatalogGridPerBoard
 	}) : deprecatedHiddenImageMD5s = deprecatedHiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();

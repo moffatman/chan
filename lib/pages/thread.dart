@@ -1016,6 +1016,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		zone.tree = useTree;
 		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);
 		final treeModeCollapsedPostsShowBody = context.select<Persistence, bool>((s) => s.browserState.treeModeCollapsedPostsShowBody);
+		final treeModeRepliesToOPAreTopLevel = context.select<Persistence, bool>((s) => s.browserState.treeModeRepliesToOPAreTopLevel);
 		Duration? autoUpdateDuration = Duration(seconds: _foreground ? settings.currentThreadAutoUpdatePeriodSeconds : settings.backgroundThreadAutoUpdatePeriodSeconds);
 		if (autoUpdateDuration.inDays > 1) {
 			autoUpdateDuration = null;
@@ -1359,7 +1360,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																		).ceil() * fontSize;
 																	},
 																	initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
-																	collapsedItemsShowBody: treeModeCollapsedPostsShowBody
+																	collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
+																	repliesToOPAreTopLevel: treeModeRepliesToOPAreTopLevel
 																),
 																footer: Container(
 																	padding: const EdgeInsets.all(16),

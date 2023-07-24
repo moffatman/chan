@@ -353,6 +353,8 @@ class PersistentBrowserStateAdapter
           fields[19] == null ? false : fields[19] as bool,
       treeModeCollapsedPostsShowBody:
           fields[20] == null ? false : fields[20] as bool,
+      treeModeRepliesToOPAreTopLevel:
+          fields[24] == null ? true : fields[24] as bool,
       useCatalogGrid: fields[21] as bool?,
       useCatalogGridPerBoard:
           fields[22] == null ? {} : (fields[22] as Map).cast<String, bool>(),
@@ -362,7 +364,7 @@ class PersistentBrowserStateAdapter
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(20)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -402,7 +404,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(22)
       ..write(obj.useCatalogGridPerBoard)
       ..writeByte(23)
-      ..write(obj.threadWatches);
+      ..write(obj.threadWatches)
+      ..writeByte(24)
+      ..write(obj.treeModeRepliesToOPAreTopLevel);
   }
 
   @override

@@ -137,7 +137,8 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				estimateHeight: (i, w) => 50,
 				getIsStub: (i) => i.isStub,
 				initiallyCollapseSecondLevelReplies: false,
-				collapsedItemsShowBody: false
+				collapsedItemsShowBody: false,
+				repliesToOPAreTopLevel: true
 			),
 			footer: CupertinoButton(
 				child: const Icon(CupertinoIcons.pencil),

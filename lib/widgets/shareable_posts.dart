@@ -227,7 +227,8 @@ class ShareablePosts extends StatelessWidget {
 							).ceil() * fontSize;
 						},
 						initiallyCollapseSecondLevelReplies: false,
-						collapsedItemsShowBody: false
+						collapsedItemsShowBody: false,
+						repliesToOPAreTopLevel: imageboard.persistence.browserState.treeModeRepliesToOPAreTopLevel
 					)
 				)
 			);

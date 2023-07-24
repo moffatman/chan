@@ -3081,6 +3081,26 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									),
 									const SizedBox(width: 16)
 								]
+							),
+							const SizedBox(height: 16),
+							Row(
+								children: [
+									const SizedBox(width: 16),
+									const Icon(CupertinoIcons.increase_indent),
+									const SizedBox(width: 8),
+									const Expanded(
+										child: Text('Show replies to OP at top level')
+									),
+									AdaptiveSwitch(
+										value: _threadLayoutImageboard.persistence.browserState.treeModeRepliesToOPAreTopLevel,
+										onChanged: (newValue) {
+											_threadLayoutImageboard.persistence.browserState.treeModeRepliesToOPAreTopLevel = newValue;
+											_threadLayoutImageboard.persistence.didUpdateBrowserState();
+											setState(() {});
+										}
+									),
+									const SizedBox(width: 16)
+								]
 							)
 						]
 					) : const SizedBox(width: double.infinity)
