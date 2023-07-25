@@ -351,6 +351,15 @@ class RefreshableListItem<T extends Object> {
 		return max(0, parentIds.length + offset);
 	}
 
+	int? get _firstEffectiveParentId {
+		if (parentIds.length > 1 &&
+		    (_state.widget.treeAdapter?.repliesToOPAreTopLevel ?? false) &&
+				(parentIds.tryFirst == _state.widget.treeAdapter?.opId)) {
+			return parentIds[1];
+		}
+		return parentIds.first;
+	}
+
 	bool get representsStubChildren => representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty;
 }
 
@@ -456,14 +465,8 @@ class _RefreshableTreeItemsCacheKey {
 
 class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final List<List<int>> manuallyCollapsedItems;
-	final List<List<int>> automaticallyCollapsedItems;
-	final Set<int> automaticallyCollapsedTopLevelItems;
 	final Map<int, int> defaultPrimarySubtreeParents = {};
 	final Map<int, int> primarySubtreeParents;
-	final void Function(List<List<int>>, Map<int, int>)? onManuallyCollapsedItemsChanged;
-	final ValueChanged<List<int>>? onAutomaticallyCollapsedItemExpanded;
-	final ValueChanged<int>? onAutomaticallyCollapsedTopLevelItemExpanded;
-	final void Function(RefreshableListItem<T> item, bool looseEquality)? onCollapseOrExpand;
 	final Set<List<int>> loadingOmittedItems = {};
 	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = {};
 	/// If the bool is false, we haven't laid out this item yet.
@@ -472,19 +475,16 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final Map<List<int>, bool> newlyInsertedItems = {};
 	final Map<List<int>, bool> newlyInsertedStubRepliesForItem = {};
 	final Set<int> itemsWithUnknownStubReplies = {};
+	final RefreshableListState<T> state;
 
 	_RefreshableTreeItems({
 		required this.manuallyCollapsedItems,
-		required this.automaticallyCollapsedItems,
-		required this.automaticallyCollapsedTopLevelItems,
 		required this.primarySubtreeParents,
-		required this.onAutomaticallyCollapsedItemExpanded,
-		required this.onAutomaticallyCollapsedTopLevelItemExpanded,
-		required this.onCollapseOrExpand,
-		required this.onManuallyCollapsedItemsChanged
+		required this.state
 	});
 
-	TreeItemCollapseType? isItemHidden(_RefreshableTreeItemsCacheKey key) {
+	TreeItemCollapseType? isItemHidden(RefreshableListItem<T> item) {
+		final key = item._key;
 		return _cache.putIfAbsent(key, () {
 			// Need to check all parent prefixes
 			for (int d = 0; d < key.parentIds.length; d++) {
@@ -495,7 +495,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 				}
 			}
 			if (key.parentIds.isNotEmpty) {
-				if (automaticallyCollapsedTopLevelItems.contains(key.parentIds.first)) {
+				if (state._automaticallyCollapsedTopLevelItems.contains(item._firstEffectiveParentId)) {
 					return TreeItemCollapseType.childCollapsed;
 				}
 			}
@@ -534,7 +534,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 				}
 			}
 			// By iterating reversed it will properly handle collapses within collapses
-			for (final collapsed in manuallyCollapsedItems.reversed.followedBy(automaticallyCollapsedItems)) {
+			for (final collapsed in manuallyCollapsedItems.reversed.followedBy(state._automaticallyCollapsedItems)) {
 				if (collapsed.length > key.parentIds.length + 1) {
 					continue;
 				}
@@ -551,11 +551,11 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 					}
 					continue;
 				}
-				if (collapsed.last == key.parentIds[collapsed.length - 1]) {
+				if (collapsed.last == key.parentIds[collapsed.length - 1] && collapsed.trySingle != (state.widget.treeAdapter?.opId ?? -1)) {
 					return TreeItemCollapseType.childCollapsed;
 				}
 			}
-			if (key.parentIds.isEmpty && automaticallyCollapsedTopLevelItems.contains(key.thisId)) {
+			if (item.depth == 0 && state._automaticallyCollapsedTopLevelItems.contains(key.thisId)) {
 				if (key.representsStubChildren) {
 					return TreeItemCollapseType.childCollapsed;
 				}
@@ -639,7 +639,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		];
 		loadingOmittedItems.removeWhere((w) => listEquals(w, x));
 		notifyListeners();
-		onCollapseOrExpand?.call(item, true);
+		state._onTreeCollapseOrExpand.call(item, true);
 	}
 
 	void hideItem(RefreshableListItem<T> item) {
@@ -648,8 +648,8 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			item.id
 		]);
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
-		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
-		onCollapseOrExpand?.call(item, false);
+		state.widget.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
+		state._onTreeCollapseOrExpand.call(item, false);
 		notifyListeners();
 	}
 
@@ -662,15 +662,15 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		final manuallyCollapsedItemsLengthBefore = manuallyCollapsedItems.length;
 		manuallyCollapsedItems.removeWhere((w) => listEquals(w, x));
 		if (manuallyCollapsedItemsLengthBefore != manuallyCollapsedItems.length) {
-			onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
+			state.widget.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		}
-		final automaticallyCollapsedItemsLengthBefore = automaticallyCollapsedItems.length;
-		automaticallyCollapsedItems.removeWhere((w) => listEquals(w, x));
-		if (automaticallyCollapsedItemsLengthBefore != automaticallyCollapsedItems.length) {
-			onAutomaticallyCollapsedItemExpanded?.call(x);
+		final automaticallyCollapsedItemsLengthBefore = state._automaticallyCollapsedItems.length;
+		state._automaticallyCollapsedItems.removeWhere((w) => listEquals(w, x));
+		if (automaticallyCollapsedItemsLengthBefore != state._automaticallyCollapsedItems.length) {
+			state._onAutomaticallyCollapsedItemExpanded.call(x);
 		}
-		if (automaticallyCollapsedTopLevelItems.remove(item.id)) {
-			onAutomaticallyCollapsedTopLevelItemExpanded?.call(item.id);
+		if (state._automaticallyCollapsedTopLevelItems.remove(item.id)) {
+			state._onAutomaticallyCollapsedTopLevelItemExpanded.call(item.id);
 		}
 		// Reveal any newly inserted items in the subtree below
 		newlyInsertedItems.removeWhere((w, _) {
@@ -695,14 +695,14 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			}
 			return true;
 		});
-		onCollapseOrExpand?.call(item, false);
+		state._onTreeCollapseOrExpand.call(item, false);
 		notifyListeners();
 	}
 
 	void swapSubtreeTo(RefreshableListItem<T> item) {
 		primarySubtreeParents[item.id] = item.parentIds.tryLast ?? -1;
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
-		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
+		state.widget.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		// Reveal any newly inserted items in the subtree below
 		final x = [
 			...item.parentIds,
@@ -730,7 +730,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			}
 			return true;
 		});
-		onCollapseOrExpand?.call(item, false);
+		state._onTreeCollapseOrExpand.call(item, false);
 		notifyListeners();
 	}
 
@@ -750,7 +750,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		}
 		newlyInsertedStubRepliesForItem.removeWhere((w, _) => listEquals(w, x));
 		if (!quiet) {
-			onCollapseOrExpand?.call(item, false);
+			state._onTreeCollapseOrExpand.call(item, false);
 			await SchedulerBinding.instance.endOfFrame;
 			notifyListeners();
 		}
@@ -774,7 +774,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			return true;
 		});
 		newlyInsertedStubRepliesForItem.removeWhere((w, _) => listEquals(w, x));
-		onCollapseOrExpand?.call(item, false);
+		state._onTreeCollapseOrExpand.call(item, false);
 		await SchedulerBinding.instance.endOfFrame;
 		notifyListeners();
 	}
@@ -808,14 +808,14 @@ class _Divider<T extends Object> extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final int? itemBeforeDepth;
-		if (context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemBefore._key).isHidden)) {
+		if (context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemBefore).isHidden)) {
 			itemBeforeDepth = itemBefore.depth;
 		}
 		else {
 			itemBeforeDepth = null;
 		}
 		final int? itemAfterDepth;
-		if (itemAfter != null && context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemAfter!._key).isHidden)) {
+		if (itemAfter != null && context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemAfter!).isHidden)) {
 			itemAfterDepth = itemAfter!.depth;
 		}
 		else {
@@ -986,13 +986,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		_refreshableTreeItems = _RefreshableTreeItems<T>(
 			manuallyCollapsedItems: widget.initialCollapsedItems?.toList() ?? [],
-			automaticallyCollapsedItems: _automaticallyCollapsedItems,
-			automaticallyCollapsedTopLevelItems: _automaticallyCollapsedTopLevelItems,
 			primarySubtreeParents: Map.from(widget.initialPrimarySubtreeParents ?? {}),
-			onAutomaticallyCollapsedItemExpanded: _onAutomaticallyCollapsedItemExpanded,
-			onAutomaticallyCollapsedTopLevelItemExpanded: _onAutomaticallyCollapsedTopLevelItemExpanded,
-			onCollapseOrExpand: _onTreeCollapseOrExpand,
-			onManuallyCollapsedItemsChanged: widget.onCollapsedItemsChanged,
+			state: this
 		);
 		widget.updateAnimation?.addListener(_onUpdateAnimation);
 	}
@@ -1025,13 +1020,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_refreshableTreeItems.dispose();
 			_refreshableTreeItems = _RefreshableTreeItems<T>(
 				manuallyCollapsedItems: widget.initialCollapsedItems?.toList() ?? [],
-				automaticallyCollapsedItems: _automaticallyCollapsedItems,
-				automaticallyCollapsedTopLevelItems: _automaticallyCollapsedTopLevelItems,
 				primarySubtreeParents: Map.from(widget.initialPrimarySubtreeParents ?? {}),
-				onAutomaticallyCollapsedItemExpanded: _onAutomaticallyCollapsedItemExpanded,
-				onAutomaticallyCollapsedTopLevelItemExpanded: _onAutomaticallyCollapsedTopLevelItemExpanded,
-				onCollapseOrExpand: _onTreeCollapseOrExpand,
-				onManuallyCollapsedItemsChanged: widget.onCollapsedItemsChanged
+				state: this
 			);
 			if (!widget.disableUpdates) {
 				update();
@@ -1294,7 +1284,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	bool _shouldIgnoreForHeightEstimation(RefreshableListItem<T> item) {
-		return _refreshableTreeItems.isItemHidden(item._key).isHidden;
+		return _refreshableTreeItems.isItemHidden(item).isHidden;
 	}
 
 	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value) {
@@ -1344,7 +1334,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			if (widget.treeAdapter != null && useTree) {
-				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value._key));
+				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value));
 				if (isHidden.isHidden) {
 					// Avoid possible heavy build+layout cost for hidden items
 					child = const SizedBox(width: double.infinity);
@@ -1644,8 +1634,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			else if (adapter.initiallyCollapseSecondLevelReplies &&
-			         parentIds.isEmpty &&
-							 (node.parents.isEmpty || node.parents.trySingle?.id == adapter.opId) &&
+							 item.depth == 0 && // TODO: Test it
 							 (node.children.isNotEmpty || willAddOmittedChildNode)) {
 				automaticallyTopLevelCollapsed.add(node.id);
 			}
@@ -1749,7 +1738,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				// Parentless items are never set to "newly-inserted" state
 				continue;
 			}
-			if (!_refreshableTreeItems.isItemHidden(item._key).isHidden) {
+			if (!_refreshableTreeItems.isItemHidden(item).isHidden) {
 				break;
 			}
 			_refreshableTreeItems.revealNewInsert(item, quiet: true, stubOnly: item.representsStubChildren);
@@ -2876,7 +2865,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	TreeItemCollapseType? isItemHidden(RefreshableListItem<T> item) {
-		return state?._refreshableTreeItems.isItemHidden(item._key);
+		return state?._refreshableTreeItems.isItemHidden(item);
 	}
 
 	void didFinishLayout(int startIndex, int endIndex) {
