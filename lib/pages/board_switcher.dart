@@ -335,151 +335,158 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								barrierDismissible: true,
 								context: context,
 								builder: (context) => AdaptiveAlertDialog(
-									title: Padding(
-										padding: const EdgeInsets.only(bottom: 16),
-										child: Row(
-											mainAxisAlignment: MainAxisAlignment.center,
+									content: StatefulBuilder(
+										builder: (context, setDialogState) => Column(
+											mainAxisSize: MainAxisSize.min,
+											crossAxisAlignment: CrossAxisAlignment.stretch,
 											children: [
-												if (allImageboards.length > 1) Padding(
-													padding: const EdgeInsets.only(right: 8),
-													child: ImageboardIcon(
-														imageboardKey: currentImageboard.key,
+												Padding(
+													padding: const EdgeInsets.symmetric(horizontal: 16),
+													child: AdaptiveThinButton(
+														padding: const EdgeInsets.all(8),
+														child: const Center(
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	Icon(CupertinoIcons.star),
+																	Text(' Edit Favorites')
+																]
+															)
+														),
+														onPressed: () => showAdaptiveDialog(
+															barrierDismissible: true,
+															context: context,
+															builder: (context) => AdaptiveAlertDialog(
+																title: Padding(
+																	padding: const EdgeInsets.only(bottom: 16),
+																	child: Row(
+																		mainAxisAlignment: MainAxisAlignment.center,
+																		children: [
+																			if (allImageboards.length > 1) Padding(
+																				padding: const EdgeInsets.only(right: 8),
+																				child: ImageboardIcon(
+																					imageboardKey: currentImageboard.key,
+																				)
+																			),
+																			const Flexible(
+																				child: Text('Favourite boards')
+																			)
+																		]
+																	)
+																),
+																content: StatefulBuilder(
+																	builder: (context, setDialogState) => SizedBox(
+																		height: 300,
+																		child: ReorderableList(
+																			itemCount: currentImageboard.persistence.browserState.favouriteBoards.length,
+																			onReorder: (oldIndex, newIndex) {
+																				if (oldIndex < newIndex) {
+																					newIndex -= 1;
+																				}
+																				final board = currentImageboard.persistence.browserState.favouriteBoards.removeAt(oldIndex);
+																				currentImageboard.persistence.browserState.favouriteBoards.insert(newIndex, board);
+																				setDialogState(() {});
+																			},
+																			itemBuilder: (context, i) => ReorderableDelayedDragStartListener(
+																				index: i,
+																				key: ValueKey(currentImageboard.persistence.browserState.favouriteBoards[i]),
+																				child: Padding(
+																					padding: const EdgeInsets.all(4),
+																					child: Container(
+																						decoration: BoxDecoration(
+																							borderRadius: const BorderRadius.all(Radius.circular(4)),
+																							color: theme.primaryColor.withOpacity(0.1)
+																						),
+																						padding: const EdgeInsets.only(left: 16),
+																						child: Row(
+																							children: [
+																								Expanded(
+																									child: AutoSizeText(
+																										currentImageboard.site.formatBoardName(currentImageboard.persistence.getBoard(currentImageboard.persistence.browserState.favouriteBoards[i])),
+																										style: const TextStyle(fontSize: 20),
+																										maxLines: 1
+																									),
+																								),
+																								AdaptiveIconButton(
+																									icon: const Icon(CupertinoIcons.delete),
+																									onPressed: () {
+																										currentImageboard.persistence.browserState.favouriteBoards.remove(currentImageboard.persistence.browserState.favouriteBoards[i]);
+																										setDialogState(() {});
+																									}
+																								)
+																							]
+																						)
+																					)
+																				)
+																			)
+																		)
+																	)
+																),
+																actions: [
+																	AdaptiveDialogAction(
+																		child: const Text('Add board'),
+																		onPressed: () async {
+																			final board = await Navigator.push<ImageboardScoped<ImageboardBoard>>(context, TransparentRoute(
+																				builder: (ctx) => ImageboardScope(
+																					imageboardKey: null,
+																					imageboard: currentImageboard,
+																					child: const BoardSwitcherPage(currentlyPickingFavourites: true)
+																				)
+																			));
+																			if (board != null && !currentImageboard.persistence.browserState.favouriteBoards.contains(board.item.name)) {
+																				currentImageboard.persistence.browserState.favouriteBoards.add(board.item.name);
+																				setDialogState(() {});
+																			}
+																		}
+																	),
+																	AdaptiveDialogAction(
+																		child: const Text('Close'),
+																		onPressed: () => Navigator.pop(context)
+																	)
+																]
+															)
+														)
 													)
 												),
-												const Flexible(
-													child: Text('Favourite boards')
+												const SizedBox(height: 16),
+												AdaptiveSegmentedControl<bool>(
+													children: const {
+														false: (null, 'All boards'),
+														true: (null, 'Only favourites')
+													},
+													groupValue: settings.onlyShowFavouriteBoardsInSwitcher,
+													onValueChanged: (setting) {
+														settings.onlyShowFavouriteBoardsInSwitcher = setting;
+													}
+												),
+												const SizedBox(height: 16),
+												AdaptiveSegmentedControl<bool>(
+													children: const {
+														false: (null, 'Grid'),
+														true: (null, 'List')
+													},
+													groupValue: settings.useBoardSwitcherList,
+													onValueChanged: (setting) {
+														settings.useBoardSwitcherList = setting;
+													}
+												),
+												const SizedBox(height: 16),
+												Row(
+													children: [
+														const Expanded(
+															child: Text('Show keyboard when opening'),
+														),
+														const SizedBox(width: 8),
+														AdaptiveSwitch(
+															value: settings.boardSwitcherHasKeyboardFocus,
+															onChanged: (v) {
+																settings.boardSwitcherHasKeyboardFocus = v;
+																setDialogState(() {});
+															}
+														)
+													]
 												)
 											]
-										)
-									),
-									content: StatefulBuilder(
-										builder: (context, setDialogState) => SizedBox(
-											width: 100,
-											height: 350,
-											child: Stack(
-												children: [
-													ReorderableList(
-														padding: const EdgeInsets.only(bottom: 128),
-														itemCount: currentImageboard.persistence.browserState.favouriteBoards.length,
-														onReorder: (oldIndex, newIndex) {
-															if (oldIndex < newIndex) {
-																newIndex -= 1;
-															}
-															final board = currentImageboard.persistence.browserState.favouriteBoards.removeAt(oldIndex);
-															currentImageboard.persistence.browserState.favouriteBoards.insert(newIndex, board);
-															setDialogState(() {});
-														},
-														itemBuilder: (context, i) => ReorderableDelayedDragStartListener(
-															index: i,
-															key: ValueKey(currentImageboard.persistence.browserState.favouriteBoards[i]),
-															child: Padding(
-																padding: const EdgeInsets.all(4),
-																child: Container(
-																	decoration: BoxDecoration(
-																		borderRadius: const BorderRadius.all(Radius.circular(4)),
-																		color: theme.primaryColor.withOpacity(0.1)
-																	),
-																	padding: const EdgeInsets.only(left: 16),
-																	child: Row(
-																		children: [
-																			Expanded(
-																				child: AutoSizeText(
-																					currentImageboard.site.formatBoardName(currentImageboard.persistence.getBoard(currentImageboard.persistence.browserState.favouriteBoards[i])),
-																					style: const TextStyle(fontSize: 20),
-																					maxLines: 1
-																				),
-																			),
-																			AdaptiveIconButton(
-																				icon: const Icon(CupertinoIcons.delete),
-																				onPressed: () {
-																					currentImageboard.persistence.browserState.favouriteBoards.remove(currentImageboard.persistence.browserState.favouriteBoards[i]);
-																					setDialogState(() {});
-																				}
-																			)
-																		]
-																	)
-																)
-															)
-														)
-													),
-													Align(
-														alignment: Alignment.bottomCenter,
-														child: ClipRect(
-															child: BackdropFilter(
-																filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-																	child: Container(
-																	color: theme.backgroundColor.withOpacity(0.1),
-																	child: Column(
-																		mainAxisSize: MainAxisSize.min,
-																		crossAxisAlignment: CrossAxisAlignment.stretch,
-																		children: [
-																			AdaptiveButton(
-																				child: const Row(
-																					mainAxisAlignment: MainAxisAlignment.center,
-																					children: [
-																						Icon(CupertinoIcons.add),
-																						Text(' Add board')
-																					]
-																				),
-																				onPressed: () async {
-																					final board = await Navigator.push<ImageboardScoped<ImageboardBoard>>(context, TransparentRoute(
-																						builder: (ctx) => ImageboardScope(
-																							imageboardKey: null,
-																							imageboard: currentImageboard,
-																							child: const BoardSwitcherPage(currentlyPickingFavourites: true)
-																						)
-																					));
-																					if (board != null && !currentImageboard.persistence.browserState.favouriteBoards.contains(board.item.name)) {
-																						currentImageboard.persistence.browserState.favouriteBoards.add(board.item.name);
-																						setDialogState(() {});
-																					}
-																				}
-																			),
-																			AdaptiveSegmentedControl<bool>(
-																				children: const {
-																					false: (null, 'All boards'),
-																					true: (null, 'Only favourites')
-																				},
-																				groupValue: settings.onlyShowFavouriteBoardsInSwitcher,
-																				onValueChanged: (setting) {
-																					settings.onlyShowFavouriteBoardsInSwitcher = setting;
-																				}
-																			),
-																			const SizedBox(height: 8),
-																			AdaptiveSegmentedControl<bool>(
-																				children: const {
-																					false: (null, 'Grid'),
-																					true: (null, 'List')
-																				},
-																				groupValue: settings.useBoardSwitcherList,
-																				onValueChanged: (setting) {
-																					settings.useBoardSwitcherList = setting;
-																				}
-																			),
-																			const SizedBox(height: 8),
-																			Row(
-																				children: [
-																					const Expanded(
-																						child: Text('Show keyboard when opening'),
-																					),
-																					const SizedBox(width: 8),
-																					AdaptiveSwitch(
-																						value: settings.boardSwitcherHasKeyboardFocus,
-																						onChanged: (v) {
-																							settings.boardSwitcherHasKeyboardFocus = v;
-																							setDialogState(() {});
-																						}
-																					)
-																				]
-																			)
-																		]
-																	)
-																)
-															)
-														)
-													)
-												]
-											)
 										)
 									),
 									actions: [
