@@ -104,35 +104,37 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 								},
 							),
 							const SizedBox(height: 16),
-							const Center(
-								child: Text('Push Notifications')
-							),
-							const SizedBox(height: 16),
-							AdaptiveListSection(
-								children: const [
-									(_BoardWatchingStatus.off, 'Off'),
-									(_BoardWatchingStatus.threadsOnly, 'Threads only'),
-									(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable)')
-								].map((v) => AdaptiveListTile(
-									title: Text(v.$2),
-									backgroundColor: ChanceTheme.barColorOf(context),
-									backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-									trailing: status == v.$1 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
-									onTap: () {
-										if (v.$1 != _BoardWatchingStatus.off) {
-											widget.imageboard.notifications.subscribeToBoard(
-												boardName: widget.board.name,
-												threadsOnly: v.$1 == _BoardWatchingStatus.threadsOnly
-											);
+							if (widget.imageboard.site.supportsPushNotifications) ...[
+								const Center(
+									child: Text('Push Notifications')
+								),
+								const SizedBox(height: 16),
+								AdaptiveListSection(
+									children: const [
+										(_BoardWatchingStatus.off, 'Off'),
+										(_BoardWatchingStatus.threadsOnly, 'Threads only'),
+										(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable)')
+									].map((v) => AdaptiveListTile(
+										title: Text(v.$2),
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										trailing: status == v.$1 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
+										onTap: () {
+											if (v.$1 != _BoardWatchingStatus.off) {
+												widget.imageboard.notifications.subscribeToBoard(
+													boardName: widget.board.name,
+													threadsOnly: v.$1 == _BoardWatchingStatus.threadsOnly
+												);
+											}
+											else {
+												widget.imageboard.notifications.unsubscribeFromBoard(widget.board.name);
+											}
+											setState(() {});
 										}
-										else {
-											widget.imageboard.notifications.unsubscribeFromBoard(widget.board.name);
-										}
-										setState(() {});
-									}
-								)).toList()
-							),
-							const SizedBox(height: 16),
+									)).toList()
+								),
+								const SizedBox(height: 16),
+							],
 							FilterEditor(
 								showRegex: false,
 								forBoard: widget.board.name,

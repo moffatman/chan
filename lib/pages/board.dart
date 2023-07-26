@@ -538,7 +538,7 @@ class _BoardPageState extends State<BoardPage> {
 					)
 				),
 				actions: [
-					if (board != null && (site?.supportsPushNotifications ?? false)) AdaptiveIconButton(
+					if (board != null) AdaptiveIconButton(
 						icon: const Icon(CupertinoIcons.settings),
 						onPressed: () {
 							Navigator.of(context).push(TransparentRoute(
