@@ -12,6 +12,7 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
@@ -541,6 +542,9 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 			await jar.delete(Uri.https(parent.baseUrl, '/mod.php'), true);
 			_adminEnabled[jar] = false;
 		}
+		await CookieManager.instance().deleteCookies(
+			url: WebUri(parent.baseUrl)
+		);
   }
 
   @override

@@ -34,6 +34,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
@@ -3409,6 +3410,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							]
 						),
 						onPressed: () {
+							CookieManager.instance().deleteAllCookies();
 							Persistence.wifiCookies.deleteAll();
 						}
 					)
@@ -3425,6 +3427,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							]
 						),
 						onPressed: () {
+							CookieManager.instance().deleteAllCookies();
 							Persistence.cellularCookies.deleteAll();
 						}
 					)

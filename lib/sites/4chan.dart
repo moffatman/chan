@@ -17,6 +17,7 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
@@ -1160,6 +1161,9 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 				await jar.delete(Uri.https(sysUrl, '/'), true);
 				await jar.delete(Uri.https(sysUrl, '/'), true);
 				await jar.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
+				await CookieManager.instance().deleteCookies(
+					url: WebUri(sysUrl)
+				);
 				_passEnabled[(jar, sysUrl)] = false;
 			}
 		}
