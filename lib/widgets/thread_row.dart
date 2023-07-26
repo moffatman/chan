@@ -96,13 +96,13 @@ class ThreadRow extends StatelessWidget {
 		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0);
 		Widget makeCounters() => Container(
 			decoration: BoxDecoration(
-				borderRadius: settings.useFullWidthForCatalogCounters ? null : const BorderRadius.only(topLeft: Radius.circular(8)),
+				borderRadius: settings.useFullWidthForCatalogCounters ? null : (settings.imagesOnRight ? const BorderRadius.only(topRight: Radius.circular(8)) : const BorderRadius.only(topLeft: Radius.circular(8))),
 				color: theme.backgroundColor,
 				border:  settings.useFullWidthForCatalogCounters ? Border(
 					top: BorderSide(color: theme.primaryColorWithBrightness(0.2)),
 				) : Border.all(color: theme.primaryColorWithBrightness(0.2))
 			),
-			margin: settings.useFullWidthForCatalogCounters ? EdgeInsets.zero : const EdgeInsets.only(left: 10),
+			margin: settings.useFullWidthForCatalogCounters ? EdgeInsets.zero : (settings.imagesOnRight ? const EdgeInsets.only(right: 10) : const EdgeInsets.only(left: 10)),
 			padding: settings.useFullWidthForCatalogCounters ? const EdgeInsets.all(4) : const EdgeInsets.all(2),
 			child: SizedBox(
 				width: settings.useFullWidthForCatalogCounters ? double.infinity : null,
@@ -591,7 +591,7 @@ class ThreadRow extends StatelessWidget {
 					content,
 					Positioned.fill(
 						child: Align(
-							alignment: Alignment.bottomRight,
+							alignment: settings.imagesOnRight ? Alignment.bottomLeft : Alignment.bottomRight,
 							child: makeCounters()
 						)
 					)
