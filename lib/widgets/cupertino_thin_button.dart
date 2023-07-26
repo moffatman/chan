@@ -55,12 +55,12 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 					color: color
 				),
 				padding: widget.padding,
-				child: widget.filled ? DefaultTextStyle.merge(
+				child: DefaultTextStyle.merge(
 					style: TextStyle(
-						color: ChanceTheme.backgroundColorOf(context)
+						color: widget.filled ? ChanceTheme.backgroundColorOf(context) : ChanceTheme.primaryColorOf(context)
 					),
 					child: widget.child
-				) : widget.child
+				)
 			)
 		);
 	}
