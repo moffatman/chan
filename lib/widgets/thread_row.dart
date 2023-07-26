@@ -369,11 +369,12 @@ class ThreadRow extends StatelessWidget {
 														avoidBuggyClippers: true,
 														maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
 														charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
-														postInject: (showLastReplies && thread.posts_.length > 1)	? null : countersPlaceholder
+														postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1)	? null : countersPlaceholder,
+														ensureTrailingNewline: true
 													)
 												)
 											]
-											else if (!(showLastReplies && thread.posts_.length > 1)) countersPlaceholder,
+											else if (!settings.useFullWidthForCatalogCounters && !(showLastReplies && thread.posts_.length > 1)) countersPlaceholder,
 											// Uuse thread and not latestThread
 											// The last replies should be only those from the catalog/search query
 											if (showLastReplies) ...[
@@ -577,13 +578,24 @@ class ThreadRow extends StatelessWidget {
 		Widget child = Stack(
 			fit: StackFit.passthrough,
 			children: [
-				content,
-				Positioned.fill(
-					child: Align(
-						alignment: Alignment.bottomRight,
-						child: makeCounters()
+				if (settings.useFullWidthForCatalogCounters) Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						Flexible(
+							child: content
+						),
+						makeCounters()
+					]
+				)
+				else ...[
+					content,
+					Positioned.fill(
+						child: Align(
+							alignment: Alignment.bottomRight,
+							child: makeCounters()
+						)
 					)
-				),
+				],
 				if (contentFocus && showFlairInContentFocus) Positioned(
 					top: 0,
 					left: 0,

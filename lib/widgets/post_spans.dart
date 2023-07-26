@@ -58,6 +58,7 @@ class PostSpanRenderOptions {
 	final InlineSpan? postInject;
 	final bool imageShareMode;
 	final bool revealYourPosts;
+	final bool ensureTrailingNewline;
 	const PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -76,7 +77,8 @@ class PostSpanRenderOptions {
 		this.highlightString,
 		this.postInject,
 		this.imageShareMode = false,
-		this.revealYourPosts = true
+		this.revealYourPosts = true,
+		this.ensureTrailingNewline = false
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
@@ -95,7 +97,8 @@ class PostSpanRenderOptions {
 		int? maxLines,
 		int? charactersPerLine,
 		InlineSpan? postInject,
-		bool removePostInject = false
+		bool removePostInject = false,
+		bool? ensureTrailingNewline
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer ?? this.recognizer,
 		overrideRecognizer: overrideRecognizer ?? this.overrideRecognizer,
@@ -114,7 +117,8 @@ class PostSpanRenderOptions {
 		charactersPerLine: charactersPerLine ?? this.charactersPerLine,
 		postInject: removePostInject ? null : (postInject ?? this.postInject),
 		imageShareMode: imageShareMode,
-		revealYourPosts: revealYourPosts
+		revealYourPosts: revealYourPosts,
+		ensureTrailingNewline: ensureTrailingNewline ?? this.ensureTrailingNewline
 	);
 }
 
@@ -182,6 +186,9 @@ class PostNodeSpan extends PostSpan {
 			else {
 				lineGuess += effectiveChildren[i].buildText().length / options.charactersPerLine;
 			}
+		}
+		if (lineGuess != 0 && options.ensureTrailingNewline) {
+			renderChildren.add(const TextSpan(text: '\n'));
 		}
 		return TextSpan(
 			children: renderChildren
