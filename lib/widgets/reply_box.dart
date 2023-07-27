@@ -17,6 +17,7 @@ import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/text_normalization.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -816,12 +817,17 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			final settings = context.read<EffectiveSettings>();
 			String? overrideAttachmentFilename;
 			if (_filenameController.text.isNotEmpty && attachment != null) {
-				overrideAttachmentFilename = '${_filenameController.text}.${attachmentExt!}';
+				overrideAttachmentFilename = '${_filenameController.text.normalizeSymbols}.${attachmentExt!}';
 			}
 			if (settings.randomizeFilenames && attachment != null) {
 				const alphanumericCharacters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
 				overrideAttachmentFilename = '${List.generate(12, (i) => alphanumericCharacters[random.nextInt(alphanumericCharacters.length)]).join('')}.${attachmentExt!}';
 			}
+			// Replace known-bad special symbols
+			_textFieldController.text = _textFieldController.text.normalizeSymbols;
+			_nameFieldController.text = _nameFieldController.text.normalizeSymbols;
+			_optionsFieldController.text = _optionsFieldController.text.normalizeSymbols;
+			_subjectFieldController.text = _subjectFieldController.text.normalizeSymbols;
 			lightHapticFeedback();
 			final receipt = (widget.threadId != null) ? (await site.postReply(
 				thread: ThreadIdentifier(widget.board, widget.threadId!),
