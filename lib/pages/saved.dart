@@ -733,11 +733,6 @@ class _SavedPageState extends State<SavedPage> {
 											itemBuilder: (context, savedPost) {
 												final threadState = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.post.threadIdentifier);
 												if (threadState?.thread == null) {
-													// Probably the thread was deleted during a cleanup
-													Future.delayed(const Duration(seconds: 1), () {
-														print('cleaning up ${savedPost.item.post}');
-														savedPost.imageboard.persistence.unsavePost(savedPost.item.post);
-													});
 													return const SizedBox.shrink();
 												}
 												return ImageboardScope(
