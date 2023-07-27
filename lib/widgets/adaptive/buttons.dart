@@ -128,12 +128,14 @@ class AdaptiveIconButton extends StatelessWidget {
 	final VoidCallback? onPressed;
 	final double minSize;
 	final EdgeInsets padding;
+	final bool dimWhenDisabled;
 
 	const AdaptiveIconButton({
 		required this.icon,
 		required this.onPressed,
 		this.minSize = 44,
 		this.padding = EdgeInsets.zero,
+		this.dimWhenDisabled = true,
 		super.key
 	});
 
@@ -147,14 +149,20 @@ class AdaptiveIconButton extends StatelessWidget {
 					tapTargetSize: MaterialTapTargetSize.shrinkWrap
 				),
 				onPressed: onPressed,
-				icon: onPressed == null ? Opacity(opacity: 0.5, child: icon) : icon
+				icon: (dimWhenDisabled && onPressed == null) ? Opacity(opacity: 0.5, child: icon) : icon
 			);
 		}
 		return CupertinoButton(
 			onPressed: onPressed,
 			padding: padding,
 			minSize: minSize,
-			child: icon
+			child: (dimWhenDisabled || onPressed != null) ? icon : DefaultTextStyle.merge(
+				style: TextStyle(color: ChanceTheme.primaryColorOf(context)),
+				child: IconTheme.merge(
+					data: IconThemeData(color: ChanceTheme.primaryColorOf(context)),
+					child: icon
+				)
+			)
 		);
 	}
 }

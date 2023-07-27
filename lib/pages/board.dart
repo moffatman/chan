@@ -503,6 +503,7 @@ class _BoardPageState extends State<BoardPage> {
 			bar: AdaptiveBar(
 				title: AdaptiveIconButton(
 					onPressed: widget.allowChangingBoard ? _selectBoard : null,
+					dimWhenDisabled: false,
 					icon: DefaultTextStyle.merge(
 						style: const TextStyle(fontWeight: FontWeight.w600),
 						child: Wrap(
