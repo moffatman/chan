@@ -22,6 +22,138 @@ import 'package:provider/provider.dart';
 
 import 'package:chan/models/thread.dart';
 
+class ThreadCounters extends StatelessWidget {
+	final Imageboard imageboard;
+	final Thread thread;
+	final PersistentThreadState? threadState;
+	final bool showPageNumber;
+	final bool countsUnreliable;
+	final bool showChrome;
+	final Alignment alignment;
+
+	const ThreadCounters({
+		required this.imageboard,
+		required this.thread,
+		required this.threadState,
+		this.showPageNumber = false,
+		required this.countsUnreliable,
+		this.showChrome = true,
+		required this.alignment,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		final site = imageboard.site;
+		final settings = context.watch<EffectiveSettings>();
+		final theme = context.watch<SavedTheme>();
+		final latestThread = threadState?.thread ?? thread;
+		final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), latestThread.posts_.length - 1);
+		final int latestImageCount = (thread.isSticky && latestReplyCount == 1000) ? latestThread.imageCount : max(thread.imageCount, latestThread.imageCount);
+		int unseenReplyCount = 0;
+		int unseenYouCount = 0;
+		int unseenImageCount = 0;
+		final grey = theme.primaryColorWithBrightness(0.6);
+		Color? replyCountColor;
+		Color? imageCountColor;
+		Color? otherMetadataColor;
+		if (threadState?.lastSeenPostId != null) {
+			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
+				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
+			}
+			else {
+				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + ((latestReplyCount + 1) - latestThread.posts_.length);
+			}
+			unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
+			unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.expand((x) => x.attachments).length ?? 0));
+			replyCountColor = unseenReplyCount <= 0 ? grey : null;
+			imageCountColor = unseenImageCount <= 0 ? grey : null;
+			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
+		}
+		final row = FittedBox(
+			alignment: alignment,
+			fit: BoxFit.scaleDown,
+			child: Row(
+				mainAxisSize: MainAxisSize.min,
+				crossAxisAlignment: CrossAxisAlignment.center,
+				children: [
+					if (showChrome) const SizedBox(width: 4),
+					if (latestThread.isSticky) ... [
+						Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+						const SizedBox(width: 4),
+					],
+					if (latestThread.isArchived) ... [
+						Icon(CupertinoIcons.archivebox, color: grey, size: 18),
+						const SizedBox(width: 4),
+					],
+					if (latestThread.isDeleted) ... [
+						Icon(CupertinoIcons.trash, color: grey, size: 18),
+						const SizedBox(width: 4),
+					],
+					if (showPageNumber && latestThread.currentPage != null) ...[
+						Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
+						const SizedBox(width: 2),
+						Text('${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
+						const SizedBox(width: 6)
+					],
+					if (settings.showTimeInCatalogStats) ...[
+						if (settings.showClockIconInCatalog) ...[
+							Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
+							const SizedBox(width: 4),
+						],
+						Text(latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
+						const SizedBox(width: 4),
+					],
+					if (site.isReddit || site.isHackerNews) ...[
+						Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
+						const SizedBox(width: 2),
+						Text(latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
+						const SizedBox(width: 6),
+					],
+					Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
+					const SizedBox(width: 4),
+					if (countsUnreliable && latestThread == thread) const Text('—')
+					else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+					if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
+					if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
+					const SizedBox(width: 2),
+					if (settings.showImageCountInCatalog && site.showImageCount) ...[
+						const SizedBox(width: 6),
+						Icon(Adaptive.icons.photo, size: 18, color: imageCountColor),
+						const SizedBox(width: 4),
+						if (latestImageCount > unseenImageCount) ...[
+							Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+							if (unseenImageCount > 0) Text('+$unseenImageCount'),
+						]
+						else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
+						else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
+						const SizedBox(width: 2),
+					]
+				]
+			)
+		);
+		if (!showChrome) {
+			return row;
+		}
+		return Container(
+			decoration: BoxDecoration(
+				borderRadius: settings.useFullWidthForCatalogCounters ? null : (settings.imagesOnRight ? const BorderRadius.only(topRight: Radius.circular(8)) : const BorderRadius.only(topLeft: Radius.circular(8))),
+				color: theme.backgroundColor,
+				border:  settings.useFullWidthForCatalogCounters ? Border(
+					top: BorderSide(color: theme.primaryColorWithBrightness(0.2)),
+				) : Border.all(color: theme.primaryColorWithBrightness(0.2))
+			),
+			margin: settings.useFullWidthForCatalogCounters ? EdgeInsets.zero : (settings.imagesOnRight ? const EdgeInsets.only(right: 10) : const EdgeInsets.only(left: 10)),
+			padding: settings.useFullWidthForCatalogCounters ? const EdgeInsets.all(4) : const EdgeInsets.all(2),
+			child: SizedBox(
+				width: settings.useFullWidthForCatalogCounters ? double.infinity : null,
+				height: 20 * settings.textScale,
+				child: row
+			)
+		);
+	}
+}
+
 class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
@@ -65,11 +197,8 @@ class ThreadRow extends StatelessWidget {
 		final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), latestThread.posts_.length - 1);
 		final int latestImageCount = (thread.isSticky && latestReplyCount == 1000) ? latestThread.imageCount : max(thread.imageCount, latestThread.imageCount);
 		int unseenReplyCount = 0;
-		int unseenYouCount = 0;
 		int unseenImageCount = 0;
 		final grey = theme.primaryColorWithBrightness(0.6);
-		Color? replyCountColor;
-		Color? imageCountColor;
 		Color? otherMetadataColor;
 		String? threadAsUrl;
 		final firstUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url;
@@ -86,90 +215,18 @@ class ThreadRow extends StatelessWidget {
 			else {
 				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + ((latestReplyCount + 1) - latestThread.posts_.length);
 			}
-			unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
 			unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.expand((x) => x.attachments).length ?? 0));
-			replyCountColor = unseenReplyCount <= 0 ? grey : null;
-			imageCountColor = unseenImageCount <= 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
 		}
 		final watch = threadState?.threadWatch;
 		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0);
-		Widget makeCounters() => Container(
-			decoration: BoxDecoration(
-				borderRadius: settings.useFullWidthForCatalogCounters ? null : (settings.imagesOnRight ? const BorderRadius.only(topRight: Radius.circular(8)) : const BorderRadius.only(topLeft: Radius.circular(8))),
-				color: theme.backgroundColor,
-				border:  settings.useFullWidthForCatalogCounters ? Border(
-					top: BorderSide(color: theme.primaryColorWithBrightness(0.2)),
-				) : Border.all(color: theme.primaryColorWithBrightness(0.2))
-			),
-			margin: settings.useFullWidthForCatalogCounters ? EdgeInsets.zero : (settings.imagesOnRight ? const EdgeInsets.only(right: 10) : const EdgeInsets.only(left: 10)),
-			padding: settings.useFullWidthForCatalogCounters ? const EdgeInsets.all(4) : const EdgeInsets.all(2),
-			child: SizedBox(
-				width: settings.useFullWidthForCatalogCounters ? double.infinity : null,
-				height: 20 * settings.textScale,
-				child: FittedBox(
-					alignment: Alignment.centerRight,
-					fit: BoxFit.scaleDown,
-					child: Row(
-						mainAxisSize: MainAxisSize.min,
-						crossAxisAlignment: CrossAxisAlignment.center,
-						children: [
-							const SizedBox(width: 4),
-							if (latestThread.isSticky) ... [
-								Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
-								const SizedBox(width: 4),
-							],
-							if (latestThread.isArchived) ... [
-								Icon(CupertinoIcons.archivebox, color: grey, size: 18),
-								const SizedBox(width: 4),
-							],
-							if (latestThread.isDeleted) ... [
-								Icon(CupertinoIcons.trash, color: grey, size: 18),
-								const SizedBox(width: 4),
-							],
-							if (showPageNumber && latestThread.currentPage != null) ...[
-								Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
-								const SizedBox(width: 2),
-								Text('${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
-								const SizedBox(width: 6)
-							],
-							if (settings.showTimeInCatalogStats) ...[
-								if (settings.showClockIconInCatalog) ...[
-									Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
-									const SizedBox(width: 4),
-								],
-								Text(latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
-								const SizedBox(width: 4),
-							],
-							if (site.isReddit || site.isHackerNews) ...[
-								Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
-								const SizedBox(width: 2),
-								Text(latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
-								const SizedBox(width: 6),
-							],
-							Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
-							const SizedBox(width: 4),
-							if (countsUnreliable && latestThread == thread) const Text('—')
-							else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
-							if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
-							if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
-							const SizedBox(width: 2),
-							if (settings.showImageCountInCatalog && site.showImageCount) ...[
-								const SizedBox(width: 6),
-								Icon(Adaptive.icons.photo, size: 18, color: imageCountColor),
-								const SizedBox(width: 4),
-								if (latestImageCount > unseenImageCount) ...[
-									Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
-									if (unseenImageCount > 0) Text('+$unseenImageCount'),
-								]
-								else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
-								else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
-								const SizedBox(width: 2),
-							]
-						]
-					)
-				)
-			)
+		Widget makeCounters() => ThreadCounters(
+			countsUnreliable: countsUnreliable,
+			imageboard: imageboard,
+			thread: thread,
+			threadState: threadState,
+			showPageNumber: showPageNumber,
+			alignment: Alignment.centerRight
 		);
 		final countersPlaceholder = WidgetSpan(
 			alignment: PlaceholderAlignment.top,

@@ -410,6 +410,7 @@ class SavedTheme {
 			),
 			listTileTheme: ListTileThemeData(
 				iconColor: primaryColor,
+				textColor: primaryColor,
 				selectedTileColor: primaryColorWithBrightness(0.3)
 			),
 			segmentedButtonTheme: SegmentedButtonThemeData(

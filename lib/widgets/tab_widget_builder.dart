@@ -40,7 +40,7 @@ class TabWidgetBuilder extends StatelessWidget {
 		Widget? secondaryIcon;
 		int unseenCount = 0;
 		int unseenYouCount = 0;
-		String? longTitle;
+		String longTitle = '';
 		if (tab.imageboardKey != null) {
 			if (tab.imageboard?.seemsOk == true) {
 				primaryIcon = FittedBox(
@@ -56,9 +56,9 @@ class TabWidgetBuilder extends StatelessWidget {
 					final board = tab.persistence?.getBoard(tab.thread!.board);
 					final thread = threadState.thread ?? tab.imageboard?.site.getThreadFromCatalogCache(threadState.identifier);
 					final attachment = thread?.attachments.tryFirst;
-					longTitle = thread?.title ?? thread?.posts_.tryFirst?.span.buildText().nonEmptyOrNull;
-					if (board != null) {
-						longTitle ??= '${tab.imageboard?.site.formatBoardName(board).replaceFirst(RegExp(r'\/$'), '')}/${tab.thread?.id}';
+					longTitle = (thread?.title ?? thread?.posts_.tryFirst?.span.buildText().nonEmptyOrNull) ?? 'Thread ${tab.thread?.id}';
+					if (board != null && board.icon == null) {
+						longTitle = '${tab.imageboard?.site.formatBoardName(board)}: $longTitle';
 					}
 					if (attachment != null) {
 						secondaryIcon = primaryIcon;
@@ -126,7 +126,7 @@ class TabWidgetBuilder extends StatelessWidget {
 			unseenCount: unseenCount,
 			unseenYouCount: unseenYouCount,
 			shortTitle: shortTitle,
-			longTitle: longTitle ?? shortTitle
+			longTitle: longTitle.isNotEmpty ? longTitle : shortTitle
 		);
 	}
 
