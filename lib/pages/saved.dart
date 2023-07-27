@@ -448,7 +448,15 @@ class _SavedPageState extends State<SavedPage> {
 												}
 												return const <ImageboardScoped<ThreadIdentifier>>[];
 											}).toList(),
-											afterFix: _threadListController.update
+											afterFix: () {
+												_threadListController.state?.forceRebuildId++;
+												_threadListController.update();
+											},
+											onFixAbandonedForThreads: (threadsToDelete) async {
+												for (final thread in threadsToDelete) {
+													await thread.imageboard.persistence.getThreadStateIfExists(thread.item)?.delete();
+												}
+											}
 										)
 									),
 									Divider(
@@ -577,7 +585,15 @@ class _SavedPageState extends State<SavedPage> {
 												}
 												return const <ImageboardScoped<ThreadIdentifier>>[];
 											}).toList(),
-											afterFix: _yourPostsListController.update
+											afterFix: () {
+												_yourPostsListController.state?.forceRebuildId++;
+												_yourPostsListController.update();
+											},
+											onFixAbandonedForThreads: (threadsToDelete) async {
+												for (final thread in threadsToDelete) {
+													await thread.imageboard.persistence.getThreadStateIfExists(thread.item)?.delete();
+												}
+											}
 										)
 									),
 									Divider(
@@ -706,7 +722,18 @@ class _SavedPageState extends State<SavedPage> {
 												}
 												return const <ImageboardScoped<ThreadIdentifier>>[];
 											}).toList(),
-											afterFix: _postListController.update
+											afterFix: () {
+												_postListController.state?.forceRebuildId++;
+												_postListController.update();
+											},
+											onFixAbandonedForThreads: (threadsToDelete) async {
+												for (final thread in threadsToDelete) {
+													final postToDelete = thread.imageboard.persistence.savedPosts.values.tryFirstWhere((p) => p.post.threadIdentifier == thread.item);
+													if (postToDelete != null) {
+														thread.imageboard.persistence.unsavePost(postToDelete.post);
+													}
+												}
+											},
 										)
 									),
 									Divider(
@@ -1141,10 +1168,12 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 class MissingThreadsControls extends StatelessWidget {
 	final List<ImageboardScoped<ThreadIdentifier>> missingThreads;
 	final VoidCallback afterFix;
+	final Future<void> Function(List<ImageboardScoped<ThreadIdentifier>>) onFixAbandonedForThreads;
 
 	const MissingThreadsControls({
 		required this.missingThreads,
 		required this.afterFix,
+		required this.onFixAbandonedForThreads,
 		super.key
 	});
 
@@ -1159,6 +1188,7 @@ class MissingThreadsControls extends StatelessWidget {
 			onPressed: () {
 				modalLoad(context, 'Fetching missing threads', (controller) async {
 					final threads = missingThreads.toList(); // In case it changes
+					final failedThreads = <ImageboardScoped<ThreadIdentifier>>[];
 					int i = 0;
 					for (final thread in threads) {
 						if (controller.cancelled) {
@@ -1195,8 +1225,46 @@ class MissingThreadsControls extends StatelessWidget {
 							final state = thread.imageboard.persistence.getThreadState(thread.item);
 							state.thread = newThread;
 						}
+						else {
+							failedThreads.add(thread);
+						}
 						controller.progress.value = (i + 1) / threads.length;
 						i++;
+					}
+					if (failedThreads.length == threads.length && context.mounted) {
+						// Only failed threads. Ask to just delete them
+						final clearFailed = (await showAdaptiveDialog<bool>(
+							context: context,
+							barrierDismissible: true,
+							builder: (context) => AdaptiveAlertDialog(
+								title: const Text('Missing threads not found'),
+								content: Text('''Some threads could not be re-downloaded.
+
+They were deleted from their original website, and no archives of them could be found.
+
+Would you like to forget about them?
+
+${failedThreads.map((t) => '${t.imageboard.site.name}: ${t.imageboard.site.formatBoardName(t.imageboard.persistence.getBoard(t.item.board)).replaceFirst(RegExp(r'\/$'), '')}/${t.item.id}').join('\n')}'''),
+								actions: [
+									AdaptiveDialogAction(
+										isDestructiveAction: true,
+										onPressed: () {
+											Navigator.of(context).pop(true);
+										},
+										child: const Text('Forget All')
+									),
+									AdaptiveDialogAction(
+										child: const Text('Cancel'),
+										onPressed: () {
+											Navigator.of(context).pop();
+										}
+									)
+								]
+							)
+						)) ?? false;
+						if (clearFailed) {
+							await onFixAbandonedForThreads(failedThreads);
+						}
 					}
 					afterFix();
 				}, cancellable: true);
