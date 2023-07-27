@@ -365,6 +365,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 													child: TabBar(
 														controller: _tabController,
 														indicatorColor: ChanceTheme.primaryColorOf(context),
+														dividerColor: ChanceTheme.primaryColorWithBrightness20Of(context),
 														tabs: panes.map((pane) => Tab(
 															icon: Icon(
 																pane.icon,
