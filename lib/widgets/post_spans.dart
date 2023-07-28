@@ -792,7 +792,7 @@ class PostSpoilerSpan extends PostSpan {
 	const PostSpoilerSpan(this.child, this.id);
 	@override
 	build(context, zone, settings, theme, options) {
-		final showSpoiler = options.imageShareMode || zone.shouldShowSpoiler(id);
+		final showSpoiler = options.imageShareMode || options.showRawSource || zone.shouldShowSpoiler(id);
 		final toggleRecognizer = TapGestureRecognizer()..onTap = () {
 			zone.toggleShowingOfSpoiler(id);
 		};
