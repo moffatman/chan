@@ -1,5 +1,6 @@
 import 'package:chan/models/flag.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -69,7 +70,8 @@ class PassSinceSpan extends TextSpan {
 		required ImageboardSite site
 	}) : super(
 		children: [
-			WidgetSpan(
+			TextualWidgetSpan(
+				text: sinceYear.toString(),
 				child: Row(
 					mainAxisSize: MainAxisSize.min,
 					children: [
