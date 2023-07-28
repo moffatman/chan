@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/services/apple.dart';
