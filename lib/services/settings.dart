@@ -2403,6 +2403,8 @@ class EffectiveSettings extends ChangeNotifier {
 		await _settings.save();
 	}
 
+	static const featureStatusBarWorkaround = false;
+
 	EffectiveSettings() {
 		_settings = Persistence.settings;
 		if (_settings.supportMouse == TristateSystemSetting.b) {

@@ -2968,7 +2968,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						settings.showListPositionIndicatorsOnLeft = newValue;
 					}
 				),
-				if (Platform.isAndroid) ...[
+				if (Platform.isAndroid && EffectiveSettings.featureStatusBarWorkaround) ...[
 					const SizedBox(height: 32),
 					Row(
 						children: [

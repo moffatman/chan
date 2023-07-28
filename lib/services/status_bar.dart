@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -12,14 +13,12 @@ Future<void> showStatusBar() async {
 		await _platform.invokeMethod('showStatusBar');
 	}
 	else {
-		if (Persistence.settings.useStatusBarWorkaround == true) {
+		if (EffectiveSettings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
 			await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 		}
 		else {
 			_guessWorkaround();
-			await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [
-				...SystemUiOverlay.values
-			]);
+			await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 		}
 	}
 }
@@ -29,7 +28,7 @@ Future<void> hideStatusBar() async {
 		await _platform.invokeMethod('hideStatusBar');
 	}
 	else {
-		if (Persistence.settings.useStatusBarWorkaround == true) {
+		if (EffectiveSettings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
 			await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 		}
 		else {

@@ -196,7 +196,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
 			final screenHeight = mediaQueryData.size.height / Persistence.settings.interfaceScale;
 			final screenTopViewPadding = mediaQueryData.viewPadding.top / Persistence.settings.interfaceScale;
-			final gridViewHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : screenTopViewPadding));
+			final gridViewHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((EffectiveSettings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding));
 			final gridViewRowCount = (gridViewHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
 			final gridViewSquareSize = gridViewHeight / gridViewRowCount;
 			final gridViewWidthEstimate = ((widget.attachments.length + 1) / gridViewRowCount).ceil() * gridViewSquareSize;
@@ -501,7 +501,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		final screenHeight = mediaQueryData.size.height / Persistence.settings.interfaceScale;
 		final screenWidth = mediaQueryData.size.width / Persistence.settings.interfaceScale;
 		final screenTopViewPadding = mediaQueryData.viewPadding.top / Persistence.settings.interfaceScale;
-		final maxHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : screenTopViewPadding));
+		final maxHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((EffectiveSettings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding));
 		final maxRowCount = (maxHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
 		final squareSize = maxHeight / maxRowCount;
 		final visibleSquaresPerRow = (screenWidth / squareSize).floor();

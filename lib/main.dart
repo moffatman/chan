@@ -226,7 +226,8 @@ class _ChanAppState extends State<ChanApp> {
 					child: MediaQuery.fromView(
 						view: View.of(context),
 						child: StickyMediaQuery(
-							top: Platform.isIOS,
+							top: true,
+							bottom: Platform.isAndroid, // Look more at it
 							child: Builder(
 								builder: (BuildContext context) {
 									final settings = context.watch<EffectiveSettings>();
