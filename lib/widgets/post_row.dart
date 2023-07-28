@@ -507,7 +507,7 @@ class PostRow extends StatelessWidget {
 						WeakNavigator.push(context, SelectablePostPage(
 							post: latestPost,
 							zone: parentZone,
-							onQuoteText: (text) => context.read<ReplyBoxZone>().onQuoteText(text, fromId: latestPost.id, fromThreadId: latestPost.threadId)
+							onQuoteText: (String text, {required bool includeBacklink}) => context.read<ReplyBoxZone>().onQuoteText(text, fromId: latestPost.id, fromThreadId: latestPost.threadId, includeBacklink: includeBacklink)
 						));
 					}
 				),

@@ -16,7 +16,7 @@ import 'package:share_plus/share_plus.dart';
 class SelectablePostPage extends StatelessWidget {
 	final PostSpanZoneData zone;
 	final Post post;
-	final ValueChanged<String> onQuoteText;
+	final void Function(String, {required bool includeBacklink}) onQuoteText;
 
 	const SelectablePostPage({
 		required this.zone,
@@ -37,6 +37,7 @@ class SelectablePostPage extends StatelessWidget {
 						color: ChanceTheme.backgroundColorOf(context),
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
+							crossAxisAlignment: CrossAxisAlignment.stretch,
 							children: [
 								SelectableText.rich(
 									TextSpan(
@@ -67,12 +68,20 @@ class SelectablePostPage extends StatelessWidget {
 										anchors: editableTextState.contextMenuAnchors,
 										buttonItems: [
 											...editableTextState.contextMenuButtonItems,
-											if (zone.imageboard.site.supportsPosting && zone.findThread(post.threadId)?.isArchived == false) ContextMenuButtonItem(
-												onPressed: () {
-													onQuoteText(editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text));
-												},
-												label: 'Quote in reply'
-											),
+											if (zone.imageboard.site.supportsPosting && zone.findThread(post.threadId)?.isArchived == false) ...[
+												ContextMenuButtonItem(
+													onPressed: () {
+														onQuoteText(editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text), includeBacklink: true);
+													},
+													label: 'Link in reply'
+												),
+												ContextMenuButtonItem(
+													onPressed: () {
+														onQuoteText(editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text), includeBacklink: false);
+													},
+													label: 'Quote in reply'
+												)
+											],
 											ContextMenuButtonItem(
 												onPressed: () {
 													Share.share(
@@ -92,22 +101,41 @@ class SelectablePostPage extends StatelessWidget {
 									),
 								),
 								const SizedBox(height: 16),
-								Align(
-									alignment: Alignment.centerRight,
-									child: AdaptiveFilledButton(
-										onPressed: !zone.imageboard.site.supportsPosting || (zone.findThread(post.threadId)?.isArchived ?? false) ? null : () {
-											onQuoteText(post.span.buildText());
-											WeakNavigator.pop(context);
-										},
-										child: const Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Icon(CupertinoIcons.text_quote),
-												SizedBox(width: 8),
-												Text('Quote all')
-											]
+								Wrap(
+									runAlignment: WrapAlignment.end,
+									alignment: WrapAlignment.end,
+									spacing: 16,
+									runSpacing: 16,
+									children: [
+										AdaptiveFilledButton(
+											onPressed: !zone.imageboard.site.supportsPosting || (zone.findThread(post.threadId)?.isArchived ?? false) ? null : () {
+												onQuoteText(post.span.buildText(), includeBacklink: true);
+												WeakNavigator.pop(context);
+											},
+											child: const Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(CupertinoIcons.chevron_right_2),
+													SizedBox(width: 8),
+													Text('Link all')
+												]
+											)
+										),
+										AdaptiveFilledButton(
+											onPressed: !zone.imageboard.site.supportsPosting || (zone.findThread(post.threadId)?.isArchived ?? false) ? null : () {
+												onQuoteText(post.span.buildText(), includeBacklink: false);
+												WeakNavigator.pop(context);
+											},
+											child: const Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(CupertinoIcons.text_quote),
+													SizedBox(width: 8),
+													Text('Quote all')
+												]
+											)
 										)
-									)
+									]
 								)
 							]
 						)

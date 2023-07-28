@@ -1043,12 +1043,12 @@ class _ThreadPageState extends State<ThreadPage> {
 										_replyBoxKey.currentState?.onTapPostId(threadId, id);
 									}
 								},
-								onQuoteText: (String text, {required int fromId, required int fromThreadId}) {
+								onQuoteText: (String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
 									if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-										_popOutReplyBox((state) => state.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId));
+										_popOutReplyBox((state) => state.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink));
 									}
 									else {
-										_replyBoxKey.currentState?.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId);
+										_replyBoxKey.currentState?.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink);
 									}
 								}
 							)

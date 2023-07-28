@@ -53,7 +53,7 @@ const _captchaContributionServer = 'https://captcha.chance.surf';
 class ReplyBoxZone {
 	final void Function(int threadId, int id) onTapPostId;
 
-	final void Function(String text, {required int fromId, required int fromThreadId}) onQuoteText;
+	final void Function(String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) onQuoteText;
 
 	const ReplyBoxZone({
 		required this.onTapPostId,
@@ -343,7 +343,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	void onQuoteText(String text, {required int fromId, required int fromThreadId}) {
+	void onQuoteText(String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
 		if (!widget.isArchived && (context.read<ImageboardSite?>()?.supportsPosting ?? false)) {
 			if (fromThreadId != widget.threadId) {
 				showToast(
@@ -353,7 +353,9 @@ class ReplyBoxState extends State<ReplyBox> {
 				);
 			}
 			showReplyBox();
-			_insertText('>>$fromId');
+			if (includeBacklink) {
+				_insertText('>>$fromId');
+			}
 			_insertText('>${text.replaceAll('\n', '\n>')}');
 		}
 	}
