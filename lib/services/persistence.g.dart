@@ -90,13 +90,15 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..primarySubtreeParents =
           fields[21] == null ? {} : (fields[21] as Map).cast<int, int>()
       ..firstVisiblePostId = fields[23] as int?
-      ..firstVisiblePostAlignment = fields[25] as double?;
+      ..firstVisiblePostAlignment = fields[25] as double?
+      ..overrideShowPostIds =
+          fields[28] == null ? [] : (fields[28] as List).cast<int>();
   }
 
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(27)
+      ..writeByte(28)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -147,6 +149,8 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..write(obj.postSortingMethod)
       ..writeByte(27)
       ..write(obj.postIdsToStartRepliesAtBottom)
+      ..writeByte(28)
+      ..write(obj.overrideShowPostIds)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)
@@ -358,13 +362,17 @@ class PersistentBrowserStateAdapter
       useCatalogGrid: fields[21] as bool?,
       useCatalogGridPerBoard:
           fields[22] == null ? {} : (fields[22] as Map).cast<String, bool>(),
+      overrideShowIds: fields[25] == null
+          ? {}
+          : (fields[25] as Map).map((dynamic k, dynamic v) =>
+              MapEntry(k as String, (v as List).cast<int>())),
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(21)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -406,7 +414,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(23)
       ..write(obj.threadWatches)
       ..writeByte(24)
-      ..write(obj.treeModeRepliesToOPAreTopLevel);
+      ..write(obj.treeModeRepliesToOPAreTopLevel)
+      ..writeByte(25)
+      ..write(obj.overrideShowIds);
   }
 
   @override

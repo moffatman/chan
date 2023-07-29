@@ -839,6 +839,18 @@ class _Divider<T extends Object> extends StatelessWidget {
 	}
 }
 
+class RefreshableListFilterReason {
+	final String reason;
+	const RefreshableListFilterReason(this.reason);
+
+	@override
+	bool operator == (Object other) =>
+		other is RefreshableListFilterReason &&
+		other.reason == reason;
+	@override
+	int get hashCode => reason.hashCode;
+}
+
 class RefreshableList<T extends Object> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
 	final Widget Function({
@@ -2141,8 +2153,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														delegate: SliverDontRebuildChildBuilderDelegate(
 															(context, i) => Stack(
 																children: [
-																	Builder(
-																		builder: (context) => _itemBuilder(context, filteredValues[i])
+																	Provider.value(
+																		value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
+																		builder: (context, _) => _itemBuilder(context, filteredValues[i])
 																	),
 																	Align(
 																		alignment: Alignment.topRight,
@@ -2200,8 +2213,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																		Container(
 																			color: theme.primaryColorWithBrightness(0.5),
 																			padding: const EdgeInsets.all(8),
-																			child: Builder(
-																				builder: (context) => _itemBuilder(context, filteredValues[childIndex])
+																			child: Provider.value(
+																				value: RefreshableListFilterReason(filteredValues[childIndex].filterReason ?? 'Unknown'),
+																				builder: (context, _) => _itemBuilder(context, filteredValues[childIndex])
 																			)
 																		)
 																	]

@@ -63,11 +63,11 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 								setState(() {});
 							}
 						),
-						if (browserState.isThreadHidden(thread.board, thread.id)) ContextMenuAction(
+						if (browserState.getThreadHiding(thread.identifier) ?? false) ContextMenuAction(
 							child: const Text('Unhide thread'),
 							trailingIcon: CupertinoIcons.eye_slash_fill,
 							onPressed: () {
-								browserState.unHideThread(thread.board, thread.id);
+								browserState.setThreadHiding(thread.identifier, null);
 								persistence.didUpdateBrowserState();
 								setState(() {});
 							}
@@ -76,7 +76,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 							child: const Text('Hide thread'),
 							trailingIcon: CupertinoIcons.eye_slash,
 							onPressed: () {
-								browserState.hideThread(thread.board, thread.id);
+								browserState.setThreadHiding(thread.identifier, true);
 								persistence.didUpdateBrowserState();
 								setState(() {});
 							}

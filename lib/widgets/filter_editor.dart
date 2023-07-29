@@ -403,6 +403,9 @@ class _FilterEditorState extends State<FilterEditor> {
 															notify = false;
 															collapse = false;
 														}
+														else {
+															hide = false;
+														}
 														setInnerState(() {});
 													}
 												)
@@ -426,7 +429,9 @@ class _FilterEditorState extends State<FilterEditor> {
 												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 												onTap: () {
 													t.$3(!t.$2);
-													hide = !(highlight || pinToTop || autoSave || notify || collapse);
+													if (highlight || pinToTop || autoSave || notify || collapse) {
+														hide = false;
+													}
 													setInnerState(() {});
 												},
 											)).toList()
@@ -501,7 +506,8 @@ class _FilterEditorState extends State<FilterEditor> {
 													'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
 													'Add `i` after the regex to make it case-insensitive\n'
 													'Example: `/sneed/i` will match `SNEED`\n'
-													'You can write text before the opening slash to give the filter a label: `Funposting/bane/i`'
+													'You can write text before the opening slash to give the filter a label: `Funposting/bane/i`\n'
+													'The first filter in the list to match an item will take precedence over other matching filters\n'
 													'\n'
 													'Qualifiers may be added after the regex:\n'
 													'`;boards:<list>` Only apply on certain boards\n'
@@ -512,6 +518,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'`;save` Send a push notification (if enabled) for matches\n'
 													'`;notify` Automatically save matching threads\n'
 													'`;collapse` Automatically collapse matching posts in tree mode\n'
+													'`;show` Show matches (use it to override later filters)\n'
 													'`;file:only` Only apply to posts with files\n'
 													'`;file:no` Only apply to posts without files\n'
 													'`;thread` Only apply to threads\n'
@@ -573,6 +580,7 @@ class _FilterEditorState extends State<FilterEditor> {
 				children: [
 					...filters.entries.map((filter) {
 						final icons = [
+							if (filter.value.outputType == FilterResultType.empty) const Icon(CupertinoIcons.eye),
 							if (filter.value.outputType.hide) const Icon(CupertinoIcons.eye_slash),
 							if (filter.value.outputType.highlight) const Icon(CupertinoIcons.sun_max_fill),
 							if (filter.value.outputType.pinToTop) const Icon(CupertinoIcons.arrow_up_to_line),

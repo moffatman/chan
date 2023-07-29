@@ -1,11 +1,13 @@
 import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/pages/posts.dart';
@@ -13,6 +15,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/slider_builder.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/reply_box.dart';
@@ -27,6 +30,123 @@ import 'package:chan/models/attachment.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/util.dart';
+
+class _PostHidingDialog extends StatefulWidget {
+	final Post post;
+	final PersistentThreadState threadState;
+	final RefreshableListFilterReason? listFilterReason;
+
+	const _PostHidingDialog({
+		required this.post,
+		required this.threadState,
+		required this.listFilterReason
+	});
+
+	@override
+	createState() => _PostHidingDialogState();
+}
+
+class _PostHidingDialogState extends State<_PostHidingDialog> {
+	@override
+	Widget build(BuildContext context) {
+		return AdaptiveAlertDialog(
+			title: const Text('Post Hiding'),
+			content: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					const SizedBox(height: 16),
+					if (widget.listFilterReason != null) ...[
+						Text('This post has been filtered by another source:\n${widget.listFilterReason?.reason}\n\nYou can override that by setting "manual control" to "Show" below.'),
+						const SizedBox(height: 16)
+					],
+					const Text('Manual control', style: TextStyle(fontSize: 17)),
+					const SizedBox(height: 8),
+					AdaptiveChoiceControl<PostHidingState>(
+						knownWidth: 100,
+						children: const {
+							PostHidingState.none: (null, 'None'),
+							PostHidingState.shown: (null, 'Show'),
+							PostHidingState.hidden: (null, 'Hide'),
+							PostHidingState.treeHidden: (null, 'Hide with replies')
+						},
+						groupValue: widget.threadState.getPostHiding(widget.post.id),
+						onValueChanged: (newState) {
+							widget.threadState.setPostHiding(widget.post.id, newState);
+							widget.threadState.save();
+							setState(() {});
+						},
+					),
+					if (widget.post.posterId != null) Padding(
+						padding: const EdgeInsets.all(16),
+						child: Row(
+							children: [
+								Expanded(
+									child: RichText(text: TextSpan(
+										children: [
+											const TextSpan(text: 'Hide from ', style: TextStyle(fontSize: 17)),
+											IDSpan(id: widget.post.posterId!, onPressed: null)
+										]
+									))
+								),
+								Checkbox.adaptive(
+									value: widget.threadState.hiddenPosterIds.contains(widget.post.posterId),
+									onChanged: (value) {
+										if (value!) {
+											widget.threadState.hidePosterId(widget.post.posterId!);
+											widget.threadState.save();
+										}
+										else {
+											widget.threadState.unHidePosterId(widget.post.posterId!);
+											widget.threadState.save();
+										}
+										setState(() {});
+									}
+								)
+							]
+						)
+					),
+					if (widget.post.attachments.isNotEmpty) ...[
+						const SizedBox(height: 16),
+						const Text('Hide by image', style: TextStyle(fontSize: 17))
+					],
+					for (final attachment in widget.post.attachments) Padding(
+						padding: const EdgeInsets.all(8),
+						child: Row(
+							mainAxisAlignment: MainAxisAlignment.spaceBetween,
+							children: [
+								AttachmentThumbnail(
+									attachment: attachment,
+									width: 75,
+									height: 75,
+								),
+								Checkbox.adaptive(
+									value: context.select<EffectiveSettings, bool>((p) => p.isMD5Hidden(attachment.md5)),
+									onChanged: attachment.md5.isEmpty ? null : (value) {
+										if (value!) {
+											context.read<EffectiveSettings>().hideByMD5(attachment.md5);
+										}
+										else {
+											context.read<EffectiveSettings>().unHideByMD5(attachment.md5);
+										}
+										context.read<EffectiveSettings>().didUpdateHiddenMD5s();
+										widget.threadState.save();
+										setState(() {});
+									}
+								)
+							]
+						)
+					)
+				]
+			),
+			actions: [
+				AdaptiveDialogAction(
+					child: const Text('Close'),
+					onPressed: () => Navigator.pop(context)
+				)
+			],
+		);
+	}
+}
 
 class PostRow extends StatelessWidget {
 	final Post post;
@@ -142,6 +262,16 @@ class PostRow extends StatelessWidget {
 			highlight ?
 				theme.primaryColor.withOpacity(settings.newPostHighlightBrightness) :
 				Colors.transparent;
+		final listFilterReason = context.watch<RefreshableListFilterReason?>();
+		final isPostHiddenByThreadState = switch(parentZoneThreadState?.getPostHiding(latestPost.id)) {
+			PostHidingState.shown => false,
+			PostHidingState.hidden || PostHidingState.treeHidden => true,
+			_ => null
+		} ?? (
+			(parentZoneThreadState?.hiddenPosterIds.contains(latestPost.posterId) ?? false) ||
+			settings.areMD5sHidden(latestPost.md5s)
+		);
+		final isPostHidden = isPostHiddenByThreadState || listFilterReason != null;
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
@@ -556,98 +686,43 @@ class PostRow extends StatelessWidget {
 							}
 						)
 					else ContextMenuAction(
-							child: const Text('Mark as You'),
-							trailingIcon: CupertinoIcons.person_badge_plus,
-							onPressed: () async {
-								parentZoneThreadState.postsMarkedAsYou.add(latestPost.id);
-								parentZoneThreadState.didUpdateYourPosts();
-								if (site.supportsPushNotifications) {
-									await promptForPushNotificationsIfNeeded(context);
-								}
-								notifications.subscribeToThread(
-									thread: parentZoneThreadState.identifier,
-									lastSeenId: parentZoneThreadState.thread?.posts.last.id ?? latestPost.id,
-									localYousOnly: parentZoneThreadState.threadWatch?.localYousOnly ?? true,
-									pushYousOnly: parentZoneThreadState.threadWatch?.localYousOnly ?? true,
-									push: true,
-									youIds: parentZoneThreadState.freshYouIds()
-								);
-								parentZoneThreadState.save();
+						child: const Text('Mark as You'),
+						trailingIcon: CupertinoIcons.person_badge_plus,
+						onPressed: () async {
+							parentZoneThreadState.postsMarkedAsYou.add(latestPost.id);
+							parentZoneThreadState.didUpdateYourPosts();
+							if (site.supportsPushNotifications) {
+								await promptForPushNotificationsIfNeeded(context);
 							}
-						),
-					if (parentZoneThreadState.hiddenPostIds.contains(latestPost.id)) ContextMenuAction(
-						child: const Text('Unhide post'),
-						trailingIcon: CupertinoIcons.eye_slash_fill,
-						onPressed: () {
-							parentZoneThreadState.unHidePost(latestPost.id);
-							parentZoneThreadState.save();
-						}
-					)
-					else ...[
-						ContextMenuAction(
-							child: const Text('Hide post'),
-							trailingIcon: CupertinoIcons.eye_slash,
-							onPressed: () {
-								parentZoneThreadState.hidePost(latestPost.id);
-								parentZoneThreadState.save();
-							}
-						),
-						ContextMenuAction(
-							child: const Text('Hide post and replies'),
-							trailingIcon: CupertinoIcons.eye_slash,
-							onPressed: () {
-								parentZoneThreadState.hidePost(latestPost.id, tree: true);
-								parentZoneThreadState.save();
-							}
-						),
-					],
-					if (latestPost.posterId != null && parentZoneThreadState.hiddenPosterIds.contains(latestPost.posterId)) ContextMenuAction(
-						child: RichText(text: TextSpan(
-							children: [
-								const TextSpan(text: 'Unhide from '),
-								IDSpan(id: latestPost.posterId!, onPressed: null)
-							]
-						)),
-						trailingIcon: CupertinoIcons.eye_slash_fill,
-						onPressed: () {
-							parentZoneThreadState.unHidePosterId(latestPost.posterId!);
-							parentZoneThreadState.save();
-						}
-					)
-					else if (latestPost.posterId != null) ContextMenuAction(
-						child: RichText(text: TextSpan(
-							children: [
-								const TextSpan(text: 'Hide from '),
-								IDSpan(id: latestPost.posterId!, onPressed: null)
-							]
-						)),
-						trailingIcon: CupertinoIcons.eye_slash,
-						onPressed: () {
-							parentZoneThreadState.hidePosterId(latestPost.posterId!);
+							notifications.subscribeToThread(
+								thread: parentZoneThreadState.identifier,
+								lastSeenId: parentZoneThreadState.thread?.posts.last.id ?? latestPost.id,
+								localYousOnly: parentZoneThreadState.threadWatch?.localYousOnly ?? true,
+								pushYousOnly: parentZoneThreadState.threadWatch?.localYousOnly ?? true,
+								push: true,
+								youIds: parentZoneThreadState.freshYouIds()
+							);
 							parentZoneThreadState.save();
 						}
 					),
-					if (context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden(latestPost.md5s))) ContextMenuAction(
-						child: Text('Unhide by image${latestPost.attachments.length != 1 ? 's' : ''}'),
-						trailingIcon: CupertinoIcons.eye_slash_fill,
+					ContextMenuAction(
+						child: isPostHidden ? const Text('Unhide...') : const Text('Hide...'),
+						trailingIcon: isPostHidden ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
 						onPressed: () {
-							context.read<EffectiveSettings>().unHideByMD5s(latestPost.md5s);
-							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
-							parentZoneThreadState.save();
-						}
-					)
-					else if (latestPost.attachments.isNotEmpty) ContextMenuAction(
-						child: const Text('Hide by image'),
-						trailingIcon: CupertinoIcons.eye_slash,
-						onPressed: () async {
-							final settings = context.read<EffectiveSettings>();
-							final attachment = await whichAttachment(context, latestPost.attachments);
-							if (attachment == null) {
-								return;
-							}
-							settings.hideByMD5(attachment.md5);
-							settings.didUpdateHiddenMD5s();
-							parentZoneThreadState.save();
+							final imageboard = context.read<Imageboard>();
+							showAdaptiveDialog(
+								barrierDismissible: true,
+								context: context,
+								builder: (context) => ImageboardScope(
+									imageboardKey: null,
+									imageboard: imageboard,
+									child: _PostHidingDialog(
+										post: latestPost,
+										threadState: parentZoneThreadState,
+										listFilterReason: isPostHiddenByThreadState ? null : listFilterReason
+									)
+								)
+							);
 						}
 					)
 				],

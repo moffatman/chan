@@ -23,6 +23,8 @@ class FilterResultType {
 		this.collapse = false
 	});
 
+	static const FilterResultType empty = FilterResultType();
+
 	@override
 	String toString() => 'FilterResultType(${[
 		if (hide) 'hide',
@@ -32,6 +34,19 @@ class FilterResultType {
 		if (notify) 'notify',
 		if (collapse) 'collapse'
 	].join(', ')})';
+
+	@override
+	bool operator == (Object other) =>
+		other is FilterResultType &&
+		other.hide == hide &&
+		other.highlight == highlight &&
+		other.pinToTop == pinToTop &&
+		other.autoSave == autoSave &&
+		other.notify == notify &&
+		other.collapse == collapse;
+
+	@override
+	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, notify, collapse);
 }
 
 class FilterResult {
@@ -234,6 +249,9 @@ class CustomFilter implements Filter {
 				collapse = true;
 				hide = false;
 			}
+			else if (s == 'show') {
+				hide = false;
+			}
 			else if (s.startsWith('type:')) {
 				filter.patternFields = s.split(separator).skip(1).toList();
 			}
@@ -316,6 +334,10 @@ class CustomFilter implements Filter {
 		if (outputType.collapse) {
 			out.write(';collapse');
 		}
+		if (outputType == FilterResultType.empty) {
+			// Kind of a dummy filter, just used to override others
+			out.write(';show');
+		}
 		if (patternFields.isNotEmpty && !setEquals(patternFields.toSet(), defaultPatternFields.toSet())) {
 			out.write(';type:${patternFields.join(',')}');
 		}
@@ -360,12 +382,19 @@ class CustomFilter implements Filter {
 }
 
 class IDFilter implements Filter {
-	final List<int> ids;
-	IDFilter(this.ids);
+	final List<int> hideIds;
+	final List<int> showIds;
+	IDFilter({
+		required this.hideIds,
+		required this.showIds
+  });
 	@override
 	FilterResult? filter(Filterable item) {
-		if (ids.contains(item.id)) {
+		if (hideIds.contains(item.id)) {
 			return FilterResult(const FilterResultType(hide: true), 'Manually hidden');
+		}
+		else if (showIds.contains(item.id)) {
+			return FilterResult(FilterResultType.empty, 'Manually shown');
 		}
 		else {
 			return null;
@@ -373,24 +402,33 @@ class IDFilter implements Filter {
 	}
 
 	@override
-	String toString() => 'IDFilter(ids: $ids)';
+	String toString() => 'IDFilter(hideIds: $hideIds, showIds: $showIds)';
 
 	@override
-	operator == (dynamic other) => other is IDFilter && listEquals(other.ids, ids);
+	operator == (Object other) => other is IDFilter && listEquals(other.hideIds, hideIds) && listEquals(other.showIds, showIds);
 
 	@override
-	int get hashCode => ids.hashCode;
+	int get hashCode => Object.hash(hideIds, showIds);
 }
 
 class ThreadFilter implements Filter {
-	final List<int> ids;
+	final List<int> hideIds;
+	final List<int> showIds;
 	final List<int> repliedToIds;
 	final List<String> posterIds;
-	ThreadFilter(this.ids, this.repliedToIds, this.posterIds);
+	ThreadFilter({
+		required this.hideIds,
+		required this.showIds,
+		required this.repliedToIds,
+		required this.posterIds
+	});
 	@override
 	FilterResult? filter(Filterable item) {
-		if (ids.contains(item.id)) {
+		if (hideIds.contains(item.id)) {
 			return FilterResult(const FilterResultType(hide: true), 'Manually hidden');
+		}
+		else if (showIds.contains(item.id)) {
+			return FilterResult(FilterResultType.empty, 'Manually shown');
 		}
 		else if (repliedToIds.any(item.repliedToIds.contains)) {
 			return FilterResult(const FilterResultType(hide: true), 'Replied to manually hidden');
@@ -404,13 +442,13 @@ class ThreadFilter implements Filter {
 	}
 
 	@override
-	String toString() => 'ThreadFilter(ids: $ids, repliedToIds: $repliedToIds, posterIds: $posterIds)';
+	String toString() => 'ThreadFilter(hideIds: $hideIds, showIds: $showIds, repliedToIds: $repliedToIds, posterIds: $posterIds)';
 
 	@override
-	operator == (dynamic other) => other is ThreadFilter && listEquals(other.ids, ids) && listEquals(other.repliedToIds, repliedToIds) && listEquals(other.posterIds, posterIds);
+	operator == (dynamic other) => other is ThreadFilter && listEquals(other.hideIds, hideIds) && listEquals(other.showIds, showIds) && listEquals(other.repliedToIds, repliedToIds) && listEquals(other.posterIds, posterIds);
 
 	@override
-	int get hashCode => ids.hashCode;
+	int get hashCode => Object.hash(hideIds, showIds, repliedToIds, posterIds);
 }
 
 class MD5Filter implements Filter {

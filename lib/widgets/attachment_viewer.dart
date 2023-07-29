@@ -1253,7 +1253,7 @@ class AttachmentViewer extends StatelessWidget {
 						trailingIcon: a.trailingIcon,
 						child: a.child,
 					)),
-					if (context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden([attachment.md5]))) ContextMenuAction(
+					if (context.select<EffectiveSettings, bool>((p) => p.isMD5Hidden(attachment.md5))) ContextMenuAction(
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
 							context.read<EffectiveSettings>().unHideByMD5s([attachment.md5]);

@@ -19,6 +19,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -43,6 +44,105 @@ enum _ThreadSortingMethodScope {
 	global,
 	board,
 	tab
+}
+
+class _ThreadHidingDialog extends StatefulWidget {
+	final Thread thread;
+	final RefreshableListFilterReason? listFilterReason;
+
+	const _ThreadHidingDialog({
+		required this.thread,
+		required this.listFilterReason
+	});
+
+	@override
+	createState() => _ThreadHidingDialogState();
+}
+
+class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
+	@override
+	Widget build(BuildContext context) {
+		final imageboard = context.watch<Imageboard>();
+		final settings = context.watch<EffectiveSettings>();
+		return AdaptiveAlertDialog(
+			title: const Text('Thread Hiding'),
+			content: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					const SizedBox(height: 16),
+					if (widget.listFilterReason != null) ...[
+						Text('This thread has been filtered by another source:\n${widget.listFilterReason?.reason}\n\nYou can override that by setting "manual control" to "Show" below.'),
+						const SizedBox(height: 16)
+					],
+					const Text('Manual control', style: TextStyle(fontSize: 17)),
+					const SizedBox(height: 8),
+					AdaptiveChoiceControl<NullSafeOptional>(
+						knownWidth: 100,
+						children: const {
+							NullSafeOptional.null_: (null, 'None'),
+							NullSafeOptional.false_: (null, 'Show'),
+							NullSafeOptional.true_: (null, 'Hide'),
+						},
+						groupValue: imageboard.persistence.browserState.getThreadHiding(widget.thread.identifier).value,
+						onValueChanged: (newState) {
+							imageboard.persistence.browserState.setThreadHiding(widget.thread.identifier, newState.value);
+							imageboard.persistence.didUpdateBrowserState();
+							setState(() {});
+						},
+					),
+					if (widget.thread.attachments.isNotEmpty)
+						if (!settings.applyImageFilterToThreads) ...[
+							const SizedBox(height: 16),
+							const Text('Hiding by image in the catalog is disabled'),
+							const SizedBox(height: 8),
+							AdaptiveFilledButton(
+								padding: const EdgeInsets.all(16),
+								child: const Text('Enable'),
+								onPressed: () {
+									settings.applyImageFilterToThreads = true;
+								}
+							)
+						]
+						else ...[
+							const SizedBox(height: 16),
+							const Text('Hide by image', style: TextStyle(fontSize: 17)),
+							for (final attachment in widget.thread.attachments) Padding(
+								padding: const EdgeInsets.all(8),
+								child: Row(
+									mainAxisAlignment: MainAxisAlignment.spaceBetween,
+									children: [
+										AttachmentThumbnail(
+											attachment: attachment,
+											width: 75,
+											height: 75,
+										),
+										Checkbox.adaptive(
+											value: context.select<EffectiveSettings, bool>((p) => p.isMD5Hidden(attachment.md5)),
+											onChanged: attachment.md5.isEmpty ? null : (value) {
+												if (value!) {
+													context.read<EffectiveSettings>().hideByMD5(attachment.md5);
+												}
+												else {
+													context.read<EffectiveSettings>().unHideByMD5(attachment.md5);
+												}
+												context.read<EffectiveSettings>().didUpdateHiddenMD5s();
+												setState(() {});
+											}
+										)
+									]
+								)
+							)
+						]
+				]
+			),
+			actions: [
+				AdaptiveDialogAction(
+					child: const Text('Close'),
+					onPressed: () => Navigator.pop(context)
+				)
+			],
+		);
+	}
 }
 
 class BoardPage extends StatefulWidget {
@@ -365,9 +465,12 @@ class _BoardPageState extends State<BoardPage> {
 		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.name] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
-			final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
+			final isThreadHidden = context.select<Persistence, bool?>((p) => p.browserState.getThreadHiding(thread.identifier));
 			final isImageHidden = context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden(thread.md5s));
 			final isSelected = widget.isThreadSelected?.call(context, thread.identifier) ?? false;
+			final listFilterReason = context.watch<RefreshableListFilterReason?>();
+			final isThreadHiddenByIdOrMD5s = isThreadHidden ?? isImageHidden;
+			final isHidden = isThreadHiddenByIdOrMD5s || listFilterReason != null;
 			return ContextMenu(
 				actions: [
 					if (openInNewTabZone != null) ...[
@@ -409,40 +512,23 @@ class _BoardPageState extends State<BoardPage> {
 							setState(() {});
 						}
 					),
-					if (isThreadHidden) ContextMenuAction(
-						child: const Text('Unhide thread'),
-						trailingIcon: CupertinoIcons.eye_slash_fill,
+					ContextMenuAction(
+						child: isHidden ? const Text('Unhide...') : const Text('Hide...'),
+						trailingIcon: isHidden ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
 						onPressed: () {
-							context.read<Persistence>().browserState.unHideThread(thread.board, thread.id);
-							context.read<Persistence>().didUpdateBrowserState();
-							setState(() {});
-						}
-					)
-					else ContextMenuAction(
-						child: const Text('Hide thread'),
-						trailingIcon: CupertinoIcons.eye_slash,
-						onPressed: () {
-							context.read<Persistence>().browserState.hideThread(thread.board, thread.id);
-							context.read<Persistence>().didUpdateBrowserState();
-							setState(() {});
-						}
-					),
-					if (isImageHidden) ContextMenuAction(
-						child: const Text('Unhide by image'),
-						trailingIcon: CupertinoIcons.eye_slash_fill,
-						onPressed: () {
-							context.read<EffectiveSettings>().unHideByMD5s(thread.md5s);
-							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
-							setState(() {});
-						}
-					)
-					else if (thread.attachments.isNotEmpty) ContextMenuAction(
-						child: const Text('Hide by image'),
-						trailingIcon: CupertinoIcons.eye_slash,
-						onPressed: () {
-							thread.md5s.forEach(context.read<EffectiveSettings>().hideByMD5);
-							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
-							setState(() {});
+							final imageboard = context.read<Imageboard>();
+							showAdaptiveDialog(
+								barrierDismissible: true,
+								context: context,
+								builder: (context) => ImageboardScope(
+									imageboardKey: null,
+									imageboard: imageboard,
+									child: _ThreadHidingDialog(
+										thread: thread,
+										listFilterReason: isThreadHiddenByIdOrMD5s ? null : listFilterReason
+									)
+								)
+							);
 						}
 					),
 					...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments)),

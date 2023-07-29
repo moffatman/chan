@@ -2384,9 +2384,18 @@ class EffectiveSettings extends ChangeNotifier {
 		return md5s.any(_settings.hiddenImageMD5s.contains);
 	}
 
+	bool isMD5Hidden(String md5) {
+		return _settings.hiddenImageMD5s.contains(md5);
+	}
+
 	late Filter imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
 	void hideByMD5(String md5) {
 		_settings.hiddenImageMD5s.add(md5);
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
+	}
+
+	void unHideByMD5(String md5) {
+		_settings.hiddenImageMD5s.remove(md5);
 		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
 	}
 

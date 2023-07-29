@@ -592,7 +592,8 @@ class Persistence extends ChangeNotifier {
 			deprecatedBoardReverseSortings: {},
 			catalogVariants: {},
 			postingNames: {},
-			useCatalogGridPerBoard: {}
+			useCatalogGridPerBoard: {},
+			overrideShowIds: {}
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey) != null) {
 			print('Migrating tabs');
@@ -866,6 +867,13 @@ class PersistentRecentSearches {
 	PersistentRecentSearches();
 }
 
+enum PostHidingState {
+	none,
+	shown,
+	hidden,
+	treeHidden;
+}
+
 @HiveType(typeId: 3)
 class PersistentThreadState extends EasyListenable with HiveObjectMixin implements Filterable {
 	@HiveField(0)
@@ -923,6 +931,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	PostSortingMethod postSortingMethod;
 	@HiveField(27)
 	final EfficientlyStoredIntSet postIdsToStartRepliesAtBottom;
+	@HiveField(28, defaultValue: [])
+	List<int> overrideShowPostIds = [];
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -1042,34 +1052,71 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	@override
 	Iterable<String> get md5s => thread?.md5s ?? [];
 
-	late Filter threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
-	void hidePost(int id, {bool tree = false}) {
-		hiddenPostIds.add(id);
-		if (tree) {
-			treeHiddenPostIds.add(id);
+	Filter get _makeThreadFilter => FilterCache(ThreadFilter(
+		hideIds: hiddenPostIds,
+		showIds: overrideShowPostIds,
+		repliedToIds: treeHiddenPostIds,
+		posterIds: hiddenPosterIds
+	));
+	late Filter threadFilter = _makeThreadFilter;
+	void setPostHiding(int id, PostHidingState state) {
+		switch (state) {
+			case PostHidingState.none:
+				hiddenPostIds.remove(id);
+				treeHiddenPostIds.remove(id);
+				overrideShowPostIds.remove(id);
+				break;
+			case PostHidingState.shown:
+				hiddenPostIds.remove(id);
+				treeHiddenPostIds.remove(id);
+				if (!overrideShowPostIds.contains(id)) {
+					overrideShowPostIds.add(id);
+				}
+				break;
+			case PostHidingState.hidden:
+				if (!hiddenPostIds.contains(id)) {
+					hiddenPostIds.add(id);
+				}
+				treeHiddenPostIds.remove(id);
+				overrideShowPostIds.remove(id);
+				break;
+			case PostHidingState.treeHidden:
+				if (!hiddenPostIds.contains(id)) {
+					hiddenPostIds.add(id);
+				}
+				if (!treeHiddenPostIds.contains(id)) {
+					treeHiddenPostIds.add(id);
+				}
+				overrideShowPostIds.remove(id);
+				break;
 		}
 		// invalidate cache
-		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+		threadFilter = _makeThreadFilter;
 		_invalidate();
 	}
-	void unHidePost(int id) {
-		hiddenPostIds.remove(id);
-		treeHiddenPostIds.remove(id);
-		// invalidate cache
-		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
-		_invalidate();
+	PostHidingState getPostHiding(int id) {
+		if (treeHiddenPostIds.contains(id)) {
+			return PostHidingState.treeHidden;
+		}
+		else if (hiddenPostIds.contains(id)) {
+			return PostHidingState.hidden;
+		}
+		else if (overrideShowPostIds.contains(id)) {
+			return PostHidingState.shown;
+		}
+		return PostHidingState.none;
 	}
 
 	void hidePosterId(String id) {
 		hiddenPosterIds.add(id);
 		// invalidate cache
-		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+		threadFilter = _makeThreadFilter;
 		_invalidate();
 	}
 	void unHidePosterId(String id) {
 		hiddenPosterIds.remove(id);
 		// invalidate cache
-		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+		threadFilter = _makeThreadFilter;
 		_invalidate();
 	}
 
@@ -1283,6 +1330,8 @@ class PersistentBrowserState {
 	Map<ThreadIdentifier, ThreadWatch> threadWatches;
 	@HiveField(24, defaultValue: true)
 	bool treeModeRepliesToOPAreTopLevel;
+	@HiveField(25, defaultValue: {})
+	final Map<String, List<int>> overrideShowIds;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1305,26 +1354,47 @@ class PersistentBrowserState {
 		this.treeModeCollapsedPostsShowBody = false,
 		this.treeModeRepliesToOPAreTopLevel = true,
 		this.useCatalogGrid,
-		required this.useCatalogGridPerBoard
+		required this.useCatalogGridPerBoard,
+		required this.overrideShowIds
 	}) : deprecatedHiddenImageMD5s = deprecatedHiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
 	Filter getCatalogFilter(String board) {
-		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(hiddenIds[board] ?? [])));
+		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(
+			hideIds: hiddenIds[board] ?? [],
+			showIds: overrideShowIds[board] ?? []
+		)));
 	}
 	
-	bool isThreadHidden(String board, int id) {
-		return hiddenIds[board]?.contains(id) ?? false;
+	bool? getThreadHiding(ThreadIdentifier thread) {
+		if (overrideShowIds[thread.board]?.contains(thread.id) ?? false) {
+			return false;
+		}
+		return hiddenIds[thread.board]?.contains(thread.id);
 	}
 
-	void hideThread(String board, int id) {
-		_catalogFilters.remove(board);
-		hiddenIds.putIfAbsent(board, () => []).add(id);
-	}
-
-	void unHideThread(String board, int id) {
-		_catalogFilters.remove(board);
-		hiddenIds[board]?.remove(id);
+	void setThreadHiding(ThreadIdentifier thread, bool? hiding) {
+		switch (hiding) {
+			case true:
+				final map = hiddenIds.putIfAbsent(thread.board, () => []);
+				if (!map.contains(thread.id)) {
+					map.add(thread.id);
+				}
+				overrideShowIds[thread.board]?.remove(thread.id);
+				break;
+			case false:
+				final map = overrideShowIds.putIfAbsent(thread.board, () => []);
+				if (!map.contains(thread.id)) {
+					map.add(thread.id);
+				}
+				hiddenIds[thread.board]?.remove(thread.id);
+				break;
+			case null:
+				hiddenIds[thread.board]?.remove(thread.id);
+				overrideShowIds[thread.board]?.remove(thread.id);
+				break;
+		}
+		_catalogFilters.remove(thread.board);
 	}
 }
 
