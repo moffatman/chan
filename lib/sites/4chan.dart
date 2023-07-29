@@ -723,8 +723,12 @@ class Site4Chan extends ImageboardSite {
 					}
 				}
 			}
+			final id = int.tryParse(metaTag.attributes['content']!.split(RegExp(r'\/|(#p)')).last);
+			if (id == null) {
+				throw PostFailedException('4chan rejected your post. ${file == null ? 'Your post might contained spam-filtered text.' : 'You may have been trying to post an image which is spam-filtered.'}');
+			}
 			return PostReceipt(
-				id: int.parse(metaTag.attributes['content']!.split(RegExp(r'\/|(#p)')).last),
+				id: id,
 				password: password
 			);
 		}
