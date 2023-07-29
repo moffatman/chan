@@ -254,6 +254,9 @@ class _BoardPageState extends State<BoardPage> {
 				_listController.scrollController?.jumpTo(0);
 			}
 			_variant = null;
+			if (!newBoard.imageboard.site.supportsPosting && (_replyBoxKey.currentState?.show ?? false)) {
+				_replyBoxKey.currentState?.hideReplyBox();
+			}
 			widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
 		});
 	}
