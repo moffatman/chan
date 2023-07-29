@@ -254,6 +254,11 @@ class CustomFilter implements Filter {
 			}
 			else if (s.startsWith('type:')) {
 				filter.patternFields = s.split(separator).skip(1).toList();
+				if (filter.patternFields.remove('thread')) {
+					// 4chan-X filters use ;type:thread instead of ;thread
+					// Move it from patternFields
+					filter.threadsOnly = true;
+				}
 			}
 			else if (s.startsWith('boards:')) {
 				filter.boards = s.split(separator).skip(1).toList();
