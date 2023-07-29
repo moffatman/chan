@@ -37,6 +37,7 @@ import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/tab_menu.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/tab_widget_builder.dart';
@@ -404,8 +405,6 @@ class ChanHomePage extends StatefulWidget {
 	createState() => _ChanHomePageState();
 }
 
-final isScrolling = ValueNotifier(false);
-
 enum _AuthenticationStatus {
 	ok,
 	inProgress,
@@ -613,8 +612,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
 	bool _hidTabPopupFromScroll = false;
-	double _accumulatedScrollDelta = 0;
-	bool _thisScrollHasDragDetails = false;
 	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
 
 	bool get showTabPopup => _showTabPopup;
@@ -623,36 +620,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_setAdditionalSafeAreaInsets();
 	}
 
-	bool _onScrollNotification(Notification notification) {
-		if (notification is ScrollStartNotification) {
-			isScrolling.value = true;
-			_thisScrollHasDragDetails = false;
+	void _onSlowScrollDirectionChange() {
+		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && showTabPopup) {
+			setState(() {
+				showTabPopup = false;
+				_hidTabPopupFromScroll = true;
+			});
 		}
-		else if (notification is ScrollEndNotification) {
-			isScrolling.value = false;
+		else if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.up && _hidTabPopupFromScroll) {
+			setState(() {
+				showTabPopup = true;
+				_hidTabPopupFromScroll = false;
+			});
 		}
-		else if (settings.tabMenuHidesWhenScrollingDown && notification is ScrollUpdateNotification) {
-			_thisScrollHasDragDetails |= notification.dragDetails != null;
-			if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && notification.metrics.extentAfter > 100) {
-				_accumulatedScrollDelta += notification.scrollDelta ?? 0;
-				_accumulatedScrollDelta = _accumulatedScrollDelta.clamp(-51, 51);
-				if (_accumulatedScrollDelta > 50 && showTabPopup) {
-					setState(() {
-						_accumulatedScrollDelta = 0;
-						showTabPopup = false;
-						_hidTabPopupFromScroll = true;
-					});
-				}
-				else if (_accumulatedScrollDelta < -50 && _hidTabPopupFromScroll) {
-					setState(() {
-						_accumulatedScrollDelta = 0;
-						showTabPopup = true;
-						_hidTabPopupFromScroll = false;
-					});
-				}
-			}
-		}
-		return false;
 	}
 
 	void _onDevNotificationTapped(PostIdentifier id) async {
@@ -971,6 +951,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 		_initialConsume = true;
 		_setAdditionalSafeAreaInsets();
+		ScrollTracker.instance.slowScrollDirection.addListener(_onSlowScrollDirectionChange);
 		if (Persistence.settings.launchCount > 5 && !Persistence.settings.promptedAboutCrashlytics && !_promptedAboutCrashlytics) {
 			_promptedAboutCrashlytics = true;
 			Future.delayed(const Duration(milliseconds: 300), () async {
@@ -1217,7 +1198,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								child: ClipRect(
 									child: PrimaryScrollControllerInjectingNavigator(
 										navigatorKey: _settingsNavigatorKey,
-										observers: [HeroController()],
+										observers: [
+											HeroController(),
+											NavigatorObserver()
+										],
 										buildRoot: (context) => const SettingsPage()
 									)
 								)
@@ -1574,7 +1558,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen(_onDevNotificationTapped));
 		}
 		Widget child = (androidDrawer || isScreenWide) ? NotificationListener<ScrollNotification>(
-			onNotification: _onScrollNotification,
+			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(
 				actions: {
 					ExtendSelectionToLineBreakIntent: CallbackAction<ExtendSelectionToLineBreakIntent>(
@@ -1675,7 +1659,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				)
 			)
 		) : NotificationListener<ScrollNotification>(
-			onNotification: _onScrollNotification,
+			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(
 				actions: {
 					ExtendSelectionToLineBreakIntent: CallbackAction<ExtendSelectionToLineBreakIntent>(
@@ -1930,6 +1914,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_sharedFilesSubscription.cancel();
 		_sharedTextSubscription.cancel();
 		_devNotificationsSubscription?.subscription.cancel();
+		ScrollTracker.instance.slowScrollDirection.removeListener(_onSlowScrollDirectionChange);
 		for (final subscription in _notificationsSubscriptions.values) {
 			subscription.subscription.cancel();
 		}
@@ -2029,7 +2014,25 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 					onRightSwipe();
 				}
 			},
-			child: super.build(context)
+			child: context.select<EffectiveSettings, bool>((s) => s.hideBarsWhenScrollingDown) ? AncestorScrollBuilder(
+				builder: (context, direction) => AnimatedOpacity(
+					opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
+					duration: const Duration(milliseconds: 350),
+					curve: Curves.ease,
+					child: IgnorePointer(
+						ignoring: direction == VerticalDirection.down,
+						child: super.build(context)
+					)
+				)
+			) : super.build(context)
 		);
+	}
+
+	@override
+	bool opaque(BuildContext context) {
+		       // No hiding OR
+		return !context.select<EffectiveSettings, bool>((s) => s.hideBarsWhenScrollingDown) ||
+		       // Hack - If we always return false, we will get a ClipRect in super.build
+		       context.widget is! CupertinoTabScaffold;
 	}
 }

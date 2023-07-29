@@ -27,6 +27,7 @@ import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -64,11 +65,11 @@ class _SettingsPageState extends State<_SettingsPage> {
 			bar: AdaptiveBar(
 				title: Text(widget.title)
 			),
-			body: SafeArea(
-				child: MaybeScrollbar(
+			body: Builder(
+				builder: (context) => MaybeScrollbar(
 					child: ListView.builder(
+						padding: MediaQuery.paddingOf(context) + const EdgeInsets.all(16),
 						key: scrollKey,
-						padding: const EdgeInsets.all(16),
 						itemCount: widget.children.length,
 						itemBuilder: (context, i) => Align(
 							alignment: Alignment.center,
@@ -949,6 +950,23 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							value: settings.tabMenuHidesWhenScrollingDown,
 							onChanged: (newValue) {
 								settings.tabMenuHidesWhenScrollingDown = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.arrow_up_down),
+						const SizedBox(width: 8),
+						Expanded(
+							child: Text('${settings.androidDrawer ? 'Navigation bar hides' : 'Top and bottom bars hide'} when scrolling down')
+						),
+						AdaptiveSwitch(
+							value: settings.hideBarsWhenScrollingDown,
+							onChanged: (newValue) {
+								ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.up; // Don't immediately hide bars
+								settings.hideBarsWhenScrollingDown = newValue;
 							}
 						)
 					]

@@ -938,6 +938,8 @@ class SavedSettings extends HiveObject {
 	@HiveField(148)
 	bool? useMaterialRoutes;
 	bool get materialRoutes => useMaterialRoutes ?? false;
+	@HiveField(149)
+	bool hideBarsWhenScrollingDown;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1085,6 +1087,7 @@ class SavedSettings extends HiveObject {
 		bool? includeThreadsYouRepliedToWhenDeletingHistory,
 		double? newPostHighlightBrightness,
 		ImagePeekingSetting? imagePeeking,
+		bool? hideBarsWhenScrollingDown,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1257,7 +1260,8 @@ class SavedSettings extends HiveObject {
 		highlightRepeatingDigitsInPostIds = highlightRepeatingDigitsInPostIds ?? false,
 		includeThreadsYouRepliedToWhenDeletingHistory = includeThreadsYouRepliedToWhenDeletingHistory ?? false,
 		newPostHighlightBrightness = newPostHighlightBrightness ?? 0.1,
-		imagePeeking = imagePeeking ?? (deprecatedUnsafeImagePeeking == true ? ImagePeekingSetting.unsafe : ImagePeekingSetting.standard) {
+		imagePeeking = imagePeeking ?? (deprecatedUnsafeImagePeeking == true ? ImagePeekingSetting.unsafe : ImagePeekingSetting.standard),
+		hideBarsWhenScrollingDown = hideBarsWhenScrollingDown ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2357,6 +2361,13 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 	bool get materialRoutes => _settings.materialRoutes;
+
+	bool get hideBarsWhenScrollingDown => _settings.hideBarsWhenScrollingDown;
+	set hideBarsWhenScrollingDown(bool setting) {
+		_settings.hideBarsWhenScrollingDown = setting;
+		_settings.save();
+		notifyListeners();
+	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

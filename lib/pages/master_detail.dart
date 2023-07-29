@@ -5,6 +5,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 
 import 'package:flutter/material.dart';
@@ -329,7 +330,10 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 				child: PrimaryScrollControllerInjectingNavigator(
 					key: _masterInterceptorKey,
 					navigatorKey: masterKey,
-					observers: [HeroController()],
+					observers: [
+						HeroController(),
+						ScrollTrackerNavigatorObserver()
+					],
 					buildRoot: (context) => AnimatedBuilder(
 						animation: _rebuild,
 						builder: (context, _) {
@@ -353,6 +357,8 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 							if (widget.showChrome) {
 								child = AdaptiveScaffold(
 									resizeToAvoidBottomInset: false,
+									// Don't hide - we can't use the top space due to TabBar above scrolling content
+									disableAutoBarHiding: true,
 									bar: panes[_tabController.index].navigationBar ?? AdaptiveBar(
 										title: panes[_tabController.index].title
 									),
@@ -401,6 +407,9 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 				child: PrimaryScrollControllerInjectingNavigator(
 					key: _detailInterceptorKey,
 					navigatorKey: detailKey,
+					observers: [
+						ScrollTrackerNavigatorObserver()
+					],
 					buildRoot: (context) => AnimatedBuilder(
 						animation: _rebuild,
 						builder: (context, _) => KeyedSubtree(

@@ -660,7 +660,7 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 	Widget build(BuildContext context) {
 		return SafeArea(
 			top: false,
-			bottom: !widget.bottomSafe,
+			bottom: animation.value > 0 && !widget.bottomSafe,
 			child: AnimatedBuilder(
 				animation: animation,
 				builder: (context, _) => SizedBox(

@@ -309,6 +309,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		final support = ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsSearch(query.boards.tryFirst);
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
+			disableAutoBarHiding: true, // Don't hide search bar
 			bar: AdaptiveBar(
 				title: Row(
 					children: [

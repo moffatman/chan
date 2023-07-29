@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:chan/main.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -74,7 +74,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	@override
 	void initState() {
 		super.initState();
-		isScrolling.addListener(_onIsScrollingChange);
+		ScrollTracker.instance.isScrolling.addListener(_onIsScrollingChange);
 		recognizer = LongPressGestureRecognizer(
 			duration: kLongPressTimeout ~/ 2,
 			postAcceptSlopTolerance: 99999
@@ -87,10 +87,10 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	}
 
 	void _onIsScrollingChange() {
-		if (!isScrolling.value && _wouldStartIfNotScrolling != null) {
+		if (!ScrollTracker.instance.isScrolling.value && _wouldStartIfNotScrolling != null) {
 			_maybeStart(_wouldStartIfNotScrolling!);
 		}
-		else if (isScrolling.value) {
+		else if (ScrollTracker.instance.isScrolling.value) {
 			_maybeStop();
 		}
 	}
@@ -156,7 +156,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	void _onLongPressEnd(LongPressEndDetails details) => _onLongPressDone();
 
 	void _maybeStart(PointerEvent event) {
-		if (isScrolling.value) {
+		if (ScrollTracker.instance.isScrolling.value) {
 			_wouldStartIfNotScrolling = event;
 			return;
 		}
@@ -268,7 +268,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	void dispose() {
 		super.dispose();
 		_entry?.remove();
-		isScrolling.removeListener(_onIsScrollingChange);
+		ScrollTracker.instance.isScrolling.removeListener(_onIsScrollingChange);
 	}
 }
 

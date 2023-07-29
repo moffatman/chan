@@ -1,6 +1,7 @@
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,10 +23,14 @@ class AdaptiveBar {
 class _AppBarWithBackButtonPriority extends StatelessWidget implements PreferredSizeWidget {
 	final AdaptiveBar bar;
 	final VoidCallback? onDrawerButtonPressed;
+	final bool autoHideOnScroll;
+
 	const _AppBarWithBackButtonPriority({
 		required this.bar,
+		required this.autoHideOnScroll,
 		this.onDrawerButtonPressed
 	});
+
 	@override
 	Widget build(BuildContext context) {
 		final Widget? leading;
@@ -40,7 +45,7 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 		else {
 			leading = bar.leading;
 		}
-		return AppBar(
+		final child = AppBar(
 			leading: leading,
 			foregroundColor: ChanceTheme.primaryColorOf(context),
 			//centerTitle: true,
@@ -52,10 +57,75 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 			actions: bar.actions,
 			backgroundColor: bar.backgroundColor
 		);
+		if (!autoHideOnScroll) {
+			return child;
+		}
+		return AncestorScrollBuilder(
+			builder: (context, direction) => AnimatedOpacity(
+				opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
+				duration: const Duration(milliseconds: 350),
+				curve: Curves.ease,
+				child: IgnorePointer(
+					ignoring: direction == VerticalDirection.down,
+					child: child
+				)
+			)
+		);
 	}
 	
 	@override
 	Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPreferredSizeWidget {
+	final bool transitionBetweenRoutes;
+	final Widget? leading;
+	final Widget? middle;
+	final Color? backgroundColor;
+	final Widget? trailing;
+	final bool autoHideOnScroll;
+
+	const _CupertinoNavigationBar({
+		required this.autoHideOnScroll,
+		this.transitionBetweenRoutes = true,
+		this.leading,
+		this.middle,
+		this.backgroundColor,
+		this.trailing
+	});
+
+	@override
+	bool shouldFullyObstruct(BuildContext context) {
+		return !autoHideOnScroll;
+	}
+
+	@override
+	Size get preferredSize => const Size.fromHeight(kMinInteractiveDimensionCupertino);
+
+	@override
+	Widget build(BuildContext context) {
+		final child = CupertinoNavigationBar(
+			transitionBetweenRoutes: transitionBetweenRoutes,
+			leading: leading,
+			middle: middle,
+			backgroundColor: backgroundColor,
+			trailing: trailing
+		);
+		if (!autoHideOnScroll) {
+			return child;
+		}
+		return AncestorScrollBuilder(
+			builder: (context, direction) => AnimatedOpacity(
+				opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
+				duration: const Duration(milliseconds: 350),
+				curve: Curves.ease,
+				child: IgnorePointer(
+					ignoring: direction == VerticalDirection.down,
+					child: child
+				)
+			)
+		);
+	}
 }
 
 class _CupertinoDrawer {
@@ -74,6 +144,7 @@ class AdaptiveScaffold extends StatelessWidget {
 	final AdaptiveBar? bar;
 	final bool resizeToAvoidBottomInset;
 	final Widget? drawer;
+	final bool disableAutoBarHiding;
 
 	const AdaptiveScaffold({
 		required this.body,
@@ -81,12 +152,14 @@ class AdaptiveScaffold extends StatelessWidget {
 		this.backgroundColor,
 		this.resizeToAvoidBottomInset = true,
 		this.drawer,
+		this.disableAutoBarHiding = false,
 		super.key
 	});
 
 	@override
 	Widget build(BuildContext context) {
 		final bar_ = bar;
+		final autoHideBars = !disableAutoBarHiding && context.select<EffectiveSettings, bool>((s) => s.hideBarsWhenScrollingDown);
 		if (ChanceTheme.materialOf(context)) {
 			VoidCallback? onDrawerButtonPressed;
 			final parentScaffold = Scaffold.maybeOf(context);
@@ -99,10 +172,11 @@ class AdaptiveScaffold extends StatelessWidget {
 			}
 			return Scaffold(
 				drawer: drawer,
-				extendBodyBehindAppBar: (backgroundColor?.opacity ?? 1) < 1,
+				extendBodyBehindAppBar: autoHideBars || (bar_?.backgroundColor?.opacity ?? 1) < 1,
 				resizeToAvoidBottomInset: resizeToAvoidBottomInset,
 				backgroundColor: backgroundColor,
 				appBar: bar_ == null ? null : _AppBarWithBackButtonPriority(
+					autoHideOnScroll: autoHideBars,
 					bar: bar_,
 					onDrawerButtonPressed: onDrawerButtonPressed
 				),
@@ -123,7 +197,8 @@ class AdaptiveScaffold extends StatelessWidget {
 		final child = CupertinoPageScaffold(
 			resizeToAvoidBottomInset: resizeToAvoidBottomInset,
 			backgroundColor: backgroundColor,
-			navigationBar: bar_ == null ? null : CupertinoNavigationBar(
+			navigationBar: bar_ == null ? null : _CupertinoNavigationBar(
+				autoHideOnScroll: autoHideBars,
 				transitionBetweenRoutes: false,
 				leading: bar_.leading ?? drawerButton,
 				middle: bar_.title,

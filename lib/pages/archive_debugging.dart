@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/cupertino.dart';
@@ -147,6 +148,7 @@ class ArchiveDebuggingPage extends StatelessWidget {
                 builder: (context) => Provider<ImageboardSite>.value(
                   value: WrappedArchive(site.archives[i]),
                   child: Navigator(
+                    observers: [ScrollTrackerNavigatorObserver()],
                     initialRoute: '/',
                     onGenerateRoute: (settings) => adaptivePageRoute(
                       builder: (context) => const BoardPage(
