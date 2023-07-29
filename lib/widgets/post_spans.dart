@@ -510,15 +510,15 @@ class PostQuoteLinkSpan extends PostSpan {
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
-			if (!zone.stackIds.contains(postId)) {
-				if (!settings.supportMouse.value) {
+			if (zone.tree || !zone.stackIds.contains(postId)) {
+				if (!settings.supportMouse.value || zone.stackIds.contains(postId)) {
 					zone.highlightQuoteLinkId = postId;
 					await WeakNavigator.push(context, PostsPage(
-							zone: zone.childZoneFor(postId),
-							postsIdsToShow: [postId],
-							postIdForBackground: zone.stackIds.last,
-						)
-					);
+						zone: zone.childZoneFor(postId),
+						postsIdsToShow: [postId],
+						postIdForBackground: zone.stackIds.last,
+						clearStack: zone.stackIds.contains(postId)
+					));
 					//await Future.delayed(const Duration(seconds: 1));
 					if (zone.highlightQuoteLinkId == postId) {
 						zone.highlightQuoteLinkId = null;
