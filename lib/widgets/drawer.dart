@@ -134,6 +134,7 @@ class ChanceDrawer extends StatelessWidget {
 					GestureDetector(
 						onLongPress: () {
 							mediumHapticFeedback();
+							final settings = context.read<EffectiveSettings>();
 							settings.recordThreadsInHistory = !settings.recordThreadsInHistory;
 							showToast(
 								context: context,

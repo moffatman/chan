@@ -29,7 +29,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:chan/util.dart';
-import 'package:chan/main.dart' as main;
 part 'persistence.g.dart';
 
 const _knownCacheDirs = {
@@ -118,7 +117,7 @@ class Persistence extends ChangeNotifier {
 	static late final PersistCookieJar wifiCookies;
 	static late final PersistCookieJar cellularCookies;
 	static PersistCookieJar get currentCookies {
-		if (main.settings.isConnectedToWifi) {
+		if (EffectiveSettings.instance.isConnectedToWifi) {
 			return wifiCookies;
 		}
 		return cellularCookies;
@@ -1005,7 +1004,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	int? unseenReplyIdsToYouCount() => replyIdsToYou()?.where(unseenPostIds.data.contains).length;
 	(Filter, List<Post>)? _filteredPosts;
 	List<Post>? filteredPosts() {
-		if (_filteredPosts != null && _filteredPosts?.$1 != settings.globalFilter) {
+		if (_filteredPosts != null && _filteredPosts?.$1 != EffectiveSettings.instance.globalFilter) {
 			_filteredPosts = null;
 		}
 		return (_filteredPosts ??= () {
@@ -1014,10 +1013,10 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			}
 			final posts = thread?.posts.where((p) {
 				return threadFilter.filter(p)?.type.hide != true
-					&& settings.globalFilter.filter(p)?.type.hide != true;
+					&& EffectiveSettings.instance.globalFilter.filter(p)?.type.hide != true;
 			}).toList();
 			if (posts != null) {
-				return (settings.globalFilter, posts);
+				return (EffectiveSettings.instance.globalFilter, posts);
 			}
 			return null;
 		}())?.$2;

@@ -1325,6 +1325,9 @@ class SavedSettings extends HiveObject {
 }
 
 class EffectiveSettings extends ChangeNotifier {
+	static EffectiveSettings? _instance;
+	static EffectiveSettings get instance => _instance ??= EffectiveSettings._();
+
 	late final SavedSettings _settings;
 	String? filename;
 	ConnectivityResult? _connectivity;
@@ -2425,7 +2428,7 @@ class EffectiveSettings extends ChangeNotifier {
 
 	static const featureStatusBarWorkaround = false;
 
-	EffectiveSettings() {
+	EffectiveSettings._() {
 		_settings = Persistence.settings;
 		if (_settings.supportMouse == TristateSystemSetting.b) {
 			supportMouse.value = true;

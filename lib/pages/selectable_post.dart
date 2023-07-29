@@ -47,9 +47,9 @@ class SelectablePostPage extends StatelessWidget {
 												isYourPost: zone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier)?.youIds.contains(post.id) ?? false,
 												showSiteIcon: false,
 												showBoardName: false,
-												settings: context.read<EffectiveSettings>(),
-												theme: context.read<SavedTheme>(),
-												site: context.read<ImageboardSite>(),
+												settings: context.watch<EffectiveSettings>(),
+												theme: context.watch<SavedTheme>(),
+												site: context.watch<ImageboardSite>(),
 												context: context,
 												zone: zone,
 												interactive: false

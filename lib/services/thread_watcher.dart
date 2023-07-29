@@ -108,7 +108,6 @@ class ThreadWatcher extends ChangeNotifier {
 	final String imageboardKey;
 	final ImageboardSite site;
 	final Persistence persistence;
-	final EffectiveSettings settings;
 	final Notifications notifications;
 	final Map<ThreadIdentifier, int> cachedUnseen = {};
 	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
@@ -129,7 +128,6 @@ class ThreadWatcher extends ChangeNotifier {
 		required this.imageboardKey,
 		required this.site,
 		required this.persistence,
-		required this.settings,
 		required this.notifications,
 		required this.controller,
 		this.watchForStickyOnBoards = const []
@@ -137,8 +135,8 @@ class ThreadWatcher extends ChangeNotifier {
 		controller.registerWatcher(this);
 		_boxSubscription = Persistence.sharedThreadStateBox.watch().listen(_threadUpdated);
 		_setInitialCounts();
-		settings.filterListenable.addListener(_didUpdateFilter);
-		settings.addListener(_didUpdateSettings);
+		EffectiveSettings.instance.filterListenable.addListener(_didUpdateFilter);
+		EffectiveSettings.instance.addListener(_didUpdateSettings);
 		_lastHiddenImageMD5s = Persistence.settings.hiddenImageMD5s.toSet();
 	}
 
@@ -345,7 +343,7 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 		}
 		bool savedAnyThread = false;
-		for (final line in settings.customFilterLines) {
+		for (final line in EffectiveSettings.instance.customFilterLines) {
 			if (line.disabled || !line.outputType.autoSave) {
 				continue;
 			}
@@ -403,8 +401,8 @@ class ThreadWatcher extends ChangeNotifier {
 		_boxSubscription = null;
 		unseenCount.dispose();
 		unseenYouCount.dispose();
-		settings.filterListenable.removeListener(_didUpdateFilter);
-		settings.removeListener(_didUpdateSettings);
+		EffectiveSettings.instance.filterListenable.removeListener(_didUpdateFilter);
+		EffectiveSettings.instance.removeListener(_didUpdateSettings);
 		super.dispose();
 	}
 }

@@ -1,4 +1,3 @@
-import 'package:chan/main.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
@@ -740,7 +739,7 @@ class _FilterEditorState extends State<FilterEditor> {
 						AdaptiveDialogAction(
 							isDefaultAction: true,
 							onPressed: () {
-								settings.filterConfiguration = lastText;
+								EffectiveSettings.instance.filterConfiguration = lastText;
 								Navigator.pop(context);
 							},
 							child: const Text('Save')

@@ -149,7 +149,6 @@ class ChanApp extends StatefulWidget {
 	createState() => _ChanAppState();
 }
 
-final settings = EffectiveSettings();
 class _ChanAppState extends State<ChanApp> {
 	late Map<String, dynamic> _lastSites;
 	final _navigatorKey = GlobalKey<NavigatorState>();
@@ -162,31 +161,27 @@ class _ChanAppState extends State<ChanApp> {
 	@override
 	void initState() {
 		super.initState();
-		_lastSites = settings.contentSettings.sites;
+		_lastSites = EffectiveSettings.instance.contentSettings.sites;
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
-		ImageboardRegistry.instance.initializeDev(
-			settings: settings
-		);
+		ImageboardRegistry.instance.initializeDev();
 		ImageboardRegistry.instance.handleSites(
-			settings: settings,
 			context: context,
 			data: _lastSites
 		);
-		settings.addListener(_onSettingsUpdate);
+		EffectiveSettings.instance.addListener(_onSettingsUpdate);
 	}
 
 	@override
 	void dispose() {
 		super.dispose();
 		ImageboardRegistry.instance.removeListener(_onImageboardRegistryUpdate);
-		settings.removeListener(_onSettingsUpdate);
+		EffectiveSettings.instance.removeListener(_onSettingsUpdate);
 	}
 
 	void _onSettingsUpdate() {
-		if (settings.contentSettings.sites != _lastSites) {
-			_lastSites = settings.contentSettings.sites;
+		if (EffectiveSettings.instance.contentSettings.sites != _lastSites) {
+			_lastSites = EffectiveSettings.instance.contentSettings.sites;
 			ImageboardRegistry.instance.handleSites(
-				settings: settings,
 				context: context,
 				data: _lastSites
 			);
@@ -203,19 +198,19 @@ class _ChanAppState extends State<ChanApp> {
 		return CallbackShortcuts(
 			bindings: {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.equal): () {
-					if (settings.interfaceScale < 2.0) {
-						settings.interfaceScale += 0.05;
+					if (EffectiveSettings.instance.interfaceScale < 2.0) {
+						EffectiveSettings.instance.interfaceScale += 0.05;
 					}
 				},
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.minus): () {
-					if (settings.interfaceScale > 0.5) {
-						settings.interfaceScale -= 0.05;
+					if (EffectiveSettings.instance.interfaceScale > 0.5) {
+						EffectiveSettings.instance.interfaceScale -= 0.05;
 					}
 				}
 			},
 			child: MultiProvider(
 				providers: [
-					ChangeNotifierProvider.value(value: settings),
+					ChangeNotifierProvider.value(value: EffectiveSettings.instance),
 					ProxyProvider<EffectiveSettings, SavedTheme>(
 						update: (context, settings, result) => settings.theme
 					),
@@ -926,7 +921,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Future<void> _setAdditionalSafeAreaInsets() async {
 		await setAdditionalSafeAreaInsets('main', EdgeInsets.only(
 			bottom: 60 + (_isShowingBottomBar ? 0 : 44 + (showTabPopup ? 80 : 0))
-		) * settings.interfaceScale);
+		) * EffectiveSettings.instance.interfaceScale);
 	}
 
 	void _onShouldShowTabPopup(bool newShowTabPopup) {
@@ -989,7 +984,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				_tabs._tabListController.jumpTo(((Persistence.currentTabIndex + 1) / Persistence.tabs.length) * _tabs._tabListController.position.maxScrollExtent);
 			}
 		});
-		if (settings.askForAuthenticationOnLaunch) {
+		if (EffectiveSettings.instance.askForAuthenticationOnLaunch) {
 			_authenticate();
 		}
 	}
@@ -1501,6 +1496,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	void _toggleHistory() {
 		mediumHapticFeedback();
+		final settings = context.read<EffectiveSettings>();
 		settings.recordThreadsInHistory = !settings.recordThreadsInHistory;
 		showToast(
 			context: context,
@@ -1512,9 +1508,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool get _isScreenWide => (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width - 85) > (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height - 50);
 	bool get isScreenWide => (MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);
 
-	bool get _isShowingBottomBar => settings.androidDrawer ? false : !_isScreenWide;
+	bool get _isShowingBottomBar => EffectiveSettings.instance.androidDrawer ? false : !_isScreenWide;
 
-	bool get _androidDrawer => settings.androidDrawer && !_isScreenWide;
+	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer && !_isScreenWide;
 	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer) && !isScreenWide;
 
 	@override
@@ -1557,6 +1553,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			_devNotificationsSubscription?.subscription.cancel();
 			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen(_onDevNotificationTapped));
 		}
+		final settings = context.watch<EffectiveSettings>();
 		Widget child = (androidDrawer || isScreenWide) ? NotificationListener<ScrollNotification>(
 			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(

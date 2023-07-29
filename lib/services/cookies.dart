@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:chan/main.dart';
+import 'package:chan/services/settings.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -15,7 +15,7 @@ class SeparatedCookieManager extends Interceptor {
 	});
 
 	CookieJar get cookieJar {
-		if (settings.connectivity == ConnectivityResult.mobile) {
+		if (EffectiveSettings.instance.connectivity == ConnectivityResult.mobile) {
 			return cellularCookieJar;
 		}
 		return wifiCookieJar;

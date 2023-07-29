@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/parent_and_child.dart';
@@ -858,7 +857,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		await _ensureCookiesMemoizedForUrl(Uri.parse(attachment.thumbnailUrl));
 	}
 	Map<String, String>? getHeaders(Uri url) {
-		if (settings.connectivity == ConnectivityResult.mobile) {
+		if (EffectiveSettings.instance.connectivity == ConnectivityResult.mobile) {
 			return {
 				'user-agent': Persistence.settings.userAgent,
 				..._memoizedCellularHeaders[url.host] ?? {}

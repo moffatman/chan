@@ -386,6 +386,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _cacheAttachments({required bool automatic}) async {
+		final settings = context.read<EffectiveSettings>();
 		await _updateCached(onscreenOnly: false);
 		if (!mounted) {
 			return;
@@ -502,7 +503,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			_scrollIfWarranted();
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
-		if (settings.autoCacheAttachments) {
+		if (context.read<EffectiveSettings>().autoCacheAttachments) {
 			_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 		}
 		newPostIds.addAll(persistentState.unseenPostIds.data);
@@ -547,7 +548,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			_maybeUpdateWatch();
 			persistentState.save();
 			_scrollIfWarranted();
-			if (settings.autoCacheAttachments) {
+			if (context.read<EffectiveSettings>().autoCacheAttachments) {
 				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 			}
 			newPostIds.clear();
@@ -635,7 +636,7 @@ class _ThreadPageState extends State<ThreadPage> {
 					return a.id == attachment.attachment.id;
 				}));
 			},
-			heroOtherEndIsBoxFitCover: settings.squareThumbnails
+			heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 		);
 	}
 
@@ -795,6 +796,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	Future<Thread> _getUpdatedThread() async {
 		final tmpPersistentState = persistentState;
 		final site = context.read<ImageboardSite>();
+		final settings = context.read<EffectiveSettings>();
 		final notifications = context.read<Notifications>();
 		lastPageNumber = persistentState.thread?.currentPage;
 		final bool firstLoad = tmpPersistentState.thread == null;
@@ -1021,6 +1023,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);
 		final treeModeCollapsedPostsShowBody = context.select<Persistence, bool>((s) => s.browserState.treeModeCollapsedPostsShowBody);
 		final treeModeRepliesToOPAreTopLevel = context.select<Persistence, bool>((s) => s.browserState.treeModeRepliesToOPAreTopLevel);
+		final settings = context.watch<EffectiveSettings>();
 		Duration? autoUpdateDuration = Duration(seconds: _foreground ? settings.currentThreadAutoUpdatePeriodSeconds : settings.backgroundThreadAutoUpdatePeriodSeconds);
 		if (autoUpdateDuration.inDays > 1) {
 			autoUpdateDuration = null;
@@ -1486,7 +1489,6 @@ class _ThreadPageState extends State<ThreadPage> {
 																	required double? peekContentHeight,
 																	required List<ParentAndChildIdentifier>? stubChildIds
 																}) {
-																	final settings = context.watch<EffectiveSettings>();
 																	final newCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
 																	final unseenCount = collapsedChildIds.where((id) => persistentState.unseenPostIds.data.contains(id)).length;
 																	if (peekContentHeight != null && value != null) {

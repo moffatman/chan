@@ -321,7 +321,7 @@ class Notifications {
 	static Future<void> initializeStatic() async {
 		try {
 			staticError = null;
-			settings.filterListenable.addListener(_didUpdateFilter);
+			EffectiveSettings.instance.filterListenable.addListener(_didUpdateFilter);
 			if (Platform.isAndroid) {
 				await FlutterLocalNotificationsPlugin().initialize(
 					const InitializationSettings(
@@ -455,7 +455,7 @@ class Notifications {
 					'token2': (await _getToken())?.toMap(),
 					'siteType': siteType,
 					'siteData': siteData,
-					'filters': settings.filterConfiguration
+					'filters': EffectiveSettings.instance.filterConfiguration
 				}));
 				final String digest = response.data['digest'];
 				if (digest != _calculateDigest()) {

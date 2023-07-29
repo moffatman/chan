@@ -1,5 +1,4 @@
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:chan/main.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
@@ -100,193 +99,196 @@ Future<String?> selectThemeKey({
 	required String title,
 	required String currentKey,
 	required bool allowEditing
-}) => showAdaptiveDialog<String>(
-	barrierDismissible: true,
-	context: context,
-	builder: (context) => AdaptiveAlertDialog(
-		title: Padding(
-			padding: const EdgeInsets.only(bottom: 16),
-			child: Row(
-				mainAxisAlignment: MainAxisAlignment.center,
-				children: [
-					const Icon(CupertinoIcons.paintbrush),
-					const SizedBox(width: 8),
-					Text(title)
-				]
-			)
-		),
-		content: StatefulBuilder(
-			builder: (context, setDialogState) {
-				final themes = settings.themes.entries.toList();
-				themes.sort((a, b) => a.key.compareTo(b.key));
-				return SizedBox(
-					width: 200,
-					height: 350,
-					child: ListView.separated(
-						itemCount: themes.length,
-						separatorBuilder: (context, i) => const SizedBox(height: 16),
-						itemBuilder: (context, i) => GestureDetector(
-							onTap: () {
-								Navigator.pop(context, themes[i].key);
-							},
-							child: ChanceTheme(
-								themeKey: themes[i].key,
-								child: Container(
-									decoration: BoxDecoration(
-										borderRadius: const BorderRadius.all(Radius.circular(8)),
-										color: themes[i].value.backgroundColor
-									),
-									child: Column(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											Padding(
-												padding: const EdgeInsets.all(16),
-												child: Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														if (allowEditing && themes[i].value.locked) Padding(
-															padding: const EdgeInsets.only(right: 4),
-															child: Icon(CupertinoIcons.lock, color: themes[i].value.primaryColor)
-														),
-														AutoSizeText(themes[i].key, style: TextStyle(
-															fontSize: 18,
-															color: themes[i].value.primaryColor,
-															fontWeight: themes[i].key == currentKey ? FontWeight.bold : null
-														))
-													]
-												)
-											),
-											if (allowEditing) Container(
-												//margin: const EdgeInsets.all(4),
-												decoration: BoxDecoration(
-													color: themes[i].value.barColor,
-													borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))
+}) {
+	final settings = context.read<EffectiveSettings>();
+	return showAdaptiveDialog<String>(
+		barrierDismissible: true,
+		context: context,
+		builder: (context) => AdaptiveAlertDialog(
+			title: Padding(
+				padding: const EdgeInsets.only(bottom: 16),
+				child: Row(
+					mainAxisAlignment: MainAxisAlignment.center,
+					children: [
+						const Icon(CupertinoIcons.paintbrush),
+						const SizedBox(width: 8),
+						Text(title)
+					]
+				)
+			),
+			content: StatefulBuilder(
+				builder: (context, setDialogState) {
+					final themes = settings.themes.entries.toList();
+					themes.sort((a, b) => a.key.compareTo(b.key));
+					return SizedBox(
+						width: 200,
+						height: 350,
+						child: ListView.separated(
+							itemCount: themes.length,
+							separatorBuilder: (context, i) => const SizedBox(height: 16),
+							itemBuilder: (context, i) => GestureDetector(
+								onTap: () {
+									Navigator.pop(context, themes[i].key);
+								},
+								child: ChanceTheme(
+									themeKey: themes[i].key,
+									child: Container(
+										decoration: BoxDecoration(
+											borderRadius: const BorderRadius.all(Radius.circular(8)),
+											color: themes[i].value.backgroundColor
+										),
+										child: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												Padding(
+													padding: const EdgeInsets.all(16),
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															if (allowEditing && themes[i].value.locked) Padding(
+																padding: const EdgeInsets.only(right: 4),
+																child: Icon(CupertinoIcons.lock, color: themes[i].value.primaryColor)
+															),
+															AutoSizeText(themes[i].key, style: TextStyle(
+																fontSize: 18,
+																color: themes[i].value.primaryColor,
+																fontWeight: themes[i].key == currentKey ? FontWeight.bold : null
+															))
+														]
+													)
 												),
-												child: Row(
-													mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-													children: [
-														CupertinoButton(
-															child: Icon(Adaptive.icons.share),
-															onPressed: () {
-																Clipboard.setData(ClipboardData(
-																	text: Uri(
-																		scheme: 'chance',
-																		host: 'theme',
-																		queryParameters: {
-																			'name': themes[i].key,
-																			'data': themes[i].value.encode()
+												if (allowEditing) Container(
+													//margin: const EdgeInsets.all(4),
+													decoration: BoxDecoration(
+														color: themes[i].value.barColor,
+														borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))
+													),
+													child: Row(
+														mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+														children: [
+															CupertinoButton(
+																child: Icon(Adaptive.icons.share),
+																onPressed: () {
+																	Clipboard.setData(ClipboardData(
+																		text: Uri(
+																			scheme: 'chance',
+																			host: 'theme',
+																			queryParameters: {
+																				'name': themes[i].key,
+																				'data': themes[i].value.encode()
+																			}
+																		).toString()
+																	));
+																	showToast(
+																		context: context,
+																		message: 'Copied ${themes[i].key} to clipboard',
+																		icon: CupertinoIcons.doc_on_clipboard
+																	);
+																}
+															),
+															CupertinoButton(
+																onPressed: themes[i].value.locked ? null : () async {
+																	final controller = TextEditingController(text: themes[i].key);
+																	controller.selection = TextSelection(baseOffset: 0, extentOffset: themes[i].key.length);
+																	final newName = await showAdaptiveDialog<String>(
+																		context: context,
+																		barrierDismissible: true,
+																		builder: (context) => AdaptiveAlertDialog(
+																			title: const Text('Enter new name'),
+																			content: AdaptiveTextField(
+																				autofocus: true,
+																				controller: controller,
+																				smartDashesType: SmartDashesType.disabled,
+																				smartQuotesType: SmartQuotesType.disabled,
+																				onSubmitted: (s) => Navigator.pop(context, s)
+																			),
+																			actions: [
+																				AdaptiveDialogAction(
+																					isDefaultAction: true,
+																					child: const Text('Rename'),
+																					onPressed: () => Navigator.pop(context, controller.text)
+																				),
+																				AdaptiveDialogAction(
+																					child: const Text('Cancel'),
+																					onPressed: () => Navigator.pop(context)
+																				)
+																			]
+																		)
+																	);
+																	if (newName != null) {
+																		final effectiveName = settings.addTheme(newName, themes[i].value);
+																		settings.themes.remove(themes[i].key);
+																		if (settings.lightThemeKey == themes[i].key) {
+																			settings.lightThemeKey = effectiveName;
 																		}
-																	).toString()
-																));
-																showToast(
-																	context: context,
-																	message: 'Copied ${themes[i].key} to clipboard',
-																	icon: CupertinoIcons.doc_on_clipboard
-																);
-															}
-														),
-														CupertinoButton(
-															onPressed: themes[i].value.locked ? null : () async {
-																final controller = TextEditingController(text: themes[i].key);
-																controller.selection = TextSelection(baseOffset: 0, extentOffset: themes[i].key.length);
-																final newName = await showAdaptiveDialog<String>(
-																	context: context,
-																	barrierDismissible: true,
-																	builder: (context) => AdaptiveAlertDialog(
-																		title: const Text('Enter new name'),
-																		content: AdaptiveTextField(
-																			autofocus: true,
-																			controller: controller,
-																			smartDashesType: SmartDashesType.disabled,
-																			smartQuotesType: SmartQuotesType.disabled,
-																			onSubmitted: (s) => Navigator.pop(context, s)
-																		),
-																		actions: [
-																			AdaptiveDialogAction(
-																				isDefaultAction: true,
-																				child: const Text('Rename'),
-																				onPressed: () => Navigator.pop(context, controller.text)
-																			),
-																			AdaptiveDialogAction(
-																				child: const Text('Cancel'),
-																				onPressed: () => Navigator.pop(context)
-																			)
-																		]
-																	)
-																);
-																if (newName != null) {
-																	final effectiveName = settings.addTheme(newName, themes[i].value);
-																	settings.themes.remove(themes[i].key);
-																	if (settings.lightThemeKey == themes[i].key) {
-																		settings.lightThemeKey = effectiveName;
+																		if (settings.darkThemeKey == themes[i].key) {
+																			settings.darkThemeKey = effectiveName;
+																		}
+																		settings.handleThemesAltered();
+																		setDialogState(() {});
 																	}
-																	if (settings.darkThemeKey == themes[i].key) {
-																		settings.darkThemeKey = effectiveName;
-																	}
+																	controller.dispose();
+																},
+																child: const Icon(CupertinoIcons.textformat)
+															),
+															CupertinoButton(
+																child: const Icon(CupertinoIcons.doc_on_doc),
+																onPressed: () {
+																	settings.addTheme(themes[i].key, themes[i].value);
 																	settings.handleThemesAltered();
 																	setDialogState(() {});
 																}
-																controller.dispose();
-															},
-															child: const Icon(CupertinoIcons.textformat)
-														),
-														CupertinoButton(
-															child: const Icon(CupertinoIcons.doc_on_doc),
-															onPressed: () {
-																settings.addTheme(themes[i].key, themes[i].value);
-																settings.handleThemesAltered();
-																setDialogState(() {});
-															}
-														),
-														CupertinoButton(
-															onPressed: (themes[i].value.locked || themes[i].key == settings.darkThemeKey || themes[i].key == settings.lightThemeKey) ? null : () async {
-																final consent = await showAdaptiveDialog<bool>(
-																	context: context,
-																	barrierDismissible: true,
-																	builder: (context) => AdaptiveAlertDialog(
-																		title: Text('Delete ${themes[i].key}?'),
-																		actions: [
-																			AdaptiveDialogAction(
-																				isDestructiveAction: true,
-																				onPressed: () {
-																					Navigator.of(context).pop(true);
-																				},
-																				child: const Text('Delete')
-																			),
-																			AdaptiveDialogAction(
-																				child: const Text('Cancel'),
-																				onPressed: () {
-																					Navigator.of(context).pop();
-																				}
-																			)
-																		]
-																	)
-																);
-																if (consent == true) {
-																	settings.themes.remove(themes[i].key);
-																	settings.handleThemesAltered();
-																	setDialogState(() {});
-																}
-															},
-															child: const Icon(CupertinoIcons.delete)
-														)
-													]
+															),
+															CupertinoButton(
+																onPressed: (themes[i].value.locked || themes[i].key == settings.darkThemeKey || themes[i].key == settings.lightThemeKey) ? null : () async {
+																	final consent = await showAdaptiveDialog<bool>(
+																		context: context,
+																		barrierDismissible: true,
+																		builder: (context) => AdaptiveAlertDialog(
+																			title: Text('Delete ${themes[i].key}?'),
+																			actions: [
+																				AdaptiveDialogAction(
+																					isDestructiveAction: true,
+																					onPressed: () {
+																						Navigator.of(context).pop(true);
+																					},
+																					child: const Text('Delete')
+																				),
+																				AdaptiveDialogAction(
+																					child: const Text('Cancel'),
+																					onPressed: () {
+																						Navigator.of(context).pop();
+																					}
+																				)
+																			]
+																		)
+																	);
+																	if (consent == true) {
+																		settings.themes.remove(themes[i].key);
+																		settings.handleThemesAltered();
+																		setDialogState(() {});
+																	}
+																},
+																child: const Icon(CupertinoIcons.delete)
+															)
+														]
+													)
 												)
-											)
-										]
+											]
+										)
 									)
 								)
 							)
 						)
-					)
-				);
-			}
-		),
-		actions: [
-			AdaptiveDialogAction(
-				child: const Text('Close'),
-				onPressed: () => Navigator.pop(context)
-			)
-		]
-	)
-);
+					);
+				}
+			),
+			actions: [
+				AdaptiveDialogAction(
+					child: const Text('Close'),
+					onPressed: () => Navigator.pop(context)
+				)
+			]
+		)
+	);
+}

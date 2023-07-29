@@ -82,6 +82,7 @@ class HistoryPageState extends State<HistoryPage> {
 							_valueInjector.value = v;
 						});
 						List<PersistentThreadState> states = [];
+						final settings = context.watch<EffectiveSettings>();
 						return AdaptiveScaffold(
 							resizeToAvoidBottomInset: false,
 							bar: AdaptiveBar(

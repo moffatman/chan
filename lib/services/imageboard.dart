@@ -22,7 +22,6 @@ class ImageboardNotFoundException implements Exception {
 }
 
 class Imageboard extends ChangeNotifier {
-	final EffectiveSettings settings;
 	dynamic siteData;
 	ImageboardSite? _site;
 	ImageboardSite get site => _site!;
@@ -42,7 +41,6 @@ class Imageboard extends ChangeNotifier {
 
 	Imageboard({
 		required this.key,
-		required this.settings,
 		required this.siteData,
 		this.threadWatcherController
 	});
@@ -85,7 +83,6 @@ class Imageboard extends ChangeNotifier {
 				imageboardKey: key,
 				site: site,
 				persistence: persistence,
-				settings: settings,
 				notifications: notifications,
 				watchForStickyOnBoards: threadWatcherWatchForStickyOnBoards,
 				controller: threadWatcherController ?? ImageboardRegistry.threadWatcherController
@@ -186,13 +183,10 @@ class ImageboardRegistry extends ChangeNotifier {
 	static final threadWatcherController = ThreadWatcherController();
 	Imageboard? dev;
 
-	Future<void> initializeDev({
-		required EffectiveSettings settings
-	}) async {
+	Future<void> initializeDev() async {
 		final tmpDev = Imageboard(
 			key: _devImageboardKey,
 			siteData: defaultSite,
-			settings: settings,
 			threadWatcherController: ThreadWatcherController(interval: const Duration(minutes: 10))
 		);
 		await tmpDev.initialize(
@@ -204,7 +198,6 @@ class ImageboardRegistry extends ChangeNotifier {
 	}
 
 	Future<void> handleSites({
-		required EffectiveSettings settings,
 		required Map<String, dynamic> data,
 		required BuildContext context
 	}) {
@@ -223,7 +216,6 @@ class ImageboardRegistry extends ChangeNotifier {
 					}
 					else {
 						_sites[entry.key] = Imageboard(
-							settings: settings,
 							siteData: entry.value,
 							key: entry.key
 						);
@@ -238,7 +230,7 @@ class ImageboardRegistry extends ChangeNotifier {
 						}
 						final site = _sites[entry.key]!.site;
 						final savedFields = site.loginSystem?.getSavedLoginFields();
-						if (savedFields != null && settings.isConnectedToWifi) {
+						if (savedFields != null && EffectiveSettings.instance.isConnectedToWifi) {
 							try {
 								await site.loginSystem!.login(null, savedFields);
 								print('Auto-logged in');
