@@ -1,6 +1,7 @@
 import 'package:chan/models/flag.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -19,11 +20,18 @@ class _ImageboardFlag extends StatelessWidget {
 		return SizedBox(
 			width: flag.imageWidth,
 			height: flag.imageHeight,
-			child: ExtendedImage.network(
-				flag.imageUrl,
-				cache: true,
-				enableLoadState: false,
-				headers: context.read<ImageboardSite>().getHeaders(Uri.parse(flag.imageUrl))
+			child: GestureDetector(
+				onTap: () => showToast(
+					context: context,
+					message: flag.name,
+					icon: CupertinoIcons.flag
+				),
+				child: ExtendedImage.network(
+					flag.imageUrl,
+					cache: true,
+					enableLoadState: false,
+					headers: context.read<ImageboardSite>().getHeaders(Uri.parse(flag.imageUrl))
+				)
 			)
 		);
 	}
