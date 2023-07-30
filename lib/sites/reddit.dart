@@ -937,7 +937,7 @@ class SiteReddit extends ImageboardSite {
 	Post _makePost(Map<String, dynamic> child, {int? parentId, required ThreadIdentifier thread}) {
 		final id = fromRedditId(child['id']);
 		final List<(String, String)> inlineImageUrls = [];
-		final text = unescape.convert(child['body'])._matchReplaceAndAddGiphyImages(inlineImageUrls).replaceAllMapped(RegExp(r'https:\/\/(?:preview|i).redd.it\/\S+'), (match) {
+		final text = unescape.convert(child['body'])._matchReplaceAndAddGiphyImages(inlineImageUrls).replaceAllMapped(RegExp(r'https:\/\/(?:preview|i).redd.it\/[^\r\n\t\f\v\) ]+'), (match) {
 			inlineImageUrls.add((
 				match.group(0)!,
 				match.group(0)!
