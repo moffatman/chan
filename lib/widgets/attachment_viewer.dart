@@ -1108,7 +1108,7 @@ class AttachmentViewer extends StatelessWidget {
 								});
 							}
 						}
-						else if (loadstate.extendedImageInfo?.image.width == attachment.width && (source != Uri.parse(attachment.thumbnailUrl))) {
+						else if ((loadstate.extendedImageInfo?.image.width ?? 0) >= (attachment.width ?? 1) && (source != Uri.parse(attachment.thumbnailUrl))) {
 							// If the displayed image looks like the full image, we can check cache
 							getCachedImageFile(source.toString()).then((file) {
 								if (file != null) {
