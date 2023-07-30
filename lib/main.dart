@@ -606,7 +606,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _historyPageKey = GlobalKey<HistoryPageState>();
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
-	bool _hidTabPopupFromScroll = false;
+	bool _hideTabPopupAutomatically = false;
 	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
 
 	bool get showTabPopup => _showTabPopup;
@@ -616,16 +616,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _onSlowScrollDirectionChange() {
+		if (!EffectiveSettings.instance.tabMenuHidesWhenScrollingDown) {
+			return;
+		}
 		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && showTabPopup) {
 			setState(() {
 				showTabPopup = false;
-				_hidTabPopupFromScroll = true;
+				_hideTabPopupAutomatically = true;
 			});
 		}
-		else if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.up && _hidTabPopupFromScroll) {
+		else if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.up && _hideTabPopupAutomatically) {
 			setState(() {
 				showTabPopup = true;
-				_hidTabPopupFromScroll = false;
+				_hideTabPopupAutomatically = false;
 			});
 		}
 	}
@@ -634,6 +637,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_tabs.mainTabIndex = 4;
 		if (showTabPopup) {
 			setState(() {
+				_hideTabPopupAutomatically = true;
 				showTabPopup = false;
 			});
 		}
@@ -893,6 +897,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}
 				if (showTabPopup) {
 					setState(() {
+						_hideTabPopupAutomatically = true;
 						showTabPopup = false;
 					});
 				}
@@ -1313,6 +1318,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									_tabs.browseTabIndex = -1 * index;
 									if (Persistence.settings.closeTabSwitcherAfterUse) {
 										setState(() {
+											_hideTabPopupAutomatically = true;
 											showTabPopup = false;
 										});
 									}
@@ -1508,7 +1514,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool get _isScreenWide => (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width - 85) > (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height - 50);
 	bool get isScreenWide => (MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);
 
-	bool get _isShowingBottomBar => EffectiveSettings.instance.androidDrawer ? false : !_isScreenWide;
+	bool get _isShowingBottomBar => EffectiveSettings.instance.androidDrawer || (EffectiveSettings.instance.hideBarsWhenScrollingDown && ScrollTracker.instance.lastNonNullDirection == VerticalDirection.down) ? false : !_isScreenWide;
 
 	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer && !_isScreenWide;
 	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer) && !isScreenWide;
@@ -1802,59 +1808,74 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								}
 								else if (showTabPopup) {
 									setState(() {
+										_hideTabPopupAutomatically = true;
 										showTabPopup = false;
 									});
 								}
 								_tabs._lastIndex = index;
 							}
 						),
-						tabBuilder: (context, index) => CupertinoTabView(
-							navigatorKey: _tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>(debugLabel: '_ChanHomePageState._tabNavigatorKeys[$index]')),
-							builder: (context) => index == 0 ? Column(
-								children: [
-									Expanded(
-										child: AnimatedBuilder(
-											animation: _tabs._tabController,
-											builder: (context, child) => _buildTab(context, index, _tabs.mainTabIndex == index)
+						tabBuilder: (context, index) => Stack(
+							children: [
+								Column(
+									children: [
+										Expanded(
+											child: CupertinoTabView(
+												navigatorKey: _tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>(debugLabel: '_ChanHomePageState._tabNavigatorKeys[$index]')),
+												builder: (context) => AnimatedBuilder(
+													animation: _tabs._tabController,
+													builder: (context, child) => _buildTab(context, index, _tabs.mainTabIndex == index)
+												)
+											)
+										),
+										Expander(
+											height: 80,
+											bottomSafe: true,
+											expanded: showTabPopup,
+											duration: const Duration(milliseconds: 200),
+											curve: Curves.ease,
+											child: const SizedBox.shrink()
 										)
-									),
-									Expander(
-										height: 80,
-										bottomSafe: false,
-										expanded: showTabPopup,
-										duration: const Duration(milliseconds: 200),
-										curve: Curves.ease,
-										child: GestureDetector(
-											behavior: HitTestBehavior.translucent,
-											onVerticalDragEnd: (details) {
-												if (details.velocity.pixelsPerSecond.dy > 0 && showTabPopup) {
-													mediumHapticFeedback();
-													setState(() {
-														showTabPopup = false;
-													});
-												}
-											},
-											child: Container(
-												color: ChanceTheme.barColorOf(context),
-												child: Row(
-													children: [
-														Expanded(
-															child: AnimatedBuilder(
-																animation: _tabs.activeBrowserTab,
-																builder: (context, _) => _buildTabList(Axis.horizontal)
-															)
-														),
-														_buildNewTabIcon(axis: Axis.horizontal)
-													]
+									]
+								),
+								Column(
+									mainAxisAlignment: MainAxisAlignment.end,
+									children: [
+										Expander(
+											height: 80,
+											bottomSafe: false,
+											expanded: showTabPopup,
+											duration: const Duration(milliseconds: 200),
+											curve: Curves.ease,
+											child: GestureDetector(
+												behavior: HitTestBehavior.translucent,
+												onVerticalDragEnd: (details) {
+													if (details.velocity.pixelsPerSecond.dy > 0 && showTabPopup) {
+														mediumHapticFeedback();
+														setState(() {
+															showTabPopup = false;
+														});
+													}
+												},
+												child: Container(
+													color: ChanceTheme.barColorOf(context),
+													child: Row(
+														children: [
+															Expanded(
+																child: AnimatedBuilder(
+																	animation: _tabs.activeBrowserTab,
+																	builder: (context, _) => _buildTabList(Axis.horizontal)
+																)
+															),
+															_buildNewTabIcon(axis: Axis.horizontal)
+														]
+													)
 												)
 											)
 										)
-									)
-								]
-							) : AnimatedBuilder(
-								animation: _tabs._tabController,
-								builder: (context, child) => _buildTab(context, index, _tabs.mainTabIndex == index)
-							)
+									]
+								)
+							]
 						)
 					)
 				)

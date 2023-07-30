@@ -646,13 +646,19 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 	void didUpdateWidget(Expander oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (widget.expanded && !oldWidget.expanded) {
-			animation.forward();
+			animation.forward().then((_) => _afterAnimation());
 		}
 		else if (!widget.expanded && oldWidget.expanded) {
-			animation.reverse();
+			animation.reverse().then((_) => _afterAnimation());
 		}
 		else if (widget.duration != oldWidget.duration) {
 			animation.duration = widget.duration;
+		}
+	}
+
+	void _afterAnimation() {
+		if (mounted) {
+			setState(() {});
 		}
 	}
 
@@ -660,7 +666,7 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 	Widget build(BuildContext context) {
 		return SafeArea(
 			top: false,
-			bottom: animation.value > 0 && !widget.bottomSafe,
+			bottom: !widget.bottomSafe,
 			child: AnimatedBuilder(
 				animation: animation,
 				builder: (context, _) => SizedBox(
@@ -674,7 +680,10 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 								right: 0,
 								child: SizedBox(
 									height: widget.height,
-									child: widget.child
+									child: FadeTransition(
+										opacity: animation,
+										child: widget.child
+									)
 								)
 							)
 						]

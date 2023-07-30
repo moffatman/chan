@@ -939,37 +939,32 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					),
 				],
 				const SizedBox(height: 32),
-				Row(
+				const Row(
 					children: [
-						const Icon(CupertinoIcons.arrow_up_down),
-						const SizedBox(width: 8),
-						const Expanded(
-							child: Text('Tab bar hides when scrolling down')
-						),
-						AdaptiveSwitch(
-							value: settings.tabMenuHidesWhenScrollingDown,
-							onChanged: (newValue) {
-								settings.tabMenuHidesWhenScrollingDown = newValue;
-							}
+						Icon(CupertinoIcons.arrow_up_down),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Hide bars when scrolling down')
 						)
 					]
 				),
-				const SizedBox(height: 32),
-				Row(
-					children: [
-						const Icon(CupertinoIcons.arrow_up_down),
-						const SizedBox(width: 8),
-						Expanded(
-							child: Text('${settings.androidDrawer ? 'Navigation bar hides' : 'Top and bottom bars hide'} when scrolling down')
-						),
-						AdaptiveSwitch(
-							value: settings.hideBarsWhenScrollingDown,
-							onChanged: (newValue) {
-								ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.up; // Don't immediately hide bars
-								settings.hideBarsWhenScrollingDown = newValue;
-							}
-						)
-					]
+				const SizedBox(height: 16),
+				AdaptiveSegmentedControl<(bool, bool)>(
+					children: {
+						(false, false): (null, 'None'),
+						(false, true): (null, 'Tab bar'),
+						if (settings.hideBarsWhenScrollingDown && !settings.tabMenuHidesWhenScrollingDown) (true, false): (null, 'Only top and bottom bars (Don\'t use this!!!)'),
+						(true, true): (null, settings.androidDrawer ? 'Navigation bar' : 'Top and bottom bars')
+					},
+					groupValue: (settings.hideBarsWhenScrollingDown, settings.tabMenuHidesWhenScrollingDown),
+					onValueChanged: (pair) {
+						if (!settings.hideBarsWhenScrollingDown && pair.$1) {
+							// Don't immediately hide bars
+							ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.up;
+						}
+						settings.hideBarsWhenScrollingDown = pair.$1;
+						settings.tabMenuHidesWhenScrollingDown = pair.$2;
+					}
 				),
 				const SizedBox(height: 32),
 				Row(
