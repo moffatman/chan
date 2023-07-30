@@ -919,7 +919,7 @@ class PostLinkSpan extends PostSpan {
 					final lines = [
 						if (name != null && !url.contains(name!)) name!,
 						if (snapshot.data?.title?.isNotEmpty ?? false) snapshot.data!.title!
-						else if (name == null) url
+						else if (name == null || url.contains(name!)) url
 					];
 					tapChild = buildEmbed(
 						left: ClipRRect(
