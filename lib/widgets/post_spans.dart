@@ -916,6 +916,11 @@ class PostLinkSpan extends PostSpan {
 					byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
 				}
 				if (snapshot.data?.thumbnailWidget != null || snapshot.data?.thumbnailUrl != null) {
+					final lines = [
+						if (name != null && !url.contains(name!)) name!,
+						if (snapshot.data?.title?.isNotEmpty ?? false) snapshot.data!.title!
+						else if (name == null) url
+					];
 					tapChild = buildEmbed(
 						left: ClipRRect(
 							borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -937,14 +942,9 @@ class PostLinkSpan extends PostSpan {
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.start,
 								children: [
-									if (name != null && !url.contains(name!)) Text(name!),
-									if (snapshot.data?.title?.isNotEmpty ?? false) Text(snapshot.data!.title!, style: TextStyle(
-										color: theme.primaryColor
-									), textScaler: TextScaler.noScaling)
-									else if (name == null) Text(url, style: TextStyle(
-										color: theme.primaryColor
-									), textScaler: TextScaler.noScaling),
-									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey), textScaler: TextScaler.noScaling)
+									if (lines.length > 1) ...lines.skip(1).map((l) => Text(l, textScaler: TextScaler.noScaling, style: const TextStyle(color: Colors.grey, fontSize: 16))),
+									Text(lines.first, textScaler: TextScaler.noScaling),
+									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey, fontSize: 16), textScaler: TextScaler.noScaling)
 								]
 							)
 						),
