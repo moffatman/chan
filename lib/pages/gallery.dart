@@ -488,7 +488,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	double get _minScrollSheetSize {
 		if (context.read<EffectiveSettings>().showThumbnailsInGallery) {
-			return 0.2;
+			return max(0.2, (kMinInteractiveDimensionCupertino + _thumbnailSize + 8) / (MediaQuery.sizeOf(context).height / Persistence.settings.interfaceScale));
 		}
 		if (currentController.videoPlayerController != null) {
 			return (44 + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height;
