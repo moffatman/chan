@@ -294,6 +294,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									placeholder: 'Board...',
 									textAlign: TextAlign.center,
 									focusNode: _focusNode,
+									enableSuggestions: false,
 									onTap: () {
 										scrollController.jumpTo(scrollController.position.pixels);
 										if (!_showSelectedItem) {
