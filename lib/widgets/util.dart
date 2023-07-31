@@ -83,6 +83,7 @@ void showToast({
 	FToast().init(context).showToast(
 		child: Container(
 			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+			margin: const EdgeInsets.only(bottom: 64),
 			decoration: BoxDecoration(
 				borderRadius: BorderRadius.circular(24),
 				color: theme.primaryColorWithBrightness(0.2)
