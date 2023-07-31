@@ -229,9 +229,15 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 													SliverFadeTransition(
 														opacity: _opacity,
 														sliver: SliverCenter(
+															minimumPadding: MediaQuery.paddingOf(context),
 															key: _childKey,
-															child: SliverSafeArea(
-																sliver: widget.sliver ?? SliverToBoxAdapter(
+															child: MediaQuery.removePadding(
+																context: context,
+																removeLeft: true,
+																removeRight: true,
+																removeTop: true,
+																removeBottom: true,
+																child: widget.sliver ?? SliverToBoxAdapter(
 																	child: ChanceTheme.materialOf(context) ? Material(
 																		child: child
 																	) : child
