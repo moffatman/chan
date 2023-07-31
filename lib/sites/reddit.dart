@@ -918,7 +918,7 @@ class SiteReddit extends ImageboardSite {
 							imageHeight: 16,
 							imageWidth: 16,
 							imageUrl: part['u'],
-							name: ''
+							name: part['a'] ?? ''
 						);
 					}
 				}).toList()
