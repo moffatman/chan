@@ -38,5 +38,5 @@ class ImageboardMultiFlag implements Flag {
 	});
 
 	@override
-	String get name => parts.map((p) => p.name).where((s) => s.isNotEmpty).join(', ');
+	String get name => parts.map((p) => p.name).where((s) => s.trim().isNotEmpty).join(', ');
 }
