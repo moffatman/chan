@@ -1989,10 +1989,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															Expanded(
 																child: Center(
 																	child: AdaptiveSearchTextField(
-																		prefixIcon: const Padding(
-																			padding: EdgeInsets.only(top: 2),
-																			child: Icon(CupertinoIcons.search)
-																		),
 																		onTap: () {
 																			setState(() {
 																				_searchTapped = true;

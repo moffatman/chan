@@ -362,7 +362,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																	smartQuotesType: SmartQuotesType.disabled,
 																	smartDashesType: SmartDashesType.disabled,
 																	suffixVisible: _searchFocused,
-																	prefixIcon: constraints.maxWidth < 150 ? null : const Icon(CupertinoIcons.search),
+																	prefixIcon: constraints.maxWidth < 150 ? null : CupertinoIcons.search,
 																	onSuffixTap: () {
 																		_focusNode.unfocus();
 																		_controller.clear();

@@ -119,6 +119,7 @@ class AdaptiveTextField extends StatelessWidget {
 				textCapitalization: textCapitalization
 			);
 		}
+		final placeholderColor = ChanceTheme.primaryColorOf(context).withOpacity(0.75);
 		return CupertinoTextField(
 			autocorrect: autocorrect,
 			autofillHints: autofillHints,
@@ -148,9 +149,9 @@ class AdaptiveTextField extends StatelessWidget {
 			onSubmitted: onSubmitted,
 			onTap: onTap,
 			placeholder: placeholder,
-			placeholderStyle: placeholderStyle ?? const TextStyle(
+			placeholderStyle: placeholderStyle ?? TextStyle(
 				fontWeight: FontWeight.w400,
-				color: CupertinoColors.placeholderText,
+				color: placeholderColor,
 			),
 			smartDashesType: smartDashesType,
 			smartQuotesType: smartQuotesType,
@@ -172,7 +173,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 	final VoidCallback? onSuffixTap;
 	final VoidCallback? onTap;
 	final String? placeholder;
-	final Widget? prefixIcon;
+	final IconData? prefixIcon;
 	final SmartDashesType? smartDashesType;
 	final SmartQuotesType? smartQuotesType;
 	final bool? suffixVisible;
@@ -186,7 +187,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 		this.onSuffixTap,
 		this.onTap,
 		this.placeholder,
-		this.prefixIcon = const Icon(CupertinoIcons.search),
+		this.prefixIcon = CupertinoIcons.search,
 		this.smartDashesType,
 		this.smartQuotesType,
 		this.suffixVisible,
@@ -218,7 +219,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 					enabledBorder: border,
 					focusedBorder: null,
 					labelText: placeholder,
-					prefixIcon: prefixIcon ?? const SizedBox.shrink(),
+					prefixIcon: prefixIcon == null ? const SizedBox.shrink() : Icon(prefixIcon),
 					prefixIconConstraints: prefixIcon == null ? const BoxConstraints.tightFor(width: 12, height: 48) : null,
 					prefixIconColor: ChanceTheme.primaryColorOf(context),
 					labelStyle: TextStyle(
@@ -238,6 +239,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 				smartQuotesType: smartQuotesType
 			);
 		}
+		final placeholderColor = ChanceTheme.primaryColorOf(context).withOpacity(0.75);
 		return CupertinoSearchTextField(
 			backgroundColor: ChanceTheme.searchTextFieldColorOf(context),
 			controller: controller,
@@ -250,10 +252,16 @@ class AdaptiveSearchTextField extends StatelessWidget {
 				null => OverlayVisibilityMode.editing,
 				false => OverlayVisibilityMode.never
 			},
+			placeholderStyle: TextStyle(
+				color: placeholderColor
+			),
 			onSuffixTap: onSuffixTap,
 			onTap: onTap,
 			placeholder: placeholder,
-			prefixIcon: prefixIcon ?? const SizedBox.shrink(),
+			prefixIcon: prefixIcon == null ? const SizedBox.shrink() : Padding(
+				padding: const EdgeInsets.only(top: 3),
+				child: Icon(prefixIcon, color: placeholderColor)
+			),
 			smartDashesType: smartDashesType,
 			smartQuotesType: smartQuotesType
 		);
