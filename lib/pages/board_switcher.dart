@@ -255,6 +255,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}).map((i) => i.scope(null)));
 		final effectiveSelectedIndex = min(_selectedIndex, filteredBoards.length - 1);
 		return AdaptiveScaffold(
+			disableAutoBarHiding: true,
 			backgroundColor: Colors.transparent,
 			bar: AdaptiveBar(
 				title: LayoutBuilder(

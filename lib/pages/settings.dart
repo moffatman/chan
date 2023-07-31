@@ -1156,6 +1156,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 		final settings = context.watch<EffectiveSettings>();
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
+			disableAutoBarHiding: true,
 			bar: const AdaptiveBar(
 				title: Text('Image Filter Settings')
 			),
@@ -1224,6 +1225,7 @@ class _SettingsFilterPageState extends State<SettingsFilterPage> {
 		final settings = context.watch<EffectiveSettings>();
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
+			disableAutoBarHiding: true,
 			bar: const AdaptiveBar(
 				title: Text('Filter Settings')
 			),
