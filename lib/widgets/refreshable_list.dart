@@ -2858,7 +2858,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		final found = _items.tryFirstWhere((i) => i.item == item);
 		if (found != null && found.cachedOffset != null && (found.cachedOffset! < (scrollController?.offset ?? 0))) {
 			scrollController?.animateTo(
-				found.cachedOffset!,
+				found.cachedOffset! - MediaQuery.paddingOf(state!.context).top,
 				duration: const Duration(milliseconds: 200),
 				curve: Curves.ease
 			);
