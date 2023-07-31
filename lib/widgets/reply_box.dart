@@ -822,8 +822,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				overrideAttachmentFilename = '${_filenameController.text.normalizeSymbols}.${attachmentExt!}';
 			}
 			if (settings.randomizeFilenames && attachment != null) {
-				const alphanumericCharacters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-				overrideAttachmentFilename = '${List.generate(12, (i) => alphanumericCharacters[random.nextInt(alphanumericCharacters.length)]).join('')}.${attachmentExt!}';
+				overrideAttachmentFilename = '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.${attachmentExt!}';
 			}
 			// Replace known-bad special symbols
 			_textFieldController.text = _textFieldController.text.normalizeSymbols;
