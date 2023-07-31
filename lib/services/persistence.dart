@@ -9,6 +9,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/thread.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
@@ -19,7 +20,6 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:cookie_jar/cookie_jar.dart';
@@ -1209,7 +1209,7 @@ class PersistentBrowserTab extends EasyListenable {
 	String? imageboardKey;
 	Imageboard? get imageboard => imageboardKey == null ? null : ImageboardRegistry.instance.getImageboard(imageboardKey!);
 	// Do not persist
-	RefreshableListController<Post>? threadController;
+	ThreadPageState? threadPageState;
 	// Do not persist
 	final Map<ThreadIdentifier, int> initialPostId = {};
 	// Do not persist

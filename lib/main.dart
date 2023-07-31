@@ -35,7 +35,6 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
-import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/tab_menu.dart';
@@ -644,7 +643,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		for (int i = 0; i < 200 && _settingsNavigatorKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
 		}
-		if (devTab.threadController?.items.tryFirst?.item.threadIdentifier != id.thread) {
+		if (devTab.threadPageState?.widget.thread != id.thread) {
 			_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
 			_settingsNavigatorKey.currentState?.push(
 				adaptivePageRoute(
@@ -656,15 +655,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				)
 			);
 		}
-		else if (id.postId != id.threadId) {
-			try {
-				await devTab.threadController?.animateTo((p) => p.id == id.postId);
-			}
-			on ItemNotFoundException {
-				await devTab.threadController?.update();
-				await Future.delayed(const Duration(milliseconds: 100));
-				await devTab.threadController?.animateTo((p) => p.id == id.postId, orElseLast: (p) => true);
-			}
+		else if (id.postId != id.threadId && id.postId != null) {
+			await devTab.threadPageState?.scrollToPost(id.postId!);
 		}
 	}
 
@@ -857,10 +849,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _scrollExistingTab(PersistentBrowserTab tab, int postId) async {
-		if (tab.threadController?.items.any((p) => p.item.id == postId) == false) {
-			await Future.any([tab.threadController!.update(), Future.delayed(const Duration(milliseconds: 500))]);
+		for (int i = 0; i < 200 && tab.threadPageState == null; i++) {
+			await Future.delayed(const Duration(milliseconds: 50));
 		}
-		tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0, orElseLast: (p) => true);
+		tab.threadPageState?.scrollToPost(postId);
 	}
 
 	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification) async {

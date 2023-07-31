@@ -43,6 +43,7 @@ import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:mutex/mutex.dart';
 import 'package:provider/provider.dart';
 
 class OpenGalleryIntent extends Intent {
@@ -126,10 +127,10 @@ class ThreadPage extends StatefulWidget {
 	}) : super(key: key);
 
 	@override
-	createState() => _ThreadPageState();
+	createState() => ThreadPageState();
 }
 
-class _ThreadPageState extends State<ThreadPage> {
+class ThreadPageState extends State<ThreadPage> {
 	late PersistentThreadState persistentState;
 	final _shareButtonKey = GlobalKey(debugLabel: '_ThreadPageState._shareButtonKey');
 	final _weakNavigatorKey = GlobalKey<WeakNavigatorState>(debugLabel: '_ThreadPageState._weakNavigatorKey');
@@ -144,7 +145,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	int? lastPageNumber;
 	int lastSavedPostsLength = 0;
 	int lastHiddenMD5sLength = 0;
-	_PersistentThreadStateSnapshot lastPersistentThreadStateSnapshot = _PersistentThreadStateSnapshot.empty();
+	_PersistentThreadStateSnapshot _lastPersistentThreadStateSnapshot = _PersistentThreadStateSnapshot.empty();
 	bool _foreground = false;
 	PersistentBrowserTab? _parentTab;
 	final List<Function> _postUpdateCallbacks = [];
@@ -159,19 +160,20 @@ class _ThreadPageState extends State<ThreadPage> {
 	ThreadIdentifier? _rejectedNewGeneralSuggestion;
 	late final EasyListenable _glowingPostsAnimation;
 	int? _glowingPostId;
+	final _scrollLock = Mutex();
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
 		final savedPostsLength = persistentState.thread?.posts.where((p) => persistence.getSavedPost(p) != null).length ?? 0;
 		final hiddenMD5sLength = Persistence.settings.hiddenImageMD5s.length;
 		final currentSnapshot = _PersistentThreadStateSnapshot.of(persistentState);
-		if (currentSnapshot != lastPersistentThreadStateSnapshot ||
+		if (currentSnapshot != _lastPersistentThreadStateSnapshot ||
 				savedPostsLength != lastSavedPostsLength ||
 				hiddenMD5sLength != lastHiddenMD5sLength) {
 			_listController.state?.forceRebuildId++;
 			setState(() {});
 		}
-		if (persistentState.thread != lastPersistentThreadStateSnapshot.thread) {
+		if (persistentState.thread != _lastPersistentThreadStateSnapshot.thread) {
 			final tmpPersistentState = persistentState;
 			_postUpdateCallbacks.add(() {
 				if (mounted && persistentState == tmpPersistentState && !blocked) {
@@ -198,7 +200,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		lastSavedPostsLength = savedPostsLength;
 		lastHiddenMD5sLength = hiddenMD5sLength;
-		lastPersistentThreadStateSnapshot = currentSnapshot;
+		_lastPersistentThreadStateSnapshot = currentSnapshot;
 		if (persistentState.thread != null) {
 			zone.addThread(persistentState.thread!);
 		}
@@ -253,14 +255,27 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<void> _blockAndScrollToPostIfNeeded([Duration delayBeforeScroll = Duration.zero]) async {
+	Future<void> scrollToPost(int postId) => _blockAndScrollToPostIfNeeded(
+		target: (postId, 0),
+		shouldBlock: false
+	);
+
+	Future<void> _blockAndScrollToPostIfNeeded({
+		Duration delayBeforeScroll = Duration.zero,
+		(int, double)? target,
+		bool shouldBlock = true
+	}) => _scrollLock.protect(() async {
 		if (persistentState.thread == null) {
 			// too early to try to scroll
 			return;
 		}
 		final (int, double)? scrollTo;
 		bool glow = false;
-		if (widget.initialPostId != null) {
+		if (target != null) {
+			scrollTo = target;
+			glow = true;
+		}
+		else if (widget.initialPostId != null) {
 			scrollTo = (widget.initialPostId!, 0);
 			glow = true;
 		}
@@ -281,10 +296,13 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread != null && scrollTo != null) {
 			Post? target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
 			if (target != null && _listController.isOnscreen(target)) {
+				if (glow) {
+					_glowPost(scrollTo.$1);
+				}
 				return;
 			}
 			setState(() {
-				blocked = true;
+				blocked = shouldBlock;
 			});
 			try {
 				await _ensurePostLoaded(scrollTo.$1);
@@ -327,7 +345,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				});
 			}
 		}
-	}
+	});
 
 	void _maybeUpdateWatch() {
 		final notifications = context.read<Notifications>();
@@ -488,7 +506,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
 		});
 		_listController.slowScrolls.addListener(_onSlowScroll);
-		context.read<PersistentBrowserTab?>()?.threadController = _listController;
+		context.read<PersistentBrowserTab?>()?.threadPageState = this;
 		if (!(context.read<MasterDetailHint?>()?.twoPane ?? false) &&
 		    persistentState.lastSeenPostId != null &&
 				(persistentState.thread?.posts_.length ?? 0) > 20) {
@@ -581,7 +599,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	Future<void> _scrollIfWarranted([Duration delayBeforeScroll = Duration.zero]) async {
 		final int? explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
 		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && (context.read<ImageboardSite>().isReddit || context.read<ImageboardSite>().isHackerNews) && persistentState.firstVisiblePostId == null))) {
-			await _blockAndScrollToPostIfNeeded(delayBeforeScroll);
+			await _blockAndScrollToPostIfNeeded(delayBeforeScroll: delayBeforeScroll);
 		}
 	}
 
@@ -1701,8 +1719,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		super.dispose();
 		_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
 		_listController.dispose();
-		if (_parentTab?.threadController == _listController) {
-			_parentTab?.threadController = null;
+		if (_parentTab?.threadPageState == this) {
+			_parentTab?.threadPageState = null;
 		}
 		if (_foreground) {
 			setHandoffUrl(null);
