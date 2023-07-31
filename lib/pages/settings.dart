@@ -2403,15 +2403,18 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													Row(
 														mainAxisAlignment: MainAxisAlignment.end,
 														children: [
-															Slider.adaptive(
-																value: size.width,
-																min: 100,
-																max: 600,
-																onChanged: (d) {
-																	setDialogState(() {
-																		size = Size(d, size.height);
-																	});
-																}
+															SizedBox(
+																width: 150,
+																child: Slider.adaptive(
+																	value: size.width,
+																	min: 100,
+																	max: 600,
+																	onChanged: (d) {
+																		setDialogState(() {
+																			size = Size(d, size.height);
+																		});
+																	}
+																)
 															),
 															AdaptiveIconButton(
 																onPressed: size.width <= 100 ? null : () {
@@ -2436,15 +2439,18 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													Row(
 														mainAxisAlignment: MainAxisAlignment.end,
 														children: [
-															Slider.adaptive(
-																value: size.height,
-																min: 100,
-																max: 600,
-																onChanged: (d) {
-																	setDialogState(() {
-																		size = Size(size.width, d);
-																	});
-																}
+															SizedBox(
+																width: 150,
+																child: Slider.adaptive(
+																	value: size.height,
+																	min: 100,
+																	max: 600,
+																	onChanged: (d) {
+																		setDialogState(() {
+																			size = Size(size.width, d);
+																		});
+																	}
+																)
 															),
 															AdaptiveIconButton(
 																onPressed: size.height <= 100 ? null : () {
@@ -2591,7 +2597,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 										message: DefaultTextStyle(
 											style: DefaultTextStyle.of(context).style,
 											child: Column(
-												crossAxisAlignment: CrossAxisAlignment.start,
+												//crossAxisAlignment: CrossAxisAlignment.start,
 												children: [
 													Container(
 														height: settings.maxCatalogRowHeight,
@@ -2625,15 +2631,18 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													Row(
 														mainAxisAlignment: MainAxisAlignment.end,
 														children: [
-															Slider.adaptive(
-																value: settings.maxCatalogRowHeight,
-																min: 100,
-																max: 600,
-																onChanged: (d) {
-																	setDialogState(() {
-																		settings.maxCatalogRowHeight = d;
-																	});
-																}
+															SizedBox(
+																width: 150,
+																child: Slider.adaptive(
+																	value: settings.maxCatalogRowHeight,
+																	min: 100,
+																	max: 600,
+																	onChanged: (d) {
+																		setDialogState(() {
+																			settings.maxCatalogRowHeight = d;
+																		});
+																	}
+																)
 															),
 															AdaptiveIconButton(
 																onPressed: settings.maxCatalogRowHeight <= 100 ? null : () {
