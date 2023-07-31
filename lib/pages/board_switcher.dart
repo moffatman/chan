@@ -532,11 +532,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 						),
 						(filteredBoards.isEmpty) ? const Center(
 							child: Text('No matching boards')
-						) : SafeArea(
-							child: settings.useBoardSwitcherList ? ListView.separated(
+						) : Builder(
+							builder: (context) => settings.useBoardSwitcherList ? ListView.separated(
 								physics: const AlwaysScrollableScrollPhysics(),
 								controller: scrollController,
-								padding: const EdgeInsets.only(top: 4, bottom: 4),
+								padding: const EdgeInsets.only(top: 4, bottom: 4) + MediaQuery.paddingOf(context),
 								separatorBuilder: (context, i) => const SizedBox(height: 2),
 								itemCount: filteredBoards.length,
 								itemBuilder: (context, i) {
@@ -705,7 +705,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							) : GridView.extent(
 								physics: const AlwaysScrollableScrollPhysics(),
 								controller: scrollController,
-								padding: const EdgeInsets.only(top: 4, bottom: 4),
+								padding: const EdgeInsets.only(top: 4, bottom: 4) + MediaQuery.paddingOf(context),
 								maxCrossAxisExtent: 125,
 								mainAxisSpacing: 4,
 								childAspectRatio: 1.2,
@@ -879,53 +879,56 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								},
 								child: Align(
 									alignment: Alignment.bottomCenter,
-									child: Container(
-										padding: const EdgeInsets.all(16),
-										width: 300 * context.select<EffectiveSettings, double>((s) => s.textScale),
-										child: Container(
-											decoration: BoxDecoration(
-												borderRadius: BorderRadius.circular(16),
-												color: ChanceTheme.backgroundColorOf(context)
-											),
+									child: Builder(
+										builder: (context) => Container(
+											margin: MediaQuery.paddingOf(context),
 											padding: const EdgeInsets.all(16),
-											child: Row(
-												crossAxisAlignment: CrossAxisAlignment.center,
-												children: [
-													AdaptiveIconButton(
-														minSize: 0,
-														onPressed: (currentImageboardIndex == 0) ? null : () {
-															setState(() {
-																currentImageboardIndex--;
-															});
-															currentImageboard.refreshBoards();
-														},
-														icon: const Icon(CupertinoIcons.chevron_left)
-													),
-													const SizedBox(width: 8),
-													Expanded(
-														child: Row(
-															mainAxisAlignment: MainAxisAlignment.center,
-															children: [
-																ImageboardIcon(imageboardKey: currentImageboard.key),
-																const SizedBox(width: 8),
-																Flexible(
-																	child: AutoSizeText(currentImageboard.site.name, textAlign: TextAlign.center, maxLines: 1)
-																)
-															]
+											width: 300 * context.select<EffectiveSettings, double>((s) => s.textScale),
+											child: Container(
+												decoration: BoxDecoration(
+													borderRadius: BorderRadius.circular(16),
+													color: ChanceTheme.backgroundColorOf(context)
+												),
+												padding: const EdgeInsets.all(16),
+												child: Row(
+													crossAxisAlignment: CrossAxisAlignment.center,
+													children: [
+														AdaptiveIconButton(
+															minSize: 0,
+															onPressed: (currentImageboardIndex == 0) ? null : () {
+																setState(() {
+																	currentImageboardIndex--;
+																});
+																currentImageboard.refreshBoards();
+															},
+															icon: const Icon(CupertinoIcons.chevron_left)
+														),
+														const SizedBox(width: 8),
+														Expanded(
+															child: Row(
+																mainAxisAlignment: MainAxisAlignment.center,
+																children: [
+																	ImageboardIcon(imageboardKey: currentImageboard.key),
+																	const SizedBox(width: 8),
+																	Flexible(
+																		child: AutoSizeText(currentImageboard.site.name, textAlign: TextAlign.center, maxLines: 1)
+																	)
+																]
+															)
+														),
+														const SizedBox(width: 8),
+														AdaptiveIconButton(
+															minSize: 0,
+															onPressed: (currentImageboardIndex + 1 >= allImageboards.length) ? null : () {
+																setState(() {
+																	currentImageboardIndex++;
+																});
+																currentImageboard.refreshBoards();
+															},
+															icon: const Icon(CupertinoIcons.chevron_right)
 														)
-													),
-													const SizedBox(width: 8),
-													AdaptiveIconButton(
-														minSize: 0,
-														onPressed: (currentImageboardIndex + 1 >= allImageboards.length) ? null : () {
-															setState(() {
-																currentImageboardIndex++;
-															});
-															currentImageboard.refreshBoards();
-														},
-														icon: const Icon(CupertinoIcons.chevron_right)
-													)
-												]
+													]
+												)
 											)
 										)
 									)
