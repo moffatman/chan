@@ -26,6 +26,9 @@ class ImageboardFlag implements Flag {
 	});
 
 	ImageboardFlag.text(this.name) : imageUrl = '', imageWidth = 0, imageHeight = 0;
+
+	@override
+	String toString() => imageUrl.isEmpty ? 'ImageboardFlag.text($name)' : 'ImageboardFlag(name: $name, imageUrl: $imageUrl)';
 }
 
 @HiveType(typeId: 36)
@@ -39,4 +42,7 @@ class ImageboardMultiFlag implements Flag {
 
 	@override
 	String get name => parts.map((p) => p.name).where((s) => s.trim().isNotEmpty).join(', ');
+
+	@override
+	String toString() => 'ImageboardMultiFlag(parts: $parts)';
 }

@@ -9,13 +9,14 @@ import 'package:provider/provider.dart';
 
 class _ImageboardFlag extends StatelessWidget {
 	final ImageboardFlag flag;
+	final TextStyle? style;
 
-	const _ImageboardFlag(this.flag);
+	const _ImageboardFlag(this.flag, this.style);
 
 	@override
 	Widget build(BuildContext context) {
 		if (flag.imageWidth == 0 || flag.imageHeight == 0) {
-			return const SizedBox.shrink();
+			return Text(flag.name, style: style, textScaler: TextScaler.noScaling);
 		}
 		return SizedBox(
 			width: flag.imageWidth,
@@ -37,38 +38,33 @@ class _ImageboardFlag extends StatelessWidget {
 	}
 }
 
-class _Flag extends StatelessWidget {
-	final Flag flag;
-
-	const _Flag(this.flag);
-
-	@override
-	Widget build(BuildContext context) {
-		if (flag is ImageboardFlag) {
-			return _ImageboardFlag(flag as ImageboardFlag);
+InlineSpan makeFlagSpan({
+	required Flag flag,
+	required bool includeTextOnlyContent,
+	required bool appendLabels,
+	TextStyle? style
+}) {
+	final parts = (flag is ImageboardMultiFlag) ? flag.parts : [flag as ImageboardFlag];
+	bool padding = false;
+	final children = <InlineSpan>[];
+	for (final part in parts) {
+		if (!includeTextOnlyContent && part.imageUrl.isEmpty) {
+			continue;
 		}
-		bool paddingBeforeNextImage = false;
-		final children = <Widget>[];
-		for (final part in (flag as ImageboardMultiFlag).parts) {
-			if (part.imageUrl.isNotEmpty && paddingBeforeNextImage) {
-				children.add(const SizedBox(width: 4));
-			}
-			children.add(_ImageboardFlag(part));
-			if (part.imageUrl.isNotEmpty) {
-				paddingBeforeNextImage = true;
-			}
+		if (padding) {
+			children.add(const TextSpan(text: ' '));
 		}
-		return Row(
-			mainAxisSize: MainAxisSize.min,
-			children: children
-		);
+		children.add(WidgetSpan(
+			child: _ImageboardFlag(part, style),
+			alignment: PlaceholderAlignment.middle
+		));
+		if (part.name.isNotEmpty && part.imageUrl.isNotEmpty && appendLabels) {
+			children.add(TextSpan(text: ' ${part.name}', style: style));
+		}
+		padding = true;
 	}
-}
-
-class FlagSpan extends WidgetSpan {
-	FlagSpan(Flag flag) : super(
-		child: _Flag(flag),
-		alignment: PlaceholderAlignment.middle
+	return TextSpan(
+		children: children
 	);
 }
 

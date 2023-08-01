@@ -621,7 +621,7 @@ class SiteReddit extends ImageboardSite {
 		final asPost = Post(
 			board: data['subreddit'],
 			name: data['author'],
-			flag: _makeAuthorFlag(data),
+			flag: _makeFlag(data['author_flair_richtext']),
 			time: DateTime.fromMillisecondsSinceEpoch(data['created'].toInt() * 1000),
 			threadId: id,
 			id: id,
@@ -641,7 +641,9 @@ class SiteReddit extends ImageboardSite {
 			attachments: asPost.attachments,
 			replyCount: data['num_comments'],
 			imageCount: 0,
-			flair: _makeLinkFlag(data),
+			flair: _makeFlag(data['link_flair_richtext']) ?? (
+				data['link_flair_text'] == null ? null : ImageboardFlag.text(data['link_flair_text'])
+			),
 			id: id,
 			suggestedVariant: (data['suggested_sort']?.isNotEmpty ?? false) ? _RedditApiName.toVariant(data['suggested_sort']) : null
 		);
@@ -906,32 +908,30 @@ class SiteReddit extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	Flag? _makeAuthorFlag(Map<String, dynamic> data) {
-		if ((data['author_flair_richtext'] as List?)?.isNotEmpty ?? false) {
-			return ImageboardMultiFlag(
-				parts: (data['author_flair_richtext'] as List).map((part) {
-					if (part['e'] == 'text') {
-						return ImageboardFlag.text(part['t']);
-					}
-					else {
-						return ImageboardFlag(
-							imageHeight: 16,
-							imageWidth: 16,
-							imageUrl: part['u'],
-							name: part['a'] ?? ''
-						);
-					}
-				}).toList()
-			);
+	Flag? _makeFlag(List<dynamic>? data) {
+		if (data == null || data.isEmpty) {
+			return null;
 		}
-		return null;
-	}
-
-	Flag? _makeLinkFlag(Map<String, dynamic> data) {
-		if (data['link_flair_text'] != null) {
-			return ImageboardFlag.text(data['link_flair_text']);
+		final parts = <ImageboardFlag>[];
+		for (final part in data) {
+			if (part['e'] == 'text') {
+				final text = (part['t'] as String?)?.trim();
+				if (text != null && !parts.any((t) => t.name == text)) {
+					parts.add(ImageboardFlag.text(text));
+				}
+			}
+			else {
+				final text = ((part['a'] as String?) ?? '').replaceAll(':', '').trim();
+				parts.removeWhere((p) => p.name == text);
+				parts.add(ImageboardFlag(
+					imageHeight: 16,
+					imageWidth: 16,
+					imageUrl: part['u'],
+					name: text
+				));
+			}
 		}
-		return null;
+		return ImageboardMultiFlag(parts: parts);
 	}
 
 	Post _makePost(Map<String, dynamic> child, {int? parentId, required ThreadIdentifier thread}) {
@@ -948,7 +948,7 @@ class SiteReddit extends ImageboardSite {
 			board: thread.board,
 			text: text,
 			name: child['author'],
-			flag: _makeAuthorFlag(child),
+			flag: _makeFlag(child['author_flair_richtext']),
 			time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
 			threadId: thread.id,
 			id: id,

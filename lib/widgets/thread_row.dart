@@ -264,14 +264,13 @@ class ThreadRow extends StatelessWidget {
 				spaceSpan
 			],
 			if (settings.showFlagInCatalogHeader && latestThread.posts_.first.flag != null) ...[
-				FlagSpan(latestThread.posts_.first.flag!),
-				spaceSpan
-			],
-			if (settings.showCountryNameInCatalogHeader && latestThread.posts_.first.flag != null) ...[
-				TextSpan(	
-					text: latestThread.posts_.first.flag!.name,
+				makeFlagSpan(
+					flag: latestThread.posts_.first.flag!,
+					includeTextOnlyContent: true,
+					appendLabels: settings.showCountryNameInCatalogHeader,
 					style: TextStyle(
-						fontSize: subheaderFontSize
+						fontSize: subheaderFontSize,
+						color: theme.primaryColor.withOpacity(0.75)
 					)
 				),
 				spaceSpan
@@ -311,7 +310,7 @@ class ThreadRow extends StatelessWidget {
 				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: theme.titleColor) : null
 			));
 			if (site.classicCatalogStyle) {
-				if (headerRow.isNotEmpty) {
+				if (headerRow.any((t) => t is TextSpan && (t.toPlainText(includePlaceholders: false, includeSemanticsLabels: false).trim().isNotEmpty))) {
 					headerRow.add(const TextSpan(text: '\n'));
 				}
 				headerRow.add(titleSpan);
@@ -327,11 +326,12 @@ class ThreadRow extends StatelessWidget {
 				}
 				headerRow.insert(0, titleSpan);
 				if (!latestThread.title!.contains(latestThread.flair?.name ?? '')) {
-					headerRow.insert(0, TextSpan(	
-						text: '${latestThread.flair!.name} ',
-						style: const TextStyle(
-							color: Colors.grey
-						)
+					headerRow.insert(0, const TextSpan(text: ' '));
+					headerRow.insert(0, makeFlagSpan(
+						flag: latestThread.flair!,
+						includeTextOnlyContent: true,
+						appendLabels: false,
+						style: const TextStyle(color: Colors.grey)
 					));
 				}
 			}
@@ -477,7 +477,6 @@ class ThreadRow extends StatelessWidget {
 				)
 			)
 		];
-		final showFlairInContentFocus = !settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '');
 		List<Widget> buildContentFocused() {
 			final attachment = latestThread.attachments.tryFirst;
 			Widget? att = attachment == null ? null : LayoutBuilder(
@@ -544,19 +543,10 @@ class ThreadRow extends StatelessWidget {
 							child: Text.rich(
 								TextSpan(
 									children: [
-										if (showFlairInContentFocus && latestThread.attachments.isEmpty) const TextSpan(
-											text: '\n'
-										),
-										if (latestThread.title?.isNotEmpty ?? false) TextSpan(
-											text: '${settings.filterProfanity(latestThread.title!)}\n',
-											style: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: theme.titleColor) : null,
-										),
-										if (settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '')) TextSpan(
-											text: '${latestThread.flair?.name}\n',
-											style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 15)
-										),
+										...headerRow,
+										if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
 										if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-											maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0),
+											maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
 											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 											avoidBuggyClippers: true
 										)),
@@ -653,19 +643,6 @@ class ThreadRow extends StatelessWidget {
 						)
 					)
 				],
-				if (contentFocus && showFlairInContentFocus) Positioned(
-					top: 0,
-					left: 0,
-					child: Container(
-						decoration: BoxDecoration(
-							borderRadius: const BorderRadius.only(bottomRight: Radius.circular(6)),
-							color: backgroundColor,
-							border: Border.all(color: borderColor)
-						),
-						padding: const EdgeInsets.all(2),
-						child: Text(latestThread.flair!.name)
-					)
-				),
 				if (watch != null || threadState?.savedTime != null || threadState?.showInHistory == false) Positioned.fill(
 					child: Align(
 						alignment: Alignment.topRight,

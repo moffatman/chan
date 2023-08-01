@@ -306,7 +306,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       title: fields[8] as String?,
       isSticky: fields[9] as bool,
       time: fields[10] as DateTime,
-      flair: fields[11] as ImageboardFlag?,
+      flair: fields[11] as Flag?,
       currentPage: fields[12] as int?,
       uniqueIPCount: fields[13] as int?,
       customSpoilerId: fields[14] as int?,

@@ -1845,6 +1845,7 @@ List<InlineSpan> buildPostInfoRow({
 		postIdRepeatingSegment = null;
 	}
 	final isOP = site.supportsUserInfo && post.name == thread?.posts_.tryFirst?.name;
+	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
 	return [
 		if (post.deleted) ...[
 			TextSpan(
@@ -1854,6 +1855,15 @@ List<InlineSpan> buildPostInfoRow({
 					fontWeight: FontWeight.w600
 				)
 			),
+		],
+		if (post.id == post.threadId && thread?.flair != null && !(thread?.title?.contains(thread.flair?.name ?? '') ?? false)) ...[
+			makeFlagSpan(
+				flag: thread!.flair!,
+				includeTextOnlyContent: true,
+				appendLabels: false,
+				style: const TextStyle(color: Colors.grey)
+			),
+			const TextSpan(text: ' '),
 		],
 		if (post.id == post.threadId && thread?.title != null) TextSpan(
 			text: '${thread?.title} ',
@@ -1949,10 +1959,14 @@ List<InlineSpan> buildPostInfoRow({
 				const TextSpan(text: ' ')
 			]
 			else if (field == PostDisplayField.flag && settings.showFlagOnPosts && post.flag != null) ...[
-				FlagSpan(post.flag!),
+				makeFlagSpan(
+					flag: post.flag!,
+					includeTextOnlyContent: true,
+					appendLabels: combineFlagNames
+				),
 				const TextSpan(text: ' ')
 			]
-			else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null) TextSpan(
+			else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null && !combineFlagNames) TextSpan(
 				text: '${post.flag!.name} '
 			)
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
