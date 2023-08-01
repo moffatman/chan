@@ -763,6 +763,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			child: ChanceTheme(
 				themeKey: settings.darkThemeKey,
 				child: AdaptiveScaffold(
+					disableAutoBarHiding: true,
 					backgroundColor: Colors.transparent,
 					bar: showChrome ? AdaptiveBar(
 						title: AnimatedBuilder(
