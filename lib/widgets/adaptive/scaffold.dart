@@ -96,7 +96,7 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 
 	@override
 	bool shouldFullyObstruct(BuildContext context) {
-		return !autoHideOnScroll;
+		return !autoHideOnScroll && backgroundColor?.opacity == 1;
 	}
 
 	@override
