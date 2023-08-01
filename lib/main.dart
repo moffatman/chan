@@ -1591,7 +1591,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							child: Row(
 								children: [
 									if (!androidDrawer) Container(
-										padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
+										padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top, bottom: MediaQuery.paddingOf(context).bottom),
 										color: ChanceTheme.barColorOf(context),
 										width: 85,
 										child: Column(

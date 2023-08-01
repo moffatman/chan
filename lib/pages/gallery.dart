@@ -195,8 +195,9 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (maxOffset > 0) {
 			thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
 			final screenHeight = mediaQueryData.size.height / Persistence.settings.interfaceScale;
-			final screenTopViewPadding = mediaQueryData.viewPadding.top / Persistence.settings.interfaceScale;
-			final gridViewHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((EffectiveSettings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding));
+			final screenTopViewPadding = mediaQueryData.viewPadding.top;
+			final screenBottomViewPadding = mediaQueryData.viewPadding.bottom;
+			final gridViewHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((EffectiveSettings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding) + screenBottomViewPadding);
 			final gridViewRowCount = (gridViewHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
 			final gridViewSquareSize = gridViewHeight / gridViewRowCount;
 			final gridViewWidthEstimate = ((widget.attachments.length + 1) / gridViewRowCount).ceil() * gridViewSquareSize;
@@ -484,11 +485,11 @@ class _GalleryPageState extends State<GalleryPage> {
 		return offset.distance / threshold;
 	}
 
-	double get _maxScrollSheetSize => (_thumbnailSize + 8 +_gridViewHeight + kMinInteractiveDimensionCupertino) / (MediaQuery.sizeOf(context).height / Persistence.settings.interfaceScale);
+	double get _maxScrollSheetSize => (_thumbnailSize + 8 + _gridViewHeight + kMinInteractiveDimensionCupertino + MediaQuery.paddingOf(context).bottom) / (MediaQuery.sizeOf(context).height / Persistence.settings.interfaceScale);
 
 	double get _minScrollSheetSize {
 		if (context.read<EffectiveSettings>().showThumbnailsInGallery) {
-			return max(0.2, (kMinInteractiveDimensionCupertino + _thumbnailSize + 8) / (MediaQuery.sizeOf(context).height / Persistence.settings.interfaceScale));
+			return max(0.2, (kMinInteractiveDimensionCupertino + _thumbnailSize + 8 + MediaQuery.paddingOf(context).bottom) / (MediaQuery.sizeOf(context).height / Persistence.settings.interfaceScale));
 		}
 		if (currentController.videoPlayerController != null) {
 			return (44 + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height;
@@ -500,8 +501,9 @@ class _GalleryPageState extends State<GalleryPage> {
 		final mediaQueryData = context.findAncestorWidgetOfExactType<MediaQuery>()!.data;
 		final screenHeight = mediaQueryData.size.height / Persistence.settings.interfaceScale;
 		final screenWidth = mediaQueryData.size.width / Persistence.settings.interfaceScale;
-		final screenTopViewPadding = mediaQueryData.viewPadding.top / Persistence.settings.interfaceScale;
-		final maxHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((EffectiveSettings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding));
+		final screenTopViewPadding = mediaQueryData.viewPadding.top;
+		final screenBottomViewPadding = mediaQueryData.viewPadding.bottom;
+		final maxHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((EffectiveSettings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding) + screenBottomViewPadding);
 		final maxRowCount = (maxHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
 		final squareSize = maxHeight / maxRowCount;
 		final visibleSquaresPerRow = (screenWidth / squareSize).floor();

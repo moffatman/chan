@@ -1502,3 +1502,36 @@ class ChainedLinearTextScaler extends TextScaler {
 	@override
 	int get hashCode => Object.hash(parent, _textScaleFactor);
 }
+
+class TestMediaQuery extends StatelessWidget {
+	final Widget child;
+	final EdgeInsets edgeInsets;
+
+	const TestMediaQuery({
+		required this.child,
+		this.edgeInsets = const EdgeInsets.all(50),
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return TransformedMediaQuery(
+			transformation: (mq) => mq.copyWith(
+				padding: mq.padding + edgeInsets,
+				viewPadding: mq.viewPadding + edgeInsets
+			),
+			child: DecoratedBox(
+				position: DecorationPosition.foreground,
+				decoration: BoxDecoration(
+					border: Border(
+						top: BorderSide(color: Colors.pink.withOpacity(0.5), width: edgeInsets.top),
+						bottom: BorderSide(color: Colors.pink.withOpacity(0.5), width: edgeInsets.bottom),
+						left: BorderSide(color: Colors.pink.withOpacity(0.5), width: edgeInsets.left),
+						right: BorderSide(color: Colors.pink.withOpacity(0.5), width: edgeInsets.right)
+					)
+				),
+				child: child
+			)
+		);
+	}
+}
