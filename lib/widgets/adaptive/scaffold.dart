@@ -47,6 +47,7 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 		}
 		final child = AppBar(
 			leading: leading,
+			surfaceTintColor: Colors.transparent,
 			foregroundColor: ChanceTheme.primaryColorOf(context),
 			//centerTitle: true,
 			title: Container(
