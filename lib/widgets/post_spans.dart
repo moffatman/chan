@@ -1901,7 +1901,7 @@ List<InlineSpan> buildPostInfoRow({
 				flag: thread!.flair!,
 				includeTextOnlyContent: true,
 				appendLabels: false,
-				style: const TextStyle(color: Colors.grey)
+				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 			),
 			const TextSpan(text: ' '),
 		],
@@ -2002,7 +2002,8 @@ List<InlineSpan> buildPostInfoRow({
 				makeFlagSpan(
 					flag: post.flag!,
 					includeTextOnlyContent: true,
-					appendLabels: combineFlagNames
+					appendLabels: combineFlagNames,
+					style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 				),
 				const TextSpan(text: ' ')
 			]

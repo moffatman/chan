@@ -331,7 +331,7 @@ class ThreadRow extends StatelessWidget {
 						flag: latestThread.flair!,
 						includeTextOnlyContent: true,
 						appendLabels: false,
-						style: const TextStyle(color: Colors.grey)
+						style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 					));
 				}
 			}
