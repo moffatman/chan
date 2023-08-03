@@ -167,16 +167,15 @@ String formatTime(DateTime time) {
 	final now = DateTime.now();
 	final notToday = (now.day != time.day) || (now.month != time.month) || (now.year != time.year);
 	String prefix = '';
-	const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 	if (notToday || Persistence.settings.exactTimeShowsDateForToday) {
-		if (Persistence.settings.exactTimeIsISO8601) {
-			prefix = '${time.toISO8601Date} ';
+		if (Persistence.settings.exactTimeUsesCustomDateFormat) {
+			prefix = '${time.formatDate(Persistence.settings.customDateFormat)} ';
 		}
 		else if (now.difference(time).inDays > 7) {
 			prefix = '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} ';
 		}
 		else {
-			prefix = '${days[time.weekday]} ';
+			prefix = '${time.weekdayShortName} ';
 		}
 	}
 	if (Persistence.settings.exactTimeIsTwelveHour) {

@@ -891,7 +891,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(126)
 	AutoloadAttachmentsSetting autoCacheAttachments;
 	@HiveField(127)
-	bool exactTimeIsISO8601;
+	bool exactTimeUsesCustomDateFormat;
 	@HiveField(128)
 	bool deprecatedUnsafeImagePeeking;
 	@HiveField(129)
@@ -942,6 +942,8 @@ class SavedSettings extends HiveObject {
 	bool hideBarsWhenScrollingDown;
 	@HiveField(150)
 	bool showPerformanceOverlay;
+	@HiveField(151)
+	String customDateFormat;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1070,7 +1072,7 @@ class SavedSettings extends HiveObject {
 		bool? recordThreadsInHistory,
 		this.fontFamily,
 		AutoloadAttachmentsSetting? autoCacheAttachments,
-		bool? exactTimeIsISO8601,
+		bool? exactTimeUsesCustomDateFormat,
 		bool? deprecatedUnsafeImagePeeking,
 		bool? showOverlaysInGallery,
 		double? verticalTwoPaneMinimumPaneSize,
@@ -1091,6 +1093,7 @@ class SavedSettings extends HiveObject {
 		ImagePeekingSetting? imagePeeking,
 		bool? hideBarsWhenScrollingDown,
 		bool? showPerformanceOverlay,
+		String? customDateFormat,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1246,7 +1249,7 @@ class SavedSettings extends HiveObject {
 		fullQualityThumbnails = fullQualityThumbnails ?? AutoloadAttachmentsSetting.never,
 		recordThreadsInHistory = recordThreadsInHistory ?? true,
 		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never,
-		exactTimeIsISO8601 = exactTimeIsISO8601 ?? false,
+		exactTimeUsesCustomDateFormat = exactTimeUsesCustomDateFormat ?? false,
 		deprecatedUnsafeImagePeeking = deprecatedUnsafeImagePeeking ?? false,
 		showOverlaysInGallery = showOverlaysInGallery ?? true,
 		verticalTwoPaneMinimumPaneSize = verticalTwoPaneMinimumPaneSize ?? -400,
@@ -1265,7 +1268,8 @@ class SavedSettings extends HiveObject {
 		newPostHighlightBrightness = newPostHighlightBrightness ?? 0.1,
 		imagePeeking = imagePeeking ?? (deprecatedUnsafeImagePeeking == true ? ImagePeekingSetting.unsafe : ImagePeekingSetting.standard),
 		hideBarsWhenScrollingDown = hideBarsWhenScrollingDown ?? false,
-		showPerformanceOverlay = showPerformanceOverlay ?? false {
+		showPerformanceOverlay = showPerformanceOverlay ?? false,
+		customDateFormat = customDateFormat ?? DateTimeConversion.kISO8601DateFormat {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2225,9 +2229,9 @@ class EffectiveSettings extends ChangeNotifier {
 			((autoCacheAttachmentsSetting == AutoloadAttachmentsSetting.wifi) && isConnectedToWifi);
 	}
 
-	bool get exactTimeIsISO8601 => _settings.exactTimeIsISO8601;
-	set exactTimeIsISO8601(bool setting) {
-		_settings.exactTimeIsISO8601 = setting;
+	bool get exactTimeUsesCustomDateFormat => _settings.exactTimeUsesCustomDateFormat;
+	set exactTimeUsesCustomDateFormat(bool setting) {
+		_settings.exactTimeUsesCustomDateFormat = setting;
 		_settings.save();
 		notifyListeners();
 	}
@@ -2379,6 +2383,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showPerformanceOverlay => _settings.showPerformanceOverlay;
 	set showPerformanceOverlay(bool setting) {
 		_settings.showPerformanceOverlay = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	String get customDateFormat => _settings.customDateFormat;
+	set customDateFormat(String setting) {
+		_settings.customDateFormat = setting;
 		_settings.save();
 		notifyListeners();
 	}

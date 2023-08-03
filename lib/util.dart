@@ -301,6 +301,19 @@ enum NullSafeOptional {
 	true_
 }
 
+class NullWrapper<T extends Object> {
+	final T? value;
+	const NullWrapper(this.value);
+
+	@override
+	String toString() => 'NullWrapper($value)';
+
+	@override
+	bool operator == (Object other) => other is NullWrapper && other.value == value;
+	@override
+	int get hashCode => value.hashCode;
+}
+
 extension ToBool on NullSafeOptional {
 	bool? get value {
 		switch (this) {
@@ -390,10 +403,23 @@ extension WaitUntil<T> on ValueListenable<T> {
 	}
 }
 
-extension Conversions on DateTime {
+extension DateTimeConversion on DateTime {
 	DateTime get startOfDay => DateTime(year, month, day, 0, 0, 0);
 	DateTime get endOfDay => DateTime(year, month, day, 23, 59, 59);
-	String get toISO8601Date => '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+	static const kISO8601DateFormat = 'YYYY-MM-DD';
+	String get toISO8601Date => formatDate(kISO8601DateFormat);
+	String get weekdayShortName {
+		const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+		return days[weekday];
+	}
+	String formatDate(String format) {
+		return format
+			.replaceAllMapped(RegExp('Y+'), (m) => (year % pow(10, m.end - m.start)).toString())
+			.replaceAll('MM', month.toString().padLeft(2, '0'))
+			.replaceAll('M', month.toString())
+			.replaceAll('DD', day.toString().padLeft(2, '0'))
+			.replaceAll('D', day.toString());
+	}
 }
 
 final Map<String, Mutex> _ephemeralLocks = {};

@@ -3170,20 +3170,33 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 32),
-				Row(
+				const Row(
 					children: [
-						const Icon(CupertinoIcons.calendar),
-						const SizedBox(width: 8),
+						Icon(CupertinoIcons.calendar),
+						SizedBox(width: 8),
 						Expanded(
-							child: Text('ISO 8601 dates (e.g. ${DateTime.now().toISO8601Date})')
-						),
-						AdaptiveSwitch(
-							value: settings.exactTimeIsISO8601,
-							onChanged: (newValue) {
-								settings.exactTimeIsISO8601 = newValue;
-							}
+							child: Text('Date formatting')
 						)
 					]
+				),
+				const SizedBox(height: 16),
+				AdaptiveSegmentedControl<NullWrapper<String>>(
+					children: {
+						const NullWrapper(null): (null, 'Default (${DateTime.now().weekdayShortName})'),
+						const NullWrapper(DateTimeConversion.kISO8601DateFormat): (null, 'ISO 8601 (${DateTime.now().formatDate(DateTimeConversion.kISO8601DateFormat)})'),
+						const NullWrapper('MM/DD/YY'): (null, 'MM/DD/YY (${DateTime.now().formatDate('MM/DD/YY')})')
+					},
+					groupValue: settings.exactTimeUsesCustomDateFormat ? NullWrapper(settings.customDateFormat) : const NullWrapper(null),
+					onValueChanged: (newValue) {
+						final newFormat = newValue.value;
+						if (newFormat == null) {
+							settings.exactTimeUsesCustomDateFormat = false;
+						}
+						else {
+							settings.customDateFormat = newFormat;
+							settings.exactTimeUsesCustomDateFormat = true;
+						}
+					}
 				),
 				const SizedBox(height: 32),
 				Row(

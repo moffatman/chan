@@ -255,7 +255,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       recordThreadsInHistory: fields[124] as bool?,
       fontFamily: fields[125] as String?,
       autoCacheAttachments: fields[126] as AutoloadAttachmentsSetting?,
-      exactTimeIsISO8601: fields[127] as bool?,
+      exactTimeUsesCustomDateFormat: fields[127] as bool?,
       deprecatedUnsafeImagePeeking: fields[128] as bool?,
       showOverlaysInGallery: fields[129] as bool?,
       verticalTwoPaneMinimumPaneSize: fields[130] as double?,
@@ -276,6 +276,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       imagePeeking: fields[145] as ImagePeekingSetting?,
       hideBarsWhenScrollingDown: fields[149] as bool?,
       showPerformanceOverlay: fields[150] as bool?,
+      customDateFormat: fields[151] as String?,
     )
       ..useMaterialStyle = fields[146] as bool?
       ..useAndroidDrawer = fields[147] as bool?
@@ -285,7 +286,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(147)
+      ..writeByte(148)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -533,7 +534,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(126)
       ..write(obj.autoCacheAttachments)
       ..writeByte(127)
-      ..write(obj.exactTimeIsISO8601)
+      ..write(obj.exactTimeUsesCustomDateFormat)
       ..writeByte(128)
       ..write(obj.deprecatedUnsafeImagePeeking)
       ..writeByte(129)
@@ -579,7 +580,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(149)
       ..write(obj.hideBarsWhenScrollingDown)
       ..writeByte(150)
-      ..write(obj.showPerformanceOverlay);
+      ..write(obj.showPerformanceOverlay)
+      ..writeByte(151)
+      ..write(obj.customDateFormat);
   }
 
   @override
