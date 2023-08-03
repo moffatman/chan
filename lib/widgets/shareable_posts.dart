@@ -308,6 +308,16 @@ class ShareablePosts extends StatelessWidget {
 			);
 		}
 		if (style.includeFooter) {
+			String footer = zone.imageboard.site.formatBoardName(zone.imageboard.persistence.getBoard(zone.board));
+			if (zone.imageboard.site.explicitIds) {
+				footer += ' Thread ${zone.primaryThreadId}';
+			}
+			final title = zone.findThread(zone.primaryThreadId)?.title;
+			if (title != null) {
+				footer += ': $title';
+			}
+			footer += '\n';
+			footer += zone.imageboard.site.getWebUrl(zone.board, zone.primaryThreadId, primaryPostId == zone.primaryThreadId ? null : primaryPostId);
 			return Container(
 				color: (!style.useTree && style.childDepth == 0 && style.parentDepth == 0) ? theme.barColor : theme.backgroundColor,
 				width: style.width,
@@ -323,8 +333,8 @@ class ShareablePosts extends StatelessWidget {
 								children: [
 									Flexible(
 										child: AutoSizeText(
-											zone.imageboard.site.getWebUrl(zone.board, zone.primaryThreadId, primaryPostId == zone.primaryThreadId ? null : primaryPostId),
-											maxLines: 1
+											footer,
+											maxLines: 2
 										)
 									)
 								]
