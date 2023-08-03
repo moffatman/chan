@@ -58,12 +58,10 @@ class CupertinoDialogAction2 extends StatelessWidget {
 			onPressed: onPressed,
 			isDefaultAction: isDefaultAction,
 			isDestructiveAction: isDestructiveAction,
-			child: Builder(
-				builder: (context) => DefaultTextStyle(
-					style: DefaultTextStyle.of(context).style.merge(Persistence.settings.textStyle),
-					textAlign: TextAlign.center,
-					child: child
-				)
+			child: DefaultTextStyle.merge(
+				style: Persistence.settings.textStyle,
+				textAlign: TextAlign.center,
+				child: child
 			)
 		);
 	}
