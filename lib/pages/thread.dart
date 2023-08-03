@@ -539,9 +539,9 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	@override
-	void didUpdateWidget(ThreadPage old) {
-		super.didUpdateWidget(old);
-		if (widget.thread != old.thread) {
+	void didUpdateWidget(ThreadPage oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.thread != oldWidget.thread) {
 			_cached.clear();
 			_cachingQueue.clear();
 			_passedFirstLoad = false;
@@ -585,7 +585,7 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			setState(() {});
 		}
-		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
+		else if (widget.initialPostId != oldWidget.initialPostId && widget.initialPostId != null) {
 			_ensurePostLoaded(widget.initialPostId!).then((_) async {
 				setState(() {});
 				await WidgetsBinding.instance.endOfFrame;
