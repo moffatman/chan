@@ -3270,9 +3270,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						)
 					]
 				),
-				const SizedBox(height: 16),
+				const SizedBox(height: 32),
 				if (Platform.isAndroid) ...[
-					const SizedBox(height: 16),
 					Center(
 						child: AdaptiveFilledButton(
 							padding: const EdgeInsets.all(16),
@@ -3289,31 +3288,31 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							}
 						)
 					),
-					const SizedBox(height: 32),
-					const Row(
-						children: [
-							Icon(CupertinoIcons.folder),
-							SizedBox(width: 8),
-							Expanded(
-								child: Text('Media saving folder structure')
-							)
-						]
-					),
-					Padding(
-						padding: const EdgeInsets.all(16),
-						child: AdaptiveChoiceControl<AndroidGallerySavePathOrganizing>(
-							children: const {
-								AndroidGallerySavePathOrganizing.noSubfolders: (null, 'No subfolders'),
-								AndroidGallerySavePathOrganizing.boardSubfolders: (null, 'Per-board subfolders'),
-								AndroidGallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders')
-							},
-							groupValue: settings.androidGallerySavePathOrganizing,
-							onValueChanged: (setting) {
-								settings.androidGallerySavePathOrganizing = setting;
-							}
-						)
-					),
+					const SizedBox(height: 32)
 				],
+				const Row(
+					children: [
+						Icon(CupertinoIcons.folder),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Media saving folder structure')
+						)
+					]
+				),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: AdaptiveChoiceControl<GallerySavePathOrganizing>(
+						children: {
+							GallerySavePathOrganizing.noSubfolders: (null, Platform.isIOS ? '"Chance" album' : 'No subfolders'),
+							GallerySavePathOrganizing.boardSubfolders: (null, Platform.isIOS ? 'Per-board albums' : 'Per-board subfolders'),
+							if (Platform.isAndroid) GallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders')
+						},
+						groupValue: settings.gallerySavePathOrganizing,
+						onValueChanged: (setting) {
+							settings.gallerySavePathOrganizing = setting;
+						}
+					)
+				),
 				const SizedBox(height: 16),
 				Row(
 					children: [

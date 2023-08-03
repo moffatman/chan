@@ -328,7 +328,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(BoardWatchAdapter());
 		Hive.registerAdapter(PersistentBrowserStateAdapter());
 		Hive.registerAdapter(WebImageSearchMethodAdapter());
-		Hive.registerAdapter(AndroidGallerySavePathOrganizingAdapter());
+		Hive.registerAdapter(GallerySavePathOrganizingAdapter());
 		Hive.registerAdapter(MediaScanAdapter());
 		Hive.registerAdapter(DurationAdapter());
 		Hive.registerAdapter(EfficientlyStoredIntSetAdapter());

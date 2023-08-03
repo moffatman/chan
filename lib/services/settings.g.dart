@@ -250,8 +250,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       overscrollModalTapPopsAll: fields[119] as bool?,
       squareThumbnails: fields[120] as bool?,
       alwaysShowSpoilers: fields[121] as bool?,
-      androidGallerySavePathOrganizing:
-          fields[122] as AndroidGallerySavePathOrganizing?,
+      gallerySavePathOrganizing: fields[122] as GallerySavePathOrganizing?,
       fullQualityThumbnails: fields[123] as AutoloadAttachmentsSetting?,
       recordThreadsInHistory: fields[124] as bool?,
       fontFamily: fields[125] as String?,
@@ -523,7 +522,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(121)
       ..write(obj.alwaysShowSpoilers)
       ..writeByte(122)
-      ..write(obj.androidGallerySavePathOrganizing)
+      ..write(obj.gallerySavePathOrganizing)
       ..writeByte(123)
       ..write(obj.fullQualityThumbnails)
       ..writeByte(124)
@@ -942,35 +941,35 @@ class WebmTranscodingSettingAdapter
           typeId == other.typeId;
 }
 
-class AndroidGallerySavePathOrganizingAdapter
-    extends TypeAdapter<AndroidGallerySavePathOrganizing> {
+class GallerySavePathOrganizingAdapter
+    extends TypeAdapter<GallerySavePathOrganizing> {
   @override
   final int typeId = 37;
 
   @override
-  AndroidGallerySavePathOrganizing read(BinaryReader reader) {
+  GallerySavePathOrganizing read(BinaryReader reader) {
     switch (reader.readByte()) {
       case 0:
-        return AndroidGallerySavePathOrganizing.noSubfolders;
+        return GallerySavePathOrganizing.noSubfolders;
       case 1:
-        return AndroidGallerySavePathOrganizing.boardSubfolders;
+        return GallerySavePathOrganizing.boardSubfolders;
       case 2:
-        return AndroidGallerySavePathOrganizing.boardAndThreadSubfolders;
+        return GallerySavePathOrganizing.boardAndThreadSubfolders;
       default:
-        return AndroidGallerySavePathOrganizing.noSubfolders;
+        return GallerySavePathOrganizing.noSubfolders;
     }
   }
 
   @override
-  void write(BinaryWriter writer, AndroidGallerySavePathOrganizing obj) {
+  void write(BinaryWriter writer, GallerySavePathOrganizing obj) {
     switch (obj) {
-      case AndroidGallerySavePathOrganizing.noSubfolders:
+      case GallerySavePathOrganizing.noSubfolders:
         writer.writeByte(0);
         break;
-      case AndroidGallerySavePathOrganizing.boardSubfolders:
+      case GallerySavePathOrganizing.boardSubfolders:
         writer.writeByte(1);
         break;
-      case AndroidGallerySavePathOrganizing.boardAndThreadSubfolders:
+      case GallerySavePathOrganizing.boardAndThreadSubfolders:
         writer.writeByte(2);
         break;
     }
@@ -982,7 +981,7 @@ class AndroidGallerySavePathOrganizingAdapter
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is AndroidGallerySavePathOrganizingAdapter &&
+      other is GallerySavePathOrganizingAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

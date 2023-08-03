@@ -65,7 +65,7 @@ Duration _estimateUrlTime(Uri url) {
 	return time;
 }
 
-const deviceGalleryAlbumName = 'Chance';
+const _kDeviceGalleryAlbumName = 'Chance';
 
 class CurvedRectTween extends Tween<Rect?> {
 	final Curve curve;
@@ -96,17 +96,21 @@ class AttachmentNotArchivedException implements Exception {
 const _maxVideoControllers = 3;
 final List<AttachmentViewerController> _videoControllers = [];
 
-extension on AndroidGallerySavePathOrganizing {
+extension on GallerySavePathOrganizing {
 	List<String> subfoldersFor(Attachment attachment) {
 		switch (this) {
-			case AndroidGallerySavePathOrganizing.noSubfolders:
+			case GallerySavePathOrganizing.noSubfolders:
 				return [];
-			case AndroidGallerySavePathOrganizing.boardSubfolders:
+			case GallerySavePathOrganizing.boardSubfolders:
 				return [attachment.board];
-			case AndroidGallerySavePathOrganizing.boardAndThreadSubfolders:
+			case GallerySavePathOrganizing.boardAndThreadSubfolders:
 				return [attachment.board, attachment.threadId.toString()];
 		}
 	}
+	String albumNameFor(Attachment attachment) => switch (this) {
+		GallerySavePathOrganizing.noSubfolders => _kDeviceGalleryAlbumName,
+		_ => '$_kDeviceGalleryAlbumName - /${attachment.board}/'
+	};
 }
 
 Future<File?> optimisticallyFindCachedFile(Attachment attachment) async {
@@ -797,8 +801,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		try {
 			if (Platform.isIOS) {
 				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
-				AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == deviceGalleryAlbumName);
-				album ??= await PhotoManager.editor.darwin.createAlbum('Chance');
+				final albumName = settings.gallerySavePathOrganizing.albumNameFor(attachment);
+				AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
+				album ??= await PhotoManager.editor.darwin.createAlbum(albumName);
 				final shareCachedFile = await _moveToShareCache();
 				final asAsset = attachment.type == AttachmentType.image ? 
 					await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: downloadFilename) :
@@ -814,7 +819,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						await saveFile(
 							sourcePath: source.path,
 							destinationDir: settings.androidGallerySavePath!,
-							destinationSubfolders: settings.androidGallerySavePathOrganizing.subfoldersFor(attachment),
+							destinationSubfolders: settings.gallerySavePathOrganizing.subfoldersFor(attachment),
 							destinationName: attachment.id.toString() + attachment.ext
 						);
 						_isDownloaded = true;

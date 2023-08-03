@@ -605,7 +605,7 @@ extension SettingsQuickActionName on SettingsQuickAction? {
 }
 
 @HiveType(typeId: 37)
-enum AndroidGallerySavePathOrganizing {
+enum GallerySavePathOrganizing {
 	@HiveField(0)
 	noSubfolders,
 	@HiveField(1)
@@ -881,7 +881,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(121)
 	bool alwaysShowSpoilers;
 	@HiveField(122)
-	AndroidGallerySavePathOrganizing androidGallerySavePathOrganizing;
+	GallerySavePathOrganizing gallerySavePathOrganizing;
 	@HiveField(123)
 	AutoloadAttachmentsSetting fullQualityThumbnails;
 	@HiveField(124)
@@ -1063,7 +1063,7 @@ class SavedSettings extends HiveObject {
 		bool? overscrollModalTapPopsAll,
 		bool? squareThumbnails,
 		bool? alwaysShowSpoilers,
-		AndroidGallerySavePathOrganizing? androidGallerySavePathOrganizing,
+		GallerySavePathOrganizing? gallerySavePathOrganizing,
 		AutoloadAttachmentsSetting? fullQualityThumbnails,
 		bool? recordThreadsInHistory,
 		this.fontFamily,
@@ -1239,7 +1239,7 @@ class SavedSettings extends HiveObject {
 		overscrollModalTapPopsAll = overscrollModalTapPopsAll ?? true,
 		squareThumbnails = squareThumbnails ?? false,
 		alwaysShowSpoilers = alwaysShowSpoilers ?? false,
-		androidGallerySavePathOrganizing = androidGallerySavePathOrganizing ?? AndroidGallerySavePathOrganizing.noSubfolders,
+		gallerySavePathOrganizing = gallerySavePathOrganizing ?? GallerySavePathOrganizing.noSubfolders,
 		fullQualityThumbnails = fullQualityThumbnails ?? AutoloadAttachmentsSetting.never,
 		recordThreadsInHistory = recordThreadsInHistory ?? true,
 		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never,
@@ -2178,9 +2178,9 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	AndroidGallerySavePathOrganizing get androidGallerySavePathOrganizing => _settings.androidGallerySavePathOrganizing;
-	set androidGallerySavePathOrganizing(AndroidGallerySavePathOrganizing setting) {
-		_settings.androidGallerySavePathOrganizing = setting;
+	GallerySavePathOrganizing get gallerySavePathOrganizing => _settings.gallerySavePathOrganizing;
+	set gallerySavePathOrganizing(GallerySavePathOrganizing setting) {
+		_settings.gallerySavePathOrganizing = setting;
 		_settings.save();
 		notifyListeners();
 	}
