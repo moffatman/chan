@@ -496,6 +496,13 @@ class ThreadPageState extends State<ThreadPage> {
 					));
 				}
 			},
+			isPostOnscreen: (id) {
+				final post = zone.findPost(id);
+				if (post == null) {
+					return false;
+				}
+				return _listController.isOnscreen(post);
+			},
 			onNeedUpdateWithStubItems: (ids) async {
 				await _updateWithStubItems(ids);
 				_listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
@@ -560,6 +567,7 @@ class ThreadPageState extends State<ThreadPage> {
 				],
 				imageboard: imageboard,
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
+				isPostOnscreen: oldZone.isPostOnscreen,
 				onNeedUpdateWithStubItems: oldZone.onNeedUpdateWithStubItems,
 				semanticRootIds: [widget.boardSemanticId, 0]
 			);

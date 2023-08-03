@@ -596,6 +596,11 @@ class PostQuoteLinkSpan extends PostSpan {
 								if (!zone.stackIds.contains(postId)) {
 									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.$2.onTap ?? () {});
 								}
+								else if (zone.tree) {
+									zone.registerConditionalLineTapTarget('$board/$threadId/$postId', context, () {
+										return zone.isPostOnscreen?.call(postId) != true;
+									}, span.$2.onTap ?? () {});
+								}
 								return TweenAnimationBuilder(
 									tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
 									duration: zone.highlightQuoteLinkId != postId ? const Duration(milliseconds: 750) : const Duration(milliseconds: 250),
@@ -1315,6 +1320,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	Imageboard get imageboard;
 	Iterable<int> get stackIds;
 	ValueChanged<Post>? get onNeedScrollToPost;
+	bool Function(int postId)? get isPostOnscreen;
 	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems;
 	bool disposed = false;
 	List<Comparator<Post>> get postSortingMethods;
@@ -1385,6 +1391,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		// Assuming that when a new childZone is requested, there will be some old one to cleanup
 		for (final child in _children.values) {
 			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
+			child._conditionalLineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 		}
 		final key = (postId, tree, fakeHoistedRootId);
 		final existingZone = _children[key];
@@ -1414,6 +1421,10 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	void registerLineTapTarget(String id, BuildContext context, VoidCallback callback) {
 		_lineTapCallbacks[id] = (context, callback);
 	}
+	final Map<String, (BuildContext, bool Function(), VoidCallback)> _conditionalLineTapCallbacks = {};
+	void registerConditionalLineTapTarget(String id, BuildContext context, bool Function() condition, VoidCallback callback) {
+		_conditionalLineTapCallbacks[id] = (context, condition, callback);
+	}
 
 	bool _onTap(Offset position, bool runCallback) {
 		for (final pair in _lineTapCallbacks.values) {
@@ -1433,6 +1444,28 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 				if (position.dy < y1) {
 					if (runCallback) {
 						pair.$2();
+					}
+					return true;
+				}
+			}
+		}
+		for (final pair in _conditionalLineTapCallbacks.values) {
+			final RenderBox? box;
+			try {
+				box = pair.$1.findRenderObject() as RenderBox?;
+			}
+			catch (e) {
+				continue;
+			}
+			if (box != null) {
+				final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
+				if (y0 > position.dy) {
+					continue;
+				}
+				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
+				if (position.dy < y1 && pair.$2()) {
+					if (runCallback) {
+						pair.$3();
 					}
 					return true;
 				}
@@ -1503,6 +1536,9 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 
 	@override
 	ValueChanged<Post>? get onNeedScrollToPost => parent.onNeedScrollToPost;
+
+	@override
+	bool Function(int)? get isPostOnscreen => parent.isPostOnscreen;
 
 	@override
 	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems => parent.onNeedUpdateWithStubItems;
@@ -1578,6 +1614,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	final ValueChanged<Post>? onNeedScrollToPost;
 	@override
+	final bool Function(int)? isPostOnscreen;
+	@override
 	Future<void> Function(List<ParentAndChildIdentifier>)? onNeedUpdateWithStubItems;
 	final Map<int, bool> _isLoadingPostFromArchive = {};
 	final Map<int, Post> _postsFromArchive = {};
@@ -1595,6 +1633,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		required Thread thread,
 		required this.imageboard,
 		this.onNeedScrollToPost,
+		this.isPostOnscreen,
 		this.onNeedUpdateWithStubItems,
 		this.semanticRootIds = const [],
 		this.postSortingMethods = const [],
@@ -1608,6 +1647,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		required List<Thread> threads,
 		required this.imageboard,
 		this.onNeedScrollToPost,
+		this.isPostOnscreen,
 		this.onNeedUpdateWithStubItems,
 		this.semanticRootIds = const [],
 		this.postSortingMethods = const [],
