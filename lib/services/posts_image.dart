@@ -258,6 +258,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 Future<File> sharePostsAsImage({
 	required BuildContext context,
 	required int primaryPostId,
+	PostSpanZoneData? zone,
 	required ShareablePostsStyle style
 }) async {
 	final controller = ScreenshotController();
@@ -275,7 +276,7 @@ Future<File> sharePostsAsImage({
 						ChangeNotifierProvider.value(value: context.read<Persistence>()),
 						ChangeNotifierProvider.value(value: context.read<ThreadWatcher>()),
 						Provider.value(value: context.read<Notifications>()),
-						ChangeNotifierProvider.value(value: context.read<PostSpanZoneData>())
+						ChangeNotifierProvider.value(value: zone ?? context.read<PostSpanZoneData>())
 					],
 					child: ChanceTheme(
 						themeKey: style.overrideThemeKey ?? ChanceTheme.keyOf(context, listen: false),

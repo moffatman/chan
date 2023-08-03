@@ -12,8 +12,10 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -27,6 +29,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/pull_tab.dart';
+import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -535,6 +538,53 @@ class _BoardPageState extends State<BoardPage> {
 						}
 					),
 					...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments)),
+					ContextMenuAction(
+						trailingIcon: Adaptive.icons.share,
+						child: const Text('Share...'),
+						onPressed: () {
+							final site = context.read<ImageboardSite>();
+							shareOne(
+								context: context,
+								text: site.getWebUrl(thread.board, thread.id),
+								type: "text",
+								sharePositionOrigin: null,
+								additionalOptions: {
+									'Share as image': () async {
+										try {
+											final zone = PostSpanRootZoneData(
+												thread: thread,
+												imageboard: imageboard!
+											);
+											final file = await modalLoad(context, 'Rendering...', (c) => sharePostsAsImage(
+												context: context,
+												primaryPostId: thread.id,
+												style: const ShareablePostsStyle(
+													expandPrimaryImage: true,
+													width: 400
+												),
+												zone: zone
+											));
+											zone.dispose();
+											if (context.mounted) {
+												shareOne(
+													context: context,
+													text: file.path,
+													type: 'file',
+													sharePositionOrigin: null
+												);
+											}
+										}
+										catch (e, st) {
+											Future.error(e, st); // Report to crashlytics
+											if (context.mounted) {
+												alertError(context, e.toStringDio());
+											}
+										}
+									}
+								}
+							);
+						}
+					),
 					ContextMenuAction(
 						child: const Text('Report thread'),
 						trailingIcon: CupertinoIcons.exclamationmark_octagon,
