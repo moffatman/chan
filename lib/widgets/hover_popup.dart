@@ -287,7 +287,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	@override
 	void dispose() {
 		super.dispose();
-		_entry?.remove();
+		_maybeStop();
 		ScrollTracker.instance.isScrolling.removeListener(_onIsScrollingChange);
 	}
 }
