@@ -69,7 +69,9 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	Offset? _touchStart;
 	OverlayEntry? _touchEntry;
 	late final LongPressGestureRecognizer recognizer;
-	PointerEvent? _wouldStartIfNotScrolling;
+	PointerEvent? _wouldStart;
+	Timer? _startTimer;
+	DateTime? _startTime;
 
 	@override
 	void initState() {
@@ -87,11 +89,18 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	}
 
 	void _onIsScrollingChange() {
-		if (!ScrollTracker.instance.isScrolling.value && _wouldStartIfNotScrolling != null) {
-			_maybeStart(_wouldStartIfNotScrolling!);
+		if (!ScrollTracker.instance.isScrolling.value && _wouldStart != null) {
+			_maybeStart(_wouldStart!);
 		}
 		else if (ScrollTracker.instance.isScrolling.value) {
 			_maybeStop();
+		}
+	}
+
+	void _onTimer() {
+		_startTimer = null;
+		if (_wouldStart != null) {
+			_maybeStart(_wouldStart!);
 		}
 	}
 
@@ -156,11 +165,19 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	void _onLongPressEnd(LongPressEndDetails details) => _onLongPressDone();
 
 	void _maybeStart(PointerEvent event) {
-		if (ScrollTracker.instance.isScrolling.value) {
-			_wouldStartIfNotScrolling = event;
+		final settings = context.read<EffectiveSettings>();
+		final now = DateTime.now();
+		final startTime = _startTime ??= now.add(Duration(milliseconds: settings.hoverPopupDelayMilliseconds));
+		if (startTime.isAfter(now)) {
+			_startTimer ??= Timer(startTime.difference(now), _onTimer);
+			_wouldStart = event;
 			return;
 		}
-		if (!context.read<EffectiveSettings>().supportMouse.value) {
+		if (ScrollTracker.instance.isScrolling.value) {
+			_wouldStart = event;
+			return;
+		}
+		if (!settings.supportMouse.value) {
 			return;
 		}
 		if (_entry != null) {
@@ -227,6 +244,10 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	}
 
 	void _maybeStop() {
+		_startTimer?.cancel();
+		_startTimer = null;
+		_startTime = null;
+		_wouldStart = null;
 		if (_entry == null) {
 			return;
 		}
@@ -256,7 +277,6 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 					_globalKey?.currentState?.updateMousePosition(event.position);
 				},
 				onExit: (event) {
-					_wouldStartIfNotScrolling = null;
 					_maybeStop();
 				},
 				child: widget.child

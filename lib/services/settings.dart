@@ -944,6 +944,8 @@ class SavedSettings extends HiveObject {
 	bool showPerformanceOverlay;
 	@HiveField(151)
 	String customDateFormat;
+	@HiveField(152)
+	int hoverPopupDelayMilliseconds;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1094,6 +1096,7 @@ class SavedSettings extends HiveObject {
 		bool? hideBarsWhenScrollingDown,
 		bool? showPerformanceOverlay,
 		String? customDateFormat,
+		int? hoverPopupDelayMilliseconds,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1269,7 +1272,8 @@ class SavedSettings extends HiveObject {
 		imagePeeking = imagePeeking ?? (deprecatedUnsafeImagePeeking == true ? ImagePeekingSetting.unsafe : ImagePeekingSetting.standard),
 		hideBarsWhenScrollingDown = hideBarsWhenScrollingDown ?? false,
 		showPerformanceOverlay = showPerformanceOverlay ?? false,
-		customDateFormat = customDateFormat ?? DateTimeConversion.kISO8601DateFormat {
+		customDateFormat = customDateFormat ?? DateTimeConversion.kISO8601DateFormat,
+		hoverPopupDelayMilliseconds = hoverPopupDelayMilliseconds ?? 0 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2390,6 +2394,13 @@ class EffectiveSettings extends ChangeNotifier {
 	String get customDateFormat => _settings.customDateFormat;
 	set customDateFormat(String setting) {
 		_settings.customDateFormat = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	int get hoverPopupDelayMilliseconds => _settings.hoverPopupDelayMilliseconds;
+	set hoverPopupDelayMilliseconds(int setting) {
+		_settings.hoverPopupDelayMilliseconds = setting;
 		_settings.save();
 		notifyListeners();
 	}

@@ -1505,6 +1505,45 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					}
 				),
 				const SizedBox(height: 32),
+				AnimatedSize(
+					duration: const Duration(milliseconds: 250),
+					curve: Curves.ease,
+					alignment: Alignment.topCenter,
+					child: ValueListenableBuilder(
+						valueListenable: settings.supportMouse,
+						builder: (context, supportMouse, _) {
+							if (!supportMouse) {
+								return const SizedBox.shrink();
+							}
+							return Column(
+								children: [
+									Row(
+										children: [
+											const Icon(Icons.mouse),
+											const SizedBox(width: 8),
+											Expanded(
+												child: Text('Hover popup delay: ${settings.hoverPopupDelayMilliseconds} ms')
+											)
+										]
+									),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: Slider.adaptive(
+											min: 0,
+											max: 1000,
+											divisions: 20,
+											value: settings.hoverPopupDelayMilliseconds.toDouble(),
+											onChanged: (newValue) {
+												settings.hoverPopupDelayMilliseconds = newValue.toInt();
+											}
+										)
+									),
+									const SizedBox(height: 16),
+								]
+							);
+						}
+					)
+				),
 				const Row(
 					children: [
 						Icon(CupertinoIcons.macwindow),

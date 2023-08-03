@@ -277,6 +277,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       hideBarsWhenScrollingDown: fields[149] as bool?,
       showPerformanceOverlay: fields[150] as bool?,
       customDateFormat: fields[151] as String?,
+      hoverPopupDelayMilliseconds: fields[152] as int?,
     )
       ..useMaterialStyle = fields[146] as bool?
       ..useAndroidDrawer = fields[147] as bool?
@@ -286,7 +287,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(148)
+      ..writeByte(149)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -582,7 +583,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(150)
       ..write(obj.showPerformanceOverlay)
       ..writeByte(151)
-      ..write(obj.customDateFormat);
+      ..write(obj.customDateFormat)
+      ..writeByte(152)
+      ..write(obj.hoverPopupDelayMilliseconds);
   }
 
   @override
