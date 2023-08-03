@@ -275,6 +275,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       newPostHighlightBrightness: fields[144] as double?,
       imagePeeking: fields[145] as ImagePeekingSetting?,
       hideBarsWhenScrollingDown: fields[149] as bool?,
+      showPerformanceOverlay: fields[150] as bool?,
     )
       ..useMaterialStyle = fields[146] as bool?
       ..useAndroidDrawer = fields[147] as bool?
@@ -284,7 +285,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(146)
+      ..writeByte(147)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -576,7 +577,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(148)
       ..write(obj.useMaterialRoutes)
       ..writeByte(149)
-      ..write(obj.hideBarsWhenScrollingDown);
+      ..write(obj.hideBarsWhenScrollingDown)
+      ..writeByte(150)
+      ..write(obj.showPerformanceOverlay);
   }
 
   @override

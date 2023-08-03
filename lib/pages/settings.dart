@@ -146,6 +146,13 @@ class SettingsPage extends StatelessWidget {
 								),
 								actions: [
 									AdaptiveDialogAction(
+										onPressed: () {
+											settings.showPerformanceOverlay = !settings.showPerformanceOverlay;
+											Navigator.pop(context);
+										},
+										child: const Text('Toggle FPS Graph')
+									),
+									AdaptiveDialogAction(
 										onPressed: () => Navigator.pop(context),
 										child: const Text('Close')
 									)

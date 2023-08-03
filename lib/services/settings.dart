@@ -940,6 +940,8 @@ class SavedSettings extends HiveObject {
 	bool get materialRoutes => useMaterialRoutes ?? false;
 	@HiveField(149)
 	bool hideBarsWhenScrollingDown;
+	@HiveField(150)
+	bool showPerformanceOverlay;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1088,6 +1090,7 @@ class SavedSettings extends HiveObject {
 		double? newPostHighlightBrightness,
 		ImagePeekingSetting? imagePeeking,
 		bool? hideBarsWhenScrollingDown,
+		bool? showPerformanceOverlay,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1261,7 +1264,8 @@ class SavedSettings extends HiveObject {
 		includeThreadsYouRepliedToWhenDeletingHistory = includeThreadsYouRepliedToWhenDeletingHistory ?? false,
 		newPostHighlightBrightness = newPostHighlightBrightness ?? 0.1,
 		imagePeeking = imagePeeking ?? (deprecatedUnsafeImagePeeking == true ? ImagePeekingSetting.unsafe : ImagePeekingSetting.standard),
-		hideBarsWhenScrollingDown = hideBarsWhenScrollingDown ?? false {
+		hideBarsWhenScrollingDown = hideBarsWhenScrollingDown ?? false,
+		showPerformanceOverlay = showPerformanceOverlay ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2368,6 +2372,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get hideBarsWhenScrollingDown => _settings.hideBarsWhenScrollingDown;
 	set hideBarsWhenScrollingDown(bool setting) {
 		_settings.hideBarsWhenScrollingDown = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showPerformanceOverlay => _settings.showPerformanceOverlay;
+	set showPerformanceOverlay(bool setting) {
+		_settings.showPerformanceOverlay = setting;
 		_settings.save();
 		notifyListeners();
 	}

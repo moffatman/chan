@@ -239,13 +239,19 @@ class _ChanAppState extends State<ChanApp> {
 												children: [
 													// For some unexplained reason this improves performance
 													// Maybe related to querying the framerate each frame?
-													Positioned(
+													if (!settings.showPerformanceOverlay) Positioned(
 														top: 0,
 														left: 0,
 														right: 0,
 														child: PerformanceOverlay.allEnabled()
 													),
-													ChanHomePage(key: _homePageKey)
+													ChanHomePage(key: _homePageKey),
+													if (settings.showPerformanceOverlay) Positioned(
+														top: 0,
+														left: 0,
+														right: 0,
+														child: PerformanceOverlay.allEnabled()
+													)
 												]
 											) : Container(
 												color: ChanceTheme.backgroundColorOf(context),
