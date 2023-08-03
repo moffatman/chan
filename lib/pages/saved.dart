@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
@@ -377,33 +378,78 @@ class _SavedPageState extends State<SavedPage> {
 												);
 											},
 											filterHint: 'Search watched threads',
-											footer: Padding(
-												padding: const EdgeInsets.all(16),
-												child: AnimatedBuilder(
-													animation: _removeArchivedHack,
-													builder: (context, _) => CupertinoButton(
-														padding: const EdgeInsets.all(8),
-														onPressed: (_watchedListController.items.any((w) => w.item.item.zombie)) ? () async {
-															await _watchMutex.protectWrite(() async {
-																_watchedListController.update(); // Should wait until mutex releases
-																final toRemove = _watchedListController.items.where((w) => w.item.item.zombie).toList();
-																for (final watch in toRemove) {
-																	await watch.item.imageboard.notifications.removeWatch(watch.item.item);
-																}
-															});
-														} : null,
-														child: const Row(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																Icon(CupertinoIcons.xmark),
-																SizedBox(width: 8),
-																Flexible(
-																	child: Text('Remove archived', textAlign: TextAlign.center)
-																)
-															]
+											footer: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													const SizedBox(height: 16),
+													Padding(
+														padding: const EdgeInsets.symmetric(horizontal: 16),
+														child: AnimatedBuilder(
+															animation: threadStateBoxesAnimation,
+															builder: (context, _) {
+																final unseenCount = _watchedListController.items.map((i) {
+																	final threadState = i.item.imageboard.persistence.getThreadStateIfExists(i.item.item.threadIdentifier);
+																	return threadState?.unseenReplyCount() ?? 0;
+																}).fold(0, (a, b) => a + b);
+																return CupertinoButton(
+																	padding: const EdgeInsets.all(8),
+																	onPressed: unseenCount == 0 ? null : () async {
+																		final watches = await _loadWatches();
+																		for (final watch in watches) {
+																			final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
+																			if (threadState != null && threadState.unseenPostIds.data.isNotEmpty) {
+																				threadState.unseenPostIds.data.clear();
+																				threadState.lastSeenPostId = threadState.thread?.posts_.fold<int>(0, (m, p) => math.max(m, p.id));
+																				threadState.didUpdate();
+																				await threadState.save();
+																			}
+																		}
+																	},
+																	child: const Row(
+																		mainAxisSize: MainAxisSize.min,
+																		children: [
+																			Icon(CupertinoIcons.xmark_circle),
+																			SizedBox(width: 8),
+																			Flexible(
+																				child: Text('Mark all as read', textAlign: TextAlign.center)
+																			)
+																		]
+																	)
+																);
+															}
 														)
-													)
-												)
+													),
+													const SizedBox(height: 16),
+													Padding(
+														padding: const EdgeInsets.symmetric(horizontal: 16),
+														child: AnimatedBuilder(
+															animation: _removeArchivedHack,
+															builder: (context, _) => CupertinoButton(
+																padding: const EdgeInsets.all(8),
+																onPressed: (_watchedListController.items.any((w) => w.item.item.zombie)) ? () async {
+																	await _watchMutex.protectWrite(() async {
+																		_watchedListController.update(); // Should wait until mutex releases
+																		final toRemove = _watchedListController.items.where((w) => w.item.item.zombie).toList();
+																		for (final watch in toRemove) {
+																			await watch.item.imageboard.notifications.removeWatch(watch.item.item);
+																		}
+																	});
+																} : null,
+																child: const Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		Icon(CupertinoIcons.xmark),
+																		SizedBox(width: 8),
+																		Flexible(
+																			child: Text('Remove archived', textAlign: TextAlign.center)
+																		)
+																	]
+																)
+															)
+														)
+													),
+													const SizedBox(height: 16)
+												]
 											)
 										)
 									)
