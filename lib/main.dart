@@ -49,6 +49,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:local_auth/local_auth.dart';
@@ -620,10 +621,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_setAdditionalSafeAreaInsets();
 	}
 
-	void _onSlowScrollDirectionChange() {
+	void _onSlowScrollDirectionChange() async {
 		if (!EffectiveSettings.instance.tabMenuHidesWhenScrollingDown) {
 			return;
 		}
+		await SchedulerBinding.instance.endOfFrame;
 		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && showTabPopup) {
 			setState(() {
 				showTabPopup = false;
