@@ -31,6 +31,10 @@ class ScrollTracker {
 		}
 		else if (notification is ScrollEndNotification) {
 			isScrolling.value = false;
+			if (notification.metrics.extentAfter < 100) {
+				// At the bottom of the scroll view. Probably we want to show stuff again.
+				slowScrollDirection.value = VerticalDirection.up;
+			}
 			slowScrollDirection.value = null;
 		}
 		else if (notification is ScrollUpdateNotification) {
