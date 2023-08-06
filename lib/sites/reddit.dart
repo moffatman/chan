@@ -122,6 +122,10 @@ extension _RedditApiId on ImageboardArchiveSearchResult {
 	}
 }
 
+extension _UnescapeHtml on String {
+	String get unescapeHtml => unescape.convert(this);
+}
+
 const _loginFieldRedGifsTokenKey = '_rgt';
 
 class SiteReddit extends ImageboardSite {
@@ -642,7 +646,7 @@ class SiteReddit extends ImageboardSite {
 			replyCount: data['num_comments'],
 			imageCount: 0,
 			flair: _makeFlag(data['link_flair_richtext']) ?? (
-				data['link_flair_text'] == null ? null : ImageboardFlag.text(data['link_flair_text'])
+				data['link_flair_text'] == null ? null : ImageboardFlag.text((data['link_flair_text'] as String).unescapeHtml)
 			),
 			id: id,
 			suggestedVariant: (data['suggested_sort']?.isNotEmpty ?? false) ? _RedditApiName.toVariant(data['suggested_sort']) : null
@@ -915,13 +919,13 @@ class SiteReddit extends ImageboardSite {
 		final parts = <ImageboardFlag>[];
 		for (final part in data) {
 			if (part['e'] == 'text') {
-				final text = (part['t'] as String?)?.trim();
+				final text = (part['t'] as String?)?.trim().unescapeHtml;
 				if (text != null && !parts.any((t) => t.name == text)) {
 					parts.add(ImageboardFlag.text(text));
 				}
 			}
 			else {
-				final text = ((part['a'] as String?) ?? '').replaceAll(':', '').trim();
+				final text = ((part['a'] as String?) ?? '').replaceAll(':', '').trim().unescapeHtml;
 				parts.removeWhere((p) => p.name == text);
 				parts.add(ImageboardFlag(
 					imageHeight: 16,
