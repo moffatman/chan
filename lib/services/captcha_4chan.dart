@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
@@ -6,7 +5,6 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:async/async.dart';
-import 'package:chan/services/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:normal/normal.dart';
 import 'package:pool/pool.dart';
@@ -35,7 +33,7 @@ class Chan4CustomCaptchaGuess {
 			numLetters: guess.length,
 			alternatives: List.generate(guess.length, (_) => []),
 			confidence: 1,
-			confidences: List.generate(guess.length, (_) => 1),
+			confidences: List.filled(guess.length, 1),
 			keys: List.generate(guess.length, (i) => Chan4CustomCaptchaLetterKey._(i))
 		);
 	}
@@ -76,162 +74,24 @@ class Chan4CustomCaptchaGuesses {
 			alternatives: [[], [], [], [], []],
 			confidence: (1 - Normal.cdf(
 				maxScore,
-				mean: 31.99121650969569,
-				variance: 5.6186633357112274
+				mean: 34.61089431538079, 
+				variance: 4.17640652209748
 			)) * (1 - Normal.cdf(
 				maxScore,
-				mean: 39.019931473509175,
-				variance: 8.9437836310256
+				mean: 37.965435072982544,
+				variance: 4.9745338087187525
 			)),
 			confidences: answersBest.map((x) => (1 - Normal.cdf(
 				x.value.score,
-				mean: 22.030712707662314,
-				variance: 6.6035697391139445
+				mean: 26.632857611907685,
+				variance: 6.143543497479517
 			)) * (1 - Normal.cdf(
 				x.value.score,
-				mean: 32.892141079395095,
-				variance: 11.419233352647126
+				mean: 32.25173511673559,
+				variance: 6.8081240822553175
 			))).toList()
 		);
 	}
-}
-
-int _floodFillBuffer({
-	required Uint8List buffer,
-	required int width,
-	required int height,
-	required int seedX,
-	required int seedY,
-	required int fillColor
-}) {
-	final int startColor = buffer[(width * seedY) + seedX];
-	final List<bool> pixelsChecked = List<bool>.filled(width * height, false);
-	final Queue<_FloodFillRange> ranges = Queue<_FloodFillRange>();
-	int pixelsChanged = 0;
-
-	bool checkPixel(int x, int y) {
-    return buffer[(y * width) + x] == startColor;
-  }
-
-	void linearFill(int x, int y) {
-    int lFillLoc = x;
-    int pxIdx = (width * y) + x;
-    while (true) {
-			buffer[(y * width) + x] = fillColor;
-			pixelsChanged++;
-      pixelsChecked[pxIdx] = true;
-      lFillLoc--;
-      pxIdx--;
-      if (lFillLoc < 0 ||
-          (pixelsChecked[pxIdx]) ||
-          !checkPixel(lFillLoc, y)) {
-        break;
-      }
-    }
-    lFillLoc++;
-    int rFillLoc = x;
-    pxIdx = (width * y) + x;
-    while (true) {
-      buffer[(y * width) + x] = fillColor;
-			pixelsChanged++;
-      pixelsChecked[pxIdx] = true;
-      rFillLoc++;
-      pxIdx++;
-      if (rFillLoc >= width ||
-          pixelsChecked[pxIdx] ||
-          !checkPixel(rFillLoc, y)) {
-        break;
-      }
-    }
-    rFillLoc--;
-    _FloodFillRange r = _FloodFillRange(lFillLoc, rFillLoc, y);
-    ranges.add(r);
-  }
-
-	linearFill(seedX, seedY);
-	_FloodFillRange range;
-	while (ranges.isNotEmpty) {
-		range = ranges.removeFirst();
-		int downPxIdx = (width * (range.y + 1)) + range.startX;
-		int upPxIdx = (width * (range.y - 1)) + range.startX;
-		int upY = range.y - 1;
-		int downY = range.y + 1;
-		for (int i = range.startX; i <= range.endX; i++) {
-			if (range.y > 0 && (!pixelsChecked[upPxIdx]) && checkPixel(i, upY)) {
-				linearFill(i, upY);
-			}
-			if (range.y < (height - 1) &&
-					(!pixelsChecked[downPxIdx]) &&
-					checkPixel(i, downY)) {
-				linearFill(i, downY);
-			}
-			downPxIdx++;
-			upPxIdx++;
-		}
-	}
-	return pixelsChanged;
-}
-
-Uint8List _dilate({
-	required Uint8List buffer,
-	required int width,
-	required int height
-}) {
-	final out = Uint8List.fromList(buffer);
-	for (int y = 1; y < height - 1; y++) {
-		for (int x = 1; x < width - 1; x++) {
-			final pos = y * width + x;
-			if (buffer[pos + 1] == 0 || buffer[pos - 1] == 0 || buffer[pos + width] == 0 || buffer[pos - width] == 0) {
-				out[pos] = 0;
-			}
-		}
-	}
-	return out;
-}
-
-Uint8List _erode({
-	required Uint8List buffer,
-	required int width,
-	required int height
-}) {
-	final out = Uint8List.fromList(buffer);
-	for (int y = 1; y < height - 1; y++) {
-		for (int x = 1; x < width - 1; x++) {
-			final pos = y * width + x;
-			if (buffer[pos + 1] == 0xFF || buffer[pos - 1] == 0xFF || buffer[pos + width] == 0xFF || buffer[pos - width] == 0xFF) {
-				out[pos] = 0xFF;
-			}
-		}
-	}
-	return out;
-}
-
-int _estimateNumLetters({
-	required Uint8List buffer,
-	required int width,
-	required int height
-}) {
-	final cols = List.generate(width, (i) => 0, growable: false);
-	for (int x = 0; x < width; x++) {
-		for (int y = 0; y < height; y++) {
-			if (buffer[y * width + x] == 0xFF) {
-				cols[x] += 1;
-			}
-		}
-	}
-	cols.sort();
-	if (cols[(cols.length * 0.8).floor()] == height) {
-		// at least 20% (by columns) is all white
-		return 5;
-	}
-	return 6;
-}
-
-class _FloodFillRange {
-  int startX;
-  int endX;
-  int y;
-  _FloodFillRange(this.startX, this.endX, this.y);
 }
 
 Future<Uint8List> _getRedChannelOnly(ByteData rgbaData) async {
@@ -340,10 +200,9 @@ List<_LetterScore> _scoreArrayForLetter(_ScoreArrayForLetterParam param) {
 	return scores;
 }
 
-const _preprocessProportion = 0.4;
-const _scoreArrayProportion = 0.45;
-const _guessProportion = 0.15;
-const _floodFillIterations = 10000;
+const _preprocessProportion = 0.1;
+const _scoreArrayProportion = 0.75;
+const _guessProportion = 0.25;
 
 void _guess(_GuessParam param) async {
 	Uint8List captcha = await _getRedChannelOnly(param.rgbaData);
@@ -360,61 +219,20 @@ void _guess(_GuessParam param) async {
 			}
 		}
 	}
-	// Heal "white noise" cuts
-	captcha = _erode(
-		buffer: _dilate(
-			buffer: captcha,
-			width: width,
-			height: height
-		),
-		width: width,
-		height: height
-	);
-	// Preprocess
-	Uint8List filling = Uint8List.fromList(captcha);
-	for (int i = 0; i < _floodFillIterations; i++) {
-		final seedX = random.nextInt(width);
-		final seedY = random.nextInt(height);
-		if (filling[(seedY * width) + seedX] == 255) {
-			continue;
-		}
-		final filled = Uint8List.fromList(captcha);
-		final count = _floodFillBuffer(
-			buffer: filled,
-			seedX: seedX,
-			seedY: seedY,
-			width: width,
-			height: height,
-			fillColor: 255
-		);
-		if ((count / captcha.length) < 0.015) {
-			captcha = filled;
-		}
-		else {
-			// Write into a parallel image to prevent rechecking this same blob
-			_floodFillBuffer(
-				buffer: filling,
-				seedX: seedX,
-				seedY: seedY,
-				width: width,
-				height: height,
-				fillColor: 255
-			);
-		}
-		if (i % 100 == 0) {
-			param.sendPort.send(_preprocessProportion * i / _floodFillIterations);
+	final usefulXes = List.filled(width, false);
+	final usefulXThreshold = (height * 0.18).round();
+	for (int x = 0; x < width; x++) {
+		int total = 0;
+		for (int y = 0; y < height; y++) {
+			if (captcha[(y * width) + x] == 0) {
+				total++;
+				if (total > usefulXThreshold) {
+					usefulXes[x] = true;
+					break;
+				}
+			}
 		}
 	}
-	// Remove "black noise"
-	captcha = _dilate(
-		buffer: _erode(
-			buffer: captcha,
-			width: width,
-			height: height
-		),
-		width: width,
-		height: height
-	);
 	param.sendPort.send(_preprocessProportion);
 	// Create score array
 	Future<List<_LetterScore>> createScoreArray(_LetterImageType type) async {
@@ -458,39 +276,48 @@ void _guess(_GuessParam param) async {
 			}
 		}
 		for (int i = 0; i < param.maxNumLetters; i++) {
-			_LetterScore bestScore = primaryScores.first;
+			int remainingX = 0;
+			for (int x = 0; x < width; x++) {
+				if (deadXes[x] == 0 && usefulXes[x]) {
+					remainingX++;
+				}
+			}
+			final xBudget = remainingX * (2 / (param.maxNumLetters - i));
+			(double, _LetterScore) bestScore = (primaryScores.first.score, primaryScores.first);
 			for (final score in primaryScores) {
 				if (deadLetters[score.x].contains(score.letter)) {
 					continue;
 				}
-				if ((score.score + (i > 0 ? xAdjustments[score.letterImageWidth]![score.x] : 0)) < bestScore.score) {
-					bestScore = score;
+				final adjustedScore = score.score + xAdjustments[score.letterImageWidth]![score.x] + (score.letterImageWidth > xBudget ? 10 : 0);
+				if (adjustedScore < bestScore.$1) {
+					bestScore = (adjustedScore, score);
 				}
 			}
-			if (bestScore.score > 30) {
+			if (bestScore.$2.score > 30) {
 				secondaryScores ??= await createScoreArray(_LetterImageType.secondary);
 				for (final score in secondaryScores!) {
 					if (deadLetters[score.x].contains(score.letter)) {
 						continue;
 					}
-					if ((score.score + (i > 0 ? xAdjustments[score.letterImageWidth]![score.x] : 0)) < bestScore.score) {
-						bestScore = score;
+					final adjustedScore = score.score + xAdjustments[score.letterImageWidth]![score.x] + (score.letterImageWidth > xBudget ? 10 : 0);
+					if (adjustedScore < bestScore.$1) {
+						bestScore = (adjustedScore, score);
 					}
 				}
 			}
-			final subimageEndX = bestScore.x + bestScore.letterImageWidth;
-			for (int x = bestScore.x; x < subimageEndX; x++) {
+			final subimageEndX = bestScore.$2.x + bestScore.$2.letterImageWidth;
+			for (int x = bestScore.$2.x; x < subimageEndX; x++) {
 				deadXes[x] = 1;
 			}
 			for (final possibleWidth in possibleSubimageWidths) {
-				for (int x = max(bestScore.x - possibleWidth, 0); x < subimageEndX; x++) {
+				for (int x = max(bestScore.$2.x - possibleWidth, 0); x < subimageEndX; x++) {
 					xAdjustments[possibleWidth]![x] = 0;
 					for (int x_ = x; x_ < min(width, x + possibleWidth); x_++) {
 						xAdjustments[possibleWidth]![x] += deadXes[x_] * 3.57;
 					}
 				}
 			}
-			answers.add(bestScore);
+			answers.add(bestScore.$2);
 			if (sendUpdates) {
 				param.sendPort.send(_preprocessProportion + _scoreArrayProportion + _guessProportion * ((i + 1) / param.maxNumLetters));
 			}
@@ -511,11 +338,8 @@ void _guess(_GuessParam param) async {
 		return ret;
 	}).toList();*/
 	param.sendPort.send(1.0);
-	param.sendPort.send(Chan4CustomCaptchaGuesses._(answersBest, _estimateNumLetters(
-		buffer: captcha,
-		width: width,
-		height: height
-	)));
+	final numLettersGuess = (answersBest.last.score < 45) ? answersBest.length : answersBest.length - 1;
+	param.sendPort.send(Chan4CustomCaptchaGuesses._(answersBest, numLettersGuess));
 }
 
 class _GuessParam {
