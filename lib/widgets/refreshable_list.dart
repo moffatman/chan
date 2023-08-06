@@ -446,6 +446,18 @@ class _RefreshableTreeItemsCacheKey {
 	@override
 	String toString() => '_RefreshableTreeItemsCacheKey($_cacheKey)';
 
+	bool isDirectParentOf(_RefreshableTreeItemsCacheKey child) {
+		if (parentIds.length + 1 != child.parentIds.length) {
+			return false;
+		}
+		for (int i = 0; i < parentIds.length; i++) {
+			if (parentIds[i] != child.parentIds[i]) {
+				return false;
+			}
+		}
+		return thisId == child.parentIds[parentIds.length];
+	}
+
 	bool isPeerOf(_RefreshableTreeItemsCacheKey other) {
 		return thisId == other.thisId && listEquals(other.parentIds, parentIds);
 	}
@@ -740,11 +752,11 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			item.id
 		];
 		if (stubOnly) {
-			_cache.removeWhere((key, value) => key.isPeerOf(item._key));
+			_cache.removeWhere((key, value) => key.isPeerOf(item._key) || key.isDirectParentOf(item._key));
 		}
 		else {
 			_cache.removeWhere((key, value) {
-				return key.isPeerOf(item._key) || key.isDescendantOf(item._key);
+				return key.isPeerOf(item._key) || key.isDescendantOf(item._key) || key.isDirectParentOf(item._key);
 			});
 			newlyInsertedItems.removeWhere((w, _) => listEquals(w, x));
 		}
