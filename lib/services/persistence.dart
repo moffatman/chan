@@ -646,6 +646,9 @@ class Persistence extends ChangeNotifier {
 		for (final list in browserState.hiddenIds.values) {
 			list.removeRange(0, max(0, list.length - _maxHiddenIdsPerBoard));
 		}
+		for (final list in browserState.overrideShowIds.values) {
+			list.removeRange(0, max(0, list.length - _maxHiddenIdsPerBoard));
+		}
 		if (!browserState.notificationsMigrated) {
 			browserState.threadWatches.clear();
 			for (final threadState in sharedThreadStateBox.values) {
