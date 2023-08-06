@@ -1320,9 +1320,8 @@ class ThreadPageState extends State<ThreadPage> {
 							children: [
 								Flexible(
 									flex: 1,
-									child: MediaQuery.removePadding(
-										context: context,
-										removeBottom: _replyBoxKey.currentState?.show ?? false,
+									child: TransformedMediaQuery(
+										transformation: (mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
 										child: Shortcuts(
 											shortcuts: {
 												LogicalKeySet(LogicalKeyboardKey.keyG): const OpenGalleryIntent()

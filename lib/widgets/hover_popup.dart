@@ -273,7 +273,6 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 					_maybeStart(event);
 				},
 				onHover: (event) {
-					_maybeStart(event);
 					_globalKey?.currentState?.updateMousePosition(event.position);
 				},
 				onExit: (event) {
