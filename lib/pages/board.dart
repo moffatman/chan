@@ -1010,6 +1010,7 @@ class _BoardPageState extends State<BoardPage> {
 																			padding: const EdgeInsets.all(16),
 																			child: GestureDetector(
 																				onLongPress: () {
+																					lightHapticFeedback();
 																					_listController.animateTo((item) => false, orElseLast: (item) => true, alignment: 1.0);
 																				},
 																				child: AdaptiveFilledButton(

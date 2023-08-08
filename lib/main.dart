@@ -1301,7 +1301,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
 							() => WeakVerticalDragGestureRecognizer(weakness: 1, sign: -1),
 							(recognizer) {
-								recognizer.onEnd = (details) => showThisTabMenu();
+								recognizer.onEnd = (details) {
+									lightHapticFeedback();
+									showThisTabMenu();
+								};
 							}
 						)
 					},
