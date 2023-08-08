@@ -25,13 +25,14 @@ class ScrollTracker {
 	}
 
 	bool onNotification(ScrollNotification notification) {
+		final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
 		if (notification is ScrollStartNotification) {
 			isScrolling.value = true;
 			_thisScrollHasDragDetails = false;
 		}
 		else if (notification is ScrollEndNotification) {
 			isScrolling.value = false;
-			if (notification.metrics.extentAfter < 100 && notification.metrics.extentBefore > 500) {
+			if (notification.metrics.extentAfter < 100 && isMeaningfullyScrollable) {
 				// At the bottom of the scroll view. Probably we want to show stuff again.
 				slowScrollDirection.value = VerticalDirection.up;
 			}
@@ -39,7 +40,7 @@ class ScrollTracker {
 		}
 		else if (notification is ScrollUpdateNotification) {
 			_thisScrollHasDragDetails |= notification.dragDetails != null;
-			if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && notification.metrics.extentAfter > 100) {
+			if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && isMeaningfullyScrollable) {
 				final delta = notification.scrollDelta ?? 0;
 				if ((notification.metrics.pixels > notification.metrics.minScrollExtent || delta < 0) &&
 				    (notification.metrics.pixels < notification.metrics.maxScrollExtent || delta > 0)) {
