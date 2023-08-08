@@ -852,7 +852,10 @@ class MaybeScrollbar extends StatelessWidget {
 			return CupertinoScrollbar(
 				controller: controller,
 				scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
+				radius: const Radius.circular(8),
+				radiusWhileDragging: const Radius.circular(12),
 				thickness: 8,
+				thicknessWhileDragging: 12,
 				thumbVisibility: thumbVisibility,
 				child: child
 			);
