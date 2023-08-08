@@ -733,6 +733,7 @@ class ThreadPageState extends State<ThreadPage> {
 				pushYousOnly: defaultThreadWatch.pushYousOnly,
 				youIds: persistentState.youIds,
 				push: defaultThreadWatch.push,
+				foregroundMuted: defaultThreadWatch.foregroundMuted
 			);
 		}
 		else {
@@ -970,6 +971,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _popOutReplyBox(ValueChanged<ReplyBoxState>? onInitState) async {
 		final imageboard = context.read<Imageboard>();
+		final settings = context.read<EffectiveSettings>();
 		final theme = context.read<SavedTheme>();
 		await showAdaptiveModalPopup(
 			context: context,
@@ -1006,9 +1008,10 @@ class ThreadPageState extends State<ThreadPage> {
 								imageboard.notifications.subscribeToThread(
 									thread: widget.thread,
 									lastSeenId: receipt.id,
-									localYousOnly: persistentState.threadWatch?.localYousOnly ?? true,
-									pushYousOnly: persistentState.threadWatch?.pushYousOnly ?? true,
-									push: true,
+									localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
+									pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
+									foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
+									push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
 									youIds: persistentState.freshYouIds()
 								);
 								if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
@@ -1720,9 +1723,10 @@ class ThreadPageState extends State<ThreadPage> {
 											notifications.subscribeToThread(
 												thread: widget.thread,
 												lastSeenId: receipt.id,
-												localYousOnly: persistentState.threadWatch?.localYousOnly ?? true,
-												pushYousOnly: persistentState.threadWatch?.pushYousOnly ?? true,
-												push: true,
+												localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
+												pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
+												foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
+												push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
 												youIds: persistentState.freshYouIds()
 											);
 											if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {

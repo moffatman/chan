@@ -822,9 +822,10 @@ class _BoardPageState extends State<BoardPage> {
 														imageboard.notifications.subscribeToThread(
 															thread: ThreadIdentifier(board!.name, receipt.id),
 															lastSeenId: receipt.id,
-															localYousOnly: false,
-															pushYousOnly: false,
-															push: true,
+															localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
+															pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
+															foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
+															push: settings.defaultThreadWatch?.push ?? true,
 															youIds: [receipt.id]
 														);
 														_listController.update();
@@ -1084,9 +1085,10 @@ class _BoardPageState extends State<BoardPage> {
 												imageboard?.notifications.subscribeToThread(
 													thread: ThreadIdentifier(board!.name, receipt.id),
 													lastSeenId: receipt.id,
-													localYousOnly: false,
-													pushYousOnly: false,
-													push: true,
+													localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
+													pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
+													foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
+													push: settings.defaultThreadWatch?.push ?? true,
 													youIds: [receipt.id]
 												);
 												_listController.update();
