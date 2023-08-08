@@ -9,6 +9,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -112,6 +113,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
 		}
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
+		ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.down;
 	}
 
 	void _onImageboardRegistryUpdate() {
