@@ -2033,7 +2033,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 				}
 			},
 			child: context.select<EffectiveSettings, bool>((s) => s.hideBarsWhenScrollingDown) ? AncestorScrollBuilder(
-				builder: (context, direction) => AnimatedOpacity(
+				builder: (context, direction, _) => AnimatedOpacity(
 					opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
 					duration: const Duration(milliseconds: 350),
 					curve: Curves.ease,

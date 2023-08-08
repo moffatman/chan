@@ -84,10 +84,12 @@ class ScrollTracker {
 }
 
 class AncestorScrollBuilder extends StatefulWidget {
-	final Widget Function(BuildContext context, VerticalDirection direction) builder;
+	final Widget Function(BuildContext context, VerticalDirection direction, Widget? child) builder;
+	final Widget? child;
 
 	const AncestorScrollBuilder({
 		required this.builder,
+		this.child,
 		super.key
 	});
 
@@ -115,7 +117,7 @@ class _AncestorScrollBuilderState extends State<AncestorScrollBuilder> {
 
 	@override
 	Widget build(BuildContext context) {
-		return widget.builder(context, direction);
+		return widget.builder(context, direction, widget.child);
 	}
 
 	@override

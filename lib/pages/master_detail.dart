@@ -357,34 +357,44 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 							if (widget.showChrome) {
 								child = AdaptiveScaffold(
 									resizeToAvoidBottomInset: false,
-									// Don't hide - we can't use the top space due to TabBar above scrolling content
-									disableAutoBarHiding: true,
 									bar: panes[_tabController.index].navigationBar ?? AdaptiveBar(
 										title: panes[_tabController.index].title
 									),
-									body: Column(
+									body: Stack(
 										children: [
+											TransformedMediaQuery(
+												transformation: (mq) => mq.copyWith(
+													padding: mq.padding + const EdgeInsets.only(top: 46),
+													viewPadding: mq.viewPadding + const EdgeInsets.only(top: 46)
+												),
+												child: child
+											),
 											SafeArea(
 												bottom: false,
-												child: Material(
-													color: ChanceTheme.backgroundColorOf(context),
-													child: TabBar(
-														controller: _tabController,
-														indicatorColor: ChanceTheme.primaryColorOf(context),
-														dividerColor: ChanceTheme.primaryColorWithBrightness20Of(context),
-														tabs: panes.map((pane) => Tab(
-															icon: Icon(
-																pane.icon,
-																color: ChanceTheme.primaryColorOf(context)
-															)
-														)).toList()
+												child: AncestorScrollBuilder(
+													builder: (context, direction, child) => settings.hideBarsWhenScrollingDown ? AnimatedOpacity(
+														opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
+														duration: const Duration(milliseconds: 350),
+														curve: Curves.ease,
+														child: IgnorePointer(
+															ignoring: direction == VerticalDirection.down,
+															child: child
+														)
+													) : child!,
+													child: Material(
+														color: ChanceTheme.backgroundColorOf(context),
+														child: TabBar(
+															controller: _tabController,
+															indicatorColor: ChanceTheme.primaryColorOf(context),
+															dividerColor: ChanceTheme.primaryColorWithBrightness20Of(context),
+															tabs: panes.map((pane) => Tab(
+																icon: Icon(
+																	pane.icon,
+																	color: ChanceTheme.primaryColorOf(context)
+																)
+															)).toList()
+														)
 													)
-												)
-											),
-											TransformedMediaQuery(
-												transformation: (mq) => mq.removePadding(removeTop: true),
-												child: Expanded(
-													child: child
 												)
 											)
 										]

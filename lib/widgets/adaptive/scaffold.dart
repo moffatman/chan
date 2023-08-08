@@ -62,7 +62,7 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 			return child;
 		}
 		return AncestorScrollBuilder(
-			builder: (context, direction) => AnimatedOpacity(
+			builder: (context, direction, _) => AnimatedOpacity(
 				opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
 				duration: const Duration(milliseconds: 350),
 				curve: Curves.ease,
@@ -116,7 +116,7 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 			return child;
 		}
 		return AncestorScrollBuilder(
-			builder: (context, direction) => AnimatedOpacity(
+			builder: (context, direction, _) => AnimatedOpacity(
 				opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
 				duration: const Duration(milliseconds: 350),
 				curve: Curves.ease,

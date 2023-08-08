@@ -884,6 +884,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final bool disableUpdates;
 	final bool disableBottomUpdates;
+	final Widget? header;
 	final Widget? footer;
 	final SliverGridDelegate? gridDelegate;
 	final String? initialFilter;
@@ -920,6 +921,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.disableUpdates = false,
 		this.disableBottomUpdates = false,
 		this.gridDelegate,
+		this.header,
 		this.footer,
 		this.initialFilter,
 		this.onFilterChanged,
@@ -1991,6 +1993,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												),
 												bottom: false
 											),
+											if (widget.header != null) ...[
+												SliverToBoxAdapter(
+													child: widget.header
+												)
+											],
 											if (!widget.shrinkWrap && (sortedList?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
 												child: Container(
 													height: kMinInteractiveDimensionCupertino * context.select<EffectiveSettings, double>((s) => s.textScale),
