@@ -964,8 +964,9 @@ class Site4Chan extends ImageboardSite {
 	
 	@override
 	Iterable<ImageboardSnippet> getBoardSnippets(String board) sync* {
+		yield greentextSnippet;
 		if (board == 'g') {
-			yield const ImageboardSnippet(
+			yield const ImageboardSnippet.simple(
 				icon: CupertinoIcons.chevron_left_slash_chevron_right,
 				name: 'Code',
 				start: '[code]',
@@ -974,7 +975,7 @@ class Site4Chan extends ImageboardSite {
 			);
 		}
 		else if (board == 'jp') {
-			yield const ImageboardSnippet(
+			yield const ImageboardSnippet.simple(
 				icon: CupertinoIcons.text_justify,
 				name: 'Shift-JIS',
 				start: '[sjis]',
@@ -983,7 +984,7 @@ class Site4Chan extends ImageboardSite {
 			);
 		}
 		else if (board == 'sci') {
-			yield const ImageboardSnippet(
+			yield const ImageboardSnippet.simple(
 				icon: CupertinoIcons.function,
 				name: 'Math',
 				start: '[math]',
@@ -992,7 +993,7 @@ class Site4Chan extends ImageboardSite {
 			);
 		}
 		if (persistence.getBoard(board).spoilers == true) {
-			yield const ImageboardSnippet(
+			yield const ImageboardSnippet.simple(
 				icon: CupertinoIcons.eye_slash,
 				name: 'Spoiler',
 				start: '[spoiler]',

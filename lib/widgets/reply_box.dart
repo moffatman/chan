@@ -1575,7 +1575,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							)
 						);
 						if (content != null) {
-							_insertText(snippet.start + content + snippet.end, addNewlineIfAtEnd: false);
+							_insertText(snippet.wrap(content), addNewlineIfAtEnd: false);
 						}
 						controller.dispose();
 					},

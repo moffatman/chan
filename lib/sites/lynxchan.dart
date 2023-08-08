@@ -484,6 +484,11 @@ class SiteLynxchan extends ImageboardSite {
 	);
 
 	@override
+	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [
+		greentextSnippet
+	];
+
+	@override
 	String get siteData => baseUrl;
 
 	@override

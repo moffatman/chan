@@ -715,17 +715,43 @@ class ImageboardBoardFlag {
 class ImageboardSnippet {
 	final IconData icon;
 	final String name;
-	final String start;
-	final String end;
+	final (String, String)? _caps;
+	final String Function(String)? _wrap;
 	final PostSpan Function(String text)? previewBuilder;
-	const ImageboardSnippet({
+	const ImageboardSnippet.simple({
 		required this.icon,
 		required this.name,
-		required this.start,
-		required this.end,
+		required String start,
+		required String end,
 		this.previewBuilder
-	});
+	}) : _caps = (start, end), _wrap = null;
+
+	const ImageboardSnippet.complex({
+		required this.icon,
+		required this.name,
+		required String Function(String) wrap,
+		this.previewBuilder
+	}) : _wrap = wrap, _caps = null;
+
+	String wrap(String content) {
+		return _wrap?.call(content) ?? '${_caps?.$1}$content${_caps?.$2}';
+	}
 }
+
+String _wrapQuoteSnippet(String content) {
+	return '>${content.replaceAll('\n', '\n>')}';
+}
+
+PostQuoteSpan _previewQuoteSnippet(String content) {
+	return PostQuoteSpan(PostTextSpan(_wrapQuoteSnippet(content)));
+}
+
+const greentextSnippet = ImageboardSnippet.complex(
+	icon: CupertinoIcons.chevron_right,
+	name: 'Greentext',
+	wrap: _wrapQuoteSnippet,
+	previewBuilder: _previewQuoteSnippet
+);
 
 enum ImageboardSearchOptions {
 	none,

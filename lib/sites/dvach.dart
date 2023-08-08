@@ -328,6 +328,11 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
+	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [
+		greentextSnippet
+	];
+
+	@override
 	String get siteType => 'dvach';
 	@override
 	String get siteData => baseUrl;
