@@ -57,14 +57,17 @@ class _TabListTile extends StatelessWidget {
 					),
 					onTap: onTap,
 					title: Text(data.longTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
-					subtitle: (currentImageboard == null || currentThreadState == null || currentThread == null) ? null : ThreadCounters(
-						imageboard: currentImageboard,
-						thread: currentThread,
-						threadState: currentThreadState,
-						showPageNumber: true,
-						countsUnreliable: false,
-						showChrome: false,
-						alignment: Alignment.centerLeft
+					subtitle: (currentImageboard == null || currentThreadState == null || currentThread == null) ? null : Padding(
+						padding: const EdgeInsets.only(top: 2),
+						child: ThreadCounters(
+							imageboard: currentImageboard,
+							thread: currentThread,
+							threadState: currentThreadState,
+							showPageNumber: true,
+							countsUnreliable: false,
+							showChrome: false,
+							alignment: Alignment.centerLeft
+						)
 					),
 					subtitleTextStyle: TextStyle(
 						color: ChanceTheme.primaryColorWithBrightness80Of(context),
