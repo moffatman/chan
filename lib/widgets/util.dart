@@ -843,6 +843,7 @@ class MaybeScrollbar extends StatelessWidget {
 				return Scrollbar(
 					controller: controller,
 					scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
+					thickness: 8,
 					thumbVisibility: thumbVisibility,
 					child: child
 				);
@@ -850,6 +851,7 @@ class MaybeScrollbar extends StatelessWidget {
 			return CupertinoScrollbar(
 				controller: controller,
 				scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
+				thickness: 8,
 				thumbVisibility: thumbVisibility,
 				child: child
 			);
