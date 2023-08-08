@@ -227,7 +227,8 @@ class NotificationContent extends StatelessWidget {
 						posts_: [],
 						attachments: []
 					),
-					semanticRootIds: [-10]
+					semanticRootIds: [-10],
+					style: PostSpanZoneStyle.linear
 				),
 				builder: (context, _) => ConstrainedBox(
 					constraints: constraints,

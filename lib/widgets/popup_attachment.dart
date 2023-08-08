@@ -53,8 +53,10 @@ class PopupAttachment extends StatelessWidget {
 				}
 			},
 			softCleanup: (controller) {
-				controller?.isPrimary = false;
-				controller?.videoPlayerController?.pause();
+				Future.microtask(() {
+					controller?.isPrimary = false;
+					controller?.videoPlayerController?.pause();
+				});
 			},
 			cleanup: (controller) {
 				controller?.dispose();

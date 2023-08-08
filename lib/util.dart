@@ -68,6 +68,18 @@ extension MapOnce<T> on Iterable<T> {
 	}
 }
 
+extension CountOf<T> on Iterable<T> {
+	int countOf(T item) {
+		int ret = 0;
+		for (final i in this) {
+			if (item == i) {
+				ret++;
+			}
+		}
+		return ret;
+	}
+}
+
 extension BinarySafeWhere<T> on List<T> {
 	int binarySearchFirstIndexWhere(bool Function(T v) f) {
 		if (isEmpty) {

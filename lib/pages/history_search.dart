@@ -354,7 +354,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 									create: (context) => PostSpanRootZoneData(
 										imageboard: row.imageboard,
 										thread: row.item.thread,
-										semanticRootIds: [-11]
+										semanticRootIds: [-11],
+										style: PostSpanZoneStyle.linear
 									),
 									builder: (context, _) => PostRow(
 										post: row.item.post!,

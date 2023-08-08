@@ -30,6 +30,11 @@ enum HoverPopupStyle {
 	floating
 }
 
+enum HoverPopupPhase {
+	start,
+	end
+}
+
 class HoverPopup<T> extends StatefulWidget {
 	final Widget child;
 	final Widget? popup;
@@ -41,6 +46,7 @@ class HoverPopup<T> extends StatefulWidget {
 	final void Function(T?)? cleanup;
 	final Duration valueLifetime;
 	final Offset? anchor;
+	final bool Function(HoverPopupPhase)? alternativeHandler;
 	const HoverPopup({
 		required this.child,
 		this.popup,
@@ -52,6 +58,7 @@ class HoverPopup<T> extends StatefulWidget {
 		this.cleanup,
 		this.valueLifetime = const Duration(seconds: 30),
 		this.anchor,
+		this.alternativeHandler,
 		Key? key
 	}) : super(key: key);
 	
@@ -64,6 +71,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	OverlayEntry? _entry;
 	T? _value;
 	Timer? _cleanupTimer;
+	bool _alternativelyHandled = false;
 
 	GlobalKey<_ScalerBlurrerState>? _touchGlobalKey;
 	Offset? _touchStart;
@@ -183,6 +191,15 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		if (_entry != null) {
 			return;
 		}
+		if (_alternativelyHandled) {
+			return;
+		}
+		if (widget.alternativeHandler != null) {
+			_alternativelyHandled = widget.alternativeHandler?.call(HoverPopupPhase.start) ?? false;
+			if (_alternativelyHandled) {
+				return;
+			}
+		}
 		final RenderBox? childBox = context.findRenderObject() as RenderBox?;
 		if (childBox == null || !childBox.attached) {
 			return;
@@ -248,6 +265,10 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		_startTimer = null;
 		_startTime = null;
 		_wouldStart = null;
+		if (_alternativelyHandled) {
+			widget.alternativeHandler?.call(HoverPopupPhase.end);
+			_alternativelyHandled = false;
+		}
 		if (_entry == null) {
 			return;
 		}

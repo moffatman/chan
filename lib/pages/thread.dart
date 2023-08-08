@@ -463,6 +463,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final threadFromCatalogCache = imageboard.site.getThreadFromCatalogCache(widget.thread);
 		zone = PostSpanRootZoneData.multi(
 			primaryThread: widget.thread,
+			style: useTree ? PostSpanZoneStyle.tree : PostSpanZoneStyle.linear,
 			threads: [
 				if (persistentState.thread != null) persistentState.thread!
 				else if (threadFromCatalogCache != null) threadFromCatalogCache
@@ -497,11 +498,25 @@ class ThreadPageState extends State<ThreadPage> {
 				}
 			},
 			isPostOnscreen: (id) {
+				if (_weakNavigatorKey.currentState?.stack.isNotEmpty ?? false) {
+					// No posts visible, something is covering them
+					return false;
+				}
 				final post = zone.findPost(id);
 				if (post == null) {
 					return false;
 				}
 				return _listController.isOnscreen(post);
+			},
+			glowOtherPost: (id, glow) {
+				if (glow) {
+					_glowingPostId = id;
+					_glowingPostsAnimation.didUpdate();
+				}
+				else if (_glowingPostId == id) {
+					_glowingPostId = null;
+					_glowingPostsAnimation.didUpdate();
+				}
 			},
 			onNeedUpdateWithStubItems: (ids) async {
 				await _updateWithStubItems(ids);
@@ -568,8 +583,10 @@ class ThreadPageState extends State<ThreadPage> {
 				imageboard: imageboard,
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
 				isPostOnscreen: oldZone.isPostOnscreen,
+				glowOtherPost: oldZone.glowOtherPost,
 				onNeedUpdateWithStubItems: oldZone.onNeedUpdateWithStubItems,
-				semanticRootIds: [widget.boardSemanticId, 0]
+				semanticRootIds: [widget.boardSemanticId, 0],
+				style: oldZone.style
 			);
 			_maybeUpdateWatch();
 			persistentState.save();
@@ -1045,7 +1062,7 @@ class ThreadPageState extends State<ThreadPage> {
 			if (persistentState.postSortingMethod == PostSortingMethod.replyCount) (a, b) => b.replyCount.compareTo(a.replyCount)
 			else if ((site.isReddit || site.isHackerNews) && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
-		zone.tree = useTree;
+		zone.style = useTree ? PostSpanZoneStyle.tree : PostSpanZoneStyle.linear;
 		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);
 		final treeModeCollapsedPostsShowBody = context.select<Persistence, bool>((s) => s.browserState.treeModeCollapsedPostsShowBody);
 		final treeModeRepliesToOPAreTopLevel = context.select<Persistence, bool>((s) => s.browserState.treeModeRepliesToOPAreTopLevel);
@@ -1385,7 +1402,7 @@ class ThreadPageState extends State<ThreadPage> {
 																		wrapTreeChild: (child, parentIds) {
 																			PostSpanZoneData childZone = zone;
 																			for (final id in parentIds) {
-																				childZone = childZone.childZoneFor(id, tree: true);
+																				childZone = childZone.childZoneFor(id, style: PostSpanZoneStyle.tree);
 																			}
 																			return ChangeNotifierProvider.value(
 																				value: childZone,

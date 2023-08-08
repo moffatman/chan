@@ -170,6 +170,7 @@ class PostRow extends StatelessWidget {
 	final double? largeImageWidth;
 	final bool revealYourPosts;
 	final bool revealSpoilerImages;
+	final bool expandedInline;
 
 	const PostRow({
 		required this.post,
@@ -193,6 +194,7 @@ class PostRow extends StatelessWidget {
 		this.largeImageWidth,
 		this.revealYourPosts = true,
 		this.revealSpoilerImages = false,
+		this.expandedInline = false,
 		Key? key
 	}) : super(key: key);
 
@@ -285,6 +287,7 @@ class PostRow extends StatelessWidget {
 		}
 		content(double factor) => PostSpanZone(
 			postId: latestPost.id,
+			style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
 			builder: (ctx) => Padding(
 				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 				child: IgnorePointer(
@@ -302,7 +305,7 @@ class PostRow extends StatelessWidget {
 									if (
 										(
 											// We are not in tree view OR
-											!parentZone.tree ||
+											parentZone.style != PostSpanZoneStyle.tree ||
 											// We are filtering and this is not a reply to OP
 											(post.parentId != latestPost.threadId && (baseOptions?.highlightString?.isNotEmpty ?? false))
 										) &&
@@ -316,7 +319,8 @@ class PostRow extends StatelessWidget {
 										PostQuoteLinkSpan(
 											board: latestPost.board,
 											threadId: latestPost.threadId,
-											postId: latestPost.parentId!
+											postId: latestPost.parentId!,
+											key: const ValueKey('parentId op quotelink')
 										).build(
 											ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 												shrinkWrap: shrinkWrap
@@ -329,6 +333,7 @@ class PostRow extends StatelessWidget {
 										(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 											showCrossThreadLabel: showCrossThreadLabel,
 											shrinkWrap: shrinkWrap,
+											addExpandingPosts: settings.supportMouseSetting != TristateSystemSetting.a,
 											postInject: overrideReplyCount != null ? WidgetSpan(
 												alignment: PlaceholderAlignment.top,
 												child: Visibility(
@@ -473,6 +478,7 @@ class PostRow extends StatelessWidget {
 											padding: const EdgeInsets.only(left: 8, right: 8),
 											child: PostSpanZone(
 												postId: latestPost.id,
+												style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
 												builder: (ctx) => ValueListenableBuilder<bool>(
 													valueListenable: settings.supportMouse,
 													builder: (context, supportMouse, child) => Text.rich(
@@ -492,10 +498,11 @@ class PostRow extends StatelessWidget {
 																	interactive: allowTappingLinks
 																),
 																if (supportMouse) ...[
-																	...replyIds.map((id) => PostQuoteLinkSpan(
+																	...replyIds.map((id) =>  PostQuoteLinkSpan(
 																		board: latestPost.board,
 																		threadId: latestPost.threadId,
-																		postId: id
+																		postId: id,
+																		key: ValueKey('replyId $id')
 																	).build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 																		showCrossThreadLabel: showCrossThreadLabel,
 																		addExpandingPosts: false,
@@ -655,7 +662,7 @@ class PostRow extends StatelessWidget {
 						);
 					}
 				),
-				if (!parentZone.tree && parentZone.stackIds.length > 2 && parentZone.onNeedScrollToPost != null) ContextMenuAction(
+				if (parentZone.style != PostSpanZoneStyle.tree && parentZone.stackIds.length > 2 && parentZone.onNeedScrollToPost != null) ContextMenuAction(
 					child: const Text('Scroll to post'),
 					trailingIcon: CupertinoIcons.return_icon,
 					onPressed: () => parentZone.onNeedScrollToPost!(latestPost)

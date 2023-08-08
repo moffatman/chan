@@ -1546,7 +1546,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														create: (context) => PostSpanRootZoneData(
 															imageboard: imageboard,
 															thread: Thread(posts_: [], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
-															semanticRootIds: [-14]
+															semanticRootIds: [-14],
+															style: PostSpanZoneStyle.linear
 														),
 														builder: (context, _) => DefaultTextStyle(
 															style: defaultTextStyle,

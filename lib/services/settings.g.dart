@@ -278,6 +278,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showPerformanceOverlay: fields[150] as bool?,
       customDateFormat: fields[151] as String?,
       hoverPopupDelayMilliseconds: fields[152] as int?,
+      mouseModeQuoteLinkBehavior: fields[153] as MouseModeQuoteLinkBehavior?,
     )
       ..useMaterialStyle = fields[146] as bool?
       ..useAndroidDrawer = fields[147] as bool?
@@ -287,7 +288,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(149)
+      ..writeByte(150)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -585,7 +586,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(151)
       ..write(obj.customDateFormat)
       ..writeByte(152)
-      ..write(obj.hoverPopupDelayMilliseconds);
+      ..write(obj.hoverPopupDelayMilliseconds)
+      ..writeByte(153)
+      ..write(obj.mouseModeQuoteLinkBehavior);
   }
 
   @override
@@ -1040,6 +1043,51 @@ class ImagePeekingSettingAdapter extends TypeAdapter<ImagePeekingSetting> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ImagePeekingSettingAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class MouseModeQuoteLinkBehaviorAdapter
+    extends TypeAdapter<MouseModeQuoteLinkBehavior> {
+  @override
+  final int typeId = 44;
+
+  @override
+  MouseModeQuoteLinkBehavior read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return MouseModeQuoteLinkBehavior.expandInline;
+      case 1:
+        return MouseModeQuoteLinkBehavior.scrollToPost;
+      case 2:
+        return MouseModeQuoteLinkBehavior.popupPostsPage;
+      default:
+        return MouseModeQuoteLinkBehavior.expandInline;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, MouseModeQuoteLinkBehavior obj) {
+    switch (obj) {
+      case MouseModeQuoteLinkBehavior.expandInline:
+        writer.writeByte(0);
+        break;
+      case MouseModeQuoteLinkBehavior.scrollToPost:
+        writer.writeByte(1);
+        break;
+      case MouseModeQuoteLinkBehavior.popupPostsPage:
+        writer.writeByte(2);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MouseModeQuoteLinkBehaviorAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

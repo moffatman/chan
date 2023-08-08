@@ -120,7 +120,7 @@ class _PostsPageState extends State<PostsPage> {
 	@override
 	Widget build(BuildContext context) {
 		final attachments = replies.expand<Attachment>((a) => a.post?.attachments ?? []).toList();
-		final subzone = widget.zone.hoistFakeRootZoneFor(0, tree: false, clearStack: widget.clearStack); // To avoid conflict with same semanticIds in tree
+		final subzone = widget.zone.hoistFakeRootZoneFor(0, style: PostSpanZoneStyle.linear, clearStack: widget.clearStack); // To avoid conflict with same semanticIds in tree
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.findPost(widget.postIdForBackground!);
 		final doubleTapScrollToReplies = context.select<EffectiveSettings, bool>((s) => s.doubleTapScrollToReplies);
 		final isRepliesForPostId = widget.isRepliesForPostId;

@@ -306,7 +306,7 @@ class ThreadRow extends StatelessWidget {
 			)
 		];
 		if (latestThread.title?.isNotEmpty == true) {
-			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, imageboard: imageboard), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, imageboard: imageboard, style: PostSpanZoneStyle.linear), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: theme.titleColor) : null
 			));
 			if (site.classicCatalogStyle) {
@@ -406,7 +406,8 @@ class ThreadRow extends StatelessWidget {
 					child: ChangeNotifierProvider<PostSpanZoneData>(
 						create: (ctx) => PostSpanRootZoneData(
 							thread: latestThread,
-							imageboard: imageboard
+							imageboard: imageboard,
+							style: PostSpanZoneStyle.linear
 						),
 						child: IgnorePointer(
 							child: LayoutBuilder(
@@ -536,7 +537,8 @@ class ThreadRow extends StatelessWidget {
 				child: ChangeNotifierProvider<PostSpanZoneData>(
 					create: (ctx) => PostSpanRootZoneData(
 						thread: latestThread,
-						imageboard: imageboard
+						imageboard: imageboard,
+						style: PostSpanZoneStyle.linear
 					),
 					child: LayoutBuilder(
 						builder: (ctx, constraints) => IgnorePointer(

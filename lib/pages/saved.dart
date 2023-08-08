@@ -691,7 +691,8 @@ class _SavedPageState extends State<SavedPage> {
 													create: (context) => PostSpanRootZoneData(
 														imageboard: item.imageboard,
 														thread: item.threadState.thread!,
-														semanticRootIds: [-8]
+														semanticRootIds: [-8],
+														style: PostSpanZoneStyle.linear
 													),
 													child: Builder(
 														builder: (context) => PostRow(
@@ -814,7 +815,8 @@ class _SavedPageState extends State<SavedPage> {
 														create: (context) => PostSpanRootZoneData(
 															imageboard: savedPost.imageboard,
 															thread: threadState!.thread!,
-															semanticRootIds: [-2]
+															semanticRootIds: [-2],
+															style: PostSpanZoneStyle.linear
 														),
 														child: Builder(
 															builder: (context) => PostRow(

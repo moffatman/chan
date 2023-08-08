@@ -553,7 +553,8 @@ class _BoardPageState extends State<BoardPage> {
 										try {
 											final zone = PostSpanRootZoneData(
 												thread: thread,
-												imageboard: imageboard!
+												imageboard: imageboard!,
+												style: PostSpanZoneStyle.linear
 											);
 											final file = await modalLoad(context, 'Rendering...', (c) => sharePostsAsImage(
 												context: context,

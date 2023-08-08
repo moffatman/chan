@@ -1417,7 +1417,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 			create: (context) => PostSpanRootZoneData(
 				imageboard: context.read<Imageboard>(),
 				thread: thread,
-				semanticRootIds: [-9]
+				semanticRootIds: [-9],
+				style: PostSpanZoneStyle.linear
 			),
 			child: PostRow(
 				isSelected: false,
@@ -1516,6 +1517,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								return const SizedBox.shrink();
 							}
 							return Column(
+								crossAxisAlignment: CrossAxisAlignment.stretch,
 								children: [
 									Row(
 										children: [
@@ -1539,6 +1541,28 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 										)
 									),
 									const SizedBox(height: 16),
+									const Row(
+										children: [
+											Icon(CupertinoIcons.chevron_right_2),
+											SizedBox(width: 8),
+											Expanded(
+												child: Text('Quotelink click behavior')
+											)
+										]
+									),
+									const SizedBox(height: 16),
+									AdaptiveChoiceControl<MouseModeQuoteLinkBehavior>(
+										children: const {
+											MouseModeQuoteLinkBehavior.expandInline: (null, 'Expand inline'),
+											MouseModeQuoteLinkBehavior.scrollToPost: (null, 'Scroll to post'),
+											MouseModeQuoteLinkBehavior.popupPostsPage: (null, 'Popup')
+										},
+										groupValue: settings.mouseModeQuoteLinkBehavior,
+										onValueChanged: (newValue) {
+											settings.mouseModeQuoteLinkBehavior = newValue;
+										}
+									),
+									const SizedBox(height: 32),
 								]
 							);
 						}

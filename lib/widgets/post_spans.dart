@@ -79,7 +79,7 @@ class PostSpanRenderOptions {
 		this.overrideRecognizer = false,
 		this.overrideTextColor,
 		this.showCrossThreadLabel = true,
-		this.addExpandingPosts = true,
+		this.addExpandingPosts = false,
 		this.baseTextStyle = const TextStyle(),
 		this.showRawSource = false,
 		this.avoidBuggyClippers = false,
@@ -388,15 +388,19 @@ class PostQuoteLinkSpan extends PostSpan {
 	final String board;
 	final int? threadId;
 	final int postId;
+	final Key? key;
+
 	const PostQuoteLinkSpan({
 		required this.board,
 		required int this.threadId,
-		required this.postId
+		required this.postId,
+		this.key
 	});
 
 	const PostQuoteLinkSpan.dead({
 		required this.board,
-		required this.postId
+		required this.postId,
+		this.key
 	}) : threadId = null;
 
 	@override
@@ -509,9 +513,14 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
+		final stackCount = zone.stackIds.countOf(postId);
+		final enableInteraction = switch(zone.style) {
+			PostSpanZoneStyle.tree => stackCount <= 1,
+			_ => stackCount == 0
+		};
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
-			if (zone.tree || !zone.stackIds.contains(postId)) {
-				if (!settings.supportMouse.value || zone.stackIds.contains(postId)) {
+			if (enableInteraction) {
+				if (!settings.supportMouse.value || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.popupPostsPage) {
 					zone.highlightQuoteLinkId = postId;
 					await WeakNavigator.push(context, PostsPage(
 						zone: zone.childZoneFor(postId),
@@ -524,8 +533,11 @@ class PostQuoteLinkSpan extends PostSpan {
 						zone.highlightQuoteLinkId = null;
 					}
 				}
-				else {
+				else if (zone.shouldExpandPost(postId) || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.expandInline || zone.onNeedScrollToPost == null) {
 					zone.toggleExpansionOfPost(postId);
+				}
+				else {
+					zone.onNeedScrollToPost!(zone.findPost(postId)!);
 				}
 			}
 		});
@@ -562,13 +574,42 @@ class PostQuoteLinkSpan extends PostSpan {
 			// Normal link
 			final span = _buildNormalLink(context, zone, settings, theme, options, threadId);
 			final thisPostInThread = zone.findPost(postId);
-			if (thisPostInThread == null || zone.shouldExpandPost(postId) == true) {
+			final stackCount = zone.stackIds.countOf(postId);
+			final enableInteraction = switch(zone.style) {
+				PostSpanZoneStyle.tree => stackCount <= 1,
+				_ => stackCount == 0
+			};
+			if (thisPostInThread == null ||
+			    zone.shouldExpandPost(postId) == true ||
+					!enableInteraction) {
 				return span;
 			}
 			else {
 				final popup = HoverPopup(
 					style: HoverPopupStyle.floating,
 					anchor: const Offset(30, -80),
+					alternativeHandler: (HoverPopupPhase phase) {
+						if (phase == HoverPopupPhase.start) {
+							if (zone.glowOtherPost != null &&
+								  (zone.isPostOnscreen?.call(postId) ?? false)) {
+								Future.microtask(() {
+									zone.highlightQuoteLinkId = postId;
+									zone.glowOtherPost?.call(postId, true);
+								});
+								return true;
+							}
+							return false;
+						}
+						else {
+							Future.microtask(() {
+								zone.glowOtherPost?.call(postId, false);
+								if (zone.highlightQuoteLinkId == postId) {
+									zone.highlightQuoteLinkId = null;
+								}
+							});
+							return true;
+						}
+					},
 					popup: ChangeNotifierProvider.value(
 						value: zone,
 						child: DecoratedBox(
@@ -582,7 +623,7 @@ class PostQuoteLinkSpan extends PostSpan {
 							)
 						)
 					),
-					key: ValueKey(thisPostInThread),
+					key: key ?? ValueKey(this),
 					child: Text.rich(
 						span.$1,
 						textScaler: TextScaler.noScaling
@@ -596,7 +637,7 @@ class PostQuoteLinkSpan extends PostSpan {
 								if (!zone.stackIds.contains(postId)) {
 									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.$2.onTap ?? () {});
 								}
-								else if (zone.tree) {
+								else if (zone.style == PostSpanZoneStyle.tree) {
 									zone.registerConditionalLineTapTarget('$board/$threadId/$postId', context, () {
 										return zone.isPostOnscreen?.call(postId) != true;
 									}, span.$2.onTap ?? () {});
@@ -1293,17 +1334,19 @@ class PostShiftJISSpan extends PostSpan {
 class PostSpanZone extends StatelessWidget {
 	final int postId;
 	final WidgetBuilder builder;
+	final PostSpanZoneStyle? style;
 
 	const PostSpanZone({
 		required this.postId,
 		required this.builder,
+		this.style,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return ChangeNotifierProvider<PostSpanZoneData>.value(
-			value: context.read<PostSpanZoneData>().childZoneFor(postId),
+			value: context.read<PostSpanZoneData>().childZoneFor(postId, style: style),
 			child: Builder(
 				builder: builder
 			)
@@ -1311,8 +1354,14 @@ class PostSpanZone extends StatelessWidget {
 	}
 }
 
+enum PostSpanZoneStyle {
+	linear,
+	tree,
+	expandedInline
+}
+
 abstract class PostSpanZoneData extends ChangeNotifier {
-	final Map<(int, bool?, int?), PostSpanZoneData> _children = {};
+	final Map<(int, PostSpanZoneStyle?, int?), PostSpanZoneData> _children = {};
 	String get board;
 	int get primaryThreadId;
 	ThreadIdentifier get primaryThread => ThreadIdentifier(board, primaryThreadId);
@@ -1321,10 +1370,11 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	Iterable<int> get stackIds;
 	ValueChanged<Post>? get onNeedScrollToPost;
 	bool Function(int postId)? get isPostOnscreen;
+	void Function(int postId, bool glow)? get glowOtherPost;
 	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems;
 	bool disposed = false;
 	List<Comparator<Post>> get postSortingMethods;
-	bool get tree;
+	PostSpanZoneStyle get style;
 
 	final Map<int, bool> _shouldExpandPost = {};
 	bool shouldExpandPost(int id) {
@@ -1387,13 +1437,13 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		return _futures[id] as AsyncSnapshot<T>;
 	}
 
-	PostSpanZoneData childZoneFor(int postId, {bool? tree, int? fakeHoistedRootId}) {
+	PostSpanZoneData childZoneFor(int postId, {PostSpanZoneStyle? style, int? fakeHoistedRootId}) {
 		// Assuming that when a new childZone is requested, there will be some old one to cleanup
 		for (final child in _children.values) {
 			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 			child._conditionalLineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 		}
-		final key = (postId, tree, fakeHoistedRootId);
+		final key = (postId, style, fakeHoistedRootId);
 		final existingZone = _children[key];
 		if (existingZone != null) {
 			return existingZone;
@@ -1401,14 +1451,14 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		final newZone = PostSpanChildZoneData(
 			parent: this,
 			postId: postId,
-			tree: tree,
+			style: style,
 			fakeHoistedRootId: fakeHoistedRootId
 		);
 		_children[key] = newZone;
 		return newZone;
 	}
 
-	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {bool? tree, bool clearStack = false});
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {PostSpanZoneStyle? style, bool clearStack = false});
 
 	void notifyAllListeners() {
 		notifyListeners();
@@ -1509,15 +1559,15 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 class PostSpanChildZoneData extends PostSpanZoneData {
 	final int postId;
 	final PostSpanZoneData parent;
-	final bool? _tree;
+	final PostSpanZoneStyle? _style;
 	final int? fakeHoistedRootId;
 
 	PostSpanChildZoneData({
 		required this.parent,
 		required this.postId,
-		bool? tree,
+		PostSpanZoneStyle? style,
 		this.fakeHoistedRootId
-	}) : _tree = tree;
+	}) : _style = style;
 
 	@override
 	String get board => parent.board;
@@ -1539,6 +1589,9 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 
 	@override
 	bool Function(int)? get isPostOnscreen => parent.isPostOnscreen;
+
+	@override
+	void Function(int, bool)? get glowOtherPost => parent.glowOtherPost;
 
 	@override
 	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems => parent.onNeedUpdateWithStubItems;
@@ -1591,15 +1644,15 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	List<Comparator<Post>> get postSortingMethods => parent.postSortingMethods;
 	@override
-	bool get tree => _tree ?? parent.tree;
+	PostSpanZoneStyle get style => _style ?? parent.style;
 	@override
 	PostSpanZoneData get _root => parent._root;
 
 	@override
-	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {bool? tree, bool clearStack = false}) {
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {PostSpanZoneStyle? style, bool clearStack = false}) {
 		return clearStack ?
-			_root.childZoneFor(fakeHoistedRootId, tree: tree) :
-			parent.childZoneFor(postId, fakeHoistedRootId: fakeHoistedRootId, tree: tree);
+			_root.childZoneFor(fakeHoistedRootId, style: style) :
+			parent.childZoneFor(postId, fakeHoistedRootId: fakeHoistedRootId, style: style);
 	}
 }
 
@@ -1616,6 +1669,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	final bool Function(int)? isPostOnscreen;
 	@override
+	final void Function(int, bool)? glowOtherPost;
+	@override
 	Future<void> Function(List<ParentAndChildIdentifier>)? onNeedUpdateWithStubItems;
 	final Map<int, bool> _isLoadingPostFromArchive = {};
 	final Map<int, Post> _postsFromArchive = {};
@@ -1625,7 +1680,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	List<Comparator<Post>> postSortingMethods;
 	@override
-	bool tree;
+	PostSpanZoneStyle style;
 	final Map<int, Thread> _threads = {};
 	final Map<int, Post> _postLookupTable = {};
 
@@ -1634,10 +1689,11 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		required this.imageboard,
 		this.onNeedScrollToPost,
 		this.isPostOnscreen,
+		this.glowOtherPost,
 		this.onNeedUpdateWithStubItems,
 		this.semanticRootIds = const [],
 		this.postSortingMethods = const [],
-		this.tree = false
+		required this.style
 	}) : board = thread.board, primaryThreadId = thread.id {
 		addThread(thread);
 	}
@@ -1648,10 +1704,11 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		required this.imageboard,
 		this.onNeedScrollToPost,
 		this.isPostOnscreen,
+		this.glowOtherPost,
 		this.onNeedUpdateWithStubItems,
 		this.semanticRootIds = const [],
 		this.postSortingMethods = const [],
-		this.tree = false
+		required this.style
 	}) : board = primaryThread.board, primaryThreadId = primaryThread.id {
 		for (final thread in threads) {
 			addThread(thread);
@@ -1766,8 +1823,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	}
 
 	@override
-	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {bool? tree, bool clearStack = false}) {
-		return childZoneFor(0, fakeHoistedRootId: fakeHoistedRootId, tree: tree);
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {PostSpanZoneStyle? style, bool clearStack = false}) {
+		return childZoneFor(0, fakeHoistedRootId: fakeHoistedRootId, style: style);
 	}
 
 	@override
@@ -1815,7 +1872,8 @@ class ExpandingPost extends StatelessWidget {
 											heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 										);
 									},
-									shrinkWrap: true
+									shrinkWrap: true,
+									expandedInline: true
 								)
 							)
 						)
@@ -2016,7 +2074,7 @@ List<InlineSpan> buildPostInfoRow({
 			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
 				text: '${formatRelativeTime(post.time)} ago '
 			)
-			else if (field == PostDisplayField.postId && (site.explicitIds || !zone.tree)) ...[
+			else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
 				if (showSiteIcon) TextualWidgetSpan(
 					text: '',
 					alignment: PlaceholderAlignment.middle,

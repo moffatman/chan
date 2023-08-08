@@ -335,6 +335,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(PostSortingMethodAdapter());
 		Hive.registerAdapter(ShareablePostsStyleAdapter());
 		Hive.registerAdapter(ImagePeekingSettingAdapter());
+		Hive.registerAdapter(MouseModeQuoteLinkBehaviorAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(

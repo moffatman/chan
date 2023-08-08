@@ -194,7 +194,8 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										posts_: [],
 										attachments: []
 									),
-									semanticRootIds: [-7]
+									semanticRootIds: [-7],
+									style: PostSpanZoneStyle.linear
 								),
 								child: PostRow(
 									post: row.post!,

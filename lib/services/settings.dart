@@ -642,6 +642,16 @@ enum ImagePeekingSetting {
 	ultraUnsafe;
 }
 
+@HiveType(typeId: 44)
+enum MouseModeQuoteLinkBehavior {
+	@HiveField(0)
+	expandInline,
+	@HiveField(1)
+	scrollToPost,
+	@HiveField(2)
+	popupPostsPage
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -946,6 +956,8 @@ class SavedSettings extends HiveObject {
 	String customDateFormat;
 	@HiveField(152)
 	int hoverPopupDelayMilliseconds;
+	@HiveField(153)
+	MouseModeQuoteLinkBehavior mouseModeQuoteLinkBehavior;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1097,6 +1109,7 @@ class SavedSettings extends HiveObject {
 		bool? showPerformanceOverlay,
 		String? customDateFormat,
 		int? hoverPopupDelayMilliseconds,
+		MouseModeQuoteLinkBehavior? mouseModeQuoteLinkBehavior,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1273,7 +1286,8 @@ class SavedSettings extends HiveObject {
 		hideBarsWhenScrollingDown = hideBarsWhenScrollingDown ?? false,
 		showPerformanceOverlay = showPerformanceOverlay ?? false,
 		customDateFormat = customDateFormat ?? DateTimeConversion.kISO8601DateFormat,
-		hoverPopupDelayMilliseconds = hoverPopupDelayMilliseconds ?? 0 {
+		hoverPopupDelayMilliseconds = hoverPopupDelayMilliseconds ?? 0,
+		mouseModeQuoteLinkBehavior = mouseModeQuoteLinkBehavior ?? MouseModeQuoteLinkBehavior.expandInline {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2401,6 +2415,13 @@ class EffectiveSettings extends ChangeNotifier {
 	int get hoverPopupDelayMilliseconds => _settings.hoverPopupDelayMilliseconds;
 	set hoverPopupDelayMilliseconds(int setting) {
 		_settings.hoverPopupDelayMilliseconds = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	MouseModeQuoteLinkBehavior get mouseModeQuoteLinkBehavior => _settings.mouseModeQuoteLinkBehavior;
+	set mouseModeQuoteLinkBehavior(MouseModeQuoteLinkBehavior setting) {
+		_settings.mouseModeQuoteLinkBehavior = setting;
 		_settings.save();
 		notifyListeners();
 	}
