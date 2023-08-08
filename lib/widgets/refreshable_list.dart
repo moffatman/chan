@@ -2511,8 +2511,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	late final BehaviorSubject<void> _scrollStream = BehaviorSubject();
 	late final EasyListenable slowScrolls = EasyListenable();
 	late final StreamSubscription<List<void>> _slowScrollSubscription;
-	double? topOffset;
-	double? bottomOffset;
+	double topOffset = 0;
+	double bottomOffset = 0;
 	String? contentId;
 	RefreshableListState<T>? state;
 	final Map<(int, bool), List<Completer<void>>> _itemCacheCallbacks = {};
@@ -2714,7 +2714,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		final initialContentId = contentId;
 		Future<bool> attemptResolve() async {
 			final completer = Completer<void>();
-			double estimate = (_estimateOffset(targetIndex) ?? ((targetIndex > (_items.length / 2)) ? scrollController!.position.maxScrollExtent : 0)) - topOffset!;
+			double estimate = (_estimateOffset(targetIndex) ?? ((targetIndex > (_items.length / 2)) ? scrollController!.position.maxScrollExtent : 0)) - topOffset;
 			if (_items.last.cachedOffset != null) {
 				// prevent overscroll
 				estimate = min(estimate, scrollController!.position.maxScrollExtent);
@@ -2747,8 +2747,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		if (_items[targetIndex].cachedOffset == null) {
 			throw Exception('Scrolling timed out');
 		}
-		double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset!;
-		final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset! - bottomOffset!;
+		double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset;
+		final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset - bottomOffset;
 		if (_items[targetIndex] == _items.last) {
 			// add offset to reveal the full footer
 			atAlignment0 += 110;
@@ -2850,8 +2850,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				return (i.item.item == item) &&
 							 (i.cachedHeight != null) &&
 							 (i.cachedOffset != null) && 
-							 (i.cachedOffset! + i.cachedHeight! > scrollController!.position.pixels) &&
-							 (i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
+							 (i.cachedOffset! + i.cachedHeight! > (scrollController!.position.pixels + topOffset)) &&
+							 (i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset));
 			});
 		}
 		return false;
