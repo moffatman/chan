@@ -844,6 +844,7 @@ class MaybeScrollbar extends StatelessWidget {
 					controller: controller,
 					scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
 					thickness: 8,
+					interactive: true,
 					thumbVisibility: thumbVisibility,
 					child: child
 				);
