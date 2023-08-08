@@ -5,6 +5,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -118,6 +119,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   }
 
   Future<T?> push<T extends Object?>(Widget child) {
+    ScrollTracker.instance.weakNavigatorDidPush();
     lightHapticFeedback();
     final forwardController = AnimationController(
       vsync: this,
@@ -161,6 +163,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   }
 
   void pop<T extends Object?>([T? result]) async {
+    ScrollTracker.instance.weakNavigatorDidPop();
     lightHapticFeedback();
     final entry = stack.removeLast();
     if (stack.isNotEmpty) {
@@ -178,6 +181,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   }
 
   Future<void> popAllExceptFirst({bool animated = false}) async {
+    ScrollTracker.instance.weakNavigatorDidPop();
     lightHapticFeedback();
     await Future.wait([
       rootCoverAnimationController.reverse(),

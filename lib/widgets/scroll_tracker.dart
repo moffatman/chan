@@ -59,6 +59,24 @@ class ScrollTracker {
 		return false;
 	}
 
+	void navigatorDidPush() {
+		slowScrollDirection.value = VerticalDirection.up;
+		isScrolling.value = false;
+	}
+
+	void navigatorDidPop() {
+		slowScrollDirection.value = VerticalDirection.up;
+		isScrolling.value = false;
+	}
+
+	void weakNavigatorDidPush() {
+		isScrolling.value = false;
+	}
+
+	void weakNavigatorDidPop() {
+		isScrolling.value = false;
+	}
+
 	void dispose() {
 		isScrolling.dispose();
 		slowScrollDirection.dispose();
@@ -110,11 +128,11 @@ class _AncestorScrollBuilderState extends State<AncestorScrollBuilder> {
 class ScrollTrackerNavigatorObserver extends NavigatorObserver {
 	@override
 	void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-		ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.up;
+		ScrollTracker.instance.navigatorDidPush();
 	}
 
 	@override
 	void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-		ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.up;
+		ScrollTracker.instance.navigatorDidPop();
 	}
 }
