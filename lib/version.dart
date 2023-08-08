@@ -1,1 +1,1 @@
-const kChanceVersion = '1.0.33.4';
+const kChanceVersion = '1.0.34';
