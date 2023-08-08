@@ -782,6 +782,17 @@ class PostCodeSpan extends PostSpan {
 		);
 		final lineCount = RegExp(r'\n').allMatches(text).length + 1;
 		final lineCountFieldWidth = lineCount.toString().length;
+		if (options.showRawSource) {
+			return TextSpan(
+				children: [
+					const TextSpan(text: '[code]'),
+					if (result.data != null) ...result.data!
+					else TextSpan(text: text),
+					const TextSpan(text: '[/code]')
+				],
+				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle)
+			);
+		}
 		final child = Row(
 			crossAxisAlignment: CrossAxisAlignment.start,
 			mainAxisSize: MainAxisSize.min,
