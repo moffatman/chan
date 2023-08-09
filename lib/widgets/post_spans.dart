@@ -39,21 +39,6 @@ import 'package:highlight/highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class TextualWidgetSpan extends WidgetSpan {
-	final String text;
-
-	const TextualWidgetSpan({
-		required super.child,
-		required this.text,
-		super.alignment
-	});
-
-	@override
-	void computeToPlainText(StringBuffer buffer, {bool includeSemanticsLabels = true, bool includePlaceholders = true}) {
-		buffer.write(text);
-	}
-}
-
 class PostSpanRenderOptions {
 	final TapGestureRecognizer? recognizer;
 	final bool overrideRecognizer;
@@ -417,7 +402,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 	}
 
-	(InlineSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int actualThreadId) {
+	(TextSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int actualThreadId) {
 		String text = '>>';
 		if (zone.board != board) {
 			text += zone.imageboard.site.formatBoardName(zone.imageboard.site.persistence.getBoard(board)).replaceFirst(RegExp(r'\/$'), '');
@@ -468,7 +453,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-  (InlineSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options) {
+  (TextSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		String text = '>>$postId';
 		if (zone.postFromArchiveError(postId) != null) {
 			text += ' (Error: ${zone.postFromArchiveError(postId)})';
@@ -492,7 +477,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	(InlineSpan, TapGestureRecognizer) _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
+	(TextSpan, TapGestureRecognizer) _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
 		Color color = theme.secondaryColor;
 		if (postId == threadId) {
@@ -581,7 +566,8 @@ class PostQuoteLinkSpan extends PostSpan {
 			};
 			if (thisPostInThread == null ||
 			    zone.shouldExpandPost(postId) == true ||
-					!enableInteraction) {
+					!enableInteraction ||
+					options.showRawSource) {
 				return span;
 			}
 			else {
@@ -629,8 +615,7 @@ class PostQuoteLinkSpan extends PostSpan {
 						textScaler: TextScaler.noScaling
 					)
 				);
-				return (TextualWidgetSpan(
-					text: span.$1.toPlainText(),
+				return (WidgetSpan(
 					child: IntrinsicHeight(
 						child: Builder(
 							builder: (context) {
@@ -661,6 +646,9 @@ class PostQuoteLinkSpan extends PostSpan {
 	@override
 	build(context, zone, settings, theme, options) {
 		final pair = _build(context, zone, settings, theme, options);
+		if (options.showRawSource) {
+			return pair.$1;
+		}
 		final span = TextSpan(
 			children: [
 				pair.$1
@@ -670,7 +658,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			return TextSpan(
 				children: [
 					span,
-					TextualWidgetSpan(child: ExpandingPost(id: postId), text: '')
+					WidgetSpan(child: ExpandingPost(id: postId))
 				]
 			);
 		}
@@ -821,8 +809,7 @@ class PostCodeSpan extends PostSpan {
 				)
 			]
 		);
-		return TextualWidgetSpan(
-			text: buildText(),
+		return WidgetSpan(
 			child: Container(
 				padding: const EdgeInsets.all(8),
 				decoration: const BoxDecoration(
@@ -1013,9 +1000,8 @@ class PostLinkSpan extends PostSpan {
 					onTap() {
 						openBrowser(context, cleanedUri!);
 					}
-					return TextualWidgetSpan(
+					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
-						text: buildText(),
 						child: options.avoidBuggyClippers ? GestureDetector(
 							onTap: onTap,
 							child: tapChild
@@ -1101,8 +1087,7 @@ class PostTeXSpan extends PostSpan {
 		);
 		return options.showRawSource ? TextSpan(
 			text: buildText()
-		) : TextualWidgetSpan(
-			text: buildText(),
+		) : WidgetSpan(
 			alignment: PlaceholderAlignment.middle,
 			child: options.avoidBuggyClippers ? child : SingleChildScrollView(
 				scrollDirection: Axis.horizontal,
@@ -1125,8 +1110,12 @@ class PostInlineImageSpan extends PostSpan {
 	});
 	@override
 	build(context, zone, settings, theme, options) {
-		return TextualWidgetSpan(
-			text: '<img src="$src">',
+		if (options.showRawSource) {
+			return TextSpan(
+				text: '<img src="$src">'
+			);
+		}
+		return WidgetSpan(
 			child: SizedBox(
 				width: width.toDouble(),
 				height: height.toDouble(),
@@ -1272,8 +1261,10 @@ class PostTableSpan extends PostSpan {
 	const PostTableSpan(this.rows);
 	@override
 	build(context, zone, settings, theme, options) {
-		return TextualWidgetSpan(
-			text: buildText(),
+		if (options.showRawSource) {
+			return TextSpan(text: buildText());
+		}
+		return WidgetSpan(
 			child: Table(
 				children: rows.map((row) => TableRow(
 					children: row.map((col) => TableCell(
@@ -1294,8 +1285,7 @@ class PostTableSpan extends PostSpan {
 class PostDividerSpan extends PostSpan {
 	const PostDividerSpan();
 	@override
-	build(context, zone, settings, theme, options) => TextualWidgetSpan(
-		text: '',
+	build(context, zone, settings, theme, options) => WidgetSpan(
 		child: Divider(
 			thickness: 1,
 			height: 25,
@@ -1314,20 +1304,23 @@ class PostShiftJISSpan extends PostSpan {
 
 	@override
 	build(context, zone, settings, theme, options) {
-		final child1 = Text.rich(
-			TextSpan(
-				text: text,
-				style: options.baseTextStyle.copyWith(
-					color: options.overrideTextColor,
-					fontFamily: 'Submona'
-				),
-				recognizer: options.recognizer,
-				onEnter: options.onEnter,
-				onExit: options.onExit
-			)
+		final span = TextSpan(
+			text: text,
+			style: options.baseTextStyle.copyWith(
+				color: options.overrideTextColor,
+				fontFamily: 'Submona'
+			),
+			recognizer: options.recognizer,
+			onEnter: options.onEnter,
+			onExit: options.onExit
 		);
-		return TextualWidgetSpan(
-			text: buildText(),
+		if (options.showRawSource) {
+			return span;
+		}
+		final child1 = Text.rich(
+			span
+		);
+		return WidgetSpan(
 			child: Padding(
 				padding: const EdgeInsets.all(8),
 				child: options.avoidBuggyClippers ? child1 : SingleChildScrollView(
@@ -1984,8 +1977,7 @@ List<InlineSpan> buildPostInfoRow({
 				style: TextStyle(color: theme.primaryColor.withOpacity(0.5))
 			)
 			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
-				TextualWidgetSpan(
-					text: '',
+				WidgetSpan(
 					child: Icon(CupertinoIcons.person_fill, color: theme.secondaryColor, size: 16),
 					alignment: PlaceholderAlignment.middle
 				),
@@ -2086,8 +2078,7 @@ List<InlineSpan> buildPostInfoRow({
 				text: '${formatRelativeTime(post.time)} ago '
 			)
 			else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
-				if (showSiteIcon) TextualWidgetSpan(
-					text: '',
+				if (showSiteIcon) WidgetSpan(
 					alignment: PlaceholderAlignment.middle,
 					child: Padding(
 						padding: const EdgeInsets.only(right: 4),
@@ -2117,8 +2108,7 @@ List<InlineSpan> buildPostInfoRow({
 				const TextSpan(text: ' ')
 			],
 		if (site.isReddit) ...[
-			TextualWidgetSpan(
-				text: '',
+			WidgetSpan(
 				child: Icon(CupertinoIcons.arrow_up, size: 16, color: theme.primaryColorWithBrightness(0.5)),
 				alignment: PlaceholderAlignment.middle
 			),
