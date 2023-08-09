@@ -628,6 +628,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (!EffectiveSettings.instance.tabMenuHidesWhenScrollingDown) {
 			return;
 		}
+		if (_tabs.mainTabIndex != 0) {
+			return;
+		}
 		await SchedulerBinding.instance.endOfFrame;
 		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && showTabPopup) {
 			setState(() {
