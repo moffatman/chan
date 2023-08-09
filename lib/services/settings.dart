@@ -2483,7 +2483,7 @@ class EffectiveSettings extends ChangeNotifier {
 		await _settings.save();
 	}
 
-	static const featureStatusBarWorkaround = false;
+	static const featureStatusBarWorkaround = true;
 
 	EffectiveSettings._() {
 		_settings = Persistence.settings;
