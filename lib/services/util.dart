@@ -62,3 +62,7 @@ Future<void> _copyUngzipped((String, String) param) async {
 Future<void> copyUngzipped(String inputPath, String outputPath) async {
 	await compute(_copyUngzipped, (inputPath, outputPath));
 }
+
+extension UnescapeHtml on String {
+	String get unescapeHtml => unescape.convert(this);
+}

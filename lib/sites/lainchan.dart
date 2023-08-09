@@ -204,7 +204,7 @@ class SiteLainchan extends ImageboardSite {
 			board: thread.board,
 			id: thread.id,
 			isSticky: firstPost['sticky'] == 1,
-			title: firstPost['sub'],
+			title: (firstPost['sub'] as String?)?.unescapeHtml,
 			attachments: posts[0].attachments,
 			time: DateTime.fromMillisecondsSinceEpoch(firstPost['time'] * 1000),
 			replyCount: posts.length - 1,
@@ -236,7 +236,7 @@ class SiteLainchan extends ImageboardSite {
 				final thread = Thread(
 					board: board,
 					id: threadData['no'],
-					title: threadData['sub'],
+					title: (threadData['sub'] as String?)?.unescapeHtml,
 					posts_: [threadAsPost],
 					attachments: threadAsPost.attachments,
 					replyCount: threadData['replies'],

@@ -122,10 +122,6 @@ extension _RedditApiId on ImageboardArchiveSearchResult {
 	}
 }
 
-extension _UnescapeHtml on String {
-	String get unescapeHtml => unescape.convert(this);
-}
-
 const _loginFieldRedGifsTokenKey = '_rgt';
 
 class SiteReddit extends ImageboardSite {

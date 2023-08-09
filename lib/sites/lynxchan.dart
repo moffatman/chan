@@ -19,10 +19,6 @@ import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:mime/mime.dart';
 
-extension _Unescape on String? {
-	String? get _unescaped => this == null ? null : unescape.convert(this!);
-}
-
 class SiteLynxchan extends ImageboardSite {
 	@override
 	final String name;
@@ -346,7 +342,7 @@ class SiteLynxchan extends ImageboardSite {
 				imageCount: (obj['omittedFiles'] ?? 0) + (obj['posts'] as List).fold<int>(0, (c, p) => c + (p['files'] as List).length),
 				id: op.id,
 				board: board,
-				title: (obj['subject'] as String?)?._unescaped,
+				title: (obj['subject'] as String?)?.unescapeHtml,
 				isSticky: obj['pinned'],
 				time: DateTime.parse(obj['creation']),
 				attachments: op.attachments,
@@ -433,7 +429,7 @@ class SiteLynxchan extends ImageboardSite {
 			imageCount: posts.fold<int>(0, (c, p) => c + p.attachments.length) - op.attachments.length,
 			id: thread.id,
 			board: thread.board,
-			title: (response.data['subject'] as String?)?._unescaped,
+			title: (response.data['subject'] as String?)?.unescapeHtml,
 			isSticky: response.data['pinned'],
 			time: op.time,
 			attachments: op.attachments,
