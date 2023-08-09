@@ -223,10 +223,7 @@ class AdaptiveScaffold extends StatelessWidget {
 					DrawerController(
 						key: context.watch<_CupertinoDrawer>().key,
 						alignment: DrawerAlignment.start,
-						child: Theme(
-							data: context.watch<SavedTheme>().materialThemeData,
-							child: drawer_
-						)
+						child: drawer_
 					)
 				]
 			)

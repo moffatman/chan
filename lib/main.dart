@@ -302,14 +302,17 @@ class _ChanAppState extends State<ChanApp> {
 													home: home,
 													localizationsDelegates: localizationsDelegates,
 													navigatorKey: _navigatorKey
-												) : CupertinoApp(
-													title: 'Chance',
-													debugShowCheckedModeBanner: false,
-													theme: settings.theme.cupertinoThemeData,
-													scrollBehavior: scrollBehavior,
-													home: home,
-													localizationsDelegates: localizationsDelegates,
-													navigatorKey: _navigatorKey
+												) : Theme(
+													data: settings.theme.materialThemeData,
+													child: CupertinoApp(
+														title: 'Chance',
+														debugShowCheckedModeBanner: false,
+														theme: settings.theme.cupertinoThemeData,
+														scrollBehavior: scrollBehavior,
+														home: home,
+														localizationsDelegates: localizationsDelegates,
+														navigatorKey: _navigatorKey
+													)
 												)
 											)
 										)

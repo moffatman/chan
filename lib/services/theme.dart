@@ -52,11 +52,14 @@ class ChanceTheme extends StatelessWidget {
 				)
 			);
 		}
-		return CupertinoTheme(
-			data: theme.cupertinoThemeData,
-			child: DefaultTextStyle(
-				style: theme.cupertinoThemeData.textTheme.textStyle,
-				child: child1
+		return Theme(
+			data: theme.materialThemeData,
+			child: CupertinoTheme(
+				data: theme.cupertinoThemeData,
+				child: DefaultTextStyle(
+					style: theme.cupertinoThemeData.textTheme.textStyle,
+					child: child1
+				)
 			)
 		);
 	}
