@@ -3243,11 +3243,12 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				AdaptiveSegmentedControl<NullWrapper<String>>(
+				AdaptiveChoiceControl<NullWrapper<String>>(
 					children: {
 						const NullWrapper(null): (null, 'Default (${DateTime.now().weekdayShortName})'),
 						const NullWrapper(DateTimeConversion.kISO8601DateFormat): (null, 'ISO 8601 (${DateTime.now().formatDate(DateTimeConversion.kISO8601DateFormat)})'),
-						const NullWrapper('MM/DD/YY'): (null, 'MM/DD/YY (${DateTime.now().formatDate('MM/DD/YY')})')
+						const NullWrapper('MM/DD/YY'): (null, 'MM/DD/YY (${DateTime.now().formatDate('MM/DD/YY')})'),
+						const NullWrapper('DD/MM/YY'): (null, 'DD/MM/YY (${DateTime.now().formatDate('DD/MM/YY')})')
 					},
 					groupValue: settings.exactTimeUsesCustomDateFormat ? NullWrapper(settings.customDateFormat) : const NullWrapper(null),
 					onValueChanged: (newValue) {
