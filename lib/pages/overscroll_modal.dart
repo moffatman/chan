@@ -8,7 +8,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 const _kLongPressToPopAllTime = Duration(milliseconds: 500);
@@ -90,8 +89,14 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 
 	void _onPointerDown(PointerEvent event) {
 		final RenderBox scrollBox = _scrollKey.currentContext!.findRenderObject()! as RenderBox;
-		final Offset childBoxOffset = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset ?? Offset.zero;
-		_pointersDown[event.pointer] = (event.position, event.position.dy < scrollBox.localToGlobal(childBoxOffset).dy || event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - childBoxOffset).dy, DateTime.now());
+		final EdgeInsets childBoxPadding = (_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.resolvedPadding ?? EdgeInsets.zero;
+		final pixelsVisuallyAbove = widget.reverse ? (_controller.tryPosition?.extentAfter ?? 0) : (_controller.tryPosition?.extentBefore ?? 0);
+		final pointerInTopMargin =
+			(event.position.dy < scrollBox.localToGlobal(Offset(0, childBoxPadding.top - pixelsVisuallyAbove)).dy);
+		final pixelsVisuallyBelow = widget.reverse ? (_controller.tryPosition?.extentBefore ?? 0) : (_controller.tryPosition?.extentAfter ?? 0);
+		final pointerInBottomMargin =
+			(event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - Offset(0, childBoxPadding.bottom)).dy + pixelsVisuallyBelow);
+		_pointersDown[event.pointer] = (event.position, pointerInTopMargin || pointerInBottomMargin, DateTime.now());
 		Future.delayed(_kLongPressToPopAllTime, () {
 			if (mounted &&
 			    WeakNavigator.of(context) != null &&
@@ -154,6 +159,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 									child: widget.background,
 									builder: (context, child) {
 										final double childBoxTopDiff = (_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.resolvedPadding?.top ?? 0;
+										final double childBoxBottomDiff = (_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.resolvedPadding?.bottom ?? 0;
 										double topOverscroll = 0;
 										double bottomOverscroll = 0;
 										if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
@@ -165,7 +171,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 											children: [
 												Positioned(
 													top: childBoxTopDiff - topOverscroll,
-													bottom: childBoxTopDiff - bottomOverscroll,
+													bottom: childBoxBottomDiff - bottomOverscroll,
 													left: 0,
 													right: 0,
 													child: Center(

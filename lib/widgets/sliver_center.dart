@@ -26,6 +26,7 @@ class SliverCenter extends SingleChildRenderObjectWidget {
 
 class RenderSliverCenter extends RenderSliverEdgeInsetsPadding {
 	EdgeInsets minimumPadding;
+	EdgeInsets centerPadding = EdgeInsets.zero;
 
 	RenderSliverCenter({
 		required this.minimumPadding,
@@ -39,19 +40,18 @@ class RenderSliverCenter extends RenderSliverEdgeInsetsPadding {
 		child!.layout(constraints, parentUsesSize: true);
 		// child!.geometry?.scrollExtent could possibly be Infinity
 		final childScrollExtent = min(child!.geometry?.scrollExtent ?? 0, constraints.viewportMainAxisExtent);
-		final padding = (max(constraints.viewportMainAxisExtent, childScrollExtent) - childScrollExtent) / 2;
-		final EdgeInsets centerPadding;
+		final totalPadding = (max(constraints.viewportMainAxisExtent, childScrollExtent) - childScrollExtent);
 		if (constraints.axis == Axis.vertical) {
-			centerPadding = EdgeInsets.symmetric(vertical: padding);
+			centerPadding = EdgeInsets.symmetric(vertical: max(0, (totalPadding - minimumPadding.vertical)) / 2);
 		}
 		else {
-			centerPadding = EdgeInsets.symmetric(horizontal: padding);
+			centerPadding = EdgeInsets.symmetric(horizontal: max(0, (totalPadding - minimumPadding.horizontal)) / 2);
 		}
 		_resolvedPadding = EdgeInsets.only(
-			top: max(minimumPadding.top, centerPadding.top),
-			left: max(minimumPadding.left, centerPadding.left),
-			right: max(minimumPadding.right, centerPadding.right),
-			bottom: max(minimumPadding.bottom, centerPadding.bottom)
+			top: minimumPadding.top + centerPadding.top,
+			left: minimumPadding.left + centerPadding.left,
+			right: minimumPadding.right + centerPadding.right,
+			bottom: minimumPadding.bottom + centerPadding.bottom
 		);
 	}
 
