@@ -390,7 +390,7 @@ class SavedTheme {
 			colorScheme: colorScheme,
 			useMaterial3: true,
 			textTheme: textTheme.copyWith(
-				bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: 17)
+				bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: 17, height: 1.3)
 			)
 		).copyWith(
 			platform: platformIsMaterial ? null : TargetPlatform.android,
