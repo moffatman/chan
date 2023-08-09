@@ -454,6 +454,9 @@ class SavedTheme {
 					return null;
 				})
 			),
+			sliderTheme: const SliderThemeData(
+				allowedInteraction: SliderInteraction.slideThumb
+			),
 			cupertinoOverrideTheme: cupertinoThemeData
 		);
 	}
