@@ -559,7 +559,7 @@ class ThreadRow extends StatelessWidget {
 											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 											avoidBuggyClippers: true
 										)),
-										countersPlaceholder
+										if (!settings.useFullWidthForCatalogCounters) countersPlaceholder
 									]
 								),
 								maxLines: settings.catalogGridModeTextLinesLimit
@@ -637,7 +637,10 @@ class ThreadRow extends StatelessWidget {
 				if (settings.useFullWidthForCatalogCounters) Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						Flexible(
+						if (contentFocus) Expanded(
+							child: content
+						)
+						else Flexible(
 							child: content
 						),
 						makeCounters()
