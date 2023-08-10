@@ -9,6 +9,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/filtering.dart';
@@ -336,6 +337,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(ShareablePostsStyleAdapter());
 		Hive.registerAdapter(ImagePeekingSettingAdapter());
 		Hive.registerAdapter(MouseModeQuoteLinkBehaviorAdapter());
+		Hive.registerAdapter(DrawerModeAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(
@@ -1222,6 +1224,8 @@ class PersistentBrowserTab extends EasyListenable {
 	final boardKey = GlobalKey(debugLabel: 'PersistentBrowserTab.boardKey');
 	// Do not persist
 	final incognitoProviderKey = GlobalKey(debugLabel: 'PersistentBrowserTab.incognitoProviderKey');
+	// Do not persist
+	final masterDetailKey = GlobalKey<MultiMasterDetailPageState>(debugLabel: 'PersistentBrowserTab.masterDetailKey');
 	// Do not persist
 	final unseen = ValueNotifier(0);
 	@HiveField(5, defaultValue: '')

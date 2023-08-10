@@ -655,6 +655,16 @@ enum MouseModeQuoteLinkBehavior {
 	popupPostsPage
 }
 
+@HiveType(typeId: 45)
+enum DrawerMode {
+	@HiveField(0)
+	tabs,
+	@HiveField(1)
+	watchedThreads,
+	@HiveField(2)
+	savedThreads;
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -961,6 +971,8 @@ class SavedSettings extends HiveObject {
 	int hoverPopupDelayMilliseconds;
 	@HiveField(153)
 	MouseModeQuoteLinkBehavior mouseModeQuoteLinkBehavior;
+	@HiveField(154)
+	DrawerMode drawerMode;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1113,6 +1125,7 @@ class SavedSettings extends HiveObject {
 		String? customDateFormat,
 		int? hoverPopupDelayMilliseconds,
 		MouseModeQuoteLinkBehavior? mouseModeQuoteLinkBehavior,
+		DrawerMode? drawerMode,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1290,7 +1303,8 @@ class SavedSettings extends HiveObject {
 		showPerformanceOverlay = showPerformanceOverlay ?? false,
 		customDateFormat = customDateFormat ?? DateTimeConversion.kISO8601DateFormat,
 		hoverPopupDelayMilliseconds = hoverPopupDelayMilliseconds ?? 0,
-		mouseModeQuoteLinkBehavior = mouseModeQuoteLinkBehavior ?? MouseModeQuoteLinkBehavior.expandInline {
+		mouseModeQuoteLinkBehavior = mouseModeQuoteLinkBehavior ?? MouseModeQuoteLinkBehavior.expandInline,
+		drawerMode = drawerMode ?? DrawerMode.tabs {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2427,6 +2441,12 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.mouseModeQuoteLinkBehavior = setting;
 		_settings.save();
 		notifyListeners();
+	}
+
+	DrawerMode get drawerMode => _settings.drawerMode;
+	set drawerMode(DrawerMode setting) {
+		_settings.drawerMode = setting;
+		_settings.save();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

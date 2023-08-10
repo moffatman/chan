@@ -22,6 +22,7 @@ class ImageboardTab extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return MasterDetailPage<ThreadIdentifier>(
 			id: 'tab_$key',
+			multiMasterDetailPageKey: tab.masterDetailKey,
 			initialValue: tab.thread,
 			onValueChanged: (thread) {
 				tab.thread = thread;

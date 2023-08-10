@@ -279,6 +279,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       customDateFormat: fields[151] as String?,
       hoverPopupDelayMilliseconds: fields[152] as int?,
       mouseModeQuoteLinkBehavior: fields[153] as MouseModeQuoteLinkBehavior?,
+      drawerMode: fields[154] as DrawerMode?,
     )
       ..useMaterialStyle = fields[146] as bool?
       ..useAndroidDrawer = fields[147] as bool?
@@ -288,7 +289,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(150)
+      ..writeByte(151)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -588,7 +589,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(152)
       ..write(obj.hoverPopupDelayMilliseconds)
       ..writeByte(153)
-      ..write(obj.mouseModeQuoteLinkBehavior);
+      ..write(obj.mouseModeQuoteLinkBehavior)
+      ..writeByte(154)
+      ..write(obj.drawerMode);
   }
 
   @override
@@ -1088,6 +1091,50 @@ class MouseModeQuoteLinkBehaviorAdapter
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is MouseModeQuoteLinkBehaviorAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class DrawerModeAdapter extends TypeAdapter<DrawerMode> {
+  @override
+  final int typeId = 45;
+
+  @override
+  DrawerMode read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return DrawerMode.tabs;
+      case 1:
+        return DrawerMode.watchedThreads;
+      case 2:
+        return DrawerMode.savedThreads;
+      default:
+        return DrawerMode.tabs;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, DrawerMode obj) {
+    switch (obj) {
+      case DrawerMode.tabs:
+        writer.writeByte(0);
+        break;
+      case DrawerMode.watchedThreads:
+        writer.writeByte(1);
+        break;
+      case DrawerMode.savedThreads:
+        writer.writeByte(2);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DrawerModeAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

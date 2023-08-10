@@ -30,6 +30,7 @@ class ThreadCounters extends StatelessWidget {
 	final bool countsUnreliable;
 	final bool showChrome;
 	final Alignment alignment;
+	final bool showUnseen;
 
 	const ThreadCounters({
 		required this.imageboard,
@@ -39,6 +40,7 @@ class ThreadCounters extends StatelessWidget {
 		required this.countsUnreliable,
 		this.showChrome = true,
 		required this.alignment,
+		this.showUnseen = true,
 		super.key
 	});
 
@@ -57,7 +59,12 @@ class ThreadCounters extends StatelessWidget {
 		Color? replyCountColor;
 		Color? imageCountColor;
 		Color? otherMetadataColor;
-		if (threadState?.lastSeenPostId != null) {
+		if (!showUnseen) {
+			replyCountColor = grey;
+			imageCountColor = grey;
+			otherMetadataColor = grey;
+		}
+		else if (threadState?.lastSeenPostId != null) {
 			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
 				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
 			}

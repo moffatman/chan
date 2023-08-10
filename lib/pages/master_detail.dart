@@ -84,12 +84,14 @@ class MasterDetailPage<T> extends StatelessWidget {
 	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
 	final T? initialValue;
 	final ValueChanged<T?>? onValueChanged;
+	final Key? multiMasterDetailPageKey;
 	const MasterDetailPage({
 		required this.id,
 		required this.masterBuilder,
 		required this.detailBuilder,
 		this.initialValue,
 		this.onValueChanged,
+		this.multiMasterDetailPageKey,
 		Key? key
 	}) : super(key: key);
 	@override
@@ -97,6 +99,7 @@ class MasterDetailPage<T> extends StatelessWidget {
 		return MultiMasterDetailPage(
 			showChrome: false,
 			id: id,
+			key: multiMasterDetailPageKey,
 			paneCreator: () => [
 				MultiMasterPane<T>(
 					masterBuilder: masterBuilder,
@@ -128,13 +131,19 @@ class MultiMasterPane<T> {
 		this.onValueChanged
 	}) : currentValue = ValueNotifier<T?>(initialValue);
 
+	callOnValueChanged(dynamic newValue) {
+		if (newValue is T?) {
+			onValueChanged?.call(newValue);
+		}
+	}
+
 	Widget buildMaster(BuildContext context, VoidCallback onNewValue, bool provideCurrentValue) {
 		return masterBuilder(context, (context, thisValue) => context.select<MasterDetailHint?, bool>((h) {
 			if (!provideCurrentValue) return false;
 			return h?.currentValue == thisValue;
 		}), (newValue) {
 			currentValue.value = newValue;
-			onValueChanged?.call(newValue);
+			callOnValueChanged(newValue);
 			onNewValue();
 		});
 	}
@@ -143,7 +152,7 @@ class MultiMasterPane<T> {
 		if (value != false) {
 			// it was a user-initiated pop
 			currentValue.value = null;
-			onValueChanged?.call(null);
+			callOnValueChanged(null);
 		}
 	}
 
@@ -152,7 +161,7 @@ class MultiMasterPane<T> {
 			valueListenable: currentValue,
 			builder: (context, T? v, child) => detailBuilder(v, (newValue) {
 				currentValue.value = newValue;
-				onValueChanged?.call(newValue);
+				callOnValueChanged(newValue);
 				onNewValue();
 			}, false).widget
 		);
@@ -161,7 +170,7 @@ class MultiMasterPane<T> {
 	PageRoute buildDetailRoute(VoidCallback onNewValue, {bool? showAnimations, required bool? showAnimationsForward}) {
 		return detailBuilder(currentValue.value, (newValue) {
 				currentValue.value = newValue;
-				onValueChanged?.call(newValue);
+				callOnValueChanged(newValue);
 				onNewValue();
 			}, true).pageRoute(showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 	}
@@ -205,6 +214,11 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	void _onPaneChanged() {
 		setState(() {});
 		_rebuild.didUpdate();
+	}
+
+	int get selectedPane => _tabController.index;
+	set selectedPane(int newPane) {
+		_tabController.index = newPane;
 	}
 
 	void _initGlobalKeys() {
@@ -252,13 +266,13 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		}
 	}
 
-	void setValue(int index, dynamic value, {bool updateDetailPane = true}) {
+	void setValue(int index, dynamic value, {bool updateDetailPane = true, bool showAnimationsForward = true}) {
 		if (panes[index].currentValue.value == value) {
 			return;
 		}
 		panes[index].currentValue.value = value;
-		panes[index].onValueChanged?.call(value);
-		_onNewValue(panes[index], updateDetailPane: updateDetailPane);
+		panes[index].callOnValueChanged(value);
+		_onNewValue(panes[index], updateDetailPane: updateDetailPane, showAnimationsForward: showAnimationsForward);
 	}
 
 	T? getValue<T>(int index) {

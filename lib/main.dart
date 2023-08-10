@@ -39,7 +39,7 @@ import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/tab_menu.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
-import 'package:chan/widgets/tab_widget_builder.dart';
+import 'package:chan/widgets/thread_widget_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:dio/dio.dart';
@@ -422,6 +422,7 @@ class ChanTabs extends ChangeNotifier {
 	final _tabController = CupertinoTabController();
 	final _tabListController = ScrollController();
 	int _lastIndex = 0;
+	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 
 	ChanTabs({
 		required this.onShouldShowTabPopup
@@ -592,6 +593,47 @@ class ChanTabs extends ChangeNotifier {
 			]
 		);
 	}
+
+	ImageboardScoped<ThreadIdentifier>? get currentBrowserThread {
+		final tab = Persistence.tabs[Persistence.currentTabIndex];
+		final thread = tab.thread;
+		if (thread == null) {
+			return null;
+		}
+		return tab.imageboard?.scope(thread);
+	}
+
+	void setCurrentBrowserThread(ImageboardScoped<ThreadIdentifier>? newThread, {
+		bool showAnimationsForward = true
+	}) {
+		final tab = Persistence.tabs[Persistence.currentTabIndex];
+		if (newThread != null && tab.imageboardKey != newThread.imageboard.key) {
+			tab.imageboardKey = newThread.imageboard.key;
+			// Old master-pane is no longer applicable
+			tab.board = newThread.imageboard.persistence.getBoard(newThread.item.board);
+		}
+		tab.masterDetailKey.currentState?.setValue(0, newThread?.item, showAnimationsForward: showAnimationsForward);
+		tab.didUpdate();
+		runWhenIdle(const Duration(seconds: 1), Persistence.saveTabs);
+	}
+	
+
+	ImageboardScoped<ThreadWatch>? get selectedWatchedThread {
+		return _savedMasterDetailKey.currentState?.getValue<ImageboardScoped<ThreadWatch>>(0);
+	}
+	set selectedWatchedThread(ImageboardScoped<ThreadWatch>? newWatchedThread) {
+		_savedMasterDetailKey.currentState?.setValue(0, newWatchedThread);
+	}
+	set selectedWatchedThreadWithoutAnimation(ImageboardScoped<ThreadWatch>? newWatchedThread) {
+		_savedMasterDetailKey.currentState?.setValue(0, newWatchedThread, showAnimationsForward: false);
+	}
+
+	Future<void> openSavedTab() async {
+		mainTabIndex = 1;
+		for (int i = 0; i < 200 && _savedMasterDetailKey.currentState == null; i++) {
+			await Future.delayed(const Duration(milliseconds: 50));
+		}
+	}
 }
 
 class _ChanHomePageState extends State<ChanHomePage> {
@@ -604,7 +646,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _tabletWillPopZones = <int, WillPopZone>{};
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
-	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
 	final Map<String, ({Notifications notifications, StreamSubscription<PostIdentifier> subscription})> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
@@ -888,18 +929,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 			}
 			else {
-				_tabs.mainTabIndex = 1;
-				for (int i = 0; i < 200 && _savedMasterDetailKey.currentState == null; i++) {
-					await Future.delayed(const Duration(milliseconds: 50));
-				}
-				if (_savedMasterDetailKey.currentState?.getValue<ImageboardScoped<ThreadWatch>>(0)?.item == watch && notification.postId != null) {
+				await _tabs.openSavedTab();
+				if (_tabs.selectedWatchedThread?.item == watch && notification.postId != null) {
 					_scrollExistingTab(_savedFakeTab, notification.postId!);
 				}
 				else {
 					if (notification.postId != null) {
 						_savedFakeTab.initialPostId[notification.threadIdentifier!] = notification.postId!;
 					}
-					_savedMasterDetailKey.currentState?.setValue(0, imageboard.scope(watch));
+					_tabs._savedMasterDetailKey.currentState?.setValue(0, imageboard.scope(watch));
 				}
 				if (showTabPopup) {
 					setState(() {
@@ -1136,7 +1174,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				],
 				child: SavedPage(
 					isActive: active,
-					masterDetailKey: _savedMasterDetailKey
+					masterDetailKey: _tabs._savedMasterDetailKey
 				)
 			);
 		}
