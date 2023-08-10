@@ -678,6 +678,17 @@ class _BoardPageState extends State<BoardPage> {
 						)
 					)
 				),
+				leading: (
+					// Is root board on desktop
+					(settings.supportMouse.value && !Navigator.of(context).canPop()) ||
+					// Space is generally available
+					!(context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false)
+				) ? AdaptiveIconButton(
+					icon: const Icon(CupertinoIcons.refresh),
+					onPressed: () {
+						_listController.blockAndUpdate();
+					}
+				) : null,
 				actions: [
 					if (board != null) AdaptiveIconButton(
 						icon: const Icon(CupertinoIcons.settings),
@@ -688,17 +699,6 @@ class _BoardPageState extends State<BoardPage> {
 									board: board!
 								)
 							));
-						}
-					),
-					if (
-						// Is root board on desktop
-						(settings.supportMouse.value && !Navigator.of(context).canPop()) ||
-						// Space is generally available
-						!(context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false)
-					) AdaptiveIconButton(
-						icon: const Icon(CupertinoIcons.refresh),
-						onPressed: () {
-							_listController.blockAndUpdate();
 						}
 					),
 					AdaptiveIconButton(

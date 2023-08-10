@@ -33,20 +33,24 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 
 	@override
 	Widget build(BuildContext context) {
-		final Widget? leading;
+		final leadings = <Widget>[];
 		if (ModalRoute.of(context)?.canPop ?? false) {
-			leading = const BackButton();
+			leadings.add(const BackButton());
 		}
 		else if (onDrawerButtonPressed != null) {
-			leading = DrawerButton(
+			leadings.add(DrawerButton(
 				onPressed: onDrawerButtonPressed
-			);
+			));
 		}
-		else {
-			leading = bar.leading;
+		if (bar.leading != null) {
+			leadings.add(bar.leading!);
 		}
 		final child = AppBar(
-			leading: leading,
+			leadingWidth: leadings.length > 1 ? leadings.length * 48 : null,
+			leading: leadings.isEmpty ? null : Row(
+				mainAxisSize: MainAxisSize.min,
+				children: leadings
+			),
 			surfaceTintColor: Colors.transparent,
 			foregroundColor: ChanceTheme.primaryColorOf(context),
 			//centerTitle: true,
@@ -185,15 +189,18 @@ class AdaptiveScaffold extends StatelessWidget {
 			);
 		}
 		final parentDrawer = context.watch<_CupertinoDrawer?>();
-		Widget? drawerButton;
+		final leadings = <Widget>[];
 		if (!(ModalRoute.of(context)?.canPop ?? false) && parentDrawer != null) {
 			// Only if at root route
-			drawerButton = CupertinoButton(
+			leadings.add(CupertinoButton(
 				onPressed: () => parentDrawer.key.currentState?.open(),
 				minSize: 0,
 				padding: EdgeInsets.zero,
 				child: const Icon(Icons.menu)
-			);
+			));
+		}
+		if (bar_?.leading != null) {
+			leadings.add(bar_!.leading!);
 		}
 		final child = CupertinoPageScaffold(
 			resizeToAvoidBottomInset: resizeToAvoidBottomInset,
@@ -201,7 +208,10 @@ class AdaptiveScaffold extends StatelessWidget {
 			navigationBar: bar_ == null ? null : _CupertinoNavigationBar(
 				autoHideOnScroll: autoHideBars,
 				transitionBetweenRoutes: false,
-				leading: bar_.leading ?? drawerButton,
+				leading: leadings.isEmpty ? null : Row(
+					mainAxisSize: MainAxisSize.min,
+					children: leadings
+				),
 				middle: bar_.title,
 				backgroundColor: bar_.backgroundColor,
 				trailing: bar_.actions == null ? null : Row(
