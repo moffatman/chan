@@ -2194,11 +2194,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									for (final buttons in [
-										[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.scrollController?.animateTo(
-											0,
-											duration: const Duration(milliseconds: 200),
-											curve: Curves.ease
-										))],
 										[(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
@@ -2343,6 +2338,11 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											}))
 										],
 										[('Update', const Icon(CupertinoIcons.refresh, size: 19), widget.listController.update)],
+										[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.scrollController?.animateTo(
+											0,
+											duration: const Duration(milliseconds: 200),
+											curve: Curves.ease
+										))],
 										[
 											('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
 												if (widget.useTree) {
