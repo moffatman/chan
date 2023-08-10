@@ -6,37 +6,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class _ImageboardFlag extends StatelessWidget {
-	final ImageboardFlag flag;
-	final TextStyle? style;
-
-	const _ImageboardFlag(this.flag, this.style);
-
-	@override
-	Widget build(BuildContext context) {
-		if (flag.imageWidth == 0 || flag.imageHeight == 0) {
-			return Text(flag.name, style: style, textScaler: TextScaler.noScaling);
-		}
-		return SizedBox(
-			width: flag.imageWidth,
-			height: flag.imageHeight,
-			child: GestureDetector(
-				onTap: () => showToast(
-					context: context,
-					message: flag.name,
-					icon: CupertinoIcons.flag
-				),
-				child: ExtendedImage.network(
-					flag.imageUrl,
-					cache: true,
-					enableLoadState: false,
-					headers: context.read<ImageboardSite>().getHeaders(Uri.parse(flag.imageUrl))
-				)
-			)
-		);
-	}
-}
-
 InlineSpan makeFlagSpan({
 	required Flag flag,
 	required bool includeTextOnlyContent,
@@ -53,17 +22,41 @@ InlineSpan makeFlagSpan({
 		if (padding) {
 			children.add(const TextSpan(text: ' '));
 		}
-		children.add(WidgetSpan(
-			child: _ImageboardFlag(part, style),
-			alignment: PlaceholderAlignment.middle
-		));
+		if (part.imageWidth == 0 || part.imageHeight == 0) {
+			children.add(TextSpan(text: flag.name));
+		}
+		else {
+			children.add(WidgetSpan(
+				alignment: PlaceholderAlignment.middle,
+				child: Builder(
+					builder: (context) => SizedBox(
+						width: part.imageWidth,
+						height: part.imageHeight,
+						child: GestureDetector(
+							onTap: () => showToast(
+								context: context,
+								message: flag.name,
+								icon: CupertinoIcons.flag
+							),
+							child: ExtendedImage.network(
+								part.imageUrl,
+								cache: true,
+								enableLoadState: false,
+								headers: context.read<ImageboardSite>().getHeaders(Uri.parse(part.imageUrl))
+							)
+						)
+					)
+				)
+			));
+		}
 		if (part.name.isNotEmpty && part.imageUrl.isNotEmpty && appendLabels) {
-			children.add(TextSpan(text: ' ${part.name}', style: style));
+			children.add(TextSpan(text: ' ${part.name}'));
 		}
 		padding = true;
 	}
 	return TextSpan(
-		children: children
+		children: children,
+		style: style
 	);
 }
 
@@ -86,7 +79,7 @@ class PassSinceSpan extends TextSpan {
 								enableLoadState: false
 							)
 						),
-						Text(sinceYear.toString(), textScaler: TextScaler.noScaling)
+						Text(sinceYear.toString(), textScaler: TextScaler.noScaling, style: const TextStyle(fontSize: 16))
 					]
 				),
 				alignment: PlaceholderAlignment.bottom
@@ -134,7 +127,8 @@ class IDSpan extends WidgetSpan {
 				child: Text(
 					id,
 					style: TextStyle(
-						color: _calculateIdColor(id).foreground
+						color: _calculateIdColor(id).foreground,
+						fontSize: 16
 					),
 					textScaler: TextScaler.noScaling
 				)

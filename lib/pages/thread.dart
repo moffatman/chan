@@ -1608,16 +1608,14 @@ class ThreadPageState extends State<ThreadPage> {
 																					children: [
 																						if (value != null) Expanded(
 																							child: Text.rich(
-																								TextSpan(
-																									children: buildPostInfoRow(
-																										post: value,
-																										isYourPost: persistentState.youIds.contains(value.id),
-																										settings: settings,
-																										theme: theme,
-																										site: site,
-																										context: context,
-																										zone: zone
-																									)
+																								buildPostInfoRow(
+																									post: value,
+																									isYourPost: persistentState.youIds.contains(value.id),
+																									settings: settings,
+																									theme: theme,
+																									site: site,
+																									context: context,
+																									zone: zone
 																								)
 																							)
 																						)

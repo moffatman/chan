@@ -42,7 +42,7 @@ class SelectablePostPage extends StatelessWidget {
 								SelectableText.rich(
 									TextSpan(
 										children: [
-											TextSpan(children: buildPostInfoRow(
+											buildPostInfoRow(
 												post: post,
 												isYourPost: zone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier)?.youIds.contains(post.id) ?? false,
 												showSiteIcon: false,
@@ -53,7 +53,7 @@ class SelectablePostPage extends StatelessWidget {
 												context: context,
 												zone: zone,
 												interactive: false
-											)),
+											),
 											const TextSpan(text: '\n'),
 											post.span.build(context, zone, context.watch<EffectiveSettings>(), context.watch<SavedTheme>(), PostSpanRenderOptions(
 												showRawSource: true,

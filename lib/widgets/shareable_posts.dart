@@ -156,16 +156,14 @@ class ShareablePosts extends StatelessWidget {
 									children: [
 										if (value != null) Expanded(
 											child: Text.rich(
-												TextSpan(
-													children: buildPostInfoRow(
-														post: value,
-														isYourPost: zone.primaryThreadState?.youIds.contains(value.id) ?? false,
-														settings: settings,
-														theme: theme,
-														site: imageboard.site,
-														context: context,
-														zone: zone
-													)
+												buildPostInfoRow(
+													post: value,
+													isYourPost: zone.primaryThreadState?.youIds.contains(value.id) ?? false,
+													settings: settings,
+													theme: theme,
+													site: imageboard.site,
+													context: context,
+													zone: zone
 												)
 											)
 										)

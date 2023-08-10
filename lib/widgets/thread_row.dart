@@ -257,7 +257,7 @@ class ThreadRow extends StatelessWidget {
 			)
 		);
 		final borderRadius = (contentFocus && contentFocusBorderRadiusAndPadding) ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
-		final double? subheaderFontSize = site.classicCatalogStyle ? null : 15;
+		final double subheaderFontSize = site.classicCatalogStyle ? 16 : 15;
 		final spaceSpan = site.classicCatalogStyle ? const TextSpan(text: ' ') : const TextSpan(text: ' ', style: TextStyle(fontSize: 15));
 		final headerRow = [
 			if (settings.showNameInCatalog && !(settings.hideDefaultNamesInCatalog && latestThread.posts_.first.name == site.defaultUsername)) ...[

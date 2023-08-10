@@ -484,7 +484,7 @@ class PostRow extends StatelessWidget {
 													builder: (context, supportMouse, child) => Text.rich(
 														TextSpan(
 															children: [
-																...buildPostInfoRow(
+																buildPostInfoRow(
 																	post: latestPost,
 																	isYourPost: isYourPost,
 																	showSiteIcon: showSiteIcon,
