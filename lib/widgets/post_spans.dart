@@ -2106,7 +2106,8 @@ List<InlineSpan> buildPostInfoRow({
 					}) : null
 				),
 				const TextSpan(text: ' ')
-			],
+			]
+			else if (field == PostDisplayField.lineBreak && settings.showLineBreakInPostInfoRow) const TextSpan(text: '\n'),
 		if (site.isReddit) ...[
 			WidgetSpan(
 				child: Icon(CupertinoIcons.arrow_up, size: 16, color: theme.primaryColorWithBrightness(0.5)),

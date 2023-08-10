@@ -280,6 +280,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       hoverPopupDelayMilliseconds: fields[152] as int?,
       mouseModeQuoteLinkBehavior: fields[153] as MouseModeQuoteLinkBehavior?,
       drawerMode: fields[154] as DrawerMode?,
+      showLineBreakInPostInfoRow: fields[155] as bool?,
     )
       ..useMaterialStyle = fields[146] as bool?
       ..useAndroidDrawer = fields[147] as bool?
@@ -289,7 +290,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(151)
+      ..writeByte(152)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -591,7 +592,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(153)
       ..write(obj.mouseModeQuoteLinkBehavior)
       ..writeByte(154)
-      ..write(obj.drawerMode);
+      ..write(obj.drawerMode)
+      ..writeByte(155)
+      ..write(obj.showLineBreakInPostInfoRow);
   }
 
   @override
@@ -797,6 +800,8 @@ class PostDisplayFieldAdapter extends TypeAdapter<PostDisplayField> {
         return PostDisplayField.ipNumber;
       case 10:
         return PostDisplayField.postNumber;
+      case 11:
+        return PostDisplayField.lineBreak;
       default:
         return PostDisplayField.name;
     }
@@ -837,6 +842,9 @@ class PostDisplayFieldAdapter extends TypeAdapter<PostDisplayField> {
         break;
       case PostDisplayField.postNumber:
         writer.writeByte(10);
+        break;
+      case PostDisplayField.lineBreak:
+        writer.writeByte(11);
         break;
     }
   }

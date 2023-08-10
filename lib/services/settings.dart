@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/web_image_picker.dart';
@@ -528,7 +529,9 @@ enum PostDisplayField {
 	@HiveField(9)
 	ipNumber,
 	@HiveField(10)
-	postNumber
+	postNumber,
+	@HiveField(11)
+	lineBreak
 }
 
 extension PostDisplayFieldName on PostDisplayField {
@@ -556,6 +559,8 @@ extension PostDisplayFieldName on PostDisplayField {
 				return 'IP Address #';
 			case PostDisplayField.postNumber:
 				return 'Post #';
+			case PostDisplayField.lineBreak:
+				return 'Line break';
 		}
 	}
 }
@@ -973,6 +978,8 @@ class SavedSettings extends HiveObject {
 	MouseModeQuoteLinkBehavior mouseModeQuoteLinkBehavior;
 	@HiveField(154)
 	DrawerMode drawerMode;
+	@HiveField(155)
+	bool showLineBreakInPostInfoRow;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1126,6 +1133,7 @@ class SavedSettings extends HiveObject {
 		int? hoverPopupDelayMilliseconds,
 		MouseModeQuoteLinkBehavior? mouseModeQuoteLinkBehavior,
 		DrawerMode? drawerMode,
+		bool? showLineBreakInPostInfoRow,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1202,6 +1210,7 @@ class SavedSettings extends HiveObject {
 			PostDisplayField.posterId,
 			PostDisplayField.attachmentInfo,
 			PostDisplayField.pass,
+			PostDisplayField.lineBreak,
 			PostDisplayField.flag,
 			PostDisplayField.countryName,
 			PostDisplayField.absoluteTime,
@@ -1304,7 +1313,8 @@ class SavedSettings extends HiveObject {
 		customDateFormat = customDateFormat ?? DateTimeConversion.kISO8601DateFormat,
 		hoverPopupDelayMilliseconds = hoverPopupDelayMilliseconds ?? 0,
 		mouseModeQuoteLinkBehavior = mouseModeQuoteLinkBehavior ?? MouseModeQuoteLinkBehavior.expandInline,
-		drawerMode = drawerMode ?? DrawerMode.tabs {
+		drawerMode = drawerMode ?? DrawerMode.tabs,
+		showLineBreakInPostInfoRow = showLineBreakInPostInfoRow ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1346,6 +1356,9 @@ class SavedSettings extends HiveObject {
 					s.deprecatedHiddenImageMD5s.clear();
 				}
 				this.appliedMigrations.add('uif');
+			}
+			if (!this.postDisplayFieldOrder.contains(PostDisplayField.lineBreak)) {
+				this.postDisplayFieldOrder.insert(min(this.postDisplayFieldOrder.length - 1, 6), PostDisplayField.lineBreak);
 			}
 		}
 
@@ -2447,6 +2460,13 @@ class EffectiveSettings extends ChangeNotifier {
 	set drawerMode(DrawerMode setting) {
 		_settings.drawerMode = setting;
 		_settings.save();
+	}
+
+	bool get showLineBreakInPostInfoRow => _settings.showLineBreakInPostInfoRow;
+	set showLineBreakInPostInfoRow(bool setting) {
+		_settings.showLineBreakInPostInfoRow = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

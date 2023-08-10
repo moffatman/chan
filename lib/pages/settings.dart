@@ -2206,6 +2206,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
+																const Text('Include line break'),
+																const Spacer(),
+																AdaptiveSwitch(
+																	value: settings.showLineBreakInPostInfoRow,
+																	onChanged: (d) => settings.showLineBreakInPostInfoRow = d
+																)
+															]
+														),
+														Row(
+															children: [
 																const Text('Highlight dubs (etc)'),
 																const Spacer(),
 																AdaptiveSwitch(
@@ -2262,6 +2272,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																								break;
 																							case PostDisplayField.postNumber:
 																								disabled = !settings.showPostNumberOnPosts;
+																								break;
+																							case PostDisplayField.lineBreak:
+																								disabled = !settings.showLineBreakInPostInfoRow;
 																								break;
 																							case PostDisplayField.posterId:
 																							case PostDisplayField.postId:
