@@ -358,38 +358,21 @@ class ThreadRow extends StatelessWidget {
 								child: ConstrainedBox(
 									constraints: BoxConstraints(
 										minHeight: 75,
-										minWidth: settings.thumbnailSize
+										maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
 									),
-									child: Center(
-										child: Stack(
-											children: [
-												AttachmentThumbnail(
-													onLoadError: onThumbnailLoadError,
-													attachment: attachment,
-													thread: latestThread.identifier,
-													hero: TaggedAttachment(
-														attachment: attachment,
-														semanticParentIds: semanticParentIds
-													),
-													fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-													shrinkHeight: !settings.squareThumbnails,
-													shrinkWidth: !settings.squareThumbnails
-												),
-												if (attachment.icon != null) Positioned.fill(
-													child: Align(
-														alignment: Alignment.bottomRight,
-														child: Container(
-															decoration: BoxDecoration(
-																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																color: backgroundColor,
-																border: Border.all(color: borderColor)
-															),
-															padding: const EdgeInsets.all(2),
-															child: Icon(attachment.icon, size: 16)
-														)
-													)
-												)
-											]
+									child: AttachmentThumbnail(
+										onLoadError: onThumbnailLoadError,
+										attachment: attachment,
+										thread: latestThread.identifier,
+										hero: TaggedAttachment(
+											attachment: attachment,
+											semanticParentIds: semanticParentIds
+										),
+										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+										shrinkHeight: !settings.squareThumbnails,
+										showIconInCorner: (
+											backgroundColor: backgroundColor,
+											borderColor: borderColor
 										)
 									)
 								),

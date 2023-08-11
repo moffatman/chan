@@ -383,42 +383,25 @@ class PostRow extends StatelessWidget {
 									child: CupertinoButton(
 										padding: EdgeInsets.zero,
 										minSize: 0,
-										child: Container(
-											alignment: Alignment.center,
-											constraints: BoxConstraints(
-												minWidth: settings.thumbnailSize,
+										child: ConstrainedBox(
+											constraints: const BoxConstraints(
 												minHeight: 75
 											),
-											child: Stack(
-												children: [
-													AttachmentThumbnail(
-														attachment: attachment,
-														revealSpoilers: revealSpoilerImages,
-														thread: latestPost.threadIdentifier,
-														onLoadError: onThumbnailLoadError,
-														hero: TaggedAttachment(
-															attachment: attachment,
-															semanticParentIds: parentZone.stackIds
-														),
-														fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-														shrinkHeight: !settings.squareThumbnails,
-														shrinkWidth: !settings.squareThumbnails
-													),
-													if (attachment.icon != null) Positioned.fill(
-														child: Align(
-															alignment: Alignment.bottomRight,
-															child: Container(
-																decoration: BoxDecoration(
-																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																	color: theme.backgroundColor,
-																	border: Border.all(color: theme.primaryColorWithBrightness(0.2))
-																),
-																padding: const EdgeInsets.all(2),
-																child: Icon(attachment.icon, size: 16)
-															)
-														)
-													)
-												]
+											child: AttachmentThumbnail(
+												attachment: attachment,
+												revealSpoilers: revealSpoilerImages,
+												thread: latestPost.threadIdentifier,
+												onLoadError: onThumbnailLoadError,
+												hero: TaggedAttachment(
+													attachment: attachment,
+													semanticParentIds: parentZone.stackIds
+												),
+												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+												shrinkHeight: !settings.squareThumbnails,
+												showIconInCorner: (
+													backgroundColor: theme.backgroundColor,
+													borderColor: theme.primaryColorWithBrightness(0.2)
+												)
 											)
 										),
 										onPressed: () {

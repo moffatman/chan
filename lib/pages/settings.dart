@@ -1940,8 +1940,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					padding: const EdgeInsets.all(16),
 					child: Slider.adaptive(
 						min: 50,
-						max: 200,
-						divisions: 30,
+						max: 400,
+						divisions: 70,
 						value: settings.thumbnailSize,
 						onChanged: (newValue) {
 							settings.thumbnailSize = newValue;

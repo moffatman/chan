@@ -55,8 +55,8 @@ class AttachmentThumbnail extends StatelessWidget {
 	final bool revealSpoilers;
 	final ImageboardSite? site;
 	final bool shrinkHeight;
-	final bool shrinkWidth;
 	final bool? overrideFullQuality;
+	final ({Color backgroundColor, Color borderColor})? showIconInCorner;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -71,9 +71,9 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.gaplessPlayback = false,
 		this.revealSpoilers = false,
 		this.shrinkHeight = false,
-		this.shrinkWidth = false,
 		this.site,
 		this.overrideFullQuality,
+		this.showIconInCorner,
 		Key? key
 	}) : super(key: key);
 
@@ -129,13 +129,14 @@ class AttachmentThumbnail extends StatelessWidget {
 		final barColor = ChanceTheme.barColorOf(context);
 		Widget child;
 		if (settings.loadThumbnails) {
+			final primaryColor = ChanceTheme.primaryColorOf(context);
 			child = ExtendedImage(
 				image: image,
 				constraints: BoxConstraints(
 					maxWidth: effectiveWidth,
 					maxHeight: effectiveHeight
 				),
-				width: shrinkWidth ? null : effectiveWidth,
+				width: effectiveWidth,
 				height: shrinkHeight ? null : effectiveHeight,
 				color: const Color.fromRGBO(238, 242, 255, 1),
 				colorBlendMode: BlendMode.dstOver,
@@ -144,6 +145,38 @@ class AttachmentThumbnail extends StatelessWidget {
 				key: gaplessPlayback ? null : ValueKey(url),
 				gaplessPlayback: true,
 				rotate90DegreesClockwise: rotate90DegreesClockwise,
+				afterPaintImage: showIconInCorner == null || attachment.icon == null ? null : (canvas, rect, image, paint) {
+					final icon = attachment.icon;
+					if (icon == null) {
+						return;
+					}
+					TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+					textPainter.text = TextSpan(
+						text: String.fromCharCode(icon.codePoint),
+						style: TextStyle(
+							fontSize: 16,
+							fontFamily: icon.fontFamily,
+							color: primaryColor,
+							package: icon.fontPackage
+						)
+					);
+					textPainter.layout();
+					textPainter.size;
+					final badgeSize = const EdgeInsets.all(2).inflateSize(Size.square(textPainter.size.longestSide));
+					final badgeRect = (rect.bottomRight - (Offset.zero & badgeSize).bottomRight) & badgeSize;
+					final rrect = RRect.fromRectAndCorners(
+						badgeRect,
+						topLeft: const Radius.circular(6)
+					);
+					canvas.drawRRect(rrect, Paint()
+						..color = showIconInCorner!.backgroundColor
+						..style = PaintingStyle.fill);
+					canvas.drawRRect(rrect, Paint()
+						..strokeWidth = 1
+						..color = showIconInCorner!.borderColor
+						..style = PaintingStyle.stroke);
+					textPainter.paint(canvas, Alignment.center.inscribe(textPainter.size, badgeRect).topLeft + const Offset(1, 1));
+				},
 				//filterQuality: FilterQuality.high,
 				loadStateChanged: (loadstate) {
 					if (loadstate.extendedImageLoadState == LoadState.loading) {
@@ -172,14 +205,6 @@ class AttachmentThumbnail extends StatelessWidget {
 					else if (loadstate.extendedImageLoadState == LoadState.completed) {
 						attachment.width ??= loadstate.extendedImageInfo?.image.width;
 						attachment.height ??= loadstate.extendedImageInfo?.image.height;
-						if (attachment.type == AttachmentType.url &&
-						    max(attachment.width ?? effectiveWidth, attachment.height ?? effectiveHeight) < settings.thumbnailSize) {
-							return SizedBox(
-								width: effectiveWidth,
-								height: effectiveHeight,
-								child: loadstate.completedWidget
-							);
-						}
 					}
 					return null;
 				}
