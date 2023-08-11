@@ -1834,7 +1834,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: show,
 						bottomSafe: !show,
-						height: ((widget.threadId == null) ? 150 : 100) + settings.replyBoxHeightOffset,
+						height: ((widget.threadId == null) ? 150 + (settings.materialStyle ? 50 : 0) : 100 + (settings.materialStyle ? 25 : 0)) + settings.replyBoxHeightOffset,
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
 							children: [
