@@ -2161,6 +2161,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		final radiusAlone = BorderRadius.all(radius);
 		final radiusStart = widget.reversed ? BorderRadius.only(topRight: radius, bottomRight: radius) : BorderRadius.only(topLeft: radius, bottomLeft: radius);
 		final radiusEnd = widget.reversed ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : BorderRadius.only(topRight: radius, bottomRight: radius);
+		scrollToTop() => widget.listController.scrollController?.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
 		scrollToBottom() => widget.listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0);
 		final youIds = widget.persistentState.youIds;
 		final uncachedCount = widget.cachedAttachments.values.where((v) => !v).length;
@@ -2342,11 +2343,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											}))
 										],
 										[('Update', const Icon(CupertinoIcons.refresh, size: 19), widget.listController.update)],
-										[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.scrollController?.animateTo(
-											0,
-											duration: const Duration(milliseconds: 200),
-											curve: Curves.ease
-										))],
+										[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), scrollToTop)],
 										[
 											('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
 												if (widget.useTree) {
@@ -2594,7 +2591,13 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										],
 										GestureDetector(
 											onLongPress: () {
-												scrollToBottom();
+												final position = widget.listController.scrollController?.tryPosition;
+												if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
+													scrollToTop();
+												}
+												else {
+													scrollToBottom();
+												}
 												mediumHapticFeedback();
 											},
 											child: CupertinoButton(
