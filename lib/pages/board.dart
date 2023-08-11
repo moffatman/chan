@@ -620,7 +620,7 @@ class _BoardPageState extends State<BoardPage> {
 								},
 								initialAttachment: initialAttachmentInList ?? initialAttachment,
 								onChange: (attachment) {
-									_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
+									_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 								},
 								semanticParentIds: [widget.semanticId],
 								heroOtherEndIsBoxFitCover: useCatalogGrid || settings.squareThumbnails
@@ -897,7 +897,7 @@ class _BoardPageState extends State<BoardPage> {
 															},
 															initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.item.attachments.any((a2) => a2.id == a.id)),
 															onChange: (attachment) {
-																_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
+																_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 															},
 															semanticParentIds: [widget.semanticId],
 															heroOtherEndIsBoxFitCover: true//settings.useCatalogGrid

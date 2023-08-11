@@ -2712,6 +2712,21 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		await animateToIndex(targetIndex, alignment: alignment, duration: duration);
 	}
+	Future<void> animateToIfOffscreen(bool Function(T val) f, {double alignment = 0.0, bool Function(T val)? orElseLast, Duration duration = const Duration(milliseconds: 200)}) async {
+		int targetIndex = _items.indexWhere((i) => f(i.item.item));
+		if (targetIndex == -1) {
+			if (orElseLast != null) {
+				targetIndex = _items.lastIndexWhere((i) => orElseLast(i.item.item));
+			}
+			if (targetIndex == -1) {
+				throw const ItemNotFoundException('No matching item to scroll to');
+			}
+		}
+		if (_isOnscreen(_items[targetIndex])) {
+			return;
+		}
+		await animateToIndex(targetIndex, alignment: alignment, duration: duration);
+	}
 	Future<void> animateToIndex(int targetIndex, {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
 		print('$contentId animating to $targetIndex');
 		final start = DateTime.now();
@@ -2851,14 +2866,17 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			}
 		}
 	}
+	bool _isOnscreen(_BuiltRefreshableListItem<RefreshableListItem<T>> i) {
+		return (i.cachedHeight != null) &&
+					 (i.cachedOffset != null) && 
+					 (i.cachedOffset! + i.cachedHeight! > (scrollController!.position.pixels + topOffset)) &&
+					 (i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset));
+	}
 	bool isOnscreen(T item) {
 		if (scrollControllerPositionLooksGood) {
 			return _items.any((i) {
 				return (i.item.item == item) &&
-							 (i.cachedHeight != null) &&
-							 (i.cachedOffset != null) && 
-							 (i.cachedOffset! + i.cachedHeight! > (scrollController!.position.pixels + topOffset)) &&
-							 (i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset));
+							 _isOnscreen(i);
 			});
 		}
 		return false;
