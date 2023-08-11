@@ -16,6 +16,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/installed_fonts.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
@@ -96,6 +97,7 @@ void main() async {
 			VideoServer.initializeStatic(webmcache, httpcache);
 			await Notifications.initializeStatic();
 			await updateDynamicColors();
+			await initializeFonts();
 			runApp(const ChanApp());
 		}
 		catch (e, st) {

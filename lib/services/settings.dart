@@ -1377,8 +1377,12 @@ class SavedSettings extends HiveObject {
 				fontFamily: '.SF Pro Text'
 			);
 		}
-		return allowedGoogleFonts[fontFamily!]?.call() ?? TextStyle(
-			fontFamily: fontFamily!
+		String name = fontFamily!;
+		if (name.endsWith('.ttf')) {
+			name = name.replaceFirst(RegExp(r'\.ttf$'), '');
+		}
+		return allowedGoogleFonts[name]?.call() ?? TextStyle(
+			fontFamily: name
 		);
 	}
 }

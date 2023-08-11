@@ -31,6 +31,7 @@ import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -1656,6 +1657,29 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Icon(CupertinoIcons.textformat_alt),
 						const SizedBox(width: 8),
 						Text('Font: ${settings.fontFamily ?? 'default'}'),
+						if (fontLoadingError != null) Padding(
+							padding: const EdgeInsets.only(left: 4),
+							child: AdaptiveIconButton(
+								icon: const Icon(CupertinoIcons.exclamationmark_circle, color: Colors.red),
+								onPressed: () {
+									showAdaptiveDialog<bool>(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											content: Text('Font loading failed:\n\n$fontLoadingError'),
+											actions: [
+												AdaptiveDialogAction(
+													child: const Text('OK'),
+													onPressed: () {
+														Navigator.of(context).pop();
+													}
+												)
+											]
+										)
+									);
+								}
+							)
+						),
 						Expanded(
 							child: Row(
 								mainAxisAlignment: MainAxisAlignment.end,
@@ -1670,10 +1694,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														barrierDismissible: true,
 														context: context,
 														builder: (context) => AdaptiveAlertDialog(
-															title: const Text('Choose a font list', textAlign: TextAlign.center),
+															title: const Text('Choose a font source', textAlign: TextAlign.center),
 															actions: [
 																AdaptiveDialogAction(
-																	child: const Text('Device Fonts'),
+																	child: const Text('System Fonts'),
 																	onPressed: () async {
 																		try {
 																			Navigator.pop(context, await getInstalledFontFamilies());
@@ -1690,6 +1714,30 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																	onPressed: () => Navigator.pop(context, allowedGoogleFonts.keys.toList())
 																),
 																AdaptiveDialogAction(
+																	child: const Text('Pick .ttf file...'),
+																	onPressed: () async {
+																		try {
+																			final pickerResult = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['.ttf']);
+																			final path = pickerResult?.files.tryFirst?.path;
+																			if (path == null) {
+																				return;
+																			}
+																			final basename = path.split('/').last;
+																			final ttfFolder = await Directory('${Persistence.documentsDirectory.path}/ttf').create();
+																			await File(path).copy('${ttfFolder.path}/$basename');
+																			if (context.mounted) {
+																				Navigator.pop(context, [basename]);
+																			}
+																		}
+																		catch (e, st) {
+																			Future.error(e, st);
+																			if (context.mounted) {
+																				alertError(context, e.toStringDio());
+																			}
+																		}
+																	}
+																),
+																AdaptiveDialogAction(
 																	child: const Text('Reset to default'),
 																	onPressed: () => Navigator.pop(context, <String>[])
 																),
@@ -1704,11 +1752,24 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														return;
 													}
 													if (availableFonts.isEmpty) {
+														if (settings.fontFamily?.endsWith('.ttf') ?? false) {
+															// Cleanup previous picked .ttf
+															try {
+																await File('${Persistence.documentsDirectory.path}/ttf/${settings.fontFamily}').delete();
+															}
+															catch (e, st) {
+																Future.error(e, st);
+																if (mounted) {
+																	alertError(context, e.toStringDio());
+																}
+															}
+														}
 														settings.fontFamily = null;
+														fontLoadingError = null;
 														settings.handleThemesAltered();
 														return;
 													}
-													final selectedFont = await showAdaptiveDialog<String>(
+													final selectedFont = availableFonts.trySingle ?? await showAdaptiveDialog<String>(
 														barrierDismissible: true,
 														context: context,
 														builder: (context) => AdaptiveAlertDialog(
@@ -1742,7 +1803,26 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														)
 													);
 													if (selectedFont != null) {
+														final oldFont = settings.fontFamily;
 														settings.fontFamily = selectedFont;
+														if (oldFont != selectedFont && (oldFont?.endsWith('.ttf') ?? false)) {
+															// Cleanup previous picked .ttf
+															try {
+																await File('${Persistence.documentsDirectory.path}/ttf/$oldFont').delete();
+															}
+															catch (e, st) {
+																Future.error(e, st);
+																if (mounted) {
+																	alertError(context, e.toStringDio());
+																}
+															}
+														}
+														if (selectedFont.endsWith('.ttf')) {
+															await initializeFonts();
+														}
+														else {
+															fontLoadingError = null;
+														}
 														settings.handleThemesAltered();
 													}
 												},
