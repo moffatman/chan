@@ -819,16 +819,15 @@ abstract class ImageboardSiteArchive {
 				return _catalogCache.values.where((t) => !t.isArchived && t.board == board).toList(); // Order is wrong but shouldn't matter
 			}
 			final catalog = await getCatalogImpl(board, variant: variant, interactive: interactive);
-			for (final oldThread in _catalogCache.values) {
-				if (oldThread.board == board) {
-					// If it's in the new catalog, it will get overwritten
-					oldThread.isArchived = true;
-				}
+			final oldThreads = Map.fromEntries(_catalogCache.entries.where((e) => e.key.board == board));
+			for (final newThread in catalog) {
+				oldThreads.remove(newThread.identifier);
+				_catalogCache[newThread.identifier] = newThread;
 			}
-			_catalogCache.addAll({
-				for (final t in catalog)
-					t.identifier: t
-			});
+			for (final oldThread in oldThreads.values) {
+				// Not in new catalog, it must have been archived
+				oldThread.isArchived = true;
+			}
 			_lastCatalogCacheTime[board] = DateTime.now();
 			return catalog;
 		});
