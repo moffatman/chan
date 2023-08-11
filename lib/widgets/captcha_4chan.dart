@@ -258,7 +258,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 						return bytes;
 					}
 				)
-			).timeout(const Duration(seconds: 3));
+			).timeout(const Duration(seconds: 5));
 			final answer = response.data as String;
 			if (answer.length > 10) {
 				// Answer shouldn't be that long
