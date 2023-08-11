@@ -3415,6 +3415,25 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					children: [
 						const Icon(CupertinoIcons.textformat),
 						const SizedBox(width: 8),
+						const Text('Use cloud captcha solver'),
+						const SizedBox(width: 8),
+						const _SettingsHelpButton(
+							helpText: 'Use a machine-learning captcha solving model which is hosted on a web server to provide better captcha solver guesses. This means the captchas you open will be sent to a first-party web service for predictions. No information will be retained.'
+						),
+						const Spacer(),
+						AdaptiveSwitch(
+							value: settings.useCloudCaptchaSolver ?? false,
+							onChanged: (setting) {
+								settings.useCloudCaptchaSolver = setting;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.textformat),
+						const SizedBox(width: 8),
 						const Text('Contribute captcha data'),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(

@@ -281,6 +281,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       mouseModeQuoteLinkBehavior: fields[153] as MouseModeQuoteLinkBehavior?,
       drawerMode: fields[154] as DrawerMode?,
       showLineBreakInPostInfoRow: fields[155] as bool?,
+      useCloudCaptchaSolver: fields[156] as bool?,
     )
       ..useMaterialStyle = fields[146] as bool?
       ..useAndroidDrawer = fields[147] as bool?
@@ -290,7 +291,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(152)
+      ..writeByte(153)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -594,7 +595,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(154)
       ..write(obj.drawerMode)
       ..writeByte(155)
-      ..write(obj.showLineBreakInPostInfoRow);
+      ..write(obj.showLineBreakInPostInfoRow)
+      ..writeByte(156)
+      ..write(obj.useCloudCaptchaSolver);
   }
 
   @override

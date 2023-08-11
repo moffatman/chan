@@ -980,6 +980,8 @@ class SavedSettings extends HiveObject {
 	DrawerMode drawerMode;
 	@HiveField(155)
 	bool showLineBreakInPostInfoRow;
+	@HiveField(156)
+	bool? useCloudCaptchaSolver;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1134,6 +1136,7 @@ class SavedSettings extends HiveObject {
 		MouseModeQuoteLinkBehavior? mouseModeQuoteLinkBehavior,
 		DrawerMode? drawerMode,
 		bool? showLineBreakInPostInfoRow,
+		this.useCloudCaptchaSolver,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -2465,6 +2468,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showLineBreakInPostInfoRow => _settings.showLineBreakInPostInfoRow;
 	set showLineBreakInPostInfoRow(bool setting) {
 		_settings.showLineBreakInPostInfoRow = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool? get useCloudCaptchaSolver => _settings.useCloudCaptchaSolver;
+	set useCloudCaptchaSolver(bool? setting) {
+		_settings.useCloudCaptchaSolver = setting;
 		_settings.save();
 		notifyListeners();
 	}

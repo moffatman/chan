@@ -61,6 +61,24 @@ class Chan4CustomCaptchaGuesses {
 
 	const Chan4CustomCaptchaGuesses._(this._answersBest, this.likelyNumLetters);
 
+	@override
+	String toString() {
+		return 'Chan4CustomCaptchaGuesses(_answersBest: $_answersBest, likelyNumLetters: $likelyNumLetters)';
+	}
+
+	factory Chan4CustomCaptchaGuesses.dummy(String answer, int maxNumLetters) {
+		final answersBest = [
+			for (int i = 0; i < maxNumLetters; i++) _LetterScore(
+				score: i.toDouble(),
+				letter: i < answer.length ? answer[i] : '0',
+				y: 0,
+				x: i,
+				letterImageWidth: 0
+			)
+		];
+		return Chan4CustomCaptchaGuesses._(answersBest, answer.length);
+	}
+
 	Chan4CustomCaptchaGuess forNumLetters(int numLetters) {
 		List<MapEntry<int, _LetterScore>> answersBest = _answersBest.asMap().entries.toList();
 		answersBest.sort((a, b) => a.value.score.compareTo(b.value.score));

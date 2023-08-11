@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'dart:ui' as ui show Image, PictureRecorder;
+import 'dart:ui' as ui show Image, ImageByteFormat, PictureRecorder;
 
 import 'package:async/async.dart';
 import 'package:chan/services/captcha_4chan.dart';
@@ -12,6 +12,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -225,14 +226,79 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	bool _greyOutPickers = true;
 	final Map<Chan4CustomCaptchaLetterKey, _PickerStuff> _pickerStuff = {};
 	final List<_PickerStuff> _orphanPickerStuff = [];
-	double _guessingProgress = 0.0;
+	double? _guessingProgress = 0.0;
 	CancelableOperation<Chan4CustomCaptchaGuesses>? _guessInProgress;
 	bool _offerGuess = false;
+	bool _cloudGuessFailed = false;
 
 	int get numLetters => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters;
 	set numLetters(int setting) => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters = setting;
 
-	Future<void> _animateGuess() async {
+	Future<void> _animateCloudGuess() async {
+		setState(() {
+			_guessingProgress = null;
+			_greyOutPickers = true;
+			_offerGuess = false;
+		});
+		try {
+			final image = await _screenshotImage();
+			final pngData = await image.toByteData(format: ui.ImageByteFormat.png);
+			if (pngData == null) {
+				throw Exception('Could not encode captcha image');
+			}
+			final bytes = pngData.buffer.asUint8List();
+			final response = await widget.site.client.postUri(Uri.https('captcha.chance.surf', '/solve'), 
+				data: bytes,
+				options: Options(
+					responseType: ResponseType.plain,
+					headers: {
+						Headers.contentLengthHeader: bytes.length.toString()
+					},
+					requestEncoder: (request, options) {
+						return bytes;
+					}
+				)
+			).timeout(const Duration(seconds: 3));
+			final answer = response.data as String;
+			if (answer.length > 10) {
+				// Answer shouldn't be that long
+				throw FormatException('Something seems wrong with cloud solver response', answer);
+			}
+			final newGuess = Chan4CustomCaptchaGuess.dummy(answer);
+			_lastGuess = newGuess;
+			_lastGuesses = Chan4CustomCaptchaGuesses.dummy(answer, max(answer.length, 6));
+			numLetters = newGuess.numLetters;
+			final selection = _solutionController.selection;
+			_previousText = ''; // Force animation of all pickers
+			_solutionController.text = newGuess.guess;
+			_solutionController.selection = TextSelection(
+				baseOffset: min(numLetters - 1, selection.baseOffset),
+				extentOffset: min(numLetters, selection.extentOffset)
+			);
+			_guessConfidences = newGuess.confidences.toList();
+			if (mounted && context.read<EffectiveSettings>().supportMouse.value) {
+				_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
+				_solutionNode.requestFocus();
+			}
+		}
+		catch (e, st) {
+			if (mounted) {
+				showToast(
+					context: context,
+					icon: CupertinoIcons.exclamationmark_triangle,
+					message: 'Cloud solver failed: ${e.toStringDio()}'
+				);
+			}
+			Future.error(e, st);
+			_cloudGuessFailed = true;
+		}
+		setState(() {
+			_guessingProgress = 1;
+			_greyOutPickers = false;
+		});
+	}
+
+	Future<void> _animateLocalGuess() async {
 		setState(() {
 			_guessingProgress = 0.0;
 			_greyOutPickers = true;
@@ -270,6 +336,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			for (final orphan in lastResolvedPickerStuff.values) {
 				_orphanPickerStuff.add(orphan);
 			}
+			_previousText = ''; // Force animation of all pickers
 			_solutionController.text = newGuess.guess;
 			_solutionController.selection = TextSelection(
 				baseOffset: min(numLetters - 1, selection.baseOffset),
@@ -288,6 +355,42 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		setState(() {
 			_greyOutPickers = false;
 		});
+	}
+
+	Future<void> _animateGuess() async {
+		final settings = context.read<EffectiveSettings>();
+		settings.useCloudCaptchaSolver = settings.useCloudCaptchaSolver ??= await showAdaptiveDialog<bool>(
+			context: context,
+			barrierDismissible: true,
+			builder: (context) => AdaptiveAlertDialog(
+				title: const Text('Use cloud captcha solver?'),
+				content: const Text('Use a machine-learning captcha solving model which is hosted on a web server to provide better captcha solver guesses. This means the captchas you open will be sent to a first-party web service for predictions. No information will be retained.'),
+				actions: [
+					AdaptiveDialogAction(
+						isDefaultAction: true,
+						child: const Text('Use cloud solver'),
+						onPressed: () {
+							Navigator.of(context).pop(true);
+						},
+					),
+					AdaptiveDialogAction(
+						child: const Text('No'),
+						onPressed: () {
+							Navigator.of(context).pop(false);
+						}
+					)
+				]
+			)
+		);
+		if (settings.useCloudCaptchaSolver ?? false) {
+			if (!_cloudGuessFailed) {
+				await _animateCloudGuess();
+				if (!_cloudGuessFailed) {
+					return;
+				}
+			}
+		}
+		await _animateLocalGuess();
 	}
 
 	_PickerStuff _getPickerStuffForWidgetIndex(int i) {
@@ -618,14 +721,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			);
 		}
 		else if (challenge != null) {
-			int minGuessConfidenceIndex = 0;
-			if (numLetters == 5) {
+			// Don't highlight any letter if they all have confidence 1
+			int minGuessConfidenceIndex = -1;
+			double minGuessConfidence = 1;
+			if (numLetters == 6) {
 				// Only emphasize worst letter on 6-captcha form
-				minGuessConfidenceIndex = -1;
-			}
-			else {
 				for (int i = 1; i < _guessConfidences.length; i++) {
-					if (_guessConfidences[i] < _guessConfidences[minGuessConfidenceIndex]) {
+					if (_guessConfidences[i] < minGuessConfidence) {
+						minGuessConfidence = _guessConfidences[i];
 						minGuessConfidenceIndex = i;
 					}
 				}
@@ -720,7 +823,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 															enabled: true,
 															interval: const Duration(seconds: 1),
 															function: () {
-																return challenge!.expiresAt.difference(DateTime.now()).inSeconds;
+																return challenge?.expiresAt.difference(DateTime.now()).inSeconds ?? 0;
 															},
 															builder: (context, seconds) {
 																return Text(
