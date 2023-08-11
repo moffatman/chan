@@ -623,6 +623,9 @@ class _BoardPageState extends State<BoardPage> {
 								},
 								initialAttachment: initialAttachmentInList ?? initialAttachment,
 								onChange: (attachment) {
+									if (_listController.state?.searching ?? false) {
+										return;
+									}
 									_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 								},
 								semanticParentIds: [widget.semanticId],
@@ -900,6 +903,9 @@ class _BoardPageState extends State<BoardPage> {
 															},
 															initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.item.attachments.any((a2) => a2.id == a.id)),
 															onChange: (attachment) {
+																if (_listController.state?.searching ?? false) {
+																	return;
+																}
 																_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 															},
 															semanticParentIds: [widget.semanticId],

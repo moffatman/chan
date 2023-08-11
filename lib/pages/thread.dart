@@ -675,6 +675,9 @@ class ThreadPageState extends State<ThreadPage> {
 				if (!_listController.scrollControllerPositionLooksGood) {
 					return;
 				}
+				if (_listController.state?.searching ?? false) {
+					return;
+				}
 				_listController.animateToIfOffscreen((p) => p.attachments.any((a) {
 					return a.id == attachment.attachment.id;
 				}));

@@ -960,6 +960,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	late final TextEditingController _searchController;
 	late final FocusNode _searchFocusNode;
 	bool get searchHasFocus => _searchFocusNode.hasFocus;
+	bool get searching => _searchFilter != null;
 	DateTime? lastUpdateTime;
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
