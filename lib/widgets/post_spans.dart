@@ -1951,7 +1951,7 @@ TextSpan buildPostInfoRow({
 	return TextSpan(
 		style: const TextStyle(fontSize: 16),
 		children: [
-			if (post.deleted) ...[
+			if (post.isDeleted) ...[
 				TextSpan(
 					text: '[Deleted] ',
 					style: TextStyle(

@@ -247,7 +247,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			posterId: data['poster_hash'],
 			foolfuukaLinkedPostThreadIds: linkedPostThreadIds,
 			passSinceYear: passSinceYear,
-			deleted: data['deleted'] == '1'
+			isDeleted: data['deleted'] == '1'
 		);
 	}
 	Future<dynamic> _getPostJson(String board, int id, {required bool interactive}) async {

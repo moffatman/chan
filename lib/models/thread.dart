@@ -14,6 +14,7 @@ part 'thread.g.dart';
 class Thread implements Filterable {
 	final List<Post> posts_;
 	bool isArchived;
+	@override
 	bool isDeleted;
 	@override
 	final int replyCount;

@@ -114,7 +114,8 @@ class Post implements Filterable {
 	final int? upvotes;
 	final int? parentId;
 	bool hasOmittedReplies;
-	bool deleted;
+	@override
+	bool isDeleted;
 	int? ipNumber;
 
 	Post({
@@ -136,7 +137,7 @@ class Post implements Filterable {
 		this.upvotes,
 		this.parentId,
 		this.hasOmittedReplies = false,
-		this.deleted = false,
+		this.isDeleted = false,
 		this.ipNumber
 	}) : board = intern(board), name = intern(name);
 
@@ -198,10 +199,10 @@ class Post implements Filterable {
 	bool get isStub => spanFormat == PostSpanFormat.stub;
 
 	@override
-	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.deleted == deleted;
+	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.isDeleted == isDeleted;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, deleted);
+	int get hashCode => Object.hash(board, id, upvotes, isDeleted);
 }
 
 class PostAdapter extends TypeAdapter<Post> {
@@ -253,7 +254,7 @@ class PostAdapter extends TypeAdapter<Post> {
 			parentId: fields[18] as int?,
 			//fields[19] was used for int omittedChildrenCount
 			hasOmittedReplies: fields[20] as bool? ?? false,
-			deleted: fields[21] as bool? ?? false,
+			isDeleted: fields[21] as bool? ?? false,
 			ipNumber: fields[22] as int?,
     );
   }
@@ -308,7 +309,7 @@ class PostAdapter extends TypeAdapter<Post> {
 		if (obj.hasOmittedReplies) {
 			writer..writeByte(20)..write(true);
 		}
-		if (obj.deleted) {
+		if (obj.isDeleted) {
 			writer..writeByte(21)..write(true);
 		}
 		if (obj.ipNumber != null) {

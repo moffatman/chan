@@ -3981,6 +3981,9 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	bool isThread = true;
 
 	@override
+	bool isDeleted = false;
+
+	@override
 	List<int> get repliedToIds => [];
 
 	@override
@@ -4061,6 +4064,18 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 					groupValue: isThread,
 					onValueChanged: (setting) {
 						isThread = setting;
+						_recalculate();
+					}
+				),
+				const SizedBox(height: 16),
+				AdaptiveSegmentedControl<bool>(
+					children: const {
+						false: (null, 'Not deleted'),
+						true: (null, 'Deleted')
+					},
+					groupValue: isDeleted,
+					onValueChanged: (setting) {
+						isDeleted = setting;
 						_recalculate();
 					}
 				),

@@ -92,6 +92,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			final patternFields = filter.patternFields.toList();
 			bool? hasFile = filter.hasFile;
 			bool? threadsOnly = filter.threadsOnly;
+			bool? deletedOnly = filter.deletedOnly;
 			final List<String> boards = filter.boards.toList();
 			final List<String> excludeBoards = filter.excludeBoards.toList();
 			int? minRepliedTo = filter.minRepliedTo;
@@ -222,6 +223,26 @@ class _FilterEditorState extends State<FilterEditor> {
 												onTap:() {
 													setInnerState(() {
 														threadsOnly = field;
+													});
+												}
+											)
+										]
+									),
+									const SizedBox(height: 32),
+									AdaptiveListSection(
+										children: [
+											for (final field in [null, true, false]) AdaptiveListTile(
+												title: Text(const{
+													null: 'All posts',
+													true: 'Deleted only',
+													false: 'Non-deleted only'
+												}[field]!),
+												backgroundColor: ChanceTheme.barColorOf(context),
+												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+												trailing: deletedOnly == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+												onTap:() {
+													setInnerState(() {
+														deletedOnly = field;
 													});
 												}
 											)
@@ -454,6 +475,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										excludeBoards: excludeBoards,
 										hasFile: hasFile,
 										threadsOnly: threadsOnly,
+										deletedOnly: deletedOnly,
 										minRepliedTo: minRepliedTo,
 										minReplyCount: minReplyCount,
 										maxReplyCount: maxReplyCount,
@@ -520,6 +542,8 @@ class _FilterEditorState extends State<FilterEditor> {
 													'`;show` Show matches (use it to override later filters)\n'
 													'`;file:only` Only apply to posts with files\n'
 													'`;file:no` Only apply to posts without files\n'
+													'`;deleted:only` Only apply to deleted posts\n'
+													'`;deleted:no` Only apply to non-deleted posts\n'
 													'`;thread` Only apply to threads\n'
 													'`;reply` Only apply to replies\n'
 													'`;type:<list>` Only apply regex filter to certain fields\n'
@@ -616,6 +640,8 @@ class _FilterEditorState extends State<FilterEditor> {
 										else if (filter.value.maxReplyCount != null) TextSpan(text: '<=${filter.value.maxReplyCount} replies'),
 										if (filter.value.threadsOnly == true) const TextSpan(text: 'Threads only')
 										else if (filter.value.threadsOnly == false) const TextSpan(text: 'Replies only'),
+										if (filter.value.deletedOnly == true) const TextSpan(text: 'Deleted only')
+										else if (filter.value.deletedOnly == false) const TextSpan(text: 'Non-deleted only'),
 										if (filter.value.hasFile == true) const WidgetSpan(
 											child: Icon(CupertinoIcons.doc)
 										)

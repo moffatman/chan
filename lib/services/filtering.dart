@@ -67,6 +67,7 @@ abstract class Filterable {
 	bool get isThread;
 	Iterable<String> get md5s;
 	int get replyCount;
+	bool get isDeleted;
 }
 
 class EmptyFilterable implements Filterable {
@@ -93,6 +94,9 @@ class EmptyFilterable implements Filterable {
 
 	@override
 	Iterable<String> get md5s => [];
+
+	@override
+	bool get isDeleted => false;
 }
 
 abstract class Filter {
@@ -147,6 +151,7 @@ class CustomFilter implements Filter {
 	bool disabled;
 	int? minReplyCount;
 	int? maxReplyCount;
+	bool? deletedOnly;
 	CustomFilter({
 		String? configuration,
 		this.disabled = false,
@@ -160,7 +165,8 @@ class CustomFilter implements Filter {
 		this.threadsOnly,
 		this.minRepliedTo,
 		this.minReplyCount,
-		this.maxReplyCount
+		this.maxReplyCount,
+		this.deletedOnly
 	}) {
 		this.configuration = configuration ?? toStringConfiguration();
 	}
@@ -200,6 +206,9 @@ class CustomFilter implements Filter {
 			return null;
 		}
 		if (maxReplyCount != null && item.replyCount > maxReplyCount!) {
+			return null;
+		}
+		if (deletedOnly != null && item.isDeleted != deletedOnly) {
 			return null;
 		}
 		return FilterResult(outputType, label.isEmpty ? 'Matched "$configuration"' : '$label filter');
@@ -277,6 +286,12 @@ class CustomFilter implements Filter {
 			}
 			else if (s == 'reply') {
 				filter.threadsOnly = false;
+			}
+			else if (s == 'deleted:only') {
+				filter.deletedOnly = true;
+			}
+			else if (s == 'deleted:no') {
+				filter.deletedOnly = false;
 			}
 			else if (s.startsWith('minReplied')) {
 				filter.minRepliedTo = int.tryParse(s.split(':')[1]);
@@ -372,6 +387,12 @@ class CustomFilter implements Filter {
 		}
 		if (maxReplyCount != null) {
 			out.write(';maxReplyCount:$maxReplyCount');
+		}
+		if (deletedOnly == true) {
+			out.write(';deleted:only');
+		}
+		else if (deletedOnly == false) {
+			out.write(';deleted:no');
 		}
 		return out.toString();
 	}

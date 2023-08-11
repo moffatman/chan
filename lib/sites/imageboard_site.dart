@@ -850,7 +850,7 @@ abstract class ImageboardSiteArchive {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
 	int placeOrphanPost(List<Post> posts, Post post) {
 		final index = posts.indexWhere((p) => p.id > post.id);
-		post.deleted = true;
+		post.isDeleted = true;
 		if (index == -1) {
 			posts.add(post);
 			return posts.length - 1;

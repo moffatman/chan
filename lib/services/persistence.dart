@@ -1056,6 +1056,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	int get replyCount => thread?.replyCount ?? 0;
 	@override
 	Iterable<String> get md5s => thread?.md5s ?? [];
+	@override
+	bool get isDeleted => thread?.isDeleted ?? false;
 
 	Filter get _makeThreadFilter => FilterCache(ThreadFilter(
 		hideIds: hiddenPostIds,
