@@ -598,6 +598,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			final char = newText[i].toUpperCase();
 			if (!captchaLetters.contains(char)) {
 				const remap = {
+					'5': 'S',
 					'B': '8',
 					'F': 'P',
 					'U': 'V',
