@@ -250,6 +250,9 @@ class _BoardPageState extends State<BoardPage> {
 	}
 	
 	void _swapBoard(ImageboardScoped<ImageboardBoard> newBoard) {
+		if (context.read<Imageboard?>()?.key != newBoard.imageboard.key) {
+			_lastSelectedThread = null;
+		}
 		widget.onBoardChanged?.call(newBoard);
 		setState(() {
 			board = newBoard.item;
