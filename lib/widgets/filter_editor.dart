@@ -523,6 +523,9 @@ class _FilterEditorState extends State<FilterEditor> {
 													'`;thread` Only apply to threads\n'
 													'`;reply` Only apply to replies\n'
 													'`;type:<list>` Only apply regex filter to certain fields\n'
+													'`;minReplied:<number>` Only apply to posts replying to a minimum number of other posts\n'
+													'`;minReplyCount:<number>` Only apply to posts with a minimum number of replies\n'
+													'`;maxReplyCount:<number>` Only apply to posts with a maximum number of replies\n'
 													'The list of possible fields is $allPatternFields\n'
 													'The default fields that are searched are $defaultPatternFields'
 												),
