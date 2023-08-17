@@ -2065,13 +2065,14 @@ TextSpan buildPostInfoRow({
 					makeFlagSpan(
 						flag: post.flag!,
 						includeTextOnlyContent: true,
-						appendLabels: combineFlagNames,
+						appendLabels: combineFlagNames && settings.showCountryNameOnPosts,
 						style: TextStyle(color: theme.primaryColor.withOpacity(0.75), fontSize: 16)
 					),
 					const TextSpan(text: ' ')
 				]
 				else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null && !combineFlagNames) TextSpan(
-					text: '${post.flag!.name} '
+					text: '${post.flag!.name} ',
+					style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 				)
 				else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
 					text: '${formatTime(post.time)} '
