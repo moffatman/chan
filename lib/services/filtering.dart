@@ -219,112 +219,120 @@ class CustomFilter implements Filter {
 		if (match == null) {
 			throw FilterException('Invalid syntax: "$configuration"');
 		}
-		final filter = CustomFilter(
-			configuration: configuration,
-			disabled: configuration.startsWith('#'),
-			label: match.group(1)!,
-			pattern: RegExp(match.group(2)!, multiLine: true, caseSensitive: match.group(3) != 'i')
-		);
-		final separator = RegExp(r':|,');
-		int i = 5;
-		bool hide = true;
-		bool highlight = false;
-		bool pinToTop = false;
-		bool autoSave = false;
-		bool notify = false;
-		bool collapse = false;
-		while (true) {
-			final s = match.group(i);
-			if (s == null) {
-				break;
-			}
-			else if (s == 'highlight') {
-				highlight = true;
-				hide = false;
-			}
-			else if (s == 'top') {
-				pinToTop = true;
-				hide = false;
-			}
-			else if (s == 'save') {
-				autoSave = true;
-				hide = false;
-			}
-			else if (s == 'notify') {
-				notify = true;
-				hide = false;
-			}
-			else if (s == 'collapse') {
-				collapse = true;
-				hide = false;
-			}
-			else if (s == 'show') {
-				hide = false;
-			}
-			else if (s.startsWith('type:')) {
-				filter.patternFields = s.split(separator).skip(1).toList();
-				if (filter.patternFields.remove('thread')) {
-					// 4chan-X filters use ;type:thread instead of ;thread
-					// Move it from patternFields
+		try {
+			final filter = CustomFilter(
+				configuration: configuration,
+				disabled: configuration.startsWith('#'),
+				label: match.group(1)!,
+				pattern: RegExp(match.group(2)!, multiLine: true, caseSensitive: match.group(3) != 'i')
+			);
+			final separator = RegExp(r':|,');
+			int i = 5;
+			bool hide = true;
+			bool highlight = false;
+			bool pinToTop = false;
+			bool autoSave = false;
+			bool notify = false;
+			bool collapse = false;
+			while (true) {
+				final s = match.group(i);
+				if (s == null) {
+					break;
+				}
+				else if (s == 'highlight') {
+					highlight = true;
+					hide = false;
+				}
+				else if (s == 'top') {
+					pinToTop = true;
+					hide = false;
+				}
+				else if (s == 'save') {
+					autoSave = true;
+					hide = false;
+				}
+				else if (s == 'notify') {
+					notify = true;
+					hide = false;
+				}
+				else if (s == 'collapse') {
+					collapse = true;
+					hide = false;
+				}
+				else if (s == 'show') {
+					hide = false;
+				}
+				else if (s.startsWith('type:')) {
+					filter.patternFields = s.split(separator).skip(1).toList();
+					if (filter.patternFields.remove('thread')) {
+						// 4chan-X filters use ;type:thread instead of ;thread
+						// Move it from patternFields
+						filter.threadsOnly = true;
+					}
+				}
+				else if (s.startsWith('boards:')) {
+					filter.boards = s.split(separator).skip(1).toList();
+				}
+				else if (s.startsWith('exclude:')) {
+					filter.excludeBoards = s.split(separator).skip(1).toList();
+				}
+				else if (s == 'file:only') {
+					filter.hasFile = true;
+				}
+				else if (s == 'file:no') {
+					filter.hasFile = false;
+				}
+				else if (s == 'thread') {
 					filter.threadsOnly = true;
 				}
-			}
-			else if (s.startsWith('boards:')) {
-				filter.boards = s.split(separator).skip(1).toList();
-			}
-			else if (s.startsWith('exclude:')) {
-				filter.excludeBoards = s.split(separator).skip(1).toList();
-			}
-			else if (s == 'file:only') {
-				filter.hasFile = true;
-			}
-			else if (s == 'file:no') {
-				filter.hasFile = false;
-			}
-			else if (s == 'thread') {
-				filter.threadsOnly = true;
-			}
-			else if (s == 'reply') {
-				filter.threadsOnly = false;
-			}
-			else if (s == 'deleted:only') {
-				filter.deletedOnly = true;
-			}
-			else if (s == 'deleted:no') {
-				filter.deletedOnly = false;
-			}
-			else if (s.startsWith('minReplied')) {
-				filter.minRepliedTo = int.tryParse(s.split(':')[1]);
-				if (filter.minRepliedTo == null) {
-					throw FilterException('Not a valid number for minReplied: "${s.split(':')[1]}"');
+				else if (s == 'reply') {
+					filter.threadsOnly = false;
 				}
-			}
-			else if (s.startsWith('minReplyCount')) {
-				filter.minReplyCount = int.tryParse(s.split(':')[1]);
-				if (filter.minReplyCount == null) {
-					throw FilterException('Not a valid number for minReplyCount: "${s.split(':')[1]}"');
+				else if (s == 'deleted:only') {
+					filter.deletedOnly = true;
 				}
-			}
-			else if (s.startsWith('maxReplyCount')) {
-				filter.maxReplyCount = int.tryParse(s.split(':')[1]);
-				if (filter.maxReplyCount == null) {
-					throw FilterException('Not a valid number for maxReplyCount: "${s.split(':')[1]}"');
+				else if (s == 'deleted:no') {
+					filter.deletedOnly = false;
 				}
+				else if (s.startsWith('minReplied')) {
+					filter.minRepliedTo = int.tryParse(s.split(':')[1]);
+					if (filter.minRepliedTo == null) {
+						throw FilterException('Not a valid number for minReplied: "${s.split(':')[1]}"');
+					}
+				}
+				else if (s.startsWith('minReplyCount')) {
+					filter.minReplyCount = int.tryParse(s.split(':')[1]);
+					if (filter.minReplyCount == null) {
+						throw FilterException('Not a valid number for minReplyCount: "${s.split(':')[1]}"');
+					}
+				}
+				else if (s.startsWith('maxReplyCount')) {
+					filter.maxReplyCount = int.tryParse(s.split(':')[1]);
+					if (filter.maxReplyCount == null) {
+						throw FilterException('Not a valid number for maxReplyCount: "${s.split(':')[1]}"');
+					}
+				}
+				else {
+					throw FilterException('Unknown qualifier "$s"');
+				}
+				i += 2;
 			}
-			else {
-				throw FilterException('Unknown qualifier "$s"');
-			}
-			i += 2;
+			filter.outputType = FilterResultType(
+				hide: hide,
+				highlight: highlight,
+				pinToTop: pinToTop,
+				autoSave: autoSave,
+				notify: notify,
+				collapse: collapse
+			);
+			return filter;
 		}
-		filter.outputType = FilterResultType(
-			hide: hide,
-			highlight: highlight,
-			pinToTop: pinToTop,
-			autoSave: autoSave,
-			notify: notify,
-			collapse: collapse
-		);
-		return filter;
+		catch (e) {
+			if (e is FilterException) {
+				rethrow;
+			}
+			throw FilterException(e.toString());
+		}
 	}
 
 	String toStringConfiguration() {
@@ -568,17 +576,18 @@ final _configurationLinePattern = RegExp(r'^#?([^\/]*)\/(.*)\/(i?)(;([^;]+))?(;(
 
 FilterGroup<CustomFilter> makeFilter(String configuration) {
 	final filters = <CustomFilter>[];
-	for (final line in configuration.split('\n')) {
+	for (final pair in configuration.split('\n').indexed) {
+		final (i, line) = pair;
 		if (line.isEmpty) {
 			continue;
 		}
 		try {
 			filters.add(CustomFilter.fromStringConfiguration(line));
 		}
-		on FilterException {
+		catch (e) {
 			// It might be a filter, or it could just be a comment
 			if (!line.startsWith('#')) {
-				rethrow;
+				throw Exception('Problem with filter on line ${i + 1} "$line"\n${e.toString()}');
 			}
 		}
 	}
