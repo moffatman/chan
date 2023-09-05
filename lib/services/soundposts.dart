@@ -8,10 +8,13 @@ extension SoundpostAttachment on Attachment {
 		if (match != null) {
 			try {
 				final source = Uri.tryParse(Uri.decodeFull(match.group(1)!));
-				if (source?.hasScheme ?? false) {
+				if (source == null) {
+					return null;
+				}
+				if (source.hasScheme) {
 					return source;
 				}
-				return source?.replace(scheme: 'https');
+				return Uri.tryParse('https://$source');
 			}
 			on ArgumentError {
 				// Bad URL encoding
