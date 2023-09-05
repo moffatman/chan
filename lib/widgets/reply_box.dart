@@ -50,6 +50,19 @@ import 'package:string_similarity/string_similarity.dart';
 
 const _captchaContributionServer = 'https://captcha.chance.surf';
 
+class _StoppedValueListenable<T> implements ValueListenable<T> {
+	@override
+	final T value;
+
+	const _StoppedValueListenable(this.value);
+	
+	@override
+	void addListener(VoidCallback listener) { }
+
+	@override
+	void removeListener(VoidCallback listener) { }	
+}
+
 class ReplyBoxZone {
 	final void Function(int threadId, int id) onTapPostId;
 
@@ -133,7 +146,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	double _replyBoxHeightOffsetAtPanStart = 0;
 	bool _willHideOnPanEnd = false;
 	late final FocusNode _rootFocusNode;
-	(String, ValueListenable<double?>)? _attachmentProgress;
+	(String, MediaConversion?)? _attachmentProgress;
 	(String, int)? _spamFilteredPostId;
 	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
 	static List<String> _previouslyUsedNames = [];
@@ -454,7 +467,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: Adaptive.icons.photo);
 		transcode.start();
 		setState(() {
-			_attachmentProgress = ('Converting', transcode.progress);
+			_attachmentProgress = ('Converting', transcode);
 		});
 		try {
 			final result = await transcode.result;
@@ -492,9 +505,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	Future<void> setAttachment(File newAttachment) async {
 		File? file = newAttachment;
 		final settings = context.read<EffectiveSettings>();
-		final progress = ValueNotifier<double?>(null);
 		setState(() {
-			_attachmentProgress = ('Processing', progress);
+			_attachmentProgress = ('Processing', null);
 		});
 		try {
 			final board = context.read<Persistence>().getBoard(widget.board);
@@ -612,7 +624,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				});
 			}
 		}
-		progress.dispose();
 	}
 
 	Future<void> _solveCaptcha() async {
@@ -1632,15 +1643,23 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									const SizedBox(width: 16),
 									SizedBox(
 										width: 100,
-										child: ClipRRect(
-											borderRadius: BorderRadius.circular(4),
-											child: ValueListenableBuilder<double?>(
-												valueListenable: _attachmentProgress!.$2,
-												builder: (context, value, _) => LinearProgressIndicator(
-													value: value,
-													minHeight: 20,
-													valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-													backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
+										child: AdaptiveButton(
+											padding: EdgeInsets.zero,
+											onPressed: _attachmentProgress?.$2 == null ? null : () {
+												_attachmentProgress?.$2?.cancel();
+												_attachmentProgress = null;
+												setState(() {});
+											},
+											child: ClipRRect(
+												borderRadius: BorderRadius.circular(4),
+												child: ValueListenableBuilder<double?>(
+													valueListenable: _attachmentProgress!.$2?.progress ?? const _StoppedValueListenable(null),
+													builder: (context, value, _) => LinearProgressIndicator(
+														value: value,
+														minHeight: 20,
+														valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+														backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
+													)
 												)
 											)
 										)

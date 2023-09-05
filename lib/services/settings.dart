@@ -1261,7 +1261,7 @@ class SavedSettings extends HiveObject {
 		useHapticFeedback = useHapticFeedback ?? true,
 		promptedAboutCrashlytics = promptedAboutCrashlytics ?? false,
 		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? (showFlagInCatalogHeader ?? true),
-		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never),
+		webmTranscoding = webmTranscoding ?? WebmTranscodingSetting.never,
 		showListPositionIndicatorsOnLeft = showListPositionIndicatorsOnLeft ?? false,
 		appliedMigrations = appliedMigrations ?? [],
 		enableIMEPersonalizedLearning = enableIMEPersonalizedLearning ?? true,
@@ -1362,6 +1362,11 @@ class SavedSettings extends HiveObject {
 			}
 			if (!this.postDisplayFieldOrder.contains(PostDisplayField.lineBreak)) {
 				this.postDisplayFieldOrder.insert(min(this.postDisplayFieldOrder.length - 1, 6), PostDisplayField.lineBreak);
+			}
+			if (!this.appliedMigrations.contains('mk')) {
+				// mk means media-kit
+				this.webmTranscoding = WebmTranscodingSetting.never;
+				this.appliedMigrations.add('mk');
 			}
 		}
 

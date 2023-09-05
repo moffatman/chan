@@ -3,18 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:async/async.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:crypto/crypto.dart';
-import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit_config.dart';
-import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_session.dart';
-import 'package:ffmpeg_kit_flutter_full_gpl/ffprobe_kit.dart';
-import 'package:ffmpeg_kit_flutter_full_gpl/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mutex/mutex.dart';
 import 'package:pool/pool.dart';
 
@@ -29,12 +25,22 @@ extension HandleSpacesInPath on Uri {
 	}
 }
 
-class MediaConversionFFMpegException implements Exception {
-	int exitCode;
-	MediaConversionFFMpegException(this.exitCode);
+class MediaScanException implements Exception {
+	final int code;
+	final String output;
+	const MediaScanException(this.code, this.output);
 
 	@override
-	String toString() => 'MediaConversionFFMpegException(exitCode: $exitCode)';
+	String toString() => 'MediaScanException(code: $code, output: $output)';
+}
+
+class MediaConversionFFMpegException implements Exception {
+	final int exitCode;
+	final String output;
+	const MediaConversionFFMpegException(this.exitCode, this.output);
+
+	@override
+	String toString() => 'MediaConversionFFMpegException(exitCode: $exitCode, output: $output)';
 }
 
 class MediaConversionResult {
@@ -84,61 +90,57 @@ class MediaScan {
 		Map<String, String> headers = const {}
 	}) async {
 		return await _ffprobeLock.protect<MediaScan>(() async {
-			final completer = Completer<MediaScan>();
-			FFprobeKit.getMediaInformationFromCommandArgumentsAsync([
-				"-v",
-				"error",
-				"-hide_banner",
-				"-print_format",
-				"json",
-				"-show_format",
-				"-show_streams",
-				"-show_chapters",
-				if (headers.isNotEmpty) ...[
-					"-headers",
-					headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
-				],
-				"-i",
-				file.toStringFFMPEG(),
-			], (session) async {
-				try {
-					final output = await session.getOutput();
-					if (output == null) {
-						completer.completeError(Exception('No output from ffprobe'));
-						return;
+			final result = await FFTools.ffprobe(
+				arguments: [
+					"-v",
+					"error",
+					"-hide_banner",
+					"-print_format",
+					"json",
+					"-show_format",
+					"-show_streams",
+					"-show_chapters",
+					if (headers.isNotEmpty) ...[
+						"-headers",
+						headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+					],
+					"-i",
+					file.toStringFFMPEG(),
+				]
+			);
+			if (result.output.isEmpty) {
+				throw const MediaScanException(0, 'No output from ffprobe');
+			}
+			if (result.returnCode != 0) {
+				// Below regexes are to cleanup some JSON junk in the output, trimming all leading and trailing non-word characters
+				throw MediaScanException(result.returnCode, result.output.replaceFirst(RegExp(r'^[^\w]*'), '').replaceFirst(RegExp(r'[^\w]*$'), ''));
+			}
+			final data = jsonDecode(result.output);
+			final seconds = double.tryParse(data['format']?['duration'] ?? '');
+			int width = 0;
+			int height = 0;
+			double? videoFramerate;
+			for (final stream in (data['streams'] as List<dynamic>)) {
+				width = max(width, stream['width'] ?? 0);
+				height = max(height, stream['height'] ?? 0);
+				if (stream['codec_type'] == 'video') {
+					final avgFramerateFractionString = stream['avg_frame_rate'] as String?;
+					final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
+					if (match != null) {
+						videoFramerate = int.parse(match.group(1)!) / int.parse(match.group(2)!);
 					}
-					final data = jsonDecode(output);
-					final seconds = double.tryParse(data['format']?['duration'] ?? '');
-					int width = 0;
-					int height = 0;
-					double? videoFramerate;
-					for (final stream in (data['streams'] as List<dynamic>)) {
-						width = max(width, stream['width'] ?? 0);
-						height = max(height, stream['height'] ?? 0);
-						if (stream['codec_type'] == 'video') {
-							final avgFramerateFractionString = stream['avg_frame_rate'] as String?;
-							final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
-							if (match != null) {
-								videoFramerate = int.parse(match.group(1)!) / int.parse(match.group(2)!);
-							}
-						}
-					}
-					completer.complete(MediaScan(
-						hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
-						duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
-						bitrate: int.tryParse(data['format']?['bit_rate'] ?? ''),
-						width: width == 0 ? null : width,
-						height: height == 0 ? null : height,
-						codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
-						videoFramerate: videoFramerate,
-						sizeInBytes: int.tryParse(data['format']?['size'] ?? '')
-					));
 				}
-				catch (e, st) {
-					completer.completeError(e, st);
-				}
-			});
-			return completer.future;
+			}
+			return MediaScan(
+				hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
+				duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
+				bitrate: int.tryParse(data['format']?['bit_rate'] ?? ''),
+				width: width == 0 ? null : width,
+				height: height == 0 ? null : height,
+				codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
+				videoFramerate: videoFramerate,
+				sizeInBytes: int.tryParse(data['format']?['size'] ?? '')
+			);
 		});
 	}
 
@@ -197,7 +199,7 @@ class MediaConversion {
 	final bool requiresSubdirectory;
 	final bool copyStreams;
 
-	FFmpegSession? _session;
+	CancelableOperation<FFToolsOutput>? _session;
 	MediaScan? cachedScan;
 
 	static final pool = Pool(sqrt(Platform.numberOfProcessors).ceil());
@@ -376,9 +378,6 @@ class MediaConversion {
 				if (await convertedFile.exists()) {
 					await convertedFile.delete();
 				}
-				if (isDesktop()) {
-					throw Exception('Media conversions disabled on desktop');
-				}
 				else {
 					final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers);
 					int outputBitrate = scan.bitrate ?? 2000000;
@@ -417,14 +416,6 @@ class MediaConversion {
 						}
 					}
 					bool passedFirstEvent = false;
-					FFmpegKitConfig.enableStatisticsCallback((stats) {
-						if (stats.getSessionId() == _session?.getSessionId()) {
-							if (passedFirstEvent && outputDurationInMilliseconds != null) {
-								progress.value = (stats.getTime() / outputDurationInMilliseconds).clamp(0, 1);
-							}
-							passedFirstEvent = true;
-						}
-					});
 					final bitrateString = '${(outputBitrate / 1000).floor()}K';
 					final results = await pool.withResource(() async {
 						final args = [
@@ -467,25 +458,31 @@ class MediaConversion {
 							convertedFile.path
 						];
 						print(args);
-						final ffmpegCompleter = Completer<Session>();
-						_session = await FFmpegKit.executeWithArgumentsAsync(args, (c) => ffmpegCompleter.complete(c));
-						return await ffmpegCompleter.future;
+						final operation = _session = FFTools.ffmpeg(
+							arguments: args,
+							statisticsCallback: (packet) {
+								if (passedFirstEvent && outputDurationInMilliseconds != null) {
+									progress.value = (packet.time / outputDurationInMilliseconds).clamp(0, 1);
+								}
+								passedFirstEvent = true;
+							}
+						);
+						return operation.value;
 					});
-					final returnCode = await results.getReturnCode();
 					_session = null;
-					if (!(returnCode?.isValueSuccess() ?? false)) {
+					if (results.returnCode != 0) {
 						if (await convertedFile.exists()) {
 							await convertedFile.delete();
 						}
 						if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') &&
 								_isVideoToolboxSupported &&
 								!_hasVideoToolboxFailed &&
-								((await results.getAllLogsAsString())?.contains('Error while opening encoder') ?? false)) {
+								results.output.contains('Error while opening encoder')) {
 							_hasVideoToolboxFailed = true;
 							await start();
 							return;
 						}
-						throw MediaConversionFFMpegException(returnCode?.getValue() ?? -1);
+						throw MediaConversionFFMpegException(results.returnCode, results.output);
 					}
 					else {
 						if (maximumSizeInBytes != null && (await convertedFile.stat()).size > maximumSizeInBytes!) {

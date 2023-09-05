@@ -54,6 +54,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:native_drag_n_drop/native_drag_n_drop.dart';
 import 'package:rxdart/subjects.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -98,6 +99,7 @@ void main() async {
 			await Notifications.initializeStatic();
 			await updateDynamicColors();
 			await initializeFonts();
+			MediaKit.ensureInitialized();
 			runApp(const ChanApp());
 		}
 		catch (e, st) {

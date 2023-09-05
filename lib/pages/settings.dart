@@ -701,30 +701,32 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 32),
-				if (Platform.isAndroid) ...[
-					const Row(
-						children: [
-							Icon(CupertinoIcons.play_rectangle),
-							SizedBox(width: 8),
-							Expanded(
-								child: Text('Transcode WEBM videos')
-							)
-						]
-					),
-					const SizedBox(height: 16),
-					AdaptiveSegmentedControl<WebmTranscodingSetting>(
-						children: const {
-							WebmTranscodingSetting.never: (null, 'Never'),
-							WebmTranscodingSetting.vp9: (null, 'VP9 only'),
-							WebmTranscodingSetting.always: (null, 'Always')
-						},
-						groupValue: settings.webmTranscoding,
-						onValueChanged: (newValue) {
-							settings.webmTranscoding = newValue;
-						}
-					),
-					const SizedBox(height: 32),
-				],
+				const Row(
+					children: [
+						Icon(CupertinoIcons.play_rectangle),
+						SizedBox(width: 8),
+						Flexible(
+							child: Text('Transcode WEBM videos before playback')
+						),
+						SizedBox(width: 8),
+						_SettingsHelpButton(
+							helpText: 'Some devices may have bugs in their media decoding engines during WEBM playback. Enabling transcoding here will make those WEBMs playable, at the cost of waiting for a transcode first.'
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				AdaptiveSegmentedControl<WebmTranscodingSetting>(
+					children: const {
+						WebmTranscodingSetting.never: (null, 'Never'),
+						WebmTranscodingSetting.vp9: (null, 'VP9 only'),
+						WebmTranscodingSetting.always: (null, 'Always')
+					},
+					groupValue: settings.webmTranscoding,
+					onValueChanged: (newValue) {
+						settings.webmTranscoding = newValue;
+					}
+				),
+				const SizedBox(height: 32),
 				Row(
 					children: [
 						const Icon(CupertinoIcons.pin_slash),

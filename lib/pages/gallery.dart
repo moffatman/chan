@@ -974,11 +974,11 @@ class _GalleryPageState extends State<GalleryPage> {
 																			icon: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
 																			onPressed: () {
 																				if (muted) {
-																					currentController.videoPlayerController?.setVolume(1);
+																					currentController.videoPlayerController?.player.setVolume(100);
 																					settings.setMuteAudio(false);
 																				}
 																				else {
-																					currentController.videoPlayerController?.setVolume(0);
+																					currentController.videoPlayerController?.player.setVolume(0);
 																					settings.setMuteAudio(true);
 																				}
 																			}
