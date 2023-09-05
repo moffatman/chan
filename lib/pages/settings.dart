@@ -1719,7 +1719,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																	child: const Text('Pick .ttf file...'),
 																	onPressed: () async {
 																		try {
-																			final pickerResult = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['.ttf']);
+																			final pickerResult = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['ttf']);
 																			final path = pickerResult?.files.tryFirst?.path;
 																			if (path == null) {
 																				return;
