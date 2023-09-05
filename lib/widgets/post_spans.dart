@@ -1279,7 +1279,7 @@ class PostTableSpan extends PostSpan {
 		);
 	}
 	@override
-	buildText() => rows.map((r) => r.join(', ')).join('\n');
+	buildText() => rows.map((r) => r.map((r) => r.buildText()).join(', ')).join('\n');
 }
 
 class PostDividerSpan extends PostSpan {
