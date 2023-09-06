@@ -274,6 +274,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       includeThreadsYouRepliedToWhenDeletingHistory: fields[143] as bool?,
       newPostHighlightBrightness: fields[144] as double?,
       imagePeeking: fields[145] as ImagePeekingSetting?,
+      useMaterialStyle: fields[146] as bool?,
+      useAndroidDrawer: fields[147] as bool?,
+      useMaterialRoutes: fields[148] as bool?,
       hideBarsWhenScrollingDown: fields[149] as bool?,
       showPerformanceOverlay: fields[150] as bool?,
       customDateFormat: fields[151] as String?,
@@ -282,10 +285,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       drawerMode: fields[154] as DrawerMode?,
       showLineBreakInPostInfoRow: fields[155] as bool?,
       useCloudCaptchaSolver: fields[156] as bool?,
-    )
-      ..useMaterialStyle = fields[146] as bool?
-      ..useAndroidDrawer = fields[147] as bool?
-      ..useMaterialRoutes = fields[148] as bool?;
+    );
   }
 
   @override
