@@ -1161,12 +1161,21 @@ class PostReceipt {
 	final String password;
 	@HiveField(1)
 	final int id;
+	@HiveField(2, defaultValue: '')
+	final String name;
+	@HiveField(3, defaultValue: '')
+	final String options;
+	@HiveField(4)
+	final DateTime? time;
 	PostReceipt({
 		required this.password,
-		required this.id
+		required this.id,
+		required this.name,
+		required this.options,
+		required this.time
 	});
 	@override
-	String toString() => 'PostReceipt(id: $id, password: $password)';
+	String toString() => 'PostReceipt(id: $id, password: $password, name: $name, options: $options, time: $time)';
 }
 
 @HiveType(typeId: 18)

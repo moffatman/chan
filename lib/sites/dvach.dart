@@ -249,7 +249,10 @@ class SiteDvach extends ImageboardSite {
 		}
 		return PostReceipt(
 			password: '',
-			id: response.data['num']
+			id: response.data['num'],
+			name: name,
+			options: options,
+			time: DateTime.now()
 		);
 	}
 

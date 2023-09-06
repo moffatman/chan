@@ -170,7 +170,10 @@ class SiteLynxchan extends ImageboardSite {
 			if (match != null) {
 				return PostReceipt(
 					id: match.group(2) != null ? int.parse(match.group(2)!) : int.parse(match.group(1)!),
-					password: password
+					password: password,
+					name: name,
+					options: options,
+					time: DateTime.now()
 				);
 			}
 			throw PostFailedException(document.querySelector('title')?.text ?? 'Unknown error');
@@ -180,7 +183,10 @@ class SiteLynxchan extends ImageboardSite {
 		}
 		return PostReceipt(
 			id: response.data['data'],
-			password: password
+			password: password,
+			name: name,
+			options: options,
+			time: DateTime.now()
 		);
 	}
 

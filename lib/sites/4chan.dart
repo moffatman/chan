@@ -729,7 +729,10 @@ class Site4Chan extends ImageboardSite {
 			}
 			return PostReceipt(
 				id: id,
-				password: password
+				password: password,
+				name: name,
+				options: options,
+				time: DateTime.now()
 			);
 		}
 		else {

@@ -181,17 +181,26 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
     return PostReceipt(
       password: fields[0] as String,
       id: fields[1] as int,
+      name: fields[2] == null ? '' : fields[2] as String,
+      options: fields[3] == null ? '' : fields[3] as String,
+      time: fields[4] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PostReceipt obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.password)
       ..writeByte(1)
-      ..write(obj.id);
+      ..write(obj.id)
+      ..writeByte(2)
+      ..write(obj.name)
+      ..writeByte(3)
+      ..write(obj.options)
+      ..writeByte(4)
+      ..write(obj.time);
   }
 
   @override

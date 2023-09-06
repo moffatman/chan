@@ -336,7 +336,10 @@ class SiteLainchan extends ImageboardSite {
 			if (digitMatches.isNotEmpty) {
 				return PostReceipt(
 					id: int.parse(digitMatches.last.group(0)!),
-					password: password
+					password: password,
+					name: name,
+					options: options,
+					time: DateTime.now()
 				);
 			}
 		}
@@ -366,7 +369,10 @@ class SiteLainchan extends ImageboardSite {
 		}
 		return PostReceipt(
 			id: newPostId,
-			password: password
+			password: password,
+			name: name,
+			options: options,
+			time: DateTime.now()
 		);
 	}
 

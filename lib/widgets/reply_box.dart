@@ -150,6 +150,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	(String, int)? _spamFilteredPostId;
 	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
 	static List<String> _previouslyUsedNames = [];
+	static List<String> _previouslyUsedOptions = [];
 	late final Timer _focusTimer;
 	(DateTime, FocusNode)? _lastNearbyFocus;
 
@@ -159,17 +160,50 @@ class ReplyBoxState extends State<ReplyBox> {
 	String get options => _optionsFieldController.text;
 	set options(String newOptions) => _optionsFieldController.text = newOptions;
 
-	Future<void> _checkPreviouslyUsedNames() async {
-		_previouslyUsedNames = (await Future.wait(Persistence.sharedThreadStateBox.values.map<Future<Iterable<String>>>((state) async {
-			if (state.youIds.isEmpty) {
-				return const [];
+	static bool _previousPostReceiptIsTooOld(DateTime? time) {
+		return DateTime.now().difference(time ?? DateTime(2000)).inDays > 30;
+	}
+
+	Future<void> _checkPreviousPostReceipts() async {
+		final previouslyUsedNames = <String>{};
+		final previouslyUsedOptions = <String>{};
+		for (final state in Persistence.sharedThreadStateBox.values) {
+			bool anyIncompleteReceipts = false;
+			for (final receipt in state.receipts) {
+				if (receipt.time == null) {
+					// PostReceipt generated before name,options stored
+					anyIncompleteReceipts = true;
+					continue;
+				}
+				if (_previousPostReceiptIsTooOld(receipt.time)) {
+					continue;
+				}
+				if (receipt.name.isNotEmpty) {
+					previouslyUsedNames.add(receipt.name);
+				}
+				if (receipt.options.isNotEmpty) {
+					previouslyUsedOptions.add(receipt.options);
+				}
 			}
-			final thread = await state.getThread();
-			if (DateTime.now().difference(thread?.time ?? DateTime(2000)).inDays > 30) {
-				return const [];
+			if (anyIncompleteReceipts) {
+				final thread = await state.getThread();
+				if (_previousPostReceiptIsTooOld(thread?.time)) {
+					continue;
+				}
+				for (final post in thread?.posts_ ?? const Iterable.empty()) {
+					if (!state.youIds.contains(post.id)) {
+						continue;
+					}
+					final name = post.name.trim();
+					if (name == (state.imageboard?.site.defaultUsername ?? 'Anonymous')) {
+						continue;
+					}
+					previouslyUsedNames.add(name);
+				}
 			}
-			return thread?.posts_.where((p) => state.youIds.contains(p.id) && p.name.trim() != (state.imageboard?.site.defaultUsername ?? 'Anonymous')).map((p) => p.name.trim()).toList() ?? const [];
-		}))).expand((s) => s).toSet().toList()..sort();
+		}
+		_previouslyUsedNames = previouslyUsedNames.toList()..sort();
+		_previouslyUsedOptions = previouslyUsedOptions.toList()..sort();
 		if (mounted) {
 			setState(() {});
 		}
@@ -374,7 +408,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void showReplyBox() {
-		_checkPreviouslyUsedNames();
+		_checkPreviousPostReceipts();
 		if (_nameFieldController.text.isEmpty && (context.read<Persistence>().browserState.postingNames[widget.board]?.isNotEmpty ?? false)) {
 			_nameFieldController.text = context.read<Persistence>().browserState.postingNames[widget.board] ?? '';
 			_showOptions = true;
@@ -1389,6 +1423,31 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							smartQuotesType: SmartQuotesType.disabled,
 							keyboardAppearance: ChanceTheme.brightnessOf(context),
 							controller: _optionsFieldController,
+							suffix: AdaptiveIconButton(
+								padding: const EdgeInsets.only(right: 8),
+								minSize: 0,
+								onPressed: _previouslyUsedOptions.isEmpty ? null : () async {
+									final choice = await showAdaptiveModalPopup<String>(
+										context: context,
+										builder: (context) => AdaptiveActionSheet(
+											title: const Text('Previously-used options'),
+											actions: _previouslyUsedOptions.map((name) => AdaptiveActionSheetAction(
+												onPressed: () => Navigator.pop(context, name),
+												isDefaultAction: _nameFieldController.text == name,
+												child: Text(name)
+											)).toList(),
+											cancelButton: AdaptiveActionSheetAction(
+												child: const Text('Cancel'),
+												onPressed: () => Navigator.of(context).pop()
+											)
+										)
+									);
+									if (choice != null) {
+										_optionsFieldController.text = choice;
+									}
+								},
+								icon: const Icon(CupertinoIcons.list_bullet, size: 20)
+							),
 							onChanged: (s) {
 								widget.onOptionsChanged?.call(s);
 							}
@@ -1507,7 +1566,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			});
 		};
 		final expandOptions = loading ? null : () {
-			_checkPreviouslyUsedNames();
+			_checkPreviousPostReceipts();
 			setState(() {
 				_showOptions = !_showOptions;
 			});
