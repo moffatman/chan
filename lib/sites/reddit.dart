@@ -256,7 +256,7 @@ class SiteReddit extends ImageboardSite {
 						yield PostBoldSpan(PostTextSpan(node.text));
 					}
 					else if (node.localName == 'a') {
-						yield PostLinkSpan(node.attributes['href']!, name: node.text);
+						yield PostLinkSpan(Uri.encodeFull(node.attributes['href']!), name: node.text);
 					}
 					else if (node.localName == 'p') {
 						yield* visit(node.nodes);
@@ -609,7 +609,7 @@ class SiteReddit extends ImageboardSite {
 				)));
 			}
 		}
-		String text = data['is_self'] ? unescape.convert(data['selftext']) : data['url'];
+		String text = data['is_self'] ? unescape.convert(data['selftext']) : Uri.encodeFull(data['url']);
 		final Map? crosspostParent = (data['crosspost_parent_list'] as List?)?.tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']);
 		if (crosspostParent != null) {
 			await dumpAttachments(crosspostParent);
