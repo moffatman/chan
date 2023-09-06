@@ -86,7 +86,8 @@ class LooseUrlLinkifier extends Linkifier {
 
             if ((options.humanize) || (options.removeWww)) {
               if (options.humanize) {
-                url = url.replaceFirst(RegExp(r'https?://'), '');
+                // Don't use "s?", still show http:// if that's the explicit protocol
+                url = url.replaceFirst(RegExp(r'https://'), '');
               }
               if (options.removeWww) {
                 url = url.replaceFirst(RegExp(r'www\.'), '');
