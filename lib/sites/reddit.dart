@@ -288,7 +288,7 @@ class SiteReddit extends ImageboardSite {
 						}
 					}
 					else if (node.localName == 'table') {
-						yield PostTableSpan(node.querySelectorAll('tr').map((tr) => tr.querySelectorAll('td,th').map((td) => PostNodeSpan(td.children.isNotEmpty ? visit(td.children).toList() : visit(td.nodes).toList())).toList()).toList());
+						yield PostTableSpan(node.querySelectorAll('tr').map((tr) => tr.querySelectorAll('td,th').map((td) => PostNodeSpan(visit(td.nodes).toList())).toList()).toList());
 					}
 					else if (node.localName == 'hr') {
 						yield const PostDividerSpan();
