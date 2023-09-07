@@ -59,10 +59,6 @@ enum WebImageSearchMethod {
 	}
 }
 
-extension ToCssRgba on Color {
-	String toCssRgba() => 'rgba($red, $green, $blue, $opacity)';
-}
-
 class WebImagePickerPage extends StatefulWidget {
 	final ImageboardSite? site;
 

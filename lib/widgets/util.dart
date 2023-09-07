@@ -1540,3 +1540,8 @@ class TestMediaQuery extends StatelessWidget {
 		);
 	}
 }
+
+extension ToCss on Color {
+	String toCssRgba() => 'rgba($red, $green, $blue, $opacity)';
+	String toCssHex() => '#${red.toRadixString(16).padLeft(2, '0')}${green.toRadixString(16).padLeft(2, '0')}${blue.toRadixString(16).padLeft(2, '0')}';
+}

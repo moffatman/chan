@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
@@ -125,7 +126,8 @@ class CloudflareInterceptor extends Interceptor {
 		final initialSettings = InAppWebViewSettings(
 			userAgent: userAgent,
 			clearCache: true,
-			clearSessionCache: true
+			clearSessionCache: true,
+			transparentBackground: true
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback) => (controller, uri) async {
 			if ((uri?.host.isEmpty ?? false) && uri?.scheme != 'data') {
@@ -184,12 +186,23 @@ class CloudflareInterceptor extends Interceptor {
 				bar: const AdaptiveBar(
 					title: Text('Cloudflare Login')
 				),
-				body: InAppWebView(
-					headlessWebView: headlessWebView,
-					initialSettings: initialSettings,
-					initialUrlRequest: initialUrlRequest,
-					initialData: initialData,
-					onLoadStop: buildOnLoadStop(Navigator.of(context).pop)
+				disableAutoBarHiding: true,
+				body: SafeArea(
+					child: InAppWebView(
+						headlessWebView: headlessWebView,
+						initialSettings: initialSettings,
+						initialUrlRequest: initialUrlRequest,
+						initialData: initialData,
+						onLoadStop: buildOnLoadStop(Navigator.of(context).pop),
+						onPageCommitVisible: (controller, uri) {
+							controller.evaluateJavascript(source: '''
+								var style = document.createElement('style');
+								style.innerHTML = "* { color: ${EffectiveSettings.instance.theme.primaryColor.toCssRgba()}; }";
+								document.head.appendChild(style);
+								document.body.bgColor = "${EffectiveSettings.instance.theme.backgroundColor.toCssHex()}";
+							''');
+						},
+					)
 				)
 			)
 		));
