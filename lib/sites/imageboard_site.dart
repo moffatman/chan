@@ -468,7 +468,7 @@ enum PostSortingMethod {
 }
 
 class CaptchaRequest {
-
+	bool get cloudSolveSupported => false;
 }
 
 class NoCaptchaRequest extends CaptchaRequest {
@@ -498,6 +498,9 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	});
 	@override
 	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders)';
+
+	@override
+	bool get cloudSolveSupported => true;
 }
 
 class SecurimageCaptchaRequest extends CaptchaRequest {

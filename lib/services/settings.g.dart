@@ -285,13 +285,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       drawerMode: fields[154] as DrawerMode?,
       showLineBreakInPostInfoRow: fields[155] as bool?,
       useCloudCaptchaSolver: fields[156] as bool?,
+      useHeadlessCloudCaptchaSolver: fields[157] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(153)
+      ..writeByte(154)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -597,7 +598,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(155)
       ..write(obj.showLineBreakInPostInfoRow)
       ..writeByte(156)
-      ..write(obj.useCloudCaptchaSolver);
+      ..write(obj.useCloudCaptchaSolver)
+      ..writeByte(157)
+      ..write(obj.useHeadlessCloudCaptchaSolver);
   }
 
   @override

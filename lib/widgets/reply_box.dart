@@ -153,6 +153,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	static List<String> _previouslyUsedOptions = [];
 	late final Timer _focusTimer;
 	(DateTime, FocusNode)? _lastNearbyFocus;
+	bool _headlessSolveFailed = false;
+	bool _promptForHeadlessSolve = false;
 
 	String get text => _textFieldController.text;
 	set text(String newText) => _textFieldController.text = newText;
@@ -725,6 +727,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		}
 		try {
 			final captchaRequest = await site.getCaptchaRequest(widget.board, widget.threadId);
+			_promptForHeadlessSolve = captchaRequest.cloudSolveSupported;
 			if (!mounted) return;
 			if (captchaRequest is RecaptchaRequest) {
 				hideReplyBox();
@@ -740,17 +743,53 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				showReplyBox();
 			}
 			else if (captchaRequest is Chan4CustomCaptchaRequest) {
-				hideReplyBox();
-				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
-					builder: (context) => OverscrollModalPage(
-						child: Captcha4ChanCustom(
-							site: site,
+				CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
+				if ((settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver ?? false) && !_headlessSolveFailed) {
+					try {
+						final cloudSolution = await headlessSolveCaptcha4ChanCustom(
 							request: captchaRequest,
-							onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+							site: site
+						);
+						if (!mounted) {
+							return;
+						}
+						if (cloudSolution.confident) {
+							_captchaSolution = cloudSolution.solution;
+							showToast(
+								context: context,
+								icon: CupertinoIcons.checkmark_seal,
+								message: 'Solved captcha'
+							);
+						}
+						else {
+							// Cloud solver did not report being "confident"
+							// Just pass the current work so far into the widget
+							initialCloudGuess = cloudSolution;
+						}
+					}
+					catch (e, st) {
+						Future.error(e, st); // Report to crashlytics
+						showToast(
+							context: context,
+							icon: CupertinoIcons.exclamationmark_triangle,
+							message: 'Cloud solve failed: ${e.toStringDio()}'
+						);
+					}
+				}
+				if (!_haveValidCaptcha) {
+					hideReplyBox();
+					_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
+						builder: (context) => OverscrollModalPage(
+							child: Captcha4ChanCustom(
+								site: site,
+								request: captchaRequest,
+								initialCloudGuess: initialCloudGuess,
+								onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+							)
 						)
-					)
-				));
-				showReplyBox();
+					));
+					showReplyBox();
+				}
 			}
 			else if (captchaRequest is SecurimageCaptchaRequest) {
 				hideReplyBox();
@@ -995,6 +1034,31 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			else if (mounted) {
 				showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark, hapticFeedback: false);
 				_maybeShowDubsToast(receipt.id);
+				if (_promptForHeadlessSolve && (settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver == null)) {
+					settings.useHeadlessCloudCaptchaSolver = await showAdaptiveDialog<bool>(
+						context: context,
+						barrierDismissible: true,
+						builder: (context) => AdaptiveAlertDialog(
+							title: const Text('Skip captcha confirmation?'),
+							content: const Text('Cloud captcha solutions will be submitted directly without showing a popup and asking for confirmation.'),
+							actions: [
+								AdaptiveDialogAction(
+									isDefaultAction: true,
+									child: const Text('Skip confirmation'),
+									onPressed: () {
+										Navigator.of(context).pop(true);
+									},
+								),
+								AdaptiveDialogAction(
+									child: const Text('No'),
+									onPressed: () {
+										Navigator.of(context).pop(false);
+									}
+								)
+							]
+						)
+					);
+				}
 			}
 		}
 		catch (e, st) {
@@ -1051,6 +1115,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				);
 			}
 			else {
+				if (e.toStringDio().toLowerCase().contains('captcha')) {
+					// Captcha didn't work. For now, let's disable the auto captcha solver
+					_headlessSolveFailed = true;
+				}
 				if (e is ActionableException) {
 					alertError(context, e.message, actions: e.actions);
 				}
@@ -1060,6 +1128,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			}
 		}
 		_captchaSolution = null;
+		_promptForHeadlessSolve = false;
 	}
 
 	void _pickEmote() async {

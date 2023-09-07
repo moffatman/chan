@@ -3511,6 +3511,27 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						)
 					]
 				),
+				const SizedBox(height: 8),
+				Row(
+					children: [
+						const SizedBox(width: 16),
+						const Icon(CupertinoIcons.checkmark_seal),
+						const SizedBox(width: 8),
+						const Text('Skip confirmation'),
+						const SizedBox(width: 8),
+						const _SettingsHelpButton(
+							helpText: 'Cloud captcha solutions will be submitted directly without showing a popup and asking for confirmation.'
+						),
+						const Spacer(),
+						AdaptiveSwitch(
+							value: settings.useHeadlessCloudCaptchaSolver ?? false,
+							onChanged: (settings.useCloudCaptchaSolver ?? false) ? (setting) {
+								settings.useHeadlessCloudCaptchaSolver = setting;
+							} : null
+						),
+						const SizedBox(width: 16)
+					]
+				),
 				const SizedBox(height: 32),
 				Row(
 					children: [

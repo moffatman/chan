@@ -20,6 +20,238 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:provider/provider.dart';
 
+typedef _CloudGuess = ({
+	String answer,
+	double confidence
+});
+
+typedef CloudGuessedCaptcha4ChanCustom = ({
+	Captcha4ChanCustomChallenge challenge,
+	DateTime? tryAgainAt,
+	Chan4CustomCaptchaSolution solution,
+	int slide,
+	bool confident
+});
+
+Future<Captcha4ChanCustomChallenge> _requestChallenge({
+	required ImageboardSite site,
+	required Chan4CustomCaptchaRequest request,
+	ValueChanged<DateTime>? onCooldown
+}) async {
+	final challengeResponse = await site.client.getUri(request.challengeUrl, options: Options(
+		headers: request.challengeHeaders
+	));
+	if (challengeResponse.statusCode != 200) {
+		throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
+	}
+	dynamic data = challengeResponse.data;
+	if (data is String) {
+		final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(data);
+		if (match == null) {
+			throw Captcha4ChanCustomException('Response doesn\'t match, 4chan must have changed their captcha system');
+		}
+		data = jsonDecode(match.group(1)!)['twister'];
+	}
+	if (data['cd'] != null) {
+		onCooldown?.call(DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2)));
+	}
+	if (data['error'] != null) {
+		throw Captcha4ChanCustomException(data['error']);
+	}
+	Completer<ui.Image>? foregroundImageCompleter;
+	if (data['img'] != null) {
+		foregroundImageCompleter = Completer<ui.Image>();
+		MemoryImage(base64Decode(data['img'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+			foregroundImageCompleter!.complete(info.image);
+		}, onError: (e, st) {
+			foregroundImageCompleter!.completeError(e);
+		}));
+	}
+	Completer<ui.Image>? backgroundImageCompleter;
+	if (data['bg'] != null) {
+		backgroundImageCompleter = Completer<ui.Image>();
+		MemoryImage(base64Decode(data['bg'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+			backgroundImageCompleter!.complete(info.image);
+		}, onError: (e, st) {
+			backgroundImageCompleter!.completeError(e);
+		}));
+	}
+	final foregroundImage = await foregroundImageCompleter?.future;
+	final backgroundImage = await backgroundImageCompleter?.future;
+	return Captcha4ChanCustomChallenge(
+		challenge: data['challenge'],
+		expiresAt: DateTime.now().add(Duration(seconds: data['ttl'].toInt())),
+		foregroundImage: foregroundImage,
+		backgroundImage: backgroundImage,
+		cloudflare: challengeResponse.cloudflare
+	);
+}
+
+Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
+	final fgWidth = challenge.foregroundImage!.width;
+	final fgHeight = challenge.foregroundImage!.height;
+	final fgBytes = (await challenge.foregroundImage!.toByteData())!;
+	final bgWidth = challenge.backgroundImage!.width;
+	final toCheck = <({int offset, int r})>[];
+	for (int x = 0; x < fgWidth - 1; x++) {
+		for (int y = 0; y < fgHeight - 1; y++) {
+			final thisIndex = 4 * (x + (y * fgWidth));
+			final thisR = fgBytes.getUint8(thisIndex);
+			final thisA = fgBytes.getUint8(thisIndex + 3);
+			final rightIndex = thisIndex + 4;
+			final rightA = fgBytes.getUint8(rightIndex + 3);
+			final downIndex = thisIndex + (4 * fgWidth);
+			final downA = fgBytes.getUint8(downIndex + 3);
+			if (thisA > rightA) {
+				// this is the opaque fg pixel
+				toCheck.add((offset: 4 * ((x + 1) + (y * bgWidth)), r: thisR));
+			}
+			else if (thisA < rightA) {
+				// this is the transparent fg pixel
+				final rightR = fgBytes.getUint8(rightIndex);
+				toCheck.add((offset: 4 * (x + (y * bgWidth)), r: rightR));
+			}
+			if (thisA > downA) {
+				// this is the opaque fg pixel
+				toCheck.add((offset: 4 * (x + ((y + 1) * bgWidth)), r: thisR));
+			}
+			else if (thisA < downA) {
+				// this is the transparent fg pixel
+				final downR = fgBytes.getUint8(downIndex);
+				toCheck.add((offset: 4 * (x + (y * bgWidth)), r: downR));
+			}
+		}
+	}
+	int bestSlide = 0;
+	int lowestMismatch = toCheck.length + 1;
+	final maxSlide = bgWidth - fgWidth;
+	final bgBytes = (await challenge.backgroundImage!.toByteData())!;
+	slideloop:
+	for (int xSlide = 0; xSlide < maxSlide; xSlide++) {
+		int mismatch = 0;
+		final offset = 4 * xSlide;
+		for (final check in toCheck) {
+			final thisR = bgBytes.getUint8(check.offset + offset);
+			if (thisR != check.r) {
+				mismatch++;
+				if (mismatch > lowestMismatch) {
+					continue slideloop;
+				}
+			}
+		}
+		lowestMismatch = mismatch;
+		bestSlide = xSlide;
+	}
+	return bestSlide;
+}
+
+Future<_CloudGuess> _cloudGuess({
+	required ImageboardSite site,
+	required ui.Image image
+}) async {
+	final pngData = await image.toByteData(format: ui.ImageByteFormat.png);
+	if (pngData == null) {
+		throw Exception('Could not encode captcha image');
+	}
+	final bytes = pngData.buffer.asUint8List();
+	final response = await site.client.postUri(Uri.https('captcha.chance.surf', '/solve'), 
+		data: bytes,
+		options: Options(
+			responseType: ResponseType.plain,
+			headers: {
+				Headers.contentLengthHeader: bytes.length.toString()
+			},
+			requestEncoder: (request, options) {
+				return bytes;
+			}
+		)
+	).timeout(const Duration(seconds: 5));
+	final answer = response.data as String;
+	if (answer.length > 10) {
+		// Answer shouldn't be that long
+		throw FormatException('Something seems wrong with cloud solver response', answer);
+	}
+	return (
+		answer: answer,
+		confidence: double.tryParse(response.headers.value('Chance-Confidence') ?? '') ?? 0
+	);
+}
+
+Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
+	required ImageboardSite site,
+	required Chan4CustomCaptchaRequest request
+}) async {
+	DateTime? tryAgainAt;
+
+	final challenge = await _requestChallenge(
+		site: site,
+		request: request,
+		onCooldown: (c) => tryAgainAt = c
+	);
+
+	final Chan4CustomCaptchaSolution solution;
+	final bool confident;
+	int slide = 0;
+
+	if (challenge.foregroundImage == null && challenge.backgroundImage == null) {
+		if (challenge.challenge == 'noop') {
+			solution = Chan4CustomCaptchaSolution(
+				challenge: 'noop',
+				response: '',
+				expiresAt: challenge.expiresAt,
+				alignedImage: null,
+				cloudflare: challenge.cloudflare
+			);
+			confident = true;
+		}
+		else {
+			throw Captcha4ChanCustomException('Unknown error, maybe the captcha format has changed: ${challenge.challenge}');
+		}
+	}
+	else {
+		final ui.Image image;
+
+		if (challenge.backgroundImage != null) {
+			slide = await _alignImage(challenge);
+			final recorder = ui.PictureRecorder();
+			final canvas = Canvas(recorder);
+			final width = challenge.foregroundImage!.width;
+			final height = challenge.foregroundImage!.height;
+			_Captcha4ChanCustomPainter(
+				backgroundImage: challenge.backgroundImage,
+				foregroundImage: challenge.foregroundImage!,
+				backgroundSlide: slide
+			).paint(canvas, Size(width.toDouble(), height.toDouble()));
+			image = await recorder.endRecording().toImage(width, height);
+		}
+		else {
+			image = challenge.foregroundImage!;
+		}
+
+		final cloudGuess = await _cloudGuess(
+			site: site,
+			image: image
+		);
+
+		solution = Chan4CustomCaptchaSolution(
+			challenge: challenge.challenge,
+			response: cloudGuess.answer,
+			expiresAt: challenge.expiresAt,
+			alignedImage: image,
+			cloudflare: challenge.cloudflare
+		);
+		confident = cloudGuess.confidence >= 1;
+	}
+
+	return (
+		challenge: challenge,
+		solution: solution,
+		tryAgainAt: tryAgainAt,
+		slide: slide,
+		confident: confident
+	);
+}
+
 class _ModifiedBouncingScrollSimulation extends Simulation {
   _ModifiedBouncingScrollSimulation({
     required double position,
@@ -132,11 +364,13 @@ class Captcha4ChanCustom extends StatefulWidget {
 	final ImageboardSite site;
 	final Chan4CustomCaptchaRequest request;
 	final ValueChanged<Chan4CustomCaptchaSolution> onCaptchaSolved;
+	final CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
 
 	const Captcha4ChanCustom({
 		required this.site,
 		required this.request,
 		required this.onCaptchaSolved,
+		this.initialCloudGuess,
 		Key? key
 	}) : super(key: key);
 
@@ -177,6 +411,7 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 	final ui.Image foregroundImage;
 	final ui.Image? backgroundImage;
 	final int backgroundSlide;
+
 	_Captcha4ChanCustomPainter({
 		required this.foregroundImage,
 		required this.backgroundImage,
@@ -242,44 +477,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		});
 		try {
 			final image = await _screenshotImage();
-			final pngData = await image.toByteData(format: ui.ImageByteFormat.png);
-			if (pngData == null) {
-				throw Exception('Could not encode captcha image');
-			}
-			final bytes = pngData.buffer.asUint8List();
-			final response = await widget.site.client.postUri(Uri.https('captcha.chance.surf', '/solve'), 
-				data: bytes,
-				options: Options(
-					responseType: ResponseType.plain,
-					headers: {
-						Headers.contentLengthHeader: bytes.length.toString()
-					},
-					requestEncoder: (request, options) {
-						return bytes;
-					}
-				)
-			).timeout(const Duration(seconds: 5));
-			final answer = response.data as String;
-			if (answer.length > 10) {
-				// Answer shouldn't be that long
-				throw FormatException('Something seems wrong with cloud solver response', answer);
-			}
-			final newGuess = Chan4CustomCaptchaGuess.dummy(answer);
-			_lastGuess = newGuess;
-			_lastGuesses = Chan4CustomCaptchaGuesses.dummy(answer, max(answer.length, 6));
-			numLetters = newGuess.numLetters;
-			final selection = _solutionController.selection;
-			_previousText = ''; // Force animation of all pickers
-			_solutionController.text = newGuess.guess;
-			_solutionController.selection = TextSelection(
-				baseOffset: min(numLetters - 1, selection.baseOffset),
-				extentOffset: min(numLetters, selection.extentOffset)
-			);
-			_guessConfidences = newGuess.confidences.toList();
-			if (mounted && context.read<EffectiveSettings>().supportMouse.value) {
-				_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
-				_solutionNode.requestFocus();
-			}
+			_useCloudGuess((await _cloudGuess(
+				site: widget.site,
+				image: image
+			)).answer);
 		}
 		catch (e, st) {
 			if (mounted) {
@@ -296,6 +497,25 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_guessingProgress = 1;
 			_greyOutPickers = false;
 		});
+	}
+
+	void _useCloudGuess(String answer) {
+		final newGuess = Chan4CustomCaptchaGuess.dummy(answer);
+		_lastGuess = newGuess;
+		_lastGuesses = Chan4CustomCaptchaGuesses.dummy(answer, max(answer.length, 6));
+		numLetters = newGuess.numLetters;
+		final selection = _solutionController.selection;
+		_previousText = ''; // Force animation of all pickers
+		_solutionController.text = newGuess.guess;
+		_solutionController.selection = TextSelection(
+			baseOffset: min(numLetters - 1, selection.baseOffset),
+			extentOffset: min(numLetters, selection.extentOffset)
+		);
+		_guessConfidences = newGuess.confidences.toList();
+		if (mounted && context.read<EffectiveSettings>().supportMouse.value) {
+			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
+			_solutionNode.requestFocus();
+		}
 	}
 
 	Future<void> _animateLocalGuess() async {
@@ -401,56 +621,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		));
 	}
 
-	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
-		final challengeResponse = await widget.site.client.getUri(widget.request.challengeUrl, options: Options(
-			headers: widget.request.challengeHeaders
-		));
-		if (challengeResponse.statusCode != 200) {
-			throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
-		}
-		dynamic data = challengeResponse.data;
-		if (data is String) {
-			final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(data);
-			if (match == null) {
-				throw Captcha4ChanCustomException('Response doesn\'t match, 4chan must have changed their captcha system');
-			}
-			data = jsonDecode(match.group(1)!)['twister'];
-		}
-		if (data['cd'] != null) {
-			tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2));
-		}
-		if (data['error'] != null) {
-			throw Captcha4ChanCustomException(data['error']);
-		}
-		Completer<ui.Image>? foregroundImageCompleter;
-		if (data['img'] != null) {
-			foregroundImageCompleter = Completer<ui.Image>();
-			MemoryImage(base64Decode(data['img'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
-				foregroundImageCompleter!.complete(info.image);
-			}, onError: (e, st) {
-				foregroundImageCompleter!.completeError(e);
-			}));
-		}
-		Completer<ui.Image>? backgroundImageCompleter;
-		if (data['bg'] != null) {
-			backgroundImageCompleter = Completer<ui.Image>();
-			MemoryImage(base64Decode(data['bg'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
-				backgroundImageCompleter!.complete(info.image);
-			}, onError: (e, st) {
-				backgroundImageCompleter!.completeError(e);
-			}));
-		}
-		final foregroundImage = await foregroundImageCompleter?.future;
-		final backgroundImage = await backgroundImageCompleter?.future;
-		return Captcha4ChanCustomChallenge(
-			challenge: data['challenge'],
-			expiresAt: DateTime.now().add(Duration(seconds: data['ttl'].toInt())),
-			foregroundImage: foregroundImage,
-			backgroundImage: backgroundImage,
-			cloudflare: challengeResponse.cloudflare
-		);
-	}
-
 	void _tryRequestChallenge() async {
 		final settings = context.read<EffectiveSettings>();
 		try {
@@ -460,7 +630,13 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				challenge?.dispose();
 				challenge = null;
 			});
-			challenge = await _requestChallenge();
+			challenge = await _requestChallenge(
+				site: widget.site,
+				request: widget.request,
+				onCooldown: (time) {
+					tryAgainAt = time;
+				}
+			);
 			if (!mounted) return;
 			if (challenge!.foregroundImage == null && challenge!.backgroundImage == null) {
 				if (challenge!.challenge == 'noop') {
@@ -478,8 +654,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				}
 			}
 			if (challenge!.backgroundImage != null) {
-				await _alignImage();
+				final bestSlide = await _alignImage(challenge!);
 				if (!mounted) return;
+				setState(() {
+					backgroundSlide = bestSlide;
+				});
 			}
 			if (settings.useNewCaptchaForm) {
 				await _animateGuess();
@@ -496,60 +675,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			if (!mounted) return;
 			setState(() {
 				errorMessage = e.toStringDio();
-			});
-		}
-	}
-
-	Future<void> _alignImage() async {
-		int? lowestMismatch;
-		int? bestSlide;
-		final width = challenge!.foregroundImage!.width;
-		final height = challenge!.foregroundImage!.height;
-		final foregroundBytes = (await challenge!.foregroundImage!.toByteData())!;
-		final checkRights = [];
-		final checkDowns = [];
-		for (int x = 0; x < width - 1; x++) {
-			for (int y = 0; y < height - 1; y++) {
-				final thisA = foregroundBytes.getUint8((4 * (x + (y * width))) + 3);
-				final rightA = foregroundBytes.getUint8((4 * ((x + 1) + (y * width))) + 3);
-				final downA = foregroundBytes.getUint8((4 * (x + ((y + 1) * width))) + 3);
-				if (thisA != rightA) {
-					checkRights.add(4 * (x + (y * width)));
-				}
-				if (thisA != downA) {
-					checkDowns.add(4 * (x + (y * width)));
-				}
-			}
-		}
-		for (var i = 0; i < (challenge!.backgroundImage!.width - width); i++) {
-			final recorder = ui.PictureRecorder();
-			final canvas = Canvas(recorder);
-			_Captcha4ChanCustomPainter(
-				backgroundImage: challenge!.backgroundImage!,
-				foregroundImage: challenge!.foregroundImage!,
-				backgroundSlide: i
-			).paint(canvas, Size(width.toDouble(), height.toDouble()));
-			final image = await recorder.endRecording().toImage(width, height);
-			final bytes = (await image.toByteData())!;
-			int mismatch = 0;
-			for (final checkRight in checkRights) {
-				final thisR = bytes.getUint8(checkRight);
-				final rightR = bytes.getUint8(checkRight + 4);
-				mismatch += (thisR - rightR).abs();
-			}
-			for (final checkDown in checkDowns) {
-				final thisR = bytes.getUint8(checkDown);
-				final downR = bytes.getUint8(checkDown + (4 * width));
-				mismatch += (thisR - downR).abs();
-			}
-			if (lowestMismatch == null || mismatch < lowestMismatch) {
-				lowestMismatch = mismatch;
-				bestSlide = i;
-			}
-		}
-		if (bestSlide != null) {
-			setState(() {
-				backgroundSlide = bestSlide!;
 			});
 		}
 	}
@@ -672,7 +797,22 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		else {
 			_greyOutPickers = false;
 		}
-		_tryRequestChallenge();
+		final guess = widget.initialCloudGuess;
+		if (guess != null) {
+			challenge = guess.challenge;
+			backgroundSlide = guess.slide;
+			tryAgainAt = guess.tryAgainAt;
+			Future.delayed(const Duration(milliseconds: 10), () {
+				_useCloudGuess(guess.solution.response);
+				setState(() {
+					_guessingProgress = 1;
+					_greyOutPickers = false;
+				});
+			});
+		}
+		else {
+			_tryRequestChallenge();
+		}
 	}
 
 	Widget _cooldownedRetryButton(BuildContext context) {
@@ -751,7 +891,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									child: GestureDetector(
 										onDoubleTap: () async {
 											if (challenge?.backgroundImage != null) {
-												await _alignImage();
+												backgroundSlide = await _alignImage(challenge!);
+												setState(() {});
 											}
 											await _animateGuess();
 										},
