@@ -1460,6 +1460,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 
 	Widget _buildTextField(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
+		final snippets = context.read<ImageboardSite>().getBoardSnippets(widget.board);
 		final settings = context.watch<EffectiveSettings>();
 		return CallbackShortcuts(
 			bindings: {
@@ -1526,7 +1527,22 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												ContextMenuButtonItem(
 													onPressed: _handleImagePaste,
 													label: 'Paste image'
-												)
+												),
+												if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
+													return ContextMenuButtonItem(
+														onPressed: () {
+															final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
+															editableTextState.userUpdateTextEditingValue(
+																editableTextState.textEditingValue.replaced(
+																	editableTextState.textEditingValue.selection,
+																	snippet.wrap(selectedText)
+																),
+																SelectionChangedCause.toolbar
+															);
+														},
+														label: snippet.name
+													);
+												})
 											]
 										),
 										placeholder: 'Comment',
