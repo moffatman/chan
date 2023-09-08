@@ -162,7 +162,7 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	InlineSpan build(context, zone, settings, theme, options) {
-		PostSpanRenderOptions effectiveOptions = options.copyWith(maxLines: 99999);
+		PostSpanRenderOptions effectiveOptions = options.copyWith(maxLines: 99999, ensureTrailingNewline: false);
 		final renderChildren = <InlineSpan>[];
 		List<PostSpan> effectiveChildren = children;
 		if (options.postInject != null) {
