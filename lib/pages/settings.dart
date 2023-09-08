@@ -2143,7 +2143,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															height: 175,
 															decoration: threadAndPostRowDecoration,
 															child: IgnorePointer(
-																child: _buildFakePostRow()
+																child: ClipRect(
+																	child: _buildFakePostRow()
+																)
 															)
 														),
 														Row(
