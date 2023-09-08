@@ -149,10 +149,10 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 								)
 							),
 							AdaptiveFilledButton(
-								onPressed: (site.supportsSearch(widget.board).name || site.supportsSearch(null).name) ? () {
+								onPressed: (site.supportsSearch(widget.board).options.name || site.supportsSearch(null).options.name) ? () {
 									openSearch(context: context, query: ImageboardArchiveSearchQuery(
 										imageboardKey: context.read<Imageboard>().key,
-										boards: site.supportsSearch(null).name ? [] : [widget.board],
+										boards: site.supportsSearch(null).options.name ? [] : [widget.board],
 										name: widget.username
 									));
 								} : null,
@@ -161,7 +161,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 									children: [
 										const Icon(CupertinoIcons.person_fill),
 										const SizedBox(width: 8),
-										Text('Search ${site.supportsSearch(null).name ? site.name : site.formatBoardName(site.persistence.getBoard(widget.board))}')
+										Text('Search ${site.supportsSearch(null).options.name ? site.name : site.formatBoardName(site.persistence.getBoard(widget.board))}')
 									]
 								)
 							)

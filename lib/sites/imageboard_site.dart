@@ -771,6 +771,18 @@ enum ImageboardSearchOptions {
 	};
 }
 
+class ImageboardSearchMetadata {
+	final String name;
+	final ImageboardSearchOptions options;
+	const ImageboardSearchMetadata({
+		required this.name,
+		required this.options
+	});
+
+	@override
+	String toString() => 'ImageboardSearchMetadata(name: $name, options: $options)';
+}
+
 class ImageboardUserInfo {
 	final String username;
 	final Uri webUrl;
@@ -1043,11 +1055,17 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get explicitIds => true;
 	bool get useTree => false;
 	bool get showImageCount => true;
-	ImageboardSearchOptions supportsSearch(String? board) {
+	ImageboardSearchMetadata supportsSearch(String? board) {
 		if (board != null && archives.isNotEmpty) {
-			return ImageboardSearchOptions.all;
+			return ImageboardSearchMetadata(
+				name: '$name archives',
+				options: ImageboardSearchOptions.all
+			);
 		}
-		return ImageboardSearchOptions.none;
+		return ImageboardSearchMetadata(
+			name: name,
+			options: ImageboardSearchOptions.none
+		);
 	}
 	bool get supportsPosting => true;
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required bool interactive}) async => throw UnimplementedError();

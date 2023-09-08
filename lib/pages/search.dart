@@ -240,14 +240,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final firstCompatibleImageboard = ImageboardRegistry.instance.imageboards.tryFirstWhere((i) => i.site.supportsSearch(null).text || i.site.supportsSearch('').text);
+		final firstCompatibleImageboard = ImageboardRegistry.instance.imageboards.tryFirstWhere((i) => i.site.supportsSearch(null).options.text || i.site.supportsSearch('').options.text);
 		if (firstCompatibleImageboard == null) {
 			return const Center(
 				child: ErrorMessageCard('No added sites with search support')
 			);
 		}
 		final currentImageboard = Persistence.tabs[Persistence.currentTabIndex].imageboard ?? firstCompatibleImageboard;
-		if (currentImageboard.key != _lastImageboardKey && (currentImageboard.site.supportsSearch(null).text || currentImageboard.site.supportsSearch('').text)) {
+		if (currentImageboard.key != _lastImageboardKey && (currentImageboard.site.supportsSearch(null).options.text || currentImageboard.site.supportsSearch('').options.text)) {
 			if (query.imageboardKey == _lastImageboardKey) {
 				query.imageboardKey = currentImageboard.key;
 			}
@@ -301,7 +301,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 						builder: (ctx) => BoardSwitcherPage(
 							initialImageboardKey: query.imageboardKey,
-							filterImageboards: (b) => b.site.supportsSearch('').text,
+							filterImageboards: (b) => b.site.supportsSearch('').options.text,
 							allowPickingWholeSites: true
 						)
 					));
@@ -314,7 +314,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				}
 			)
 		);
-		final support = ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsSearch(query.boards.tryFirst);
+		final support = imageboard?.site.supportsSearch(query.boards.tryFirst);
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			disableAutoBarHiding: true, // Don't hide search bar
@@ -325,6 +325,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							child: LayoutBuilder(
 								builder: (context, constraints) {
 									final showBoardName = constraints.maxWidth > 250;
+									final searchPlaceholderPrefix = showBoardName ? '' : query.boards.tryFirst ?? '';
 									return Stack(
 										fit: StackFit.expand,
 										children: [
@@ -358,7 +359,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																	color: ChanceTheme.backgroundColorOf(context)
 																),
 																child: AdaptiveSearchTextField(
-																	placeholder: 'Search ${showBoardName ? 'archives' : query.boards.tryFirst ?? query.imageboard?.site.name ?? 'archives'}...',
+																	placeholder: 'Search ${searchPlaceholderPrefix.isEmpty ? '' : '$searchPlaceholderPrefix on '}${support?.name ?? 'archives'}...',
 																	focusNode: _focusNode,
 																	controller: _controller,
 																	onSubmitted: (String q) {
@@ -509,12 +510,12 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				switchOutCurve: Curves.easeOut,
 				child: (_searchFocused &&
 				        query.imageboardKey != null &&
-								(support?.name ?? false)
+								(support?.options.name ?? false)
 								) ? ListView(
 					key: const ValueKey(true),
 					children: [
 						const SizedBox(height: 16),
-						if (support == ImageboardSearchOptions.all) ...[
+						if (support?.options == ImageboardSearchOptions.all) ...[
 							AdaptiveChoiceControl<PostTypeFilter>(
 								children: const {
 									PostTypeFilter.none: (null, 'All posts'),
@@ -623,7 +624,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							runAlignment: WrapAlignment.center,
 							children: [
 								for (final field in [
-									if (support == ImageboardSearchOptions.all) (
+									if (support?.options == ImageboardSearchOptions.all) (
 										name: 'Subject',
 										cb: (String s) => query.subject = s,
 										controller: _subjectFieldController
@@ -633,7 +634,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										cb: (String s) => query.name = s,
 										controller: _nameFieldController
 									),
-									if (support == ImageboardSearchOptions.all) (
+									if (support?.options == ImageboardSearchOptions.all) (
 										name: 'Trip',
 										cb: (String s) => query.trip = s,
 										controller: _tripFieldController
@@ -655,7 +656,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								)
 							]
 						),
-						if (support == ImageboardSearchOptions.all && query.md5 != null) Container(
+						if (support?.options == ImageboardSearchOptions.all && query.md5 != null) Container(
 							padding: const EdgeInsets.only(top: 16),
 							alignment: Alignment.center,
 							child: Text('MD5: ${query.md5}')

@@ -999,7 +999,7 @@ class _BoardPageState extends State<BoardPage> {
 														itemBuilder: (context, thread) => itemBuilder(context, thread),
 														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
 														filterHint: 'Search in board',
-														filterAlternative: (widget.onWantArchiveSearch == null || !imageboard!.site.supportsSearch(board?.name).text) ? null : FilterAlternative(
+														filterAlternative: (widget.onWantArchiveSearch == null || !imageboard!.site.supportsSearch(board?.name).options.text) ? null : FilterAlternative(
 															name: '${board == null ? '' : site.formatBoardName(board!)} archives',
 															handler: (s) {
 																widget.onWantArchiveSearch!(imageboard.key, board!.name, s);

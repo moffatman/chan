@@ -2005,7 +2005,7 @@ TextSpan buildPostInfoRow({
 									postsIdsToShow: postIdsToShow,
 									zone: zone,
 									clearStack: true,
-									header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(post.board).name || zone.imageboard.site.supportsSearch(null).name) ? UserInfoPanel(
+									header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(post.board).options.name || zone.imageboard.site.supportsSearch(null).options.name) ? UserInfoPanel(
 										username: post.name,
 										board: post.board
 									) : null

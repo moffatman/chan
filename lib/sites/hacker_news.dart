@@ -552,8 +552,11 @@ class SiteHackerNews extends ImageboardSite {
 	@override
 	bool get showImageCount => false;
 	@override
-	ImageboardSearchOptions supportsSearch(String? board) {
-		return ImageboardSearchOptions.nameAndTextOnly;
+	ImageboardSearchMetadata supportsSearch(String? board) {
+		return ImageboardSearchMetadata(
+			options: ImageboardSearchOptions.nameAndTextOnly,
+			name: name
+		);
 	}
 	@override
 	bool get supportsPosting => false;

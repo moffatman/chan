@@ -1018,9 +1018,12 @@ class Site4Chan extends ImageboardSite {
 	];
 
 	@override
-	ImageboardSearchOptions supportsSearch(String? board) {
+	ImageboardSearchMetadata supportsSearch(String? board) {
 		if (board == null) {
-			return ImageboardSearchOptions.textOnly;
+			return ImageboardSearchMetadata(
+				name: searchUrl,
+				options: ImageboardSearchOptions.textOnly
+			);
 		}
 		return super.supportsSearch(board);
 	}
