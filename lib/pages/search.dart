@@ -346,7 +346,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 															padding: const EdgeInsets.only(top: 4, bottom: 4),
 															child: DecoratedBox(
 																decoration: BoxDecoration(
-																	borderRadius: const BorderRadius.all(Radius.circular(4)),
+																	borderRadius: ChanceTheme.materialOf(context) ? const BorderRadius.all(Radius.circular(4)) : const BorderRadius.all(Radius.circular(9)),
 																	color: ChanceTheme.backgroundColorOf(context)
 																),
 																child: AdaptiveSearchTextField(
