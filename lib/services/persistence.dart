@@ -938,6 +938,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	final EfficientlyStoredIntSet postIdsToStartRepliesAtBottom;
 	@HiveField(28, defaultValue: [])
 	List<int> overrideShowPostIds = [];
+	@HiveField(29, defaultValue: '')
+	String replyOptions;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -952,6 +954,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		EfficientlyStoredIntSet? unseenPostIds,
 		this.postSortingMethod = PostSortingMethod.none,
 		EfficientlyStoredIntSet? postIdsToStartRepliesAtBottom,
+		this.replyOptions = '',
 	}) : lastOpenedTime = DateTime.now(),
 	     unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({}),
 			 postIdsToStartRepliesAtBottom = postIdsToStartRepliesAtBottom ?? EfficientlyStoredIntSet({});

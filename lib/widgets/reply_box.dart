@@ -85,7 +85,7 @@ class ReplyBox extends StatefulWidget {
 	final VoidCallback? onVisibilityChanged;
 	final bool isArchived;
 	final bool fullyExpanded;
-	final String initialOptions;
+	final String? initialOptions;
 	final ValueChanged<String>? onOptionsChanged;
 	final String? initialFilePath;
 	final ValueChanged<String?>? onFilePathChanged;
@@ -103,7 +103,7 @@ class ReplyBox extends StatefulWidget {
 		this.onVisibilityChanged,
 		this.isArchived = false,
 		this.fullyExpanded = false,
-		this.initialOptions = '',
+		this.initialOptions,
 		this.onOptionsChanged,
 		this.initialFilePath,
 		this.onFilePathChanged,
@@ -155,6 +155,11 @@ class ReplyBoxState extends State<ReplyBox> {
 	(DateTime, FocusNode)? _lastNearbyFocus;
 	bool _headlessSolveFailed = false;
 	bool _promptForHeadlessSolve = false;
+
+	ThreadIdentifier? get thread => switch (widget.threadId) {
+		int threadId => ThreadIdentifier(widget.board, threadId),
+		null => null
+	};
 
 	String get text => _textFieldController.text;
 	set text(String newText) => _textFieldController.text = newText;
@@ -284,11 +289,12 @@ class ReplyBoxState extends State<ReplyBox> {
 			_attachmentScan = otherState._attachmentScan;
 			_captchaSolution = otherState._captchaSolution;
 		}
+		final persistence = context.read<Persistence>();
 		_textFieldController = TextEditingController(text: widget.initialText);
 		_subjectFieldController = TextEditingController(text: widget.initialSubject);
-		_optionsFieldController = TextEditingController(text: widget.initialOptions);
+		_optionsFieldController = TextEditingController(text: widget.initialOptions ?? persistence.getThreadStateIfExists(thread)?.replyOptions);
 		_filenameController = TextEditingController(text: otherState?._filenameController.text ?? '');
-		_nameFieldController = TextEditingController(text: context.read<Persistence>().browserState.postingNames[widget.board]);
+		_nameFieldController = TextEditingController(text: persistence.browserState.postingNames[widget.board]);
 		_textFocusNode = FocusNode();
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
@@ -328,7 +334,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (oldWidget.board != widget.board || oldWidget.threadId != widget.threadId) {
 			_textFieldController.text = widget.initialText;
 			_subjectFieldController.text = widget.initialSubject;
-			_optionsFieldController.text = widget.initialOptions;
+			_optionsFieldController.text = widget.initialOptions ?? '';
 			attachment = null;
 			_attachmentScan = null;
 			spoiler = false;
@@ -411,9 +417,20 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	void showReplyBox() {
 		_checkPreviousPostReceipts();
-		if (_nameFieldController.text.isEmpty && (context.read<Persistence>().browserState.postingNames[widget.board]?.isNotEmpty ?? false)) {
-			_nameFieldController.text = context.read<Persistence>().browserState.postingNames[widget.board] ?? '';
-			_showOptions = true;
+		final persistence = context.read<Persistence>();
+		if (_nameFieldController.text.isEmpty) {
+			final name = persistence.browserState.postingNames[widget.board];
+			if (name?.isNotEmpty ?? false) {
+				_nameFieldController.text = name ?? '';
+				_showOptions = true;
+			}
+		}
+		if (_optionsFieldController.text.isEmpty) {
+			final options = persistence.getThreadStateIfExists(thread)?.replyOptions;
+			if (options?.isNotEmpty ?? false) {
+				_optionsFieldController.text = options ?? '';
+				_showOptions = true;
+			}
 		}
 		setState(() {
 			_show = true;
@@ -1434,6 +1451,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 
 	Widget _buildOptions(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		final persistence = context.watch<Persistence>();
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
@@ -1518,6 +1536,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								icon: const Icon(CupertinoIcons.list_bullet, size: 20)
 							),
 							onChanged: (s) {
+								persistence.getThreadStateIfExists(thread)
+							    ?..replyOptions = s
+									..save();
 								widget.onOptionsChanged?.call(s);
 							}
 						)
