@@ -1545,3 +1545,25 @@ extension ToCss on Color {
 	String toCssRgba() => 'rgba($red, $green, $blue, $opacity)';
 	String toCssHex() => '#${red.toRadixString(16).padLeft(2, '0')}${green.toRadixString(16).padLeft(2, '0')}${blue.toRadixString(16).padLeft(2, '0')}';
 }
+
+class NotificationListener2<T1 extends Notification, T2 extends Notification> extends StatelessWidget {
+	final Widget child;
+	final NotificationListenerCallback<Notification> onNotification;
+
+	const NotificationListener2({
+		required this.child,
+		required this.onNotification,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return NotificationListener<T1>(
+			onNotification: onNotification,
+			child: NotificationListener<T2>(
+				onNotification: onNotification,
+				child: child
+			)
+		);
+	}
+}

@@ -1611,7 +1611,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen(_onDevNotificationTapped));
 		}
 		final settings = context.watch<EffectiveSettings>();
-		Widget child = (androidDrawer || isScreenWide) ? NotificationListener<ScrollNotification>(
+		Widget child = (androidDrawer || isScreenWide) ? NotificationListener2<ScrollNotification, ScrollMetricsNotification>(
 			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(
 				actions: {
@@ -1712,7 +1712,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					)
 				)
 			)
-		) : NotificationListener<ScrollNotification>(
+		) : NotificationListener2<ScrollNotification, ScrollMetricsNotification>(
 			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(
 				actions: {

@@ -24,37 +24,47 @@ class ScrollTracker {
 		return _instance ??= ScrollTracker._();
 	}
 
-	bool onNotification(ScrollNotification notification) {
-		final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
-		if (notification is ScrollStartNotification) {
-			isScrolling.value = true;
-			_thisScrollHasDragDetails = false;
-		}
-		else if (notification is ScrollEndNotification) {
-			isScrolling.value = false;
-			if (notification.metrics.extentAfter < 100 && isMeaningfullyScrollable) {
-				// At the bottom of the scroll view. Probably we want to show stuff again.
-				slowScrollDirection.value = VerticalDirection.up;
+	bool onNotification(Notification notification) {
+		if (notification is ScrollNotification) {
+			final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
+			if (notification is ScrollStartNotification) {
+				isScrolling.value = true;
+				_thisScrollHasDragDetails = false;
 			}
-			slowScrollDirection.value = null;
-		}
-		else if (notification is ScrollUpdateNotification) {
-			_thisScrollHasDragDetails |= notification.dragDetails != null;
-			if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && isMeaningfullyScrollable) {
-				final delta = notification.scrollDelta ?? 0;
-				if ((notification.metrics.pixels > notification.metrics.minScrollExtent || delta < 0) &&
-				    (notification.metrics.pixels < notification.metrics.maxScrollExtent || delta > 0)) {
-					_accumulatedScrollDelta += delta;
-				}
-				_accumulatedScrollDelta = _accumulatedScrollDelta.clamp(-51, 51);
-				if (_accumulatedScrollDelta > 50 && slowScrollDirection.value != VerticalDirection.down) {
-					_accumulatedScrollDelta = 0;
-					slowScrollDirection.value = VerticalDirection.down;
-				}
-				else if (_accumulatedScrollDelta < -50 && slowScrollDirection.value != VerticalDirection.up) {
-					_accumulatedScrollDelta = 0;
+			else if (notification is ScrollEndNotification) {
+				isScrolling.value = false;
+				if (notification.metrics.extentAfter < 100 && isMeaningfullyScrollable) {
+					// At the bottom of the scroll view. Probably we want to show stuff again.
 					slowScrollDirection.value = VerticalDirection.up;
 				}
+				slowScrollDirection.value = null;
+			}
+			else if (notification is ScrollUpdateNotification) {
+				_thisScrollHasDragDetails |= notification.dragDetails != null;
+				if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && isMeaningfullyScrollable) {
+					final delta = notification.scrollDelta ?? 0;
+					if ((notification.metrics.pixels > notification.metrics.minScrollExtent || delta < 0) &&
+							(notification.metrics.pixels < notification.metrics.maxScrollExtent || delta > 0)) {
+						_accumulatedScrollDelta += delta;
+					}
+					_accumulatedScrollDelta = _accumulatedScrollDelta.clamp(-51, 51);
+					if (_accumulatedScrollDelta > 50 && slowScrollDirection.value != VerticalDirection.down) {
+						_accumulatedScrollDelta = 0;
+						slowScrollDirection.value = VerticalDirection.down;
+					}
+					else if (_accumulatedScrollDelta < -50 && slowScrollDirection.value != VerticalDirection.up) {
+						_accumulatedScrollDelta = 0;
+						slowScrollDirection.value = VerticalDirection.up;
+					}
+				}
+			}
+		}
+		else if (notification is ScrollMetricsNotification) {
+			final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
+			if (!isMeaningfullyScrollable) {
+				// Scrollable size has shrunk, show the bars
+				slowScrollDirection.value = VerticalDirection.up;
+				slowScrollDirection.value = null;
 			}
 		}
 		return false;
@@ -102,7 +112,11 @@ class _AncestorScrollBuilderState extends State<AncestorScrollBuilder> {
 	late VerticalDirection direction;
 
 	void _onSlowScrollDirectionChange() async {
+		final lastDirection = direction;
 		direction = ScrollTracker.instance.slowScrollDirection.value ?? direction;
+		if (direction == lastDirection) {
+			return;
+		}
 		await SchedulerBinding.instance.endOfFrame;
 		if (mounted) {
 			setState(() {});
