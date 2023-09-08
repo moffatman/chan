@@ -230,6 +230,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		setState(() {});
 	}
 
+	void _submitQuery() {
+		FocusManager.instance.primaryFocus!.unfocus();
+		setState(() {
+			_searchFocused = false;
+		});
+		widget.onSearchComposed(query);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final firstCompatibleImageboard = ImageboardRegistry.instance.imageboards.tryFirstWhere((i) => i.site.supportsSearch(null).text || i.site.supportsSearch('').text);
@@ -354,9 +362,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																	focusNode: _focusNode,
 																	controller: _controller,
 																	onSubmitted: (String q) {
-																		_controller.clear();
-																		FocusManager.instance.primaryFocus!.unfocus();
-																		widget.onSearchComposed(query);
+																		_submitQuery();
 																	},
 																	enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
 																	smartQuotesType: SmartQuotesType.disabled,
@@ -366,6 +372,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																	onSuffixTap: () {
 																		_focusNode.unfocus();
 																		_controller.clear();
+																		_nameFieldController.clear();
+																		_subjectFieldController.clear();
+																		_tripFieldController.clear();
 																		_searchFocused = false;
 																		query = ImageboardArchiveSearchQuery(
 																			imageboardKey: query.imageboardKey,
@@ -650,6 +659,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							padding: const EdgeInsets.only(top: 16),
 							alignment: Alignment.center,
 							child: Text('MD5: ${query.md5}')
+						),
+						Container(
+							padding: const EdgeInsets.only(top: 16),
+							alignment: Alignment.center,
+							child: AdaptiveFilledButton(
+								onPressed: _submitQuery,
+								child: const Text('Search')
+							)
 						)
 					]
 				) : ListView(
