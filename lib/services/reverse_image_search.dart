@@ -41,7 +41,7 @@ List<ContextMenuAction> buildImageSearchActions(BuildContext context, Future<Att
 					openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
 						'image_url': attachment._urlForSearch,
 						'safe': 'off',
-						'sbisrc': 'is'
+						'sbisrc': 'cr_1'
 					}));
 				}
 			},
