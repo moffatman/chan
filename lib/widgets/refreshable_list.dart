@@ -2285,7 +2285,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													)
 												)
 											)
-											else if (widget.disableUpdates) const SliverSafeArea(
+											else if (widget.disableUpdates || widget.disableBottomUpdates) const SliverSafeArea(
 												top: false,
 												sliver: SliverToBoxAdapter(
 													child: SizedBox.shrink()
