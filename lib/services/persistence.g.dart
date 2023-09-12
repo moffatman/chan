@@ -93,13 +93,14 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..firstVisiblePostId = fields[23] as int?
       ..firstVisiblePostAlignment = fields[25] as double?
       ..overrideShowPostIds =
-          fields[28] == null ? [] : (fields[28] as List).cast<int>();
+          fields[28] == null ? [] : (fields[28] as List).cast<int>()
+      ..lastKnownTreeMaxItemId = fields[30] as int?;
   }
 
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(29)
+      ..writeByte(30)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -154,6 +155,8 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..write(obj.overrideShowPostIds)
       ..writeByte(29)
       ..write(obj.replyOptions)
+      ..writeByte(30)
+      ..write(obj.lastKnownTreeMaxItemId)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)
@@ -378,13 +381,15 @@ class PersistentBrowserStateAdapter
           ? {}
           : (fields[25] as Map).map((dynamic k, dynamic v) =>
               MapEntry(k as String, (v as List).cast<int>())),
+      treeModeNewRepliesAreLinear:
+          fields[26] == null ? true : fields[26] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(22)
+      ..writeByte(23)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -428,7 +433,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(24)
       ..write(obj.treeModeRepliesToOPAreTopLevel)
       ..writeByte(25)
-      ..write(obj.overrideShowIds);
+      ..write(obj.overrideShowIds)
+      ..writeByte(26)
+      ..write(obj.treeModeNewRepliesAreLinear);
   }
 
   @override

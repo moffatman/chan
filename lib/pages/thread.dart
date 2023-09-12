@@ -1078,6 +1078,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);
 		final treeModeCollapsedPostsShowBody = context.select<Persistence, bool>((s) => s.browserState.treeModeCollapsedPostsShowBody);
 		final treeModeRepliesToOPAreTopLevel = context.select<Persistence, bool>((s) => s.browserState.treeModeRepliesToOPAreTopLevel);
+		final treeModeNewRepliesAreLinear = context.select<Persistence, bool>((s) => s.browserState.treeModeNewRepliesAreLinear);
 		final settings = context.watch<EffectiveSettings>();
 		Duration? autoUpdateDuration = Duration(seconds: _foreground ? settings.currentThreadAutoUpdatePeriodSeconds : settings.backgroundThreadAutoUpdatePeriodSeconds);
 		if (autoUpdateDuration.inDays > 1) {
@@ -1396,6 +1397,11 @@ class ThreadPageState extends State<ThreadPage> {
 																	disableUpdates: persistentState.disableUpdates,
 																	autoUpdateDuration: autoUpdateDuration,
 																	initialList: persistentState.thread?.posts ?? site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1),
+																	initialLastKnownTreeMaxItemId: persistentState.lastKnownTreeMaxItemId,
+																	onLastKnownTreeMaxItemIdChanged: (newId) {
+																		persistentState.lastKnownTreeMaxItemId = newId;
+																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+																	},
 																	useTree: useTree,
 																	initialCollapsedItems: persistentState.collapsedItems,
 																	initialPrimarySubtreeParents: persistentState.primarySubtreeParents,
@@ -1429,7 +1435,8 @@ class ThreadPageState extends State<ThreadPage> {
 																		},
 																		initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
 																		collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
-																		repliesToOPAreTopLevel: treeModeRepliesToOPAreTopLevel
+																		repliesToOPAreTopLevel: treeModeRepliesToOPAreTopLevel,
+																		newRepliesAreLinear: treeModeNewRepliesAreLinear
 																	),
 																	footer: Container(
 																		padding: const EdgeInsets.all(16),

@@ -376,6 +376,7 @@ class RefreshableTreeAdapter<T extends Object> {
 	final bool collapsedItemsShowBody;
 	final bool Function(RefreshableListItem<T> item)? filter;
 	final bool repliesToOPAreTopLevel;
+	final bool newRepliesAreLinear;
 
 	const RefreshableTreeAdapter({
 		required this.getId,
@@ -389,6 +390,7 @@ class RefreshableTreeAdapter<T extends Object> {
 		required this.initiallyCollapseSecondLevelReplies,
 		required this.collapsedItemsShowBody,
 		required this.repliesToOPAreTopLevel,
+		required this.newRepliesAreLinear,
 		this.filter
 	});
 }
@@ -900,6 +902,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final List<List<int>>? initialCollapsedItems;
 	final Map<int, int>? initialPrimarySubtreeParents;
 	final void Function(List<List<int>>, Map<int, int>)? onCollapsedItemsChanged;
+	final int? initialLastKnownTreeMaxItemId;
+	final ValueChanged<int>? onLastKnownTreeMaxItemIdChanged;
 	final Duration minUpdateDuration;
 	final Listenable? updateAnimation;
 	final bool canTapFooter;
@@ -937,6 +941,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.initialCollapsedItems,
 		this.initialPrimarySubtreeParents,
 		this.onCollapsedItemsChanged,
+		this.initialLastKnownTreeMaxItemId,
+		this.onLastKnownTreeMaxItemIdChanged,
 		this.minUpdateDuration = const Duration(milliseconds: 500),
 		this.updateAnimation,
 		this.canTapFooter = true,
@@ -982,7 +988,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	int forceRebuildId = 0;
 	Timer? _trailingUpdateAnimationTimer;
 	bool _treeBuildingFailed = false;
-	int _lastKnownTreeMaxItemId = 1 << 50;
+	static const _kTreeMaxItemIdInfinite = 1 << 50;
+	int? _lastKnownTreeMaxItemId;
 	bool _needToTransitionNewlyInsertedItems = false;
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
@@ -1017,6 +1024,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			state: this
 		);
 		widget.updateAnimation?.addListener(_onUpdateAnimation);
+		_lastKnownTreeMaxItemId = widget.initialLastKnownTreeMaxItemId;
 	}
 
 	@override
@@ -1038,7 +1046,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			sortedList = null;
 			errorMessage = null;
 			errorType = null;
-			_lastKnownTreeMaxItemId = 1 << 50;
+			_lastKnownTreeMaxItemId = widget.initialLastKnownTreeMaxItemId;
 			lastUpdateTime = null;
 			_automaticallyCollapsedItems.clear();
 			_overrideExpandAutomaticallyCollapsedItems.clear();
@@ -1187,7 +1195,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
-	Future<void> update({bool hapticFeedback = false, bool extend = false, Duration? overrideMinUpdateDuration}) async {
+	Future<void> update({
+		bool hapticFeedback = false,
+		bool extend = false,
+		bool mutateTree = false,
+		Duration? overrideMinUpdateDuration
+	}) async {
 		if (updatingNow.value == widget.id) {
 			return;
 		}
@@ -1205,6 +1218,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			minUpdateDuration = overrideMinUpdateDuration ?? minUpdateDuration;
 			final lastItem = widget.controller?._items.tryLast?.item;
+			if (mutateTree) {
+				final newMaxItemId = _lastKnownTreeMaxItemId = widget.controller?._items.fold<int>(0, (m, i) => max(m, i.item.id));
+				if (newMaxItemId != null) {
+					widget.onLastKnownTreeMaxItemIdChanged?.call(newMaxItemId);
+				}
+			}
 			if (extend && widget.treeAdapter != null && ((lastItem?.representsStubChildren ?? false))) {
 				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem!.parentIds, lastItem.id);
 				try {
@@ -1303,11 +1322,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> _updateWithHapticFeedback() async {
-		await update(hapticFeedback: true, extend: false);
+		await update(hapticFeedback: true, extend: false, mutateTree: true);
 	}
 
 	Future<void> _updateOrExtendWithHapticFeedback() async {
-		await update(hapticFeedback: true, extend: true);
+		await update(hapticFeedback: true, extend: true, mutateTree: true);
 	}
 
 	bool _shouldIgnoreForHeightEstimation(RefreshableListItem<T> item) {
@@ -1575,15 +1594,21 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					node.parents.add(op);
 				}
 			}
+			else if (adapter.newRepliesAreLinear && _lastKnownTreeMaxItemId != null && id > _lastKnownTreeMaxItemId!) {
+				parentIds.removeWhere((parentId) => parentId <= (_lastKnownTreeMaxItemId ?? 0));
+				if (parentIds.isEmpty) {
+					treeRoots.add(node);
+				}
+			}
 			else {
 				// Will only work with sequential ids
-				node.parents.addAll(parentIds.map((id) => treeMap[id]).where((p) => p != null).map((p) => p!));
+				node.parents.addAll(parentIds.tryMap((id) => treeMap[id]));
 			}
 			if (parentIds.length > 1) {
 				// Avoid multiple child subtrees in the same root tree
 				// This doesn't handle orphans case, but that should only happen on Reddit,
 				// which doesn't have multiple parents anyways.
-				final parents = parentIds.map((id) => treeMap[id]).where((p) => p != null).map((p) => p!).toList();
+				final parents = parentIds.tryMap((id) => treeMap[id]).toList();
 				// Sort to process from shallowest to deepest
 				parents.sort((a, b) => a.id.compareTo(b.id));
 				int? findToDelete() {
@@ -1668,7 +1693,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (item.filterCollapsed) {
 				automaticallyCollapsed.add(ids);
 			}
-			if (node.id > _lastKnownTreeMaxItemId && parentIds.isNotEmpty) {
+			if (!adapter.newRepliesAreLinear &&
+			    node.id > (_lastKnownTreeMaxItemId ?? _kTreeMaxItemIdInfinite) &&
+					parentIds.isNotEmpty) {
 				_refreshableTreeItems.newlyInsertedItems.putIfAbsent(ids, () => false);
 				_refreshableTreeItems._cache.removeWhere((k, _) => parentIds.contains(k.thisId));
 				if (parentIds.isEmpty) {
@@ -1688,7 +1715,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					// Node has has unknown further replies, and didn't in the previous tree
 					node.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(node.id) ||
 					// Node has known further replies, and didn't have any in the previous tree
-					!node.stubChildIds.any((c) => c <= _lastKnownTreeMaxItemId)) {
+					!node.stubChildIds.any((c) => c <= (_lastKnownTreeMaxItemId ?? _kTreeMaxItemIdInfinite))) {
 					_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent(ids, () => false);
 					_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == node.id);
 				}
@@ -1741,7 +1768,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				// Node has has unknown further replies, and didn't in the previous treeTODO: FIX THIS!!!!
 				firstRoot.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(firstRoot.id) ||
 				// Node has known further replies, and didn't have any in the previous tree
-				!firstRoot.stubChildIds.any((c) => c <= _lastKnownTreeMaxItemId)) {
+				!firstRoot.stubChildIds.any((c) => c <= (_lastKnownTreeMaxItemId ?? _kTreeMaxItemIdInfinite))) {
 				_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent([firstRoot.id], () => false);
 				_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == firstRoot?.id);
 			}
@@ -1755,7 +1782,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				depth: 0
 			));
 		}
-		_lastKnownTreeMaxItemId = maxIdFound;
 		_refreshableTreeItems.itemsWithUnknownStubReplies.addAll(itemsWithOmittedReplies);
 		_needToTransitionNewlyInsertedItems = true;
 		// Reveal all new inserts at the bottom of the list
@@ -2686,8 +2712,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		return RenderAbstractViewport.of(object).getOffsetToReveal(object, 0.0).offset;
 	}
 	double? _estimateOffset(int targetIndex) {
-		final heightedItems = _items.map((i) => i.cachedHeight).where((i) => i != null);
-		final averageItemHeight = heightedItems.map((i) => i!).fold<double>(0, (a, b) => a + b) / heightedItems.length;
+		final heightedItems = _items.tryMap((i) => i.cachedHeight);
+		final averageItemHeight = heightedItems.fold<double>(0, (a, b) => a + b) / heightedItems.length;
 		int nearestDistance = _items.length + 1;
 		double? estimate;
 		for (int i = 0; i < _items.length; i++) {

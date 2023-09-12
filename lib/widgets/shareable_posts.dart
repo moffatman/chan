@@ -226,7 +226,8 @@ class ShareablePosts extends StatelessWidget {
 						},
 						initiallyCollapseSecondLevelReplies: false,
 						collapsedItemsShowBody: false,
-						repliesToOPAreTopLevel: imageboard.persistence.browserState.treeModeRepliesToOPAreTopLevel
+						repliesToOPAreTopLevel: imageboard.persistence.browserState.treeModeRepliesToOPAreTopLevel,
+						newRepliesAreLinear: false
 					)
 				)
 			);

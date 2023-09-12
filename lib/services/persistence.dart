@@ -940,6 +940,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	List<int> overrideShowPostIds = [];
 	@HiveField(29, defaultValue: '')
 	String replyOptions;
+	@HiveField(30)
+	int? lastKnownTreeMaxItemId;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -1353,6 +1355,8 @@ class PersistentBrowserState {
 	bool treeModeRepliesToOPAreTopLevel;
 	@HiveField(25, defaultValue: {})
 	final Map<String, List<int>> overrideShowIds;
+	@HiveField(26, defaultValue: true)
+	bool treeModeNewRepliesAreLinear;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1376,7 +1380,8 @@ class PersistentBrowserState {
 		this.treeModeRepliesToOPAreTopLevel = true,
 		this.useCatalogGrid,
 		required this.useCatalogGridPerBoard,
-		required this.overrideShowIds
+		required this.overrideShowIds,
+		this.treeModeNewRepliesAreLinear = true
 	}) : deprecatedHiddenImageMD5s = deprecatedHiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
