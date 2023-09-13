@@ -3293,6 +3293,26 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									),
 									const SizedBox(width: 16)
 								]
+							),
+							const SizedBox(height: 16),
+							Row(
+								children: [
+									const SizedBox(width: 16),
+									const Icon(CupertinoIcons.asterisk_circle),
+									const SizedBox(width: 8),
+									const Expanded(
+										child: Text('New posts inserted at bottom')
+									),
+									AdaptiveSwitch(
+										value: _threadLayoutImageboard.persistence.browserState.treeModeNewRepliesAreLinear,
+										onChanged: (newValue) {
+											_threadLayoutImageboard.persistence.browserState.treeModeNewRepliesAreLinear = newValue;
+											_threadLayoutImageboard.persistence.didUpdateBrowserState();
+											setState(() {});
+										}
+									),
+									const SizedBox(width: 16)
+								]
 							)
 						]
 					) : const SizedBox(width: double.infinity)
