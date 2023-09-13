@@ -207,8 +207,9 @@ class SiteHackerNews extends ImageboardSite {
 		return out;
 	}
 
-	Future<_HNObject> _makeHNObjectAlgolia(Map d) async {
-		final children = await Future.wait(((d['children'] as List?)?.cast<Map>() ?? []).map(_makeHNObjectAlgolia));
+	Future<_HNObject?> _makeHNObjectAlgolia(Map d) async {
+		final children0 = await Future.wait(((d['children'] as List?)?.cast<Map>() ?? []).tryMap(_makeHNObjectAlgolia));
+		final children = children0.tryMap((a) => a).toList();
 		switch (d['type']) {
 			case 'story':
 			case 'job':
@@ -236,6 +237,10 @@ class SiteHackerNews extends ImageboardSite {
 					deleted: d['deleted'] ?? false
 				);
 			case 'comment':
+				if (d['story_id'] == null) {
+					// Sometimes happens during fast-moving threads, just skip this comment
+					return null;
+				}
 				return _HNComment(
 					by: d['author'] ?? '',
 					id: d['id'],
@@ -259,7 +264,7 @@ class SiteHackerNews extends ImageboardSite {
 				kInteractive: interactive
 			}
 		));
-		return await _makeHNObjectAlgolia(response.data);
+		return (await _makeHNObjectAlgolia(response.data))!;
 	}
 
 	Future<Thread> _getThreadForCatalog(int id, {required bool interactive}) async {
