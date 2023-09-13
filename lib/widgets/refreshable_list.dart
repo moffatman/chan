@@ -256,6 +256,15 @@ class _TreeNode<T extends Object> {
 		return false;
 	}
 
+	_TreeNode get lastDescendant {
+		return children.tryLast?.lastDescendant ?? this;
+	}
+
+	Iterable<int> get ownershipChain sync* {
+		yield id;
+		yield* parents.tryLast?.ownershipChain ?? const Iterable.empty();
+	}
+
 	@override
 	String toString() => '_TreeNode<$T>(item: $item, id: $id, ${children.length > 5 ? '# children: ${children.length}' : 'children: $children'}, ${parents.length > 5 ? '# parents: ${parents.length}' : 'parents: $parents'}';
 
@@ -902,8 +911,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final List<List<int>>? initialCollapsedItems;
 	final Map<int, int>? initialPrimarySubtreeParents;
 	final void Function(List<List<int>>, Map<int, int>)? onCollapsedItemsChanged;
-	final int? initialLastKnownTreeMaxItemId;
-	final ValueChanged<int>? onLastKnownTreeMaxItemIdChanged;
+	final int? initialTreeSplitId;
+	final ValueChanged<int>? onTreeSplitIdChanged;
 	final Duration minUpdateDuration;
 	final Listenable? updateAnimation;
 	final bool canTapFooter;
@@ -941,8 +950,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.initialCollapsedItems,
 		this.initialPrimarySubtreeParents,
 		this.onCollapsedItemsChanged,
-		this.initialLastKnownTreeMaxItemId,
-		this.onLastKnownTreeMaxItemIdChanged,
+		this.initialTreeSplitId,
+		this.onTreeSplitIdChanged,
 		this.minUpdateDuration = const Duration(milliseconds: 500),
 		this.updateAnimation,
 		this.canTapFooter = true,
@@ -988,8 +997,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	int forceRebuildId = 0;
 	Timer? _trailingUpdateAnimationTimer;
 	bool _treeBuildingFailed = false;
-	static const _kTreeMaxItemIdInfinite = 1 << 50;
-	int? _lastKnownTreeMaxItemId;
+	int _treeSplitId = 0;
 	bool _needToTransitionNewlyInsertedItems = false;
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
@@ -1024,7 +1032,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			state: this
 		);
 		widget.updateAnimation?.addListener(_onUpdateAnimation);
-		_lastKnownTreeMaxItemId = widget.initialLastKnownTreeMaxItemId;
+		_treeSplitId = widget.initialTreeSplitId ?? 0;
 	}
 
 	@override
@@ -1046,7 +1054,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			sortedList = null;
 			errorMessage = null;
 			errorType = null;
-			_lastKnownTreeMaxItemId = widget.initialLastKnownTreeMaxItemId;
+			_treeSplitId = widget.initialTreeSplitId ?? 0;
 			lastUpdateTime = null;
 			_automaticallyCollapsedItems.clear();
 			_overrideExpandAutomaticallyCollapsedItems.clear();
@@ -1195,10 +1203,21 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
+	void _mergeTrees({required bool rebuild}) {
+		final newTreeSplitId = widget.controller?._items.fold<int>(0, (m, i) => max(m, i.item.representsKnownStubChildren.fold<int>(i.item.id, (n, j) => max(n, j.childId))));
+		if (newTreeSplitId != null) {
+			_treeSplitId = newTreeSplitId;
+			widget.onTreeSplitIdChanged?.call(newTreeSplitId);
+		}
+		if (rebuild) {
+			setState(() {});
+		}
+	}
+
 	Future<void> update({
 		bool hapticFeedback = false,
 		bool extend = false,
-		bool mutateTree = false,
+		bool mergeTrees = false,
 		Duration? overrideMinUpdateDuration
 	}) async {
 		if (updatingNow.value == widget.id) {
@@ -1218,11 +1237,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			minUpdateDuration = overrideMinUpdateDuration ?? minUpdateDuration;
 			final lastItem = widget.controller?._items.tryLast?.item;
-			if (mutateTree) {
-				final newMaxItemId = _lastKnownTreeMaxItemId = widget.controller?._items.fold<int>(0, (m, i) => max(m, i.item.id));
-				if (newMaxItemId != null) {
-					widget.onLastKnownTreeMaxItemIdChanged?.call(newMaxItemId);
-				}
+			if (mergeTrees) {
+				_mergeTrees(rebuild: false);
 			}
 			if (extend && widget.treeAdapter != null && ((lastItem?.representsStubChildren ?? false))) {
 				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem!.parentIds, lastItem.id);
@@ -1322,11 +1338,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> _updateWithHapticFeedback() async {
-		await update(hapticFeedback: true, extend: false, mutateTree: true);
+		await update(hapticFeedback: true, extend: false, mergeTrees: true);
 	}
 
 	Future<void> _updateOrExtendWithHapticFeedback() async {
-		await update(hapticFeedback: true, extend: true, mutateTree: true);
+		await update(hapticFeedback: true, extend: true, mergeTrees: true);
 	}
 
 	bool _shouldIgnoreForHeightEstimation(RefreshableListItem<T> item) {
@@ -1557,7 +1573,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final orphans = <int, List<_TreeNode<RefreshableListItem<T>>>>{};
 		final orphanStubs = <int, List<int>>{};
 		final treeMap = <int, _TreeNode<RefreshableListItem<T>>>{};
-		final treeRoots = <_TreeNode<RefreshableListItem<T>>>[];
+		// Old tree + some additions at the bottom
+		final treeRoots1 = <_TreeNode<RefreshableListItem<T>>>[];
+		// New tree
+		final treeRoots2 = <_TreeNode<RefreshableListItem<T>>>[];
 
 		final adapter = widget.treeAdapter;
 		if (adapter == null) {
@@ -1582,22 +1601,27 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			orphanStubs.remove(id);
 			final parentIds = adapter.getParentIds(item.item).toList();
 			if (id == adapter.opId) {
-				treeRoots.insert(0, node);
+				treeRoots1.insert(0, node);
 			}
 			else if (parentIds.isEmpty) {
-				treeRoots.add(node);
+				treeRoots1.add(node);
 			}
 			else if (adapter.repliesToOPAreTopLevel && parentIds.trySingle == adapter.opId) {
-				treeRoots.add(node);
+				treeRoots1.add(node);
 				final op = treeMap[adapter.opId];
 				if (op != null) {
 					node.parents.add(op);
 				}
 			}
-			else if (adapter.newRepliesAreLinear && _lastKnownTreeMaxItemId != null && id > _lastKnownTreeMaxItemId!) {
-				parentIds.removeWhere((parentId) => parentId <= (_lastKnownTreeMaxItemId ?? 0));
+			else if (adapter.newRepliesAreLinear && id > _treeSplitId) {
+				final peekLastTreeItemSoFar = treeRoots1.tryLast?.lastDescendant;
+				final acceptableParentIds = peekLastTreeItemSoFar?.ownershipChain.toSet() ?? {};
+				parentIds.removeWhere((parentId) => parentId <= _treeSplitId && !acceptableParentIds.contains(parentId));
 				if (parentIds.isEmpty) {
-					treeRoots.add(node);
+					treeRoots2.add(node);
+				}
+				else {
+					node.parents.addAll(parentIds.tryMap((id) => treeMap[id]));
 				}
 			}
 			else {
@@ -1663,6 +1687,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 		}
 
+		final treeRoots = treeRoots1.followedBy(treeRoots2).toList();
+		final stubRoots = <_TreeNode<RefreshableListItem<T>>>[];
+
 		final out = <RefreshableListItem<T>>[];
 		final Map<int, RefreshableListItem<T>> encountered = {};
 		final precollapseCache = <T, bool>{};
@@ -1694,7 +1721,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				automaticallyCollapsed.add(ids);
 			}
 			if (!adapter.newRepliesAreLinear &&
-			    node.id > (_lastKnownTreeMaxItemId ?? _kTreeMaxItemIdInfinite) &&
+			    node.id > _treeSplitId &&
 					parentIds.isNotEmpty) {
 				_refreshableTreeItems.newlyInsertedItems.putIfAbsent(ids, () => false);
 				_refreshableTreeItems._cache.removeWhere((k, _) => parentIds.contains(k.thisId));
@@ -1715,7 +1742,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					// Node has has unknown further replies, and didn't in the previous tree
 					node.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(node.id) ||
 					// Node has known further replies, and didn't have any in the previous tree
-					!node.stubChildIds.any((c) => c <= (_lastKnownTreeMaxItemId ?? _kTreeMaxItemIdInfinite))) {
+					!node.stubChildIds.any((c) => c <= _treeSplitId)) {
 					_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent(ids, () => false);
 					_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == node.id);
 				}
@@ -1759,25 +1786,35 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		for (final root in treeRoots) {
 			if (adapter.getIsStub(root.item.item)) {
+				stubRoots.add(root);
 				continue;
 			}
 			dumpNode(root, root.parents.map((t) => t.id).toList());
 		}
-		if (firstRoot != null && (firstRoot.stubChildIds.isNotEmpty || firstRoot.hasOmittedReplies)) {
+		if (firstRoot != null && (firstRoot.stubChildIds.isNotEmpty || firstRoot.hasOmittedReplies || stubRoots.isNotEmpty)) {
 			if (
 				// Node has has unknown further replies, and didn't in the previous treeTODO: FIX THIS!!!!
 				firstRoot.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(firstRoot.id) ||
 				// Node has known further replies, and didn't have any in the previous tree
-				!firstRoot.stubChildIds.any((c) => c <= (_lastKnownTreeMaxItemId ?? _kTreeMaxItemIdInfinite))) {
+				!(
+					firstRoot.stubChildIds.any((c) => c <= _treeSplitId) ||
+					stubRoots.any((r) => r.id <= _treeSplitId)
+				)) {
 				_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent([firstRoot.id], () => false);
 				_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == firstRoot?.id);
 			}
 			out.add(firstRoot.item.copyWith(
 				parentIds: [],
-				representsKnownStubChildren: firstRoot.stubChildIds.map((childId) => ParentAndChildIdentifier(
-					parentId: firstRoot!.id,
-					childId: childId
-				)).toList(),
+				representsKnownStubChildren: [
+					...firstRoot.stubChildIds.map((childId) => ParentAndChildIdentifier(
+						parentId: firstRoot!.id,
+						childId: childId
+					)),
+					...stubRoots.map((r) => ParentAndChildIdentifier(
+						parentId: r.parents.tryLast?.id ?? firstRoot!.id,
+						childId: r.id
+					))
+				].toList(),
 				representsUnknownStubChildren: firstRoot.hasOmittedReplies,
 				depth: 0
 			));
@@ -2990,4 +3027,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	bool get scrollControllerPositionLooksGood => scrollController?.hasOnePosition ?? false;
+
+	void mergeTrees() {
+		state?._mergeTrees(rebuild: true);
+	}
 }

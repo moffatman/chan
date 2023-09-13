@@ -1397,9 +1397,9 @@ class ThreadPageState extends State<ThreadPage> {
 																	disableUpdates: persistentState.disableUpdates,
 																	autoUpdateDuration: autoUpdateDuration,
 																	initialList: persistentState.thread?.posts ?? site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1),
-																	initialLastKnownTreeMaxItemId: persistentState.lastKnownTreeMaxItemId,
-																	onLastKnownTreeMaxItemIdChanged: (newId) {
-																		persistentState.lastKnownTreeMaxItemId = newId;
+																	initialTreeSplitId: persistentState.treeSplitId,
+																	onTreeSplitIdChanged: (newId) {
+																		persistentState.treeSplitId = newId;
 																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 																	},
 																	useTree: useTree,

@@ -94,7 +94,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..firstVisiblePostAlignment = fields[25] as double?
       ..overrideShowPostIds =
           fields[28] == null ? [] : (fields[28] as List).cast<int>()
-      ..lastKnownTreeMaxItemId = fields[30] as int?;
+      ..treeSplitId = fields[30] as int?;
   }
 
   @override
@@ -156,7 +156,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(29)
       ..write(obj.replyOptions)
       ..writeByte(30)
-      ..write(obj.lastKnownTreeMaxItemId)
+      ..write(obj.treeSplitId)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)

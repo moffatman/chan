@@ -941,7 +941,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	@HiveField(29, defaultValue: '')
 	String replyOptions;
 	@HiveField(30)
-	int? lastKnownTreeMaxItemId;
+	int? treeSplitId;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 

@@ -1,4 +1,5 @@
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -32,7 +33,7 @@ class _DebuggingItem {
 class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 	late final RefreshableListController<_DebuggingItem> controller;
 	final List<_DebuggingItem> items = [];
-	int _unknownStubId = 9000;
+	int _id = 0;
 
 	@override
 	void initState() {
@@ -61,7 +62,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 										CupertinoButton(
 											onPressed: () {
 												items.add(_DebuggingItem(
-													id: items.last.id + 1,
+													id: _id++,
 													parentIds: [item.id],
 													isStub: false,
 													hasUnknownStubChildren: false
@@ -73,7 +74,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 										CupertinoButton(
 											onPressed: () {
 												items.add(_DebuggingItem(
-													id: items.last.id + 1,
+													id: _id++,
 													parentIds: [item.id],
 													isStub: true,
 													hasUnknownStubChildren: false
@@ -122,7 +123,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 					if (stubIds.length == 1 && stubIds.single.childId == stubIds.single.parentId) {
 						// Expanding unknownStubChildren
 						output.add(_DebuggingItem(
-							id: ++_unknownStubId,
+							id: _id++,
 							parentIds: [stubIds.single.childId],
 							isStub: false,
 							hasUnknownStubChildren: false
@@ -141,27 +142,46 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				repliesToOPAreTopLevel: true,
 				newRepliesAreLinear: true
 			),
-			footer: CupertinoButton(
-				child: const Icon(CupertinoIcons.pencil),
-				onPressed: () async {
-					final list = <String>[];
-					await editStringList(
-						context: context,
-						list: list,
-						name: 'id',
-						title: 'ID chain'
-					);
-					final ids = list.tryMap((v) => int.tryParse(v)).toList();
-					if (ids.isNotEmpty) {
-						items.add(_DebuggingItem(
-							id: ids.last,
-							parentIds: ids.sublist(0, ids.length - 1),
-							isStub: list.last == 's',
-							hasUnknownStubChildren: false
-						));
-						setState(() {});
-					}
-				}
+			footer: Padding(
+				padding: const EdgeInsets.all(16),
+				child: Row(
+					mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+					children: [
+						AdaptiveIconButton(
+							icon: const Icon(CupertinoIcons.pencil),
+							onPressed: () async {
+								final list = <String>[];
+								await editStringList(
+									context: context,
+									list: list,
+									name: 'id',
+									title: 'ID chain'
+								);
+								final ids = list.tryMap((v) => int.tryParse(v)).toList();
+								if (ids.isNotEmpty) {
+									items.add(_DebuggingItem(
+										id: ids.last,
+										parentIds: ids.sublist(0, ids.length - 1),
+										isStub: list.last == 's',
+										hasUnknownStubChildren: false
+									));
+									setState(() {});
+								}
+							}
+						),
+						AdaptiveIconButton(
+							icon: const Icon(CupertinoIcons.tree),
+							onPressed: controller.mergeTrees
+						),
+						AdaptiveIconButton(
+							icon: const Icon(CupertinoIcons.shuffle),
+							onPressed: () {
+								items.shuffle();
+								setState(() {});
+							}
+						)
+					]
+				)
 			)
 		);
 	}
