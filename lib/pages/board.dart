@@ -644,6 +644,7 @@ class _BoardPageState extends State<BoardPage> {
 		if (imageboard != null) {
 			navigationBarBoardName = board != null ? imageboard.site.formatBoardName(board!) : 'Select Board';
 		}
+		final supportsSearch = imageboard?.site.supportsSearch(board?.name) ?? const ImageboardSearchMetadata(name: '', options: ImageboardSearchOptions.none);
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			bar: AdaptiveBar(
@@ -999,10 +1000,10 @@ class _BoardPageState extends State<BoardPage> {
 														itemBuilder: (context, thread) => itemBuilder(context, thread),
 														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
 														filterHint: 'Search in board',
-														filterAlternative: (widget.onWantArchiveSearch == null || !imageboard!.site.supportsSearch(board?.name).options.text) ? null : FilterAlternative(
-															name: '${board == null ? '' : site.formatBoardName(board!)} archives',
+														filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
+															name: supportsSearch.name,
 															handler: (s) {
-																widget.onWantArchiveSearch!(imageboard.key, board!.name, s);
+																widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
 															}
 														)
 													),
