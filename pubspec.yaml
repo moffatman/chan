@@ -105,12 +105,13 @@ dev_dependencies:
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/appicon.png"
   adaptive_icon_background: "assets/appicon_bg.png"
   adaptive_icon_foreground: "assets/appicon_fg.png"
+  adaptive_icon_monochrome: "assets/appicon_monochrome.png"
 
 flutter_native_splash:
   color: "#141414"
@@ -145,6 +146,10 @@ flutter:
       fonts:
         - asset: assets/submona.ttf
 dependency_overrides:
+  flutter_launcher_icons:
+    git:
+      url: https://github.com/OutdatedGuy/flutter_launcher_icons.git
+      ref: feat/monochrome-icons-support
   heic_to_jpg:
     git:
       url: https://github.com/a7med-3laa/flutter_heic_to_jpg.git

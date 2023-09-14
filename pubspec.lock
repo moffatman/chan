@@ -157,10 +157,10 @@ packages:
     dependency: transitive
     description:
       name: cli_util
-      sha256: "66f86e916d285c1a93d3b79587d94bd71984a66aac4ff74e524cfa7877f1395c"
+      sha256: b8db3080e59b2503ca9e7922c3df2072cf13992354d5e944074ffa836fba43b7
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.5"
+    version: "0.4.0"
   clock:
     dependency: transitive
     description:
@@ -467,11 +467,12 @@ packages:
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
-      name: flutter_launcher_icons
-      sha256: "02dcaf49d405f652b7160e882bacfc02cb497041bb2eab2a49b1c393cf9aac12"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.12.0"
+      path: "."
+      ref: "feat/monochrome-icons-support"
+      resolved-ref: "1902eba83da89b0350a70672ac7c963cd995e017"
+      url: "https://github.com/OutdatedGuy/flutter_launcher_icons.git"
+    source: git
+    version: "0.13.1"
   flutter_lints:
     dependency: "direct dev"
     description:
