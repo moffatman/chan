@@ -286,13 +286,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showLineBreakInPostInfoRow: fields[155] as bool?,
       useCloudCaptchaSolver: fields[156] as bool?,
       useHeadlessCloudCaptchaSolver: fields[157] as bool?,
+      removeMetadataOnUploadedFiles: fields[158] as bool?,
+      randomizeChecksumOnUploadedFiles: fields[159] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(154)
+      ..writeByte(156)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -600,7 +602,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(156)
       ..write(obj.useCloudCaptchaSolver)
       ..writeByte(157)
-      ..write(obj.useHeadlessCloudCaptchaSolver);
+      ..write(obj.useHeadlessCloudCaptchaSolver)
+      ..writeByte(158)
+      ..write(obj.removeMetadataOnUploadedFiles)
+      ..writeByte(159)
+      ..write(obj.randomizeChecksumOnUploadedFiles);
   }
 
   @override

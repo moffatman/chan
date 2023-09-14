@@ -490,6 +490,9 @@ class ReplyBoxState extends State<ReplyBox> {
 		int? width,
 		int? height,
 		int? maximumDimension,
+		required bool metadataPresent,
+		required bool metadataAllowed,
+		required bool randomizeChecksum,
 		required MediaConversion transcode
 	}) async {
 		final ext = source.path.split('.').last.toLowerCase();
@@ -499,10 +502,17 @@ class ReplyBoxState extends State<ReplyBox> {
 					!(ext == 'jpg' && transcode.outputFileExtension == 'jpeg')) 'to .${transcode.outputFileExtension}',
 			if (size != null && maximumSize != null && (size > maximumSize)) 'compressing',
 			if (audioPresent == true && audioAllowed == false) 'removing audio',
-			if (durationInSeconds != null && maximumDurationInSeconds != null && (durationInSeconds > maximumDurationInSeconds)) 'clipping at ${maximumDurationInSeconds}s'
+			if (durationInSeconds != null && maximumDurationInSeconds != null && (durationInSeconds > maximumDurationInSeconds)) 'clipping at ${maximumDurationInSeconds}s',
 		];
 		if (width != null && height != null && maximumDimension != null && (width > maximumDimension || height > maximumDimension)) {
 			solutions.add('resizing');
+		}
+		if (randomizeChecksum) {
+			solutions.add('randomizing checksum');
+		}
+		transcode.copyStreams = solutions.isEmpty;
+		if (metadataPresent && !metadataAllowed) {
+			solutions.add('removing metadata');
 		}
 		if (solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(ext)) {
 			return source;
@@ -556,6 +566,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	Future<void> setAttachment(File newAttachment) async {
+		print(newAttachment);
 		File? file = newAttachment;
 		final settings = context.read<EffectiveSettings>();
 		setState(() {
@@ -591,8 +602,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					transcode: MediaConversion.toJpg(
 						file.uri,
 						maximumSizeInBytes: board.maxImageSizeBytes,
-						maximumDimension: settings.maximumImageUploadDimension
-					)
+						maximumDimension: settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+					),
+					metadataPresent: scan.metadata?.isNotEmpty ?? false,
+					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
+					randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
 				);
 			}
 			else if (ext == 'png') {
@@ -606,8 +622,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					transcode: MediaConversion.toPng(
 						file.uri,
 						maximumSizeInBytes: board.maxImageSizeBytes,
-						maximumDimension: settings.maximumImageUploadDimension
-					)
+						maximumDimension: settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+					),
+					metadataPresent: scan.metadata?.isNotEmpty ?? false,
+					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
+					randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
 				);
 			}
 			else if (ext == 'gif') {
@@ -632,8 +653,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds,
-						maximumDimension: settings.maximumImageUploadDimension
-					)
+						maximumDimension: settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+					),
+					metadataPresent: scan.metadata?.isNotEmpty ?? false,
+					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
+					randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
 				);
 			}
 			else if (ext == 'mp4' || ext == 'mov') {
@@ -651,8 +677,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds,
-						maximumDimension: settings.maximumImageUploadDimension
-					)
+						maximumDimension: settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+					),
+					metadataPresent: scan.metadata?.isNotEmpty ?? false,
+					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
+					randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
 				);
 			}
 			else {

@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
@@ -70,6 +71,8 @@ class MediaScan {
 	final double? videoFramerate;
 	@HiveField(7)
 	final int? sizeInBytes;
+	@HiveField(8, defaultValue: null)
+	final Map? metadata;
 
 	MediaScan({
 		required this.hasAudio,
@@ -79,7 +82,8 @@ class MediaScan {
 		required this.height,
 		required this.codec,
 		required this.videoFramerate,
-		required this.sizeInBytes
+		required this.sizeInBytes,
+		required this.metadata
 	});
 
 	static final _ffprobeLock = Mutex();
@@ -139,7 +143,8 @@ class MediaScan {
 				height: height == 0 ? null : height,
 				codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
 				videoFramerate: videoFramerate,
-				sizeInBytes: int.tryParse(data['format']?['size'] ?? '')
+				sizeInBytes: int.tryParse(data['format']?['size'] ?? ''),
+				metadata: data['format']?['tags']
 			);
 		});
 	}
@@ -197,7 +202,9 @@ class MediaConversion {
 	int _additionalScaleDownFactor = 1;
 	final Uri? soundSource;
 	final bool requiresSubdirectory;
-	final bool copyStreams;
+	bool copyStreams;
+	final bool removeMetadata;
+	final bool randomizeChecksum;
 
 	CancelableOperation<FFToolsOutput>? _session;
 	MediaScan? cachedScan;
@@ -219,7 +226,9 @@ class MediaConversion {
 		this.headers = const {},
 		this.soundSource,
 		this.requiresSubdirectory = false,
-		this.copyStreams = false
+		this.copyStreams = false,
+		this.removeMetadata = false,
+		this.randomizeChecksum = false
 	});
 
 	static MediaConversion toMp4(Uri inputFile, {
@@ -256,7 +265,9 @@ class MediaConversion {
 		required bool stripAudio,
 		int? maximumDimension,
 		Map<String, String> headers = const {},
-		Uri? soundSource
+		Uri? soundSource,
+		bool removeMetadata = false,
+		bool randomizeChecksum = false
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -265,27 +276,49 @@ class MediaConversion {
 			maximumDurationInSeconds: maximumDurationInSeconds,
 			maximumDimension: maximumDimension,
 			stripAudio: stripAudio,
-			extraOptions: ['-c:a', 'libvorbis', '-c:v', 'libvpx', '-cpu-used', '2'],
+			extraOptions: [
+				'-c:a', 'libvorbis',
+				'-c:v', 'libvpx-vp9',
+				'-cpu-used', '3',
+				'-crf', '10',
+				'-threads', sqrt(Platform.numberOfProcessors).ceil().toString()
+			],
 			headers: headers,
-			soundSource: soundSource
+			soundSource: soundSource,
+			removeMetadata: removeMetadata,
+			randomizeChecksum: randomizeChecksum
 		);
 	}
 
-	static MediaConversion toJpg(Uri inputFile, {int? maximumSizeInBytes, int? maximumDimension}) {
+	static MediaConversion toJpg(Uri inputFile, {
+		int? maximumSizeInBytes,
+		int? maximumDimension,
+		bool removeMetadata = false,
+		bool randomizeChecksum = false
+	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'jpg',
 			maximumSizeInBytes: maximumSizeInBytes,
-			maximumDimension: maximumDimension
+			maximumDimension: maximumDimension,
+			removeMetadata: removeMetadata,
+			randomizeChecksum: randomizeChecksum
 		);
 	}
 
-	static MediaConversion toPng(Uri inputFile, {int? maximumSizeInBytes, int? maximumDimension}) {
+	static MediaConversion toPng(Uri inputFile, {
+		int? maximumSizeInBytes,
+		int? maximumDimension,
+		bool removeMetadata = false,
+		bool randomizeChecksum = false
+	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'png',
 			maximumSizeInBytes: maximumSizeInBytes,
-			maximumDimension: maximumDimension
+			maximumDimension: maximumDimension,
+			removeMetadata: removeMetadata,
+			randomizeChecksum: randomizeChecksum
 		);
 	}
 
@@ -360,6 +393,12 @@ class MediaConversion {
 		if (soundSource != null && isOriginalFile) {
 			return null;
 		}
+		if ((scan?.metadata?.isNotEmpty ?? false) && removeMetadata) {
+			return null;
+		}
+		if (randomizeChecksum) {
+			return null;
+		}
 		return MediaConversionResult(file, soundSource != null || (scan?.hasAudio ?? false), scan?.isAudioOnly ?? false);
 	}
 
@@ -378,122 +417,121 @@ class MediaConversion {
 				if (await convertedFile.exists()) {
 					await convertedFile.delete();
 				}
+				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers);
+				int outputBitrate = scan.bitrate ?? 2000000;
+				int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
+				if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') {
+					if (maximumDurationInSeconds != null) {
+						outputDurationInMilliseconds = min(maximumDurationInSeconds! * 1000, outputDurationInMilliseconds!);
+					}
+					if (maximumSizeInBytes != null) {
+						outputBitrate = min(outputBitrate, (8 * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
+					}
+				}
+				(int, int)? newSize;
+				if (scan.width != null && scan.height != null) {
+					if (outputFileExtension != 'jpg' && outputFileExtension != 'png' && maximumSizeInBytes != null) {
+						double scaleDownFactorSq = (outputBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
+						if (scaleDownFactorSq < 1) {
+							final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
+							final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
+							newSize = (newWidth, newHeight);
+						}
+					}
+					else if (maximumSizeInBytes != null) {
+						double scaleDownFactor = ((scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 3))) + _additionalScaleDownFactor;
+						if (scaleDownFactor > 1) {
+							final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
+							final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
+							newSize = (newWidth, newHeight);
+						}
+					}
+					if (maximumDimension != null) {
+						final fittedSize = applyBoxFit(BoxFit.contain, Size(scan.width!.toDouble(), scan.height!.toDouble()), Size.square(maximumDimension!.toDouble())).destination;
+						if (newSize == null || fittedSize.width < newSize.$1) {
+							newSize = (fittedSize.width.round(), fittedSize.height.round());
+						}
+					}
+				}
+				bool passedFirstEvent = false;
+				final bitrateString = '${(outputBitrate / 1000).floor()}K';
+				final results = await pool.withResource(() async {
+					final args = [
+						'-hwaccel', 'auto',
+						if (headers.isNotEmpty && inputFile.scheme != 'file') ...[
+							"-headers",
+							headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+						],
+						'-i', inputFile.toStringFFMPEG(),
+						if (soundSource != null && !copyStreams) ...[
+							'-i', soundSource!.toStringFFMPEG(),
+							'-map', '0:v:0',
+							'-map', '1:a:0',
+							'-c:a', 'aac',
+							'-b:a', '192k'
+						],
+						'-max_muxing_queue_size', '9999',
+						...extraOptions,
+						if (stripAudio) '-an',
+						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
+						else if (outputFileExtension != 'png') ...['-b:v', bitrateString],
+						if (outputFileExtension == 'jpg' || outputFileExtension == 'png') ...['-pix_fmt', 'rgba'],
+						if (outputFileExtension == 'png') ...['-pred', 'mixed'],
+						if (outputFileExtension == 'm3u8') ...[
+							'-f', 'hls',
+							'-hls_playlist_type', 'event',
+							'-hls_init_time', '3',
+							'-hls_time', '3',
+							'-hls_flags', 'split_by_time'
+						],
+						if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams)
+							if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
+								...['-vcodec', 'h264_videotoolbox']
+							else
+								...['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'],
+						if (copyStreams) ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy']
+						else if (newSize != null) ...['-vf', 'scale=${newSize.$1}:${newSize.$2}'],
+						if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
+						if (removeMetadata) ...['-map_metadata', '-1'],
+						if (randomizeChecksum) ...['-vf', 'noise=alls=10:allf=t+u:all_seed=${random.nextInt(1 << 30)}'],
+						convertedFile.path
+					];
+					print(args);
+					final operation = _session = FFTools.ffmpeg(
+						arguments: args,
+						statisticsCallback: (packet) {
+							if (passedFirstEvent && outputDurationInMilliseconds != null) {
+								progress.value = (packet.time / outputDurationInMilliseconds).clamp(0, 1);
+							}
+							passedFirstEvent = true;
+						}
+					);
+					return operation.value;
+				});
+				_session = null;
+				if (results.returnCode != 0) {
+					if (await convertedFile.exists()) {
+						await convertedFile.delete();
+					}
+					if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') &&
+							_isVideoToolboxSupported &&
+							!_hasVideoToolboxFailed &&
+							results.output.contains('Error while opening encoder')) {
+						_hasVideoToolboxFailed = true;
+						await start();
+						return;
+					}
+					throw MediaConversionFFMpegException(results.returnCode, results.output);
+				}
 				else {
-					final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers);
-					int outputBitrate = scan.bitrate ?? 2000000;
-					int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
-					if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') {
-						if (maximumDurationInSeconds != null) {
-							outputDurationInMilliseconds = min(maximumDurationInSeconds! * 1000, outputDurationInMilliseconds!);
-						}
-						if (maximumSizeInBytes != null) {
-							outputBitrate = min(outputBitrate, (8 * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
-						}
-					}
-					(int, int)? newSize;
-					if (scan.width != null && scan.height != null) {
-						if (outputFileExtension != 'jpg' && outputFileExtension != 'png' && maximumSizeInBytes != null) {
-							double scaleDownFactorSq = (outputBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
-							if (scaleDownFactorSq < 1) {
-								final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-								final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-								newSize = (newWidth, newHeight);
-							}
-						}
-						else if (maximumSizeInBytes != null) {
-							double scaleDownFactor = ((scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 3))) + _additionalScaleDownFactor;
-							if (scaleDownFactor > 1) {
-								final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
-								final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
-								newSize = (newWidth, newHeight);
-							}
-						}
-						if (maximumDimension != null) {
-							final fittedSize = applyBoxFit(BoxFit.contain, Size(scan.width!.toDouble(), scan.height!.toDouble()), Size.square(maximumDimension!.toDouble())).destination;
-							if (newSize == null || fittedSize.width < newSize.$1) {
-								newSize = (fittedSize.width.round(), fittedSize.height.round());
-							}
-						}
-					}
-					bool passedFirstEvent = false;
-					final bitrateString = '${(outputBitrate / 1000).floor()}K';
-					final results = await pool.withResource(() async {
-						final args = [
-							'-hwaccel', 'auto',
-							if (headers.isNotEmpty && inputFile.scheme != 'file') ...[
-								"-headers",
-								headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
-							],
-							'-i', inputFile.toStringFFMPEG(),
-							if (soundSource != null && !copyStreams) ...[
-								'-i', soundSource!.toStringFFMPEG(),
-								'-map', '0:v:0',
-								'-map', '1:a:0',
-								'-c:a', 'aac',
-								'-b:a', '192k'
-							],
-							'-max_muxing_queue_size', '9999',
-							...extraOptions,
-							if (stripAudio) '-an',
-							if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
-							else if (outputFileExtension != 'png') ...['-b:v', bitrateString],
-							if (outputFileExtension == 'jpg' || outputFileExtension == 'png') ...['-pix_fmt', 'rgba'],
-							if (outputFileExtension == 'png') ...['-pred', 'mixed'],
-							if (outputFileExtension == 'webm') ...['-crf', '10'],
-							if (outputFileExtension == 'm3u8') ...[
-								'-f', 'hls',
-								'-hls_playlist_type', 'event',
-								'-hls_init_time', '3',
-								'-hls_time', '3',
-								'-hls_flags', 'split_by_time'
-							],
-							if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams)
-								if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
-									...['-vcodec', 'h264_videotoolbox']
-								else
-									...['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'],
-							if (copyStreams) ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy']
-							else if (newSize != null) ...['-vf', 'scale=${newSize.$1}:${newSize.$2}'],
-							if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
-							convertedFile.path
-						];
-						print(args);
-						final operation = _session = FFTools.ffmpeg(
-							arguments: args,
-							statisticsCallback: (packet) {
-								if (passedFirstEvent && outputDurationInMilliseconds != null) {
-									progress.value = (packet.time / outputDurationInMilliseconds).clamp(0, 1);
-								}
-								passedFirstEvent = true;
-							}
-						);
-						return operation.value;
-					});
-					_session = null;
-					if (results.returnCode != 0) {
-						if (await convertedFile.exists()) {
-							await convertedFile.delete();
-						}
-						if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') &&
-								_isVideoToolboxSupported &&
-								!_hasVideoToolboxFailed &&
-								results.output.contains('Error while opening encoder')) {
-							_hasVideoToolboxFailed = true;
-							await start();
-							return;
-						}
-						throw MediaConversionFFMpegException(results.returnCode, results.output);
+					if (maximumSizeInBytes != null && (await convertedFile.stat()).size > maximumSizeInBytes!) {
+						_additionalScaleDownFactor += 2;
+						print('Too big, retrying with factor $_additionalScaleDownFactor');
+						await start();
+						return;
 					}
 					else {
-						if (maximumSizeInBytes != null && (await convertedFile.stat()).size > maximumSizeInBytes!) {
-							_additionalScaleDownFactor += 2;
-							print('Too big, retrying with factor $_additionalScaleDownFactor');
-							await start();
-							return;
-						}
-						else {
-							_completer!.complete(MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly));
-						}
+						_completer!.complete(MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly));
 					}
 				}
 			}

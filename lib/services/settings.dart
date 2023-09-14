@@ -984,6 +984,10 @@ class SavedSettings extends HiveObject {
 	bool? useCloudCaptchaSolver;
 	@HiveField(157)
 	bool? useHeadlessCloudCaptchaSolver;
+	@HiveField(158)
+	bool removeMetadataOnUploadedFiles;
+	@HiveField(159)
+	bool randomizeChecksumOnUploadedFiles;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1143,6 +1147,8 @@ class SavedSettings extends HiveObject {
 		bool? showLineBreakInPostInfoRow,
 		this.useCloudCaptchaSolver,
 		this.useHeadlessCloudCaptchaSolver,
+		bool? removeMetadataOnUploadedFiles,
+		bool? randomizeChecksumOnUploadedFiles
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1323,7 +1329,9 @@ class SavedSettings extends HiveObject {
 		hoverPopupDelayMilliseconds = hoverPopupDelayMilliseconds ?? 0,
 		mouseModeQuoteLinkBehavior = mouseModeQuoteLinkBehavior ?? MouseModeQuoteLinkBehavior.expandInline,
 		drawerMode = drawerMode ?? DrawerMode.tabs,
-		showLineBreakInPostInfoRow = showLineBreakInPostInfoRow ?? false {
+		showLineBreakInPostInfoRow = showLineBreakInPostInfoRow ?? false,
+		removeMetadataOnUploadedFiles = removeMetadataOnUploadedFiles ?? true,
+		randomizeChecksumOnUploadedFiles = randomizeChecksumOnUploadedFiles ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2497,6 +2505,20 @@ class EffectiveSettings extends ChangeNotifier {
 	bool? get useHeadlessCloudCaptchaSolver => _settings.useHeadlessCloudCaptchaSolver;
 	set useHeadlessCloudCaptchaSolver(bool? setting) {
 		_settings.useHeadlessCloudCaptchaSolver = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get removeMetadataOnUploadedFiles => _settings.removeMetadataOnUploadedFiles;
+	set removeMetadataOnUploadedFiles(bool setting) {
+		_settings.removeMetadataOnUploadedFiles = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get randomizeChecksumOnUploadedFiles => _settings.randomizeChecksumOnUploadedFiles;
+	set randomizeChecksumOnUploadedFiles(bool setting) {
+		_settings.randomizeChecksumOnUploadedFiles = setting;
 		_settings.save();
 		notifyListeners();
 	}

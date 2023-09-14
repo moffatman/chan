@@ -3613,6 +3613,40 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					]
 				),
 				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.doc_person),
+						const SizedBox(width: 8),
+						const Text('Remove metadata from uploads'),
+						const Spacer(),
+						AdaptiveSwitch(
+							value: settings.removeMetadataOnUploadedFiles,
+							onChanged: (setting) {
+								settings.removeMetadataOnUploadedFiles = setting;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.doc_checkmark),
+						const SizedBox(width: 8),
+						const Text('Randomize checksum on uploads'),
+						const SizedBox(width: 8),
+						const _SettingsHelpButton(
+							helpText: 'Uploaded files will be re-encoded to prevent matching against other files.'
+						),
+						const Spacer(),
+						AdaptiveSwitch(
+							value: settings.randomizeChecksumOnUploadedFiles,
+							onChanged: (setting) {
+								settings.randomizeChecksumOnUploadedFiles = setting;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
 				const Row(
 					children: [
 						Icon(CupertinoIcons.calendar),

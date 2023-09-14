@@ -25,13 +25,14 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
       codec: fields[5] as String?,
       videoFramerate: fields[6] as double?,
       sizeInBytes: fields[7] as int?,
+      metadata: (fields[8] as Map?)?.cast<dynamic, dynamic>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, MediaScan obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.hasAudio)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
       ..writeByte(6)
       ..write(obj.videoFramerate)
       ..writeByte(7)
-      ..write(obj.sizeInBytes);
+      ..write(obj.sizeInBytes)
+      ..writeByte(8)
+      ..write(obj.metadata);
   }
 
   @override
