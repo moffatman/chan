@@ -1950,7 +1950,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					final List<String> paths = [];
 					for (final datum in data) {
 						if (datum.dropFile != null) {
-							paths.add(datum.dropFile!.path);
+							if (datum.dropFile!.path.startsWith(Persistence.documentsDirectory.path)) {
+								// The file has been placed in our Documents dir, this isn't appropriate for temporary storage
+								paths.add((await datum.dropFile!.rename('${Persistence.temporaryDirectory.path}/${datum.dropFile!.path.split('/').last}')).path);
+							}
+							else {
+								paths.add(datum.dropFile!.path);
+							}
 						}
 						else if (datum.dropText != null) {
 							_consumeLink(datum.dropText);
