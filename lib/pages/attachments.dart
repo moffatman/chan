@@ -114,9 +114,10 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 			if (middleVisibleItem != _lastMiddleVisibleItem) {
 				widget.onChange?.call(middleVisibleItem);
 			}
-			final maxColumnWidth = context.read<EffectiveSettings>().attachmentsPageMaxCrossAxisExtent;
+			final settings = context.read<EffectiveSettings>();
+			final maxColumnWidth = settings.attachmentsPageMaxCrossAxisExtent;
 			final screenWidth = (context.findRenderObject() as RenderBox?)?.paintBounds.width ?? double.infinity;
-			final columnCount = max(1, screenWidth ~/ maxColumnWidth);
+			final columnCount = max(1, screenWidth / maxColumnWidth).ceil();
 			if (columnCount == 1) {
 				// This is one-column view
 				if (middleVisibleItem != _lastMiddleVisibleItem) {
@@ -124,6 +125,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 						_getController(_lastMiddleVisibleItem!).isPrimary = false;
 					}
 					_getController(middleVisibleItem).isPrimary = true;
+					if (settings.autoloadAttachments) {
+						Future.microtask(_getController(middleVisibleItem).loadFullAttachment);
+					}
 				}
 			}
 			_lastMiddleVisibleItem = middleVisibleItem;
