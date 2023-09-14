@@ -238,10 +238,19 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 													headers: _getController(attachment).getHeaders(goodSource)
 												).resolve(ImageConfiguration.empty);
 												final completer = Completer<void>();
-												stream.addListener(ImageStreamListener((image, synchronousCall) {
+												ImageStreamListener? listener;
+												stream.addListener(listener = ImageStreamListener((image, synchronousCall) {
 													completer.complete();
+													final toRemove = listener;
+													if (toRemove != null) {
+														stream.removeListener(toRemove);
+													}
 												}, onError: (e, st) {
 													completer.completeError(e, st);
+													final toRemove = listener;
+													if (toRemove != null) {
+														stream.removeListener(toRemove);
+													}
 												}));
 												await completer.future;
 											}
