@@ -527,18 +527,24 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 		}
 		if (!mounted) return null;
-		showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: Adaptive.icons.photo);
 		transcode.start();
 		setState(() {
 			_attachmentProgress = ('Converting', transcode);
 		});
 		try {
+			bool toastedStart = false;
+			Future.delayed(const Duration(milliseconds: 250), () {
+				if (_attachmentProgress != null) {
+					showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: Adaptive.icons.photo);
+					toastedStart = true;
+				}
+			});
 			final result = await transcode.result;
 			if (!mounted) return null;
 			setState(() {
 				_attachmentProgress = null;
 			});
-			showToast(context: context, message: 'File converted', icon: CupertinoIcons.checkmark);
+			showToast(context: context, message: 'File converted${toastedStart ? '' : ': ${solutions.join(', ')}'}', icon: CupertinoIcons.checkmark);
 			return result.file;
 		}
 		catch (e) {
