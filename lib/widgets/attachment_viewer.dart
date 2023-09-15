@@ -269,6 +269,18 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 	}
 
+	VideoController _ensureController() {
+		return _videoPlayerController ??= (VideoController(Player())..player.stream.error.listen(_onPlayerError)..player.stream.log.listen(_onPlayerLog));
+	}
+
+	void _onPlayerError(String error) {
+		print(error);
+	}
+
+	void _onPlayerLog(PlayerLog log) {
+		print(log);
+	}
+
 	set isPrimary(bool val) {
 		if (val) {
 			videoPlayerController?.player.play();
@@ -497,7 +509,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (url.scheme == 'file') {
 						final file = File(url.toStringFFMPEG());
 						// TODO: Try with broken url or something? Not right here but too lazy to find the appropriate place for the TODO
-						await (_videoPlayerController ??= VideoController(Player())).player.open(Media(file.path), play: false);
+						await _ensureController().player.open(Media(file.path), play: false);
 						onCacheCompleted(file);
 					}
 					else {
@@ -515,7 +527,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						_videoLoadingProgress = progressNotifier;
 						notifyListeners();
 						if (!background) {
-							await (_videoPlayerController ??= VideoController(Player())).player.open(Media(VideoServer.instance.getUri(hash).toString()), play: false);
+							await _ensureController().player.open(Media(VideoServer.instance.getUri(hash).toString()), play: false);
 						}
 					}
 				}
@@ -530,7 +542,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					isAudioOnly = result.isAudioOnly;
 					if (result is StreamingMP4ConvertedFile) {
 						if (isPrimary || !background) {
-							await (_videoPlayerController ??= VideoController(Player())).player.open(Media(result.mp4File.path), play: false);
+							await _ensureController().player.open(Media(result.mp4File.path), play: false);
 						}
 						_cachedFile = result.mp4File;
 						attachment.sizeInBytes ??= result.mp4File.statSync().size;
@@ -538,7 +550,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					else if (result is StreamingMP4ConversionStream) {
 						_duration = result.duration;
 						if (isPrimary || !background) {
-							await (_videoPlayerController ??= VideoController(Player())).player.open(Media(result.hlsStream.toString()), play: false);
+							await _ensureController().player.open(Media(result.hlsStream.toString()), play: false);
 						}
 						_videoLoadingProgress = result.progress;
 						_swapIncoming = true;
@@ -825,7 +837,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			_videoFileToSwapIn = null;
 			final oldState = _videoPlayerController?.player.state;
 			_hideVideoPlayerController = false;
-			await (_videoPlayerController ??= VideoController(Player())).player.open(Media(newFile.path), play: false);
+			await _ensureController().player.open(Media(newFile.path), play: false);
 			if (_isDisposed) return;
 			final mute = oldState?.volume.isZero ?? settings.muteAudio.value || settings.alwaysStartVideosMuted;
 			if (mute) {
