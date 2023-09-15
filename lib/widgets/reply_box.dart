@@ -36,6 +36,7 @@ import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/foundation.dart';
@@ -126,7 +127,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _filenameController;
 	late final FocusNode _textFocusNode;
 	bool loading = false;
-	(MediaScan, FileStat)? _attachmentScan;
+	(MediaScan, FileStat, Digest)? _attachmentScan;
 	File? attachment;
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
 	bool _showOptions = false;
@@ -571,10 +572,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		}
 	}
 
-	Future<void> setAttachment(File newAttachment) async {
-		print(newAttachment);
+	Future<void> setAttachment(File newAttachment, {bool forceRandomizeChecksum = false}) async {
 		File? file = newAttachment;
 		final settings = context.read<EffectiveSettings>();
+		final randomizeChecksum = forceRandomizeChecksum || settings.randomizeChecksumOnUploadedFiles;
 		setState(() {
 			_attachmentProgress = ('Processing', null);
 		});
@@ -610,11 +611,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						maximumSizeInBytes: board.maxImageSizeBytes,
 						maximumDimension: settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
-						randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+						randomizeChecksum: randomizeChecksum
 					),
-					metadataPresent: scan.metadata?.isNotEmpty ?? false,
+					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-					randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+					randomizeChecksum: randomizeChecksum
 				);
 			}
 			else if (ext == 'png') {
@@ -630,11 +631,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						maximumSizeInBytes: board.maxImageSizeBytes,
 						maximumDimension: settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
-						randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+						randomizeChecksum: randomizeChecksum
 					),
-					metadataPresent: scan.metadata?.isNotEmpty ?? false,
+					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-					randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+					randomizeChecksum: randomizeChecksum
 				);
 			}
 			else if (ext == 'gif') {
@@ -661,11 +662,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						maximumDurationInSeconds: board.maxWebmDurationSeconds,
 						maximumDimension: settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
-						randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+						randomizeChecksum: randomizeChecksum
 					),
-					metadataPresent: scan.metadata?.isNotEmpty ?? false,
+					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-					randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+					randomizeChecksum: randomizeChecksum
 				);
 			}
 			else if (ext == 'mp4' || ext == 'mov') {
@@ -685,18 +686,18 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						maximumDurationInSeconds: board.maxWebmDurationSeconds,
 						maximumDimension: settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
-						randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+						randomizeChecksum: randomizeChecksum
 					),
-					metadataPresent: scan.metadata?.isNotEmpty ?? false,
+					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-					randomizeChecksum: settings.randomizeChecksumOnUploadedFiles
+					randomizeChecksum: randomizeChecksum
 				);
 			}
 			else {
 				throw Exception('Unsupported file type: $ext');
 			}
 			if (file != null) {
-				_attachmentScan = (await MediaScan.scan(file.uri), await file.stat());
+				_attachmentScan = (await MediaScan.scan(file.uri), await file.stat(), await md5.bind(file.openRead()).first);
 				setState(() {
 					attachment = file;
 				});
@@ -1404,19 +1405,41 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										mainAxisAlignment: MainAxisAlignment.spaceBetween,
 										crossAxisAlignment: CrossAxisAlignment.end,
 										children: [
-											AdaptiveIconButton(
-												padding: EdgeInsets.zero,
-												minSize: 30,
-												icon: const Icon(CupertinoIcons.xmark),
-												onPressed: () {
-													widget.onFilePathChanged?.call(null);
-													setState(() {
-														attachment = null;
-														_attachmentScan = null;
-														_showAttachmentOptions = false;
-														_filenameController.clear();
-													});
-												}
+											Wrap(
+												spacing: 4,
+												runSpacing: 4,
+												children: [
+													AdaptiveFilledButton(
+														padding: const EdgeInsets.all(4),
+														child: Text('MD5: ${_attachmentScan?.$3.toString().substring(0, 6).toUpperCase()}'),
+														onPressed: () async {
+															final old = attachment!;
+															setState(() {
+																attachment = null;
+																_attachmentScan = null;
+																_showAttachmentOptions = false;
+															});
+															await setAttachment(old, forceRandomizeChecksum: true);
+															setState(() {
+																_showAttachmentOptions = true;
+															});
+														}
+													),
+													AdaptiveIconButton(
+														padding: EdgeInsets.zero,
+														minSize: 30,
+														icon: const Icon(CupertinoIcons.xmark),
+														onPressed: () {
+															widget.onFilePathChanged?.call(null);
+															setState(() {
+																attachment = null;
+																_attachmentScan = null;
+																_showAttachmentOptions = false;
+																_filenameController.clear();
+															});
+														}
+													),
+												]
 											),
 											Flexible(
 												child: AutoSizeText(

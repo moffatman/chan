@@ -7,6 +7,7 @@ import 'package:async/async.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
@@ -182,6 +183,14 @@ class MediaScan {
 
 	bool get isAudioOnly => videoFramerate?.isNaN ?? true;
 
+	bool get hasMetadata {
+		final map = metadata;
+		return map != null &&
+		       map.isNotEmpty &&
+					 // ENCODER tag cannot be removed
+					 map.keys.trySingle != 'ENCODER';
+	}
+
 	@override
 	String toString() => 'MediaScan(hasAudio: $hasAudio, duration: $duration, bitrate: $bitrate, width: $width, height: $height, codec: $codec, videoFramerate: $videoFramerate)';
 }
@@ -280,7 +289,6 @@ class MediaConversion {
 				'-c:a', 'libvorbis',
 				'-c:v', 'libvpx-vp9',
 				'-cpu-used', '3',
-				'-crf', '10',
 				'-threads', sqrt(Platform.numberOfProcessors).ceil().toString()
 			],
 			headers: headers,
@@ -393,7 +401,7 @@ class MediaConversion {
 		if (soundSource != null && isOriginalFile) {
 			return null;
 		}
-		if ((scan?.metadata?.isNotEmpty ?? false) && removeMetadata) {
+		if ((scan?.hasMetadata ?? false) && removeMetadata) {
 			return null;
 		}
 		if (randomizeChecksum) {
@@ -475,6 +483,10 @@ class MediaConversion {
 						if (stripAudio) '-an',
 						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
 						else if (outputFileExtension != 'png') ...['-b:v', bitrateString],
+						if (outputFileExtension == 'webm') ...[
+							'-minrate', bitrateString,
+							'-maxrate', bitrateString
+						],
 						if (outputFileExtension == 'jpg' || outputFileExtension == 'png') ...['-pix_fmt', 'rgba'],
 						if (outputFileExtension == 'png') ...['-pred', 'mixed'],
 						if (outputFileExtension == 'm3u8') ...[
@@ -524,15 +536,16 @@ class MediaConversion {
 					throw MediaConversionFFMpegException(results.returnCode, results.output);
 				}
 				else {
-					if (maximumSizeInBytes != null && (await convertedFile.stat()).size > maximumSizeInBytes!) {
-						_additionalScaleDownFactor += 2;
-						print('Too big, retrying with factor $_additionalScaleDownFactor');
-						await start();
-						return;
+					if (maximumSizeInBytes != null) {
+						final outputSize = (await convertedFile.stat()).size;
+						if (outputSize > maximumSizeInBytes!) {
+							_additionalScaleDownFactor += 2;
+							print('Too big (${formatFilesize(outputSize)} > ${formatFilesize(maximumSizeInBytes!)}), retrying with factor $_additionalScaleDownFactor');
+							await start();
+							return;
+						}
 					}
-					else {
-						_completer!.complete(MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly));
-					}
+					_completer!.complete(MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly));
 				}
 			}
 		}
