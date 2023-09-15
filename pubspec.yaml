@@ -180,24 +180,30 @@ dependency_overrides:
   media_kit:
     git:
       url: https://github.com/moffatman/media-kit.git
+      ref: main
       path: media_kit
   media_kit_video:
     git:
       url: https://github.com/moffatman/media-kit.git
+      ref: main
       path: media_kit_video
   media_kit_libs_ios_video:
     git:
       url: https://github.com/moffatman/media-kit.git
+      ref: main
       path: libs/ios/media_kit_libs_ios_video
   media_kit_libs_android_video:
     git:
       url: https://github.com/moffatman/media-kit.git
+      ref: main
       path: libs/android/media_kit_libs_android_video
   media_kit_libs_macos_video:
     git:
       url: https://github.com/moffatman/media-kit.git
+      ref: main
       path: libs/macos/media_kit_libs_macos_video
   media_kit_libs_windows_video_encoders_gpl:
     git:
       url: https://github.com/moffatman/media-kit.git
+      ref: main
       path: libs/windows/media_kit_libs_windows_video_encoders_gpl
