@@ -195,7 +195,7 @@ class SiteDvach extends ImageboardSite {
 			throw DvachException(response.data['error']['code'], response.data['error']['message']);
 		}
 		if (response.data['enabled'] == 0) {
-			return NoCaptchaRequest();
+			return const NoCaptchaRequest();
 		}
 		for (final type in response.data['types']) {
 			if (type['id'] == '2chcaptcha') {

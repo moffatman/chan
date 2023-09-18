@@ -412,7 +412,7 @@ class SiteHackerNews extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		return NoCaptchaRequest();
+		return const NoCaptchaRequest();
 	}
 
 	Future<List<int>> _getSecondChancePoolIds(int? after, {required bool interactive}) async {

@@ -679,7 +679,7 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		return NoCaptchaRequest();
+		return const NoCaptchaRequest();
 	}
 
 	Future<void> _updateBoardIfNeeded(String board, {required bool interactive}) async {

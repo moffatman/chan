@@ -12,6 +12,7 @@ import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -650,7 +651,7 @@ class Site4Chan extends ImageboardSite {
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
 		if (loginSystem._passEnabled.putIfAbsent((Persistence.currentCookies, _sysUrl(board)), () => false)) {
-			return NoCaptchaRequest();
+			return const NoCaptchaRequest();
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
 		return Chan4CustomCaptchaRequest(
@@ -892,11 +893,81 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Uri getPostReportUrl(String board, int threadId, int postId) {
-		return Uri.https(_sysUrl(board), '/$board/imgboard.php', {
+	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
+		final endpoint = Uri.https(_sysUrl(board), '/$board/imgboard.php', {
 			'mode': 'report',
 			'no': postId.toString()
 		});
+		try {
+			final response = await client.getUri(endpoint);
+			final document = parse(response.data);
+			final choices = <ChoiceReportMethodChoice>[];
+			final cats = document.querySelectorAll('[name="cat"]');
+			final knownCat = cats.tryFirstWhere((cat) => cat.attributes['value']?.isEmpty != false);
+			if (knownCat == null) {
+				throw Exception('Report form changed');
+			}
+			cats.remove(knownCat);
+			choices.addAll(cats.map((cat) => (
+				name: document.querySelector('[for="${cat.id}"]')!.text,
+				value: {
+					'cat': cat.attributes['value']!,
+					'cat_id': ''
+				}
+			)));
+			choices.addAll(document.querySelectorAll('#cat-sel option').map((option) => (
+				name: option.text,
+				value: {
+					'cat': '',
+					'cat_id': option.attributes['value']!
+				}
+			)).where((choice) => choice.name.isNotEmpty));
+			final CaptchaRequest captchaRequest;
+			final captchaScript = document.querySelector('#pass script')?.text ?? '';
+			final captchaMatch = RegExp(r"TCaptcha\.init\(document\.getElementById\('t-root'\), '([^']+)', (\d+)\)").firstMatch(captchaScript);
+			if (captchaMatch != null) {
+				captchaRequest = await getCaptchaRequest(captchaMatch.group(1)!, int.parse(captchaMatch.group(2)!));
+			}
+			else {
+				captchaRequest = const NoCaptchaRequest();
+			}
+			return ChoiceReportMethod(
+				question: 'Report type',
+				captchaRequest: captchaRequest,
+				choices: choices,
+				onSubmit: (choice, captchaSolution) async {
+					final response = await client.postUri(endpoint, data: {
+						...choice,
+						if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
+						else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
+							't-response': captchaSolution.response,
+							't-challenge': captchaSolution.challenge
+						},
+						'board': board,
+						'no': postId.toString(),
+					}, options: Options(
+						responseType: ResponseType.plain,
+						contentType: Headers.formUrlEncodedContentType,
+						headers: {
+							'referer': endpoint.toString()
+						},
+						extra: {
+							if (captchaSolution.cloudflare) 'cloudflare': true
+						}
+					));
+					final responseDocument = parse(response.data);
+					final message = responseDocument.querySelector('font')?.text;
+					if (message == null || !message.contains('submitted')) {
+						throw Exception('Report failed: ${message ?? 'Could not find response text'}');
+					}
+				}
+			);
+		}
+		catch (e, st) {
+			Future.error(e, st); // Form has changed, report to crashlytics
+		}
+		// Fallback to web form
+		return WebReportMethod(endpoint);
 	}
 
 	Site4Chan({

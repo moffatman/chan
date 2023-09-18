@@ -271,7 +271,7 @@ class SiteLynxchan extends ImageboardSite {
 		final captchaMode = persistence.maybeGetBoard(board)?.captchaMode ?? 0;
 		if (captchaMode == 0 ||
 				(captchaMode == 1 && threadId != null)) {
-			return NoCaptchaRequest();
+			return const NoCaptchaRequest();
 		}
 		return LynxchanCaptchaRequest(
 			board: board

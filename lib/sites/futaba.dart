@@ -178,7 +178,7 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		return NoCaptchaRequest();
+		return const NoCaptchaRequest();
 	}
 
 	Future<dom.Document> _getCatalogPage(String board, String page, {required bool interactive}) async {

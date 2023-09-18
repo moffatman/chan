@@ -467,19 +467,20 @@ enum PostSortingMethod {
 	};
 }
 
-class CaptchaRequest {
+sealed class CaptchaRequest {
 	bool get cloudSolveSupported => false;
+	const CaptchaRequest();
 }
 
 class NoCaptchaRequest extends CaptchaRequest {
-  
+  const NoCaptchaRequest();
 }
 
 class RecaptchaRequest extends CaptchaRequest {
 	final String key;
 	final String sourceUrl;
 	final bool cloudflare;
-	RecaptchaRequest({
+	const RecaptchaRequest({
 		required this.key,
 		required this.sourceUrl,
 		required this.cloudflare
@@ -492,7 +493,7 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
 	final Map<String, String> challengeHeaders;
 
-	Chan4CustomCaptchaRequest({
+	const Chan4CustomCaptchaRequest({
 		required this.challengeUrl,
 		required this.challengeHeaders
 	});
@@ -505,7 +506,7 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 
 class SecurimageCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
-	SecurimageCaptchaRequest({
+	const SecurimageCaptchaRequest({
 		required this.challengeUrl
 	});
 	@override
@@ -514,14 +515,14 @@ class SecurimageCaptchaRequest extends CaptchaRequest {
 
 class DvachCaptchaRequest extends CaptchaRequest {
 	final Duration challengeLifetime;
-	DvachCaptchaRequest({
+	const DvachCaptchaRequest({
 		required this.challengeLifetime
 	});
 }
 
 class LynxchanCaptchaRequest extends CaptchaRequest {
 	final String board;
-	LynxchanCaptchaRequest({
+	const LynxchanCaptchaRequest({
 		required this.board
 	});
 	@override
@@ -530,7 +531,7 @@ class LynxchanCaptchaRequest extends CaptchaRequest {
 
 class SecucapCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
-	SecucapCaptchaRequest({
+	const SecucapCaptchaRequest({
 		required this.challengeUrl
 	});
 	@override
@@ -806,6 +807,30 @@ class ImageboardUserInfo {
 	String toString() => 'ImageboardUserInfo($username)';
 }
 
+sealed class ImageboardReportMethod {
+	const ImageboardReportMethod();
+}
+
+class WebReportMethod extends ImageboardReportMethod {
+	final Uri uri;
+	const WebReportMethod(this.uri);
+}
+
+typedef ChoiceReportMethodChoice = ({String name, Map<String, String> value});
+
+class ChoiceReportMethod extends ImageboardReportMethod {
+	final String question;
+	final List<ChoiceReportMethodChoice> choices;
+	final CaptchaRequest captchaRequest;
+	final Future<void> Function(Map<String, String> choice, CaptchaSolution captchaSolution) onSubmit;
+	const ChoiceReportMethod({
+		required this.question,
+		required this.choices,
+		required this.captchaRequest,
+		required this.onSubmit
+	});
+}
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
@@ -1038,7 +1063,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		throw Exception('Search failed - exhausted all archives$s');
 	}
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
-	Uri getPostReportUrl(String board, int threadId, int postId) => Uri.parse(getWebUrl(board, threadId, postId));
+	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
+		return WebReportMethod(Uri.parse(getWebUrl(board, threadId, postId)));
+	}
 	late Persistence persistence;
 	ImageboardSiteLoginSystem? get loginSystem => null;
 	List<ImageboardEmote> getEmotes() => [];

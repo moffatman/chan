@@ -449,12 +449,12 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		return NoCaptchaRequest();
+		return const NoCaptchaRequest();
 	}
 
 	@override
-	Uri getPostReportUrl(String board, int threadId, int postId) {
-		return Uri.https(baseUrl, '/report.php?post=delete_$postId&board=$board');
+	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
+		return WebReportMethod(Uri.https(baseUrl, '/report.php?post=delete_$postId&board=$board'));
 	}
 
 	@override

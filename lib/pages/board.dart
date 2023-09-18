@@ -13,6 +13,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/posts_image.dart';
+import 'package:chan/services/report_post.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
@@ -592,9 +593,13 @@ class _BoardPageState extends State<BoardPage> {
 					ContextMenuAction(
 						child: const Text('Report thread'),
 						trailingIcon: CupertinoIcons.exclamationmark_octagon,
-						onPressed: () {
-							openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(thread.board, thread.id, thread.id));
-						}
+						onPressed: () => reportPost(
+							context: context,
+							site: context.read<ImageboardSite>(),
+							board: thread.board,
+							threadId: thread.id,
+							postId: thread.id
+						)
 					)
 				],
 				maxHeight: settings.maxCatalogRowHeight,

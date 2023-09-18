@@ -4,6 +4,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/posts_image.dart';
+import 'package:chan/services/report_post.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -784,9 +785,13 @@ class PostRow extends StatelessWidget {
 				ContextMenuAction(
 					child: const Text('Report post'),
 					trailingIcon: CupertinoIcons.exclamationmark_octagon,
-					onPressed: () {
-						openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(latestPost.board, latestPost.threadId, latestPost.id));
-					}
+					onPressed: () => reportPost(
+						context: context,
+						site: context.read<ImageboardSite>(),
+						board: latestPost.board,
+						threadId: latestPost.threadId,
+						postId: latestPost.id
+					)
 				),
 				if (receipt != null) ContextMenuAction(
 					child: const Text('Delete post'),

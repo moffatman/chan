@@ -234,6 +234,14 @@ class CloudflareInterceptor extends Interceptor {
 				else if (options.data is String) {
 					options.data = utf8.encode(options.data);
 				}
+				else if (Transformer.isJsonMimeType(options.contentType)) {
+					options.data = utf8.encode(jsonEncode(options.data));
+				}
+				else if (options.data is Map) {
+					options.headers[Headers.contentTypeHeader] = Headers.formUrlEncodedContentType;
+					print(Transformer.urlEncodeMap(options.data));
+					options.data = utf8.encode(Transformer.urlEncodeMap(options.data));
+				}
 				final data = await _useWebview(
 					cookieUrl: options.uri,
 					userAgent: options.headers['user-agent'] ?? Persistence.settings.userAgent,

@@ -10,6 +10,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/captcha.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/imageboard.dart';
@@ -25,11 +26,6 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
-import 'package:chan/widgets/captcha_4chan.dart';
-import 'package:chan/widgets/captcha_dvach.dart';
-import 'package:chan/widgets/captcha_lynxchan.dart';
-import 'package:chan/widgets/captcha_secucap.dart';
-import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
@@ -784,123 +780,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			final captchaRequest = await site.getCaptchaRequest(widget.board, widget.threadId);
 			_promptForHeadlessSolve = captchaRequest.cloudSolveSupported;
 			if (!mounted) return;
-			if (captchaRequest is RecaptchaRequest) {
-				hideReplyBox();
-				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
-					builder: (context) => OverscrollModalPage(
-						child: CaptchaNoJS(
-							site: site,
-							request: captchaRequest,
-							onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
-						)
-					)
-				));
-				showReplyBox();
-			}
-			else if (captchaRequest is Chan4CustomCaptchaRequest) {
-				CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
-				if ((settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver ?? false) && !_headlessSolveFailed) {
-					try {
-						final cloudSolution = await headlessSolveCaptcha4ChanCustom(
-							request: captchaRequest,
-							site: site
-						);
-						if (!mounted) {
-							return;
-						}
-						if (cloudSolution.confident) {
-							_captchaSolution = cloudSolution.solution;
-							showToast(
-								context: context,
-								icon: CupertinoIcons.checkmark_seal,
-								message: 'Solved captcha'
-							);
-						}
-						else {
-							// Cloud solver did not report being "confident"
-							// Just pass the current work so far into the widget
-							initialCloudGuess = cloudSolution;
-						}
-					}
-					catch (e, st) {
-						Future.error(e, st); // Report to crashlytics
-						showToast(
-							context: context,
-							icon: CupertinoIcons.exclamationmark_triangle,
-							message: 'Cloud solve failed: ${e.toStringDio()}'
-						);
-					}
-				}
-				if (!_haveValidCaptcha) {
-					hideReplyBox();
-					_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
-						builder: (context) => OverscrollModalPage(
-							child: Captcha4ChanCustom(
-								site: site,
-								request: captchaRequest,
-								initialCloudGuess: initialCloudGuess,
-								onCaptchaSolved: (key) => Navigator.of(context).pop(key)
-							)
-						)
-					));
-					showReplyBox();
-				}
-			}
-			else if (captchaRequest is SecurimageCaptchaRequest) {
-				hideReplyBox();
-				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
-					builder: (context) => OverscrollModalPage(
-						child: CaptchaSecurimage(
-							request: captchaRequest,
-							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
-							site: site
-						)
-					)
-				));
-				showReplyBox();
-			}
-			else if (captchaRequest is DvachCaptchaRequest) {
-				hideReplyBox();
-				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
-					builder: (context) => OverscrollModalPage(
-						child: CaptchaDvach(
-							request: captchaRequest,
-							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
-							site: site
-						)
-					)
-				));
-				showReplyBox();
-			}
-			else if (captchaRequest is LynxchanCaptchaRequest) {
-				hideReplyBox();
-				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
-					builder: (context) => OverscrollModalPage(
-						child: CaptchaLynxchan(
-							request: captchaRequest,
-							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
-							site: site
-						)
-					)
-				));
-				showReplyBox();
-			}
-			else if (captchaRequest is SecucapCaptchaRequest) {
-				hideReplyBox();
-				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
-					builder: (context) => OverscrollModalPage(
-						child: CaptchaSecucap(
-							request: captchaRequest,
-							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
-							site: site
-						)
-					)
-				));
-				showReplyBox();
-			}
-			else if (captchaRequest is NoCaptchaRequest) {
-				_captchaSolution = NoCaptchaSolution();
-			}
+			_captchaSolution = await solveCaptcha(
+				context: context,
+				site: site,
+				request: captchaRequest,
+				beforeModal: hideReplyBox,
+				afterModal: showReplyBox,
+				disableHeadlessSolve: _headlessSolveFailed
+			);
 		}
 		catch (e, st) {
 			print(e);
