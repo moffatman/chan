@@ -801,7 +801,7 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		final crossThreads = <ThreadIdentifier, Set<int>>{};
 		for (final id in newThread.posts.expand((p) => p.span.referencedPostIdentifiers)) {
-			if (id.threadId == newThread.id || id.postId == id.threadId || id.postId == null) {
+			if (id.threadId == newThread.id || id.postId == id.threadId || id.postId == null || id.board != newThread.board) {
 				continue;
 			}
 			crossThreads.putIfAbsent(id.thread, () => {}).add(id.postId!);
