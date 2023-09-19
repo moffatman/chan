@@ -61,7 +61,7 @@ Future<void> reportPost({
 								AdaptiveDialogAction(
 									isDefaultAction: true,
 									onPressed: choice == null ? null : () {
-										() async {
+										modalLoad(context, 'Submitting...', (_) async {
 											final captchaSolution = await solveCaptcha(
 												context: context,
 												site: site,
@@ -76,7 +76,7 @@ Future<void> reportPost({
 											if (context.mounted) {
 												Navigator.pop(context);
 											}
-										}().then(completer.complete, onError: completer.completeError);
+										}).then(completer.complete, onError: completer.completeError);
 									},
 									child: const Text('Submit')
 								),
