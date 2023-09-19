@@ -181,7 +181,7 @@ class Post implements Filterable {
 	List<int> get repliedToIds {
 		_repliedToIds ??= id == threadId ? const [] : [
 			if (parentId != null) parentId!,
-			...span.referencedPostIds(board)
+			...span.referencedPostIds(board).where((otherId) => otherId != id)
 		].toList(growable: false);
 		return _repliedToIds!;
 	}

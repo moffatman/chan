@@ -1667,7 +1667,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				bool foundAParent = false;
 				final orphanParents = <int>[];
 				for (final parentId in parentIds) {
-					if (adapter.repliesToOPAreTopLevel && parentId == adapter.opId) {
+					if (parentId == id) {
+						// Disallow recursive replies
+						continue;
+					}
+					if (adapter.repliesToOPAreTopLevel && parentId == adapter.opId && treeMap.containsKey(parentId)) {
 						foundAParent = true;
 						continue;
 					}

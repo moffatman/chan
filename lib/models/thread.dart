@@ -65,6 +65,10 @@ class Thread implements Filterable {
 			}
 			for (final post in posts_) {
 				for (final referencedPostId in post.repliedToIds) {
+					if (referencedPostId == post.id) {
+						// Disallow recursive replies
+						continue;
+					}
 					if (!(postsById[referencedPostId]?.replyIds.contains(post.id) ?? true)) {
 						postsById[referencedPostId]?.replyIds.add(post.id);
 					}
