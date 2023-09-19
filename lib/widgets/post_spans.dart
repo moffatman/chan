@@ -1634,7 +1634,9 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	Future<void> translatePost(Post post) async {
 		try {
-			await parent.translatePost(post);
+			final x = parent.translatePost(post);
+			notifyListeners();
+			await x;
 		}
 		finally {
 			notifyListeners();
