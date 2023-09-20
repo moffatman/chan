@@ -197,7 +197,7 @@ class CloudflareInterceptor extends Interceptor {
 						onPageCommitVisible: (controller, uri) {
 							controller.evaluateJavascript(source: '''
 								var style = document.createElement('style');
-								style.innerHTML = "* { color: ${EffectiveSettings.instance.theme.primaryColor.toCssRgba()}; }";
+								style.innerHTML = "* { color: ${EffectiveSettings.instance.theme.primaryColor.toCssHex()}; }";
 								document.head.appendChild(style);
 								document.body.bgColor = "${EffectiveSettings.instance.theme.backgroundColor.toCssHex()}";
 							''');
