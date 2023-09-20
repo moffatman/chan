@@ -427,15 +427,26 @@ class ChanTabs extends ChangeNotifier {
 	final _tabListController = ScrollController();
 	int _lastIndex = 0;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
+	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
+	final _searchPageKey = GlobalKey<SearchPageState>();
+	final _historyPageKey = GlobalKey<HistoryPageState>();
+	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 
 	ChanTabs({
 		required this.onShouldShowTabPopup
 	}) {
 		Persistence.globalTabMutator.addListener(_onGlobalTabMutatorUpdate);
+		for (final tab in Persistence.tabs) {
+			tab.addListener(_onTabUpdate);
+		}
 	}
 
 	void _onGlobalTabMutatorUpdate() {
 		browseTabIndex = Persistence.globalTabMutator.value;
+	}
+
+	void _onTabUpdate() {
+		notifyListeners();
 	}
 
 	Future<void> _didModifyPersistentTabData() async {
@@ -460,12 +471,61 @@ class ChanTabs extends ChangeNotifier {
 		_didModifyPersistentTabData();
 	}
 
+	bool get shouldEnableWideDrawerGesture {
+		if (_tabNavigatorKeys[mainTabIndex]?.currentState?.canPop() ?? false) {
+			// Something covering the current navigator
+			return false;
+		}
+		if (mainTabIndex == 0) {
+			final tab = Persistence.tabs[Persistence.currentTabIndex];
+			final masterNavigatorState = tab.masterDetailKey.currentState?.masterKey.currentState;
+			if (masterNavigatorState != null) {
+				return !masterNavigatorState.canPop();
+			}
+		}
+		else if (mainTabIndex == 1) {
+			final state = _savedMasterDetailKey.currentState;
+			if (state != null) {
+				if (state.selectedPane != 0) {
+					// Priority is swiping left to previous pane
+					return false;
+				}
+				final masterNavigatorState = state.masterKey.currentState;
+				if (masterNavigatorState != null) {
+					return !masterNavigatorState.canPop();
+				}
+			}
+		}
+		else if (mainTabIndex == 2) {
+			final masterNavigatorState = _historyPageKey.currentState?.masterDetailKey.currentState?.masterKey.currentState;
+			if (masterNavigatorState != null) {
+				return !masterNavigatorState.canPop();
+			}
+		}
+		else if (mainTabIndex == 3) {
+			final masterNavigatorState = _searchPageKey.currentState?.masterDetailKey.currentState?.masterKey.currentState;
+			if (masterNavigatorState != null) {
+				return !masterNavigatorState.canPop();
+			}
+		}
+		else if (mainTabIndex == 4) {
+			final state = _settingsNavigatorKey.currentState;
+			if (state != null) {
+				return !state.canPop();
+			}
+		}
+		return true;
+	}
+
 	@override
 	void dispose() {
 		super.dispose();
 		activeBrowserTab.dispose();
 		_tabListController.dispose();
 		Persistence.globalTabMutator.removeListener(_onGlobalTabMutatorUpdate);
+		for (final tab in Persistence.tabs) {
+			tab.removeListener(_onTabUpdate);
+		}
 	}
 
 	PersistentBrowserTab addNewTab({
@@ -489,6 +549,7 @@ class ChanTabs extends ChangeNotifier {
 			initialSearch: withInitialSearch
 		);
 		tab.initialize();
+		tab.addListener(_onTabUpdate);
 		if (withBoard != null && withThreadId != null && withInitialPostId != null) {
 			tab.initialPostId[ThreadIdentifier(withBoard, withThreadId)] = withInitialPostId;
 		}
@@ -525,7 +586,8 @@ class ChanTabs extends ChangeNotifier {
 	}
 
 	void closeBrowseTab(int browseIndex) {
-		Persistence.tabs.removeAt(browseIndex);
+		final removed = Persistence.tabs.removeAt(browseIndex);
+		removed.removeListener(_onTabUpdate);
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		final newActiveTabIndex = min(activeBrowserTab.value, Persistence.tabs.length - 1);
 		activeBrowserTab.value = newActiveTabIndex;
@@ -584,8 +646,12 @@ class ChanTabs extends ChangeNotifier {
 						);
 						if (shouldCloseOthers == true) {
 							final tabToPreserve = Persistence.tabs[browseTabIndex];
+							for (final tab in Persistence.tabs) {
+								tab.removeListener(_onTabUpdate);
+							}
 							Persistence.tabs.clear();
 							Persistence.tabs.add(tabToPreserve);
+							tabToPreserve.addListener(_onTabUpdate);
 							browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 							browseTabIndex = 0;
 							if (Persistence.settings.closeTabSwitcherAfterUse) {
@@ -648,17 +714,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	({Notifications notifications, StreamSubscription<PostIdentifier> subscription})? _devNotificationsSubscription;
 	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
 	final devTab = PersistentBrowserTab();
-	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _tabletWillPopZones = <int, WillPopZone>{};
-	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
 	final Map<String, ({Notifications notifications, StreamSubscription<PostIdentifier> subscription})> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
 	late StreamSubscription<String?> _fakeLinkSubscription;
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
 	late StreamSubscription<String> _sharedTextSubscription;
-	final _searchPageKey = GlobalKey<SearchPageState>();
-	final _historyPageKey = GlobalKey<HistoryPageState>();
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
 	bool _hideTabPopupAutomatically = false;
@@ -700,12 +762,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				showTabPopup = false;
 			});
 		}
-		for (int i = 0; i < 200 && _settingsNavigatorKey.currentState == null; i++) {
+		for (int i = 0; i < 200 && _tabs._settingsNavigatorKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
 		}
 		if (devTab.threadPageState?.widget.thread != id.thread) {
-			_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
-			_settingsNavigatorKey.currentState?.push(
+			_tabs._settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
+			_tabs._settingsNavigatorKey.currentState?.push(
 				adaptivePageRoute(
 					builder: (context) => ThreadPage(
 						thread: id.thread,
@@ -1106,10 +1168,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									key: tabObject.tabKey,
 									onWantArchiveSearch: (imageboardKey, board, query) async {
 										_tabs.mainTabIndex = 3;
-										for (int i = 0; i < 200 && _searchPageKey.currentState == null; i++) {
+										for (int i = 0; i < 200 && _tabs._searchPageKey.currentState == null; i++) {
 											await Future.delayed(const Duration(milliseconds: 50));
 										}
-										_searchPageKey.currentState?.onSearchComposed(ImageboardArchiveSearchQuery(
+										_tabs._searchPageKey.currentState?.onSearchComposed(ImageboardArchiveSearchQuery(
 											imageboardKey: imageboardKey,
 											boards: [board],
 											query: query
@@ -1196,7 +1258,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				),
 				child: HistoryPage(
 					isActive: active,
-					key: _historyPageKey
+					key: _tabs._historyPageKey
 				)
 			);
 		}
@@ -1212,7 +1274,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					)
 				),
 				child: SearchPage(
-					key: _searchPageKey
+					key: _tabs._searchPageKey
 				)
 			);
 		}
@@ -1231,14 +1293,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									// Likely a text field is focused
 									return;
 								}
-								_settingsNavigatorKey.currentState?.maybePop();
+								_tabs._settingsNavigatorKey.currentState?.maybePop();
 								return null;
 							}
 						)
 					},
 					child: WillPopScope(
 						onWillPop: () async {
-							return !(await _settingsNavigatorKey.currentState?.maybePop() ?? false);
+							return !(await _tabs._settingsNavigatorKey.currentState?.maybePop() ?? false);
 						},
 						child: ImageboardScope(
 							imageboardKey: devImageboard?.key,
@@ -1246,7 +1308,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								value: devTab,
 								child: ClipRect(
 									child: PrimaryScrollControllerInjectingNavigator(
-										navigatorKey: _settingsNavigatorKey,
+										navigatorKey: _tabs._settingsNavigatorKey,
 										observers: [
 											HeroController(),
 											NavigatorObserver()
@@ -1378,13 +1440,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							}
 							else if (index == _tabs._lastIndex) {
 								if (index == 4) {
-									_settingsNavigatorKey.currentState?.maybePop();
+									_tabs._settingsNavigatorKey.currentState?.maybePop();
 								}
 								else {
 									_tabletWillPopZones[index]?.callback?.call();
 								}
 							} else if (index == 2) {
-								await _historyPageKey.currentState?.updateList();
+								await _tabs._historyPageKey.currentState?.updateList();
 							}
 							_tabs.mainTabIndex = max(0, index);
 						}
@@ -1630,7 +1692,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				child: WillPopScope(
 					onWillPop: () async {
 						if (_tabs.mainTabIndex == 4) {
-							if ((await _settingsNavigatorKey.currentState?.maybePop()) ?? false) {
+							if ((await _tabs._settingsNavigatorKey.currentState?.maybePop()) ?? false) {
 								return false;
 							}
 						}
@@ -1723,14 +1785,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								// Likely a text field is focused
 								return;
 							}
-							_tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop();
+							_tabs._tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop();
 							return null;
 						}
 					)
 				},
 				child: WillPopScope(
 					onWillPop: () async {
-						if (await _tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop() ?? false) {
+						if (await _tabs._tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop() ?? false) {
 							return false;
 						}
 						if (_tabs.mainTabIndex != 0) {
@@ -1840,7 +1902,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							},
 							beforeCopiedOnTap: (index) async {
 								if (index == 2) {
-									await _historyPageKey.currentState?.updateList();
+									await _tabs._historyPageKey.currentState?.updateList();
 								}
 							},
 							onTap: (index) {
@@ -1852,7 +1914,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								}
 								else if (index == _tabs._lastIndex) {
 									if (index == 4) {
-										_settingsNavigatorKey.currentState?.maybePop();
+										_tabs._settingsNavigatorKey.currentState?.maybePop();
 									}
 									else {
 										_tabletWillPopZones[index]?.callback?.call();
@@ -1873,7 +1935,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									children: [
 										Expanded(
 											child: CupertinoTabView(
-												navigatorKey: _tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>(debugLabel: '_ChanHomePageState._tabNavigatorKeys[$index]')),
+												navigatorKey: _tabs._tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>(debugLabel: '_ChanHomePageState._tabNavigatorKeys[$index]')),
 												builder: (context) => AnimatedBuilder(
 													animation: _tabs._tabController,
 													builder: (context, child) => _buildTab(context, index, _tabs.mainTabIndex == index)

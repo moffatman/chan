@@ -36,7 +36,7 @@ class HistoryPage extends StatefulWidget {
 const _historyPageSize = 50;
 
 class HistoryPageState extends State<HistoryPage> {
-	final _masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
+	final masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	late final RefreshableListController<PersistentThreadState> _listController;
 	late final ValueNotifier<ImageboardScoped<PostIdentifier>?> _valueInjector;
 
@@ -48,7 +48,7 @@ class HistoryPageState extends State<HistoryPage> {
 	}
 
 	void _onFullHistorySearch(String query) {
-		_masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
+		masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _valueInjector,
 				builder: (context, ImageboardScoped<PostIdentifier>? selectedResult, child) {
@@ -56,7 +56,7 @@ class HistoryPageState extends State<HistoryPage> {
 						query: query,
 						selectedResult: _valueInjector.value,
 						onResultSelected: (result) {
-							_masterDetailKey.currentState!.setValue(0, result);
+							masterDetailKey.currentState!.setValue(0, result);
 						}
 					);
 				}
@@ -73,7 +73,7 @@ class HistoryPageState extends State<HistoryPage> {
 		return MultiMasterDetailPage(
 			showChrome: false,
 			id: 'history',
-			key: _masterDetailKey,
+			key: masterDetailKey,
 			paneCreator: () => [
 				MultiMasterPane<ImageboardScoped<PostIdentifier>>(
 					masterBuilder: (context, selectedThread, threadSetter) {

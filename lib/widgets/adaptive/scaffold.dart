@@ -1,3 +1,4 @@
+import 'package:chan/main.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
@@ -161,6 +162,18 @@ class AdaptiveScaffold extends StatelessWidget {
 		super.key
 	});
 
+	double _calculateWideDrawerEdgeDragWidth(BuildContext context) {
+		final twoPaneBreakpoint = context.select<EffectiveSettings, double>((s) => s.twoPaneBreakpoint);
+		final size = MediaQuery.sizeOf(context);
+		if (size.width < twoPaneBreakpoint) {
+			// Half-screen-width for one-pane
+			return size.width / 2;
+		}
+		final twoPaneSplit = context.select<EffectiveSettings, int>((s) => s.twoPaneSplit) / twoPaneSplitDenominator;
+		// Half-master-pane-width for two-pane
+		return (size.width / 2) * twoPaneSplit;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final bar_ = bar;
@@ -177,6 +190,7 @@ class AdaptiveScaffold extends StatelessWidget {
 			}
 			return Scaffold(
 				drawer: drawer,
+				drawerEdgeDragWidth: context.select<ChanTabs, bool>((t) => t.shouldEnableWideDrawerGesture) ? _calculateWideDrawerEdgeDragWidth(context) : null,
 				extendBodyBehindAppBar: autoHideBars || (bar_?.backgroundColor?.opacity ?? 1) < 1,
 				resizeToAvoidBottomInset: resizeToAvoidBottomInset,
 				backgroundColor: backgroundColor,
@@ -233,6 +247,7 @@ class AdaptiveScaffold extends StatelessWidget {
 				children: [
 					child,
 					DrawerController(
+						edgeDragWidth: context.select<ChanTabs, bool>((t) => t.shouldEnableWideDrawerGesture) ? _calculateWideDrawerEdgeDragWidth(context) : null,
 						key: context.watch<_CupertinoDrawer>().key,
 						alignment: DrawerAlignment.start,
 						child: drawer_

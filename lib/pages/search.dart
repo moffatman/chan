@@ -58,7 +58,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class SearchPageState extends State<SearchPage> {
-	final _masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
+	final masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	late final ValueNotifier<SelectedSearchResult?> _valueInjector;
 
 	@override
@@ -70,7 +70,7 @@ class SearchPageState extends State<SearchPage> {
 	void onSearchComposed(ImageboardArchiveSearchQuery query) {
 		Persistence.recentSearches.handleSearch(query.clone());
 		Persistence.didUpdateRecentSearches();
-		_masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
+		masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _valueInjector,
 				builder: (context, SelectedSearchResult? selectedResult, child) {
@@ -78,7 +78,7 @@ class SearchPageState extends State<SearchPage> {
 						query: query,
 						selectedResult: _valueInjector.value,
 						onResultSelected: (result) {
-							_masterDetailKey.currentState!.setValue(0, result);
+							masterDetailKey.currentState!.setValue(0, result);
 						}
 					);
 					if (query.imageboardKey == null) {
@@ -98,7 +98,7 @@ class SearchPageState extends State<SearchPage> {
 	Widget build(BuildContext context) {
 		return MultiMasterDetailPage(
 			id: 'search',
-			key: _masterDetailKey,
+			key: masterDetailKey,
 			showChrome: false,
 			paneCreator: () => [
 				MultiMasterPane<SelectedSearchResult>(
