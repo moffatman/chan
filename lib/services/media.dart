@@ -351,12 +351,16 @@ class MediaConversion {
 			// Probably the other pathSegments are the unique parts
 			filename = inputFile.pathSegments.join('_');
 		}
-		final fileExtension = inputFile.pathSegments.last.split('.').last;
+		final filenameParts = filename.split('.');
+		if (filenameParts.length > 1) {
+			filenameParts.removeLast();
+		}
+		final filenameWithoutExtension = filenameParts.join('.');
 		if (requiresSubdirectory) {
-			subdir += '/${filename.replaceFirst('.$fileExtension', '')}';
+			subdir += '/$filenameWithoutExtension';
 			Directory('${Persistence.temporaryDirectory.path}/webmcache/$subdir').createSync(recursive: true);
 		}
-		return File('${Persistence.temporaryDirectory.path}/webmcache/$subdir/${filename.replaceFirst('.$fileExtension', '$cacheKey.$outputFileExtension')}');
+		return File('${Persistence.temporaryDirectory.path}/webmcache/$subdir/$filenameWithoutExtension$cacheKey.$outputFileExtension');
 	}
 
 	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints() async {

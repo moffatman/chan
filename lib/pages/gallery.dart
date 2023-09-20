@@ -804,9 +804,9 @@ class _GalleryPageState extends State<GalleryPage> {
 													onPressed: currentController.canShare ? () async {
 														final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));
 														if (!download) return;
-														await currentController.download(force: true);
+														final filename = await currentController.download(force: true);
 														if (!mounted) return;
-														showToast(context: context, message: 'Downloaded ${currentController.downloadFilename}', icon: CupertinoIcons.cloud_download);
+														showToast(context: context, message: 'Downloaded $filename', icon: CupertinoIcons.cloud_download);
 													} : null,
 													icon: currentController.isDownloaded ? const Icon(CupertinoIcons.cloud_download_fill) : const Icon(CupertinoIcons.cloud_download)
 												),
@@ -820,7 +820,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																	context.read<Persistence>().deleteSavedAttachment(currentAttachment.attachment);
 																}
 																else {
-																	context.read<Persistence>().saveAttachment(currentAttachment.attachment, currentController.getFile());
+																	context.read<Persistence>().saveAttachment(currentAttachment.attachment, currentController.getFile(), currentController.cacheExt);
 																}
 															} : null,
 															icon: Icon(currentlySaved ? Adaptive.icons.bookmarkFilled : Adaptive.icons.bookmark)

@@ -110,6 +110,12 @@ void showToast({
 class ModalLoadController {
 	final progress = ValueNotifier<double?>(null);
 	bool cancelled = false;
+	VoidCallback? onCancel;
+
+	void cancel() {
+		cancelled = true;
+		onCancel?.call();
+	}
 
 	void dispose() {
 		progress.dispose();
@@ -138,7 +144,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 								padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
 								minSize: 0,
 								onPressed: controller.cancelled ? null : () {
-									controller.cancelled = true;
+									controller.cancel();
 									setDialogState(() {});
 								},
 								child: const Text('Cancel')

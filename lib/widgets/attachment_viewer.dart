@@ -477,7 +477,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
 				final url = await _getGoodSource(interactive: !background);
 				bool transcode = false;
-				if (attachment.type == AttachmentType.webm) {
+				if (attachment.type == AttachmentType.webm && url.path.endsWith('.webm')) {
 					transcode |= settings.webmTranscoding == WebmTranscodingSetting.always;
 				}
 				transcode |= url.path.endsWith('.m3u8');
@@ -734,7 +734,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 	}
 
-	String get downloadExt {
+	String get cacheExt {
 		final cached = _cachedFile;
 		if (cached != null) {
 			final basename = cached.path.split('/').last;
@@ -746,22 +746,73 @@ class AttachmentViewerController extends ChangeNotifier {
 		return attachment.ext;
 	}
 
-	String get downloadFilename {
-		return attachment.filename.replaceFirst(RegExp(r'\..+$'), downloadExt);
+	String _downloadExt(bool convertForCompatibility) {
+		if (convertForCompatibility && attachment.type == AttachmentType.webm) {
+			return '.mp4';
+		}
+		return attachment.ext;
 	}
 
-	Future<File> _moveToShareCache() async {
+	String _downloadFilename(bool convertForCompatibility) {
+		return attachment.filename.replaceFirst(RegExp(r'\..+$'), _downloadExt(convertForCompatibility));
+	}
+
+	Future<File> _moveToShareCache({required bool convertForCompatibility}) async {
 		final systemTempDirectory = Persistence.temporaryDirectory;
-		final shareDirectory = await (Directory('${systemTempDirectory.path}/sharecache')).create(recursive: true);
-		final newFilename = '${Uri.encodeComponent(attachment.id)}$downloadExt';
-		return await getFile().copy('${shareDirectory.path}/$newFilename');
+		final shareDirectory = Directory('${systemTempDirectory.path}/sharecache')..createSync(recursive: true);
+		final newFilename = '${Uri.encodeComponent(attachment.id)}${_downloadExt(convertForCompatibility)}';
+		File file = getFile();
+		if (convertForCompatibility && attachment.type == AttachmentType.webm && cacheExt == '.webm') {
+			file = await modalLoad(context, 'Converting...', (c) async {
+				final conversion = MediaConversion.toMp4(file.uri);
+				c.onCancel = conversion.cancel;
+				await conversion.start();
+				return (await conversion.result).file;
+			}, cancellable: true);
+		}
+		return await file.copy('${shareDirectory.path}/$newFilename');
 	}
 
 	Future<void> share(Rect? sharePosition) async {
+		final bool convertForCompatibility;
+		if (attachment.type == AttachmentType.webm && cacheExt == '.webm') {
+			final choice = await showAdaptiveDialog<bool>(
+				barrierDismissible: true,
+				context: context,
+				builder: (context) => AdaptiveAlertDialog(
+					title: const Text('Which format?'),
+					content: const Padding(
+						padding: EdgeInsets.only(top: 16),
+						child: Text('Share the video in its original WEBM form, or convert it to MP4 for compatibility with other apps and services?')
+					),
+					actions: [
+						AdaptiveDialogAction(
+							onPressed: () => Navigator.pop(context, false),
+							child: const Text('WEBM')
+						),
+						AdaptiveDialogAction(
+							onPressed: () => Navigator.pop(context, true),
+							child: const Text('MP4')
+						),
+						AdaptiveDialogAction(
+							onPressed: () => Navigator.pop(context),
+							child: const Text('Cancel')
+						)
+					]
+				)
+			);
+			if (!context.mounted || choice == null) {
+				return;
+			}
+			convertForCompatibility = choice;
+		}
+		else {
+			convertForCompatibility = false;
+		}
 		await shareOne(
 			context: context,
-			text: (await _moveToShareCache()).path,
-			subject: downloadFilename,
+			text: (await _moveToShareCache(convertForCompatibility: convertForCompatibility)).path,
+			subject: _downloadFilename(convertForCompatibility),
 			type: "file",
 			sharePositionOrigin: sharePosition
 		);
@@ -777,24 +828,31 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Future<void> download({bool force = false}) async {
-		if (_isDownloaded && !force) return;
+	Future<String?> download({bool force = false}) async {
+		if (_isDownloaded && !force) return null;
 		final settings = context.read<EffectiveSettings>();
+		final String filename;
 		try {
 			if (Platform.isIOS) {
 				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
 				final albumName = settings.gallerySavePathOrganizing.albumNameFor(attachment);
 				AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
 				album ??= await PhotoManager.editor.darwin.createAlbum(albumName);
-				final shareCachedFile = await _moveToShareCache();
+				final convertForCompatibility = attachment.type == AttachmentType.webm;
+				filename = _downloadFilename(convertForCompatibility);
+				final shareCachedFile = await _moveToShareCache(convertForCompatibility: convertForCompatibility);
 				final asAsset = attachment.type == AttachmentType.image ? 
-					await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: downloadFilename) :
-					await PhotoManager.editor.saveVideo(shareCachedFile, title: downloadFilename);
-				await PhotoManager.editor.copyAssetToPath(asset: asAsset!, pathEntity: album!);
+					await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: filename) :
+					await PhotoManager.editor.saveVideo(shareCachedFile, title: filename);
+				if (asAsset == null) {
+					throw Exception('Failed to save to gallery');
+				}
+				await PhotoManager.editor.copyAssetToPath(asset: asAsset, pathEntity: album!);
 				_isDownloaded = true;
 			}
 			else if (Platform.isAndroid) {
 				settings.androidGallerySavePath ??= await pickDirectory();
+				filename = attachment.id.toString() + attachment.ext;
 				if (settings.androidGallerySavePath != null) {
 					File source = getFile();
 					try {
@@ -802,7 +860,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							sourcePath: source.path,
 							destinationDir: settings.androidGallerySavePath!,
 							destinationSubfolders: settings.gallerySavePathOrganizing.subfoldersFor(attachment),
-							destinationName: attachment.id.toString() + attachment.ext
+							destinationName: filename
 						);
 						_isDownloaded = true;
 					}
@@ -828,6 +886,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			rethrow;
 		}
 		notifyListeners();
+		return filename;
 	}
 
 	Future<void> potentiallySwapVideo({bool play = false}) async {
@@ -1209,9 +1268,9 @@ class AttachmentViewer extends StatelessWidget {
 						onPressed: () async {
 							final download = !controller.isDownloaded || (await confirm(context, 'Redownload?'));
 							if (!download) return;
-							await controller.download(force: true);
+							final filename = await controller.download(force: true);
 							if (context.mounted) {
-								showToast(context: context, message: 'Downloaded ${controller.downloadFilename}', icon: CupertinoIcons.cloud_download);
+								showToast(context: context, message: 'Downloaded $filename', icon: CupertinoIcons.cloud_download);
 							}
 						},
 						child: const Text('Download')

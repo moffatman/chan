@@ -97,7 +97,7 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
   void removeListener(VoidCallback listener) => parent.removeListener(listener);
 
   @override
-  void saveAttachment(Attachment attachment, File fullResolutionFile) => parent.saveAttachment(attachment, fullResolutionFile);
+  void saveAttachment(Attachment attachment, File fullResolutionFile, String ext) => parent.saveAttachment(attachment, fullResolutionFile, ext);
 
   @override
   void savePost(Post post) => parent.savePost(post);

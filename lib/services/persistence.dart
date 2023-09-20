@@ -679,6 +679,28 @@ class Persistence extends ChangeNotifier {
 			browserState.threadWatches[threadWatch.threadIdentifier] ??= threadWatch;
 		}
 		browserState.deprecatedThreadWatches = []; // Can't use .clear(), it could be const
+		for (final savedAttachment in savedAttachments.values) {
+			if (savedAttachment.savedExt == null) {
+				if (savedAttachment.attachment.ext == '.webm') {
+					// It might be WEBM saved with .mp4 extension
+					try {
+						final fileBefore = savedAttachment.file;
+						final scan = await MediaScan.scan(fileBefore.uri);
+						savedAttachment.savedExt = (scan.codec == 'h264') ? '.mp4' : '.webm';
+						final fileAfter = savedAttachment.file;
+						if (fileBefore.path != fileAfter.path) {
+							await fileBefore.rename(fileAfter.path);
+						}
+					}
+					catch (e, st) {
+						Future.error(e, st); // Report to crashlytics
+					}
+				}
+				else {
+					savedAttachment.savedExt = savedAttachment.attachment.ext;
+				}
+			}
+		}
 		if (settings.automaticCacheClearDays < 100000) {
 			await _cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
@@ -744,8 +766,12 @@ class Persistence extends ChangeNotifier {
 		return savedAttachments[attachment.globalId];
 	}
 
-	void saveAttachment(Attachment attachment, File fullResolutionFile) {
-		final newSavedAttachment = SavedAttachment(attachment: attachment, savedTime: DateTime.now());
+	void saveAttachment(Attachment attachment, File fullResolutionFile, String ext) {
+		final newSavedAttachment = SavedAttachment(
+			attachment: attachment,
+			savedTime: DateTime.now(),
+			savedExt: ext
+		);
 		savedAttachments[attachment.globalId] = newSavedAttachment;
 		fullResolutionFile.copy(newSavedAttachment.file.path);
 		getCachedImageFile(attachment.thumbnailUrl.toString()).then((file) {
@@ -1191,10 +1217,13 @@ class SavedAttachment {
 	final DateTime savedTime;
 	@HiveField(2)
 	final List<int> tags;
+	@HiveField(3)
+	String? savedExt;
 	SavedAttachment({
 		required this.attachment,
 		required this.savedTime,
-		List<int>? tags
+		List<int>? tags,
+		required this.savedExt
 	}) : tags = tags ?? [];
 
 	Future<void> deleteFiles() async {
@@ -1203,7 +1232,14 @@ class SavedAttachment {
 	}
 
 	File get thumbnailFile => File('${Persistence.documentsDirectory.path}/$_savedAttachmentThumbnailsDir/${attachment.globalId}.jpg');
-	File get file => File('${Persistence.documentsDirectory.path}/$_savedAttachmentsDir/${attachment.globalId}${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');
+	File get file {
+		final base = '${Persistence.documentsDirectory.path}/$_savedAttachmentsDir/${attachment.globalId}';
+		if (savedExt == null) {
+			// Not yet fixed
+			return File('$base${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');
+		}
+		return File('$base$savedExt');
+	}
 }
 
 class SavedPost {

@@ -234,19 +234,22 @@ class SavedAttachmentAdapter extends TypeAdapter<SavedAttachment> {
       attachment: fields[0] as Attachment,
       savedTime: fields[1] as DateTime,
       tags: (fields[2] as List?)?.cast<int>(),
+      savedExt: fields[3] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedAttachment obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.attachment)
       ..writeByte(1)
       ..write(obj.savedTime)
       ..writeByte(2)
-      ..write(obj.tags);
+      ..write(obj.tags)
+      ..writeByte(3)
+      ..write(obj.savedExt);
   }
 
   @override
