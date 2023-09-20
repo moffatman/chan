@@ -190,7 +190,9 @@ class AdaptiveScaffold extends StatelessWidget {
 		}
 		final parentDrawer = context.watch<_CupertinoDrawer?>();
 		final leadings = <Widget>[];
-		if (!(ModalRoute.of(context)?.canPop ?? false) && parentDrawer != null) {
+		if (!(ModalRoute.of(context)?.canPop ?? false) &&
+		    parentDrawer != null &&
+				context.read<MasterDetailHint?>()?.location.isDetail != true) {
 			// Only if at root route
 			leadings.add(CupertinoButton(
 				onPressed: () => parentDrawer.key.currentState?.open(),
