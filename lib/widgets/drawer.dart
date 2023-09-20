@@ -91,7 +91,7 @@ class _DrawerList<T extends Object> {
 	final List<T> list;
 	final Widget Function(T, Widget Function(BuildContext, ThreadWidgetData)) builder;
 	final void Function(int, int)? onReorder;
-	final void Function(int) onClose;
+	final void Function(int)? onClose;
 	final bool Function(int) isSelected;
 	final void Function(int) onSelect;
 	final Iterable<TabMenuAction> Function(int, T) buildAdditionalActions;
@@ -127,37 +127,38 @@ class _DrawerList<T extends Object> {
 								ro.localToGlobal(ro.semanticBounds.bottomRight)
 							),
 							actions: [
-								TabMenuAction(
+								if (onClose != null) TabMenuAction(
 									icon: Icons.close,
 									title: 'Close',
 									isDestructiveAction: true,
 									disabled: list.length == 1,
-									onPressed: () => onClose(i)
+									onPressed: () => onClose!(i)
 								),
 								...buildAdditionalActions(i, item)
 							]
 						);
 					}
-					return Dismissible(
+					final tile = builder(item, (context, data) => _TabListTile(
+						data: data,
+						selected: isSelected(i),
+						onTap: () {
+							lightHapticFeedback();
+							if (isSelected(i)) {
+								showThisTabMenu();
+							}
+							else {
+								onSelect(i);
+								Navigator.pop(context);
+							}
+						}
+					));
+					return onClose == null ? tile : Dismissible(
 						key: ValueKey(item),
 						direction: DismissDirection.startToEnd,
 						onDismissed: (direction) {
-							onClose(i);
+							onClose!(i);
 						},
-						child: builder(item, (context, data) => _TabListTile(
-							data: data,
-							selected: isSelected(i),
-							onTap: () {
-								lightHapticFeedback();
-								if (isSelected(i)) {
-									showThisTabMenu();
-								}
-								else {
-									onSelect(i);
-									Navigator.pop(context);
-								}
-							}
-						))
+						child: tile
 					);
 				}
 			)
@@ -208,7 +209,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					builder: builder
 				),
 				onReorder: tabs.onReorder,
-				onClose: (i) => tabs.closeBrowseTab(i),
+				onClose: Persistence.tabs.length > 1 ? (i) => tabs.closeBrowseTab(i) : null,
 				isSelected: (i) => tabs.mainTabIndex == 0 && tabs.browseTabIndex == i,
 				onSelect: (i) {
 					if (tabs.mainTabIndex != 0) {
