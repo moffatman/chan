@@ -173,10 +173,10 @@ class BoardPage extends StatefulWidget {
 	}) : super(key: key);
 
 	@override
-	createState() => _BoardPageState();
+	createState() => BoardPageState();
 }
 
-class _BoardPageState extends State<BoardPage> {
+class BoardPageState extends State<BoardPage> {
 	late ImageboardBoard? board;
 	late final RefreshableListController<Thread> _listController;
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
@@ -246,11 +246,11 @@ class _BoardPageState extends State<BoardPage> {
 			)
 		));
 		if (newBoard != null) {
-			_swapBoard(newBoard);
+			swapBoard(newBoard);
 		}
 	}
 	
-	void _swapBoard(ImageboardScoped<ImageboardBoard> newBoard) {
+	void swapBoard(ImageboardScoped<ImageboardBoard> newBoard) {
 		if (context.read<Imageboard?>()?.key != newBoard.imageboard.key) {
 			_lastSelectedThread = null;
 		}

@@ -615,6 +615,7 @@ class ChanTabs extends ChangeNotifier {
 			tab.imageboardKey = newThread.imageboard.key;
 			// Old master-pane is no longer applicable
 			tab.board = newThread.imageboard.persistence.getBoard(newThread.item.board);
+			tab.boardKey.currentState?.swapBoard(newThread.imageboard.scope(newThread.imageboard.persistence.getBoard(newThread.item.board)));
 		}
 		tab.masterDetailKey.currentState?.setValue(0, newThread?.item, showAnimationsForward: showAnimationsForward);
 		tab.didUpdate();

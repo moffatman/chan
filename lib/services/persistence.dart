@@ -9,6 +9,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/pages/web_image_picker.dart';
@@ -1273,7 +1274,7 @@ class PersistentBrowserTab extends EasyListenable {
 	// Do not persist
 	final tabKey = GlobalKey(debugLabel: 'PersistentBrowserTab.tabKey');
 	// Do not persist
-	final boardKey = GlobalKey(debugLabel: 'PersistentBrowserTab.boardKey');
+	final boardKey = GlobalKey<BoardPageState>(debugLabel: 'PersistentBrowserTab.boardKey');
 	// Do not persist
 	final incognitoProviderKey = GlobalKey(debugLabel: 'PersistentBrowserTab.incognitoProviderKey');
 	// Do not persist
