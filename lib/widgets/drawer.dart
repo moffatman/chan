@@ -283,7 +283,6 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 			for (final state in states) {
 				// Hacky way to kick off the loading
 				if (!_ensuredThreads.contains(state)) {
-					print('Ensuring $state');
 					state.ensureThreadLoaded(catalog: true).then((_) => state.save());
 					_ensuredThreads.add(key: state, value: true);
 				}
