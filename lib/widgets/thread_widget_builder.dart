@@ -70,7 +70,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 					final board = persistence?.getBoard(this.thread!.board);
 					final thread = threadState.thread ?? imageboard?.site.getThreadFromCatalogCache(threadState.identifier);
 					final attachment = thread?.attachments.tryFirst;
-					longTitle = (thread?.title ?? thread?.posts_.tryFirst?.span.buildText().nonEmptyOrNull) ?? 'Thread ${thread?.id}';
+					longTitle = (thread?.title ?? thread?.posts_.tryFirst?.span.buildText().nonEmptyOrNull) ?? 'Thread ${threadState.id}';
 					if (board != null && board.icon == null && board.name.isNotEmpty) {
 						longTitle = '${imageboard?.site.formatBoardName(board)}: $longTitle';
 					}
