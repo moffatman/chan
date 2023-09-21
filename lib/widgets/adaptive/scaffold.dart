@@ -190,7 +190,7 @@ class AdaptiveScaffold extends StatelessWidget {
 			}
 			return Scaffold(
 				drawer: drawer,
-				drawerEdgeDragWidth: context.select<ChanTabs, bool>((t) => t.shouldEnableWideDrawerGesture) ? _calculateWideDrawerEdgeDragWidth(context) : null,
+				drawerEdgeDragWidth: (drawer != null && context.select<ChanTabs?, bool>((t) => t?.shouldEnableWideDrawerGesture ?? false)) ? _calculateWideDrawerEdgeDragWidth(context) : null,
 				extendBodyBehindAppBar: autoHideBars || (bar_?.backgroundColor?.opacity ?? 1) < 1,
 				resizeToAvoidBottomInset: resizeToAvoidBottomInset,
 				backgroundColor: backgroundColor,
@@ -247,7 +247,7 @@ class AdaptiveScaffold extends StatelessWidget {
 				children: [
 					child,
 					DrawerController(
-						edgeDragWidth: context.select<ChanTabs, bool>((t) => t.shouldEnableWideDrawerGesture) ? _calculateWideDrawerEdgeDragWidth(context) : null,
+						edgeDragWidth: (drawer != null && context.select<ChanTabs?, bool>((t) => t?.shouldEnableWideDrawerGesture ?? false)) ? _calculateWideDrawerEdgeDragWidth(context) : null,
 						key: context.watch<_CupertinoDrawer>().key,
 						alignment: DrawerAlignment.start,
 						child: drawer_
