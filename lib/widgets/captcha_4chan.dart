@@ -20,6 +20,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:provider/provider.dart';
 
+Captcha4ChanCustomChallenge? _challenge;
+
 typedef _CloudGuess = ({
 	String answer,
 	double confidence
@@ -79,6 +81,7 @@ Future<Captcha4ChanCustomChallenge> _requestChallenge({
 	final foregroundImage = await foregroundImageCompleter?.future;
 	final backgroundImage = await backgroundImageCompleter?.future;
 	return Captcha4ChanCustomChallenge(
+		request: request,
 		challenge: data['challenge'],
 		expiresAt: DateTime.now().add(Duration(seconds: data['ttl'].toInt())),
 		foregroundImage: foregroundImage,
@@ -183,7 +186,12 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 }) async {
 	DateTime? tryAgainAt;
 
-	final challenge = await _requestChallenge(
+	if (_challenge?.isReusableFor(request, const Duration(seconds: 10)) == false) {
+		_challenge?.dispose();
+		_challenge = null;
+	}
+
+	final challenge = _challenge ??= await _requestChallenge(
 		site: site,
 		request: request,
 		onCooldown: (c) => tryAgainAt = c
@@ -387,13 +395,16 @@ class Captcha4ChanCustomException implements Exception {
 }
 
 class Captcha4ChanCustomChallenge {
-	String challenge;
-	DateTime expiresAt;
-	ui.Image? foregroundImage;
-	ui.Image? backgroundImage;
-	bool cloudflare;
+	final Chan4CustomCaptchaRequest request;
+	final String challenge;
+	final DateTime expiresAt;
+	final ui.Image? foregroundImage;
+	final ui.Image? backgroundImage;
+	final bool cloudflare;
+	bool _isDisposed = false;
 
 	Captcha4ChanCustomChallenge({
+		required this.request,
 		required this.challenge,
 		required this.expiresAt,
 		required this.foregroundImage,
@@ -401,7 +412,12 @@ class Captcha4ChanCustomChallenge {
 		required this.cloudflare
 	});
 
+	bool isReusableFor(Chan4CustomCaptchaRequest request, Duration validityPeriod) {
+		return !_isDisposed && this.request == request && expiresAt.isBefore(DateTime.now().add(validityPeriod));
+	}
+
 	void dispose() {
+		_isDisposed = true;
 		foregroundImage?.dispose();
 		backgroundImage?.dispose();
 	}
@@ -451,7 +467,10 @@ typedef _PickerStuff = ({GlobalKey key, UniqueKey wrapperKey, FixedExtentScrollC
 class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	String? errorMessage;
 	DateTime? tryAgainAt;
-	Captcha4ChanCustomChallenge? challenge;
+	Captcha4ChanCustomChallenge? get challenge => _challenge;
+	set challenge(Captcha4ChanCustomChallenge? c) {
+		_challenge = c;
+	}
 	int backgroundSlide = 0;
 	late final FocusNode _solutionNode;
 	late final TextEditingController _solutionController;
@@ -622,7 +641,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	void _tryRequestChallenge() async {
-		final settings = context.read<EffectiveSettings>();
 		try {
 			setState(() {
 				errorMessage = null;
@@ -647,27 +665,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 						alignedImage: null,
 						cloudflare: challenge!.cloudflare
 					));
+					challenge?.dispose();
+					challenge = null;
 					return;
 				}
 				else {
 					throw Captcha4ChanCustomException('Unknown error, maybe the captcha format has changed: ${challenge!.challenge}');
 				}
 			}
-			if (challenge!.backgroundImage != null) {
-				final bestSlide = await _alignImage(challenge!);
-				if (!mounted) return;
-				setState(() {
-					backgroundSlide = bestSlide;
-				});
-			}
-			if (settings.useNewCaptchaForm) {
-				await _animateGuess();
-			}
-			else {
-				backgroundSlide = 0;
-				setState(() {});
-				_solutionNode.requestFocus();
-			}
+			await _setupChallenge();
 		}
 		catch(e, st) {
 			print(e);
@@ -676,6 +682,25 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			setState(() {
 				errorMessage = e.toStringDio();
 			});
+		}
+	}
+
+	Future<void> _setupChallenge() async {
+		final settings = context.read<EffectiveSettings>();
+		if (challenge!.backgroundImage != null) {
+			final bestSlide = await _alignImage(challenge!);
+			if (!mounted) return;
+			setState(() {
+				backgroundSlide = bestSlide;
+			});
+		}
+		if (settings.useNewCaptchaForm) {
+			await _animateGuess();
+		}
+		else {
+			backgroundSlide = 0;
+			setState(() {});
+			_solutionNode.requestFocus();
 		}
 	}
 
@@ -781,11 +806,17 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			alignedImage: await _screenshotImage(),
 			cloudflare: challenge!.cloudflare
 		));
+		challenge?.dispose();
+		challenge = null;
 	}
 
 	@override
 	void initState() {
 		super.initState();
+		if (challenge?.isReusableFor(widget.request, const Duration(seconds: 15)) == false) {
+			challenge?.dispose();
+			challenge = null;
+		}
 		_solutionNode = FocusNode();
 		_solutionController = TextEditingController();
 		_lastGuess = Chan4CustomCaptchaGuess.dummy('0' * numLetters);
@@ -809,6 +840,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					_greyOutPickers = false;
 				});
 			});
+		}
+		else if (challenge != null) {
+			_setupChallenge();
 		}
 		else {
 			_tryRequestChallenge();

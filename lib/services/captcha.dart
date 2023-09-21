@@ -46,9 +46,11 @@ Future<CaptchaSolution?> solveCaptcha({
 						site: site
 					);
 					if (!context.mounted) {
+						cloudSolution.challenge.dispose();
 						return null;
 					}
 					if (cloudSolution.confident) {
+						cloudSolution.challenge.dispose();
 						showToast(
 							context: context,
 							icon: CupertinoIcons.checkmark_seal,

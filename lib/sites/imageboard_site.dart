@@ -32,6 +32,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/thread.dart';
@@ -502,6 +503,15 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 
 	@override
 	bool get cloudSolveSupported => true;
+
+	@override
+	bool operator == (Object other) =>
+		other is Chan4CustomCaptchaRequest &&
+		other.challengeUrl == challengeUrl &&
+		mapEquals(other.challengeHeaders, challengeHeaders);
+	
+	@override
+	int get hashCode => Object.hash(challengeUrl, challengeHeaders);
 }
 
 class SecurimageCaptchaRequest extends CaptchaRequest {
