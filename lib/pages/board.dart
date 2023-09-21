@@ -806,7 +806,7 @@ class BoardPageState extends State<BoardPage> {
 										child: Padding(
 											padding: MediaQuery.viewInsetsOf(ctx),
 											child: Container(
-												color: ChanceTheme.backgroundColorOf(context),
+												color: ChanceTheme.backgroundColorOf(ctx),
 												child: ReplyBox(
 													fullyExpanded: true,
 													board: board!.name,
