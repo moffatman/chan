@@ -920,10 +920,10 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: "3c74dbf8763d36539f114c799d8a2d87343b5067e9d796ca22b5eb8437090ee3"
+      sha256: a6e590c838b18133bb482a2745ad77c5bb7715fb0451209e1a7567d416678b8e
       url: "https://pub.dev"
     source: hosted
-    version: "1.9.1"
+    version: "1.10.0"
   mime:
     dependency: "direct main"
     description:
@@ -1079,19 +1079,20 @@ packages:
   photo_manager:
     dependency: "direct main"
     description:
-      name: photo_manager
-      sha256: bdc4ab1fa9fb064d8ccfea6ab44119f55b220293d7ce2e19eb5a5f998db86c88
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.6.0"
+      path: "."
+      ref: main
+      resolved-ref: bbe70a4f6c001f1bc9cf4345b20cdb7d30450640
+      url: "https://github.com/moffatman/flutter_photo_manager.git"
+    source: git
+    version: "2.7.1"
   platform:
     dependency: transitive
     description:
       name: platform
-      sha256: "4a451831508d7d6ca779f7ac6e212b4023dd5a7d08a27a63da33756410e32b76"
+      sha256: ae68c7bfcd7383af3629daafb32fb4e8681c7154428da4febcff06200585f102
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.0"
+    version: "3.1.2"
   plugin_platform_interface:
     dependency: transitive
     description:
@@ -1662,10 +1663,10 @@ packages:
     dependency: transitive
     description:
       name: vm_service
-      sha256: "0fae432c85c4ea880b33b497d32824b97795b04cdaa74d270219572a1f50268d"
+      sha256: c538be99af830f478718b51630ec1b6bee5e74e52c8a802d328d9e71d35d2583
       url: "https://pub.dev"
     source: hosted
-    version: "11.9.0"
+    version: "11.10.0"
   volume_controller:
     dependency: transitive
     description:
@@ -1811,5 +1812,5 @@ packages:
     source: hosted
     version: "3.1.1"
 sdks:
-  dart: ">=3.1.0-185.0.dev <4.0.0"
+  dart: ">=3.2.0-0 <4.0.0"
   flutter: ">=3.4.0-17.0.pre"

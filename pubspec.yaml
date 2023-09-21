@@ -167,6 +167,10 @@ dependency_overrides:
     git:
       url: https://github.com/moffatman/dio.git
       path: dio
+  photo_manager:
+    git:
+      url: https://github.com/moffatman/flutter_photo_manager.git
+      ref: main
   markdown: ^7.0.1 # Needed to resolve a conflict with flutter_tex
   screenshot: ^2.1.0 # Needed to run with current moffatman/flutter tag
   connectivity_plus: # Needed to prioritize Mobile over VPN on Android

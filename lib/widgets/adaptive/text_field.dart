@@ -8,7 +8,7 @@ class AdaptiveTextField extends StatelessWidget {
 	final bool autofocus;
 	final EditableTextContextMenuBuilder? contextMenuBuilder;
 	final TextEditingController? controller;
-	final bool? enabled;
+	final bool enabled;
 	final bool enableIMEPersonalizedLearning;
 	final bool enableSuggestions;
 	final FocusNode? focusNode;
@@ -35,7 +35,7 @@ class AdaptiveTextField extends StatelessWidget {
 		this.autofocus = false,
 		this.contextMenuBuilder,
 		this.controller,
-		this.enabled,
+		this.enabled = true,
 		this.enableIMEPersonalizedLearning = true,
 		this.enableSuggestions = true,
 		this.focusNode,
