@@ -1078,6 +1078,7 @@ class AttachmentViewer extends StatelessWidget {
 		if (maxWidth != null) {
 			image = ExtendedResizeImage(
 				image,
+				maxBytes: 800 << 10,
 				width: maxWidth!.ceil()
 			);
 		}

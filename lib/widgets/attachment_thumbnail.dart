@@ -123,6 +123,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		if (resize && effectiveWidth.isFinite && effectiveHeight.isFinite) {
 			image = ExtendedResizeImage(
 				image,
+				maxBytes: 800 << 10,
 				width: (effectiveWidth * MediaQuery.devicePixelRatioOf(context)).ceil()
 			);
 		}
