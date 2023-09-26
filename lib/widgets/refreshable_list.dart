@@ -1486,6 +1486,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							}
 							else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
 								context.read<_RefreshableTreeItems>().revealNewInsertsBelow(value);
+								// At the same time, trigger any loading
+								final stubParent = widget.controller?.items.tryFirstWhere((otherItem) {
+									return otherItem.item == value.item &&
+											otherItem.id == value.id &&
+											otherItem.parentIds == value.parentIds &&
+											otherItem.representsStubChildren;
+								});
+								if (stubParent != null) {
+									_loadOmittedItems(stubParent);
+								}
 							}
 							else if (isHidden != null) {
 								context.read<_RefreshableTreeItems>().unhideItem(value);
