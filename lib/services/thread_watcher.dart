@@ -7,6 +7,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 import 'package:mutex/mutex.dart';
 
@@ -417,6 +418,7 @@ class ThreadWatcherController extends ChangeNotifier {
 	final Set<ThreadWatcher> _watchers = {};
 	final Set<ThreadWatcher> _doghouse = {};
 	bool updatingNow = false;
+	bool _addedResumeCallback = false;
 
 	ThreadWatcherController({
 		this.interval = const Duration(seconds: 90),
@@ -433,6 +435,15 @@ class ThreadWatcherController extends ChangeNotifier {
 	}
 
 	Future<void> update() async {
+		if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+			// Don't update when app is in background
+			if (!_addedResumeCallback) {
+				EffectiveSettings.instance.addAppResumeCallback(update);
+			}
+			_addedResumeCallback = true;
+			return;
+		}
+		_addedResumeCallback = false;
 		updatingNow = true;
 		notifyListeners();
 		if (!ImageboardRegistry.instance.initialized || _watchers.isEmpty) {

@@ -1143,7 +1143,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	void resetTimer() {
 		autoUpdateTimer?.cancel();
 		if (widget.autoUpdateDuration != null) {
-			autoUpdateTimer = Timer(widget.autoUpdateDuration!, update);
+			autoUpdateTimer = Timer(widget.autoUpdateDuration!, _autoUpdate);
 			nextUpdateTime = DateTime.now().add(widget.autoUpdateDuration!);
 		}
 		else {
@@ -1211,6 +1211,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		if (rebuild) {
 			setState(() {});
+		}
+	}
+
+	Future<void> _autoUpdate() async { 
+		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+			await update();
 		}
 	}
 
