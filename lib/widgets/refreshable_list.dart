@@ -1616,13 +1616,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else if (parentIds.isEmpty) {
 				treeRoots1.add(node);
 			}
-			else if (adapter.repliesToOPAreTopLevel && parentIds.trySingle == adapter.opId) {
-				treeRoots1.add(node);
-				final op = treeMap[adapter.opId];
-				if (op != null) {
-					node.parents.add(op);
-				}
-			}
 			else if (adapter.newRepliesAreLinear && id > _treeSplitId) {
 				final peekLastTreeItemSoFar = treeRoots1.tryLast?.lastDescendant;
 				final acceptableParentIds = peekLastTreeItemSoFar?.ownershipChain.toSet() ?? {};
@@ -1675,6 +1668,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			else {
 				bool foundAParent = false;
+				bool foundOP = false;
 				final orphanParents = <int>[];
 				for (final parentId in parentIds) {
 					if (parentId == id) {
@@ -1683,6 +1677,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 					if (adapter.repliesToOPAreTopLevel && parentId == adapter.opId && treeMap.containsKey(parentId)) {
 						foundAParent = true;
+						foundOP = true;
 						continue;
 					}
 					treeMap[parentId]?.children.add(node);
@@ -1696,6 +1691,20 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				if (!foundAParent) {
 					for (final parentId in orphanParents) {
 						orphans.putIfAbsent(parentId, () => []).add(node);
+					}
+				}
+				if (foundOP) {
+					if (adapter.repliesToOPAreTopLevel) {
+						treeRoots1.add(node);
+					}
+					else {
+						final op = treeMap[adapter.opId];
+						if (op != null) {
+							op.children.add(node);
+						}
+						else {
+							orphans.putIfAbsent(adapter.opId, () => []).add(node);
+						}
 					}
 				}
 			}
