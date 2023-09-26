@@ -61,7 +61,11 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 									children: [
 										CupertinoButton(
 											onPressed: () {
-												items.add(_DebuggingItem(
+												int idx = items.indexOf(item);
+												if (idx == -1) {
+													idx = items.length;
+												}
+												items.insert(idx, _DebuggingItem(
 													id: _id++,
 													parentIds: [item.id],
 													isStub: false,
@@ -73,7 +77,11 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 										),
 										CupertinoButton(
 											onPressed: () {
-												items.add(_DebuggingItem(
+												int idx = items.indexOf(item);
+												if (idx == -1) {
+													idx = items.length;
+												}
+												items.insert(idx, _DebuggingItem(
 													id: _id++,
 													parentIds: [item.id],
 													isStub: true,

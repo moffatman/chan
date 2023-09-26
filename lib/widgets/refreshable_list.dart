@@ -1597,7 +1597,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		int maxIdFound = 0;
 		final Set<int> itemsWithOmittedReplies = {};
 
-		for (final item in linear) {
+		void visitLinear(RefreshableListItem<T> item) {
 			final id = adapter.getId(item.item);
 			maxIdFound = max(maxIdFound, id);
 			final node = _TreeNode(item.copyWith(), id, adapter.getHasOmittedReplies(item.item));
@@ -1700,6 +1700,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 		}
+
+		linear.where((item) => item.id <= _treeSplitId).forEach(visitLinear);
+		linear.where((item) => item.id > _treeSplitId).forEach(visitLinear);
 
 		final treeRoots = treeRoots1.followedBy(treeRoots2).toList();
 		final stubRoots = <_TreeNode<RefreshableListItem<T>>>[];
