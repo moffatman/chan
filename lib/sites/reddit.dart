@@ -335,7 +335,18 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		final pattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.com\/r\/([^\/\n]+)(\/comments\/([^\/\n]+)(\/[^\/\n]+\/([^\/\n]+))?)?');
+		final sharePattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.com\/r\/([^\/\n]+)\/s\/([^\/\n?]+)');
+		if (sharePattern.hasMatch(url)) {
+			final response = await client.head(url);
+			String? redirected = response.redirects.tryLast?.location.toString();
+			if (redirected != null && !sharePattern.hasMatch(redirected)) {
+				if (redirected.startsWith('/')) {
+					redirected = 'https://$baseUrl$redirected';
+				}
+				return await decodeUrl(redirected);
+			}
+		}
+		final pattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.com\/r\/([^\/\n]+)(\/comments\/([^\/\n]+)(\/[^\/\n]+\/([^?\/\n]+))?)?');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
 			int? threadId;
