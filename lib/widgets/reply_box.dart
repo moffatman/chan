@@ -1188,7 +1188,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final fakeAttachment = Attachment(
 			ext: '.$attachmentExt',
 			url: '',
-			type: attachmentExt == 'webm' || attachmentExt == 'mp4' ? AttachmentType.webm : AttachmentType.image,
+			type: attachmentExt == 'webm' ?
+				AttachmentType.webm :
+				(attachmentExt == 'mp4' ? AttachmentType.mp4 : AttachmentType.image),
 			md5: '',
 			id: attachment?.uri.toString() ?? 'zz',
 			filename: attachment?.uri.pathSegments.last ?? '',
