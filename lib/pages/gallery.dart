@@ -770,15 +770,21 @@ class _GalleryPageState extends State<GalleryPage> {
 					bar: showChrome ? AdaptiveBar(
 						title: AnimatedBuilder(
 							animation: _currentAttachmentChanged,
-							builder: (context, _) => Padding(
-								padding: const EdgeInsets.only(bottom: 4),
-								child: AutoSizeText(
-									currentAttachment.attachment.type == AttachmentType.url ?
-										currentAttachment.attachment.url.toString() :
-										"${currentAttachment.attachment.filename} (${currentAttachment.attachment.width}x${currentAttachment.attachment.height}${currentAttachment.attachment.sizeInBytes == null ? ')' : ', ${formatFilesize(currentAttachment.attachment.sizeInBytes!)})'}",
-									minFontSize: 8
-								)
-							)
+							builder: (context, _) {
+								final metadataParts = [
+									if (currentAttachment.attachment.width != null && currentAttachment.attachment.height != null) '${currentAttachment.attachment.width}x${currentAttachment.attachment.height}',
+									if (currentAttachment.attachment.sizeInBytes != null) formatFilesize(currentAttachment.attachment.sizeInBytes!)
+								];
+								return Padding(
+									padding: const EdgeInsets.only(bottom: 4),
+									child: AutoSizeText(
+										currentAttachment.attachment.type == AttachmentType.url ?
+											currentAttachment.attachment.url.toString() :
+											"${currentAttachment.attachment.filename}${metadataParts.isEmpty ? '' : ' (${metadataParts.join(', ')})'}",
+										minFontSize: 8
+									)
+								);
+							}
 						),
 						backgroundColor: Colors.black38,
 						actions: [
