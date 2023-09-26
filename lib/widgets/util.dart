@@ -1224,7 +1224,7 @@ extension HasOnePosition on ScrollController {
 	}
 }
 
-Future<bool> confirm(BuildContext context, String message) async {
+Future<bool> confirm(BuildContext context, String message, {String actionName = 'OK'}) async {
 	return (await showAdaptiveDialog<bool>(
 		context: context,
 		barrierDismissible: true,
@@ -1236,7 +1236,7 @@ Future<bool> confirm(BuildContext context, String message) async {
 					onPressed: () {
 						Navigator.of(context).pop(true);
 					},
-					child: const Text('OK')
+					child: Text(actionName)
 				),
 				AdaptiveDialogAction(
 					child: const Text('Cancel'),

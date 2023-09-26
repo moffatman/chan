@@ -1759,10 +1759,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										width: 100,
 										child: AdaptiveButton(
 											padding: EdgeInsets.zero,
-											onPressed: _attachmentProgress?.$2 == null ? null : () {
-												_attachmentProgress?.$2?.cancel();
-												_attachmentProgress = null;
-												setState(() {});
+											onPressed: _attachmentProgress?.$2 == null ? null : () async {
+												final confirmed = await confirm(context, 'Cancel conversion?', actionName: 'Cancel');
+												if (confirmed) {
+													_attachmentProgress?.$2?.cancel();
+													_attachmentProgress = null;
+													setState(() {});
+												}
 											},
 											child: ClipRRect(
 												borderRadius: BorderRadius.circular(4),
