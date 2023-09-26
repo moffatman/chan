@@ -1759,7 +1759,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					// Node has has unknown further replies, and didn't in the previous tree
 					node.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(node.id) ||
 					// Node has known further replies, and didn't have any in the previous tree
-					!node.stubChildIds.any((c) => c <= _treeSplitId)) {
+					!node.stubChildIds.any((c) => c <= _treeSplitId) &&
+					_treeSplitId != 0) {
 					_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent(ids, () => false);
 					_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == node.id);
 				}
