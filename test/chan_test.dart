@@ -556,5 +556,95 @@ void main() {
         VideoServer.teardownStatic();
       }
     });
+
+    test('interruptOngoingDownload', () async {
+      final root = await Directory.current.createTemp('caching_server_');
+      final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final client = HttpClient();
+      final requests = <HttpRequest>[];
+      fakeServer.listen((request) {
+        requests.add(request);
+      });
+      try {
+        VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false, insignificantByteThreshold: 0);
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: Uri.http('localhost:${fakeServer.port}'), interruptible: true);
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests[0].method, equals('GET'));
+        requests[0].response.bufferOutput = false;
+        requests[0].response.contentLength = 10000;
+        requests[0].response.add(Uint8List(1000));
+        await requests[0].response.flush();
+        final digest = await digestFuture;
+        final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
+        clientRequest.bufferOutput = false;
+        final response = await clientRequest.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(response.contentLength, equals(10000));
+        final chunks = <List<int>>[];
+        bool responseStreamSubscriptionIsErrored = false;
+        bool responseStreamSubscriptionIsDone = false;
+        response.listen(chunks.add, onError: (e) {
+          responseStreamSubscriptionIsErrored = true;
+        }, onDone: () {
+          responseStreamSubscriptionIsDone = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks.length, equals(1));
+        expect(chunks[0].length, equals(1000));
+        await VideoServer.instance.interruptOngoingDownload(digest);
+        await Future.delayed(const Duration(milliseconds: 200));
+        requests[0].response.add(Uint8List(9000));
+        await requests[0].response.close();
+        await Future.delayed(const Duration(milliseconds: 200));
+        expect(chunks.length, equals(1));
+        expect(responseStreamSubscriptionIsDone, isTrue);
+        expect(responseStreamSubscriptionIsErrored, isTrue);
+        await Future.delayed(const Duration(milliseconds: 200));
+        final digestFuture2 = VideoServer.instance.startCachingDownload(uri: Uri.http('localhost:${fakeServer.port}'), interruptible: true);
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests.length, equals(2));
+        expect(requests[1].method, equals('HEAD'));
+        requests[1].response.bufferOutput = false;
+        requests[1].response.contentLength = 10000;
+        await requests[1].response.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests.length, equals(3));
+        expect(requests[2].method, equals('GET'));
+        expect(requests[2].headers.value(HttpHeaders.rangeHeader), equals('bytes=1000-'));
+        requests[2].response.bufferOutput = false;
+        requests[2].response.contentLength = 9000;
+        requests[2].response.add(Uint8List(1));
+        await requests[2].response.flush();
+        final digest2 = await digestFuture2;
+        final clientRequest2 = await client.getUrl(VideoServer.instance.getUri(digest2));
+        clientRequest2.bufferOutput = false;
+        final response2 = await clientRequest2.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(response2.contentLength, equals(10000));
+        final chunks2 = <List<int>>[];
+        bool response2StreamSubscriptionIsErrored = false;
+        bool response2StreamSubscriptionIsDone = false;
+        response2.listen(chunks2.add, onError: (e) {
+          response2StreamSubscriptionIsErrored = true;
+        }, onDone: () {
+          response2StreamSubscriptionIsDone = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks2.length, equals(1));
+        expect(chunks2[0].length, equals(1001));
+        requests[2].response.add(Uint8List(8999));
+        await requests[2].response.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks2.length, equals(2));
+        expect(chunks2[1].length, equals(8999));
+        expect(response2StreamSubscriptionIsDone, isTrue);
+        expect(response2StreamSubscriptionIsErrored, isFalse);
+      }
+      finally {
+        await root.delete(recursive: true);
+        fakeServer.close();
+        VideoServer.teardownStatic();
+      }
+    });
   });
 }

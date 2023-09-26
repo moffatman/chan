@@ -521,8 +521,12 @@ class AttachmentViewerController extends ChangeNotifier {
 							onProgressChanged: (currentBytes, totalBytes) {
 								progressNotifier.value = currentBytes / totalBytes;
 							},
-							force: force
+							force: force,
+							interruptible: attachment.thumbnailUrl.isEmpty
 						);
+						_conversionDisposers.add(() {
+							VideoServer.instance.interruptOngoingDownload(hash);
+						});
 						if (_isDisposed) return;
 						_videoLoadingProgress = progressNotifier;
 						notifyListeners();

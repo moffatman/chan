@@ -80,13 +80,17 @@ class _CachingFile extends EasyListenable {
 	final completer = Completer<void>();
 	final lock = Mutex();
 	final Map<String, String> headers;
+	/// For interruptible requests, it must have its own client
+	HttpClient? _client;
+	bool _interrupted = false;
 
 	_CachingFile({
 		required this.file,
 		required this.totalBytes,
 		required this.statusCode,
-		this.headers = const {}
-	}) : currentBytes = 0;
+		this.headers = const {},
+		this.currentBytes = 0
+	});
 
 	@override
 	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, completer: $completer, lock: $lock, headers: $headers)';
@@ -103,7 +107,7 @@ extension _Normalize on _RawRange {
 }
 
 class VideoServer {
-	final client = HttpClient();
+	final _client = HttpClient();
 	static VideoServer? _server;
 	final Directory webmRoot;
 	final Directory httpRoot;
@@ -113,13 +117,19 @@ class VideoServer {
 	bool _stopped = false;
 	final bool bufferOutput;
 	final int port;
+	final int insignificantByteThreshold;
 
-	static void initializeStatic(Directory webmRoot, Directory httpRoot, {bool bufferOutput = true, int port = 4070}) {
+	static void initializeStatic(Directory webmRoot, Directory httpRoot, {
+		bool bufferOutput = true,
+		int port = 4070,
+		int insignificantByteThreshold = 50 << 10 // 50 KB
+	}) {
 		_server = VideoServer(
 			webmRoot: webmRoot,
 			httpRoot: httpRoot,
 			bufferOutput: bufferOutput,
-			port: port
+			port: port,
+			insignificantByteThreshold: insignificantByteThreshold
 		);
 	}
 
@@ -135,6 +145,7 @@ class VideoServer {
 		required this.httpRoot,
 		required this.bufferOutput,
 		required this.port,
+		required this.insignificantByteThreshold
 	});
 
 	static _RawRange? _parseRange(HttpHeaders headers) {
@@ -170,7 +181,7 @@ class VideoServer {
 	Future<void> _serveProxy(HttpRequest request, String digest) async {
 		final uri = _decodeDigest(digest);
 		try {
-			final upstream = await client.getUrl(uri);
+			final upstream = await _client.getUrl(uri);
 			final headers = _caches[digest]?.headers ?? {};
 			for (final header in headers.entries) {
 				upstream.headers.set(header.key, header.value);
@@ -181,7 +192,7 @@ class VideoServer {
 			}
 			final upstreamResponse = await upstream.close();
 			request.response.contentLength = upstreamResponse.contentLength;
-			if (request.response.contentLength > (1024*50)) {
+			if (request.response.contentLength > insignificantByteThreshold) {
 				// This is not the intent of _serveProxy, it needs to be adjusted
 				// Report it to Crashlytics
 				Future.error(Exception('Too large proxy serve (${formatFilesize(request.response.contentLength)}) of $uri'), StackTrace.current);
@@ -303,7 +314,7 @@ class VideoServer {
 				digest = _encodeDigest(subUri);
 				try {
 					await runEphemerallyLocked(digest, () async {
-						_caches[digest] ??= await _startCaching(subUri, _caches[rootDigest]?.headers ?? {});
+						_caches[digest] ??= await _startCaching(subUri, _caches[rootDigest]?.headers ?? {}, force: false, interruptible: false);
 					});
 				}
 				on HttpException {
@@ -358,21 +369,62 @@ class VideoServer {
 		return Uri.parse(utf8.decode(base64Url.decode(digest)));
 	}
 
-	Future<_CachingFile> _startCaching(Uri uri, Map<String, String> headers) async {
+	Future<_CachingFile> _startCaching(Uri uri, Map<String, String> headers, {
+		required bool force,
+		required bool interruptible
+	}) async {
 		final digest = _encodeDigest(uri);
+		final file = getFile(digest);
+		final stat = await file.stat();
+		_CachingFile? cachingFile0;
+		if (stat.type == FileSystemEntityType.file) {
+			// First HEAD, to see if we have the right size file cached
+			final headRequest = await _client.headUrl(uri);
+			for (final header in headers.entries) {
+				headRequest.headers.set(header.key, header.value);
+			}
+			final headResponse = await headRequest.close();
+			headResponse.drain(); // HEAD should have no body, but just to be safe
+			cachingFile0= _CachingFile(
+				file: file,
+				totalBytes: headResponse.contentLength,
+				statusCode: headResponse.statusCode,
+				headers: headers
+			);
+			if (!force && stat.size == cachingFile0.totalBytes && !uri.path.endsWith('m3u8')) {
+				// File is already downloaded and filesize matches
+				cachingFile0.currentBytes = cachingFile0.totalBytes;
+				cachingFile0.completer.complete();
+				return cachingFile0;
+			}
+			if (interruptible && !force && !uri.path.endsWith('m3u8')) {
+				cachingFile0.currentBytes = stat.size;
+			}
+			else {
+				// Corrupt file
+				await file.delete();
+			}
+		}
+		// Now GET the file for real
+		HttpClient? interruptibleClient = interruptible ? HttpClient() : null;
+		final client = interruptibleClient ?? _client;
 		final httpRequest = await client.getUrl(uri);
 		for (final header in headers.entries) {
 			httpRequest.headers.set(header.key, header.value);
 		}
+		if ((cachingFile0?.currentBytes ?? 0) != 0) {
+			httpRequest.headers.set('Range', 'bytes=${cachingFile0?.currentBytes}-');
+		}
+		print(httpRequest.headers);
 		final response = await httpRequest.close();
-		final file = getFile(digest);
-		final cachingFile = _CachingFile(
+		final cachingFile = cachingFile0 ?? _CachingFile(
 			file: file,
 			totalBytes: response.contentLength,
 			statusCode: response.statusCode,
 			headers: headers
 		);
-		final handle = await file.open(mode: FileMode.writeOnly);
+		cachingFile._client = interruptibleClient;
+		final handle = await file.open(mode:cachingFile.currentBytes == 0 ? FileMode.writeOnly : FileMode.writeOnlyAppend);
 		() async {
 			try {
 				await for (final chunk in response) {
@@ -383,11 +435,21 @@ class VideoServer {
 						cachingFile.didUpdate();
 					});
 				}
+				cachingFile._client?.close();
+				cachingFile._client = null;
 				cachingFile.completer.complete();
 			}
 			catch (e, st) {
+				cachingFile._client?.close();
+				cachingFile._client = null;
 				cachingFile.completer.completeError(e, st);
-				await file.delete();
+				if (!(cachingFile._interrupted && e is HttpException)) {
+					print('Deleting file');
+					await file.delete();
+				}
+				else {
+					print('Not deleting file');
+				}
 			}
 		}();
 		if (uri.path.endsWith('m3u8')) {
@@ -403,7 +465,8 @@ class VideoServer {
 		Map<String, String> headers = const {},
 		void Function(File file)? onCached,
 		void Function(int currentBytes, int totalBytes)? onProgressChanged,
-		bool force = false
+		bool force = false,
+		bool interruptible = false
 	}) async {
 		await ensureRunning();
 		final digest = _encodeDigest(uri);
@@ -411,7 +474,7 @@ class VideoServer {
 		await runEphemerallyLocked(digest, () async {
 			if (existing == null || (existing == true && (force || !getFile(digest).existsSync()))) {
 				_caches[digest]?.dispose();
-				final cachingFile = await _startCaching(uri, headers);
+				final cachingFile = await _startCaching(uri, headers, force: force, interruptible: interruptible);
 				void listener() {
 					onProgressChanged?.call(cachingFile.currentBytes, cachingFile.totalBytes);
 				}
@@ -453,6 +516,23 @@ class VideoServer {
 			}
 		});
 		return digest;
+	}
+
+	Future<void> interruptOngoingDownload(String digest) async {
+		final cachingFile = _caches[digest];
+		if (cachingFile == null) {
+			return;
+		}
+		if (cachingFile._client == null) {
+			// Not interruptible
+		}
+		if ((cachingFile.totalBytes - cachingFile.currentBytes) < insignificantByteThreshold) {
+			// Just let it finish
+			return;
+		}
+		cachingFile._interrupted = true;
+		cachingFile._client?.close(force: true);
+		_caches.remove(digest);
 	}
 
 	Future<void> cleanupCachedDownloadTree(String digest) async {

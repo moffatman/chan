@@ -403,6 +403,33 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			heroOtherEndIsBoxFitCover: false
 		);
 	}
+	else if (url.path.endsWith('.webm') ||
+	         url.path.endsWith('.mkv') ||
+					 url.path.endsWith('.mp4')) {
+		final attachment = Attachment(
+			type: url.path.endsWith('.webm') ? AttachmentType.webm : AttachmentType.mp4,
+			board: '',
+			id: '',
+			ext: '.${url.path.split('.').last}',
+			filename: url.path.split('/').last,
+			url: url.toString(),
+			thumbnailUrl: '',
+			md5: '',
+			width: null,
+			height: null,
+			sizeInBytes: null,
+			threadId: null
+		);
+		await showGallery(
+			context: context,
+			attachments: [attachment],
+			overrideSources: {
+				attachment: url
+			},
+			semanticParentIds: [],
+			heroOtherEndIsBoxFitCover: false
+		);
+	}
 	else {
 		final settings = context.read<EffectiveSettings>();
 		final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
