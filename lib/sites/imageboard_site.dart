@@ -884,9 +884,9 @@ abstract class ImageboardSiteArchive {
 	}
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	@protected
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async => [];
-	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant, required bool interactive}) async {
-		final moreCatalog = await getMoreCatalogImpl(after, variant: variant, interactive: interactive);
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async => [];
+	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
+		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, interactive: interactive);
 		_catalogCache.addAll({
 			for (final t in moreCatalog)
 				t.identifier: t
@@ -1174,8 +1174,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		return catalog;
 	}
 	@override
-	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant, required bool interactive}) async {
-		final catalog = await super.getMoreCatalog(after, variant: variant, interactive: interactive);
+	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
+		final catalog = await super.getMoreCatalog(board, after, variant: variant, interactive: interactive);
 		await Future.wait(catalog.expand((t) => t.posts_.expand((p) => p.attachments)).map(_ensureCookiesMemoizedForAttachment));
 		return catalog;
 	}

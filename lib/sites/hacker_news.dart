@@ -473,7 +473,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
 			final ids = await _getSecondChancePoolIds(after.id, interactive: interactive);
 			return await Future.wait(ids.map((id) => _getThreadForCatalog(id, interactive: interactive)));

@@ -202,11 +202,11 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
 		try {
 			final pageNumber = (after.currentPage ?? 0) + 1;
-			final doc = await _getCatalogPage(after.board, pageNumber.toString(), interactive: interactive);
-			return doc.querySelectorAll('.thre').map((e) => _makeThread(e, after.board)..currentPage = pageNumber).toList();
+			final doc = await _getCatalogPage(board, pageNumber.toString(), interactive: interactive);
+			return doc.querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = pageNumber).toList();
 		}
 		on BoardNotFoundException {
 			return [];

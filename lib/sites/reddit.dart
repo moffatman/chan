@@ -889,9 +889,9 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
 		final suffix = _getCatalogSuffix(variant);
-		final response = await client.getUri(Uri.https(baseUrl, '/r/${after.board}${suffix.$1}', {
+		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', {
 			'after': 't3_${toRedditId(after.id)}',
 			...suffix.$2
 		}), options: Options(

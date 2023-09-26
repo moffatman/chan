@@ -391,7 +391,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) => _getCatalog(board, 1, interactive: interactive);
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) => _getCatalog(after.board, (after.currentPage ?? 0) + 1, interactive: interactive);
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) => _getCatalog(board, (after.currentPage ?? 0) + 1, interactive: interactive);
 
 	Future<List<ImageboardBoard>> _getBoards({required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/archives'), options: Options(

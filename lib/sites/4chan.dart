@@ -641,9 +641,9 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
 		if (variant == CatalogVariant.chan4NativeArchive) {
-			return _getArchive(after.board, after.id, interactive: interactive);
+			return _getArchive(board, after.id, interactive: interactive);
 		}
 		return [];
 	}

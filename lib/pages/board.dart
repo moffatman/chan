@@ -993,7 +993,7 @@ class BoardPageState extends State<BoardPage> {
 															return list;
 														}),
 														autoExtendDuringScroll: true,
-														listExtender: (after) => site.getMoreCatalog(after, variant: variant, interactive: true).then((list) async {
+														listExtender: (after) => site.getMoreCatalog(board!.name, after, variant: variant, interactive: true).then((list) async {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);
 																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();

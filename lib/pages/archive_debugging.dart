@@ -51,8 +51,8 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) {
-    return archive.getMoreCatalogImpl(after, variant: variant, interactive: interactive);
+  Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) {
+    return archive.getMoreCatalogImpl(board, after, variant: variant, interactive: interactive);
   }
 
   @override

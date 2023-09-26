@@ -364,9 +364,9 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
 		try {
-			return _getCatalogPage(after.board, (after.currentPage ?? 0) + 1, interactive: interactive);
+			return _getCatalogPage(board, (after.currentPage ?? 0) + 1, interactive: interactive);
 		}
 		on BoardNotFoundException {
 			return [];
