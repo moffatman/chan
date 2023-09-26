@@ -1609,6 +1609,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				)
 																			);
 																		}
+																		const style = TextStyle(fontSize: 16);
 																		return IgnorePointer(
 																			child: Container(
 																				width: double.infinity,
@@ -1631,19 +1632,29 @@ class ThreadPageState extends State<ThreadPage> {
 																						)
 																						else const Spacer(),
 																						if (loading) ...[
-																							const CircularProgressIndicator.adaptive(),
-																							const Text(' ')
+																							SizedBox(
+																								width: 18,
+																								height: 18,
+																								child: Transform.scale(
+																									scale: 0.9,
+																									child: const CircularProgressIndicator.adaptive()
+																								)
+																							),
+																							const Text(' ', style: style)
 																						],
 																						if (collapsedChildIds.isNotEmpty) Text(
-																							'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} '
+																							'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} ',
+																							style: style
 																						),
 																						if (unseenCount > 0) Text(
 																							'($unseenCount unseen) ',
+																							style: style
 																						)
 																						else if (newCount > 0) Text(
 																							'($newCount new) ',
+																							style: style
 																						),
-																						const Icon(CupertinoIcons.chevron_down, size: 20)
+																						const Icon(CupertinoIcons.chevron_down, size: 18)
 																					]
 																				)
 																			)
