@@ -624,6 +624,7 @@ class ChanTabs extends ChangeNotifier {
 					icon: CupertinoIcons.xmark_square,
 					title: 'Close others',
 					isDestructiveAction: true,
+					disabled: Persistence.tabs.length == 1,
 					onPressed: () async {
 						lightHapticFeedback();
 						final shouldCloseOthers = await showAdaptiveDialog<bool>(
@@ -635,7 +636,7 @@ class ChanTabs extends ChangeNotifier {
 									AdaptiveDialogAction(
 										onPressed: () => Navigator.of(context).pop(true),
 										isDestructiveAction: true,
-										child: const Text('Close others')
+										child: Text('Close ${Persistence.tabs.length - 1}')
 									),
 									AdaptiveDialogAction(
 										onPressed: () => Navigator.of(context).pop(false),
