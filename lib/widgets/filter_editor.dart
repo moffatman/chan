@@ -558,7 +558,13 @@ class _FilterEditorState extends State<FilterEditor> {
 													fontSize: 16,
 													height: 1.5
 												)
-											)
+											),
+											actions: [
+												AdaptiveActionSheetAction(
+													onPressed: () => Navigator.pop(context),
+													child: const Text('Close')
+												)
+											]
 										)
 									);
 								}
