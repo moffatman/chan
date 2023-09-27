@@ -1654,7 +1654,7 @@ class ThreadPageState extends State<ThreadPage> {
 																							'($newCount new) ',
 																							style: style
 																						),
-																						const Icon(CupertinoIcons.chevron_down, size: 18)
+																						Icon(CupertinoIcons.chevron_down, size: MediaQuery.textScalerOf(context).scale(18))
 																					]
 																				)
 																			)
