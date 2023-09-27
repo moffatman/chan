@@ -997,7 +997,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	int forceRebuildId = 0;
 	Timer? _trailingUpdateAnimationTimer;
 	bool _treeBuildingFailed = false;
-	int _treeSplitId = 0;
+	int? _treeSplitId;
 	bool _needToTransitionNewlyInsertedItems = false;
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
@@ -1032,7 +1032,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			state: this
 		);
 		widget.updateAnimation?.addListener(_onUpdateAnimation);
-		_treeSplitId = widget.initialTreeSplitId ?? 0;
+		_treeSplitId = widget.initialTreeSplitId;
 	}
 
 	@override
@@ -1054,7 +1054,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			sortedList = null;
 			errorMessage = null;
 			errorType = null;
-			_treeSplitId = widget.initialTreeSplitId ?? 0;
+			_treeSplitId = widget.initialTreeSplitId;
 			lastUpdateTime = null;
 			_automaticallyCollapsedItems.clear();
 			_overrideExpandAutomaticallyCollapsedItems.clear();
@@ -1603,12 +1603,17 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return (tree: linear, automaticallyCollapsed: [], automaticallyTopLevelCollapsed: {});
 		}
 
-		int maxIdFound = 0;
+		final firstTreeBuild = _treeSplitId == null;
+		final treeSplitId = _treeSplitId ?? linear.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j.childId))));
+		if (_treeSplitId == null && linear.length > 1) {
+			// Set initial tree-split ID to last post in thread
+			_treeSplitId = treeSplitId;
+			widget.onTreeSplitIdChanged?.call(treeSplitId);
+		}
 		final Set<int> itemsWithOmittedReplies = {};
 
 		void visitLinear(RefreshableListItem<T> item) {
 			final id = adapter.getId(item.item);
-			maxIdFound = max(maxIdFound, id);
 			final node = _TreeNode(item.copyWith(), id, adapter.getHasOmittedReplies(item.item));
 			if (node.hasOmittedReplies) {
 				itemsWithOmittedReplies.add(id);
@@ -1625,10 +1630,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else if (parentIds.isEmpty) {
 				treeRoots1.add(node);
 			}
-			else if (adapter.newRepliesAreLinear && id > _treeSplitId) {
+			else if (adapter.newRepliesAreLinear && id > treeSplitId) {
 				final peekLastTreeItemSoFar = treeRoots1.tryLast?.lastDescendant;
 				final acceptableParentIds = peekLastTreeItemSoFar?.ownershipChain.toSet() ?? {};
-				parentIds.removeWhere((parentId) => parentId <= _treeSplitId && !acceptableParentIds.contains(parentId));
+				parentIds.removeWhere((parentId) => parentId <= treeSplitId && !acceptableParentIds.contains(parentId));
 				if (parentIds.isEmpty) {
 					treeRoots2.add(node);
 				}
@@ -1719,8 +1724,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 		}
 
-		linear.where((item) => item.id <= _treeSplitId).forEach(visitLinear);
-		linear.where((item) => item.id > _treeSplitId).forEach(visitLinear);
+		linear.where((item) => item.id <= treeSplitId).forEach(visitLinear);
+		linear.where((item) => item.id > treeSplitId).forEach(visitLinear);
 
 		final treeRoots = treeRoots1.followedBy(treeRoots2).toList();
 		final stubRoots = <_TreeNode<RefreshableListItem<T>>>[];
@@ -1756,7 +1761,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				automaticallyCollapsed.add(ids);
 			}
 			if (!adapter.newRepliesAreLinear &&
-			    node.id > _treeSplitId &&
+			    node.id > treeSplitId &&
 					parentIds.isNotEmpty) {
 				_refreshableTreeItems.newlyInsertedItems.putIfAbsent(ids, () => false);
 				_refreshableTreeItems._cache.removeWhere((k, _) => parentIds.contains(k.thisId));
@@ -1774,11 +1779,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			if (willAddOmittedChildNode) {
 				if (
-					// Node has has unknown further replies, and didn't in the previous tree
-					node.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(node.id) ||
-					// Node has known further replies, and didn't have any in the previous tree
-					!node.stubChildIds.any((c) => c <= _treeSplitId) &&
-					_treeSplitId != 0) {
+					(
+						// Node has has unknown further replies, and didn't in the previous tree
+						node.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(node.id) ||
+						// Node has known further replies, and didn't have any in the previous tree
+						!node.stubChildIds.any((c) => c <= treeSplitId)
+					) &&
+					// We can trust treeSplitId,itemsWithUnknownStubReplies
+					!firstTreeBuild
+				) {
 					_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent(ids, () => false);
 					_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == node.id);
 				}
@@ -1829,13 +1838,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		if (firstRoot != null && (firstRoot.stubChildIds.isNotEmpty || firstRoot.hasOmittedReplies || stubRoots.isNotEmpty)) {
 			if (
-				// Node has has unknown further replies, and didn't in the previous treeTODO: FIX THIS!!!!
-				firstRoot.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(firstRoot.id) ||
-				// Node has known further replies, and didn't have any in the previous tree
-				!(
-					firstRoot.stubChildIds.any((c) => c <= _treeSplitId) ||
-					stubRoots.any((r) => r.id <= _treeSplitId)
-				)) {
+				(
+					// Node has has unknown further replies, and didn't in the previous tree
+					firstRoot.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(firstRoot.id) ||
+					// Node has known further replies, and didn't have any in the previous tree
+					!(
+						firstRoot.stubChildIds.any((c) => c <= treeSplitId) ||
+						stubRoots.any((r) => r.id <= treeSplitId)
+					)
+				) &&
+				// We can trust treeSplitId,itemsWithUnknownStubReplies
+				!firstTreeBuild
+			) {
 				_refreshableTreeItems.newlyInsertedStubRepliesForItem.putIfAbsent([firstRoot.id], () => false);
 				_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == firstRoot?.id);
 			}
