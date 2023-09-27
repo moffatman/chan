@@ -1134,6 +1134,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		while (total < _treeAnimationDuration) {
 			const incremental = Duration(milliseconds: 50);
 			await Future.delayed(incremental);
+			if (!mounted) {
+				return;
+			}
 			widget.controller?.invalidateAfter(item, looseEquality);
 			widget.controller?._scrollStream.add(null);
 			total += incremental;
