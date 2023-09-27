@@ -304,12 +304,6 @@ class PostRow extends StatelessWidget {
 							TextSpan(
 								children: [
 									if (
-										(
-											// We are not in tree view OR
-											parentZone.style != PostSpanZoneStyle.tree ||
-											// We are filtering and this is not a reply to OP
-											(post.parentId != latestPost.threadId && (baseOptions?.highlightString?.isNotEmpty ?? false))
-										) &&
 										// The site uses parentIds
 										!site.explicitIds &&
 										// The post has a parentId
