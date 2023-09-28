@@ -76,7 +76,7 @@ class _CachingFile extends EasyListenable {
 	final File file;
 	int totalBytes;
 	final int statusCode;
-	int currentBytes;
+	int currentBytes = 0;
 	final completer = Completer<void>();
 	final lock = Mutex();
 	final Map<String, String> headers;
@@ -88,8 +88,7 @@ class _CachingFile extends EasyListenable {
 		required this.file,
 		required this.totalBytes,
 		required this.statusCode,
-		this.headers = const {},
-		this.currentBytes = 0
+		this.headers = const {}
 	});
 
 	@override
@@ -415,7 +414,6 @@ class VideoServer {
 		if ((cachingFile0?.currentBytes ?? 0) != 0) {
 			httpRequest.headers.set('Range', 'bytes=${cachingFile0?.currentBytes}-');
 		}
-		print(httpRequest.headers);
 		final response = await httpRequest.close();
 		final cachingFile = cachingFile0 ?? _CachingFile(
 			file: file,
