@@ -781,7 +781,16 @@ class PostCodeSpan extends PostSpan {
 				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle)
 			);
 		}
-		final child = Row(
+		final content = RichText(
+			text: TextSpan(
+				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
+				children: result.data ?? [
+					TextSpan(text: text)
+				]
+			),
+			softWrap: false
+		);
+		final child = lineCount < 9 ? content : Row(
 			crossAxisAlignment: CrossAxisAlignment.start,
 			mainAxisSize: MainAxisSize.min,
 			children: [
@@ -798,15 +807,7 @@ class PostCodeSpan extends PostSpan {
 						)
 					)
 				),
-				RichText(
-					text: TextSpan(
-						style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
-						children: result.data ?? [
-							TextSpan(text: text)
-						]
-					),
-					softWrap: false
-				)
+				content
 			]
 		);
 		return WidgetSpan(
