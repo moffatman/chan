@@ -173,7 +173,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	String? _overlayText;
 	bool _isDisposed = false;
 	bool _isDownloaded;
-	GestureDetails? _gestureDetailsOnDoubleTapDragStart;
+	Offset? _doubleTapDragAnchor;
 	late final StreamSubscription<List<double>> _longPressFactorSubscription;
 	bool _loadingProgressHideScheduled = false;
 	bool _audioOnlyShowScheduled = false;
@@ -1249,14 +1249,15 @@ class AttachmentViewer extends StatelessWidget {
 			onSingleTap: onTap,
 			onDoubleTapDrag: (details) {
 				final state = controller.gestureKey.currentState!;
-				controller._gestureDetailsOnDoubleTapDragStart ??= state.gestureDetails;
-				final screenCenter = Offset(MediaQuery.sizeOf(context).width / 2, MediaQuery.sizeOf(context).height / 2);
-				Offset centerTarget = screenCenter;
-				centerTarget = (centerTarget - controller._gestureDetailsOnDoubleTapDragStart!.offset!) / controller._gestureDetailsOnDoubleTapDragStart!.totalScale!;
-				final scale = max(1.0, min(5.0, state.gestureDetails!.totalScale! * (1 +  (0.005 * details.localDelta.dy))));
+				final scaleBefore = state.gestureDetails!.totalScale!;
+				final offsetBefore = state.gestureDetails!.offset!;
+				final logicalAnchor = controller._doubleTapDragAnchor ??= ((details.localPosition - offsetBefore) / scaleBefore);
+				final anchorBefore = (logicalAnchor * scaleBefore) + offsetBefore;
+				final scaleAfter = (state.gestureDetails!.totalScale! * (1 + (0.005 * details.localDelta.dy))).clamp(1.0, 5.0);
+				final offsetAfter = anchorBefore - (logicalAnchor * scaleAfter);
 				state.gestureDetails = GestureDetails(
-					offset: (centerTarget * scale - screenCenter).scale(-1, -1),
-					totalScale: scale,
+					offset: offsetAfter,
+					totalScale: scaleAfter,
 					actionType: ActionType.zoom
 				);
 			},
@@ -1264,7 +1265,7 @@ class AttachmentViewer extends StatelessWidget {
 				if (details.localOffsetFromOrigin.distance < 1) {
 					onDoubleTap(controller.gestureKey.currentState!);
 				}
-				controller._gestureDetailsOnDoubleTapDragStart = null;
+				controller._doubleTapDragAnchor = null;
 			},
 			child: !allowContextMenu ? buildChild(true) : ContextMenu(
 				actions: [
