@@ -1068,6 +1068,11 @@ class AttachmentViewer extends StatelessWidget {
 		if (goodSource != null && ((!goodSource.path.endsWith('.gif') || passedFirstBuild) || source.toString().length < 6)) {
 			source = goodSource;
 		}
+		if (source.toString().isEmpty) {
+			return const Center(
+				child: CircularProgressIndicator.adaptive()
+			);
+		}
 		ImageProvider image = ExtendedNetworkImageProvider(
 			source.toString(),
 			cache: true,

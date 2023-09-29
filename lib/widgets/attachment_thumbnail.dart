@@ -112,6 +112,15 @@ class AttachmentThumbnail extends StatelessWidget {
 		if (spoiler && !settings.alwaysShowSpoilers) {
 			url = s.getSpoilerImageUrl(attachment, thread: thread).toString();
 		}
+		if (url.isEmpty) {
+			return SizedBox(
+				width: effectiveWidth,
+				height: effectiveHeight,
+				child: Center(
+					child: Icon(attachment.icon ?? Adaptive.icons.photo, size: max(24, 0.5 * min(effectiveWidth, effectiveHeight)))
+				)
+			);
+		}
 		ImageProvider image = ExtendedNetworkImageProvider(
 			url,
 			cache: true,
