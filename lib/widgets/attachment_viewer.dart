@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:async/async.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/media.dart';
@@ -65,6 +66,15 @@ Duration _estimateUrlTime(Uri url, AttachmentType type) {
 
 const _kDeviceGalleryAlbumName = 'Chance';
 
+extension _Current on Playlist {
+	Media? get current {
+		if (index > medias.length - 1) {
+			return null;
+		}
+		return medias[index];
+	}
+}
+
 class CurvedRectTween extends Tween<Rect?> {
 	final Curve curve;
 	CurvedRectTween({
@@ -89,6 +99,15 @@ class AttachmentNotArchivedException implements Exception {
 	AttachmentNotArchivedException(this.attachment);
 	@override
 	String toString() => 'Attachment not archived';
+}
+
+class MediaPlayerException implements Exception {
+	final String error;
+	final Media? media;
+
+	const MediaPlayerException(this.error, this.media);
+	@override
+	String toString() => 'Playback failed: $error\nFile: $media';
 }
 
 const _maxVideoControllers = 3;
@@ -189,6 +208,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _hideVideoPlayerController = false;
 	List<RecognizedTextBlock> _textBlocks = [];
 	bool _soundSourceFailed = false;
+	final _playerErrorStream = PublishSubject<String>();
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -274,7 +294,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onPlayerError(String error) {
-		print(error);
+		_playerErrorStream.add(error);
 	}
 
 	void _onPlayerLog(PlayerLog log) {
@@ -508,7 +528,6 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (!transcode) {
 					if (url.scheme == 'file') {
 						final file = File(url.toStringFFMPEG());
-						// TODO: Try with broken url or something? Not right here but too lazy to find the appropriate place for the TODO
 						await _ensureController().player.open(Media(file.path), play: false);
 						onCacheCompleted(file);
 					}
@@ -594,26 +613,37 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 				}
 				if (_isDisposed) return;
-				if (_videoPlayerController != null) {
+				final controller = _videoPlayerController;
+				if (controller != null) {
 					_hideVideoPlayerController = false;
 					if (_isDisposed) return;
 					if (settings.muteAudio.value || settings.alwaysStartVideosMuted) {
 						if (!settings.muteAudio.value) {
 							settings.setMuteAudio(true);
 						}
-						await _videoPlayerController?.player.setVolume(0);
+						await controller.player.setVolume(0);
 						if (_isDisposed) return;
 					}
-					await _videoPlayerController?.player.setPlaylistMode(PlaylistMode.loop);
+					await controller.player.setPlaylistMode(PlaylistMode.loop);
 					if (_isDisposed) return;
 					if (isPrimary) {
 						if (Platform.isAndroid) {
 							// Seems to be necessary to prevent brief freeze near beginning of video
 							await Future.delayed(const Duration(milliseconds: 100));
 						}
-						await _videoPlayerController?.player.seek(Duration.zero);
-						await _videoPlayerController?.waitUntilFirstFrameRendered;
-						await _videoPlayerController?.player.play();
+						await controller.player.seek(Duration.zero);
+						final error = await Future.any<String?>([
+							controller.waitUntilFirstFrameRendered.then((_) => null),
+							_playerErrorStream.firstOrNull.then((error) async {
+								// Sometimes MPV sends bogus errors when trying different decoders
+								await Future.delayed(const Duration(seconds: 1));
+								return error;
+							})
+						]);
+						if (error != null) {
+							throw MediaPlayerException(error, controller.player.state.playlist.current);
+						}
+						await controller.player.play();
 					}
 					if (_isDisposed) return;
 					_scheduleHidingOfLoadingProgress();
@@ -923,7 +953,17 @@ class AttachmentViewerController extends ChangeNotifier {
 				await _videoPlayerController?.player.seek(newPosition);
 				if (_isDisposed) return;
 			}
-			await _videoPlayerController?.waitUntilFirstFrameRendered;
+			final error = await Future.any<String?>([
+				_videoPlayerController!.waitUntilFirstFrameRendered.then((_) => null),
+				_playerErrorStream.firstOrNull.then((error) async {
+					// Sometimes MPV sends bogus errors when trying different decoders
+					await Future.delayed(const Duration(seconds: 1));
+					return error;
+				})
+			]);
+			if (error != null) {
+				throw MediaPlayerException(error, _videoPlayerController?.player.state.playlist.current);
+			}
 			if (_isDisposed) return;
 			await _videoPlayerController?.player.play();
 			if (_isDisposed) return;
@@ -948,6 +988,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_longPressFactorStream.close();
 		_videoControllers.remove(this);
 		_ongoingConversion?.cancelIfActive();
+		_playerErrorStream.close();
 	}
 
 	@override
