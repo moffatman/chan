@@ -394,7 +394,7 @@ class SiteReddit extends ImageboardSite {
 							return 'm.${m.group(1)}';
 						}),
 						type: AttachmentType.image,
-						ext: link.split('.').last
+						ext: '.${link.split('.').last}'
 					)];
 				}
 			}
@@ -415,7 +415,7 @@ class SiteReddit extends ImageboardSite {
 								return 'm.${m.group(1)}';
 							}),
 							type: AttachmentType.image,
-							ext: link.split('.').last
+							ext: '.${link.split('.').last}'
 						)];
 					}).toList();
 				}
@@ -504,7 +504,7 @@ class SiteReddit extends ImageboardSite {
 			url: url,
 			thumbnailUrl: null,
 			type: isDirectLink ? AttachmentType.image : AttachmentType.url,
-			ext: isDirectLink ? url.split('.').last : ''
+			ext: isDirectLink ? '.${url.split('.').last}' : ''
 		)];
 	}
 
