@@ -13,6 +13,7 @@ import android.webkit.MimeTypeMap;
 import android.util.Log;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument;
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree;
 import androidx.annotation.NonNull;
 import androidx.documentfile.provider.DocumentFile;
@@ -34,6 +35,9 @@ public class MainActivity extends FlutterFragmentActivity {
     private static final String NOTIFICATIONS_CHANNEL = "com.moffatman.chan/notifications";
     private static final String CLIPBOARD_CHANNEL = "com.moffatman.chan/clipboard";
     private MethodChannel.Result folderResult;
+
+    private MethodChannel.Result saveFileAsResult;
+    private String newDocumentSourcePath;
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -61,7 +65,62 @@ public class MainActivity extends FlutterFragmentActivity {
                     return;
                 }
             }
-            folderResult.success(null);
+            if (folderResult != null) {
+                folderResult.success(null);
+            }
+        });
+        ActivityResultLauncher<String> newDocument = registerForActivityResult(new CreateDocument("*/*") {
+            @Override
+            @NonNull
+            public Intent createIntent(@NonNull Context context, String input) {
+                Intent intent = super.createIntent(context, input);
+                if (input.endsWith(".png")) {
+                    intent.setType("image/png");
+                }
+                else if (input.endsWith(".jpg") || input.endsWith(".jpeg")) {
+                    intent.setType("image/jpeg");
+                }
+                else if (input.endsWith(".gif")) {
+                    intent.setType("image/gif");
+                }
+                else if (input.endsWith(".mp4")) {
+                    intent.setType("video/mp4");
+                }
+                else if (input.endsWith(".webm")) {
+                    intent.setType("video/webm");
+                }
+                else if (input.endsWith(".mp3")) {
+                    intent.setType("audio/mp3");
+                }
+                return intent;
+            }
+        }, uri -> {
+            if (saveFileAsResult == null) {
+                Log.e("newDocument", "saveFileAsResult was null!");
+                return;
+            }
+            if (uri == null) {
+                saveFileAsResult.success(null);
+                return;
+            }
+            try {
+                ParcelFileDescriptor destinationFileDescriptor = getContentResolver().openFileDescriptor(uri, "w");
+                File sourceFile = new File(newDocumentSourcePath);
+                FileOutputStream destinationWriteStream = new FileOutputStream(destinationFileDescriptor.getFileDescriptor());
+                FileInputStream sourceReadStream = new FileInputStream(sourceFile);
+                byte[] buffer = new byte[4096];
+                int len;
+                while ((len = sourceReadStream.read(buffer, 0, 4096)) > 0) {
+                    destinationWriteStream.write(buffer, 0, len);
+                }
+                destinationWriteStream.close();
+                destinationFileDescriptor.close();
+                sourceReadStream.close();
+                saveFileAsResult.success(uri.toString());
+            }
+            catch (IOException e) {
+                saveFileAsResult.error("FileNotFound", e.getMessage(), null);
+            }
         });
         super.configureFlutterEngine(flutterEngine);
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), STORAGE_CHANNEL).setMethodCallHandler(
@@ -123,6 +182,12 @@ public class MainActivity extends FlutterFragmentActivity {
                         catch (IOException e) {
                             result.error("IOException", e.getMessage(), null);
                         }
+                    }
+                    else if (call.method.equals("saveFileAs")) {
+                        this.saveFileAsResult = result;
+                        this.newDocumentSourcePath = call.argument("sourcePath");
+                        String destinationName = call.argument("destinationName");
+                        newDocument.launch(destinationName);
                     }
                     else {
                         result.notImplemented();

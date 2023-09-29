@@ -862,10 +862,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Future<String?> download({bool force = false}) async {
+	Future<String?> download({bool force = false, bool saveAs = false}) async {
 		if (_isDownloaded && !force) return null;
 		final settings = context.read<EffectiveSettings>();
 		final String filename;
+		bool successful = false;
 		try {
 			if (Platform.isIOS) {
 				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
@@ -883,28 +884,39 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				await PhotoManager.editor.copyAssetToPath(asset: asAsset, pathEntity: album!);
 				_isDownloaded = true;
+				successful = true;
 			}
 			else if (Platform.isAndroid) {
-				settings.androidGallerySavePath ??= await pickDirectory();
 				filename = attachment.id.toString() + attachment.ext;
-				if (settings.androidGallerySavePath != null) {
-					File source = getFile();
-					try {
-						await saveFile(
-							sourcePath: source.path,
-							destinationDir: settings.androidGallerySavePath!,
-							destinationSubfolders: settings.gallerySavePathOrganizing.subfoldersFor(attachment),
-							destinationName: filename
-						);
-						_isDownloaded = true;
-					}
-					on DirectoryNotFoundException {
-						settings.androidGallerySavePath = null;
-						rethrow;
-					}
-					on InsufficientPermissionException {
-						settings.androidGallerySavePath = null;
-						rethrow;
+				if (saveAs) {
+					final path = await saveFileAs(
+						sourcePath: getFile().path,
+						destinationName: filename
+					);
+					successful = path != null;
+				}
+				else {
+					settings.androidGallerySavePath ??= await pickDirectory();
+					if (settings.androidGallerySavePath != null) {
+						File source = getFile();
+						try {
+							await saveFile(
+								sourcePath: source.path,
+								destinationDir: settings.androidGallerySavePath!,
+								destinationSubfolders: settings.gallerySavePathOrganizing.subfoldersFor(attachment),
+								destinationName: filename
+							);
+							_isDownloaded = true;
+							successful = true;
+						}
+						on DirectoryNotFoundException {
+							settings.androidGallerySavePath = null;
+							rethrow;
+						}
+						on InsufficientPermissionException {
+							settings.androidGallerySavePath = null;
+							rethrow;
+						}
 					}
 				}
 			}
@@ -920,7 +932,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			rethrow;
 		}
 		notifyListeners();
-		return filename;
+		return successful ? filename : null;
 	}
 
 	Future<void> potentiallySwapVideo({bool play = false}) async {
@@ -1321,11 +1333,21 @@ class AttachmentViewer extends StatelessWidget {
 							final download = !controller.isDownloaded || (await confirm(context, 'Redownload?'));
 							if (!download) return;
 							final filename = await controller.download(force: true);
-							if (context.mounted) {
+							if (filename != null && context.mounted) {
 								showToast(context: context, message: 'Downloaded $filename', icon: CupertinoIcons.cloud_download);
 							}
 						},
 						child: const Text('Download')
+					),
+					if (isSaveFileAsSupported) ContextMenuAction(
+						trailingIcon: Icons.folder,
+						onPressed: () async {
+							final filename = await controller.download(force: true, saveAs: true);
+							if (filename != null && context.mounted) {
+								showToast(context: context, message: 'Downloaded $filename', icon: Icons.folder);
+							}
+						},
+						child: const Text('Download to...')
 					),
 					ContextMenuAction(
 						trailingIcon: Adaptive.icons.share,

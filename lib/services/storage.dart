@@ -51,3 +51,15 @@ Future<void> saveFile({
 		rethrow;
 	}
 }
+
+final bool isSaveFileAsSupported = Platform.isAndroid;
+
+Future<String?> saveFileAs({
+	required String sourcePath,
+	required String destinationName
+}) async {
+	return await _platform.invokeMethod<String>('saveFileAs', {
+		'sourcePath': sourcePath,
+		'destinationName': destinationName
+	});
+}

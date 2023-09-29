@@ -10,6 +10,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/status_bar.dart';
+import 'package:chan/services/storage.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -806,15 +807,23 @@ class _GalleryPageState extends State<GalleryPage> {
 													},
 													icon: const Icon(CupertinoIcons.rectangle_grid_2x2)
 												),
-												AdaptiveIconButton(
-													onPressed: currentController.canShare ? () async {
-														final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));
-														if (!download) return;
-														final filename = await currentController.download(force: true);
-														if (!mounted) return;
-														showToast(context: context, message: 'Downloaded $filename', icon: CupertinoIcons.cloud_download);
+												GestureDetector(
+													onLongPress: isSaveFileAsSupported ? () async {
+														final filename = await currentController.download(force: true, saveAs: true);
+														if (filename != null && context.mounted) {
+															showToast(context: context, message: 'Downloaded $filename', icon: Icons.folder);
+														}
 													} : null,
-													icon: currentController.isDownloaded ? const Icon(CupertinoIcons.cloud_download_fill) : const Icon(CupertinoIcons.cloud_download)
+													child: AdaptiveIconButton(
+														onPressed: currentController.canShare ? () async {
+															final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));
+															if (!download) return;
+															final filename = await currentController.download(force: true);
+															if (!mounted || filename == null) return;
+															showToast(context: context, message: 'Downloaded $filename', icon: CupertinoIcons.cloud_download);
+														} : null,
+														icon: currentController.isDownloaded ? const Icon(CupertinoIcons.cloud_download_fill) : const Icon(CupertinoIcons.cloud_download)
+													)
 												),
 												AnimatedBuilder(
 													animation: context.watch<Persistence>().savedAttachmentsListenable,
