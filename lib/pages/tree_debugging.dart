@@ -39,7 +39,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 	void initState() {
 		super.initState();
 		controller = RefreshableListController();
-		items.add(const _DebuggingItem(id: 0, parentIds: [], isStub: false, hasUnknownStubChildren: false));
+		items.add(_DebuggingItem(id: _id++, parentIds: [], isStub: false, hasUnknownStubChildren: false));
 	}
 
 	@override

@@ -999,6 +999,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	bool _treeBuildingFailed = false;
 	int? _treeSplitId;
 	bool _needToTransitionNewlyInsertedItems = false;
+	({
+		Map<int, int> treeRootIndexLookup,
+		Map<int, Map<int, int>> treeChildrenIndexLookup
+	})? _lastTreeOrder;
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
 	bool get treeBuildingFailed => _treeBuildingFailed;
@@ -1066,6 +1070,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				primarySubtreeParents: Map.from(widget.initialPrimarySubtreeParents ?? {}),
 				state: this
 			);
+			_lastTreeOrder = null;
 			if (!widget.disableUpdates) {
 				update();
 			}
@@ -1088,6 +1093,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if ((!listEquals(widget.sortMethods, oldWidget.sortMethods) ||
 		     widget.reverseSort != oldWidget.reverseSort ||
 				 sortedList == null) && originalList != null) {
+			_lastTreeOrder = null; // Resort
 			sortedList = originalList!.toList();
 			_sortList();
 		}
@@ -1208,6 +1214,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	void _mergeTrees({required bool rebuild}) {
 		final newTreeSplitId = widget.controller?._items.fold<int>(0, (m, i) => max(m, i.item.representsKnownStubChildren.fold<int>(i.item.id, (n, j) => max(n, j.childId))));
+		_lastTreeOrder = null; // Reorder OK
 		if (newTreeSplitId != null) {
 			_treeSplitId = newTreeSplitId;
 			widget.onTreeSplitIdChanged?.call(newTreeSplitId);
@@ -1729,6 +1736,34 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 		final treeRoots = treeRoots1.followedBy(treeRoots2).toList();
 		final stubRoots = <_TreeNode<RefreshableListItem<T>>>[];
+
+		final lastTreeOrder = _lastTreeOrder;
+		if (lastTreeOrder != null) {
+			const infiniteIndex = 1 << 50;
+			treeRoots.sort((a, b) {
+				final idxA = lastTreeOrder.treeRootIndexLookup[a.id] ?? infiniteIndex;
+				final idxB = lastTreeOrder.treeRootIndexLookup[b.id] ?? infiniteIndex;
+				return idxA.compareTo(idxB);
+			});
+			for (final entry in treeMap.entries) {
+				entry.value.children.sort((a, b) {
+					final idxA = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[a.id] ?? infiniteIndex;
+					final idxB = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[b.id] ?? infiniteIndex;
+					return idxA.compareTo(idxB);
+				});
+			}
+		}
+
+		_lastTreeOrder = (
+			treeRootIndexLookup: {
+				for (int i = 0; i < treeRoots.length; i++)
+					treeRoots[i].id: i
+			},
+			treeChildrenIndexLookup: treeMap.map((k, v) => MapEntry(k, {
+				for (int i = 0; i < v.children.length; i++)
+					v.children[i].id: i
+			}))
+		);
 
 		final out = <RefreshableListItem<T>>[];
 		final Map<int, RefreshableListItem<T>> encountered = {};
