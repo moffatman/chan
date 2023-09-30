@@ -1886,7 +1886,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							);
 						}
 						return AdaptiveIconButton(
-							onPressed: loading ? null : _submit,
+							onPressed: (loading || _attachmentProgress != null) ? null : _submit,
 							icon: const Icon(CupertinoIcons.paperplane)
 						);
 					}
