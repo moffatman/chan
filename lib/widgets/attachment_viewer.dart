@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:async/async.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/reverse_image_search.dart';
@@ -114,17 +115,28 @@ const _maxVideoControllers = 3;
 final List<AttachmentViewerController> _videoControllers = [];
 
 extension on GallerySavePathOrganizing {
-	List<String> subfoldersFor(Attachment attachment) {
+	List<String> subfoldersFor(AttachmentViewerController controller) {
+		final attachment = controller.attachment;
 		switch (this) {
+			case GallerySavePathOrganizing.noFolder:
 			case GallerySavePathOrganizing.noSubfolders:
 				return [];
 			case GallerySavePathOrganizing.boardSubfolders:
 				return [attachment.board];
 			case GallerySavePathOrganizing.boardAndThreadSubfolders:
 				return [attachment.board, attachment.threadId.toString()];
+			case GallerySavePathOrganizing.boardAndThreadNameSubfolders:
+				final title = attachment.threadId == null ?
+					null :
+					controller.imageboard.persistence.getThreadStateIfExists(ThreadIdentifier(attachment.board, attachment.threadId!))?.thread?.title;
+				if (title == null) {
+					return [attachment.board, attachment.threadId.toString()];
+				}
+				return [attachment.board, '${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
 		}
 	}
-	String albumNameFor(Attachment attachment) => switch (this) {
+	String? albumNameFor(Attachment attachment) => switch (this) {
+		GallerySavePathOrganizing.noFolder => null,
 		GallerySavePathOrganizing.noSubfolders => _kDeviceGalleryAlbumName,
 		_ => '$_kDeviceGalleryAlbumName - /${attachment.board}/'
 	};
@@ -167,7 +179,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	final BuildContext context;
 	final Attachment attachment;
 	final Listenable? redrawGestureListenable;
-	final ImageboardSite site;
+	final Imageboard imageboard;
+	ImageboardSite get site => imageboard.site;
 	final Uri? overrideSource;
 	final VoidCallback? onDownloaded;
 
@@ -261,7 +274,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		required this.context,
 		required this.attachment,
 		this.redrawGestureListenable,
-		required this.site,
+		required this.imageboard,
 		this.overrideSource,
 		Uri? initialGoodSource,
 		this.onDownloaded,
@@ -870,9 +883,12 @@ class AttachmentViewerController extends ChangeNotifier {
 		try {
 			if (Platform.isIOS) {
 				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
+				AssetPathEntity? album;
 				final albumName = settings.gallerySavePathOrganizing.albumNameFor(attachment);
-				AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
-				album ??= await PhotoManager.editor.darwin.createAlbum(albumName);
+				if (albumName != null) {
+					album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
+					album ??= await PhotoManager.editor.darwin.createAlbum(albumName);
+				}
 				final convertForCompatibility = attachment.type == AttachmentType.webm;
 				filename = _downloadFilename(convertForCompatibility);
 				final shareCachedFile = await _moveToShareCache(convertForCompatibility: convertForCompatibility);
@@ -882,7 +898,9 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (asAsset == null) {
 					throw Exception('Failed to save to gallery');
 				}
-				await PhotoManager.editor.copyAssetToPath(asset: asAsset, pathEntity: album!);
+				if (album != null) {
+					await PhotoManager.editor.copyAssetToPath(asset: asAsset, pathEntity: album);
+				}
 				_isDownloaded = true;
 				successful = true;
 			}
@@ -903,7 +921,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							await saveFile(
 								sourcePath: source.path,
 								destinationDir: settings.androidGallerySavePath!,
-								destinationSubfolders: settings.gallerySavePathOrganizing.subfoldersFor(attachment),
+								destinationSubfolders: settings.gallerySavePathOrganizing.subfoldersFor(this),
 								destinationName: filename
 							);
 							_isDownloaded = true;

@@ -13,7 +13,6 @@ import 'package:chan/services/status_bar.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -269,7 +268,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				context: context,
 				attachment: attachment.attachment,
 				redrawGestureListenable: _slideListenable,
-				site: context.read<ImageboardSite>(),
+				imageboard: context.read<Imageboard>(),
 				isPrimary: attachment == currentAttachment,
 				overrideSource: widget.overrideSources[attachment.attachment],
 				initialGoodSource: widget.initialGoodSources[attachment.attachment],

@@ -993,6 +993,10 @@ class GallerySavePathOrganizingAdapter
         return GallerySavePathOrganizing.boardSubfolders;
       case 2:
         return GallerySavePathOrganizing.boardAndThreadSubfolders;
+      case 3:
+        return GallerySavePathOrganizing.boardAndThreadNameSubfolders;
+      case 4:
+        return GallerySavePathOrganizing.noFolder;
       default:
         return GallerySavePathOrganizing.noSubfolders;
     }
@@ -1009,6 +1013,12 @@ class GallerySavePathOrganizingAdapter
         break;
       case GallerySavePathOrganizing.boardAndThreadSubfolders:
         writer.writeByte(2);
+        break;
+      case GallerySavePathOrganizing.boardAndThreadNameSubfolders:
+        writer.writeByte(3);
+        break;
+      case GallerySavePathOrganizing.noFolder:
+        writer.writeByte(4);
         break;
     }
   }

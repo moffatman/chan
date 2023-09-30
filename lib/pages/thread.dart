@@ -429,7 +429,7 @@ class ThreadPageState extends State<ThreadPage> {
 			final controller = AttachmentViewerController(
 				context: context,
 				attachment: attachment,
-				site: context.read<ImageboardSite>()
+				imageboard: context.read<Imageboard>()
 			);
 			try {
 				await controller.preloadFullAttachment();

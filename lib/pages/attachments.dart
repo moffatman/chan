@@ -4,11 +4,11 @@ import 'dart:math';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/context_menu.dart';
@@ -144,7 +144,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 			final controller = AttachmentViewerController(
 				context: context,
 				attachment: attachment.attachment,
-				site: context.read<ImageboardSite>(),
+				imageboard: context.read<Imageboard>(),
 				isPrimary: false
 			);
 			if (context.watch<EffectiveSettings>().autoloadAttachments && !attachment.attachment.isRateLimited) {

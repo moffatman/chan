@@ -3504,9 +3504,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					padding: const EdgeInsets.all(16),
 					child: AdaptiveChoiceControl<GallerySavePathOrganizing>(
 						children: {
+							if (Platform.isIOS) GallerySavePathOrganizing.noFolder: (null, "No album"),
 							GallerySavePathOrganizing.noSubfolders: (null, Platform.isIOS ? '"Chance" album' : 'No subfolders'),
 							GallerySavePathOrganizing.boardSubfolders: (null, Platform.isIOS ? 'Per-board albums' : 'Per-board subfolders'),
-							if (Platform.isAndroid) GallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders')
+							if (Platform.isAndroid) ...{
+								GallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders'),
+								GallerySavePathOrganizing.boardAndThreadNameSubfolders: (null, 'Per-board and per-thread (with name) subfolders')
+							}
 						},
 						groupValue: settings.gallerySavePathOrganizing,
 						onValueChanged: (setting) {

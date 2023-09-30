@@ -1,5 +1,5 @@
 import 'package:chan/models/attachment.dart';
-import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:flutter/cupertino.dart';
@@ -19,7 +19,7 @@ class PopupAttachment extends StatelessWidget {
 		final controller = AttachmentViewerController(
 			context: context,
 			attachment: attachment,
-			site: context.read<ImageboardSite>()
+			imageboard: context.read<Imageboard>()
 		);
 		controller.isPrimary = true;
 		controller.loadFullAttachment();
