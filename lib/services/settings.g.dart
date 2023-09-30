@@ -288,13 +288,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       useHeadlessCloudCaptchaSolver: fields[157] as bool?,
       removeMetadataOnUploadedFiles: fields[158] as bool?,
       randomizeChecksumOnUploadedFiles: fields[159] as bool?,
+      recentWebImageSearches: (fields[160] as List?)?.cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(156)
+      ..writeByte(157)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -606,7 +607,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(158)
       ..write(obj.removeMetadataOnUploadedFiles)
       ..writeByte(159)
-      ..write(obj.randomizeChecksumOnUploadedFiles);
+      ..write(obj.randomizeChecksumOnUploadedFiles)
+      ..writeByte(160)
+      ..write(obj.recentWebImageSearches);
   }
 
   @override

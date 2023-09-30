@@ -865,6 +865,22 @@ class Persistence extends ChangeNotifier {
 		savedPostsListenable.didUpdate();
 	}
 
+	static List<String> get recentWebImageSearches => settings.recentWebImageSearches;
+	static Future<void> handleWebImageSearch(String query) async {
+		if (recentWebImageSearches.contains(query)) {
+			// Bump
+			settings.recentWebImageSearches = [query, ...recentWebImageSearches.where((e) => e != query)];
+		}
+		else {
+			settings.recentWebImageSearches = [query, ...recentWebImageSearches.take(_maxRecentItems)];
+		}
+		await settings.save();
+	}
+	static Future<void> removeRecentWebImageSearch(String query) async {
+		recentWebImageSearches.remove(query);
+		await settings.save();
+	}
+
 	@override
 	String toString() => 'Persistence($imageboardKey)';
 }

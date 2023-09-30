@@ -988,6 +988,8 @@ class SavedSettings extends HiveObject {
 	bool removeMetadataOnUploadedFiles;
 	@HiveField(159)
 	bool randomizeChecksumOnUploadedFiles;
+	@HiveField(160)
+	List<String> recentWebImageSearches;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1148,7 +1150,8 @@ class SavedSettings extends HiveObject {
 		this.useCloudCaptchaSolver,
 		this.useHeadlessCloudCaptchaSolver,
 		bool? removeMetadataOnUploadedFiles,
-		bool? randomizeChecksumOnUploadedFiles
+		bool? randomizeChecksumOnUploadedFiles,
+		List<String>? recentWebImageSearches,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1331,7 +1334,8 @@ class SavedSettings extends HiveObject {
 		drawerMode = drawerMode ?? DrawerMode.tabs,
 		showLineBreakInPostInfoRow = showLineBreakInPostInfoRow ?? false,
 		removeMetadataOnUploadedFiles = removeMetadataOnUploadedFiles ?? true,
-		randomizeChecksumOnUploadedFiles = randomizeChecksumOnUploadedFiles ?? false {
+		randomizeChecksumOnUploadedFiles = randomizeChecksumOnUploadedFiles ?? false,
+		recentWebImageSearches = recentWebImageSearches ?? [] {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';

@@ -105,6 +105,17 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 		urlFocusNode.requestFocus();
 	}
 
+	void _search(String value) {
+		final settings = context.read<EffectiveSettings>();
+		Uri url = Uri.parse(value);
+		if (url.scheme.isEmpty) {
+			url = settings.webImageSearchMethod.searchUrl(value);
+			// Don't pop-in behind loading search
+			Future.delayed(const Duration(seconds: 2), () => Persistence.handleWebImageSearch(value));
+		}
+		webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri.uri(url)));
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
@@ -116,13 +127,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 					enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
 					smartDashesType: SmartDashesType.disabled,
 					smartQuotesType: SmartQuotesType.disabled,
-					onSubmitted: (value) {
-						Uri url = Uri.parse(value);
-						if (url.scheme.isEmpty) {
-							url = settings.webImageSearchMethod.searchUrl(value);
-						}
-						webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri.uri(url)));
-					},
+					onSubmitted: _search,
 					onSuffixTap: () {
 						urlController.clear();
 						urlFocusNode.requestFocus();
@@ -225,7 +230,36 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											});
 										}
 									),
-									if (startedInitialLoad && progress < 1.0) LinearProgressIndicator(value: progress)
+									if (!startedInitialLoad) ListView(
+										children: Persistence.recentWebImageSearches.map((query) {
+											return CupertinoButton(
+												padding: EdgeInsets.zero,
+												onPressed: () => _search(query),
+												child: Container(
+													decoration: BoxDecoration(
+														border: Border(bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
+													),
+													padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+													child: Row(
+														children: [
+															Expanded(
+																child: Text(query)
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																child: const Icon(CupertinoIcons.xmark),
+																onPressed: () {
+																	Persistence.removeRecentWebImageSearch(query);
+																	setState(() {});
+																}
+															)
+														]
+													)
+												)
+											);
+										}).toList()
+									)
+									else if (progress < 1.0) LinearProgressIndicator(value: progress)
 								],
 							),
 						),
