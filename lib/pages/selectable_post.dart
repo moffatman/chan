@@ -108,6 +108,7 @@ class SelectablePostPage extends StatelessWidget {
 									runSpacing: 16,
 									children: [
 										AdaptiveFilledButton(
+											padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 											onPressed: !zone.imageboard.site.supportsPosting || (zone.findThread(post.threadId)?.isArchived ?? false) ? null : () {
 												onQuoteText(post.span.buildText(), includeBacklink: true);
 												WeakNavigator.pop(context);
@@ -122,6 +123,7 @@ class SelectablePostPage extends StatelessWidget {
 											)
 										),
 										AdaptiveFilledButton(
+											padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 											onPressed: !zone.imageboard.site.supportsPosting || (zone.findThread(post.threadId)?.isArchived ?? false) ? null : () {
 												onQuoteText(post.span.buildText(), includeBacklink: false);
 												WeakNavigator.pop(context);
@@ -136,6 +138,14 @@ class SelectablePostPage extends StatelessWidget {
 											)
 										)
 									]
+								),
+								const SizedBox(height: 16),
+								Text(
+									'Link all: Add quotelink, and copy text to reply field into a quote block\nQuote all: Copy text to reply field into a quote block',
+									textAlign: TextAlign.right,
+									style: TextStyle(
+										color: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
+									)
 								)
 							]
 						)
