@@ -67,7 +67,6 @@ class SelectablePostPage extends StatelessWidget {
 									contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
 										anchors: editableTextState.contextMenuAnchors,
 										buttonItems: [
-											...editableTextState.contextMenuButtonItems,
 											if (zone.imageboard.site.supportsPosting && zone.findThread(post.threadId)?.isArchived == false) ...[
 												ContextMenuButtonItem(
 													onPressed: () {
@@ -82,6 +81,7 @@ class SelectablePostPage extends StatelessWidget {
 													label: 'Quote in reply'
 												)
 											],
+											...editableTextState.contextMenuButtonItems,
 											ContextMenuButtonItem(
 												onPressed: () {
 													Share.share(
