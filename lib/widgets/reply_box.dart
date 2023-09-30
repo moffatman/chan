@@ -1815,9 +1815,15 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
 													focusToRestore = _lastNearbyFocus?.$2;
 												}
+												_attachmentProgress = ('Picking', null);
+												setState(() {});
 												final path = await picker.pick();
 												if (path != null) {
 													await setAttachment(File(path));
+												}
+												else if (mounted) {
+													_attachmentProgress = null;
+													setState(() {});
 												}
 												focusToRestore?.requestFocus();
 											},
