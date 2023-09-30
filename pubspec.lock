@@ -279,7 +279,7 @@ packages:
     description:
       path: dio
       ref: HEAD
-      resolved-ref: b29045eb5fbd7ee62c2bab16e6eafeeacfedd7b5
+      resolved-ref: "8e8305cb60a7ba8283233001994c5d01645bb9f4"
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "4.0.6"
