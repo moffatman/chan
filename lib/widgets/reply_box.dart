@@ -569,6 +569,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	Future<void> setAttachment(File newAttachment, {bool forceRandomizeChecksum = false}) async {
+		_autoPostTimer?.cancel();
 		File? file = newAttachment;
 		final settings = context.read<EffectiveSettings>();
 		final randomizeChecksum = forceRandomizeChecksum || settings.randomizeChecksumOnUploadedFiles;
@@ -1811,6 +1812,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										),
 										for (final picker in getAttachmentSources(context: context, includeClipboard: false)) AdaptiveIconButton(
 											onPressed: () async {
+												_autoPostTimer?.cancel();
 												FocusNode? focusToRestore;
 												if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
 													focusToRestore = _lastNearbyFocus?.$2;
