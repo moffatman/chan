@@ -306,7 +306,8 @@ class SiteReddit extends ImageboardSite {
 						yield PostQuoteSpan(PostNodeSpan(node.children.isNotEmpty ? visit(node.children).toList() : visit(node.nodes).toList()));
 					}
 					else if (node.localName == 'pre') {
-						yield PostCodeSpan(node.text);
+						yield PostCodeSpan(node.text.trimRight());
+						addLinebreakBefore = true;
 					}
 					else if (node.localName == 'crosspostparent') {
 						yield PostQuoteLinkSpan(
