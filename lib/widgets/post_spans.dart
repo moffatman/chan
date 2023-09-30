@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import 'dart:math' as math;
 
 import 'package:chan/main.dart';
 import 'package:chan/models/parent_and_child.dart';
@@ -730,7 +731,7 @@ class PostCodeSpan extends PostSpan {
 	build(context, zone, settings, theme, options) {
 		final lineCount = RegExp(r'\n').allMatches(text).length + 1;
 		final result = zone.getFutureForComputation(
-			id: 'languagedetect $text',
+			id: 'languagedetect ${identityHashCode(text)} ${text.substring(0, math.min(10, text.length - 1))}',
 			work: () async {
 				final startsWithCapitalLetter = RegExp(r'^[A-Z]');
 				if (lineCount < 10 && startsWithCapitalLetter.hasMatch(text)) {
