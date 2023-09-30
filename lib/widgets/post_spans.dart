@@ -728,9 +728,15 @@ class PostCodeSpan extends PostSpan {
 
 	@override
 	build(context, zone, settings, theme, options) {
+		final lineCount = RegExp(r'\n').allMatches(text).length + 1;
 		final result = zone.getFutureForComputation(
 			id: 'languagedetect $text',
 			work: () async {
+				final startsWithCapitalLetter = RegExp(r'^[A-Z]');
+				if (lineCount < 10 && startsWithCapitalLetter.hasMatch(text)) {
+					// Probably just plaintext
+					return [TextSpan(text: text)];
+				}
 				final receivePort = ReceivePort();
 				String? language;
 				await Isolate.spawn(_detectLanguageIsolate, _DetectLanguageParam(text, receivePort.sendPort));
@@ -768,7 +774,6 @@ class PostCodeSpan extends PostSpan {
 				return spans;
 			}
 		);
-		final lineCount = RegExp(r'\n').allMatches(text).length + 1;
 		final lineCountFieldWidth = lineCount.toString().length;
 		if (options.showRawSource) {
 			return TextSpan(
