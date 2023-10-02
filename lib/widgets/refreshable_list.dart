@@ -2047,6 +2047,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						}
 					}
 				}
+				if (stubItem != null) {
+					values.add(stubItem);
+				}
 			}
 			widget.controller?.setItems(values);
 			if (filteredValues.isEmpty) {
