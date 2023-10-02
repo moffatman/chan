@@ -1816,9 +1816,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				if (
 					(
 						// Node has has unknown further replies, and didn't in the previous tree
-						node.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(node.id) ||
+						(node.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(node.id)) ||
 						// Node has known further replies, and didn't have any in the previous tree
-						!node.stubChildIds.any((c) => c <= treeSplitId)
+						(node.stubChildIds.isNotEmpty && !node.stubChildIds.any((c) => c <= treeSplitId))
 					) &&
 					// We can trust treeSplitId,itemsWithUnknownStubReplies
 					!firstTreeBuild
@@ -1878,7 +1878,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					firstRoot.hasOmittedReplies && !_refreshableTreeItems.itemsWithUnknownStubReplies.contains(firstRoot.id) ||
 					// Node has known further replies, and didn't have any in the previous tree
 					!(
-						firstRoot.stubChildIds.any((c) => c <= treeSplitId) ||
+						(firstRoot.stubChildIds.isNotEmpty && firstRoot.stubChildIds.any((c) => c <= treeSplitId)) ||
 						stubRoots.any((r) => r.id <= treeSplitId)
 					)
 				) &&
