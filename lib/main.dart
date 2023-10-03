@@ -549,10 +549,21 @@ class ChanTabs extends ChangeNotifier {
 			initialSearch: withInitialSearch
 		);
 		tab.initialize();
-		tab.addListener(_onTabUpdate);
 		if (withBoard != null && withThreadId != null && withInitialPostId != null) {
 			tab.initialPostId[ThreadIdentifier(withBoard, withThreadId)] = withInitialPostId;
 		}
+		insertInitializedTab(pos, tab,
+			keepTabPopupOpen: keepTabPopupOpen,
+			activate: activate
+		);
+		return tab;
+	}
+	
+	void insertInitializedTab(int pos, PersistentBrowserTab tab, {
+		bool keepTabPopupOpen = false,
+		bool activate = false
+	}) {
+		tab.addListener(_onTabUpdate);
 		Persistence.tabs.insert(pos, tab);
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		if (activate) {
@@ -569,7 +580,6 @@ class ChanTabs extends ChangeNotifier {
 			}
 			_tabListController.animateTo((_tabListController.position.maxScrollExtent / Persistence.tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease);
 		});
-		return tab;
 	}
 
 	void onReorder(int oldIndex, int newIndex) {
@@ -646,7 +656,9 @@ class ChanTabs extends ChangeNotifier {
 							)
 						);
 						if (shouldCloseOthers == true) {
-							final tabToPreserve = Persistence.tabs[browseTabIndex];
+							final beforeRemove = {...Persistence.tabs.asMap()};
+							final indexToPreserve = browseTabIndex;
+							final tabToPreserve = Persistence.tabs[indexToPreserve];
 							for (final tab in Persistence.tabs) {
 								tab.removeListener(_onTabUpdate);
 							}
@@ -657,6 +669,21 @@ class ChanTabs extends ChangeNotifier {
 							browseTabIndex = 0;
 							if (Persistence.settings.closeTabSwitcherAfterUse) {
 								onShouldShowTabPopup(false);
+							}
+							if (context.mounted) {
+								showUndoToast(
+									context: context,
+									message: 'Closed ${describeCount(beforeRemove.length - 1, 'tab')}',
+									icon: CupertinoIcons.xmark_square,
+									onUndo: () {
+										for (final pair in beforeRemove.entries) {
+											if (pair.key != indexToPreserve) {
+												insertInitializedTab(pair.key, pair.value);
+											}
+										}
+										browseTabIndex = indexToPreserve;
+									}
+								);
 							}
 						}
 					}
@@ -1387,7 +1414,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								title: 'Close',
 								isDestructiveAction: true,
 								disabled: Persistence.tabs.length == 1,
-								onPressed: () => _tabs.closeBrowseTab(-1 * index)
+								onPressed: () {
+									final previouslyActiveTab = _tabs.browseTabIndex;
+									final closedTab = Persistence.tabs[-1 * index];
+									_tabs.closeBrowseTab(-1 * index);
+									showUndoToast(
+										context: context,
+										message: 'Closed tab',
+										icon: CupertinoIcons.xmark,
+										onUndo: () {
+											_tabs.insertInitializedTab(-1 * index, closedTab);
+											_tabs.browseTabIndex = previouslyActiveTab;
+										}
+									);
+								}
 							),
 							TabMenuAction(
 								icon: CupertinoIcons.doc_on_doc,

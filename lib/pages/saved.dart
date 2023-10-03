@@ -14,9 +14,11 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -295,6 +297,25 @@ class _SavedPageState extends State<SavedPage> {
 												onPressed: () async {
 													await watch.imageboard.notifications.removeWatch(watch.item);
 													_watchedListController.update();
+													if (context.mounted) {
+														showUndoToast(
+															context: context,
+															message: 'Unwatched',
+															icon: CupertinoIcons.xmark,
+															onUndo: () {
+																watch.imageboard.notifications.subscribeToThread(
+																	thread: watch.item.threadIdentifier,
+																	lastSeenId: watch.item.lastSeenId,
+																	localYousOnly: watch.item.localYousOnly,
+																	pushYousOnly: watch.item.pushYousOnly,
+																	push: watch.item.push,
+																	youIds: watch.item.youIds,
+																	zombie: watch.item.zombie
+																);
+																_watchedListController.update();
+															}
+														);
+													}
 												},
 												trailingIcon: CupertinoIcons.xmark,
 												isDestructiveAction: true
@@ -434,6 +455,27 @@ class _SavedPageState extends State<SavedPage> {
 														for (final watch in toRemove) {
 															await watch.item.imageboard.notifications.removeWatch(watch.item.item);
 														}
+														if (context.mounted) {
+															showUndoToast(
+																context: context,
+																message: 'Removed ${describeCount(toRemove.length, 'watch', plural: 'watches')}',
+																icon: CupertinoIcons.xmark,
+																onUndo: () => _watchMutex.protectWrite(() async {
+																	_watchedListController.update(); // Should wait until mutex releases
+																	for (final watch in toRemove) {
+																		watch.item.imageboard.notifications.subscribeToThread(
+																			thread: watch.item.item.threadIdentifier,
+																			lastSeenId: watch.item.item.lastSeenId,
+																			localYousOnly: watch.item.item.localYousOnly,
+																			pushYousOnly: watch.item.item.pushYousOnly,
+																			push: watch.item.item.push,
+																			youIds: watch.item.item.youIds,
+																			zombie: watch.item.item.zombie
+																		);
+																	}
+																})
+															);
+														}
 													});
 												} : null,
 												child: const Row(
@@ -535,9 +577,20 @@ class _SavedPageState extends State<SavedPage> {
 											ContextMenuAction(
 												child: const Text('Unsave'),
 												onPressed: () {
+													final oldSavedTime = state.savedTime;
 													state.savedTime = null;
 													state.save();
 													_threadListController.update();
+													showUndoToast(
+														context: context,
+														message: 'Unsaved',
+														icon: CupertinoIcons.xmark,
+														onUndo: () {
+															state.savedTime = oldSavedTime ?? DateTime.now();
+															state.save();
+															_threadListController.update();
+														}
+													);
 												},
 												trailingIcon: CupertinoIcons.xmark,
 												isDestructiveAction: true
@@ -923,12 +976,45 @@ class _SavedPageState extends State<SavedPage> {
 															]
 														)
 													);
-													if (ok != true || !mounted) {
+													if (!mounted || ok != true) {
 														return;
 													}
-													for (final item in list) {
-														item.imageboard.persistence.deleteSavedAttachment(item.item.attachment);
+													final toDelete = list.toList();
+													final imageboards = toDelete.map((i) => i.imageboard).toSet();
+													for (final item in toDelete) {
+														item.imageboard.persistence.savedAttachments.remove(item.item.attachment.globalId);
 													}
+													for (final imageboard in imageboards) {
+														imageboard.persistence.savedAttachmentsListenable.didUpdate();
+														attachmentSourceNotifier.didUpdate();
+													}
+													Persistence.settings.save();
+													bool actuallyDelete = true;
+													showUndoToast(
+														context: context,
+														message: 'Deleted ${describeCount(list.length, 'attachment')}',
+														icon: CupertinoIcons.xmark,
+														onUndo: () {
+															actuallyDelete = false;
+															// Restore all the objects
+															for (final item in toDelete) {
+																item.imageboard.persistence.savedAttachments[item.item.attachment.globalId] = item.item;
+															}
+															for (final imageboard in imageboards) {
+																imageboard.persistence.savedAttachmentsListenable.didUpdate();
+																attachmentSourceNotifier.didUpdate();
+															}
+															Persistence.settings.save();
+														}
+													);
+													Future.delayed(const Duration(seconds: 10), () async {
+														if (actuallyDelete) {
+															// Objects are really gone, delete the saved files
+															for (final item in toDelete) {
+																await item.item.deleteFiles();
+															}
+														}
+													});
 												} : null,
 												child: const Row(
 													mainAxisSize: MainAxisSize.min,

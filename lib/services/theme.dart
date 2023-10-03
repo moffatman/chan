@@ -267,9 +267,22 @@ Future<String?> selectThemeKey({
 																		)
 																	);
 																	if (consent == true) {
-																		settings.themes.remove(themes[i].key);
+																		final removed = themes[i];
+																		settings.themes.remove(removed.key);
 																		settings.handleThemesAltered();
 																		setDialogState(() {});
+																		if (context.mounted) {
+																			showUndoToast(
+																				context: context,
+																				message: 'Deleted ${removed.key}',
+																				icon: CupertinoIcons.trash,
+																				onUndo: () {
+																					settings.themes[removed.key] = removed.value;
+																					settings.handleThemesAltered();
+																					setDialogState(() {});
+																				}
+																			);
+																		}
 																	}
 																},
 																child: const Icon(CupertinoIcons.delete)

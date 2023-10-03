@@ -689,7 +689,19 @@ class _FilterEditorState extends State<FilterEditor> {
 								if (newFilter != null) {
 									final lines = settings.filterConfiguration.split('\n');
 									if (newFilter.$1) {
-										lines.removeAt(filter.key);
+										final removed = lines.removeAt(filter.key);
+										if (context.mounted) {
+											showUndoToast(
+												context: context,
+												message: 'Deleted filter',
+												icon: CupertinoIcons.trash,
+												onUndo: () {
+													lines.insert(filter.key, removed);
+													settings.filterConfiguration = lines.join('\n');
+													regexController.text = settings.filterConfiguration;
+												}
+											);
+										}
 									}
 									else {
 										lines[filter.key] = newFilter.$2!.toStringConfiguration();

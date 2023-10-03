@@ -498,7 +498,8 @@ class Notifications {
 		required bool pushYousOnly,
 		required bool push,
 		required List<int> youIds,
-		bool foregroundMuted = false
+		bool foregroundMuted = false,
+		bool zombie = false
 	}) {
 		final existingWatch = threadWatches[thread];
 		if (existingWatch != null) {
@@ -515,7 +516,8 @@ class Notifications {
 				pushYousOnly: pushYousOnly,
 				youIds: youIds,
 				push: push,
-				foregroundMuted: foregroundMuted
+				foregroundMuted: foregroundMuted,
+				zombie: zombie
 			);
 			threadWatches[thread] = watch;
 			if (Persistence.settings.usePushNotifications == true && watch.push) {

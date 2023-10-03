@@ -74,7 +74,9 @@ void showToast({
 	required BuildContext context,
 	required String message,
 	required IconData icon,
-	bool hapticFeedback = true
+	bool hapticFeedback = true,
+	Widget? button,
+	Duration duration = const Duration(seconds: 2)
 }) {
 	if (hapticFeedback) {
 		lightHapticFeedback();
@@ -100,10 +102,44 @@ void showToast({
 								color: theme.primaryColor
 							)
 						)
-					)
+					),
+					if (button != null) ...[
+						const SizedBox(width: 12),
+						button
+					]
 				]
 			)
-		)
+		),
+		toastDuration: duration
+	);
+}
+
+void showUndoToast({
+	required BuildContext context,
+	required String message,
+	required IconData icon,
+	required VoidCallback onUndo
+}) {
+	bool pressed = false;
+	showToast(
+		context: context,
+		message: message,
+		icon: icon,
+		button: StatefulBuilder(
+			builder: (context, setState) => AdaptiveButton(
+				padding: EdgeInsets.zero,
+				onPressed: pressed ? null : () {
+					onUndo();
+					setState(() {
+						pressed = true;
+					});
+				},
+				child: Text('Undo', style: TextStyle(
+					color: pressed ? null : EffectiveSettings.instance.theme.secondaryColor
+				))
+			)
+		),
+		duration: const Duration(seconds: 5)
 	);
 }
 

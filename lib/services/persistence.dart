@@ -1194,13 +1194,16 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 
 	@override
 	Future<void> delete() async {
-		await Persistence.setCachedThread(imageboardKey, board, id, null);
+		// Don't delete cached thread, it will be cleaned up next launch
+		// This allows time to undo safely
 		await super.delete();
 	}
 
 	ThreadIdentifier get identifier => ThreadIdentifier(board, id);
 	
 	ThreadWatch? get threadWatch => imageboard?.notifications.getThreadWatch(identifier);
+
+	String get boxKey => '$imageboardKey/$board/$id';
 }
 
 @HiveType(typeId: 4)

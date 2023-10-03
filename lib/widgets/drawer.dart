@@ -91,12 +91,14 @@ class _DrawerList<T extends Object> {
 	final List<T> list;
 	final Widget Function(T, Widget Function(BuildContext, ThreadWidgetData)) builder;
 	final void Function(int, int)? onReorder;
-	final void Function(int)? onClose;
+	final ({String message, VoidCallback onUndo}) Function(int)? onClose;
 	final bool Function(int) isSelected;
 	final void Function(int) onSelect;
 	final Iterable<TabMenuAction> Function(int, T) buildAdditionalActions;
 
 	static Iterable<TabMenuAction> _buildNothing(int i, Object t) => const Iterable.empty();
+
+	static int _undoId = 0;
 
 	const _DrawerList({
 		required this.list,
@@ -132,7 +134,15 @@ class _DrawerList<T extends Object> {
 									title: 'Close',
 									isDestructiveAction: true,
 									disabled: list.length == 1,
-									onPressed: () => onClose!(i)
+									onPressed: () {
+										final data = onClose!(i);
+										showUndoToast(
+											context: context,
+											message: data.message,
+											icon: Icons.close,
+											onUndo: data.onUndo
+										);
+									}
 								),
 								...buildAdditionalActions(i, item)
 							]
@@ -153,10 +163,19 @@ class _DrawerList<T extends Object> {
 						}
 					));
 					return onClose == null ? tile : Dismissible(
-						key: ValueKey(item),
+						key: ValueKey((item, _undoId)),
 						direction: DismissDirection.startToEnd,
 						onDismissed: (direction) {
-							onClose!(i);
+							final data = onClose!(i);
+							showUndoToast(
+								context: context,
+								message: data.message,
+								icon: Icons.close,
+								onUndo: () {
+									_undoId++;
+									data.onUndo();
+								}
+							);
 						},
 						child: tile
 					);
@@ -209,7 +228,18 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					builder: builder
 				),
 				onReorder: tabs.onReorder,
-				onClose: Persistence.tabs.length > 1 ? (i) => tabs.closeBrowseTab(i) : null,
+				onClose: Persistence.tabs.length > 1 ? (i) {
+					final previouslyActiveTab = tabs.browseTabIndex;
+					final closedTab = Persistence.tabs[i];
+					tabs.closeBrowseTab(i);
+					return (
+						message: 'Closed tab',
+						onUndo: () {
+							tabs.insertInitializedTab(i, closedTab);
+							tabs.browseTabIndex = previouslyActiveTab;
+						}
+					);
+				 } : null,
 				isSelected: (i) => tabs.mainTabIndex == 0 && tabs.browseTabIndex == i,
 				onSelect: (i) {
 					if (tabs.mainTabIndex != 0) {
@@ -265,7 +295,26 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					builder: builder
 				),
 				onReorder: null,
-				onClose: (i) => watches[i].imageboard.notifications.unsubscribeFromThread(watches[i].item.threadIdentifier),
+				onClose: (i) {
+					final watch = watches[i];
+					watch.imageboard.notifications.unsubscribeFromThread(watch.item.threadIdentifier);
+					setState(() {});
+					return (
+						message: 'Unwatched thread',
+						onUndo: () {
+							watch.imageboard.notifications.subscribeToThread(
+								thread: watch.item.threadIdentifier,
+								lastSeenId: watch.item.lastSeenId,
+								localYousOnly: watch.item.localYousOnly,
+								pushYousOnly: watch.item.pushYousOnly,
+								push: watch.item.push,
+								youIds: watch.item.youIds,
+								zombie: watch.item.zombie
+							);
+							setState(() {});
+						}
+					);
+				},
 				isSelected: (i) => tabs.mainTabIndex == 0 && tabs.currentBrowserThread == watches[i].imageboard.scope(watches[i].item.threadIdentifier),
 				onSelect: (i) async {
 					final watch = watches[i];
@@ -300,8 +349,18 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 				onReorder: null,
 				onClose: (i) {
 					final state = states[i];
+					final oldSavedTime = state.savedTime;
 					state.savedTime = null;
 					state.save();
+					setState(() {});
+					return (
+						message: 'Unsaved thread',
+						onUndo: () {
+							state.savedTime = oldSavedTime ?? DateTime.now();
+							state.save();
+							setState(() {});
+						}
+					);
 				},
 				isSelected: (i) => tabs.mainTabIndex == 0 && tabs.currentBrowserThread == states[i].imageboard?.scope(states[i].identifier),
 				onSelect: (i) {

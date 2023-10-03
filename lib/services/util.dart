@@ -22,9 +22,12 @@ String makeRandomUserAgent() {
 	return makeRandomBase64String(random.nextInt(30) + 10);
 }
 
-String describeCount(int count, String noun) {
+String describeCount(int count, String noun, {String? plural}) {
 	if (count == 1) {
 		return '$count $noun';
+	}
+	else if (plural != null) {
+		return '$count $plural';
 	}
 	else {
 		return '$count ${noun}s';

@@ -7,6 +7,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
@@ -90,7 +91,7 @@ class HistoryPageState extends State<HistoryPage> {
 								actions: [
 									AdaptiveIconButton(
 										onPressed: () async {
-											await showAdaptiveDialog(
+											final toDelete = await showAdaptiveDialog<List<PersistentThreadState>>(
 												context: context,
 												barrierDismissible: true,
 												builder: (context) => StatefulBuilder(
@@ -98,8 +99,8 @@ class HistoryPageState extends State<HistoryPage> {
 														final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (settings.includeThreadsYouRepliedToWhenDeletingHistory || i.youIds.isEmpty)).toList();
 														final thisSessionStates = states.where((s) => s.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
 														final now = DateTime.now();
-														final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1);
-														final lastWeekStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 7);
+														final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1).toList();
+														final lastWeekStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 7).toList();
 														return AdaptiveAlertDialog(
 															title: const Text('Clear history'),
 															content: Column(
@@ -127,40 +128,28 @@ class HistoryPageState extends State<HistoryPage> {
 															actions: [
 																AdaptiveDialogAction(
 																	onPressed: () async {
-																		Navigator.pop(context);
-																		for (final state in thisSessionStates) {
-																			await state.delete();
-																		}
+																		Navigator.pop(context, thisSessionStates);
 																	},
 																	isDestructiveAction: true,
 																	child: Text('This session (${thisSessionStates.length})')
 																),
 																AdaptiveDialogAction(
 																	onPressed: () async {
-																		Navigator.pop(context);
-																		for (final state in lastDayStates) {
-																			await state.delete();
-																		}
+																		Navigator.pop(context, lastDayStates);
 																	},
 																	isDestructiveAction: true,
 																	child: Text('Today (${lastDayStates.length})')
 																),
 																AdaptiveDialogAction(
 																	onPressed: () async {
-																		Navigator.pop(context);
-																		for (final state in lastWeekStates) {
-																			await state.delete();
-																		}
+																		Navigator.pop(context, lastWeekStates);
 																	},
 																	isDestructiveAction: true,
 																	child: Text('This week (${lastWeekStates.length})')
 																),
 																AdaptiveDialogAction(
 																	onPressed: () async {
-																		Navigator.pop(context);
-																		for (final state in states) {
-																			await state.delete();
-																		}
+																		Navigator.pop(context, states);
 																	},
 																	isDestructiveAction: true,
 																	child: Text('All time (${states.length})')
@@ -174,6 +163,23 @@ class HistoryPageState extends State<HistoryPage> {
 													}
 												)
 											);
+											if (toDelete != null) {
+												for (final state in toDelete) {
+													await state.delete();
+												}
+												if (mounted) {
+													showUndoToast(
+														context: context,
+														message: 'Deleted ${describeCount(toDelete.length, 'thread')}',
+														icon: CupertinoIcons.delete,
+														onUndo: () async {
+															for (final state in toDelete) {
+																await Persistence.sharedThreadStateBox.put(state.boxKey, state);
+															}
+														}
+													);
+												}
+											}
 										},
 										icon: const Icon(CupertinoIcons.delete)
 									),
@@ -249,6 +255,18 @@ class HistoryPageState extends State<HistoryPage> {
 													state.showInHistory = false;
 													await state.save();
 													_listController.update();
+													if (context.mounted) {
+														showUndoToast(
+															context: context,
+															message: 'Thread hidden',
+															icon: CupertinoIcons.eye_slash,
+															onUndo: () async {
+																state.showInHistory = true;
+																await state.save();
+																_listController.update();
+															}
+														);
+													}
 												},
 												trailingIcon: CupertinoIcons.eye_slash,
 												isDestructiveAction: true
@@ -258,6 +276,17 @@ class HistoryPageState extends State<HistoryPage> {
 												onPressed: () async {
 													await state.delete();
 													_listController.update();
+													if (context.mounted) {
+														showUndoToast(
+															context: context,
+															message: 'Removed thread',
+															icon: CupertinoIcons.xmark,
+															onUndo: () async {
+																await Persistence.sharedThreadStateBox.put(state.boxKey, state);
+																_listController.update();
+															}
+														);
+													}
 												},
 												trailingIcon: CupertinoIcons.xmark,
 												isDestructiveAction: true
