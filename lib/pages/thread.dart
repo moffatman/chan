@@ -698,12 +698,23 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _replacePostFromArchive(Post post) async {
-		final tmpPersistentState = persistentState;
-		final site = context.read<ImageboardSite>();
-		final asArchived = await site.getPostFromArchive(post.board, post.id, interactive: true);
-		tmpPersistentState.thread?.mergePosts(null, [asArchived], site.placeOrphanPost);
-		await tmpPersistentState.save();
-		setState(() {});
+		try {
+			final tmpPersistentState = persistentState;
+			final site = context.read<ImageboardSite>();
+			final asArchived = await site.getPostFromArchive(post.board, post.id, interactive: true);
+			tmpPersistentState.thread?.mergePosts(null, [asArchived], site.placeOrphanPost);
+			await tmpPersistentState.save();
+			setState(() {});
+		}
+		catch (e) {
+			if (mounted) {
+				showToast(
+					context: context,
+					message: e.toStringDio(),
+					icon: CupertinoIcons.exclamationmark_triangle
+				);
+			}
+		}
 	}
 
 	Future<void> _switchToLive() async {
