@@ -120,6 +120,12 @@ class CloudflareInterceptor extends Interceptor {
 			transparentBackground: true
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback) => (controller, uri) async {
+			controller.evaluateJavascript(source: '''
+				var style = document.createElement('style');
+				style.innerHTML = "* { color: ${EffectiveSettings.instance.theme.primaryColor.toCssHex()} !important; }";
+				document.head.appendChild(style);
+				document.body.bgColor = "${EffectiveSettings.instance.theme.backgroundColor.toCssHex()}";
+			''');
 			if ((uri?.host.isEmpty ?? false) && uri?.scheme != 'data') {
 				final correctedUri = uri!.replace(
 					scheme: cookieUrl.scheme,
@@ -184,14 +190,6 @@ class CloudflareInterceptor extends Interceptor {
 						initialUrlRequest: initialUrlRequest,
 						initialData: initialData,
 						onLoadStop: buildOnLoadStop(Navigator.of(context).pop),
-						onPageCommitVisible: (controller, uri) {
-							controller.evaluateJavascript(source: '''
-								var style = document.createElement('style');
-								style.innerHTML = "* { color: ${EffectiveSettings.instance.theme.primaryColor.toCssHex()}; }";
-								document.head.appendChild(style);
-								document.body.bgColor = "${EffectiveSettings.instance.theme.backgroundColor.toCssHex()}";
-							''');
-						},
 					)
 				)
 			)
