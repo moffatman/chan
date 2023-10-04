@@ -1228,6 +1228,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 			await update();
 		}
+		else {
+			resetTimer();
+		}
 	}
 
 	Future<void> update({
