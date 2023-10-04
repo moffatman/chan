@@ -199,10 +199,10 @@ class Post implements Filterable {
 	bool get isStub => spanFormat == PostSpanFormat.stub;
 
 	@override
-	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.isDeleted == isDeleted;
+	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.isDeleted == isDeleted && listEquals(other.attachments, attachments);
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, isDeleted);
+	int get hashCode => Object.hash(board, id, upvotes, isDeleted, attachments);
 }
 
 class PostAdapter extends TypeAdapter<Post> {
