@@ -245,7 +245,7 @@ class CloudflareInterceptor extends Interceptor {
 				);
 				final newResponse = data.response(options);
 				if (newResponse != null) {
-					handler.resolve(newResponse);
+					handler.resolve(newResponse, true);
 					return;
 				}
 			}
@@ -275,7 +275,7 @@ class CloudflareInterceptor extends Interceptor {
 				);
 				final newResponse = data.response(response.requestOptions);
 				if (newResponse != null) {
-					handler.resolve(newResponse);
+					handler.next(newResponse);
 					return;
 				}
 			}

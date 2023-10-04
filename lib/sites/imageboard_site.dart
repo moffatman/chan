@@ -26,6 +26,7 @@ import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/soyjak.dart';
+import 'package:chan/sites/lainchan2.dart';
 import 'package:chan/sites/wizchan.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -1328,6 +1329,20 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			boards: boards
+		);
+	}
+	else if (data['type'] == 'lainchan2') {
+		return SiteLainchan2(
+			name: data['name'],
+			baseUrl: data['baseUrl'],
+			imageThumbnailExtension: data['imageThumbnailExtension'],
+			faviconPath: data['faviconPath'],
+			boardsPath: data['boardsPath'],
+			defaultUsername: data['defaultUsername'],
+			formBypass: {
+				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
+					entry.key as String: (entry.value as Map).cast<String, String>()
+			}
 		);
 	}
 	else {

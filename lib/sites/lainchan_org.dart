@@ -6,22 +6,29 @@ import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 
 class SiteLainchanOrg extends SiteLainchan {
+	final String boardsPath;
 	SiteLainchanOrg({
 		required super.baseUrl,
 		required super.name,
 		super.archives = const [],
 		super.faviconPath,
-		super.defaultUsername
+		super.defaultUsername,
+		this.boardsPath = '/'
 	});
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/'), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, boardsPath), options: Options(
 			responseType: ResponseType.plain,
 			extra: {
 				kInteractive: interactive
-			}
+			},
+			// Needed to allow multiple interception
+			validateStatus: (_) => true
 		));
+		if (response.statusCode != 200) {
+			throw HTTPStatusException(response.statusCode ?? 0);
+		}
 		final document = parse(response.data);
 		return document.querySelectorAll('.boardlist a').where((e) => e.attributes['title'] != null && (e.attributes['href'] ?? '').contains('/')).map((e) => ImageboardBoard(
 			name: e.attributes['href']!.split('/')[1],

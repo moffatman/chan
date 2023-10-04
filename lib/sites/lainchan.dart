@@ -512,7 +512,12 @@ class SiteLainchan extends ImageboardSite {
 	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, archives, faviconPath, defaultUsername);
 	
 	@override
-	Uri get iconUrl => Uri.https(baseUrl, faviconPath);
+	Uri get iconUrl {
+		if (faviconPath.startsWith('/')) {
+			return Uri.https(baseUrl, faviconPath);
+		}
+		return Uri.parse(faviconPath);
+	}
 
 	@override
 	bool get supportsPushNotifications => true;
