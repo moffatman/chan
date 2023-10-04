@@ -59,7 +59,7 @@ extension on _CloudflareResponse {
 	Response? response(RequestOptions options) {
 		return Response(
 			requestOptions: options,
-			data: _decode(content!),
+			data: content == null ? null : _decode(content!),
 			isRedirect: uri != options.uri,
 			redirects: [
 				if (uri != null && uri != options.uri) RedirectRecord(302, 'GET', uri!)
