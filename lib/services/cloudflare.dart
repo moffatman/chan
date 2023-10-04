@@ -53,32 +53,22 @@ dynamic _decode(String data) {
 }
 
 
-typedef _CloudflareResponse = ({String? content, Uri? redirect});
+typedef _CloudflareResponse = ({String? content, Uri? uri});
 
 extension on _CloudflareResponse {
 	Response? response(RequestOptions options) {
-		if (content != null) {
-			return Response(
-				requestOptions: options,
-				data: _decode(content!),
-				statusCode: 200,
-				extra: {
-					'cloudflare': true
-				}
-			);
-		}
-		else if (redirect != null) {
-			return Response(
-				requestOptions: options,
-				isRedirect: true,
-				redirects: [RedirectRecord(302, 'GET', redirect!)],
-				statusCode: 302,
-				extra: {
-					'cloudflare': true
-				}
-			);
-		}
-		return null;
+		return Response(
+			requestOptions: options,
+			data: _decode(content!),
+			isRedirect: uri != options.uri,
+			redirects: [
+				if (uri != null && uri != options.uri) RedirectRecord(302, 'GET', uri!)
+			],
+			statusCode: content == null ? 302 : 200,
+			extra: {
+				'cloudflare': true
+			}
+		);
 	}
 } 
 
@@ -136,7 +126,7 @@ class CloudflareInterceptor extends Interceptor {
 					host: cookieUrl.host
 				);
 				await _saveCookies(correctedUri);
-				callback((content: null, redirect: correctedUri));
+				callback((content: null, uri: correctedUri));
 				return;
 			}
 			final title = await controller.getTitle() ?? '';
@@ -146,10 +136,10 @@ class CloudflareInterceptor extends Interceptor {
 				if (html.contains('<pre')) {
 					// Raw JSON response, but web-view has put it within a <pre>
 					final document = parse(html);
-					callback((content: document.querySelector('pre')!.text, redirect: null));
+					callback((content: document.querySelector('pre')!.text, uri: uri));
 				}
 				else {
-					callback((content: html, redirect: null));
+					callback((content: html, uri: uri));
 				}
 			}
 		};
