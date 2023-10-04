@@ -136,7 +136,7 @@ class SiteLainchan extends ImageboardSite {
 				sizeInBytes: data['fsize']
 			);
 		}
-		if (postData['tim'] != null) {
+		if ((postData['tim'] as String?)?.isNotEmpty ?? false) {
 			ret.add(makeAttachment(postData));
 			if (postData['extra_files'] != null) {
 				for (final extraFile in (postData['extra_files'] as List<dynamic>).cast<Map<String, dynamic>>()) {
@@ -168,7 +168,7 @@ class SiteLainchan extends ImageboardSite {
 			id: data['no'],
 			threadId: threadId,
 			attachments: _makeAttachments(board, threadId, data),
-			attachmentDeleted: data['filedeleted'] == 1,
+			attachmentDeleted: data['filedeleted'] == 1 || data['ext'] == 'deleted',
 			spanFormat: PostSpanFormat.lainchan,
 			posterId: data['id'],
 			flag: _makeFlag(data),
@@ -205,6 +205,7 @@ class SiteLainchan extends ImageboardSite {
 			id: thread.id,
 			isSticky: firstPost['sticky'] == 1,
 			title: (firstPost['sub'] as String?)?.unescapeHtml,
+			attachmentDeleted: posts[0].attachmentDeleted,
 			attachments: posts[0].attachments,
 			time: DateTime.fromMillisecondsSinceEpoch(firstPost['time'] * 1000),
 			replyCount: posts.length - 1,
@@ -238,6 +239,7 @@ class SiteLainchan extends ImageboardSite {
 					id: threadData['no'],
 					title: (threadData['sub'] as String?)?.unescapeHtml,
 					posts_: [threadAsPost],
+					attachmentDeleted: threadAsPost.attachmentDeleted,
 					attachments: threadAsPost.attachments,
 					replyCount: threadData['replies'],
 					imageCount: threadData['images'],
