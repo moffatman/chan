@@ -847,6 +847,7 @@ abstract class ImageboardSiteArchive {
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
 	final Map<String, DateTime> _lastCatalogCacheTime = {};
 	ImageboardSiteArchive() {
+		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(SeparatedCookieManager(
 			wifiCookieJar: Persistence.wifiCookies,
 			cellularCookieJar: Persistence.cellularCookies

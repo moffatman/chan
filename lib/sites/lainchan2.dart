@@ -1,8 +1,30 @@
-import 'package:chan/services/cloudflare.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
+import 'package:mutex/mutex.dart';
+
+const _kExtraBypassLock = 'bypass_lock';
+
+/// Block any processing while form is being submitted, so that the new cookies
+/// can be injected by a later interceptor
+class FormBypassBlockingInterceptor extends Interceptor {
+	final SiteLainchan2 site;
+
+	FormBypassBlockingInterceptor(this.site);
+
+	@override
+	void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+		if (options.extra[_kExtraBypassLock] == true) {
+			handler.next(options);
+		}
+		else {
+			site.formLock.protect(() async {
+				handler.next(options);
+			});
+		}
+	}
+}
 
 class FormBypassInterceptor extends Interceptor {
 	final SiteLainchan2 site;
@@ -21,16 +43,27 @@ class FormBypassInterceptor extends Interceptor {
 						if (action.startsWith('/')) {
 							action = 'https://${site.baseUrl}$action';
 						}
-						final postResponse = await site.client.post(action, data: FormData.fromMap(formBypass), options: Options(
-							validateStatus: (x) => x != null && (x >= 200 || x < 400),
-							followRedirects: true,
-							extra: {
-								if (response.cloudflare) 'cloudflare': true
+						final action_ = action;
+						final response2 = await site.formLock.protect(() async {
+							final postResponse = await site.client.post(action_, data: FormData.fromMap(formBypass), options: Options(
+								validateStatus: (x) => x != null && (x >= 200 || x < 400),
+								followRedirects: true,
+								extra: {
+									_kExtraBypassLock: true
+								}
+							));
+							if (postResponse.realUri.path != response.realUri.path) {
+								return await site.client.fetch(response.requestOptions.copyWith(
+									extra: {
+										...response.requestOptions.extra,
+										_kExtraBypassLock: true
+									}
+								));
 							}
-						));
-						if (postResponse.realUri.path != response.realUri.path) {
+						});
+						if (response2 != null) {
 							// Success
-							handler.next(await site.client.fetch(response.requestOptions));
+							handler.next(response2);
 							return;
 						}
 					}
@@ -53,6 +86,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	@override
 	final String? imageThumbnailExtension;
 	final Map<String, Map<String, String>> formBypass;
+	final formLock = Mutex();
 
 	SiteLainchan2({
 		required super.baseUrl,
@@ -64,6 +98,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		super.boardsPath,
 		super.defaultUsername
 	}) {
+		client.interceptors.insert(1, FormBypassBlockingInterceptor(this));
 		client.interceptors.add(FormBypassInterceptor(this));
 	}
 

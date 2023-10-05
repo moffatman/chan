@@ -74,6 +74,15 @@ extension on _CloudflareResponse {
 
 final _lock = Mutex();
 
+/// Block any processing while Cloudflare is clearing, so that the new cookies
+/// can be injected by a later interceptor
+class CloudflareBlockingInterceptor extends Interceptor {
+	@override
+	void onRequest(RequestOptions options, RequestInterceptorHandler handler) => _lock.protect(() async {
+		handler.next(options);
+	});
+}
+
 class CloudflareInterceptor extends Interceptor {
 	static bool _titleMatches(String title) {
 		return title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait') || title.contains('Verification Required');
