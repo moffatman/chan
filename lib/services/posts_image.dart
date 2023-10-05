@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/services/filtering.dart';
@@ -11,7 +13,6 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/shareable_posts.dart';
-import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -263,6 +264,8 @@ Future<File> sharePostsAsImage({
 }) async {
 	final controller = ScreenshotController();
 	final mediaQueryData = context.getInheritedWidgetOfExactType<MediaQuery>()!.data;
+	final imageboard = context.read<Imageboard>();
+	final effectiveZone = zone ?? context.read<PostSpanZoneData>();
 	final img = await controller.captureFromLongWidget(
 		MediaQuery(
 			data: mediaQueryData.copyWith(devicePixelRatio: 1),
@@ -271,12 +274,12 @@ Future<File> sharePostsAsImage({
 				child: MultiProvider(
 					providers: [
 						ChangeNotifierProvider.value(value: context.read<EffectiveSettings>()),
-						ChangeNotifierProvider.value(value: context.read<Imageboard>()),
+						ChangeNotifierProvider.value(value: imageboard),
 						Provider.value(value: context.read<ImageboardSite>()),
 						ChangeNotifierProvider.value(value: context.read<Persistence>()),
 						ChangeNotifierProvider.value(value: context.read<ThreadWatcher>()),
 						Provider.value(value: context.read<Notifications>()),
-						ChangeNotifierProvider.value(value: zone ?? context.read<PostSpanZoneData>())
+						ChangeNotifierProvider.value(value: effectiveZone)
 					],
 					child: ChanceTheme(
 						themeKey: style.overrideThemeKey ?? ChanceTheme.keyOf(context, listen: false),
@@ -291,7 +294,9 @@ Future<File> sharePostsAsImage({
 		pixelRatio: mediaQueryData.devicePixelRatio,
 		delay: const Duration(milliseconds: 500)
 	);
-	final file = File('${Persistence.documentsDirectory.path}/screenshot.png');
+	final shareDirectory = Directory('${Persistence.temporaryDirectory.path}/sharecache');
+	await shareDirectory.create(recursive: true);
+	final file = File('${shareDirectory.path}/${imageboard.site.name}_${effectiveZone.board}_$primaryPostId.png');
 	await file.writeAsBytes(img);
 	return file;
 }
