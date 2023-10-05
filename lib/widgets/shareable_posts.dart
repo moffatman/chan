@@ -100,6 +100,8 @@ class ShareablePosts extends StatelessWidget {
 						largeImageWidth: (p.id == primaryPostId && style.expandPrimaryImage) ? style.width : null,
 						highlight: p.id == primaryPostId && ((style.childDepth > 0 && p.replyIds.isNotEmpty) || (style.parentDepth > 0 && p.repliedToIds.isNotEmpty)),
 						baseOptions: options,
+						showBoardName: p.id == primaryPostId,
+						showSiteIcon: p.id == primaryPostId,
 						revealYourPosts: style.revealYourPosts,
 						revealSpoilerImages: true
 					),
@@ -118,6 +120,8 @@ class ShareablePosts extends StatelessWidget {
 									post: value,
 									dim: peekContentHeight.isFinite,
 									baseOptions: options,
+									showBoardName: value.id == primaryPostId,
+									showSiteIcon: value.id == primaryPostId,
 									revealYourPosts: style.revealYourPosts,
 									revealSpoilerImages: true,
 									overrideReplyCount: Row(
@@ -283,6 +287,8 @@ class ShareablePosts extends StatelessWidget {
 									highlight: parents.isNotEmpty || children.isNotEmpty,
 									largeImageWidth: style.expandPrimaryImage ? style.width : null,
 									shrinkWrap: true,
+									showBoardName: true,
+									showSiteIcon: true,
 									baseOptions: options,
 									revealYourPosts: style.revealYourPosts
 								)
