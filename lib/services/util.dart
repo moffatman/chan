@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:chan/services/persistence.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:html_unescape/html_unescape_small.dart';
 
 bool isDesktop() {
@@ -35,13 +36,13 @@ String describeCount(int count, String noun, {String? plural}) {
 }
 
 Future<void> lightHapticFeedback() async {
-	if (Persistence.settings.useHapticFeedback) {
+	if (Persistence.settings.useHapticFeedback && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 		await HapticFeedback.lightImpact();
 	}
 }
 
 Future<void> mediumHapticFeedback() async {
-	if (Persistence.settings.useHapticFeedback) {
+	if (Persistence.settings.useHapticFeedback && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 		await HapticFeedback.mediumImpact();
 	}
 }
