@@ -39,8 +39,13 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 			leadings.add(const BackButton());
 		}
 		else if (onDrawerButtonPressed != null) {
-			leadings.add(DrawerButton(
-				onPressed: onDrawerButtonPressed
+			leadings.add(GestureDetector(
+				onLongPress: () {
+					context.read<EffectiveSettings>().runQuickAction(context);
+				},
+				child: DrawerButton(
+					onPressed: onDrawerButtonPressed
+				)
 			));
 		}
 		if (bar.leading != null) {

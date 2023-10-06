@@ -1598,63 +1598,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		) ?? false);
 	}
 
-	void _runSettingsQuickAction() {
-		mediumHapticFeedback();
-		final settings = context.read<EffectiveSettings>();
-		switch (settings.settingsQuickAction) {
-			case SettingsQuickAction.toggleTheme:
-				settings.themeSetting = settings.whichTheme == Brightness.light ? TristateSystemSetting.b : TristateSystemSetting.a;
-				showToast(
-					context: context,
-					icon: CupertinoIcons.paintbrush,
-					message: settings.whichTheme == Brightness.light ? 'Switched to light theme' : 'Switched to dark theme'
-				);
-				break;
-			case SettingsQuickAction.toggleBlurredThumbnails:
-				settings.blurThumbnails = !settings.blurThumbnails;
-				showToast(
-					context: context,
-					icon: CupertinoIcons.paintbrush,
-					message: settings.blurThumbnails ? 'Blurred thumbnails enabled' : 'Blurred thumbnails disabled'
-				);
-				break;
-			case SettingsQuickAction.toggleCatalogLayout:
-				settings.useCatalogGrid = !settings.useCatalogGrid;
-				showToast(
-					context: context,
-					icon: CupertinoIcons.rectangle_stack,
-					message: settings.useCatalogGrid ? 'Switched to catalog grid' : 'Switched to catalog rows'
-				);
-				break;
-			case SettingsQuickAction.toggleInterfaceStyle:
-				settings.supportMouseSetting = settings.supportMouse.value ? TristateSystemSetting.a : TristateSystemSetting.b;
-				showToast(
-					context: context,
-					icon: settings.supportMouse.value ? Icons.mouse : CupertinoIcons.hand_draw,
-					message: settings.supportMouse.value ? 'Switched to mouse layout' : 'Switched to touch layout'
-				);
-				break;
-			case SettingsQuickAction.toggleListPositionIndicatorLocation:
-				settings.showListPositionIndicatorsOnLeft = !settings.showListPositionIndicatorsOnLeft;
-				showToast(
-					context: context,
-					icon: settings.showListPositionIndicatorsOnLeft ? CupertinoIcons.arrow_left_to_line : CupertinoIcons.arrow_right_to_line,
-					message: settings.showListPositionIndicatorsOnLeft ? 'Moved list position indicators to left' : 'Moved list position indicators to right'
-				);
-				break;
-			case SettingsQuickAction.toggleVerticalTwoPaneSplit:
-				settings.verticalTwoPaneMinimumPaneSize = -1 * settings.verticalTwoPaneMinimumPaneSize;
-				showToast(
-					context: context,
-					icon: settings.verticalTwoPaneMinimumPaneSize.isNegative ? CupertinoIcons.rectangle : CupertinoIcons.rectangle_grid_1x2,
-					message: settings.verticalTwoPaneMinimumPaneSize.isNegative ? 'Disabled vertical two-pane layout' : 'Enabled vertical two-pane layout'
-				);
-				break;
-			case null:
-				break;
-		}
-	}
-
 	void _toggleHistory() {
 		mediumHapticFeedback();
 		final settings = context.read<EffectiveSettings>();
@@ -1789,7 +1732,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												),
 												_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
 												GestureDetector(
-													onLongPress: _runSettingsQuickAction,
+													onLongPress: () => settings.runQuickAction(context),
 													child: _buildTabletIcon(4, NotifyingIcon(
 															icon: Icon(CupertinoIcons.settings, color: settings.filterError != null ? Colors.red : null),
 															primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
@@ -1891,7 +1834,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								),
 								BottomNavigationBarItem(
 									icon: GestureDetector(
-										onLongPress: _runSettingsQuickAction,
+										onLongPress: () => settings.runQuickAction(context),
 										child: NotifyingIcon(
 											icon: Icon(CupertinoIcons.settings, size: 28, color: settings.filterError != null ? Colors.red : null),
 											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,

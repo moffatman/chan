@@ -2585,6 +2585,62 @@ class EffectiveSettings extends ChangeNotifier {
 		await _settings.save();
 	}
 
+	void runQuickAction(BuildContext context) {
+		mediumHapticFeedback();
+		switch (settingsQuickAction) {
+			case SettingsQuickAction.toggleTheme:
+				themeSetting = whichTheme == Brightness.light ? TristateSystemSetting.b : TristateSystemSetting.a;
+				showToast(
+					context: context,
+					icon: CupertinoIcons.paintbrush,
+					message: whichTheme == Brightness.light ? 'Switched to light theme' : 'Switched to dark theme'
+				);
+				break;
+			case SettingsQuickAction.toggleBlurredThumbnails:
+				blurThumbnails = !blurThumbnails;
+				showToast(
+					context: context,
+					icon: CupertinoIcons.paintbrush,
+					message: blurThumbnails ? 'Blurred thumbnails enabled' : 'Blurred thumbnails disabled'
+				);
+				break;
+			case SettingsQuickAction.toggleCatalogLayout:
+				useCatalogGrid = !useCatalogGrid;
+				showToast(
+					context: context,
+					icon: CupertinoIcons.rectangle_stack,
+					message: useCatalogGrid ? 'Switched to catalog grid' : 'Switched to catalog rows'
+				);
+				break;
+			case SettingsQuickAction.toggleInterfaceStyle:
+				supportMouseSetting = supportMouse.value ? TristateSystemSetting.a : TristateSystemSetting.b;
+				showToast(
+					context: context,
+					icon: supportMouse.value ? Icons.mouse : CupertinoIcons.hand_draw,
+					message: supportMouse.value ? 'Switched to mouse layout' : 'Switched to touch layout'
+				);
+				break;
+			case SettingsQuickAction.toggleListPositionIndicatorLocation:
+				showListPositionIndicatorsOnLeft = !showListPositionIndicatorsOnLeft;
+				showToast(
+					context: context,
+					icon: showListPositionIndicatorsOnLeft ? CupertinoIcons.arrow_left_to_line : CupertinoIcons.arrow_right_to_line,
+					message: showListPositionIndicatorsOnLeft ? 'Moved list position indicators to left' : 'Moved list position indicators to right'
+				);
+				break;
+			case SettingsQuickAction.toggleVerticalTwoPaneSplit:
+				verticalTwoPaneMinimumPaneSize = -1 * verticalTwoPaneMinimumPaneSize;
+				showToast(
+					context: context,
+					icon: verticalTwoPaneMinimumPaneSize.isNegative ? CupertinoIcons.rectangle : CupertinoIcons.rectangle_grid_1x2,
+					message: verticalTwoPaneMinimumPaneSize.isNegative ? 'Disabled vertical two-pane layout' : 'Enabled vertical two-pane layout'
+				);
+				break;
+			case null:
+				break;
+		}
+	}
+
 	static const featureStatusBarWorkaround = true;
 
 	EffectiveSettings._() {
