@@ -37,6 +37,11 @@ class ScrollTracker {
 					// At the bottom of the scroll view. Probably we want to show stuff again.
 					slowScrollDirection.value = VerticalDirection.up;
 				}
+				else if (notification.metrics.extentBefore < 5) {
+					// At the top of the scroll view. We may not be showing due to automated scroll.
+					// But it's still appropriate to show stuff now.
+					slowScrollDirection.value = VerticalDirection.up;
+				}
 				slowScrollDirection.value = null;
 			}
 			else if (notification is ScrollUpdateNotification) {
