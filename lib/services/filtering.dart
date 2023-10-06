@@ -282,7 +282,7 @@ class CustomFilter implements Filter {
 				else if (s == 'file:no') {
 					filter.hasFile = false;
 				}
-				else if (s == 'thread') {
+				else if (s == 'thread' || s == 'op:only') {
 					filter.threadsOnly = true;
 				}
 				else if (s == 'reply') {
