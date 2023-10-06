@@ -2183,7 +2183,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 
 	Future<void> _onUpdatingNowChange() async {
 		await WidgetsBinding.instance.endOfFrame;
-		setState(() {});
+		if (mounted) {
+			setState(() {});
+		}
 	}
 
 	@override
