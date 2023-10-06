@@ -575,10 +575,7 @@ class ChanTabs extends ChangeNotifier {
 		_didModifyPersistentTabData();
 		notifyListeners();
 		Future.delayed(const Duration(milliseconds: 100), () {
-			if (!_tabListController.hasOnePosition) {
-				return;
-			}
-			_tabListController.animateTo((_tabListController.position.maxScrollExtent / Persistence.tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease);
+			_animateTabList(index: pos);
 		});
 	}
 
@@ -731,6 +728,19 @@ class ChanTabs extends ChangeNotifier {
 		mainTabIndex = 1;
 		for (int i = 0; i < 200 && _savedMasterDetailKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
+		}
+	}
+
+	void _animateTabList({int? index, Duration duration = const Duration(milliseconds: 500)}) {
+		final pos = index ?? browseTabIndex;
+		if (_tabListController.hasOnePosition) {
+			final px = (_tabListController.position.maxScrollExtent / Persistence.tabs.length) * (pos + 1);
+			if (duration > Duration.zero) {
+				_tabListController.animateTo(px, duration: duration, curve: Curves.ease);
+			}
+			else {
+				_tabListController.jumpTo(px);
+			}
 		}
 	}
 }
@@ -1124,9 +1134,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			});
 		}
 		WidgetsBinding.instance.addPostFrameCallback((_) {
-			if (_tabs._tabListController.hasOnePosition) {
-				_tabs._tabListController.jumpTo(((Persistence.currentTabIndex + 1) / Persistence.tabs.length) * _tabs._tabListController.position.maxScrollExtent);
-			}
+			_tabs._animateTabList();
 		});
 		if (EffectiveSettings.instance.askForAuthenticationOnLaunch) {
 			_authenticate();
@@ -1852,6 +1860,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								setState(() {
 									showTabPopup = true;
 								});
+								_tabs._animateTabList();
 							},
 							onDownSwipe: () {
 								if (!showTabPopup) {
@@ -1895,6 +1904,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									setState(() {
 										showTabPopup = !showTabPopup;
 									});
+									if (showTabPopup) {
+										_tabs._animateTabList();
+									}
 								}
 								else if (index == _tabs._lastIndex) {
 									if (index == 4) {
@@ -1936,7 +1948,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										)
 									]
 								),
-								Column(
+								if (index == 0) Column(
 									mainAxisAlignment: MainAxisAlignment.end,
 									children: [
 										Expander(
