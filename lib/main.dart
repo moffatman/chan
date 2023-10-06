@@ -1564,17 +1564,22 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				key: ValueKey(i),
 				child: TabWidgetBuilder(
 					tab: Persistence.tabs[i],
-					builder: (context, data) => _buildTabletIcon(
-						i * -1,
-						StationaryNotifyingIcon(
-							icon: data.primaryIcon,
-							primary: data.unseenYouCount,
-							secondary: data.unseenCount
+					builder: (context, data) => DecoratedBox(
+						decoration: BoxDecoration(
+							color: data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null
 						),
-						data.shortTitle,
-						reorderable: false,
-						axis: axis,
-						preLabelInjection: data.secondaryIcon
+						child: _buildTabletIcon(
+							i * -1,
+							StationaryNotifyingIcon(
+								icon: data.primaryIcon,
+								primary: data.unseenYouCount,
+								secondary: data.unseenCount
+							),
+							data.shortTitle,
+							reorderable: false,
+							axis: axis,
+							preLabelInjection: data.secondaryIcon
+						)
 					)
 				)
 			)

@@ -25,6 +25,7 @@ typedef ThreadWidgetData = ({
 	int unseenYouCount,
 	String shortTitle,
 	String longTitle,
+	bool isArchived,
 	Imageboard? imageboard,
 	PersistentThreadState? threadState
 });
@@ -55,6 +56,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 		int unseenYouCount = 0;
 		String longTitle = '';
 		PersistentThreadState? threadState;
+		bool isArchived = false;
 		if (imageboard != null) {
 			final persistence = this.persistence ?? imageboard?.persistence;
 			if (imageboard?.seemsOk == true) {
@@ -69,6 +71,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 				if (threadState != null) {
 					final board = persistence?.getBoard(this.thread!.board);
 					final thread = threadState.thread ?? imageboard?.site.getThreadFromCatalogCache(threadState.identifier);
+					isArchived = thread?.isArchived ?? threadState.useArchive;
 					final attachment = thread?.attachments.tryFirst;
 					longTitle = (thread?.title ?? thread?.posts_.tryFirst?.span.buildText().nonEmptyOrNull) ?? 'Thread ${threadState.id}';
 					if (board != null && board.icon == null && board.name.isNotEmpty) {
@@ -114,6 +117,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 				width: 30,
 				child: primaryIcon
 			),
+			isArchived: isArchived,
 			secondaryIcon: secondaryIcon,
 			unseenCount: unseenCount,
 			unseenYouCount: unseenYouCount,
@@ -218,7 +222,8 @@ class TabWidgetBuilder extends StatelessWidget {
 							unseenCount: data.unseenCount,
 							unseenYouCount: data.unseenYouCount,
 							imageboard: data.imageboard,
-							threadState: data.threadState
+							threadState: data.threadState,
+							isArchived: data.isArchived
 						));
 					}
 				);
