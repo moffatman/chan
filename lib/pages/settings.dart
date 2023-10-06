@@ -1375,7 +1375,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				Post(
 					board: 'tv',
-					text: 'This is the first reply to the OP.',
+					text: '<a href="#p123455" class="quotelink">&gt;&gt;22568140</a>\nThis is the first reply to the OP.',
 					name: 'User',
 					trip: '!fdsa',
 					time: DateTime.now().subtract(const Duration(minutes: 4)),
@@ -2140,13 +2140,23 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 												child: Column(
 													children: [
 														Container(
-															height: 175,
+															height: 200,
 															decoration: threadAndPostRowDecoration,
 															child: IgnorePointer(
 																child: ClipRect(
 																	child: _buildFakePostRow()
 																)
 															)
+														),
+														Row(
+															children: [
+																const Text('Clover-style replies button'),
+																const Spacer(),
+																AdaptiveSwitch(
+																	value: settings.cloverStyleRepliesButton,
+																	onChanged: (d) => settings.cloverStyleRepliesButton = d
+																)
+															]
 														),
 														Row(
 															children: [

@@ -994,6 +994,8 @@ class SavedSettings extends HiveObject {
 	bool randomizeChecksumOnUploadedFiles;
 	@HiveField(160)
 	List<String> recentWebImageSearches;
+	@HiveField(161)
+	bool cloverStyleRepliesButton;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1156,6 +1158,7 @@ class SavedSettings extends HiveObject {
 		bool? removeMetadataOnUploadedFiles,
 		bool? randomizeChecksumOnUploadedFiles,
 		List<String>? recentWebImageSearches,
+		bool? cloverStyleRepliesButton,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1339,7 +1342,8 @@ class SavedSettings extends HiveObject {
 		showLineBreakInPostInfoRow = showLineBreakInPostInfoRow ?? false,
 		removeMetadataOnUploadedFiles = removeMetadataOnUploadedFiles ?? true,
 		randomizeChecksumOnUploadedFiles = randomizeChecksumOnUploadedFiles ?? false,
-		recentWebImageSearches = recentWebImageSearches ?? [] {
+		recentWebImageSearches = recentWebImageSearches ?? [],
+		cloverStyleRepliesButton = cloverStyleRepliesButton ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2527,6 +2531,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get randomizeChecksumOnUploadedFiles => _settings.randomizeChecksumOnUploadedFiles;
 	set randomizeChecksumOnUploadedFiles(bool setting) {
 		_settings.randomizeChecksumOnUploadedFiles = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get cloverStyleRepliesButton => _settings.cloverStyleRepliesButton;
+	set cloverStyleRepliesButton(bool setting) {
+		_settings.cloverStyleRepliesButton = setting;
 		_settings.save();
 		notifyListeners();
 	}

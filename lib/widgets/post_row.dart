@@ -7,6 +7,7 @@ import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/report_post.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/popup_attachment.dart';
@@ -341,7 +342,7 @@ class PostRow extends StatelessWidget {
 														child: overrideReplyCount!
 													)
 												)
-											) : (replyIds.isEmpty ? null : TextSpan(
+											) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : TextSpan(
 												text: List.filled(replyIds.length.toString().length + 4, '1').join(),
 												style: const TextStyle(color: Colors.transparent)
 											))
@@ -517,6 +518,9 @@ class PostRow extends StatelessWidget {
 												mainAxisSize: MainAxisSize.min,
 												children: settings.imagesOnRight ? mainRow.reversed.toList() : mainRow
 											)
+										),
+										if (settings.cloverStyleRepliesButton && replyIds.isNotEmpty && parentZone.style != PostSpanZoneStyle.tree) SizedBox(
+											height: 24 * settings.textScale
 										)
 									]
 								)
@@ -542,7 +546,30 @@ class PostRow extends StatelessWidget {
 									)
 								)
 							)
-							else if (replyIds.isNotEmpty) Positioned.fill(
+							else if (settings.cloverStyleRepliesButton && replyIds.isNotEmpty && parentZone.style != PostSpanZoneStyle.tree) Positioned.fill(
+								child: Align(
+									alignment: Alignment.bottomLeft,
+									child: AdaptiveIconButton(
+										padding: EdgeInsets.zero,
+										minSize: 0,
+										onPressed: openReplies,
+										icon: SizedBox(
+											width: double.infinity,
+											child: Padding(
+												padding: const EdgeInsets.only(left: 16, bottom: 16),
+												child: Text(
+													describeCount(replyIds.length, 'reply', plural: 'replies'),
+													style: TextStyle(
+														fontSize: 17 + (7 * slideFactor.clamp(0, 1)),
+														color: theme.primaryColor.withOpacity(0.7)
+													)
+												)
+											)
+										)
+									)
+								)
+							)
+							else if (!settings.cloverStyleRepliesButton && replyIds.isNotEmpty) Positioned.fill(
 								child: Align(
 									alignment: Alignment.bottomRight,
 									child: CupertinoButton(
