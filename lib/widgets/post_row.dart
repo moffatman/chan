@@ -691,6 +691,32 @@ class PostRow extends StatelessWidget {
 							parentZoneThreadState.save();
 						}
 					),
+					if (isPostHiddenByThreadState) ContextMenuAction(
+						child: const Text('Unhide post'),
+						trailingIcon: CupertinoIcons.eye_slash_fill,
+						onPressed: () {
+							parentZoneThreadState.setPostHiding(latestPost.id, PostHidingState.none);
+							parentZoneThreadState.save();
+						}
+					)
+					else ...[
+						ContextMenuAction(
+							child: const Text('Hide post'),
+							trailingIcon: CupertinoIcons.eye_slash,
+							onPressed: () {
+								parentZoneThreadState.setPostHiding(latestPost.id, PostHidingState.hidden);
+								parentZoneThreadState.save();
+							}
+						),
+						ContextMenuAction(
+							child: const Text('Hide post and replies'),
+							trailingIcon: CupertinoIcons.eye_slash,
+							onPressed: () {
+								parentZoneThreadState.setPostHiding(latestPost.id, PostHidingState.treeHidden);
+								parentZoneThreadState.save();
+							}
+						),
+					],
 					ContextMenuAction(
 						child: isPostHidden ? const Text('Unhide...') : const Text('Hide...'),
 						trailingIcon: isPostHidden ? CupertinoIcons.eye : CupertinoIcons.eye_slash,

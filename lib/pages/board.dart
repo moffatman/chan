@@ -522,6 +522,24 @@ class BoardPageState extends State<BoardPage> {
 							setState(() {});
 						}
 					),
+					if (isThreadHidden ?? false) ContextMenuAction(
+						child: const Text('Unhide thread'),
+						trailingIcon: CupertinoIcons.eye_slash_fill,
+						onPressed: () {
+							context.read<Persistence>().browserState.setThreadHiding(thread.identifier, null);
+							context.read<Persistence>().didUpdateBrowserState();
+							setState(() {});
+						}
+					)
+					else ContextMenuAction(
+						child: const Text('Hide thread'),
+						trailingIcon: CupertinoIcons.eye_slash,
+						onPressed: () {
+							context.read<Persistence>().browserState.setThreadHiding(thread.identifier, true);
+							context.read<Persistence>().didUpdateBrowserState();
+							setState(() {});
+						}
+					),
 					ContextMenuAction(
 						child: isHidden ? const Text('Unhide...') : const Text('Hide...'),
 						trailingIcon: isHidden ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
