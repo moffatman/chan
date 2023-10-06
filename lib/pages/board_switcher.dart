@@ -67,6 +67,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	bool _popping = false;
 	int _selectedIndex = 0;
 	bool _showSelectedItem = isOnMac;
+	late TextEditingController _textEditingController;
 
 	bool isPhoneSoftwareKeyboard() {
 		return MediaQueryData.fromView(View.of(context)).viewInsets.bottom > 100;
@@ -114,6 +115,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
 		ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.down;
+		_textEditingController = TextEditingController();
 	}
 
 	void _onImageboardRegistryUpdate() {
@@ -298,6 +300,23 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									textAlign: TextAlign.center,
 									focusNode: _focusNode,
 									enableSuggestions: false,
+									suffixMode: OverlayVisibilityMode.editing,
+									controller: _textEditingController,
+									suffix: Padding(
+										padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 5, 2),
+										child: AdaptiveIconButton(
+											onPressed: () {
+												_textEditingController.clear();
+												_updateTypeaheadBoards('');
+												setState(() {
+													searchString = '';
+												});
+											},
+											minSize: 0,
+											padding: EdgeInsets.zero,
+											icon: Icon(CupertinoIcons.xmark_circle_fill, size: MediaQuery.textScalerOf(context).scale(20))
+										)
+									),
 									onTap: () {
 										scrollController.jumpTo(scrollController.position.pixels);
 										if (!_showSelectedItem) {
@@ -950,6 +969,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		scrollController.dispose();
 		_backgroundColor.dispose();
 		_focusNode.dispose();
+		_textEditingController.dispose();
 		ImageboardRegistry.instance.removeListener(_onImageboardRegistryUpdate);
 	}
 }

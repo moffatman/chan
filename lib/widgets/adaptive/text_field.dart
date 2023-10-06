@@ -26,6 +26,7 @@ class AdaptiveTextField extends StatelessWidget {
 	final SpellCheckConfiguration? spellCheckConfiguration;
 	final TextStyle? style;
 	final Widget? suffix;
+	final OverlayVisibilityMode suffixMode;
 	final TextAlign textAlign;
 	final TextCapitalization textCapitalization;
 
@@ -53,6 +54,7 @@ class AdaptiveTextField extends StatelessWidget {
 		this.spellCheckConfiguration,
 		this.style,
 		this.suffix,
+		this.suffixMode = OverlayVisibilityMode.always,
 		this.textAlign = TextAlign.start,
 		this.textCapitalization = TextCapitalization.none,
 		super.key
@@ -97,7 +99,16 @@ class AdaptiveTextField extends StatelessWidget {
 					labelStyle: TextStyle(
 						color: ChanceTheme.primaryColorWithBrightness50Of(context)
 					).merge(placeholderStyle),
-					suffixIcon: suffix,
+					suffixIcon: controller == null ? suffix : AnimatedBuilder(
+						animation: controller!,
+						builder: (context, _) {
+							Widget? ret;
+							if (controller!.text.isNotEmpty) {
+								ret = suffix;
+							}
+							return ret ?? const SizedBox.shrink();
+						}
+					),
 					isDense: true
 				),
 				enabled: enabled,
@@ -158,6 +169,7 @@ class AdaptiveTextField extends StatelessWidget {
 			spellCheckConfiguration: spellCheckConfiguration,
 			style: style,
 			suffix: suffix,
+			suffixMode: suffixMode,
 			textAlign: textAlign,
 			textCapitalization: textCapitalization
 		);
