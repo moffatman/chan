@@ -8,6 +8,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/status_bar.dart';
 import 'package:chan/services/storage.dart';
@@ -805,6 +806,41 @@ class _GalleryPageState extends State<GalleryPage> {
 														);
 													},
 													icon: const Icon(CupertinoIcons.rectangle_grid_2x2)
+												),
+												if (currentAttachment.attachment.type.isVideo) AdaptiveIconButton(
+													onPressed: () async {
+														final actions = [
+															...buildImageSearchActions(context, () => Future.value(currentAttachment.attachment)),
+															...(widget.additionalContextMenuActionsBuilder?.call(currentAttachment) ?? const Iterable<ContextMenuAction>.empty())
+														];
+														await showAdaptiveModalPopup(
+															context: context,
+															builder: (context) => AdaptiveActionSheet(
+																actions: actions.map((action) => AdaptiveActionSheetAction(
+																	onPressed: () async {
+																		Navigator.of(context).pop();
+																		try {
+																			await action.onPressed();
+																		}
+																		catch (e) {
+																			if (context.mounted) {
+																				alertError(context, e.toStringDio());
+																			}
+																		}
+																	},
+																	key: action.key,
+																	isDestructiveAction: action.isDestructiveAction,
+																	trailing: Icon(action.trailingIcon),
+																	child: action.child
+																)).toList(),
+																cancelButton: AdaptiveActionSheetAction(
+																	child: const Text('Cancel'),
+																	onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+																)
+															)
+														);
+													},
+													icon: const Icon(Icons.image_search)
 												),
 												GestureDetector(
 													onLongPress: isSaveFileAsSupported ? () async {
