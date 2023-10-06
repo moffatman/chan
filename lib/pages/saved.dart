@@ -238,6 +238,7 @@ class _SavedPageState extends State<SavedPage> {
 		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => widget.isActive);
 		final savedPostNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => widget.isActive);
 		final savedAttachmentsNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => widget.isActive);
+		final imageboardIds = <String, int>{};
 		return MultiMasterDetailPage(
 			id: 'saved',
 			key: widget.masterDetailKey,
@@ -919,7 +920,7 @@ class _SavedPageState extends State<SavedPage> {
 															child: Hero(
 																tag: TaggedAttachment(
 																	attachment: list[i].item.attachment,
-																	semanticParentIds: [-5]
+																	semanticParentIds: [-5, imageboardIds.putIfAbsent(list[i].imageboard.key, () => imageboardIds.length)]
 																),
 																child: SavedAttachmentThumbnail(
 																	file: list[i].item.file,
@@ -1042,18 +1043,22 @@ class _SavedPageState extends State<SavedPage> {
 							child = _placeholder('Select an attachment');
 						}
 						else {
+							final thisImageboardId = imageboardIds.putIfAbsent(selectedValue.imageboard.key, () => imageboardIds.length);
 							final attachment = TaggedAttachment(
 								attachment: selectedValue.item.attachment,
-								semanticParentIds: poppedOut ? [-5] : [-6]
+								semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId]
 							);
 							child = ImageboardScope(
 								imageboardKey: selectedValue.imageboard.key,
 								child: GalleryPage(
 									initialAttachment: attachment,
-									attachments: _savedAttachments.map((l) => TaggedAttachment(
-										attachment: l.item.attachment,
-										semanticParentIds: poppedOut ? [-5] : [-6]
-									)).toList(),
+									attachments: _savedAttachments.map((l) {
+										final thisImageboardId = imageboardIds.putIfAbsent(l.imageboard.key, () => imageboardIds.length);
+										return TaggedAttachment(
+											attachment: l.item.attachment,
+											semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId]
+										);
+									}).toList(),
 									overrideSources: {
 										for (final l in _savedAttachments)
 											l.item.attachment: l.item.file.uri
@@ -1065,7 +1070,78 @@ class _SavedPageState extends State<SavedPage> {
 									allowScroll: true,
 									allowPop: poppedOut,
 									updateOverlays: false,
-									heroOtherEndIsBoxFitCover: false
+									heroOtherEndIsBoxFitCover: false,
+									additionalContextMenuActionsBuilder: (attachment) => [
+										ContextMenuAction(
+											child: const Text('Find in thread'),
+											trailingIcon: CupertinoIcons.return_icon,
+											onPressed: () async {
+												try {
+													final threadId = attachment.attachment.threadId;
+													if (threadId == null) {
+														throw Exception('Attachment saved without thread ID');
+													}
+													final threadIdentifier = ThreadIdentifier(attachment.attachment.board, threadId);
+													final imageboardKey = imageboardIds.entries.tryFirstWhere((e) => e.value == attachment.semanticParentIds.last)?.key;
+													if (imageboardKey == null) {
+														throw Exception('Could not find corresponding site key');
+													}
+													final imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey);
+													if (imageboard == null) {
+														throw Exception('Could not find corresponding site');
+													}
+													final (thread, postId) = await modalLoad(
+														context,
+														'Finding...',
+														(controller) async {
+															bool attachmentMatches(Attachment a) {
+																if (a.md5.isNotEmpty && attachment.attachment.md5.isNotEmpty && a.md5 == attachment.attachment.md5) {
+																	return true;
+																}
+																return a.id == attachment.attachment.id;
+															}
+															final threadState = imageboard.persistence.getThreadStateIfExists(threadIdentifier);
+															Thread? thread = await threadState?.getThread();
+															if (thread == null) {
+																try {
+																	thread = await imageboard.site.getThread(threadIdentifier, interactive: true);
+																}
+																on ThreadNotFoundException {
+																	thread = await imageboard.site.getThreadFromArchive(threadIdentifier, interactive: true, customValidator: (t) async {
+																		if (!t.posts_.any((p) => p.attachments.any(attachmentMatches))) {
+																			throw Exception('Could not find attachment in thread');
+																		}
+																	});
+																}
+															}
+															final postId = thread.posts_.tryFirstWhere((p) => p.attachments.any(attachmentMatches))?.id;
+															return (thread, postId);
+														}
+													);
+													if (!mounted) {
+														return;
+													}
+													Navigator.of(context).push(adaptivePageRoute(
+														builder: (ctx) => ImageboardScope(
+															imageboardKey: null,
+															imageboard: imageboard,
+															child: ThreadPage(
+																thread: thread.identifier,
+																initialPostId: postId,
+																initiallyUseArchive: thread.isArchived,
+																boardSemanticId: -1
+															)
+														)
+													));
+												}
+												catch (e) {
+													if (mounted) {
+														alertError(context, e.toStringDio());
+													}
+												}
+											}
+										)
+									],
 								)
 							);
 						}
