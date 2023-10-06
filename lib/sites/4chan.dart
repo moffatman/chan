@@ -531,7 +531,7 @@ class Site4Chan extends ImageboardSite {
 			final id = int.parse(tr.children.first.text);
 			final cachedJson = cache[id];
 			if (cachedJson != null) {
-				return _makeThread(board, jsonDecode(cachedJson));
+				return _makeThread(board, jsonDecode(cachedJson), isArchived: true);
 			}
 			final excerptNode = tr.children[1];
 			String? subject;
@@ -547,6 +547,7 @@ class Site4Chan extends ImageboardSite {
 				board: board,
 				title: subject,
 				isSticky: false,
+				isArchived: true,
 				time: DateTime.fromMicrosecondsSinceEpoch(0),
 				attachments: [],
 				posts_: [
@@ -565,7 +566,7 @@ class Site4Chan extends ImageboardSite {
 		}).toList();
 	}
 
-	Thread _makeThread(String board, dynamic threadData, {int? currentPage}) {
+	Thread _makeThread(String board, dynamic threadData, {int? currentPage, bool isArchived = false}) {
 		final String? title = threadData['sub'];
 		final int threadId = threadData['no'];
 		final Post threadAsPost = _makePost(board, threadId, threadData);
@@ -580,6 +581,7 @@ class Site4Chan extends ImageboardSite {
 			posts_: [threadAsPost, ...lastReplies],
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: threadData['sticky'] == 1,
+			isArchived: isArchived,
 			time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
 			currentPage: currentPage
 		);
