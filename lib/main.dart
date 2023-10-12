@@ -1430,7 +1430,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										context: context,
 										message: 'Closed tab',
 										icon: CupertinoIcons.xmark,
-										onUndo: () {
+										onUndo: closedTab.board == null ? null : () {
 											_tabs.insertInitializedTab(-1 * index, closedTab);
 											_tabs.browseTabIndex = previouslyActiveTab;
 										}

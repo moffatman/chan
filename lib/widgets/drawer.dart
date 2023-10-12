@@ -91,7 +91,7 @@ class _DrawerList<T extends Object> {
 	final List<T> list;
 	final Widget Function(T, Widget Function(BuildContext, ThreadWidgetData)) builder;
 	final void Function(int, int)? onReorder;
-	final ({String message, VoidCallback onUndo}) Function(int)? onClose;
+	final ({String message, VoidCallback? onUndo}) Function(int)? onClose;
 	final bool Function(int) isSelected;
 	final void Function(int) onSelect;
 	final Iterable<TabMenuAction> Function(int, T) buildAdditionalActions;
@@ -171,9 +171,9 @@ class _DrawerList<T extends Object> {
 								context: context,
 								message: data.message,
 								icon: Icons.close,
-								onUndo: () {
+								onUndo: data.onUndo == null ? null : () {
 									_undoId++;
-									data.onUndo();
+									data.onUndo?.call();
 								}
 							);
 						},
@@ -234,7 +234,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					tabs.closeBrowseTab(i);
 					return (
 						message: 'Closed tab',
-						onUndo: () {
+						onUndo: closedTab.board == null ? null : () {
 							tabs.insertInitializedTab(i, closedTab);
 							tabs.browseTabIndex = previouslyActiveTab;
 						}

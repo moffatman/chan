@@ -118,14 +118,14 @@ void showUndoToast({
 	required BuildContext context,
 	required String message,
 	required IconData icon,
-	required VoidCallback onUndo
+	required VoidCallback? onUndo
 }) {
 	bool pressed = false;
 	showToast(
 		context: context,
 		message: message,
 		icon: icon,
-		button: StatefulBuilder(
+		button: onUndo == null ? null : StatefulBuilder(
 			builder: (context, setState) => AdaptiveIconButton(
 				padding: EdgeInsets.zero,
 				minSize: 0,
@@ -140,7 +140,7 @@ void showUndoToast({
 				))
 			)
 		),
-		duration: const Duration(seconds: 5)
+		duration: onUndo == null ? const Duration(seconds: 2) : const Duration(seconds: 5)
 	);
 }
 
