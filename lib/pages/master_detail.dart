@@ -451,7 +451,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			if (onePane && pane.currentValue.value != null) {
 				masterKey.currentState!.push(pane.buildDetailRoute(
 					() => _onNewValue(pane, showAnimationsForward: false),
-					showAnimationsForward: null
+					showAnimationsForward: false
 				)).then(pane.onPushReturn);
 			}
 			else {
