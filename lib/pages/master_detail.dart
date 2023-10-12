@@ -120,7 +120,7 @@ class MultiMasterPane<T> {
 	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
 	ValueNotifier<T?> currentValue;
 	final ValueChanged<T?>? onValueChanged;
-	DateTime _lastAutomatedPop = DateTime(3000);
+	DateTime? _lastAutomatedPop;
 
 	MultiMasterPane({
 		required this.masterBuilder,
@@ -150,7 +150,7 @@ class MultiMasterPane<T> {
 	}
 
 	void onPushReturn(dynamic value) {
-		if (DateTime.now().difference(_lastAutomatedPop) > const Duration(milliseconds: 200)) {
+		if (_lastAutomatedPop == null || DateTime.now().difference(_lastAutomatedPop!) > const Duration(milliseconds: 300)) {
 			// it was a user-initiated pop
 			currentValue.value = null;
 			callOnValueChanged(null);
