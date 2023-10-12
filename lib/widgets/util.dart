@@ -126,15 +126,16 @@ void showUndoToast({
 		message: message,
 		icon: icon,
 		button: StatefulBuilder(
-			builder: (context, setState) => AdaptiveButton(
+			builder: (context, setState) => AdaptiveIconButton(
 				padding: EdgeInsets.zero,
+				minSize: 0,
 				onPressed: pressed ? null : () {
 					onUndo();
 					setState(() {
 						pressed = true;
 					});
 				},
-				child: Text('Undo', style: TextStyle(
+				icon: Text('Undo', style: TextStyle(
 					color: pressed ? null : EffectiveSettings.instance.theme.secondaryColor
 				))
 			)
