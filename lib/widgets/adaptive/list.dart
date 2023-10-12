@@ -44,6 +44,7 @@ class AdaptiveListTile extends StatelessWidget {
 		}
 		else {
 			child = CupertinoListTile(
+				padding: const EdgeInsetsDirectional.only(start: 20, end: 14, top: 8, bottom: 8),
 				title: title,
 				subtitle: subtitle,
 				leading: leading,
