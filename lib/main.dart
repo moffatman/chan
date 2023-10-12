@@ -1627,8 +1627,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	bool get _isShowingBottomBar => EffectiveSettings.instance.androidDrawer || (EffectiveSettings.instance.hideBarsWhenScrollingDown && ScrollTracker.instance.lastNonNullDirection == VerticalDirection.down) ? false : !_isScreenWide;
 
-	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer && !_isScreenWide;
-	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer) && !isScreenWide;
+	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer;
+	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer);
 
 	@override
 	Widget build(BuildContext context) {
