@@ -1858,7 +1858,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								)
 							],
 							onUpSwipe: () {
-								if (showTabPopup) {
+								if (showTabPopup || _tabs.mainTabIndex != 0) {
 									return;
 								}
 								mediumHapticFeedback();
@@ -1868,7 +1868,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								_tabs._animateTabList();
 							},
 							onDownSwipe: () {
-								if (!showTabPopup) {
+								if (!showTabPopup || _tabs.mainTabIndex != 0) {
 									return;
 								}
 								mediumHapticFeedback();
