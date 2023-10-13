@@ -478,7 +478,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	(TextSpan, TapGestureRecognizer) _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
+	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
 		Color color = theme.secondaryColor;
 		if (postId == threadId) {
@@ -502,7 +502,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final stackCount = zone.stackIds.countOf(postId);
 		final enableInteraction = switch(zone.style) {
 			PostSpanZoneStyle.tree => stackCount <= 1,
-			_ => stackCount == 0
+			_ => !expandedImmediatelyAbove
 		};
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 			if (enableInteraction) {
@@ -538,7 +538,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer,
 			onEnter: options.onEnter,
 			onExit: options.onExit
-		), recognizer);
+		), recognizer, enableInteraction);
 	}
 	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		int? actualThreadId = threadId;
@@ -569,7 +569,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			    zone.shouldExpandPost(postId) == true ||
 					!enableInteraction ||
 					options.showRawSource) {
-				return span;
+				return (span.$1, span.$2);
 			}
 			else {
 				final popup = HoverPopup(
@@ -620,7 +620,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					child: IntrinsicHeight(
 						child: Builder(
 							builder: (context) {
-								if (!zone.stackIds.contains(postId)) {
+								if (span.$3) {
 									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.$2.onTap ?? () {});
 								}
 								else if (zone.style == PostSpanZoneStyle.tree) {
