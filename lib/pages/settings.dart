@@ -4043,6 +4043,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	late final TextEditingController _subjectController;
 	late final TextEditingController _nameController;
 	late final TextEditingController _filenameController;
+	late final TextEditingController _dimensionsController;
 	late final TextEditingController _posterIdController;
 	late final TextEditingController _flagController;
 	late final TextEditingController _replyCountController;
@@ -4056,6 +4057,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 		_subjectController = TextEditingController();
 		_nameController = TextEditingController();
 		_filenameController = TextEditingController();
+		_dimensionsController = TextEditingController();
 		_posterIdController = TextEditingController();
 		_flagController = TextEditingController();
 		_replyCountController = TextEditingController();
@@ -4094,6 +4096,8 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 				return _nameController.text;
 			case 'filename':
 				return _filenameController.text;
+			case 'dimensions':
+				return _dimensionsController.text;
 			case 'text':
 				return _textController.text;
 			case 'postID':
@@ -4185,6 +4189,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 					('Poster ID', _posterIdController, null),
 					('Flag', _flagController, null),
 					('Filename', _filenameController, null),
+					('File dimensions', _dimensionsController, null),
 					('Text', _textController, 5),
 				]) ...[
 					Text(field.$1),
@@ -4215,6 +4220,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 		_subjectController.dispose();
 		_nameController.dispose();
 		_filenameController.dispose();
+		_dimensionsController.dispose();
 		_posterIdController.dispose();
 		_flagController.dispose();
 	}

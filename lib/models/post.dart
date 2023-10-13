@@ -155,7 +155,9 @@ class Post implements Filterable {
 			case 'name':
 				return name;
 			case 'filename':
-				return attachments.map((a) => a.filename).join(' ');
+				return attachments.map((a) => a.filename).join('\n');
+			case 'dimensions':
+				return attachments.map((a) => '${a.width}x${a.height}').join('\n');
 			case 'text':
 				return span.buildText();
 			case 'postID':

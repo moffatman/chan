@@ -169,6 +169,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'subject': 'Subject',
 													'name': 'Name',
 													'filename': 'Filename',
+													'dimensions': 'File dimensions',
 													'postID': 'Post ID',
 													'posterID': 'Poster ID',
 													'flag': 'Flag',
