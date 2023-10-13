@@ -621,7 +621,7 @@ class SiteReddit extends ImageboardSite {
 				)));
 			}
 		}
-		String text = data['is_self'] ? unescape.convert(data['selftext']) : Uri.encodeFull(data['url']);
+		String text = data['is_self'] ? unescape.convert(data['selftext']) : '<a href="${data['url']}">${data['url']}</a>';
 		final Map? crosspostParent = (data['crosspost_parent_list'] as List?)?.tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']);
 		if (crosspostParent != null) {
 			await dumpAttachments(crosspostParent);
