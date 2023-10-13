@@ -88,6 +88,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			);
 			final patternController = TextEditingController(text: filter.pattern.pattern);
 			bool isCaseSensitive = filter.pattern.isCaseSensitive;
+			bool isSingleLine = !filter.pattern.isMultiLine;
 			final labelController = TextEditingController(text: filter.label);
 			final patternFields = filter.patternFields.toList();
 			bool? hasFile = filter.hasFile;
@@ -153,6 +154,16 @@ class _FilterEditorState extends State<FilterEditor> {
 												trailing: isCaseSensitive ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 												onTap: () {
 													isCaseSensitive = !isCaseSensitive;
+													setInnerState(() {});
+												}
+											),
+											AdaptiveListTile(
+												backgroundColor: ChanceTheme.barColorOf(context),
+												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+												title: const Text('Single-line'),
+												trailing: isSingleLine ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+												onTap: () {
+													isSingleLine = !isSingleLine;
 													setInnerState(() {});
 												}
 											)
@@ -473,7 +484,7 @@ class _FilterEditorState extends State<FilterEditor> {
 							AdaptiveActionSheetAction(
 								onPressed: () {
 									Navigator.pop(context, (false, CustomFilter(
-										pattern: RegExp(patternController.text, caseSensitive: isCaseSensitive),
+										pattern: RegExp(patternController.text, caseSensitive: isCaseSensitive, multiLine: !isSingleLine),
 										patternFields: patternFields,
 										boards: boards,
 										excludeBoards: excludeBoards,
@@ -532,6 +543,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
 													'Add `i` after the regex to make it case-insensitive\n'
 													'Example: `/sneed/i` will match `SNEED`\n'
+													'Add `s` after the regex to make it single-line. ^ and \$ will match the start and end of text instead of each line\n'
 													'You can write text before the opening slash to give the filter a label: `Funposting/bane/i`\n'
 													'The first filter in the list to match an item will take precedence over other matching filters\n'
 													'\n'

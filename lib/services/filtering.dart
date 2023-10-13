@@ -224,11 +224,12 @@ class CustomFilter implements Filter {
 			throw FilterException('Invalid syntax: "$configuration"');
 		}
 		try {
+			final flags = match.group(3) ?? '';
 			final filter = CustomFilter(
 				configuration: configuration,
 				disabled: configuration.startsWith('#'),
 				label: match.group(1)!,
-				pattern: RegExp(match.group(2)!, multiLine: true, caseSensitive: match.group(3) != 'i')
+				pattern: RegExp(match.group(2)!, multiLine: !flags.contains('s'), caseSensitive: !flags.contains('i'))
 			);
 			final separator = RegExp(r':|,');
 			int i = 5;
@@ -356,6 +357,9 @@ class CustomFilter implements Filter {
 		out.write('/');
 		if (!pattern.isCaseSensitive) {
 			out.write('i');
+		}
+		if (!pattern.isMultiLine) {
+			out.write('s');
 		}
 		if (outputType.highlight) {
 			out.write(';highlight');
@@ -585,7 +589,7 @@ class FilterException implements Exception {
 	String toString() => 'Filter Error: $message';
 }
 
-final _configurationLinePattern = RegExp(r'^#?([^\/]*)\/(.*)\/(i?)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
+final _configurationLinePattern = RegExp(r'^#?([^\/]*)\/(.*)\/([is]*)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
 
 FilterGroup<CustomFilter> makeFilter(String configuration) {
 	final filters = <CustomFilter>[];
