@@ -11,6 +11,7 @@ class FilterResultType {
 	final bool highlight;
 	final bool pinToTop;
 	final bool autoSave;
+	final bool autoWatch;
 	final bool notify;
 	final bool collapse;
 
@@ -19,6 +20,7 @@ class FilterResultType {
 		this.highlight = false,
 		this.pinToTop = false,
 		this.autoSave = false,
+		this.autoWatch = false,
 		this.notify = false,
 		this.collapse = false
 	});
@@ -31,6 +33,7 @@ class FilterResultType {
 		if (highlight) 'highlight',
 		if (pinToTop) 'pinToTop',
 		if (autoSave) 'autoSave',
+		if (autoWatch) 'autoWatch',
 		if (notify) 'notify',
 		if (collapse) 'collapse'
 	].join(', ')})';
@@ -42,11 +45,12 @@ class FilterResultType {
 		other.highlight == highlight &&
 		other.pinToTop == pinToTop &&
 		other.autoSave == autoSave &&
+		other.autoWatch == autoWatch &&
 		other.notify == notify &&
 		other.collapse == collapse;
 
 	@override
-	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, notify, collapse);
+	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, autoWatch, notify, collapse);
 }
 
 class FilterResult {
@@ -232,6 +236,7 @@ class CustomFilter implements Filter {
 			bool highlight = false;
 			bool pinToTop = false;
 			bool autoSave = false;
+			bool autoWatch = false;
 			bool notify = false;
 			bool collapse = false;
 			while (true) {
@@ -249,6 +254,10 @@ class CustomFilter implements Filter {
 				}
 				else if (s == 'save') {
 					autoSave = true;
+					hide = false;
+				}
+				else if (s == 'watch') {
+					autoWatch = true;
 					hide = false;
 				}
 				else if (s == 'notify') {
@@ -322,6 +331,7 @@ class CustomFilter implements Filter {
 				highlight: highlight,
 				pinToTop: pinToTop,
 				autoSave: autoSave,
+				autoWatch: autoWatch,
 				notify: notify,
 				collapse: collapse
 			);
@@ -355,6 +365,9 @@ class CustomFilter implements Filter {
 		}
 		if (outputType.autoSave) {
 			out.write(';save');
+		}
+		if (outputType.autoWatch) {
+			out.write(';watch');
 		}
 		if (outputType.notify) {
 			out.write(';notify');

@@ -386,13 +386,17 @@ class PersistentBrowserStateAdapter
               MapEntry(k as String, (v as List).cast<int>())),
       treeModeNewRepliesAreLinear:
           fields[26] == null ? true : fields[26] as bool,
+      autowatchedIds: fields[27] == null
+          ? {}
+          : (fields[27] as Map).map((dynamic k, dynamic v) =>
+              MapEntry(k as String, (v as List).cast<int>())),
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(23)
+      ..writeByte(24)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -438,7 +442,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(25)
       ..write(obj.overrideShowIds)
       ..writeByte(26)
-      ..write(obj.treeModeNewRepliesAreLinear);
+      ..write(obj.treeModeNewRepliesAreLinear)
+      ..writeByte(27)
+      ..write(obj.autowatchedIds);
   }
 
   @override

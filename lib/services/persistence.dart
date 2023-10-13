@@ -586,6 +586,7 @@ class Persistence extends ChangeNotifier {
 			hiddenIds: {},
 			favouriteBoards: [],
 			autosavedIds: {},
+			autowatchedIds: {},
 			deprecatedHiddenImageMD5s: [],
 			loginFields: {},
 			threadWatches: {},
@@ -645,6 +646,9 @@ class Persistence extends ChangeNotifier {
 		settings.savedPostsBySite.putIfAbsent(imageboardKey, () => {});
 		// Cleanup expanding lists
 		for (final list in browserState.autosavedIds.values) {
+			list.removeRange(0, max(0, list.length - _maxAutosavedIdsPerBoard));
+		}
+		for (final list in browserState.autowatchedIds.values) {
 			list.removeRange(0, max(0, list.length - _maxAutosavedIdsPerBoard));
 		}
 		for (final list in browserState.hiddenIds.values) {
@@ -1413,12 +1417,15 @@ class PersistentBrowserState {
 	final Map<String, List<int>> overrideShowIds;
 	@HiveField(26, defaultValue: true)
 	bool treeModeNewRepliesAreLinear;
+	@HiveField(27, defaultValue: {})
+	final Map<String, List<int>> autowatchedIds;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
 		required this.hiddenIds,
 		required this.favouriteBoards,
 		required this.autosavedIds,
+		required this.autowatchedIds,
 		required List<String> deprecatedHiddenImageMD5s,
 		required this.loginFields,
 		String? notificationsId,

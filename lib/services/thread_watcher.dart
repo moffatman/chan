@@ -345,7 +345,7 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 		bool savedAnyThread = false;
 		for (final line in EffectiveSettings.instance.customFilterLines) {
-			if (line.disabled || !line.outputType.autoSave) {
+			if (line.disabled || (!line.outputType.autoSave && !line.outputType.autoWatch)) {
 				continue;
 			}
 			for (final board in line.boards) {
@@ -355,20 +355,33 @@ class ThreadWatcher extends ChangeNotifier {
 				}
 				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board, interactive: false);
 				for (final thread in catalog) {
-					if (line.filter(thread)?.type.autoSave != true) {
-						// Thread doesn't match
-						continue;
+					if (line.filter(thread)?.type.autoSave ?? false) {
+						if (!(persistence.browserState.autosavedIds[board]?.contains(thread.id) ?? false)) {
+							final threadState = persistence.getThreadState(thread.identifier);
+							threadState.savedTime = DateTime.now();
+							threadState.thread = thread;
+							persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+							await threadState.save();
+							savedAnyThread = true;
+						}
 					}
-					if (persistence.browserState.autosavedIds[board]?.contains(thread.id) ?? false) {
-						// Already saw this thread
-						continue;
+					if (line.filter(thread)?.type.autoWatch ?? false) {
+						if (!(persistence.browserState.autowatchedIds[board]?.contains(thread.id) ?? false)) {
+							final threadState = persistence.getThreadStateIfExists(thread.identifier);
+							final defaultThreadWatch = EffectiveSettings.instance.defaultThreadWatch;
+							notifications.subscribeToThread(
+								thread: thread.identifier,
+								lastSeenId: thread.posts_.last.id,
+								localYousOnly: defaultThreadWatch?.localYousOnly ?? false,
+								pushYousOnly: defaultThreadWatch?.pushYousOnly ?? false,
+								push: defaultThreadWatch?.push ?? true,
+								youIds: threadState?.youIds ?? [],
+								foregroundMuted: defaultThreadWatch?.foregroundMuted ?? false
+							);
+							persistence.browserState.autowatchedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+							savedAnyThread = true;
+						}
 					}
-					final threadState = persistence.getThreadState(thread.identifier);
-					threadState.savedTime = DateTime.now();
-					threadState.thread = thread;
-					persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
-					await threadState.save();
-					savedAnyThread = true;
 				}
 			}
 		}

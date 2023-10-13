@@ -902,6 +902,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final ValueChanged<String?>? onFilterChanged;
 	final bool allowReordering;
 	final ValueChanged<T>? onWantAutosave;
+	final ValueChanged<T>? onWantAutowatch;
 	final Filterable Function(T)? filterableAdapter;
 	final FilterAlternative? filterAlternative;
 	final bool useTree;
@@ -940,6 +941,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.onFilterChanged,
 		this.allowReordering = false,
 		this.onWantAutosave,
+		this.onWantAutowatch,
 		required this.filterableAdapter,
 		this.filterAlternative,
 		this.useTree = false,
@@ -1955,6 +1957,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						}
 						if (result.type.autoSave) {
 							widget.onWantAutosave?.call(item);
+						}
+						if (result.type.autoWatch) {
+							widget.onWantAutowatch?.call(item);
 						}
 						if (result.type.hide) {
 							filteredValues.add(RefreshableListItem(

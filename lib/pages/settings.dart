@@ -4128,6 +4128,9 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 		if (type?.autoSave == true) {
 			results.add('Auto-saved');
 		}
+		if (type?.autoWatch == true) {
+			results.add('Auto-watched');
+		}
 		if (type?.notify == true) {
 			results.add('Notified');
 		}

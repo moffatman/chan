@@ -969,6 +969,25 @@ class BoardPageState extends State<BoardPage> {
 															await threadState.save();
 															await persistence.didUpdateBrowserState();
 														},
+														onWantAutowatch: (thread) async {
+															final imageboard = context.read<Imageboard>();
+															if (imageboard.persistence.browserState.autowatchedIds[thread.board]?.contains(thread.id) ?? false) {
+																// Already saw this thread
+																return;
+															}
+															final threadState = imageboard.persistence.getThreadStateIfExists(thread.identifier);
+															imageboard.notifications.subscribeToThread(
+																thread: thread.identifier,
+																lastSeenId: thread.posts_.last.id,
+																localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
+																pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
+																push: settings.defaultThreadWatch?.push ?? true,
+																youIds: threadState?.youIds ?? [],
+																foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
+															);
+															imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+															await imageboard.persistence.didUpdateBrowserState();
+														},
 														sortMethods: [
 															if (variant.sortingMethod == ThreadSortingMethod.replyCount)
 																(a, b) => b.replyCount.compareTo(a.replyCount)

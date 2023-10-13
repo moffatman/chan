@@ -102,6 +102,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool highlight = filter.outputType.highlight;
 			bool pinToTop = filter.outputType.pinToTop;
 			bool autoSave = filter.outputType.autoSave;
+			bool autoWatch = filter.outputType.autoWatch;
 			bool notify = filter.outputType.notify;
 			bool collapse = filter.outputType.collapse;
 			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
@@ -420,6 +421,7 @@ class _FilterEditorState extends State<FilterEditor> {
 															highlight = false;
 															pinToTop = false;
 															autoSave = false;
+															autoWatch = false;
 															notify = false;
 															collapse = false;
 														}
@@ -440,6 +442,7 @@ class _FilterEditorState extends State<FilterEditor> {
 												('Highlight', highlight, (v) => highlight = v),
 												('Pin-to-top', pinToTop, (v) => pinToTop = v),
 												('Auto-save', autoSave, (v) => autoSave = v),
+												('Auto-watch', autoWatch, (v) => autoWatch = v),
 												('Notify', notify, (v) => notify = v),
 												('Collapse (tree mode)', collapse, (v) => collapse = v),
 											].map((t) => AdaptiveListTile(
@@ -449,7 +452,7 @@ class _FilterEditorState extends State<FilterEditor> {
 												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 												onTap: () {
 													t.$3(!t.$2);
-													if (highlight || pinToTop || autoSave || notify || collapse) {
+													if (highlight || pinToTop || autoSave || autoWatch || notify || collapse) {
 														hide = false;
 													}
 													setInnerState(() {});
@@ -484,6 +487,7 @@ class _FilterEditorState extends State<FilterEditor> {
 											highlight: highlight,
 											pinToTop: pinToTop,
 											autoSave: autoSave,
+											autoWatch: autoWatch,
 											notify: notify,
 											collapse: collapse
 										),
@@ -617,6 +621,7 @@ class _FilterEditorState extends State<FilterEditor> {
 							if (filter.value.outputType.highlight) const Icon(CupertinoIcons.sun_max_fill),
 							if (filter.value.outputType.pinToTop) const Icon(CupertinoIcons.arrow_up_to_line),
 							if (filter.value.outputType.autoSave) Icon(Adaptive.icons.bookmarkFilled),
+							if (filter.value.outputType.autoWatch) const Icon(CupertinoIcons.bell),
 							if (filter.value.outputType.notify) const Icon(CupertinoIcons.bell_fill),
 							if (filter.value.outputType.collapse) const Icon(CupertinoIcons.chevron_down_square)
 						];

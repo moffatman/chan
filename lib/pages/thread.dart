@@ -1625,6 +1625,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			child: Container(
 																				width: double.infinity,
 																				padding: const EdgeInsets.all(8),
+																				// TODO: The below?
 																				color: ([value?.id, ...(stubChildIds?.map((x) => x.childId) ?? <int>[])]).any((x) => newPostIds.contains(x)) ? theme.primaryColorWithBrightness(0.1) : null,
 																				child: Row(
 																					children: [
