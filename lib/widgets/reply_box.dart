@@ -18,6 +18,7 @@ import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/text_normalization.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
@@ -1056,6 +1057,16 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						);
 					}
 				);
+			}
+			else if (e is WebAuthenticationRequiredException) {
+				alertError(context, 'Web authentication required\n\nMaking a post via the website is required to whitelist your IP for posting via Chance.', actions: {
+					'Go to web': () => shareOne(
+						context: context,
+						text: site.getWebUrl(widget.board, widget.threadId),
+						type: 'text',
+						sharePositionOrigin: null
+					)
+				});
 			}
 			else {
 				if (e.toStringDio().toLowerCase().contains('captcha')) {

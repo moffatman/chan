@@ -88,6 +88,12 @@ class PostFailedException implements Exception {
 	String toString() => 'Posting failed: $reason';
 }
 
+class WebAuthenticationRequiredException implements Exception {
+	const WebAuthenticationRequiredException();
+	@override
+	String toString() => 'Web authentication required';
+}
+
 class BannedException implements Exception {
 	String reason;
 	BannedException(this.reason);

@@ -350,6 +350,11 @@ class SiteLainchan extends ImageboardSite {
 		if (ban != null) {
 			throw PostFailedException(ban.text);
 		}
+		final captchaKeyElement = doc.querySelector('form [data-sitekey]');
+		if (captchaKeyElement != null) {
+			// The captcha here is not automatable
+			throw const WebAuthenticationRequiredException();
+		}
 		// This doesn't work if user has quoted someone, but it shouldn't be needed
 		int? newPostId;
 		while (newPostId == null) {
