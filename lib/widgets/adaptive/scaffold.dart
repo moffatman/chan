@@ -8,13 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class AdaptiveBar {
-	final Widget? leading;
+	final List<Widget>? leadings;
 	final Widget? title;
 	final List<Widget>? actions;
 	final Color? backgroundColor;
 	
 	const AdaptiveBar({
-		this.leading,
+		this.leadings,
 		this.title,
 		this.actions,
 		this.backgroundColor
@@ -48,8 +48,8 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 				)
 			));
 		}
-		if (bar.leading != null) {
-			leadings.add(bar.leading!);
+		if (bar.leadings != null) {
+			leadings.addAll(bar.leadings!);
 		}
 		final child = AppBar(
 			leadingWidth: leadings.length > 1 ? leadings.length * 48 : null,
@@ -220,8 +220,8 @@ class AdaptiveScaffold extends StatelessWidget {
 				child: const Icon(Icons.menu)
 			));
 		}
-		if (bar_?.leading != null) {
-			leadings.add(bar_!.leading!);
+		if (bar_?.leadings != null) {
+			leadings.addAll(bar_!.leadings!);
 		}
 		final child = CupertinoPageScaffold(
 			resizeToAvoidBottomInset: resizeToAvoidBottomInset,

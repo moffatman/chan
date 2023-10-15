@@ -708,18 +708,7 @@ class BoardPageState extends State<BoardPage> {
 						)
 					)
 				),
-				leading: (
-					// Is root board on desktop
-					(settings.supportMouse.value && !Navigator.of(context).canPop()) ||
-					// Space is generally available
-					!(context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false)
-				) ? AdaptiveIconButton(
-					icon: const Icon(CupertinoIcons.refresh),
-					onPressed: () {
-						_listController.blockAndUpdate();
-					}
-				) : null,
-				actions: [
+				leadings: [
 					if (board != null) AdaptiveIconButton(
 						icon: const Icon(CupertinoIcons.settings),
 						onPressed: () {
@@ -810,6 +799,19 @@ class BoardPageState extends State<BoardPage> {
 									setState(() {});
 									break;
 							}
+						}
+					),
+				],
+				actions: [
+					if (
+						// Is root board on desktop
+						(settings.supportMouse.value && !Navigator.of(context).canPop()) ||
+						// Space is generally available
+						!(context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false)
+					) AdaptiveIconButton(
+						icon: const Icon(CupertinoIcons.refresh),
+						onPressed: () {
+							_listController.blockAndUpdate();
 						}
 					),
 					if (imageboard?.site.supportsPosting ?? false) AdaptiveIconButton(
