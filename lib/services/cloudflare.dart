@@ -131,9 +131,18 @@ class CloudflareInterceptor extends Interceptor {
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback) => (controller, uri) async {
 			controller.evaluateJavascript(source: '''
 				var style = document.createElement('style');
-				style.innerHTML = "* { color: ${EffectiveSettings.instance.theme.primaryColor.toCssHex()} !important; }";
+				style.innerHTML = "* {\\
+					color: ${EffectiveSettings.instance.theme.primaryColor.toCssHex()} !important;\\
+				}\\
+				div {\\
+					background: ${EffectiveSettings.instance.theme.backgroundColor.toCssHex()};\\
+				}\\
+				html, p, h1, h2, h3, h4, h5 {\\
+					background: ${EffectiveSettings.instance.theme.backgroundColor.toCssHex()} !important;\\
+				}";
 				document.head.appendChild(style);
 				document.body.bgColor = "${EffectiveSettings.instance.theme.backgroundColor.toCssHex()}";
+				document.body.style.background = "${EffectiveSettings.instance.theme.backgroundColor.toCssHex()}";
 			''');
 			if ((uri?.host.isEmpty ?? false) && uri?.scheme != 'data') {
 				final correctedUri = uri!.replace(
