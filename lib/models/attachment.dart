@@ -113,6 +113,13 @@ class Attachment {
 		return null;
 	}
 
+	String? get ellipsizedFilename {
+		if (filename.length <= 53) {
+			return null;
+		}
+		return '${filename.substring(0, 25)}...${filename.substring(filename.length - 25)}';
+	}
+
 	String get globalId => '${board}_$id';
 
 	@override

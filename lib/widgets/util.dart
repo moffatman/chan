@@ -42,17 +42,17 @@ class ActionableException implements Exception {
 	String toString() => 'ActionableException(message: $message, ${actions.length} actions)';
 }
 
-Future<void> alertError(BuildContext context, String error, {
+Future<void> alert(BuildContext context, String title, String message, {
 	Map<String, VoidCallback> actions = const {},
-	bool barrierDismissible = false
+	bool barrierDismissible = true
 }) async {
 	await showAdaptiveDialog(
 		context: context,
 		barrierDismissible: barrierDismissible,
 		builder: (context) {
 			return AdaptiveAlertDialog(
-				title: const Text('Error'),
-				content: Text(error),
+				title: Text(title),
+				content: Text(message),
 				actions: [
 					for (final action in actions.entries) AdaptiveDialogAction(
 						onPressed: action.value,
@@ -69,6 +69,11 @@ Future<void> alertError(BuildContext context, String error, {
 		}
 	);
 }
+
+Future<void> alertError(BuildContext context, String error, {
+	Map<String, VoidCallback> actions = const {},
+	bool barrierDismissible = false
+}) => alert(context, 'Error', error, actions: actions, barrierDismissible: barrierDismissible);
 
 void showToast({
 	required BuildContext context,

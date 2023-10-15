@@ -2340,20 +2340,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																				padding: EdgeInsets.zero,
 																				child: const Icon(CupertinoIcons.question),
 																				onPressed: () {
-																					showAdaptiveDialog(
-																						context: context,
-																						barrierDismissible: true,
-																						builder: (context) => AdaptiveAlertDialog(
-																							title: const Text('Filter reason'),
-																							content: Text(filteredValues[i].filterReason ?? 'Unknown'),
-																							actions: [
-																								AdaptiveDialogAction(
-																									child: const Text('OK'),
-																									onPressed: () => Navigator.pop(context)
-																								)
-																							]
-																						)
-																					);
+																					alert(context, 'Filter reason', filteredValues[i].filterReason ?? 'Unknown');
 																				}
 																			)
 																		)

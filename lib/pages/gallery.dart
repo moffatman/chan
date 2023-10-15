@@ -778,11 +778,16 @@ class _GalleryPageState extends State<GalleryPage> {
 								];
 								return Padding(
 									padding: const EdgeInsets.only(bottom: 4),
-									child: AutoSizeText(
-										currentAttachment.attachment.type == AttachmentType.url ?
-											currentAttachment.attachment.url.toString() :
-											"${currentAttachment.attachment.filename}${metadataParts.isEmpty ? '' : ' (${metadataParts.join(', ')})'}",
-										minFontSize: 8
+									child: GestureDetector(
+										onTap: currentAttachment.attachment.ellipsizedFilename == null ? null : () {
+											alert(context, 'Full filename', currentAttachment.attachment.ellipsizedFilename!);
+										},
+										child: AutoSizeText(
+											currentAttachment.attachment.type == AttachmentType.url ?
+												currentAttachment.attachment.url.toString() :
+												"${currentAttachment.attachment.ellipsizedFilename ?? currentAttachment.attachment.filename}${metadataParts.isEmpty ? '' : ' (${metadataParts.join(', ')})'}",
+											minFontSize: 8
+										)
 									)
 								);
 							}

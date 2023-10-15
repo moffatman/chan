@@ -1897,14 +1897,26 @@ class ExpandingPost extends StatelessWidget {
 	}
 }
 
-String _makeAttachmentInfo({
+Iterable<TextSpan> _makeAttachmentInfo({
+	required BuildContext context,
+	required bool interactive,
 	required Post post,
 	required EffectiveSettings settings
-}) {
-	String text = '';
+}) sync* {
 	for (final attachment in post.attachments) {
 		if (settings.showFilenameOnPosts && attachment.filename.isNotEmpty) {
-			text += '${attachment.filename} ';
+			final ellipsizedFilename = attachment.ellipsizedFilename;
+			if (ellipsizedFilename != null) {
+				yield TextSpan(
+					text: '$ellipsizedFilename ',
+					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
+						alert(context, 'Full filename', attachment.filename);
+					}) : null
+				);
+			}
+			else {
+				yield TextSpan(text: '${attachment.filename} ');
+			}
 		}
 		if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
 			final bracketParts = <String>[];
@@ -1915,11 +1927,10 @@ String _makeAttachmentInfo({
 				bracketParts.add('${attachment.width}x${attachment.height}');
 			}
 			if (bracketParts.isNotEmpty) {
-				text += '(${bracketParts.join(', ')}) ';
+				yield TextSpan(text: '(${bracketParts.join(', ')}) ');
 			}
 		}
 	}
-	return text;
 }
 
 TextSpan buildPostInfoRow({
@@ -2055,10 +2066,12 @@ TextSpan buildPostInfoRow({
 					const TextSpan(text: ' ')
 				]
 				else if (field == PostDisplayField.attachmentInfo && post.attachments.isNotEmpty) TextSpan(
-					text: _makeAttachmentInfo(
+					children: _makeAttachmentInfo(
+						context: context,
+						interactive: interactive,
 						post: post,
 						settings: settings
-					),
+					).toList(),
 					style: TextStyle(
 						color: theme.primaryColorWithBrightness(0.8)
 					)

@@ -1137,20 +1137,7 @@ class ThreadPageState extends State<ThreadPage> {
 						bar: AdaptiveBar(
 							title: GestureDetector(
 								onTap: () {
-									showAdaptiveDialog(
-										context: context,
-										barrierDismissible: true,
-										builder: (context) => AdaptiveAlertDialog(
-											title: const Text('Thread title'),
-											content: Text(title),
-											actions: [
-												AdaptiveDialogAction(
-													child: const Text('OK'),
-													onPressed: () => Navigator.pop(context)
-												)
-											]
-										)
-									);
+									alert(context, 'Thread title', title);
 								},
 								child: Padding(
 									padding: const EdgeInsets.only(top: 8, bottom: 8),
