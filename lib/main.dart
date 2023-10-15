@@ -1943,7 +1943,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												)
 											)
 										),
-										Expander(
+										if (index == 0) Expander(
 											height: 80,
 											bottomSafe: true,
 											expanded: showTabPopup,
