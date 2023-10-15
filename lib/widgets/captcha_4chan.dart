@@ -420,6 +420,9 @@ class Captcha4ChanCustomChallenge {
 		_isDisposed = true;
 		foregroundImage?.dispose();
 		backgroundImage?.dispose();
+		if (this == _challenge) {
+			_challenge = null;
+		}
 	}
 }
 
