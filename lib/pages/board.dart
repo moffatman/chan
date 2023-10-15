@@ -1054,7 +1054,8 @@ class BoardPageState extends State<BoardPage> {
 															animation: _listController.slowScrolls,
 															builder: (context, _) {
 																_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
-																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+																final scrollAnimationDuration = context.select<EffectiveSettings, bool>((s) => s.showAnimations) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
+																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: scrollAnimationDuration, curve: Curves.ease);
 																return SafeArea(
 																	child: Align(
 																		alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
@@ -1063,7 +1064,7 @@ class BoardPageState extends State<BoardPage> {
 																			child: GestureDetector(
 																				onLongPress: () {
 																					lightHapticFeedback();
-																					_listController.animateTo((item) => false, orElseLast: (item) => true, alignment: 1.0);
+																					_listController.animateTo((item) => false, orElseLast: (item) => true, alignment: 1.0, duration: scrollAnimationDuration);
 																				},
 																				child: AdaptiveFilledButton(
 																					onPressed: () async {
