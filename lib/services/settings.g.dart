@@ -290,13 +290,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       randomizeChecksumOnUploadedFiles: fields[159] as bool?,
       recentWebImageSearches: (fields[160] as List?)?.cast<String>(),
       cloverStyleRepliesButton: fields[161] as bool?,
+      watchThreadAutomaticallyWhenReplying: fields[162] as bool?,
+      saveThreadAutomaticallyWhenReplying: fields[163] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(158)
+      ..writeByte(160)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -612,7 +614,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(160)
       ..write(obj.recentWebImageSearches)
       ..writeByte(161)
-      ..write(obj.cloverStyleRepliesButton);
+      ..write(obj.cloverStyleRepliesButton)
+      ..writeByte(162)
+      ..write(obj.watchThreadAutomaticallyWhenReplying)
+      ..writeByte(163)
+      ..write(obj.saveThreadAutomaticallyWhenReplying);
   }
 
   @override

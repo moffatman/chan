@@ -1019,15 +1019,21 @@ class ThreadPageState extends State<ThreadPage> {
 									await promptForPushNotificationsIfNeeded(context);
 								}
 								if (!mounted) return;
-								imageboard.notifications.subscribeToThread(
-									thread: widget.thread,
-									lastSeenId: receipt.id,
-									localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
-									pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
-									foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
-									push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-									youIds: persistentState.freshYouIds()
-								);
+								if (settings.watchThreadAutomaticallyWhenReplying) {
+									imageboard.notifications.subscribeToThread(
+										thread: widget.thread,
+										lastSeenId: receipt.id,
+										localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
+										pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
+										foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
+										push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
+										youIds: persistentState.freshYouIds()
+									);
+								}
+								if (settings.saveThreadAutomaticallyWhenReplying) {
+									persistentState.savedTime ??= DateTime.now();
+									runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+								}
 								if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
 									// If already at the bottom, pre-mark the created post as seen
 									persistentState.lastSeenPostId = receipt.id;
@@ -1744,15 +1750,21 @@ class ThreadPageState extends State<ThreadPage> {
 												await promptForPushNotificationsIfNeeded(context);
 											}
 											if (!mounted) return;
-											notifications.subscribeToThread(
-												thread: widget.thread,
-												lastSeenId: receipt.id,
-												localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
-												pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
-												foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
-												push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-												youIds: persistentState.freshYouIds()
-											);
+											if (settings.watchThreadAutomaticallyWhenReplying) {
+												notifications.subscribeToThread(
+													thread: widget.thread,
+													lastSeenId: receipt.id,
+													localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
+													pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
+													foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
+													push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
+													youIds: persistentState.freshYouIds()
+												);
+											}
+											if (settings.saveThreadAutomaticallyWhenReplying) {
+												persistentState.savedTime ??= DateTime.now();
+												runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+											}
 											if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
 												// If already at the bottom, pre-mark the created post as seen
 												persistentState.lastSeenPostId = receipt.id;

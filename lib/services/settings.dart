@@ -996,6 +996,10 @@ class SavedSettings extends HiveObject {
 	List<String> recentWebImageSearches;
 	@HiveField(161)
 	bool cloverStyleRepliesButton;
+	@HiveField(162)
+	bool watchThreadAutomaticallyWhenReplying;
+	@HiveField(163)
+	bool saveThreadAutomaticallyWhenReplying;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1159,6 +1163,8 @@ class SavedSettings extends HiveObject {
 		bool? randomizeChecksumOnUploadedFiles,
 		List<String>? recentWebImageSearches,
 		bool? cloverStyleRepliesButton,
+		bool? watchThreadAutomaticallyWhenReplying,
+		bool? saveThreadAutomaticallyWhenReplying,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1343,7 +1349,9 @@ class SavedSettings extends HiveObject {
 		removeMetadataOnUploadedFiles = removeMetadataOnUploadedFiles ?? true,
 		randomizeChecksumOnUploadedFiles = randomizeChecksumOnUploadedFiles ?? false,
 		recentWebImageSearches = recentWebImageSearches ?? [],
-		cloverStyleRepliesButton = cloverStyleRepliesButton ?? false {
+		cloverStyleRepliesButton = cloverStyleRepliesButton ?? false,
+		watchThreadAutomaticallyWhenReplying = watchThreadAutomaticallyWhenReplying ?? true,
+		saveThreadAutomaticallyWhenReplying = saveThreadAutomaticallyWhenReplying ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2538,6 +2546,20 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get cloverStyleRepliesButton => _settings.cloverStyleRepliesButton;
 	set cloverStyleRepliesButton(bool setting) {
 		_settings.cloverStyleRepliesButton = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get watchThreadAutomaticallyWhenReplying => _settings.watchThreadAutomaticallyWhenReplying;
+	set watchThreadAutomaticallyWhenReplying(bool setting) {
+		_settings.watchThreadAutomaticallyWhenReplying = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get saveThreadAutomaticallyWhenReplying => _settings.saveThreadAutomaticallyWhenReplying;
+	set saveThreadAutomaticallyWhenReplying(bool setting) {
+		_settings.saveThreadAutomaticallyWhenReplying = setting;
 		_settings.save();
 		notifyListeners();
 	}

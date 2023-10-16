@@ -851,17 +851,25 @@ class BoardPageState extends State<BoardPage> {
 															await promptForPushNotificationsIfNeeded(ctx);
 														}
 														if (!mounted) return;
-														imageboard.notifications.subscribeToThread(
-															thread: ThreadIdentifier(board!.name, receipt.id),
-															lastSeenId: receipt.id,
-															localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
-															pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
-															foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
-															push: settings.defaultThreadWatch?.push ?? true,
-															youIds: [receipt.id]
-														);
+														final newThread = ThreadIdentifier(board!.name, receipt.id);
+														if (settings.watchThreadAutomaticallyWhenReplying) {
+															imageboard.notifications.subscribeToThread(
+																thread: newThread,
+																lastSeenId: receipt.id,
+																localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
+																pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
+																foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
+																push: settings.defaultThreadWatch?.push ?? true,
+																youIds: [receipt.id]
+															);
+														}
+														if (settings.saveThreadAutomaticallyWhenReplying) {
+															final persistentState = imageboard.persistence.getThreadState(newThread);
+															persistentState.savedTime ??= DateTime.now();
+															runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+														}
 														_listController.update();
-														_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
+														_onThreadSelected(newThread);
 														Navigator.of(ctx).pop();
 													}
 												)
@@ -1138,15 +1146,23 @@ class BoardPageState extends State<BoardPage> {
 													await promptForPushNotificationsIfNeeded(context);
 												}
 												if (!mounted) return;
-												imageboard?.notifications.subscribeToThread(
-													thread: ThreadIdentifier(board!.name, receipt.id),
-													lastSeenId: receipt.id,
-													localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
-													pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
-													foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
-													push: settings.defaultThreadWatch?.push ?? true,
-													youIds: [receipt.id]
-												);
+												final newThread = ThreadIdentifier(board!.name, receipt.id);
+												if (settings.watchThreadAutomaticallyWhenReplying) {
+													imageboard?.notifications.subscribeToThread(
+														thread: newThread,
+														lastSeenId: receipt.id,
+														localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
+														pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
+														foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
+														push: settings.defaultThreadWatch?.push ?? true,
+														youIds: [receipt.id]
+													);
+												}
+												if (settings.saveThreadAutomaticallyWhenReplying) {
+													final persistentState = imageboard!.persistence.getThreadState(newThread);
+													persistentState.savedTime ??= DateTime.now();
+													runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+												}
 												_listController.update();
 												_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
 											},

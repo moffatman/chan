@@ -1137,6 +1137,38 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						}
 					)
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.bell),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Auto-watch thread when replying')
+						),
+						AdaptiveSwitch(
+							value: settings.watchThreadAutomaticallyWhenReplying,
+							onChanged: (newValue) {
+								settings.watchThreadAutomaticallyWhenReplying = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						Icon(Adaptive.icons.bookmark),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Auto-save thread when replying')
+						),
+						AdaptiveSwitch(
+							value: settings.saveThreadAutomaticallyWhenReplying,
+							onChanged: (newValue) {
+								settings.saveThreadAutomaticallyWhenReplying = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 16)
 			]
 		);
