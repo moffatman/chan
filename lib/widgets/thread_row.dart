@@ -553,7 +553,7 @@ class ThreadRow extends StatelessWidget {
 									onPressed: onThumbnailTap?.bind1(taggedAttachment),
 									child: ConstrainedBox(
 										constraints: BoxConstraints(
-											minHeight: 51,
+											minHeight: attachment.type == AttachmentType.url ? 75 : 51,
 											maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
 										),
 										child: AttachmentThumbnail(
