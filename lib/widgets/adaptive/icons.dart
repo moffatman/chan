@@ -17,9 +17,9 @@ class AdaptiveIconSetMaterial implements AdaptiveIconSet {
 	@override
 	IconData get bookmarkFilled => Icons.bookmark;
 	@override
-	IconData get photo => Icons.photo;
+	IconData get photo => Icons.photo_outlined;
 	@override
-	IconData get photos => Icons.photo_library;
+	IconData get photos => Icons.photo_library_outlined;
 	@override
 	IconData get share => Icons.share;
 } 
