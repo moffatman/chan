@@ -416,7 +416,7 @@ class PostRow extends StatelessWidget {
 						height: 75,
 						child: CupertinoButton(
 							onPressed: onRequestArchive,
-							child: const Icon(CupertinoIcons.question_square, size: 36)
+							child: const Icon(CupertinoIcons.xmark_square, size: 36)
 						)
 					)
 				),
