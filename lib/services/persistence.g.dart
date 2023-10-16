@@ -347,6 +347,10 @@ class PersistentBrowserStateAdapter
           ? {}
           : (fields[5] as Map).map((dynamic k, dynamic v) =>
               MapEntry(k as String, (v as List).cast<int>())),
+      autowatchedIds: fields[27] == null
+          ? {}
+          : (fields[27] as Map).map((dynamic k, dynamic v) =>
+              MapEntry(k as String, (v as List).cast<int>())),
       deprecatedHiddenImageMD5s:
           fields[6] == null ? [] : (fields[6] as List).cast<String>(),
       loginFields:
@@ -386,10 +390,6 @@ class PersistentBrowserStateAdapter
               MapEntry(k as String, (v as List).cast<int>())),
       treeModeNewRepliesAreLinear:
           fields[26] == null ? true : fields[26] as bool,
-      autowatchedIds: fields[27] == null
-          ? {}
-          : (fields[27] as Map).map((dynamic k, dynamic v) =>
-              MapEntry(k as String, (v as List).cast<int>())),
     );
   }
 
