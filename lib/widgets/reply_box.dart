@@ -1301,64 +1301,66 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							mainAxisAlignment: MainAxisAlignment.end,
 							crossAxisAlignment: CrossAxisAlignment.center,
 							children: [
-								Column(
-									mainAxisAlignment: MainAxisAlignment.spaceBetween,
-									crossAxisAlignment: CrossAxisAlignment.end,
-									children: [
-										Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												AdaptiveFilledButton(
-													padding: const EdgeInsets.all(4),
-													child: Text('MD5: ${_attachmentScan?.$3.toString().substring(0, 6).toUpperCase()}'),
-													onPressed: () async {
-														final old = attachment!;
-														setState(() {
-															attachment = null;
-															_attachmentScan = null;
-															_showAttachmentOptions = false;
-														});
-														await setAttachment(old, forceRandomizeChecksum: true);
-														setState(() {
-															_showAttachmentOptions = true;
-														});
-													}
-												),
-												const SizedBox(width: 4),
-												AdaptiveIconButton(
-													padding: EdgeInsets.zero,
-													minSize: 30,
-													icon: const Icon(CupertinoIcons.xmark),
-													onPressed: () {
-														widget.onFilePathChanged?.call(null);
-														setState(() {
-															attachment = null;
-															_attachmentScan = null;
-															_showAttachmentOptions = false;
-															_filenameController.clear();
-														});
-													}
-												),
-											]
-										),
-										Flexible(
-											child: AutoSizeText(
-											[
-												if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
-													if (_attachmentScan?.$1.codec != null) _attachmentScan!.$1.codec!.toUpperCase(),
-													if (_attachmentScan?.$1.hasAudio == true) 'with audio'
-													else 'no audio',
-													if (_attachmentScan?.$1.duration != null) formatDuration(_attachmentScan!.$1.duration!),
-													if (_attachmentScan?.$1.bitrate != null) '${(_attachmentScan!.$1.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
-												],
-												if (_attachmentScan?.$1.width != null && _attachmentScan?.$1.height != null) '${_attachmentScan?.$1.width}x${_attachmentScan?.$1.height}',
-												if (_attachmentScan?.$2.size != null) formatFilesize(_attachmentScan?.$2.size ?? 0)
-											].join(', '),
-											style: const TextStyle(color: Colors.grey),
-											maxLines: 3,
-											textAlign: TextAlign.right
-										))
-									]
+								Flexible(
+									child: Column(
+										mainAxisAlignment: MainAxisAlignment.spaceBetween,
+										crossAxisAlignment: CrossAxisAlignment.end,
+										children: [
+											Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													AdaptiveFilledButton(
+														padding: const EdgeInsets.all(4),
+														child: Text('MD5: ${_attachmentScan?.$3.toString().substring(0, 6).toUpperCase()}'),
+														onPressed: () async {
+															final old = attachment!;
+															setState(() {
+																attachment = null;
+																_attachmentScan = null;
+																_showAttachmentOptions = false;
+															});
+															await setAttachment(old, forceRandomizeChecksum: true);
+															setState(() {
+																_showAttachmentOptions = true;
+															});
+														}
+													),
+													const SizedBox(width: 4),
+													AdaptiveIconButton(
+														padding: EdgeInsets.zero,
+														minSize: 30,
+														icon: const Icon(CupertinoIcons.xmark),
+														onPressed: () {
+															widget.onFilePathChanged?.call(null);
+															setState(() {
+																attachment = null;
+																_attachmentScan = null;
+																_showAttachmentOptions = false;
+																_filenameController.clear();
+															});
+														}
+													),
+												]
+											),
+											Flexible(
+												child: AutoSizeText(
+												[
+													if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
+														if (_attachmentScan?.$1.codec != null) _attachmentScan!.$1.codec!.toUpperCase(),
+														if (_attachmentScan?.$1.hasAudio == true) 'with audio'
+														else 'no audio',
+														if (_attachmentScan?.$1.duration != null) formatDuration(_attachmentScan!.$1.duration!),
+														if (_attachmentScan?.$1.bitrate != null) '${(_attachmentScan!.$1.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+													],
+													if (_attachmentScan?.$1.width != null && _attachmentScan?.$1.height != null) '${_attachmentScan?.$1.width}x${_attachmentScan?.$1.height}',
+													if (_attachmentScan?.$2.size != null) formatFilesize(_attachmentScan?.$2.size ?? 0)
+												].join(', '),
+												style: const TextStyle(color: Colors.grey),
+												maxLines: 3,
+												textAlign: TextAlign.right
+											))
+										]
+									)
 								),
 								const SizedBox(width: 8),
 								Flexible(
