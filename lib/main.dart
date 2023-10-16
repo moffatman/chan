@@ -123,22 +123,86 @@ class ChanFailedApp extends StatelessWidget {
 					brightness: Brightness.dark
 				),
 				home: Center(
-					child: ErrorMessageCard(
-						'Sorry, an unrecoverable error has occured:\n${error.toStringDio()}\n$stackTrace',
-						remedies: {
-							'Report via Email': () {
-								FlutterEmailSender.send(Email(
-									subject: 'Unrecoverable Chance Error',
-									recipients: ['callum@moffatman.com'],
-									isHTML: true,
-									body: '''<p>Hi Callum,</p>
-													<p>Chance v$kChanceVersion isn't starting and is giving the following error:</p>
-													<p>$error</p>
-													<p>${const LineSplitter().convert(stackTrace.toString()).join('</p><p>')}</p>
-													<p>Thanks!</p>'''
-								));
+					child: StatefulBuilder(
+						builder: (context, setState) => ErrorMessageCard(
+							'Sorry, an unrecoverable error has occured:\n${error.toStringDio()}\n$stackTrace',
+							remedies: {
+								'Report via Email': () {
+									FlutterEmailSender.send(Email(
+										subject: 'Unrecoverable Chance Error',
+										recipients: ['callum@moffatman.com'],
+										isHTML: true,
+										body: '''<p>Hi Callum,</p>
+														<p>Chance v$kChanceVersion isn't starting and is giving the following error:</p>
+														<p>$error</p>
+														<p>${const LineSplitter().convert(stackTrace.toString()).join('</p><p>')}</p>
+														<p>Thanks!</p>'''
+									));
+								},
+								if (Persistence.doesCachedThreadBoxExist) 'Clear cached thread database': () async {
+									final ok = await showCupertinoDialog<bool>(
+										context: context,
+										builder: (context) => CupertinoAlertDialog(
+											title: const Text('Delete threads data'),
+											content: const Text('The local threads database might be corrupt. No user data is in this file, just thread data which could probably be redownloaded from its site or an archive. If Chance is stuck at this error page, this might fix it.'),
+											actions: [
+												CupertinoDialogAction(
+													onPressed: () => Navigator.pop(context, false),
+													child: const Text('Cancel')
+												),
+												CupertinoDialogAction(
+													onPressed: () => Navigator.pop(context, true),
+													isDefaultAction: true,
+													isDestructiveAction: true,
+													child: const Text('Clear')
+												)
+											]
+										)
+									);
+									if (ok ?? false) {
+										try {
+											await Persistence.deleteCachedThreadBoxAndBackup();
+											if (context.mounted) {
+												showCupertinoDialog<bool>(
+													context: context,
+													builder: (context) => CupertinoAlertDialog(
+														title: const Text('Cleared'),
+														content: const Text('Now quit Chance via your multitasking switcher and relaunch it.'),
+														actions: [
+															CupertinoDialogAction(
+																onPressed: () => Navigator.pop(context),
+																isDefaultAction: true,
+																child: const Text('OK')
+															)
+														]
+													)
+												);
+											}
+										}
+										catch (e, st) {
+											Future.error(e, st); // Crashlytics
+											if (context.mounted) {
+												showCupertinoDialog<bool>(
+													context: context,
+													builder: (context) => CupertinoAlertDialog(
+														title: const Text('Error'),
+														content: Text(e.toStringDio()),
+														actions: [
+															CupertinoDialogAction(
+																onPressed: () => Navigator.pop(context),
+																isDefaultAction: true,
+																child: const Text('OK')
+															)
+														]
+													)
+												);
+											}
+										}
+										setState(() {});
+									}
+								}
 							}
-						}
+						)
 					)
 				)
 			)

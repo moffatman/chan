@@ -279,6 +279,36 @@ class Persistence extends ChangeNotifier {
 		});
 	}
 
+	static bool get doesCachedThreadBoxExist {
+		try {
+			final dir = documentsDirectory.path;
+			for (final path in [
+				'$dir/$_sharedThreadsBoxName.hive',
+				'$dir/$_backupBoxPrefix$_sharedThreadsBoxName.hive.gz'
+			]) {
+				final file = File(path);
+				if (file.existsSync()) {
+					return true;
+				}
+			}
+		}
+		catch (_) { }
+		return false;
+	}
+
+	static Future<void> deleteCachedThreadBoxAndBackup() async {
+		final dir = (await getApplicationDocumentsDirectory()).path;
+		for (final path in [
+			'$dir/$_sharedThreadsBoxName.hive',
+			'$dir/$_backupBoxPrefix$_sharedThreadsBoxName.hive.gz'
+		]) {
+			final file = File(path);
+			if (await file.exists()) {
+				await file.delete();
+			}
+		}
+	}
+
 	static Future<Thread?> getCachedThread(String imageboardKey, String board, int id) async {
 		return await _sharedThreadsBox.get('$imageboardKey/$board/$id');
 	}
