@@ -1874,7 +1874,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				stubRoots.add(root);
 				continue;
 			}
-			dumpNode(root, root.parents.map((t) => t.id).toList());
+			dumpNode(root, root.parents.any((r) => r.id == adapter.opId) ? [adapter.opId] : []);
 		}
 		if (firstRoot != null && (firstRoot.stubChildIds.isNotEmpty || firstRoot.hasOmittedReplies || stubRoots.isNotEmpty)) {
 			if (
