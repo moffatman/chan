@@ -2796,7 +2796,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) => AdaptiveActionSheet(
-										title: const Text('Edit catalog grid item layout'),
+										title: const Text('Edit catalog row item layout'),
 										actions: [
 											AdaptiveActionSheetAction(
 												child: const Text('Close'),
