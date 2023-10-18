@@ -60,6 +60,7 @@ class PostSpanRenderOptions {
 	final bool imageShareMode;
 	final bool revealYourPosts;
 	final bool ensureTrailingNewline;
+	final bool hiddenWithinSpoiler;
 	const PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -79,7 +80,8 @@ class PostSpanRenderOptions {
 		this.postInject,
 		this.imageShareMode = false,
 		this.revealYourPosts = true,
-		this.ensureTrailingNewline = false
+		this.ensureTrailingNewline = false,
+		this.hiddenWithinSpoiler = false
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
@@ -99,7 +101,8 @@ class PostSpanRenderOptions {
 		int? charactersPerLine,
 		InlineSpan? postInject,
 		bool removePostInject = false,
-		bool? ensureTrailingNewline
+		bool? ensureTrailingNewline,
+		bool? hiddenWithinSpoiler
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer ?? this.recognizer,
 		overrideRecognizer: overrideRecognizer ?? this.overrideRecognizer,
@@ -119,7 +122,8 @@ class PostSpanRenderOptions {
 		postInject: removePostInject ? null : (postInject ?? this.postInject),
 		imageShareMode: imageShareMode,
 		revealYourPosts: revealYourPosts,
-		ensureTrailingNewline: ensureTrailingNewline ?? this.ensureTrailingNewline
+		ensureTrailingNewline: ensureTrailingNewline ?? this.ensureTrailingNewline,
+		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler
 	);
 }
 
@@ -858,7 +862,8 @@ class PostSpoilerSpan extends PostSpan {
 				overrideTextColor: showSpoiler ? visibleColor : hiddenColor,
 				showCrossThreadLabel: options.showCrossThreadLabel,
 				onEnter: onEnter,
-				onExit: onExit
+				onExit: onExit,
+				hiddenWithinSpoiler: !showSpoiler
 			))],
 			style: options.baseTextStyle.copyWith(
 				backgroundColor: hiddenColor,
@@ -1004,6 +1009,21 @@ class PostLinkSpan extends PostSpan {
 				}
 
 				if (tapChild != null) {
+					if (options.hiddenWithinSpoiler) {
+						tapChild = Visibility(
+							maintainSize: true,
+							maintainAnimation: true,
+							maintainState: true,
+							visible: false,
+							maintainInteractivity: true,
+							child: GestureDetector(
+								onTap: options.recognizer?.onTap,
+								child: AbsorbPointer(
+									child: tapChild
+								)
+							)
+						);
+					}
 					onTap() {
 						openBrowser(context, cleanedUri!);
 					}
