@@ -295,7 +295,7 @@ class CustomFilter implements Filter {
 				else if (s == 'thread' || s == 'op:only') {
 					filter.threadsOnly = true;
 				}
-				else if (s == 'reply') {
+				else if (s == 'reply' || s == 'op:no') {
 					filter.threadsOnly = false;
 				}
 				else if (s == 'deleted:only') {
