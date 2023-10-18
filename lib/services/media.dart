@@ -287,9 +287,16 @@ class MediaConversion {
 			stripAudio: stripAudio,
 			extraOptions: [
 				'-c:a', 'libvorbis',
-				'-c:v', 'libvpx-vp9',
-				'-cpu-used', '3',
-				'-threads', sqrt(Platform.numberOfProcessors).ceil().toString()
+				if (Platform.isAndroid) ...[
+					// Android phones are not fast enough for VP9 encoding, use VP8
+					'-c:v', 'libvpx',
+					'-cpu-used', '2'
+				]
+				else ...[
+					'-c:v', 'libvpx-vp9',
+					'-cpu-used', '3',
+					'-threads', sqrt(Platform.numberOfProcessors).ceil().toString()
+				]
 			],
 			headers: headers,
 			soundSource: soundSource,
