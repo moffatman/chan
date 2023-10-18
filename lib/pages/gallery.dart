@@ -780,7 +780,7 @@ class _GalleryPageState extends State<GalleryPage> {
 									padding: const EdgeInsets.only(bottom: 4),
 									child: GestureDetector(
 										onTap: currentAttachment.attachment.ellipsizedFilename == null ? null : () {
-											alert(context, 'Full filename', currentAttachment.attachment.ellipsizedFilename!);
+											alert(context, 'Full filename', currentAttachment.attachment.filename);
 										},
 										child: AutoSizeText(
 											currentAttachment.attachment.type == AttachmentType.url ?
