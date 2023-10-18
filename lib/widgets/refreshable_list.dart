@@ -1005,6 +1005,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		Map<int, int> treeRootIndexLookup,
 		Map<int, Map<int, int>> treeChildrenIndexLookup
 	})? _lastTreeOrder;
+	bool _addedResumeCallback = false;
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
 	bool get treeBuildingFailed => _treeBuildingFailed;
@@ -1228,9 +1229,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	Future<void> _autoUpdate() async { 
 		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+			_addedResumeCallback = false;
 			await update();
 		}
 		else {
+			if (!_addedResumeCallback) {
+				EffectiveSettings.instance.addAppResumeCallback(_autoUpdate);
+			}
+			_addedResumeCallback = true;
 			resetTimer();
 		}
 	}
