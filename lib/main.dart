@@ -743,7 +743,8 @@ class ChanTabs extends ChangeNotifier {
 											}
 										}
 										browseTabIndex = indexToPreserve;
-									}
+									},
+									padding: const EdgeInsets.only(bottom: 50)
 								);
 							}
 						}
@@ -1497,7 +1498,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										onUndo: closedTab.board == null ? null : () {
 											_tabs.insertInitializedTab(-1 * index, closedTab);
 											_tabs.browseTabIndex = previouslyActiveTab;
-										}
+										},
+										padding: const EdgeInsets.only(bottom: 50)
 									);
 								}
 							),

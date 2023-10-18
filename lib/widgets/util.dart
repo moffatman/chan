@@ -81,7 +81,8 @@ void showToast({
 	required IconData icon,
 	bool hapticFeedback = true,
 	Widget? button,
-	Duration duration = const Duration(seconds: 2)
+	Duration duration = const Duration(seconds: 2),
+	EdgeInsets padding = EdgeInsets.zero
 }) {
 	if (hapticFeedback) {
 		lightHapticFeedback();
@@ -90,7 +91,7 @@ void showToast({
 	FToast().init(context).showToast(
 		child: Container(
 			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-			margin: const EdgeInsets.only(bottom: 64),
+			margin: const EdgeInsets.only(bottom: 64) + padding,
 			decoration: BoxDecoration(
 				borderRadius: BorderRadius.circular(24),
 				color: theme.primaryColorWithBrightness(0.2)
@@ -123,7 +124,8 @@ void showUndoToast({
 	required BuildContext context,
 	required String message,
 	required IconData icon,
-	required VoidCallback? onUndo
+	required VoidCallback? onUndo,
+	EdgeInsets padding = EdgeInsets.zero
 }) {
 	bool pressed = false;
 	showToast(
@@ -145,7 +147,8 @@ void showUndoToast({
 				))
 			)
 		),
-		duration: onUndo == null ? const Duration(seconds: 2) : const Duration(seconds: 5)
+		duration: onUndo == null ? const Duration(seconds: 2) : const Duration(seconds: 5),
+		padding: padding
 	);
 }
 
