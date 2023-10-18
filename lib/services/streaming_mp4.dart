@@ -644,7 +644,7 @@ class StreamingMP4Conversion {
 		final surelyAudioOnly = ['jpg', 'jpeg', 'png'].contains(inputExtension);
 		if (Platform.isAndroid && inputExtension == 'webm') {
 			final scan = await MediaScan.scan(inputFile, headers: headers);
-			final conversion = _directConversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false);
+			final conversion = _directConversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false, copyVideoStream: soundSource != null);
 			conversion.start();
 			return StreamingMP4ConvertingFile(
 				mp4File: conversion.result.then((r) => r.file),

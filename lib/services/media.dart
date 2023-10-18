@@ -276,7 +276,8 @@ class MediaConversion {
 		Map<String, String> headers = const {},
 		Uri? soundSource,
 		bool removeMetadata = false,
-		bool randomizeChecksum = false
+		bool randomizeChecksum = false,
+		bool copyVideoStream = false
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -287,7 +288,10 @@ class MediaConversion {
 			stripAudio: stripAudio,
 			extraOptions: [
 				'-c:a', 'libvorbis',
-				if (Platform.isAndroid) ...[
+				if (copyVideoStream) ...[
+					'-vcodec', 'copy'
+				]
+				else if (Platform.isAndroid) ...[
 					// Android phones are not fast enough for VP9 encoding, use VP8
 					'-c:v', 'libvpx',
 					'-cpu-used', '2'
