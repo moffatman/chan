@@ -111,7 +111,8 @@ class MediaScan {
 					],
 					"-i",
 					file.toStringFFMPEG(),
-				]
+				],
+				logLevel: 0
 			);
 			if (result.output.isEmpty) {
 				throw const MediaScanException(0, 'No output from ffprobe');
