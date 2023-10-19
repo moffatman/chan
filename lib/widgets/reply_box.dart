@@ -1306,41 +1306,43 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										mainAxisAlignment: MainAxisAlignment.spaceBetween,
 										crossAxisAlignment: CrossAxisAlignment.end,
 										children: [
-											Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													AdaptiveFilledButton(
-														padding: const EdgeInsets.all(4),
-														child: Text('MD5: ${_attachmentScan?.$3.toString().substring(0, 6).toUpperCase()}'),
-														onPressed: () async {
-															final old = attachment!;
-															setState(() {
-																attachment = null;
-																_attachmentScan = null;
-																_showAttachmentOptions = false;
-															});
-															await setAttachment(old, forceRandomizeChecksum: true);
-															setState(() {
-																_showAttachmentOptions = true;
-															});
-														}
-													),
-													const SizedBox(width: 4),
-													AdaptiveIconButton(
-														padding: EdgeInsets.zero,
-														minSize: 30,
-														icon: const Icon(CupertinoIcons.xmark),
-														onPressed: () {
-															widget.onFilePathChanged?.call(null);
-															setState(() {
-																attachment = null;
-																_attachmentScan = null;
-																_showAttachmentOptions = false;
-																_filenameController.clear();
-															});
-														}
-													),
-												]
+											FittedBox(
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														AdaptiveFilledButton(
+															padding: const EdgeInsets.all(4),
+															child: Text('MD5: ${_attachmentScan?.$3.toString().substring(0, 6).toUpperCase()}'),
+															onPressed: () async {
+																final old = attachment!;
+																setState(() {
+																	attachment = null;
+																	_attachmentScan = null;
+																	_showAttachmentOptions = false;
+																});
+																await setAttachment(old, forceRandomizeChecksum: true);
+																setState(() {
+																	_showAttachmentOptions = true;
+																});
+															}
+														),
+														const SizedBox(width: 4),
+														AdaptiveIconButton(
+															padding: EdgeInsets.zero,
+															minSize: 30,
+															icon: const Icon(CupertinoIcons.xmark),
+															onPressed: () {
+																widget.onFilePathChanged?.call(null);
+																setState(() {
+																	attachment = null;
+																	_attachmentScan = null;
+																	_showAttachmentOptions = false;
+																	_filenameController.clear();
+																});
+															}
+														),
+													]
+												)
 											),
 											Flexible(
 												child: AutoSizeText(
