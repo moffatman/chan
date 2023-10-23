@@ -303,7 +303,10 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	VideoController _ensureController() {
-		return _videoPlayerController ??= (VideoController(Player())..player.stream.error.listen(_onPlayerError)..player.stream.log.listen(_onPlayerLog));
+		return _videoPlayerController ??= (VideoController(Player())
+			..player.stream.error.listen(_onPlayerError)
+			..player.stream.log.listen(_onPlayerLog))
+			..player.stream.videoParams.listen(_onPlayerVideoParams);
 	}
 
 	void _onPlayerError(String error) {
@@ -312,6 +315,21 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	void _onPlayerLog(PlayerLog log) {
 		print(log);
+	}
+
+	void _onPlayerVideoParams(VideoParams params) async {
+		final dw = params.dw ?? 0;
+		final dh = params.dh ?? 0;
+		if (dw == 0 || dh == 0) {
+			// Not valid
+			return;
+		}
+		try {
+			_videoPlayerController?.setSize(height: dh, width: dw);
+		}
+		on UnsupportedError {
+			// Not supported on all platforms
+		}
 	}
 
 	set isPrimary(bool val) {
@@ -637,7 +655,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						await controller.player.setVolume(0);
 						if (_isDisposed) return;
 					}
-					await controller.player.setPlaylistMode(PlaylistMode.loop);
+					await controller.player.setPlaylistMode(PlaylistMode.single);
 					if (_isDisposed) return;
 					if (isPrimary) {
 						if (Platform.isAndroid) {
@@ -971,7 +989,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (_isDisposed) return;
 			}
 			if (_isDisposed) return;
-			await _videoPlayerController?.player.setPlaylistMode(PlaylistMode.loop);
+			await _videoPlayerController?.player.setPlaylistMode(PlaylistMode.single);
 			if (_isDisposed) return;
 			if (Platform.isAndroid) {
 				// Seems to be necessary to prevent brief freeze near beginning of video
