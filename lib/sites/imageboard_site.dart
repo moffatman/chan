@@ -129,6 +129,13 @@ class UnknownArchiveTypeException implements Exception {
 	String toString() => 'Unknown archive type "$siteType"\nAn app update might be required.';
 }
 
+class ReportFailedException implements Exception {
+	final String message;
+	const ReportFailedException(this.message);
+	@override
+	String toString() => 'Report failed: $message';
+}
+
 enum ImageboardAction {
 	postThread,
 	postReply,

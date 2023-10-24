@@ -116,8 +116,10 @@ Future<void> reportPost({
 		}
 	}
 	catch (e, st) {
-		_submissionFailed = true; // Disable future headless solve
-		Future.error(e, st); // Report to crashlytics
+		if (e is! ReportFailedException) {
+			_submissionFailed = true; // Disable future headless solve
+			Future.error(e, st); // Report to crashlytics
+		}
 		if (context.mounted) {
 			alertError(context, e.toStringDio());
 		}

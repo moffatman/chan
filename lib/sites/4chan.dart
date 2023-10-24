@@ -903,6 +903,10 @@ class Site4Chan extends ImageboardSite {
 		try {
 			final response = await client.getUri(endpoint);
 			final document = parse(response.data);
+			final error = document.querySelector('h3 > font[color="#FF0000"]')?.text;
+			if (error != null) {
+				throw ReportFailedException(error);
+			}
 			final choices = <ChoiceReportMethodChoice>[];
 			final cats = document.querySelectorAll('[name="cat"]');
 			final knownCat = cats.tryFirstWhere((cat) => cat.attributes['value']?.isEmpty != false);
@@ -964,6 +968,10 @@ class Site4Chan extends ImageboardSite {
 					}
 				}
 			);
+		}
+		on ReportFailedException {
+			// Don't fall back to web form
+			rethrow;
 		}
 		catch (e, st) {
 			Future.error(e, st); // Form has changed, report to crashlytics
