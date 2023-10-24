@@ -1915,6 +1915,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				depth: 0
 			));
 		}
+		if (!adapter.newRepliesAreLinear && linear.length > 1) {
+			// In "old" tree behaviour, we use treeSplitId to track new insertions
+			// It needs to be updated after each rebuild
+			final treeSplitId = _treeSplitId = linear.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j.childId))));
+			widget.onTreeSplitIdChanged?.call(treeSplitId);
+		}
 		_refreshableTreeItems.itemsWithUnknownStubReplies.addAll(itemsWithOmittedReplies);
 		_needToTransitionNewlyInsertedItems = true;
 		// Reveal all new inserts at the bottom of the list
