@@ -345,7 +345,7 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 		bool savedAnyThread = false;
 		for (final line in EffectiveSettings.instance.customFilterLines) {
-			if (line.disabled || (!line.outputType.autoSave && !line.outputType.autoWatch)) {
+			if (line.disabled || (!line.outputType.autoSave && line.outputType.autoWatch == null)) {
 				continue;
 			}
 			for (final board in line.boards) {
@@ -365,7 +365,8 @@ class ThreadWatcher extends ChangeNotifier {
 							savedAnyThread = true;
 						}
 					}
-					if (line.filter(thread)?.type.autoWatch ?? false) {
+					final autoWatch = line.filter(thread)?.type.autoWatch;
+					if (autoWatch != null) {
 						if (!(persistence.browserState.autowatchedIds[board]?.contains(thread.id) ?? false)) {
 							final threadState = persistence.getThreadStateIfExists(thread.identifier);
 							final defaultThreadWatch = EffectiveSettings.instance.defaultThreadWatch;
@@ -374,7 +375,7 @@ class ThreadWatcher extends ChangeNotifier {
 								lastSeenId: thread.posts_.last.id,
 								localYousOnly: defaultThreadWatch?.localYousOnly ?? false,
 								pushYousOnly: defaultThreadWatch?.pushYousOnly ?? false,
-								push: defaultThreadWatch?.push ?? true,
+								push: autoWatch.push ?? defaultThreadWatch?.push ?? true,
 								youIds: threadState?.youIds ?? [],
 								foregroundMuted: defaultThreadWatch?.foregroundMuted ?? false
 							);

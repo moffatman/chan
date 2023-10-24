@@ -2,6 +2,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -103,7 +104,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool highlight = filter.outputType.highlight;
 			bool pinToTop = filter.outputType.pinToTop;
 			bool autoSave = filter.outputType.autoSave;
-			bool autoWatch = filter.outputType.autoWatch;
+			AutoWatchType? autoWatch = filter.outputType.autoWatch;
 			bool notify = filter.outputType.notify;
 			bool collapse = filter.outputType.collapse;
 			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
@@ -433,7 +434,7 @@ class _FilterEditorState extends State<FilterEditor> {
 															highlight = false;
 															pinToTop = false;
 															autoSave = false;
-															autoWatch = false;
+															autoWatch = null;
 															notify = false;
 															collapse = false;
 														}
@@ -450,11 +451,11 @@ class _FilterEditorState extends State<FilterEditor> {
 										padding: const EdgeInsets.all(16),
 										alignment: Alignment.center,
 										child: AdaptiveListSection(
-											children: [
+											children: <(String, bool, ValueChanged<bool>)>[
 												('Highlight', highlight, (v) => highlight = v),
 												('Pin-to-top', pinToTop, (v) => pinToTop = v),
 												('Auto-save', autoSave, (v) => autoSave = v),
-												('Auto-watch', autoWatch, (v) => autoWatch = v),
+												('Auto-watch', autoWatch != null, (v) => autoWatch = (v ? const AutoWatchType(push: null) : null)),
 												('Notify', notify, (v) => notify = v),
 												('Collapse (tree mode)', collapse, (v) => collapse = v),
 											].map((t) => AdaptiveListTile(
@@ -464,12 +465,43 @@ class _FilterEditorState extends State<FilterEditor> {
 												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 												onTap: () {
 													t.$3(!t.$2);
-													if (highlight || pinToTop || autoSave || autoWatch || notify || collapse) {
+													if (highlight || pinToTop || autoSave || autoWatch != null || notify || collapse) {
 														hide = false;
 													}
 													setInnerState(() {});
 												},
 											)).toList()
+										)
+									),
+									Opacity(
+										opacity: autoWatch == null ? 0.5 : 1.0,
+										child: IgnorePointer(
+											ignoring: autoWatch == null,
+											child: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													const Text('Auto-watch notifications'),
+													Container(
+														padding: const EdgeInsets.all(16),
+														alignment: Alignment.center,
+														child: AdaptiveChoiceControl<NullSafeOptional>(
+															children: {
+																NullSafeOptional.false_: (null, 'Push off'),
+																NullSafeOptional.null_: (null, 'Default (push ${(EffectiveSettings.instance.defaultThreadWatch?.push ?? true) ? 'on' : 'off'})'),
+																NullSafeOptional.true_: (null, 'Push on')
+															},
+															knownWidth: 0,
+															groupValue: (autoWatch?.push).value,
+															onValueChanged: (v) {
+																autoWatch = AutoWatchType(
+																	push: v.value
+																);
+																setInnerState(() {});
+															}
+														)
+													)
+												]
+											)
 										)
 									)
 								]
@@ -555,6 +587,8 @@ class _FilterEditorState extends State<FilterEditor> {
 													'`;top` Pin match to top of list instead of hiding\n'
 													'`;notify` Send a push notification (if enabled) for matches\n'
 													'`;save` Automatically save matching threads\n'
+													'`;watch` Automatically watch matching threads\n'
+													'    Append `:push` to ensure push is enabled on the watches, or `:noPush` to ensure it\'s disabled\n'
 													'`;collapse` Automatically collapse matching posts in tree mode\n'
 													'`;show` Show matches (use it to override later filters)\n'
 													'`;file:only` Only apply to posts with files\n'
@@ -634,7 +668,7 @@ class _FilterEditorState extends State<FilterEditor> {
 							if (filter.value.outputType.highlight) const Icon(CupertinoIcons.sun_max_fill),
 							if (filter.value.outputType.pinToTop) const Icon(CupertinoIcons.arrow_up_to_line),
 							if (filter.value.outputType.autoSave) Icon(Adaptive.icons.bookmarkFilled),
-							if (filter.value.outputType.autoWatch) const Icon(CupertinoIcons.bell),
+							if (filter.value.outputType.autoWatch != null) const Icon(CupertinoIcons.bell),
 							if (filter.value.outputType.notify) const Icon(CupertinoIcons.bell_fill),
 							if (filter.value.outputType.collapse) const Icon(CupertinoIcons.chevron_down_square)
 						];

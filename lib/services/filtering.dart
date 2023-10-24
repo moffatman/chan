@@ -6,12 +6,25 @@ import 'package:weak_map/weak_map.dart';
 const allPatternFields = ['text', 'subject', 'name', 'filename', 'dimensions', 'postID', 'posterID', 'flag', 'capcode'];
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
 
+class AutoWatchType {
+	final bool? push;
+
+	const AutoWatchType({
+		required this.push
+	});
+
+	bool get hasProperties => push != null;
+
+	@override
+	String toString() => 'AutoWatchType(push: $push)';
+}
+
 class FilterResultType {
 	final bool hide;
 	final bool highlight;
 	final bool pinToTop;
 	final bool autoSave;
-	final bool autoWatch;
+	final AutoWatchType? autoWatch;
 	final bool notify;
 	final bool collapse;
 
@@ -20,7 +33,7 @@ class FilterResultType {
 		this.highlight = false,
 		this.pinToTop = false,
 		this.autoSave = false,
-		this.autoWatch = false,
+		this.autoWatch,
 		this.notify = false,
 		this.collapse = false
 	});
@@ -33,7 +46,7 @@ class FilterResultType {
 		if (highlight) 'highlight',
 		if (pinToTop) 'pinToTop',
 		if (autoSave) 'autoSave',
-		if (autoWatch) 'autoWatch',
+		if (autoWatch != null) autoWatch.toString(),
 		if (notify) 'notify',
 		if (collapse) 'collapse'
 	].join(', ')})';
@@ -237,7 +250,7 @@ class CustomFilter implements Filter {
 			bool highlight = false;
 			bool pinToTop = false;
 			bool autoSave = false;
-			bool autoWatch = false;
+			AutoWatchType? autoWatch;
 			bool notify = false;
 			bool collapse = false;
 			while (true) {
@@ -257,8 +270,22 @@ class CustomFilter implements Filter {
 					autoSave = true;
 					hide = false;
 				}
-				else if (s == 'watch') {
-					autoWatch = true;
+				else if (s == 'watch' || s.startsWith('watch:')) {
+					bool? push;
+					for (final part in s.split(separator).skip(1)) {
+						if (part == 'push') {
+							push = true;
+						}
+						else if (part == 'noPush') {
+							push = false;
+						}
+						else {
+							throw FilterException('Unknown watch qualifier: $part');
+						}
+					}
+					autoWatch = AutoWatchType(
+						push: push
+					);
 					hide = false;
 				}
 				else if (s == 'notify') {
@@ -370,8 +397,17 @@ class CustomFilter implements Filter {
 		if (outputType.autoSave) {
 			out.write(';save');
 		}
-		if (outputType.autoWatch) {
+		if (outputType.autoWatch != null) {
 			out.write(';watch');
+			if (outputType.autoWatch?.hasProperties ?? false) {
+				out.write(':');
+				if (outputType.autoWatch?.push == true) {
+					out.write('push');
+				}
+				else if (outputType.autoWatch?.push == false) {
+					out.write('noPush');
+				}
+			}
 		}
 		if (outputType.notify) {
 			out.write(';notify');

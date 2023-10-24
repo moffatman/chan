@@ -979,7 +979,7 @@ class BoardPageState extends State<BoardPage> {
 															await threadState.save();
 															await persistence.didUpdateBrowserState();
 														},
-														onWantAutowatch: (thread) async {
+														onWantAutowatch: (thread, autoWatch) async {
 															final imageboard = context.read<Imageboard>();
 															if (imageboard.persistence.browserState.autowatchedIds[thread.board]?.contains(thread.id) ?? false) {
 																// Already saw this thread
@@ -991,7 +991,7 @@ class BoardPageState extends State<BoardPage> {
 																lastSeenId: thread.posts_.last.id,
 																localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
 																pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
-																push: settings.defaultThreadWatch?.push ?? true,
+																push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
 																youIds: threadState?.youIds ?? [],
 																foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
 															);
