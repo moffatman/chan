@@ -500,6 +500,7 @@ class ChanTabs extends ChangeNotifier {
 		required this.onShouldShowTabPopup
 	}) {
 		Persistence.globalTabMutator.addListener(_onGlobalTabMutatorUpdate);
+		ScrollTracker.instance.someNavigatorNavigated.addListener(_onSomeNavigatorNavigated);
 		for (final tab in Persistence.tabs) {
 			tab.addListener(_onTabUpdate);
 		}
@@ -511,6 +512,11 @@ class ChanTabs extends ChangeNotifier {
 
 	void _onTabUpdate() {
 		notifyListeners();
+	}
+
+	void _onSomeNavigatorNavigated() {
+		// Recalculate shouldEnableWideDrawerGesture
+		Future.microtask(notifyListeners);
 	}
 
 	Future<void> _didModifyPersistentTabData() async {
@@ -587,6 +593,7 @@ class ChanTabs extends ChangeNotifier {
 		activeBrowserTab.dispose();
 		_tabListController.dispose();
 		Persistence.globalTabMutator.removeListener(_onGlobalTabMutatorUpdate);
+		ScrollTracker.instance.someNavigatorNavigated.removeListener(_onSomeNavigatorNavigated);
 		for (final tab in Persistence.tabs) {
 			tab.removeListener(_onTabUpdate);
 		}
@@ -1412,7 +1419,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										navigatorKey: _tabs._settingsNavigatorKey,
 										observers: [
 											HeroController(),
-											NavigatorObserver()
+											ScrollTrackerNavigatorObserver()
 										],
 										buildRoot: (context) => const SettingsPage()
 									)
@@ -2003,6 +2010,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										Expanded(
 											child: CupertinoTabView(
 												navigatorKey: _tabs._tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>(debugLabel: '_ChanHomePageState._tabNavigatorKeys[$index]')),
+												navigatorObservers: [
+													ScrollTrackerNavigatorObserver()
+												],
 												builder: (context) => AnimatedBuilder(
 													animation: _tabs._tabController,
 													builder: (context, child) => _buildTab(context, index, _tabs.mainTabIndex == index)

@@ -1,3 +1,4 @@
+import 'package:chan/util.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -10,6 +11,8 @@ class ScrollTracker {
 	}
 	double _accumulatedScrollDelta = 0;
 	bool _thisScrollHasDragDetails = false;
+	final _someNavigatorNavigated = EasyListenable();
+	ChangeNotifier get someNavigatorNavigated => _someNavigatorNavigated;
 
 	ScrollTracker._() {
 		slowScrollDirection.addListener(_onSlowScrollDirectionChange);
@@ -76,11 +79,13 @@ class ScrollTracker {
 	}
 
 	void navigatorDidPush() {
+		_someNavigatorNavigated.didUpdate();
 		slowScrollDirection.value = VerticalDirection.up;
 		isScrolling.value = false;
 	}
 
 	void navigatorDidPop() {
+		_someNavigatorNavigated.didUpdate();
 		slowScrollDirection.value = VerticalDirection.up;
 		isScrolling.value = false;
 	}
