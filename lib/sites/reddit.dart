@@ -541,7 +541,7 @@ class SiteReddit extends ImageboardSite {
 							ext: ext,
 							filename: item['id'] + ext,
 							url: unescape.convert(item['s']['u'] ?? item['s']['gif']),
-							thumbnailUrl: unescape.convert(item['p'][0]['u']),
+							thumbnailUrl: unescape.convert((item['p'] as List).cast<Map>().tryFirst?['u'] ?? item['s']['u']),
 							md5: '',
 							width: item['s']['x'],
 							height: item['s']['y'],
