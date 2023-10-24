@@ -325,7 +325,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			return;
 		}
 		try {
-			_videoPlayerController?.setSize(height: dh, width: dw);
+			await _videoPlayerController?.setSize(height: dh, width: dw);
 		}
 		on UnsupportedError {
 			// Not supported on all platforms
