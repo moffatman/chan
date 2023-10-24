@@ -57,7 +57,9 @@ class AdaptiveAlertDialog extends StatelessWidget {
 		if (ChanceTheme.materialOf(context)) {
 			return AlertDialog(
 				title: title,
-				content: content,
+				content: SingleChildScrollView(
+					child: content
+				),
 				actions: actions.reversed.toList(),
 				actionsOverflowDirection: VerticalDirection.up,
 			);

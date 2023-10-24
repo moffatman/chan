@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chan/services/captcha.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -41,20 +42,35 @@ Future<void> reportPost({
 							content: Container(
 								padding: const EdgeInsets.only(top: 16),
 								width: 350,
-								child: SingleChildScrollView(
-									child: AdaptiveChoiceControl<Map<String, String>>(
-										knownWidth: 0,
-										children: {
-											for (final choice in method.choices)
-												choice.value: (null, choice.name)
-										},
-										groupValue: choice,
-										onValueChanged: (v) {
-											setDialogState(() {
-												choice = v;
-											});
-										}
-									)
+								child: Column(
+									children: [
+										for (int i = 0; i < method.choices.length; i++) ...[
+											if (i > 0) Divider(
+												color: ChanceTheme.primaryColorOf(context),
+												height: 8
+											),
+											AdaptiveButton(
+												padding: const EdgeInsets.all(8),
+												onPressed: () => setDialogState(() {
+													if (choice == method.choices[i].value) {
+														choice = null;
+													}
+													else {
+														choice = method.choices[i].value;
+													}
+												}),
+												child: Row(
+													children: [
+														Expanded(
+															child: Text(method.choices[i].name)
+														),
+														const SizedBox(width: 8),
+														choice == method.choices[i].value ? const Icon(Icons.radio_button_on_outlined) : const Icon(Icons.radio_button_off_outlined)
+													]
+												)
+											)
+										]
+									]
 								)
 							),
 							actions: [
