@@ -9,10 +9,12 @@ class SliderBuilder extends StatefulWidget {
 	final Widget Function(BuildContext context, double factor) builder;
   final Widget popup;
 	final double activationDistance;
+	final bool cancelable;
 	const SliderBuilder({
 		required this.builder,
 		required this.popup,
 		this.activationDistance = 50,
+		this.cancelable = true,
 		Key? key
 	}) : super(key: key);
 	@override
@@ -62,7 +64,7 @@ class _SliderBuilderState extends State<SliderBuilder> {
 	}
 
 	void _handleDragEnd(DragEndDetails details) {
-		if (details.velocity.pixelsPerSecond.direction.abs() > math.pi * 0.75) {
+		if (!widget.cancelable || details.velocity.pixelsPerSecond.direction.abs() > math.pi * 0.75) {
 			if (!insertedEarly) {
 				WeakNavigator.push(context, widget.popup);
 			}

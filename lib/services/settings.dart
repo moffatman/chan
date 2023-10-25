@@ -1002,6 +1002,8 @@ class SavedSettings extends HiveObject {
 	bool watchThreadAutomaticallyWhenReplying;
 	@HiveField(163)
 	bool saveThreadAutomaticallyWhenReplying;
+	@HiveField(164)
+	bool cancellableRepliesSlideGesture;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1167,6 +1169,7 @@ class SavedSettings extends HiveObject {
 		bool? cloverStyleRepliesButton,
 		bool? watchThreadAutomaticallyWhenReplying,
 		bool? saveThreadAutomaticallyWhenReplying,
+		bool? cancellableRepliesSlideGesture,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1353,7 +1356,8 @@ class SavedSettings extends HiveObject {
 		recentWebImageSearches = recentWebImageSearches ?? [],
 		cloverStyleRepliesButton = cloverStyleRepliesButton ?? false,
 		watchThreadAutomaticallyWhenReplying = watchThreadAutomaticallyWhenReplying ?? true,
-		saveThreadAutomaticallyWhenReplying = saveThreadAutomaticallyWhenReplying ?? false {
+		saveThreadAutomaticallyWhenReplying = saveThreadAutomaticallyWhenReplying ?? false,
+		cancellableRepliesSlideGesture = cancellableRepliesSlideGesture ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2562,6 +2566,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get saveThreadAutomaticallyWhenReplying => _settings.saveThreadAutomaticallyWhenReplying;
 	set saveThreadAutomaticallyWhenReplying(bool setting) {
 		_settings.saveThreadAutomaticallyWhenReplying = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get cancellableRepliesSlideGesture => _settings.cancellableRepliesSlideGesture;
+	set cancellableRepliesSlideGesture(bool setting) {
+		_settings.cancellableRepliesSlideGesture = setting;
 		_settings.save();
 		notifyListeners();
 	}

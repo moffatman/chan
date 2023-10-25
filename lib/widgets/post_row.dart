@@ -860,6 +860,7 @@ class PostRow extends StatelessWidget {
 					zone: parentZone.childZoneFor(latestPost.id),
 					isRepliesForPostId: latestPost.id
 				),
+				cancelable: settings.cancellableRepliesSlideGesture,
 				builder: innerChild
 			) : innerChild(context, 0.0)
 		);

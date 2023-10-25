@@ -1171,6 +1171,25 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.reply_all),
+						const SizedBox(width: 8),
+						const Text('Cancellable replies swipe gesture'),
+						const SizedBox(width: 8),
+						const _SettingsHelpButton(
+							helpText: 'When swiping from right to left to open a post\'s replies, only continuing the swipe will open the replies. Releasing the swipe in another direction will cancel the gesture.'
+						),
+						const Spacer(),
+						AdaptiveSwitch(
+							value: settings.cancellableRepliesSlideGesture,
+							onChanged: (newValue) {
+								settings.cancellableRepliesSlideGesture = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 16)
 			]
 		);

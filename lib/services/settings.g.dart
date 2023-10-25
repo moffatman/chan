@@ -292,13 +292,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       cloverStyleRepliesButton: fields[161] as bool?,
       watchThreadAutomaticallyWhenReplying: fields[162] as bool?,
       saveThreadAutomaticallyWhenReplying: fields[163] as bool?,
+      cancellableRepliesSlideGesture: fields[164] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(160)
+      ..writeByte(161)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -618,7 +619,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(162)
       ..write(obj.watchThreadAutomaticallyWhenReplying)
       ..writeByte(163)
-      ..write(obj.saveThreadAutomaticallyWhenReplying);
+      ..write(obj.saveThreadAutomaticallyWhenReplying)
+      ..writeByte(164)
+      ..write(obj.cancellableRepliesSlideGesture);
   }
 
   @override
