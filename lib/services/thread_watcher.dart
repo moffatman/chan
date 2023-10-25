@@ -368,7 +368,8 @@ class ThreadWatcher extends ChangeNotifier {
 					final autoWatch = line.filter(thread)?.type.autoWatch;
 					if (autoWatch != null) {
 						if (!(persistence.browserState.autowatchedIds[board]?.contains(thread.id) ?? false)) {
-							final threadState = persistence.getThreadStateIfExists(thread.identifier);
+							final threadState = persistence.getThreadState(thread.identifier);
+							threadState.thread = thread;
 							final defaultThreadWatch = EffectiveSettings.instance.defaultThreadWatch;
 							notifications.subscribeToThread(
 								thread: thread.identifier,
@@ -376,7 +377,7 @@ class ThreadWatcher extends ChangeNotifier {
 								localYousOnly: defaultThreadWatch?.localYousOnly ?? false,
 								pushYousOnly: defaultThreadWatch?.pushYousOnly ?? false,
 								push: autoWatch.push ?? defaultThreadWatch?.push ?? true,
-								youIds: threadState?.youIds ?? [],
+								youIds: threadState.youIds,
 								foregroundMuted: defaultThreadWatch?.foregroundMuted ?? false
 							);
 							persistence.browserState.autowatchedIds.putIfAbsent(thread.board, () => []).add(thread.id);

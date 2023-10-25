@@ -986,14 +986,15 @@ class BoardPageState extends State<BoardPage> {
 																// Already saw this thread
 																return;
 															}
-															final threadState = imageboard.persistence.getThreadStateIfExists(thread.identifier);
+															final threadState = imageboard.persistence.getThreadState(thread.identifier);
+															threadState.thread = thread;
 															imageboard.notifications.subscribeToThread(
 																thread: thread.identifier,
 																lastSeenId: thread.posts_.last.id,
 																localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
 																pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
 																push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
-																youIds: threadState?.youIds ?? [],
+																youIds: threadState.youIds,
 																foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
 															);
 															imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.board, () => []).add(thread.id);
