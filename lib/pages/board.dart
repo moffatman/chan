@@ -981,6 +981,7 @@ class BoardPageState extends State<BoardPage> {
 														},
 														onWantAutowatch: (thread, autoWatch) async {
 															final imageboard = context.read<Imageboard>();
+															await Future.microtask(() => {});
 															if (imageboard.persistence.browserState.autowatchedIds[thread.board]?.contains(thread.id) ?? false) {
 																// Already saw this thread
 																return;
