@@ -1969,26 +1969,30 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								});
 							},
 							onLeftSwipe: () {
-								if (_tabs.mainTabIndex != 0) {
-									return;
-								}
 								mediumHapticFeedback();
-								if (_tabs.browseTabIndex <= 0) {
-									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-									return;
+								if (_tabs.mainTabIndex > 0) {
+									_tabs.mainTabIndex--;
 								}
-								_tabs.browseTabIndex--;
+								else if (_tabs.browseTabIndex > 0) {
+									_tabs.browseTabIndex--;
+								}
+								else {
+									// Not possible, do a second haptic for feedback
+									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+								}
 							},
 							onRightSwipe: () {
-								if (_tabs.mainTabIndex != 0) {
-									return;
-								}
 								mediumHapticFeedback();
-								if (_tabs.browseTabIndex >= Persistence.tabs.length - 1) {
-									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-									return;
+								if (_tabs.mainTabIndex > 0 && _tabs.mainTabIndex < 4) {
+									_tabs.mainTabIndex++;
 								}
-								_tabs.browseTabIndex++;
+								else if (_tabs.mainTabIndex == 0 && _tabs.browseTabIndex < Persistence.tabs.length - 1) {
+									_tabs.browseTabIndex++;
+								}
+								else {
+									// Not possible, do a second haptic for feedback
+									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+								}
 							},
 							beforeCopiedOnTap: (index) async {
 								if (index == 2) {
