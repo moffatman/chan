@@ -89,9 +89,14 @@ void showToast({
 	}
 	final theme = context.read<SavedTheme>();
 	FToast().init(context).showToast(
+		positionedToastBuilder: (context, child) => Positioned(
+			bottom: 114 + padding.bottom,
+			left: 24 + padding.left,
+			right: 24 + padding.right,
+			child: child
+		),
 		child: Container(
 			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-			margin: const EdgeInsets.only(bottom: 64) + padding,
 			decoration: BoxDecoration(
 				borderRadius: BorderRadius.circular(24),
 				color: theme.primaryColorWithBrightness(0.2)
