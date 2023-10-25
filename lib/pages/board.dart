@@ -894,7 +894,7 @@ class BoardPageState extends State<BoardPage> {
 					child: const Text('Open boards'),
 					onActivation: _selectBoard,
 				),
-				enabled: widget.allowChangingBoard,
+				enabled: settings.openBoardSwitcherSlideGesture && widget.allowChangingBoard,
 				child: PullTab(
 					key: _threadPullTabKey,
 					tab: (context.read<MasterDetailHint?>()?.currentValue != null || _lastSelectedThread == null) ? null : PullTabTab(

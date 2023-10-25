@@ -1190,6 +1190,25 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.arrow_right_square),
+						const SizedBox(width: 8),
+						const Text('Swipe to open board switcher'),
+						const SizedBox(width: 8),
+						_SettingsHelpButton(
+							helpText: 'Swipe left-to-right ${settings.androidDrawer ? 'starting on the right side of the' : 'in the'} catalog to open the board switcher.'
+						),
+						const Spacer(),
+						AdaptiveSwitch(
+							value: settings.openBoardSwitcherSlideGesture,
+							onChanged: (newValue) {
+								settings.openBoardSwitcherSlideGesture = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 16)
 			]
 		);

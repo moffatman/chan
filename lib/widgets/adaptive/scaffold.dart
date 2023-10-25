@@ -168,15 +168,16 @@ class AdaptiveScaffold extends StatelessWidget {
 	});
 
 	double _calculateWideDrawerEdgeDragWidth(BuildContext context) {
+		final factor = context.select<EffectiveSettings, bool>((s) => s.openBoardSwitcherSlideGesture) ? 0.5 : 1;
 		final twoPaneBreakpoint = context.select<EffectiveSettings, double>((s) => s.twoPaneBreakpoint);
 		final size = MediaQuery.sizeOf(context);
 		if (size.width < twoPaneBreakpoint) {
-			// Half-screen-width for one-pane
-			return size.width / 2;
+			// Based on full screen width for one-pane
+			return size.width * factor;
 		}
 		final twoPaneSplit = context.select<EffectiveSettings, int>((s) => s.twoPaneSplit) / twoPaneSplitDenominator;
-		// Half-master-pane-width for two-pane
-		return (size.width / 2) * twoPaneSplit;
+		// Based on master pane width for two-pane
+		return size.width * factor * twoPaneSplit;
 	}
 
 	@override

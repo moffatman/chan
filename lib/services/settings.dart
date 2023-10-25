@@ -1004,6 +1004,8 @@ class SavedSettings extends HiveObject {
 	bool saveThreadAutomaticallyWhenReplying;
 	@HiveField(164)
 	bool cancellableRepliesSlideGesture;
+	@HiveField(165)
+	bool openBoardSwitcherSlideGesture;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1170,6 +1172,7 @@ class SavedSettings extends HiveObject {
 		bool? watchThreadAutomaticallyWhenReplying,
 		bool? saveThreadAutomaticallyWhenReplying,
 		bool? cancellableRepliesSlideGesture,
+		bool? openBoardSwitcherSlideGesture,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1357,7 +1360,8 @@ class SavedSettings extends HiveObject {
 		cloverStyleRepliesButton = cloverStyleRepliesButton ?? false,
 		watchThreadAutomaticallyWhenReplying = watchThreadAutomaticallyWhenReplying ?? true,
 		saveThreadAutomaticallyWhenReplying = saveThreadAutomaticallyWhenReplying ?? false,
-		cancellableRepliesSlideGesture = cancellableRepliesSlideGesture ?? true {
+		cancellableRepliesSlideGesture = cancellableRepliesSlideGesture ?? true,
+		openBoardSwitcherSlideGesture = openBoardSwitcherSlideGesture ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2573,6 +2577,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get cancellableRepliesSlideGesture => _settings.cancellableRepliesSlideGesture;
 	set cancellableRepliesSlideGesture(bool setting) {
 		_settings.cancellableRepliesSlideGesture = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get openBoardSwitcherSlideGesture => _settings.openBoardSwitcherSlideGesture;
+	set openBoardSwitcherSlideGesture(bool setting) {
+		_settings.openBoardSwitcherSlideGesture = setting;
 		_settings.save();
 		notifyListeners();
 	}
