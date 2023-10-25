@@ -830,7 +830,15 @@ class _RootCustomScaleState extends State<RootCustomScale> {
 						viewInsets: mq.viewInsets * widget.scale,
 						systemGestureInsets: mq.systemGestureInsets * widget.scale,
 						viewPadding: mq.viewPadding * widget.scale,
-						padding: mq.padding * widget.scale
+						padding: mq.padding * widget.scale,
+						displayFeatures: mq.displayFeatures.map((f) => ui.DisplayFeature(
+							type: f.type,
+							state: f.state,
+							bounds: Rect.fromPoints(
+								f.bounds.topLeft * widget.scale,
+								f.bounds.bottomRight * widget.scale
+							)
+						)).toList()
 					),
 					child: child
 				)

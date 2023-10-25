@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:chan/firebase_options.dart';
 import 'package:chan/models/post.dart';
@@ -1703,6 +1704,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer;
 	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer);
 
+	Rect? get foldBounds => MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => f.type == DisplayFeatureType.fold || f.type == DisplayFeatureType.hinge)?.bounds;
+
+	bool get persistentDrawer {
+		return androidDrawer && context.select<EffectiveSettings, bool>((s) => s.persistentDrawer) && (foldBounds != null || MediaQuery.sizeOf(context).width > 700);
+	}
+
+	double get persistentDrawerWidth {
+		return foldBounds?.left ?? 304;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final hideTabletLayoutLabels = MediaQuery.sizeOf(context).height < 600;
@@ -1776,18 +1787,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						return await confirmExit();
 					},
 					child: AdaptiveScaffold(
-						drawer: androidDrawer ? const ChanceDrawer() : null,
+						drawer: (androidDrawer && !persistentDrawer) ? const ChanceDrawer(persistent: false) : null,
 						body: SafeArea(
 							top: false,
 							bottom: false,
 							child: Row(
 								children: [
-									if (!androidDrawer) Container(
-										padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top, bottom: MediaQuery.paddingOf(context).bottom),
+									if (!androidDrawer || persistentDrawer) Container(
 										color: ChanceTheme.barColorOf(context),
-										width: 85,
-										child: Column(
+										width: persistentDrawer ? persistentDrawerWidth : 85,
+										child: persistentDrawer ? const ChanceDrawer(
+											persistent: true
+										) : Column(
 											children: [
+												SizedBox(height: MediaQuery.paddingOf(context).top),
 												Expanded(
 													child: AnimatedBuilder(
 														animation: _tabs.activeBrowserTab,
@@ -1825,9 +1838,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 															secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 														), hideTabletLayoutLabels ? null : 'Settings'
 													)
-												)
+												),
+												SizedBox(height: MediaQuery.paddingOf(context).bottom)
 											]
 										)
+									),
+									if (persistentDrawer) VerticalDivider(
+										width: 0,
+										thickness: 0,
+										color: ChanceTheme.primaryColorWithBrightness20Of(context)
 									),
 									Expanded(
 										child: AnimatedBuilder(

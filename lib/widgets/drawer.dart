@@ -158,7 +158,6 @@ class _DrawerList<T extends Object> {
 							}
 							else {
 								onSelect(i);
-								Navigator.pop(context);
 							}
 						}
 					));
@@ -188,8 +187,11 @@ class _DrawerList<T extends Object> {
 final _ensuredThreads = WeakMap<PersistentThreadState, bool?>();
 
 class ChanceDrawer extends StatefulWidget {
+	final bool persistent;
+
 	const ChanceDrawer({
-		super.key
+		required this.persistent,
+		super.key,
 	});
 
 	@override
@@ -211,6 +213,12 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					_ => 2
 				}
 		);
+	}
+
+	void _afterUse() {
+		if (!widget.persistent) {
+			Navigator.pop(context);
+		}
 	}
 
 	@override
@@ -246,6 +254,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 						tabs.mainTabIndex = 0;
 					}
 					tabs.browseTabIndex = i;
+					_afterUse();
 				},
 				buildAdditionalActions: (i, tab) => [
 					TabMenuAction(
@@ -322,6 +331,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 						tabs.mainTabIndex = 0;
 					}
 					tabs.setCurrentBrowserThread(watch.imageboard.scope(watch.item.threadIdentifier), showAnimationsForward: false);
+					_afterUse();
 				}
 			);
 		}
@@ -369,6 +379,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 						tabs.mainTabIndex = 0;
 					}
 					tabs.setCurrentBrowserThread(state.imageboard!.scope(state.identifier), showAnimationsForward: false);
+					_afterUse();
 				}
 			);
 		}
@@ -377,11 +388,12 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 		final selectedButtonColor = ChanceTheme.primaryColorWithBrightness80Of(context);
 		final unselectedButtonColor = ChanceTheme.primaryColorWithBrightness20Of(context);
 		return Drawer(
+			shape: widget.persistent ? const Border() : null,
 			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.stretch,
 				children: [
 					SizedBox(
-						height: MediaQuery.paddingOf(context).top
+						height: MediaQuery.paddingOf(context).top + (ChanceTheme.materialOf(context) ? 8 : 0)
 					),
 					Row(
 						children: [
@@ -401,7 +413,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 												onPressed: () {
 													lightHapticFeedback();
 													tabs.mainTabIndex = 4;
-													Navigator.pop(context);
+													_afterUse();
 												},
 												child: StationaryNotifyingIcon(
 													primary: unseenYouCount,
@@ -421,7 +433,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 										onPressed: () {
 											lightHapticFeedback();
 											tabs.mainTabIndex = 3;
-											Navigator.pop(context);
+											_afterUse();
 										},
 										child: Icon(Icons.search, color: tabs.mainTabIndex == 3 ? backgroundColor : primaryColor)
 									)
@@ -446,7 +458,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 											onPressed: () {
 												lightHapticFeedback();
 												tabs.mainTabIndex = 2;
-												Navigator.pop(context);
+												_afterUse();
 											},
 											child: Icon(
 												context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? Icons.history : Icons.history_toggle_off,
@@ -464,7 +476,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 										onPressed: () {
 											lightHapticFeedback();
 											tabs.mainTabIndex = 1;
-											Navigator.pop(context);
+											_afterUse();
 										},
 										child: Icon(Adaptive.icons.bookmark, color: tabs.mainTabIndex == 1 ? backgroundColor : primaryColor)
 									)
@@ -546,7 +558,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 									lightHapticFeedback();
 									settings.drawerMode = DrawerMode.tabs;
 									tabs.addNewTab(activate: true);
-									Navigator.pop(context);
+									_afterUse();
 								},
 								tileColor: ChanceTheme.barColorOf(context),
 								onLongPress: () => tabs.showNewTabPopup(

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
@@ -337,7 +338,16 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		final horizontalSplit = MediaQuery.sizeOf(context).width >= settings.twoPaneBreakpoint;
+		final displayWidth = MediaQuery.sizeOf(context).width;
+		double drawerWidth = 85;
+		if (settings.persistentDrawer && settings.androidDrawer) {
+			final foldBounds = MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => (f.type == DisplayFeatureType.fold || f.type == DisplayFeatureType.hinge))?.bounds;
+			if (foldBounds != null || displayWidth > 700) {
+				drawerWidth = foldBounds?.left ?? 304;
+			}
+		}
+		// For legacy behaviour reasons, don't count 85 px of drawer width here
+		final horizontalSplit = (displayWidth + 85 - drawerWidth) >= settings.twoPaneBreakpoint;
 		final verticalSplit = !settings.verticalTwoPaneMinimumPaneSize.isNegative && MediaQuery.sizeOf(context).height >= (settings.verticalTwoPaneMinimumPaneSize * 2);
 		onePane = !(horizontalSplit || verticalSplit);
 		final masterNavigator = Provider.value(

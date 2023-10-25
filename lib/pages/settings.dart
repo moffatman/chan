@@ -1685,6 +1685,31 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					}
 				),
 				const SizedBox(height: 32),
+				IgnorePointer(
+					ignoring: !settings.androidDrawer,
+					child: Opacity(
+						opacity: settings.androidDrawer ? 1.0 : 0.5,
+						child: Row(
+							children: [
+								const Icon(CupertinoIcons.sidebar_left),
+								const SizedBox(width: 8),
+								const Text('Drawer permanently visible'),
+								const SizedBox(width: 8),
+								const _SettingsHelpButton(
+									helpText: 'The drawer will always be on the left side if there is enough space. On foldable devices, the drawer will size itself to fill the left pane of the screen.'
+								),
+								const Spacer(),
+								AdaptiveSwitch(
+									value: settings.persistentDrawer,
+									onChanged: (v) {
+										settings.persistentDrawer = v;
+									}
+								)
+							]
+						)
+					)
+				),
+				const SizedBox(height: 32),
 				const Row(
 					children: [
 						Icon(CupertinoIcons.doc),
