@@ -225,7 +225,11 @@ enum CatalogVariant {
 	@HiveField(39)
 	hackerNewsJobs,
 	@HiveField(40)
-	hackerNewsSecondChancePool
+	hackerNewsSecondChancePool,
+	@HiveField(41)
+	alphabeticByTitle,
+	@HiveField(42)
+	alphabeticByTitleReversed
 }
 
 extension CatalogVariantMetadata on CatalogVariant {
@@ -255,6 +259,9 @@ extension CatalogVariantMetadata on CatalogVariant {
 			case CatalogVariant.lastReplyByYouTime:
 			case CatalogVariant.lastReplyByYouTimeReversed:
 				return ThreadSortingMethod.imageCount;
+			case CatalogVariant.alphabeticByTitle:
+			case CatalogVariant.alphabeticByTitleReversed:
+				return ThreadSortingMethod.alphabeticByTitle;
 			default:
 				return null;
 		}
@@ -270,6 +277,7 @@ extension CatalogVariantMetadata on CatalogVariant {
 			case CatalogVariant.lastReplyTimeReversed:
 			case CatalogVariant.imageCountReversed:
 			case CatalogVariant.lastReplyByYouTimeReversed:
+			case CatalogVariant.alphabeticByTitleReversed:
 				return true;
 			default:
 				return false;
@@ -318,7 +326,9 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.hackerNewsAsk: CupertinoIcons.chat_bubble_2,
 		CatalogVariant.hackerNewsShow: CupertinoIcons.chart_bar_square,
 		CatalogVariant.hackerNewsJobs: CupertinoIcons.briefcase,
-		CatalogVariant.hackerNewsSecondChancePool: CupertinoIcons.arrow_2_circlepath
+		CatalogVariant.hackerNewsSecondChancePool: CupertinoIcons.arrow_2_circlepath,
+		CatalogVariant.alphabeticByTitle: CupertinoIcons.textformat,
+		CatalogVariant.alphabeticByTitleReversed: CupertinoIcons.textformat
 	}[this];
 	String get name => const {
 		CatalogVariant.unsorted: 'Bump order',
@@ -361,7 +371,9 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.hackerNewsAsk: 'Ask HN',
 		CatalogVariant.hackerNewsShow: 'Show HN',
 		CatalogVariant.hackerNewsJobs: 'Jobs',
-		CatalogVariant.hackerNewsSecondChancePool: 'Second Chance'
+		CatalogVariant.hackerNewsSecondChancePool: 'Second Chance',
+		CatalogVariant.alphabeticByTitle: 'A-Z by title',
+		CatalogVariant.alphabeticByTitleReversed: 'Z-A by title'
 	}[this]!;
 	bool? get hasPagedCatalog {
 		switch (this) {
@@ -391,6 +403,8 @@ extension CatalogVariantMetadata on CatalogVariant {
 			case CatalogVariant.imageCountReversed:
 			case CatalogVariant.lastReplyByYouTime:
 			case CatalogVariant.lastReplyByYouTimeReversed:
+			case CatalogVariant.alphabeticByTitle:
+			case CatalogVariant.alphabeticByTitleReversed:
 				return '';
 			default:
 				return toString();
@@ -419,6 +433,8 @@ extension CatalogVariantMetadata on CatalogVariant {
 				return reverse ? CatalogVariant.imageCountReversed : CatalogVariant.imageCount;
 			case ThreadSortingMethod.lastReplyByYouTime:
 				return reverse ? CatalogVariant.lastReplyByYouTimeReversed : CatalogVariant.lastReplyByYouTime;
+			case ThreadSortingMethod.alphabeticByTitle:
+				return reverse ? CatalogVariant.alphabeticByTitleReversed : CatalogVariant.alphabeticByTitle;
 		}
 	}
 }
@@ -1156,6 +1172,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		CatalogVariantGroup(
 			name: 'Image count',
 			variants: [CatalogVariant.imageCount, CatalogVariant.imageCountReversed],
+			hasPrimary: true
+		),
+		CatalogVariantGroup(
+			name: 'Alphabetically',
+			variants: [CatalogVariant.alphabeticByTitle, CatalogVariant.alphabeticByTitleReversed],
 			hasPrimary: true
 		)
 	];

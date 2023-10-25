@@ -1014,6 +1014,8 @@ class BoardPageState extends State<BoardPage> {
 																(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
 															else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
 																(a, b) => b.imageCount.compareTo(a.imageCount)
+															else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)
+																(a, b) => a.compareTo(b)
 														],
 														reverseSort: variant.reverseAfterSorting,
 														minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,

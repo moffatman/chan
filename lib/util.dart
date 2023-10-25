@@ -449,3 +449,50 @@ Future<T> runEphemerallyLocked<T>(String key, Future<T> Function() criticalSecti
 		}
 	}
 }
+
+extension FriendlyCompare on String {
+	/// Compare case-insensitively, ignoring leading symbols
+	int friendlyCompareTo(String other) {
+		int thisStart;
+		for (thisStart = 0; thisStart < length; thisStart++) {
+			final c = codeUnitAt(thisStart);
+			if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) {
+				break;
+			}
+		}
+		int otherStart = 0;
+		for (otherStart = 0; otherStart < other.length; otherStart++) {
+			final c = other.codeUnitAt(otherStart);
+			if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) {
+				break;
+			}
+		}
+		final thisLen = length - thisStart;
+		final otherLen = other.length - otherStart;
+		final len = (thisLen < otherLen) ? thisLen : otherLen;
+		for (int i = 0; i < len; i++) {
+			int thisC = codeUnitAt(thisStart + i);
+			int otherC = other.codeUnitAt(otherStart + i);
+			// To upper case
+			if ((thisC >= 97 && thisC <= 122)) {
+				thisC -= 32;
+			}
+			if ((otherC >= 97 && otherC <= 122)) {
+				otherC -= 32;
+			}
+			if (thisC < otherC) {
+				return -1;
+			}
+			if (thisC > otherC) {
+				return 1;
+			}
+		}
+		if (thisLen < otherLen) {
+			return -1;
+		}
+		if (thisLen > otherLen) {
+			return 1;
+		}
+		return 0;
+	}
+}

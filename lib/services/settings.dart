@@ -148,7 +148,9 @@ enum ThreadSortingMethod {
 	@HiveField(7)
 	imageCount,
 	@HiveField(8)
-	lastReplyByYouTime
+	lastReplyByYouTime,
+	@HiveField(9)
+	alphabeticByTitle
 }
 
 @HiveType(typeId: 20)

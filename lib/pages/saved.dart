@@ -84,6 +84,13 @@ Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() => _watchMutex.protec
 			return (b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread?.posts.last.time ?? d).compareTo(a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread?.posts.last.time ?? d);
 		});
 	}
+	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.alphabeticByTitle) {
+		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
+			final ta = a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread;
+			final tb = b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread;
+			return ta.compareTo(tb);
+		});
+	}
 	mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
 		if (a.item.zombie == b.item.zombie) {
 			return 0;
@@ -173,6 +180,7 @@ class _SavedPageState extends State<SavedPage> {
 								actions: {
 									ThreadSortingMethod.lastPostTime: 'Last Reply',
 									ThreadSortingMethod.lastReplyByYouTime: 'Last Reply by You',
+									ThreadSortingMethod.alphabeticByTitle: 'Alphabetically'
 								}.entries.map((entry) => AdaptiveActionSheetAction(
 									child: Text(entry.value, style: TextStyle(
 										fontWeight: entry.key == settings.watchedThreadsSortingMethod ? FontWeight.bold : null
@@ -180,6 +188,7 @@ class _SavedPageState extends State<SavedPage> {
 									onPressed: () {
 										settings.watchedThreadsSortingMethod = entry.key;
 										Navigator.of(context, rootNavigator: true).pop();
+										_watchedListController.update();
 									}
 								)).toList(),
 								cancelButton: AdaptiveActionSheetAction(
@@ -210,6 +219,7 @@ class _SavedPageState extends State<SavedPage> {
 								actions: {
 									ThreadSortingMethod.savedTime: 'Saved Date',
 									ThreadSortingMethod.lastPostTime: 'Posted Date',
+									ThreadSortingMethod.alphabeticByTitle: 'Alphabetically'
 								}.entries.map((entry) => AdaptiveActionSheetAction(
 									child: Text(entry.value, style: TextStyle(
 										fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
@@ -233,7 +243,6 @@ class _SavedPageState extends State<SavedPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
 		final persistencesAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList()), () => widget.isActive);
 		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => widget.isActive);
 		final savedPostNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => widget.isActive);
@@ -247,6 +256,7 @@ class _SavedPageState extends State<SavedPage> {
 					navigationBar: _watchedNavigationBar(),
 					icon: CupertinoIcons.bell_fill,
 					masterBuilder: (context, selected, setter) {
+						final settings = context.watch<EffectiveSettings>();
 						return RefreshableList<ImageboardScoped<ThreadWatch>>(
 							header: Column(
 								mainAxisSize: MainAxisSize.min,
@@ -514,6 +524,7 @@ class _SavedPageState extends State<SavedPage> {
 					navigationBar: _savedNavigationBar('Saved Threads'),
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
+						final settings = context.watch<EffectiveSettings>();
 						Comparator<PersistentThreadState> sortMethod = (a, b) => 0;
 						final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 						if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
@@ -521,6 +532,9 @@ class _SavedPageState extends State<SavedPage> {
 						}
 						else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
 							sortMethod = (a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate);
+						}
+						else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.alphabeticByTitle) {
+							sortMethod = (a, b) => a.thread.compareTo(b.thread);
 						}
 						return RefreshableList<PersistentThreadState>(
 							header: AnimatedBuilder(
@@ -774,6 +788,7 @@ class _SavedPageState extends State<SavedPage> {
 					navigationBar: _savedNavigationBar('Saved Posts'),
 					icon: CupertinoIcons.reply,
 					masterBuilder: (context, selected, setter) {
+						final settings = context.watch<EffectiveSettings>();
 						Comparator<ImageboardScoped<SavedPost>> sortMethod = (a, b) => 0;
 						if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
 							sortMethod = (a, b) => b.item.savedTime.compareTo(a.item.savedTime);

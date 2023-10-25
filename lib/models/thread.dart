@@ -382,3 +382,31 @@ class ThreadAdapter extends TypeAdapter<Thread> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+extension CompareTitle on Thread? {
+	int compareTo(Thread? other) {
+		final a = this;
+		final b = other;
+		if (a == null && b == null) {
+			return 0;
+		}
+		else if (a == null) {
+			return 1;
+		}
+		else if (b == null) {
+			return -1;
+		}
+		final titleA = a.title;
+		final titleB = b.title;
+		if (titleA != null && titleB != null) {
+			return titleA.friendlyCompareTo(titleB);
+		}
+		else if (titleA != null) {
+			return -1;
+		}
+		else if (titleB != null) {
+			return 1;
+		}
+		return (a.posts_.tryFirst?.text ?? '').friendlyCompareTo(b.posts_.tryFirst?.text ?? '');
+	}
+}

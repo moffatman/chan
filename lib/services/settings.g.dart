@@ -746,6 +746,8 @@ class ThreadSortingMethodAdapter extends TypeAdapter<ThreadSortingMethod> {
         return ThreadSortingMethod.imageCount;
       case 8:
         return ThreadSortingMethod.lastReplyByYouTime;
+      case 9:
+        return ThreadSortingMethod.alphabeticByTitle;
       default:
         return ThreadSortingMethod.unsorted;
     }
@@ -780,6 +782,9 @@ class ThreadSortingMethodAdapter extends TypeAdapter<ThreadSortingMethod> {
         break;
       case ThreadSortingMethod.lastReplyByYouTime:
         writer.writeByte(8);
+        break;
+      case ThreadSortingMethod.alphabeticByTitle:
+        writer.writeByte(9);
         break;
     }
   }

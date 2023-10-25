@@ -95,6 +95,10 @@ class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
         return CatalogVariant.hackerNewsJobs;
       case 40:
         return CatalogVariant.hackerNewsSecondChancePool;
+      case 41:
+        return CatalogVariant.alphabeticByTitle;
+      case 42:
+        return CatalogVariant.alphabeticByTitleReversed;
       default:
         return CatalogVariant.unsorted;
     }
@@ -225,6 +229,12 @@ class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
         break;
       case CatalogVariant.hackerNewsSecondChancePool:
         writer.writeByte(40);
+        break;
+      case CatalogVariant.alphabeticByTitle:
+        writer.writeByte(41);
+        break;
+      case CatalogVariant.alphabeticByTitleReversed:
+        writer.writeByte(42);
         break;
     }
   }
