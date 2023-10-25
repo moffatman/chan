@@ -1167,6 +1167,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_searchFocusNode.unfocus();
 		_searchController.clear();
 		setState(() {
+			_lastTreeOrder = null;
 			_searchTapped = false;
 			_searchFilter = null;
 		});
@@ -2189,6 +2190,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																		},
 																		onChanged: (searchText) {
 																			setState(() {
+																				if (searchText.isEmpty) {
+																					_lastTreeOrder = null;
+																				}
 																				_searchFilter = SearchFilter(searchText.toLowerCase());
 																			});
 																			widget.onFilterChanged?.call(searchText);
