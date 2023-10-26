@@ -455,9 +455,14 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	}
 	else if (url.path.endsWith('.webm') ||
 	         url.path.endsWith('.mkv') ||
-					 url.path.endsWith('.mp4')) {
+					 url.path.endsWith('.mp4') ||
+					 url.path.endsWith('.png') ||
+					 url.path.endsWith('.jpg') ||
+					 url.path.endsWith('.jpeg') ||
+					 url.path.endsWith('.gif')) {
 		final attachment = Attachment(
-			type: url.path.endsWith('.webm') ? AttachmentType.webm : AttachmentType.mp4,
+			type: url.path.endsWith('.webm') ? AttachmentType.webm :
+			  ['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.path.endsWith(e)) ? AttachmentType.image : AttachmentType.mp4,
 			board: '',
 			id: '',
 			ext: '.${url.path.split('.').last}',
