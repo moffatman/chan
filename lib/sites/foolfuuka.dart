@@ -210,7 +210,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		final int threadId = int.parse(data['thread_num']);
 		final int id = int.parse(data['num']);
 		_precachePostThreadId(board, id, threadId);
-		final postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]+)/');
+		final postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]{1,18})/');
 		final Map<String, int> linkedPostThreadIds = {};
 		if (resolveIds) {
 			for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
