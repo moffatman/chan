@@ -13,6 +13,9 @@ Future<T?> showAdaptiveModalPopup<T>({
 		return showModalBottomSheet<T>(
 			context: context,
 			builder: builder,
+			// Seems to be needed to be positioned above tablet keyboard
+			isScrollControlled: true,
+			enableDrag: false,
 			useRootNavigator: useRootNavigator
 		);
 	}
