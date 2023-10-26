@@ -246,10 +246,13 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _glowPost(int postId, {Duration duration = const Duration(seconds: 2)}) async {
+		if (!mounted) {
+			return;
+		}
 		_glowingPostId = postId;
 		_glowingPostsAnimation.didUpdate();
 		await Future.delayed(duration);
-		if (_glowingPostId == postId) {
+		if (mounted && _glowingPostId == postId) {
 			_glowingPostId = null;
 			_glowingPostsAnimation.didUpdate();
 		}
