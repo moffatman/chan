@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
@@ -357,8 +358,8 @@ class SiteLainchan extends ImageboardSite {
 		}
 		// This doesn't work if user has quoted someone, but it shouldn't be needed
 		int? newPostId;
-		while (newPostId == null) {
-			await Future.delayed(const Duration(seconds: 2));
+		await Future.delayed(const Duration(milliseconds: 500));
+		for (int i = 0; newPostId == null && i < 10; i++) {
 			if (threadId == null) {
 				for (final thread in (await getCatalog(board, interactive: true)).reversed) {
 					if (thread.title == subject && (thread.posts[0].span.buildText().similarityTo(text) > 0.9) && (thread.time.compareTo(now) >= 0)) {
@@ -373,6 +374,10 @@ class SiteLainchan extends ImageboardSite {
 					}
 				}
 			}
+			await Future.delayed(const Duration(seconds: 2));
+		}
+		if (newPostId == null) {
+			throw TimeoutException('Could not find post ID after submission', const Duration(seconds: 20));
 		}
 		return PostReceipt(
 			id: newPostId,
