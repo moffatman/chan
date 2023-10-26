@@ -566,9 +566,9 @@ class SearchFilter implements Filter {
 	SearchFilter(this.text);
 	@override
 	FilterResult? filter(Filterable item) {
-		return defaultPatternFields.map((field) {
+		return '${item.id} ${defaultPatternFields.map((field) {
 			return item.getFilterFieldText(field) ?? '';
-		}).join(' ').toLowerCase().contains(text) ? null : FilterResult(const FilterResultType(hide: true), 'Search for "$text"');
+		}).join(' ').toLowerCase()}'.contains(text) ? null : FilterResult(const FilterResultType(hide: true), 'Search for "$text"');
 	}
 
 	@override
