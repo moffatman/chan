@@ -145,6 +145,11 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 				builder: (context, child) => Stack(
 					fit: StackFit.expand,
 					children: [
+						// Block original tap target from re-opening
+						Positioned.fromRect(
+							rect: widget.origin,
+							child: const AbsorbPointer()
+						),
 						Listener(
 							onPointerDown: (e) => onDone(),
 							onPointerPanZoomStart: (e) => onDone(),
