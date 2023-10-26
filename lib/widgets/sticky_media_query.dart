@@ -24,7 +24,7 @@ class StickyMediaQuery extends StatefulWidget {
 
 class _StickyMediaQueryState extends State<StickyMediaQuery> {
 	Size? _lastSize;
-	final Map<Orientation, (EdgeInsets padding, EdgeInsets viewPadding)> map = {};
+	final Map<Orientation, EdgeInsets> map = {};
 
 	@override
 	Widget build(BuildContext context) {
@@ -41,24 +41,18 @@ class _StickyMediaQueryState extends State<StickyMediaQuery> {
 		_lastSize = mq.size;
 		final data = map.update(mq.orientation, (old) {
 			return (
-				mq.padding.clamp(EdgeInsets.only(
-					left: widget.left ? old.$1.left : 0,
-					top: widget.top ? old.$1.top : 0,
-					right: widget.right ? old.$1.right : 0,
-					bottom: widget.bottom ? old.$1.bottom : 0
-				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr),
-				mq.padding.clamp(EdgeInsets.only(
-					left: widget.left ? old.$2.left : 0,
-					top: widget.top ? old.$2.top : 0,
-					right: widget.right ? old.$2.right : 0,
-					bottom: widget.bottom ? old.$2.bottom : 0
+				mq.viewPadding.clamp(EdgeInsets.only(
+					left: widget.left ? old.left : 0,
+					top: widget.top ? old.top : 0,
+					right: widget.right ? old.right : 0,
+					bottom: widget.bottom ? old.bottom : 0
 				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr)
 			);
-		}, ifAbsent: () => (mq.padding, mq.viewPadding));
+		}, ifAbsent: () => mq.viewPadding);
 		return MediaQuery(
 			data: mq.copyWith(
-				padding: data.$1,
-				viewPadding: data.$2
+				padding: (data - mq.viewInsets).clamp(EdgeInsets.zero, const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr),
+				viewPadding: data
 			),
 			child: widget.child
 		);
