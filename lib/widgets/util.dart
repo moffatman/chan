@@ -934,7 +934,7 @@ class MaybeScrollbar extends StatelessWidget {
 				return Scrollbar(
 					controller: controller,
 					scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
-					thickness: 8,
+					thickness: 6,
 					interactive: true,
 					thumbVisibility: thumbVisibility,
 					child: child
@@ -945,8 +945,8 @@ class MaybeScrollbar extends StatelessWidget {
 				scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
 				radius: const Radius.circular(8),
 				radiusWhileDragging: const Radius.circular(12),
-				thickness: 8,
-				thicknessWhileDragging: 12,
+				thickness: 6,
+				thicknessWhileDragging: 10,
 				thumbVisibility: thumbVisibility,
 				child: child
 			);
