@@ -1882,7 +1882,7 @@ class ExpandingPost extends StatelessWidget {
 		final zone = context.watch<PostSpanZoneData>();
 		final post = zone.findPost(id) ?? zone.postFromArchive(id);
 		return zone.shouldExpandPost(id) ? TransformedMediaQuery(
-			transformation: (mq) => mq.copyWith(textScaler: TextScaler.noScaling),
+			transformation: (context, mq) => mq.copyWith(textScaler: TextScaler.noScaling),
 			child: (post == null) ? Center(
 				child: Text('Could not find /${zone.board}/$id')
 			) : Row(

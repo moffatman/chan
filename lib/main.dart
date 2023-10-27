@@ -295,9 +295,6 @@ class _ChanAppState extends State<ChanApp> {
 							bottom: Platform.isAndroid, // Look more at it
 							child: Builder(
 								builder: (BuildContext context) {
-									final settings = context.watch<EffectiveSettings>();
-									final mq = MediaQuery.of(context);
-									final additionalSafeAreaInsets = sumAdditionalSafeAreaInsets();
 									final scrollBehavior = const CupertinoScrollBehavior().copyWith(
 										physics: Platform.isAndroid ? const HybridScrollPhysics() :
 											(isOnMac ? const BouncingScrollPhysics(decelerationRate: ScrollDecelerationRate.fast) : const BouncingScrollPhysics())
@@ -305,18 +302,19 @@ class _ChanAppState extends State<ChanApp> {
 									final home = Builder(
 										builder: (BuildContext context) {
 											ImageboardRegistry.instance.context = context;
+											final showPerformanceOverlay = context.select<EffectiveSettings, bool>((s) => s.showPerformanceOverlay);
 											return ImageboardRegistry.instance.initialized ? Stack(
 												children: [
 													// For some unexplained reason this improves performance
 													// Maybe related to querying the framerate each frame?
-													if (!settings.showPerformanceOverlay) Positioned(
+													if (!showPerformanceOverlay) Positioned(
 														top: 0,
 														left: 0,
 														right: 0,
 														child: PerformanceOverlay.allEnabled()
 													),
 													ChanHomePage(key: _homePageKey),
-													if (settings.showPerformanceOverlay) Positioned(
+													if (showPerformanceOverlay) Positioned(
 														top: 0,
 														left: 0,
 														right: 0,
@@ -331,13 +329,13 @@ class _ChanAppState extends State<ChanApp> {
 															alertError(context, ImageboardRegistry.instance.setupStackTrace!);
 														},
 														'Resynchronize': () {
-															settings.updateContentSettings();
+															EffectiveSettings.instance.updateContentSettings();
 														},
 														'Edit content preferences': () {
-															launchUrl(Uri.parse(settings.contentSettingsUrl), mode: LaunchMode.externalApplication);
-															settings.addAppResumeCallback(() async {
+															launchUrl(Uri.parse(EffectiveSettings.instance.contentSettingsUrl), mode: LaunchMode.externalApplication);
+															EffectiveSettings.instance.addAppResumeCallback(() async {
 																await Future.delayed(const Duration(seconds: 1));
-																settings.updateContentSettings();
+																EffectiveSettings.instance.updateContentSettings();
 															});
 														}
 													}) : const ChanSplashPage()
@@ -349,34 +347,41 @@ class _ChanAppState extends State<ChanApp> {
 										DefaultCupertinoLocalizations.delegate,
 										DefaultMaterialLocalizations.delegate
 									];
-									return MediaQuery(
-										data: mq.copyWith(
-											boldText: false,
-											textScaler: ChainedLinearTextScaler(
-												parent: mq.textScaler,
-												textScaleFactor: settings.textScale
-											),
-											padding: (mq.padding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null),
-											viewPadding: (mq.viewPadding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null)
-										),
+									final materialStyle = context.select<EffectiveSettings, bool>((s) => s.materialStyle);
+									final theme = context.select<EffectiveSettings, SavedTheme>((s) => s.theme);
+									final globalFilter = context.select<EffectiveSettings, Filter>((s) => s.globalFilter);
+									final interfaceScale = context.select<EffectiveSettings, double>((s) => s.interfaceScale);
+									return TransformedMediaQuery(
+										transformation: (context, mq) {
+											final additionalSafeAreaInsets = sumAdditionalSafeAreaInsets();
+											return mq.copyWith(
+												boldText: false,
+												textScaler: ChainedLinearTextScaler(
+													parent: mq.textScaler,
+													textScaleFactor: context.select<EffectiveSettings, double>((s) => s.textScale)
+												),
+												padding: (mq.padding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null),
+												viewPadding: (mq.viewPadding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null)
+											);
+										},
 										child: RootCustomScale(
-											scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
+											scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / interfaceScale,
 											child: FilterZone(
-												filter: settings.globalFilter,
-												child: settings.materialStyle ? MaterialApp(
+												filter: globalFilter,
+												child: materialStyle ? MaterialApp(
 													title: 'Chance',
 													debugShowCheckedModeBanner: false,
-													theme: settings.theme.materialThemeData,
+													theme: theme.materialThemeData,
 													scrollBehavior: scrollBehavior,
 													home: home,
 													localizationsDelegates: localizationsDelegates,
 													navigatorKey: _navigatorKey
 												) : Theme(
-													data: settings.theme.materialThemeData,
+													data: theme.materialThemeData,
 													child: CupertinoApp(
 														title: 'Chance',
 														debugShowCheckedModeBanner: false,
-														theme: settings.theme.cupertinoThemeData,
+														theme: theme.cupertinoThemeData,
 														scrollBehavior: scrollBehavior,
 														home: home,
 														localizationsDelegates: localizationsDelegates,
@@ -1754,7 +1759,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			_devNotificationsSubscription?.subscription.cancel();
 			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen(_onDevNotificationTapped));
 		}
-		final settings = context.watch<EffectiveSettings>();
+		final filterError = context.select<EffectiveSettings, String?>((s) => s.filterError);
 		Widget child = (androidDrawer || isScreenWide) ? NotificationListener2<ScrollNotification, ScrollMetricsNotification>(
 			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(
@@ -1831,9 +1836,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												),
 												_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
 												GestureDetector(
-													onLongPress: () => settings.runQuickAction(context),
+													onLongPress: () => EffectiveSettings.instance.runQuickAction(context),
 													child: _buildTabletIcon(4, NotifyingIcon(
-															icon: Icon(CupertinoIcons.settings, color: settings.filterError != null ? Colors.red : null),
+															icon: Icon(CupertinoIcons.settings, color: filterError != null ? Colors.red : null),
 															primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
 															secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 														), hideTabletLayoutLabels ? null : 'Settings'
@@ -1939,9 +1944,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								),
 								BottomNavigationBarItem(
 									icon: GestureDetector(
-										onLongPress: () => settings.runQuickAction(context),
+										onLongPress: () => EffectiveSettings.instance.runQuickAction(context),
 										child: NotifyingIcon(
-											icon: Icon(CupertinoIcons.settings, size: 28, color: settings.filterError != null ? Colors.red : null),
+											icon: Icon(CupertinoIcons.settings, size: 28, color: filterError != null ? Colors.red : null),
 											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
 											secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 										)

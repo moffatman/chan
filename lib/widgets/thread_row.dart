@@ -434,7 +434,7 @@ class ThreadRow extends StatelessWidget {
 												),
 												...thread.posts.skip(max(1, thread.posts.length - 3)).map((post) => WidgetSpan(
 													child: TransformedMediaQuery(
-														transformation: (mq) => mq.copyWith(textScaler: TextScaler.noScaling),
+														transformation: (context, mq) => mq.copyWith(textScaler: TextScaler.noScaling),
 															child: Padding(
 															padding: const EdgeInsets.only(bottom: 16),
 															child: Row(

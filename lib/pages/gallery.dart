@@ -952,7 +952,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												itemBuilder: (context, index) {
 													final attachment = widget.attachments[index];
 													return TransformedMediaQuery(
-														transformation: (data) => data.copyWith(
+														transformation: (context, data) => data.copyWith(
 															gestureSettings: DeviceGestureSettings(
 																touchSlop: (data.gestureSettings.touchSlop ?? kTouchSlop) * 2
 															)

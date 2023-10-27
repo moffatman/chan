@@ -389,7 +389,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 									body: Stack(
 										children: [
 											TransformedMediaQuery(
-												transformation: (mq) => mq.copyWith(
+												transformation: (context, mq) => mq.copyWith(
 													padding: mq.padding + const EdgeInsets.only(top: 46),
 													viewPadding: mq.viewPadding + const EdgeInsets.only(top: 46)
 												),
@@ -535,7 +535,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 					),
 					Expanded(
 						child: TransformedMediaQuery(
-							transformation: (data) => data.removePadding(removeTop: true),
+							transformation: (context, data) => data.removePadding(removeTop: true),
 							child: Provider.value(
 								value: MasterDetailHint(
 									location: MasterDetailLocation.twoPaneVerticalDetail,

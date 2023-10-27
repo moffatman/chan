@@ -902,7 +902,7 @@ class BenchmarkBuilder extends StatelessWidget {
 
 class TransformedMediaQuery extends StatelessWidget {
 	final Widget child;
-	final MediaQueryData Function(MediaQueryData) transformation;
+	final MediaQueryData Function(BuildContext context, MediaQueryData) transformation;
 
 	const TransformedMediaQuery({
 		required this.child,
@@ -913,7 +913,7 @@ class TransformedMediaQuery extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return MediaQuery(
-			data: transformation(MediaQuery.of(context)),
+			data: transformation(context, MediaQuery.of(context)),
 			child: child
 		);
 	}
@@ -1617,7 +1617,7 @@ class TestMediaQuery extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return TransformedMediaQuery(
-			transformation: (mq) => mq.copyWith(
+			transformation: (context, mq) => mq.copyWith(
 				padding: mq.padding + edgeInsets,
 				viewPadding: mq.viewPadding + edgeInsets
 			),
