@@ -1844,7 +1844,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												}
 												focusToRestore?.requestFocus();
 											},
-											icon: Icon(picker.icon)
+											icon: Transform.scale(
+												scale: picker.iconSizeMultiplier,
+												child: Icon(picker.icon)
+											)
 										)
 									]
 								)

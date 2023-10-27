@@ -25,11 +25,13 @@ class AttachmentPickingSource {
 	final String name;
 	final IconData icon;
 	final Future<String?> Function() pick;
+	final double iconSizeMultiplier;
 
 	const AttachmentPickingSource({
 		required this.name,
 		required this.icon,
-		required this.pick
+		required this.pick,
+		this.iconSizeMultiplier = 1
 	});
 }
 
@@ -56,6 +58,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final videoCamera = AttachmentPickingSource(
 		name: 'Video Camera',
 		icon: CupertinoIcons.videocam,
+		iconSizeMultiplier: 1.4,
 		pick: () => picker.pickVideo(source: ImageSource.camera).then((x) => x?.path)
 	);
 	final web = AttachmentPickingSource(
@@ -220,9 +223,18 @@ Future<File?> pickAttachment({
 												child: Column(
 													mainAxisAlignment: MainAxisAlignment.center,
 													children: [
-														Icon(entry.icon, size: 40, color: theme.backgroundColor),
-														Flexible(
-															child: AutoSizeText(entry.name, minFontSize: 5, style: TextStyle(color: theme.backgroundColor), textAlign: TextAlign.center)
+														Expanded(
+															child: Center(
+																child: Transform.scale(
+																	scale: entry.iconSizeMultiplier,
+																	child: Icon(entry.icon, size: 40, color: theme.backgroundColor)
+																)
+															)
+														),
+														Expanded(
+															child: Center(
+																child: AutoSizeText(entry.name, minFontSize: 5, style: TextStyle(color: theme.backgroundColor), textAlign: TextAlign.center)
+															)
 														)
 													]
 												)
