@@ -112,14 +112,14 @@ class MediaScan {
 					"-i",
 					file.toStringFFMPEG(),
 				],
-				logLevel: 0
+				logLevel: 8 // AV_LOG_FATAL
 			);
-			if (result.output.isEmpty) {
-				throw const MediaScanException(0, 'No output from ffprobe');
-			}
 			if (result.returnCode != 0) {
 				// Below regexes are to cleanup some JSON junk in the output, trimming all leading and trailing non-word characters
 				throw MediaScanException(result.returnCode, result.output.replaceFirst(RegExp(r'^[^\w]*'), '').replaceFirst(RegExp(r'[^\w]*$'), ''));
+			}
+			if (result.output.isEmpty) {
+				throw const MediaScanException(0, 'No output from ffprobe');
 			}
 			final data = jsonDecode(result.output);
 			final seconds = double.tryParse(data['format']?['duration'] ?? '');
