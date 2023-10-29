@@ -859,43 +859,43 @@ packages:
     description:
       path: media_kit
       ref: main
-      resolved-ref: c964852eedbe25c5895724dfe5757f41d07b535f
+      resolved-ref: "33f4f25dd691909273ca032c22f05953483e7aa0"
       url: "https://github.com/moffatman/media-kit.git"
     source: git
-    version: "1.1.7"
+    version: "1.1.10+1"
   media_kit_libs_android_video:
     dependency: "direct main"
     description:
       path: "libs/android/media_kit_libs_android_video"
       ref: main
-      resolved-ref: c964852eedbe25c5895724dfe5757f41d07b535f
+      resolved-ref: "33f4f25dd691909273ca032c22f05953483e7aa0"
       url: "https://github.com/moffatman/media-kit.git"
     source: git
-    version: "1.3.3"
+    version: "1.3.6"
   media_kit_libs_ios_video:
     dependency: "direct main"
     description:
       path: "libs/ios/media_kit_libs_ios_video"
       ref: main
-      resolved-ref: c964852eedbe25c5895724dfe5757f41d07b535f
+      resolved-ref: "33f4f25dd691909273ca032c22f05953483e7aa0"
       url: "https://github.com/moffatman/media-kit.git"
     source: git
-    version: "1.1.3"
+    version: "1.1.4"
   media_kit_libs_macos_video:
     dependency: "direct main"
     description:
       path: "libs/macos/media_kit_libs_macos_video"
       ref: main
-      resolved-ref: c964852eedbe25c5895724dfe5757f41d07b535f
+      resolved-ref: "33f4f25dd691909273ca032c22f05953483e7aa0"
       url: "https://github.com/moffatman/media-kit.git"
     source: git
-    version: "1.1.3"
+    version: "1.1.4"
   media_kit_libs_windows_video_encoders_gpl:
     dependency: "direct main"
     description:
       path: "libs/windows/media_kit_libs_windows_video_encoders_gpl"
       ref: main
-      resolved-ref: c964852eedbe25c5895724dfe5757f41d07b535f
+      resolved-ref: "33f4f25dd691909273ca032c22f05953483e7aa0"
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.0.8"
@@ -912,10 +912,10 @@ packages:
     description:
       path: media_kit_video
       ref: main
-      resolved-ref: c964852eedbe25c5895724dfe5757f41d07b535f
+      resolved-ref: "33f4f25dd691909273ca032c22f05953483e7aa0"
       url: "https://github.com/moffatman/media-kit.git"
     source: git
-    version: "1.1.8"
+    version: "1.2.4"
   meta:
     dependency: transitive
     description:
