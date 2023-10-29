@@ -348,7 +348,7 @@ class _ChanAppState extends State<ChanApp> {
 										DefaultMaterialLocalizations.delegate
 									];
 									final materialStyle = context.select<EffectiveSettings, bool>((s) => s.materialStyle);
-									final theme = context.select<EffectiveSettings, SavedTheme>((s) => s.theme);
+									final (theme, _) = context.select<EffectiveSettings, (SavedTheme, String?)>((s) => (s.theme, s.fontFamily));
 									final globalFilter = context.select<EffectiveSettings, Filter>((s) => s.globalFilter);
 									final interfaceScale = context.select<EffectiveSettings, double>((s) => s.interfaceScale);
 									return TransformedMediaQuery(
