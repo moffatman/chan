@@ -478,6 +478,16 @@ class MediaConversion {
 				bool passedFirstEvent = false;
 				final bitrateString = '${(outputBitrate / 1000).floor()}K';
 				final results = await pool.withResource(() async {
+					final vfs = <String>[];
+					if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams && (!_isVideoToolboxSupported || _hasVideoToolboxFailed)) {
+						vfs.add('crop=trunc(iw/2)*2:trunc(ih/2)*2');
+					}
+					if (!copyStreams && newSize != null) {
+						vfs.add('scale=${newSize.$1}:${newSize.$2}');
+					}
+					if (randomizeChecksum) {
+						vfs.add('noise=alls=10:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
+					}
 					final args = [
 						'-hwaccel', 'auto',
 						if (headers.isNotEmpty && inputFile.scheme != 'file') ...[
@@ -514,12 +524,11 @@ class MediaConversion {
 							if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
 								...['-vcodec', 'h264_videotoolbox']
 							else
-								...['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'],
-						if (copyStreams) ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy']
-						else if (newSize != null) ...['-vf', 'scale=${newSize.$1}:${newSize.$2}'],
+								...['-c:v', 'libx264', '-preset', 'medium'],
+						if (copyStreams) ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy'],
 						if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 						if (removeMetadata) ...['-map_metadata', '-1'],
-						if (randomizeChecksum) ...['-vf', 'noise=alls=10:allf=t+u:all_seed=${random.nextInt(1 << 30)}'],
+						if (vfs.isNotEmpty) ...['-vf', vfs.join(',')],
 						convertedFile.path
 					];
 					print(args);
