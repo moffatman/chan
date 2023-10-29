@@ -1709,14 +1709,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer;
 	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer);
 
-	Rect? get foldBounds => MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => f.type == DisplayFeatureType.fold || f.type == DisplayFeatureType.hinge)?.bounds;
+	Rect? get hingeBounds => MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => f.type == DisplayFeatureType.hinge)?.bounds;
 
 	bool get persistentDrawer {
-		return androidDrawer && context.select<EffectiveSettings, bool>((s) => s.persistentDrawer) && (foldBounds != null || MediaQuery.sizeOf(context).width > 700);
+		return androidDrawer && context.select<EffectiveSettings, bool>((s) => s.persistentDrawer) && (hingeBounds != null || MediaQuery.sizeOf(context).width > 650);
 	}
 
 	double get persistentDrawerWidth {
-		return foldBounds?.left ?? 304;
+		return hingeBounds?.left ?? 304;
 	}
 
 	@override

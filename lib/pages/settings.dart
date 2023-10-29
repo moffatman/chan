@@ -1696,7 +1696,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								const Text('Drawer permanently visible'),
 								const SizedBox(width: 8),
 								const _SettingsHelpButton(
-									helpText: 'The drawer will always be on the left side if there is enough space. On foldable devices, the drawer will size itself to fill the left pane of the screen.'
+									helpText: 'The drawer will always be on the left side if there is enough space. On devices with a hinge, the drawer will size itself to fill the left screen.'
 								),
 								const Spacer(),
 								AdaptiveSwitch(
