@@ -100,7 +100,7 @@ class AdaptiveTextField extends StatelessWidget {
 					labelStyle: TextStyle(
 						color: ChanceTheme.primaryColorWithBrightness50Of(context)
 					).merge(placeholderStyle),
-					suffixIcon: controller == null ? suffix : AnimatedBuilder(
+					suffixIcon: (controller == null || suffix == null) ? suffix : AnimatedBuilder(
 						animation: controller!,
 						builder: (context, _) {
 							Widget? ret;
