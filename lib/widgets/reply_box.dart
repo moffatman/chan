@@ -1240,7 +1240,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									children: [
 										Flexible(
 											child: SizedBox(
-												height: 35,
+												height: settings.materialStyle ? 55 : 35,
 												child: AdaptiveTextField(
 													enabled: !settings.randomizeFilenames,
 													controller: _filenameController,
@@ -1933,7 +1933,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: showAttachmentOptions && show,
 						bottomSafe: true,
-						height: 100,
+						height: settings.materialStyle ? 125 : 100,
 						child: Focus(
 							descendantsAreFocusable: showAttachmentOptions && show,
 							child: _buildAttachmentOptions(context)
@@ -1942,7 +1942,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: showOptions && show,
 						bottomSafe: true,
-						height: settings.materialStyle ? 65 : 55,
+						height: settings.materialStyle ? 75 : 55,
 						child: Focus(
 							descendantsAreFocusable: showOptions && show,
 							child: _buildOptions(context)
