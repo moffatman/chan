@@ -226,6 +226,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 						onPressed: onSuffixTap ?? () {
 							controller?.clear();
 							focusNode?.unfocus();
+							onChanged?.call('');
 						},
 					) : null),
 					border: border,
