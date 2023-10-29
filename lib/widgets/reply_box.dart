@@ -491,7 +491,8 @@ class ReplyBoxState extends State<ReplyBox> {
 		required bool metadataPresent,
 		required bool metadataAllowed,
 		required bool randomizeChecksum,
-		required MediaConversion transcode
+		required MediaConversion transcode,
+		required bool showToastIfOnlyRandomizingChecksum
 	}) async {
 		final ext = source.path.split('.').last.toLowerCase();
 		final solutions = [
@@ -509,8 +510,9 @@ class ReplyBoxState extends State<ReplyBox> {
 			solutions.add('randomizing checksum');
 		}
 		transcode.copyStreams = solutions.isEmpty;
+		const kRandomizingChecksum = 'randomizing checksum';
 		if (metadataPresent && !metadataAllowed) {
-			solutions.add('removing metadata');
+			solutions.add(kRandomizingChecksum);
 		}
 		if (solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(ext)) {
 			return source;
@@ -531,7 +533,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 		try {
 			bool toastedStart = false;
-			Future.delayed(const Duration(milliseconds: 250), () {
+			Future.delayed(const Duration(milliseconds: 500), () {
 				if (_attachmentProgress != null) {
 					showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: Adaptive.icons.photo);
 					toastedStart = true;
@@ -542,7 +544,9 @@ class ReplyBoxState extends State<ReplyBox> {
 			setState(() {
 				_attachmentProgress = null;
 			});
-			showToast(context: context, message: 'File converted${toastedStart ? '' : ': ${solutions.join(', ')}'}', icon: CupertinoIcons.checkmark);
+			if (toastedStart || showToastIfOnlyRandomizingChecksum || solutions.trySingle != kRandomizingChecksum) {
+				showToast(context: context, message: 'File converted${toastedStart ? '' : ': ${solutions.join(', ')}'}', icon: CupertinoIcons.checkmark);
+			}
 			return result.file;
 		}
 		catch (e) {
@@ -613,7 +617,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-					randomizeChecksum: randomizeChecksum
+					randomizeChecksum: randomizeChecksum,
+					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
 				);
 			}
 			else if (ext == 'png') {
@@ -633,7 +638,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-					randomizeChecksum: randomizeChecksum
+					randomizeChecksum: randomizeChecksum,
+					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
 				);
 			}
 			else if (ext == 'gif') {
@@ -664,7 +670,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-					randomizeChecksum: randomizeChecksum
+					randomizeChecksum: randomizeChecksum,
+					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
 				);
 			}
 			else if (ext == 'mp4' || ext == 'mov') {
@@ -688,7 +695,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-					randomizeChecksum: randomizeChecksum
+					randomizeChecksum: randomizeChecksum,
+					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
 				);
 			}
 			else {
