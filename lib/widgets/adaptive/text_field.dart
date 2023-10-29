@@ -83,6 +83,7 @@ class AdaptiveTextField extends StatelessWidget {
 				controller: controller,
 				decoration: InputDecoration(
 					fillColor: ChanceTheme.textFieldColorOf(context),
+					alignLabelWithHint: (maxLines ?? 2) > 1,
 					border: OutlineInputBorder(
 						borderSide: BorderSide(
 							color: ChanceTheme.primaryColorWithBrightness70Of(context),
