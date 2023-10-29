@@ -334,6 +334,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_subjectFieldController.text = widget.initialSubject;
 			_optionsFieldController.text = widget.initialOptions ?? '';
 			attachment = null;
+			_showAttachmentOptions = false;
 			_attachmentScan = null;
 			spoiler = false;
 			flag = null;
