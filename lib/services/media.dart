@@ -389,41 +389,39 @@ class MediaConversion {
 		}
 		final stat = await file.stat();
 		MediaScan? scan;
-		if (outputFileExtension != 'jpg' && outputFileExtension != 'png') {
-			try {
-				scan = await MediaScan.scan(file.uri, headers: headers);
-			}
-			catch (e, st) {
-				print('Error scanning existing file: $e');
-				print(st);
-				return null;
-			}
+		try {
+			scan = await MediaScan.scan(file.uri, headers: headers);
 		}
-		if (stripAudio && scan!.hasAudio) {
+		catch (e, st) {
+			print('Error scanning existing file: $e');
+			print(st);
+			return null;
+		}
+		if (stripAudio && scan.hasAudio) {
 			return null;
 		}
 		if (maximumSizeInBytes != null && stat.size > maximumSizeInBytes!) {
 			return null;
 		}
-		if ((maximumDurationInSeconds != null) && (scan!.duration != null) && (scan.duration!.inSeconds > maximumDurationInSeconds!)) {
+		if ((maximumDurationInSeconds != null) && (scan.duration != null) && (scan.duration!.inSeconds > maximumDurationInSeconds!)) {
 			return null;
 		}
 		final maxDimension = maximumDimension ?? 9999999;
-		final width = scan?.width ?? 0;
-		final height = scan?.height ?? 0;
+		final width = scan.width ?? 0;
+		final height = scan.height ?? 0;
 		if (width > maxDimension || height > maxDimension) {
 			return null;
 		}
 		if (soundSource != null && isOriginalFile) {
 			return null;
 		}
-		if ((scan?.hasMetadata ?? false) && removeMetadata) {
+		if (scan.hasMetadata && removeMetadata) {
 			return null;
 		}
 		if (randomizeChecksum) {
 			return null;
 		}
-		return MediaConversionResult(file, soundSource != null || (scan?.hasAudio ?? false), scan?.isAudioOnly ?? false);
+		return MediaConversionResult(file, soundSource != null || scan.hasAudio, scan.isAudioOnly);
 	}
 
 	Future<void> start() async {
