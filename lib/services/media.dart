@@ -554,6 +554,9 @@ class MediaConversion {
 						final outputSize = (await convertedFile.stat()).size;
 						if (outputSize > maximumSizeInBytes!) {
 							_additionalScaleDownFactor += 2;
+							if (_additionalScaleDownFactor > 32) {
+								throw Exception('Failed to shrink image to fit in ${formatFilesize(maximumSizeInBytes!)}');
+							}
 							print('Too big (${formatFilesize(outputSize)} > ${formatFilesize(maximumSizeInBytes!)}), retrying with factor $_additionalScaleDownFactor');
 							await start();
 							return;
