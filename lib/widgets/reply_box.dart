@@ -597,9 +597,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			}
 			final size = (await file.stat()).size;
 			final scan = await MediaScan.scan(file.uri);
-			setState(() {
-				_attachmentProgress = null;
-			});
 			if (ext == 'jpg' || ext == 'jpeg' || ext == 'webp') {
 				file = await _showTranscodeWindow(
 					source: file,
@@ -702,6 +699,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			else {
 				throw Exception('Unsupported file type: $ext');
 			}
+			setState(() {
+				_attachmentProgress = null;
+			});
 			if (file != null) {
 				_attachmentScan = (await MediaScan.scan(file.uri), await file.stat(), await md5.bind(file.openRead()).first);
 				setState(() {
