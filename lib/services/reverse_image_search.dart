@@ -71,6 +71,18 @@ List<ContextMenuAction> buildImageSearchActions(BuildContext context, Future<Att
 				}
 			},
 			child: const Text('Search SauceNAO')
+		),
+		ContextMenuAction(
+			trailingIcon: Icons.image_search,
+			onPressed: () async {
+				final attachment = await getAttachment();
+				if (context.mounted && attachment != null) {
+					openBrowser(context, Uri.https('iqdb.org', '/', {
+						'url': attachment._urlForSearch
+					}));
+				}
+			},
+			child: const Text('Search IQDB')
 		)
 	];
 }
