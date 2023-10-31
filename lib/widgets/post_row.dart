@@ -276,6 +276,7 @@ class PostRow extends StatelessWidget {
 			settings.areMD5sHidden(latestPost.md5s)
 		);
 		final isPostHidden = isPostHiddenByThreadState || listFilterReason != null;
+		final cloverStyleRepliesButton = (settings.cloverStyleRepliesButton && replyIds.isNotEmpty && parentZone.style != PostSpanZoneStyle.tree);
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
@@ -405,7 +406,7 @@ class PostRow extends StatelessWidget {
 										}
 									)
 								)).expand((x) => [const SizedBox(height: 8), x]),
-								const SizedBox(height: 8)
+								cloverStyleRepliesButton ? const SizedBox(height: 24) : const SizedBox(height: 8)
 							]
 						)
 					)
@@ -519,7 +520,7 @@ class PostRow extends StatelessWidget {
 												children: settings.imagesOnRight ? mainRow.reversed.toList() : mainRow
 											)
 										),
-										if (settings.cloverStyleRepliesButton && replyIds.isNotEmpty && parentZone.style != PostSpanZoneStyle.tree) SizedBox(
+										if (cloverStyleRepliesButton) SizedBox(
 											height: 24 * settings.textScale
 										)
 									]
@@ -546,7 +547,7 @@ class PostRow extends StatelessWidget {
 									)
 								)
 							)
-							else if (settings.cloverStyleRepliesButton && replyIds.isNotEmpty && parentZone.style != PostSpanZoneStyle.tree) Positioned.fill(
+							else if (cloverStyleRepliesButton) Positioned.fill(
 								child: Align(
 									alignment: Alignment.bottomLeft,
 									child: AdaptiveIconButton(
