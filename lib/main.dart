@@ -1709,7 +1709,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer;
 	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer);
 
-	Rect? get hingeBounds => MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => f.type == DisplayFeatureType.hinge)?.bounds;
+	Rect? get hingeBounds => MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => f.type == DisplayFeatureType.hinge && f.bounds.left > 0 /* Only when hinge is vertical */)?.bounds;
 
 	bool get persistentDrawer {
 		return androidDrawer && context.select<EffectiveSettings, bool>((s) => s.persistentDrawer) && (hingeBounds != null || MediaQuery.sizeOf(context).width > 650);

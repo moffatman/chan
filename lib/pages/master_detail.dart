@@ -341,7 +341,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		final displayWidth = MediaQuery.sizeOf(context).width;
 		double drawerWidth = 85;
 		if (settings.persistentDrawer && settings.androidDrawer) {
-			final hingeBounds = MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => (f.type == DisplayFeatureType.hinge))?.bounds;
+			final hingeBounds = MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => (f.type == DisplayFeatureType.hinge && f.bounds.left > 0 /* Only when hinge is vertical */))?.bounds;
 			if (hingeBounds != null || displayWidth > 700) {
 				drawerWidth = hingeBounds?.left ?? 304;
 			}
