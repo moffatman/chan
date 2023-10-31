@@ -287,7 +287,7 @@ class PostRow extends StatelessWidget {
 				);
 			}
 		}
-		content(double factor) => PostSpanZone(
+		final content = PostSpanZone(
 			postId: latestPost.id,
 			style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
 			builder: (ctx) => Padding(
@@ -421,10 +421,10 @@ class PostRow extends StatelessWidget {
 					)
 				),
 				if (shrinkWrap) Flexible(
-					child: content(slideFactor)
+					child: content
 				)
 				else Expanded(
-					child: content(slideFactor)
+					child: content
 				),
 				const SizedBox(width: 8)
 			];

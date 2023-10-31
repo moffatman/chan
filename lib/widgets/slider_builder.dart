@@ -96,7 +96,7 @@ class _SliderBuilderState extends State<SliderBuilder> {
 			_claimingRecognizer.dispose();
 			_recognizingRecognizer.dispose();
 		}
-		if (mounted && !_disposing) {
+		if (mounted && !_disposing && factor > 0) {
 			setState(() {
 				factor = 0;
 			});
