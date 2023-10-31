@@ -856,6 +856,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			return;
 		}
 		await SchedulerBinding.instance.endOfFrame;
+		_setAdditionalSafeAreaInsets();
 		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && showTabPopup) {
 			setState(() {
 				showTabPopup = false;
@@ -1152,7 +1153,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Future<void> _setAdditionalSafeAreaInsets() async {
 		await setAdditionalSafeAreaInsets('main', EdgeInsets.only(
-			bottom: 60 + (_isShowingBottomBar ? 0 : 44 + (showTabPopup ? 80 : 0))
+			bottom: 60 + 44 + (showTabPopup ? 80 : 0)
 		) * EffectiveSettings.instance.interfaceScale);
 	}
 

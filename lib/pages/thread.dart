@@ -1875,6 +1875,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _lastLastVisibleIndex = -1;
 	int _lastItemsLength = 0;
 	final _animatedPaddingKey = GlobalKey(debugLabel: '_ThreadPositionIndicatorState._animatedPaddingKey');
+	late final ScrollController _menuScrollController;
 	ValueNotifier<String?>? _lastUpdatingNow;
 	late bool _useCatalogCache;
 
@@ -2074,6 +2075,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			parent: _buttonsAnimationController,
 			curve: Curves.ease
 		);
+		_menuScrollController = ScrollController();
 		widget.listController.slowScrolls.addListener(_onSlowScroll);
 		_lastUpdatingNow = widget.listController.state?.updatingNow;
 		_lastUpdatingNow?.addListener(_onUpdatingNowChange);
@@ -2158,14 +2160,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 
 	void _scheduleAdditionalSafeAreaInsetsShow() async {
 		await Future.delayed(const Duration(milliseconds: 100));
-		final box = _animatedPaddingKey.currentContext?.findRenderObject() as RenderBox?;
-		if (box != null) {
-			final bounds = Rect.fromPoints(
-				box.localToGlobal(box.paintBounds.topLeft),
-				// The padding for the primary button is already accounted for in 'main'
-				box.localToGlobal(box.paintBounds.bottomRight - const Offset(0, 50))
-			);
-			setAdditionalSafeAreaInsets('menu${widget.boardSemanticId}', EdgeInsets.only(bottom: bounds.height));
+		final scrollableHeight = _menuScrollController.tryPosition?.viewportDimension;
+		if (scrollableHeight != null) {
+			setAdditionalSafeAreaInsets('menu${widget.boardSemanticId}', EdgeInsets.only(bottom: scrollableHeight * EffectiveSettings.instance.interfaceScale));
 		}
 	}
 
@@ -2232,6 +2229,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						child: SingleChildScrollView(
 							reverse: true,
 							primary: false,
+							controller: _menuScrollController,
 							child: Column(
 								crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
 								mainAxisSize: MainAxisSize.min,
@@ -2734,6 +2732,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		widget.listController.slowScrolls.removeListener(_onSlowScroll);
 		widget.listController.state?.updatingNow.removeListener(_onUpdatingNowChange);
 		_buttonsAnimationController.dispose();
+		_menuScrollController.dispose();
 		_waitForRebuildTimer?.cancel();
 		WidgetsBinding.instance.addPostFrameCallback((_) {
 			_scheduleAdditionalSafeAreaInsetsHide();
