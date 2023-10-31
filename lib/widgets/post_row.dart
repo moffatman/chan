@@ -462,11 +462,13 @@ class PostRow extends StatelessWidget {
 										))) : null
 									)
 								),
-								const TextSpan(text: '\n'),
-								// In practice this is the height of a line of text
-								const WidgetSpan(
-									child: SizedBox.shrink()
-								)
+								if (!cloverStyleRepliesButton) ...[
+									const TextSpan(text: '\n'),
+									// In practice this is the height of a line of text
+									const WidgetSpan(
+										child: SizedBox.shrink()
+									)
+								]
 							]
 						),
 						overflow: TextOverflow.fade
@@ -639,7 +641,7 @@ class PostRow extends StatelessWidget {
 											)
 										),
 										if (cloverStyleRepliesButton) SizedBox(
-											height: 24 * settings.textScale
+											height: 48 * settings.textScale
 										)
 									]
 								)
