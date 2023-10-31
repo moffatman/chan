@@ -790,6 +790,7 @@ class _GalleryPageState extends State<GalleryPage> {
 							}
 						),
 						backgroundColor: Colors.black38,
+						brightness: Brightness.dark,
 						actions: [
 							AnimatedBuilder(
 								animation: _currentAttachmentChanged,

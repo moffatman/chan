@@ -5,6 +5,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class AdaptiveBar {
@@ -12,12 +13,14 @@ class AdaptiveBar {
 	final Widget? title;
 	final List<Widget>? actions;
 	final Color? backgroundColor;
+	final Brightness? brightness;
 	
 	const AdaptiveBar({
 		this.leadings,
 		this.title,
 		this.actions,
-		this.backgroundColor
+		this.backgroundColor,
+		this.brightness
 	});
 }
 
@@ -66,7 +69,10 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 				child: bar.title
 			),
 			actions: bar.actions,
-			backgroundColor: bar.backgroundColor
+			backgroundColor: bar.backgroundColor,
+			systemOverlayStyle: SystemUiOverlayStyle(
+				statusBarBrightness: bar.brightness ?? ChanceTheme.brightnessOf(context)
+			)
 		);
 		if (!autoHideOnScroll) {
 			return child;
@@ -94,6 +100,7 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 	final Widget? middle;
 	final Color? backgroundColor;
 	final Widget? trailing;
+	final Brightness brightness;
 	final bool autoHideOnScroll;
 
 	const _CupertinoNavigationBar({
@@ -102,7 +109,8 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 		this.leading,
 		this.middle,
 		this.backgroundColor,
-		this.trailing
+		this.trailing,
+		required this.brightness
 	});
 
 	@override
@@ -120,7 +128,8 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 			leading: leading,
 			middle: middle,
 			backgroundColor: backgroundColor,
-			trailing: trailing
+			trailing: trailing,
+			brightness: brightness
 		);
 		if (!autoHideOnScroll) {
 			return child;
@@ -239,7 +248,8 @@ class AdaptiveScaffold extends StatelessWidget {
 				trailing: bar_.actions == null ? null : Row(
 					mainAxisSize: MainAxisSize.min,
 					children: bar_.actions!
-				)
+				),
+				brightness: bar_.brightness ?? ChanceTheme.brightnessOf(context)
 			),
 			child: body
 		);
