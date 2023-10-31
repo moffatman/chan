@@ -194,7 +194,6 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _isPrimary = false;
 	StreamingMP4Conversion? _ongoingConversion;
 	final _conversionDisposers = <VoidCallback>[];
-	bool _rotate90DegreesClockwise = false;
 	bool _checkArchives = false;
 	final _showLoadingProgress = ValueNotifier<bool>(false);
 	final _longPressFactorStream = BehaviorSubject<double>();
@@ -242,8 +241,6 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool get cacheCompleted => _cachedFile != null;
 	/// Whether this attachment is currently the primary one being displayed to the user
 	bool get isPrimary => _isPrimary;
-	/// Whether to rotate the image 90 degrees clockwise
-	bool get rotate90DegreesClockwise => _rotate90DegreesClockwise;
 	/// A key to use to with ExtendedImage (to help maintain gestures when the image widget is replaced)
 	final gestureKey = GlobalKey<ExtendedImageGestureState>(debugLabel: 'AttachmentViewerController.gestureKey');
 	/// A key to use with CupertinoContextMenu share button
@@ -705,16 +702,6 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> preloadFullAttachment() => _loadFullAttachment(true);
 
-	void rotate() {
-		_rotate90DegreesClockwise = true;
-		notifyListeners();
-	}
-
-	void unrotate() {
-		_rotate90DegreesClockwise = false;
-		notifyListeners();
-	}
-
 	void onCacheCompleted(File file) {
 		_cachedFile = file;
 		attachment.sizeInBytes ??= file.statSync().size;
@@ -1152,6 +1139,17 @@ class AttachmentViewer extends StatelessWidget {
 		);
 	}
 
+	bool _rotate90DegreesClockwise(BuildContext context) {
+		if (attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf) {
+			return false;
+		}
+		if (!context.select<EffectiveSettings, bool>((s) => s.autoRotateInGallery)) {
+			return false;
+		}
+		final displayIsLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
+		return attachment.aspectRatio != 1 && displayIsLandscape != (attachment.aspectRatio > 1);
+	}
+
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
 		Uri source = controller.overrideSource ?? Uri.parse(attachment.thumbnailUrl);
 		final goodSource = controller.goodImageSource;
@@ -1241,7 +1239,7 @@ class AttachmentViewer extends StatelessWidget {
 						canvas.drawParagraph(paragraph2, transformedRect.topLeft + Offset(0, max(0, (paragraph2.height - transformedRect.height) / 2)));
 					}
 				},
-				rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
+				rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
 				loadStateChanged: (loadstate) {
 					// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
 					if (!controller.cacheCompleted || controller.showLoadingProgress.value) {
@@ -1456,6 +1454,7 @@ class AttachmentViewer extends StatelessWidget {
 	}
 
 	Widget _buildVideo(BuildContext context, Size? size) {
+		final rotate90DegreesClockwise = _rotate90DegreesClockwise(context);
 		return ExtendedImageSlidePageHandler(
 			heroBuilderForSlidingPage: controller.isPrimary ? (Widget result) {
 				return Hero(
@@ -1488,7 +1487,7 @@ class AttachmentViewer extends StatelessWidget {
 											attachment: attachment,
 											width: attachment.width?.toDouble() ?? double.infinity,
 											height: attachment.height?.toDouble() ?? double.infinity,
-											rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
+											rotate90DegreesClockwise: rotate90DegreesClockwise,
 											gaplessPlayback: true,
 											revealSpoilers: true,
 											site: controller.site
@@ -1499,7 +1498,7 @@ class AttachmentViewer extends StatelessWidget {
 							if (controller._showAudioOnly) Positioned.fill(
 								child: Center(
 									child: RotatedBox(
-										quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
+										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
 										child: Container(
 											padding: const EdgeInsets.all(8),
 											decoration: const BoxDecoration(
@@ -1539,7 +1538,7 @@ class AttachmentViewer extends StatelessWidget {
 							if (controller.videoPlayerController != null && (controller.isPrimary || !onlyRenderVideoWhenPrimary)) IgnorePointer(
 								child: Center(
 									child: RotatedBox(
-										quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
+										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
 										child: AspectRatio(
 											aspectRatio: aspectRatio,
 											child: Video(
@@ -1572,7 +1571,7 @@ class AttachmentViewer extends StatelessWidget {
 								duration: const Duration(milliseconds: 250),
 								child: (controller.overlayText != null) ? Center(
 									child: RotatedBox(
-										quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
+										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
 										child: Container(
 											padding: const EdgeInsets.all(8),
 											margin: EdgeInsets.only(
@@ -1637,7 +1636,7 @@ class AttachmentViewer extends StatelessWidget {
 							attachment: attachment,
 							width: double.infinity,
 							height: double.infinity,
-							rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
+							rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
 							gaplessPlayback: true,
 							revealSpoilers: true,
 							site: controller.site

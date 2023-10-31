@@ -389,9 +389,6 @@ class _GalleryPageState extends State<GalleryPage> {
 					_getController(nextAttachment).preloadFullAttachment();
 				}
 			}
-			if (settings.autoRotateInGallery && _rotationAppropriate(attachment.attachment) && !_getController(attachment).rotate90DegreesClockwise) {
-				_getController(attachment).rotate();
-			}
 			for (final c in _controllers.entries) {
 				c.value.isPrimary = c.key == currentAttachment;
 			}
@@ -1052,16 +1049,11 @@ class _GalleryPageState extends State<GalleryPage> {
 																		padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
 																		icon: Transform(
 																			alignment: Alignment.center,
-																			transform: !currentController.rotate90DegreesClockwise ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																			transform: !settings.autoRotateInGallery ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
 																			child: const Icon(CupertinoIcons.rotate_left)
 																		),
 																		onPressed: () {
-																			if (currentController.rotate90DegreesClockwise) {
-																				currentController.unrotate();
-																			}
-																			else {
-																				currentController.rotate();
-																			}
+																			settings.autoRotateInGallery = !settings.autoRotateInGallery;
 																			_rotationsChanged.didUpdate();
 																		}
 																	) : const SizedBox.shrink()
