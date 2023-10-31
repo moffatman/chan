@@ -140,7 +140,7 @@ public class MainActivity extends FlutterFragmentActivity {
                             boolean sufficientPermission = false;
                             for (UriPermission permission : getContentResolver().getPersistedUriPermissions()) {
                                 if (permission.getUri().equals(destination)) {
-                                    sufficientPermission = permission.isWritePermission() && (destinationSubfolders.isEmpty() || permission.isReadPermission());
+                                    sufficientPermission = permission.isWritePermission() && permission.isReadPermission();
                                 }
                             }
                             if (!sufficientPermission) {
@@ -161,7 +161,22 @@ public class MainActivity extends FlutterFragmentActivity {
                                     dir = dir.createDirectory(subdirName);
                                 }
                             }
-                            DocumentFile file = dir.createFile(MimeTypeMap.getFileExtensionFromUrl(destinationName), destinationName);
+                            String filename = destinationName;
+                            int duplicateNumber = 0;
+                            DocumentFile existing;
+                            do {
+                                if (duplicateNumber > 0) {
+                                    int dotPos = destinationName.lastIndexOf('.');
+                                    if (dotPos == -1) {
+                                        result.error("FilenameProblem", "Supplied filename has no file extension", null);
+                                        return;
+                                    }
+                                    filename = String.format("%s (%d)%s", destinationName.substring(0, dotPos), duplicateNumber, destinationName.substring(dotPos));
+                                }
+                                existing = dir.findFile(filename);
+                                duplicateNumber++;
+                            } while (existing != null);
+                            DocumentFile file = dir.createFile(MimeTypeMap.getFileExtensionFromUrl(filename), filename);
                             ParcelFileDescriptor destinationFileDescriptor = getContentResolver().openFileDescriptor(file.getUri(), "w");
                             File sourceFile = new File(sourcePath);
                             FileOutputStream destinationWriteStream = new FileOutputStream(destinationFileDescriptor.getFileDescriptor());
@@ -174,7 +189,7 @@ public class MainActivity extends FlutterFragmentActivity {
                             destinationWriteStream.close();
                             destinationFileDescriptor.close();
                             sourceReadStream.close();
-                            result.success(null);
+                            result.success(filename);
                         }
                         catch (FileNotFoundException e) {
                             result.error("FileNotFound", e.getMessage(), null);

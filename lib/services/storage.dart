@@ -27,14 +27,14 @@ class InsufficientPermissionException implements Exception {
 	String toString() => 'Storage permission expired or needs to be re-acquired for "$directory"';
 }
 
-Future<void> saveFile({
+Future<String> saveFile({
 	required String sourcePath,
 	required String destinationDir,
 	required List<String> destinationSubfolders,
 	required String destinationName
 }) async {
 	try {
-		await _platform.invokeMethod('saveFile', {
+		return await _platform.invokeMethod('saveFile', {
 			'sourcePath': sourcePath,
 			'destinationDir': destinationDir,
 			'destinationSubfolders': destinationSubfolders,

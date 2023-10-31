@@ -896,7 +896,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	Future<String?> download({bool force = false, bool saveAs = false}) async {
 		if (_isDownloaded && !force) return null;
 		final settings = context.read<EffectiveSettings>();
-		final String filename;
+		String filename;
 		bool successful = false;
 		try {
 			if (Platform.isIOS) {
@@ -923,7 +923,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				successful = true;
 			}
 			else if (Platform.isAndroid) {
-				filename = attachment.id.toString() + attachment.ext;
+				filename = _downloadFilename(false);
 				if (saveAs) {
 					final path = await saveFileAs(
 						sourcePath: getFile().path,
@@ -936,7 +936,8 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (settings.androidGallerySavePath != null) {
 						File source = getFile();
 						try {
-							await saveFile(
+							// saveFile may modify name if there is a collision
+							filename = await saveFile(
 								sourcePath: source.path,
 								destinationDir: settings.androidGallerySavePath!,
 								destinationSubfolders: settings.gallerySavePathOrganizing.subfoldersFor(this),
