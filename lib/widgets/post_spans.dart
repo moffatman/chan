@@ -1293,12 +1293,16 @@ class PostTableSpan extends PostSpan {
 		}
 		return WidgetSpan(
 			child: Table(
+				defaultColumnWidth: const IntrinsicColumnWidth(flex: 1),
 				children: rows.map((row) => TableRow(
 					children: row.map((col) => TableCell(
-						child: Text.rich(
-							col.build(context, zone, settings, theme, options),
-							textAlign: TextAlign.left,
-							textScaler: TextScaler.noScaling
+						child: Padding(
+							padding: const EdgeInsets.all(4),
+							child: Text.rich(
+								col.build(context, zone, settings, theme, options),
+								textAlign: TextAlign.left,
+								textScaler: TextScaler.noScaling
+							)
 						)
 					)).toList()
 				)).toList()
