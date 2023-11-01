@@ -14,22 +14,7 @@ import Vision
       UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    let statusBarChannel = FlutterMethodChannel(name: "com.moffatman.chan/statusBar", binaryMessenger: controller.binaryMessenger)
     var currentActivity: NSUserActivity?
-    statusBarChannel.setMethodCallHandler({
-      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-      if (call.method == "showStatusBar") {
-        application.setStatusBarHidden(false, with: UIStatusBarAnimation.fade)
-        result(nil)
-      }
-      else if (call.method == "hideStatusBar") {
-        application.setStatusBarHidden(true, with: UIStatusBarAnimation.fade)
-        result(nil)
-      }
-      else {
-        result(FlutterMethodNotImplemented)
-      }
-    })
     appleChannel = FlutterMethodChannel(name: "com.moffatman.chan/apple", binaryMessenger: controller.binaryMessenger)
     appleChannel!.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in

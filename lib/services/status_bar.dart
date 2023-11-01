@@ -1,40 +1,26 @@
-import 'dart:io';
-
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-const _platform = MethodChannel('com.moffatman.chan/statusBar');
-
 Future<void> showStatusBar() async {
-	if (Platform.isIOS) {
-		await _platform.invokeMethod('showStatusBar');
+	if (EffectiveSettings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
+		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 	}
 	else {
-		if (EffectiveSettings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
-			await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-		}
-		else {
-			_guessWorkaround();
-			await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-		}
+		_guessWorkaround();
+		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 	}
 }
 
 Future<void> hideStatusBar() async {
-	if (Platform.isIOS) {
-		await _platform.invokeMethod('hideStatusBar');
+	if (EffectiveSettings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
+		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 	}
 	else {
-		if (EffectiveSettings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
-			await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-		}
-		else {
-			_guessWorkaround();
-			await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-		}
+		_guessWorkaround();
+		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 	}
 }
 
