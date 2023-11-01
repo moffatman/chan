@@ -631,7 +631,11 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	void _showGallery({bool initiallyShowChrome = false, TaggedAttachment? initialAttachment}) {
+	void _showGallery({
+		bool initiallyShowChrome = false,
+		TaggedAttachment? initialAttachment,
+		bool initiallyShowGrid = false
+	}) {
 		final commonParentIds = [widget.boardSemanticId, 0];
 		List<TaggedAttachment> attachments = _listController.items.expand((item) {
 			if (item.representsStubChildren) {
@@ -673,6 +677,7 @@ class ThreadPageState extends State<ThreadPage> {
 			isAttachmentAlreadyDownloaded: persistentState.isAttachmentDownloaded,
 			onAttachmentDownload: persistentState.didDownloadAttachment,
 			initiallyShowChrome: initiallyShowChrome,
+			initiallyShowGrid: initiallyShowGrid,
 			initialAttachment: initialAttachment,
 			onChange: (attachment) {
 				if (!_listController.scrollControllerPositionLooksGood) {
@@ -687,6 +692,24 @@ class ThreadPageState extends State<ThreadPage> {
 			},
 			heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 		);
+	}
+
+	void _showGalleryFromNextImage({
+		bool initiallyShowGrid = false
+	}) {
+		if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
+			RefreshableListItem<Post>? nextPostWithImage = _listController.items.skip(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
+			nextPostWithImage ??= _listController.items.take(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
+			if (nextPostWithImage != null) {
+				_showGallery(
+					initialAttachment: TaggedAttachment(
+						attachment: nextPostWithImage.item.attachments.first,
+						semanticParentIds: [widget.boardSemanticId, 0].followedBy(nextPostWithImage.parentIds)
+					),
+					initiallyShowGrid: initiallyShowGrid
+				);
+			}
+		}
 	}
 
 	Widget _limitCounter(int value, int? maximum) {
@@ -1370,16 +1393,7 @@ class ThreadPageState extends State<ThreadPage> {
 															if (_listController.state?.searchHasFocus ?? false) {
 																return;
 															}
-															if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
-																RefreshableListItem<Post>? nextPostWithImage = _listController.items.skip(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
-																nextPostWithImage ??= _listController.items.take(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
-																if (nextPostWithImage != null) {
-																	_showGallery(initialAttachment: TaggedAttachment(
-																		attachment: nextPostWithImage.item.attachments.first,
-																		semanticParentIds: [widget.boardSemanticId, 0].followedBy(nextPostWithImage.parentIds)
-																	));
-																}
-															}
+															_showGalleryFromNextImage();
 															return null;
 														}
 													)
@@ -1706,6 +1720,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			cachedAttachments: _cached,
 																			attachmentsCachingQueue: _cachingQueue,
 																			startCaching: () => _cacheAttachments(automatic: false),
+																			openGalleryGrid: () => _showGalleryFromNextImage(initiallyShowGrid: true),
 																			suggestedThread: _suggestedNewGeneral == null ? null : (
 																				label: _suggestedNewGeneral?.$2 ?? '',
 																				onAccept: () {
@@ -1826,6 +1841,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 	final Map<Attachment, bool> cachedAttachments;
 	final List<Attachment> attachmentsCachingQueue;
 	final VoidCallback startCaching;
+	final VoidCallback openGalleryGrid;
 	final SuggestedNewThread? suggestedThread;
 	
 	const ThreadPositionIndicator({
@@ -1845,6 +1861,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 		required this.cachedAttachments,
 		required this.attachmentsCachingQueue,
 		required this.startCaching,
+		required this.openGalleryGrid,
 		required this.suggestedThread,
 		this.developerModeButtons = const [],
 		Key? key
@@ -2203,6 +2220,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		final uncachedMB = (widget.cachedAttachments.entries.map((e) => e.value ? 0 : e.key.sizeInBytes ?? 0).fold(0, (a, b) => a + b) / (1024*1024));
 		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value && e.key.sizeInBytes == null);
 		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
+		final showGalleryGridButton = context.select<EffectiveSettings, bool>((s) => s.showGalleryGridButton);
+		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
 			children: [
@@ -2258,7 +2277,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											);
 										})],
 										[(
-											describeCount((widget.thread?.imageCount ?? 0) + 1, 'image'),
+											describeCount(realImageCount, 'image'),
 											const RotatedBox(
 												quarterTurns: 1,
 												child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
@@ -2624,6 +2643,24 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												child: Icon(CupertinoIcons.exclamationmark, color: theme.backgroundColor, size: 19)
 											),
 											const SizedBox(width: 8)
+										],
+										if (showGalleryGridButton && realImageCount > 1) ...[
+											AdaptiveFilledButton(
+												padding: const EdgeInsets.all(8),
+												onPressed: widget.openGalleryGrid,
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													crossAxisAlignment: CrossAxisAlignment.center,
+													children: [
+														Icon(CupertinoIcons.square_grid_2x2, size: 19, color: theme.backgroundColor),
+														const SizedBox(width: 4),
+														Text(describeCount(realImageCount, 'image'), style: TextStyle(
+															color: theme.backgroundColor
+														))
+													]
+												)
+											),
+											const SizedBox(width: 8),
 										],
 										GestureDetector(
 											onLongPress: () {

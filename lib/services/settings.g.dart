@@ -295,13 +295,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       cancellableRepliesSlideGesture: fields[164] as bool?,
       openBoardSwitcherSlideGesture: fields[165] as bool?,
       persistentDrawer: fields[166] as bool?,
+      showGalleryGridButton: fields[167] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(163)
+      ..writeByte(164)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -627,7 +628,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(165)
       ..write(obj.openBoardSwitcherSlideGesture)
       ..writeByte(166)
-      ..write(obj.persistentDrawer);
+      ..write(obj.persistentDrawer)
+      ..writeByte(167)
+      ..write(obj.showGalleryGridButton);
   }
 
   @override

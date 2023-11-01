@@ -110,6 +110,7 @@ class GalleryPage extends StatefulWidget {
 	final bool useHeroDestinationWidget;
 	final bool heroOtherEndIsBoxFitCover;
 	final List<ContextMenuAction> Function(TaggedAttachment)? additionalContextMenuActionsBuilder;
+	final bool initiallyShowGrid;
 
 	const GalleryPage({
 		required this.attachments,
@@ -129,6 +130,7 @@ class GalleryPage extends StatefulWidget {
 		this.useHeroDestinationWidget = false,
 		required this.heroOtherEndIsBoxFitCover,
 		this.additionalContextMenuActionsBuilder,
+		this.initiallyShowGrid = false,
 		Key? key
 	}) : super(key: key);
 
@@ -163,17 +165,23 @@ class _GalleryPageState extends State<GalleryPage> {
 	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
 	bool _gridViewDesynced = false;
 	bool _thumbnailsDesynced = false;
+	/// To prevent Hero when entering with grid initially enabled
+	bool _doneInitialTransition = false;
 
 	@override
 	void initState() {
 		super.initState();
+		if (widget.initiallyShowGrid) {
+			// Hard to mute if loud when grid is covering
+			EffectiveSettings.instance.setMuteAudio(true);
+		}
 		_scrollCoalescer = BehaviorSubject();
 		_slideListenable = EasyListenable();
 		_shouldShowPosition = ValueNotifier(false);
 		_currentAttachmentChanged = EasyListenable();
 		_rotationsChanged = EasyListenable();
 		_scrollSheetController = DraggableScrollableController();
-		showChrome = widget.initiallyShowChrome;
+		showChrome = widget.initiallyShowGrid || widget.initiallyShowChrome;
 		currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
 		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
@@ -186,6 +194,13 @@ class _GalleryPageState extends State<GalleryPage> {
 			});
 		}
 		_updateOverlays(showChrome);
+		Future.delayed(const Duration(milliseconds: 500), () {
+			if (mounted) {
+				setState(() {
+					_doneInitialTransition = true;
+				});
+			}
+		});
 	}
 
 	void _initializeScrollSheetScrollControllers() {
@@ -964,32 +979,35 @@ class _GalleryPageState extends State<GalleryPage> {
 																		_currentAttachmentChanged.didUpdate();
 																	});
 																},
-																child: AttachmentViewer(
-																	controller: _getController(attachment),
-																	onScaleChanged: (scale) {
-																		if (scale > 1 && !_hideRotateButton) {
-																			setState(() {
-																				_hideRotateButton = true;
+																child: HeroMode(
+																	enabled: !widget.initiallyShowGrid || _doneInitialTransition,
+																	child: AttachmentViewer(
+																		controller: _getController(attachment),
+																		onScaleChanged: (scale) {
+																			if (scale > 1 && !_hideRotateButton) {
+																				setState(() {
+																					_hideRotateButton = true;
+																				});
+																			}
+																			else if (scale <= 1 && _hideRotateButton) {
+																				setState(() {
+																					_hideRotateButton = false;
+																				});
+																			}
+																		},
+																		semanticParentIds: attachment.semanticParentIds,
+																		onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
+																			_getController(attachment).loadFullAttachment().then((x) {
+																				if (!mounted) return;
+																				_currentAttachmentChanged.didUpdate();
 																			});
-																		}
-																		else if (scale <= 1 && _hideRotateButton) {
-																			setState(() {
-																				_hideRotateButton = false;
-																			});
-																		}
-																	},
-																	semanticParentIds: attachment.semanticParentIds,
-																	onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																		_getController(attachment).loadFullAttachment().then((x) {
-																			if (!mounted) return;
-																			_currentAttachmentChanged.didUpdate();
-																		});
-																	},
-																	layoutInsets: layoutInsets,
-																	allowContextMenu: widget.allowContextMenu,
-																	useHeroDestinationWidget: widget.useHeroDestinationWidget,
-																	heroOtherEndIsBoxFitCover: widget.heroOtherEndIsBoxFitCover,
-																	additionalContextMenuActions: widget.additionalContextMenuActionsBuilder?.call(attachment) ?? []
+																		},
+																		layoutInsets: layoutInsets,
+																		allowContextMenu: widget.allowContextMenu,
+																		useHeroDestinationWidget: widget.useHeroDestinationWidget,
+																		heroOtherEndIsBoxFitCover: widget.heroOtherEndIsBoxFitCover,
+																		additionalContextMenuActions: widget.additionalContextMenuActionsBuilder?.call(attachment) ?? []
+																	)
 																)
 															)
 														)
@@ -1103,7 +1121,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													key: _draggableScrollableSheetKey,
 													snap: true,
 													snapAnimationDuration: const Duration(milliseconds: 200),
-													initialChildSize: _minScrollSheetSize,
+													initialChildSize: widget.initiallyShowGrid ? _maxScrollSheetSize : _minScrollSheetSize,
 													maxChildSize: _maxScrollSheetSize,
 													minChildSize: _minScrollSheetSize,
 													controller: _scrollSheetController,
@@ -1150,6 +1168,7 @@ Future<Attachment?> showGalleryPretagged({
 	ValueChanged<Attachment>? onAttachmentDownload,
 	TaggedAttachment? initialAttachment,
 	bool initiallyShowChrome = false,
+	bool initiallyShowGrid = false,
 	bool allowChrome = true,
 	bool allowContextMenu = true,
 	ValueChanged<TaggedAttachment>? onChange,
@@ -1174,6 +1193,7 @@ Future<Attachment?> showGalleryPretagged({
 				onAttachmentDownload: onAttachmentDownload,
 				initialAttachment: initialAttachment,
 				initiallyShowChrome: initiallyShowChrome,
+				initiallyShowGrid: initiallyShowGrid,
 				onChange: onChange,
 				allowChrome: allowChrome,
 				allowContextMenu: allowContextMenu,
@@ -1205,6 +1225,7 @@ Future<Attachment?> showGallery({
 	required Iterable<int> semanticParentIds,
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
+	bool initiallyShowGrid = false,
 	bool allowChrome = true,
 	bool allowContextMenu = true,
 	ValueChanged<Attachment>? onChange,
@@ -1228,6 +1249,7 @@ Future<Attachment?> showGallery({
 		semanticParentIds: semanticParentIds
 	),
 	initiallyShowChrome: initiallyShowChrome,
+	initiallyShowGrid: initiallyShowGrid,
 	allowChrome: allowChrome,
 	allowContextMenu: allowContextMenu,
 	onChange: onChange == null ? null : (x) => onChange(x.attachment),

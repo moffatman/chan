@@ -3518,6 +3518,22 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.square_grid_2x2),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Show gallery grid button in catalog and thread')
+						),
+						AdaptiveSwitch(
+							value: settings.showGalleryGridButton,
+							onChanged: (newValue) {
+								settings.showGalleryGridButton = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 16)
 			]
 		);

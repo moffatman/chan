@@ -457,6 +457,34 @@ class BoardPageState extends State<BoardPage> {
 		}
 	);
 
+	void _showGalleryFromNextImage({bool initiallyShowGrid = false}) {
+		if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
+			final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.item.attachments.isNotEmpty, orElse: () {
+				return _listController.items.firstWhere((t) => t.item.attachments.isNotEmpty);
+			});
+			final attachments = _listController.items.expand((_) => _.item.attachments).toList();
+			showGallery(
+				context: context,
+				attachments: attachments,
+				replyCounts: {
+					for (final thread in _listController.items)
+						for (final attachment in thread.item.attachments)
+							attachment: thread.item.replyCount
+				},
+				initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.item.attachments.any((a2) => a2.id == a.id)),
+				onChange: (attachment) {
+					if (_listController.state?.searching ?? false) {
+						return;
+					}
+					_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
+				},
+				semanticParentIds: [widget.semanticId],
+				initiallyShowGrid: initiallyShowGrid,
+				heroOtherEndIsBoxFitCover: true//settings.useCatalogGrid
+			);
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final selectedThread = context.watch<MasterDetailHint?>()?.currentValue;
@@ -922,30 +950,7 @@ class BoardPageState extends State<BoardPage> {
 													if (_listController.state?.searchHasFocus ?? false) {
 														return;
 													}
-													if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
-														final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.item.attachments.isNotEmpty, orElse: () {
-															return _listController.items.firstWhere((t) => t.item.attachments.isNotEmpty);
-														});
-														final attachments = _listController.items.expand((_) => _.item.attachments).toList();
-														showGallery(
-															context: context,
-															attachments: attachments,
-															replyCounts: {
-																for (final thread in _listController.items)
-																	for (final attachment in thread.item.attachments)
-																		attachment: thread.item.replyCount
-															},
-															initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.item.attachments.any((a2) => a2.id == a.id)),
-															onChange: (attachment) {
-																if (_listController.state?.searching ?? false) {
-																	return;
-																}
-																_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
-															},
-															semanticParentIds: [widget.semanticId],
-															heroOtherEndIsBoxFitCover: true//settings.useCatalogGrid
-														);
-													}
+													_showGalleryFromNextImage();
 												}
 											},
 											child: site == null ? const Center(
@@ -1070,50 +1075,65 @@ class BoardPageState extends State<BoardPage> {
 																_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
 																final scrollAnimationDuration = context.select<EffectiveSettings, bool>((s) => s.showAnimations) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
 																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: scrollAnimationDuration, curve: Curves.ease);
+																final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
 																return SafeArea(
 																	child: Align(
 																		alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
 																		child: Padding(
 																			padding: const EdgeInsets.all(16),
-																			child: GestureDetector(
-																				onLongPress: () {
-																					lightHapticFeedback();
-																					_listController.animateTo((item) => false, orElseLast: (item) => true, alignment: 1.0, duration: scrollAnimationDuration);
-																				},
-																				child: AdaptiveFilledButton(
-																					onPressed: () async {
-																						lightHapticFeedback();
-																						if (_searching) {
-																							_listController.state?.closeSearch();
-																						}
-																						else {
-																							await scrollToTop();
-																							_page = _listController.items.first.item.currentPage ?? 1;
-																						}
-																					},
-																					color: ChanceTheme.primaryColorWithBrightness80Of(context),
-																					padding: const EdgeInsets.all(8),
-																					child: Row(
-																						mainAxisSize: MainAxisSize.min,
-																						children: _searching ? [
-																							Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
-																							const SizedBox(width: 8),
-																							Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
-																						] : [
-																							Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
-																							SizedBox(
-																								width: 25,
-																								child: Text(
-																									_page.toString(),
-																									textAlign: TextAlign.center,
-																									style: TextStyle(
-																										color: ChanceTheme.backgroundColorOf(context)
+																			child: Row(
+																				mainAxisSize: MainAxisSize.min,
+																				children: [
+																					if (settings.showGalleryGridButton && realImageCount > 1) ...[
+																						AdaptiveFilledButton(
+																							padding: const EdgeInsets.all(8),
+																							color: ChanceTheme.primaryColorWithBrightness80Of(context),
+																							onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
+																							child: Icon(CupertinoIcons.square_grid_2x2, size: 24, color: ChanceTheme.backgroundColorOf(context))
+																						),
+																						const SizedBox(width: 8),
+																					],
+																					GestureDetector(
+																						onLongPress: () {
+																							lightHapticFeedback();
+																							_listController.animateTo((item) => false, orElseLast: (item) => true, alignment: 1.0, duration: scrollAnimationDuration);
+																						},
+																						child: AdaptiveFilledButton(
+																							onPressed: () async {
+																								lightHapticFeedback();
+																								if (_searching) {
+																									_listController.state?.closeSearch();
+																								}
+																								else {
+																									await scrollToTop();
+																									_page = _listController.items.first.item.currentPage ?? 1;
+																								}
+																							},
+																							color: ChanceTheme.primaryColorWithBrightness80Of(context),
+																							padding: const EdgeInsets.all(8),
+																							child: Row(
+																								mainAxisSize: MainAxisSize.min,
+																								children: _searching ? [
+																									Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
+																									const SizedBox(width: 8),
+																									Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
+																								] : [
+																									Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
+																									SizedBox(
+																										width: 25,
+																										child: Text(
+																											_page.toString(),
+																											textAlign: TextAlign.center,
+																											style: TextStyle(
+																												color: ChanceTheme.backgroundColorOf(context)
+																											)
+																										)
 																									)
-																								)
+																								]
 																							)
-																						]
+																						)
 																					)
-																				)
+																				]
 																			)
 																		)
 																	)

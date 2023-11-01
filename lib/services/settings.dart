@@ -1008,6 +1008,8 @@ class SavedSettings extends HiveObject {
 	bool openBoardSwitcherSlideGesture;
 	@HiveField(166)
 	bool persistentDrawer;
+	@HiveField(167)
+	bool showGalleryGridButton;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1176,6 +1178,7 @@ class SavedSettings extends HiveObject {
 		bool? cancellableRepliesSlideGesture,
 		bool? openBoardSwitcherSlideGesture,
 		bool? persistentDrawer,
+		bool? showGalleryGridButton,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1365,7 +1368,8 @@ class SavedSettings extends HiveObject {
 		saveThreadAutomaticallyWhenReplying = saveThreadAutomaticallyWhenReplying ?? false,
 		cancellableRepliesSlideGesture = cancellableRepliesSlideGesture ?? true,
 		openBoardSwitcherSlideGesture = openBoardSwitcherSlideGesture ?? true,
-		persistentDrawer = persistentDrawer ?? false {
+		persistentDrawer = persistentDrawer ?? false,
+		showGalleryGridButton = showGalleryGridButton ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2595,6 +2599,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get persistentDrawer => _settings.persistentDrawer;
 	set persistentDrawer(bool setting) {
 		_settings.persistentDrawer = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showGalleryGridButton => _settings.showGalleryGridButton;
+	set showGalleryGridButton(bool setting) {
+		_settings.showGalleryGridButton = setting;
 		_settings.save();
 		notifyListeners();
 	}
