@@ -2129,6 +2129,43 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.list_bullet_below_rectangle),
+						const SizedBox(width: 8),
+						Expanded(
+							child: Text.rich(
+								TextSpan(
+									children: [
+										const TextSpan(text: 'Centered post thumbnails\n'),
+										TextSpan(text: 'Size: ${settings.centeredPostThumbnailSizeSetting.abs().round()}x${settings.centeredPostThumbnailSizeSetting.abs().round()}', style: TextStyle(
+											color: settings.centeredPostThumbnailSizeSetting.isNegative ? ChanceTheme.primaryColorWithBrightness50Of(context) : ChanceTheme.primaryColorWithBrightness80Of(context)
+										))
+									]
+								)
+							)
+						),
+						AdaptiveSwitch(
+							value: !settings.centeredPostThumbnailSizeSetting.isNegative,
+							onChanged: (newValue) {
+								settings.centeredPostThumbnailSizeSetting = settings.centeredPostThumbnailSizeSetting.abs() * (newValue ? 1 : -1);
+							}
+						)
+					]
+				),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: Slider.adaptive(
+						min: 100,
+						max: 1000,
+						divisions: 36,
+						value: settings.centeredPostThumbnailSizeSetting.abs(),
+						onChanged: settings.centeredPostThumbnailSizeSetting.isNegative ? null : (newValue) {
+							settings.centeredPostThumbnailSizeSetting = newValue;
+						}
+					)
+				),
+				const SizedBox(height: 16),
+				Row(
+					children: [
 						const Icon(CupertinoIcons.brightness),
 						const SizedBox(width: 8),
 						const Expanded(

@@ -1010,6 +1010,8 @@ class SavedSettings extends HiveObject {
 	bool persistentDrawer;
 	@HiveField(167)
 	bool showGalleryGridButton;
+	@HiveField(168)
+	double centeredPostThumbnailSize;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1179,6 +1181,7 @@ class SavedSettings extends HiveObject {
 		bool? openBoardSwitcherSlideGesture,
 		bool? persistentDrawer,
 		bool? showGalleryGridButton,
+		double? centeredPostThumbnailSize,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1369,7 +1372,8 @@ class SavedSettings extends HiveObject {
 		cancellableRepliesSlideGesture = cancellableRepliesSlideGesture ?? true,
 		openBoardSwitcherSlideGesture = openBoardSwitcherSlideGesture ?? true,
 		persistentDrawer = persistentDrawer ?? false,
-		showGalleryGridButton = showGalleryGridButton ?? false {
+		showGalleryGridButton = showGalleryGridButton ?? false,
+		centeredPostThumbnailSize = centeredPostThumbnailSize ?? -300 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2606,6 +2610,19 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showGalleryGridButton => _settings.showGalleryGridButton;
 	set showGalleryGridButton(bool setting) {
 		_settings.showGalleryGridButton = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double? get centeredPostThumbnailSize {
+		if (_settings.centeredPostThumbnailSize <= 0) {
+			return null;
+		}
+		return _settings.centeredPostThumbnailSize;
+	}
+	double get centeredPostThumbnailSizeSetting => _settings.centeredPostThumbnailSize;
+	set centeredPostThumbnailSizeSetting(double setting) {
+		_settings.centeredPostThumbnailSize = setting;
 		_settings.save();
 		notifyListeners();
 	}

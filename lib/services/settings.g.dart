@@ -296,13 +296,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       openBoardSwitcherSlideGesture: fields[165] as bool?,
       persistentDrawer: fields[166] as bool?,
       showGalleryGridButton: fields[167] as bool?,
+      centeredPostThumbnailSize: fields[168] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(164)
+      ..writeByte(165)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -630,7 +631,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(166)
       ..write(obj.persistentDrawer)
       ..writeByte(167)
-      ..write(obj.showGalleryGridButton);
+      ..write(obj.showGalleryGridButton)
+      ..writeByte(168)
+      ..write(obj.centeredPostThumbnailSize);
   }
 
   @override

@@ -230,8 +230,9 @@ class PostRow extends StatelessWidget {
 		final receipt = parentZoneThreadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
 		final isYourPost = revealYourPosts && receipt != null || (parentZoneThreadState?.postsMarkedAsYou.contains(post.id) ?? false);
 		Border? border;
-		final List<Attachment> largeAttachments = largeImageWidth == null ? [] : latestPost.attachments.where((a) => a.type == AttachmentType.image).toList();
-		final List<Attachment> smallAttachments = largeImageWidth == null ? latestPost.attachments : latestPost.attachments.where((a) => a.type != AttachmentType.image).toList();
+		final largeImageWidth = this.largeImageWidth ?? settings.centeredPostThumbnailSize;
+		final List<Attachment> largeAttachments = largeImageWidth == null ? [] : latestPost.attachments;
+		final List<Attachment> smallAttachments = largeImageWidth == null ? latestPost.attachments : [];
 		if (isYourPost && showYourPostBorder) {
 			border = Border(
 				left: BorderSide(color: theme.secondaryColor, width: 10)
@@ -397,7 +398,8 @@ class PostRow extends StatelessWidget {
 												shrinkHeight: !settings.squareThumbnails,
 												showIconInCorner: (
 													backgroundColor: theme.backgroundColor,
-													borderColor: theme.primaryColorWithBrightness(0.2)
+													borderColor: theme.primaryColorWithBrightness(0.2),
+													size: null
 												)
 											)
 										),
@@ -498,16 +500,34 @@ class PostRow extends StatelessWidget {
 												)
 											)
 										),
-										if (largeAttachments.isNotEmpty) ...largeAttachments.map((a) => Center(
+										if (largeAttachments.isNotEmpty) ...largeAttachments.map((a) => Align(
 											child: Padding(
 												padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
-												child: AttachmentThumbnail(
-													attachment: a,
-													revealSpoilers: revealSpoilerImages,
-													width: largeImageWidth,
-													height: largeImageWidth,
-													shrinkHeight: true,
-													overrideFullQuality: true
+												child: CupertinoButton(
+													padding: EdgeInsets.zero,
+													minSize: 0,
+													onPressed: () {
+														onThumbnailTap?.call(a);
+													},
+													child: AttachmentThumbnail(
+														attachment: a,
+														revealSpoilers: revealSpoilerImages,
+														onLoadError: onThumbnailLoadError,
+														thread: latestPost.threadIdentifier,
+														width: largeImageWidth,
+														height: largeImageWidth,
+														shrinkHeight: true,
+														overrideFullQuality: true,
+														hero: TaggedAttachment(
+															attachment: a,
+															semanticParentIds: parentZone.stackIds
+														),
+														showIconInCorner: (
+															backgroundColor: theme.backgroundColor,
+															borderColor: theme.primaryColorWithBrightness(0.2),
+															size: (largeImageWidth ?? 300) / 10
+														)
+													)
 												)
 											)
 										))

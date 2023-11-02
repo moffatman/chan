@@ -382,7 +382,8 @@ class ThreadRow extends StatelessWidget {
 										shrinkHeight: !settings.squareThumbnails,
 										showIconInCorner: (
 											backgroundColor: backgroundColor,
-											borderColor: borderColor
+											borderColor: borderColor,
+											size: null
 										)
 									)
 								),

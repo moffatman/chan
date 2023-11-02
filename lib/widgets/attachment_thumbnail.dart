@@ -56,7 +56,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final ImageboardSite? site;
 	final bool shrinkHeight;
 	final bool? overrideFullQuality;
-	final ({Color backgroundColor, Color borderColor})? showIconInCorner;
+	final ({Color backgroundColor, Color borderColor, double? size})? showIconInCorner;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -160,23 +160,23 @@ class AttachmentThumbnail extends StatelessWidget {
 					if (icon == null) {
 						return;
 					}
+					final fontSize = showIconInCorner?.size ?? 16;
 					TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
 					textPainter.text = TextSpan(
 						text: String.fromCharCode(icon.codePoint),
 						style: TextStyle(
-							fontSize: 16,
+							fontSize: fontSize,
 							fontFamily: icon.fontFamily,
 							color: primaryColor,
 							package: icon.fontPackage
 						)
 					);
 					textPainter.layout();
-					textPainter.size;
-					final badgeSize = const EdgeInsets.all(2).inflateSize(Size.square(textPainter.size.longestSide));
+					final badgeSize = EdgeInsets.all(fontSize / 8).inflateSize(Size.square(textPainter.size.longestSide));
 					final badgeRect = (rect.bottomRight - (Offset.zero & badgeSize).bottomRight) & badgeSize;
 					final rrect = RRect.fromRectAndCorners(
 						badgeRect,
-						topLeft: const Radius.circular(6)
+						topLeft: Radius.circular(fontSize * 0.375)
 					);
 					canvas.drawRRect(rrect, Paint()
 						..color = showIconInCorner!.backgroundColor
