@@ -85,6 +85,16 @@ class ThreadCounters extends StatelessWidget {
 				crossAxisAlignment: CrossAxisAlignment.center,
 				children: [
 					if (showChrome) const SizedBox(width: 4),
+					if (threadState?.youIds.contains(thread.id) ?? false) ...[
+						Text(
+							'(You)',
+							style: TextStyle(
+								fontWeight: FontWeight.w600,
+								color: theme.secondaryColor
+							)
+						),
+						const SizedBox(width: 4)
+					],
 					if (latestThread.isSticky) ... [
 						Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
 						const SizedBox(width: 4),
