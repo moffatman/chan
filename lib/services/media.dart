@@ -92,63 +92,74 @@ class MediaScan {
 	static final _boxLock = Mutex();
 
 	static Future<MediaScan> _scan(Uri file, {
-		Map<String, String> headers = const {}
+		Map<String, String> headers = const {},
+		int tries = 0
 	}) async {
-		return await _ffprobeLock.protect<MediaScan>(() async {
-			final result = await FFTools.ffprobe(
-				arguments: [
-					"-v",
-					"error",
-					"-hide_banner",
-					"-print_format",
-					"json",
-					"-show_format",
-					"-show_streams",
-					"-show_chapters",
-					if (headers.isNotEmpty) ...[
-						"-headers",
-						headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+		try {
+			return await _ffprobeLock.protect<MediaScan>(() async {
+				final result = await FFTools.ffprobe(
+					arguments: [
+						"-v",
+						"error",
+						"-hide_banner",
+						"-print_format",
+						"json",
+						"-show_format",
+						"-show_streams",
+						"-show_chapters",
+						if (headers.isNotEmpty) ...[
+							"-headers",
+							headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+						],
+						"-i",
+						file.toStringFFMPEG(),
 					],
-					"-i",
-					file.toStringFFMPEG(),
-				],
-				logLevel: 8 // AV_LOG_FATAL
-			);
-			if (result.returnCode != 0) {
-				// Below regexes are to cleanup some JSON junk in the output, trimming all leading and trailing non-word characters
-				throw MediaScanException(result.returnCode, result.output.replaceFirst(RegExp(r'^[^\w]*'), '').replaceFirst(RegExp(r'[^\w]*$'), ''));
-			}
-			if (result.output.isEmpty) {
-				throw const MediaScanException(0, 'No output from ffprobe');
-			}
-			final data = jsonDecode(result.output);
-			final seconds = double.tryParse(data['format']?['duration'] ?? '');
-			int width = 0;
-			int height = 0;
-			double? videoFramerate;
-			for (final stream in (data['streams'] as List<dynamic>)) {
-				width = max(width, stream['width'] ?? 0);
-				height = max(height, stream['height'] ?? 0);
-				if (stream['codec_type'] == 'video') {
-					final avgFramerateFractionString = stream['avg_frame_rate'] as String?;
-					final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
-					if (match != null) {
-						videoFramerate = int.parse(match.group(1)!) / int.parse(match.group(2)!);
+					logLevel: 8 // AV_LOG_FATAL
+				);
+				if (result.returnCode != 0) {
+					// Below regexes are to cleanup some JSON junk in the output, trimming all leading and trailing non-word characters
+					throw MediaScanException(result.returnCode, result.output.replaceFirst(RegExp(r'^[^\w]*'), '').replaceFirst(RegExp(r'[^\w]*$'), ''));
+				}
+				if (result.output.isEmpty) {
+					throw const MediaScanException(0, 'No output from ffprobe');
+				}
+				final data = jsonDecode(result.output);
+				final seconds = double.tryParse(data['format']?['duration'] ?? '');
+				int width = 0;
+				int height = 0;
+				double? videoFramerate;
+				for (final stream in (data['streams'] as List<dynamic>)) {
+					width = max(width, stream['width'] ?? 0);
+					height = max(height, stream['height'] ?? 0);
+					if (stream['codec_type'] == 'video') {
+						final avgFramerateFractionString = stream['avg_frame_rate'] as String?;
+						final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
+						if (match != null) {
+							videoFramerate = int.parse(match.group(1)!) / int.parse(match.group(2)!);
+						}
 					}
 				}
+				return MediaScan(
+					hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
+					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
+					bitrate: int.tryParse(data['format']?['bit_rate'] ?? ''),
+					width: width == 0 ? null : width,
+					height: height == 0 ? null : height,
+					codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
+					videoFramerate: videoFramerate,
+					sizeInBytes: int.tryParse(data['format']?['size'] ?? ''),
+					metadata: data['format']?['tags']
+				);
+			});
+		}
+		on FormatException {
+			if (tries < 3) {
+				return _scan(file, headers: headers, tries: tries + 1);
 			}
-			return MediaScan(
-				hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
-				duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
-				bitrate: int.tryParse(data['format']?['bit_rate'] ?? ''),
-				width: width == 0 ? null : width,
-				height: height == 0 ? null : height,
-				codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
-				videoFramerate: videoFramerate,
-				sizeInBytes: int.tryParse(data['format']?['size'] ?? ''),
-				metadata: data['format']?['tags']
-			);
-		});
+			else {
+				rethrow;
+			}
+		}
 	}
 
 	static Future<void> _closeBox() async {
