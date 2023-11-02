@@ -1012,6 +1012,8 @@ class SavedSettings extends HiveObject {
 	bool showGalleryGridButton;
 	@HiveField(168)
 	double centeredPostThumbnailSize;
+	@HiveField(169)
+	bool ellipsizeLongFilenamesOnPosts;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1182,6 +1184,7 @@ class SavedSettings extends HiveObject {
 		bool? persistentDrawer,
 		bool? showGalleryGridButton,
 		double? centeredPostThumbnailSize,
+		bool? ellipsizeLongFilenamesOnPosts,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1373,7 +1376,8 @@ class SavedSettings extends HiveObject {
 		openBoardSwitcherSlideGesture = openBoardSwitcherSlideGesture ?? true,
 		persistentDrawer = persistentDrawer ?? false,
 		showGalleryGridButton = showGalleryGridButton ?? false,
-		centeredPostThumbnailSize = centeredPostThumbnailSize ?? -300 {
+		centeredPostThumbnailSize = centeredPostThumbnailSize ?? -300,
+		ellipsizeLongFilenamesOnPosts = ellipsizeLongFilenamesOnPosts ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2623,6 +2627,13 @@ class EffectiveSettings extends ChangeNotifier {
 	double get centeredPostThumbnailSizeSetting => _settings.centeredPostThumbnailSize;
 	set centeredPostThumbnailSizeSetting(double setting) {
 		_settings.centeredPostThumbnailSize = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get ellipsizeLongFilenamesOnPosts => _settings.ellipsizeLongFilenamesOnPosts;
+	set ellipsizeLongFilenamesOnPosts(bool setting) {
+		_settings.ellipsizeLongFilenamesOnPosts = setting;
 		_settings.save();
 		notifyListeners();
 	}

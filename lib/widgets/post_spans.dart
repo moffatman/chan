@@ -1930,7 +1930,7 @@ Iterable<TextSpan> _makeAttachmentInfo({
 	for (final attachment in post.attachments) {
 		if (settings.showFilenameOnPosts && attachment.filename.isNotEmpty) {
 			final ellipsizedFilename = attachment.ellipsizedFilename;
-			if (ellipsizedFilename != null) {
+			if (ellipsizedFilename != null && settings.ellipsizeLongFilenamesOnPosts) {
 				yield TextSpan(
 					text: '$ellipsizedFilename ',
 					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {

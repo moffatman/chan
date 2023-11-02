@@ -297,13 +297,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       persistentDrawer: fields[166] as bool?,
       showGalleryGridButton: fields[167] as bool?,
       centeredPostThumbnailSize: fields[168] as double?,
+      ellipsizeLongFilenamesOnPosts: fields[169] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(165)
+      ..writeByte(166)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -633,7 +634,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(167)
       ..write(obj.showGalleryGridButton)
       ..writeByte(168)
-      ..write(obj.centeredPostThumbnailSize);
+      ..write(obj.centeredPostThumbnailSize)
+      ..writeByte(169)
+      ..write(obj.ellipsizeLongFilenamesOnPosts);
   }
 
   @override

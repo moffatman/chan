@@ -2354,6 +2354,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
+																const Text('Truncate long filenames'),
+																const Spacer(),
+																AdaptiveSwitch(
+																	value: settings.ellipsizeLongFilenamesOnPosts,
+																	onChanged: (d) => settings.ellipsizeLongFilenamesOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
 																const Text('Show filesize'),
 																const Spacer(),
 																AdaptiveSwitch(
