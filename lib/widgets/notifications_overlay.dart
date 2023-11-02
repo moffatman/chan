@@ -69,6 +69,10 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 	}
 
 	void _newNotification(Imageboard imageboard, PushNotification notification) async {
+		if (imageboard.persistence.getThreadStateIfExists(notification.target.thread)?.youIds.contains(notification.target.postId) ?? false) {
+			// Push server won race first, don't show this notification
+			return;
+		}
 		final autoCloseAnimation = AnimationController(
 			vsync: this,
 			duration: widget.fadeTime
