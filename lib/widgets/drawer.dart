@@ -139,7 +139,6 @@ class _DrawerList<T extends Object> {
 										showUndoToast(
 											context: context,
 											message: data.message,
-											icon: Icons.close,
 											onUndo: data.onUndo
 										);
 									}
@@ -169,7 +168,6 @@ class _DrawerList<T extends Object> {
 							showUndoToast(
 								context: context,
 								message: data.message,
-								icon: Icons.close,
 								onUndo: data.onUndo == null ? null : () {
 									_undoId++;
 									data.onUndo?.call();

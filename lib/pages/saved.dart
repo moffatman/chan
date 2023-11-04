@@ -312,7 +312,6 @@ class _SavedPageState extends State<SavedPage> {
 														showUndoToast(
 															context: context,
 															message: 'Unwatched',
-															icon: CupertinoIcons.xmark,
 															onUndo: () {
 																watch.imageboard.notifications.subscribeToThread(
 																	thread: watch.item.threadIdentifier,
@@ -470,7 +469,6 @@ class _SavedPageState extends State<SavedPage> {
 															showUndoToast(
 																context: context,
 																message: 'Removed ${describeCount(toRemove.length, 'watch', plural: 'watches')}',
-																icon: CupertinoIcons.xmark,
 																onUndo: () => _watchMutex.protectWrite(() async {
 																	_watchedListController.update(); // Should wait until mutex releases
 																	for (final watch in toRemove) {
@@ -599,7 +597,6 @@ class _SavedPageState extends State<SavedPage> {
 													showUndoToast(
 														context: context,
 														message: 'Unsaved',
-														icon: CupertinoIcons.xmark,
 														onUndo: () {
 															state.savedTime = oldSavedTime ?? DateTime.now();
 															state.save();
@@ -1015,7 +1012,6 @@ class _SavedPageState extends State<SavedPage> {
 													showUndoToast(
 														context: context,
 														message: 'Deleted ${describeCount(list.length, 'attachment')}',
-														icon: CupertinoIcons.xmark,
 														onUndo: () {
 															actuallyDelete = false;
 															// Restore all the objects

@@ -275,7 +275,6 @@ Future<String?> selectThemeKey({
 																			showUndoToast(
 																				context: context,
 																				message: 'Deleted ${removed.key}',
-																				icon: CupertinoIcons.trash,
 																				onUndo: () {
 																					settings.themes[removed.key] = removed.value;
 																					settings.handleThemesAltered();

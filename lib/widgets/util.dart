@@ -78,7 +78,7 @@ Future<void> alertError(BuildContext context, String error, {
 void showToast({
 	required BuildContext context,
 	required String message,
-	required IconData icon,
+	required IconData? icon,
 	bool hapticFeedback = true,
 	Widget? button,
 	Duration duration = const Duration(seconds: 2),
@@ -104,8 +104,10 @@ void showToast({
 			child: Row(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Icon(icon, color: theme.primaryColor),
-					const SizedBox(width: 12),
+					if (icon != null) Padding(
+						padding: const EdgeInsets.only(right: 12),
+						child: Icon(icon, color: theme.primaryColor),
+					),
 					Flexible(
 						child: Text(
 							message,
@@ -128,7 +130,6 @@ void showToast({
 void showUndoToast({
 	required BuildContext context,
 	required String message,
-	required IconData icon,
 	required VoidCallback? onUndo,
 	EdgeInsets padding = EdgeInsets.zero
 }) {
@@ -136,7 +137,7 @@ void showUndoToast({
 	showToast(
 		context: context,
 		message: message,
-		icon: icon,
+		icon: null,
 		button: onUndo == null ? null : StatefulBuilder(
 			builder: (context, setState) => AdaptiveIconButton(
 				padding: EdgeInsets.zero,

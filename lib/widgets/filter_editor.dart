@@ -746,7 +746,6 @@ class _FilterEditorState extends State<FilterEditor> {
 											showUndoToast(
 												context: context,
 												message: 'Deleted filter',
-												icon: CupertinoIcons.trash,
 												onUndo: () {
 													lines.insert(filter.key, removed);
 													settings.filterConfiguration = lines.join('\n');

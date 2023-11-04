@@ -171,7 +171,6 @@ class HistoryPageState extends State<HistoryPage> {
 													showUndoToast(
 														context: context,
 														message: 'Deleted ${describeCount(toDelete.length, 'thread')}',
-														icon: CupertinoIcons.delete,
 														onUndo: () async {
 															for (final state in toDelete) {
 																await Persistence.sharedThreadStateBox.put(state.boxKey, state);
@@ -259,7 +258,6 @@ class HistoryPageState extends State<HistoryPage> {
 														showUndoToast(
 															context: context,
 															message: 'Thread hidden',
-															icon: CupertinoIcons.eye_slash,
 															onUndo: () async {
 																state.showInHistory = true;
 																await state.save();
@@ -280,7 +278,6 @@ class HistoryPageState extends State<HistoryPage> {
 														showUndoToast(
 															context: context,
 															message: 'Removed thread',
-															icon: CupertinoIcons.xmark,
 															onUndo: () async {
 																await Persistence.sharedThreadStateBox.put(state.boxKey, state);
 																_listController.update();

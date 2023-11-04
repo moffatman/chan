@@ -748,7 +748,6 @@ class ChanTabs extends ChangeNotifier {
 								showUndoToast(
 									context: context,
 									message: 'Closed ${describeCount(beforeRemove.length - 1, 'tab')}',
-									icon: CupertinoIcons.xmark_square,
 									onUndo: () {
 										for (final pair in beforeRemove.entries) {
 											if (pair.key != indexToPreserve) {
@@ -1508,7 +1507,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									showUndoToast(
 										context: context,
 										message: 'Closed tab',
-										icon: CupertinoIcons.xmark,
 										onUndo: closedTab.board == null ? null : () {
 											_tabs.insertInitializedTab(-1 * index, closedTab);
 											_tabs.browseTabIndex = previouslyActiveTab;
