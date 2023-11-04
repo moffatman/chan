@@ -685,20 +685,26 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					}
 				),
 				const SizedBox(height: 32),
-				Row(
+				const Row(
 					children: [
-						const Icon(CupertinoIcons.volume_off),
-						const SizedBox(width: 8),
-						const Expanded(
-							child: Text('Always start videos with sound muted')
-						),
-						AdaptiveSwitch(
-							value: settings.alwaysStartVideosMuted,
-							onChanged: (newValue) {
-								settings.alwaysStartVideosMuted = newValue;
-							}
+						Icon(CupertinoIcons.volume_off),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Automatically mute audio')
 						)
 					]
+				),
+				const SizedBox(height: 16),
+				AdaptiveChoiceControl<TristateSystemSetting>(
+					children: const {
+						TristateSystemSetting.a: (null, 'Never'),
+						TristateSystemSetting.system: (null, 'When opening gallery without headphones'),
+						TristateSystemSetting.b: (null, 'When opening gallery')
+					},
+					groupValue: settings.muteAudioWhenOpeningGallery,
+					onValueChanged: (newValue) {
+						settings.muteAudioWhenOpeningGallery = newValue;
+					}
 				),
 				if (EffectiveSettings.featureWebmTranscodingForPlayback) ...[
 					const SizedBox(height: 32),

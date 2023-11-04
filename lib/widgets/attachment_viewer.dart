@@ -645,10 +645,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (controller != null) {
 					_hideVideoPlayerController = false;
 					if (_isDisposed) return;
-					if (settings.muteAudio.value || settings.alwaysStartVideosMuted) {
-						if (!settings.muteAudio.value) {
-							settings.setMuteAudio(true);
-						}
+					if (settings.muteAudio.value) {
 						await controller.player.setVolume(0);
 						if (_isDisposed) return;
 					}
@@ -968,7 +965,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			_hideVideoPlayerController = false;
 			await _ensureController().player.open(Media(newFile.path), play: false);
 			if (_isDisposed) return;
-			final mute = oldState?.volume.isZero ?? settings.muteAudio.value || settings.alwaysStartVideosMuted;
+			final mute = oldState?.volume.isZero ?? settings.muteAudio.value;
 			if (mute) {
 				if (!settings.muteAudio.value) {
 					settings.setMuteAudio(true);

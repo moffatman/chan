@@ -843,7 +843,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(85)
 	bool useFullWidthForCatalogCounters;
 	@HiveField(86)
-	bool alwaysStartVideosMuted;
+	bool? deprecatedAlwaysStartVideosMuted;
 	@HiveField(87)
 	bool allowSwipingInGallery;
 	@HiveField(88)
@@ -1014,6 +1014,8 @@ class SavedSettings extends HiveObject {
 	double centeredPostThumbnailSize;
 	@HiveField(169)
 	bool ellipsizeLongFilenamesOnPosts;
+	@HiveField(170)
+	TristateSystemSetting muteAudioWhenOpeningGallery;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1101,7 +1103,7 @@ class SavedSettings extends HiveObject {
 		String? darkThemeKey,
 		List<String>? hostsToOpenExternally,
 		bool? useFullWidthForCatalogCounters,
-		bool? alwaysStartVideosMuted,
+		this.deprecatedAlwaysStartVideosMuted,
 		bool? allowSwipingInGallery,
 		SettingsQuickAction? settingsQuickAction,
 		bool? useHapticFeedback,
@@ -1185,6 +1187,7 @@ class SavedSettings extends HiveObject {
 		bool? showGalleryGridButton,
 		double? centeredPostThumbnailSize,
 		bool? ellipsizeLongFilenamesOnPosts,
+		TristateSystemSetting? muteAudioWhenOpeningGallery,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1303,7 +1306,6 @@ class SavedSettings extends HiveObject {
 			'youtu.be'
 		],
 		useFullWidthForCatalogCounters = useFullWidthForCatalogCounters ?? false,
-		alwaysStartVideosMuted = alwaysStartVideosMuted ?? false,
 		allowSwipingInGallery = allowSwipingInGallery ?? true,
 		settingsQuickAction = settingsQuickAction ?? SettingsQuickAction.toggleTheme,
 		useHapticFeedback = useHapticFeedback ?? true,
@@ -1377,7 +1379,11 @@ class SavedSettings extends HiveObject {
 		persistentDrawer = persistentDrawer ?? false,
 		showGalleryGridButton = showGalleryGridButton ?? false,
 		centeredPostThumbnailSize = centeredPostThumbnailSize ?? -300,
-		ellipsizeLongFilenamesOnPosts = ellipsizeLongFilenamesOnPosts ?? true {
+		ellipsizeLongFilenamesOnPosts = ellipsizeLongFilenamesOnPosts ?? true,
+		muteAudioWhenOpeningGallery = muteAudioWhenOpeningGallery ?? switch (deprecatedAlwaysStartVideosMuted) {
+			true => TristateSystemSetting.b,
+			false || null => TristateSystemSetting.a
+		} {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2075,13 +2081,6 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get alwaysStartVideosMuted => _settings.alwaysStartVideosMuted;
-	set alwaysStartVideosMuted(bool setting) {
-		_settings.alwaysStartVideosMuted = setting;
-		_settings.save();
-		notifyListeners();
-	}
-
 	bool get allowSwipingInGallery => _settings.allowSwipingInGallery;
 	set allowSwipingInGallery(bool setting) {
 		_settings.allowSwipingInGallery = setting;
@@ -2634,6 +2633,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get ellipsizeLongFilenamesOnPosts => _settings.ellipsizeLongFilenamesOnPosts;
 	set ellipsizeLongFilenamesOnPosts(bool setting) {
 		_settings.ellipsizeLongFilenamesOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	TristateSystemSetting get muteAudioWhenOpeningGallery => _settings.muteAudioWhenOpeningGallery;
+	set muteAudioWhenOpeningGallery(TristateSystemSetting setting) {
+		_settings.muteAudioWhenOpeningGallery = setting;
 		_settings.save();
 		notifyListeners();
 	}

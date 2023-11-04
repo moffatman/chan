@@ -1,4 +1,5 @@
 import UIKit
+import AVFAudio
 import Flutter
 import Foundation
 import Vision
@@ -202,6 +203,16 @@ import Vision
         else {
           result(FlutterError.init(code: "OS", message: "iOS version too low to support text recognition", details: nil))
         }
+      }
+      else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    let audioChannel = FlutterMethodChannel(name: "com.moffatman.chan/audio", binaryMessenger: controller.binaryMessenger)
+    audioChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if (call.method == "areHeadphonesPluggedIn") {
+        result(AVAudioSession.sharedInstance().currentRoute.outputs.contains(where: {$0.portType == .headphones || $0.portType == .bluetoothLE || $0.portType == .bluetoothA2DP || $0.portType == .bluetoothHFP}))
       }
       else {
         result(FlutterMethodNotImplemented)

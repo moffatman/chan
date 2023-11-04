@@ -214,7 +214,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       darkThemeKey: fields[83] as String?,
       hostsToOpenExternally: (fields[84] as List?)?.cast<String>(),
       useFullWidthForCatalogCounters: fields[85] as bool?,
-      alwaysStartVideosMuted: fields[86] as bool?,
+      deprecatedAlwaysStartVideosMuted: fields[86] as bool?,
       allowSwipingInGallery: fields[87] as bool?,
       settingsQuickAction: fields[88] as SettingsQuickAction?,
       useHapticFeedback: fields[89] as bool?,
@@ -298,13 +298,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showGalleryGridButton: fields[167] as bool?,
       centeredPostThumbnailSize: fields[168] as double?,
       ellipsizeLongFilenamesOnPosts: fields[169] as bool?,
+      muteAudioWhenOpeningGallery: fields[170] as TristateSystemSetting?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(166)
+      ..writeByte(167)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -470,7 +471,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(85)
       ..write(obj.useFullWidthForCatalogCounters)
       ..writeByte(86)
-      ..write(obj.alwaysStartVideosMuted)
+      ..write(obj.deprecatedAlwaysStartVideosMuted)
       ..writeByte(87)
       ..write(obj.allowSwipingInGallery)
       ..writeByte(88)
@@ -636,7 +637,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(168)
       ..write(obj.centeredPostThumbnailSize)
       ..writeByte(169)
-      ..write(obj.ellipsizeLongFilenamesOnPosts);
+      ..write(obj.ellipsizeLongFilenamesOnPosts)
+      ..writeByte(170)
+      ..write(obj.muteAudioWhenOpeningGallery);
   }
 
   @override

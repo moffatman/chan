@@ -6,6 +6,7 @@ import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/audio.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/reverse_image_search.dart';
@@ -1158,6 +1159,43 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 }
 
+Future<void> handleMutingBeforeShowingGallery() async {
+	if (Persistence.settings.deprecatedAlwaysStartVideosMuted ?? false) {
+		// User previously had "Always start videos muted", but now unmuting once
+		// will keep it unmuted while the gallery is open. Should let them know to
+		// be safe.
+		Future.delayed(const Duration(seconds: 1), () {
+			alert(
+				ImageboardRegistry.instance.context!,
+				'Muting behaviour has changed',
+				'You had the "always start videos muted" settings enabled, but now that only will apply once when opening the gallery. Swiping between images will not re-mute. Just letting you know to be safe...'
+			);
+		});
+		Persistence.settings.deprecatedAlwaysStartVideosMuted = false;
+		Persistence.settings.save();
+	}
+	if (EffectiveSettings.instance.muteAudio.value) {
+		// Already muted
+		return;
+	}
+	final shouldMute = EffectiveSettings.instance.muteAudioWhenOpeningGallery;
+	if (shouldMute == TristateSystemSetting.a) {
+		// Don't auto-mute
+		return;
+	}
+	if (shouldMute == TristateSystemSetting.b) {
+		// Always auto-mte
+		EffectiveSettings.instance.setMuteAudio(true);
+		return;
+	}
+	// TristateSystemSetting.system
+	// Mute if on speakers
+	if (await areHeadphonesPluggedIn()) {
+		return;
+	}
+	EffectiveSettings.instance.setMuteAudio(true);
+}
+
 Future<Attachment?> showGalleryPretagged({
 	required BuildContext context,
 	required List<TaggedAttachment> attachments,
@@ -1180,6 +1218,7 @@ Future<Attachment?> showGalleryPretagged({
 }) async {
 	final imageboard = context.read<Imageboard>();
 	final navigator = fullscreen ? Navigator.of(context, rootNavigator: true) : context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context);
+	await handleMutingBeforeShowingGallery();
 	final lastSelected = await navigator.push(TransparentRoute<Attachment>(
 		builder: (ctx) => ImageboardScope(
 			imageboardKey: null,

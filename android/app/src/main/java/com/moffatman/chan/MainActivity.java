@@ -6,6 +6,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.UriPermission;
+import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
@@ -24,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 
 import io.flutter.embedding.android.FlutterFragmentActivity;
@@ -34,6 +37,8 @@ public class MainActivity extends FlutterFragmentActivity {
     private static final String STORAGE_CHANNEL = "com.moffatman.chan/storage";
     private static final String NOTIFICATIONS_CHANNEL = "com.moffatman.chan/notifications";
     private static final String CLIPBOARD_CHANNEL = "com.moffatman.chan/clipboard";
+
+    private static final String AUDIO_CHANNEL = "com.moffatman.chan/audio";
     private MethodChannel.Result folderResult;
 
     private MethodChannel.Result saveFileAsResult;
@@ -257,6 +262,30 @@ public class MainActivity extends FlutterFragmentActivity {
                                 }
                             }
                             result.success(null);
+                        } else {
+                            result.notImplemented();
+                        }
+                    }
+                    catch (Exception e) {
+                        result.error("JAVA_EXCEPTION", e.getMessage(), null);
+                    }
+                }
+        );
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), AUDIO_CHANNEL).setMethodCallHandler(
+                (call, result) -> {
+                    try {
+                        if (call.method.equals("areHeadphonesPluggedIn")) {
+                            AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+                            result.success(Arrays.stream(audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)).anyMatch((device) -> {
+                                switch (device.getType()) {
+                                    case AudioDeviceInfo.TYPE_WIRED_HEADSET:
+                                    case AudioDeviceInfo.TYPE_WIRED_HEADPHONES:
+                                    case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
+                                    case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+                                        return true;
+                                }
+                                return false;
+                            }));
                         } else {
                             result.notImplemented();
                         }

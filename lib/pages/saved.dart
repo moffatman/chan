@@ -957,7 +957,13 @@ class _SavedPageState extends State<SavedPage> {
 																}
 															)
 														),
-														onTap: () => setter(list[i])
+														onTap: () async {
+															if (context.read<MasterDetailHint?>()?.currentValue == null) {
+																// First use of gallery
+																await handleMutingBeforeShowingGallery();
+															}
+															setter(list[i]);
+														}
 													)
 												)
 											),
