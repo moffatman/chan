@@ -289,7 +289,7 @@ class MediaConversion {
 		Uri? soundSource,
 		bool removeMetadata = false,
 		bool randomizeChecksum = false,
-		bool copyVideoStream = false
+		bool copyStreams = false
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -298,22 +298,7 @@ class MediaConversion {
 			maximumDurationInSeconds: maximumDurationInSeconds,
 			maximumDimension: maximumDimension,
 			stripAudio: stripAudio,
-			extraOptions: [
-				'-c:a', 'libvorbis',
-				if (copyVideoStream) ...[
-					'-vcodec', 'copy'
-				]
-				else if (Platform.isAndroid) ...[
-					// Android phones are not fast enough for VP9 encoding, use VP8
-					'-c:v', 'libvpx',
-					'-cpu-used', '2'
-				]
-				else ...[
-					'-c:v', 'libvpx-vp9',
-					'-cpu-used', '3',
-					'-threads', sqrt(Platform.numberOfProcessors).ceil().toString()
-				]
-			],
+			copyStreams: copyStreams,
 			headers: headers,
 			soundSource: soundSource,
 			removeMetadata: removeMetadata,
@@ -520,7 +505,26 @@ class MediaConversion {
 						else if (outputFileExtension != 'png') ...['-b:v', bitrateString],
 						if (outputFileExtension == 'webm') ...[
 							'-minrate', bitrateString,
-							'-maxrate', bitrateString
+							'-maxrate', bitrateString,
+							if (copyStreams && soundSource == null) ...[
+								'-acodec', 'copy'
+							]
+							else ...[
+								'-c:a', 'libvorbis',
+							],
+							if (copyStreams) ...[
+								'-vcodec', 'copy'
+							]
+							else if (Platform.isAndroid) ...[
+								// Android phones are not fast enough for VP9 encoding, use VP8
+								'-c:v', 'libvpx',
+								'-cpu-used', '2'
+							]
+							else ...[
+								'-c:v', 'libvpx-vp9',
+								'-cpu-used', '3',
+								'-threads', sqrt(Platform.numberOfProcessors).ceil().toString()
+							]
 						],
 						if (outputFileExtension == 'jpg' || outputFileExtension == 'png') ...['-pix_fmt', 'rgba'],
 						if (outputFileExtension == 'png') ...['-pred', 'mixed'],
@@ -536,7 +540,7 @@ class MediaConversion {
 								...['-vcodec', 'h264_videotoolbox']
 							else
 								...['-c:v', 'libx264', '-preset', 'medium'],
-						if (copyStreams) ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy'],
+						if (copyStreams && outputFileExtension != 'webm') ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy'],
 						if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 						if (removeMetadata) ...['-map_metadata', '-1'],
 						if (vfs.isNotEmpty) ...['-vf', vfs.join(',')],
