@@ -507,13 +507,13 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (width != null && height != null && maximumDimension != null && (width > maximumDimension || height > maximumDimension)) {
 			solutions.add('resizing');
 		}
+		const kRandomizingChecksum = 'randomizing checksum';
 		if (randomizeChecksum) {
-			solutions.add('randomizing checksum');
+			solutions.add(kRandomizingChecksum);
 		}
 		transcode.copyStreams = solutions.isEmpty;
-		const kRandomizingChecksum = 'randomizing checksum';
 		if (metadataPresent && !metadataAllowed) {
-			solutions.add(kRandomizingChecksum);
+			solutions.add('removing metadata');
 		}
 		if (solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(ext)) {
 			return source;
