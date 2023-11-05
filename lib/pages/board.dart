@@ -587,7 +587,7 @@ class BoardPageState extends State<BoardPage> {
 							);
 						}
 					),
-					...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments)),
+					if (thread.attachments.any((a) => a.type.isImageSearchable)) ...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments.where((a) => a.type.isImageSearchable).toList())),
 					ContextMenuAction(
 						trailingIcon: Adaptive.icons.share,
 						child: const Text('Share...'),

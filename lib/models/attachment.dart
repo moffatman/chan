@@ -34,10 +34,8 @@ enum AttachmentType {
 				return AttachmentType.image;
 		}
 	}
-}
-
-extension IsVideo on AttachmentType {
 	bool get isVideo => this == AttachmentType.webm || this == AttachmentType.mp4;
+	bool get isImageSearchable => isVideo || this == AttachmentType.image;
 }
 
 class Attachment {

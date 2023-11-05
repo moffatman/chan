@@ -872,7 +872,7 @@ class PostRow extends StatelessWidget {
 						}
 					}
 				),
-				if (latestPost.attachments.isNotEmpty) ...buildImageSearchActions(context, () => whichAttachment(context, latestPost.attachments))
+				if (latestPost.attachments.any((a) => a.type.isImageSearchable)) ...buildImageSearchActions(context, () => whichAttachment(context, latestPost.attachments.where((a) => a.type.isImageSearchable).toList()))
 			],
 			child: (replyIds.isNotEmpty) ? SliderBuilder(
 				popup: PostsPage(
