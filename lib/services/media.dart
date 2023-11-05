@@ -528,6 +528,7 @@ class MediaConversion {
 							else ...[
 								'-c:v', 'libvpx-vp9',
 								'-cpu-used', '3',
+								'-row-mt', '1',
 								'-threads', sqrt(Platform.numberOfProcessors).ceil().toString()
 							]
 						],
