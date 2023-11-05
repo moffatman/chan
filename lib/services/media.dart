@@ -226,6 +226,7 @@ class MediaConversion {
 	bool copyStreams;
 	final bool removeMetadata;
 	final bool randomizeChecksum;
+	bool requireAudio;
 
 	CancelableOperation<FFToolsOutput>? _session;
 	MediaScan? cachedScan;
@@ -249,7 +250,8 @@ class MediaConversion {
 		this.requiresSubdirectory = false,
 		this.copyStreams = false,
 		this.removeMetadata = false,
-		this.randomizeChecksum = false
+		this.randomizeChecksum = false,
+		this.requireAudio = false
 	});
 
 	static MediaConversion toMp4(Uri inputFile, {
@@ -394,6 +396,9 @@ class MediaConversion {
 			return null;
 		}
 		if (stripAudio && scan.hasAudio) {
+			return null;
+		}
+		if (requireAudio && !scan.hasAudio) {
 			return null;
 		}
 		if (maximumSizeInBytes != null && stat.size > maximumSizeInBytes!) {

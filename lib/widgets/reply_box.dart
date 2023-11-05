@@ -521,6 +521,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		final existingResult = await transcode.getDestinationIfSatisfiesConstraints();
 		if (existingResult != null) {
 			if ((audioPresent == true && audioAllowed == true && !existingResult.hasAudio)) {
+				transcode.requireAudio = true;
 				solutions.add('re-adding audio');
 			}
 			else {
