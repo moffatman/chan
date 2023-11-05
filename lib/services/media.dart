@@ -448,7 +448,7 @@ class MediaConversion {
 						outputDurationInMilliseconds = min(maximumDurationInSeconds! * 1000, outputDurationInMilliseconds!);
 					}
 					if (maximumSizeInBytes != null) {
-						outputBitrate = min(outputBitrate, (8 * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
+						outputBitrate = min(outputBitrate, ((7.2 - (_additionalScaleDownFactor / 6)) * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
 					}
 				}
 				(int, int)? newSize;
