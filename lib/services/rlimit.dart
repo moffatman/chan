@@ -56,7 +56,7 @@ Future<void> initializeRLimit() async {
 	// Raise rlimit, the default of 256 is too small on iOS
 	try {
 		final first = getrlimit(kRlimitNoFile);
-		setrlimit(kRlimitNoFile, (current: min(2048, first.maximum), maximum: first.maximum));
+		setrlimit(kRlimitNoFile, (current: min(4096, first.maximum), maximum: first.maximum));
 	}
 	catch (e, st) {
 		Future.error(e, st);
