@@ -968,7 +968,7 @@ class SavedSettings extends HiveObject {
 	bool get materialStyle => useMaterialStyle ?? platformIsMaterial;
 	@HiveField(147)
 	bool? useAndroidDrawer;
-	bool get androidDrawer => useAndroidDrawer ?? false;
+	bool get androidDrawer => useAndroidDrawer ?? platformIsMaterial;
 	@HiveField(148)
 	bool? useMaterialRoutes;
 	bool get materialRoutes => useMaterialRoutes ?? false;
