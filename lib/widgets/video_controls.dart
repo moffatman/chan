@@ -34,11 +34,13 @@ class _VideoControlsState extends State<VideoControls> {
 	late bool wasAlreadyPlaying;
 	StreamSubscription<Duration>? _positionSubscription;
 	StreamSubscription<bool>? _playingSubscription;
+	StreamSubscription<Duration>? _durationSubscription;
 	final position = ValueNotifier(Duration.zero);
 	bool _playingBeforeLongPress = false;
 	bool _currentlyWithinLongPress = false;
 	final _mutex = Mutex();
 	final _clipRRectKey = GlobalKey(debugLabel: '_VideoControlsState._clipRRectKey');
+	int _lastGoodDurationInMilliseconds = 0;
 
 	@override
 	void initState() {
@@ -46,6 +48,7 @@ class _VideoControlsState extends State<VideoControls> {
 		videoPlayerController = widget.controller.videoPlayerController;
 		_playingSubscription = videoPlayerController?.player.stream.playing.listen(_onVideoUpdate);
 		_positionSubscription = videoPlayerController?.player.stream.position.listen(_onVideoUpdate);
+		_durationSubscription = videoPlayerController?.player.stream.duration.listen(_onVideoUpdate);
 		value = videoPlayerController?.player.state ?? const PlayerState();
 		position.value = value.position;
 		wasAlreadyPlaying = value.playing;
@@ -60,6 +63,7 @@ class _VideoControlsState extends State<VideoControls> {
 			old.controller.removeListener(_onControllerUpdate);
 			widget.controller.addListener(_onControllerUpdate);
 			videoPlayerController = widget.controller.videoPlayerController!;
+			Future.microtask(_onControllerUpdate);
 		}
 	}
 
@@ -70,9 +74,11 @@ class _VideoControlsState extends State<VideoControls> {
 		if (widget.controller.videoPlayerController != videoPlayerController) {
 			_positionSubscription?.cancel();
 			_playingSubscription?.cancel();
+			_durationSubscription?.cancel();
 			videoPlayerController = widget.controller.videoPlayerController;
 			_positionSubscription = videoPlayerController?.player.stream.position.listen(_onVideoUpdate);
 			_playingSubscription = videoPlayerController?.player.stream.playing.listen(_onVideoUpdate);
+			_durationSubscription = videoPlayerController?.player.stream.duration.listen(_onVideoUpdate);
 		}
 		setState(() {});
 	}
@@ -80,6 +86,10 @@ class _VideoControlsState extends State<VideoControls> {
 	void _onVideoUpdate(Object _) {
 		if (!mounted) return;
 		final v = videoPlayerController?.player.state;
+		final duration = (v?.duration ?? Duration.zero);
+		if (duration > Duration.zero) {
+			_lastGoodDurationInMilliseconds = duration.inMilliseconds;
+		}
 		if (v != null) {
 			setState(() {
 				value = v;
@@ -111,13 +121,13 @@ class _VideoControlsState extends State<VideoControls> {
 
 	Future<void> _onLongPressUpdate(double relativePosition) async {
 		if (_currentlyWithinLongPress) {
-			final duration = (widget.controller.duration ?? value.duration).inMilliseconds;
-			final newPosition = Duration(milliseconds: (relativePosition.clamp(0, 1) * (duration)).round());
+			final newPosition = Duration(milliseconds: (relativePosition.clamp(0, 1) * _lastGoodDurationInMilliseconds).round());
 			if (!_mutex.isLocked) {
-				_mutex.protect(() async {
+				await _mutex.protect(() async {
 					if (widget.controller.swapIncoming) {
 						return;
 					}
+					await Future.delayed(const Duration(milliseconds: 50));
 					await videoPlayerController?.player.seek(newPosition);
 					await videoPlayerController?.player.play();
 					await videoPlayerController?.player.pause();
@@ -195,7 +205,7 @@ class _VideoControlsState extends State<VideoControls> {
 												valueListenable: position,
 												builder: (context, Duration positionValue, _) => LinearProgressIndicator(
 													minHeight: 44,
-													value: positionValue.inMilliseconds / (widget.controller.duration ?? value.duration).inMilliseconds.clamp(1, double.maxFinite),
+													value: positionValue.inMilliseconds / value.duration.inMilliseconds.clamp(1, double.maxFinite),
 													valueColor: AlwaysStoppedAnimation(primaryColor),
 													backgroundColor: !widget.controller.cacheCompleted ? Colors.transparent : primaryColor.withOpacity(0.3)
 												)
@@ -210,7 +220,7 @@ class _VideoControlsState extends State<VideoControls> {
 						width: 40,
 						child: FittedBox(
 							fit: BoxFit.scaleDown,
-							child: Text(formatDuration(widget.controller.duration ?? value.duration), style: TextStyle(color: primaryColor))
+							child: Text(formatDuration(value.duration), style: TextStyle(color: primaryColor))
 						)
 					),
 					if (widget.controller.hasAudio && widget.showMuteButton) AnimatedBuilder(

@@ -19,8 +19,6 @@ extension _NullMath on int? {
 
 abstract class StreamingMP4ConversionResult {
 	bool get hasAudio;
-	Duration? get duration;
-	bool get isAudioOnly;
 }
 
 class StreamingMP4ConversionStream implements StreamingMP4ConversionResult {
@@ -29,29 +27,19 @@ class StreamingMP4ConversionStream implements StreamingMP4ConversionResult {
 	final ValueListenable<double?> progress;
 	@override
 	final bool hasAudio;
-	@override
-	final Duration? duration;
-	@override
-	final bool isAudioOnly;
 	const StreamingMP4ConversionStream({
 		required this.hlsStream,
 		required this.mp4File,
 		required this.progress,
-		required this.hasAudio,
-		required this.duration,
-		required this.isAudioOnly
+		required this.hasAudio
 	});
 }
 
 class StreamingMP4ConvertedFile implements StreamingMP4ConversionResult {
 	final File mp4File;
-	const StreamingMP4ConvertedFile(this.mp4File, this.hasAudio, this.isAudioOnly);
+	const StreamingMP4ConvertedFile(this.mp4File, this.hasAudio);
 	@override
 	final bool hasAudio;
-	@override
-	final bool isAudioOnly;
-	@override
-	Duration? get duration => null;
 }
 
 class StreamingMP4ConvertingFile implements StreamingMP4ConversionResult {
@@ -59,16 +47,10 @@ class StreamingMP4ConvertingFile implements StreamingMP4ConversionResult {
 	final ValueListenable<double?> progress;
 	@override
 	final bool hasAudio;
-	@override
-	final Duration? duration;
-	@override
-	final bool isAudioOnly;
 	const StreamingMP4ConvertingFile({
 		required this.mp4File,
 		required this.progress,
-		required this.hasAudio,
-		required this.duration,
-		required this.isAudioOnly
+		required this.hasAudio
 	});
 }
 
@@ -173,8 +155,17 @@ class VideoServer {
 		else {
 			request.response.contentLength = fileLength;
 		}
-		await request.response.addStream(file.openRead(range?.start, range?.inclusiveEnd.plus(1)));
+		final fd = file.openRead(range?.start, range?.inclusiveEnd.plus(1));
+		await request.response.addStream(fd);
+		await request.response.flush();
 		await request.response.close();
+		try {
+			await Future.delayed(const Duration(seconds: 1));
+			await fd.drain();
+		}
+		on FileSystemException {
+			// Closed properly, drain wasn't needed
+		}
 	}
 
 	Future<void> _serveProxy(HttpRequest request, String digest) async {
@@ -516,6 +507,24 @@ class VideoServer {
 		return digest;
 	}
 
+	Future<File> cachingDownload({
+		required Uri uri,
+		Map<String, String> headers = const {},
+		void Function(int currentBytes, int totalBytes)? onProgressChanged,
+		bool force = false,
+		bool interruptible = false
+	}) async {
+		final digest = await startCachingDownload(
+			uri: uri,
+			headers: headers,
+			onProgressChanged: onProgressChanged,
+			force: force,
+			interruptible: interruptible
+		);
+		await _caches[digest]?.completer.future;
+		return getFile(digest);
+	}
+
 	Future<void> interruptOngoingDownload(String digest) async {
 		final cachingFile = _caches[digest];
 		if (cachingFile == null) {
@@ -531,6 +540,10 @@ class VideoServer {
 		cachingFile._interrupted = true;
 		cachingFile._client?.close(force: true);
 		_caches.remove(digest);
+	}
+
+	Future<void> interruptOngoingDownloadFromUri(Uri uri) async {
+		await interruptOngoingDownload(_encodeDigest(uri));
 	}
 
 	Future<void> cleanupCachedDownloadTree(String digest) async {
@@ -629,7 +642,7 @@ class StreamingMP4Conversion {
 
 	Future<void> _waitForTwoTSFiles(Directory parent) async {
 		int times = 0;
-		while (times < 100) {
+		while (times < 300) {
 			if (await _areThereTwoTSFiles(parent)) {
 				// At least two ts files created
 				break;
@@ -641,7 +654,6 @@ class StreamingMP4Conversion {
 
 	Future<StreamingMP4ConversionResult> start({bool force = false}) async {
 		final inputExtension = inputFile.path.split('.').last.toLowerCase();
-		final surelyAudioOnly = ['jpg', 'jpeg', 'png'].contains(inputExtension);
 		if (Platform.isAndroid && inputExtension == 'webm') {
 			final scan = await MediaScan.scan(inputFile, headers: headers);
 			final conversion = _directConversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false, copyStreams: soundSource != null);
@@ -649,15 +661,13 @@ class StreamingMP4Conversion {
 			return StreamingMP4ConvertingFile(
 				mp4File: conversion.result.then((r) => r.file),
 				hasAudio: scan.hasAudio,
-				progress: conversion.progress,
-				duration: scan.duration,
-				isAudioOnly: surelyAudioOnly || scan.isAudioOnly
+				progress: conversion.progress
 			);
 		}
 		final mp4Conversion = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource);
 		final existingResult = await mp4Conversion.getDestinationIfSatisfiesConstraints();
 		if (existingResult != null) {
-			return StreamingMP4ConvertedFile(existingResult.file, existingResult.hasAudio, existingResult.isAudioOnly);
+			return StreamingMP4ConvertedFile(existingResult.file, existingResult.hasAudio);
 		}
 		if (inputExtension == 'm3u8' && soundSource == null) {
 			await VideoServer.instance.ensureRunning();
@@ -673,8 +683,6 @@ class StreamingMP4Conversion {
 				mp4File: _joinedCompleter.future,
 				progress: joinProgress,
 				hasAudio: true, // assumption
-				duration: null,
-				isAudioOnly: false
 			);
 		}
 		final streamingConversion = _streamingConversion = MediaConversion.toHLS(inputFile, headers: headers, soundSource: soundSource);
@@ -693,15 +701,13 @@ class StreamingMP4Conversion {
 				),
 				progress: streamingConversion.progress,
 				mp4File: _joinedCompleter.future,
-				hasAudio: soundSource != null || (streamingConversion.cachedScan?.hasAudio ?? false),
-				duration: streamingConversion.cachedScan?.duration,
-				isAudioOnly: surelyAudioOnly || (streamingConversion.cachedScan?.isAudioOnly ?? false)
+				hasAudio: soundSource != null || (streamingConversion.cachedScan?.hasAudio ?? false)
 			);
 		}
 		else {
 			// Better to just wait and return the mp4
 			final file = await _joinedCompleter.future;
-			return StreamingMP4ConvertedFile(file, soundSource != null || (streamingConversion.cachedScan?.hasAudio ?? false), surelyAudioOnly || (streamingConversion.cachedScan?.isAudioOnly ?? false));
+			return StreamingMP4ConvertedFile(file, soundSource != null || (streamingConversion.cachedScan?.hasAudio ?? false));
 		}
 	}
 

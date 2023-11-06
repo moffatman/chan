@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
@@ -477,7 +478,12 @@ class MediaConversion {
 					}
 				}
 				bool passedFirstEvent = false;
-				final bitrateString = '${(outputBitrate / 1000).floor()}K';
+				if (soundSource != null) {
+					// Ideally this could be smarter, but it looks ok
+					// and works well enough to avoid huge file due to looping
+					// a high-res source with long audio.
+					outputBitrate = 400000;
+				}
 				final results = await pool.withResource(() async {
 					final vfs = <String>[];
 					if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams && (!_isVideoToolboxSupported || _hasVideoToolboxFailed)) {
@@ -489,18 +495,39 @@ class MediaConversion {
 					if (randomizeChecksum) {
 						vfs.add('noise=alls=10:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
 					}
+					final inputFileIsVideoLike = inputFile.path.endsWith('.gif') || inputFile.path.endsWith('.webm');
+					if (!inputFileIsVideoLike && soundSource != null) {
+						outputBitrate = 1000;
+					}
+					Uri inputUri = inputFile;
+					Map<String, String> inputHeaders = headers;
+					if (soundSource != null && inputFile.toStringFFMPEG().startsWith('http')) {
+						// Proxy cache the video file, FFMPEG will try to read it repeatedly if looping
+						final digest = await VideoServer.instance.startCachingDownload(uri: inputUri);
+						inputUri = VideoServer.instance.getUri(digest);
+						inputHeaders = {};
+					}
+					final bitrateString = '${(outputBitrate / 1000).floor()}K';
 					final args = [
 						'-hwaccel', 'auto',
-						if (headers.isNotEmpty && inputFile.scheme != 'file') ...[
+						if (inputHeaders.isNotEmpty && inputFile.scheme != 'file') ...[
 							"-headers",
-							headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+							inputHeaders.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
 						],
-						'-i', inputFile.toStringFFMPEG(),
+						if (soundSource != null)
+							if (inputFileIsVideoLike) ...[
+								'-stream_loop', '-1',
+							]
+							else ...[
+								'-loop', '1',
+								'-framerate', '1'
+							],
+						'-i', inputUri.toStringFFMPEG(),
 						if (soundSource != null && !copyStreams) ...[
 							'-i', soundSource!.toStringFFMPEG(),
+							if (soundSource != null) ...['-shortest', '-fflags', '+shortest'],
 							'-map', '0:v:0',
 							'-map', '1:a:0',
-							'-c:a', 'aac',
 							'-b:a', '192k'
 						],
 						'-max_muxing_queue_size', '9999',
@@ -541,11 +568,13 @@ class MediaConversion {
 							'-hls_time', '3',
 							'-hls_flags', 'split_by_time'
 						],
-						if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams)
+						if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams) ...[
+							'-c:a', 'aac',
 							if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
 								...['-vcodec', 'h264_videotoolbox']
 							else
-								...['-c:v', 'libx264', '-preset', 'medium'],
+								...['-c:v', 'libx264', '-preset', 'medium']
+						],
 						if (copyStreams && outputFileExtension != 'webm') ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy'],
 						if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 						if (removeMetadata) ...['-map_metadata', '-1'],
