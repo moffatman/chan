@@ -136,11 +136,13 @@ class _DrawerList<T extends Object> {
 									disabled: list.length == 1,
 									onPressed: () {
 										final data = onClose!(i);
-										showUndoToast(
-											context: context,
-											message: data.message,
-											onUndo: data.onUndo
-										);
+										if (data.onUndo != null) {
+											showUndoToast(
+												context: context,
+												message: data.message,
+												onUndo: data.onUndo!
+											);
+										}
 									}
 								),
 								...buildAdditionalActions(i, item)
@@ -165,14 +167,16 @@ class _DrawerList<T extends Object> {
 						direction: DismissDirection.startToEnd,
 						onDismissed: (direction) {
 							final data = onClose!(i);
-							showUndoToast(
-								context: context,
-								message: data.message,
-								onUndo: data.onUndo == null ? null : () {
-									_undoId++;
-									data.onUndo?.call();
-								}
-							);
+							if (data.onUndo != null) {
+								showUndoToast(
+									context: context,
+									message: data.message,
+									onUndo: () {
+										_undoId++;
+										data.onUndo!();
+									}
+								);
+							}
 						},
 						child: tile
 					);

@@ -1504,15 +1504,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									final previouslyActiveTab = _tabs.browseTabIndex;
 									final closedTab = Persistence.tabs[-1 * index];
 									_tabs.closeBrowseTab(-1 * index);
-									showUndoToast(
-										context: context,
-										message: 'Closed tab',
-										onUndo: closedTab.board == null ? null : () {
-											_tabs.insertInitializedTab(-1 * index, closedTab);
-											_tabs.browseTabIndex = previouslyActiveTab;
-										},
-										padding: const EdgeInsets.only(bottom: 50)
-									);
+									if (closedTab.board != null) {
+										showUndoToast(
+											context: context,
+											message: 'Closed tab',
+											onUndo: () {
+												_tabs.insertInitializedTab(-1 * index, closedTab);
+												_tabs.browseTabIndex = previouslyActiveTab;
+											},
+											padding: const EdgeInsets.only(bottom: 50)
+										);
+									}
 								}
 							),
 							TabMenuAction(
