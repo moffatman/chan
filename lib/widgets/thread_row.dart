@@ -59,12 +59,13 @@ class ThreadCounters extends StatelessWidget {
 		Color? replyCountColor;
 		Color? imageCountColor;
 		Color? otherMetadataColor;
+		final threadSeen = threadState?.lastSeenPostId != null && threadState?.showInHistory == true;
 		if (!showUnseen) {
 			replyCountColor = grey;
 			imageCountColor = grey;
 			otherMetadataColor = grey;
 		}
-		else if (threadState?.lastSeenPostId != null) {
+		else if (threadSeen) {
 			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
 				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
 			}
@@ -130,7 +131,7 @@ class ThreadCounters extends StatelessWidget {
 					Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
 					const SizedBox(width: 4),
 					if (countsUnreliable && latestThread == thread) const Text('—')
-					else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+					else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadSeen ? grey : null)),
 					if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
 					if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
 					const SizedBox(width: 2),
@@ -139,11 +140,11 @@ class ThreadCounters extends StatelessWidget {
 						Icon(Adaptive.icons.photo, size: 18, color: imageCountColor),
 						const SizedBox(width: 4),
 						if (latestImageCount > unseenImageCount) ...[
-							Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+							Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadSeen ? grey : null)),
 							if (unseenImageCount > 0) Text('+$unseenImageCount'),
 						]
 						else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
-						else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
+						else Text('$unseenImageCount', style: TextStyle(color: threadSeen ? grey : null)),
 						const SizedBox(width: 2),
 					]
 				]
@@ -236,7 +237,7 @@ class ThreadRow extends StatelessWidget {
 			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
 		}
 		final watch = threadState?.threadWatch;
-		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0);
+		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0) && threadState.showInHistory;
 		Widget makeCounters() => ThreadCounters(
 			countsUnreliable: countsUnreliable,
 			imageboard: imageboard,
@@ -649,7 +650,7 @@ class ThreadRow extends StatelessWidget {
 						)
 					)
 				],
-				if (watch != null || threadState?.savedTime != null || threadState?.showInHistory == false) Positioned.fill(
+				if (watch != null || threadState?.savedTime != null) Positioned.fill(
 					child: Align(
 						alignment: Alignment.topRight,
 						child: Container(
@@ -664,8 +665,7 @@ class ThreadRow extends StatelessWidget {
 								children: [
 									if (watch != null) Icon(CupertinoIcons.bell_fill, color: otherMetadataColor, size: 18),
 									if (watch?.localYousOnly == false) Icon(CupertinoIcons.asterisk_circle, color: otherMetadataColor, size: 18),
-									if (threadState?.savedTime != null) Icon(Adaptive.icons.bookmarkFilled, color: otherMetadataColor, size: 18),
-									if (threadState?.showInHistory == false) Icon(CupertinoIcons.eye_slash, color: otherMetadataColor, size: 18)
+									if (threadState?.savedTime != null) Icon(Adaptive.icons.bookmarkFilled, color: otherMetadataColor, size: 18)
 								]
 							)
 						)
