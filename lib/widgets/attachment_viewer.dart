@@ -1600,6 +1600,7 @@ class AttachmentViewer extends StatelessWidget {
 									child: RotatedBox(
 										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
 										child: Container(
+											margin: const EdgeInsets.all(16),
 											padding: const EdgeInsets.all(24),
 											decoration: const BoxDecoration(
 												color: Colors.black87,
@@ -1613,7 +1614,6 @@ class AttachmentViewer extends StatelessWidget {
 														const Row(
 															mainAxisSize: MainAxisSize.min,
 															children: [
-																SizedBox(width: 64),
 																Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
 																SizedBox(width: 8),
 																Text(
@@ -1622,8 +1622,7 @@ class AttachmentViewer extends StatelessWidget {
 																		fontSize: 32,
 																		color: Colors.white
 																	)
-																),
-																SizedBox(width: 64)
+																)
 															]
 														),
 														Text('from ${soundSourceDownload.uri.host}', style: const TextStyle(
