@@ -825,6 +825,13 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (convertForCompatibility && attachment.type == AttachmentType.webm) {
 			return '.mp4';
 		}
+		if (attachment.soundSource != null && !_soundSourceFailed) {
+			// Whatever the input type, it is combined with sound now
+			if (convertForCompatibility) {
+				return '.mp4';
+			}
+			return Platform.isAndroid ? '.webm': '.mp4';
+		}
 		return attachment.ext;
 	}
 
@@ -837,7 +844,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		final shareDirectory = Directory('${systemTempDirectory.path}/sharecache')..createSync(recursive: true);
 		final newFilename = '${Uri.encodeComponent(attachment.id)}${_downloadExt(convertForCompatibility)}';
 		File file = getFile();
-		if (convertForCompatibility && attachment.type == AttachmentType.webm && cacheExt == '.webm') {
+		if (convertForCompatibility && cacheExt == '.webm') {
 			file = await modalLoad(context, 'Converting...', (c) async {
 				final conversion = MediaConversion.toMp4(file.uri);
 				c.onCancel = conversion.cancel;
@@ -850,7 +857,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> share(Rect? sharePosition) async {
 		final bool convertForCompatibility;
-		if (attachment.type == AttachmentType.webm && cacheExt == '.webm') {
+		if (cacheExt == '.webm') {
 			final choice = await showAdaptiveDialog<bool>(
 				barrierDismissible: true,
 				context: context,
