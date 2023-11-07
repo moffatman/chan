@@ -508,6 +508,10 @@ class PostQuoteLinkSpan extends PostSpan {
 			PostSpanZoneStyle.tree => stackCount <= 1,
 			_ => !expandedImmediatelyAbove
 		};
+		final enableUnconditionalInteraction = switch(zone.style) {
+			PostSpanZoneStyle.tree => stackCount == 0,
+			_ => !expandedImmediatelyAbove
+		};
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 			if (enableInteraction) {
 				if (!settings.supportMouse.value || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.popupPostsPage) {
@@ -542,7 +546,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer,
 			onEnter: options.onEnter,
 			onExit: options.onExit
-		), recognizer, enableInteraction);
+		), recognizer, enableUnconditionalInteraction);
 	}
 	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		int? actualThreadId = threadId;
