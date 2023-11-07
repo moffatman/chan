@@ -1070,6 +1070,7 @@ class AttachmentViewer extends StatelessWidget {
 	final List<ContextMenuAction> additionalContextMenuActions;
 	final double? maxWidth;
 	final BoxFit fit;
+	final bool autoRotate;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -1087,6 +1088,7 @@ class AttachmentViewer extends StatelessWidget {
 		this.additionalContextMenuActions = const [],
 		this.maxWidth,
 		this.fit = BoxFit.contain,
+		this.autoRotate = false,
 		Key? key
 	}) : super(key: key);
 
@@ -1163,10 +1165,7 @@ class AttachmentViewer extends StatelessWidget {
 	}
 
 	bool _rotate90DegreesClockwise(BuildContext context) {
-		if (attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf) {
-			return false;
-		}
-		if (!context.select<EffectiveSettings, bool>((s) => s.autoRotateInGallery)) {
+		if (!autoRotate || attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf) {
 			return false;
 		}
 		final displayIsLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;

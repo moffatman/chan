@@ -1523,13 +1523,6 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get autoRotateInGallery => _settings.autoRotateInGallery;
-	set autoRotateInGallery(bool setting) {
-		_settings.autoRotateInGallery = setting;
-		_settings.save();
-		notifyListeners();
-	}
-
 	ContentSettings get contentSettings => _settings.contentSettings;
 	String get contentSettingsUrl => '$contentSettingsApiRoot/user/${_settings.userId}/edit';
 

@@ -160,7 +160,6 @@ class _GalleryPageState extends State<GalleryPage> {
 	final Map<TaggedAttachment, AttachmentViewerController> _controllers = {};
 	late final ValueNotifier<bool> _shouldShowPosition;
 	late final EasyListenable _currentAttachmentChanged;
-	late final EasyListenable _rotationsChanged;
 	late final DraggableScrollableController _scrollSheetController;
 	final _draggableScrollableSheetKey = GlobalKey(debugLabel: 'GalleryPage._draggableScrollableSheetKey');
 	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
@@ -168,6 +167,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	bool _thumbnailsDesynced = false;
 	/// To prevent Hero when entering with grid initially enabled
 	bool _doneInitialTransition = false;
+	bool _autoRotate = false;
 
 	@override
 	void initState() {
@@ -180,7 +180,6 @@ class _GalleryPageState extends State<GalleryPage> {
 		_slideListenable = EasyListenable();
 		_shouldShowPosition = ValueNotifier(false);
 		_currentAttachmentChanged = EasyListenable();
-		_rotationsChanged = EasyListenable();
 		_scrollSheetController = DraggableScrollableController();
 		showChrome = widget.initiallyShowGrid || widget.initiallyShowChrome;
 		currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
@@ -984,6 +983,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																	enabled: !widget.initiallyShowGrid || _doneInitialTransition,
 																	child: AttachmentViewer(
 																		controller: _getController(attachment),
+																		autoRotate: _autoRotate,
 																		onScaleChanged: (scale) {
 																			if (scale > 1 && !_hideRotateButton) {
 																				setState(() {
@@ -1061,23 +1061,20 @@ class _GalleryPageState extends State<GalleryPage> {
 														),
 														AnimatedBuilder(
 															animation: _currentAttachmentChanged,
-															builder: (context, _) => AnimatedBuilder(
-																animation: _rotationsChanged,
-																builder: (context, _) => AnimatedSwitcher(
-																	duration: const Duration(milliseconds: 300),
-																	child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton && (showChrome || settings.showOverlaysInGallery)) ? AdaptiveIconButton(
-																		padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-																		icon: Transform(
-																			alignment: Alignment.center,
-																			transform: !settings.autoRotateInGallery ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																			child: const Icon(CupertinoIcons.rotate_left)
-																		),
-																		onPressed: () {
-																			settings.autoRotateInGallery = !settings.autoRotateInGallery;
-																			_rotationsChanged.didUpdate();
-																		}
-																	) : const SizedBox.shrink()
-																)
+															builder: (context, _) => AnimatedSwitcher(
+																duration: const Duration(milliseconds: 300),
+																child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton && (showChrome || settings.showOverlaysInGallery)) ? AdaptiveIconButton(
+																	padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+																	icon: Transform(
+																		alignment: Alignment.center,
+																		transform: !_autoRotate ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																		child: const Icon(CupertinoIcons.rotate_left)
+																	),
+																	onPressed: () {
+																		_autoRotate = !_autoRotate;
+																		setState(() {});
+																	}
+																) : const SizedBox.shrink()
 															)
 														)
 													]
