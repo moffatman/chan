@@ -112,10 +112,6 @@ class _VideoControlsState extends State<VideoControls> {
 
 	Future<void> _onLongPressStart() => _mutex.protect(() async {
 		_playingBeforeLongPress = value.playing;
-		if (!widget.controller.swapIncoming || widget.controller.swapAvailable) {
-			await videoPlayerController?.player.pause();
-			await widget.controller.potentiallySwapVideo();
-		}
 		_currentlyWithinLongPress = true;
 	});
 
@@ -124,24 +120,16 @@ class _VideoControlsState extends State<VideoControls> {
 			final newPosition = Duration(milliseconds: (relativePosition.clamp(0, 1) * _lastGoodDurationInMilliseconds).round());
 			if (!_mutex.isLocked) {
 				await _mutex.protect(() async {
-					if (widget.controller.swapIncoming) {
-						return;
-					}
-					await Future.delayed(const Duration(milliseconds: 50));
 					await videoPlayerController?.player.seek(newPosition);
 					await videoPlayerController?.player.play();
 					await videoPlayerController?.player.pause();
 					await Future.delayed(const Duration(milliseconds: 50));
 				});
 			}
-			if (!widget.controller.swapIncoming) {
-				position.value = newPosition;
-			}
 		}
 	}
 
 	Future<void> _onLongPressEnd() => _mutex.protect(() async {
-		await widget.controller.potentiallySwapVideo();
 		if (_playingBeforeLongPress) {
 			await videoPlayerController?.player.play();
 		}
@@ -191,7 +179,7 @@ class _VideoControlsState extends State<VideoControls> {
 										children: [
 											ValueListenableBuilder(
 												valueListenable: widget.controller.showLoadingProgress,
-												builder: (context, showLoadingProgress, _) => (widget.controller.swapIncoming || showLoadingProgress || !widget.controller.cacheCompleted) ? ValueListenableBuilder(
+												builder: (context, showLoadingProgress, _) => (showLoadingProgress || !widget.controller.cacheCompleted) ? ValueListenableBuilder(
 													valueListenable: widget.controller.videoLoadingProgress,
 													builder: (context, double? value, _) => LinearProgressIndicator(
 														minHeight: 44,
@@ -245,7 +233,6 @@ class _VideoControlsState extends State<VideoControls> {
 						onPressed: () async {
 							if (value.playing) {
 								await videoPlayerController?.player.pause();
-								await widget.controller.potentiallySwapVideo();
 							}
 							else {
 								await videoPlayerController?.player.play();

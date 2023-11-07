@@ -35,6 +35,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide ContextMenu;
+import 'package:media_kit_video/media_kit_video_controls/src/controls/extensions/duration.dart';
 import 'package:mutex/mutex.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
@@ -60,13 +61,7 @@ final Map <String, (DateTime, Rect, Rect)> _heroRectCache = {};
 Duration _estimateUrlTime(Uri url, AttachmentType type) {
 	final times = _domainLoadTimes[(url.host, type)] ?? <Duration>[];
 	final time = (times.fold(Duration.zero, (Duration a, b) => a + b) * 1.5) ~/ max(times.length, 1);
-	if (time < _minUrlTime) {
-		return _minUrlTime;
-	}
-	if (time > _maxUrlTime) {
-		return _maxUrlTime;
-	}
-	return time;
+	return time.clamp(_minUrlTime, _maxUrlTime);
 }
 
 const _kDeviceGalleryAlbumName = 'Chance';
@@ -212,11 +207,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	late final StreamSubscription<List<double>> _longPressFactorSubscription;
 	bool _loadingProgressHideScheduled = false;
 	bool? _useRandomUserAgent;
-	File? _videoFileToSwapIn;
 	ValueListenable<double?> _videoLoadingProgress = ValueNotifier(null);
-	bool _swapIncoming = false;
-	bool _waitingOnSwap = false;
-	Duration? _swapStartTime;
 	final _lock = Mutex();
 	bool _hideVideoPlayerController = false;
 	List<RecognizedTextBlock> _textBlocks = [];
@@ -257,16 +248,10 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool get checkArchives => _checkArchives;
 	/// Modal text which should be overlayed on the attachment
 	String? get overlayText => _overlayText;
-	// Whether the modal text should be dimmed
-	bool get dimOverlayText => _swapIncoming;
 	/// Whether the image has already been downloaded
 	bool get isDownloaded => _isDownloaded;
 	/// Key to use for loading spinner
 	final loadingSpinnerKey = GlobalKey(debugLabel: 'AttachmentViewerController.loadingSpinnerKey');
-	/// Whether a seekable version of the video is incoming
-	bool get swapIncoming => _swapIncoming;
-	/// Whether a seekable version of the file is ready to swap in
-	bool get swapAvailable => _videoFileToSwapIn != null;
 	/// Blocks of text to draw on top of image
 	List<RecognizedTextBlock> get textBlocks => _textBlocks;
 
@@ -612,18 +597,12 @@ class AttachmentViewerController extends ChangeNotifier {
 							await _ensureController().player.open(Media(result.hlsStream.toString()), play: false);
 						}
 						_videoLoadingProgress = result.progress;
-						_swapIncoming = true;
 						result.mp4File.then((mp4File) async {
 							if (_isDisposed) {
 								return;
 							}
-							_videoFileToSwapIn = mp4File;
-							if (_waitingOnSwap && !background) {
-								await potentiallySwapVideo();
-							}
 							_videoLoadingProgress = ValueNotifier(null);
 							onCacheCompleted(mp4File);
-							_swapIncoming = false;
 							notifyListeners();
 						});
 						if (!isPrimary && background) {
@@ -636,10 +615,6 @@ class AttachmentViewerController extends ChangeNotifier {
 						result.mp4File.then((mp4File) async {
 							if (_isDisposed) {
 								return;
-							}
-							_videoFileToSwapIn = mp4File;
-							if (isPrimary && !background) {
-								await potentiallySwapVideo(play: true);
 							}
 							_videoLoadingProgress = ValueNotifier(null);
 							onCacheCompleted(mp4File);
@@ -751,10 +726,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		_millisecondsBeforeLongPress = videoPlayerController!.player.state.position.inMilliseconds;
 		_currentlyWithinLongPress = true;
 		_overlayText = _formatPosition(videoPlayerController!.player.state.position, videoPlayerController!.player.state.duration);
-		_waitingOnSwap = _swapIncoming;
 		notifyListeners();
 		videoPlayerController!.player.pause();
-		potentiallySwapVideo();
 	}
 
 	void _onLongPressUpdate(double factor) {
@@ -773,10 +746,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			final newPosition = Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)).clamp(0, duration)).round());
 			_overlayText = _formatPosition(newPosition, videoPlayerController!.player.state.duration);
 			notifyListeners();
-			if (_waitingOnSwap) {
-				_swapStartTime = newPosition;
-			}
-			else if (!_seeking) {
+			if (!_seeking) {
 				_seeking = true;
 				await videoPlayerController!.player.seek(newPosition);
 				_seeking = false;
@@ -785,13 +755,11 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	Future<void> _onLongPressEnd() async {
-		await potentiallySwapVideo();
 		if (_playingBeforeLongPress) {
 			videoPlayerController!.player.play();
 		}
 		_currentlyWithinLongPress = false;
 		_overlayText = null;
-		_waitingOnSwap = false;
 		notifyListeners();
 	}
 
@@ -989,57 +957,30 @@ class AttachmentViewerController extends ChangeNotifier {
 		return successful ? filename : null;
 	}
 
-	Future<void> potentiallySwapVideo({bool play = false}) async {
-		if (_videoFileToSwapIn != null) {
-			final settings = context.read<EffectiveSettings>();
-			final newFile = _videoFileToSwapIn!;
-			_videoFileToSwapIn = null;
-			final oldState = _videoPlayerController?.player.state;
-			_hideVideoPlayerController = false;
-			await _ensureController().player.open(Media(newFile.path), play: false);
-			if (_isDisposed) return;
-			final mute = oldState?.volume.isZero ?? settings.muteAudio.value;
-			if (mute) {
-				if (!settings.muteAudio.value) {
-					settings.setMuteAudio(true);
-				}
-				await _videoPlayerController?.player.setVolume(0);
-				if (_isDisposed) return;
-			}
-			if (_isDisposed) return;
-			await _videoPlayerController?.player.setPlaylistMode(PlaylistMode.single);
-			if (_isDisposed) return;
-			if (Platform.isAndroid) {
-				// Seems to be necessary to prevent brief freeze near beginning of video
-				await Future.delayed(const Duration(milliseconds: 100));
-			}
-			if (_isDisposed) return;
-			final newPosition = _swapStartTime ?? oldState?.position;
-			if (newPosition != null) {
-				await _videoPlayerController?.player.seek(newPosition);
-				if (_isDisposed) return;
-			}
-			final error = await Future.any<String?>([
-				_videoPlayerController!.waitUntilFirstFrameRendered.then((_) => null),
-				_playerErrorStream.firstOrNull.then((error) async {
-					// Sometimes MPV sends bogus errors when trying different decoders
-					await Future.delayed(const Duration(seconds: 1));
-					return error;
-				})
-			]);
-			if (error != null) {
-				throw MediaPlayerException(error, _videoPlayerController?.player.state.playlist.current);
-			}
-			if (_isDisposed) return;
-			await _videoPlayerController?.player.play();
-			if (_isDisposed) return;
-			if (!play) {
-				await _videoPlayerController?.player.pause();
-				if (_isDisposed) return;
-			}
+	Future<void> _seekRelative(double factor) async {
+		final controller = _videoPlayerController;
+		if (controller == null) {
+			return;
+		}
+		final totalDuration = controller.player.state.duration;
+		final seekDuration = (totalDuration * factor).clamp(const Duration(seconds: -5), const Duration(seconds: 5));
+		final newPosition = (controller.player.state.position + seekDuration).clamp(Duration.zero, totalDuration);
+		await controller.player.seek(newPosition);
+		if (_isDisposed) {
+			return;
+		}
+		final overlayText = _overlayText = _formatPosition(newPosition, totalDuration);
+		notifyListeners();
+		await Future.delayed(const Duration(seconds: 1));
+		if (!_isDisposed && _overlayText == overlayText) {
+			_overlayText = null;
 			notifyListeners();
 		}
 	}
+
+	Future<void> seekForward() => _seekRelative(0.2);
+
+	Future<void> seekBackward() => _seekRelative(-0.2);
 
 	@override
 	void dispose() {
@@ -1584,6 +1525,22 @@ class AttachmentViewer extends StatelessWidget {
 									)
 								)
 							),
+							if (controller.videoPlayerController != null) Positioned.fill(
+								child: Row(
+									children: [
+										Expanded(
+											child: GestureDetector(
+												onDoubleTap: controller.seekBackward
+											)
+										),
+										Expanded(
+											child: GestureDetector(
+												onDoubleTap: controller.seekForward
+											)
+										)
+									],
+								)
+							),
 							ValueListenableBuilder(
 								valueListenable: controller.showLoadingProgress,
 								builder: (context, showLoadingProgress, _) => (showLoadingProgress && controller._soundSourceDownload == null) ? ValueListenableBuilder(
@@ -1678,9 +1635,9 @@ class AttachmentViewer extends StatelessWidget {
 										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
 										child: Container(
 											padding: const EdgeInsets.all(8),
-											margin: EdgeInsets.only(
+											margin: const EdgeInsets.only(
 												top: 12,
-												bottom: controller.swapIncoming ? 0 : 12
+												bottom: 12
 											),
 											decoration: const BoxDecoration(
 												color: Colors.black54,
@@ -1692,20 +1649,9 @@ class AttachmentViewer extends StatelessWidget {
 													children: [
 														Text(
 															controller.overlayText!,
-															style: TextStyle(
+															style: const TextStyle(
 																fontSize: 32,
-																color: Colors.white.withOpacity(controller.dimOverlayText ? 0.5 : 1)
-															)
-														),
-														if (controller.swapIncoming) Padding(
-															padding: const EdgeInsets.symmetric(vertical: 4),
-															child: ValueListenableBuilder(
-																valueListenable: controller.videoLoadingProgress,
-																builder: (context, double? value, _) => LinearProgressIndicator(
-																	color: Colors.white,
-																	backgroundColor: Colors.black,
-																	value: value
-																)
+																color: Colors.white
 															)
 														)
 													]
