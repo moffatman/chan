@@ -1048,6 +1048,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		_videoControllers.remove(this);
 		_ongoingConversion?.cancelIfActive();
 		_playerErrorStream.close();
+		final downloadingSoundUri = _soundSourceDownload?.uri;
+		if (downloadingSoundUri != null) {
+			VideoServer.instance.interruptOngoingDownloadFromUri(downloadingSoundUri);
+		}
 	}
 
 	@override
