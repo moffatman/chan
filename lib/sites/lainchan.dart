@@ -471,7 +471,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		throw UnimplementedError();
+		return Uri();
 	}
 
 	String _getWebUrl(String board, {int? threadId, int? postId, bool mod = false}) {
