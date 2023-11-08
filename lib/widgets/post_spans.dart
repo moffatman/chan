@@ -506,7 +506,8 @@ class PostQuoteLinkSpan extends PostSpan {
 		final stackCount = zone.stackIds.countOf(postId);
 		final enableInteraction = switch(zone.style) {
 			PostSpanZoneStyle.tree => stackCount <= 1,
-			_ => !expandedImmediatelyAbove
+			_ => !expandedImmediatelyAbove ||
+			     zone.shouldExpandPost(postId) // Always allow re-collapsing
 		};
 		final enableUnconditionalInteraction = switch(zone.style) {
 			PostSpanZoneStyle.tree => stackCount == 0,
