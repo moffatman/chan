@@ -554,7 +554,8 @@ class ThreadRow extends StatelessWidget {
 											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 											avoidBuggyClippers: true
 										)),
-										if (!settings.useFullWidthForCatalogCounters) countersPlaceholder
+										if (!settings.useFullWidthForCatalogCounters) countersPlaceholder,
+										if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText) TextSpan(text: '\n' * 25)
 									]
 								),
 								maxLines: settings.catalogGridModeTextLinesLimit
@@ -588,7 +589,7 @@ class ThreadRow extends StatelessWidget {
 				];
 			}
 			else {
-				final gridTextMaxHeight = (settings.catalogGridHeight / 2) - 20;
+				final gridTextMaxHeight = settings.catalogGridHeight / 2;
 				if (att == null) {
 					return [txt];
 				}
@@ -602,7 +603,7 @@ class ThreadRow extends StatelessWidget {
 							),
 							ConstrainedBox(
 								constraints: BoxConstraints(
-									minHeight: settings.catalogGridModeShowMoreImageIfLessText ? 25 : gridTextMaxHeight,
+									minHeight: 25,
 									maxHeight: gridTextMaxHeight
 								),
 								child: txt

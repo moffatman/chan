@@ -1439,7 +1439,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 			posts_: [
 				Post(
 					board: 'tv',
-					text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
+					text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
 					name: 'Anonymous',
 					trip: '!asdf',
 					time: DateTime.now().subtract(const Duration(minutes: 5)),
@@ -2869,7 +2869,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															),
 															AdaptiveSwitch(
 																value: settings.catalogGridModeShowMoreImageIfLessText,
-																onChanged: (v) {
+																onChanged: settings.catalogGridModeAttachmentInBackground ? null : (v) {
 																	setDialogState(() {
 																		settings.catalogGridModeShowMoreImageIfLessText = v;
 																	});
