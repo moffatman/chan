@@ -20,8 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
-final _appLaunchTime = DateTime.now();
-
 class HistoryPage extends StatefulWidget {
 	final bool isActive;
 
@@ -96,8 +94,9 @@ class HistoryPageState extends State<HistoryPage> {
 												barrierDismissible: true,
 												builder: (context) => StatefulBuilder(
 													builder: (context, setDialogState) {
-														final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (settings.includeThreadsYouRepliedToWhenDeletingHistory || i.youIds.isEmpty)).toList();
-														final thisSessionStates = states.where((s) => s.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
+														final openTabThreadBoxKeys = Persistence.tabs.map((t) => '${t.imageboardKey}/${t.thread?.board}/${t.thread?.id}').toSet();
+														final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (settings.includeThreadsYouRepliedToWhenDeletingHistory || i.youIds.isEmpty) && !openTabThreadBoxKeys.contains(i.boxKey)).toList();
+														final thisSessionStates = states.where((s) => s.lastOpenedTime.compareTo(Persistence.appLaunchTime) >= 0).toList();
 														final now = DateTime.now();
 														final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1).toList();
 														final lastWeekStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 7).toList();

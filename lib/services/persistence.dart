@@ -130,6 +130,7 @@ class Persistence extends ChangeNotifier {
 	static String get _sharedThreadStatesBoxName => 'threadStates';
 	static String get _sharedBoardsBoxName => 'boards';
 	static String get _sharedThreadsBoxName => 'threads';
+	static late final DateTime appLaunchTime;
 
 	static Future<Box<T>> _openBoxWithBackup<T>(String name, {
 		CompactionStrategy compactionStrategy = defaultCompactionStrategy,
@@ -323,6 +324,7 @@ class Persistence extends ChangeNotifier {
 	}
 
 	static Future<void> initializeStatic() async {
+		appLaunchTime = DateTime.now();
 		await Hive.initFlutter();
 		Hive.registerAdapter(PostAdapter());
 		Hive.registerAdapter(PostSpanFormatAdapter());
