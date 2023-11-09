@@ -476,6 +476,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						}
 					);
 					if (_isDisposed) return;
+					await MediaScan.scan(soundFile.uri); // Validate file
 					soundSource = soundFile.uri;
 				}
 				catch (e) {
