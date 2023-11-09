@@ -530,9 +530,10 @@ class MediaConversion {
 								'-framerate', '1'
 							],
 						'-i', inputUri.toStringFFMPEG(),
-						if (soundSource != null && !copyStreams) ...[
+						if (soundSource != null) ...[
 							'-i', soundSource!.toStringFFMPEG(),
-							if (soundSource != null) ...['-shortest', '-fflags', '+shortest'],
+							'-shortest',
+							'-fflags', '+shortest',
 							'-map', '0:v:0',
 							'-map', '1:a:0',
 							'-b:a', '192k'
