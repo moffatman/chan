@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:chan/services/apple.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -20,17 +21,9 @@ extension WithinRange on num {
   }
 }
 
-bool eventTooCloseToEdge(PointerEvent event) {
-  if (Platform.isAndroid) {
-		final view = PlatformDispatcher.instance.views.first;
-    final relativeX = (event.position.dx * view.devicePixelRatio) / view.physicalSize.width;
-    final relativeToCenter = (0.5 - relativeX).abs();
-    if (relativeToCenter >= 0.45) {
-      // Within 5% of edge, it could conflict with system gestures.
-      return true;
-    }
-  }
-  return false;
+bool eventTooCloseToEdge(Offset globalPosition) {
+  final mq = MediaQueryData.fromView(PlatformDispatcher.instance.views.first);
+  return !(Platform.isIOS ? (mq.viewPadding - sumAdditionalSafeAreaInsets()) : mq.systemGestureInsets).deflateRect(Offset.zero & mq.size).contains(globalPosition);
 }
 
 enum _DragState {

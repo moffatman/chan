@@ -113,7 +113,7 @@ class _SliderBuilderState extends State<SliderBuilder> {
 				builder: (context, smoothedFactor, child) => widget.builder(context, smoothedFactor)
 			),
 			onPointerDown: (e) {
-				if (eventTooCloseToEdge(e)) {
+				if (eventTooCloseToEdge(e.position)) {
 					return;
 				}
 				_recognizingRecognizer.addPointer(e);

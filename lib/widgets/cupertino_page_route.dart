@@ -447,7 +447,7 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 	}
 
 	void _handlePointerDown(PointerDownEvent event) {
-		if (!eventTooCloseToEdge(event) && widget.enabledCallback()) {
+		if (!eventTooCloseToEdge(event.position) && widget.enabledCallback()) {
 			_recognizer.addPointer(event);
 		}
 	}
