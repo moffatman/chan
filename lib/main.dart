@@ -1701,10 +1701,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
-	bool get _isScreenWide => (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width - 85) > (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height - 50);
 	bool get isScreenWide => (MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);
-
-	bool get _isShowingBottomBar => EffectiveSettings.instance.androidDrawer || (EffectiveSettings.instance.hideBarsWhenScrollingDown && ScrollTracker.instance.lastNonNullDirection == VerticalDirection.down) ? false : !_isScreenWide;
 
 	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer;
 	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer);
