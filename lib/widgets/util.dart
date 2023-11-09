@@ -153,7 +153,7 @@ void showUndoToast({
 				))
 			)
 		),
-		duration: const Duration(seconds: 5),
+		duration: const Duration(milliseconds: 3500),
 		padding: padding
 	);
 }
