@@ -82,6 +82,9 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	double progress = 0;
 	late final TextEditingController urlController;
 	late final FocusNode urlFocusNode;
+	static const _kMobileUserAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1';
+	static const _kDesktopUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15';
+	bool useDesktopUserAgent = false;
 
 	@override
 	void initState() {
@@ -139,29 +142,60 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 						child: CupertinoButton(
 							minSize: 0,
 							padding: EdgeInsets.zero,
-							onPressed: () async {
-								final choice = await showAdaptiveModalPopup<WebImageSearchMethod>(
-									context: context,
-									builder: (context) => AdaptiveActionSheet(
-										title: const Text('Search'),
-										actions: WebImageSearchMethod.values.map((entry) => AdaptiveActionSheetAction(
-											child: Text(entry.name, style: TextStyle(
-												fontWeight: entry == settings.webImageSearchMethod ? FontWeight.bold : null
-											)),
-											onPressed: () {
-												Navigator.of(context, rootNavigator: true).pop(entry);
-											}
-										)).toList(),
+							onPressed: () => showAdaptiveModalPopup<WebImageSearchMethod>(
+								context: context,
+								builder: (context) => StatefulBuilder(
+									builder: (context, setDialogState) => AdaptiveActionSheet(
+										title: const Text('Web Image Picker Settings'),
+										message: Column(
+											children: [
+												const Text('Search method'),
+												const SizedBox(height: 10),
+												AdaptiveChoiceControl(
+													knownWidth: 100,
+													children: {
+														for (final entry in WebImageSearchMethod.values)
+															entry: (null, entry.name)
+													},
+													groupValue: settings.webImageSearchMethod,
+													onValueChanged: (choice) {
+														settings.webImageSearchMethod = choice;
+														setDialogState(() {});
+													}
+												),
+												const SizedBox(height: 10),
+												const Text('User Agent'),
+												const SizedBox(height: 10),
+												AdaptiveChoiceControl(
+													knownWidth: 100,
+													children: const {
+														false: (CupertinoIcons.device_phone_portrait, 'Mobile'),
+														true: (CupertinoIcons.desktopcomputer, 'Desktop')
+													},
+													groupValue: useDesktopUserAgent,
+													onValueChanged: (newUseDesktopUserAgent) async {
+														useDesktopUserAgent = newUseDesktopUserAgent;
+														setDialogState(() {});
+														final settings = await webViewController?.getSettings();
+														if (settings == null) {
+															if (context.mounted) {
+																alertError(context, 'Failed to change WebView settings');
+															}
+															return;
+														}
+														settings.userAgent = useDesktopUserAgent ? _kDesktopUserAgent : _kMobileUserAgent;
+														await webViewController?.setSettings(settings: settings);
+													}
+												)
+											]
+										),
 										cancelButton: AdaptiveActionSheetAction(
-											child: const Text('Cancel'),
+											child: const Text('Close'),
 											onPressed: () => Navigator.of(context, rootNavigator: true).pop()
 										)
 									)
-								);
-								if (choice != null) {
-									settings.webImageSearchMethod = choice;
-								}
-							},
+								)
+							),
 							child: const Icon(CupertinoIcons.gear)
 						)
 					)
@@ -177,7 +211,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										initialSettings: InAppWebViewSettings(
 											mediaPlaybackRequiresUserGesture: false,
 											transparentBackground: true,
-											userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1',
+											userAgent: useDesktopUserAgent ? _kDesktopUserAgent : _kMobileUserAgent,
 											useHybridComposition: true,
 											allowsInlineMediaPlayback: true,
 										),
