@@ -1822,7 +1822,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		notifyListeners();
 		final threadState = imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		try {
-			final translated = await translateHtml(post.text);
+			final translated = await translateHtml(post.text, toLanguage: EffectiveSettings.instance.translationTargetLanguage);
 			final translatedPost = Post(
 				board: post.board,
 				text: translated,

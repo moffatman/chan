@@ -299,13 +299,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       centeredPostThumbnailSize: fields[168] as double?,
       ellipsizeLongFilenamesOnPosts: fields[169] as bool?,
       muteAudioWhenOpeningGallery: fields[170] as TristateSystemSetting?,
+      translationTargetLanguage: fields[171] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(167)
+      ..writeByte(168)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -639,7 +640,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(169)
       ..write(obj.ellipsizeLongFilenamesOnPosts)
       ..writeByte(170)
-      ..write(obj.muteAudioWhenOpeningGallery);
+      ..write(obj.muteAudioWhenOpeningGallery)
+      ..writeByte(171)
+      ..write(obj.translationTargetLanguage);
   }
 
   @override

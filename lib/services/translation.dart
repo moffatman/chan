@@ -7,6 +7,38 @@ import 'package:html/parser.dart';
 
 const _translationApiRoot = 'https://api.chance.surf/translate';
 
+const translationSupportedTargetLanguages = {
+	'en': 'English',
+	'bg': 'Bulgarian',
+	'zh': 'Chinese',
+	'cs': 'Czech',
+	'da': 'Danish',
+	'nl': 'Dutch',
+	'et': 'Estonian',
+	'fi': 'Finnish',
+	'fr': 'French',
+	'de': 'German',
+	'el': 'Greek',
+	'hu': 'Hungarian',
+	'id': 'Indonesian',
+	'it': 'Italian',
+	'ja': 'Japanese',
+	'ko': 'Korean',
+	'lv': 'Latvian',
+	'lt': 'Lithuanian',
+	'no': 'Norwegian',
+	'pl': 'Polish',
+	'pt': 'Portuguese',
+	'ro': 'Romanian',
+	'ru': 'Russian',
+	'sk': 'Slovak',
+	'sl': 'Slovenian',
+	'es': 'Spanish',
+	'sv': 'Swedish',
+	'tr': 'Turkish',
+	'uk': 'Ukrainian'
+};
+
 class TranslationException implements Exception {
 	final String message;
 	const TranslationException(this.message);
@@ -14,7 +46,7 @@ class TranslationException implements Exception {
 	String toString() => 'Translation error: $message';
 }
 
-Future<String> translateHtml(String html, {String toLanguage = 'en'}) async {
+Future<String> translateHtml(String html, {required String toLanguage}) async {
 	final compressed = compressHTML(html);
 	final response = await Dio().get(_translationApiRoot, queryParameters: {
 		'html': compressed.html,
@@ -26,7 +58,7 @@ Future<String> translateHtml(String html, {String toLanguage = 'en'}) async {
 	return compressed.decompressTranslation(response.data['html']);
 }
 
-Future<List<String>> batchTranslate(List<String> input, {String toLanguage = 'en'}) async {
+Future<List<String>> batchTranslate(List<String> input, {required String toLanguage}) async {
 	const escape = HtmlEscape();
 	final joined = input.asMap().entries.map((e) {
 		return '<p>${escape.convert(e.value)}</p>';

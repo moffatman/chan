@@ -1016,6 +1016,8 @@ class SavedSettings extends HiveObject {
 	bool ellipsizeLongFilenamesOnPosts;
 	@HiveField(170)
 	TristateSystemSetting muteAudioWhenOpeningGallery;
+	@HiveField(171)
+	String translationTargetLanguage;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1188,6 +1190,7 @@ class SavedSettings extends HiveObject {
 		double? centeredPostThumbnailSize,
 		bool? ellipsizeLongFilenamesOnPosts,
 		TristateSystemSetting? muteAudioWhenOpeningGallery,
+		String? translationTargetLanguage,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1383,7 +1386,8 @@ class SavedSettings extends HiveObject {
 		muteAudioWhenOpeningGallery = muteAudioWhenOpeningGallery ?? switch (deprecatedAlwaysStartVideosMuted) {
 			true => TristateSystemSetting.b,
 			false || null => TristateSystemSetting.a
-		} {
+		},
+		translationTargetLanguage = translationTargetLanguage ?? 'en' {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2633,6 +2637,13 @@ class EffectiveSettings extends ChangeNotifier {
 	TristateSystemSetting get muteAudioWhenOpeningGallery => _settings.muteAudioWhenOpeningGallery;
 	set muteAudioWhenOpeningGallery(TristateSystemSetting setting) {
 		_settings.muteAudioWhenOpeningGallery = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	String get translationTargetLanguage => _settings.translationTargetLanguage;
+	set translationTargetLanguage(String setting) {
+		_settings.translationTargetLanguage = setting;
 		_settings.save();
 		notifyListeners();
 	}

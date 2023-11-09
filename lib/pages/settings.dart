@@ -17,6 +17,7 @@ import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/translation.dart';
 import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -1215,7 +1216,53 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
-				const SizedBox(height: 16)
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(Icons.translate),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Post translation')
+						),
+						AdaptiveFilledButton(
+							padding: const EdgeInsets.all(8),
+							onPressed: () async {
+								final newLanguageCode = await showAdaptiveModalPopup<String>(
+									context: context,
+									builder: (context) => AdaptiveActionSheet(
+										title: const Text('Select language'),
+										actions: translationSupportedTargetLanguages.entries.map((pair) => AdaptiveActionSheetAction(
+											isSelected: pair.key == settings.translationTargetLanguage,
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Text(pair.value)
+												]
+											),
+											onPressed: () {
+												Navigator.of(context, rootNavigator: true).pop(pair.key);
+											}
+										)).toList(),
+										cancelButton: AdaptiveActionSheetAction(
+											child: const Text('Cancel'),
+											onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+										)
+									)
+								);
+								if (newLanguageCode != null) {
+									settings.translationTargetLanguage = newLanguageCode;
+								}
+							},
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Text(translationSupportedTargetLanguages[settings.translationTargetLanguage] ?? settings.translationTargetLanguage)
+								]
+							)
+						)
+					]
+				),
+				const SizedBox(height: 32)
 			]
 		);
 	}
