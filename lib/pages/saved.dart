@@ -482,6 +482,7 @@ class _SavedPageState extends State<SavedPage> {
 																			zombie: watch.item.item.zombie
 																		);
 																	}
+																	Future.delayed(const Duration(milliseconds: 100), _removeArchivedHack.didUpdate);
 																})
 															);
 														}
