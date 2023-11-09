@@ -743,7 +743,7 @@ class PostCodeSpan extends PostSpan {
 			id: 'languagedetect ${identityHashCode(text)} ${text.substring(0, math.min(10, text.length - 1))}',
 			work: () async {
 				final startsWithCapitalLetter = RegExp(r'^[A-Z]');
-				if (lineCount < 10 && startsWithCapitalLetter.hasMatch(text)) {
+				if (lineCount == 1 || lineCount < 10 && startsWithCapitalLetter.hasMatch(text)) {
 					// Probably just plaintext
 					return [TextSpan(text: text)];
 				}
