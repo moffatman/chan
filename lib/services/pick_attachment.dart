@@ -61,12 +61,13 @@ List<AttachmentPickingSource> getAttachmentSources({
 		iconSizeMultiplier: 1.4,
 		pick: () => picker.pickVideo(source: ImageSource.camera).then((x) => x?.path)
 	);
+	final site = context.read<ImageboardSite?>();
 	final web = AttachmentPickingSource(
 		name: 'Web',
 		icon: CupertinoIcons.globe,
 		pick: () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
 			builder: (_) => WebImagePickerPage(
-				site: context.read<ImageboardSite?>()
+				site: site
 			)
 		)).then((x) => x?.path)
 	);
