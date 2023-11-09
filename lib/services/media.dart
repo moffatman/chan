@@ -483,6 +483,13 @@ class MediaConversion {
 					// and works well enough to avoid huge file due to looping
 					// a high-res source with long audio.
 					outputBitrate = 400000;
+					final soundScan = await MediaScan.scan(soundSource!);
+					if (outputDurationInMilliseconds != null) {
+						outputDurationInMilliseconds = max(outputDurationInMilliseconds, soundScan.duration?.inMilliseconds ?? outputDurationInMilliseconds);
+					}
+					else {
+						outputDurationInMilliseconds = soundScan.duration?.inMilliseconds;
+					}
 				}
 				final results = await pool.withResource(() async {
 					final vfs = <String>[];
