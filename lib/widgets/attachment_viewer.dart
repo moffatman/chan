@@ -613,14 +613,20 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 					else if (result is StreamingMP4ConvertingFile) {
 						_videoLoadingProgress = result.progress;
-						result.mp4File.then((mp4File) async {
-							if (_isDisposed) {
-								return;
-							}
-							_videoLoadingProgress = ValueNotifier(null);
-							onCacheCompleted(mp4File);
-							notifyListeners();
-						});
+						notifyListeners();
+						final mp4File = await result.mp4File;
+						if (_isDisposed) {
+							return;
+						}
+						if (isPrimary || !background) {
+							await _ensureController().player.open(Media(mp4File.path), play: false);
+						}
+						if (_isDisposed) {
+							return;
+						}
+						_videoLoadingProgress = ValueNotifier(null);
+						onCacheCompleted(mp4File);
+						notifyListeners();
 					}
 				}
 				if (_isDisposed) return;
