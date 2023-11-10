@@ -1811,13 +1811,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 														icon: Icon(Adaptive.icons.bookmark),
 														primaryCount: CombiningValueListenable<int>(
 															children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
-															combine: (a, b) => a + b,
-															noChildrenValue: 0
+															combine: (list) => list.fold(0, (a, b) => a + b)
 														),
 														secondaryCount: CombiningValueListenable<int>(
 															children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
-															combine: (a, b) => a + b,
-															noChildrenValue: 0
+															combine: (list) => list.fold(0, (a, b) => a + b)
 														)
 													), hideTabletLayoutLabels ? null : 'Saved',
 												),
@@ -1910,13 +1908,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											icon: Icon(Adaptive.icons.bookmark, size: 28),
 											primaryCount: CombiningValueListenable<int>(
 												children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
-												combine: (a, b) => a + b,
-												noChildrenValue: 0
+												combine: (list) => list.fold(0, (a, b) => a + b)
 											),
 											secondaryCount: CombiningValueListenable<int>(
 												children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
-												combine: (a, b) => a + b,
-												noChildrenValue: 0
+												combine: (list) => list.fold(0, (a, b) => a + b)
 											)
 										)
 									),

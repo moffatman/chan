@@ -267,12 +267,10 @@ class FilteringListenable extends ChangeNotifier {
 
 class CombiningValueListenable<T> extends ChangeNotifier implements ValueListenable<T> {
 	final List<ValueListenable<T>> children;
-	final T Function(T, T) combine;
-	final T noChildrenValue;
+	final T Function(Iterable<T>) combine;
 	CombiningValueListenable({
 		required this.children,
-		required this.combine,
-		required this.noChildrenValue
+		required this.combine
 	}) {
 		for (final child in children) {
 			child.addListener(_listen);
@@ -292,7 +290,7 @@ class CombiningValueListenable<T> extends ChangeNotifier implements ValueListena
 	}
 
 	@override
-	T get value => children.isEmpty ? noChildrenValue : children.map((c) => c.value).reduce(combine);
+	T get value => combine(children.map((c) => c.value));
 }
 
 final Map<Function, ({Timer timer, Completer<void> completer})> _functionIdleTimers = {};

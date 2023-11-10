@@ -228,6 +228,7 @@ class MediaConversion {
 	final bool removeMetadata;
 	final bool randomizeChecksum;
 	bool requireAudio;
+	int? targetBitrate;
 
 	CancelableOperation<FFToolsOutput>? _session;
 	MediaScan? cachedScan;
@@ -252,7 +253,8 @@ class MediaConversion {
 		this.copyStreams = false,
 		this.removeMetadata = false,
 		this.randomizeChecksum = false,
-		this.requireAudio = false
+		this.requireAudio = false,
+		this.targetBitrate
 	});
 
 	static MediaConversion toMp4(Uri inputFile, {
@@ -292,7 +294,8 @@ class MediaConversion {
 		Uri? soundSource,
 		bool removeMetadata = false,
 		bool randomizeChecksum = false,
-		bool copyStreams = false
+		bool copyStreams = false,
+		int? targetBitrate
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -305,7 +308,8 @@ class MediaConversion {
 			headers: headers,
 			soundSource: soundSource,
 			removeMetadata: removeMetadata,
-			randomizeChecksum: randomizeChecksum
+			randomizeChecksum: randomizeChecksum,
+			targetBitrate: targetBitrate
 		);
 	}
 
@@ -442,7 +446,7 @@ class MediaConversion {
 					await convertedFile.delete();
 				}
 				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers);
-				int outputBitrate = scan.bitrate ?? 2000000;
+				int outputBitrate = targetBitrate ?? scan.bitrate ?? 2000000;
 				int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
 				if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') {
 					if (maximumDurationInSeconds != null) {
@@ -484,11 +488,13 @@ class MediaConversion {
 					// a high-res source with long audio.
 					outputBitrate = 400000;
 					final soundScan = await MediaScan.scan(soundSource!);
-					if (outputDurationInMilliseconds != null) {
-						outputDurationInMilliseconds = max(outputDurationInMilliseconds, soundScan.duration?.inMilliseconds ?? outputDurationInMilliseconds);
-					}
-					else {
-						outputDurationInMilliseconds = soundScan.duration?.inMilliseconds;
+					final soundDuration = soundScan.duration;
+					if (soundDuration != null) {
+						final ms = outputDurationInMilliseconds = max(outputDurationInMilliseconds ?? soundDuration.inMilliseconds, soundDuration.inMilliseconds);
+						if (copyStreams && outputFileExtension == 'webm') {
+							// Some bug on Android where it will loop forever, need to set a target time
+							maximumDurationInSeconds = (ms / 1000).ceil();
+						}
 					}
 				}
 				final results = await pool.withResource(() async {
@@ -503,9 +509,6 @@ class MediaConversion {
 						vfs.add('noise=alls=10:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
 					}
 					final inputFileIsVideoLike = inputFile.path.endsWith('.gif') || inputFile.path.endsWith('.webm');
-					if (!inputFileIsVideoLike && soundSource != null) {
-						outputBitrate = 1000;
-					}
 					Uri inputUri = inputFile;
 					Map<String, String> inputHeaders = headers;
 					if (soundSource != null && inputFile.toStringFFMPEG().startsWith('http')) {
@@ -557,7 +560,8 @@ class MediaConversion {
 							else if (Platform.isAndroid) ...[
 								// Android phones are not fast enough for VP9 encoding, use VP8
 								'-c:v', 'libvpx',
-								'-cpu-used', '2'
+								'-cpu-used', '2',
+								'-auto-alt-ref', '0'
 							]
 							else ...[
 								'-c:v', 'libvpx-vp9',

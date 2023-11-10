@@ -500,13 +500,11 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 								icon: NotifyingIcon(
 									primaryCount: CombiningValueListenable<int>(
 										children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
-										combine: (a, b) => a + b,
-										noChildrenValue: 0
+										combine: (list) => list.fold(0, (a, b) => a + b)
 									),
 									secondaryCount: CombiningValueListenable<int>(
 										children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
-										combine: (a, b) => a + b,
-										noChildrenValue: 0
+										combine: (list) => list.fold(0, (a, b) => a + b)
 									),
 									icon: const Icon(CupertinoIcons.bell)
 								)

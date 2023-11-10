@@ -654,13 +654,37 @@ class StreamingMP4Conversion {
 
 	Future<StreamingMP4ConversionResult> start({bool force = false}) async {
 		final inputExtension = inputFile.path.split('.').last.toLowerCase();
-		if (Platform.isAndroid && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(inputExtension)) {
+		if (inputExtension == 'gif' && soundSource != null) {
+			// Two stages, to avoid network + performance hit of ffmpeg looping unconvered input gif
+			final conversion1 = _streamingConversion = MediaConversion.toWebm(inputFile, headers: headers, stripAudio: false, targetBitrate: 400000);
+			final conversion2 = _joinedConversion = MediaConversion.toWebm(conversion1.getDestination().uri, soundSource: soundSource, stripAudio: false, copyStreams: true);
+			conversion1.start();
+			return StreamingMP4ConvertingFile(
+				mp4File: conversion1.result.then((r) async {
+					conversion2.start();
+					final file = (await conversion2.result).file;
+					_joinedCompleter.complete(file); // To allow cleanup in _waitAndCleanup
+					return file;
+				}),
+				hasAudio: true,
+				progress: CombiningValueListenable(
+					children: [conversion1.progress, conversion2.progress],
+					combine: (progresses) {
+						if (progresses.every((p) => p == null)) {
+							return null;
+						}
+						return progresses.fold<double>(0, (t, v) => t + ((v ?? 0) / progresses.length));
+					}
+				)
+			);
+		}
+		else if (['jpg', 'jpeg', 'png', 'webm'].contains(inputExtension) && (soundSource != null || Platform.isAndroid)) {
 			final scan = await MediaScan.scan(inputFile, headers: headers);
 			final conversion = _directConversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false, copyStreams: soundSource != null && inputExtension == 'webm');
 			conversion.start();
 			return StreamingMP4ConvertingFile(
 				mp4File: conversion.result.then((r) => r.file),
-				hasAudio: scan.hasAudio,
+				hasAudio: scan.hasAudio || soundSource != null,
 				progress: conversion.progress
 			);
 		}
@@ -713,9 +737,12 @@ class StreamingMP4Conversion {
 
 	Future<void> _waitAndCleanup() async {
 		await _joinedCompleter.future;
-		final junkFolder = _streamingConversion?.getDestination().parent;
-		if (junkFolder != null) {
-			junkFolder.delete(recursive: true);
+		FileSystemEntity? tmp = _streamingConversion?.getDestination();
+		if (_streamingConversion?.requiresSubdirectory ?? false) {
+			tmp = tmp?.parent;
+		}
+		if (tmp != null) {
+			tmp.delete(recursive: true);
 		}
 		if (_cachingServerDigest != null) {
 			await VideoServer.instance.cleanupCachedDownloadTree(_cachingServerDigest!);
