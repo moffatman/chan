@@ -89,13 +89,7 @@ void main() async {
 				FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 			}
 			await Persistence.initializeStatic();
-			final webmcache = await Directory('${Persistence.temporaryDirectory.path}/webmcache').create(recursive: true);
-			final oldHttpCache = Directory('${webmcache.path}/httpcache');
-			if (oldHttpCache.statSync().type == FileSystemEntityType.directory) {
-				await oldHttpCache.rename('${Persistence.temporaryDirectory.path}/httpcache');
-			}
-			final httpcache = await Directory('${Persistence.temporaryDirectory.path}/httpcache').create(recursive: true);
-			VideoServer.initializeStatic(webmcache, httpcache);
+			VideoServer.initializeStatic(Persistence.webmCacheDirectory, Persistence.httpCacheDirectory);
 			await Notifications.initializeStatic();
 			await updateDynamicColors();
 			await initializeFonts();

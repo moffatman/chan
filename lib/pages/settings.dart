@@ -4061,6 +4061,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		});
 		try {
 			await Persistence.clearFilesystemCaches(null);
+			await Persistence.ensureTemporaryDirectoriesExist();
 		}
 		catch (e, st) {
 			Future.error(e, st); // Report to Crashlytics

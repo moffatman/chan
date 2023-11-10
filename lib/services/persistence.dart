@@ -116,6 +116,8 @@ class Persistence extends ChangeNotifier {
 	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
+	static late final Directory webmCacheDirectory;
+	static late final Directory httpCacheDirectory;
 	static late final PersistCookieJar wifiCookies;
 	static late final PersistCookieJar cellularCookies;
 	static PersistCookieJar get currentCookies {
@@ -323,6 +325,15 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
+	static Future<void> ensureTemporaryDirectoriesExist() async {
+		await webmCacheDirectory.create(recursive: true);
+		final oldHttpCache = Directory('${webmCacheDirectory.path}/httpcache');
+		if (oldHttpCache.statSync().type == FileSystemEntityType.directory) {
+			await oldHttpCache.rename(httpCacheDirectory.path);
+		}
+		await httpCacheDirectory.create(recursive: true);
+	}
+
 	static Future<void> initializeStatic() async {
 		appLaunchTime = DateTime.now();
 		await Hive.initFlutter();
@@ -372,6 +383,9 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(MouseModeQuoteLinkBehaviorAdapter());
 		Hive.registerAdapter(DrawerModeAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
+		webmCacheDirectory = Directory('${temporaryDirectory.path}/webmcache');
+		httpCacheDirectory = Directory('${temporaryDirectory.path}/httpcache');
+		await ensureTemporaryDirectoriesExist();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(
 			storage: FileStorage(temporaryDirectory.path)
