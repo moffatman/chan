@@ -125,9 +125,7 @@ extension on GallerySavePathOrganizing {
 			case GallerySavePathOrganizing.boardAndThreadSubfolders:
 				return [attachment.board, attachment.threadId.toString()];
 			case GallerySavePathOrganizing.boardAndThreadNameSubfolders:
-				final title = attachment.threadId == null ?
-					null :
-					controller.imageboard.persistence.getThreadStateIfExists(ThreadIdentifier(attachment.board, attachment.threadId!))?.thread?.title;
+				final title = controller.thread?.title;
 				if (title == null) {
 					return [attachment.board, attachment.threadId.toString()];
 				}
@@ -254,6 +252,15 @@ class AttachmentViewerController extends ChangeNotifier {
 	final loadingSpinnerKey = GlobalKey(debugLabel: 'AttachmentViewerController.loadingSpinnerKey');
 	/// Blocks of text to draw on top of image
 	List<RecognizedTextBlock> get textBlocks => _textBlocks;
+
+	Thread? get thread {
+		final threadId = attachment.threadId;
+		if (threadId == null) {
+			return null;
+		}
+		final threadIdentifier = ThreadIdentifier(attachment.board, threadId);
+		return imageboard.persistence.getThreadStateIfExists(threadIdentifier)?.thread ?? imageboard.site.getThreadFromCatalogCache(threadIdentifier);
+	}
 
 
 	AttachmentViewerController({
