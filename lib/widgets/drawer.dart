@@ -95,6 +95,7 @@ class _DrawerList<T extends Object> {
 	final bool Function(int) isSelected;
 	final void Function(int) onSelect;
 	final Iterable<TabMenuAction> Function(int, T) buildAdditionalActions;
+	final Future<void> Function()? onRefresh;
 
 	static Iterable<TabMenuAction> _buildNothing(int i, Object t) => const Iterable.empty();
 
@@ -107,7 +108,8 @@ class _DrawerList<T extends Object> {
 		required this.isSelected,
 		required this.onSelect,
 		this.buildAdditionalActions = _buildNothing,
-		this.onReorder
+		this.onReorder,
+		this.onRefresh
 	});
 
 	Widget itemBuilder(BuildContext context, int i) {
@@ -305,6 +307,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					thread: watch.item.threadIdentifier,
 					builder: builder
 				),
+				onRefresh: ImageboardRegistry.threadWatcherController.update,
 				onReorder: null,
 				onClose: (i) {
 					final watch = watches[i];
@@ -524,16 +527,22 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					),
 					Expanded(
 						child: Material(
-							child: ReorderableListView.builder(
-								key: PageStorageKey(settings.drawerMode),
-								primary: false,
-								buildDefaultDragHandles: false,
-								physics: const AlwaysScrollableScrollPhysics(),
-								itemCount: list.list.length,
-								onReorder: (oldIndex, newIndex) {
-									list.onReorder?.call(oldIndex, newIndex);
+							child: RefreshIndicator(
+								notificationPredicate: (x) => list.onRefresh != null,
+								onRefresh: () async {
+									await list.onRefresh?.call();
 								},
-								itemBuilder: list.itemBuilder
+								child: ReorderableListView.builder(
+									key: PageStorageKey(settings.drawerMode),
+									primary: false,
+									buildDefaultDragHandles: false,
+									physics: const AlwaysScrollableScrollPhysics(),
+									itemCount: list.list.length,
+									onReorder: (oldIndex, newIndex) {
+										list.onReorder?.call(oldIndex, newIndex);
+									},
+									itemBuilder: list.itemBuilder
+								)
 							)
 						)
 					),
