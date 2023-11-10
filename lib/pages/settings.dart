@@ -3732,7 +3732,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							GallerySavePathOrganizing.boardSubfolders: (null, Platform.isIOS ? 'Per-board albums' : 'Per-board subfolders'),
 							if (Platform.isAndroid) ...{
 								GallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders'),
-								GallerySavePathOrganizing.boardAndThreadNameSubfolders: (null, 'Per-board and per-thread (with name) subfolders')
+								GallerySavePathOrganizing.boardAndThreadNameSubfolders: (null, 'Per-board and per-thread (with name) subfolders'),
+								GallerySavePathOrganizing.threadNameSubfolders: (null, 'Per-thread (with name) subfolders')
 							}
 						},
 						groupValue: settings.gallerySavePathOrganizing,

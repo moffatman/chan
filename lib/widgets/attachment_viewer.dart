@@ -130,6 +130,12 @@ extension on GallerySavePathOrganizing {
 					return [attachment.board, attachment.threadId.toString()];
 				}
 				return [attachment.board, '${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
+			case GallerySavePathOrganizing.threadNameSubfolders:
+				final title = controller.thread?.title;
+				if (title == null) {
+					return ['${attachment.board} - ${attachment.threadId}'];
+				}
+				return ['${attachment.board} - ${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
 		}
 	}
 	String? albumNameFor(Attachment attachment) => switch (this) {

@@ -625,7 +625,9 @@ enum GallerySavePathOrganizing {
 	@HiveField(3)
 	boardAndThreadNameSubfolders,
 	@HiveField(4)
-	noFolder
+	noFolder,
+	@HiveField(5)
+	threadNameSubfolders
 }
 
 final allowedGoogleFonts = {
