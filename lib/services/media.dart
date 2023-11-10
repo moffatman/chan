@@ -536,7 +536,6 @@ class MediaConversion {
 							'-fflags', '+shortest',
 							'-map', '0:v:0',
 							'-map', '1:a:0',
-							'-b:a', '192k'
 						],
 						'-max_muxing_queue_size', '9999',
 						...extraOptions,
