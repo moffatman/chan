@@ -1409,18 +1409,29 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						onWillPop: () async {
 							return !(await _tabs._settingsNavigatorKey.currentState?.maybePop() ?? false);
 						},
-						child: ImageboardScope(
-							imageboardKey: devImageboard?.key,
-							child: ChangeNotifierProvider.value(
-								value: devTab,
-								child: ClipRect(
-									child: PrimaryScrollControllerInjectingNavigator(
-										navigatorKey: _tabs._settingsNavigatorKey,
-										observers: [
-											HeroController(),
-											ScrollTrackerNavigatorObserver()
-										],
-										buildRoot: (context) => const SettingsPage()
+						child: Provider.value(
+							value: OpenInNewTabZone(
+								onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
+									withImageboardKey: imageboardKey,
+									withBoard: thread.board,
+									withThreadId: thread.id,
+									activate: activate,
+									incognito: incognito
+								)
+							),
+							child: ImageboardScope(
+								imageboardKey: devImageboard?.key,
+								child: ChangeNotifierProvider.value(
+									value: devTab,
+									child: ClipRect(
+										child: PrimaryScrollControllerInjectingNavigator(
+											navigatorKey: _tabs._settingsNavigatorKey,
+											observers: [
+												HeroController(),
+												ScrollTrackerNavigatorObserver()
+											],
+											buildRoot: (context) => const SettingsPage()
+										)
 									)
 								)
 							)
