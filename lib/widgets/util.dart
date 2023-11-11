@@ -465,7 +465,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			type: url.path.endsWith('.webm') ? AttachmentType.webm :
 			  ['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.path.endsWith(e)) ? AttachmentType.image : AttachmentType.mp4,
 			board: '',
-			id: '',
+			id: url.toString(),
 			ext: '.${url.path.split('.').last}',
 			filename: url.path.split('/').last,
 			url: url.toString(),

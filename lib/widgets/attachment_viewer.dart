@@ -786,7 +786,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool get canShare => (overrideSource ?? _cachedFile) != null;
 
 	File getFile() {
-		if (overrideSource != null) {
+		if (overrideSource?.isScheme('file') ?? false) {
 			return File(overrideSource!.path);
 		}
 		else if (_cachedFile != null) {
