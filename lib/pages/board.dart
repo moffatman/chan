@@ -270,6 +270,7 @@ class BoardPageState extends State<BoardPage> {
 
 	void _onThreadSelected(ThreadIdentifier identifier) {
 		_lastSelectedThread = identifier;
+		_listController.unfocusSearch();
 		setState(() {});
 		if (widget.onThreadSelected != null) {
 			widget.onThreadSelected!(identifier);

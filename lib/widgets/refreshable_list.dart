@@ -1182,6 +1182,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		setState(() {});
 	}
 
+	void _unfocusSearch() {
+		_searchFocusNode.unfocus();
+		setState(() {});
+	}
+
 	Future<void> _loadOmittedItems(RefreshableListItem<T> value) async {
 		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id);
 		try {
@@ -2766,6 +2771,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	void focusSearch() {
 		state?._focusSearch();
+	}
+	void unfocusSearch() {
+		state?._unfocusSearch();
 	}
 	void reportPrimaryScrollController(ScrollController? controller) {
 		if (scrollController != controller) {
