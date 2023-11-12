@@ -25,8 +25,7 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 					bytes = await conversion.getDestination().readAsBytes();
 				}
 				else {
-					conversion.start();
-					final result = await conversion.result;
+					final result = await conversion.start();
 					bytes = await result.file.readAsBytes();
 				}
 				return await decode(await ImmutableBuffer.fromUint8List(bytes));

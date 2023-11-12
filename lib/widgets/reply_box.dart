@@ -529,7 +529,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 		}
 		if (!mounted) return null;
-		transcode.start();
 		setState(() {
 			_attachmentProgress = ('Converting', transcode);
 		});
@@ -541,7 +540,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					toastedStart = true;
 				}
 			});
-			final result = await transcode.result;
+			final result = await transcode.start();
 			if (!mounted) return null;
 			setState(() {
 				_attachmentProgress = null;

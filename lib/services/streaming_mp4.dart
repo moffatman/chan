@@ -623,9 +623,8 @@ class StreamingMP4Conversion {
 
 	ValueNotifier<double?> _handleJoining(Uri hlsUri) {
 		final joinedConversion = _joinedConversion = MediaConversion.toMp4(hlsUri, copyStreams: true);
-		joinedConversion.start();
 		() async {
-			final joined = await joinedConversion.result;
+			final joined = await joinedConversion.start();
 			final expected = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource).getDestination();
 			await expected.parent.create(recursive: true);
 			await joined.file.rename(expected.path);
@@ -658,11 +657,9 @@ class StreamingMP4Conversion {
 			// Two stages, to avoid network + performance hit of ffmpeg looping unconvered input gif
 			final conversion1 = _streamingConversion = MediaConversion.toWebm(inputFile, headers: headers, stripAudio: false, targetBitrate: 400000);
 			final conversion2 = _joinedConversion = MediaConversion.toWebm(conversion1.getDestination().uri, soundSource: soundSource, stripAudio: false, copyStreams: true);
-			conversion1.start();
 			return StreamingMP4ConvertingFile(
-				mp4File: conversion1.result.then((r) async {
-					conversion2.start();
-					final file = (await conversion2.result).file;
+				mp4File: conversion1.start().then((r) async {
+					final file = (await conversion2.start()).file;
 					_joinedCompleter.complete(file); // To allow cleanup in _waitAndCleanup
 					return file;
 				}),
@@ -681,9 +678,8 @@ class StreamingMP4Conversion {
 		else if (['jpg', 'jpeg', 'png', 'webm'].contains(inputExtension) && (soundSource != null || Platform.isAndroid)) {
 			final scan = await MediaScan.scan(inputFile, headers: headers);
 			final conversion = _directConversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false, copyStreams: soundSource != null && inputExtension == 'webm');
-			conversion.start();
 			return StreamingMP4ConvertingFile(
-				mp4File: conversion.result.then((r) => r.file),
+				mp4File: conversion.start().then((r) => r.file),
 				hasAudio: scan.hasAudio || soundSource != null,
 				progress: conversion.progress
 			);
@@ -710,9 +706,9 @@ class StreamingMP4Conversion {
 			);
 		}
 		final streamingConversion = _streamingConversion = MediaConversion.toHLS(inputFile, headers: headers, soundSource: soundSource);
-		streamingConversion.start();
-		streamingConversion.result.then((result) => _handleJoining(result.file.uri));
-		await Future.any([_waitForTwoTSFiles(streamingConversion.getDestination().parent), streamingConversion.result]);
+		final streamingConversionFuture = streamingConversion.start();
+		streamingConversionFuture.then((result) => _handleJoining(result.file.uri));
+		await Future.any([_waitForTwoTSFiles(streamingConversion.getDestination().parent), streamingConversionFuture]);
 		if (await _areThereTwoTSFiles(streamingConversion.getDestination().parent)) {
 			await Future.delayed(const Duration(milliseconds: 50));
 			await VideoServer.instance.ensureRunning();

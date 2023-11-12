@@ -836,8 +836,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			file = await modalLoad(context, 'Converting...', (c) async {
 				final conversion = MediaConversion.toMp4(file.uri);
 				c.onCancel = conversion.cancel;
-				await conversion.start();
-				return (await conversion.result).file;
+				return (await conversion.start()).file;
 			}, cancellable: true);
 		}
 		return await file.copy('${shareDirectory.path}/$newFilename');

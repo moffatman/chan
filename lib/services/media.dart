@@ -210,8 +210,6 @@ class MediaScan {
 
 class MediaConversion {
 	final progress = ValueNotifier<double?>(null);
-	Completer<MediaConversionResult>? _completer;
-	Future<MediaConversionResult> get result => _completer!.future;
 	final Uri inputFile;
 	String outputFileExtension;
 	List<String> extraOptions;
@@ -430,14 +428,13 @@ class MediaConversion {
 		return MediaConversionResult(file, soundSource != null || scan.hasAudio, scan.isAudioOnly);
 	}
 
-	Future<void> start() async {
+	Future<MediaConversionResult> start() async {
 		try {
 			cancel();
-			_completer ??= Completer<MediaConversionResult>();
 			progress.value = null;
 			final existingResult = await getDestinationIfSatisfiesConstraints();
 			if (existingResult != null) {
-				_completer!.complete(existingResult);
+				return existingResult;
 			}
 			else {
 				final convertedFile = getDestination();
@@ -614,8 +611,7 @@ class MediaConversion {
 							!_hasVideoToolboxFailed &&
 							results.output.contains('Error while opening encoder')) {
 						_hasVideoToolboxFailed = true;
-						await start();
-						return;
+						return await start();
 					}
 					throw MediaConversionFFMpegException(results.returnCode, results.output);
 				}
@@ -628,18 +624,16 @@ class MediaConversion {
 								throw Exception('Failed to shrink image to fit in ${formatFilesize(maximumSizeInBytes!)}');
 							}
 							print('Too big (${formatFilesize(outputSize)} > ${formatFilesize(maximumSizeInBytes!)}), retrying with factor $_additionalScaleDownFactor');
-							await start();
-							return;
+							return await start();
 						}
 					}
-					_completer!.complete(MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly));
+					return MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly);
 				}
 			}
 		}
-		catch (error, st) {
-			_completer!.completeError(error, st);
+		finally {
+			Future.delayed(const Duration(milliseconds: 2500), () => progress.dispose());
 		}
-		Future.delayed(const Duration(milliseconds: 2500), () => progress.dispose());
 	}
 
 	void cancel() => _session?.cancel();
