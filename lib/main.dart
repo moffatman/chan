@@ -1543,7 +1543,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				return RawGestureDetector(
 					gestures: {
 						WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
-							() => WeakVerticalDragGestureRecognizer(weakness: 1, sign: -1),
+							() => WeakVerticalDragGestureRecognizer(weakness: 2, sign: -1),
 							(recognizer) {
 								recognizer.onEnd = (details) {
 									lightHapticFeedback();
@@ -2064,15 +2064,22 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											expanded: showTabPopup,
 											duration: const Duration(milliseconds: 200),
 											curve: Curves.ease,
-											child: GestureDetector(
+											child: RawGestureDetector(
 												behavior: HitTestBehavior.translucent,
-												onVerticalDragEnd: (details) {
-													if (details.velocity.pixelsPerSecond.dy > 0 && showTabPopup) {
-														mediumHapticFeedback();
-														setState(() {
-															showTabPopup = false;
-														});
-													}
+												gestures: {
+													WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
+														() => WeakVerticalDragGestureRecognizer(weakness: 1, sign: 1),
+														(recognizer) {
+															recognizer.onEnd = (details) {
+																if (details.velocity.pixelsPerSecond.dy > 0 && showTabPopup) {
+																	mediumHapticFeedback();
+																	setState(() {
+																		showTabPopup = false;
+																	});
+																}
+															};
+														}
+													)
 												},
 												child: Container(
 													color: ChanceTheme.barColorOf(context),
