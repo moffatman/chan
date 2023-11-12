@@ -490,6 +490,7 @@ class ChanTabs extends ChangeNotifier {
 	final _tabListController = ScrollController();
 	int _lastIndex = 0;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
+	final _tabButtonKeys = <int, GlobalKey>{};
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _searchPageKey = GlobalKey<SearchPageState>();
 	final _historyPageKey = GlobalKey<HistoryPageState>();
@@ -803,15 +804,15 @@ class ChanTabs extends ChangeNotifier {
 
 	void _animateTabList({int? index, Duration duration = const Duration(milliseconds: 500)}) {
 		final pos = index ?? browseTabIndex;
-		if (_tabListController.hasOnePosition) {
-			final px = (_tabListController.position.maxScrollExtent / Persistence.tabs.length) * (pos + 1);
-			if (duration > Duration.zero) {
-				_tabListController.animateTo(px, duration: duration, curve: Curves.ease);
-			}
-			else {
-				_tabListController.jumpTo(px);
-			}
+		final ctx = _tabButtonKeys[pos]?.currentContext;
+		if (ctx == null) {
+			return;
 		}
+		Scrollable.ensureVisible(
+			ctx,
+			alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+			duration: duration
+		);
 	}
 }
 
@@ -1454,7 +1455,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Widget _buildTabletIcon(int index, Widget icon, String? label, {
-		bool reorderable = false,
 		Axis axis = Axis.vertical,
 		Widget? preLabelInjection
 	}) {
@@ -1487,7 +1487,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				)
 			)
 		);
-		final child = Builder(
+		return Builder(
 			builder: (context) {
 				void showThisTabMenu() {
 					final ro = context.findRenderObject()! as RenderBox;
@@ -1587,16 +1587,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 			}
 		);
-		if (reorderable) {
-			return ReorderableDelayedDragStartListener(
-				index: index.abs(),
-				key: ValueKey(index),
-				child: child
-			);
-		}
-		else {
-			return child;
-		}
 	}
 
 	Widget _buildNewTabIcon({required Axis axis, bool hideLabel = false}) {
@@ -1645,7 +1635,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			itemCount: Persistence.tabs.length,
 			itemBuilder: (context, i) => ReorderableDelayedDragStartListener(
 				index: i,
-				key: ValueKey(i),
+				key: _tabs._tabButtonKeys.putIfAbsent(i, () => GlobalKey(debugLabel: '_tabs._tabButtonKeys[$i]')),
 				child: TabWidgetBuilder(
 					tab: Persistence.tabs[i],
 					builder: (context, data) => DecoratedBox(
@@ -1660,7 +1650,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								secondary: data.unseenCount
 							),
 							data.shortTitle,
-							reorderable: false,
 							axis: axis,
 							preLabelInjection: data.secondaryIcon
 						)
@@ -1960,7 +1949,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								setState(() {
 									showTabPopup = true;
 								});
-								_tabs._animateTabList();
 							},
 							onDownSwipe: () {
 								if (!showTabPopup || _tabs.mainTabIndex != 0) {
@@ -2008,9 +1996,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									setState(() {
 										showTabPopup = !showTabPopup;
 									});
-									if (showTabPopup) {
-										_tabs._animateTabList();
-									}
 								}
 								else if (index == _tabs._lastIndex) {
 									if (index == 4) {
