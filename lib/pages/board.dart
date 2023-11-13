@@ -915,8 +915,13 @@ class BoardPageState extends State<BoardPage> {
 					)
 				]
 			),
-			body: board == null ? const Center(
-				child: Text('No Board Selected')
+			body: board == null ? Center(
+				child: ErrorMessageCard(
+					'No board selected',
+					remedies: {
+						if (widget.allowChangingBoard) 'Pick one': _selectBoard
+					}
+				)
 			) : PullTab(
 				key: _boardsPullTabKey,
 				tab: PullTabTab(
