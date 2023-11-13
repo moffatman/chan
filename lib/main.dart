@@ -1630,6 +1630,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget _buildTabList(Axis axis) {
 		return ReorderableList(
 			controller: _tabs._tabListController,
+			// Take the performance hit, ensure everything is laid out for _animateTabList to work
+			cacheExtent: 9000,
 			scrollDirection: axis,
 			onReorder: _tabs.onReorder,
 			itemCount: Persistence.tabs.length,
