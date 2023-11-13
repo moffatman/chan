@@ -1465,7 +1465,16 @@ class AttachmentViewer extends StatelessWidget {
 				child: GestureDetector(
 					behavior: HitTestBehavior.translucent,
 					onLongPressStart: (x) => controller._onLongPressStart(),
-					onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.sizeOf(context).width / 2)),
+					onLongPressMoveUpdate: (details) {
+						final double factor;
+						if (rotate90DegreesClockwise) {
+							factor = details.offsetFromOrigin.dy / (MediaQuery.sizeOf(context).height / 2);
+						}
+						else {
+							factor = details.offsetFromOrigin.dx / (MediaQuery.sizeOf(context).width / 2);
+						}
+						controller._onLongPressUpdate(factor);
+					},
 					onLongPressEnd: (x) => controller._onLongPressEnd(),
 					child: Stack(
 						children: [
@@ -1547,7 +1556,8 @@ class AttachmentViewer extends StatelessWidget {
 								)
 							),
 							if (controller.videoPlayerController != null) Positioned.fill(
-								child: Row(
+								child: Flex(
+									direction: rotate90DegreesClockwise ? Axis.vertical : Axis.horizontal,
 									children: [
 										Expanded(
 											child: GestureDetector(
