@@ -478,7 +478,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						force: force,
 						onProgressChanged: (current, total) {
 							currentBytes.value = current;
-							if (_soundSourceDownload == null) {
+							if (_soundSourceDownload == null && !_isDisposed) {
 								_soundSourceDownload = (
 									currentBytes: currentBytes,
 									totalBytes: total,
@@ -506,7 +506,9 @@ class AttachmentViewerController extends ChangeNotifier {
 				finally {
 					_soundSourceDownload?.currentBytes.dispose();
 					_soundSourceDownload = null;
-					notifyListeners();
+					if (!_isDisposed) {
+						notifyListeners();
+					}
 				}
 			}
 			final startTime = DateTime.now();
