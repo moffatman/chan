@@ -410,13 +410,15 @@ class _SavedPageState extends State<SavedPage> {
 								);
 							},
 							filterHint: 'Search watched threads',
-							footer: Column(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									const SizedBox(height: 16),
-									Padding(
-										padding: const EdgeInsets.symmetric(horizontal: 16),
-										child: AnimatedBuilder(
+							footer: Padding(
+								padding: const EdgeInsets.all(16),
+								child: Wrap(
+									spacing: 16,
+									runSpacing: 16,
+									alignment: WrapAlignment.spaceEvenly,
+									runAlignment: WrapAlignment.center,
+									children: [
+										AnimatedBuilder(
 											animation: threadStateBoxesAnimation,
 											builder: (context, _) {
 												final unseenCount = _watchedListController.items.map((i) {
@@ -449,12 +451,8 @@ class _SavedPageState extends State<SavedPage> {
 													)
 												);
 											}
-										)
-									),
-									const SizedBox(height: 16),
-									Padding(
-										padding: const EdgeInsets.symmetric(horizontal: 16),
-										child: AnimatedBuilder(
+										),
+										AnimatedBuilder(
 											animation: _removeArchivedHack,
 											builder: (context, _) => CupertinoButton(
 												padding: const EdgeInsets.all(8),
@@ -491,7 +489,7 @@ class _SavedPageState extends State<SavedPage> {
 												child: const Row(
 													mainAxisSize: MainAxisSize.min,
 													children: [
-														Icon(CupertinoIcons.xmark),
+														Icon(CupertinoIcons.bin_xmark),
 														SizedBox(width: 8),
 														Flexible(
 															child: Text('Remove archived', textAlign: TextAlign.center)
@@ -499,10 +497,55 @@ class _SavedPageState extends State<SavedPage> {
 													]
 												)
 											)
+										),
+										AnimatedBuilder(
+											animation: _removeArchivedHack,
+											builder: (context, _) => CupertinoButton(
+												padding: const EdgeInsets.all(8),
+												onPressed: (_watchedListController.items.isNotEmpty) ? () async {
+													await _watchMutex.protectWrite(() async {
+														_watchedListController.update(); // Should wait until mutex releases
+														final toRemove = _watchedListController.items..toList();
+														for (final watch in toRemove) {
+															await watch.item.imageboard.notifications.removeWatch(watch.item.item);
+														}
+														if (context.mounted) {
+															showUndoToast(
+																context: context,
+																message: 'Removed ${describeCount(toRemove.length, 'watch', plural: 'watches')}',
+																onUndo: () => _watchMutex.protectWrite(() async {
+																	_watchedListController.update(); // Should wait until mutex releases
+																	for (final watch in toRemove) {
+																		watch.item.imageboard.notifications.subscribeToThread(
+																			thread: watch.item.item.threadIdentifier,
+																			lastSeenId: watch.item.item.lastSeenId,
+																			localYousOnly: watch.item.item.localYousOnly,
+																			pushYousOnly: watch.item.item.pushYousOnly,
+																			push: watch.item.item.push,
+																			youIds: watch.item.item.youIds,
+																			zombie: watch.item.item.zombie
+																		);
+																	}
+																	Future.delayed(const Duration(milliseconds: 100), _removeArchivedHack.didUpdate);
+																})
+															);
+														}
+													});
+												} : null,
+												child: const Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(CupertinoIcons.xmark),
+														SizedBox(width: 8),
+														Flexible(
+															child: Text('Remove all', textAlign: TextAlign.center)
+														)
+													]
+												)
+											)
 										)
-									),
-									const SizedBox(height: 16)
-								]
+									]
+								)
 							)
 						);
 					},
