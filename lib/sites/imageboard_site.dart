@@ -884,6 +884,7 @@ abstract class ImageboardSiteArchive {
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
 				options.headers['user-agent'] ??= Persistence.settings.userAgent;
+				options.headers[HttpHeaders.acceptEncodingHeader] ??= 'gzip';
 				handler.next(options);
 			}
 		));
