@@ -1116,7 +1116,7 @@ class AttachmentViewer extends StatelessWidget {
 					startRect = layoutInsets.inflateRect(startRect);
 				}
 			}
-			else if (attachment.type == AttachmentType.image) {
+			else if (attachment.type == AttachmentType.image && attachment.soundSource == null) {
 				// This is AttachmentThumbnail -> AttachmentViewer
 				// Need to deflate the rect as AttachmentThumbnail does not know about the layoutInsets
 				endRect = layoutInsets.deflateRect(endRect);
@@ -1759,19 +1759,25 @@ class AttachmentViewer extends StatelessWidget {
 					builder: (context, constraints) {
 						Size? targetSize;
 						if (!fill && attachment.width != null && attachment.height != null && constraints.hasBoundedHeight && constraints.hasBoundedWidth) {
-							targetSize = applyBoxFit(BoxFit.scaleDown, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), constraints.biggest).destination;
+							targetSize = applyBoxFit(BoxFit.scaleDown, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), layoutInsets.deflateSize(constraints.biggest)).destination;
 						}
 						if (attachment.type == AttachmentType.image && (attachment.soundSource == null || controller._soundSourceFailed)) {
 							return _buildImage(context, targetSize, passedFirstBuild);
 						}
 						else if (attachment.type == AttachmentType.pdf) {
-							return _buildPdf(context, targetSize);
+							return Padding(
+								padding: layoutInsets,
+								child: _buildPdf(context, targetSize)
+							);
 						}
 						else if (attachment.type == AttachmentType.url) {
 							return _buildBrowser(context, targetSize);
 						}
 						else {
-							return _buildVideo(context, targetSize);
+							return Padding(
+								padding: layoutInsets,
+								child: _buildVideo(context, targetSize)
+							);
 						}
 					}
 				);
