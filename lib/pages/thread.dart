@@ -108,6 +108,13 @@ extension _DisableUpdates on PersistentThreadState {
 	bool get disableUpdates => (thread?.isDeleted ?? false) || (thread?.isArchived ?? false);
 }
 
+enum _AttachmentCachingStatus {
+	uncached,
+	cached,
+	willNotAutoCacheDueToRateLimiting;
+	bool get isCached => this == cached;
+}
+
 class ThreadPage extends StatefulWidget {
 	final ThreadIdentifier thread;
 	final int? initialPostId;
@@ -153,7 +160,7 @@ class ThreadPageState extends State<ThreadPage> {
 	bool _searching = false;
 	bool _passedFirstLoad = false;
 	bool _showingWatchMenu = false;
-	final Map<Attachment, bool> _cached = {};
+	final Map<Attachment, _AttachmentCachingStatus> _cached = {};
 	final List<Attachment> _cachingQueue = [];
 	final _indicatorKey = GlobalKey<_ThreadPositionIndicatorState>();
 	(ThreadIdentifier, String)? _suggestedNewGeneral;
@@ -401,8 +408,11 @@ class ThreadPageState extends State<ThreadPage> {
 	Future<void> _updateCached({required bool onscreenOnly}) async {
 		final attachments = (onscreenOnly ? _listController.visibleItems : _listController.items).expand((p) => p.item.attachments).toSet();
 		await Future.wait(attachments.map((attachment) async {
-			if (_cached[attachment] == true) return;
-			_cached[attachment] = (await (await optimisticallyFindCachedFile(attachment))?.exists()) ?? false;
+			if (_cached[attachment] == _AttachmentCachingStatus.cached) return;
+			_cached[attachment] = switch (await (await optimisticallyFindCachedFile(attachment))?.exists()) {
+				true => _AttachmentCachingStatus.cached,
+				null || false => _cached[attachment] ?? _AttachmentCachingStatus.uncached
+			};
 		}));
 	}
 
@@ -413,7 +423,8 @@ class ThreadPageState extends State<ThreadPage> {
 			return;
 		}
 		_cachingQueue.clear();
-		_cachingQueue.addAll(_cached.entries.where((e) => !e.value).map((e) => e.key));
+		_cachingQueue.addAll(_cached.entries.where((e) => e.value == _AttachmentCachingStatus.uncached).map((e) => e.key));
+		int newlyRateLimited = 0;
 		while (_cachingQueue.isNotEmpty) {
 			if (!mounted) {
 				break;
@@ -429,6 +440,12 @@ class ThreadPageState extends State<ThreadPage> {
 				break;
 			}
 			final attachment = _cachingQueue.removeAt(0);
+			if (attachment.isRateLimited) {
+				// Shouldn't preload as it will probably ban us from the server for too many requests
+				newlyRateLimited++;
+				_cached[attachment] = _AttachmentCachingStatus.willNotAutoCacheDueToRateLimiting;
+				continue;
+			}
 			final controller = AttachmentViewerController(
 				context: context,
 				attachment: attachment,
@@ -446,8 +463,16 @@ class ThreadPageState extends State<ThreadPage> {
 					);
 				}
 			}
-			_cached[attachment] = true;
+			_cached[attachment] = _AttachmentCachingStatus.cached;
 			_indicatorKey.currentState?.setState(() {});
+		}
+		final count = automatic ? newlyRateLimited : _cached.values.countOf(_AttachmentCachingStatus.willNotAutoCacheDueToRateLimiting);
+		if (mounted && count > 0) {
+			showToast(
+				context: context,
+				message: 'Skipped caching ${describeCount(count, 'file')} (${persistentState.thread?.archiveName ?? 'archive'} has rate limits)',
+				icon: CupertinoIcons.exclamationmark_circle
+			);
 		}
 	}
 
@@ -548,6 +573,9 @@ class ThreadPageState extends State<ThreadPage> {
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 		if (context.read<EffectiveSettings>().autoCacheAttachments) {
 			_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
+		}
+		else {
+			_listController.waitForItemBuild(0).then((_) => _updateCached(onscreenOnly: false));
 		}
 		newPostIds.addAll(persistentState.unseenPostIds.data);
 		if (persistentState.disableUpdates) {
@@ -1687,7 +1715,7 @@ class ThreadPageState extends State<ThreadPage> {
 																SafeArea(
 																	child: Align(
 																		alignment: reverseIndicatorPosition ? Alignment.bottomLeft : Alignment.bottomRight,
-																		child: ThreadPositionIndicator(
+																		child: _ThreadPositionIndicator(
 																			key: _indicatorKey,
 																			reversed: reverseIndicatorPosition,
 																			persistentState: persistentState,
@@ -1823,7 +1851,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 typedef SuggestedNewThread = ({String label, VoidCallback onAccept, VoidCallback onReject});
 
-class ThreadPositionIndicator extends StatefulWidget {
+class _ThreadPositionIndicator extends StatefulWidget {
 	final PersistentThreadState persistentState;
 	final Thread? thread;
 	final ThreadIdentifier threadIdentifier;
@@ -1838,13 +1866,13 @@ class ThreadPositionIndicator extends StatefulWidget {
 	final bool blocked;
 	final int boardSemanticId;
 	final List<List<(String, Widget, VoidCallback)>> developerModeButtons;
-	final Map<Attachment, bool> cachedAttachments;
+	final Map<Attachment, _AttachmentCachingStatus> cachedAttachments;
 	final List<Attachment> attachmentsCachingQueue;
 	final VoidCallback startCaching;
 	final VoidCallback openGalleryGrid;
 	final SuggestedNewThread? suggestedThread;
 	
-	const ThreadPositionIndicator({
+	const _ThreadPositionIndicator({
 		required this.persistentState,
 		required this.thread,
 		required this.threadIdentifier,
@@ -1871,7 +1899,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 	createState() => _ThreadPositionIndicatorState();
 }
 
-class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with TickerProviderStateMixin {
+class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with TickerProviderStateMixin {
 	List<Post>? _filteredPosts;
 	List<RefreshableListItem<Post>>? _filteredItems;
 	List<int> _youIds = [];
@@ -2104,7 +2132,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	}
 
 	@override
-	void didUpdateWidget(ThreadPositionIndicator oldWidget) {
+	void didUpdateWidget(_ThreadPositionIndicator oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (widget.persistentState != oldWidget.persistentState) {
 			_filteredPosts = null;
@@ -2216,9 +2244,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		scrollToTop() => widget.listController.scrollController?.animateTo(0, duration: scrollAnimationDuration, curve: Curves.ease);
 		scrollToBottom() => widget.listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration);
 		final youIds = widget.persistentState.youIds;
-		final uncachedCount = widget.cachedAttachments.values.where((v) => !v).length;
-		final uncachedMB = (widget.cachedAttachments.entries.map((e) => e.value ? 0 : e.key.sizeInBytes ?? 0).fold(0, (a, b) => a + b) / (1024*1024));
-		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value && e.key.sizeInBytes == null);
+		final uncachedCount = widget.cachedAttachments.values.where((v) => !v.isCached).length;
+		final uncachedMB = (widget.cachedAttachments.entries.map((e) => e.value.isCached ? 0 : e.key.sizeInBytes ?? 0).fold(0, (a, b) => a + b) / (1024*1024));
+		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value.isCached && e.key.sizeInBytes == null);
 		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
 		final showGalleryGridButton = context.select<EffectiveSettings, bool>((s) => s.showGalleryGridButton);
 		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
@@ -2324,7 +2352,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										), (
 											uncachedCount == 0 ? '' : 'Preload $uncachedCount${uncachedMB == 0 ? '' : ' (${uncachedMBIsUncertain ? '>' : ''}${uncachedMB.ceil()} MB)'}',
 											const Icon(CupertinoIcons.cloud_download, size: 19),
-											(widget.attachmentsCachingQueue.isEmpty && widget.cachedAttachments.values.any((v) => !v)) ? widget.startCaching : null
+											(widget.attachmentsCachingQueue.isEmpty && widget.cachedAttachments.values.any((v) => !v.isCached)) ? widget.startCaching : null
 										)],
 										[('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch)],
 										if (context.read<ImageboardSite>().archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), null)]
