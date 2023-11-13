@@ -61,7 +61,7 @@ class _TabListTile extends StatelessWidget {
 				mainAxisSize: MainAxisSize.min,
 				children: [
 					if (data.unseenYouCount > 0) Text('${data.unseenYouCount}', style: TextStyle(color: ChanceTheme.secondaryColorOf(context))),
-					if (data.unseenCount > 0) Text('${data.unseenCount}', style: TextStyle(color: (data.threadState?.threadWatch?.localYousOnly ?? false) ? ChanceTheme.primaryColorWithBrightness50Of(context) : null))
+					if (data.unseenCount > 0 && !(data.threadState?.threadWatch?.localYousOnly ?? false)) Text('${data.unseenCount}')
 				]
 			),
 			onTap: onTap,
@@ -76,7 +76,8 @@ class _TabListTile extends StatelessWidget {
 					countsUnreliable: false,
 					showChrome: false,
 					alignment: Alignment.centerLeft,
-					showUnseen: false
+					showUnseenColors: false,
+					showUnseenCounters: (data.threadState?.threadWatch?.localYousOnly ?? false)
 				)
 			),
 			subtitleTextStyle: TextStyle(

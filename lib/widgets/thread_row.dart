@@ -30,7 +30,8 @@ class ThreadCounters extends StatelessWidget {
 	final bool countsUnreliable;
 	final bool showChrome;
 	final Alignment alignment;
-	final bool showUnseen;
+	final bool showUnseenColors;
+	final bool showUnseenCounters;
 
 	const ThreadCounters({
 		required this.imageboard,
@@ -40,7 +41,8 @@ class ThreadCounters extends StatelessWidget {
 		required this.countsUnreliable,
 		this.showChrome = true,
 		required this.alignment,
-		this.showUnseen = true,
+		this.showUnseenColors = true,
+		this.showUnseenCounters = true,
 		super.key
 	});
 
@@ -60,12 +62,7 @@ class ThreadCounters extends StatelessWidget {
 		Color? imageCountColor;
 		Color? otherMetadataColor;
 		final threadSeen = threadState?.lastSeenPostId != null && threadState?.showInHistory == true;
-		if (!showUnseen) {
-			replyCountColor = grey;
-			imageCountColor = grey;
-			otherMetadataColor = grey;
-		}
-		else if (threadSeen) {
+		if (threadSeen && showUnseenCounters) {
 			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
 				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
 			}
@@ -77,6 +74,11 @@ class ThreadCounters extends StatelessWidget {
 			replyCountColor = unseenReplyCount <= 0 ? grey : null;
 			imageCountColor = unseenImageCount <= 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
+		}
+		if (!showUnseenColors) {
+			replyCountColor = grey;
+			imageCountColor = grey;
+			otherMetadataColor = grey;
 		}
 		final row = FittedBox(
 			alignment: alignment,
@@ -131,7 +133,7 @@ class ThreadCounters extends StatelessWidget {
 					Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
 					const SizedBox(width: 4),
 					if (countsUnreliable && latestThread == thread) const Text('—')
-					else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadSeen ? grey : null)),
+					else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 					if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
 					if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
 					const SizedBox(width: 2),
@@ -140,11 +142,11 @@ class ThreadCounters extends StatelessWidget {
 						Icon(Adaptive.icons.photo, size: 18, color: imageCountColor),
 						const SizedBox(width: 4),
 						if (latestImageCount > unseenImageCount) ...[
-							Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadSeen ? grey : null)),
+							Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 							if (unseenImageCount > 0) Text('+$unseenImageCount'),
 						]
 						else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
-						else Text('$unseenImageCount', style: TextStyle(color: threadSeen ? grey : null)),
+						else Text('$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 						const SizedBox(width: 2),
 					]
 				]
