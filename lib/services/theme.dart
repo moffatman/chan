@@ -72,12 +72,14 @@ class ChanceTheme extends StatelessWidget {
 	static Color primaryColorOf(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColor);
 	static Color _selectPrimaryColorWithBrightness10(SavedTheme theme) => theme.primaryColorWithBrightness(0.1);
 	static Color _selectPrimaryColorWithBrightness20(SavedTheme theme) => theme.primaryColorWithBrightness(0.2);
+	static Color _selectPrimaryColorWithBrightness30(SavedTheme theme) => theme.primaryColorWithBrightness(0.3);
 	static Color _selectPrimaryColorWithBrightness50(SavedTheme theme) => theme.primaryColorWithBrightness(0.5);
 	static Color _selectPrimaryColorWithBrightness60(SavedTheme theme) => theme.primaryColorWithBrightness(0.6);
 	static Color _selectPrimaryColorWithBrightness70(SavedTheme theme) => theme.primaryColorWithBrightness(0.7);
 	static Color _selectPrimaryColorWithBrightness80(SavedTheme theme) => theme.primaryColorWithBrightness(0.8);
 	static Color primaryColorWithBrightness10Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness10);
 	static Color primaryColorWithBrightness20Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness20);
+	static Color primaryColorWithBrightness30Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness30);
 	static Color primaryColorWithBrightness50Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness50);
 	static Color primaryColorWithBrightness60Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness60);
 	static Color primaryColorWithBrightness70Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness70);

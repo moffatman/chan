@@ -1192,7 +1192,7 @@ class SiteReddit extends ImageboardSite {
 	];
 
 	@override
-	String formatBoardName(ImageboardBoard board) => '/r/${board.name}';
+	String formatBoardName(String name) => '/r/$name';
 
 	@override
 	int placeOrphanPost(List<Post> posts, Post post) {

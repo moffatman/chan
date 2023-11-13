@@ -714,7 +714,7 @@ class ChanTabs extends ChangeNotifier {
 									AdaptiveDialogAction(
 										onPressed: () => Navigator.of(context).pop(true),
 										isDestructiveAction: true,
-										child: Text('Close ${Persistence.tabs.length - 1}')
+										child: Text('Close ${Persistence.tabs.length - 1 - (EffectiveSettings.instance.usingHomeBoard && Persistence.currentTabIndex != 0 ? 1 : 0)}')
 									),
 									AdaptiveDialogAction(
 										onPressed: () => Navigator.of(context).pop(false),
@@ -726,15 +726,24 @@ class ChanTabs extends ChangeNotifier {
 						if (shouldCloseOthers == true) {
 							final beforeRemove = {...Persistence.tabs.asMap()};
 							final indexToPreserve = browseTabIndex;
+							PersistentBrowserTab? homeTabToPreserve;
+							if (indexToPreserve != 0 && EffectiveSettings.instance.usingHomeBoard) {
+								homeTabToPreserve = Persistence.tabs.first;
+								beforeRemove.remove(0); // Nothing to undo
+							}
 							final tabToPreserve = Persistence.tabs[indexToPreserve];
 							for (final tab in Persistence.tabs) {
 								tab.removeListener(_onTabUpdate);
 							}
 							Persistence.tabs.clear();
+							if (homeTabToPreserve != null) {
+								Persistence.tabs.add(homeTabToPreserve);
+							}
 							Persistence.tabs.add(tabToPreserve);
 							tabToPreserve.addListener(_onTabUpdate);
+							homeTabToPreserve?.addListener(_onTabUpdate);
 							browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
-							browseTabIndex = 0;
+							browseTabIndex = homeTabToPreserve == null ? 0 : 1;
 							if (Persistence.settings.closeTabSwitcherAfterUse) {
 								onShouldShowTabPopup(false);
 							}
@@ -810,7 +819,9 @@ class ChanTabs extends ChangeNotifier {
 		}
 		Scrollable.ensureVisible(
 			ctx,
-			alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+			alignmentPolicy: pos < 3 ? // Kind of a hack guess, mainly to handle cloning the home tab
+				ScrollPositionAlignmentPolicy.keepVisibleAtStart :
+				ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
 			duration: duration
 		);
 	}
@@ -1499,7 +1510,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							ro.localToGlobal(ro.semanticBounds.bottomRight)
 						),
 						actions: [
-							TabMenuAction(
+							if (!EffectiveSettings.instance.usingHomeBoard || index < 0) TabMenuAction(
 								icon: CupertinoIcons.xmark,
 								title: 'Close',
 								isDestructiveAction: true,
@@ -1628,36 +1639,51 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Widget _buildTabList(Axis axis) {
-		return ReorderableList(
-			controller: _tabs._tabListController,
-			// Take the performance hit, ensure everything is laid out for _animateTabList to work
-			cacheExtent: 9000,
-			scrollDirection: axis,
-			onReorder: _tabs.onReorder,
-			itemCount: Persistence.tabs.length,
-			itemBuilder: (context, i) => ReorderableDelayedDragStartListener(
-				index: i,
-				key: _tabs._tabButtonKeys.putIfAbsent(i, () => GlobalKey(debugLabel: '_tabs._tabButtonKeys[$i]')),
-				child: TabWidgetBuilder(
-					tab: Persistence.tabs[i],
-					builder: (context, data) => DecoratedBox(
-						decoration: BoxDecoration(
-							color: data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null
-						),
-						child: _buildTabletIcon(
-							i * -1,
-							StationaryNotifyingIcon(
-								icon: data.primaryIcon,
-								primary: data.unseenYouCount,
-								secondary: data.unseenCount
-							),
-							data.shortTitle,
-							axis: axis,
-							preLabelInjection: data.secondaryIcon
-						)
-					)
+		final usingHomeBoard = context.read<EffectiveSettings>().usingHomeBoard;
+		buildTabIcon(int i) => TabWidgetBuilder(
+			tab: Persistence.tabs[i],
+			builder: (context, data) => DecoratedBox(
+				decoration: BoxDecoration(
+					color: usingHomeBoard && i == 0 ?
+						ChanceTheme.primaryColorWithBrightness30Of(context) :
+						(data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null),
+				),
+				child: _buildTabletIcon(
+					i * -1,
+					StationaryNotifyingIcon(
+						icon: data.primaryIcon,
+						primary: data.unseenYouCount,
+						secondary: data.unseenCount
+					),
+					data.shortTitle,
+					axis: axis,
+					preLabelInjection: data.secondaryIcon
 				)
 			)
+		);
+		return Flex(
+			direction: axis,
+			children: [
+				if (usingHomeBoard) buildTabIcon(0),
+				Expanded(
+					child: ReorderableList(
+						controller: _tabs._tabListController,
+						// Take the performance hit, ensure everything is laid out for _animateTabList to work
+						cacheExtent: 9000,
+						scrollDirection: axis,
+						onReorder: _tabs.onReorder,
+						itemCount: usingHomeBoard ? Persistence.tabs.length - 1 : Persistence.tabs.length,
+						itemBuilder: (context, index) {
+							final i = usingHomeBoard ? index + 1 : index;
+							return ReorderableDelayedDragStartListener(
+								index: i,
+								key: _tabs._tabButtonKeys.putIfAbsent(i, () => GlobalKey(debugLabel: '_tabs._tabButtonKeys[$i]')),
+								child: buildTabIcon(i)
+							);
+						}
+					)
+				)
+			]
 		);
 	}
 

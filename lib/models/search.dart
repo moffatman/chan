@@ -77,7 +77,7 @@ class ImageboardArchiveSearchQuery {
 		this.subject
 	}) : boards = boards ?? [];
 
-	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey ?? '');
+	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
 	ImageboardArchiveSearchQuery clone() {
 		return ImageboardArchiveSearchQuery(

@@ -1182,7 +1182,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		)
 	];
 	List<ThreadVariant> get threadVariants => const [];
-	String formatBoardName(ImageboardBoard board) => '/${board.name}/';
+	String formatBoardName(String name) => '/$name/';
 	@mustCallSuper
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
 		_catalogCache.addAll(oldSite._catalogCache);

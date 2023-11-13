@@ -103,7 +103,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_focusNode = FocusNode();
 		_listenerFocusNode = FocusNode();
 		allImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
-		currentImageboardIndex = allImageboards.indexOf(ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey ?? '____nothing') ?? allImageboards.first);
+		currentImageboardIndex = allImageboards.indexOf(ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey) ?? allImageboards.first);
 		if (currentImageboardIndex == -1) {
 			currentImageboardIndex = 0;
 		}
@@ -425,7 +425,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																							children: [
 																								Expanded(
 																									child: AutoSizeText(
-																										currentImageboard.site.formatBoardName(currentImageboard.persistence.getBoard(currentImageboard.persistence.browserState.favouriteBoards[i])),
+																										currentImageboard.site.formatBoardName(currentImageboard.persistence.browserState.favouriteBoards[i]),
 																										style: const TextStyle(fontSize: 20),
 																										maxLines: 1
 																									),
@@ -634,7 +634,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																			crossAxisAlignment: CrossAxisAlignment.stretch,
 																			children: [
 																				AutoSizeText(
-																					board.name.isNotEmpty ? imageboard.site.formatBoardName(board) : board.title,
+																					board.name.isNotEmpty ? imageboard.site.formatBoardName(board.name) : board.title,
 																					maxFontSize: 20,
 																					minFontSize: 13,
 																					maxLines: 1,
@@ -801,7 +801,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	if (board.name.isNotEmpty) Flexible(
 																		child: Center(
 																			child: AutoSizeText(
-																				imageboard.site.formatBoardName(board),
+																				imageboard.site.formatBoardName(board.name),
 																				textAlign: TextAlign.center,
 																				maxLines: 1,
 																				minFontSize: 0,

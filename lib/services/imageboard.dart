@@ -285,7 +285,10 @@ class ImageboardRegistry extends ChangeNotifier {
 		});
 	}
 
-	Imageboard? getImageboard(String key) {
+	Imageboard? getImageboard(String? key) {
+		if (key == null) {
+			return null;
+		}
 		if (key == _devImageboardKey) {
 			return dev;
 		}

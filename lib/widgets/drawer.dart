@@ -97,6 +97,7 @@ class _DrawerList<T extends Object> {
 	final void Function(int) onSelect;
 	final Iterable<TabMenuAction> Function(int, T) buildAdditionalActions;
 	final Future<void> Function()? onRefresh;
+	final bool pinFirstItem;
 
 	static Iterable<TabMenuAction> _buildNothing(int i, Object t) => const Iterable.empty();
 
@@ -110,81 +111,87 @@ class _DrawerList<T extends Object> {
 		required this.onSelect,
 		this.buildAdditionalActions = _buildNothing,
 		this.onReorder,
-		this.onRefresh
+		this.onRefresh,
+		this.pinFirstItem = false
 	});
 
 	Widget itemBuilder(BuildContext context, int i) {
 		final item = list[i];
+		final onClose = pinFirstItem && i == 0 ? null : this.onClose;
+		final innerBuilder = Builder(
+			builder: (context) {
+				void showThisTabMenu() {
+					final ro = context.findRenderObject()! as RenderBox;
+					showTabMenu(
+						context: context,
+						direction: AxisDirection.right,
+						showTitles: false,
+						origin: Rect.fromPoints(
+							ro.localToGlobal(ro.semanticBounds.topLeft),
+							ro.localToGlobal(ro.semanticBounds.bottomRight)
+						),
+						actions: [
+							if (onClose != null) TabMenuAction(
+								icon: Icons.close,
+								title: 'Close',
+								isDestructiveAction: true,
+								disabled: list.length == 1,
+								onPressed: () {
+									final data = onClose(i);
+									if (data.onUndo != null) {
+										showUndoToast(
+											context: context,
+											message: data.message,
+											onUndo: data.onUndo!
+										);
+									}
+								}
+							),
+							...buildAdditionalActions(i, item)
+						]
+					);
+				}
+				final tile = builder(item, (context, data) => _TabListTile(
+					data: data,
+					selected: isSelected(i),
+					onTap: () {
+						lightHapticFeedback();
+						if (isSelected(i)) {
+							showThisTabMenu();
+						}
+						else {
+							onSelect(i);
+						}
+					}
+				));
+				return onClose == null ? tile : Dismissible(
+					key: ValueKey((item, _undoId)),
+					direction: DismissDirection.startToEnd,
+					onDismissed: (direction) {
+						final data = onClose(i);
+						if (data.onUndo != null) {
+							showUndoToast(
+								context: context,
+								message: data.message,
+								onUndo: () {
+									_undoId++;
+									data.onUndo!();
+								}
+							);
+						}
+					},
+					child: tile
+				);
+			}
+		);
+		if (pinFirstItem && i == 0) {
+			return innerBuilder;
+		}
 		return ReorderableDelayedDragStartListener(
 			enabled: onReorder != null,
 			index: i,
 			key: ValueKey(i),
-			child: Builder(
-				builder: (context) {
-					void showThisTabMenu() {
-						final ro = context.findRenderObject()! as RenderBox;
-						showTabMenu(
-							context: context,
-							direction: AxisDirection.right,
-							showTitles: false,
-							origin: Rect.fromPoints(
-								ro.localToGlobal(ro.semanticBounds.topLeft),
-								ro.localToGlobal(ro.semanticBounds.bottomRight)
-							),
-							actions: [
-								if (onClose != null) TabMenuAction(
-									icon: Icons.close,
-									title: 'Close',
-									isDestructiveAction: true,
-									disabled: list.length == 1,
-									onPressed: () {
-										final data = onClose!(i);
-										if (data.onUndo != null) {
-											showUndoToast(
-												context: context,
-												message: data.message,
-												onUndo: data.onUndo!
-											);
-										}
-									}
-								),
-								...buildAdditionalActions(i, item)
-							]
-						);
-					}
-					final tile = builder(item, (context, data) => _TabListTile(
-						data: data,
-						selected: isSelected(i),
-						onTap: () {
-							lightHapticFeedback();
-							if (isSelected(i)) {
-								showThisTabMenu();
-							}
-							else {
-								onSelect(i);
-							}
-						}
-					));
-					return onClose == null ? tile : Dismissible(
-						key: ValueKey((item, _undoId)),
-						direction: DismissDirection.startToEnd,
-						onDismissed: (direction) {
-							final data = onClose!(i);
-							if (data.onUndo != null) {
-								showUndoToast(
-									context: context,
-									message: data.message,
-									onUndo: () {
-										_undoId++;
-										data.onUndo!();
-									}
-								);
-							}
-						},
-						child: tile
-					);
-				}
-			)
+			child: innerBuilder
 		);
 	}
 }
@@ -235,6 +242,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 		final _DrawerList list;
 		if (settings.drawerMode == DrawerMode.tabs) {
 			list = _DrawerList<PersistentBrowserTab>(
+				pinFirstItem: settings.usingHomeBoard,
 				list: Persistence.tabs,
 				builder: (tab, builder) => TabWidgetBuilder(
 					tab: tab,
@@ -526,6 +534,9 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 							setState(() {});
 						}
 					),
+					if (list.pinFirstItem) Builder(
+						builder: (context) => list.itemBuilder(context, 0)
+					),
 					Expanded(
 						child: Material(
 							child: RefreshIndicator(
@@ -538,11 +549,16 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 									primary: false,
 									buildDefaultDragHandles: false,
 									physics: const AlwaysScrollableScrollPhysics(),
-									itemCount: list.list.length,
+									itemCount: list.pinFirstItem ? list.list.length - 1 : list.list.length,
 									onReorder: (oldIndex, newIndex) {
-										list.onReorder?.call(oldIndex, newIndex);
+										final oldI = list.pinFirstItem ? oldIndex + 1 : oldIndex;
+										final newI = list.pinFirstItem ? newIndex + 1 : newIndex;
+										list.onReorder?.call(oldI, newI);
 									},
-									itemBuilder: list.itemBuilder
+									itemBuilder: (context, index) {
+										final i = list.pinFirstItem ? index + 1 : index;
+										return list.itemBuilder(context, i);
+									}
 								)
 							)
 						)

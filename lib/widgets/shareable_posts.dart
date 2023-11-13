@@ -313,7 +313,7 @@ class ShareablePosts extends StatelessWidget {
 			);
 		}
 		if (style.includeFooter) {
-			String footer = zone.imageboard.site.formatBoardName(zone.imageboard.persistence.getBoard(zone.board));
+			String footer = zone.imageboard.site.formatBoardName(zone.board);
 			if (zone.imageboard.site.explicitIds) {
 				footer += ' Thread ${zone.primaryThreadId}';
 			}

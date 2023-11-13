@@ -410,7 +410,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	(TextSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int actualThreadId) {
 		String text = '>>';
 		if (zone.board != board) {
-			text += zone.imageboard.site.formatBoardName(zone.imageboard.site.persistence.getBoard(board)).replaceFirst(RegExp(r'\/$'), '');
+			text += zone.imageboard.site.formatBoardName(board).replaceFirst(RegExp(r'\/$'), '');
 			text += '/';
 		}
 		text += '$postId';
@@ -2142,7 +2142,7 @@ TextSpan buildPostInfoRow({
 						)
 					),
 					TextSpan(
-						text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.imageboard.site.formatBoardName(zone.imageboard.site.persistence.getBoard(post.board)).replaceFirst(RegExp(r'\/$'), '')}/' : ''}$postIdNonRepeatingSegment',
+						text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.imageboard.site.formatBoardName(post.board).replaceFirst(RegExp(r'\/$'), '')}/' : ''}$postIdNonRepeatingSegment',
 						style: TextStyle(
 							color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.primaryColor).withOpacity(0.5)
 						),

@@ -256,7 +256,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		final imageboard = query.imageboard;
 		final String? boardName;
 		if (imageboard != null && query.boards.isNotEmpty) {
-			boardName = imageboard.site.formatBoardName(imageboard.persistence.getBoard(query.boards.first));
+			boardName = imageboard.site.formatBoardName(query.boards.first);
 		}
 		else {
 			boardName = null;
@@ -722,12 +722,11 @@ class _SearchComposePageState extends State<SearchComposePage> {
 }
 
 List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
-	final imageboard = ImageboardRegistry.instance.getImageboard(q.imageboardKey ?? '');
+	final imageboard = ImageboardRegistry.instance.getImageboard(q.imageboardKey);
 	return [
 		if (ImageboardRegistry.instance.count > 1 && q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
 		if (q.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) ...q.boards.map((boardName) {
-			final board = imageboard?.persistence.getBoard(boardName);
-			final formattedBoardName = board == null ? null : imageboard!.site.formatBoardName(board);
+			final formattedBoardName = imageboard?.site.formatBoardName(boardName);
 			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/');
 		})
 		else const SizedBox(width: 8),

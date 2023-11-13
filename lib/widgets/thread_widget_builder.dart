@@ -75,7 +75,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 					final attachment = thread?.attachments.tryFirst;
 					longTitle = (thread?.title ?? thread?.posts_.tryFirst?.span.buildText().nonEmptyOrNull) ?? 'Thread ${threadState.id}';
 					if (board != null && board.icon == null && board.name.isNotEmpty) {
-						longTitle = '${imageboard?.site.formatBoardName(board)}: $longTitle';
+						longTitle = '${imageboard?.site.formatBoardName(board.name)}: $longTitle';
 					}
 					if (attachment != null) {
 						secondaryIcon = primaryIcon;
@@ -95,7 +95,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 					unseenCount = threadState.unseenReplyCount() ?? 0;
 				}
 				else if (board != null && initialSearch != null) {
-					longTitle = '${imageboard?.site.formatBoardName(board!)} ("$initialSearch")';
+					longTitle = '${imageboard?.site.formatBoardName(board!.name)} ("$initialSearch")';
 				}
 			}
 			else {
@@ -110,7 +110,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 				);
 			}
 		}
-		final shortTitle = (board != null ? imageboard?.site.formatBoardName(board!) : imageboard?.site.name) ?? 'None';
+		final shortTitle = (board != null ? imageboard?.site.formatBoardName(board!.name) : imageboard?.site.name) ?? 'None';
 		return (
 			primaryIcon: SizedBox(
 				height: 30,

@@ -1020,6 +1020,10 @@ class SavedSettings extends HiveObject {
 	TristateSystemSetting muteAudioWhenOpeningGallery;
 	@HiveField(171)
 	String translationTargetLanguage;
+	@HiveField(172)
+	String? homeImageboardKey;
+	@HiveField(173)
+	String homeBoardName;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1193,6 +1197,8 @@ class SavedSettings extends HiveObject {
 		bool? ellipsizeLongFilenamesOnPosts,
 		TristateSystemSetting? muteAudioWhenOpeningGallery,
 		String? translationTargetLanguage,
+		this.homeImageboardKey,
+		String? homeBoardName,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1389,7 +1395,8 @@ class SavedSettings extends HiveObject {
 			true => TristateSystemSetting.b,
 			false || null => TristateSystemSetting.a
 		},
-		translationTargetLanguage = translationTargetLanguage ?? 'en' {
+		translationTargetLanguage = translationTargetLanguage ?? 'en',
+		homeBoardName = homeBoardName ?? '' {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2649,6 +2656,23 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.save();
 		notifyListeners();
 	}
+
+	String? get homeImageboardKey => _settings.homeImageboardKey;
+	set homeImageboardKey(String? setting) {
+		_settings.homeImageboardKey = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	Imageboard? get homeImageboard => ImageboardRegistry.instance.getImageboard(homeImageboardKey);
+
+	String get homeBoardName => _settings.homeBoardName;
+	set homeBoardName(String setting) {
+		_settings.homeBoardName = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get usingHomeBoard => homeImageboardKey != null;
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

@@ -141,7 +141,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											boardName: _filterBoard!.item.name
 										),
 										const SizedBox(width: 8),
-										Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item))
+										Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
 									]
 								),
 								if (_filterDateStart != null && _filterDateEnd != null)
@@ -213,7 +213,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 																			boardName: _filterBoard!.item.name
 																		),
 																		const SizedBox(width: 8),
-																		Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item))
+																		Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
 																	]
 																)
 															),

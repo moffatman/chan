@@ -316,8 +316,8 @@ class ThreadRow extends StatelessWidget {
 			if (showBoardName || (settings.showIdInCatalogHeader && site.explicitIds)) TextSpan(
 				text: showBoardName ?
 						site.explicitIds ?
-							'${site.formatBoardName(site.persistence.getBoard(latestThread.board)).replaceFirst(RegExp(r'\/$'), '')}/${latestThread.id} ' :
-							site.formatBoardName(site.persistence.getBoard(latestThread.board)) :
+							'${site.formatBoardName(latestThread.board).replaceFirst(RegExp(r'\/$'), '')}/${latestThread.id} ' :
+							site.formatBoardName(latestThread.board) :
 					'${latestThread.id} ',
 				style: TextStyle(
 					color: Colors.grey,

@@ -3,6 +3,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +24,8 @@ class ImageboardTab extends StatelessWidget {
 		return MasterDetailPage<ThreadIdentifier>(
 			id: 'tab_$key',
 			multiMasterDetailPageKey: tab.masterDetailKey,
-			initialValue: tab.thread,
+			// Don't pass home board initial thread through, by doing this, it could still be used via pull-tab in BoardPage
+			initialValue: (context.select<EffectiveSettings, bool>((s) => s.usingHomeBoard) && tab == Persistence.tabs.first) ? null : tab.thread,
 			onValueChanged: (thread) {
 				tab.thread = thread;
 				if (thread != null) {

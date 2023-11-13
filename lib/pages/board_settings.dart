@@ -70,7 +70,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 									),
 									const SizedBox(width: 8),
 									Text(
-										'${widget.imageboard.site.formatBoardName(widget.board)} Settings',
+										'${widget.imageboard.site.formatBoardName(widget.board.name)} Settings',
 										style: const TextStyle(
 											fontSize: 18,
 											fontWeight: FontWeight.bold

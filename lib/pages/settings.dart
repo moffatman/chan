@@ -7,6 +7,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
+import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/licenses.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
@@ -1257,6 +1258,57 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									Text(translationSupportedTargetLanguages[settings.translationTargetLanguage] ?? settings.translationTargetLanguage)
+								]
+							)
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.home),
+						const SizedBox(width: 8),
+						const Text('Home board'),
+						const SizedBox(width: 8),
+						const _SettingsHelpButton(helpText: 'Chance will always open to this site or board on a fresh launch'),
+						const Spacer(),
+						if (settings.usingHomeBoard) AdaptiveIconButton(
+							icon: const Icon(CupertinoIcons.xmark),
+							onPressed: () {
+								settings.homeImageboardKey = null;
+								settings.homeBoardName = '';
+							}
+						),
+						AdaptiveFilledButton(
+							padding: const EdgeInsets.all(8),
+							onPressed: () async {
+								final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+									builder: (ctx) => BoardSwitcherPage(
+										initialImageboardKey: settings.homeImageboardKey,
+										allowPickingWholeSites: true
+									)
+								));
+								if (newBoard != null) {
+									settings.homeImageboardKey = newBoard.imageboard.key;
+									settings.homeBoardName = newBoard.item.name;
+								}
+							},
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									if (settings.homeImageboardKey == '') ...[
+										const Text('Board switcher')
+									]
+									else if (settings.homeImageboardKey != null) ...[
+										ImageboardIcon(
+											imageboardKey: settings.homeImageboardKey
+										),
+										const SizedBox(width: 8),
+										Text((settings.homeBoardName.isEmpty ? settings.homeImageboard?.site.name : settings.homeImageboard?.site.formatBoardName(settings.homeBoardName)) ?? settings.homeImageboardKey ?? 'null')
+									]
+									else ...[
+										const Text('None')
+									]
 								]
 							)
 						)

@@ -1480,7 +1480,7 @@ They were deleted from their original website, and no archives of them could be 
 
 Would you like to forget about them?
 
-${failedThreads.map((t) => '${t.imageboard.site.name}: ${t.imageboard.site.formatBoardName(t.imageboard.persistence.getBoard(t.item.board)).replaceFirst(RegExp(r'\/$'), '')}/${t.item.id}').join('\n')}'''),
+${failedThreads.map((t) => '${t.imageboard.site.name}: ${t.imageboard.site.formatBoardName(t.item.board).replaceFirst(RegExp(r'\/$'), '')}/${t.item.id}').join('\n')}'''),
 								actions: [
 									AdaptiveDialogAction(
 										isDestructiveAction: true,

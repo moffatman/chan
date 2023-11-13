@@ -161,7 +161,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 									children: [
 										const Icon(CupertinoIcons.person_fill),
 										const SizedBox(width: 8),
-										Text('Search ${site.supportsSearch(null).options.name ? site.name : site.formatBoardName(site.persistence.getBoard(widget.board))}')
+										Text('Search ${site.supportsSearch(null).options.name ? site.name : site.formatBoardName(widget.board)}')
 									]
 								)
 							)

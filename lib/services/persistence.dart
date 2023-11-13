@@ -133,6 +133,7 @@ class Persistence extends ChangeNotifier {
 	static String get _sharedBoardsBoxName => 'boards';
 	static String get _sharedThreadsBoxName => 'threads';
 	static late final DateTime appLaunchTime;
+	static (String?, ThreadIdentifier?)? _threadIdToBumpInHistory;
 
 	static Future<Box<T>> _openBoxWithBackup<T>(String name, {
 		CompactionStrategy compactionStrategy = defaultCompactionStrategy,
@@ -417,6 +418,16 @@ class Persistence extends ChangeNotifier {
 		}
 		_sharedThreadsBox = await _openLazyBoxWithBackup<Thread>(_sharedThreadsBoxName, gzip: true);
 		_startBoxBackupTimer(_sharedThreadsBoxName, gzip: true);
+		if (settings.homeImageboardKey != null) {
+			currentTabIndex = 0;
+		}
+		if (settings.homeImageboardKey != null && settings.homeImageboardKey != tabs.first.imageboardKey) {
+			// Open at some other board switcher
+			_threadIdToBumpInHistory = (tabs.first.imageboardKey, tabs.first.thread);
+			tabs.first.imageboardKey = settings.homeImageboardKey;
+			tabs.first.board = null; // settings.initialBoardName will be handled in specific initialize() below
+			tabs.first.thread = null;
+		}
 	}
 
 	static Future<Map<String, int>> getFilesystemCacheSizes() async {
@@ -750,6 +761,17 @@ class Persistence extends ChangeNotifier {
 				else {
 					savedAttachment.savedExt = savedAttachment.attachment.ext;
 				}
+			}
+		}
+		if (settings.homeImageboardKey == imageboardKey) {
+			tabs.first.board = maybeGetBoard(settings.homeBoardName);
+		}
+		if (_threadIdToBumpInHistory?.$1 == imageboardKey) {
+			// The previous thread in the home tab was replaced by the board switcher
+			// Make sure it appears at the top of the history
+			final threadToBump = _threadIdToBumpInHistory?.$2;
+			if (threadToBump != null) {
+				getThreadStateIfExists(threadToBump)?..lastOpenedTime = DateTime.now()..save();
 			}
 		}
 		if (settings.automaticCacheClearDays < 100000) {

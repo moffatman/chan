@@ -694,7 +694,7 @@ class BoardPageState extends State<BoardPage> {
 		}
 		String navigationBarBoardName = 'Select Imageboard';
 		if (imageboard != null) {
-			navigationBarBoardName = board != null ? imageboard.site.formatBoardName(board!) : 'Select Board';
+			navigationBarBoardName = board != null ? imageboard.site.formatBoardName(board!.name) : 'Select Board';
 		}
 		final supportsSearch = imageboard?.site.supportsSearch(board?.name) ?? const ImageboardSearchMetadata(name: '', options: ImageboardSearchOptions.none);
 		return AdaptiveScaffold(
