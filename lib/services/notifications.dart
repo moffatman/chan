@@ -153,6 +153,13 @@ class Notifications {
 	static final _client = Dio(BaseOptions(
 		headers: {
 			HttpHeaders.userAgentHeader: 'Chance/$kChanceVersion'
+		},
+		requestEncoder: (request, options) {
+			if (!options.headers.containsValue(HttpHeaders.contentEncodingHeader)) {
+				options.headers[HttpHeaders.contentEncodingHeader] = 'gzip';
+				return gzip.encode(utf8.encode(request));
+			}
+			return utf8.encode(request);
 		}
 	));
 
