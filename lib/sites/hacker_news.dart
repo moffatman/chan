@@ -660,7 +660,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	String formatBoardName(String name) => name;
+	String formatBoardName(String name) => this.name;
 
 	@override
 	int placeOrphanPost(List<Post> posts, Post post) {
