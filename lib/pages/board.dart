@@ -448,7 +448,11 @@ class BoardPageState extends State<BoardPage> {
 							onPressed: () async {
 								Navigator.pop(context, (subvariant, _ThreadSortingMethodScope.tab));
 							}
-						)).toList()
+						)).toList(),
+						cancelButton: AdaptiveActionSheetAction(
+							child: const Text('Cancel'),
+							onPressed: () => Navigator.pop(context)
+						)
 					)
 				);
 				if (choice != null && mounted) {
