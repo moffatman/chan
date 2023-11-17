@@ -6,11 +6,13 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.UriPermission;
+import android.database.Cursor;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.provider.DocumentsContract;
 import android.webkit.MimeTypeMap;
 import android.util.Log;
 
@@ -31,7 +33,9 @@ import java.util.List;
 
 import io.flutter.embedding.android.FlutterFragmentActivity;
 import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodChannel;
+import io.flutter.plugin.common.StandardMethodCodec;
 
 public class MainActivity extends FlutterFragmentActivity {
     private static final String STORAGE_CHANNEL = "com.moffatman.chan/storage";
@@ -43,6 +47,28 @@ public class MainActivity extends FlutterFragmentActivity {
 
     private MethodChannel.Result saveFileAsResult;
     private String newDocumentSourcePath;
+
+    private DocumentFile fastFindFile(DocumentFile parent, String name) {
+        try {
+            try (Cursor cursor = getContentResolver().query(DocumentsContract.buildChildDocumentsUriUsingTree(
+                    parent.getUri(),
+                    DocumentsContract.getDocumentId(parent.getUri())
+            ), new String[]{
+                    DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                    DocumentsContract.Document.COLUMN_DISPLAY_NAME
+            }, null, null, null)) {
+                while (cursor.moveToNext()) {
+                    if (name.equals(cursor.getString(1))) {
+                        return DocumentFile.fromTreeUri(getApplicationContext(), DocumentsContract.buildDocumentUriUsingTree(parent.getUri(), cursor.getString(0)));
+                    }
+                }
+            }
+        }
+        catch (Exception e) {
+            Log.w("fastFindFile", "Got exception", e);
+        }
+        return null;
+    }
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -128,7 +154,8 @@ public class MainActivity extends FlutterFragmentActivity {
             }
         });
         super.configureFlutterEngine(flutterEngine);
-        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), STORAGE_CHANNEL).setMethodCallHandler(
+        BinaryMessenger.TaskQueue storageTaskQueue = flutterEngine.getDartExecutor().getBinaryMessenger().makeBackgroundTaskQueue();
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), STORAGE_CHANNEL, StandardMethodCodec.INSTANCE, storageTaskQueue).setMethodCallHandler(
                 (call, result) -> {
                     if (call.method.equals("pickDirectory")) {
                         System.out.println(getContentResolver().getPersistedUriPermissions());
@@ -158,7 +185,7 @@ public class MainActivity extends FlutterFragmentActivity {
                                 return;
                             }
                             for (String subdirName : destinationSubfolders) {
-                                DocumentFile subdir = dir.findFile(subdirName);
+                                DocumentFile subdir = fastFindFile(dir, subdirName);
                                 if (subdir != null && subdir.isDirectory()) {
                                     dir = subdir;
                                 }
@@ -178,7 +205,7 @@ public class MainActivity extends FlutterFragmentActivity {
                                     }
                                     filename = String.format("%s (%d)%s", destinationName.substring(0, dotPos), duplicateNumber, destinationName.substring(dotPos));
                                 }
-                                existing = dir.findFile(filename);
+                                existing = fastFindFile(dir, filename);
                                 duplicateNumber++;
                             } while (existing != null);
                             DocumentFile file = dir.createFile(MimeTypeMap.getFileExtensionFromUrl(filename), filename);
