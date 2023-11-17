@@ -256,14 +256,28 @@ class ShareablePosts extends StatelessWidget {
 				}
 			}
 			final List<Post> children = style.childDepth > 0 ? post.replyIds.tryMap(zone.findPost).toList() : [];
-			child = Container(
+			final primaryPost = PostSpanZone(
+				postId: parents.tryLast?.$1.id ?? -1,
+				builder: (context) => PostRow(
+					post: post,
+					revealSpoilerImages: true,
+					highlight: parents.isNotEmpty || children.isNotEmpty,
+					largeImageWidth: style.expandPrimaryImage ? style.width : null,
+					shrinkWrap: true,
+					showBoardName: true,
+					showSiteIcon: true,
+					baseOptions: options,
+					revealYourPosts: style.revealYourPosts
+				)
+			);
+			child = (parents.isEmpty && children.isEmpty) ? primaryPost : Container(
 				color: theme.barColor,
 				width: style.width,
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					crossAxisAlignment: CrossAxisAlignment.start,
 					children: [
-						if (parents.isNotEmpty || children.isNotEmpty) const SizedBox(height: 8),
+						const SizedBox(height: 8),
 						for (final parent in parents) Padding(
 							padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 							child: PostSpanZone(
@@ -278,21 +292,8 @@ class ShareablePosts extends StatelessWidget {
 							)
 						),
 						Padding(
-							padding: (parents.isNotEmpty || children.isNotEmpty) ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8) : EdgeInsets.zero,
-							child: PostSpanZone(
-								postId: parents.tryLast?.$1.id ?? -1,
-								builder: (context) => PostRow(
-									post: post,
-									revealSpoilerImages: true,
-									highlight: parents.isNotEmpty || children.isNotEmpty,
-									largeImageWidth: style.expandPrimaryImage ? style.width : null,
-									shrinkWrap: true,
-									showBoardName: true,
-									showSiteIcon: true,
-									baseOptions: options,
-									revealYourPosts: style.revealYourPosts
-								)
-							)
+							padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+							child: primaryPost
 						),
 						for (final child in children) Padding(
 							padding: EdgeInsets.only(left: 16 + (style.width / 10), right: 16, top: 8, bottom: 8),
@@ -307,7 +308,7 @@ class ShareablePosts extends StatelessWidget {
 								)
 							)
 						),
-						if (parents.isNotEmpty || children.isNotEmpty) const SizedBox(height: 8)
+						const SizedBox(height: 8)
 					]
 				)
 			);
