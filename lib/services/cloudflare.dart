@@ -85,7 +85,18 @@ class CloudflareBlockingInterceptor extends Interceptor {
 
 class CloudflareInterceptor extends Interceptor {
 	static bool _titleMatches(String title) {
-		return title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait') || title.contains('Verification Required');
+		return [
+			'Cloudflare',
+			'Just a moment',
+			'Please wait',
+			'Verification Required',
+			'Un momento',
+			'Um momento'
+			'لحظة'
+		].any((snippet) => title.contains(snippet)) || [
+			'…',
+			'...'
+		].any((ending) => title.endsWith(ending));
 	}
 
 	static bool _responseMatches(Response response) {
