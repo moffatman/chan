@@ -371,6 +371,13 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					builder: builder,
 				),
 				onReorder: null,
+				onRefresh: () async {
+					for (final state in states) {
+						if (state.thread?.isArchived != true) {
+							await state.imageboard?.threadWatcher.updateThread(state.identifier);
+						}
+					}
+				},
 				onClose: (i) {
 					final state = states[i];
 					final oldSavedTime = state.savedTime;
