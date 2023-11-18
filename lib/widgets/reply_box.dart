@@ -305,7 +305,8 @@ class ReplyBoxState extends State<ReplyBox> {
 			setState(() {
 				_flags = flags;
 			});
-		}).catchError((e) {
+		}).catchError((e, st) {
+			Future.error(e, st); // Crashlytics
 			print('Error getting flags for ${widget.board}: $e');
 		});
 		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty) {
