@@ -91,6 +91,13 @@ Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() => _watchMutex.protec
 			return ta.compareTo(tb);
 		});
 	}
+	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.threadPostTime) {
+		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
+			final ta = a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread;
+			final tb = b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread;
+			return (tb?.time ?? d).compareTo(ta?.time ?? d);
+		});
+	}
 	mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
 		if (a.item.zombie == b.item.zombie) {
 			return 0;
@@ -180,7 +187,8 @@ class _SavedPageState extends State<SavedPage> {
 								actions: {
 									ThreadSortingMethod.lastPostTime: 'Last Reply',
 									ThreadSortingMethod.lastReplyByYouTime: 'Last Reply by You',
-									ThreadSortingMethod.alphabeticByTitle: 'Alphabetically'
+									ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
+									ThreadSortingMethod.threadPostTime: 'Newest threads'
 								}.entries.map((entry) => AdaptiveActionSheetAction(
 									child: Text(entry.value, style: TextStyle(
 										fontWeight: entry.key == settings.watchedThreadsSortingMethod ? FontWeight.bold : null
