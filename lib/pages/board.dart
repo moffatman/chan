@@ -921,21 +921,21 @@ class BoardPageState extends State<BoardPage> {
 					)
 				]
 			),
-			body: board == null ? Center(
-				child: ErrorMessageCard(
-					'No board selected',
-					remedies: {
-						if (widget.allowChangingBoard) 'Pick one': _selectBoard
-					}
-				)
-			) : PullTab(
+			body: PullTab(
 				key: _boardsPullTabKey,
 				tab: PullTabTab(
 					child: const Text('Open boards'),
 					onActivation: _selectBoard,
 				),
 				enabled: settings.openBoardSwitcherSlideGesture && widget.allowChangingBoard,
-				child: PullTab(
+				child: board == null ? Center(
+					child: ErrorMessageCard(
+						'No board selected',
+						remedies: {
+							if (widget.allowChangingBoard) 'Pick one': _selectBoard
+						}
+					)
+				) : PullTab(
 					key: _threadPullTabKey,
 					tab: (context.read<MasterDetailHint?>()?.currentValue != null || _lastSelectedThread == null) ? null : PullTabTab(
 						child: Text('Re-open /${_lastSelectedThread!.board}/${_lastSelectedThread!.id}'),
