@@ -1643,6 +1643,13 @@ extension ToCss on Color {
 	String toCssHex() => '#${red.toRadixString(16).padLeft(2, '0')}${green.toRadixString(16).padLeft(2, '0')}${blue.toRadixString(16).padLeft(2, '0')}';
 }
 
+extension Inverted on Brightness {
+	Brightness get inverted => switch (this) {
+		Brightness.dark => Brightness.light,
+		Brightness.light => Brightness.dark
+	};
+}
+
 class NotificationListener2<T1 extends Notification, T2 extends Notification> extends StatelessWidget {
 	final Widget child;
 	final NotificationListenerCallback<Notification> onNotification;

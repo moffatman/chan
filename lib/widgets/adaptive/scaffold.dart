@@ -3,6 +3,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -71,7 +72,8 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 			actions: bar.actions,
 			backgroundColor: bar.backgroundColor,
 			systemOverlayStyle: SystemUiOverlayStyle(
-				statusBarBrightness: bar.brightness ?? ChanceTheme.brightnessOf(context)
+				statusBarBrightness: bar.brightness ?? ChanceTheme.brightnessOf(context),
+				statusBarIconBrightness: (bar.brightness ?? ChanceTheme.brightnessOf(context)).inverted
 			)
 		);
 		if (!autoHideOnScroll) {
