@@ -254,6 +254,7 @@ class BoardPageState extends State<BoardPage> {
 		if (context.read<Imageboard?>()?.key != newBoard.imageboard.key) {
 			_lastSelectedThread = null;
 		}
+		_page = 1;
 		widget.onBoardChanged?.call(newBoard);
 		setState(() {
 			board = newBoard.item;
