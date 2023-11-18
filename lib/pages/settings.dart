@@ -520,7 +520,10 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 										)
 									);
 								},
-								child: Text(_loginSystemImageboard.site.loginSystem?.getSavedLoginFields() == null ? 'Logged out' : 'Logged in')
+								child: AnimatedBuilder(
+									animation: _loginSystemImageboard.persistence,
+									builder: (context, _) => Text(_loginSystemImageboard.site.loginSystem?.getSavedLoginFields() == null ? 'Logged out' : 'Logged in')
+								)
 							),
 							const SizedBox(width: 8)
 						],
