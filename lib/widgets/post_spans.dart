@@ -2041,8 +2041,8 @@ TextSpan buildPostInfoRow({
 					)
 				]
 				else if (field == PostDisplayField.name) ...[
-					if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername)) TextSpan(
-						text: settings.filterProfanity(post.name) + (isYourPost ? ' (You)' : '') + (isOP ? ' (OP)' : ''),
+					if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
+						text: settings.filterProfanity(post.name) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (isOP ? ' (OP)' : ''),
 						style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : (isOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
 						recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
 							final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
