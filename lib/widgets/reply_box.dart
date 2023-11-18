@@ -993,7 +993,12 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				}
 			}
 			else if (mounted) {
-				showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark, hapticFeedback: false);
+				showToast(
+					context: context,
+					message: 'Post successful',
+					icon: (_captchaSolution?.autoSolved ?? false) ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
+					hapticFeedback: false
+				);
 				_maybeShowDubsToast(receipt.id);
 				if (_promptForHeadlessSolve && (settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver == null)) {
 					settings.useHeadlessCloudCaptchaSolver = await showAdaptiveDialog<bool>(

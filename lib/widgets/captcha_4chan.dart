@@ -246,7 +246,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 			response: cloudGuess.answer,
 			expiresAt: challenge.expiresAt,
 			alignedImage: image,
-			cloudflare: challenge.cloudflare
+			cloudflare: challenge.cloudflare,
+			autoSolved: true
 		);
 		confident = cloudGuess.confidence >= 1;
 	}

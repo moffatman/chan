@@ -51,11 +51,6 @@ Future<CaptchaSolution?> solveCaptcha({
 					}
 					if (cloudSolution.confident) {
 						cloudSolution.challenge.dispose();
-						showToast(
-							context: context,
-							icon: CupertinoIcons.checkmark_seal,
-							message: 'Solved captcha'
-						);
 						return cloudSolution.solution;
 					}
 					// Cloud solver did not report being "confident"

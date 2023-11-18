@@ -581,6 +581,7 @@ class SecucapCaptchaRequest extends CaptchaRequest {
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
 	bool get cloudflare => false;
+	bool get autoSolved => false;
 }
 
 class NoCaptchaSolution extends CaptchaSolution {
@@ -610,12 +611,15 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	final ui.Image? alignedImage;
 	@override
 	final bool cloudflare;
+	@override
+	final bool autoSolved;
 	Chan4CustomCaptchaSolution({
 		required this.challenge,
 		required this.response,
 		required this.expiresAt,
 		required this.alignedImage,
-		required this.cloudflare
+		required this.cloudflare,
+		this.autoSolved = false
 	});
 	@override
 	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';
