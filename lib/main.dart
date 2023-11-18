@@ -255,7 +255,8 @@ class _ChanAppState extends State<ChanApp> {
 		SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 		SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
 			systemNavigationBarColor: Colors.transparent,
-			systemNavigationBarDividerColor: Colors.transparent
+			systemNavigationBarDividerColor: Colors.transparent,
+			statusBarColor: Colors.transparent
 		));
 		return CallbackShortcuts(
 			bindings: {
