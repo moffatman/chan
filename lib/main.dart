@@ -1576,7 +1576,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									_tabs.browseTabIndex = -1 * index;
 									if (Persistence.settings.closeTabSwitcherAfterUse) {
 										setState(() {
-											_hideTabPopupAutomatically = true;
 											showTabPopup = false;
 										});
 									}
