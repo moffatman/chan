@@ -2146,7 +2146,7 @@ TextSpan buildPostInfoRow({
 						style: TextStyle(
 							color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.primaryColor).withOpacity(0.5)
 						),
-						recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
+						recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer()..onTap = () {
 							context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
 						}) : null
 					),
@@ -2155,7 +2155,7 @@ TextSpan buildPostInfoRow({
 						style: TextStyle(
 							color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.secondaryColor)
 						),
-						recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
+						recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer()..onTap = () {
 							context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
 						}) : null
 					),

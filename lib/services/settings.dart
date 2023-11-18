@@ -1024,6 +1024,8 @@ class SavedSettings extends HiveObject {
 	String? homeImageboardKey;
 	@HiveField(173)
 	String homeBoardName;
+	@HiveField(174)
+	bool tapPostIdToReply;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1199,6 +1201,7 @@ class SavedSettings extends HiveObject {
 		String? translationTargetLanguage,
 		this.homeImageboardKey,
 		String? homeBoardName,
+		bool? tapPostIdToReply,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1396,7 +1399,8 @@ class SavedSettings extends HiveObject {
 			false || null => TristateSystemSetting.a
 		},
 		translationTargetLanguage = translationTargetLanguage ?? 'en',
-		homeBoardName = homeBoardName ?? '' {
+		homeBoardName = homeBoardName ?? '',
+		tapPostIdToReply = tapPostIdToReply ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2673,6 +2677,13 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 
 	bool get usingHomeBoard => homeImageboardKey != null;
+
+	bool get tapPostIdToReply => _settings.tapPostIdToReply;
+	set tapPostIdToReply(bool setting) {
+		_settings.tapPostIdToReply = setting;
+		_settings.save();
+		notifyListeners();
+	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

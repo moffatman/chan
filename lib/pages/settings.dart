@@ -1314,6 +1314,22 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.reply),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Tap post IDs to reply')
+						),
+						AdaptiveSwitch(
+							value: settings.tapPostIdToReply,
+							onChanged: (newValue) {
+								settings.tapPostIdToReply = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);

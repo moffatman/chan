@@ -302,13 +302,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       translationTargetLanguage: fields[171] as String?,
       homeImageboardKey: fields[172] as String?,
       homeBoardName: fields[173] as String?,
+      tapPostIdToReply: fields[174] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(170)
+      ..writeByte(171)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -648,7 +649,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(172)
       ..write(obj.homeImageboardKey)
       ..writeByte(173)
-      ..write(obj.homeBoardName);
+      ..write(obj.homeBoardName)
+      ..writeByte(174)
+      ..write(obj.tapPostIdToReply);
   }
 
   @override
