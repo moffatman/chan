@@ -765,6 +765,9 @@ class Persistence extends ChangeNotifier {
 		}
 		if (settings.homeImageboardKey == imageboardKey) {
 			tabs.first.board = maybeGetBoard(settings.homeBoardName);
+			// Open at catalog, but keep previous thread available in pull tab
+			tabs.first.threadForPullTab = tabs.first.thread;
+			tabs.first.thread = null;
 		}
 		if (_threadIdToBumpInHistory?.$1 == imageboardKey) {
 			// The previous thread in the home tab was replaced by the board switcher
@@ -1382,6 +1385,8 @@ class PersistentBrowserTab extends EasyListenable {
 	CatalogVariant? catalogVariant;
 	@HiveField(9, defaultValue: false)
 	bool incognito;
+	// Do not persist
+	ThreadIdentifier? threadForPullTab;
 
 	PersistentBrowserTab({
 		this.board,

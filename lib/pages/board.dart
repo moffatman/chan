@@ -233,8 +233,9 @@ class BoardPageState extends State<BoardPage> {
 					});
 			}
 		}
-		else if (context.findAncestorStateOfType<NavigatorState>()?.canPop() == false) {
-			_lastSelectedThread = context.read<PersistentBrowserTab?>()?.thread;
+		if (context.findAncestorStateOfType<NavigatorState>()?.canPop() == false) {
+			final tab = context.read<PersistentBrowserTab?>();
+			_lastSelectedThread ??= tab?.threadForPullTab ?? tab?.thread;
 		}
 		_searching = (widget.initialSearch ?? widget.tab?.initialSearch)?.isNotEmpty ?? false;
 	}
