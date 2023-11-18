@@ -1301,7 +1301,7 @@ class PostReceipt {
 		required this.name,
 		required this.options,
 		required this.time,
-		this.markAsYou = false
+		this.markAsYou = true
 	});
 	@override
 	String toString() => 'PostReceipt(id: $id, password: $password, name: $name, options: $options, time: $time, markAsYou: $markAsYou)';
