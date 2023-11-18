@@ -21,6 +21,21 @@ import 'package:provider/provider.dart';
 final List<String> receivedFilePaths = [];
 final attachmentSourceNotifier = EasyListenable();
 
+Future<String?> _copyFileToSafeLocation(String? path) async {
+	if (path == null) {
+		return null;
+	}
+	if (path.startsWith('/') && path.contains('com.moffatman.chan-Inbox')) {
+		// Files will be deleted from here eventually by iOS
+		final parent = Directory('${Persistence.temporaryDirectory.path}/inboxcache/${DateTime.now().millisecondsSinceEpoch}');
+		await parent.create(recursive: true);
+		final destPath = '${parent.path}/${path.split('/').last}';
+		await File(path).copy(destPath);
+		return destPath;
+	}
+	return path;
+}
+
 class AttachmentPickingSource {
 	final String name;
 	final IconData icon;
@@ -42,24 +57,24 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final gallery = AttachmentPickingSource(
 		name: 'Image Gallery',
 		icon: Adaptive.icons.photo,
-		pick: () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => x?.files.single.path)
+		pick: () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => _copyFileToSafeLocation(x?.files.single.path))
 	);
 	final videoGallery = AttachmentPickingSource(
 		name: 'Video Gallery',
 		icon: CupertinoIcons.play_rectangle,
-		pick: () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => x?.files.single.path)
+		pick: () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => _copyFileToSafeLocation(x?.files.single.path))
 	);
 	final picker = ImagePicker();
 	final camera = AttachmentPickingSource(
 		name: 'Camera',
 		icon: CupertinoIcons.camera,
-		pick: () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)
+		pick: () => picker.pickImage(source: ImageSource.camera).then((x) => _copyFileToSafeLocation(x?.path))
 	);
 	final videoCamera = AttachmentPickingSource(
 		name: 'Video Camera',
 		icon: CupertinoIcons.videocam,
 		iconSizeMultiplier: 1.4,
-		pick: () => picker.pickVideo(source: ImageSource.camera).then((x) => x?.path)
+		pick: () => picker.pickVideo(source: ImageSource.camera).then((x) => _copyFileToSafeLocation(x?.path))
 	);
 	final site = context.read<ImageboardSite?>();
 	final web = AttachmentPickingSource(
@@ -74,7 +89,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final file = AttachmentPickingSource(
 		name: 'File',
 		icon: CupertinoIcons.folder,
-		pick: () => FilePicker.platform.pickFiles(type: FileType.any).then((x) => x?.files.single.path)
+		pick: () => FilePicker.platform.pickFiles(type: FileType.any).then((x) => _copyFileToSafeLocation(x?.files.single.path))
 	);
 	final clipboard = AttachmentPickingSource(
 		name: 'Clipboard',
