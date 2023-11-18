@@ -480,6 +480,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													groupValue: settings.onlyShowFavouriteBoardsInSwitcher,
 													onValueChanged: (setting) {
 														settings.onlyShowFavouriteBoardsInSwitcher = setting;
+														setDialogState(() {});
 													}
 												),
 												const SizedBox(height: 16),
@@ -491,6 +492,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													groupValue: settings.useBoardSwitcherList,
 													onValueChanged: (setting) {
 														settings.useBoardSwitcherList = setting;
+														setDialogState(() {});
 													}
 												),
 												const SizedBox(height: 16),
