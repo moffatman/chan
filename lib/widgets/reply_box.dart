@@ -153,6 +153,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	(DateTime, FocusNode)? _lastNearbyFocus;
 	bool _headlessSolveFailed = false;
 	bool _promptForHeadlessSolve = false;
+	bool _disableLoginSystem = false;
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
 		int threadId => ThreadIdentifier(widget.board, threadId),
@@ -340,6 +341,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			spoiler = false;
 			flag = null;
 			widget.onFilePathChanged?.call(null);
+			_disableLoginSystem = false;
 		}
 		if (oldWidget.board != widget.board) {
 			context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
@@ -474,6 +476,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_attachmentScan = null;
 			widget.onFilePathChanged?.call(null);
 			_showAttachmentOptions = false;
+			_disableLoginSystem = false;
 			_setSpamFilteredPostId(null);
 			setState(() {});
 		}
@@ -769,6 +772,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					shouldAutoLogin = true;
 				}
 			}
+			if (_disableLoginSystem) {
+				shouldAutoLogin = false;
+			}
 			if (shouldAutoLogin) {
 				try {
 					await site.loginSystem?.login(widget.board, savedFields);
@@ -956,6 +962,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				_attachmentScan = null;
 				widget.onFilePathChanged?.call(null);
 				_showAttachmentOptions = false;
+				_disableLoginSystem = false;
 			}
 			_show = false;
 			loading = false;
@@ -1425,6 +1432,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	Widget _buildOptions(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		final persistence = context.watch<Persistence>();
+		final site = context.watch<ImageboardSite>();
+		final fields = site.loginSystem?.getLoginFields();
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
@@ -1514,6 +1523,33 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									..save();
 								widget.onOptionsChanged?.call(s);
 							}
+						)
+					),
+					if (fields != null && !_haveValidCaptcha) Padding(
+						padding: const EdgeInsets.only(left: 8),
+						child: AdaptiveIconButton(
+							onPressed: () {
+								setState(() {
+									_disableLoginSystem = !_disableLoginSystem;
+								});
+							},
+							icon: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									SizedBox(
+										width: 16,
+										height: 16,
+										child: ExtendedImage.network(
+											site.passIconUrl.toString(),
+											cache: true,
+											enableLoadState: false,
+											fit: BoxFit.contain
+										)
+									),
+									const SizedBox(width: 2),
+									Icon(_disableLoginSystem ? CupertinoIcons.square : CupertinoIcons.checkmark_square)
+								]
+							)
 						)
 					)
 				]
