@@ -825,7 +825,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		return attachment.ext;
 	}
 
-	String _downloadFilename(bool convertForCompatibility) {
+	String _downloadFilename(bool convertForCompatibility, {bool serverSideName = false}) {
+		if (serverSideName) {
+			return attachment.id + _downloadExt(convertForCompatibility);
+		}
 		return attachment.filename.replaceFirst(RegExp(r'\..+$'), _downloadExt(convertForCompatibility));
 	}
 
@@ -929,7 +932,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				successful = true;
 			}
 			else if (Platform.isAndroid) {
-				filename = _downloadFilename(false);
+				filename = _downloadFilename(false, serverSideName: settings.downloadUsingServerSideFilenames);
 				if (saveAs) {
 					final path = await saveFileAs(
 						sourcePath: getFile().path,

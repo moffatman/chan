@@ -1026,6 +1026,8 @@ class SavedSettings extends HiveObject {
 	String homeBoardName;
 	@HiveField(174)
 	bool tapPostIdToReply;
+	@HiveField(175)
+	bool downloadUsingServerSideFilenames;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1202,6 +1204,7 @@ class SavedSettings extends HiveObject {
 		this.homeImageboardKey,
 		String? homeBoardName,
 		bool? tapPostIdToReply,
+		bool? downloadUsingServerSideFilenames,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1400,7 +1403,8 @@ class SavedSettings extends HiveObject {
 		},
 		translationTargetLanguage = translationTargetLanguage ?? 'en',
 		homeBoardName = homeBoardName ?? '',
-		tapPostIdToReply = tapPostIdToReply ?? true {
+		tapPostIdToReply = tapPostIdToReply ?? true,
+		downloadUsingServerSideFilenames = downloadUsingServerSideFilenames ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2681,6 +2685,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get tapPostIdToReply => _settings.tapPostIdToReply;
 	set tapPostIdToReply(bool setting) {
 		_settings.tapPostIdToReply = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get downloadUsingServerSideFilenames => _settings.downloadUsingServerSideFilenames;
+	set downloadUsingServerSideFilenames(bool setting) {
+		_settings.downloadUsingServerSideFilenames = setting;
 		_settings.save();
 		notifyListeners();
 	}

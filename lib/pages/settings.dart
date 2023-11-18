@@ -3780,7 +3780,30 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							}
 						)
 					),
-					const SizedBox(height: 32)
+					const SizedBox(height: 32),
+					const Row(
+						children: [
+							Icon(CupertinoIcons.doc_text),
+							SizedBox(width: 8),
+							Expanded(
+								child: Text('Media saving filenames')
+							)
+						]
+					),
+					Padding(
+						padding: const EdgeInsets.all(16),
+						child: AdaptiveChoiceControl<bool>(
+							children: const {
+								false: (null, 'User-submitted'),
+								true: (null, 'Server-side')
+							},
+							groupValue: settings.downloadUsingServerSideFilenames,
+							onValueChanged: (setting) {
+								settings.downloadUsingServerSideFilenames = setting;
+							}
+						)
+					),
+					const SizedBox(height: 16)
 				],
 				const Row(
 					children: [
