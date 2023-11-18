@@ -32,6 +32,7 @@ class ThreadCounters extends StatelessWidget {
 	final Alignment alignment;
 	final bool showUnseenColors;
 	final bool showUnseenCounters;
+	final bool? forceShowInHistory;
 
 	const ThreadCounters({
 		required this.imageboard,
@@ -43,6 +44,7 @@ class ThreadCounters extends StatelessWidget {
 		required this.alignment,
 		this.showUnseenColors = true,
 		this.showUnseenCounters = true,
+		this.forceShowInHistory,
 		super.key
 	});
 
@@ -61,7 +63,7 @@ class ThreadCounters extends StatelessWidget {
 		Color? replyCountColor;
 		Color? imageCountColor;
 		Color? otherMetadataColor;
-		final threadSeen = threadState?.lastSeenPostId != null && threadState?.showInHistory == true;
+		final threadSeen = threadState?.lastSeenPostId != null && (forceShowInHistory ?? (threadState?.showInHistory ?? false));
 		if (threadSeen && showUnseenCounters) {
 			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
 				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
@@ -189,6 +191,7 @@ class ThreadRow extends StatelessWidget {
 	final bool dimReadThreads;
 	final bool showLastReplies;
 	final bool showPageNumber;
+	final bool? forceShowInHistory;
 
 	const ThreadRow({
 		required this.thread,
@@ -205,6 +208,7 @@ class ThreadRow extends StatelessWidget {
 		this.dimReadThreads = false,
 		this.showLastReplies = false,
 		this.showPageNumber = false,
+		this.forceShowInHistory,
 		Key? key
 	}) : super(key: key);
 
@@ -239,14 +243,15 @@ class ThreadRow extends StatelessWidget {
 			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
 		}
 		final watch = threadState?.threadWatch;
-		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0) && threadState.showInHistory;
+		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0) && (forceShowInHistory ?? threadState.showInHistory);
 		Widget makeCounters() => ThreadCounters(
 			countsUnreliable: countsUnreliable,
 			imageboard: imageboard,
 			thread: thread,
 			threadState: threadState,
 			showPageNumber: showPageNumber,
-			alignment: Alignment.centerRight
+			alignment: Alignment.centerRight,
+			forceShowInHistory: forceShowInHistory
 		);
 		final countersPlaceholder = WidgetSpan(
 			alignment: PlaceholderAlignment.top,
@@ -666,6 +671,7 @@ class ThreadRow extends StatelessWidget {
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
+									if (threadState?.showInHistory == false && forceShowInHistory == true) Icon(CupertinoIcons.eye_slash, color: otherMetadataColor, size: 18),
 									if (watch != null) Icon(CupertinoIcons.bell_fill, color: otherMetadataColor, size: 18),
 									if (watch?.localYousOnly == false) Icon(CupertinoIcons.asterisk_circle, color: otherMetadataColor, size: 18),
 									if (threadState?.savedTime != null) Icon(Adaptive.icons.bookmarkFilled, color: otherMetadataColor, size: 18)
