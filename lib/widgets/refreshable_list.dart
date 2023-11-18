@@ -3056,6 +3056,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	Future<void> blockAndUpdate() async {
 		state?.originalList = null;
 		state?.sortedList = null;
+		state?._lastTreeOrder = null;
 		setItems([]);
 		await state?.update();
 		slowScrolls.didUpdate();
