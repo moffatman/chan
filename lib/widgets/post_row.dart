@@ -228,7 +228,7 @@ class PostRow extends StatelessWidget {
 		final theme = context.watch<SavedTheme>();
 		final parentZoneThreadState = parentZone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		final receipt = parentZoneThreadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
-		final isYourPost = revealYourPosts && receipt != null || (parentZoneThreadState?.postsMarkedAsYou.contains(post.id) ?? false);
+		final isYourPost = revealYourPosts && (receipt?.markAsYou ?? false) || (parentZoneThreadState?.postsMarkedAsYou.contains(post.id) ?? false);
 		Border? border;
 		final largeImageWidth = this.largeImageWidth ?? settings.centeredPostThumbnailSize;
 		final List<Attachment> largeAttachments = largeImageWidth == null ? [] : latestPost.attachments;
@@ -712,7 +712,11 @@ class PostRow extends StatelessWidget {
 							child: const Text('Unmark as You'),
 							trailingIcon: CupertinoIcons.person_badge_minus,
 							onPressed: () {
-								parentZoneThreadState.receipts.removeWhere((r) => r.id == latestPost.id);
+								for (final r in parentZoneThreadState.receipts) {
+									if (r.id == latestPost.id) {
+										r.markAsYou = false;
+									}
+								}
 								parentZoneThreadState.postsMarkedAsYou.remove(latestPost.id);
 								parentZoneThreadState.didUpdateYourPosts();
 								parentZoneThreadState.save();
@@ -722,7 +726,16 @@ class PostRow extends StatelessWidget {
 						child: const Text('Mark as You'),
 						trailingIcon: CupertinoIcons.person_badge_plus,
 						onPressed: () async {
-							parentZoneThreadState.postsMarkedAsYou.add(latestPost.id);
+							bool markedReceipt = false;
+							for (final r in parentZoneThreadState.receipts) {
+								if (r.id == latestPost.id) {
+									r.markAsYou = true;
+									markedReceipt = true;
+								}
+							}
+							if (!markedReceipt) {
+								parentZoneThreadState.postsMarkedAsYou.add(latestPost.id);
+							}
 							parentZoneThreadState.didUpdateYourPosts();
 							if (site.supportsPushNotifications) {
 								await promptForPushNotificationsIfNeeded(context);

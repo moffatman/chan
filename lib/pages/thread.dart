@@ -56,6 +56,7 @@ class _PersistentThreadStateSnapshot {
 	final int postsMarkedAsYouLength;
 	final DateTime? savedTime;
 	final int receiptsLength;
+	final int markedReceiptsLength;
 	final int treeHiddenIdsLength;
 	final int hiddenPosterIdsLength;
 	final bool? useTree;
@@ -68,6 +69,7 @@ class _PersistentThreadStateSnapshot {
 		postsMarkedAsYouLength = 0,
 		savedTime = null,
 		receiptsLength = 0,
+		markedReceiptsLength = 0,
 		treeHiddenIdsLength = 0,
 		hiddenPosterIdsLength = 0,
 		useTree = null,
@@ -80,6 +82,7 @@ class _PersistentThreadStateSnapshot {
 		postsMarkedAsYouLength = s.postsMarkedAsYou.length,
 		savedTime = s.savedTime,
 		receiptsLength = s.receipts.length,
+		markedReceiptsLength = s.receipts.where((receipt) => receipt.markAsYou).length,
 		treeHiddenIdsLength = s.treeHiddenPostIds.length,
 		hiddenPosterIdsLength = s.hiddenPosterIds.length,
 		useTree = s.useTree,
@@ -94,6 +97,7 @@ class _PersistentThreadStateSnapshot {
 		(o.postsMarkedAsYouLength == postsMarkedAsYouLength) &&
 		(o.savedTime == savedTime) &&
 		(o.receiptsLength == receiptsLength) &&
+		(o.markedReceiptsLength == markedReceiptsLength) &&
 		(o.treeHiddenIdsLength == treeHiddenIdsLength) &&
 		(o.hiddenPosterIdsLength == hiddenPosterIdsLength) &&
 		(o.useTree == useTree) &&
@@ -101,7 +105,7 @@ class _PersistentThreadStateSnapshot {
 		(o.overrideShowPostIdsLength == overrideShowPostIdsLength);
 	
 	@override
-	int get hashCode => Object.hash(thread, hiddenPostIdsLength, postsMarkedAsYouLength, savedTime, receiptsLength, treeHiddenIdsLength, hiddenPostIdsLength, useTree, postSortingMethod, overrideShowPostIdsLength);
+	int get hashCode => Object.hash(thread, hiddenPostIdsLength, postsMarkedAsYouLength, savedTime, receiptsLength, markedReceiptsLength, treeHiddenIdsLength, hiddenPostIdsLength, useTree, postSortingMethod, overrideShowPostIdsLength);
 }
 
 extension _DisableUpdates on PersistentThreadState {

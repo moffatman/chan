@@ -1116,7 +1116,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}
 
 	List<int> freshYouIds() {
-		return receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
+		return receipts.where((receipt) => receipt.markAsYou).map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
 	}
 	List<int>? _youIds;
 	List<int> get youIds {
@@ -1293,15 +1293,18 @@ class PostReceipt {
 	final String options;
 	@HiveField(4)
 	final DateTime? time;
+	@HiveField(5, defaultValue: true)
+	bool markAsYou;
 	PostReceipt({
 		required this.password,
 		required this.id,
 		required this.name,
 		required this.options,
-		required this.time
+		required this.time,
+		this.markAsYou = false
 	});
 	@override
-	String toString() => 'PostReceipt(id: $id, password: $password, name: $name, options: $options, time: $time)';
+	String toString() => 'PostReceipt(id: $id, password: $password, name: $name, options: $options, time: $time, markAsYou: $markAsYou)';
 }
 
 @HiveType(typeId: 18)
