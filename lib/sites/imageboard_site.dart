@@ -1322,6 +1322,7 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			staticUrl: data['staticUrl'],
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
+			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
 			searchUrl: data['searchUrl'] ?? '',
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
 				final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(

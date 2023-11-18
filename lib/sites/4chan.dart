@@ -126,6 +126,7 @@ class Site4Chan extends ImageboardSite {
 	final String imageUrl;
 	final String captchaKey;
 	final Map<String, String> captchaUserAgents;
+	final Map<String, Map<String, String>> boardFlags;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
 	Map<ImageboardAction, Map<String, DateTime>> _lastActionTime = {
@@ -990,7 +991,8 @@ class Site4Chan extends ImageboardSite {
 		required this.captchaKey,
 		List<ImageboardSiteArchive> archives = const [],
 		required this.captchaUserAgents,
-		required this.searchUrl
+		required this.searchUrl,
+		required this.boardFlags
 	}) : sysRedUrl = sysUrl, sysBlueUrl = sysUrl.replaceAll('chan.', 'channel.'), super(archives);
 
 
@@ -1024,13 +1026,24 @@ class Site4Chan extends ImageboardSite {
 	@override
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) {
 		return _boardFlags.putIfAbsent(board, () => AsyncMemoizer<List<ImageboardBoardFlag>>()).runOnce(() async {
-			final response = await client.getUri(Uri.https(baseUrl, '/$board/'));
-			final doc = parse(response.data);
-			return doc.querySelector('select[name="flag"]')?.querySelectorAll('option').map((e) => ImageboardBoardFlag(
-				code: e.attributes['value'] ?? '0',
-				name: e.text,
-				image: Uri.https(staticUrl, '/image/flags/$board/${e.attributes['value']?.toLowerCase()}.gif')
-			)).toList() ?? [];
+			Map<String, String> flagMap = boardFlags[board] ?? {};
+			try {
+				final response = await client.getUri(Uri.https(baseUrl, '/$board/')).timeout(const Duration(seconds: 5));
+				final doc = parse(response.data);
+				flagMap = {
+					for (final e in doc.querySelector('select[name="flag"]')?.querySelectorAll('option') ?? [])
+						(e.attributes['value'] ?? 0): e.text
+				};
+			}
+			catch (e, st) {
+				print('Failed to fetch flags for $name ${formatBoardName(board)}: ${e.toStringDio()}');
+				Future.error(e, st); // crashlytics
+			}
+			return flagMap.entries.map((entry) => ImageboardBoardFlag(
+				code: entry.key,
+				name: entry.value,
+				image: Uri.https(staticUrl, '/image/flags/$board/${entry.key.toLowerCase()}.gif')
+			)).toList();
 		});
 	}
 
