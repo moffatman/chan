@@ -45,8 +45,8 @@ class StationaryNotifyingIcon extends StatelessWidget {
 									maxLines: 1,
 									minFontSize: 0,
 									textAlign: TextAlign.center,
-									style: const TextStyle(
-										color: Colors.white
+									style: TextStyle(
+										color: (ChanceTheme.secondaryColorOf(context).computeLuminance() > 0.5) ? Colors.black : Colors.white
 									)
 								)
 							),
