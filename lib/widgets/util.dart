@@ -807,6 +807,7 @@ class _RootCustomScaleState extends State<RootCustomScale> {
         scale: 1 / widget.scale,
         child: MediaQuery(
 					data: mq.copyWith(
+						size: mq.size * widget.scale,
 						viewInsets: mq.viewInsets * widget.scale,
 						systemGestureInsets: mq.systemGestureInsets * widget.scale,
 						viewPadding: mq.viewPadding * widget.scale,
@@ -823,30 +824,6 @@ class _RootCustomScaleState extends State<RootCustomScale> {
 					child: child
 				)
 			)
-		);
-	}
-}
-
-class MQCustomScale extends StatelessWidget {
-	final double scale;
-	final Widget child;
-	const MQCustomScale({
-		required this.scale,
-		required this.child,
-		Key? key
-	}) : super(key: key);
-	@override
-	Widget build(BuildContext context) {
-		final mq = MediaQuery.of(context);
-    return MediaQuery(
-			data: mq.copyWith(
-				viewInsets: mq.viewInsets * scale,
-				padding: mq.padding * scale,
-				viewPadding: mq.viewPadding * scale,
-				systemGestureInsets: mq.systemGestureInsets * scale,
-				size: mq.size / scale
-			),
-			child: child
 		);
 	}
 }
