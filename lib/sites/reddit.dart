@@ -1114,7 +1114,10 @@ class SiteReddit extends ImageboardSite {
 		}
 		return ImageboardArchiveSearchResultPage(
 			page: page,
-			maxPage: response.data['data']['after'] == null ? page : null,
+			maxPage: // No next-page hint AND
+			         response.data['data']['after'] == null &&
+							 // We arrived at this page going forward
+							 (page > (lastResult?.page ?? 0)) ? page : null,
 			posts: await Future.wait((response.data['data']['children'] as List<dynamic>).map((c) async {
 				if (c['kind'] == 't3') {
 					return ImageboardArchiveSearchResult.thread(await _makeThread(c['data']));
