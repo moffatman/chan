@@ -494,6 +494,7 @@ class ThreadPageState extends State<ThreadPage> {
 		persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 		persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
 		persistentState.useArchive |= widget.initiallyUseArchive;
+		persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] ?? false;
 		persistentState.save();
 		_maybeUpdateWatch();
 		persistentState.thread?.preinit();
@@ -611,6 +612,7 @@ class ThreadPageState extends State<ThreadPage> {
 			persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 			persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
 			persistentState.useArchive |= widget.initiallyUseArchive;
+			persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] ?? false;
 			final oldZone = zone;
 			Future.delayed(const Duration(milliseconds: 100), () => oldZone.dispose());
 			final imageboard = context.read<Imageboard>();

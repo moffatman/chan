@@ -1369,6 +1369,8 @@ class PersistentBrowserTab extends EasyListenable {
 	// Do not persist
 	final Map<ThreadIdentifier, int> initialPostId = {};
 	// Do not persist
+	final Map<ThreadIdentifier, bool> initiallyUseArchive = {};
+	// Do not persist
 	final tabKey = GlobalKey(debugLabel: 'PersistentBrowserTab.tabKey');
 	// Do not persist
 	final boardKey = GlobalKey<BoardPageState>(debugLabel: 'PersistentBrowserTab.boardKey');

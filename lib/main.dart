@@ -610,7 +610,8 @@ class ChanTabs extends ChangeNotifier {
 		bool incognito = false,
 		int? withInitialPostId,
 		String? withInitialSearch,
-		bool keepTabPopupOpen = false
+		bool keepTabPopupOpen = false,
+		bool initiallyUseArchive = false
 	}) {
 		final pos = atPosition ?? Persistence.tabs.length;
 		final tab = PersistentBrowserTab(
@@ -623,6 +624,9 @@ class ChanTabs extends ChangeNotifier {
 		tab.initialize();
 		if (withBoard != null && withThreadId != null && withInitialPostId != null) {
 			tab.initialPostId[ThreadIdentifier(withBoard, withThreadId)] = withInitialPostId;
+		}
+		if (withBoard != null && withThreadId != null && initiallyUseArchive) {
+			tab.initiallyUseArchive[ThreadIdentifier(withBoard, withThreadId)] = true;
 		}
 		insertInitializedTab(pos, tab,
 			keepTabPopupOpen: keepTabPopupOpen,
@@ -1054,7 +1058,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else {
 			final dest = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(link), wait: const Duration(milliseconds: 50));
 			if (dest != null) {
-				_onNotificationTapped(dest.$1, dest.$2);
+				_onNotificationTapped(dest.$1, dest.$2, initiallyUseArchive: dest.$3);
 				return;
 			}
 			final devDest = (await devImageboard?.site.decodeUrl(link))?.postIdentifier;
@@ -1099,13 +1103,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		tab.threadPageState?.scrollToPost(postId);
 	}
 
-	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification) async {
+	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification, {
+		bool initiallyUseArchive = false
+	}) async {
 		if (!_goToPost(
 			imageboardKey: imageboard.key,
 			board: notification.board,
 			threadId: notification.threadId,
 			postId: notification.postId,
-			openNewTabIfNeeded: false
+			openNewTabIfNeeded: false,
+			initiallyUseArchive: initiallyUseArchive
 		)) {
 			final watch = imageboard.persistence.browserState.threadWatches[notification.threadIdentifier];
 			if (watch == null) {
@@ -1114,7 +1121,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					board: notification.board,
 					threadId: notification.threadId,
 					postId: notification.postId,
-					openNewTabIfNeeded: true
+					openNewTabIfNeeded: true,
+					initiallyUseArchive: initiallyUseArchive
 				);
 			}
 			else {
@@ -1246,7 +1254,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		required String board,
 		required int? threadId,
 		int? postId,
-		required bool openNewTabIfNeeded
+		required bool openNewTabIfNeeded,
+		bool initiallyUseArchive = false
 	}) {
 		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.board == board && tab.thread?.id == threadId);
 		final tabAlreadyExisted = tab != null;
@@ -1256,7 +1265,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				withImageboardKey: imageboardKey,
 				withBoard: board,
 				withThreadId: threadId,
-				withInitialPostId: postId
+				withInitialPostId: postId,
+				initiallyUseArchive: initiallyUseArchive
 			);
 		}
 		if (tab != null) {
