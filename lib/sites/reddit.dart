@@ -690,6 +690,22 @@ class SiteReddit extends ImageboardSite {
 	String get defaultUsername => '';
 
 	@override
+	Map<String, String>? getHeaders(Uri url) {
+		if (url.host == 'v.redd.it') {
+			return {
+				'Origin': 'https://www.reddit.com',
+				'Sec-Fetch-Site': 'cross-site',
+				'Sec-Fetch-Mode': 'cors',
+				'Sec-Fetch-Dest': 'empty',
+				'Sec-Ch-Ua-Mobile': '?0',
+				'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+				'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+			};
+		}
+		return null;
+	}
+
+	@override
 	Future<void> deletePost(String board, int threadId, PostReceipt receipt) {
 		// TODO: implement deletePost
 		throw UnimplementedError();
