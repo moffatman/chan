@@ -47,12 +47,7 @@ class RenderSliverCenter extends RenderSliverEdgeInsetsPadding {
 		else {
 			centerPadding = EdgeInsets.symmetric(horizontal: max(0, (totalPadding - minimumPadding.horizontal)) / 2);
 		}
-		_resolvedPadding = EdgeInsets.only(
-			top: minimumPadding.top + centerPadding.top,
-			left: minimumPadding.left + centerPadding.left,
-			right: minimumPadding.right + centerPadding.right,
-			bottom: minimumPadding.bottom + centerPadding.bottom
-		);
+		_resolvedPadding = minimumPadding + centerPadding;
 	}
 
   @override
