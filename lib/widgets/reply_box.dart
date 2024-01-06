@@ -1229,7 +1229,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				AttachmentType.webm :
 				(attachmentExt == 'mp4' ? AttachmentType.mp4 : AttachmentType.image),
 			md5: '',
-			id: attachment?.uri.toString() ?? 'zz',
+			id: '${random.nextInt(1000000)}',
 			filename: attachment?.uri.pathSegments.last ?? '',
 			thumbnailUrl: '',
 			board: widget.board,
