@@ -1438,7 +1438,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final settings = context.watch<EffectiveSettings>();
 		final persistence = context.watch<Persistence>();
 		final site = context.watch<ImageboardSite>();
-		final fields = site.loginSystem?.getLoginFields();
+		final fields = site.loginSystem?.getSavedLoginFields();
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
