@@ -108,4 +108,5 @@ dependencies {
     implementation 'androidx.window:window:1.0.0'
     implementation 'androidx.window:window-java:1.0.0'
     implementation 'com.github.UnifiedPush:android-foss_embedded_fcm_distributor:1.0.0-beta1'
+    implementation 'androidx.documentfile:documentfile:1.0.1'
 }
