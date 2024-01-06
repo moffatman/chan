@@ -33,8 +33,7 @@ Future<void> reportPost({
 				openBrowser(context, method.uri);
 			case ChoiceReportMethod():
 				Map<String, String>? choice;
-				final completer = Completer<void>();
-				showAdaptiveDialog<bool>(
+				await showAdaptiveDialog<bool>(
 					context: context,
 					builder: (context) => StatefulBuilder(
 						builder: (context, setDialogState) => AdaptiveAlertDialog(
@@ -92,7 +91,15 @@ Future<void> reportPost({
 											if (context.mounted) {
 												Navigator.pop(context);
 											}
-										}).then(completer.complete, onError: completer.completeError);
+										}).catchError((e, st) {
+											if (e is! ReportFailedException) {
+												_submissionFailed = true; // Disable future headless solve
+												Future.error(e, st); // Report to crashlytics
+											}
+											if (context.mounted) {
+												alertError(context, e.toString());
+											}
+										});
 									},
 									child: const Text('Submit')
 								),
@@ -104,7 +111,6 @@ Future<void> reportPost({
 						)
 					)
 				);
-				await completer.future;
 				if (!context.mounted) {
 					return;
 				}

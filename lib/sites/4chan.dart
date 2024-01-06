@@ -965,7 +965,7 @@ class Site4Chan extends ImageboardSite {
 					final responseDocument = parse(response.data);
 					final message = responseDocument.querySelector('font')?.text;
 					if (message == null || !message.contains('submitted')) {
-						throw Exception('Report failed: ${message ?? 'Could not find response text'}');
+						throw ReportFailedException(message ?? 'Could not find response text');
 					}
 				}
 			);
