@@ -207,6 +207,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 		);
 	});
 	try {
+		await Future.delayed(Duration.zero);
 		return await work(controller);
 	}
 	finally {
