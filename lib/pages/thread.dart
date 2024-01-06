@@ -1630,7 +1630,7 @@ class ThreadPageState extends State<ThreadPage> {
 																					color: theme.secondaryColor,
 																					fontWeight: FontWeight.bold
 																				);
-																				final post = Builder(
+																				Widget post = Builder(
 																					builder: (context) => PostRow(
 																						post: value,
 																						dim: peekContentHeight.isFinite,
@@ -1665,6 +1665,11 @@ class ThreadPageState extends State<ThreadPage> {
 																						)
 																					)
 																				);
+																				if (peekContentHeight.isFinite) {
+																					post = ClipRect(
+																						child: post
+																					);
+																				}
 																				return IgnorePointer(
 																					ignoring: peekContentHeight.isFinite,
 																					child: ConstrainedBox(
