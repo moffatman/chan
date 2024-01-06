@@ -270,7 +270,12 @@ class ShareablePosts extends StatelessWidget {
 					revealYourPosts: style.revealYourPosts
 				)
 			);
-			child = (parents.isEmpty && children.isEmpty) ? primaryPost : Container(
+			child = (parents.isEmpty && children.isEmpty) ? ConstrainedBox(
+				constraints: BoxConstraints(
+					maxWidth: style.width
+				),
+				child: primaryPost
+			) : Container(
 				color: theme.barColor,
 				width: style.width,
 				child: Column(
