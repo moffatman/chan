@@ -354,7 +354,8 @@ class AttachmentViewerController extends ChangeNotifier {
 			return overrideSource!;
 		}
 		final attachmentUrl = Uri.parse(attachment.url);
-		Response result = await site.client.headUri(attachmentUrl, options: Options(
+		Response result = await site.client.requestUri(attachmentUrl, options: Options(
+			method: attachmentUrl.path.endsWith('.m3u8') ? 'GET' : 'HEAD',
 			validateStatus: (_) => true,
 			headers: getHeaders(attachmentUrl),
 			extra: {
