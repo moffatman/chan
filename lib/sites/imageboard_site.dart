@@ -968,7 +968,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		await _ensureCookiesMemoizedForUrl(Uri.parse(attachment.url));
 		await _ensureCookiesMemoizedForUrl(Uri.parse(attachment.thumbnailUrl));
 	}
-	Map<String, String>? getHeaders(Uri url) {
+	Map<String, String> getHeaders(Uri url) {
 		if (EffectiveSettings.instance.connectivity == ConnectivityResult.mobile) {
 			return {
 				'user-agent': Persistence.settings.userAgent,
@@ -1041,7 +1041,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			if (opAttachment != null) {
 				await client.head(opAttachment.url, options: Options(
 					headers: {
-						...getHeaders(Uri.parse(opAttachment.url)) ?? {},
+						...getHeaders(Uri.parse(opAttachment.url)),
 						if (opAttachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 					},
 					extra: {

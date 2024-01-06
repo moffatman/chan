@@ -690,9 +690,10 @@ class SiteReddit extends ImageboardSite {
 	String get defaultUsername => '';
 
 	@override
-	Map<String, String>? getHeaders(Uri url) {
+	Map<String, String> getHeaders(Uri url) {
 		if (url.host == 'v.redd.it') {
 			return {
+				...super.getHeaders(url),
 				'Origin': 'https://www.reddit.com',
 				'Sec-Fetch-Site': 'cross-site',
 				'Sec-Fetch-Mode': 'cors',
@@ -702,7 +703,7 @@ class SiteReddit extends ImageboardSite {
 				'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 			};
 		}
-		return null;
+		return super.getHeaders(url);
 	}
 
 	@override
