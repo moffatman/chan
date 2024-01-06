@@ -183,7 +183,6 @@ class ThreadRow extends StatelessWidget {
 	final ValueChanged<Attachment>? onThumbnailTap;
 	final Iterable<int> semanticParentIds;
 	final bool contentFocus;
-	final bool contentFocusBorderRadiusAndPadding;
 	final bool showSiteIcon;
 	final bool showBoardName;
 	final bool countsUnreliable;
@@ -199,7 +198,6 @@ class ThreadRow extends StatelessWidget {
 		this.onThumbnailLoadError,
 		this.onThumbnailTap,
 		this.contentFocus = false,
-		this.contentFocusBorderRadiusAndPadding = false,
 		this.showSiteIcon = false,
 		this.showBoardName = false,
 		this.countsUnreliable = false,
@@ -274,7 +272,7 @@ class ThreadRow extends StatelessWidget {
 				)
 			)
 		);
-		final borderRadius = (contentFocus && contentFocusBorderRadiusAndPadding) ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
+		final borderRadius = (contentFocus && settings.catalogGridModeCellBorderRadiusAndMargin) ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
 		final double subheaderFontSize = site.classicCatalogStyle ? 16 : 15;
 		final spaceSpan = site.classicCatalogStyle ? const TextSpan(text: ' ') : const TextSpan(text: ' ', style: TextStyle(fontSize: 15));
 		final headerRow = [
@@ -688,7 +686,7 @@ class ThreadRow extends StatelessWidget {
 				border: contentFocus ? Border.all(color: borderColor) : null,
 				borderRadius: borderRadius
 			),
-			margin: (contentFocus && contentFocusBorderRadiusAndPadding) ? const EdgeInsets.all(4) : null,
+			margin: (contentFocus && settings.catalogGridModeCellBorderRadiusAndMargin) ? const EdgeInsets.all(4) : null,
 			child: borderRadius != BorderRadius.zero ? ClipRRect(
 				borderRadius: borderRadius,
 				child: child

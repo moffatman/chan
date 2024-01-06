@@ -1604,7 +1604,6 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 	Widget _buildFakeThreadRow({bool contentFocus = true}) {
 		return ThreadRow(
 			contentFocus: contentFocus,
-			contentFocusBorderRadiusAndPadding: context.watch<EffectiveSettings>().catalogGridModeCellBorderRadiusAndMargin,
 			isSelected: false,
 			thread: _makeFakeThread()
 		);
@@ -3002,7 +3001,6 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														decoration: threadAndPostRowDecoration,
 														child: ThreadRow(
 															contentFocus: true,
-															contentFocusBorderRadiusAndPadding: settings.catalogGridModeCellBorderRadiusAndMargin,
 															isSelected: false,
 															thread: _makeFakeThread()
 														)

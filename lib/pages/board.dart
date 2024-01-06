@@ -660,7 +660,6 @@ class BoardPageState extends State<BoardPage> {
 					child: ThreadRow(
 						contentFocus: useCatalogGrid,
 						showLastReplies: !useCatalogGrid && settings.showLastRepliesInCatalog,
-						contentFocusBorderRadiusAndPadding: settings.catalogGridModeCellBorderRadiusAndMargin,
 						thread: thread,
 						isSelected: isSelected,
 						semanticParentIds: [widget.semanticId],
