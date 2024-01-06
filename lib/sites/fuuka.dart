@@ -11,6 +11,15 @@ import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 
+extension _EnsurePrefix on String {
+	String ensurePrefix(String prefix) {
+		if (!startsWith(prefix)) {
+			return '$prefix$this';
+		}
+		return this;
+	}
+}
+
 class FuukaException implements Exception {
 	String error;
 	FuukaException(this.error);
@@ -115,8 +124,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 				filename: fileDetailsMatch.group(5)!,
 				ext: ext,
 				type: ext == '.webm' ? AttachmentType.webm : AttachmentType.image,
-				url: 'https:$url',
-				thumbnailUrl: 'https:${element.querySelector('.thumb')!.attributes['src']!}',
+				url: url.ensurePrefix('https:'),
+				thumbnailUrl: element.querySelector('.thumb')!.attributes['src']!.ensurePrefix('https:'),
 				md5: element.parent!.querySelectorAll('a').firstWhere((x) => x.text == 'View same').attributes['href']!.split('/').last,
 				spoiler: false,
 				width: int.parse(fileDetailsMatch.group(3)!),
