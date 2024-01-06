@@ -268,7 +268,12 @@ Future<File> sharePostsAsImage({
 	final effectiveZone = zone ?? context.read<PostSpanZoneData>();
 	final img = await controller.captureFromLongWidget(
 		MediaQuery(
-			data: mediaQueryData.copyWith(devicePixelRatio: 1),
+			data: mediaQueryData.copyWith(
+				devicePixelRatio: 1,
+				padding: EdgeInsets.zero,
+				viewInsets: EdgeInsets.zero,
+				viewPadding: EdgeInsets.zero
+			),
 			child: FilterZone(
 				filter: Filter.of(context, listen: false),
 				child: MultiProvider(
