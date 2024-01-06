@@ -214,24 +214,26 @@ class _ContextMenuState extends State<ContextMenu> {
 										),
 										curve: Curves.ease,
 										duration: const Duration(milliseconds: 300),
-										builder: (context, double maxHeight, _) => ConstrainedBox(
-											constraints: BoxConstraints(
-												minWidth: 0,
-												maxWidth: min(max(originalConstraints.maxWidth, newConstraints.maxWidth - x), newConstraints.maxWidth + x),
-												minHeight: 0,
-												maxHeight: maxHeight.isNaN ? double.infinity : maxHeight
-											),
-											child: MultiProvider(
-												providers: [
-													Provider<bool>.value(value: false), // Dummy, at least one provider is required
-													if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
-													if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
-													if (site != null) Provider<ImageboardSite>.value(value: site),
-													if (persistence != null) ChangeNotifierProvider<Persistence>.value(value: persistence),
-													if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
-													if (notifications != null) Provider<Notifications>.value(value: notifications)
-												],
-												child: IgnorePointer(child: widget.previewBuilder?.call(context, animation, null) ?? child)
+										builder: (context, double maxHeight, _) => ClipRect(
+											child: ConstrainedBox(
+												constraints: BoxConstraints(
+													minWidth: 0,
+													maxWidth: min(max(originalConstraints.maxWidth, newConstraints.maxWidth - x), newConstraints.maxWidth + x),
+													minHeight: 0,
+													maxHeight: maxHeight.isNaN ? double.infinity : maxHeight
+												),
+												child: MultiProvider(
+													providers: [
+														Provider<bool>.value(value: false), // Dummy, at least one provider is required
+														if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
+														if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
+														if (site != null) Provider<ImageboardSite>.value(value: site),
+														if (persistence != null) ChangeNotifierProvider<Persistence>.value(value: persistence),
+														if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
+														if (notifications != null) Provider<Notifications>.value(value: notifications)
+													],
+													child: IgnorePointer(child: widget.previewBuilder?.call(context, animation, null) ?? child)
+												)
 											)
 										)
 									)
