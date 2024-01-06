@@ -188,7 +188,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					previouslyUsedNames.add(receipt.name);
 				}
 				if (receipt.options.isNotEmpty) {
-					previouslyUsedOptions.add(receipt.options);
+					previouslyUsedOptions.add(receipt.options.trim());
 				}
 			}
 			if (anyIncompleteReceipts) {
