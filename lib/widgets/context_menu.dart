@@ -159,7 +159,9 @@ class _ContextMenuState extends State<ContextMenu> {
 				if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
 				if (notifications != null) Provider<Notifications>.value(value: notifications)
 			],
-			child: IgnorePointer(child: widget.previewBuilder?.call(context, null) ?? child)
+			child: ClipRect(
+				child: IgnorePointer(child: widget.previewBuilder?.call(context, null) ?? child)
+			)
 		);
 		if (!widget.useLayoutBuilder) {
 			return CupertinoContextMenu2(
