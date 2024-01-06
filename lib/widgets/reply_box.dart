@@ -665,7 +665,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
-						maximumDurationInSeconds: board.maxWebmDurationSeconds,
+						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
 						maximumDimension: settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
@@ -690,7 +690,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
-						maximumDurationInSeconds: board.maxWebmDurationSeconds,
+						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
 						maximumDimension: settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum

@@ -210,16 +210,18 @@ class MediaScan {
 
 class MediaConversion {
 	final progress = ValueNotifier<double?>(null);
+	bool _disposedProgress = false;
 	final Uri inputFile;
 	String outputFileExtension;
 	List<String> extraOptions;
 	int? maximumSizeInBytes;
-	int? maximumDurationInSeconds;
+	double? maximumDurationInSeconds;
 	bool stripAudio;
 	int? maximumDimension;
 	final String cacheKey;
 	final Map<String, String> headers;
 	int _additionalScaleDownFactor = 1;
+	int _durationArgumentFactor = 1;
 	final Uri? soundSource;
 	final bool requiresSubdirectory;
 	bool copyStreams;
@@ -285,7 +287,7 @@ class MediaConversion {
 
 	static MediaConversion toWebm(Uri inputFile, {
 		int? maximumSizeInBytes,
-		int? maximumDurationInSeconds,
+		double? maximumDurationInSeconds,
 		required bool stripAudio,
 		int? maximumDimension,
 		Map<String, String> headers = const {},
@@ -447,7 +449,7 @@ class MediaConversion {
 				int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
 				if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') {
 					if (maximumDurationInSeconds != null) {
-						outputDurationInMilliseconds = min(maximumDurationInSeconds! * 1000, outputDurationInMilliseconds!);
+						outputDurationInMilliseconds = min((maximumDurationInSeconds! * 1000).round(), outputDurationInMilliseconds!);
 					}
 					if (maximumSizeInBytes != null) {
 						outputBitrate = min(outputBitrate, ((7.2 - (_additionalScaleDownFactor / 6)) * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
@@ -490,7 +492,7 @@ class MediaConversion {
 						final ms = outputDurationInMilliseconds = max(outputDurationInMilliseconds ?? soundDuration.inMilliseconds, soundDuration.inMilliseconds);
 						if (copyStreams && outputFileExtension == 'webm') {
 							// Some bug on Android where it will loop forever, need to set a target time
-							maximumDurationInSeconds = (ms / 1000).ceil();
+							maximumDurationInSeconds = ms / 1000;
 						}
 					}
 				}
@@ -584,7 +586,7 @@ class MediaConversion {
 								...['-c:v', 'libx264', '-preset', 'medium']
 						],
 						if (copyStreams && outputFileExtension != 'webm') ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy'],
-						if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
+						if (maximumDurationInSeconds != null) ...['-t', (maximumDurationInSeconds! * _durationArgumentFactor).toString()],
 						if (removeMetadata) ...['-map_metadata', '-1'],
 						if (vfs.isNotEmpty) ...['-vf', vfs.join(',')],
 						convertedFile.path
@@ -627,12 +629,33 @@ class MediaConversion {
 							return await start();
 						}
 					}
+					else if (soundSource != null && (outputDurationInMilliseconds ?? 0) > 0) {
+						// Sometimes soundpost is cut off short for some unknown reason
+						final duration = (await MediaScan.scan(convertedFile.uri)).duration;
+						if (duration != null && (duration.inMilliseconds / outputDurationInMilliseconds!) < 0.3) {
+							// Video is much shorter, try again with larger target duration
+							_durationArgumentFactor += 2;
+							if (_durationArgumentFactor < 8) {
+								print('Too short (${duration.inMilliseconds}ms < ${outputDurationInMilliseconds}ms)');
+								await convertedFile.delete();
+								return await start();
+							}
+							else {
+								// Give up, just return it
+							}
+						}
+					}
 					return MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly);
 				}
 			}
 		}
 		finally {
-			Future.delayed(const Duration(milliseconds: 2500), () => progress.dispose());
+			Future.delayed(const Duration(milliseconds: 2500), () {
+				if (!_disposedProgress) {
+					_disposedProgress = true;
+					progress.dispose();
+				}
+			});
 		}
 	}
 
