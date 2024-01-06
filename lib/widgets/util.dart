@@ -13,7 +13,6 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -428,149 +427,123 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			host: context.read<Imageboard?>()?.site.baseUrl,
 		);
 	}
-	final webmMatcher = RegExp('https?://${context.read<ImageboardSite?>()?.imageUrl}/([^/]+)/([0-9]+).webm');
-	final match = webmMatcher.firstMatch(url.toString());
-	if (match != null) {
-		final String board = match.group(1)!;
-		final String id = match.group(2)!;
-		await showGallery(
-			context: context,
-			attachments: [
-				Attachment(
-					type: AttachmentType.webm,
-					board: board,
-					id: id,
-					ext: '.webm',
-					filename: '$id.webm',
-					url: url.toString(),
-					thumbnailUrl: Uri.https(context.read<ImageboardSite>().imageUrl, '/$board/${id}s.jpg').toString(),
-					md5: '',
-					width: null,
-					height: null,
-					sizeInBytes: null,
-					threadId: null
+	final settings = context.read<EffectiveSettings>();
+	final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
+	openInChance() {
+		(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
+			builder: (ctx) => ImageboardScope(
+				imageboardKey: null,
+				imageboard: imageboardTarget!.$1,
+				child: imageboardTarget.$2.threadId == null ? BoardPage(
+					initialBoard: imageboardTarget.$1.persistence.getBoard(imageboardTarget.$2.board),
+					semanticId: -1
+				) : ThreadPage(
+					thread: imageboardTarget.$2.threadIdentifier!,
+					initialPostId: imageboardTarget.$2.postId,
+					initiallyUseArchive: imageboardTarget.$3,
+					boardSemanticId: -1
 				)
-			],
-			semanticParentIds: [],
-			heroOtherEndIsBoxFitCover: false
-		);
+			)
+		));
 	}
-	else if (url.path.endsWith('.webm') ||
-	         url.path.endsWith('.mkv') ||
-					 url.path.endsWith('.mp4') ||
-					 url.path.endsWith('.png') ||
-					 url.path.endsWith('.jpg') ||
-					 url.path.endsWith('.jpeg') ||
-					 url.path.endsWith('.gif')) {
-		final attachment = Attachment(
-			type: url.path.endsWith('.webm') ? AttachmentType.webm :
-			  ['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.path.endsWith(e)) ? AttachmentType.image : AttachmentType.mp4,
-			board: '',
-			id: url.toString(),
-			ext: '.${url.path.split('.').last}',
-			filename: url.path.split('/').last,
-			url: url.toString(),
-			thumbnailUrl: '',
-			md5: '',
-			width: null,
-			height: null,
-			sizeInBytes: null,
-			threadId: null
-		);
-		await showGallery(
-			context: context,
-			attachments: [attachment],
-			overrideSources: {
-				attachment: url
-			},
-			semanticParentIds: [],
-			heroOtherEndIsBoxFitCover: false
-		);
-	}
-	else {
-		final settings = context.read<EffectiveSettings>();
-		final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
-		openInChance() {
-			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
-				builder: (ctx) => ImageboardScope(
-					imageboardKey: null,
-					imageboard: imageboardTarget!.$1,
-					child: imageboardTarget.$2.threadId == null ? BoardPage(
-						initialBoard: imageboardTarget.$1.persistence.getBoard(imageboardTarget.$2.board),
-						semanticId: -1
-					) : ThreadPage(
-						thread: imageboardTarget.$2.threadIdentifier!,
-						initialPostId: imageboardTarget.$2.postId,
-						initiallyUseArchive: imageboardTarget.$3,
-						boardSemanticId: -1
-					)
-				)
-			));
-		}
-		if (Persistence.settings.hostsToOpenExternally.any((s) => url.host.endsWith(s))) {
-			if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
-				launchUrl(url, mode: LaunchMode.externalApplication);
-			}
-		}
-		else if (settings.useInternalBrowser == null && !fromShareOne) {
-			if (context.mounted) {
-				shareOne(
-					context: context,
-					text: url.toString(),
-					type: "text",
-					sharePositionOrigin: null,
-					additionalOptions: {
-						if (imageboardTarget != null) 'Open in Chance': openInChance
-					}
-				);
-			}
-		}
-		else if ((isOnMac && !useCooperativeBrowser && imageboardTarget == null) || settings.useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
+	final bool isMediaLink = [
+		'.webm',
+		'.mkv',
+		'.mp4',
+		'.png',
+		'.jpg',
+		'.jpeg',
+		'.gif'
+	].any(url.path.endsWith);
+	if (Persistence.settings.hostsToOpenExternally.any((s) => url.host.endsWith(s))) {
+		if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
 			launchUrl(url, mode: LaunchMode.externalApplication);
 		}
-		else if (imageboardTarget != null && !fromShareOne) {
-			openInChance();
+	}
+	else if (settings.useInternalBrowser == null && !fromShareOne) {
+		if (context.mounted) {
+			shareOne(
+				context: context,
+				text: url.toString(),
+				type: "text",
+				sharePositionOrigin: null,
+				additionalOptions: {
+					if (imageboardTarget != null) 'Open in Chance': openInChance
+				}
+			);
 		}
-		else if (context.mounted) {
-			if (useCooperativeBrowser) {
-				final fakeAttachment = Attachment(
-					type: AttachmentType.url,
-					board: '',
-					id: '',
-					ext: '',
-					filename: '',
-					url: url.toString(),
-					thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
-						'url': url.toString()
-					}).toString(),
-					md5: '',
-					width: null,
-					height: null,
-					sizeInBytes: null,
-					threadId: null
-				);
-				showGallery(
-					context: context,
-					attachments: [fakeAttachment],
-					allowChrome: false,
-					semanticParentIds: [],
-					fullscreen: false,
-					allowScroll: false,
-					heroOtherEndIsBoxFitCover: false
-				);
+	}
+	else if ((isOnMac && !useCooperativeBrowser && imageboardTarget == null && !isMediaLink) || settings.useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
+		launchUrl(url, mode: LaunchMode.externalApplication);
+	}
+	else if (imageboardTarget != null && !fromShareOne) {
+		openInChance();
+	}
+	else if (context.mounted) {
+		if (isMediaLink) {
+			final attachment = Attachment(
+				type: url.path.endsWith('.webm') ? AttachmentType.webm :
+					['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.path.endsWith(e)) ? AttachmentType.image : AttachmentType.mp4,
+				board: '',
+				id: url.toString(),
+				ext: '.${url.path.split('.').last}',
+				filename: url.path.split('/').last,
+				url: url.toString(),
+				thumbnailUrl: '',
+				md5: '',
+				width: null,
+				height: null,
+				sizeInBytes: null,
+				threadId: null
+			);
+			await showGallery(
+				context: context,
+				attachments: [attachment],
+				overrideSources: {
+					attachment: url
+				},
+				semanticParentIds: [],
+				heroOtherEndIsBoxFitCover: false
+			);
+		}
+		else if (useCooperativeBrowser) {
+			final fakeAttachment = Attachment(
+				type: AttachmentType.url,
+				board: '',
+				id: '',
+				ext: '',
+				filename: '',
+				url: url.toString(),
+				thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
+					'url': url.toString()
+				}).toString(),
+				md5: '',
+				width: null,
+				height: null,
+				sizeInBytes: null,
+				threadId: null
+			);
+			showGallery(
+				context: context,
+				attachments: [fakeAttachment],
+				allowChrome: false,
+				semanticParentIds: [],
+				fullscreen: false,
+				allowScroll: false,
+				heroOtherEndIsBoxFitCover: false
+			);
+		}
+		else {
+			try {
+				final theme = context.read<SavedTheme>();
+				await ChromeSafariBrowser().open(url: WebUri.uri(url), settings: ChromeSafariBrowserSettings(
+					toolbarBackgroundColor: theme.barColor,
+					preferredBarTintColor: theme.barColor,
+					preferredControlTintColor: theme.primaryColor
+				));
 			}
-			else {
-				try {
-					final theme = context.read<SavedTheme>();
-					await ChromeSafariBrowser().open(url: WebUri.uri(url), settings: ChromeSafariBrowserSettings(
-						toolbarBackgroundColor: theme.barColor,
-						preferredBarTintColor: theme.barColor,
-						preferredControlTintColor: theme.primaryColor
-					));
-				}
-				on PlatformException {
-					await launchUrl(url);
-				}
+			on PlatformException {
+				await launchUrl(url);
 			}
 		}
 	}
