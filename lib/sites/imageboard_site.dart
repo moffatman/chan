@@ -976,9 +976,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			};
 		}
 		return {
-				'user-agent': Persistence.settings.userAgent,
-				..._memoizedWifiHeaders[url.host] ?? {}
-			};
+			'user-agent': Persistence.settings.userAgent,
+			..._memoizedWifiHeaders[url.host] ?? {}
+		};
 	}
 	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 	String get baseUrl;
