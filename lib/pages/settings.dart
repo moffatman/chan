@@ -717,7 +717,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						children: [
 							Icon(CupertinoIcons.play_rectangle),
 							SizedBox(width: 8),
-							Flexible(
+							Expanded(
 								child: Text('Transcode WEBM videos before playback')
 							),
 							SizedBox(width: 8),
@@ -1042,7 +1042,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					children: [
 						Icon(CupertinoIcons.exclamationmark_square),
 						SizedBox(width: 8),
-						Flexible(
+						Expanded(
 							child: Text('Image peeking')
 						),
 						SizedBox(width: 8),
@@ -1187,12 +1187,13 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					children: [
 						const Icon(CupertinoIcons.reply_all),
 						const SizedBox(width: 8),
-						const Text('Cancellable replies swipe gesture'),
+						const Expanded(
+							child: Text('Cancellable replies swipe gesture')
+						),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(
 							helpText: 'When swiping from right to left to open a post\'s replies, only continuing the swipe will open the replies. Releasing the swipe in another direction will cancel the gesture.'
 						),
-						const Spacer(),
 						AdaptiveSwitch(
 							value: settings.cancellableRepliesSlideGesture,
 							onChanged: (newValue) {
@@ -1206,12 +1207,13 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					children: [
 						const Icon(CupertinoIcons.arrow_right_square),
 						const SizedBox(width: 8),
-						const Text('Swipe to open board switcher'),
+						const Expanded(
+							child: Text('Swipe to open board switcher')
+						),
 						const SizedBox(width: 8),
 						_SettingsHelpButton(
 							helpText: 'Swipe left-to-right ${settings.androidDrawer ? 'starting on the right side of the' : 'in the'} catalog to open the board switcher.'
 						),
-						const Spacer(),
 						AdaptiveSwitch(
 							value: settings.openBoardSwitcherSlideGesture,
 							onChanged: (newValue) {
@@ -1271,10 +1273,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					children: [
 						const Icon(CupertinoIcons.home),
 						const SizedBox(width: 8),
-						const Text('Home board'),
+						const Expanded(
+							child: Text('Home board')
+						),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(helpText: 'Chance will always open to this site or board on a fresh launch'),
-						const Spacer(),
 						if (settings.usingHomeBoard) AdaptiveIconButton(
 							icon: const Icon(CupertinoIcons.xmark),
 							onPressed: () {
@@ -1642,8 +1645,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					children: [
 						const Icon(CupertinoIcons.zoom_in),
 						const SizedBox(width: 8),
-						const Text('Interface scale'),
-						const Spacer(),
+						const Expanded(
+							child: Text('Interface scale')
+						),
 						AdaptiveIconButton(
 							onPressed: settings.interfaceScale <= 0.5 ? null : () {
 								settings.interfaceScale -= 0.05;
@@ -1664,8 +1668,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					children: [
 						const Icon(CupertinoIcons.textformat_size),
 						const SizedBox(width: 8),
-						const Text('Font scale'),
-						const Spacer(),
+						const Expanded(
+							child: Text('Font scale')
+						),
 						AdaptiveIconButton(
 							onPressed: settings.textScale <= 0.5 ? null : () {
 								settings.textScale -= 0.05;
@@ -1816,12 +1821,13 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							children: [
 								const Icon(CupertinoIcons.sidebar_left),
 								const SizedBox(width: 8),
-								const Text('Drawer permanently visible'),
+								const Expanded(
+									child: Text('Drawer permanently visible')
+								),
 								const SizedBox(width: 8),
 								const _SettingsHelpButton(
 									helpText: 'The drawer will always be on the left side if there is enough space. On devices with a hinge, the drawer will size itself to fill the left screen.'
 								),
-								const Spacer(),
 								AdaptiveSwitch(
 									value: settings.persistentDrawer,
 									onChanged: (v) {
@@ -1837,7 +1843,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					children: [
 						Icon(CupertinoIcons.doc),
 						SizedBox(width: 8),
-						Flexible(
+						Expanded(
 							child: Text('Page Style')
 						),
 						SizedBox(width: 8),
@@ -2407,8 +2413,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Clover-style replies button'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Clover-style replies button')
+																),
 																AdaptiveSwitch(
 																	value: settings.cloverStyleRepliesButton,
 																	onChanged: (d) => settings.cloverStyleRepliesButton = d
@@ -2417,8 +2424,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show Post #'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show Post #')
+																),
 																AdaptiveSwitch(
 																	value: settings.showPostNumberOnPosts,
 																	onChanged: (d) => settings.showPostNumberOnPosts = d
@@ -2427,8 +2435,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show IP address #'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show IP address #')
+																),
 																AdaptiveSwitch(
 																	value: settings.showIPNumberOnPosts,
 																	onChanged: (d) => settings.showIPNumberOnPosts = d
@@ -2437,8 +2446,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show name'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show name')
+																),
 																AdaptiveSwitch(
 																	value: settings.showNameOnPosts,
 																	onChanged: (d) => settings.showNameOnPosts = d
@@ -2447,8 +2457,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Hide default names'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Hide default names')
+																),
 																AdaptiveSwitch(
 																	value: settings.hideDefaultNamesOnPosts,
 																	onChanged: (d) => settings.hideDefaultNamesOnPosts = d
@@ -2457,8 +2468,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show trip'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show trip')
+																),
 																AdaptiveSwitch(
 																	value: settings.showTripOnPosts,
 																	onChanged: (d) => settings.showTripOnPosts = d
@@ -2467,8 +2479,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show filename'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show filename')
+																),
 																AdaptiveSwitch(
 																	value: settings.showFilenameOnPosts,
 																	onChanged: (d) => settings.showFilenameOnPosts = d
@@ -2477,8 +2490,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Truncate long filenames'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Truncate long filenames')
+																),
 																AdaptiveSwitch(
 																	value: settings.ellipsizeLongFilenamesOnPosts,
 																	onChanged: (d) => settings.ellipsizeLongFilenamesOnPosts = d
@@ -2487,8 +2501,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show filesize'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show filesize')
+																),
 																AdaptiveSwitch(
 																	value: settings.showFilesizeOnPosts,
 																	onChanged: (d) => settings.showFilesizeOnPosts = d
@@ -2497,8 +2512,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show file dimensions'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show file dimensions')
+																),
 																AdaptiveSwitch(
 																	value: settings.showFileDimensionsOnPosts,
 																	onChanged: (d) => settings.showFileDimensionsOnPosts = d
@@ -2507,8 +2523,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show pass'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show pass')
+																),
 																AdaptiveSwitch(
 																	value: settings.showPassOnPosts,
 																	onChanged: (d) => settings.showPassOnPosts = d
@@ -2517,8 +2534,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show flag'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show flag')
+																),
 																AdaptiveSwitch(
 																	value: settings.showFlagOnPosts,
 																	onChanged: (d) => settings.showFlagOnPosts = d
@@ -2527,8 +2545,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show country name'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show country name')
+																),
 																AdaptiveSwitch(
 																	value: settings.showCountryNameOnPosts,
 																	onChanged: (d) => settings.showCountryNameOnPosts = d
@@ -2537,8 +2556,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show exact time'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show exact time')
+																),
 																AdaptiveSwitch(
 																	value: settings.showAbsoluteTimeOnPosts,
 																	onChanged: (d) => settings.showAbsoluteTimeOnPosts = d
@@ -2547,8 +2567,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show relative time'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show relative time')
+																),
 																AdaptiveSwitch(
 																	value: settings.showRelativeTimeOnPosts,
 																	onChanged: (d) => settings.showRelativeTimeOnPosts = d
@@ -2557,8 +2578,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show "No." before ID'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show "No." before ID')
+																),
 																AdaptiveSwitch(
 																	value: settings.showNoBeforeIdOnPosts,
 																	onChanged: (d) => settings.showNoBeforeIdOnPosts = d
@@ -2567,8 +2589,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Include line break'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Include line break')
+																),
 																AdaptiveSwitch(
 																	value: settings.showLineBreakInPostInfoRow,
 																	onChanged: (d) => settings.showLineBreakInPostInfoRow = d
@@ -2577,8 +2600,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Highlight dubs (etc)'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Highlight dubs (etc)')
+																),
 																AdaptiveSwitch(
 																	value: settings.highlightRepeatingDigitsInPostIds,
 																	onChanged: (d) => settings.highlightRepeatingDigitsInPostIds = d
@@ -3162,8 +3186,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show image count'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show image count')
+																),
 																AdaptiveSwitch(
 																	value: settings.showImageCountInCatalog,
 																	onChanged: (d) => settings.showImageCountInCatalog = d
@@ -3172,8 +3197,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show clock icon'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show clock icon')
+																),
 																AdaptiveSwitch(
 																	value: settings.showClockIconInCatalog,
 																	onChanged: (d) => settings.showClockIconInCatalog = d
@@ -3182,8 +3208,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show name'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show name')
+																),
 																AdaptiveSwitch(
 																	value: settings.showNameInCatalog,
 																	onChanged: (d) => settings.showNameInCatalog = d
@@ -3192,8 +3219,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Hide default names'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Hide default names')
+																),
 																AdaptiveSwitch(
 																	value: settings.hideDefaultNamesInCatalog,
 																	onChanged: (d) => settings.hideDefaultNamesInCatalog = d
@@ -3202,8 +3230,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show exact time'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show exact time')
+																),
 																AdaptiveSwitch(
 																	value: settings.showTimeInCatalogHeader,
 																	onChanged: (d) => settings.showTimeInCatalogHeader = d
@@ -3212,8 +3241,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show relative time'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show relative time')
+																),
 																AdaptiveSwitch(
 																	value: settings.showTimeInCatalogStats,
 																	onChanged: (d) => settings.showTimeInCatalogStats = d
@@ -3222,8 +3252,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show ID'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show ID')
+																),
 																AdaptiveSwitch(
 																	value: settings.showIdInCatalogHeader,
 																	onChanged: (d) => settings.showIdInCatalogHeader = d
@@ -3232,8 +3263,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show flag'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show flag')
+																),
 																AdaptiveSwitch(
 																	value: settings.showFlagInCatalogHeader,
 																	onChanged: (d) => settings.showFlagInCatalogHeader = d
@@ -3242,8 +3274,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
-																const Text('Show country name'),
-																const Spacer(),
+																const Expanded(
+																	child: Text('Show country name')
+																),
 																AdaptiveSwitch(
 																	value: settings.showCountryNameInCatalogHeader,
 																	onChanged: (d) => settings.showCountryNameInCatalogHeader = d
@@ -3281,7 +3314,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					children: [
 						const Icon(CupertinoIcons.sidebar_left),
 						const SizedBox(width: 8),
-						Flexible(
+						Expanded(
 							child: Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels')
 						),
 						const SizedBox(width: 8),
@@ -3441,12 +3474,13 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						children: [
 							const Icon(CupertinoIcons.device_phone_portrait),
 							const SizedBox(width: 8),
-							const Text('Use status bar workaround'),
+							const Expanded(
+								child: Text('Use status bar workaround')
+							),
 							const SizedBox(width: 8),
 							const _SettingsHelpButton(
 								helpText: 'Some devices have a bug in their Android ROM, where the status bar cannot be properly hidden.\n\nIf this workaround is enabled, the status bar will not be hidden when opening the gallery.'
 							),
-							const Spacer(),
 							AdaptiveSwitch(
 								value: settings.useStatusBarWorkaround ?? false,
 								onChanged: (newValue) {
@@ -3839,12 +3873,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					children: [
 						const Icon(CupertinoIcons.textformat),
 						const SizedBox(width: 8),
-						const Text('Use cloud captcha solver'),
+						const Expanded(
+							child: Text('Use cloud captcha solver')
+						),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(
 							helpText: 'Use a machine-learning captcha solving model which is hosted on a web server to provide better captcha solver guesses. This means the captchas you open will be sent to a first-party web service for predictions. No information will be retained.'
 						),
-						const Spacer(),
 						AdaptiveSwitch(
 							value: settings.useCloudCaptchaSolver ?? false,
 							onChanged: (setting) {
@@ -3859,12 +3894,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						const SizedBox(width: 16),
 						const Icon(CupertinoIcons.checkmark_seal),
 						const SizedBox(width: 8),
-						const Text('Skip confirmation'),
+						const Expanded(
+							child: Text('Skip confirmation')
+						),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(
 							helpText: 'Cloud captcha solutions will be submitted directly without showing a popup and asking for confirmation.'
 						),
-						const Spacer(),
 						AdaptiveSwitch(
 							value: settings.useHeadlessCloudCaptchaSolver ?? false,
 							onChanged: (settings.useCloudCaptchaSolver ?? false) ? (setting) {
@@ -3879,12 +3915,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					children: [
 						const Icon(CupertinoIcons.textformat),
 						const SizedBox(width: 8),
-						const Text('Contribute captcha data'),
+						const Expanded(
+							child: Text('Contribute captcha data')
+						),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(
 							helpText: 'Send the captcha images you solve to a database to improve the automated solver. No other information about your posts will be collected.'
 						),
-						const Spacer(),
 						AdaptiveSwitch(
 							value: settings.contributeCaptchas ?? false,
 							onChanged: (setting) {
@@ -3898,12 +3935,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					children: [
 						const Icon(CupertinoIcons.burst),
 						const SizedBox(width: 8),
-						const Text('Contribute crash data'),
+						const Expanded(
+							child: Text('Contribute crash data')
+						),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(
 							helpText: 'Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'
 						),
-						const Spacer(),
 						AdaptiveSwitch(
 							value: FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled,
 							onChanged: (setting) async {
@@ -3918,12 +3956,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					children: [
 						const Icon(CupertinoIcons.rectangle_paperclip),
 						const SizedBox(width: 8),
-						const Text('Show rich links'),
+						const Expanded(
+							child: Text('Show rich links')
+						),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(
 							helpText: 'Links to sites such as YouTube will show the thumbnail and title of the page instead of the link URL.'
 						),
-						const Spacer(),
 						AdaptiveSwitch(
 							value: settings.useEmbeds,
 							onChanged: (setting) {
@@ -3937,8 +3976,9 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					children: [
 						const Icon(CupertinoIcons.doc_person),
 						const SizedBox(width: 8),
-						const Text('Remove metadata from uploads'),
-						const Spacer(),
+						const Expanded(
+							child: Text('Remove metadata from uploads')
+						),
 						AdaptiveSwitch(
 							value: settings.removeMetadataOnUploadedFiles,
 							onChanged: (setting) {
@@ -3952,12 +3992,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					children: [
 						const Icon(CupertinoIcons.doc_checkmark),
 						const SizedBox(width: 8),
-						const Text('Randomize checksum on uploads'),
+						const Expanded(
+							child: Text('Randomize checksum on uploads')
+						),
 						const SizedBox(width: 8),
 						const _SettingsHelpButton(
 							helpText: 'Uploaded files will be re-encoded to prevent matching against other files.'
 						),
-						const Spacer(),
 						AdaptiveSwitch(
 							value: settings.randomizeChecksumOnUploadedFiles,
 							onChanged: (setting) {
