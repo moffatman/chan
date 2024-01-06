@@ -1757,13 +1757,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final lastTreeOrder = _lastTreeOrder;
 		if (lastTreeOrder != null) {
 			const infiniteIndex = 1 << 50;
-			treeRoots.sort((a, b) {
+			mergeSort(treeRoots, compare: (a, b) {
 				final idxA = lastTreeOrder.treeRootIndexLookup[a.id] ?? infiniteIndex;
 				final idxB = lastTreeOrder.treeRootIndexLookup[b.id] ?? infiniteIndex;
 				return idxA.compareTo(idxB);
 			});
 			for (final entry in treeMap.entries) {
-				entry.value.children.sort((a, b) {
+				mergeSort(entry.value.children, compare: (a, b) {
 					final idxA = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[a.id] ?? infiniteIndex;
 					final idxB = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[b.id] ?? infiniteIndex;
 					return idxA.compareTo(idxB);
