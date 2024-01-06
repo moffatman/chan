@@ -41,7 +41,7 @@ enum AttachmentType {
 class Attachment {
 	final String board;
 	final String ext;
-	final String filename;
+	String filename;
 	final AttachmentType type;
 	final String url;
 	String thumbnailUrl;

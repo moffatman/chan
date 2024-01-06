@@ -15,6 +15,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape_small.dart';
 import 'package:markdown/markdown.dart' as markdown;
@@ -619,6 +620,29 @@ class SiteReddit extends ImageboardSite {
 					height: null,
 					sizeInBytes: null
 				)));
+			}
+			final galleryItems = (data['gallery_data'] as Map?)?['items'] as List?;
+			final Map<String, (int, String?)> galleryMap;
+			if (galleryItems != null) {
+				galleryMap = {
+					for (final (i, item) in galleryItems.indexed)
+						item['media_id']: (i, item['caption'] as String?)
+				};
+			}
+			else {
+				galleryMap = {};
+			}
+			const infiniteIndex = 1 << 50;
+			mergeSort(attachments, compare: (a, b) {
+				final idxA = galleryMap[a.id]?.$1 ?? infiniteIndex;
+				final idxB = galleryMap[b.id]?.$1 ?? infiniteIndex;
+				return idxA.compareTo(idxB);
+			});
+			for (final attachment in attachments) {
+				final caption = galleryMap[attachment.id]?.$2;
+				if (caption != null) {
+					attachment.filename = caption + attachment.ext;
+				}
 			}
 		}
 		final String url = data['url'];
