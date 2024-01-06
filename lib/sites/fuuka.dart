@@ -147,10 +147,11 @@ class FuukaArchive extends ImageboardSiteArchive {
 			}
 		}
 		final a = _makeAttachment(element.querySelector('.thumb')?.parent, threadId);
+		final name = element.querySelector('span[itemprop="name"]') ?? element.querySelector('span.postername');
 		return Post(
 			board: board,
 			text: textNode.innerHtml,
-			name: element.querySelector('span[itemprop="name"]')!.text,
+			name: name?.text ?? 'Anonymous',
 			time: DateTime.fromMillisecondsSinceEpoch(int.parse(element.querySelector('.posttime')!.attributes['title']!)),
 			id: postId ?? threadId,
 			threadId: threadId,
