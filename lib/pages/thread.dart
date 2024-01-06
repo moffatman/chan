@@ -218,6 +218,12 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	bool get useTree => persistentState.useTree ?? context.read<Persistence>().browserState.useTree ?? context.read<ImageboardSite>().useTree;
+	String? get archiveName {
+		if (persistentState.thread?.identifier == widget.thread) {
+			return persistentState.thread?.archiveName;
+		}
+		return null;
+	}
 
 	Future<void> _ensurePostLoaded(int postId) async {
 		Post? post = persistentState.thread?.posts_.tryFirstWhere((p) => p.id == postId);
@@ -653,7 +659,11 @@ class ThreadPageState extends State<ThreadPage> {
 		super.didChangeDependencies();
 		_checkForeground();
 		_parentTab = context.watch<PersistentBrowserTab?>();
-		setHandoffUrl(_foreground ? context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id) : null);
+		setHandoffUrl(_foreground ? context.read<ImageboardSite>().getWebUrl(
+			board: widget.thread.board,
+			threadId: widget.thread.id,
+			archiveName: archiveName
+		) : null);
 	}
 
 	Future<void> _scrollIfWarranted([Duration delayBeforeScroll = Duration.zero]) async {
@@ -1362,7 +1372,11 @@ class ThreadPageState extends State<ThreadPage> {
 											final openInNewTabZone = context.read<OpenInNewTabZone?>();
 											shareOne(
 												context: context,
-												text: site.getWebUrl(widget.thread.board, widget.thread.id),
+												text: site.getWebUrl(
+													board: widget.thread.board,
+													threadId: widget.thread.id,
+													archiveName: archiveName
+												),
 												type: "text",
 												sharePositionOrigin: (offset != null && size != null) ? offset & size : null,
 												additionalOptions: {

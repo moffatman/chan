@@ -331,7 +331,7 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
-		final response = await client.get(getWebUrl(thread.board, thread.id), options: Options(
+		final response = await client.get(getWebUrlImpl(thread.board, thread.id), options: Options(
 			responseType: ResponseType.bytes,
 			extra: {
 				kInteractive: interactive
@@ -343,7 +343,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	String getWebUrl(String board, [int? threadId, int? postId]) {
+	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
 		String webUrl = 'https://${boardDomain(board)}/$board/';
 		if (threadId != null) {
 			webUrl += 'res/$threadId.htm';

@@ -602,7 +602,11 @@ class BoardPageState extends State<BoardPage> {
 							final site = context.read<ImageboardSite>();
 							shareOne(
 								context: context,
-								text: site.getWebUrl(thread.board, thread.id),
+								text: site.getWebUrl(
+									board: thread.board,
+									threadId: thread.id,
+									archiveName: thread.archiveName
+								),
 								type: "text",
 								sharePositionOrigin: null,
 								additionalOptions: {

@@ -1084,7 +1084,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				alertError(context, 'Web authentication required\n\nMaking a post via the website is required to whitelist your IP for posting via Chance.', actions: {
 					'Go to web': () => shareOne(
 						context: context,
-						text: site.getWebUrl(widget.board, widget.threadId),
+						text: site.getWebUrl(
+							board: widget.board,
+							threadId: widget.threadId
+						),
 						type: 'text',
 						sharePositionOrigin: null
 					)

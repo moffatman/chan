@@ -81,7 +81,7 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  String getWebUrl(String board, [int? threadId, int? postId]) {
+  String getWebUrlImpl(String board, [int? threadId, int? postId]) {
     throw UnimplementedError();
   }
 

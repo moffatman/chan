@@ -323,7 +323,12 @@ class ShareablePosts extends StatelessWidget {
 				footer += ': $title';
 			}
 			footer += '\n';
-			footer += zone.imageboard.site.getWebUrl(zone.board, zone.primaryThreadId, primaryPostId == zone.primaryThreadId ? null : primaryPostId);
+			footer += zone.imageboard.site.getWebUrl(
+				board: zone.board,
+				threadId: zone.primaryThreadId,
+				postId: primaryPostId == zone.primaryThreadId ? null : primaryPostId,
+				archiveName: zone.findThread(zone.primaryThreadId)?.archiveName
+			);
 			return Container(
 				color: (!style.useTree && style.childDepth == 0 && style.parentDepth == 0) ? theme.barColor : theme.backgroundColor,
 				width: style.width,

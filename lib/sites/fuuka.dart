@@ -300,7 +300,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	String getWebUrl(String board, [int? threadId, int? postId]) {
+	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
 		String webUrl = 'https://$baseUrl/$board/';
 		if (threadId != null) {
 			webUrl += 'thread/$threadId';

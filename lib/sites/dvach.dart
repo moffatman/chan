@@ -239,7 +239,7 @@ class SiteDvach extends ImageboardSite {
 				responseType: ResponseType.json,
 				validateStatus: (x) => true,
 				headers: {
-					'Referer': getWebUrl(board, threadId)
+					'Referer': getWebUrlImpl(board, threadId)
 				}
 			)
 		);
@@ -311,7 +311,7 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	String getWebUrl(String board, [int? threadId, int? postId]) {
+	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
 		String threadUrl = Uri.https(baseUrl, '/$board/').toString();
 		if (threadId != null) {
 			threadUrl += 'res/$threadId.html';

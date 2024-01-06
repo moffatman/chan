@@ -807,7 +807,12 @@ class PostRow extends StatelessWidget {
 						final size = rootContext.findRenderObject()?.semanticBounds.size;
 						shareOne(
 							context: context,
-							text: site.getWebUrl(latestPost.board, latestPost.threadId, latestPost.id),
+							text: site.getWebUrl(
+								board: latestPost.board,
+								threadId: latestPost.threadId,
+								postId: latestPost.id,
+								archiveName: parentZoneThreadState?.thread?.archiveName
+							),
 							type: "text",
 							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
 						);

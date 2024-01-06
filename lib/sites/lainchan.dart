@@ -486,7 +486,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	String getWebUrl(String board, [int? threadId, int? postId]) {
+	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
 		return _getWebUrl(board, threadId: threadId, postId: postId);
 	}
 

@@ -706,7 +706,7 @@ class Site4Chan extends ImageboardSite {
 			options: Options(
 				responseType: ResponseType.plain,
 				headers: {
-					'referer': getWebUrl(board, threadId)
+					'referer': getWebUrlImpl(board, threadId)
 				},
 				extra: {
 					if (captchaSolution.cloudflare) 'cloudflare': true
@@ -873,7 +873,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	String getWebUrl(String board, [int? threadId, int? postId]) {
+	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
 		String webUrl = 'https://$baseUrl/$board/';
 		if (threadId != null) {
 			webUrl += 'thread/$threadId';

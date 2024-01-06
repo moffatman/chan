@@ -932,7 +932,8 @@ abstract class ImageboardSiteArchive {
 	Thread? getThreadFromCatalogCache(ThreadIdentifier identifier) => _catalogCache[identifier];
 	Future<List<ImageboardBoard>> getBoards({required bool interactive});
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
-	String getWebUrl(String board, [int? threadId, int? postId]);
+	@protected
+	String getWebUrlImpl(String board, [int? threadId, int? postId]);
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
 	int placeOrphanPost(List<Post> posts, Post post) {
 		final index = posts.indexWhere((p) => p.id > post.id);
@@ -1110,7 +1111,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
 	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
-		return WebReportMethod(Uri.parse(getWebUrl(board, threadId, postId)));
+		return WebReportMethod(Uri.parse(getWebUrlImpl(board, threadId, postId)));
 	}
 	late Persistence persistence;
 	ImageboardSiteLoginSystem? get loginSystem => null;
@@ -1229,6 +1230,14 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		return theThread;
 	}
 	Future<ImageboardUserInfo> getUserInfo(String username) async => throw UnimplementedError();
+	String getWebUrl({
+		required String board,
+		int? threadId,
+		int? postId,
+		String? archiveName
+	}) {
+		return (archives.tryFirstWhere((a) => a.name == archiveName) ?? this).getWebUrlImpl(board, threadId, postId);
+	}
 }
 
 abstract class ImageboardSiteLoginSystem {

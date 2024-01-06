@@ -1061,7 +1061,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	String getWebUrl(String board, [int? threadId, int? postId]) {
+	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
 		String s = 'https://reddit.com/r/$board/';
 		if (threadId != null) {
 			s += 'comments/${toRedditId(threadId)}/';

@@ -444,7 +444,7 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	String getWebUrl(String board, [int? threadId, int? postId]) {
+	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
 		String url = 'https://$baseUrl/$board/';
 		if (threadId != null) {
 			url += 'res/$threadId.html';
