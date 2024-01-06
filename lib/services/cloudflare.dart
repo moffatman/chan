@@ -140,7 +140,7 @@ class CloudflareInterceptor extends Interceptor {
 			transparentBackground: true
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback) => (controller, uri) async {
-			controller.evaluateJavascript(source: '''
+			await controller.evaluateJavascript(source: '''
 				var style = document.createElement('style');
 				style.innerHTML = "* {\\
 					color: ${EffectiveSettings.instance.theme.primaryColor.toCssHex()} !important;\\
