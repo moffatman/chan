@@ -159,9 +159,14 @@ Future<EmbedData?> loadEmbedData({
 					thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl
 				);
 			}
+			String title = thread.title ?? thread.posts_.first.span.buildText();
+			if (title.length > 50) {
+				final space = title.lastIndexOf(' ', 50);
+				title = '${title.substring(0, space == -1 ? 47 : space)}...';
+			}
 			return EmbedData(
-				title: 'Reply to "${thread.title}"',
-				provider: target.$1.site.name,
+				title: 'Reply to "$title"',
+				provider: '${target.$1.site.name} (${target.$1.site.formatBoardName(thread.board)})',
 				author: post.name,
 				thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl
 			);
