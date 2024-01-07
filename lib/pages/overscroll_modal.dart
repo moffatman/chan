@@ -144,88 +144,89 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			key: _childWidgetKey,
 			child: widget.child!
 		);
-		return LayoutBuilder(
-			builder: (context, constraints) => Stack(
-				fit: StackFit.expand,
-				children: [
-					RepaintBoundary(
-						child: Container(
-							color: widget.backgroundColor,
-							child: (widget.background == null) ? null : SafeArea(
-								top: false,
-								bottom: false,
-								child: AnimatedBuilder(
-									animation: _controller,
-									child: widget.background,
-									builder: (context, child) {
-										final double childBoxTopDiff = (_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.resolvedPadding?.top ?? 0;
-										final double childBoxBottomDiff = (_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.resolvedPadding?.bottom ?? 0;
-										double topOverscroll = 0;
-										double bottomOverscroll = 0;
-										if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
-											topOverscroll = -1 * min(0, _controller.position.pixels);
-											bottomOverscroll = max(0, _controller.position.pixels - _controller.position.maxScrollExtent);
-										}
-										return Stack(
-											fit: StackFit.expand,
-											children: [
-												Positioned(
-													top: childBoxTopDiff - topOverscroll,
-													bottom: childBoxBottomDiff - bottomOverscroll,
-													left: 0,
-													right: 0,
-													child: Center(
-														child: Visibility(
-															visible: _finishedPopIn,
-															child: ClippingBox(
-																child: child!
-															)
+		return Stack(
+			fit: StackFit.expand,
+			children: [
+				RepaintBoundary(
+					child: Container(
+						color: widget.backgroundColor,
+						child: (widget.background == null) ? null : SafeArea(
+							top: false,
+							bottom: false,
+							child: AnimatedBuilder(
+								animation: _controller,
+								child: widget.background,
+								builder: (context, child) {
+									final double childBoxTopDiff = (_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.resolvedPadding?.top ?? 0;
+									final double childBoxBottomDiff = (_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.resolvedPadding?.bottom ?? 0;
+									double topOverscroll = 0;
+									double bottomOverscroll = 0;
+									if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
+										topOverscroll = -1 * min(0, _controller.position.pixels);
+										bottomOverscroll = max(0, _controller.position.pixels - _controller.position.maxScrollExtent);
+									}
+									return Stack(
+										fit: StackFit.expand,
+										children: [
+											Positioned(
+												top: childBoxTopDiff - topOverscroll,
+												bottom: childBoxBottomDiff - bottomOverscroll,
+												left: 0,
+												right: 0,
+												child: Center(
+													child: Visibility(
+														visible: _finishedPopIn,
+														child: ClippingBox(
+															child: child!
 														)
 													)
 												)
-											]
-										);
-									}
-								)
+											)
+										]
+									);
+								}
 							)
 						)
-					),
-					RepaintBoundary(
-						child: Listener(
-							onPointerDown: _onPointerDown,
-							onPointerPanZoomStart: _onPointerDown,
-							onPointerMove: (event) {
-								final downData = _pointersDown[event.pointer];
-								if (downData?.$2 == true) {
-									if ((event.position - downData!.$1).distance > kTouchSlop) {
-										// Moved too far, will no longer pop
-										if (WeakNavigator.of(context) != null &&
-										    !context.read<EffectiveSettings>().overscrollModalTapPopsAll &&
-												DateTime.now().difference(downData.$3) > _kLongPressToPopAllTime) {
-											// We played the haptic feedback to say it was held long enough
-											// Do a double-vibrate to indicate cancel
-											lightHapticFeedback();
-											Future.delayed(const Duration(milliseconds: 75), lightHapticFeedback);
-										}
-										_pointersDown[event.pointer] = (downData.$1, false, downData.$3);
+					)
+				),
+				RepaintBoundary(
+					child: Listener(
+						onPointerDown: _onPointerDown,
+						onPointerPanZoomStart: _onPointerDown,
+						onPointerMove: (event) {
+							final downData = _pointersDown[event.pointer];
+							if (downData?.$2 == true) {
+								if ((event.position - downData!.$1).distance > kTouchSlop) {
+									// Moved too far, will no longer pop
+									if (WeakNavigator.of(context) != null &&
+											!context.read<EffectiveSettings>().overscrollModalTapPopsAll &&
+											DateTime.now().difference(downData.$3) > _kLongPressToPopAllTime) {
+										// We played the haptic feedback to say it was held long enough
+										// Do a double-vibrate to indicate cancel
+										lightHapticFeedback();
+										Future.delayed(const Duration(milliseconds: 75), lightHapticFeedback);
 									}
+									_pointersDown[event.pointer] = (downData.$1, false, downData.$3);
 								}
+							}
+						},
+						onPointerCancel: (event) {
+							_pointersDown.remove(event.pointer);
+						},
+						onPointerUp: (event) => _onPointerUp(event.pointer),
+						onPointerPanZoomEnd: (event) => _onPointerUp(event.pointer),
+						child: Actions(
+							actions: {
+								DismissIntent: CallbackAction<DismissIntent>(
+									onInvoke: (i) => WeakNavigator.pop(context)
+								)
 							},
-							onPointerCancel: (event) {
-								_pointersDown.remove(event.pointer);
-							},
-							onPointerUp: (event) => _onPointerUp(event.pointer),
-							onPointerPanZoomEnd: (event) => _onPointerUp(event.pointer),
-							child: Actions(
-								actions: {
-									DismissIntent: CallbackAction<DismissIntent>(
-										onInvoke: (i) => WeakNavigator.pop(context)
-									)
-								},
-								child: Focus(
-									autofocus: true,
-									child: Padding(
-										padding: MediaQuery.viewInsetsOf(context),
+							child: Focus(
+								autofocus: true,
+								child: Padding(
+									padding: MediaQuery.viewInsetsOf(context),
+									child: TransformedMediaQuery(
+										transformation: (context, mq) => mq.copyWith(viewInsets: EdgeInsets.zero),
 										child: MaybeScrollbar(
 											controller: _controller,
 											child: CustomScrollView(
@@ -261,8 +262,8 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							)
 						)
 					)
-				]
-			)
+				)
+			]
 		);
 	}
 
