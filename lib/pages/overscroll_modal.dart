@@ -223,40 +223,34 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							},
 							child: Focus(
 								autofocus: true,
-								child: Padding(
-									padding: MediaQuery.viewInsetsOf(context),
-									child: TransformedMediaQuery(
-										transformation: (context, mq) => mq.copyWith(viewInsets: EdgeInsets.zero),
-										child: MaybeScrollbar(
-											controller: _controller,
-											child: CustomScrollView(
-												reverse: widget.reverse,
-												controller: _controller,
-												key: _scrollKey,
-												physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-												slivers: [
-													SliverFadeTransition(
-														opacity: _opacity,
-														sliver: SliverCenter(
-															minimumPadding: MediaQuery.paddingOf(context),
-															key: _childKey,
-															child: MediaQuery.removePadding(
-																context: context,
-																removeLeft: true,
-																removeRight: true,
-																removeTop: true,
-																removeBottom: true,
-																child: widget.sliver ?? SliverToBoxAdapter(
-																	child: ChanceTheme.materialOf(context) ? Material(
-																		child: child
-																	) : child
-																)
-															)
+								child: MaybeScrollbar(
+									controller: _controller,
+									child: CustomScrollView(
+										reverse: widget.reverse,
+										controller: _controller,
+										key: _scrollKey,
+										physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+										slivers: [
+											SliverFadeTransition(
+												opacity: _opacity,
+												sliver: SliverCenter(
+													minimumPadding: MediaQuery.paddingOf(context),
+													key: _childKey,
+													child: MediaQuery.removePadding(
+														context: context,
+														removeLeft: true,
+														removeRight: true,
+														removeTop: true,
+														removeBottom: true,
+														child: widget.sliver ?? SliverToBoxAdapter(
+															child: ChanceTheme.materialOf(context) ? Material(
+																child: child
+															) : child
 														)
 													)
-												]
+												)
 											)
-										)
+										]
 									)
 								)
 							)
