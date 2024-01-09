@@ -40,7 +40,6 @@
                <!-- 2chan -->
                <data android:scheme="https" android:host="www.2chan.net"/>
                <!-- 4chan -->
-               <data android:scheme="https" android:host="boards.4channel.org"/>
                <data android:scheme="https" android:host="boards.4chan.org"/>
                <data android:scheme="https" android:host="archive.palanq.win"/>
                <data android:scheme="https" android:host="desuarchive.org"/>

@@ -118,8 +118,7 @@ class Site4Chan extends ImageboardSite {
 	@override
 	final String baseUrl;
 	final String staticUrl;
-	final String sysRedUrl;
-	final String sysBlueUrl;
+	final String sysUrl;
 	final String apiUrl;
 	final String searchUrl;
 	@override
@@ -146,8 +145,6 @@ class Site4Chan extends ImageboardSite {
 		loginSystem._passEnabled = oldSite.loginSystem._passEnabled;
 		_lastActionTime = oldSite._lastActionTime;
 	}
-
-	String _sysUrl(String board) => persistence.getBoard(board).isWorksafe ? sysBlueUrl : sysRedUrl;
 
 	static List<PostSpan> parsePlaintext(String text, {ThreadIdentifier? fromSearchThread}) {
 		return linkify(text, linkifiers: fromSearchThread != null ? const [
@@ -653,12 +650,12 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		if (loginSystem._passEnabled.putIfAbsent((Persistence.currentCookies, _sysUrl(board)), () => false)) {
+		if (loginSystem._passEnabled.putIfAbsent(Persistence.currentCookies, () => false)) {
 			return const NoCaptchaRequest();
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
 		return Chan4CustomCaptchaRequest(
-			challengeUrl: Uri.https(_sysUrl(board), '/captcha', {
+			challengeUrl: Uri.https(sysUrl, '/captcha', {
 				'framed': '1',
 				'board': board,
 				if (threadId != null) 'thread_id': threadId.toString()
@@ -685,7 +682,7 @@ class Site4Chan extends ImageboardSite {
 	}) async {
 		final password = makeRandomBase64String(66);
 		final response = await client.postUri(
-			Uri.https(_sysUrl(board), '/$board/post'),
+			Uri.https(sysUrl, '/$board/post'),
 			data: FormData.fromMap({
 				if (threadId != null) 'resto': threadId.toString(),
 				if (subject != null) 'sub': subject,
@@ -855,7 +852,7 @@ class Site4Chan extends ImageboardSite {
 	@override
 	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
 		final response = await client.postUri(
-			Uri.https(_sysUrl(board), '/$board/imgboard.php'),
+			Uri.https(sysUrl, '/$board/imgboard.php'),
 			data: FormData.fromMap({
 				receipt.id.toString(): 'delete',
 				'mode': 'usrdel',
@@ -897,7 +894,7 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
-		final endpoint = Uri.https(_sysUrl(board), '/$board/imgboard.php', {
+		final endpoint = Uri.https(sysUrl, '/$board/imgboard.php', {
 			'mode': 'report',
 			'no': postId.toString()
 		});
@@ -984,7 +981,7 @@ class Site4Chan extends ImageboardSite {
 	Site4Chan({
 		required this.baseUrl,
 		required this.staticUrl,
-		required String sysUrl,
+		required this.sysUrl,
 		required this.apiUrl,
 		required this.imageUrl,
 		required this.name,
@@ -993,7 +990,7 @@ class Site4Chan extends ImageboardSite {
 		required this.captchaUserAgents,
 		required this.searchUrl,
 		required this.boardFlags
-	}) : sysRedUrl = sysUrl, sysBlueUrl = sysUrl.replaceAll('chan.', 'channel.'), super(archives);
+	}) : super(archives);
 
 
 
@@ -1048,10 +1045,10 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysRedUrl == sysRedUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives) && mapEquals(other.captchaUserAgents, captchaUserAgents) && (other.searchUrl == searchUrl);
+	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysUrl == sysUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives) && mapEquals(other.captchaUserAgents, captchaUserAgents) && (other.searchUrl == searchUrl);
 
 	@override
-	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysRedUrl, baseUrl, staticUrl, archives, captchaUserAgents, searchUrl);
+	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives, captchaUserAgents, searchUrl);
 	
 	@override
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
@@ -1225,7 +1222,7 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 	@override
 	final Site4Chan parent;
 
-	Map<(PersistCookieJar, String), bool> _passEnabled = {};
+	Map<PersistCookieJar, bool> _passEnabled = {};
 
 	Site4ChanPassLoginSystem(this.parent);
 
@@ -1259,48 +1256,44 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 			Persistence.currentCookies
 		];
 		for (final jar in jars) {
-			for (final sysUrl in board == null ? [parent.sysRedUrl, parent.sysBlueUrl] : [parent._sysUrl(board)]) {
-				final toSave = (await jar.loadForRequest(Uri.https(sysUrl, '/'))).where((cookie) {
-					return cookie.name == 'cf_clearance';
-				}).toList();
-				await jar.delete(Uri.https(sysUrl, '/'), true);
-				await jar.delete(Uri.https(sysUrl, '/'), true);
-				await jar.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
-				await CookieManager.instance().deleteCookies(
-					url: WebUri(sysUrl)
-				);
-				_passEnabled[(jar, sysUrl)] = false;
-			}
+			final toSave = (await jar.loadForRequest(Uri.https(parent.sysUrl, '/'))).where((cookie) {
+				return cookie.name == 'cf_clearance';
+			}).toList();
+			await jar.delete(Uri.https(parent.sysUrl, '/'), true);
+			await jar.delete(Uri.https(parent.sysUrl, '/'), true);
+			await jar.saveFromResponse(Uri.https(parent.sysUrl, '/'), toSave);
+			await CookieManager.instance().deleteCookies(
+				url: WebUri(parent.sysUrl)
+			);
+			_passEnabled[jar] = false;
 		}
   }
 
   @override
   Future<void> login(String? board, Map<ImageboardSiteLoginField, String> fields) async {
-		for (final sysUrl in board == null ? [parent.sysRedUrl, parent.sysBlueUrl] : [parent._sysUrl(board)]) {
-			final response = await parent.client.postUri(
-				Uri.https(sysUrl, '/auth'),
-				data: FormData.fromMap({
-					for (final field in fields.entries) field.key.formKey: field.value
-				})
-			);
-			final document = parse(response.data);
-			final message = document.querySelector('h2')?.text;
-			if (message == null) {
-				_passEnabled[(Persistence.currentCookies, sysUrl)] = false;
-				await clearLoginCookies(board, false);
-				throw const ImageboardSiteLoginException('Unexpected response, contact developer');
-			}
-			if (!message.contains('Success!')) {
-				_passEnabled[(Persistence.currentCookies, sysUrl)] = false;
-				await clearLoginCookies(board, false);
-				throw ImageboardSiteLoginException(message);
-			}
-			_passEnabled[(Persistence.currentCookies, sysUrl)] = true;
+		final response = await parent.client.postUri(
+			Uri.https(parent.sysUrl, '/auth'),
+			data: FormData.fromMap({
+				for (final field in fields.entries) field.key.formKey: field.value
+			})
+		);
+		final document = parse(response.data);
+		final message = document.querySelector('h2')?.text;
+		if (message == null) {
+			_passEnabled[Persistence.currentCookies] = false;
+			await clearLoginCookies(board, false);
+			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
 		}
+		if (!message.contains('Success!')) {
+			_passEnabled[Persistence.currentCookies] = false;
+			await clearLoginCookies(board, false);
+			throw ImageboardSiteLoginException(message);
+		}
+		_passEnabled[Persistence.currentCookies] = true;
   }
 
 	bool passEnabled(String board) {
-		return _passEnabled.putIfAbsent((Persistence.currentCookies, parent._sysUrl(board)), () => false);
+		return _passEnabled.putIfAbsent(Persistence.currentCookies, () => false);
 	}
 
   @override
