@@ -830,7 +830,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (serverSideName) {
 			return attachment.id + _downloadExt(convertForCompatibility);
 		}
-		return attachment.filename.replaceFirst(RegExp(r'\..+$'), _downloadExt(convertForCompatibility));
+		return attachment.filename.replaceFirst(RegExp(r'\.[^.]+$'), _downloadExt(convertForCompatibility));
 	}
 
 	Future<File> _moveToShareCache({required bool convertForCompatibility}) async {
