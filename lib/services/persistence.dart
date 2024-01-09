@@ -768,6 +768,8 @@ class Persistence extends ChangeNotifier {
 			// Open at catalog, but keep previous thread available in pull tab
 			tabs.first.threadForPullTab = tabs.first.thread;
 			tabs.first.thread = null;
+			// Clear catalog search
+			tabs.first.initialSearch = null;
 		}
 		if (_threadIdToBumpInHistory?.$1 == imageboardKey) {
 			// The previous thread in the home tab was replaced by the board switcher
