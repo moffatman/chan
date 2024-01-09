@@ -310,6 +310,9 @@ class SiteReddit extends ImageboardSite {
 						yield PostCodeSpan(node.text.trimRight());
 						addLinebreakBefore = true;
 					}
+					else if (node.localName == 'code') {
+						yield PostCodeSpan(node.text);
+					}
 					else if (node.localName == 'crosspostparent') {
 						yield PostQuoteLinkSpan(
 							board: node.attributes['board']!,
