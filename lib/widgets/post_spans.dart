@@ -796,13 +796,22 @@ class PostCodeSpan extends PostSpan {
 				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle)
 			);
 		}
+		final span = TextSpan(
+			style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
+			children: result.data ?? [
+				TextSpan(text: text)
+			]
+		);
+		if (lineCount == 1) {
+			return TextSpan(
+				children: [span],
+				style: const TextStyle(
+					backgroundColor: Colors.black
+				)
+			);
+		}
 		final content = RichText(
-			text: TextSpan(
-				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
-				children: result.data ?? [
-					TextSpan(text: text)
-				]
-			),
+			text: span,
 			softWrap: false
 		);
 		final child = lineCount < 9 ? content : Row(
