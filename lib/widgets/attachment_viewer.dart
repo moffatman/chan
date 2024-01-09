@@ -268,6 +268,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		return imageboard.persistence.getThreadStateIfExists(threadIdentifier)?.thread ?? imageboard.site.getThreadFromCatalogCache(threadIdentifier);
 	}
 
+	bool get _isReallyImage {
+		return (attachment.type == AttachmentType.image) &&
+		       (attachment.soundSource == null || _soundSourceFailed);
+	}
+
 
 	AttachmentViewerController({
 		required this.context,
@@ -917,10 +922,10 @@ class AttachmentViewerController extends ChangeNotifier {
 					album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
 					album ??= await PhotoManager.editor.darwin.createAlbum(albumName);
 				}
-				final convertForCompatibility = attachment.type == AttachmentType.webm;
+				final convertForCompatibility = !_isReallyImage;
 				filename = _downloadFilename(convertForCompatibility);
 				final shareCachedFile = await _moveToShareCache(convertForCompatibility: convertForCompatibility);
-				final asAsset = attachment.type == AttachmentType.image ? 
+				final asAsset = _isReallyImage ? 
 					await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: filename) :
 					await PhotoManager.editor.saveVideo(shareCachedFile, title: filename);
 				if (asAsset == null) {
