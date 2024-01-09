@@ -252,7 +252,7 @@ class ThreadWatcher extends ChangeNotifier {
 	Future<bool> _updateThread(PersistentThreadState threadState) async {
 		Thread? newThread;
 		try {
-			newThread = await site.getThread(threadState.identifier, interactive: false);
+			newThread = await site.getThread(threadState.identifier, priority: RequestPriority.functional);
 		}
 		on ThreadNotFoundException {
 			final watch = persistence.browserState.threadWatches[threadState.identifier];
@@ -268,7 +268,7 @@ class ThreadWatcher extends ChangeNotifier {
 				return true;
 			}
 			try {
-				newThread = await site.getThreadFromArchive(threadState.identifier, interactive: false);
+				newThread = await site.getThreadFromArchive(threadState.identifier, priority: RequestPriority.functional);
 			}
 			on ThreadNotFoundException {
 				return false;
@@ -321,7 +321,7 @@ class ThreadWatcher extends ChangeNotifier {
 		_lastCatalogs.clear();
 		_unseenStickyThreads.clear();
 		for (final board in watchForStickyOnBoards) {
-			_lastCatalogs[board] ??= await site.getCatalog(board, interactive: false);
+			_lastCatalogs[board] ??= await site.getCatalog(board, priority: RequestPriority.functional);
 			_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
 			// Update sticky threads for (you)s
 			final stickyThreadStates = _lastCatalogs[board]!.where((t) => t.isSticky).map((t) => persistence.getThreadStateIfExists(t.identifier)).where((s) => s != null).map((s) => s!).toList();
@@ -329,7 +329,7 @@ class ThreadWatcher extends ChangeNotifier {
 				await threadState.ensureThreadLoaded(preinit: false);
 				if (threadState.youIds.isNotEmpty) {
 					try {
-						final newThread = await site.getThread(threadState.thread!.identifier, interactive: false);
+						final newThread = await site.getThread(threadState.thread!.identifier, priority: RequestPriority.functional);
 						if (newThread != threadState.thread) {
 							newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site.placeOrphanPost);
 							threadState.thread = newThread;
@@ -353,7 +353,7 @@ class ThreadWatcher extends ChangeNotifier {
 				if (imageboardBoard == null) {
 					continue;
 				}
-				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board, interactive: false);
+				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board, priority: RequestPriority.functional);
 				for (final thread in catalog) {
 					if (line.filter(thread)?.type.autoSave ?? false) {
 						if (!(persistence.browserState.autosavedIds[board]?.contains(thread.id) ?? false)) {

@@ -713,10 +713,10 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/subreddits/popular.json'), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
@@ -736,7 +736,7 @@ class SiteReddit extends ImageboardSite {
 		return const NoCaptchaRequest();
 	}
 
-	Future<void> _updateBoardIfNeeded(String board, {required bool interactive}) async {
+	Future<void> _updateBoardIfNeeded(String board, {required RequestPriority priority}) async {
 		final boardAge = DateTime.now().difference(persistence.maybeGetBoard(board)?.additionalDataTime ?? DateTime(2000));
 		if (boardAge > const Duration(days: 3)) {
 			final ImageboardBoard newBoard;
@@ -752,7 +752,7 @@ class SiteReddit extends ImageboardSite {
 			else {
 				final response = await client.getUri(Uri.https(baseUrl, '/r/$board/about.json'), options: Options(
 					extra: {
-						kInteractive: interactive
+						kPriority: priority
 					}
 				));
 				newBoard = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
@@ -781,9 +781,9 @@ class SiteReddit extends ImageboardSite {
 		}[variant] ?? ('.json', <String, String>{});
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
 		try {
-			await _updateBoardIfNeeded(board, interactive: interactive);
+			await _updateBoardIfNeeded(board, priority: priority);
 		}
 		catch (e, st) {
 			Future.error(e, st);
@@ -791,7 +791,7 @@ class SiteReddit extends ImageboardSite {
 		final suffix = _getCatalogSuffix(variant);
 		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', suffix.$2), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
@@ -802,7 +802,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required bool interactive}) async {
+	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority}) async {
 		final ret = <Post>[];
 		final childIdsToGet = postIds.take(20).toList();
 		final newPosts = <int, Post>{};
@@ -816,7 +816,7 @@ class SiteReddit extends ImageboardSite {
 				'r': thread.board
 			}), options: Options(
 				extra: {
-					kInteractive: interactive
+					kPriority: priority
 				}
 			));
 			final things = response.data['json']['data']['things'];
@@ -932,14 +932,14 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
 		final suffix = _getCatalogSuffix(variant);
 		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', {
 			'after': 't3_${toRedditId(after.id)}',
 			...suffix.$2
 		}), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final newPage = (after.currentPage ?? 1) + 1;
@@ -951,7 +951,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required bool interactive}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
 		// TODO: implement getPost
 		throw UnimplementedError();
 	}
@@ -1028,12 +1028,12 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
 		}), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final ret = await _makeThread(response.data[0]['data']['children'][0]['data']);
@@ -1181,7 +1181,7 @@ class SiteReddit extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required bool interactive}) => getThread(thread, interactive: interactive);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority}) => getThread(thread, priority: priority);
 
 	@override
 	List<CatalogVariantGroup> get catalogVariantGroups => const [

@@ -205,7 +205,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		return null;
 	}
-	Future<Post> _makePost(dynamic data, {bool resolveIds = true, required bool interactive}) async {
+	Future<Post> _makePost(dynamic data, {bool resolveIds = true, required RequestPriority priority}) async {
 		final String board = data['board']['shortname'];
 		final int threadId = int.parse(data['thread_num']);
 		final int id = int.parse(data['num']);
@@ -216,7 +216,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
 				final board = match.group(1)!;
 				final postId = int.parse(match.group(2)!);
-				final threadId = await _getPostThreadId(board, postId, interactive: interactive);
+				final threadId = await _getPostThreadId(board, postId, priority: priority);
 				if (threadId != null) {
 					linkedPostThreadIds['$board/$postId'] = threadId;
 				}
@@ -250,8 +250,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			isDeleted: data['deleted'] == '1'
 		);
 	}
-	Future<dynamic> _getPostJson(String board, int id, {required bool interactive}) async {
-		if (!(await getBoards(interactive: interactive)).any((b) => b.name == board)) {
+	Future<dynamic> _getPostJson(String board, int id, {required RequestPriority priority}) async {
+		if (!(await getBoards(priority: priority)).any((b) => b.name == board)) {
 			throw BoardNotFoundException(board);
 		}
 		final response = await client.getUri(
@@ -264,7 +264,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 				},
 				extra: {
-					kInteractive: interactive
+					kPriority: priority
 				}
 			)
 		);
@@ -283,18 +283,18 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return response.data;
 	}
 	final _postThreadIdCache = <String, Map<int, int?>>{};
-	Future<int?> __getPostThreadId(String board, int postId, {required bool interactive}) async {
+	Future<int?> __getPostThreadId(String board, int postId, {required RequestPriority priority}) async {
 		try {
-			return int.parse((await _getPostJson(board, postId, interactive: interactive))['thread_num']);
+			return int.parse((await _getPostJson(board, postId, priority: priority))['thread_num']);
 		}
 		on PostNotFoundException {
 			return null;
 		}
 	}
-	Future<int?> _getPostThreadId(String board, int postId, {required bool interactive}) async {
+	Future<int?> _getPostThreadId(String board, int postId, {required RequestPriority priority}) async {
 		_postThreadIdCache[board] ??= {};
 		if (!_postThreadIdCache[board]!.containsKey(postId)) {
-			_postThreadIdCache[board]?[postId] = await __getPostThreadId(board, postId, interactive: interactive);
+			_postThreadIdCache[board]?[postId] = await __getPostThreadId(board, postId, priority: priority);
 		}
 		return _postThreadIdCache[board]?[postId];
 	}
@@ -302,19 +302,19 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		_postThreadIdCache.putIfAbsent(board, () => {}).putIfAbsent(postId, () => threadId);
 	}
 	@override
-	Future<Post> getPost(String board, int id, {required bool interactive}) async {		
-		return _makePost(await _getPostJson(board, id, interactive: interactive), interactive: interactive);
+	Future<Post> getPost(String board, int id, {required RequestPriority priority}) async {		
+		return _makePost(await _getPostJson(board, id, priority: priority), priority: priority);
 	}
 	Future<Thread> getThreadContainingPost(String board, int id) async {
 		throw Exception('Unimplemented');
 	}
-	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage, required bool interactive}) async {
+	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage, required RequestPriority priority}) async {
 		final op = data[thread.id.toString()]['op'];
 		var replies = data[thread.id.toString()]['posts'] ?? [];
 		if (replies is Map) {
 			replies = replies.entries.where((e) => int.tryParse(e.key) != null).map((e) => e.value);
 		}
-		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, interactive: interactive)))).toList();
+		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, priority: priority)))).toList();
 		final String? title = op['title'];
 		final a = _makeAttachment(op);
 		return Thread(
@@ -334,8 +334,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
-		if (!(await getBoards(interactive: interactive)).any((b) => b.name == thread.board)) {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+		if (!(await getBoards(priority: priority)).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
 		final response = await client.getUri(
@@ -349,7 +349,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 				},
 				extra: {
-					kInteractive: interactive
+					kPriority: priority
 				}
 			)
 		);
@@ -363,10 +363,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (data['error'] != null) {
 			throw Exception(data['error']);
 		}
-		return _makeThread(thread, data, interactive: interactive);
+		return _makeThread(thread, data, priority: priority);
 	}
 
-	Future<List<Thread>> _getCatalog(String board, int pageNumber, {required bool interactive}) async {
+	Future<List<Thread>> _getCatalog(String board, int pageNumber, {required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/index', {
 			'board': board,
 			'page': pageNumber.toString()
@@ -375,7 +375,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 				},
 				extra: {
-					kInteractive: interactive
+					kPriority: priority
 				}
 			)
 		);
@@ -384,23 +384,23 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}).map((threadIdStr) => _makeThread(ThreadIdentifier(
 			board,
 			int.parse(threadIdStr)
-		), response.data, currentPage: pageNumber, interactive: interactive)).toList());
+		), response.data, currentPage: pageNumber, priority: priority)).toList());
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) => _getCatalog(board, 1, interactive: interactive);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) => _getCatalog(board, 1, priority: priority);
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) => _getCatalog(board, (after.currentPage ?? 0) + 1, interactive: interactive);
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) => _getCatalog(board, (after.currentPage ?? 0) + 1, priority: priority);
 
-	Future<List<ImageboardBoard>> _getBoards({required bool interactive}) async {
+	Future<List<ImageboardBoard>> _getBoards({required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/archives'), options: Options(
 			validateStatus: (x) => true,
 			headers: {
 				if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 			},
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		if (response.statusCode != 200) {
@@ -417,8 +417,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}).toList();
 	}
 	@override
-	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
-		boards ??= await _getBoards(interactive: interactive);
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+		boards ??= await _getBoards(priority: priority);
 		return boards!;
 	}
 
@@ -432,19 +432,19 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					data['num']: {
 						'op': data
 					}
-				}, interactive: true)
+				}, priority: RequestPriority.interactive)
 			);
 		}
 		else {
 			return ImageboardArchiveSearchResult.post(
-				await _makePost(data, resolveIds: false, interactive: true)
+				await _makePost(data, resolveIds: false, priority: RequestPriority.interactive)
 			);
 		}
 	}
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
-		final knownBoards = await getBoards(interactive: true);
+		final knownBoards = await getBoards(priority: RequestPriority.interactive);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);

@@ -36,8 +36,8 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<List<ImageboardBoard>> getBoards({required bool interactive}) {
-    return archive.getBoards(interactive: interactive);
+  Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) {
+    return archive.getBoards(priority: priority);
   }
 
   @override
@@ -46,23 +46,23 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) {
-    return archive.getCatalogImpl(board, variant: variant, interactive: interactive);
+  Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) {
+    return archive.getCatalogImpl(board, variant: variant, priority: priority);
   }
 
   @override
-  Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) {
-    return archive.getMoreCatalogImpl(board, after, variant: variant, interactive: interactive);
+  Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) {
+    return archive.getMoreCatalogImpl(board, after, variant: variant, priority: priority);
   }
 
   @override
-  Future<Post> getPost(String board, int id, {required bool interactive}) {
-    return archive.getPost(board, id, interactive: interactive);
+  Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
+    return archive.getPost(board, id, priority: priority);
   }
 
   @override
-  Future<Post> getPostFromArchive(String board, int id, {required bool interactive}) {
-    return archive.getPost(board, id, interactive: interactive);
+  Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) {
+    return archive.getPost(board, id, priority: priority);
   }
 
   @override
@@ -71,13 +71,13 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) {
-    return archive.getThread(thread, interactive: interactive);
+  Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) {
+    return archive.getThread(thread, priority: priority);
   }
 
   @override
-  Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required bool interactive}) {
-    return archive.getThread(thread, interactive: interactive);
+  Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority}) {
+    return archive.getThread(thread, priority: priority);
   }
 
   @override

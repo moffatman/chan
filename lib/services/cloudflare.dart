@@ -17,11 +17,18 @@ import 'package:mutex/mutex.dart';
 
 extension CloudflareWanted on RequestOptions {
 	bool get cloudflare => extra['cloudflare'] == true;
-	bool get interactive => extra[kInteractive] != false;
+	RequestPriority get priority => (extra[kPriority] as RequestPriority?) ?? RequestPriority.functional;
 }
 extension CloudflareHandled on Response {
 	bool get cloudflare => extra['cloudflare'] == true;
-	bool get interactive => extra[kInteractive] != false;
+	RequestPriority get priority => (extra[kPriority] as RequestPriority?) ?? RequestPriority.functional;
+}
+
+extension _Cloudflare on RequestPriority {
+	bool get shouldPopupCloudflare => switch(this) {
+		RequestPriority.interactive || RequestPriority.functional => true,
+		RequestPriority.cosmetic => false
+	};
 }
 
 final _initialAllowNonInteractiveWebvieWhen = (timePasses: DateTime(2000), hostPasses: '');
@@ -129,7 +136,7 @@ class CloudflareInterceptor extends Interceptor {
 		URLRequest? initialUrlRequest,
 		required String userAgent,
 		required Uri cookieUrl,
-		required bool interactive
+		required RequestPriority priority
 	}) => _lock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
 		await CookieManager.instance().deleteAllCookies();
@@ -202,7 +209,7 @@ class CloudflareInterceptor extends Interceptor {
 				return headlessCompleter.future;
 			}
 		}
-		if (!interactive && DateTime.now().isBefore(_allowNonInteractiveWebviewWhen.timePasses)) {
+		if ((priority != RequestPriority.interactive) && DateTime.now().isBefore(_allowNonInteractiveWebviewWhen.timePasses)) {
 			// User recently rejected a non-interactive cloudflare login, reject it
 			throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
 		}
@@ -269,7 +276,7 @@ class CloudflareInterceptor extends Interceptor {
 						},
 						body: options.data == null ? null : Uint8List.fromList(options.data)
 					),
-					interactive: options.interactive
+					priority: options.priority
 				);
 				final newResponse = data.response(options);
 				if (newResponse != null) {
@@ -290,7 +297,7 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		if (_responseMatches(response)) {
+		if (_responseMatches(response) && response.priority.shouldPopupCloudflare) {
 			try {
 				final data = await _useWebview(
 					cookieUrl: response.requestOptions.uri,
@@ -299,7 +306,7 @@ class CloudflareInterceptor extends Interceptor {
 						data: response.data,
 						baseUrl: WebUri.uri(response.realUri)
 					),
-					interactive: response.requestOptions.interactive
+					priority: response.priority
 				);
 				final newResponse = data.response(response.requestOptions);
 				if (newResponse != null) {
@@ -320,7 +327,10 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onError(DioError err, ErrorInterceptorHandler handler) async {
-		if (err.type == DioErrorType.response && err.response != null && _responseMatches(err.response!)) {
+		if (err.type == DioErrorType.response &&
+		    err.response != null &&
+				_responseMatches(err.response!) &&
+				err.requestOptions.priority.shouldPopupCloudflare) {
 			try {
 				final data = await _useWebview(
 					cookieUrl: err.requestOptions.uri,
@@ -329,7 +339,7 @@ class CloudflareInterceptor extends Interceptor {
 						data: err.response!.data,
 						baseUrl: WebUri.uri(err.response!.realUri)
 					),
-					interactive: err.requestOptions.interactive
+					priority: err.requestOptions.priority
 				);
 				final newResponse = data.response(err.requestOptions);
 				if (newResponse != null) {

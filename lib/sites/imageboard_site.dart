@@ -43,7 +43,12 @@ import 'package:dio/dio.dart';
 part 'imageboard_site.g.dart';
 
 const _preferredArchiveApiRoot = 'https://push.chance.surf';
-const kInteractive = 'interactive';
+const kPriority = 'priority';
+enum RequestPriority {
+	interactive,
+	functional,
+	cosmetic
+}
 
 class PostNotFoundException implements Exception {
 	String board;
@@ -895,16 +900,16 @@ abstract class ImageboardSiteArchive {
 		client.interceptors.add(CloudflareInterceptor());
 	}
 	String get name;
-	Future<Post> getPost(String board, int id, {required bool interactive});
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive});
+	Future<Post> getPost(String board, int id, {required RequestPriority priority});
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority});
 	@protected
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive});
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required bool interactive, DateTime? acceptCachedAfter}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority});
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter}) async {
 		return runEphemerallyLocked('getCatalog($name,$board)', () async {
 			if (acceptCachedAfter != null && (_lastCatalogCacheTime[board]?.isAfter(acceptCachedAfter) ?? false)) {
 				return _catalogCache.values.where((t) => !t.isArchived && t.board == board).toList(); // Order is wrong but shouldn't matter
 			}
-			final catalog = await getCatalogImpl(board, variant: variant, interactive: interactive);
+			final catalog = await getCatalogImpl(board, variant: variant, priority: priority);
 			final oldThreads = Map.fromEntries(_catalogCache.entries.where((e) => e.key.board == board));
 			for (final newThread in catalog) {
 				oldThreads.remove(newThread.identifier);
@@ -920,9 +925,9 @@ abstract class ImageboardSiteArchive {
 	}
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	@protected
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async => [];
-	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
-		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, interactive: interactive);
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async => [];
+	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
+		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, priority: priority);
 		_catalogCache.addAll({
 			for (final t in moreCatalog)
 				t.identifier: t
@@ -930,7 +935,7 @@ abstract class ImageboardSiteArchive {
 		return moreCatalog;
 	}
 	Thread? getThreadFromCatalogCache(ThreadIdentifier identifier) => _catalogCache[identifier];
-	Future<List<ImageboardBoard>> getBoards({required bool interactive});
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority});
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
 	@protected
 	String getWebUrlImpl(String board, [int? threadId, int? postId]);
@@ -1010,11 +1015,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	});
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) => null;
 	Future<void> deletePost(String board, int threadId, PostReceipt receipt);
-	Future<Post> getPostFromArchive(String board, int id, {required bool interactive}) async {
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) async {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
 			try {
-				final post = await archive.getPost(board, id, interactive: interactive);
+				final post = await archive.getPost(board, id, priority: priority);
 				await Future.wait(post.attachments.map(_ensureCookiesMemoizedForAttachment));
 				return post;
 			}
@@ -1033,7 +1038,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw BoardNotArchivedException(board);
 		}
 	}
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required bool interactive}) async {
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority}) async {
 		final Map<String, String> errorMessages = {};
 		Thread? fallback;
 		final validator = customValidator ?? (Thread thread) async {
@@ -1045,7 +1050,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 						if (opAttachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 					},
 					extra: {
-						kInteractive: interactive
+						kPriority: priority
 					}
 				));
 			}
@@ -1054,7 +1059,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		() async {
 			await Future.wait(archives.map((archive) async {
 				try {
-					final thread_ = await archive.getThread(thread, interactive: interactive).timeout(const Duration(seconds: 10));
+					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 10));
 					if (completer.isCompleted) return null;
 					await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
 					thread_.archiveName = archive.name;
@@ -1142,7 +1147,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		);
 	}
 	bool get supportsPosting => true;
-	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required bool interactive}) async => throw UnimplementedError();
+	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority}) async => throw UnimplementedError();
 	bool get isHackerNews => false;
 	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;
@@ -1210,22 +1215,22 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		};
 	}
 	@override
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required bool interactive, DateTime? acceptCachedAfter}) async {
-		final catalog = await super.getCatalog(board, variant: variant, interactive: interactive, acceptCachedAfter: acceptCachedAfter);
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter}) async {
+		final catalog = await super.getCatalog(board, variant: variant, priority: priority, acceptCachedAfter: acceptCachedAfter);
 		await Future.wait(catalog.expand((t) => t.posts_.expand((p) => p.attachments)).map(_ensureCookiesMemoizedForAttachment));
 		return catalog;
 	}
 	@override
-	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
-		final catalog = await super.getMoreCatalog(board, after, variant: variant, interactive: interactive);
+	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
+		final catalog = await super.getMoreCatalog(board, after, variant: variant, priority: priority);
 		await Future.wait(catalog.expand((t) => t.posts_.expand((p) => p.attachments)).map(_ensureCookiesMemoizedForAttachment));
 		return catalog;
 	}
 	@protected
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive});
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority});
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
-		final theThread = await getThreadImpl(thread, variant: variant, interactive: interactive);
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+		final theThread = await getThreadImpl(thread, variant: variant, priority: priority);
 		await Future.wait(theThread.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
 		return theThread;
 	}

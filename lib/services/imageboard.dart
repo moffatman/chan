@@ -118,7 +118,7 @@ class Imageboard extends ChangeNotifier {
 			boardsLoading = true;
 			boardFetchErrorMessage = null;
 			notifyListeners();
-			final freshBoards = await site.getBoards(interactive: true);
+			final freshBoards = await site.getBoards(priority: RequestPriority.interactive);
 			if (freshBoards.isEmpty) {
 				throw('No boards found');
 			}
@@ -135,7 +135,7 @@ class Imageboard extends ChangeNotifier {
 	}
 
 	Future<List<ImageboardBoard>> refreshBoards() async {
-		final freshBoards = await site.getBoards(interactive: true);
+		final freshBoards = await site.getBoards(priority: RequestPriority.interactive);
 		await persistence.storeBoards(freshBoards);
 		return freshBoards;
 	}

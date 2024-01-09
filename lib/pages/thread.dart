@@ -158,6 +158,7 @@ class ThreadPageState extends State<ThreadPage> {
 	int lastHiddenMD5sLength = 0;
 	_PersistentThreadStateSnapshot _lastPersistentThreadStateSnapshot = _PersistentThreadStateSnapshot.empty();
 	bool _foreground = false;
+	RequestPriority get _priority => _foreground ? RequestPriority.interactive : RequestPriority.functional;
 	PersistentBrowserTab? _parentTab;
 	final List<Function> _postUpdateCallbacks = [];
 	final Set<int> newPostIds = {}; // basically a copy of unseenPostIds?
@@ -771,7 +772,7 @@ class ThreadPageState extends State<ThreadPage> {
 		try {
 			final tmpPersistentState = persistentState;
 			final site = context.read<ImageboardSite>();
-			final asArchived = await site.getPostFromArchive(post.board, post.id, interactive: true);
+			final asArchived = await site.getPostFromArchive(post.board, post.id, priority: RequestPriority.interactive);
 			tmpPersistentState.thread?.mergePosts(null, [asArchived], site.placeOrphanPost);
 			await tmpPersistentState.save();
 			setState(() {});
@@ -855,7 +856,7 @@ class ThreadPageState extends State<ThreadPage> {
 			return;
 		}
 		await WidgetsBinding.instance.endOfFrame; // Hack - let board win lock first
-		final catalog = await imageboard.site.getCatalog(widget.thread.board, interactive: _foreground, acceptCachedAfter: DateTime.now().subtract(const Duration(seconds: 30)));
+		final catalog = await imageboard.site.getCatalog(widget.thread.board, priority: _priority, acceptCachedAfter: DateTime.now().subtract(const Duration(seconds: 30)));
 		ThreadIdentifier candidate = widget.thread;
 		for (final thread in catalog) {
 			if (thread.id > candidate.id) {
@@ -906,7 +907,7 @@ class ThreadPageState extends State<ThreadPage> {
 				continue;
 			}
 			try {
-				final newThread = await imageboard.site.getThread(id, interactive: _foreground);
+				final newThread = await imageboard.site.getThread(id, priority: _priority);
 				threadState.thread = newThread;
 				tmpZone.addThread(newThread);
 			}
@@ -932,11 +933,11 @@ class ThreadPageState extends State<ThreadPage> {
 		_checkForeground();
 		final Thread newThread;
 		if (tmpPersistentState.useArchive) {
-			newThread = await site.getThreadFromArchive(widget.thread, interactive: _foreground);
+			newThread = await site.getThreadFromArchive(widget.thread, priority: _priority);
 		}
 		else {
 			try {
-				newThread = await site.getThread(widget.thread, variant: tmpPersistentState.variant, interactive: _foreground);
+				newThread = await site.getThread(widget.thread, variant: tmpPersistentState.variant, priority: _priority);
 			}
 			on ThreadNotFoundException {
 				if (site.archives.isEmpty) {
@@ -1039,7 +1040,7 @@ class ThreadPageState extends State<ThreadPage> {
 			throw Exception('Thread not loaded');
 		}
 		final site = context.read<ImageboardSite>();
-		final newChildren = await site.getStubPosts(thread.identifier, ids, interactive: true);
+		final newChildren = await site.getStubPosts(thread.identifier, ids, priority: RequestPriority.interactive);
 		if (widget.thread != thread.identifier) {
 			throw Exception('Thread changed');
 		}

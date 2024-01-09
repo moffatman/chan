@@ -349,7 +349,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		};
 	}
 
-	Future<Uri> _getGoodSource({required bool interactive}) async {
+	Future<Uri> _getGoodSource({required RequestPriority priority}) async {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
@@ -359,7 +359,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			validateStatus: (_) => true,
 			headers: getHeaders(attachmentUrl),
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		if (result.statusCode == 200) {
@@ -376,7 +376,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				validateStatus: (_) => true,
 				headers: getHeaders(Uri.parse(correctedUrl)),
 				extra: {
-					kInteractive: interactive
+					kPriority: priority
 				}
 			));
 			if (result.statusCode == 200) {
@@ -398,13 +398,13 @@ class AttachmentViewerController extends ChangeNotifier {
 					validateStatus: (_) => true,
 					headers: getHeaders(Uri.parse(newAttachment.url)),
 					extra: {
-						kInteractive: interactive
+						kPriority: priority
 					}
 				));
 				if (check.statusCode != 200) {
 					throw AttachmentNotArchivedException(attachment);
 				}
-			}, interactive: interactive);
+			}, priority: priority);
 			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
 				?? archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id))!;
 			_useRandomUserAgent = goodAttachment.useRandomUseragent;
@@ -514,7 +514,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			final startTime = DateTime.now();
 			if (soundSource == null && (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf)) {
-				_goodImageSource = await _getGoodSource(interactive: !background);
+				_goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive);
 				_recordUrlTime(_goodImageSource!, attachment.type, DateTime.now().difference(startTime));
 				if (_goodImageSource?.scheme == 'file') {
 					_cachedFile = File(_goodImageSource!.path);
@@ -536,7 +536,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 			}
 			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
-				final url = await _getGoodSource(interactive: !background);
+				final url = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive);
 				bool transcode = false;
 				if (attachment.type == AttachmentType.webm && url.path.endsWith('.webm')) {
 					transcode |= settings.webmTranscoding == WebmTranscodingSetting.always;

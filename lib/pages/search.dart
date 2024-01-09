@@ -476,13 +476,13 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										try {
 											final result = await modalLoad(context, 'Finding post...', (controller) async {
 												try {
-													final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3), interactive: true);
+													final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3), priority: RequestPriority.interactive);
 													return ImageboardArchiveSearchResult.thread(thread);
 												}
 												on ThreadNotFoundException {
 													// Not a thread
 												}
-												final post = await target.$1.site.getPostFromArchive(target.$2, target.$3, interactive: true);
+												final post = await target.$1.site.getPostFromArchive(target.$2, target.$3, priority: RequestPriority.interactive);
 												return ImageboardArchiveSearchResult.post(post);
 											});
 											widget.onManualResult(SelectedSearchResult(

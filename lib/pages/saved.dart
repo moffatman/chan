@@ -1175,10 +1175,10 @@ class _SavedPageState extends State<SavedPage> {
 															Thread? thread = await threadState?.getThread();
 															if (thread == null) {
 																try {
-																	thread = await imageboard.site.getThread(threadIdentifier, interactive: true);
+																	thread = await imageboard.site.getThread(threadIdentifier, priority: RequestPriority.interactive);
 																}
 																on ThreadNotFoundException {
-																	thread = await imageboard.site.getThreadFromArchive(threadIdentifier, interactive: true, customValidator: (t) async {
+																	thread = await imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (t) async {
 																		if (!t.posts_.any((p) => p.attachments.any(attachmentMatches))) {
 																			throw Exception('Could not find attachment in thread');
 																		}
@@ -1442,11 +1442,11 @@ class MissingThreadsControls extends StatelessWidget {
 						}
 						Thread? newThread;
 						try {
-							newThread = await thread.imageboard.site.getThread(thread.item, interactive: true);
+							newThread = await thread.imageboard.site.getThread(thread.item, priority: RequestPriority.interactive);
 						}
 						on ThreadNotFoundException {
 							try {
-								newThread = await thread.imageboard.site.getThreadFromArchive(thread.item, interactive: true);
+								newThread = await thread.imageboard.site.getThreadFromArchive(thread.item, priority: RequestPriority.interactive);
 							}
 							catch (e) {
 								if (context.mounted) {

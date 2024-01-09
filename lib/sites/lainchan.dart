@@ -178,7 +178,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required bool interactive}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
 		throw Exception('Not implemented');
 	}
 
@@ -186,11 +186,11 @@ class SiteLainchan extends ImageboardSite {
 	String get res => 'res';
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/$res/${thread.id}.json'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		if (response.statusCode == 404 || (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false)) {
@@ -215,11 +215,11 @@ class SiteLainchan extends ImageboardSite {
 		);
 	}
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		if (response.statusCode != 200) {
@@ -255,11 +255,11 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/boards.json'), options: Options(
 			responseType: ResponseType.json,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		return (response.data['boards'] as List<dynamic>).map((board) => ImageboardBoard(
@@ -361,14 +361,14 @@ class SiteLainchan extends ImageboardSite {
 		await Future.delayed(const Duration(milliseconds: 500));
 		for (int i = 0; newPostId == null && i < 10; i++) {
 			if (threadId == null) {
-				for (final thread in (await getCatalog(board, interactive: true)).reversed) {
+				for (final thread in (await getCatalog(board, priority: RequestPriority.interactive)).reversed) {
 					if (thread.title == subject && (thread.posts[0].span.buildText().similarityTo(text) > 0.9) && (thread.time.compareTo(now) >= 0)) {
 						newPostId = thread.id;
 					}
 				}
 			}
 			else {
-				for (final post in (await getThread(ThreadIdentifier(board, threadId), interactive: true)).posts) {
+				for (final post in (await getThread(ThreadIdentifier(board, threadId), priority: RequestPriority.interactive)).posts) {
 					if ((post.span.buildText().similarityTo(text) > 0.9) && (post.time.compareTo(now) >= 0)) {
 						newPostId = post.id;
 					}

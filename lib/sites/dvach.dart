@@ -32,11 +32,11 @@ class SiteDvach extends ImageboardSite {
 	}) : super(archives);
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/'), options: Options(
 			responseType: ResponseType.plain,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final document = parse(response.data);
@@ -64,7 +64,7 @@ class SiteDvach extends ImageboardSite {
 
 
 	@override
-	Future<Post> getPost(String board, int id, {required bool interactive}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
 		throw UnimplementedError();
 	}
 
@@ -128,11 +128,11 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (s) => true,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		if (response.statusCode == 404) {
@@ -163,10 +163,10 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		if (response.data['board'] != null) {

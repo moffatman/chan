@@ -17,11 +17,11 @@ class SiteLainchanOrg extends SiteLainchan {
 	});
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, boardsPath), options: Options(
 			responseType: ResponseType.plain,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			},
 			// Needed to allow multiple interception
 			validateStatus: (_) => true

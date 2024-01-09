@@ -143,13 +143,13 @@ Future<EmbedData?> loadEmbedData({
 			Thread? thread;
 			try {
 				if (!target.$3) {
-					thread = await target.$1.site.getThread(target.$2.threadIdentifier!, interactive: false);
+					thread = await target.$1.site.getThread(target.$2.threadIdentifier!, priority: RequestPriority.cosmetic);
 				}
 			}
 			on ThreadNotFoundException {
 				// Maybe dead?
 			}
-			thread ??= await target.$1.site.getThreadFromArchive(target.$2.threadIdentifier!, interactive: false);
+			thread ??= await target.$1.site.getThreadFromArchive(target.$2.threadIdentifier!, priority: RequestPriority.cosmetic);
 			final post = thread.posts_.tryFirstWhere((p) => p.id == target.$2.postId) ?? thread.posts_.first;
 			if (post.id == post.threadId) {
 				return EmbedData(

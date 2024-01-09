@@ -34,7 +34,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 			) : null,
 			filterableAdapter: (t) => t,
 			listUpdater: () async {
-				final thread = await widget.site.getThread(ThreadIdentifier('g', 85712241), interactive: true);
+				final thread = await widget.site.getThread(ThreadIdentifier('g', 85712241), priority: RequestPriority.interactive);
 				return List.generate(150, (i) => thread);
 			},
 			id: 'debugging frame drops',

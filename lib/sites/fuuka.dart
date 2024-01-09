@@ -136,7 +136,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		}
 		return null;
 	}
-	Future<Post> _makePost(dom.Element element, {required bool interactive}) async {
+	Future<Post> _makePost(dom.Element element, {required RequestPriority priority}) async {
 		final thisLinkMatches = _threadLinkMatcher.firstMatch(element.querySelector('.js')!.attributes['href']!)!;
 		final board = thisLinkMatches.group(1)!;
 		final threadId = int.parse(thisLinkMatches.group(2)!);
@@ -149,7 +149,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				final response = await client.head(Uri.https(baseUrl, link.attributes['href']!).toString(), options: Options(
 					validateStatus: (x) => true,
 					extra: {
-						kInteractive: interactive
+						kPriority: priority
 					}
 				));
 				linkedPostThreadIds['${linkMatches.group(1)!}/${linkMatches.group(2)!}'] = int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!);
@@ -170,22 +170,22 @@ class FuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 	@override
-	Future<Post> getPost(String board, int id, {required bool interactive}) async {		
+	Future<Post> getPost(String board, int id, {required RequestPriority priority}) async {		
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/post/$id'), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
-		final thread = await _makeThread(response.data, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!), interactive: interactive);
+		final thread = await _makeThread(response.data, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!), priority: priority);
 		return thread.posts.firstWhere((t) => t.id == id);
 	}
-	Future<Thread> _makeThread(dom.Element document, String board, int id, {required bool interactive}) async {
+	Future<Thread> _makeThread(dom.Element document, String board, int id, {required RequestPriority priority}) async {
 		final op = document.querySelector('#p$id');
 		if (op == null) {
 			throw FuukaException('OP was not archived');
 		}
 		final replies = document.querySelectorAll('.reply:not(.subreply)');
-		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, interactive: interactive)))).toList();
+		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, priority: priority)))).toList();
 		final title = document.querySelector('.filetitle')?.text;
 		return Thread(
 			posts_: posts,
@@ -204,8 +204,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 		throw Exception('Unimplemented');
 	}
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
-		if (!(await getBoards(interactive: interactive)).any((b) => b.name == thread.board)) {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+		if (!(await getBoards(priority: priority)).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
 		final response = await client.getUri(
@@ -215,18 +215,18 @@ class FuukaArchive extends ImageboardSiteArchive {
 			}),
 			options: Options(
 				extra: {
-					kInteractive: interactive
+					kPriority: priority
 				}
 			)
 		);
-		return _makeThread(parse(response.data).body!, thread.board, thread.id, interactive: interactive);
+		return _makeThread(parse(response.data).body!, thread.board, thread.id, priority: priority);
 	}
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final document = parse(response.data);
@@ -235,7 +235,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		final List<Thread> threads = [];
 		for (final child in document.querySelector('.content')!.children) {
 			if (child.localName == 'hr') {
-				threads.add(await _makeThread(e, board, threadId!, interactive: interactive));
+				threads.add(await _makeThread(e, board, threadId!, priority: priority));
 				e = dom.Element.tag('div');
 			}
 			else {
@@ -252,7 +252,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		return boards!;
 	}
 
@@ -265,7 +265,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		if (query.postTypeFilter == PostTypeFilter.onlyStickies) {
 			throw UnsupportedError('"Only stickies" filtering not supported in Fuuka search');
 		}
-		final knownBoards = await getBoards(interactive: true);
+		final knownBoards = await getBoards(priority: RequestPriority.interactive);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);
@@ -292,7 +292,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		}
 		final document = parse(response.data);
 		return ImageboardArchiveSearchResultPage(
-			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map((d) => _makePost(d, interactive: true)))).map((p) => ImageboardArchiveSearchResult.post(p)).toList(),
+			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map((d) => _makePost(d, priority: RequestPriority.interactive)))).map((p) => ImageboardArchiveSearchResult.post(p)).toList(),
 			page: page,
 			maxPage: 100,
 			archive: this

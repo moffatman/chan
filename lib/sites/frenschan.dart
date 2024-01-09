@@ -22,11 +22,11 @@ class SiteFrenschan extends SiteSoyjak {
 	String get siteType => 'frenschan';
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
-		final broken = await super.getThreadImpl(thread, interactive: interactive);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+		final broken = await super.getThreadImpl(thread, priority: priority);
 		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final document = parse(response.data);
@@ -45,11 +45,11 @@ class SiteFrenschan extends SiteSoyjak {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
-		final broken = await super.getCatalogImpl(board, interactive: interactive);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+		final broken = await super.getCatalogImpl(board, priority: priority);
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.html'), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final document = parse(response.data);

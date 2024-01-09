@@ -1789,7 +1789,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			_postFromArchiveErrors.remove(id);
 			_isLoadingPostFromArchive[id] = true;
 			notifyListeners();
-			final newPost = _postsFromArchive[id] = await imageboard.site.getPostFromArchive(board, id, interactive: true);
+			final newPost = _postsFromArchive[id] = await imageboard.site.getPostFromArchive(board, id, priority: RequestPriority.interactive);
 			_postsFromArchive[id]!.replyIds = findThread(newPost.threadId)?.posts.where((p) => p.repliedToIds.contains(id)).map((p) => p.id).toList() ?? [];
 			notifyListeners();
 		}

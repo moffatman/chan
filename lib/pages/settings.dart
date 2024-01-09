@@ -170,7 +170,7 @@ class SettingsPage extends StatelessWidget {
 					curve: Curves.ease,
 					alignment: Alignment.topCenter,
 					child: FutureBuilder<List<Thread>>(
-						future: context.read<ImageboardSite>().getCatalog('chance', interactive: true),
+						future: context.read<ImageboardSite>().getCatalog('chance', priority: RequestPriority.interactive),
 						initialData: context.read<ThreadWatcher>().peekLastCatalog('chance'),
 						builder: (context, snapshot) {
 							if (!snapshot.hasData) {

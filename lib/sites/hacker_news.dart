@@ -258,19 +258,19 @@ class SiteHackerNews extends ImageboardSite {
 		}
 	}
 
-	Future<_HNObject> _getAlgolia(int id, {required bool interactive}) async {
+	Future<_HNObject> _getAlgolia(int id, {required RequestPriority priority}) async {
 		final response = await client.get('https://hn.algolia.com/api/v1/items/$id', options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		return (await _makeHNObjectAlgolia(response.data))!;
 	}
 
-	Future<Thread> _getThreadForCatalog(int id, {required bool interactive}) async {
+	Future<Thread> _getThreadForCatalog(int id, {required RequestPriority priority}) async {
 		final response = await client.get('https://hacker-news.firebaseio.com/v0/item/$id.json', options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final d = response.data as Map;
@@ -286,7 +286,7 @@ class SiteHackerNews extends ImageboardSite {
 				final responses = await Future.wait<Map>(d['parts'].map((int part) async {
 					return (await client.get('https://hacker-news.firebaseio.com/v0/item/$part.json', options: Options(
 						extra: {
-							kInteractive: interactive
+							kPriority: priority
 						}
 					))).data;
 				}));
@@ -378,7 +378,7 @@ class SiteHackerNews extends ImageboardSite {
 			if (parsed.host == baseUrl && parsed.path == '/item' && parsed.queryParameters.containsKey('id')) {
 				int id = int.parse(parsed.queryParameters['id']!);
 				return BoardThreadOrPostIdentifier('', await _cachedOpIds.putIfAbsentAsync(id, () async {
-					final object = await _getAlgolia(id, interactive: true);
+					final object = await _getAlgolia(id, priority: RequestPriority.interactive);
 					return object is _HNComment ? object.story : id;
 				}), id);
 			}
@@ -396,7 +396,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		return [ImageboardBoard(
 			name: '',
 			title: 'Hacker News',
@@ -415,12 +415,12 @@ class SiteHackerNews extends ImageboardSite {
 		return const NoCaptchaRequest();
 	}
 
-	Future<List<int>> _getSecondChancePoolIds(int? after, {required bool interactive}) async {
+	Future<List<int>> _getSecondChancePoolIds(int? after, {required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/pool', {
 			if (after != null) 'next': after.toString()
 		}), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final doc = parse(response.data);
@@ -433,10 +433,10 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
 		final List<int> data;
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
-			data = await _getSecondChancePoolIds(null, interactive: interactive);
+			data = await _getSecondChancePoolIds(null, priority: priority);
 		}
 		else {
 			final name = {
@@ -449,13 +449,13 @@ class SiteHackerNews extends ImageboardSite {
 			}[variant]!;
 			final response = await client.get('https://hacker-news.firebaseio.com/v0/$name.json', options: Options(
 				extra: {
-					kInteractive: interactive
+					kPriority: priority
 				}
 			));
 			data = (response.data as List).cast<int>();
 		}
 		_lastCatalogIds[variant] = data;
-		return await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, interactive: interactive)));
+		return await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, priority: priority)));
 	}
 
 	Future<List<Post>> _getMoreThread(_HNObject item) async {
@@ -473,10 +473,10 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
-			final ids = await _getSecondChancePoolIds(after.id, interactive: interactive);
-			return await Future.wait(ids.map((id) => _getThreadForCatalog(id, interactive: interactive)));
+			final ids = await _getSecondChancePoolIds(after.id, priority: priority);
+			return await Future.wait(ids.map((id) => _getThreadForCatalog(id, priority: priority)));
 		}
 		else {
 			final lastCatalogIds = _lastCatalogIds[variant];
@@ -484,13 +484,13 @@ class SiteHackerNews extends ImageboardSite {
 			if (index == -1) {
 				return [];
 			}
-			return await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map((id) => _getThreadForCatalog(id, interactive: interactive)));
+			return await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map((id) => _getThreadForCatalog(id, priority: priority)));
 		}
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required bool interactive}) async {
-		final item = await _getAlgolia(id, interactive: interactive);
+	Future<Post> getPost(String board, int id, {required RequestPriority priority}) async {
+		final item = await _getAlgolia(id, priority: priority);
 		return _makePost(item);
 	}
 
@@ -501,8 +501,8 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
-		final item = await _getAlgolia(thread.id, interactive: interactive);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+		final item = await _getAlgolia(thread.id, priority: priority);
 		if (item is! _HNStory) {
 			throw Exception('HN item ${thread.id} is not a thread');
 		}
@@ -573,7 +573,7 @@ class SiteHackerNews extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required bool interactive}) => getThread(thread, interactive: interactive);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority}) => getThread(thread, priority: priority);
 
 	@override
 	List<CatalogVariantGroup> get catalogVariantGroups => const [

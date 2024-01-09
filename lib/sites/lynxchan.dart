@@ -239,13 +239,13 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		if (boards != null) {
 			return boards!;
 		}
 		final response = await client.getUri(Uri.https(baseUrl, '/boards.js'), options: Options(
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		final document = parse(response.data);
@@ -305,11 +305,11 @@ class SiteLynxchan extends ImageboardSite {
 		}
 	}
 
-	Future<List<Thread>> _getCatalogPage(String board, int page, {required bool interactive}) async {
+	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/$page.json'), options: Options(
 			validateStatus: (status) => status == 200 || status == 404,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		if (response.statusCode == 404) {
@@ -359,14 +359,14 @@ class SiteLynxchan extends ImageboardSite {
 
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
-		return _getCatalogPage(board, 1, interactive: interactive);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+		return _getCatalogPage(board, 1, priority: priority);
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required bool interactive}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
 		try {
-			return _getCatalogPage(board, (after.currentPage ?? 0) + 1, interactive: interactive);
+			return _getCatalogPage(board, (after.currentPage ?? 0) + 1, priority: priority);
 		}
 		on BoardNotFoundException {
 			return [];
@@ -374,7 +374,7 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required bool interactive}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
 		throw UnimplementedError();
 	}
 
@@ -414,11 +414,11 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), options: Options(
 			validateStatus: (status) => status == 200 || status == 404,
 			extra: {
-				kInteractive: interactive
+				kPriority: priority
 			}
 		));
 		if (response.statusCode == 404) {
