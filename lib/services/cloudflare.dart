@@ -190,7 +190,7 @@ class CloudflareInterceptor extends Interceptor {
 			await headlessWebView.run();
 			showToast(
 				context: ImageboardRegistry.instance.context!,
-				message: 'Authorizing Cloudflare',
+				message: 'Authorizing Cloudflare\n${cookieUrl.host}',
 				icon: CupertinoIcons.cloud
 			);
 			await Future.any([

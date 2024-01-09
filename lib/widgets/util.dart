@@ -112,7 +112,8 @@ void showToast({
 							message,
 							style: TextStyle(
 								color: theme.primaryColor
-							)
+							),
+							textAlign: TextAlign.center
 						)
 					),
 					if (button != null) ...[
