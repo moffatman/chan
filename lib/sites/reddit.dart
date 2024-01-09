@@ -320,6 +320,12 @@ class SiteReddit extends ImageboardSite {
 							postId: fromRedditId(node.attributes['id']!)
 						);
 					}
+					else if (node.attributes.values.every((v) => v.isEmpty)) {
+						// Some joker made up their own span
+						yield PostTextSpan('<${[node.localName, ...node.attributes.keys].join(' ')}>');
+						yield const PostLineBreakSpan();
+						yield* visit(node.children);
+					}
 					else {
 						yield PostTextSpan(node.outerHtml);
 					}
