@@ -14,6 +14,7 @@ import 'package:chan/services/captcha.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
@@ -42,6 +43,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
+import 'package:linkify/linkify.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 import 'package:string_similarity/string_similarity.dart';
@@ -114,7 +116,7 @@ class ReplyBox extends StatefulWidget {
 	createState() => ReplyBoxState();
 }
 
-final _imageUrlPattern = RegExp(r'https?:\/\/[^. ]\.[^ ]+\.(jpg|jpeg|png|gif)');
+final _imageUrlPattern = RegExp(r'https?:\/\/[^. ]+\.[^ ]+\.(jpg|jpeg|png|gif)');
 
 class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _textFieldController;
@@ -237,7 +239,16 @@ class ReplyBoxState extends State<ReplyBox> {
 		widget.onTextChanged?.call(_textFieldController.text);
 		_autoPostTimer?.cancel();
 		if (mounted) setState(() {});
-		final rawUrl = _imageUrlPattern.firstMatch(_textFieldController.text)?.group(0);
+		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier()]).tryMapOnce<String>((element) {
+			if (element is UrlElement) {
+				final path = Uri.parse(element.url).path;
+				if (['.jpg', '.jpeg', '.png', '.gif', '.webm'].any(path.endsWith)) {
+					return element.url;
+				}
+			}
+			return null;
+		});
+		print(rawUrl);
 		if (rawUrl != _lastFoundUrl && rawUrl != null) {
 			try {
 				await context.read<ImageboardSite>().client.head(rawUrl);
