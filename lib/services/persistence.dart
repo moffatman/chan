@@ -508,6 +508,7 @@ class Persistence extends ChangeNotifier {
 		if (deletedCount > 0) {
 			print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
 		}
+		await ensureTemporaryDirectoriesExist();
 	}
 
 	Future<void> _cleanupThreads(Duration olderThan) async {
