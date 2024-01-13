@@ -125,6 +125,7 @@ class Site4Chan extends ImageboardSite {
 	final String imageUrl;
 	final String captchaKey;
 	final Map<String, String> captchaUserAgents;
+	final List<int> possibleCaptchaLetterCounts;
 	final Map<String, Map<String, String>> boardFlags;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
@@ -662,7 +663,8 @@ class Site4Chan extends ImageboardSite {
 			}),
 			challengeHeaders: {
 				if (userAgent != null) 'user-agent': userAgent
-			}
+			},
+			possibleLetterCounts: possibleCaptchaLetterCounts
 		);
 	}
 
@@ -989,7 +991,8 @@ class Site4Chan extends ImageboardSite {
 		List<ImageboardSiteArchive> archives = const [],
 		required this.captchaUserAgents,
 		required this.searchUrl,
-		required this.boardFlags
+		required this.boardFlags,
+		required this.possibleCaptchaLetterCounts
 	}) : super(archives);
 
 
@@ -1045,10 +1048,10 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysUrl == sysUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives) && mapEquals(other.captchaUserAgents, captchaUserAgents) && (other.searchUrl == searchUrl);
+	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysUrl == sysUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives) && mapEquals(other.captchaUserAgents, captchaUserAgents) && (other.searchUrl == searchUrl) && listEquals(other.possibleCaptchaLetterCounts, possibleCaptchaLetterCounts);
 
 	@override
-	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives, captchaUserAgents, searchUrl);
+	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives, captchaUserAgents, searchUrl, possibleCaptchaLetterCounts);
 	
 	@override
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');

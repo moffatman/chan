@@ -528,13 +528,15 @@ class RecaptchaRequest extends CaptchaRequest {
 class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
 	final Map<String, String> challengeHeaders;
+	final List<int> possibleLetterCounts;
 
 	const Chan4CustomCaptchaRequest({
 		required this.challengeUrl,
-		required this.challengeHeaders
+		required this.challengeHeaders,
+		required this.possibleLetterCounts
 	});
 	@override
-	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders)';
+	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders, possibleLetterCounts: $possibleLetterCounts)';
 
 	@override
 	bool get cloudSolveSupported => true;
@@ -543,10 +545,11 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	bool operator == (Object other) =>
 		other is Chan4CustomCaptchaRequest &&
 		other.challengeUrl == challengeUrl &&
-		mapEquals(other.challengeHeaders, challengeHeaders);
+		mapEquals(other.challengeHeaders, challengeHeaders) &&
+		listEquals(other.possibleLetterCounts, possibleLetterCounts);
 	
 	@override
-	int get hashCode => Object.hash(challengeUrl, challengeHeaders);
+	int get hashCode => Object.hash(challengeUrl, challengeHeaders, possibleLetterCounts);
 }
 
 class SecurimageCaptchaRequest extends CaptchaRequest {
@@ -1340,6 +1343,7 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			staticUrl: data['staticUrl'],
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
+			possibleCaptchaLetterCounts: (data['possibleCaptchaLetterCounts'] as List?)?.cast<int>() ?? [],
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
 			searchUrl: data['searchUrl'] ?? '',
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {

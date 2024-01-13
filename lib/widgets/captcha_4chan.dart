@@ -492,6 +492,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	int get numLetters => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters;
 	set numLetters(int setting) => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters = setting;
 
+	bool get useNewCaptchaForm => context.read<EffectiveSettings>().useNewCaptchaForm && widget.request.possibleLetterCounts.isNotEmpty;
+
 	Future<void> _animateCloudGuess() async {
 		setState(() {
 			_guessingProgress = null;
@@ -690,7 +692,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Future<void> _setupChallenge() async {
-		final settings = context.read<EffectiveSettings>();
 		if (challenge!.backgroundImage != null) {
 			final bestSlide = await _alignImage(challenge!);
 			if (!mounted) return;
@@ -698,7 +699,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				backgroundSlide = bestSlide;
 			});
 		}
-		if (settings.useNewCaptchaForm) {
+		if (useNewCaptchaForm) {
 			await _animateGuess();
 		}
 		else {
@@ -824,7 +825,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		_solutionNode = FocusNode();
 		_solutionController = TextEditingController();
 		_lastGuess = Chan4CustomCaptchaGuess.dummy('0' * numLetters);
-		if (context.read<EffectiveSettings>().useNewCaptchaForm) {
+		if (useNewCaptchaForm) {
 			_solutionController.text = "000000";
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionController.addListener(_onSolutionControllerUpdate);
@@ -1020,7 +1021,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							),
 							const SizedBox(height: 0),
 							Visibility(
-								visible: !context.read<EffectiveSettings>().useNewCaptchaForm,
+								visible: !useNewCaptchaForm,
 								maintainAnimation: true,
 								maintainState: true,
 								child: SizedBox(
@@ -1060,15 +1061,19 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									)
 								)
 							),
-							if (context.read<EffectiveSettings>().useNewCaptchaForm) ...[
+							if (useNewCaptchaForm) ...[
 								Row(
 									mainAxisAlignment: MainAxisAlignment.center,
 									children: [
 										const SizedBox(width: 40),
 										AdaptiveSegmentedControl<int>(
-											children: const {
+											children: widget.request.possibleLetterCounts.isEmpty ? const {
+												4: (null, '4 letters'),
 												5: (null, '5 letters'),
 												6: (null, '6 letters')
+											} : {
+												for (final count in widget.request.possibleLetterCounts)
+													count: (null, '$count letters')
 											},
 											groupValue: numLetters,
 											onValueChanged: (x) {
