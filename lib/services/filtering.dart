@@ -192,18 +192,6 @@ class CustomFilter implements Filter {
 		if (disabled) {
 			return null;
 		}
-		if (pattern.pattern.isNotEmpty) {
-			bool matches = false;
-			for (final field in patternFields) {
-				if (pattern.hasMatch(item.getFilterFieldText(field) ?? '')) {
-					matches = true;
-					break;
-				}
-			}
-			if (!matches) {
-				return null;
-			}
-		}
 		if (boards.isNotEmpty && !boards.contains(item.board)) {
 			return null;
 		}
@@ -227,6 +215,11 @@ class CustomFilter implements Filter {
 		}
 		if (deletedOnly != null && item.isDeleted != deletedOnly) {
 			return null;
+		}
+		if (pattern.pattern.isNotEmpty) {
+			if (!patternFields.any((field) => pattern.hasMatch(item.getFilterFieldText(field) ?? ''))) {
+				return null;
+			}
 		}
 		return FilterResult(outputType, label.isEmpty ? 'Matched "$configuration"' : '$label filter');
 	}
