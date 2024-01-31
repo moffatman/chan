@@ -498,4 +498,11 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	bool get hasPagedCatalog => true;
+
+	@override
+	Future<void> clearPseudoCookies() async {
+		persistence.browserState.loginFields.remove(kLoginFieldLastSolvedCaptchaKey);
+	}
+
+	static const kLoginFieldLastSolvedCaptchaKey = 'lc';
 }

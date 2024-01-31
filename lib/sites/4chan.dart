@@ -655,11 +655,13 @@ class Site4Chan extends ImageboardSite {
 			return const NoCaptchaRequest();
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
+		final ticket = persistence.browserState.loginFields[kLoginFieldTicketKey];
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
 				'framed': '1',
 				'board': board,
-				if (threadId != null) 'thread_id': threadId.toString()
+				if (threadId != null) 'thread_id': threadId.toString(),
+				if (ticket != null) 'ticket': ticket
 			}),
 			challengeHeaders: {
 				if (userAgent != null) 'user-agent': userAgent
@@ -1219,6 +1221,13 @@ class Site4Chan extends ImageboardSite {
 			archive: this
 		);
 	}
+
+	@override
+	Future<void> clearPseudoCookies() async {
+		persistence.browserState.loginFields.remove(kLoginFieldTicketKey);
+	}
+
+	static const kLoginFieldTicketKey = 't';
 }
 
 class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
@@ -47,8 +48,6 @@ class CaptchaLynxchanChallenge {
 	});
 }
 
-const _loginFieldLastSolvedCaptchaKey = 'lc';
-
 class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 	String? errorMessage;
 	CaptchaLynxchanChallenge? challenge;
@@ -63,7 +62,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 
 	Future<CaptchaLynxchanChallenge> _requestChallenge() async {
 		Persistence.currentCookies.delete(Uri.https(widget.site.baseUrl, '/captcha.js'), true);
-		final lastSolvedCaptcha = widget.site.persistence.browserState.loginFields[_loginFieldLastSolvedCaptchaKey];
+		final lastSolvedCaptcha = widget.site.persistence.browserState.loginFields[SiteLynxchan.kLoginFieldLastSolvedCaptchaKey];
 		final idResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/captcha.js', {
 			'boardUri': widget.request.board,
 			'd': (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
@@ -127,7 +126,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			answer: answer,
 			expiresAt: challenge!.expiresAt
 		));
-		widget.site.persistence.browserState.loginFields[_loginFieldLastSolvedCaptchaKey] = challenge!.id;
+		widget.site.persistence.browserState.loginFields[SiteLynxchan.kLoginFieldLastSolvedCaptchaKey] = challenge!.id;
 		widget.site.persistence.didUpdateBrowserState();
 	}
 

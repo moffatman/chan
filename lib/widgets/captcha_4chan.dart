@@ -8,6 +8,7 @@ import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -54,11 +55,19 @@ Future<Captcha4ChanCustomChallenge> _requestChallenge({
 		}
 		data = jsonDecode(match.group(1)!)['twister'];
 	}
+	if (data['ticket'] is String) {
+		site.persistence.browserState.loginFields[Site4Chan.kLoginFieldTicketKey] = data['ticket'];
+		site.persistence.didUpdateBrowserState();
+	}
 	if (data['cd'] != null) {
 		onCooldown?.call(DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2)));
 	}
 	if (data['error'] != null) {
 		throw Captcha4ChanCustomException(data['error']);
+	}
+	if (data['pcd'] != null && data['pcd_msg'] != null) {
+		onCooldown?.call(DateTime.now().add(Duration(seconds: data['pcd'].toInt() + 2)));
+		throw Captcha4ChanCustomException(data['pcd_msg']);
 	}
 	Completer<ui.Image>? foregroundImageCompleter;
 	if (data['img'] != null) {

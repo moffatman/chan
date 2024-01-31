@@ -1246,6 +1246,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}) {
 		return (archives.tryFirstWhere((a) => a.name == archiveName) ?? this).getWebUrlImpl(board, threadId, postId);
 	}
+	Future<void> clearPseudoCookies() async {}
 }
 
 abstract class ImageboardSiteLoginSystem {

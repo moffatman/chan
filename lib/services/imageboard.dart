@@ -332,6 +332,12 @@ class ImageboardRegistry extends ChangeNotifier {
 		}
 		return null;
 	}
+
+	Future<void> clearAllPseudoCookies() async {
+		for (final i in imageboards) {
+			await i.site.clearPseudoCookies();
+		}
+	}
 }
 
 class ImageboardScoped<T> {

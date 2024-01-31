@@ -4071,6 +4071,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						onPressed: () {
 							CookieManager.instance().deleteAllCookies();
 							Persistence.wifiCookies.deleteAll();
+							ImageboardRegistry.instance.clearAllPseudoCookies();
 						}
 					)
 				),
@@ -4088,6 +4089,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						onPressed: () {
 							CookieManager.instance().deleteAllCookies();
 							Persistence.cellularCookies.deleteAll();
+							ImageboardRegistry.instance.clearAllPseudoCookies();
 						}
 					)
 				),
