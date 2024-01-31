@@ -1345,6 +1345,7 @@ ImageboardSite makeSite(dynamic data) {
 			staticUrl: data['staticUrl'],
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
 			possibleCaptchaLetterCounts: (data['possibleCaptchaLetterCounts'] as List?)?.cast<int>() ?? [],
+			postingHeaders: (data['postingHeaders'] as Map?)?.cast<String, String>() ?? {},
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
 			searchUrl: data['searchUrl'] ?? '',
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
