@@ -806,7 +806,9 @@ class PostCodeSpan extends PostSpan {
 			return TextSpan(
 				children: [span],
 				style: const TextStyle(
-					backgroundColor: Colors.black
+					backgroundColor: Colors.black,
+					color: Colors.white,
+					fontSize: 15
 				)
 			);
 		}
