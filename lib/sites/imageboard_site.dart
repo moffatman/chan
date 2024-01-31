@@ -840,7 +840,7 @@ class ImageboardUserInfo {
 	final String username;
 	final Uri webUrl;
 	final Uri? avatar;
-	final DateTime createdAt;
+	final DateTime? createdAt;
 	final int? commentKarma;
 	final int? linkKarma;
 	final int totalKarma;

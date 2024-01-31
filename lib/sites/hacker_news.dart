@@ -683,7 +683,7 @@ class SiteHackerNews extends ImageboardSite {
 			webUrl: Uri.https('news.ycombinator.com', '/user', {
 				'id': username
 			}),
-			createdAt: DateTime.parse(response.data['created_at']),
+			createdAt: DateTime.tryParse(response.data['created_at'] ?? ''),
 			totalKarma: response.data['karma']
 		);
 	}

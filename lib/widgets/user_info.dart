@@ -131,7 +131,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 										)
 										else if (data == null) const CircularProgressIndicator.adaptive()
 										else ...[
-											('Age', formatRelativeTime(data.createdAt)),
+											if (data.createdAt != null) ('Age', formatRelativeTime(data.createdAt!)),
 											('Total Score', data.totalKarma.toString()),
 											if (data.commentKarma != null) ('Comment Score', data.commentKarma.toString()),
 											if (data.linkKarma != null) ('Link Score', data.linkKarma.toString()),
