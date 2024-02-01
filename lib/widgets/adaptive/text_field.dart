@@ -6,6 +6,7 @@ class AdaptiveTextField extends StatelessWidget {
 	final bool autocorrect;
 	final Iterable<String>? autofillHints;
 	final bool autofocus;
+	final ContentInsertionConfiguration? contentInsertionConfiguration;
 	final EditableTextContextMenuBuilder? contextMenuBuilder;
 	final TextEditingController? controller;
 	final bool enabled;
@@ -34,6 +35,7 @@ class AdaptiveTextField extends StatelessWidget {
 		this.autocorrect = true,
 		this.autofillHints = const [],
 		this.autofocus = false,
+		this.contentInsertionConfiguration,
 		this.contextMenuBuilder,
 		this.controller,
 		this.enabled = true,
@@ -79,6 +81,7 @@ class AdaptiveTextField extends StatelessWidget {
 				autocorrect: autocorrect,
 				autofillHints: autofillHints,
 				autofocus: autofocus,
+				contentInsertionConfiguration: contentInsertionConfiguration,
 				contextMenuBuilder: contextMenuBuilder ?? _defaultMaterialContextMenuBuilder,
 				controller: controller,
 				decoration: InputDecoration(
@@ -136,6 +139,7 @@ class AdaptiveTextField extends StatelessWidget {
 			autocorrect: autocorrect,
 			autofillHints: autofillHints,
 			autofocus: autofocus,
+			contentInsertionConfiguration: contentInsertionConfiguration,
 			contextMenuBuilder: contextMenuBuilder ?? _defaultCupertinoContextMenuBuilder,
 			controller: controller,
 			decoration: BoxDecoration(

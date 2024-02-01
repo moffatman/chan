@@ -1652,6 +1652,21 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										smartQuotesType: SmartQuotesType.disabled,
 										controller: _textFieldController,
 										autofocus: widget.fullyExpanded,
+										contentInsertionConfiguration: ContentInsertionConfiguration(
+											onContentInserted: (content) async {
+												final data = content.data;
+												if (data == null) {
+													return;
+												}
+												if (data.isEmpty) {
+													return;
+												}
+												final f = File('${Persistence.temporaryDirectory.path}/sharecache/${DateTime.now().millisecondsSinceEpoch}/${Uri.parse(content.uri).pathSegments.last}');
+												await f.create(recursive: true);
+												await f.writeAsBytes(data, flush: true);
+												setAttachment(f);
+											}
+										),
 										spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
 										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
 											anchors: editableTextState.contextMenuAnchors,
