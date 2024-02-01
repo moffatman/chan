@@ -26,7 +26,9 @@ enum WebImageSearchMethod {
 	@HiveField(1)
 	yandex,
 	@HiveField(2)
-	duckDuckGo;
+	duckDuckGo,
+	@HiveField(3)
+	bing;
 	String get name {
 		switch (this) {
 			case google:
@@ -35,6 +37,8 @@ enum WebImageSearchMethod {
 				return 'Yandex';
 			case duckDuckGo:
 				return 'DuckDuckGo';
+			case bing:
+				return 'Bing';
 		}
 	}
 	Uri searchUrl(String query) {
@@ -54,6 +58,10 @@ enum WebImageSearchMethod {
 					't': 'h_',
 					'iax': 'images',
 					'ia': 'images'
+				});
+			case bing:
+				return Uri.https('www.bing.com', '/images/search', {
+					'q': query
 				});
 		}
 	}

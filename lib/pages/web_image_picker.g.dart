@@ -19,6 +19,8 @@ class WebImageSearchMethodAdapter extends TypeAdapter<WebImageSearchMethod> {
         return WebImageSearchMethod.yandex;
       case 2:
         return WebImageSearchMethod.duckDuckGo;
+      case 3:
+        return WebImageSearchMethod.bing;
       default:
         return WebImageSearchMethod.google;
     }
@@ -35,6 +37,9 @@ class WebImageSearchMethodAdapter extends TypeAdapter<WebImageSearchMethod> {
         break;
       case WebImageSearchMethod.duckDuckGo:
         writer.writeByte(2);
+        break;
+      case WebImageSearchMethod.bing:
+        writer.writeByte(3);
         break;
     }
   }
