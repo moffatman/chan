@@ -887,6 +887,7 @@ abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
 	final Map<String, DateTime> _lastCatalogCacheTime = {};
+	String get userAgent => platformUserAgents[Platform.operatingSystem] ?? Persistence.settings.userAgent;
 	final Map<String, String> platformUserAgents;
 	ImageboardSiteArchive({
 		this.platformUserAgents = const {}
@@ -898,7 +899,7 @@ abstract class ImageboardSiteArchive {
 		));
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
-				options.headers['user-agent'] ??= platformUserAgents[Platform.operatingSystem] ?? Persistence.settings.userAgent;
+				options.headers['user-agent'] ??= userAgent;
 				options.headers[HttpHeaders.acceptEncodingHeader] ??= 'gzip';
 				handler.next(options);
 			}
@@ -985,12 +986,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Map<String, String> getHeaders(Uri url) {
 		if (EffectiveSettings.instance.connectivity == ConnectivityResult.mobile) {
 			return {
-				'user-agent': Persistence.settings.userAgent,
+				'user-agent': userAgent,
 				..._memoizedCellularHeaders[url.host] ?? {}
 			};
 		}
 		return {
-			'user-agent': Persistence.settings.userAgent,
+			'user-agent': userAgent,
 			..._memoizedWifiHeaders[url.host] ?? {}
 		};
 	}
