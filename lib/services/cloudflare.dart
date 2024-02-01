@@ -21,7 +21,6 @@ extension CloudflareWanted on RequestOptions {
 }
 extension CloudflareHandled on Response {
 	bool get cloudflare => extra['cloudflare'] == true;
-	RequestPriority get priority => (extra[kPriority] as RequestPriority?) ?? RequestPriority.functional;
 }
 
 extension _Cloudflare on RequestPriority {
@@ -297,7 +296,7 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		if (_responseMatches(response) && response.priority.shouldPopupCloudflare) {
+		if (_responseMatches(response) && response.requestOptions.priority.shouldPopupCloudflare) {
 			try {
 				final data = await _useWebview(
 					cookieUrl: response.requestOptions.uri,
@@ -306,7 +305,7 @@ class CloudflareInterceptor extends Interceptor {
 						data: response.data,
 						baseUrl: WebUri.uri(response.realUri)
 					),
-					priority: response.priority
+					priority: response.requestOptions.priority
 				);
 				final newResponse = data.response(response.requestOptions);
 				if (newResponse != null) {
