@@ -28,8 +28,9 @@ class SiteDvach extends ImageboardSite {
 	SiteDvach({
 		required this.baseUrl,
 		required this.name,
-		List<ImageboardSiteArchive> archives = const []
-	}) : super(archives);
+		super.platformUserAgents,
+		super.archives
+	});
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {

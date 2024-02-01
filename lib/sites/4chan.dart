@@ -993,13 +993,14 @@ class Site4Chan extends ImageboardSite {
 		required this.imageUrl,
 		required this.name,
 		required this.captchaKey,
-		List<ImageboardSiteArchive> archives = const [],
+		super.platformUserAgents,
+		super.archives,
 		required this.captchaUserAgents,
 		required this.searchUrl,
 		required this.boardFlags,
 		required this.possibleCaptchaLetterCounts,
 		required this.postingHeaders
-	}) : super(archives);
+	});
 
 
 

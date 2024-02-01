@@ -41,10 +41,11 @@ class SiteLainchan extends ImageboardSite {
 		required this.baseUrl,
 		required this.name,
 		this.maxUploadSizeBytes,
-		List<ImageboardSiteArchive> archives = const [],
+		super.platformUserAgents,
+		super.archives,
 		this.faviconPath = '/favicon.ico',
 		this.defaultUsername = 'Anonymous'
-	}) : super(archives);
+	});
 
 	static List<PostSpan> parsePlaintext(String text) {
 		return linkify(text, linkifiers: const [ChanceLinkifier(), LooseUrlLinkifier()]).map((elem) {
@@ -327,7 +328,8 @@ class SiteLainchan extends ImageboardSite {
 				responseType: ResponseType.plain,
 				validateStatus: (x) => true,
 				headers: {
-					'Referer': referer
+					'Referer': referer,
+					'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/122.0 Mobile/15E148 Safari/605.1.15'
 				}
 			)
 		);

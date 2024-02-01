@@ -5,7 +5,8 @@ class SiteSoyjak extends SiteLainchanOrg {
 	SiteSoyjak({
 		required super.baseUrl,
 		required super.name,
-		super.archives = const [],
+		super.platformUserAgents,
+		super.archives,
 		super.faviconPath = '/static/favicon.png',
 		super.defaultUsername = 'Chud'
 	});

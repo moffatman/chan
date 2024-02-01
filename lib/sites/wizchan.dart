@@ -5,7 +5,8 @@ class SiteWizchan extends SiteLainchanOrg {
 	SiteWizchan({
 		required super.baseUrl,
 		required super.name,
-		super.archives = const [],
+		super.platformUserAgents,
+		super.archives,
 		super.faviconPath,
 		super.defaultUsername = 'Anonymage'
 	});

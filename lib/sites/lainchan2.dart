@@ -93,6 +93,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		required super.name,
 		required this.formBypass,
 		required this.imageThumbnailExtension,
+		super.platformUserAgents,
 		super.archives,
 		super.faviconPath,
 		super.boardsPath,

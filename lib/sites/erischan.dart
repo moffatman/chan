@@ -5,7 +5,9 @@ import 'package:chan/sites/imageboard_site.dart';
 class SiteErischan extends SiteFrenschan {
 	SiteErischan({
 		required super.baseUrl,
-		required super.name
+		required super.name,
+		super.platformUserAgents,
+		super.archives
 	}) : super(
 		defaultUsername: ''
 	);

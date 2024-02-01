@@ -80,8 +80,9 @@ class SiteLynxchan extends ImageboardSite {
 		required this.name,
 		required this.baseUrl,
 		required this.boards,
-		List<ImageboardSiteArchive> archives = const []
-	}) : super(archives);
+		super.platformUserAgents,
+		super.archives
+	});
 
 	ImageboardFlag? _makeFlag(Map<String, dynamic> data) {
 		if (data['flag'] != null) {

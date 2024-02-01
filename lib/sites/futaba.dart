@@ -72,8 +72,9 @@ class SiteFutaba extends ImageboardSite {
 		required this.baseUrl,
 		required this.name,
 		required this.maxUploadSizeBytes,
-		List<ImageboardSiteArchive> archives = const []
-	}) : super(archives);
+		super.platformUserAgents,
+		super.archives
+	});
 
 	String boardDomain(String board) => persistence.maybeGetBoard(board)?.subdomain ?? baseUrl;
 

@@ -10,7 +10,8 @@ class SiteFrenschan extends SiteSoyjak {
 	SiteFrenschan({
 		required super.baseUrl,
 		required super.name,
-		super.archives = const [],
+		super.platformUserAgents,
+		super.archives,
 		super.faviconPath = '/favicon.ico',
 		super.defaultUsername = 'Fren'
 	});

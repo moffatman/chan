@@ -152,7 +152,10 @@ class SiteReddit extends ImageboardSite {
 		return DateTime.fromMillisecondsSinceEpoch((slope * (id - _earliestKnown!.$1)).round() + _earliestKnown!.$2.millisecondsSinceEpoch);
 	}
 
-	SiteReddit() : super([]);
+	SiteReddit({
+		super.platformUserAgents,
+		super.archives
+	});
 	@override
 	String get baseUrl => 'reddit.com';
 

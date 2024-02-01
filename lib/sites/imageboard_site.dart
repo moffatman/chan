@@ -887,7 +887,10 @@ abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
 	final Map<String, DateTime> _lastCatalogCacheTime = {};
-	ImageboardSiteArchive() {
+	final Map<String, String> platformUserAgents;
+	ImageboardSiteArchive({
+		this.platformUserAgents = const {}
+	}) {
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(SeparatedCookieManager(
 			wifiCookieJar: Persistence.wifiCookies,
@@ -895,7 +898,7 @@ abstract class ImageboardSiteArchive {
 		));
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
-				options.headers['user-agent'] ??= Persistence.settings.userAgent;
+				options.headers['user-agent'] ??= platformUserAgents[Platform.operatingSystem] ?? Persistence.settings.userAgent;
 				options.headers[HttpHeaders.acceptEncodingHeader] ??= 'gzip';
 				handler.next(options);
 			}
@@ -963,7 +966,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Map<String, Map<String, String>> _memoizedWifiHeaders = {};
 	Map<String, Map<String, String>> _memoizedCellularHeaders = {};
 	final List<ImageboardSiteArchive> archives;
-	ImageboardSite(this.archives) : super();
+	ImageboardSite({
+		this.archives = const [],
+		super.platformUserAgents
+	});
 	Future<void> _ensureCookiesMemoizedForUrl(Uri url) async {
 		_memoizedWifiHeaders.putIfAbsent(url.host, () => {
 
@@ -1276,29 +1282,34 @@ abstract class ImageboardSiteLoginSystem {
 }
 
 ImageboardSite makeSite(dynamic data) {
+	final platformUserAgents = (data['platformUserAgents'] as Map?)?.cast<String, String>() ?? const {};
 	if (data['type'] == 'lainchan') {
 		return SiteLainchan(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			maxUploadSizeBytes: data['maxUploadSizeBytes']
+			maxUploadSizeBytes: data['maxUploadSizeBytes'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'soyjak') {
 		return SiteSoyjak(
 			name: data['name'],
-			baseUrl: data['baseUrl']
+			baseUrl: data['baseUrl'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'frenschan') {
 		return SiteFrenschan(
 			name: data['name'],
-			baseUrl: data['baseUrl']
+			baseUrl: data['baseUrl'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'wizchan') {
 		return SiteWizchan(
 			name: data['name'],
-			baseUrl: data['baseUrl']
+			baseUrl: data['baseUrl'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'lainchan_org') {
@@ -1306,32 +1317,40 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			faviconPath: data['faviconPath'] ?? '/favicon.ico',
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'dvach') {
 		return SiteDvach(
 			name: data['name'],
-			baseUrl: data['baseUrl']
+			baseUrl: data['baseUrl'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'futaba') {
 		return SiteFutaba(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			maxUploadSizeBytes: data['maxUploadSizeBytes']
+			maxUploadSizeBytes: data['maxUploadSizeBytes'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'reddit') {
-		return SiteReddit();
+		return SiteReddit(
+			platformUserAgents: platformUserAgents
+		);
 	}
 	else if (data['type'] == 'hackernews') {
-		return SiteHackerNews();
+		return SiteHackerNews(
+			platformUserAgents: platformUserAgents
+		);
 	}
 	else if (data['type'] == 'erischan') {
 		return SiteErischan(
 			name: data['name'],
-			baseUrl: data['baseUrl']
+			baseUrl: data['baseUrl'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == '4chan') {
@@ -1346,6 +1365,7 @@ ImageboardSite makeSite(dynamic data) {
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
 			possibleCaptchaLetterCounts: (data['possibleCaptchaLetterCounts'] as List?)?.cast<int>() ?? [],
 			postingHeaders: (data['postingHeaders'] as Map?)?.cast<String, String>() ?? {},
+			platformUserAgents: platformUserAgents,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
 			searchUrl: data['searchUrl'] ?? '',
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
@@ -1389,7 +1409,8 @@ ImageboardSite makeSite(dynamic data) {
 		return SiteLynxchan(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			boards: boards
+			boards: boards,
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'lainchan2') {
@@ -1400,6 +1421,7 @@ ImageboardSite makeSite(dynamic data) {
 			faviconPath: data['faviconPath'],
 			boardsPath: data['boardsPath'],
 			defaultUsername: data['defaultUsername'],
+			platformUserAgents: platformUserAgents,
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()
