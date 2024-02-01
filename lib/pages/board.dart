@@ -539,10 +539,21 @@ class BoardPageState extends State<BoardPage> {
 						trailingIcon: Adaptive.icons.bookmarkFilled,
 						onPressed: () {
 							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
+							final savedTime = threadState.savedTime;
 							threadState.savedTime = null;
 							threadState.save();
 							context.read<Persistence>().didUpdateBrowserState();
 							setState(() {});
+							showUndoToast(
+								context: context,
+								message: 'Thread unsaved',
+								onUndo: () {
+									threadState.savedTime = savedTime ?? DateTime.now();
+									threadState.save();
+									context.read<Persistence>().didUpdateBrowserState();
+									setState(() {});
+								}
+							);
 						}
 					)
 					else ContextMenuAction(
@@ -555,6 +566,16 @@ class BoardPageState extends State<BoardPage> {
 							threadState.save();
 							context.read<Persistence>().didUpdateBrowserState();
 							setState(() {});
+							showUndoToast(
+								context: context,
+								message: 'Thread saved',
+								onUndo: () {
+									threadState.savedTime = null;
+									threadState.save();
+									context.read<Persistence>().didUpdateBrowserState();
+									setState(() {});
+								}
+							);
 						}
 					),
 					if (isThreadHidden ?? false) ContextMenuAction(

@@ -343,9 +343,19 @@ class _SavedPageState extends State<SavedPage> {
 												trailingIcon: Adaptive.icons.bookmarkFilled,
 												onPressed: () {
 													final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
+													final savedTime = threadState.savedTime;
 													threadState.savedTime = null;
 													threadState.save();
 													_threadListController.update();
+													showUndoToast(
+														context: context,
+														message: 'Thread unsaved',
+														onUndo: () {
+															threadState.savedTime = savedTime ?? DateTime.now();
+															threadState.save();
+															_threadListController.update();
+														}
+													);
 												}
 											)
 											else ContextMenuAction(
@@ -355,6 +365,16 @@ class _SavedPageState extends State<SavedPage> {
 													final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
 													threadState.savedTime = DateTime.now();
 													threadState.save();
+													_threadListController.update();
+													showUndoToast(
+														context: context,
+														message: 'Thread saved',
+														onUndo: () {
+															threadState.savedTime = null;
+															threadState.save();
+															_threadListController.update();
+														}
+													);
 												}
 											),
 										],
