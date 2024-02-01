@@ -2008,178 +2008,190 @@ TextSpan buildPostInfoRow({
 	}
 	final isOP = site.supportsUserInfo && post.name == thread?.posts_.tryFirst?.name;
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
-	return TextSpan(
-		style: const TextStyle(fontSize: 16),
-		children: [
-			if (post.isDeleted) ...[
+	const lineBreak = TextSpan(text: '\n');
+	final children = [
+		if (post.isDeleted) ...[
+			TextSpan(
+				text: '[Deleted] ',
+				style: TextStyle(
+					color: theme.secondaryColor,
+					fontWeight: FontWeight.w600
+				)
+			),
+		],
+		if (post.id == post.threadId && thread?.flair != null && !(thread?.title?.contains(thread.flair?.name ?? '') ?? false)) ...[
+			makeFlagSpan(
+				flag: thread!.flair!,
+				includeTextOnlyContent: true,
+				appendLabels: false,
+				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
+			),
+			const TextSpan(text: ' '),
+		],
+		if (post.id == post.threadId && thread?.title != null) TextSpan(
+			text: '${thread?.title}\n',
+			style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
+		),
+		for (final field in settings.postDisplayFieldOrder)
+			if (thread != null && showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
+				text: post.id == post.threadId ? '#1 ' : '#${thread.replyCount - ((thread.posts.length - 1) - (thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1))} ',
+				style: TextStyle(color: theme.primaryColor.withOpacity(0.5))
+			)
+			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
+				WidgetSpan(
+					child: Icon(CupertinoIcons.person_fill, color: theme.secondaryColor, size: 15),
+					alignment: PlaceholderAlignment.middle
+				),
 				TextSpan(
-					text: '[Deleted] ',
+					text: '${post.ipNumber} ',
 					style: TextStyle(
 						color: theme.secondaryColor,
 						fontWeight: FontWeight.w600
 					)
-				),
-			],
-			if (post.id == post.threadId && thread?.flair != null && !(thread?.title?.contains(thread.flair?.name ?? '') ?? false)) ...[
-				makeFlagSpan(
-					flag: thread!.flair!,
-					includeTextOnlyContent: true,
-					appendLabels: false,
-					style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
-				),
-				const TextSpan(text: ' '),
-			],
-			if (post.id == post.threadId && thread?.title != null) TextSpan(
-				text: '${thread?.title}\n',
-				style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
-			),
-			for (final field in settings.postDisplayFieldOrder)
-				if (thread != null && showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
-					text: post.id == post.threadId ? '#1 ' : '#${thread.replyCount - ((thread.posts.length - 1) - (thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1))} ',
-					style: TextStyle(color: theme.primaryColor.withOpacity(0.5))
 				)
-				else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
-					WidgetSpan(
-						child: Icon(CupertinoIcons.person_fill, color: theme.secondaryColor, size: 15),
-						alignment: PlaceholderAlignment.middle
-					),
-					TextSpan(
-						text: '${post.ipNumber} ',
-						style: TextStyle(
-							color: theme.secondaryColor,
-							fontWeight: FontWeight.w600
-						)
-					)
-				]
-				else if (field == PostDisplayField.name) ...[
-					if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
-						text: settings.filterProfanity(post.name) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (isOP ? ' (OP)' : ''),
-						style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : (isOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
-						recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
-							final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
-							if (postIdsToShow.isEmpty) {
-								alertError(context, 'Could not find any posts with name "${post.name}". This is likely a problem with Chance...');
-							}
-							else {
-								WeakNavigator.push(context, PostsPage(
-									postsIdsToShow: postIdsToShow,
-									zone: zone,
-									clearStack: true,
-									header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(post.board).options.name || zone.imageboard.site.supportsSearch(null).options.name) ? UserInfoPanel(
-										username: post.name,
-										board: post.board
-									) : null
-								));
-							}
-						}) : null
-					)
-					else if (isYourPost) TextSpan(
-						text: '(You)',
-						style: TextStyle(fontWeight: FontWeight.w600, color: theme.secondaryColor)
-					),
-					if (settings.showTripOnPosts && post.trip != null) TextSpan(
-						text: '${settings.filterProfanity(post.trip!)} ',
-						style: TextStyle(color: isYourPost ? theme.secondaryColor : null)
-					)
-					else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
-					if (post.capcode != null) TextSpan(
-						text: '## ${post.capcode} ',
-						style: TextStyle(fontWeight: FontWeight.w600, color: theme.quoteColor.shiftHue(200).shiftSaturation(-0.3))
-					)
-				]
-				else if (field == PostDisplayField.posterId && post.posterId != null) ...[
-					IDSpan(
-						id: post.posterId!,
-						onPressed: interactive ? () {
-							final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList() ?? [];
-							if (postIdsToShow.isEmpty) {
-								alertError(context, 'Could not find any posts with ID "${post.posterId}". This is likely a problem with Chance...');
-							}
-							else {
-								WeakNavigator.push(context, PostsPage(
-									postsIdsToShow: postIdsToShow,
-									zone: zone
-								));
-							}
-						} : null
-					),
-					const TextSpan(text: ' ')
-				]
-				else if (field == PostDisplayField.attachmentInfo && post.attachments.isNotEmpty) TextSpan(
-					children: _makeAttachmentInfo(
-						context: context,
-						interactive: interactive,
-						post: post,
-						settings: settings
-					).toList(),
-					style: TextStyle(
-						color: theme.primaryColorWithBrightness(0.8)
-					)
-				)
-				else if (field == PostDisplayField.pass && settings.showPassOnPosts && post.passSinceYear != null) ...[
-					PassSinceSpan(
-						sinceYear: post.passSinceYear!,
-						site: site
-					),
-					const TextSpan(text: ' ')
-				]
-				else if (field == PostDisplayField.flag && settings.showFlagOnPosts && post.flag != null) ...[
-					makeFlagSpan(
-						flag: post.flag!,
-						includeTextOnlyContent: true,
-						appendLabels: combineFlagNames && settings.showCountryNameOnPosts,
-						style: TextStyle(color: theme.primaryColor.withOpacity(0.75), fontSize: 16)
-					),
-					const TextSpan(text: ' ')
-				]
-				else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null && !combineFlagNames) TextSpan(
-					text: '${post.flag!.name} ',
-					style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
-				)
-				else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
-					text: '${formatTime(post.time)} '
-				)
-				else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
-					text: '${formatRelativeTime(post.time)} ago '
-				)
-				else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
-					if (showSiteIcon) WidgetSpan(
-						alignment: PlaceholderAlignment.middle,
-						child: Padding(
-							padding: const EdgeInsets.only(right: 4),
-							child: ImageboardIcon(
-								boardName: post.board
-							)
-						)
-					),
-					TextSpan(
-						text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.imageboard.site.formatBoardName(post.board).replaceFirst(RegExp(r'\/$'), '')}/' : ''}$postIdNonRepeatingSegment',
-						style: TextStyle(
-							color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.primaryColor).withOpacity(0.5)
-						),
-						recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer()..onTap = () {
-							context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
-						}) : null
-					),
-					if (postIdRepeatingSegment != null) TextSpan(
-						text: postIdRepeatingSegment,
-						style: TextStyle(
-							color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.secondaryColor)
-						),
-						recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer()..onTap = () {
-							context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
-						}) : null
-					),
-					const TextSpan(text: ' ')
-				]
-				else if (field == PostDisplayField.lineBreak && settings.showLineBreakInPostInfoRow) const TextSpan(text: '\n'),
-			if (site.isReddit) ...[
-				WidgetSpan(
-					child: Icon(CupertinoIcons.arrow_up, size: 15, color: theme.primaryColorWithBrightness(0.5)),
-					alignment: PlaceholderAlignment.middle
-				),
-				TextSpan(text: '${post.upvotes ?? '—'} ', style: TextStyle(color: theme.primaryColorWithBrightness(0.5)))
 			]
-		]
+			else if (field == PostDisplayField.name) ...[
+				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
+					text: settings.filterProfanity(post.name) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (isOP ? ' (OP)' : ''),
+					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : (isOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
+					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
+						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
+						if (postIdsToShow.isEmpty) {
+							alertError(context, 'Could not find any posts with name "${post.name}". This is likely a problem with Chance...');
+						}
+						else {
+							WeakNavigator.push(context, PostsPage(
+								postsIdsToShow: postIdsToShow,
+								zone: zone,
+								clearStack: true,
+								header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(post.board).options.name || zone.imageboard.site.supportsSearch(null).options.name) ? UserInfoPanel(
+									username: post.name,
+									board: post.board
+								) : null
+							));
+						}
+					}) : null
+				)
+				else if (isYourPost) TextSpan(
+					text: '(You)',
+					style: TextStyle(fontWeight: FontWeight.w600, color: theme.secondaryColor)
+				),
+				if (settings.showTripOnPosts && post.trip != null) TextSpan(
+					text: '${settings.filterProfanity(post.trip!)} ',
+					style: TextStyle(color: isYourPost ? theme.secondaryColor : null)
+				)
+				else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
+				if (post.capcode != null) TextSpan(
+					text: '## ${post.capcode} ',
+					style: TextStyle(fontWeight: FontWeight.w600, color: theme.quoteColor.shiftHue(200).shiftSaturation(-0.3))
+				)
+			]
+			else if (field == PostDisplayField.posterId && post.posterId != null) ...[
+				IDSpan(
+					id: post.posterId!,
+					onPressed: interactive ? () {
+						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList() ?? [];
+						if (postIdsToShow.isEmpty) {
+							alertError(context, 'Could not find any posts with ID "${post.posterId}". This is likely a problem with Chance...');
+						}
+						else {
+							WeakNavigator.push(context, PostsPage(
+								postsIdsToShow: postIdsToShow,
+								zone: zone
+							));
+						}
+					} : null
+				),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.attachmentInfo && post.attachments.isNotEmpty) TextSpan(
+				children: _makeAttachmentInfo(
+					context: context,
+					interactive: interactive,
+					post: post,
+					settings: settings
+				).toList(),
+				style: TextStyle(
+					color: theme.primaryColorWithBrightness(0.8)
+				)
+			)
+			else if (field == PostDisplayField.pass && settings.showPassOnPosts && post.passSinceYear != null) ...[
+				PassSinceSpan(
+					sinceYear: post.passSinceYear!,
+					site: site
+				),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.flag && settings.showFlagOnPosts && post.flag != null) ...[
+				makeFlagSpan(
+					flag: post.flag!,
+					includeTextOnlyContent: true,
+					appendLabels: combineFlagNames && settings.showCountryNameOnPosts,
+					style: TextStyle(color: theme.primaryColor.withOpacity(0.75), fontSize: 16)
+				),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null && !combineFlagNames) TextSpan(
+				text: '${post.flag!.name} ',
+				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
+			)
+			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
+				text: '${formatTime(post.time)} '
+			)
+			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
+				text: '${formatRelativeTime(post.time)} ago '
+			)
+			else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
+				if (showSiteIcon) WidgetSpan(
+					alignment: PlaceholderAlignment.middle,
+					child: Padding(
+						padding: const EdgeInsets.only(right: 4),
+						child: ImageboardIcon(
+							boardName: post.board
+						)
+					)
+				),
+				TextSpan(
+					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.imageboard.site.formatBoardName(post.board).replaceFirst(RegExp(r'\/$'), '')}/' : ''}$postIdNonRepeatingSegment',
+					style: TextStyle(
+						color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.primaryColor).withOpacity(0.5)
+					),
+					recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer()..onTap = () {
+						context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
+					}) : null
+				),
+				if (postIdRepeatingSegment != null) TextSpan(
+					text: postIdRepeatingSegment,
+					style: TextStyle(
+						color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.secondaryColor)
+					),
+					recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer()..onTap = () {
+						context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
+					}) : null
+				),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.lineBreak && settings.showLineBreakInPostInfoRow) lineBreak,
+	];
+	if (children.last == lineBreak &&
+	    settings.postDisplayFieldOrder.last != PostDisplayField.lineBreak) {
+		// "Optional line-break" use case
+		// The line-break is positioned before some optional fields
+		// If the optional fields aren't there, get rid of the blank line by removing
+		// the line break.
+		children.removeLast();
+	}
+	if (site.isReddit) {
+		children.addAll([
+			WidgetSpan(
+				child: Icon(CupertinoIcons.arrow_up, size: 15, color: theme.primaryColorWithBrightness(0.5)),
+				alignment: PlaceholderAlignment.middle
+			),
+			TextSpan(text: '${post.upvotes ?? '—'} ', style: TextStyle(color: theme.primaryColorWithBrightness(0.5)))
+		]);
+	}
+	return TextSpan(
+		style: const TextStyle(fontSize: 16),
+		children: children
 	);
 }
