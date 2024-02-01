@@ -116,8 +116,6 @@ class ReplyBox extends StatefulWidget {
 	createState() => ReplyBoxState();
 }
 
-final _imageUrlPattern = RegExp(r'https?:\/\/[^. ]+\.[^ ]+\.(jpg|jpeg|png|gif)');
-
 class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _textFieldController;
 	late final TextEditingController _nameFieldController;
