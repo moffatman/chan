@@ -392,21 +392,35 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	void _insertText(String insertedText, {bool addNewlineIfAtEnd = true}) {
-		int currentPos = _textFieldController.selection.base.offset;
-		if (currentPos < 0) {
-			currentPos = _textFieldController.text.length;
+	void _insertText(String insertedText, {bool addNewlineIfAtEnd = true, TextSelection? initialSelection}) {
+		final selection = initialSelection ?? _textFieldController.selection;
+		if (selection.isCollapsed) {
+			// Insert at selection point
+			int currentPos = selection.base.offset;
+			if (currentPos < 0) {
+				currentPos = _textFieldController.text.length;
+			}
+			if (addNewlineIfAtEnd && currentPos == _textFieldController.text.length) {
+				insertedText += '\n';
+			}
+			_textFieldController.value = TextEditingValue(
+				selection: TextSelection(
+					baseOffset: currentPos + insertedText.length,
+					extentOffset: currentPos + insertedText.length
+				),
+				text: _textFieldController.text.substring(0, currentPos) + insertedText + _textFieldController.text.substring(currentPos)
+			);
 		}
-		if (addNewlineIfAtEnd && currentPos == _textFieldController.text.length) {
-			insertedText += '\n';
+		else {
+			// Replace selected text
+			_textFieldController.value = TextEditingValue(
+				selection: TextSelection(
+					baseOffset: selection.baseOffset,
+					extentOffset: selection.baseOffset + insertedText.length
+				),
+				text: _textFieldController.text.substring(0, selection.baseOffset) + insertedText + _textFieldController.text.substring(selection.extentOffset)
+			);
 		}
-		_textFieldController.value = TextEditingValue(
-			selection: TextSelection(
-				baseOffset: currentPos + insertedText.length,
-				extentOffset: currentPos + insertedText.length
-			),
-			text: _textFieldController.text.substring(0, currentPos) + insertedText + _textFieldController.text.substring(currentPos)
-		);
 	}
 
 	void onTapPostId(int threadId, int id) {
@@ -1725,7 +1739,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			children: [
 				for (final snippet in context.read<ImageboardSite>().getBoardSnippets(widget.board)) AdaptiveIconButton(
 					onPressed: () async {
-						final controller = TextEditingController();
+						final initialSelection = _textFieldController.selection;
+						final controller = TextEditingController(text: initialSelection.textInside(_textFieldController.text));
 						final content = await showAdaptiveDialog<String>(
 							context: context,
 							barrierDismissible: true,
@@ -1791,7 +1806,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							)
 						);
 						if (content != null) {
-							_insertText(snippet.wrap(content), addNewlineIfAtEnd: false);
+							_insertText(snippet.wrap(content), addNewlineIfAtEnd: false, initialSelection: initialSelection);
 						}
 						controller.dispose();
 					},
