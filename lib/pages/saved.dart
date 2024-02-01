@@ -438,14 +438,38 @@ class _SavedPageState extends State<SavedPage> {
 													padding: const EdgeInsets.all(8),
 													onPressed: unseenCount == 0 ? null : () async {
 														final watches = await _loadWatches();
+														final cleared = <({
+															PersistentThreadState threadState,
+															Set<int> unseenPostIds,
+															int? lastSeenPostId
+														})>[];
 														for (final watch in watches) {
 															final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
 															if (threadState != null && threadState.unseenPostIds.data.isNotEmpty) {
+																cleared.add((
+																	threadState: threadState,
+																	unseenPostIds: threadState.unseenPostIds.data.toSet(),
+																	lastSeenPostId: threadState.lastSeenPostId
+																));
 																threadState.unseenPostIds.data.clear();
 																threadState.lastSeenPostId = threadState.thread?.posts_.fold<int>(0, (m, p) => math.max(m, p.id));
 																threadState.didUpdate();
 																await threadState.save();
 															}
+														}
+														if (context.mounted) {
+															showUndoToast(
+																context: context,
+																message: 'Marked ${describeCount(cleared.length, 'thread')} as read',
+																onUndo: () async {
+																	for (final item in cleared) {
+																		item.threadState.unseenPostIds.data.addAll(item.unseenPostIds);
+																		item.threadState.lastSeenPostId = item.lastSeenPostId;
+																		item.threadState.didUpdate();
+																		await item.threadState.save();
+																	}
+																}
+															);
 														}
 													},
 													child: const Row(
