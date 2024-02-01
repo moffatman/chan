@@ -120,6 +120,7 @@ class _VideoControlsState extends State<VideoControls> {
 			final newPosition = Duration(milliseconds: (relativePosition.clamp(0, 1) * _lastGoodDurationInMilliseconds).round());
 			if (!_mutex.isLocked) {
 				await _mutex.protect(() async {
+					position.value = newPosition;
 					await videoPlayerController?.player.seek(newPosition);
 					await videoPlayerController?.player.play();
 					await videoPlayerController?.player.pause();
