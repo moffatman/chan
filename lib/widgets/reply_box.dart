@@ -148,6 +148,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final FocusNode _rootFocusNode;
 	(String, MediaConversion?)? _attachmentProgress;
 	(String, int)? _spamFilteredPostId;
+	(String, int)? _alertedSpamFilteredPostId;
 	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
 	static List<String> _previouslyUsedNames = [];
 	static List<String> _previouslyUsedOptions = [];
@@ -225,12 +226,23 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void _setSpamFilteredPostId((String, int)? newId) {
-		final otherState = widget.longLivedCounterpartKey?.currentState;
-		if (otherState != null) {
-			otherState._spamFilteredPostId = newId;
+		(widget.longLivedCounterpartKey?.currentState ?? this)._spamFilteredPostId = newId;
+	}
+
+	void _onSpamFilterTimeout() {
+		final state = widget.longLivedCounterpartKey?.currentState ?? this;
+		if (state._spamFilteredPostId == null) {
+			// The post appeared after all.
+			return;
 		}
-		else {
-			_spamFilteredPostId = newId;
+		if (state._alertedSpamFilteredPostId != state._spamFilteredPostId) {
+			// Only alert once
+			alertError(
+				state.context,
+				'Your post seems to have been blocked by 4chan\'s anti-spam firewall.\nIt has been saved in the reply form for you to try again.',
+				barrierDismissible: true
+			);
+			state._alertedSpamFilteredPostId = state._spamFilteredPostId;
 		}
 	}
 
@@ -471,8 +483,17 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void checkForSpamFilteredPost(Post post) {
-		if (post.board != _spamFilteredPostId?.$1) return;
-		if (post.id != _spamFilteredPostId?.$2) return;
+		final spamFiltered = (widget.longLivedCounterpartKey?.currentState ?? this)._spamFilteredPostId;
+		if (spamFiltered == null) {
+			return;
+		}
+		if (post.board != spamFiltered.$1) return;
+		if (post.id > spamFiltered.$2) {
+			// There is a later post, and our post never showed up!
+			_onSpamFilterTimeout();
+			return;
+		}
+		if (post.id != spamFiltered.$2) return;
 		final similarity = post.span.buildText().similarityTo(_textFieldController.text);
 		print('Spam filter similarity: $similarity');
 		if (similarity > 0.90) {
@@ -958,7 +979,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						});
 					}
 				}
-				spamFiltered = _captchaSolution?.cloudflare ?? false;
+				// Now spam filter is quite broad on 4chan...
+				spamFiltered = solution.challenge != 'noop';
 			}
 			if (spamFiltered) {
 				_setSpamFilteredPostId((widget.board, receipt.id));
@@ -990,17 +1012,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			widget.onReplyPosted(receipt);
 			if (spamFiltered) {
 				if (mounted) {
-					Future.delayed(const Duration(seconds: 15), () {
-						if (_spamFilteredPostId == null) {
-							// The post appeared after all.
-							return;
-						}
-						alertError(
-							widget.longLivedCounterpartKey?.currentContext ?? context,
-							'Your post was likely blocked by 4chan\'s anti-spam firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.',
-							barrierDismissible: true
-						);
-					});
+					Future.delayed(const Duration(seconds: 15), _onSpamFilterTimeout);
 				}
 			}
 			else if (mounted) {
