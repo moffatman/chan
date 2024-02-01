@@ -338,6 +338,31 @@ class _SavedPageState extends State<SavedPage> {
 												trailingIcon: CupertinoIcons.xmark,
 												isDestructiveAction: true
 											),
+											ContextMenuAction(
+												child: const Text('Mark as read'),
+												onPressed: () async {
+													final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
+													final unseenPostIds = threadState.unseenPostIds.data.toSet();
+													final lastSeenPostId = threadState.lastSeenPostId;
+													threadState.unseenPostIds.data.clear();
+													threadState.lastSeenPostId = threadState.thread?.posts_.fold<int>(0, (m, p) => math.max(m, p.id));
+													threadState.didUpdate();
+													await threadState.save();
+													if (context.mounted) {
+														showUndoToast(
+															context: context,
+															message: 'Marked as read',
+															onUndo: () async {
+																threadState.unseenPostIds.data.addAll(unseenPostIds);
+																threadState.lastSeenPostId = lastSeenPostId;
+																threadState.didUpdate();
+																await threadState.save();
+															}
+														);
+													}
+												},
+												trailingIcon: CupertinoIcons.xmark_circle,
+											),
 											if (watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.savedTime != null) ContextMenuAction(
 												child: const Text('Un-save thread'),
 												trailingIcon: Adaptive.icons.bookmarkFilled,
