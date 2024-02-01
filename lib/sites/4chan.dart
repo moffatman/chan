@@ -1169,7 +1169,9 @@ class Site4Chan extends ImageboardSite {
 			final file = thread.querySelector('.file');
 			if (file != null) {
 				final thumb = file.querySelector('.fileThumb')!;
-				final fullUrl = 'https:${thumb.attributes['href']!}';
+				final fullUrl = 'https:${thumb.attributes['href']!}'
+					// is2.4chan.org seems to have broken SSL
+					.replaceFirst('is2.4chan.org', imageUrl);
 				final ext = '.${fullUrl.split('.').last}';
 				final metadata = RegExp(r'\(\s+([\d\.]+)(Mi|Ki)?B,\s+(\d+)x(\d+)\s+\)').firstMatch(file.querySelector('.fileText')!.text)!;
 				int multiplier = 1;
