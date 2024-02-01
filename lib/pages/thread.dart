@@ -1984,13 +1984,16 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		_youIds = widget.persistentState.replyIdsToYou() ?? [];
 		if (widget.useTree) {
 			final items = widget.listController.items.toList();
-			_greyCount = 0;
-			_whiteCountAbove = 0;
-			_whiteCountBelow = 0;
-			_redCountAbove = 0;
-			_redCountBelow = 0;
+			final greyBelow = <int>{};
+			final whiteAbove = <int>{};
+			final whiteBelow = <int>{};
+			final redAbove = <int>{};
+			final redBelow = <int>{};
 			if (!widget.passedFirstLoad) {
-				_whiteCountBelow += max(0, (site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0) - (widget.thread?.replyCount ?? 0));
+				_whiteCountBelow = max(0, (site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0) - (widget.thread?.replyCount ?? 0));
+			}
+			else {
+				_whiteCountBelow = 0;
 			}
 			// TODO: Determine if this needs to be / can be memoized
 			for (int i = 0; i < items.length - 1; i++) {
@@ -2001,65 +2004,73 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 					if (items[i].representsKnownStubChildren.isNotEmpty) {
 						for (final stubChild in items[i].representsKnownStubChildren) {
 							if (widget.newPostIds.contains(stubChild.childId)) {
-								_whiteCountBelow++;
+								whiteBelow.add(stubChild.childId);
 							}
 							else {
-								_greyCount++;
+								greyBelow.add(stubChild.childId);
 							}
 						}
 					}
 					else if (widget.newPostIds.contains(items[i].item.id)) {
-						_whiteCountBelow++;
+						whiteBelow.add(items[i].item.id);
 						if (_youIds.contains(items[i].item.id)) {
-							_redCountBelow++;
+							redBelow.add(items[i].item.id);
 						}
 					}
 					else {
-						_greyCount++;
+						greyBelow.add(items[i].item.id);
 					}
 				}
 				else if (i < furthestSeenIndexTop) {
 					if (items[i].representsKnownStubChildren.isNotEmpty) {
 						for (final stubChild in items[i].representsKnownStubChildren) {
 							if (widget.newPostIds.contains(stubChild.childId)) {
-								_whiteCountAbove++;
+								whiteAbove.add(stubChild.childId);
 							}
 						}
 					}
 					else if (widget.newPostIds.contains(items[i].item.id)) {
-						_whiteCountAbove++;
+						whiteAbove.add(items[i].item.id);
 						if (_youIds.contains(items[i].item.id)) {
-							_redCountAbove++;
+							redAbove.add(items[i].item.id);
 						}
 					}
 				}
 				else if (i > lastVisibleIndex) {
-					_greyCount += max(1, items[i].representsKnownStubChildren.length);
+					greyBelow.add(items[i].item.id);
+					for (final stubChild in items[i].representsKnownStubChildren) {
+						greyBelow.add(stubChild.childId);
+					}
 				}
 			}
 			if (!items.last.filterCollapsed) {
 				if (items.last.representsKnownStubChildren.isNotEmpty) {
 					for (final stubChild in items.last.representsKnownStubChildren) {
 						if (widget.newPostIds.contains(stubChild.childId)) {
-							_whiteCountBelow++;
+							whiteBelow.add(stubChild.childId);
 						}
 						else {
-							_greyCount++;
+							greyBelow.add(stubChild.childId);
 						}
 					}
 				}
 				else if ((items.length - 1) > furthestSeenIndexBottom) {
 					if (widget.newPostIds.contains(items.last.item.id)) {
-						_whiteCountBelow++;
+						whiteBelow.add(items.last.item.id);
 						if (_youIds.contains(items.last.item.id)) {
-							_redCountBelow++;
+							redBelow.add(items.last.item.id);
 						}
 					}
 				}
 				else if (lastVisibleIndex < (items.length - 1)) {
-					_greyCount++;
+					greyBelow.add(items.last.item.id);
 				}
 			}
+			_greyCount = greyBelow.length;
+			_whiteCountAbove = whiteAbove.length;
+			_whiteCountBelow += whiteBelow.length; // Initialized before for-loop
+			_redCountAbove = redAbove.length;
+			_redCountBelow = redBelow.length;
 		}
 		else {
 			_lastLastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
