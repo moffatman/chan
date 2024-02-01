@@ -157,6 +157,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _headlessSolveFailed = false;
 	bool _promptForHeadlessSolve = false;
 	bool _disableLoginSystem = false;
+	final Map<ImageboardSnippet, TextEditingController> _snippetControllers = {};
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
 		int threadId => ThreadIdentifier(widget.board, threadId),
@@ -1740,7 +1741,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				for (final snippet in context.read<ImageboardSite>().getBoardSnippets(widget.board)) AdaptiveIconButton(
 					onPressed: () async {
 						final initialSelection = _textFieldController.selection;
-						final controller = TextEditingController(text: initialSelection.textInside(_textFieldController.text));
+						// This only works because all the ImageboardSnippets are const
+						final controller = _snippetControllers.putIfAbsent(snippet, () => TextEditingController());
+						if (!initialSelection.isCollapsed) {
+							controller.text = initialSelection.textInside(_textFieldController.text);
+						}
 						final content = await showAdaptiveDialog<String>(
 							context: context,
 							barrierDismissible: true,
@@ -1807,8 +1812,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						);
 						if (content != null) {
 							_insertText(snippet.wrap(content), addNewlineIfAtEnd: false, initialSelection: initialSelection);
+							controller.clear();
 						}
-						controller.dispose();
 					},
 					icon: Icon(snippet.icon)
 				),
@@ -2178,6 +2183,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		_filenameController.dispose();
 		_textFocusNode.dispose();
 		_rootFocusNode.dispose();
+		for (final controller in _snippetControllers.values) {
+			controller.dispose();
+		}
 		final otherState = widget.longLivedCounterpartKey?.currentState;
 		if (otherState != null) {
 			otherState._showOptions = _showOptions;
