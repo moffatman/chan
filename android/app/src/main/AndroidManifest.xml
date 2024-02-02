@@ -67,7 +67,7 @@
                <data android:scheme="https" android:host="reddit.com"/>
                <data android:scheme="https" android:host="*.reddit.com"/>
                <!-- soyjak -->
-               <data android:scheme="https" android:host="soychan.org"/>
+               <data android:scheme="https" android:host="soyjak.party"/>
                <!-- voidchan -->
                <data android:scheme="https" android:host="voidchan.net"/>
             </intent-filter>
