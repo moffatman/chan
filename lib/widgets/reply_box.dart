@@ -259,7 +259,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 			return null;
 		});
-		print(rawUrl);
 		if (rawUrl != _lastFoundUrl && rawUrl != null) {
 			try {
 				await context.read<ImageboardSite>().client.head(rawUrl);
