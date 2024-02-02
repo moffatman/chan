@@ -993,7 +993,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					}
 				}
 				// Now spam filter is quite broad on 4chan...
-				spamFiltered = solution.challenge != 'noop';
+				spamFiltered =
+					solution.challenge != 'noop' &&
+					// No spam filter checking for now in the catalog...
+					widget.threadId != null;
 			}
 			if (spamFiltered) {
 				_setSpamFilteredPostId((widget.board, receipt.id));
