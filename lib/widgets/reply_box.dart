@@ -1583,10 +1583,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							}
 						)
 					),
-					if (fields != null && !_haveValidCaptcha) Padding(
+					if (fields != null) Padding(
 						padding: const EdgeInsets.only(left: 8),
 						child: AdaptiveIconButton(
-							onPressed: () {
+							onPressed: _haveValidCaptcha ? null : () {
 								setState(() {
 									_disableLoginSystem = !_disableLoginSystem;
 								});
