@@ -60,8 +60,7 @@ Future<Captcha4ChanCustomChallenge> _requestChallenge({
 		data = jsonDecode(match.group(1)!)['twister'];
 	}
 	if (data['ticket'] is String) {
-		site.persistence.browserState.loginFields[Site4Chan.kLoginFieldTicketKey] = data['ticket'];
-		site.persistence.didUpdateBrowserState();
+		await Persistence.currentCookies.writePseudoCookie(Site4Chan.kTicketPseudoCookieKey, data['ticket']);
 	}
 	if (data['cd'] != null) {
 		onCooldown?.call(DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2)));

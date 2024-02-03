@@ -1701,3 +1701,15 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+extension PseudoCookies on PersistCookieJar {
+	static final _pseudoCookieUri = Uri.parse('https://chancepseudo.com');
+	Future<String?> readPseudoCookie(String key) async {
+		final cookies = await loadForRequest(_pseudoCookieUri);
+		return cookies.tryFirstWhere((c) => c.name == key)?.value;
+	}
+
+	Future<void> writePseudoCookie(String key, String value) async {
+		await saveFromResponse(_pseudoCookieUri, [Cookie(key, value)]);
+	}
+}

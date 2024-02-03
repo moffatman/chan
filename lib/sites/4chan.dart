@@ -656,7 +656,7 @@ class Site4Chan extends ImageboardSite {
 			return const NoCaptchaRequest();
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
-		final ticket = persistence.browserState.loginFields[kLoginFieldTicketKey];
+		final ticket = await Persistence.currentCookies.readPseudoCookie(kTicketPseudoCookieKey);
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
 				'framed': '1',
@@ -1230,12 +1230,7 @@ class Site4Chan extends ImageboardSite {
 		);
 	}
 
-	@override
-	Future<void> clearPseudoCookies() async {
-		persistence.browserState.loginFields.remove(kLoginFieldTicketKey);
-	}
-
-	static const kLoginFieldTicketKey = 't';
+	static const kTicketPseudoCookieKey = '4chan_ticket';
 
 	@override
 	DateTime getCaptchaUsableTime(CaptchaSolution captcha) {
