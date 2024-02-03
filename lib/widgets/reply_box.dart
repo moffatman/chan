@@ -228,48 +228,50 @@ class ReplyBoxState extends State<ReplyBox> {
 		final postShowedUpCompleter = Completer<bool>();
 		final imageboard = context.read<Imageboard>();
 		final threadState = imageboard.persistence.getThreadStateIfExists(thread);
-		if (threadState != null) {
-			final listenable = imageboard.persistence.listenForPersistentThreadStateChanges(threadState.identifier);
-			Future.delayed(const Duration(seconds: 12), () {
-				if (context.mounted && thread == threadState.identifier) {
-					// No need to do anything, ThreadPage is handling the update
-					return;
+		if (threadState == null) {
+			return;
+		}
+		final listenable = imageboard.persistence.listenForPersistentThreadStateChanges(threadState.identifier);
+		Future.delayed(const Duration(seconds: 12), () {
+			if (context.mounted && thread == threadState.identifier) {
+				// No need to do anything, ThreadPage is handling the update
+				return;
+			}
+			// Either the thread has switched or we are closed in zombie mode
+			// Trigger our own update
+			imageboard.threadWatcher.updateThread(threadState.identifier);
+		});
+		void listener() {
+			bool? found;
+			for (final post in threadState.thread?.posts_.reversed ?? <Post>[]) {
+				if (post.id > receipt.id) {
+					found = false;
 				}
-				// Either the thread has switched or we are closed in zombie mode
-				// Trigger our own update
-				imageboard.threadWatcher.updateThread(threadState.identifier);
-			});
-			void listener() {
-				bool? found;
-				for (final post in threadState.thread?.posts_.reversed ?? <Post>[]) {
-					if (post.id > receipt.id) {
-						found = false;
-					}
-					else if (post.id == receipt.id) {
-						final similarity = post.span.buildText().similarityTo(_textFieldController.text);
-						found = similarity > 0.65;
-						break;
-					}
-					else {
-						// post.id < receipt.id
-						break;
-					}
+				else if (post.id == receipt.id) {
+					final similarity = post.span.buildText().similarityTo(_textFieldController.text);
+					found = similarity > 0.65;
+					break;
 				}
-				if (found != null) {
-					// Post is certainly there or not
-					postShowedUpCompleter.complete(found);
-				}
-				else if (DateTime.now().difference(start) > const Duration(seconds: 12)) {
-					// On first update after 12 seconds, give up
-					postShowedUpCompleter.complete(false);
+				else {
+					// post.id < receipt.id
+					break;
 				}
 			}
-			listenable.addListener(listener);
+			if (found != null) {
+				// Post is certainly there or not
+				postShowedUpCompleter.complete(found);
+			}
+			else if (DateTime.now().difference(start) > const Duration(seconds: 12)) {
+				// On first update after 12 seconds, give up
+				postShowedUpCompleter.complete(false);
+			}
 		}
+		listenable.addListener(listener);
 		final postShowedUp = await Future.any<bool>([
 			postShowedUpCompleter.future,
 			Future.delayed(const Duration(seconds: 20), () => false)
 		]);
+		listenable.removeListener(listener);
 		if (postShowedUp) {
 			showToast(
 				context: widget.longLivedCounterpartKey?.currentContext ?? context,
