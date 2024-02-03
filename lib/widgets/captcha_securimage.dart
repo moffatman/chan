@@ -67,7 +67,10 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 			'mode': 'get',
 			'extra': 'abcdefghijklmnopqrstuvwxyz'
 		}), options: Options(
-			responseType: ResponseType.json
+			responseType: ResponseType.json,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
 		));
 		if (challengeResponse.statusCode != 200) {
 			throw CaptchaSecurimageException('Got status code ${challengeResponse.statusCode}');

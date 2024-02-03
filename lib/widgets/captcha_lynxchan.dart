@@ -71,7 +71,10 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			'd': (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
 			if (lastSolvedCaptcha != null) 'solvedCaptcha': lastSolvedCaptcha
 		}), options: Options(
-			responseType: ResponseType.json
+			responseType: ResponseType.json,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
 		));
 		if (idResponse.statusCode != 200) {
 			throw CaptchaLynxchanException('Got status code ${idResponse.statusCode}');
@@ -92,7 +95,10 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			imagePath = '/.global/captchas/${id.substring(0, 24)}';
 		}
 		final imageResponse = await widget.site.client.get('https://${widget.site.baseUrl}$imagePath', options: Options(
-			responseType: ResponseType.bytes
+			responseType: ResponseType.bytes,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
 		));
 		if (imageResponse.statusCode != 200) {
 			throw CaptchaLynxchanException('Got status code ${idResponse.statusCode}');

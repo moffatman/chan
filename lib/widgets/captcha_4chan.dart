@@ -43,7 +43,10 @@ Future<Captcha4ChanCustomChallenge> _requestChallenge({
 	ValueChanged<DateTime>? onCooldown
 }) async {
 	final challengeResponse = await site.client.getUri(request.challengeUrl, options: Options(
-		headers: request.challengeHeaders
+		headers: request.challengeHeaders,
+		extra: {
+			kPriority: RequestPriority.interactive
+		}
 	));
 	if (challengeResponse.statusCode != 200) {
 		throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');

@@ -58,7 +58,10 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 
 	Future<CaptchaSecucapChallenge> _requestChallenge() async {
 		final challengeResponse = await widget.site.client.getUri(widget.request.challengeUrl, options: Options(
-			responseType: ResponseType.bytes
+			responseType: ResponseType.bytes,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
 		));
 		if (challengeResponse.statusCode != 200) {
 			throw CaptchaSecucapException('Got status code ${challengeResponse.statusCode}');

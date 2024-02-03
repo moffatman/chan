@@ -65,7 +65,10 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 
 	Future<CaptchaDvachChallenge> _requestChallenge() async {
 		final idResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/id'), options: Options(
-			responseType: ResponseType.json
+			responseType: ResponseType.json,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
 		));
 		if (idResponse.statusCode != 200) {
 			throw CaptchaDvachException('Got status code ${idResponse.statusCode}');
@@ -78,7 +81,10 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/show', {
 			'id': id
 		}), options: Options(
-			responseType: ResponseType.bytes
+			responseType: ResponseType.bytes,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
 		));
 		if (imageResponse.statusCode != 200) {
 			throw CaptchaDvachException('Got status code ${idResponse.statusCode}');
