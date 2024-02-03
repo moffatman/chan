@@ -649,7 +649,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			}
 			final size = (await file.stat()).size;
 			final scan = await MediaScan.scan(file.uri);
-			if (ext == 'jpg' || ext == 'jpeg' || ext == 'webp') {
+			if (ext == 'jpg' || ext == 'jpeg' || ext == 'webp' || ext == 'avif') {
 				file = await _showTranscodeWindow(
 					source: file,
 					size: size,
