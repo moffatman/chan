@@ -145,9 +145,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _willHideOnPanEnd = false;
 	late final FocusNode _rootFocusNode;
 	(String, MediaConversion?)? _attachmentProgress;
-	(String, PostReceipt)? _spamFilteredPostId;
-	(String, PostReceipt)? _alertedSpamFilteredPostId;
-	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
+	PostReceipt? _spamFilterCheckingReceipt;
 	static List<String> _previouslyUsedNames = [];
 	static List<String> _previouslyUsedOptions = [];
 	late final Timer _focusTimer;
@@ -224,32 +222,101 @@ class ReplyBoxState extends State<ReplyBox> {
 		return _captchaSolution?.expiresAt?.isAfter(DateTime.now()) ?? true;
 	}
 
-	void _setSpamFilteredPostId((String, PostReceipt)? newId) {
-		(widget.longLivedCounterpartKey?.currentState ?? this)._spamFilteredPostId = newId;
-	}
-
-	void _onSpamFilterTimeout() {
-		final state = widget.longLivedCounterpartKey?.currentState ?? this;
-		if (state._spamFilteredPostId == null) {
-			// The post appeared after all.
-			return;
+	void _listenForSpamFilter(PostReceipt receipt) async {
+		final start = DateTime.now();
+		_spamFilterCheckingReceipt = receipt;
+		final postShowedUpCompleter = Completer<bool>();
+		final imageboard = context.read<Imageboard>();
+		final threadState = imageboard.persistence.getThreadStateIfExists(thread);
+		if (threadState != null) {
+			final listenable = imageboard.persistence.listenForPersistentThreadStateChanges(threadState.identifier);
+			Future.delayed(const Duration(seconds: 12), () {
+				if (context.mounted && thread == threadState.identifier) {
+					// No need to do anything, ThreadPage is handling the update
+					return;
+				}
+				// Either the thread has switched or we are closed in zombie mode
+				// Trigger our own update
+				imageboard.threadWatcher.updateThread(threadState.identifier);
+			});
+			void listener() {
+				bool? found;
+				for (final post in threadState.thread?.posts_.reversed ?? <Post>[]) {
+					if (post.id > receipt.id) {
+						found = false;
+					}
+					else if (post.id == receipt.id) {
+						final similarity = post.span.buildText().similarityTo(_textFieldController.text);
+						found = similarity > 0.9;
+						break;
+					}
+					else {
+						// post.id < receipt.id
+						break;
+					}
+				}
+				if (found != null) {
+					// Post is certainly there or not
+					postShowedUpCompleter.complete(found);
+				}
+				else if (DateTime.now().difference(start) > const Duration(seconds: 12)) {
+					// On first update after 12 seconds, give up
+					postShowedUpCompleter.complete(false);
+				}
+			}
+			listenable.addListener(listener);
 		}
-		// This only works because the PostReceipt should be identical()
-		if (state._alertedSpamFilteredPostId != state._spamFilteredPostId) {
-			// Only alert once
-			alertError(
-				state.context,
-				'Your post seems to have been blocked by 4chan\'s anti-spam firewall.\nIt has been saved in the reply form for you to try again.',
-				barrierDismissible: true
+		final postShowedUp = await Future.any<bool>([
+			postShowedUpCompleter.future,
+			Future.delayed(const Duration(seconds: 20), () => false)
+		]);
+		if (postShowedUp) {
+			showToast(
+				context: widget.longLivedCounterpartKey?.currentContext ?? context,
+				message: 'Post successful',
+				icon: CupertinoIcons.smiley,
+				hapticFeedback: false
 			);
-			state._alertedSpamFilteredPostId = state._spamFilteredPostId;
-			state._spamFilteredPostId?.$2.spamFiltered = true;
-			context.read<ImageboardSite?>()?.persistence.didUpdateBrowserState();
+			_maybeShowDubsToast(receipt.id);
+			if (_spamFilterCheckingReceipt == receipt) {
+				// User hasn't edited the reply form since submitting
+				_textFieldController.clear();
+				_nameFieldController.clear();
+				_optionsFieldController.clear();
+				_subjectFieldController.clear();
+				_filenameController.clear();
+				attachment = null;
+				_attachmentScan = null;
+				widget.onFilePathChanged?.call(null);
+				_showAttachmentOptions = false;
+				_disableLoginSystem = false;
+				setState(() {});
+			}
+		}
+		else {
+			receipt.spamFiltered = true;
+			imageboard.persistence.didUpdateBrowserState();
+			if (_spamFilterCheckingReceipt == receipt) {
+				// User hasn't edited the reply form since submitting
+				alertError(
+					widget.longLivedCounterpartKey?.currentContext ?? context,
+					'Your post seems to have been blocked by 4chan\'s anti-spam firewall.\nIt has been saved in the reply form for you to try again.',
+					barrierDismissible: true
+				);
+			}
+			else {
+				showToast(
+					context: widget.longLivedCounterpartKey?.currentContext ?? context,
+					message: 'Post spam-filtered',
+					icon: CupertinoIcons.exclamationmark_shield,
+					hapticFeedback: false
+				);
+			}
 		}
 	}
 
 	void _onTextChanged() async {
-		_setSpamFilteredPostId(null);
+		_spamFilterCheckingReceipt = null;
 		widget.onTextChanged?.call(_textFieldController.text);
 		_autoPostTimer?.cancel();
 		if (mounted) setState(() {});
@@ -322,7 +389,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(() {
-			_setSpamFilteredPostId(null);
+			_spamFilterCheckingReceipt = null;
 			widget.onSubjectChanged?.call(_subjectFieldController.text);
 		});
 		context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
@@ -366,6 +433,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			flag = null;
 			widget.onFilePathChanged?.call(null);
 			_disableLoginSystem = false;
+			_spamFilterCheckingReceipt = null;
 		}
 		if (oldWidget.board != widget.board) {
 			context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
@@ -495,38 +563,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			showReplyBox();
 		}
 		lightHapticFeedback();
-	}
-
-	void checkForSpamFilteredPost(Post post) {
-		final spamFiltered = (widget.longLivedCounterpartKey?.currentState ?? this)._spamFilteredPostId;
-		if (spamFiltered == null) {
-			return;
-		}
-		if (post.board != spamFiltered.$1) return;
-		if (post.id > spamFiltered.$2.id) {
-			// There is a later post, and our post never showed up!
-			_onSpamFilterTimeout();
-			return;
-		}
-		if (post.id != spamFiltered.$2.id) return;
-		final similarity = post.span.buildText().similarityTo(_textFieldController.text);
-		print('Spam filter similarity: $similarity');
-		if (similarity > 0.90) {
-			showToast(context: widget.longLivedCounterpartKey?.currentContext ?? context, message: 'Post successful', icon: CupertinoIcons.smiley, hapticFeedback: false);
-			_maybeShowDubsToast(post.id);
-			_textFieldController.clear();
-			_nameFieldController.clear();
-			_optionsFieldController.clear();
-			_subjectFieldController.clear();
-			_filenameController.clear();
-			attachment = null;
-			_attachmentScan = null;
-			widget.onFilePathChanged?.call(null);
-			_showAttachmentOptions = false;
-			_disableLoginSystem = false;
-			_setSpamFilteredPostId(null);
-			setState(() {});
-		}
 	}
 
 	Future<File?> _showTranscodeWindow({
@@ -759,7 +795,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				setState(() {
 					attachment = file;
 				});
-				_setSpamFilteredPostId(null);
+				_spamFilterCheckingReceipt = null;
 				widget.onFilePathChanged?.call(file.path);
 			}
 		}
@@ -1010,7 +1046,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					widget.threadId != null;
 			}
 			if (spamFiltered) {
-				_setSpamFilteredPostId((widget.board, receipt));
+				_listenForSpamFilter(receipt);
 			}
 			else {
 				_textFieldController.clear();
@@ -1037,12 +1073,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			threadState.save();
 			mediumHapticFeedback();
 			widget.onReplyPosted(receipt);
-			if (spamFiltered) {
-				if (mounted) {
-					Future.delayed(const Duration(seconds: 15), _onSpamFilterTimeout);
-				}
-			}
-			else if (mounted) {
+			if (mounted && !spamFiltered) {
 				showToast(
 					context: context,
 					message: 'Post successful',

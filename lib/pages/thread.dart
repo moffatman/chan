@@ -960,9 +960,6 @@ class ThreadPageState extends State<ThreadPage> {
 			tmpPersistentState.thread = newThread;
 			if (persistentState == tmpPersistentState) {
 				zone.addThread(newThread);
-				if (_replyBoxKey.currentState?.hasSpamFilteredPostToCheck ?? false) {
-					newThread.posts.forEach(_replyBoxKey.currentState!.checkForSpamFilteredPost);
-				}
 				if (firstLoad) shouldScroll = true;
 				if (persistentState.autoTranslate) {
 					// Translate new posts
