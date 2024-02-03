@@ -740,7 +740,8 @@ class Site4Chan extends ImageboardSite {
 				password: password,
 				name: name,
 				options: options,
-				time: DateTime.now()
+				time: DateTime.now(),
+				ip: captchaSolution.ip
 			);
 		}
 		else {
@@ -1235,6 +1236,43 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	static const kLoginFieldTicketKey = 't';
+
+	@override
+	DateTime getCaptchaUsableTime(CaptchaSolution captcha) {
+		if (captcha is Chan4CustomCaptchaSolution) {
+			if (captcha.challenge == 'noop') {
+				return super.getCaptchaUsableTime(captcha);
+			}
+			final receipts = Persistence.sharedThreadStateBox.values.expand<PostReceipt>((state) {
+				if (state.imageboardKey != persistence.imageboardKey) {
+					return const Iterable.empty();
+				}
+				return state.receipts.where((r) => r.ip == captcha.ip);
+			}).toList();
+			final nullTime = DateTime(2000);
+			receipts.sort((a, b) {
+				return (a.time ?? nullTime).compareTo(b.time ?? nullTime);
+			});
+			// Sorted so newest receipt is last
+			if (receipts.isEmpty) {
+				// Fresh IP
+				return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(1000) + 1000));
+			}
+			else if (receipts.last.spamFiltered) {
+				// Last post was spam-filtered
+				return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(4000) + 12000));
+			}
+			else if (receipts.any((r) => r.spamFiltered) && captcha.ip != null) {
+				// Some previous post was spam-filtered
+				return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(4000) + 5000));
+			}
+			else {
+				// Never spam-filtered
+				return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(1000) + 1000));
+			}
+		}
+		return super.getCaptchaUsableTime(captcha);
+	}
 }
 
 class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {

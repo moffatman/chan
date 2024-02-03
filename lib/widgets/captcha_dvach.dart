@@ -37,13 +37,16 @@ class CaptchaDvachException implements Exception {
 class CaptchaDvachChallenge {
 	final String id;
 	final String inputType;
-	DateTime expiresAt;
-	Uint8List imageBytes;
+	final DateTime acquiredAt;
+	final Duration lifetime;
+	DateTime get expiresAt => acquiredAt.add(lifetime);
+	final Uint8List imageBytes;
 
 	CaptchaDvachChallenge({
 		required this.id,
 		required this.inputType,
-		required this.expiresAt,
+		required this.acquiredAt,
+		required this.lifetime,
 		required this.imageBytes
 	});
 }
@@ -72,7 +75,6 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 		}
 		final String id = idResponse.data['id'];
 		final String inputType = idResponse.data['input'];
-		final DateTime expiresAt = DateTime.now().add(widget.request.challengeLifetime);
 		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/show', {
 			'id': id
 		}), options: Options(
@@ -84,7 +86,8 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 		return CaptchaDvachChallenge(
 			id: id,
 			inputType: inputType,
-			expiresAt: expiresAt,
+			acquiredAt: DateTime.now(),
+			lifetime: widget.request.challengeLifetime,
 			imageBytes: Uint8List.fromList(imageResponse.data)
 		);
 	}
@@ -187,7 +190,8 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 								widget.onCaptchaSolved(DvachCaptchaSolution(
 									id: challenge!.id,
 									response: response,
-									expiresAt: challenge!.expiresAt
+									acquiredAt: challenge!.acquiredAt,
+									lifetime: challenge!.lifetime
 								));
 							},
 						)

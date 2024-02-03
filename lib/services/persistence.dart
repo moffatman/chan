@@ -1298,16 +1298,22 @@ class PostReceipt {
 	final DateTime? time;
 	@HiveField(5, defaultValue: true)
 	bool markAsYou;
+	@HiveField(6, defaultValue: false)
+	bool spamFiltered;
+	@HiveField(7)
+	final String? ip;
 	PostReceipt({
 		required this.password,
 		required this.id,
 		required this.name,
 		required this.options,
 		required this.time,
-		this.markAsYou = true
+		this.markAsYou = true,
+		this.spamFiltered = false,
+		this.ip
 	});
 	@override
-	String toString() => 'PostReceipt(id: $id, password: $password, name: $name, options: $options, time: $time, markAsYou: $markAsYou)';
+	String toString() => 'PostReceipt(id: $id, password: $password, name: $name, options: $options, time: $time, markAsYou: $markAsYou, spamFiltered: $spamFiltered, ip: $ip)';
 }
 
 @HiveType(typeId: 18)

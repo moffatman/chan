@@ -588,22 +588,30 @@ class SecucapCaptchaRequest extends CaptchaRequest {
 
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
-	bool get cloudflare => false;
-	bool get autoSolved => false;
+	final DateTime acquiredAt;
+	final bool cloudflare;
+	final bool autoSolved;
+	final String? ip;
+	const CaptchaSolution({
+		required this.acquiredAt,
+		this.cloudflare = false,
+		this.autoSolved = false,
+		this.ip
+	});
 }
 
 class NoCaptchaSolution extends CaptchaSolution {
 	@override
 	DateTime? get expiresAt => null;
+	NoCaptchaSolution(DateTime acquiredAt) : super(acquiredAt: acquiredAt);
 }
 
 class RecaptchaSolution extends CaptchaSolution {
 	final String response;
-	@override
-	final bool cloudflare;
 	RecaptchaSolution({
 		required this.response,
-		required this.cloudflare
+		required super.cloudflare,
+		required super.acquiredAt
 	});
 	@override
 	DateTime? get expiresAt => null;
@@ -614,21 +622,20 @@ class RecaptchaSolution extends CaptchaSolution {
 class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	final String challenge;
 	final String response;
-	@override
-	final DateTime expiresAt;
 	final ui.Image? alignedImage;
-	@override
-	final bool cloudflare;
-	@override
-	final bool autoSolved;
+	final Duration lifetime;
 	Chan4CustomCaptchaSolution({
 		required this.challenge,
 		required this.response,
-		required this.expiresAt,
+		required super.acquiredAt,
+		required this.lifetime,
 		required this.alignedImage,
-		required this.cloudflare,
-		this.autoSolved = false
+		required super.cloudflare,
+		required super.ip,
+		super.autoSolved
 	});
+	@override
+	DateTime? get expiresAt => acquiredAt.add(lifetime);
 	@override
 	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';
 }
@@ -636,12 +643,14 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 class SecurimageCaptchaSolution extends CaptchaSolution {
 	final String cookie;
 	final String response;
+	final Duration lifetime;
 	@override
-	final DateTime expiresAt;
+	DateTime? get expiresAt => acquiredAt.add(lifetime);
 	SecurimageCaptchaSolution({
 		required this.cookie,
 		required this.response,
-		required this.expiresAt
+		required super.acquiredAt,
+		required this.lifetime
 	});
 	@override
 	String toString() => 'SecurimageCaptchaSolution(cookie: $cookie, response: $response)';
@@ -650,12 +659,14 @@ class SecurimageCaptchaSolution extends CaptchaSolution {
 class DvachCaptchaSolution extends CaptchaSolution {
 	final String id;
 	final String response;
+	final Duration lifetime;
 	@override
-	final DateTime expiresAt;
+	DateTime? get expiresAt => acquiredAt.add(lifetime);
 	DvachCaptchaSolution({
 		required this.id,
 		required this.response,
-		required this.expiresAt
+		required super.acquiredAt,
+		required this.lifetime
 	});
 	@override
 	String toString() => 'DvachCaptchaSolution(id: $id, response: $response)';
@@ -664,12 +675,14 @@ class DvachCaptchaSolution extends CaptchaSolution {
 class LynxchanCaptchaSolution extends CaptchaSolution {
 	final String id;
 	final String answer;
+	final Duration lifetime;
 	@override
-	final DateTime expiresAt;
+	DateTime? get expiresAt => acquiredAt.add(lifetime);
 	LynxchanCaptchaSolution({
 		required this.id,
 		required this.answer,
-		required this.expiresAt
+		required super.acquiredAt,
+		required this.lifetime
 	});
 	@override
 	String toString() => 'LynxchanCaptchaSolution(id: $id)';
@@ -678,10 +691,10 @@ class LynxchanCaptchaSolution extends CaptchaSolution {
 class SecucapCaptchaSolution extends CaptchaSolution {
 	final String response;
 	@override
-	final DateTime expiresAt;
+	DateTime? get expiresAt => null;
 	SecucapCaptchaSolution({
 		required this.response,
-		required this.expiresAt
+		required super.acquiredAt
 	});
 	@override
 	String toString() => 'SecucapCaptchaSolution(response: $response)';
@@ -1254,6 +1267,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		return (archives.tryFirstWhere((a) => a.name == archiveName) ?? this).getWebUrlImpl(board, threadId, postId);
 	}
 	Future<void> clearPseudoCookies() async {}
+	DateTime getCaptchaUsableTime(CaptchaSolution captcha) {
+		if (captcha is NoCaptchaSolution) {
+			return captcha.acquiredAt;
+		}
+		return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(500) + 450));
+	}
 }
 
 abstract class ImageboardSiteLoginSystem {

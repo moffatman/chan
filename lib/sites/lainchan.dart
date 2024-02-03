@@ -344,7 +344,8 @@ class SiteLainchan extends ImageboardSite {
 					password: password,
 					name: name,
 					options: options,
-					time: DateTime.now()
+					time: DateTime.now(),
+					ip: captchaSolution.ip
 				);
 			}
 		}
@@ -386,7 +387,8 @@ class SiteLainchan extends ImageboardSite {
 			password: password,
 			name: name,
 			options: options,
-			time: DateTime.now()
+			time: DateTime.now(),
+			ip: captchaSolution.ip
 		);
 	}
 

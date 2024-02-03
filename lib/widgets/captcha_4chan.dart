@@ -25,7 +25,8 @@ Captcha4ChanCustomChallenge? _challenge;
 
 typedef _CloudGuess = ({
 	String answer,
-	double confidence
+	double confidence,
+	String? ip
 });
 
 typedef CloudGuessedCaptcha4ChanCustom = ({
@@ -92,7 +93,8 @@ Future<Captcha4ChanCustomChallenge> _requestChallenge({
 	return Captcha4ChanCustomChallenge(
 		request: request,
 		challenge: data['challenge'],
-		expiresAt: DateTime.now().add(Duration(seconds: data['ttl'].toInt())),
+		acquiredAt: DateTime.now(),
+		lifetime: Duration(seconds: data['ttl'].toInt()),
 		foregroundImage: foregroundImage,
 		backgroundImage: backgroundImage,
 		cloudflare: challengeResponse.cloudflare
@@ -185,7 +187,8 @@ Future<_CloudGuess> _cloudGuess({
 	}
 	return (
 		answer: answer,
-		confidence: double.tryParse(response.headers.value('Chance-Confidence') ?? '') ?? 0
+		confidence: double.tryParse(response.headers.value('Chance-Confidence') ?? '') ?? 0,
+		ip: response.headers.value('Chance-X-Forwarded-For')
 	);
 }
 
@@ -215,9 +218,11 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 			solution = Chan4CustomCaptchaSolution(
 				challenge: 'noop',
 				response: '',
-				expiresAt: challenge.expiresAt,
+				acquiredAt: challenge.acquiredAt,
+				lifetime: challenge.lifetime,
 				alignedImage: null,
-				cloudflare: challenge.cloudflare
+				cloudflare: challenge.cloudflare,
+				ip: null
 			);
 			confident = true;
 		}
@@ -253,9 +258,11 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 		solution = Chan4CustomCaptchaSolution(
 			challenge: challenge.challenge,
 			response: cloudGuess.answer,
-			expiresAt: challenge.expiresAt,
+			acquiredAt: challenge.acquiredAt,
+			lifetime: challenge.lifetime,
 			alignedImage: image,
 			cloudflare: challenge.cloudflare,
+			ip: cloudGuess.ip,
 			autoSolved: true
 		);
 		confident = cloudGuess.confidence >= 1;
@@ -407,7 +414,9 @@ class Captcha4ChanCustomException implements Exception {
 class Captcha4ChanCustomChallenge {
 	final Chan4CustomCaptchaRequest request;
 	final String challenge;
-	final DateTime expiresAt;
+	final DateTime acquiredAt;
+	final Duration lifetime;
+	DateTime get expiresAt => acquiredAt.add(lifetime);
 	final ui.Image? foregroundImage;
 	final ui.Image? backgroundImage;
 	final bool cloudflare;
@@ -416,7 +425,8 @@ class Captcha4ChanCustomChallenge {
 	Captcha4ChanCustomChallenge({
 		required this.request,
 		required this.challenge,
-		required this.expiresAt,
+		required this.acquiredAt,
+		required this.lifetime,
 		required this.foregroundImage,
 		required this.backgroundImage,
 		required this.cloudflare
@@ -497,6 +507,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	CancelableOperation<Chan4CustomCaptchaGuesses>? _guessInProgress;
 	bool _offerGuess = false;
 	bool _cloudGuessFailed = false;
+	String? _ip;
 
 	int get numLetters => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters;
 	set numLetters(int setting) => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters = setting;
@@ -511,10 +522,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		});
 		try {
 			final image = await _screenshotImage();
-			_useCloudGuess((await _cloudGuess(
+			final guess = await _cloudGuess(
 				site: widget.site,
 				image: image
-			)).answer);
+			);
+			_ip = guess.ip ?? _ip;
+			_useCloudGuess(guess.answer);
 		}
 		catch (e, st) {
 			if (mounted) {
@@ -676,9 +689,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
 						challenge: 'noop',
 						response: '',
-						expiresAt: challenge!.expiresAt,
+						acquiredAt: challenge!.acquiredAt,
+						lifetime: challenge!.lifetime,
 						alignedImage: null,
-						cloudflare: challenge!.cloudflare
+						cloudflare: challenge!.cloudflare,
+						ip: null
 					));
 					challenge?.dispose();
 					challenge = null;
@@ -816,9 +831,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
 			challenge: challenge!.challenge,
 			response: response,
-			expiresAt: challenge!.expiresAt,
+			acquiredAt: challenge!.acquiredAt,
+			lifetime: challenge!.lifetime,
 			alignedImage: await _screenshotImage(),
-			cloudflare: challenge!.cloudflare
+			cloudflare: challenge!.cloudflare,
+			ip: _ip
 		));
 		challenge?.dispose();
 		challenge = null;
@@ -844,6 +861,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		final guess = widget.initialCloudGuess;
 		if (guess != null) {
+			_ip = guess.solution.ip;
 			challenge = guess.challenge;
 			backgroundSlide = guess.slide;
 			tryAgainAt = guess.tryAgainAt;

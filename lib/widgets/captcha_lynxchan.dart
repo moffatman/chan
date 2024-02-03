@@ -38,12 +38,15 @@ class CaptchaLynxchanException implements Exception {
 
 class CaptchaLynxchanChallenge {
 	final String id;
-	DateTime expiresAt;
-	Uint8List imageBytes;
+	final DateTime acquiredAt;
+	final Duration lifetime;
+	DateTime get expiresAt => acquiredAt.add(lifetime);
+	final Uint8List imageBytes;
 
 	CaptchaLynxchanChallenge({
 		required this.id,
-		required this.expiresAt,
+		required this.acquiredAt,
+		required this.lifetime,
 		required this.imageBytes
 	});
 }
@@ -96,7 +99,8 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		}
 		return CaptchaLynxchanChallenge(
 			id: id,
-			expiresAt: DateTime.now().add(const Duration(minutes: 2)),
+			acquiredAt: DateTime.now(),
+			lifetime: const Duration(minutes: 2),
 			imageBytes: Uint8List.fromList(imageResponse.data)
 		);
 	}
@@ -124,7 +128,8 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		widget.onCaptchaSolved(LynxchanCaptchaSolution(
 			id: challenge!.id,
 			answer: answer,
-			expiresAt: challenge!.expiresAt
+			acquiredAt: challenge!.acquiredAt,
+			lifetime: challenge!.lifetime
 		));
 		widget.site.persistence.browserState.loginFields[SiteLynxchan.kLoginFieldLastSolvedCaptchaKey] = challenge!.id;
 		widget.site.persistence.didUpdateBrowserState();

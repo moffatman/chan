@@ -174,7 +174,8 @@ class SiteLynxchan extends ImageboardSite {
 					password: password,
 					name: name,
 					options: options,
-					time: DateTime.now()
+					time: DateTime.now(),
+					ip: captchaSolution.ip
 				);
 			}
 			throw PostFailedException(document.querySelector('title')?.text ?? 'Unknown error');
@@ -187,7 +188,8 @@ class SiteLynxchan extends ImageboardSite {
 			password: password,
 			name: name,
 			options: options,
-			time: DateTime.now()
+			time: DateTime.now(),
+			ip: captchaSolution.ip
 		);
 	}
 

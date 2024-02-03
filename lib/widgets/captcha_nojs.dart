@@ -77,18 +77,20 @@ class CaptchaNoJSSubimage {
 }
 
 class CaptchaNoJSChallenge {
-	String title;
-	String responseKey;
-	ui.Image image;
-	List<List<CaptchaNoJSSubimage>> subimages;
+	final String title;
+	final String responseKey;
+	final ui.Image image;
+	final List<List<CaptchaNoJSSubimage>> subimages;
 	final bool cloudflare;
+	final DateTime acquiredAt;
 
 	CaptchaNoJSChallenge({
 		required this.title,
 		required this.responseKey,
 		required this.image,
 		required this.subimages,
-		required this.cloudflare
+		required this.cloudflare,
+		required this.acquiredAt
 	});
 
 	String submitAnswer(Map<int, bool> checkboxes) {
@@ -150,7 +152,8 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			responseKey: document.querySelector('input[name="c"]')!.attributes['value']!,
 			image: challengeImage,
 			subimages: subimages,
-			cloudflare: cloudflare
+			cloudflare: cloudflare,
+			acquiredAt: DateTime.now()
 		);
 	}
 
@@ -227,6 +230,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		final tokenElement = document.querySelector('.fbc-verification-token textarea');
 		if (tokenElement != null) {
 			widget.onCaptchaSolved(RecaptchaSolution(
+				acquiredAt: chal.acquiredAt,
 				response: tokenElement.text,
 				cloudflare: chal.cloudflare
 			));

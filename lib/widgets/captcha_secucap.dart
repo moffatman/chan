@@ -35,10 +35,12 @@ class CaptchaSecucapException implements Exception {
 
 
 class CaptchaSecucapChallenge {
-	Uint8List imageBytes;
+	final Uint8List imageBytes;
+	final DateTime acquiredAt;
 
 	CaptchaSecucapChallenge({
-		required this.imageBytes
+		required this.imageBytes,
+		required this.acquiredAt
 	});
 }
 
@@ -62,7 +64,8 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 			throw CaptchaSecucapException('Got status code ${challengeResponse.statusCode}');
 		}
 		return CaptchaSecucapChallenge(
-			imageBytes: Uint8List.fromList((challengeResponse.data as List<int>))
+			imageBytes: Uint8List.fromList((challengeResponse.data as List<int>)),
+			acquiredAt: DateTime.now()
 		);
 	}
 
@@ -145,7 +148,7 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 							onSubmitted: (response) async {
 								widget.onCaptchaSolved(SecucapCaptchaSolution(
 									response: response,
-									expiresAt: DateTime.now().add(const Duration(days: 999))
+									acquiredAt: challenge!.acquiredAt
 								));
 							},
 						)

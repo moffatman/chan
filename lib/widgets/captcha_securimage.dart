@@ -37,12 +37,15 @@ class CaptchaSecurimageException implements Exception {
 
 class CaptchaSecurimageChallenge {
 	final String cookie;
-	DateTime expiresAt;
-	Uint8List imageBytes;
+	final DateTime acquiredAt;
+	final Duration lifetime;
+	DateTime get expiresAt => acquiredAt.add(lifetime);
+	final Uint8List imageBytes;
 
 	CaptchaSecurimageChallenge({
 		required this.cookie,
-		required this.expiresAt,
+		required this.acquiredAt,
+		required this.lifetime,
 		required this.imageBytes
 	});
 }
@@ -79,7 +82,8 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 		}
 		return CaptchaSecurimageChallenge(
 			cookie: data['cookie'],
-			expiresAt: DateTime.now().add(Duration(seconds: data['expires_in'])),
+			acquiredAt: DateTime.now(),
+			lifetime: Duration(seconds: data['expires_in']),
 			imageBytes: base64Decode(base64Data)
 		);
 	}
@@ -181,7 +185,8 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 								widget.onCaptchaSolved(SecurimageCaptchaSolution(
 									cookie: challenge!.cookie,
 									response: response,
-									expiresAt: challenge!.expiresAt
+									acquiredAt: challenge!.acquiredAt,
+									lifetime: challenge!.lifetime
 								));
 							},
 						)

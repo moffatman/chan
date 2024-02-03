@@ -191,13 +191,15 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
       options: fields[3] == null ? '' : fields[3] as String,
       time: fields[4] as DateTime?,
       markAsYou: fields[5] == null ? true : fields[5] as bool,
+      spamFiltered: fields[6] == null ? false : fields[6] as bool,
+      ip: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PostReceipt obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.password)
       ..writeByte(1)
@@ -209,7 +211,11 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
       ..writeByte(4)
       ..write(obj.time)
       ..writeByte(5)
-      ..write(obj.markAsYou);
+      ..write(obj.markAsYou)
+      ..writeByte(6)
+      ..write(obj.spamFiltered)
+      ..writeByte(7)
+      ..write(obj.ip);
   }
 
   @override

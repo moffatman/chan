@@ -145,8 +145,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _willHideOnPanEnd = false;
 	late final FocusNode _rootFocusNode;
 	(String, MediaConversion?)? _attachmentProgress;
-	(String, int)? _spamFilteredPostId;
-	(String, int)? _alertedSpamFilteredPostId;
+	(String, PostReceipt)? _spamFilteredPostId;
+	(String, PostReceipt)? _alertedSpamFilteredPostId;
 	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
 	static List<String> _previouslyUsedNames = [];
 	static List<String> _previouslyUsedOptions = [];
@@ -224,7 +224,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		return _captchaSolution?.expiresAt?.isAfter(DateTime.now()) ?? true;
 	}
 
-	void _setSpamFilteredPostId((String, int)? newId) {
+	void _setSpamFilteredPostId((String, PostReceipt)? newId) {
 		(widget.longLivedCounterpartKey?.currentState ?? this)._spamFilteredPostId = newId;
 	}
 
@@ -234,6 +234,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			// The post appeared after all.
 			return;
 		}
+		// This only works because the PostReceipt should be identical()
 		if (state._alertedSpamFilteredPostId != state._spamFilteredPostId) {
 			// Only alert once
 			alertError(
@@ -242,6 +243,8 @@ class ReplyBoxState extends State<ReplyBox> {
 				barrierDismissible: true
 			);
 			state._alertedSpamFilteredPostId = state._spamFilteredPostId;
+			state._spamFilteredPostId?.$2.spamFiltered = true;
+			context.read<ImageboardSite?>()?.persistence.didUpdateBrowserState();
 		}
 	}
 
@@ -500,12 +503,12 @@ class ReplyBoxState extends State<ReplyBox> {
 			return;
 		}
 		if (post.board != spamFiltered.$1) return;
-		if (post.id > spamFiltered.$2) {
+		if (post.id > spamFiltered.$2.id) {
 			// There is a later post, and our post never showed up!
 			_onSpamFilterTimeout();
 			return;
 		}
-		if (post.id != spamFiltered.$2) return;
+		if (post.id != spamFiltered.$2.id) return;
 		final similarity = post.span.buildText().similarityTo(_textFieldController.text);
 		print('Spam filter similarity: $similarity');
 		if (similarity > 0.90) {
@@ -918,6 +921,15 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			_optionsFieldController.text = _optionsFieldController.text.normalizeSymbols;
 			_subjectFieldController.text = _subjectFieldController.text.normalizeSymbols;
 			lightHapticFeedback();
+			final delay = site.getCaptchaUsableTime(_captchaSolution!).difference(DateTime.now());
+			if (delay > const Duration(seconds: 3)) {
+				showToast(
+					context: context,
+					message: 'Waiting to use captcha',
+					icon: CupertinoIcons.clock
+				);
+			}
+			await Future.delayed(delay);
 			final receipt = (widget.threadId != null) ? (await site.postReply(
 				thread: ThreadIdentifier(widget.board, widget.threadId!),
 				name: _nameFieldController.text,
@@ -998,7 +1010,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					widget.threadId != null;
 			}
 			if (spamFiltered) {
-				_setSpamFilteredPostId((widget.board, receipt.id));
+				_setSpamFilteredPostId((widget.board, receipt));
 			}
 			else {
 				_textFieldController.clear();

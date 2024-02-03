@@ -253,7 +253,8 @@ class SiteDvach extends ImageboardSite {
 			id: response.data['num'],
 			name: name,
 			options: options,
-			time: DateTime.now()
+			time: DateTime.now(),
+			ip: captchaSolution.ip
 		);
 	}
 

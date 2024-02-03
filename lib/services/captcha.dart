@@ -97,6 +97,6 @@ Future<CaptchaSolution?> solveCaptcha({
 				site: site
 			));
 		case NoCaptchaRequest():
-			return NoCaptchaSolution();
+			return NoCaptchaSolution(DateTime.now());
 	}
 }
