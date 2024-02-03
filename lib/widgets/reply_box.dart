@@ -247,7 +247,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					}
 					else if (post.id == receipt.id) {
 						final similarity = post.span.buildText().similarityTo(_textFieldController.text);
-						found = similarity > 0.9;
+						found = similarity > 0.65;
 						break;
 					}
 					else {
