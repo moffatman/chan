@@ -36,8 +36,11 @@ class ContextMenu extends StatefulWidget {
 	final List<ContextMenuAction> actions;
 	final Widget child;
 	final double? maxHeight;
-	final Widget Function(BuildContext, Animation, Widget?)? previewBuilder;
+	final Widget Function(BuildContext, Widget?)? previewBuilder;
 	final Color? backgroundColor;
+	/// Use LayoutBuilder if your child is going to be close to the max width
+	/// of the screen to avoid text relayout visual jank
+	final bool useLayoutBuilder;
 
 	const ContextMenu({
 		required this.actions,
@@ -45,6 +48,7 @@ class ContextMenu extends StatefulWidget {
 		this.maxHeight,
 		this.previewBuilder,
 		this.backgroundColor,
+		this.useLayoutBuilder = true,
 		Key? key
 	}) : super(key: key);
 
@@ -106,8 +110,7 @@ class _ContextMenuState extends State<ContextMenu> {
 		);
 	}
 
-	@override
-	Widget build(BuildContext context) {
+	Widget _buildCupertino() {
 		// Using select to only rebuild when object changes, not on its updates
 		final zone = context.select<PostSpanZoneData?, PostSpanZoneData?>((z) => z);
 		final imageboard = context.select<Imageboard?, Imageboard?>((i) => i);
@@ -115,6 +118,85 @@ class _ContextMenuState extends State<ContextMenu> {
 		final persistence = context.select<Persistence?, Persistence?>((p) => p);
 		final threadWatcher = context.select<ThreadWatcher?, ThreadWatcher?>((w) => w);
 		final notifications = context.watch<Notifications?>();
+		final actions = widget.actions.map((action) => CupertinoContextMenuAction2(
+			trailingIcon: action.trailingIcon,
+			key: action.key,
+			onPressed: () async {
+				Navigator.of(context, rootNavigator: true).pop();
+				try {
+					await action.onPressed();
+				}
+				catch (e) {
+					if (context.mounted) {
+						alertError(context, e.toStringDio());
+					}
+				}
+			},
+			isDestructiveAction: action.isDestructiveAction,
+			child: action.child
+		)).toList();
+		Widget previewBuilder(BuildContext context) => MultiProvider(
+			providers: [
+				Provider<bool>.value(value: false), // Dummy, at least one provider is required
+				if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
+				if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
+				if (site != null) Provider<ImageboardSite>.value(value: site),
+				if (persistence != null) ChangeNotifierProvider<Persistence>.value(value: persistence),
+				if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
+				if (notifications != null) Provider<Notifications>.value(value: notifications)
+			],
+			child: IgnorePointer(child: widget.previewBuilder?.call(context, null) ?? widget.child)
+		);
+		final child = widget.backgroundColor == null ? widget.child : DecoratedBox(
+			decoration: BoxDecoration(
+				color: widget.backgroundColor
+			),
+			child: widget.child
+		);
+		if (!widget.useLayoutBuilder) {
+			return CupertinoContextMenu2(
+				actions: actions,
+				previewBuilder: (context, animation, child) => previewBuilder(context),
+				child: child
+			);
+		}
+		return LayoutBuilder(
+			builder: (context, originalConstraints) => CupertinoContextMenu2(
+				actions: actions,
+				previewBuilder: (context, animation, child) => LayoutBuilder(
+					builder: (context, newConstraints) {
+						const x = 75;
+						return FittedBox(
+							child: AnimatedBuilder(
+								animation: animation,
+								builder: (context, _) => TweenAnimationBuilder(
+									tween: Tween<double>(
+										begin: originalConstraints.maxHeight,
+										end: newConstraints.maxHeight
+									),
+									curve: Curves.ease,
+									duration: const Duration(milliseconds: 300),
+									builder: (context, double maxHeight, _) => ConstrainedBox(
+										constraints: BoxConstraints(
+											minWidth: 0,
+											maxWidth: min(max(originalConstraints.maxWidth, newConstraints.maxWidth - x), newConstraints.maxWidth + x),
+											minHeight: 0,
+											maxHeight: maxHeight.isNaN ? double.infinity : maxHeight
+										),
+										child: previewBuilder(context)
+									)
+								)
+							)
+						);
+					}
+				),
+				child: child
+			)
+		);
+	}
+
+	@override
+	Widget build(BuildContext context) {
 		final iconSize = 24 * context.select<EffectiveSettings, double>((s) => s.textScale);
 		final interfaceScale = context.select<EffectiveSettings, double>((s) => s.interfaceScale);
 		final child = GestureDetector(
@@ -182,71 +264,7 @@ class _ContextMenuState extends State<ContextMenu> {
 				);
 				Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
 			},
-			child: ChanceTheme.materialOf(context) ? _buildMaterial() : LayoutBuilder(
-				builder: (context, originalConstraints) => CupertinoContextMenu2(
-					actions: widget.actions.map((action) => CupertinoContextMenuAction2(
-						trailingIcon: action.trailingIcon,
-						key: action.key,
-						onPressed: () async {
-							Navigator.of(context, rootNavigator: true).pop();
-							try {
-								await action.onPressed();
-							}
-							catch (e) {
-								if (context.mounted) {
-									alertError(context, e.toStringDio());
-								}
-							}
-						},
-						isDestructiveAction: action.isDestructiveAction,
-						child: action.child
-					)).toList(),
-					previewBuilder: (context, animation, child) => LayoutBuilder(
-						builder: (context, newConstraints) {
-							const x = 75;
-							return FittedBox(
-								child: AnimatedBuilder(
-									animation: animation,
-									builder: (context, _) => TweenAnimationBuilder(
-										tween: Tween<double>(
-											begin: originalConstraints.maxHeight,
-											end: newConstraints.maxHeight
-										),
-										curve: Curves.ease,
-										duration: const Duration(milliseconds: 300),
-										builder: (context, double maxHeight, _) => ConstrainedBox(
-											constraints: BoxConstraints(
-												minWidth: 0,
-												maxWidth: min(max(originalConstraints.maxWidth, newConstraints.maxWidth - x), newConstraints.maxWidth + x),
-												minHeight: 0,
-												maxHeight: maxHeight.isNaN ? double.infinity : maxHeight
-											),
-											child: MultiProvider(
-												providers: [
-													Provider<bool>.value(value: false), // Dummy, at least one provider is required
-													if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
-													if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
-													if (site != null) Provider<ImageboardSite>.value(value: site),
-													if (persistence != null) ChangeNotifierProvider<Persistence>.value(value: persistence),
-													if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
-													if (notifications != null) Provider<Notifications>.value(value: notifications)
-												],
-												child: IgnorePointer(child: widget.previewBuilder?.call(context, animation, null) ?? child)
-											)
-										)
-									)
-								)
-							);
-						}
-					),
-					child: widget.backgroundColor == null ? widget.child : DecoratedBox(
-						decoration: BoxDecoration(
-							color: widget.backgroundColor
-						),
-						child: widget.child
-					)
-				)
-			)
+			child: ChanceTheme.materialOf(context) ? _buildMaterial() : _buildCupertino()
 		);
 		if (widget.maxHeight != null) {
 			return ConstrainedBox(

@@ -1437,7 +1437,7 @@ class AttachmentViewer extends StatelessWidget {
 					...additionalContextMenuActions
 				],
 				child: buildChild(true),
-				previewBuilder: (context, animation, child) => AspectRatio(
+				previewBuilder: (context, child) => AspectRatio(
 					aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
 					child: buildChild(false)
 				)
