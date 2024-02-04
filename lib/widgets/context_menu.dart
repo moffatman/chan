@@ -135,6 +135,12 @@ class _ContextMenuState extends State<ContextMenu> {
 			isDestructiveAction: action.isDestructiveAction,
 			child: action.child
 		)).toList();
+		final child = widget.backgroundColor == null ? widget.child : DecoratedBox(
+			decoration: BoxDecoration(
+				color: widget.backgroundColor
+			),
+			child: widget.child
+		);
 		Widget previewBuilder(BuildContext context) => MultiProvider(
 			providers: [
 				Provider<bool>.value(value: false), // Dummy, at least one provider is required
@@ -145,13 +151,7 @@ class _ContextMenuState extends State<ContextMenu> {
 				if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
 				if (notifications != null) Provider<Notifications>.value(value: notifications)
 			],
-			child: IgnorePointer(child: widget.previewBuilder?.call(context, null) ?? widget.child)
-		);
-		final child = widget.backgroundColor == null ? widget.child : DecoratedBox(
-			decoration: BoxDecoration(
-				color: widget.backgroundColor
-			),
-			child: widget.child
+			child: IgnorePointer(child: widget.previewBuilder?.call(context, null) ?? child)
 		);
 		if (!widget.useLayoutBuilder) {
 			return CupertinoContextMenu2(
