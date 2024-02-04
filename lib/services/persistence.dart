@@ -1704,12 +1704,19 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
 
 extension PseudoCookies on PersistCookieJar {
 	static final _pseudoCookieUri = Uri.parse('https://chancepseudo.com');
+	static const _expiresOffset = Duration(days: 1000);
+
 	Future<String?> readPseudoCookie(String key) async {
 		final cookies = await loadForRequest(_pseudoCookieUri);
 		return cookies.tryFirstWhere((c) => c.name == key)?.value;
 	}
 
+	Future<DateTime?> readPseudoCookieTime(String key) async {
+		final cookies = await loadForRequest(_pseudoCookieUri);
+		return cookies.tryFirstWhere((c) => c.name == key)?.expires?.subtract(_expiresOffset);
+	}
+
 	Future<void> writePseudoCookie(String key, String value) async {
-		await saveFromResponse(_pseudoCookieUri, [Cookie(key, value)]);
+		await saveFromResponse(_pseudoCookieUri, [Cookie(key, value)..expires = DateTime.now().add(_expiresOffset)]);
 	}
 }

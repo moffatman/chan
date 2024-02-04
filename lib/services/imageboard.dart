@@ -51,9 +51,11 @@ class Imageboard extends ChangeNotifier {
 			if (newSite != _site) {
 				if (_site != null) {
 					newSite.migrateFromPrevious(_site!);
+					_site!.dispose();
 				}
 				_site = newSite;
-				site.persistence = persistence;
+				site.imageboard = this;
+				site.initState();
 				notifyListeners();
 			}
 		}
@@ -71,7 +73,7 @@ class Imageboard extends ChangeNotifier {
 			_site = makeSite(siteData);
 			persistence = Persistence(key);
 			await persistence.initialize();
-			site.persistence = persistence;
+			site.imageboard = this;
 			_persistenceInitialized = true;
 			notifications = Notifications(
 				persistence: persistence,
@@ -97,6 +99,7 @@ class Imageboard extends ChangeNotifier {
 					setupBoards(); // don't await
 				}
 			}
+			site.initState();
 			initialized = true;
 		}
 		catch (e, st) {

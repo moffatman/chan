@@ -1,4 +1,5 @@
 // ignore_for_file: file_names
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -13,7 +14,9 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -127,6 +130,8 @@ class Site4Chan extends ImageboardSite {
 	final Map<String, String> captchaUserAgents;
 	final List<int> possibleCaptchaLetterCounts;
 	final Map<String, String> postingHeaders;
+	final Duration? captchaTicketLifetime;
+	Timer? _captchaTicketTimer;
 	final Map<String, Map<String, String>> boardFlags;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
@@ -139,6 +144,77 @@ class Site4Chan extends ImageboardSite {
 	@override
 	late final Site4ChanPassLoginSystem loginSystem = Site4ChanPassLoginSystem(this);
 
+	void resetCaptchaTicketTimer([Duration? overrideDuration]) {
+		_captchaTicketTimer?.cancel();
+		final lifetime = overrideDuration ?? captchaTicketLifetime;
+		if (lifetime == null) {
+			return;
+		}
+		_captchaTicketTimer = Timer(lifetime, _onCaptchaTicketTimerFire);
+	}
+
+	void _onCaptchaTicketTimerFire() async {
+		final lifetime = captchaTicketLifetime;
+		if (lifetime == null) {
+			return;
+		}
+		final ticketTime = await Persistence.currentCookies.readPseudoCookieTime(kTicketPseudoCookieKey);
+		if (ticketTime != null) {
+			final elapsed = DateTime.now().difference(ticketTime);
+			if (elapsed < (lifetime * 0.75)) {
+				// If less than 75% passed, just resync phase
+				resetCaptchaTicketTimer(lifetime - elapsed);
+				return;
+			}
+			// Ticket will expire in less than 25%, it's ok just to reuse it
+		}
+		final currentTab = Persistence.tabs[Persistence.currentTabIndex];
+		final PersistentBrowserTab? tab;
+		if (currentTab.imageboardKey == imageboard.key &&
+		    imageboard.persistence.getThreadStateIfExists(currentTab.thread)?.thread?.isArchived != true) {
+			tab = currentTab;
+		}
+		else {
+			tab = Persistence.tabs.tryFirstWhere((t) => t.imageboardKey == imageboard.key);
+		}
+		final request = await getCaptchaRequest(tab?.thread?.board ?? tab?.board?.name ?? persistence.boards.tryFirst?.name ?? '', tab?.thread?.id);
+		if (request is! Chan4CustomCaptchaRequest) {
+			return;
+		}
+		try {
+			final challenge = await requestCaptcha4ChanCustomChallenge(
+				site: this,
+				request: request,
+				priority: RequestPriority.cosmetic // Don't pop up cloudflare
+			);
+			print(challenge);
+		}
+		catch (e, st) {
+			print(e);
+			print(st);
+		}
+		resetCaptchaTicketTimer();
+	}
+
+	ConnectivityResult? _lastConnectivity;
+	void _onSettingsUpdate() {
+		if (EffectiveSettings.instance.connectivity != _lastConnectivity) {
+			_lastConnectivity = EffectiveSettings.instance.connectivity;
+			_onCaptchaTicketTimerFire();
+			resetCaptchaTicketTimer();
+		}
+	}
+
+	@override
+	void initState() {
+		super.initState();
+		if (captchaTicketLifetime != null) {
+			_onCaptchaTicketTimerFire();
+			resetCaptchaTicketTimer();
+			EffectiveSettings.instance.addListener(_onSettingsUpdate);
+		}
+	}
+
 	@override
 	void migrateFromPrevious(Site4Chan oldSite) {
 		super.migrateFromPrevious(oldSite);
@@ -146,6 +222,13 @@ class Site4Chan extends ImageboardSite {
 		_catalogCaches = oldSite._catalogCaches;
 		loginSystem._passEnabled = oldSite.loginSystem._passEnabled;
 		_lastActionTime = oldSite._lastActionTime;
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_captchaTicketTimer?.cancel();
+		EffectiveSettings.instance.removeListener(_onSettingsUpdate);
 	}
 
 	static List<PostSpan> parsePlaintext(String text, {ThreadIdentifier? fromSearchThread}) {
@@ -1000,7 +1083,8 @@ class Site4Chan extends ImageboardSite {
 		required this.searchUrl,
 		required this.boardFlags,
 		required this.possibleCaptchaLetterCounts,
-		required this.postingHeaders
+		required this.postingHeaders,
+		required this.captchaTicketLifetime
 	});
 
 

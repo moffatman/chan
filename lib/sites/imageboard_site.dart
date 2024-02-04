@@ -10,6 +10,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -1141,7 +1142,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
 		return WebReportMethod(Uri.parse(getWebUrlImpl(board, threadId, postId)));
 	}
-	late Persistence persistence;
+	late Imageboard imageboard;
+	Persistence get persistence => imageboard.persistence;
 	ImageboardSiteLoginSystem? get loginSystem => null;
 	List<ImageboardEmote> getEmotes() => [];
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async => [];
@@ -1222,6 +1224,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		_memoizedWifiHeaders = oldSite._memoizedWifiHeaders;
 		_memoizedCellularHeaders = oldSite._memoizedCellularHeaders;
 	}
+	@mustCallSuper
+	void initState() {}
+	@mustCallSuper
+	void dispose() {}
 	@protected
 	Future<Map<int, String>> queryPreferredArchive(String board, List<int> threadIds) async {
 		final sorted = threadIds.toList()..sort();
@@ -1374,6 +1380,7 @@ ImageboardSite makeSite(dynamic data) {
 		);
 	}
 	else if (data['type'] == '4chan') {
+		final captchaTicketLifetime = data['captchaTicketLifetime'] as int?;
 		return Site4Chan(
 			name: data['name'],
 			imageUrl: data['imageUrl'],
@@ -1385,6 +1392,7 @@ ImageboardSite makeSite(dynamic data) {
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
 			possibleCaptchaLetterCounts: (data['possibleCaptchaLetterCounts'] as List?)?.cast<int>() ?? [],
 			postingHeaders: (data['postingHeaders'] as Map?)?.cast<String, String>() ?? {},
+			captchaTicketLifetime: captchaTicketLifetime == null ? null : Duration(seconds: captchaTicketLifetime),
 			platformUserAgents: platformUserAgents,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
 			searchUrl: data['searchUrl'] ?? '',

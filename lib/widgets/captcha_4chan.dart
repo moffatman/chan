@@ -6,6 +6,7 @@ import 'dart:ui' as ui show Image, ImageByteFormat, PictureRecorder;
 import 'package:async/async.dart';
 import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/4chan.dart';
@@ -37,15 +38,16 @@ typedef CloudGuessedCaptcha4ChanCustom = ({
 	bool confident
 });
 
-Future<Captcha4ChanCustomChallenge> _requestChallenge({
+Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	required ImageboardSite site,
 	required Chan4CustomCaptchaRequest request,
-	ValueChanged<DateTime>? onCooldown
+	ValueChanged<DateTime>? onCooldown,
+	RequestPriority priority = RequestPriority.interactive
 }) async {
 	final challengeResponse = await site.client.getUri(request.challengeUrl, options: Options(
 		headers: request.challengeHeaders,
 		extra: {
-			kPriority: RequestPriority.interactive
+			kPriority: priority
 		}
 	));
 	if (challengeResponse.statusCode != 200) {
@@ -61,6 +63,9 @@ Future<Captcha4ChanCustomChallenge> _requestChallenge({
 	}
 	if (data['ticket'] is String) {
 		await Persistence.currentCookies.writePseudoCookie(Site4Chan.kTicketPseudoCookieKey, data['ticket']);
+	}
+	if (site is Site4Chan) {
+		site.resetCaptchaTicketTimer();
 	}
 	if (data['cd'] != null) {
 		onCooldown?.call(DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2)));
@@ -205,7 +210,7 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 		_challenge = null;
 	}
 
-	final challenge = _challenge ??= await _requestChallenge(
+	final challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
 		site: site,
 		request: request,
 		onCooldown: (c) => tryAgainAt = c
@@ -437,6 +442,9 @@ class Captcha4ChanCustomChallenge {
 	bool isReusableFor(Chan4CustomCaptchaRequest request, Duration validityPeriod) {
 		return !_isDisposed && this.request == request && expiresAt.isBefore(DateTime.now().add(validityPeriod));
 	}
+
+	@override
+	String toString() => 'Captcha4ChanCustomChallenge(request: $request, challenge: $challenge, expiresAt: $expiresAt, cloudflare: $cloudflare)';
 
 	void dispose() {
 		_isDisposed = true;
@@ -678,7 +686,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				challenge?.dispose();
 				challenge = null;
 			});
-			challenge = await _requestChallenge(
+			challenge = await requestCaptcha4ChanCustomChallenge(
 				site: widget.site,
 				request: widget.request,
 				onCooldown: (time) {
