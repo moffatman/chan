@@ -539,7 +539,7 @@ class ThreadRow extends StatelessWidget {
 					);
 				}
 			);
-			final txt = Padding(
+			Widget txtBuilder(BoxConstraints constraints) => Padding(
 				padding: const EdgeInsets.all(8),
 				child: ChangeNotifierProvider<PostSpanZoneData>(
 					create: (ctx) => PostSpanRootZoneData(
@@ -547,24 +547,22 @@ class ThreadRow extends StatelessWidget {
 						imageboard: imageboard,
 						style: PostSpanZoneStyle.linear
 					),
-					child: LayoutBuilder(
-						builder: (ctx, constraints) => IgnorePointer(
-							child: Text.rich(
-								TextSpan(
-									children: [
-										...headerRow,
-										if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
-										if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-											maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
-											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
-											avoidBuggyClippers: true
-										)),
-										if (!settings.useFullWidthForCatalogCounters) countersPlaceholder,
-										if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText) TextSpan(text: '\n' * 25)
-									]
-								),
-								maxLines: settings.catalogGridModeTextLinesLimit
-							)
+					builder: (ctx, _) => IgnorePointer(
+						child: Text.rich(
+							TextSpan(
+								children: [
+									...headerRow,
+									if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
+									if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+										maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
+										charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
+										avoidBuggyClippers: true
+									)),
+									if (!settings.useFullWidthForCatalogCounters) countersPlaceholder,
+									if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText) TextSpan(text: '\n' * 25)
+								]
+							),
+							maxLines: settings.catalogGridModeTextLinesLimit
 						)
 					)
 				)
@@ -586,7 +584,9 @@ class ThreadRow extends StatelessWidget {
 								child: Container(
 									color: backgroundColor.withOpacity(0.8),
 									width: double.infinity,
-									child: txt
+									child: LayoutBuilder(
+										builder: (_, constraints) => txtBuilder(constraints)
+									)
 								)
 							)
 						)
@@ -594,26 +594,33 @@ class ThreadRow extends StatelessWidget {
 				];
 			}
 			else {
-				final gridTextMaxHeight = settings.catalogGridHeight / 2;
-				if (att == null) {
-					return [txt];
+				final att_ = att;
+				if (att_ == null) {
+					return [LayoutBuilder(
+						builder: (_, constraints) => txtBuilder(constraints)
+					)];
 				}
 				return [
-					Column(
-						mainAxisSize: MainAxisSize.min,
-						crossAxisAlignment: CrossAxisAlignment.stretch,
-						children: [
-							Expanded(
-								child: att
-							),
-							ConstrainedBox(
-								constraints: BoxConstraints(
-									minHeight: 25,
-									maxHeight: gridTextMaxHeight
-								),
-								child: txt
-							)
-						]
+					LayoutBuilder(
+						builder: (_, constraints) {
+							final txtConstraints = constraints.copyWith(
+								maxHeight: constraints.maxHeight / 2,
+								minHeight: 25
+							);
+							return Column(
+								mainAxisSize: MainAxisSize.min,
+								crossAxisAlignment: CrossAxisAlignment.stretch,
+								children: [
+									Expanded(
+										child: att_
+									),
+									ConstrainedBox(
+										constraints: txtConstraints,
+										child: txtBuilder(txtConstraints)
+									)
+								]
+							);
+						}
 					)
 				];
 			}
