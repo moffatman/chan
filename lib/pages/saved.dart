@@ -1501,7 +1501,7 @@ class MissingThreadsControls extends StatelessWidget {
 		return CupertinoButton(
 			padding: const EdgeInsets.all(16),
 			onPressed: () {
-				modalLoad(context, 'Fetching missing threads', (controller) async {
+				modalLoad(context, 'Fetching ${describeCount(missingThreads.length, 'missing thread')}', (controller) async {
 					final threads = missingThreads.toList(); // In case it changes
 					final failedThreads = <ImageboardScoped<ThreadIdentifier>>[];
 					int i = 0;
@@ -1552,7 +1552,7 @@ class MissingThreadsControls extends StatelessWidget {
 							context: context,
 							barrierDismissible: true,
 							builder: (context) => AdaptiveAlertDialog(
-								title: const Text('Missing threads not found'),
+								title: Text('${describeCount(failedThreads.length, 'missing thread')} not found'),
 								content: Text('''Some threads could not be re-downloaded.
 
 They were deleted from their original website, and no archives of them could be found.
@@ -1590,7 +1590,7 @@ ${failedThreads.map((t) => '${t.imageboard.site.name}: ${t.imageboard.site.forma
 					Icon(CupertinoIcons.exclamationmark_triangle, color: errorColor),
 					const SizedBox(width: 8),
 					Flexible(
-						child: Text('${missingThreads.length} missing threads', style: TextStyle(
+						child: Text(describeCount(missingThreads.length, 'missing thread'), style: TextStyle(
 							color: errorColor,
 							fontWeight: FontWeight.bold
 						))
