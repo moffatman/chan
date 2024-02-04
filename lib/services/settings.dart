@@ -1030,6 +1030,8 @@ class SavedSettings extends HiveObject {
 	bool downloadUsingServerSideFilenames;
 	@HiveField(176)
 	double catalogGridModeTextScale;
+	@HiveField(177)
+	bool catalogGridModeCropThumbnails;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1208,6 +1210,7 @@ class SavedSettings extends HiveObject {
 		bool? tapPostIdToReply,
 		bool? downloadUsingServerSideFilenames,
 		double? catalogGridModeTextScale,
+		bool? catalogGridModeCropThumbnails,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1408,7 +1411,8 @@ class SavedSettings extends HiveObject {
 		homeBoardName = homeBoardName ?? '',
 		tapPostIdToReply = tapPostIdToReply ?? true,
 		downloadUsingServerSideFilenames = downloadUsingServerSideFilenames ?? false,
-		catalogGridModeTextScale = catalogGridModeTextScale ?? 1.0 {
+		catalogGridModeTextScale = catalogGridModeTextScale ?? 1.0,
+		catalogGridModeCropThumbnails = catalogGridModeCropThumbnails ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2703,6 +2707,13 @@ class EffectiveSettings extends ChangeNotifier {
 	double get catalogGridModeTextScale => _settings.catalogGridModeTextScale;
 	set catalogGridModeTextScale(double setting) {
 		_settings.catalogGridModeTextScale = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get catalogGridModeCropThumbnails => _settings.catalogGridModeCropThumbnails;
+	set catalogGridModeCropThumbnails(bool setting) {
+		_settings.catalogGridModeCropThumbnails = setting;
 		_settings.save();
 		notifyListeners();
 	}

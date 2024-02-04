@@ -497,7 +497,7 @@ class ThreadRow extends StatelessWidget {
 									AttachmentThumbnail(
 										width: constraints.maxWidth,
 										height: constraints.maxHeight,
-										fit: BoxFit.cover,
+										fit: settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
 										attachment: attachment,
 										thread: latestThread.identifier,
 										onLoadError: onThumbnailLoadError,

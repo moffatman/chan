@@ -3044,6 +3044,22 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														]
 													),
 													const SizedBox(height: 8),
+													Row(
+														children: [
+															const Expanded(
+																child: Text('Crop image to fit')
+															),
+															AdaptiveSwitch(
+																value: settings.catalogGridModeCropThumbnails,
+																onChanged: (v) {
+																	setDialogState(() {
+																		settings.catalogGridModeCropThumbnails = v;
+																	});
+																}
+															)
+														]
+													),
+													const SizedBox(height: 8),
 													Container(
 														width: size.width,
 														height: size.height,
