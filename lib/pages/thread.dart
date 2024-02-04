@@ -153,7 +153,6 @@ class ThreadPageState extends State<ThreadPage> {
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
 	late Listenable _threadStateListenable;
-	int? lastPageNumber;
 	int lastSavedPostsLength = 0;
 	int lastHiddenMD5sLength = 0;
 	_PersistentThreadStateSnapshot _lastPersistentThreadStateSnapshot = _PersistentThreadStateSnapshot.empty();
@@ -927,7 +926,6 @@ class ThreadPageState extends State<ThreadPage> {
 		final site = context.read<ImageboardSite>();
 		final settings = context.read<EffectiveSettings>();
 		final notifications = context.read<Notifications>();
-		lastPageNumber = persistentState.thread?.currentPage;
 		final bool firstLoad = tmpPersistentState.thread == null;
 		// The thread might switch in this interval
 		_checkForeground();
@@ -988,9 +986,6 @@ class ThreadPageState extends State<ThreadPage> {
 			if (settings.autoCacheAttachments) {
 				_postUpdateCallbacks.add(() => _cacheAttachments(automatic: true));
 			}
-		}
-		else if (newThread.currentPage != lastPageNumber) {
-			lastPageNumber = newThread.currentPage;
 		}
 		final newPostIdsBefore = newPostIds.toSet();
 		// unseenPostIds is filled-up during PersistentThreadState thread setter
