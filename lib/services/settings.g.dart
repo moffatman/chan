@@ -304,13 +304,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       homeBoardName: fields[173] as String?,
       tapPostIdToReply: fields[174] as bool?,
       downloadUsingServerSideFilenames: fields[175] as bool?,
+      catalogGridModeTextScale: fields[176] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(172)
+      ..writeByte(173)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -654,7 +655,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(174)
       ..write(obj.tapPostIdToReply)
       ..writeByte(175)
-      ..write(obj.downloadUsingServerSideFilenames);
+      ..write(obj.downloadUsingServerSideFilenames)
+      ..writeByte(176)
+      ..write(obj.catalogGridModeTextScale);
   }
 
   @override

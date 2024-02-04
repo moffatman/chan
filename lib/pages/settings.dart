@@ -3019,6 +3019,31 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														]
 													),
 													const SizedBox(height: 8),
+													Row(
+														children: [
+															const Expanded(
+																child: Text('Font scale')
+															),
+															AdaptiveIconButton(
+																onPressed: settings.catalogGridModeTextScale <= 0.5 ? null : () {
+																	setDialogState(() {
+																		settings.catalogGridModeTextScale -= 0.05;
+																	});
+																},
+																icon: const Icon(CupertinoIcons.minus)
+															),
+															Text('${(settings.catalogGridModeTextScale * 100).round()}%'),
+															AdaptiveIconButton(
+																onPressed: settings.catalogGridModeTextScale >= 2.0 ? null : () {
+																	setDialogState(() {
+																		settings.catalogGridModeTextScale += 0.05;
+																	});
+																},
+																icon: const Icon(CupertinoIcons.plus)
+															)
+														]
+													),
+													const SizedBox(height: 8),
 													Container(
 														width: size.width,
 														height: size.height,

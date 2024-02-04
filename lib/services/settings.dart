@@ -1028,6 +1028,8 @@ class SavedSettings extends HiveObject {
 	bool tapPostIdToReply;
 	@HiveField(175)
 	bool downloadUsingServerSideFilenames;
+	@HiveField(176)
+	double catalogGridModeTextScale;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1205,6 +1207,7 @@ class SavedSettings extends HiveObject {
 		String? homeBoardName,
 		bool? tapPostIdToReply,
 		bool? downloadUsingServerSideFilenames,
+		double? catalogGridModeTextScale,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1404,7 +1407,8 @@ class SavedSettings extends HiveObject {
 		translationTargetLanguage = translationTargetLanguage ?? 'en',
 		homeBoardName = homeBoardName ?? '',
 		tapPostIdToReply = tapPostIdToReply ?? true,
-		downloadUsingServerSideFilenames = downloadUsingServerSideFilenames ?? false {
+		downloadUsingServerSideFilenames = downloadUsingServerSideFilenames ?? false,
+		catalogGridModeTextScale = catalogGridModeTextScale ?? 1.0 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2692,6 +2696,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get downloadUsingServerSideFilenames => _settings.downloadUsingServerSideFilenames;
 	set downloadUsingServerSideFilenames(bool setting) {
 		_settings.downloadUsingServerSideFilenames = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get catalogGridModeTextScale => _settings.catalogGridModeTextScale;
+	set catalogGridModeTextScale(double setting) {
+		_settings.catalogGridModeTextScale = setting;
 		_settings.save();
 		notifyListeners();
 	}

@@ -687,7 +687,7 @@ class ThreadRow extends StatelessWidget {
 				)
 			]
 		);
-		return Container(
+		final container = Container(
 			decoration: BoxDecoration(
 				color: (Material.maybeOf(context)?.color == theme.backgroundColor) ? opacityBasedBackgroundColor : backgroundColor,
 				border: contentFocus ? Border.all(color: borderColor) : null,
@@ -699,6 +699,15 @@ class ThreadRow extends StatelessWidget {
 				child: child
 			) : child
 		);
+		return contentFocus ? TransformedMediaQuery(
+			transformation: (context, mq) => mq.copyWith(
+				textScaler: ChainedLinearTextScaler(
+					parent: mq.textScaler,
+					textScaleFactor: context.select<EffectiveSettings, double>((s) => s.catalogGridModeTextScale)
+				)
+			),
+			child: container
+		) : container;
 	}
 
 	@override
