@@ -68,8 +68,9 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		}
 		data = jsonDecode(match.group(1)!)['twister'];
 	}
-	if (data['ticket'] is String) {
-		await Persistence.currentCookies.writePseudoCookie(Site4Chan.kTicketPseudoCookieKey, data['ticket']);
+	final ticket = data['ticket'];
+	if (ticket is Object) {
+		await Persistence.currentCookies.writePseudoCookie(Site4Chan.kTicketPseudoCookieKey, ticket.toString());
 	}
 	if (site is Site4Chan) {
 		site.resetCaptchaTicketTimer();
