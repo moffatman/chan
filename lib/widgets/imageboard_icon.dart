@@ -38,7 +38,20 @@ class ImageboardIcon extends StatelessWidget {
 			url.toString(),
 			headers: imageboard.site.getHeaders(url),
 			cache: true,
-			enableLoadState: false,
+			enableLoadState: true,
+			loadStateChanged: (state) {
+				if (state.extendedImageLoadState == LoadState.failed) {
+					return Builder(
+						builder: (context) => Center(
+							child: Icon(CupertinoIcons.exclamationmark_triangle_fill, size: size)
+						)
+					);
+				}
+				else if (state.extendedImageLoadState == LoadState.loading) {
+					return const SizedBox();
+				}
+				return null;
+			},
 			filterQuality: FilterQuality.high,
 			fit: BoxFit.contain,
 			width: size,
@@ -51,6 +64,9 @@ class ImageboardIcon extends StatelessWidget {
 				child: child
 			);
 		}
-		return child;
+		return SizedBox.square(
+			dimension: size,
+			child: child
+		);
 	}
 }
