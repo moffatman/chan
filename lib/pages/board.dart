@@ -713,7 +713,7 @@ class BoardPageState extends State<BoardPage> {
 									_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 								},
 								semanticParentIds: [widget.semanticId],
-								heroOtherEndIsBoxFitCover: useCatalogGrid || settings.squareThumbnails
+								heroOtherEndIsBoxFitCover: useCatalogGrid ? settings.catalogGridModeCropThumbnails : settings.squareThumbnails
 							);
 						},
 						baseOptions: PostSpanRenderOptions(
