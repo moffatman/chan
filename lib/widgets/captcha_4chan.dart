@@ -32,16 +32,23 @@ typedef _CloudGuess = ({
 
 typedef CloudGuessedCaptcha4ChanCustom = ({
 	Captcha4ChanCustomChallenge challenge,
-	DateTime? tryAgainAt,
 	Chan4CustomCaptchaSolution solution,
 	int slide,
 	bool confident
 });
 
+class Captcha4ChanCustomChallengeException implements Exception {
+	final String message;
+	final DateTime? tryAgainAt;
+	const Captcha4ChanCustomChallengeException(this.message, this.tryAgainAt);
+
+	@override
+	String toString() => 'Failed to get 4chan captcha: $message';
+}
+
 Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	required ImageboardSite site,
 	required Chan4CustomCaptchaRequest request,
-	ValueChanged<DateTime>? onCooldown,
 	RequestPriority priority = RequestPriority.interactive
 }) async {
 	final challengeResponse = await site.client.getUri(request.challengeUrl, options: Options(
@@ -51,13 +58,13 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		}
 	));
 	if (challengeResponse.statusCode != 200) {
-		throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
+		throw Captcha4ChanCustomChallengeException('Got status code ${challengeResponse.statusCode}', null);
 	}
 	dynamic data = challengeResponse.data;
 	if (data is String) {
 		final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(data);
 		if (match == null) {
-			throw Captcha4ChanCustomException('Response doesn\'t match, 4chan must have changed their captcha system');
+			throw const Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system', null);
 		}
 		data = jsonDecode(match.group(1)!)['twister'];
 	}
@@ -67,15 +74,15 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	if (site is Site4Chan) {
 		site.resetCaptchaTicketTimer();
 	}
+	if (data['pcd'] != null && data['pcd_msg'] != null) {
+		throw Captcha4ChanCustomChallengeException(data['pcd_msg'], DateTime.now().add(Duration(seconds: data['pcd'].toInt() + 2)));
+	}
+	DateTime? tryAgainAt;
 	if (data['cd'] != null) {
-		onCooldown?.call(DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2)));
+		tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2));
 	}
 	if (data['error'] != null) {
-		throw Captcha4ChanCustomException(data['error']);
-	}
-	if (data['pcd'] != null && data['pcd_msg'] != null) {
-		onCooldown?.call(DateTime.now().add(Duration(seconds: data['pcd'].toInt() + 2)));
-		throw Captcha4ChanCustomException(data['pcd_msg']);
+		throw Captcha4ChanCustomChallengeException(data['error'], tryAgainAt);
 	}
 	Completer<ui.Image>? foregroundImageCompleter;
 	if (data['img'] != null) {
@@ -101,6 +108,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		request: request,
 		challenge: data['challenge'],
 		acquiredAt: DateTime.now(),
+		tryAgainAt: tryAgainAt,
 		lifetime: Duration(seconds: data['ttl'].toInt()),
 		foregroundImage: foregroundImage,
 		backgroundImage: backgroundImage,
@@ -203,8 +211,6 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 	required ImageboardSite site,
 	required Chan4CustomCaptchaRequest request
 }) async {
-	DateTime? tryAgainAt;
-
 	if (_challenge?.isReusableFor(request, const Duration(seconds: 10)) == false) {
 		_challenge?.dispose();
 		_challenge = null;
@@ -212,8 +218,7 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 
 	final challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
 		site: site,
-		request: request,
-		onCooldown: (c) => tryAgainAt = c
+		request: request
 	);
 
 	final Chan4CustomCaptchaSolution solution;
@@ -278,7 +283,6 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 	return (
 		challenge: challenge,
 		solution: solution,
-		tryAgainAt: tryAgainAt,
 		slide: slide,
 		confident: confident
 	);
@@ -397,12 +401,14 @@ class Captcha4ChanCustom extends StatefulWidget {
 	final Chan4CustomCaptchaRequest request;
 	final ValueChanged<Chan4CustomCaptchaSolution> onCaptchaSolved;
 	final CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
+	final Captcha4ChanCustomChallengeException? initialCloudChallengeException;
 
 	const Captcha4ChanCustom({
 		required this.site,
 		required this.request,
 		required this.onCaptchaSolved,
 		this.initialCloudGuess,
+		this.initialCloudChallengeException,
 		Key? key
 	}) : super(key: key);
 
@@ -422,6 +428,7 @@ class Captcha4ChanCustomChallenge {
 	final Chan4CustomCaptchaRequest request;
 	final String challenge;
 	final DateTime acquiredAt;
+	final DateTime? tryAgainAt;
 	final Duration lifetime;
 	DateTime get expiresAt => acquiredAt.add(lifetime);
 	final ui.Image? foregroundImage;
@@ -433,6 +440,7 @@ class Captcha4ChanCustomChallenge {
 		required this.request,
 		required this.challenge,
 		required this.acquiredAt,
+		required this.tryAgainAt,
 		required this.lifetime,
 		required this.foregroundImage,
 		required this.backgroundImage,
@@ -688,11 +696,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			});
 			challenge = await requestCaptcha4ChanCustomChallenge(
 				site: widget.site,
-				request: widget.request,
-				onCooldown: (time) {
-					tryAgainAt = time;
-				}
+				request: widget.request
 			);
+			tryAgainAt = challenge?.tryAgainAt;
 			if (!mounted) return;
 			if (challenge!.foregroundImage == null && challenge!.backgroundImage == null) {
 				if (challenge!.challenge == 'noop') {
@@ -716,6 +722,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			await _setupChallenge();
 		}
 		catch(e, st) {
+			if (e is Captcha4ChanCustomChallengeException) {
+				tryAgainAt = e.tryAgainAt ?? tryAgainAt;
+			}
 			print(e);
 			print(st);
 			if (!mounted) return;
@@ -870,11 +879,16 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_greyOutPickers = false;
 		}
 		final guess = widget.initialCloudGuess;
-		if (guess != null) {
+		final exception = widget.initialCloudChallengeException;
+		if (exception != null) {
+			errorMessage = exception.message;
+			tryAgainAt = exception.tryAgainAt;
+		}
+		else if (guess != null) {
 			_ip = guess.solution.ip;
 			challenge = guess.challenge;
 			backgroundSlide = guess.slide;
-			tryAgainAt = guess.tryAgainAt;
+			tryAgainAt = guess.challenge.tryAgainAt;
 			Future.delayed(const Duration(milliseconds: 10), () {
 				_useCloudGuess(guess.solution.response);
 				setState(() {

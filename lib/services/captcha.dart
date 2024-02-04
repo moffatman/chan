@@ -39,6 +39,7 @@ Future<CaptchaSolution?> solveCaptcha({
 			));
 		case Chan4CustomCaptchaRequest():
 			CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
+			Captcha4ChanCustomChallengeException? initialCloudChallengeException;
 			if ((settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver ?? false) && !disableHeadlessSolve) {
 				try {
 					final cloudSolution = await headlessSolveCaptcha4ChanCustom(
@@ -58,18 +59,24 @@ Future<CaptchaSolution?> solveCaptcha({
 					initialCloudGuess = cloudSolution;
 				}
 				catch (e, st) {
-					Future.error(e, st); // Report to crashlytics
-					showToast(
-						context: context,
-						icon: CupertinoIcons.exclamationmark_triangle,
-						message: 'Cloud solve failed: ${e.toStringDio()}'
-					);
+					if (e is Captcha4ChanCustomChallengeException) {
+						initialCloudChallengeException = e;
+					}
+					else {
+						Future.error(e, st); // Report to crashlytics
+						showToast(
+							context: context,
+							icon: CupertinoIcons.exclamationmark_triangle,
+							message: 'Cloud solve failed: ${e.toStringDio()}'
+						);
+					}
 				}
 			}
 			return pushModal((onCaptchaSolved) => Captcha4ChanCustom(
 				site: site,
 				request: request,
 				initialCloudGuess: initialCloudGuess,
+				initialCloudChallengeException: initialCloudChallengeException,
 				onCaptchaSolved: onCaptchaSolved
 			));
 		case SecurimageCaptchaRequest():
