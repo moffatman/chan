@@ -80,8 +80,8 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	if (site is Site4Chan) {
 		site.resetCaptchaTicketTimer();
 	}
-	if (data['pcd'] != null && data['pcd_msg'] != null) {
-		throw Captcha4ChanCustomChallengeException(data['pcd_msg'], DateTime.now().add(Duration(seconds: data['pcd'].toInt() + 2)));
+	if (data['pcd'] != null) {
+		throw Captcha4ChanCustomChallengeException(data['pcd_msg'] ?? 'Please wait a while.', DateTime.now().add(Duration(seconds: data['pcd'].toInt() + 2)));
 	}
 	DateTime? tryAgainAt;
 	if (data['cd'] != null) {
