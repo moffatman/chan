@@ -487,57 +487,52 @@ class ThreadRow extends StatelessWidget {
 		];
 		List<Widget> buildContentFocused() {
 			final attachment = latestThread.attachments.tryFirst;
-			Widget? att = attachment == null ? null : LayoutBuilder(
-				builder: (context, constraints) {
-					return PopupAttachment(
-						attachment: attachment,
-						child: GestureDetector(
-							child: Stack(
-								children: [
-									AttachmentThumbnail(
-										width: constraints.maxWidth,
-										height: constraints.maxHeight,
-										fit: settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
-										attachment: attachment,
-										thread: latestThread.identifier,
-										onLoadError: onThumbnailLoadError,
-										hero: TaggedAttachment(
-											attachment: attachment,
-											semanticParentIds: semanticParentIds
-										)
-									),
-									if (latestThread.attachments.length > 1 || attachment.icon != null) Positioned(
-										top: settings.catalogGridModeAttachmentInBackground ? 0 : null,
-										bottom: settings.catalogGridModeAttachmentInBackground ? null : 0,
-										right: 0,
-										child: Container(
-											decoration: BoxDecoration(
-												borderRadius: settings.catalogGridModeAttachmentInBackground ?
-													const BorderRadius.only(bottomLeft: Radius.circular(6)) :
-													const BorderRadius.only(topLeft: Radius.circular(6)),
-												color: backgroundColor,
-												border: Border.all(color: borderColor)
-											),
-											padding: const EdgeInsets.all(2),
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													if (attachment.icon != null) Icon(attachment.icon, size: 19),
-													if (latestThread.attachments.length > 1 && attachment.icon != null) const SizedBox(width: 4),
-													if (latestThread.attachments.length > 1) ...[
-														Text('${latestThread.attachments.length} '),
-														Icon(Adaptive.icons.photos, size: 19)
-													]
-												]
-											)
-										)
-									)
-								]
+			Widget? att = attachment == null ? null : PopupAttachment(
+				attachment: attachment,
+				child: GestureDetector(
+					child: Stack(
+						fit: StackFit.expand,
+						children: [
+							AttachmentThumbnail(
+								fit: settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
+								attachment: attachment,
+								thread: latestThread.identifier,
+								onLoadError: onThumbnailLoadError,
+								hero: TaggedAttachment(
+									attachment: attachment,
+									semanticParentIds: semanticParentIds
+								)
 							),
-							onTap: () => onThumbnailTap?.call(attachment)
-						)
-					);
-				}
+							if (latestThread.attachments.length > 1 || attachment.icon != null) Positioned(
+								top: settings.catalogGridModeAttachmentInBackground ? 0 : null,
+								bottom: settings.catalogGridModeAttachmentInBackground ? null : 0,
+								right: 0,
+								child: Container(
+									decoration: BoxDecoration(
+										borderRadius: settings.catalogGridModeAttachmentInBackground ?
+											const BorderRadius.only(bottomLeft: Radius.circular(6)) :
+											const BorderRadius.only(topLeft: Radius.circular(6)),
+										color: backgroundColor,
+										border: Border.all(color: borderColor)
+									),
+									padding: const EdgeInsets.all(2),
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											if (attachment.icon != null) Icon(attachment.icon, size: 19),
+											if (latestThread.attachments.length > 1 && attachment.icon != null) const SizedBox(width: 4),
+											if (latestThread.attachments.length > 1) ...[
+												Text('${latestThread.attachments.length} '),
+												Icon(Adaptive.icons.photos, size: 19)
+											]
+										]
+									)
+								)
+							)
+						]
+					),
+					onTap: () => onThumbnailTap?.call(attachment)
+				)
 			);
 			Widget txtBuilder(BoxConstraints constraints) => Padding(
 				padding: const EdgeInsets.all(8),

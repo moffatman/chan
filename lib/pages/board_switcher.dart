@@ -263,91 +263,87 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			resizeToAvoidBottomInset: false,
 			backgroundColor: Colors.transparent,
 			bar: AdaptiveBar(
-				title: LayoutBuilder(
-					builder: (context, box) {
-						return SizedBox(
-							width: box.maxWidth * 0.75,
-							child: KeyboardListener(
-								focusNode: _listenerFocusNode,
-								onKeyEvent: (e) {
-									if (e is! KeyDownEvent) {
-										return;
-									}
-									switch (e.logicalKey) {
-										case LogicalKeyboardKey.arrowDown:
-											if (effectiveSelectedIndex < filteredBoards.length - 1) {
-												setState(() {
-													_selectedIndex++;
-												});
-											}
-											break;
-										case LogicalKeyboardKey.arrowUp:
-										if (effectiveSelectedIndex > 0) {
-											setState(() {
-												_selectedIndex--;
-											});
-										}
-										break;
-									}
-								},
-								child: AdaptiveTextField(
-									autofocus: settings.boardSwitcherHasKeyboardFocus,
-									enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-									smartDashesType: SmartDashesType.disabled,
-									smartQuotesType: SmartQuotesType.disabled,
-									autocorrect: false,
-									placeholder: 'Board...',
-									textAlign: TextAlign.center,
-									focusNode: _focusNode,
-									enableSuggestions: false,
-									suffixMode: OverlayVisibilityMode.editing,
-									controller: _textEditingController,
-									suffix: Padding(
-										padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 5, 2),
-										child: AdaptiveIconButton(
-											onPressed: () {
-												_textEditingController.clear();
-												_updateTypeaheadBoards('');
-												setState(() {
-													searchString = '';
-												});
-											},
-											minSize: 0,
-											padding: EdgeInsets.zero,
-											icon: Icon(CupertinoIcons.xmark_circle_fill, size: MediaQuery.textScalerOf(context).scale(20))
-										)
-									),
-									onTap: () {
-										scrollController.jumpTo(scrollController.position.pixels);
-										if (!_showSelectedItem) {
-											Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
-										}
-									},
-									onSubmitted: (String board) {
-										if (filteredBoards.isNotEmpty) {
-											final selected = filteredBoards[effectiveSelectedIndex];
-											if (selected.item != null) {
-												Navigator.of(context).pop(selected.unnullify);
-												return;
-											}
-											setState(() {
-												currentImageboardIndex = allImageboards.indexOf(selected.imageboard);
-											});
-											typeahead = const (query: '', results: []);
-											_updateTypeaheadBoards(searchString);
-										}
-										_focusNode.requestFocus();
-									},
-									onChanged: (String newSearchString) {
-										_updateTypeaheadBoards(newSearchString);
+				title: FractionallySizedBox(
+					widthFactor: 0.75,
+					child: KeyboardListener(
+						focusNode: _listenerFocusNode,
+						onKeyEvent: (e) {
+							if (e is! KeyDownEvent) {
+								return;
+							}
+							switch (e.logicalKey) {
+								case LogicalKeyboardKey.arrowDown:
+									if (effectiveSelectedIndex < filteredBoards.length - 1) {
 										setState(() {
-											searchString = newSearchString;
+											_selectedIndex++;
 										});
 									}
+									break;
+								case LogicalKeyboardKey.arrowUp:
+								if (effectiveSelectedIndex > 0) {
+									setState(() {
+										_selectedIndex--;
+									});
+								}
+								break;
+							}
+						},
+						child: AdaptiveTextField(
+							autofocus: settings.boardSwitcherHasKeyboardFocus,
+							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+							smartDashesType: SmartDashesType.disabled,
+							smartQuotesType: SmartQuotesType.disabled,
+							autocorrect: false,
+							placeholder: 'Board...',
+							textAlign: TextAlign.center,
+							focusNode: _focusNode,
+							enableSuggestions: false,
+							suffixMode: OverlayVisibilityMode.editing,
+							controller: _textEditingController,
+							suffix: Padding(
+								padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 5, 2),
+								child: AdaptiveIconButton(
+									onPressed: () {
+										_textEditingController.clear();
+										_updateTypeaheadBoards('');
+										setState(() {
+											searchString = '';
+										});
+									},
+									minSize: 0,
+									padding: EdgeInsets.zero,
+									icon: Icon(CupertinoIcons.xmark_circle_fill, size: MediaQuery.textScalerOf(context).scale(20))
 								)
-							)
-						);
-					}
+							),
+							onTap: () {
+								scrollController.jumpTo(scrollController.position.pixels);
+								if (!_showSelectedItem) {
+									Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
+								}
+							},
+							onSubmitted: (String board) {
+								if (filteredBoards.isNotEmpty) {
+									final selected = filteredBoards[effectiveSelectedIndex];
+									if (selected.item != null) {
+										Navigator.of(context).pop(selected.unnullify);
+										return;
+									}
+									setState(() {
+										currentImageboardIndex = allImageboards.indexOf(selected.imageboard);
+									});
+									typeahead = const (query: '', results: []);
+									_updateTypeaheadBoards(searchString);
+								}
+								_focusNode.requestFocus();
+							},
+							onChanged: (String newSearchString) {
+								_updateTypeaheadBoards(newSearchString);
+								setState(() {
+									searchString = newSearchString;
+								});
+							}
+						)
+					)
 				),
 				actions: [
 					if (!widget.currentlyPickingFavourites) AdaptiveIconButton(
