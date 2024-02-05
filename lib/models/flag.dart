@@ -1,3 +1,4 @@
+import 'package:chan/models/intern.dart';
 import 'package:hive/hive.dart';
 
 part 'flag.g.dart';
@@ -19,13 +20,13 @@ class ImageboardFlag implements Flag {
 	final double imageHeight;
 
 	ImageboardFlag({
-		required this.name,
-		required this.imageUrl,
+		required String name,
+		required String imageUrl,
 		required this.imageWidth,
 		required this.imageHeight
-	});
+	}) : name = intern(name), imageUrl = intern(imageUrl);
 
-	ImageboardFlag.text(this.name) : imageUrl = '', imageWidth = 0, imageHeight = 0;
+	ImageboardFlag.text(String name) : name = intern(name), imageUrl = intern(''), imageWidth = 0, imageHeight = 0;
 
 	@override
 	String toString() => imageUrl.isEmpty ? 'ImageboardFlag.text($name)' : 'ImageboardFlag(name: $name, imageUrl: $imageUrl)';

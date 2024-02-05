@@ -2,6 +2,7 @@ import 'dart:isolate';
 import 'dart:math' as math;
 
 import 'package:chan/main.dart';
+import 'package:chan/models/intern.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
@@ -380,18 +381,18 @@ class PostQuoteLinkSpan extends PostSpan {
 	final int postId;
 	final Key? key;
 
-	const PostQuoteLinkSpan({
-		required this.board,
+	PostQuoteLinkSpan({
+		required String board,
 		required int this.threadId,
 		required this.postId,
 		this.key
-	});
+	}) : board = intern(board);
 
-	const PostQuoteLinkSpan.dead({
-		required this.board,
+	PostQuoteLinkSpan.dead({
+		required String board,
 		required this.postId,
 		this.key
-	}) : threadId = null;
+	}) : board = intern(board), threadId = null;
 
 	@override
 	Iterable<int> referencedPostIds(String forBoard) sync* {
@@ -685,7 +686,7 @@ class PostQuoteLinkSpan extends PostSpan {
 
 class PostBoardLink extends PostSpan {
 	final String board;
-	const PostBoardLink(this.board);
+	PostBoardLink(String board) : board = intern(board);
 	@override
 	build(context, zone, settings, theme, options) {
 		return TextSpan(
@@ -1082,10 +1083,10 @@ class PostLinkSpan extends PostSpan {
 class PostCatalogSearchSpan extends PostSpan {
 	final String board;
 	final String query;
-	const PostCatalogSearchSpan({
-		required this.board,
+	PostCatalogSearchSpan({
+		required String board,
 		required this.query
-	});
+	}) : board = intern(board);
 	@override
 	build(context, zone, settings, theme, options) {
 		return TextSpan(
