@@ -1311,11 +1311,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			type: attachmentExt == 'webm' ?
 				AttachmentType.webm :
 				(attachmentExt == 'mp4' ? AttachmentType.mp4 : AttachmentType.image),
-			md5: '',
-			id: '${random.nextInt(1000000)}',
+			md5: _attachmentScan?.$3.toString() ?? '',
+			id: '${identityHashCode(attachment)}',
 			filename: attachment?.uri.pathSegments.last ?? '',
 			thumbnailUrl: '',
-			board: widget.board,
+			board: 'reply-form',
 			width: null,
 			height: null,
 			sizeInBytes: null,
@@ -1504,8 +1504,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												overrideSources: {
 													fakeAttachment: attachment!.uri
 												},
-												allowChrome: false,
-												allowContextMenu: false,
+												allowChrome: true,
+												allowContextMenu: true,
 												allowScroll: false,
 												heroOtherEndIsBoxFitCover: false
 											);
