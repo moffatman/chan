@@ -105,7 +105,19 @@ class Post implements Filterable {
 			_span = _makeSpan();
 		}
 	}
-	List<int> replyIds = [];
+	static const _kEmptyReplyIds = <int>[];
+	List<int> replyIds = const [];
+	void maybeAddReplyId(int replyId) {
+		if (!replyIds.contains(replyId)) {
+			if (identical(replyIds, _kEmptyReplyIds)) {
+				// Make it modifiable
+				replyIds = [replyId].toList(growable: false);
+			}
+			else {
+				replyIds = [...replyIds, replyId].toList(growable: false);
+			}
+		}
+	}
 	bool attachmentDeleted;
 	String? trip;
 	int? passSinceYear;

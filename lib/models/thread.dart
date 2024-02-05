@@ -61,7 +61,7 @@ class Thread implements Filterable {
 			Map<int, Post> postsById = {};
 			for (final post in posts_) {
 				postsById[post.id] = post;
-				post.replyIds = [];
+				post.replyIds = const [];
 			}
 			for (final post in posts_) {
 				for (final referencedPostId in post.repliedToIds) {
@@ -69,9 +69,7 @@ class Thread implements Filterable {
 						// Disallow recursive replies
 						continue;
 					}
-					if (!(postsById[referencedPostId]?.replyIds.contains(post.id) ?? true)) {
-						postsById[referencedPostId]?.replyIds.add(post.id);
-					}
+					postsById[referencedPostId]?.maybeAddReplyId(post.id);
 				}
 			}
 			_initialized = true;
@@ -167,9 +165,7 @@ class Thread implements Filterable {
 				final parentIndex = postIdToListIndex[newChild.parentId];
 				if (parentIndex != null) {
 					final parent = posts_[parentIndex];
-					if (!parent.replyIds.contains(newChild.id)) {
-						parent.replyIds.add(newChild.id);
-					}
+					parent.maybeAddReplyId(newChild.id);
 					parent.hasOmittedReplies = false;
 				}
 			}

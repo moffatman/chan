@@ -907,10 +907,7 @@ class SiteReddit extends ImageboardSite {
 		for (final id in childIdsToGet) {
 			final newPost = newPosts[id.childId];
 			if (newPost != null) {
-				final parent = newPosts[newPost.parentId];
-				if (parent != null) {
-					parent.replyIds.add(id.childId);
-				}
+				newPosts[newPost.parentId]?.maybeAddReplyId(id.childId);
 				ret.add(newPost);
 				newPostsMatched.remove(newPost);
 			}
@@ -929,10 +926,7 @@ class SiteReddit extends ImageboardSite {
 			}
 		}
 		for (final unmatchedPost in newPostsMatched) {
-			final parent = newPosts[unmatchedPost.parentId];
-			if (parent != null) {
-				parent.replyIds.add(unmatchedPost.id);
-			}
+			newPosts[unmatchedPost.parentId]?.maybeAddReplyId(unmatchedPost.id);
 			ret.add(unmatchedPost);
 		}
 		for (final id in newPostsWithReplies) {
