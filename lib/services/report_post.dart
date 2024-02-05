@@ -33,7 +33,7 @@ Future<void> reportPost({
 				openBrowser(context, method.uri);
 			case ChoiceReportMethod():
 				Map<String, String>? choice;
-				await showAdaptiveDialog<bool>(
+				final submitted = await showAdaptiveDialog<bool>(
 					context: context,
 					builder: (context) => StatefulBuilder(
 						builder: (context, setDialogState) => AdaptiveAlertDialog(
@@ -75,8 +75,8 @@ Future<void> reportPost({
 							actions: [
 								AdaptiveDialogAction(
 									isDefaultAction: true,
-									onPressed: choice == null ? null : () {
-										modalLoad(context, 'Submitting...', (_) async {
+									onPressed: choice == null ? null : () async {
+										final submitted = await modalLoad(context, 'Submitting...', (_) async {
 											final captchaSolution = await solveCaptcha(
 												context: context,
 												site: site,
@@ -85,12 +85,10 @@ Future<void> reportPost({
 												disableHeadlessSolve: _submissionFailed
 											);
 											if (captchaSolution == null) {
-												return;
+												return false;
 											}
 											await method.onSubmit(choice!, captchaSolution);
-											if (context.mounted) {
-												Navigator.pop(context);
-											}
+											return true;
 										}).catchError((e, st) {
 											if (e is! ReportFailedException) {
 												_submissionFailed = true; // Disable future headless solve
@@ -99,7 +97,11 @@ Future<void> reportPost({
 											if (context.mounted) {
 												alertError(context, e.toString());
 											}
+											return false;
 										});
+										if (context.mounted) {
+											Navigator.pop(context, submitted);
+										}
 									},
 									child: const Text('Submit')
 								),
@@ -111,7 +113,7 @@ Future<void> reportPost({
 						)
 					)
 				);
-				if (!context.mounted) {
+				if (!context.mounted || !(submitted ?? false)) {
 					return;
 				}
 				showToast(
