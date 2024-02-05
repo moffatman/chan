@@ -145,13 +145,13 @@ class Post implements Filterable {
 		this.foolfuukaLinkedPostThreadIds,
 		this.passSinceYear,
 		this.capcode,
-		required this.attachments,
+		required List<Attachment> attachments,
 		this.upvotes,
 		this.parentId,
 		this.hasOmittedReplies = false,
 		this.isDeleted = false,
 		this.ipNumber
-	}) : board = intern(board), name = intern(name);
+	}) : board = intern(board), name = intern(name), attachments = attachments.isEmpty ? const [] : attachments;
 
 	@override
 	String toString() {
