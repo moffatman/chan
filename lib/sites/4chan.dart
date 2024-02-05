@@ -739,13 +739,11 @@ class Site4Chan extends ImageboardSite {
 			return const NoCaptchaRequest();
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
-		final ticket = await Persistence.currentCookies.readPseudoCookie(kTicketPseudoCookieKey);
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
 				'framed': '1',
 				'board': board,
-				if (threadId != null) 'thread_id': threadId.toString(),
-				if (ticket != null) 'ticket': ticket
+				if (threadId != null) 'thread_id': threadId.toString()
 			}),
 			challengeHeaders: {
 				if (userAgent != null) 'user-agent': userAgent

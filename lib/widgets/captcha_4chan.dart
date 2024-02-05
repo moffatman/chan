@@ -51,7 +51,12 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	required Chan4CustomCaptchaRequest request,
 	RequestPriority priority = RequestPriority.interactive
 }) async {
-	final challengeResponse = await site.client.getUri(request.challengeUrl, options: Options(
+	final challengeResponse = await site.client.getUri(request.challengeUrl.replace(
+		queryParameters: {
+			...request.challengeUrl.queryParameters,
+			'ticket': await Persistence.currentCookies.readPseudoCookie(Site4Chan.kTicketPseudoCookieKey)
+		}
+	), options: Options(
 		headers: request.challengeHeaders,
 		extra: {
 			kPriority: priority
