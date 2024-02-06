@@ -4,6 +4,10 @@ final _soundSourceRegex = RegExp(r'\[sound=([^\]]+)\]');
 
 extension SoundpostAttachment on Attachment {
 	Uri? get soundSource {
+		if (!filename.contains('[sound=')) {
+			// Fast path
+			return null;
+		}
 		final match = _soundSourceRegex.firstMatch(filename);
 		if (match != null) {
 			try {
