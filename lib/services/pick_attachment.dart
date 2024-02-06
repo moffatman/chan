@@ -68,13 +68,30 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final camera = AttachmentPickingSource(
 		name: 'Camera',
 		icon: CupertinoIcons.camera,
-		pick: () => picker.pickImage(source: ImageSource.camera).then((x) => _copyFileToSafeLocation(x?.path))
-	);
-	final videoCamera = AttachmentPickingSource(
-		name: 'Video Camera',
-		icon: CupertinoIcons.videocam,
-		iconSizeMultiplier: 1.4,
-		pick: () => picker.pickVideo(source: ImageSource.camera).then((x) => _copyFileToSafeLocation(x?.path))
+		pick: () async {
+			final video = await showAdaptiveDialog<bool>(
+				context: context,
+				barrierDismissible: true,
+				builder: (context) => AdaptiveAlertDialog(
+					title: const Text('Which mode?'),
+					actions: {
+						false: 'Photo',
+						true: 'Video',
+						null: 'Cancel'
+					}.entries.map((e) => AdaptiveDialogAction(
+						onPressed: () => Navigator.pop(context, e.key),
+						child: Text(e.value)
+					)).toList()
+				)
+			);
+			if (video == null) {
+				return null;
+			}
+			return (video ?
+				picker.pickVideo(source: ImageSource.camera) :
+				picker.pickImage(source: ImageSource.camera))
+				.then((x) => _copyFileToSafeLocation(x?.path));
+		}
 	);
 	final site = context.read<ImageboardSite?>();
 	final web = AttachmentPickingSource(
@@ -158,7 +175,6 @@ List<AttachmentPickingSource> getAttachmentSources({
 			web,
 			if (!isOnMac) ...[
 				camera,
-				videoCamera,
 			],
 			if (includeClipboard) clipboard,
 		];
@@ -170,7 +186,6 @@ List<AttachmentPickingSource> getAttachmentSources({
 			if (includeClipboard) clipboard,
 			web,
 			camera,
-			videoCamera,
 		];
 	}
 	else {
