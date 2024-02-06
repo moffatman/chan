@@ -1583,7 +1583,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final depth = value.depth;
 		if (depth > 0 && useTree) {
 			child = Container(
-				margin: EdgeInsets.only(left: (pow(depth, 0.70) * 20) - 5),
+				margin: EdgeInsets.only(left: min(MediaQuery.sizeOf(context).width / 2, (pow(depth, 0.60) * 20) - 5)),
 				decoration: BoxDecoration(
 					border: Border(left: BorderSide(
 						width: 5,
