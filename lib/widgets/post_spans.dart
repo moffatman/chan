@@ -1781,7 +1781,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			}
 		}
 		_threads[thread.id] = thread;
-		for (final post in thread.posts) {
+		// Use posts_ to avoid looking repliedToIds. Mainly for catalog here.
+		for (final post in thread.posts_) {
 			_postLookupTable[post.id] = post;
 		}
 	}
