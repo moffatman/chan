@@ -960,14 +960,31 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			_subjectFieldController.text = _subjectFieldController.text.normalizeSymbols;
 			lightHapticFeedback();
 			final delay = site.getCaptchaUsableTime(_captchaSolution!).difference(DateTime.now());
+			final skipCompleter = Completer<void>();
 			if (delay > const Duration(seconds: 3)) {
+				bool pressed = false;
 				showToast(
 					context: context,
-					message: 'Waiting to use captcha',
+					message: 'Waiting ${delay.inSeconds.ceil()}s to avoid spam filter',
+					button: StatefulBuilder(
+						builder: (context, setState) => AdaptiveIconButton(
+							padding: EdgeInsets.zero,
+							minSize: 0,
+							onPressed: pressed ? null : () {
+								skipCompleter.complete();
+								setState(() {
+									pressed = true;
+								});
+							},
+							icon: Text('Skip', style: TextStyle(
+								color: pressed ? null : EffectiveSettings.instance.theme.secondaryColor
+							))
+						)
+					),
 					icon: CupertinoIcons.clock
 				);
 			}
-			await Future.delayed(delay);
+			await Future.any([Future.delayed(delay), skipCompleter.future]);
 			final receipt = (widget.threadId != null) ? (await site.postReply(
 				thread: ThreadIdentifier(widget.board, widget.threadId!),
 				name: _nameFieldController.text,
