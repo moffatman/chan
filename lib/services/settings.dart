@@ -8,6 +8,7 @@ import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/streaming_mp4.dart';
@@ -1492,6 +1493,7 @@ class EffectiveSettings extends ChangeNotifier {
 	static EffectiveSettings get instance => _instance ??= EffectiveSettings._();
 
 	late final SavedSettings _settings;
+	final client = Dio();
 	String? filename;
 	ConnectivityResult? _connectivity;
 	ConnectivityResult? get connectivity {
@@ -1561,7 +1563,7 @@ class EffectiveSettings extends ChangeNotifier {
 			if (Platform.isIOS && isDevelopmentBuild) {
 				platform += '-dev';
 			}
-			final response = await Dio().get('$contentSettingsApiRoot/user2/${_settings.userId}', queryParameters: {
+			final response = await client.get('$contentSettingsApiRoot/user2/${_settings.userId}', queryParameters: {
 				'platform': platform
 			});
 			_settings.contentSettings.images = response.data['images'];
@@ -1580,7 +1582,7 @@ class EffectiveSettings extends ChangeNotifier {
 	late List<RegExp> embedRegexes;
 	void updateEmbedRegexes() async {
 		try {
-			final response = await Dio().get('https://noembed.com/providers');
+			final response = await client.get('https://noembed.com/providers');
 			final data = jsonDecode(response.data);
 			_settings.embedRegexes = List<String>.from(data.expand((x) => (x['patterns'] as List<dynamic>).cast<String>()));
 			embedRegexes = _settings.embedRegexes.map((x) => RegExp(x)).toList();
@@ -2833,6 +2835,7 @@ class EffectiveSettings extends ChangeNotifier {
 
 	EffectiveSettings._() {
 		_settings = Persistence.settings;
+		client.interceptors.add(LoggingInterceptor.instance);
 		if (_settings.supportMouse == TristateSystemSetting.b) {
 			supportMouse.value = true;
 		}

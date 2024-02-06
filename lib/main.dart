@@ -44,7 +44,6 @@ import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/thread_widget_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
-import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -1015,7 +1014,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						if (consent != true) {
 							return;
 						}
-						final siteResponse = await Dio().get('$contentSettingsApiRoot/site/$siteKey');
+						final siteResponse = await settings.client.get('$contentSettingsApiRoot/site/$siteKey');
 						if (siteResponse.data['error'] != null) {
 							throw Exception(siteResponse.data['error']);
 						}
@@ -1024,7 +1023,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						if (Platform.isIOS && isDevelopmentBuild) {
 							platform += '-dev';
 						}
-						final response = await Dio().put('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$siteKey', queryParameters: {
+						final response = await settings.client.put('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$siteKey', queryParameters: {
 							'platform': platform
 						});
 						if (response.data['error'] != null) {

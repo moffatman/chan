@@ -375,7 +375,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															Navigator.of(context).pop(data);
 														}
 														else {
-															final response = await (widget.site?.client ?? Dio()).get(image['src'], options: Options(
+															final response = await (widget.site?.client ?? settings.client).get(image['src'], options: Options(
 																responseType: ResponseType.bytes
 															));
 															if (!mounted) return;

@@ -13,6 +13,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/installed_fonts.dart';
+import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
@@ -32,7 +33,6 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
@@ -333,7 +333,7 @@ class SettingsPage extends StatelessWidget {
 											if (toDelete != null && context.mounted) {
 												await modalLoad(context, 'Cleaning up...', (_) async {
 													ImageboardRegistry.instance.getImageboard(toDelete)?.deleteAllData();
-													final response = await Dio().delete('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$toDelete');
+													final response = await settings.client.delete('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$toDelete');
 													if (response.data['error'] != null) {
 														throw Exception(response.data['error']);
 													}
@@ -4195,6 +4195,20 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 								Icon(CupertinoIcons.globe),
 								SizedBox(width: 8),
 								Text('Edit user agent')
+							]
+						)
+					)
+				),
+				const SizedBox(height: 16),
+				Center(
+					child: AdaptiveButton(
+						onPressed: LoggingInterceptor.instance.reportViaEmail,
+						child: const Row(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								Icon(CupertinoIcons.mail),
+								SizedBox(width: 8),
+								Text('Send network logs')
 							]
 						)
 					)

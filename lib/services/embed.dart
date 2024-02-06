@@ -7,7 +7,6 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:linkify/linkify.dart';
@@ -98,7 +97,7 @@ Future<EmbedData?> loadEmbedData({
 	final client = context.read<ImageboardSite>().client;
 	if (url.startsWith('chance://site/')) {
 		try {
-			final response = await Dio().get(url.replaceFirst('chance://', '$contentSettingsApiRoot/'));
+			final response = await EffectiveSettings.instance.client.get(url.replaceFirst('chance://', '$contentSettingsApiRoot/'));
 			if (response.data['data'] == null) {
 				throw Exception(response.data['error'] ?? 'Unknown error');
 			}

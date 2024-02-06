@@ -11,6 +11,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -906,6 +907,7 @@ abstract class ImageboardSiteArchive {
 	ImageboardSiteArchive({
 		this.platformUserAgents = const {}
 	}) {
+		client.interceptors.add(LoggingInterceptor.instance);
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(SeparatedCookieManager(
 			wifiCookieJar: Persistence.wifiCookies,

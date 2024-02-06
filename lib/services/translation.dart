@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 import 'package:chan/services/compress_html.dart';
-import 'package:dio/dio.dart';
+import 'package:chan/services/settings.dart';
 import 'package:html/parser.dart';
 
 const _translationApiRoot = 'https://api.chance.surf/translate';
@@ -48,7 +48,7 @@ class TranslationException implements Exception {
 
 Future<String> translateHtml(String html, {required String toLanguage}) async {
 	final compressed = compressHTML(html);
-	final response = await Dio().get(_translationApiRoot, queryParameters: {
+	final response = await EffectiveSettings.instance.client.get(_translationApiRoot, queryParameters: {
 		'html': compressed.html,
 		'to': toLanguage
 	});
