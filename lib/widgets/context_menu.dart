@@ -63,7 +63,7 @@ class _ContextMenuState extends State<ContextMenu> {
 	void _onLongPress() async {
 		final l = ((lastTap?.dx ?? 0) / Persistence.settings.interfaceScale) + 5;
 		final t = ((lastTap?.dy ?? 0) / Persistence.settings.interfaceScale) + 5;
-		final s = context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size / Persistence.settings.interfaceScale;
+		final s = context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size;
 		final action = await showMenu(
 			useRootNavigator: true,
 			items: widget.actions.map((action) => PopupMenuItem(

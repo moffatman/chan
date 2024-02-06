@@ -158,7 +158,7 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 						if (widget.direction == AxisDirection.up) Positioned(
 							left: widget.origin.left,
 							width: widget.origin.width,
-							bottom: (screenSize.height / context.select<EffectiveSettings, double>((s) => s.interfaceScale)) - widget.origin.top - (1 - _animation.value) * 15,
+							bottom: screenSize.height - widget.origin.top - (1 - _animation.value) * 15,
 							child: child!
 						)
 						else if (widget.direction == AxisDirection.right) Positioned(
