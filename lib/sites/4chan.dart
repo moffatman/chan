@@ -155,7 +155,7 @@ class Site4Chan extends ImageboardSite {
 
 	void _onCaptchaTicketTimerFire() async {
 		final lifetime = captchaTicketLifetime;
-		if (lifetime == null) {
+		if (lifetime == null || !EffectiveSettings.instance.useSpamFilterWorkarounds) {
 			return;
 		}
 		final ticketTime = await Persistence.currentCookies.readPseudoCookieTime(kTicketPseudoCookieKey);
@@ -197,9 +197,28 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	ConnectivityResult? _lastConnectivity;
+	bool _lastUseSpamFilterWorkarounds = false;
 	void _onSettingsUpdate() {
-		if (EffectiveSettings.instance.connectivity != _lastConnectivity) {
+		if (EffectiveSettings.instance.connectivity != _lastConnectivity ||
+		    EffectiveSettings.instance.useSpamFilterWorkarounds != _lastUseSpamFilterWorkarounds) {
+			if (!EffectiveSettings.instance.useSpamFilterWorkarounds && _lastUseSpamFilterWorkarounds) {
+				// User disabled spam-filter workarounds
+				// Add a junk "x" at beginning of past IPs to start fresh
+				for (final threadState in Persistence.sharedThreadStateBox.values) {
+					bool modified = false;
+					for (final receipt in threadState.receipts) {
+						if (receipt.spamFiltered && !(receipt.ip?.startsWith('x') ?? true)) {
+							receipt.ip = 'x${receipt.ip}';
+							modified = true;
+						}
+					}
+					if (modified) {
+						threadState.save();
+					}
+				}
+			}
 			_lastConnectivity = EffectiveSettings.instance.connectivity;
+			_lastUseSpamFilterWorkarounds = EffectiveSettings.instance.useSpamFilterWorkarounds;
 			_onCaptchaTicketTimerFire();
 			resetCaptchaTicketTimer();
 		}
@@ -211,6 +230,8 @@ class Site4Chan extends ImageboardSite {
 		if (captchaTicketLifetime != null) {
 			_onCaptchaTicketTimerFire();
 			resetCaptchaTicketTimer();
+			_lastConnectivity = EffectiveSettings.instance.connectivity;
+			_lastUseSpamFilterWorkarounds = EffectiveSettings.instance.useSpamFilterWorkarounds;
 			EffectiveSettings.instance.addListener(_onSettingsUpdate);
 		}
 	}
@@ -1322,7 +1343,7 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	DateTime getCaptchaUsableTime(CaptchaSolution captcha) {
-		if (captcha is Chan4CustomCaptchaSolution) {
+		if (captcha is Chan4CustomCaptchaSolution && EffectiveSettings.instance.useSpamFilterWorkarounds) {
 			if (captcha.challenge == 'noop') {
 				return super.getCaptchaUsableTime(captcha);
 			}

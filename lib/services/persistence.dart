@@ -1301,7 +1301,7 @@ class PostReceipt {
 	@HiveField(6, defaultValue: false)
 	bool spamFiltered;
 	@HiveField(7)
-	final String? ip;
+	String? ip;
 	PostReceipt({
 		required this.password,
 		required this.id,

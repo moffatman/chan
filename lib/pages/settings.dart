@@ -1336,6 +1336,24 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.exclamationmark_shield),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Spam-filter workarounds')
+						),
+						const SizedBox(width: 8),
+						const _SettingsHelpButton(helpText: 'Automatic waiting to use captcha after spam-filter encountered on current IP, automatic refresh of post ticket in background.'),
+						AdaptiveSwitch(
+							value: settings.useSpamFilterWorkarounds,
+							onChanged: (newValue) {
+								settings.useSpamFilterWorkarounds = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);

@@ -1033,6 +1033,8 @@ class SavedSettings extends HiveObject {
 	double catalogGridModeTextScale;
 	@HiveField(177)
 	bool catalogGridModeCropThumbnails;
+	@HiveField(178)
+	bool useSpamFilterWorkarounds;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1212,6 +1214,7 @@ class SavedSettings extends HiveObject {
 		bool? downloadUsingServerSideFilenames,
 		double? catalogGridModeTextScale,
 		bool? catalogGridModeCropThumbnails,
+		bool? useSpamFilterWorkarounds,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1413,7 +1416,8 @@ class SavedSettings extends HiveObject {
 		tapPostIdToReply = tapPostIdToReply ?? true,
 		downloadUsingServerSideFilenames = downloadUsingServerSideFilenames ?? false,
 		catalogGridModeTextScale = catalogGridModeTextScale ?? 1.0,
-		catalogGridModeCropThumbnails = catalogGridModeCropThumbnails ?? true {
+		catalogGridModeCropThumbnails = catalogGridModeCropThumbnails ?? true,
+		useSpamFilterWorkarounds = useSpamFilterWorkarounds ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2716,6 +2720,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get catalogGridModeCropThumbnails => _settings.catalogGridModeCropThumbnails;
 	set catalogGridModeCropThumbnails(bool setting) {
 		_settings.catalogGridModeCropThumbnails = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get useSpamFilterWorkarounds => _settings.useSpamFilterWorkarounds;
+	set useSpamFilterWorkarounds(bool setting) {
+		_settings.useSpamFilterWorkarounds = setting;
 		_settings.save();
 		notifyListeners();
 	}
