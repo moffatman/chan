@@ -2,6 +2,7 @@ import 'package:chan/main.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/sorting.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
@@ -14,7 +15,6 @@ import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart' hide WeakMap;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide WeakMap;
 import 'package:provider/provider.dart';
 import 'package:weak_map/weak_map.dart';
@@ -290,23 +290,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 		}
 		else if (settings.drawerMode == DrawerMode.watchedThreads) {
 			final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.values.map(i.scope)).toList();
-			final t0 = DateTime(2000);
-			watches.sort((a, b) {
-				final ta = a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread?.time;
-				final tb = b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread?.time;
-				return (tb ?? t0).compareTo(ta ?? t0);
-			});
-			mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
-				if (a.item.zombie == b.item.zombie) {
-					return 0;
-				}
-				else if (a.item.zombie) {
-					return 1;
-				}
-				else {
-					return -1;
-				}
-			});
+			sortWatchedThreads(watches);
 			list = _DrawerList<ImageboardScoped<ThreadWatch>>(
 				list: watches,
 				builder: (watch, builder) => ThreadWidgetBuilder(
@@ -351,8 +335,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 		}
 		else {
 			List<PersistentThreadState> states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
-			final d0 = DateTime(2000);
-			states.sort((a, b) => (b.savedTime ?? d0).compareTo(a.savedTime ?? d0));
+			states.sort(getSavedThreadsSortMethod());
 			states = states.take(100).toList();
 			for (final state in states) {
 				// Hacky way to kick off the loading
