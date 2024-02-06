@@ -1035,6 +1035,8 @@ class SavedSettings extends HiveObject {
 	bool catalogGridModeCropThumbnails;
 	@HiveField(178)
 	bool useSpamFilterWorkarounds;
+	@HiveField(179)
+	double scrollbarThickness;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1215,6 +1217,7 @@ class SavedSettings extends HiveObject {
 		double? catalogGridModeTextScale,
 		bool? catalogGridModeCropThumbnails,
 		bool? useSpamFilterWorkarounds,
+		double? scrollbarThickness,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1417,7 +1420,8 @@ class SavedSettings extends HiveObject {
 		downloadUsingServerSideFilenames = downloadUsingServerSideFilenames ?? false,
 		catalogGridModeTextScale = catalogGridModeTextScale ?? 1.0,
 		catalogGridModeCropThumbnails = catalogGridModeCropThumbnails ?? true,
-		useSpamFilterWorkarounds = useSpamFilterWorkarounds ?? true {
+		useSpamFilterWorkarounds = useSpamFilterWorkarounds ?? true,
+		scrollbarThickness = scrollbarThickness ?? 6 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2727,6 +2731,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get useSpamFilterWorkarounds => _settings.useSpamFilterWorkarounds;
 	set useSpamFilterWorkarounds(bool setting) {
 		_settings.useSpamFilterWorkarounds = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get scrollbarThickness => _settings.scrollbarThickness;
+	set scrollbarThickness(double setting) {
+		_settings.scrollbarThickness = setting;
 		_settings.save();
 		notifyListeners();
 	}

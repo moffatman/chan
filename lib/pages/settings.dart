@@ -3484,6 +3484,29 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				const SizedBox(height: 32),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.arrow_left_right),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Scrollbar thickness')
+						),
+						AdaptiveIconButton(
+							onPressed: settings.scrollbarThickness <= 1 ? null : () {
+								settings.scrollbarThickness -= 1;
+							},
+							icon: const Icon(CupertinoIcons.minus)
+						),
+						Text('${settings.scrollbarThickness.round()} px'),
+						AdaptiveIconButton(
+							onPressed: settings.scrollbarThickness >= 32 ? null : () {
+								settings.scrollbarThickness += 1;
+							},
+							icon: const Icon(CupertinoIcons.plus)
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
 						Container(
 							decoration: BoxDecoration(
 								borderRadius: const BorderRadius.only(
