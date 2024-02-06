@@ -1083,7 +1083,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		() async {
 			await Future.wait(archives.map((archive) async {
 				try {
-					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 10));
+					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
 					if (completer.isCompleted) return null;
 					await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
 					thread_.archiveName = archive.name;
