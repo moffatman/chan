@@ -684,7 +684,7 @@ class ThreadRow extends StatelessWidget {
 		);
 		final container = Container(
 			decoration: BoxDecoration(
-				color: (Material.maybeOf(context)?.color == theme.backgroundColor) ? opacityBasedBackgroundColor : backgroundColor,
+				color: (settings.materialStyle && Material.maybeOf(context)?.color == theme.backgroundColor) ? opacityBasedBackgroundColor : backgroundColor,
 				border: contentFocus ? Border.all(color: borderColor) : null,
 				borderRadius: borderRadius
 			),
