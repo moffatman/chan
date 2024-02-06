@@ -32,6 +32,14 @@ class ContextMenuAction {
 	});
 }
 
+class ContextMenuHint {
+	const ContextMenuHint();
+	@override
+	bool operator == (Object other) => other is ContextMenuHint;
+	@override
+	int get hashCode => 0;
+}
+
 class ContextMenu extends StatefulWidget {
 	final List<ContextMenuAction> actions;
 	final Widget child;
@@ -143,7 +151,7 @@ class _ContextMenuState extends State<ContextMenu> {
 		);
 		Widget previewBuilder(BuildContext context) => MultiProvider(
 			providers: [
-				Provider<bool>.value(value: false), // Dummy, at least one provider is required
+				Provider<ContextMenuHint>.value(value: const ContextMenuHint()), // Dummy, at least one provider is required
 				if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
 				if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
 				if (site != null) Provider<ImageboardSite>.value(value: site),

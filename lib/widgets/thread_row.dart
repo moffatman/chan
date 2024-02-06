@@ -4,10 +4,12 @@ import 'dart:ui';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -242,6 +244,11 @@ class ThreadRow extends StatelessWidget {
 		}
 		final watch = threadState?.threadWatch;
 		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0) && (forceShowInHistory ?? threadState.showInHistory);
+		final approxScreenWidth = estimateWidth(context);
+		final columns = contentFocus ? (approxScreenWidth / settings.catalogGridWidth).floor() : 1;
+		final approxWidth = approxScreenWidth / columns;
+		final inContextMenuHack = context.watch<ContextMenuHint?>() != null;
+		final approxHeight = (contentFocus ? settings.catalogGridHeight : settings.maxCatalogRowHeight) * (inContextMenuHack ? 5 : 1);
 		Widget makeCounters() => ThreadCounters(
 			countsUnreliable: countsUnreliable,
 			imageboard: imageboard,
@@ -260,15 +267,7 @@ class ThreadRow extends StatelessWidget {
 				maintainSize: true,
 				child: Padding(
 					padding: const EdgeInsets.only(top: 2),
-					child: LayoutBuilder(
-						builder: (context, constraints) {
-							final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
-							if (constraints.maxWidth < 150) {
-								return SizedBox(height: fontSize + 12, width: double.infinity);	
-							}
-							return makeCounters();
-						}
-					)
+					child: approxWidth < 150 ? SizedBox(height: DefaultTextStyle.of(context).style.fontSize ?? 17, width: double.infinity) : makeCounters()
 				)
 			)
 		);
@@ -416,69 +415,67 @@ class ThreadRow extends StatelessWidget {
 							imageboard: imageboard,
 							style: PostSpanZoneStyle.linear
 						),
-						child: IgnorePointer(
-							child: LayoutBuilder(
-								builder: (context, constraints) => Text.rich(
-									TextSpan(
-										children: [
-											if (headerRow.isNotEmpty) TextSpan(
-												children: [
-													...headerRow,
-												]
-											),
-											if (site.classicCatalogStyle) ...[
-												if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
-												latestThread.posts_.first.span.build(
-													context, context.watch<PostSpanZoneData>(), settings, theme,
-													(baseOptions ?? const PostSpanRenderOptions()).copyWith(
-														avoidBuggyClippers: true,
-														maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
-														charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
-														postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1)	? null : countersPlaceholder,
-														ensureTrailingNewline: true
-													)
-												)
+						builder: (context, _) => IgnorePointer(
+							child: Text.rich(
+								TextSpan(
+									children: [
+										if (headerRow.isNotEmpty) TextSpan(
+											children: [
+												...headerRow,
 											]
-											else if (!settings.useFullWidthForCatalogCounters && !(showLastReplies && thread.posts_.length > 1)) countersPlaceholder,
-											// Uuse thread and not latestThread
-											// The last replies should be only those from the catalog/search query
-											if (showLastReplies) ...[
-												if (thread.posts.length > 1) const WidgetSpan(
-													child: SizedBox(
-														width: double.infinity,
-														height: 16
-													)
-												),
-												...thread.posts.skip(max(1, thread.posts.length - 3)).map((post) => WidgetSpan(
-													child: TransformedMediaQuery(
-														transformation: (context, mq) => mq.copyWith(textScaler: TextScaler.noScaling),
-															child: Padding(
-															padding: const EdgeInsets.only(bottom: 16),
-															child: Row(
-																mainAxisSize: MainAxisSize.min,
-																crossAxisAlignment: CrossAxisAlignment.start,
-																children: [
-																	Text('>>', style: TextStyle(color: theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
-																	const SizedBox(width: 4),
-																	Flexible(
-																		child: PostRow(
-																			post: post,
-																			baseOptions: baseOptions,
-																			shrinkWrap: true,
-																			highlight: true,
-																			showPostNumber: true
-																		)
+										),
+										if (site.classicCatalogStyle) ...[
+											if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
+											latestThread.posts_.first.span.build(
+												context, context.watch<PostSpanZoneData>(), settings, theme,
+												(baseOptions ?? const PostSpanRenderOptions()).copyWith(
+													avoidBuggyClippers: true,
+													maxLines: 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
+													charactersPerLine: (approxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
+													postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1)	? null : countersPlaceholder,
+													ensureTrailingNewline: true
+												)
+											)
+										]
+										else if (!settings.useFullWidthForCatalogCounters && !(showLastReplies && thread.posts_.length > 1)) countersPlaceholder,
+										// Uuse thread and not latestThread
+										// The last replies should be only those from the catalog/search query
+										if (showLastReplies) ...[
+											if (thread.posts.length > 1) const WidgetSpan(
+												child: SizedBox(
+													width: double.infinity,
+													height: 16
+												)
+											),
+											...thread.posts.skip(max(1, thread.posts.length - 3)).map((post) => WidgetSpan(
+												child: TransformedMediaQuery(
+													transformation: (context, mq) => mq.copyWith(textScaler: TextScaler.noScaling),
+														child: Padding(
+														padding: const EdgeInsets.only(bottom: 16),
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															crossAxisAlignment: CrossAxisAlignment.start,
+															children: [
+																Text('>>', style: TextStyle(color: theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
+																const SizedBox(width: 4),
+																Flexible(
+																	child: PostRow(
+																		post: post,
+																		baseOptions: baseOptions,
+																		shrinkWrap: true,
+																		highlight: true,
+																		showPostNumber: true
 																	)
-																]
-															)
+																)
+															]
 														)
 													)
-												))
-											]
+												)
+											))
 										]
-									),
-									overflow: TextOverflow.fade
-								)
+									]
+								),
+								overflow: TextOverflow.fade
 							)
 						)
 					)
@@ -534,7 +531,7 @@ class ThreadRow extends StatelessWidget {
 					onTap: () => onThumbnailTap?.call(attachment)
 				)
 			);
-			Widget txtBuilder(BoxConstraints constraints) => Padding(
+			final txt = Padding(
 				padding: const EdgeInsets.all(8),
 				child: ChangeNotifierProvider<PostSpanZoneData>(
 					create: (ctx) => PostSpanRootZoneData(
@@ -549,8 +546,8 @@ class ThreadRow extends StatelessWidget {
 									...headerRow,
 									if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
 									if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-										maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
-										charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
+										maxLines: 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
+										charactersPerLine: (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 										avoidBuggyClippers: true
 									)),
 									if (!settings.useFullWidthForCatalogCounters) countersPlaceholder,
@@ -579,9 +576,7 @@ class ThreadRow extends StatelessWidget {
 								child: Container(
 									color: backgroundColor.withOpacity(0.8),
 									width: double.infinity,
-									child: LayoutBuilder(
-										builder: (_, constraints) => txtBuilder(constraints)
-									)
+									child: txt
 								)
 							)
 						)
@@ -591,31 +586,21 @@ class ThreadRow extends StatelessWidget {
 			else {
 				final att_ = att;
 				if (att_ == null) {
-					return [LayoutBuilder(
-						builder: (_, constraints) => txtBuilder(constraints)
-					)];
+					return [txt];
 				}
 				return [
-					LayoutBuilder(
-						builder: (_, constraints) {
-							final txtConstraints = constraints.copyWith(
-								maxHeight: constraints.maxHeight / 2,
-								minHeight: 25
-							);
-							return Column(
-								mainAxisSize: MainAxisSize.min,
-								crossAxisAlignment: CrossAxisAlignment.stretch,
-								children: [
-									Expanded(
-										child: att_
-									),
-									ConstrainedBox(
-										constraints: txtConstraints,
-										child: txtBuilder(txtConstraints)
-									)
-								]
-							);
-						}
+					CustomMultiChildLayout(
+						delegate: _ContentFocusedMultiChildLayoutDelegate(),
+						children: [
+							LayoutId(
+								id: _ContentFocusedMultiChildLayoutId.attachment,
+								child: att_
+							),
+							LayoutId(
+								id: _ContentFocusedMultiChildLayoutId.text,
+								child: txt
+							)
+						],
 					)
 				];
 			}
@@ -722,5 +707,39 @@ class ThreadRow extends StatelessWidget {
 				}
 			}
 		);
+	}
+}
+
+enum _ContentFocusedMultiChildLayoutId {
+	attachment,
+	text
+}
+
+class _ContentFocusedMultiChildLayoutDelegate extends MultiChildLayoutDelegate {
+	@override
+	void performLayout(Size size) {
+		final start = DateTime.now();
+		final textSize = layoutChild(_ContentFocusedMultiChildLayoutId.text, BoxConstraints(
+			minWidth: size.width,
+			maxWidth: size.width,
+			minHeight: 25,
+			maxHeight: size.height / 2
+		));
+		final attachmentHeight = size.height - textSize.height;
+		positionChild(_ContentFocusedMultiChildLayoutId.text, Offset(0, attachmentHeight));
+		layoutChild(_ContentFocusedMultiChildLayoutId.attachment, BoxConstraints(
+			minWidth: size.width,
+			maxWidth: size.width,
+			minHeight: attachmentHeight,
+			maxHeight: attachmentHeight
+		));
+		positionChild(_ContentFocusedMultiChildLayoutId.attachment, Offset.zero);
+		print('zombocom ${DateTime.now().difference(start).inMicroseconds / 1000} ms');
+	}
+
+	@override
+	bool shouldRelayout(_ContentFocusedMultiChildLayoutDelegate oldDelegate) {
+		print(oldDelegate);
+		return false;
 	}
 }
