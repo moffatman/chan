@@ -386,7 +386,13 @@ class Site4Chan extends ImageboardSite {
 					elements.add(PostCodeSpan(unescape.convert(node.innerHtml.replaceFirst(RegExp(r'<br>$'), '').replaceAll('<br>', '\n'))));
 				}
 				else if (node.localName == 'b' || node.localName == 'strong') {
-					elements.add(PostBoldSpan(makeSpan(board, threadId, node.innerHtml)));
+					final child = PostBoldSpan(makeSpan(board, threadId, node.innerHtml));
+					if (node.attributes['style']?.contains('color: red;') ?? false) {
+						elements.add(PostSecondaryColorSpan(child));
+					}
+					else {
+						elements.add(child);
+					}
 				}
 				else {
 					elements.addAll(parsePlaintext(node.text, fromSearchThread: fromSearchThread));

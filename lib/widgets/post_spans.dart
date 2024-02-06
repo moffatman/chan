@@ -1193,6 +1193,22 @@ class PostColorSpan extends PostSpan {
 	bool get containsLink => child.containsLink;
 }
 
+class PostSecondaryColorSpan extends PostSpan {
+	final PostSpan child;
+	
+	const PostSecondaryColorSpan(this.child);
+	@override
+	build(context, zone, settings, theme, options) {
+		return child.build(context, zone, settings, theme, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(color: theme.secondaryColor)
+		));
+	}
+	@override
+	buildText() => child.buildText();
+	@override
+	bool get containsLink => child.containsLink;
+}
+
 class PostBoldSpan extends PostSpan {
 	final PostSpan child;
 
