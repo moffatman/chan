@@ -83,7 +83,7 @@ dependencies:
     sdk: flutter
   firebase_crashlytics: ^3.0.3
   charset_converter: ^2.1.0
-  markdown: ^7.0.1
+  markdown: ^7.2.1
   string_similarity: ^2.0.0
   weak_map: ^2.1.0
   vector_math: ^2.1.4
@@ -171,7 +171,7 @@ dependency_overrides:
     git:
       url: https://github.com/moffatman/flutter_photo_manager.git
       ref: main
-  markdown: ^7.0.1 # Needed to resolve a conflict with flutter_tex
+  markdown: ^7.2.1 # Needed to resolve a conflict with flutter_tex
   screenshot: ^2.1.0 # Needed to run with current moffatman/flutter tag
   connectivity_plus: # Needed to prioritize Mobile over VPN on Android
     git:
