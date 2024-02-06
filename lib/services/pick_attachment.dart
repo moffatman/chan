@@ -182,6 +182,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 	else if (Platform.isAndroid) {
 		return [
 			if (anySaved) saved,
+			gallery,
 			file,
 			if (includeClipboard) clipboard,
 			web,
