@@ -2696,6 +2696,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	bool? _useTree;
 	final Map<int, RefreshableListItem<T>> _newInsertIndices = {};
 	bool _autoExtendEnabled = true;
+	bool _isDisposed = false;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
@@ -2785,6 +2786,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	@override
 	void dispose() {
 		super.dispose();
+		_isDisposed = true;
 		_scrollStream.close();
 		_slowScrollSubscription.cancel();
 		scrollController?.removeListener(_onScrollControllerNotification);
@@ -2843,6 +2845,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			}
 		}
 		WidgetsBinding.instance.addPostFrameCallback((_) {
+			if (_isDisposed) {
+				return;
+			}
 			slowScrolls.didUpdate();
 			notifyListeners();
 		});

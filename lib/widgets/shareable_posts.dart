@@ -64,7 +64,7 @@ class ShareablePostsStyle {
 	});
 }
 
-class ShareablePosts extends StatelessWidget {
+class ShareablePosts extends StatefulWidget {
 	final int primaryPostId;
 	final ShareablePostsStyle style;
 
@@ -75,7 +75,22 @@ class ShareablePosts extends StatelessWidget {
 	});
 
 	@override
+	createState() => _ShareablePostsState();
+}
+
+class _ShareablePostsState extends State<ShareablePosts> {
+	late final RefreshableListController<Post> controller;
+
+	@override
+	void initState() {
+		super.initState();
+		controller = RefreshableListController();
+	}
+
+	@override
 	Widget build(BuildContext context) {
+		final style = widget.style;
+		final primaryPostId = widget.primaryPostId;
 		final imageboard = context.read<Imageboard>();
 		final zone = context.read<PostSpanZoneData>();
 		final theme = context.read<SavedTheme>();
@@ -187,12 +202,13 @@ class ShareablePosts extends StatelessWidget {
 					},
 					useTree: true,
 					initialPrimarySubtreeParents: zone.primaryThreadState?.primarySubtreeParents,
+					controller: controller,
 					treeAdapter: RefreshableTreeAdapter(
 						filter: (item) {
 							if (item.id == primaryPostId) {
 								return true;
 							}
-							if (style.parentDepth == 1 && item.item.replyIds.contains(primaryPostId)) {
+							if (style.parentDepth == 1 && item.item.replyIds.contains(primaryPostId) && !controller.isItemHidden(item).isDuplicate) {
 								return true;
 							}
 							else if (style.parentDepth > 1 && item.treeDescendantIds.contains(primaryPostId)) {
@@ -361,5 +377,11 @@ class ShareablePosts extends StatelessWidget {
 			);
 		}
 		return child;
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		controller.dispose();
 	}
 }
