@@ -1725,7 +1725,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												if (data.isEmpty) {
 													return;
 												}
-												final f = File('${Persistence.temporaryDirectory.path}/sharecache/${DateTime.now().millisecondsSinceEpoch}/${Uri.parse(content.uri).pathSegments.last}');
+												String filename = Uri.parse(content.uri).pathSegments.last;
+												if (!filename.contains('.')) {
+													filename += '.${content.mimeType.split('/').last}';
+												}
+												final f = File('${Persistence.temporaryDirectory.path}/sharecache/${DateTime.now().millisecondsSinceEpoch}/$filename');
 												await f.create(recursive: true);
 												await f.writeAsBytes(data, flush: true);
 												setAttachment(f);
