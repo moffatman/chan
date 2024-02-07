@@ -718,7 +718,6 @@ enum _ContentFocusedMultiChildLayoutId {
 class _ContentFocusedMultiChildLayoutDelegate extends MultiChildLayoutDelegate {
 	@override
 	void performLayout(Size size) {
-		final start = DateTime.now();
 		final textSize = layoutChild(_ContentFocusedMultiChildLayoutId.text, BoxConstraints(
 			minWidth: size.width,
 			maxWidth: size.width,
@@ -734,12 +733,10 @@ class _ContentFocusedMultiChildLayoutDelegate extends MultiChildLayoutDelegate {
 			maxHeight: attachmentHeight
 		));
 		positionChild(_ContentFocusedMultiChildLayoutId.attachment, Offset.zero);
-		print('zombocom ${DateTime.now().difference(start).inMicroseconds / 1000} ms');
 	}
 
 	@override
 	bool shouldRelayout(_ContentFocusedMultiChildLayoutDelegate oldDelegate) {
-		print(oldDelegate);
 		return false;
 	}
 }
