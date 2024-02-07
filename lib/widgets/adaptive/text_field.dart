@@ -135,48 +135,51 @@ class AdaptiveTextField extends StatelessWidget {
 			);
 		}
 		final placeholderColor = ChanceTheme.primaryColorOf(context).withOpacity(0.75);
-		return CupertinoTextField(
-			autocorrect: autocorrect,
-			autofillHints: autofillHints,
-			autofocus: autofocus,
-			contentInsertionConfiguration: contentInsertionConfiguration,
-			contextMenuBuilder: contextMenuBuilder ?? _defaultCupertinoContextMenuBuilder,
-			controller: controller,
-			decoration: BoxDecoration(
-				color: ChanceTheme.textFieldColorOf(context),
-				border: Border.all(
-					color: const CupertinoDynamicColor.withBrightness(
-						color: Color(0x33000000),
-						darkColor: Color(0x33FFFFFF),
+		return Opacity(
+			opacity: enabled ? 1 : 0.5,
+			child: CupertinoTextField(
+				autocorrect: autocorrect,
+				autofillHints: autofillHints,
+				autofocus: autofocus,
+				contentInsertionConfiguration: contentInsertionConfiguration,
+				contextMenuBuilder: contextMenuBuilder ?? _defaultCupertinoContextMenuBuilder,
+				controller: controller,
+				decoration: BoxDecoration(
+					color: ChanceTheme.textFieldColorOf(context),
+					border: Border.all(
+						color: const CupertinoDynamicColor.withBrightness(
+							color: Color(0x33000000),
+							darkColor: Color(0x33FFFFFF),
+						),
+						width: 0
 					),
-					width: 0
+					borderRadius: const BorderRadius.all(Radius.circular(5.0))
 				),
-				borderRadius: const BorderRadius.all(Radius.circular(5.0))
-			),
-			enabled: enabled,
-			enableIMEPersonalizedLearning: enableIMEPersonalizedLearning,
-			enableSuggestions: enableSuggestions,
-			focusNode: focusNode,
-			keyboardAppearance: keyboardAppearance,
-			keyboardType: keyboardType,
-			maxLines: maxLines,
-			minLines: minLines,
-			onChanged: onChanged,
-			onSubmitted: onSubmitted,
-			onTap: onTap,
-			placeholder: placeholder,
-			placeholderStyle: placeholderStyle ?? TextStyle(
-				fontWeight: FontWeight.w400,
-				color: placeholderColor,
-			),
-			smartDashesType: smartDashesType,
-			smartQuotesType: smartQuotesType,
-			spellCheckConfiguration: spellCheckConfiguration,
-			style: style,
-			suffix: suffix,
-			suffixMode: suffixMode,
-			textAlign: textAlign,
-			textCapitalization: textCapitalization
+				enabled: enabled,
+				enableIMEPersonalizedLearning: enableIMEPersonalizedLearning,
+				enableSuggestions: enableSuggestions,
+				focusNode: focusNode,
+				keyboardAppearance: keyboardAppearance,
+				keyboardType: keyboardType,
+				maxLines: maxLines,
+				minLines: minLines,
+				onChanged: onChanged,
+				onSubmitted: onSubmitted,
+				onTap: onTap,
+				placeholder: placeholder,
+				placeholderStyle: placeholderStyle ?? TextStyle(
+					fontWeight: FontWeight.w400,
+					color: placeholderColor,
+				),
+				smartDashesType: smartDashesType,
+				smartQuotesType: smartQuotesType,
+				spellCheckConfiguration: spellCheckConfiguration,
+				style: style,
+				suffix: suffix,
+				suffixMode: suffixMode,
+				textAlign: textAlign,
+				textCapitalization: textCapitalization
+			)
 		);
 	}
 }
