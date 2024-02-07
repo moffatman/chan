@@ -798,6 +798,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					attachment = file;
 				});
 				_spamFilterCheckingReceipt = null;
+				_filenameController.text = file.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), '');
 				widget.onFilePathChanged?.call(file.path);
 			}
 		}
