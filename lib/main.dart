@@ -681,14 +681,14 @@ class ChanTabs extends ChangeNotifier {
 	Future<void> showNewTabPopup({
 		required BuildContext context,
 		required AxisDirection direction,
-		bool showTitles = true
+		required Axis? titles
 	}) async {
 		lightHapticFeedback();
 		final ro = context.findRenderObject()! as RenderBox;
 		showTabMenu(
 			context: context,
 			direction: direction,
-			showTitles: showTitles,
+			titles: titles,
 			origin: Rect.fromPoints(
 				ro.localToGlobal(ro.semanticBounds.topLeft),
 				ro.localToGlobal(ro.semanticBounds.bottomRight)
@@ -1514,7 +1514,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					showTabMenu(
 						context: context,
 						direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
-						showTitles: axis == Axis.horizontal,
+						titles: Axis.vertical,
 						origin: Rect.fromPoints(
 							ro.localToGlobal(ro.semanticBounds.topLeft),
 							ro.localToGlobal(ro.semanticBounds.bottomRight)
@@ -1615,10 +1615,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					onVerticalDragEnd: (details) {
 						final velocity = details.primaryVelocity ?? 0;
 						if (velocity < 0) {
-							_tabs.showNewTabPopup(context: context, direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right);
+							_tabs.showNewTabPopup(
+								context: context,
+								direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+								titles: Axis.vertical,
+							);
 						}
 					},
-					onLongPress: () => _tabs.showNewTabPopup(context: context, direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right),
+					onLongPress: () => _tabs.showNewTabPopup(
+						context: context,
+						direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+						titles: Axis.vertical,
+					),
 					child: AdaptiveButton(
 						padding: const EdgeInsets.all(16),
 						child: Opacity(

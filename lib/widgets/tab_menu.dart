@@ -26,14 +26,14 @@ class _TabMenuOverlay extends StatefulWidget {
 	final AxisDirection direction;
 	final List<TabMenuAction> actions;
 	final VoidCallback onDone;
-	final bool showTitles;
+	final Axis? titles;
 
 	const _TabMenuOverlay({
 		required this.origin,
 		required this.direction,
 		required this.actions,
 		required this.onDone,
-		required this.showTitles
+		required this.titles
 	});
 	
 	@override
@@ -103,32 +103,36 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 				);
 				break;
 		}
-		final actions = widget.actions.map((action) => AdaptiveIconButton(
-			padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-			onPressed: action.onPressed == null ? null : () {
-				action.onPressed?.call();
-				onDone();
-			},
-			icon: Flex(
-				direction: flipAxis(axisDirectionToAxis(widget.direction)),
-				mainAxisSize: MainAxisSize.min,
-				children: [
-					Icon(action.icon, color: (action.onPressed != null) && action.isDestructiveAction ? Colors.red : null),
-					if (widget.showTitles) ...[
+		final actions = widget.actions.map((action) {
+			final icon = Icon(action.icon, color: (action.onPressed != null) && action.isDestructiveAction ? Colors.red : null);
+			final titles = widget.titles;
+			return AdaptiveIconButton(
+				padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+				onPressed: action.onPressed == null ? null : () {
+					action.onPressed?.call();
+					onDone();
+				},
+				icon: titles == null ? icon : Flex(
+					direction: titles,
+					mainAxisSize: MainAxisSize.min,
+					crossAxisAlignment: CrossAxisAlignment.center,
+					children: [
+						icon,
 						const SizedBox(height: 4, width: 8),
 						Flexible(
 							child: Text(
 								action.title,
 								overflow: TextOverflow.visible,
+								textAlign: TextAlign.center,
 								style: widget.origin.size.aspectRatio < 1.5
 									// Not much space (near-square), shrink font
 									? const TextStyle(fontSize: 15) : null
 							)
 						)
 					]
-				]
-			)
-		)).toList();
+				)
+			);
+		}).toList();
 		final menu = Container(
 			decoration: BoxDecoration(
 				color: ChanceTheme.barColorOf(context),
@@ -202,7 +206,7 @@ Future<void> showTabMenu({
 	required Rect origin,
 	required AxisDirection direction,
 	required List<TabMenuAction> actions,
-	required bool showTitles
+	required Axis? titles
 }) async {
 	final completer = Completer<void>();
 	final entry = OverlayEntry(
@@ -213,7 +217,7 @@ Future<void> showTabMenu({
 			),
 			direction: direction,
 			actions: actions,
-			showTitles: showTitles,
+			titles: titles,
 			onDone: completer.complete
 		)
 	);

@@ -136,7 +136,7 @@ class _DrawerList<T extends Object> {
 					showTabMenu(
 						context: context,
 						direction: AxisDirection.right,
-						showTitles: false,
+						titles: null,
 						origin: Rect.fromPoints(
 							ro.localToGlobal(ro.semanticBounds.topLeft),
 							ro.localToGlobal(ro.semanticBounds.bottomRight)
@@ -537,7 +537,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 										tabs.showNewTabPopup(
 											context: context,
 											direction: AxisDirection.down,
-											showTitles: true
+											titles: Axis.horizontal,
 										);
 									}
 									else if (newMode == DrawerMode.watchedThreads) {
@@ -545,7 +545,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 										showTabMenu(
 											context: context,
 											direction: AxisDirection.down,
-											showTitles: true,
+											titles: Axis.horizontal,
 											origin: Rect.fromPoints(
 												ro.localToGlobal(ro.semanticBounds.topLeft),
 												ro.localToGlobal(ro.semanticBounds.bottomRight)
@@ -565,7 +565,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 										showTabMenu(
 											context: context,
 											direction: AxisDirection.down,
-											showTitles: true,
+											titles: Axis.horizontal,
 											origin: Rect.fromPoints(
 												ro.localToGlobal(ro.semanticBounds.topLeft),
 												ro.localToGlobal(ro.semanticBounds.bottomRight)
@@ -633,7 +633,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 											tabs.showNewTabPopup(
 												context: context,
 												direction: AxisDirection.right,
-												showTitles: false
+												titles: null,
 											);
 										};
 									}
@@ -650,7 +650,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 								onLongPress: () => tabs.showNewTabPopup(
 									context: context,
 									direction: AxisDirection.right,
-									showTitles: false
+									titles: null,
 								),
 								leading: const Icon(Icons.add),
 								title: const Text('New Tab')
