@@ -392,17 +392,6 @@ extension CompareTitle on Thread? {
 		else if (b == null) {
 			return -1;
 		}
-		final titleA = a.title;
-		final titleB = b.title;
-		if (titleA != null && titleB != null) {
-			return titleA.friendlyCompareTo(titleB);
-		}
-		else if (titleA != null) {
-			return -1;
-		}
-		else if (titleB != null) {
-			return 1;
-		}
-		return (a.posts_.tryFirst?.text ?? '').friendlyCompareTo(b.posts_.tryFirst?.text ?? '');
+		return (a.title ?? a.posts_.tryFirst?.span.buildText() ?? '').friendlyCompareTo(b.title ?? b.posts_.tryFirst?.span.buildText() ?? '');
 	}
 }
