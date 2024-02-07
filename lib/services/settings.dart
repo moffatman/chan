@@ -1308,7 +1308,7 @@ class SavedSettings extends HiveObject {
 		recentSearches = recentSearches ?? PersistentRecentSearches(),
 		hideDefaultNamesOnPosts = hideDefaultNamesOnPosts ?? false,
 		showThumbnailsInGallery = showThumbnailsInGallery ?? true,
-		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.lastPostTime,
+		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.savedTime,
 		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false,
 		textScale = textScale ?? 1.0,
 		catalogGridModeAttachmentInBackground = catalogGridModeAttachmentInBackground ?? false,
@@ -1471,6 +1471,13 @@ class SavedSettings extends HiveObject {
 				// mk means media-kit
 				this.webmTranscoding = WebmTranscodingSetting.never;
 				this.appliedMigrations.add('mk');
+			}
+			if (!this.appliedMigrations.contains('ws')) {
+				// ws means watched sorting
+				if (this.watchedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
+					this.watchedThreadsSortingMethod = ThreadSortingMethod.savedTime;
+				}
+				this.appliedMigrations.add('ws');
 			}
 		}
 

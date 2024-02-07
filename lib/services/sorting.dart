@@ -5,7 +5,36 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive/modal_popup.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+
+Future<void> selectWatchedThreadsSortMethod(BuildContext context, {VoidCallback? onMutate}) => showAdaptiveModalPopup<DateTime>(
+	context: context,
+	builder: (context) => AdaptiveActionSheet(
+		title: const Text('Sort by...'),
+		actions: {
+			ThreadSortingMethod.savedTime: 'Order added',
+			ThreadSortingMethod.lastPostTime: 'Latest reply',
+			ThreadSortingMethod.lastReplyByYouTime: 'Latest reply by you',
+			ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
+			ThreadSortingMethod.threadPostTime: 'Latest thread'
+		}.entries.map((entry) => AdaptiveActionSheetAction(
+			child: Text(entry.value, style: TextStyle(
+				fontWeight: entry.key == Persistence.settings.watchedThreadsSortingMethod ? FontWeight.bold : null
+			)),
+			onPressed: () {
+				EffectiveSettings.instance.watchedThreadsSortingMethod = entry.key;
+				Navigator.of(context, rootNavigator: true).pop();
+				onMutate?.call();
+			}
+		)).toList(),
+		cancelButton: AdaptiveActionSheetAction(
+			child: const Text('Cancel'),
+			onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+		)
+	)
+);
 
 void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 	final d = DateTime(2000);
@@ -43,6 +72,11 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 			return (tb?.time ?? d).compareTo(ta?.time ?? d);
 		});
 	}
+	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
+		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
+			return (b.item.watchTime ?? d).compareTo((a.item.watchTime ?? d));
+		});
+	}
 	mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
 		if (a.item.zombie == b.item.zombie) {
 			return 0;
@@ -57,16 +91,49 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 }
 
 Comparator<PersistentThreadState> getSavedThreadsSortMethod() {
-	Comparator<PersistentThreadState> sortMethod = (a, b) => 0;
 	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
-	if (Persistence.settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
-		sortMethod = (a, b) => (b.savedTime ?? noDate).compareTo(a.savedTime ?? noDate);
-	}
-	else if (Persistence.settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
-		sortMethod = (a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate);
-	}
-	else if (Persistence.settings.savedThreadsSortingMethod == ThreadSortingMethod.alphabeticByTitle) {
-		sortMethod = (a, b) => a.thread.compareTo(b.thread);
-	}
-	return sortMethod;
+	return switch (Persistence.settings.savedThreadsSortingMethod) {
+		ThreadSortingMethod.alphabeticByTitle => (a, b) => a.thread.compareTo(b.thread),
+		ThreadSortingMethod.lastPostTime => (a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate),
+		ThreadSortingMethod.threadPostTime => (a, b) => (b.thread?.time ?? noDate).compareTo(a.thread?.time ?? noDate),
+		ThreadSortingMethod.savedTime || _ => (a, b) => (b.savedTime ?? noDate).compareTo(a.savedTime ?? noDate)
+	};
+}
+
+Future<void> selectSavedThreadsSortMethod(BuildContext context) => showAdaptiveModalPopup(
+	context: context,
+	useRootNavigator: true,
+	builder: (context) => AdaptiveActionSheet(
+		title: const Text('Sort by...'),
+		actions: {
+			ThreadSortingMethod.savedTime: 'Order added',
+			ThreadSortingMethod.lastPostTime: 'Latest reply',
+			ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
+			ThreadSortingMethod.threadPostTime: 'Latest thread'
+		}.entries.map((entry) => AdaptiveActionSheetAction(
+			child: Text(entry.value, style: TextStyle(
+				fontWeight: entry.key == Persistence.settings.savedThreadsSortingMethod ? FontWeight.bold : null
+			)),
+			onPressed: () {
+				EffectiveSettings.instance.savedThreadsSortingMethod = entry.key;
+				Navigator.of(context, rootNavigator: true).pop();
+			}
+		)).toList(),
+		cancelButton: AdaptiveActionSheetAction(
+			child: const Text('Cancel'),
+			onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+		)
+	)
+);
+
+Comparator<ImageboardScoped<SavedPost>> getSavedPostsSortMethod() {
+	return switch (Persistence.settings.savedThreadsSortingMethod) {
+		ThreadSortingMethod.lastPostTime => (a, b) => b.item.post.time.compareTo(a.item.post.time),
+		ThreadSortingMethod.threadPostTime => (a, b) {
+						final ta = a.imageboard.persistence.getThreadStateIfExists(a.item.post.threadIdentifier)?.thread;
+						final tb = b.imageboard.persistence.getThreadStateIfExists(b.item.post.threadIdentifier)?.thread;
+						return (tb?.time ?? b.item.post.time).compareTo(ta?.time ?? a.item.post.time);
+					},
+		ThreadSortingMethod.savedTime || _ => (a, b) => b.item.savedTime.compareTo(a.item.savedTime)
+	};
 }

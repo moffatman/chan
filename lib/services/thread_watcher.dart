@@ -53,6 +53,8 @@ class ThreadWatch extends Watch {
 	bool push;
 	@HiveField(8, defaultValue: false)
 	bool foregroundMuted;
+	@HiveField(9)
+	DateTime? watchTime;
 	ThreadWatch({
 		required this.board,
 		required this.threadId,
@@ -62,7 +64,8 @@ class ThreadWatch extends Watch {
 		this.zombie = false,
 		bool? pushYousOnly,
 		this.push = true,
-		this.foregroundMuted = false
+		this.foregroundMuted = false,
+		required this.watchTime
 	}) : pushYousOnly = pushYousOnly ?? localYousOnly;
 	@override
 	String get type => 'thread';
@@ -155,6 +158,7 @@ class ThreadWatcher extends ChangeNotifier {
 	Future<void> _setInitialCounts() async {
 		for (final watch in persistence.browserState.threadWatches.values) {
 			await persistence.getThreadStateIfExists(watch.threadIdentifier)?.ensureThreadLoaded();
+			watch.watchTime ??= persistence.getThreadStateIfExists(watch.threadIdentifier)?.thread?.posts_.last.time;
 			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
 			if (!watch.localYousOnly) {
 				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;

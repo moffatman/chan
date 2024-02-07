@@ -524,7 +524,8 @@ class Notifications {
 				youIds: youIds,
 				push: push,
 				foregroundMuted: foregroundMuted,
-				zombie: zombie
+				zombie: zombie,
+				watchTime: DateTime.now()
 			);
 			threadWatches[thread] = watch;
 			if (Persistence.settings.usePushNotifications == true && watch.push) {

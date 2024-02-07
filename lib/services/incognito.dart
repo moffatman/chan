@@ -100,7 +100,7 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
   void saveAttachment(Attachment attachment, File fullResolutionFile, String ext) => parent.saveAttachment(attachment, fullResolutionFile, ext);
 
   @override
-  void savePost(Post post) => parent.savePost(post);
+  void savePost(Post post, {DateTime? savedTime}) => parent.savePost(post, savedTime: savedTime);
 
   @override
   Map<String, SavedAttachment> get savedAttachments => parent.savedAttachments;

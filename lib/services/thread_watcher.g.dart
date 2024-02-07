@@ -26,13 +26,14 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
       pushYousOnly: fields[6] == null ? true : fields[6] as bool?,
       push: fields[7] == null ? true : fields[7] as bool,
       foregroundMuted: fields[8] == null ? false : fields[8] as bool,
+      watchTime: fields[9] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ThreadWatch obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.board)
       ..writeByte(1)
@@ -50,7 +51,9 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
       ..writeByte(7)
       ..write(obj.push)
       ..writeByte(8)
-      ..write(obj.foregroundMuted);
+      ..write(obj.foregroundMuted)
+      ..writeByte(9)
+      ..write(obj.watchTime);
   }
 
   @override

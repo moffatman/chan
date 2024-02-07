@@ -725,7 +725,8 @@ class Persistence extends ChangeNotifier {
 						youIds: threadState.youIds,
 						localYousOnly: true,
 						pushYousOnly: true,
-						lastSeenId: threadState.thread?.posts.last.id ?? threadState.id
+						lastSeenId: threadState.thread?.posts.last.id ?? threadState.id,
+						watchTime: DateTime.now()
 					);
 				}
 			}
@@ -884,8 +885,8 @@ class Persistence extends ChangeNotifier {
 		return savedPosts[post.globalId];
 	}
 
-	void savePost(Post post) {
-		savedPosts[post.globalId] = SavedPost(post: post, savedTime: DateTime.now());
+	void savePost(Post post, {DateTime? savedTime}) {
+		savedPosts[post.globalId] = SavedPost(post: post, savedTime: savedTime ?? DateTime.now());
 		settings.save();
 		// Likely will force the widget to rebuild
 		getThreadState(post.threadIdentifier).save();

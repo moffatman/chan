@@ -680,14 +680,14 @@ class ChanTabs extends ChangeNotifier {
 
 	Future<void> showNewTabPopup({
 		required BuildContext context,
-		required Axis axis,
+		required AxisDirection direction,
 		bool showTitles = true
 	}) async {
 		lightHapticFeedback();
 		final ro = context.findRenderObject()! as RenderBox;
 		showTabMenu(
 			context: context,
-			direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+			direction: direction,
 			showTitles: showTitles,
 			origin: Rect.fromPoints(
 				ro.localToGlobal(ro.semanticBounds.topLeft),
@@ -706,8 +706,7 @@ class ChanTabs extends ChangeNotifier {
 					icon: CupertinoIcons.xmark_square,
 					title: 'Close others',
 					isDestructiveAction: true,
-					disabled: Persistence.tabs.length == 1,
-					onPressed: () async {
+					onPressed: Persistence.tabs.length == 1 ? null : () async {
 						lightHapticFeedback();
 						final shouldCloseOthers = await showAdaptiveDialog<bool>(
 							context: context,
@@ -1515,6 +1514,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					showTabMenu(
 						context: context,
 						direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+						showTitles: axis == Axis.horizontal,
 						origin: Rect.fromPoints(
 							ro.localToGlobal(ro.semanticBounds.topLeft),
 							ro.localToGlobal(ro.semanticBounds.bottomRight)
@@ -1524,8 +1524,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								icon: CupertinoIcons.xmark,
 								title: 'Close',
 								isDestructiveAction: true,
-								disabled: Persistence.tabs.length == 1,
-								onPressed: () {
+								onPressed: Persistence.tabs.length == 1 ? null : () {
 									final previouslyActiveTab = _tabs.browseTabIndex;
 									final closedTab = Persistence.tabs[-1 * index];
 									_tabs.closeBrowseTab(-1 * index);
@@ -1616,10 +1615,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					onVerticalDragEnd: (details) {
 						final velocity = details.primaryVelocity ?? 0;
 						if (velocity < 0) {
-							_tabs.showNewTabPopup(context: context, axis: axis);
+							_tabs.showNewTabPopup(context: context, direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right);
 						}
 					},
-					onLongPress: () => _tabs.showNewTabPopup(context: context, axis: axis),
+					onLongPress: () => _tabs.showNewTabPopup(context: context, direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right),
 					child: AdaptiveButton(
 						padding: const EdgeInsets.all(16),
 						child: Opacity(

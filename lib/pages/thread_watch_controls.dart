@@ -194,7 +194,8 @@ class ThreadWatchControlsPage extends StatelessWidget {
 													youIds: [],
 													pushYousOnly: watch.pushYousOnly,
 													foregroundMuted: watch.foregroundMuted,
-													push: watch.push
+													push: watch.push,
+													watchTime: DateTime.now()
 												);
 											} : null,
 											child: const Text('Use as default without asking')

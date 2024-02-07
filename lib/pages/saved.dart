@@ -18,6 +18,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/sorting.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/thread_collection_actions.dart' as thread_actions;
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -37,7 +38,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:mutex/mutex.dart';
 import 'package:provider/provider.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
@@ -56,16 +56,6 @@ class _PostThreadCombo {
 	@override
 	int get hashCode => Object.hash(imageboard, post, threadState);
 }
-
-final _watchMutex = ReadWriteMutex();
-Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() => _watchMutex.protectRead(() async {
-	final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.values.map(i.scope)).toList();
-	await Future.wait(watches.map((watch) async {
-		await watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.ensureThreadLoaded();
-	}));
-	sortWatchedThreads(watches);
-	return watches;
-});
 
 class SavedPage extends StatefulWidget {
 	final bool isActive;
@@ -126,84 +116,6 @@ class _SavedPageState extends State<SavedPage> {
 		);
 	}
 
-	AdaptiveBar _watchedNavigationBar() {
-		final settings = context.watch<EffectiveSettings>();
-		return AdaptiveBar(
-			title: const Text('Watched Threads'),
-			actions: [
-				CupertinoButton(
-					padding: EdgeInsets.zero,
-					child: const Icon(CupertinoIcons.sort_down),
-					onPressed: () {
-						showAdaptiveModalPopup<DateTime>(
-							context: context,
-							builder: (context) => AdaptiveActionSheet(
-								title: const Text('Sort by...'),
-								actions: {
-									ThreadSortingMethod.lastPostTime: 'Last Reply',
-									ThreadSortingMethod.lastReplyByYouTime: 'Last Reply by You',
-									ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
-									ThreadSortingMethod.threadPostTime: 'Newest threads'
-								}.entries.map((entry) => AdaptiveActionSheetAction(
-									child: Text(entry.value, style: TextStyle(
-										fontWeight: entry.key == settings.watchedThreadsSortingMethod ? FontWeight.bold : null
-									)),
-									onPressed: () {
-										settings.watchedThreadsSortingMethod = entry.key;
-										Navigator.of(context, rootNavigator: true).pop();
-										_watchedListController.update();
-									}
-								)).toList(),
-								cancelButton: AdaptiveActionSheetAction(
-									child: const Text('Cancel'),
-									onPressed: () => Navigator.of(context, rootNavigator: true).pop()
-								)
-							)
-						);
-					}
-				)
-			]
-		);
-	}
-
-	AdaptiveBar _savedNavigationBar(String title) {
-		final settings = context.watch<EffectiveSettings>();
-		return AdaptiveBar(
-			title: Text(title),
-			actions: [
-				CupertinoButton(
-					padding: EdgeInsets.zero,
-					child: const Icon(CupertinoIcons.sort_down),
-					onPressed: () {
-						showAdaptiveModalPopup<DateTime>(
-							context: context,
-							builder: (context) => AdaptiveActionSheet(
-								title: const Text('Sort by...'),
-								actions: {
-									ThreadSortingMethod.savedTime: 'Saved Date',
-									ThreadSortingMethod.lastPostTime: 'Posted Date',
-									ThreadSortingMethod.alphabeticByTitle: 'Alphabetically'
-								}.entries.map((entry) => AdaptiveActionSheetAction(
-									child: Text(entry.value, style: TextStyle(
-										fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
-									)),
-									onPressed: () {
-										settings.savedThreadsSortingMethod = entry.key;
-										Navigator.of(context, rootNavigator: true).pop();
-									}
-								)).toList(),
-								cancelButton: AdaptiveActionSheetAction(
-									child: const Text('Cancel'),
-									onPressed: () => Navigator.of(context, rootNavigator: true).pop()
-								)
-							)
-						);
-					}
-				)
-			]
-		);
-	}
-
 	@override
 	Widget build(BuildContext context) {
 		final persistencesAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList()), () => widget.isActive);
@@ -216,7 +128,44 @@ class _SavedPageState extends State<SavedPage> {
 			key: widget.masterDetailKey,
 			paneCreator: () => [
 				MultiMasterPane<ImageboardScoped<ThreadWatch>>(
-					navigationBar: _watchedNavigationBar(),
+					navigationBar: AdaptiveBar(
+						title: const Text('Watched Threads'),
+						actions: [
+							Builder(
+								builder: (context) => CupertinoButton(
+									padding: EdgeInsets.zero,
+									child: const Icon(CupertinoIcons.archivebox),
+									onPressed: () => showAdaptiveModalPopup(
+										context: context,
+										builder: (context) => AdaptiveActionSheet(
+											actions: [
+												...thread_actions.getWatchedThreadsActions(context)
+													.where((a) => a.onPressed != null)
+													.map((a) => AdaptiveActionSheetAction(
+														onPressed: () {
+															a.onPressed?.call();
+															Navigator.pop(context);
+														},
+														child: Text(a.title)
+													)),
+											],
+											cancelButton: AdaptiveActionSheetAction(
+												child: const Text('Cancel'),
+												onPressed: () => Navigator.pop(context)
+											)
+										)
+									)
+								)
+							),
+							Builder(
+								builder: (context) => CupertinoButton(
+									padding: EdgeInsets.zero,
+									child: const Icon(CupertinoIcons.sort_down),
+									onPressed: () => selectWatchedThreadsSortMethod(context)
+								)
+							)
+						]
+					),
 					icon: CupertinoIcons.bell_fill,
 					masterBuilder: (context, selected, setter) {
 						final settings = context.watch<EffectiveSettings>();
@@ -237,7 +186,7 @@ class _SavedPageState extends State<SavedPage> {
 							filterableAdapter: null,
 							controller: _watchedListController,
 							listUpdater: () async {
-								final list = await _loadWatches();
+								final list = await thread_actions.loadWatches();
 								_watchedListController.waitForItemBuild(0).then((_) => _removeArchivedHack.didUpdate());
 								return list;
 							},
@@ -418,168 +367,7 @@ class _SavedPageState extends State<SavedPage> {
 									)
 								);
 							},
-							filterHint: 'Search watched threads',
-							footer: Padding(
-								padding: const EdgeInsets.all(16),
-								child: Wrap(
-									spacing: 16,
-									runSpacing: 16,
-									alignment: WrapAlignment.spaceEvenly,
-									runAlignment: WrapAlignment.center,
-									children: [
-										AnimatedBuilder(
-											animation: threadStateBoxesAnimation,
-											builder: (context, _) {
-												final unseenCount = _watchedListController.items.map((i) {
-													final threadState = i.item.imageboard.persistence.getThreadStateIfExists(i.item.item.threadIdentifier);
-													return threadState?.unseenReplyCount() ?? 0;
-												}).fold(0, (a, b) => a + b);
-												return CupertinoButton(
-													padding: const EdgeInsets.all(8),
-													onPressed: unseenCount == 0 ? null : () async {
-														final watches = await _loadWatches();
-														final cleared = <({
-															PersistentThreadState threadState,
-															Set<int> unseenPostIds,
-															int? lastSeenPostId
-														})>[];
-														for (final watch in watches) {
-															final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
-															if (threadState != null && threadState.unseenPostIds.data.isNotEmpty) {
-																cleared.add((
-																	threadState: threadState,
-																	unseenPostIds: threadState.unseenPostIds.data.toSet(),
-																	lastSeenPostId: threadState.lastSeenPostId
-																));
-																threadState.unseenPostIds.data.clear();
-																threadState.lastSeenPostId = threadState.thread?.posts_.fold<int>(0, (m, p) => math.max(m, p.id));
-																threadState.didUpdate();
-																await threadState.save();
-															}
-														}
-														if (context.mounted) {
-															showUndoToast(
-																context: context,
-																message: 'Marked ${describeCount(cleared.length, 'thread')} as read',
-																onUndo: () async {
-																	for (final item in cleared) {
-																		item.threadState.unseenPostIds.data.addAll(item.unseenPostIds);
-																		item.threadState.lastSeenPostId = item.lastSeenPostId;
-																		item.threadState.didUpdate();
-																		await item.threadState.save();
-																	}
-																}
-															);
-														}
-													},
-													child: const Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															Icon(CupertinoIcons.xmark_circle),
-															SizedBox(width: 8),
-															Flexible(
-																child: Text('Mark all as read', textAlign: TextAlign.center)
-															)
-														]
-													)
-												);
-											}
-										),
-										AnimatedBuilder(
-											animation: _removeArchivedHack,
-											builder: (context, _) => CupertinoButton(
-												padding: const EdgeInsets.all(8),
-												onPressed: (_watchedListController.items.any((w) => w.item.item.zombie)) ? () async {
-													await _watchMutex.protectWrite(() async {
-														_watchedListController.update(); // Should wait until mutex releases
-														final toRemove = _watchedListController.items.where((w) => w.item.item.zombie).toList();
-														for (final watch in toRemove) {
-															await watch.item.imageboard.notifications.removeWatch(watch.item.item);
-														}
-														if (context.mounted) {
-															showUndoToast(
-																context: context,
-																message: 'Removed ${describeCount(toRemove.length, 'watch', plural: 'watches')}',
-																onUndo: () => _watchMutex.protectWrite(() async {
-																	_watchedListController.update(); // Should wait until mutex releases
-																	for (final watch in toRemove) {
-																		watch.item.imageboard.notifications.subscribeToThread(
-																			thread: watch.item.item.threadIdentifier,
-																			lastSeenId: watch.item.item.lastSeenId,
-																			localYousOnly: watch.item.item.localYousOnly,
-																			pushYousOnly: watch.item.item.pushYousOnly,
-																			push: watch.item.item.push,
-																			youIds: watch.item.item.youIds,
-																			zombie: watch.item.item.zombie
-																		);
-																	}
-																	Future.delayed(const Duration(milliseconds: 100), _removeArchivedHack.didUpdate);
-																})
-															);
-														}
-													});
-												} : null,
-												child: const Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Icon(CupertinoIcons.bin_xmark),
-														SizedBox(width: 8),
-														Flexible(
-															child: Text('Remove archived', textAlign: TextAlign.center)
-														)
-													]
-												)
-											)
-										),
-										AnimatedBuilder(
-											animation: _removeArchivedHack,
-											builder: (context, _) => CupertinoButton(
-												padding: const EdgeInsets.all(8),
-												onPressed: (_watchedListController.items.isNotEmpty) ? () async {
-													await _watchMutex.protectWrite(() async {
-														_watchedListController.update(); // Should wait until mutex releases
-														final toRemove = _watchedListController.items..toList();
-														for (final watch in toRemove) {
-															await watch.item.imageboard.notifications.removeWatch(watch.item.item);
-														}
-														if (context.mounted) {
-															showUndoToast(
-																context: context,
-																message: 'Removed ${describeCount(toRemove.length, 'watch', plural: 'watches')}',
-																onUndo: () => _watchMutex.protectWrite(() async {
-																	_watchedListController.update(); // Should wait until mutex releases
-																	for (final watch in toRemove) {
-																		watch.item.imageboard.notifications.subscribeToThread(
-																			thread: watch.item.item.threadIdentifier,
-																			lastSeenId: watch.item.item.lastSeenId,
-																			localYousOnly: watch.item.item.localYousOnly,
-																			pushYousOnly: watch.item.item.pushYousOnly,
-																			push: watch.item.item.push,
-																			youIds: watch.item.item.youIds,
-																			zombie: watch.item.item.zombie
-																		);
-																	}
-																	Future.delayed(const Duration(milliseconds: 100), _removeArchivedHack.didUpdate);
-																})
-															);
-														}
-													});
-												} : null,
-												child: const Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Icon(CupertinoIcons.xmark),
-														SizedBox(width: 8),
-														Flexible(
-															child: Text('Remove all', textAlign: TextAlign.center)
-														)
-													]
-												)
-											)
-										)
-									]
-								)
-							)
+							filterHint: 'Search watched threads'
 						);
 					},
 					detailBuilder: (selectedThread, setter, poppedOut) {
@@ -596,7 +384,24 @@ class _SavedPageState extends State<SavedPage> {
 					}
 				),
 				MultiMasterPane<ImageboardScoped<ThreadIdentifier>>(
-					navigationBar: _savedNavigationBar('Saved Threads'),
+					navigationBar: AdaptiveBar(
+						title: const Text('Saved Threads'),
+						actions: [
+							AnimatedBuilder(
+								animation: _threadListController,
+								builder: (context, _) => CupertinoButton(
+									padding: EdgeInsets.zero,
+									onPressed: _threadListController.items.isEmpty ? null : () => thread_actions.unsaveAllSavedThreads(context, onMutate: _threadListController.update),
+									child: const Icon(CupertinoIcons.delete)
+								)
+							),
+							CupertinoButton(
+								padding: EdgeInsets.zero,
+								child: const Icon(CupertinoIcons.sort_down),
+								onPressed: () => selectSavedThreadsSortMethod(context)
+							)
+						]
+					),
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
 						final settings = context.watch<EffectiveSettings>();
@@ -630,7 +435,7 @@ class _SavedPageState extends State<SavedPage> {
 								return states;
 							},
 							minUpdateDuration: Duration.zero,
-							id: 'saved',
+							id: 'savedThreads',
 							sortMethods: [sortMethod],
 							key: _savedThreadsListKey,
 							updateAnimation: threadStateBoxesAnimation,
@@ -850,17 +655,26 @@ class _SavedPageState extends State<SavedPage> {
 					)
 				),
 				MultiMasterPane<ImageboardScoped<SavedPost>>(
-					navigationBar: _savedNavigationBar('Saved Posts'),
+					navigationBar: AdaptiveBar(
+						title: const Text('Saved Posts'),
+						actions: [
+							AnimatedBuilder(
+								animation: _postListController,
+								builder: (context, _) => CupertinoButton(
+									padding: EdgeInsets.zero,
+									onPressed: _postListController.items.isEmpty ? null : () => thread_actions.unsaveAllSavedPosts(context, onMutate: _postListController.update),
+									child: const Icon(CupertinoIcons.delete)
+								)
+							),
+							CupertinoButton(
+								padding: EdgeInsets.zero,
+								child: const Icon(CupertinoIcons.sort_down),
+								onPressed: () => selectSavedThreadsSortMethod(context)
+							)
+						]
+					),
 					icon: CupertinoIcons.reply,
 					masterBuilder: (context, selected, setter) {
-						final settings = context.watch<EffectiveSettings>();
-						Comparator<ImageboardScoped<SavedPost>> sortMethod = (a, b) => 0;
-						if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
-							sortMethod = (a, b) => b.item.savedTime.compareTo(a.item.savedTime);
-						}
-						else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
-							sortMethod = (a, b) => b.item.post.time.compareTo(a.item.post.time);
-						}
 						return RefreshableList<ImageboardScoped<SavedPost>>(
 							header: AnimatedBuilder(
 								animation: _postListController,
@@ -895,11 +709,11 @@ class _SavedPageState extends State<SavedPage> {
 								}));
 								return savedPosts;
 							},
-							id: 'saved',
+							id: 'savedPosts',
 							key: _savedPostsListKey,
 							updateAnimation: savedPostNotifiersAnimation,
 							minUpdateDuration: Duration.zero,
-							sortMethods: [sortMethod],
+							sortMethods: [getSavedPostsSortMethod()],
 							itemBuilder: (context, savedPost) {
 								final threadState = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.post.threadIdentifier);
 								if (threadState?.thread == null) {
@@ -952,7 +766,7 @@ class _SavedPageState extends State<SavedPage> {
 									)
 								);
 							},
-							filterHint: 'Search saved threads'
+							filterHint: 'Search saved posts'
 						);
 					},
 					detailBuilder: (selected, setter, poppedOut) => BuiltDetailPane(
@@ -968,7 +782,78 @@ class _SavedPageState extends State<SavedPage> {
 					)
 				),
 				MultiMasterPane<ImageboardScoped<SavedAttachment>>(
-					title: const Text('Saved Attachments'),
+					navigationBar: AdaptiveBar(
+						title: const Text('Saved Attachments'),
+						actions: [
+							AnimatedBuilder(
+								animation: savedAttachmentsNotifiersAnimation,
+								builder: (context, _) => CupertinoButton(
+									padding: EdgeInsets.zero,
+									onPressed: ImageboardRegistry.instance.imageboards.any((i) => i.persistence.savedAttachments.isNotEmpty) ?
+											() async {
+												final toDelete = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values.map(i.scope)).toList();
+												final ok = await showAdaptiveDialog<bool>(
+													context: context,
+													barrierDismissible: true,
+													builder: (context) => AdaptiveAlertDialog(
+														title: const Text('Are you sure?'),
+														content: Text('All ${describeCount(toDelete.length, 'saved attachment')} will be removed.'),
+														actions: [
+															AdaptiveDialogAction(
+																isDestructiveAction: true,
+																onPressed: () => Navigator.pop(context, true),
+																child: const Text('Delete all')
+															),
+															AdaptiveDialogAction(
+																onPressed: () => Navigator.pop(context),
+																child: const Text('Cancel')
+															)
+														]
+													)
+												);
+												if (!mounted || ok != true) {
+													return;
+												}
+												final imageboards = toDelete.map((i) => i.imageboard).toSet();
+												for (final item in toDelete) {
+													item.imageboard.persistence.savedAttachments.remove(item.item.attachment.globalId);
+												}
+												for (final imageboard in imageboards) {
+													imageboard.persistence.savedAttachmentsListenable.didUpdate();
+													attachmentSourceNotifier.didUpdate();
+												}
+												Persistence.settings.save();
+												bool actuallyDelete = true;
+												showUndoToast(
+													context: context,
+													message: 'Deleted ${describeCount(toDelete.length, 'attachment')}',
+													onUndo: () {
+														actuallyDelete = false;
+														// Restore all the objects
+														for (final item in toDelete) {
+															item.imageboard.persistence.savedAttachments[item.item.attachment.globalId] = item.item;
+														}
+														for (final imageboard in imageboards) {
+															imageboard.persistence.savedAttachmentsListenable.didUpdate();
+															attachmentSourceNotifier.didUpdate();
+														}
+														Persistence.settings.save();
+													}
+												);
+												Future.delayed(const Duration(seconds: 10), () async {
+													if (actuallyDelete) {
+														// Objects are really gone, delete the saved files
+														for (final item in toDelete) {
+															await item.item.deleteFiles();
+														}
+													}
+												});
+											} : null,
+									child: const Icon(CupertinoIcons.delete)
+								)
+							)
+						]
+					),
 					icon: Adaptive.icons.photo,
 					masterBuilder: (context, selected, setter) => AnimatedBuilder(
 						key: _savedAttachmentsAnimatedBuilderKey,
@@ -1036,83 +921,6 @@ class _SavedPageState extends State<SavedPage> {
 										),
 										gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
 											crossAxisCount: 4
-										)
-									),
-									SliverToBoxAdapter(
-										child: Container(
-											padding: const EdgeInsets.all(16),
-											child: CupertinoButton(
-												padding: const EdgeInsets.all(8),
-												onPressed: list.isNotEmpty ? () async {
-													final ok = await showAdaptiveDialog<bool>(
-														context: context,
-														barrierDismissible: true,
-														builder: (context) => AdaptiveAlertDialog(
-															title: const Text('Are you sure?'),
-															content: const Text('All saved attachments will be removed.'),
-															actions: [
-																AdaptiveDialogAction(
-																	isDestructiveAction: true,
-																	onPressed: () => Navigator.pop(context, true),
-																	child: const Text('Delete all')
-																),
-																AdaptiveDialogAction(
-																	onPressed: () => Navigator.pop(context),
-																	child: const Text('Cancel')
-																)
-															]
-														)
-													);
-													if (!mounted || ok != true) {
-														return;
-													}
-													final toDelete = list.toList();
-													final imageboards = toDelete.map((i) => i.imageboard).toSet();
-													for (final item in toDelete) {
-														item.imageboard.persistence.savedAttachments.remove(item.item.attachment.globalId);
-													}
-													for (final imageboard in imageboards) {
-														imageboard.persistence.savedAttachmentsListenable.didUpdate();
-														attachmentSourceNotifier.didUpdate();
-													}
-													Persistence.settings.save();
-													bool actuallyDelete = true;
-													showUndoToast(
-														context: context,
-														message: 'Deleted ${describeCount(list.length, 'attachment')}',
-														onUndo: () {
-															actuallyDelete = false;
-															// Restore all the objects
-															for (final item in toDelete) {
-																item.imageboard.persistence.savedAttachments[item.item.attachment.globalId] = item.item;
-															}
-															for (final imageboard in imageboards) {
-																imageboard.persistence.savedAttachmentsListenable.didUpdate();
-																attachmentSourceNotifier.didUpdate();
-															}
-															Persistence.settings.save();
-														}
-													);
-													Future.delayed(const Duration(seconds: 10), () async {
-														if (actuallyDelete) {
-															// Objects are really gone, delete the saved files
-															for (final item in toDelete) {
-																await item.item.deleteFiles();
-															}
-														}
-													});
-												} : null,
-												child: const Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Icon(CupertinoIcons.xmark),
-														SizedBox(width: 8),
-														Flexible(
-															child: Text('Delete all', textAlign: TextAlign.center)
-														)
-													]
-												)
-											)
 										)
 									),
 									SliverPadding(

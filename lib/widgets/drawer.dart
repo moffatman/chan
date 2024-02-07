@@ -4,6 +4,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/sorting.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/thread_collection_actions.dart' as thread_actions;
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
@@ -145,8 +146,7 @@ class _DrawerList<T extends Object> {
 								icon: Icons.close,
 								title: 'Close',
 								isDestructiveAction: true,
-								disabled: list.length == 1,
-								onPressed: () {
+								onPressed: list.length == 1 ? null : () {
 									final data = onClose(i);
 									if (data.onUndo != null) {
 										showUndoToast(
@@ -499,40 +499,100 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 						]
 					),
 					const SizedBox(height: 16),
-					TabBar(
-						controller: _tabController,
-						indicatorColor: ChanceTheme.primaryColorOf(context),
-						dividerColor: ChanceTheme.primaryColorWithBrightness20Of(context),
-						unselectedLabelColor: ChanceTheme.primaryColorWithBrightness50Of(context),
-						tabs: [
-							const Tab(
-								icon: Icon(CupertinoIcons.rectangle_stack)
-							),
-							Tab(
-								icon: NotifyingIcon(
-									primaryCount: CombiningValueListenable<int>(
-										children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
-										combine: (list) => list.fold(0, (a, b) => a + b)
-									),
-									secondaryCount: CombiningValueListenable<int>(
-										children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
-										combine: (list) => list.fold(0, (a, b) => a + b)
-									),
-									icon: const Icon(CupertinoIcons.bell)
+					Builder(
+						builder: (context) => TabBar(
+							controller: _tabController,
+							indicatorColor: ChanceTheme.primaryColorOf(context),
+							dividerColor: ChanceTheme.primaryColorWithBrightness20Of(context),
+							unselectedLabelColor: ChanceTheme.primaryColorWithBrightness50Of(context),
+							tabs: [
+								const Tab(
+									icon: Icon(CupertinoIcons.rectangle_stack)
+								),
+								Tab(
+									icon: NotifyingIcon(
+										primaryCount: CombiningValueListenable<int>(
+											children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
+											combine: (list) => list.fold(0, (a, b) => a + b)
+										),
+										secondaryCount: CombiningValueListenable<int>(
+											children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
+											combine: (list) => list.fold(0, (a, b) => a + b)
+										),
+										icon: const Icon(CupertinoIcons.bell)
+									)
+								),
+								Tab(
+									icon: Icon(Adaptive.icons.bookmark)
 								)
-							),
-							Tab(
-								icon: Icon(Adaptive.icons.bookmark)
-							)
-						],
-						onTap: (index) {
-							settings.drawerMode = switch(index) {
-								0 => DrawerMode.tabs,
-								1 => DrawerMode.watchedThreads,
-								_ => DrawerMode.savedThreads
-							};
-							setState(() {});
-						}
+							],
+							onTap: (index) {
+								final newMode = switch(index) {
+									0 => DrawerMode.tabs,
+									1 => DrawerMode.watchedThreads,
+									_ => DrawerMode.savedThreads
+								};
+								if (settings.drawerMode == newMode) {
+									if (newMode == DrawerMode.tabs) {
+										tabs.showNewTabPopup(
+											context: context,
+											direction: AxisDirection.down,
+											showTitles: true
+										);
+									}
+									else if (newMode == DrawerMode.watchedThreads) {
+										final ro = context.findRenderObject() as RenderBox;
+										showTabMenu(
+											context: context,
+											direction: AxisDirection.down,
+											showTitles: true,
+											origin: Rect.fromPoints(
+												ro.localToGlobal(ro.semanticBounds.topLeft),
+												ro.localToGlobal(ro.semanticBounds.bottomRight)
+											),
+											actions: [
+												TabMenuAction(
+													icon: CupertinoIcons.sort_down,
+													title: 'Sort...',
+													onPressed: () => selectWatchedThreadsSortMethod(context)
+												),
+												...thread_actions.getWatchedThreadsActions(context)
+											]
+										);
+									}
+									else if (newMode == DrawerMode.savedThreads) {
+										final ro = context.findRenderObject() as RenderBox;
+										showTabMenu(
+											context: context,
+											direction: AxisDirection.down,
+											showTitles: true,
+											origin: Rect.fromPoints(
+												ro.localToGlobal(ro.semanticBounds.topLeft),
+												ro.localToGlobal(ro.semanticBounds.bottomRight)
+											),
+											actions: [
+												TabMenuAction(
+													icon: CupertinoIcons.sort_down,
+													title: 'Sort...',
+													onPressed: () => selectSavedThreadsSortMethod(context)
+												),
+												TabMenuAction(
+													icon: CupertinoIcons.delete,
+													isDestructiveAction: true,
+													title: 'Unsave all',
+													onPressed: () => thread_actions.unsaveAllSavedThreads(context, onMutate: () => setState(() {}))
+												)
+											]
+										);
+									}
+								}
+								else {
+									setState(() {
+										settings.drawerMode = newMode;
+									});
+								}
+							}
+						)
 					),
 					if (list.pinFirstItem) Builder(
 						builder: (context) => list.itemBuilder(context, 0)
@@ -572,7 +632,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 										recognizer.onEnd = (details) {
 											tabs.showNewTabPopup(
 												context: context,
-												axis: Axis.vertical,
+												direction: AxisDirection.right,
 												showTitles: false
 											);
 										};
@@ -589,7 +649,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 								tileColor: ChanceTheme.barColorOf(context),
 								onLongPress: () => tabs.showNewTabPopup(
 									context: context,
-									axis: Axis.vertical,
+									direction: AxisDirection.right,
 									showTitles: false
 								),
 								leading: const Icon(Icons.add),

@@ -10,16 +10,14 @@ import 'package:provider/provider.dart';
 class TabMenuAction {
 	final IconData icon;
 	final String title;
-	final VoidCallback onPressed;
+	final VoidCallback? onPressed;
 	final bool isDestructiveAction;
-	final bool disabled;
 
 	const TabMenuAction({
 		required this.icon,
 		required this.title,
 		required this.onPressed,
-		this.isDestructiveAction = false,
-		this.disabled = false
+		this.isDestructiveAction = false
 	});
 }
 
@@ -35,7 +33,7 @@ class _TabMenuOverlay extends StatefulWidget {
 		required this.direction,
 		required this.actions,
 		required this.onDone,
-		this.showTitles = true
+		required this.showTitles
 	});
 	
 	@override
@@ -107,18 +105,25 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 		}
 		final actions = widget.actions.map((action) => AdaptiveIconButton(
 			padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-			onPressed: action.disabled ? null : () {
-				action.onPressed();
+			onPressed: action.onPressed == null ? null : () {
+				action.onPressed?.call();
 				onDone();
 			},
-			icon: Column(
+			icon: Flex(
+				direction: flipAxis(axisDirectionToAxis(widget.direction)),
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Icon(action.icon, color: !action.disabled && action.isDestructiveAction ? Colors.red : null),
-					if (axisDirectionToAxis(widget.direction) == Axis.horizontal && widget.showTitles) ...[
-						const SizedBox(height: 4),
+					Icon(action.icon, color: (action.onPressed != null) && action.isDestructiveAction ? Colors.red : null),
+					if (widget.showTitles) ...[
+						const SizedBox(height: 4, width: 8),
 						Flexible(
-							child: Text(action.title, overflow: TextOverflow.visible, style: const TextStyle(fontSize: 15))
+							child: Text(
+								action.title,
+								overflow: TextOverflow.visible,
+								style: widget.origin.size.aspectRatio < 1.5
+									// Not much space (near-square), shrink font
+									? const TextStyle(fontSize: 15) : null
+							)
 						)
 					]
 				]
@@ -161,6 +166,18 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 							bottom: screenSize.height - widget.origin.top - (1 - _animation.value) * 15,
 							child: child!
 						)
+						else if (widget.direction == AxisDirection.down) Positioned(
+							left: widget.origin.left,
+							width: widget.origin.width,
+							top: widget.origin.bottom - (1 - _animation.value) * 15,
+							child: child!
+						)
+						else if (widget.direction == AxisDirection.left) Positioned(
+							right: screenSize.width - widget.origin.left - (1 - _animation.value) * 15,
+							height: widget.origin.height,
+							top: widget.origin.top,
+							child: child!
+						)
 						else if (widget.direction == AxisDirection.right) Positioned(
 							left: widget.origin.right - (1 - _animation.value) * 15,
 							height: widget.origin.height,
@@ -185,7 +202,7 @@ Future<void> showTabMenu({
 	required Rect origin,
 	required AxisDirection direction,
 	required List<TabMenuAction> actions,
-	bool showTitles = true
+	required bool showTitles
 }) async {
 	final completer = Completer<void>();
 	final entry = OverlayEntry(
