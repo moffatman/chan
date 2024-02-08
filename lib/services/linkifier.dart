@@ -71,10 +71,17 @@ class LooseUrlLinkifier extends Linkifier {
             String originalUrl = match.group(2)!;
             String? end;
 
-            if ((options.excludeLastPeriod) &&
-                originalUrl[originalUrl.length - 1] == ".") {
-              end = ".";
-              originalUrl = originalUrl.substring(0, originalUrl.length - 1);
+            if (options.excludeLastPeriod) {
+              int c = 0;
+              for (; c < originalUrl.length - 1; c++) {
+                if (originalUrl[originalUrl.length - (c + 1)] != '.') {
+                  break;
+                }
+              }
+              if (c > 0) {
+                end = '.' * c;
+                originalUrl = originalUrl.substring(0, originalUrl.length - c);
+              }
             }
 
             String url = originalUrl;
