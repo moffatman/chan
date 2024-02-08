@@ -269,12 +269,16 @@ class SiteHackerNews extends ImageboardSite {
 		return (await _makeHNObjectAlgolia(response.data))!;
 	}
 
-	Future<Thread> _getThreadForCatalog(int id, {required RequestPriority priority}) async {
+	Future<Thread?> _getThreadForCatalog(int id, {required RequestPriority priority}) async {
 		final response = await client.get('https://hacker-news.firebaseio.com/v0/item/$id.json', options: Options(
 			extra: {
 				kPriority: priority
 			}
 		));
+		if (response.data == null) {
+			// Missing for some reason
+			return null;
+		}
 		final d = response.data as Map;
 		String text;
 		switch (d['type']) {
@@ -457,7 +461,7 @@ class SiteHackerNews extends ImageboardSite {
 			data = (response.data as List).cast<int>();
 		}
 		_lastCatalogIds[variant] = data;
-		return await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, priority: priority)));
+		return (await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, priority: priority)))).tryMap((e) => e).toList();
 	}
 
 	Future<List<Post>> _getMoreThread(_HNObject item) async {
@@ -478,7 +482,7 @@ class SiteHackerNews extends ImageboardSite {
 	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
 			final ids = await _getSecondChancePoolIds(after.id, priority: priority);
-			return await Future.wait(ids.map((id) => _getThreadForCatalog(id, priority: priority)));
+			return (await Future.wait(ids.map((id) => _getThreadForCatalog(id, priority: priority)))).tryMap((e) => e).toList();
 		}
 		else {
 			final lastCatalogIds = _lastCatalogIds[variant];
@@ -486,7 +490,7 @@ class SiteHackerNews extends ImageboardSite {
 			if (index == -1) {
 				return [];
 			}
-			return await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map((id) => _getThreadForCatalog(id, priority: priority)));
+			return (await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map((id) => _getThreadForCatalog(id, priority: priority)))).tryMap((e) => e).toList();
 		}
 	}
 
