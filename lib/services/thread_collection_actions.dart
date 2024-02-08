@@ -79,7 +79,7 @@ bool anyZombieWatches() {
 Future<void> removeZombieWatches(BuildContext context, {VoidCallback? onMutate}) => _watchMutex.protectWrite(() async {
 	final toRemove = ImageboardRegistry.instance.imageboards.expand(
 		(i) => i.persistence.browserState.threadWatches.values.where(
-			(w) => w.zombie).map(i.scope));
+			(w) => w.zombie).map(i.scope)).toList();
 	for (final watch in toRemove) {
 		await watch.imageboard.notifications.removeWatch(watch.item);
 	}
