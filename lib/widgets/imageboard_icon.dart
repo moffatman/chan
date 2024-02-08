@@ -34,39 +34,39 @@ class ImageboardIcon extends StatelessWidget {
 			}
 		}
 		final cacheSize = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
-		final child = ExtendedImage.network(
-			url.toString(),
-			headers: imageboard.site.getHeaders(url),
-			cache: true,
-			enableLoadState: true,
-			loadStateChanged: (state) {
-				if (state.extendedImageLoadState == LoadState.failed) {
-					return Builder(
-						builder: (context) => Center(
-							child: Icon(CupertinoIcons.exclamationmark_triangle_fill, size: size)
-						)
-					);
-				}
-				else if (state.extendedImageLoadState == LoadState.loading) {
-					return const SizedBox();
-				}
-				return null;
-			},
-			filterQuality: FilterQuality.high,
-			fit: BoxFit.contain,
-			width: size,
-			height: size,
-			cacheWidth: cacheSize,
-			cacheHeight: cacheSize,
+		final child = SizedBox.square(
+			dimension: size,
+			child: ExtendedImage.network(
+				url.toString(),
+				headers: imageboard.site.getHeaders(url),
+				cache: true,
+				enableLoadState: true,
+				loadStateChanged: (state) {
+					if (state.extendedImageLoadState == LoadState.failed) {
+						return Builder(
+							builder: (context) => Center(
+								child: Icon(CupertinoIcons.exclamationmark_triangle_fill, size: size)
+							)
+						);
+					}
+					else if (state.extendedImageLoadState == LoadState.loading) {
+						return const SizedBox();
+					}
+					return null;
+				},
+				filterQuality: FilterQuality.high,
+				fit: BoxFit.contain,
+				width: size,
+				height: size,
+				cacheWidth: cacheSize,
+				cacheHeight: cacheSize,
+			)
 		);
 		if (clipOval) {
 			return ClipOval(
 				child: child
 			);
 		}
-		return SizedBox.square(
-			dimension: size,
-			child: child
-		);
+		return child;
 	}
 }
