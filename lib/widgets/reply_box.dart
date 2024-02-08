@@ -1958,7 +1958,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										child: AdaptiveButton(
 											padding: EdgeInsets.zero,
 											onPressed: _attachmentProgress?.$2 == null ? null : () async {
-												final confirmed = await confirm(context, 'Cancel conversion?', actionName: 'Cancel');
+												final confirmed = await confirm(context, 'Stop conversion?', actionName: 'Stop');
 												if (confirmed) {
 													_attachmentProgress?.$2?.cancel();
 													_attachmentProgress = null;
