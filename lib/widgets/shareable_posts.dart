@@ -211,7 +211,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 							if (style.parentDepth == 1 && item.item.replyIds.contains(primaryPostId) && !controller.isItemHidden(item).isDuplicate) {
 								return true;
 							}
-							else if (style.parentDepth > 1 && item.treeDescendantIds.contains(primaryPostId)) {
+							else if (style.parentDepth > 1 && item.treeDescendantIds.contains(primaryPostId) && !controller.isItemHidden(item).isDuplicate) {
 								return true;
 							}
 							if (style.childDepth == 1 && item.item.repliedToIds.contains(primaryPostId)) {
