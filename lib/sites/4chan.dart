@@ -153,6 +153,11 @@ class Site4Chan extends ImageboardSite {
 		_captchaTicketTimer = Timer(lifetime, _onCaptchaTicketTimerFire);
 	}
 
+	bool _isAppropriateForCaptchaRequest(PersistentBrowserTab tab) {
+		return tab.imageboardKey == imageboard.key &&
+		    imageboard.persistence.getThreadStateIfExists(tab.thread)?.thread?.isArchived != true;
+	}
+
 	void _onCaptchaTicketTimerFire() async {
 		final lifetime = captchaTicketLifetime;
 		if (lifetime == null || !EffectiveSettings.instance.useSpamFilterWorkarounds) {
@@ -170,12 +175,11 @@ class Site4Chan extends ImageboardSite {
 		}
 		final currentTab = Persistence.tabs[Persistence.currentTabIndex];
 		final PersistentBrowserTab? tab;
-		if (currentTab.imageboardKey == imageboard.key &&
-		    imageboard.persistence.getThreadStateIfExists(currentTab.thread)?.thread?.isArchived != true) {
+		if (_isAppropriateForCaptchaRequest(currentTab)) {
 			tab = currentTab;
 		}
 		else {
-			tab = Persistence.tabs.tryFirstWhere((t) => t.imageboardKey == imageboard.key);
+			tab = Persistence.tabs.tryFirstWhere(_isAppropriateForCaptchaRequest);
 		}
 		final request = await getCaptchaRequest(tab?.thread?.board ?? tab?.board?.name ?? persistence.boards.tryFirst?.name ?? '', tab?.thread?.id);
 		if (request is! Chan4CustomCaptchaRequest) {
