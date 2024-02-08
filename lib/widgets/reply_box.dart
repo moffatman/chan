@@ -733,6 +733,19 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				if ((board.maxImageSizeBytes != null) && (size > board.maxImageSizeBytes!)) {
 					throw Exception('GIF is too large, and automatic re-encoding of GIFs is not supported');
 				}
+				if (randomizeChecksum) {
+					file = await _showTranscodeWindow(
+						source: file,
+						metadataPresent: scan.hasMetadata,
+						metadataAllowed: !settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: randomizeChecksum,
+						transcode: MediaConversion.toGif(
+							file.uri,
+							randomizeChecksum: randomizeChecksum
+						),
+						showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
+					);
+				}
 			}
 			else if (ext == 'webm') {
 				file = await _showTranscodeWindow(

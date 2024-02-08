@@ -345,6 +345,16 @@ class MediaConversion {
 		);
 	}
 
+	static MediaConversion toGif(Uri inputFile, {
+		bool randomizeChecksum = false
+	}) {
+		return MediaConversion(
+			inputFile: inputFile,
+			outputFileExtension: 'gif',
+			randomizeChecksum: randomizeChecksum
+		);
+	}
+
 	static MediaConversion extractThumbnail(Uri inputFile) {
 		return MediaConversion(
 			inputFile: inputFile,
