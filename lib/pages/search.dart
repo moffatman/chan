@@ -280,10 +280,11 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					mainAxisSize: MainAxisSize.min,
 					children: [
 						const SizedBox(height: 44),
-						if (ImageboardRegistry.instance.count > 1 && query.imageboardKey != null) ...[
+						if (query.imageboardKey != null) ...[
 							ImageboardIcon(imageboardKey: query.imageboardKey),
 							const SizedBox(width: 4),
-						],
+						]
+						else const SizedBox(width: 20),
 						if (showBoardName && query.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) Flexible(
 							child: Text(
 								'${boardName ?? '/${query.boards.first}'} ',
@@ -724,7 +725,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 	final imageboard = ImageboardRegistry.instance.getImageboard(q.imageboardKey);
 	return [
-		if (ImageboardRegistry.instance.count > 1 && q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
+		if (q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
 		if (q.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) ...q.boards.map((boardName) {
 			final formattedBoardName = imageboard?.site.formatBoardName(boardName);
 			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/');
