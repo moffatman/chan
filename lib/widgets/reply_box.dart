@@ -1347,9 +1347,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			filename: attachment?.uri.pathSegments.last ?? '',
 			thumbnailUrl: '',
 			board: 'reply-form',
-			width: null,
-			height: null,
-			sizeInBytes: null,
+			width: _attachmentScan?.$1.width,
+			height: _attachmentScan?.$1.height,
+			sizeInBytes: _attachmentScan?.$1.sizeInBytes,
 			threadId: null
 		);
 		return Container(
