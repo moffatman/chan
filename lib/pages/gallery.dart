@@ -798,7 +798,8 @@ class _GalleryPageState extends State<GalleryPage> {
 											currentAttachment.attachment.type == AttachmentType.url ?
 												currentAttachment.attachment.url.toString() :
 												"${currentAttachment.attachment.ellipsizedFilename ?? currentAttachment.attachment.filename}${metadataParts.isEmpty ? '' : ' (${metadataParts.join(', ')})'}",
-											minFontSize: 8
+											minFontSize: 8,
+											maxLines: 3
 										)
 									)
 								);
