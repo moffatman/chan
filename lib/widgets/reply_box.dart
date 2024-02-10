@@ -774,7 +774,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
 				);
 			}
-			else if (ext == 'mp4' || ext == 'mov' || ext == 'm4v' || ext == 'mkv') {
+			else if (ext == 'mp4' || ext == 'mov' || ext == 'm4v' || ext == 'mkv' || ext == 'mpeg') {
 				file = await _showTranscodeWindow(
 					source: file,
 					audioAllowed: board.webmAudioAllowed,
