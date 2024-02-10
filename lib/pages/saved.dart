@@ -176,11 +176,7 @@ class _SavedPageState extends State<SavedPage> {
 									ThreadWatcherControls(
 										isActive: widget.isActive
 									),
-									Divider(
-										height: 0,
-										thickness: 1,
-										color: ChanceTheme.primaryColorWithBrightness20Of(context)
-									)
+									const ChanceDivider()
 								]
 							),
 							filterableAdapter: null,

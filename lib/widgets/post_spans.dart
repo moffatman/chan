@@ -1349,12 +1349,8 @@ class PostTableSpan extends PostSpan {
 class PostDividerSpan extends PostSpan {
 	const PostDividerSpan();
 	@override
-	build(context, zone, settings, theme, options) => WidgetSpan(
-		child: Divider(
-			thickness: 1,
-			height: 25,
-			color: theme.primaryColorWithBrightness(0.2)
-		)
+	build(context, zone, settings, theme, options) => const WidgetSpan(
+		child: ChanceDivider()
 	);
 
 	@override

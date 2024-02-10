@@ -1623,3 +1623,18 @@ class NotificationListener2<T1 extends Notification, T2 extends Notification> ex
 		);
 	}
 }
+
+class ChanceDivider extends StatelessWidget {
+	const ChanceDivider({
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return Divider(
+			thickness: 1,
+			height: 0,
+			color: ChanceTheme.primaryColorWithBrightness20Of(context)
+		);
+	}
+}
