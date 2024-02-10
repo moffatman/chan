@@ -21,12 +21,23 @@ class AdaptiveSegmentedControl<T extends Object> extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final groupValue = this.groupValue;
+		final Map<T, (IconData?, String)> children;
+		if (groupValue == null || this.children.containsKey(groupValue)) {
+			children = this.children;
+		}
+		else {
+			children = {
+				...this.children,
+				groupValue: (null, 'Invalid: "$groupValue"')
+			};
+		}
 		if (ChanceTheme.materialOf(context)) {
 			return Padding(
 				padding: padding,
 				child: SegmentedButton<T>(
 					selected: {
-						if (groupValue != null) groupValue!
+						if (groupValue != null) groupValue
 					},
 					segments: children.entries.map((x) => ButtonSegment(
 						value: x.key,
