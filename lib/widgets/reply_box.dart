@@ -1386,12 +1386,32 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											)
 										),
 										const SizedBox(width: 8),
-										Text('.$attachmentExt')
+										Text('.$attachmentExt'),
+										const SizedBox(width: 8),
+										FittedBox(
+											child: AdaptiveFilledButton(
+												padding: const EdgeInsets.all(4),
+												child: Text('MD5:\n${_attachmentScan?.$3.toString().substring(0, 6).toUpperCase()}', textAlign: TextAlign.center),
+												onPressed: () async {
+													final old = attachment!;
+													setState(() {
+														attachment = null;
+														_attachmentScan = null;
+														_showAttachmentOptions = false;
+													});
+													await setAttachment(old, forceRandomizeChecksum: true);
+													setState(() {
+														_showAttachmentOptions = true;
+													});
+												}
+											)
+										)
 									]
 								),
-								FittedBox(
-									fit: BoxFit.contain,
+								const SizedBox(height: 4),
+								Flexible(
 									child: Row(
+										crossAxisAlignment: CrossAxisAlignment.center,
 										children: [
 											AdaptiveIconButton(
 												padding: EdgeInsets.zero,
@@ -1414,6 +1434,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												padding: const EdgeInsets.only(right: 8),
 												child: AdaptiveIconButton(
 													padding: EdgeInsets.zero,
+													minSize: 0,
 													icon: Row(
 														mainAxisSize: MainAxisSize.min,
 														children: [
@@ -1427,6 +1448,58 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														});
 													}
 												)
+											),
+											const SizedBox(width: 4),
+											Expanded(
+												child: LayoutBuilder(
+													builder: (context, constraints) {
+														final metadata = [
+															if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
+																if (_attachmentScan?.$1.codec != null) _attachmentScan!.$1.codec!.toUpperCase(),
+																if (_attachmentScan?.$1.hasAudio == true) 'with audio'
+																else 'no audio',
+																if (_attachmentScan?.$1.duration != null) formatDuration(_attachmentScan!.$1.duration!),
+																if (_attachmentScan?.$1.bitrate != null) '${(_attachmentScan!.$1.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+															],
+															if (_attachmentScan?.$1.width != null && _attachmentScan?.$1.height != null) '${_attachmentScan?.$1.width}x${_attachmentScan?.$1.height}',
+															if (_attachmentScan?.$2.size != null) formatFilesize(_attachmentScan?.$2.size ?? 0)
+														].join(', ');
+														if (constraints.maxWidth * constraints.maxHeight < (70 * 70)) {
+															return Align(
+																alignment: Alignment.centerRight,
+																child: AdaptiveIconButton(
+																	padding: EdgeInsets.zero,
+																	minSize: 30,
+																	icon: const Icon(CupertinoIcons.info_circle),
+																	onPressed: () => alert(context, 'File metadata', metadata)
+																)
+															);
+														}
+														return AutoSizeText(
+															metadata,
+															style: const TextStyle(color: Colors.grey),
+															maxLines: null,
+															minFontSize: 10,
+															wrapWords: false,
+															textAlign: TextAlign.right
+														);
+													}
+												)
+											),
+											const SizedBox(width: 4),
+											AdaptiveIconButton(
+												padding: EdgeInsets.zero,
+												minSize: 30,
+												icon: const Icon(CupertinoIcons.xmark),
+												onPressed: () {
+													widget.onFilePathChanged?.call(null);
+													setState(() {
+														attachment = null;
+														_attachmentScan = null;
+														_showAttachmentOptions = false;
+														_filenameController.clear();
+													});
+												}
 											)
 										]
 									)
@@ -1435,122 +1508,48 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						)
 					),
 					const SizedBox(width: 8),
-					Flexible(
-						child: (attachment != null) ? Row(
-							mainAxisAlignment: MainAxisAlignment.end,
-							crossAxisAlignment: CrossAxisAlignment.center,
-							children: [
-								Flexible(
-									child: Column(
-										mainAxisAlignment: MainAxisAlignment.spaceBetween,
-										crossAxisAlignment: CrossAxisAlignment.end,
-										children: [
-											FittedBox(
-												child: AdaptiveFilledButton(
-													padding: const EdgeInsets.all(4),
-													child: Text('MD5: ${_attachmentScan?.$3.toString().substring(0, 6).toUpperCase()}'),
-													onPressed: () async {
-														final old = attachment!;
-														setState(() {
-															attachment = null;
-															_attachmentScan = null;
-															_showAttachmentOptions = false;
-														});
-														await setAttachment(old, forceRandomizeChecksum: true);
-														setState(() {
-															_showAttachmentOptions = true;
-														});
-													}
-												)
-											),
-											const SizedBox(height: 4),
-											Flexible(
-												child: Row(
-													children: [
-														Expanded(
-															child: AutoSizeText(
-																[
-																	if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
-																		if (_attachmentScan?.$1.codec != null) _attachmentScan!.$1.codec!.toUpperCase(),
-																		if (_attachmentScan?.$1.hasAudio == true) 'with audio'
-																		else 'no audio',
-																		if (_attachmentScan?.$1.duration != null) formatDuration(_attachmentScan!.$1.duration!),
-																		if (_attachmentScan?.$1.bitrate != null) '${(_attachmentScan!.$1.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
-																	],
-																	if (_attachmentScan?.$1.width != null && _attachmentScan?.$1.height != null) '${_attachmentScan?.$1.width}x${_attachmentScan?.$1.height}',
-																	if (_attachmentScan?.$2.size != null) formatFilesize(_attachmentScan?.$2.size ?? 0)
-																].join(', '),
-																style: const TextStyle(color: Colors.grey),
-																maxLines: 3,
-																minFontSize: 8,
-																wrapWords: false,
-																textAlign: TextAlign.right
-															)
-														),
-														const SizedBox(width: 4),
-														AdaptiveIconButton(
-															padding: EdgeInsets.zero,
-															minSize: 30,
-															icon: const Icon(CupertinoIcons.xmark),
-															onPressed: () {
-																widget.onFilePathChanged?.call(null);
-																setState(() {
-																	attachment = null;
-																	_attachmentScan = null;
-																	_showAttachmentOptions = false;
-																	_filenameController.clear();
-																});
-															}
-														)
-													]
-												)
-											)
-										]
-									)
+					(attachment != null) ? ConstrainedBox(
+						constraints: BoxConstraints(
+							maxWidth: settings.thumbnailSize
+						),
+						child: GestureDetector(
+							child: Hero(
+								tag: TaggedAttachment(
+									attachment: fakeAttachment,
+									semanticParentIds: [_textFieldController.hashCode]
 								),
-								const SizedBox(width: 8),
-								Flexible(
-									child: GestureDetector(
-										child: Hero(
-											tag: TaggedAttachment(
-												attachment: fakeAttachment,
-												semanticParentIds: [_textFieldController.hashCode]
-											),
-											flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
-												return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
-											},
-											createRectTween: (startRect, endRect) {
-												if (startRect != null && endRect != null) {
-													if (attachmentExt != 'webm') {
-														// Need to deflate the original startRect because it has inbuilt layoutInsets
-														// This SavedAttachmentThumbnail will always fill its size
-														final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
-														startRect = rootPadding.deflateRect(startRect);
-													}
-												}
-												return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
-											},
-											child: SavedAttachmentThumbnail(file: attachment!, fit: BoxFit.contain)
-										),
-										onTap: () async {
-											showGallery(
-												attachments: [fakeAttachment],
-												context: context,
-												semanticParentIds: [_textFieldController.hashCode],
-												overrideSources: {
-													fakeAttachment: attachment!.uri
-												},
-												allowChrome: true,
-												allowContextMenu: true,
-												allowScroll: false,
-												heroOtherEndIsBoxFitCover: false
-											);
+								flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+									return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+								},
+								createRectTween: (startRect, endRect) {
+									if (startRect != null && endRect != null) {
+										if (attachmentExt != 'webm') {
+											// Need to deflate the original startRect because it has inbuilt layoutInsets
+											// This SavedAttachmentThumbnail will always fill its size
+											final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+											startRect = rootPadding.deflateRect(startRect);
 										}
-									)
-								)
-							]
-						) : const SizedBox.expand()
-					),
+									}
+									return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+								},
+								child: SavedAttachmentThumbnail(file: attachment!, fit: BoxFit.contain)
+							),
+							onTap: () async {
+								showGallery(
+									attachments: [fakeAttachment],
+									context: context,
+									semanticParentIds: [_textFieldController.hashCode],
+									overrideSources: {
+										fakeAttachment: attachment!.uri
+									},
+									allowChrome: true,
+									allowContextMenu: true,
+									allowScroll: false,
+									heroOtherEndIsBoxFitCover: false
+								);
+							}
+						)
+					) : const SizedBox.shrink()
 				]
 			)
 		);
@@ -2121,7 +2120,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: showAttachmentOptions && show,
 						bottomSafe: true,
-						height: settings.materialStyle ? 125 : 100,
+						height: settings.materialStyle ? 125 : 110,
 						child: Focus(
 							descendantsAreFocusable: showAttachmentOptions && show,
 							child: _buildAttachmentOptions(context)
