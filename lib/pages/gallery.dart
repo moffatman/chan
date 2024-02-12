@@ -549,6 +549,7 @@ class _GalleryPageState extends State<GalleryPage> {
 										scrollDirection: Axis.horizontal,
 										itemBuilder: (context, index) {
 											final attachment = widget.attachments[index];
+											final icon = attachment.attachment.icon;
 											return AdaptiveIconButton(
 												minSize: 0,
 												onPressed: () {
@@ -581,6 +582,21 @@ class _GalleryPageState extends State<GalleryPage> {
 																		) : SavedAttachmentThumbnail(
 																			file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
 																			fit: BoxFit.cover
+																		)
+																	),
+																	Positioned(
+																		bottom: 0,
+																		right: 0,
+																		child: Container(
+																			decoration: const BoxDecoration(
+																				borderRadius: BorderRadius.only(
+																					topLeft: Radius.circular(6),
+																					bottomRight: Radius.circular(8)
+																				),
+																				color: Colors.black54
+																			),
+																			padding: const EdgeInsets.all(2),
+																			child: Icon(icon, size: 15),
 																		)
 																	),
 																	if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Container(
@@ -637,6 +653,7 @@ class _GalleryPageState extends State<GalleryPage> {
 											);
 										}
 										final attachment = widget.attachments[index];
+										final icon = attachment.attachment.icon;
 										return AdaptiveIconButton(
 											minSize: 0,
 											onPressed: () {
@@ -664,6 +681,21 @@ class _GalleryPageState extends State<GalleryPage> {
 															) : SavedAttachmentThumbnail(
 																file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
 																fit: BoxFit.cover
+															)
+														),
+														Positioned(
+															bottom: 0,
+															right: 0,
+															child: Container(
+																decoration: const BoxDecoration(
+																	borderRadius: BorderRadius.only(
+																		topLeft: Radius.circular(6),
+																		bottomRight: Radius.circular(8)
+																	),
+																	color: Colors.black54
+																),
+																padding: const EdgeInsets.all(2),
+																child: Icon(icon, size: 19),
 															)
 														),
 														if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Center(
