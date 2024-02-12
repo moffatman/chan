@@ -961,11 +961,13 @@ class ThreadPageState extends State<ThreadPage> {
 				if (firstLoad) shouldScroll = true;
 				if (persistentState.autoTranslate) {
 					// Translate new posts
-					for (final post in newThread.posts) {
-						if (zone.translatedPost(post.id) == null) {
-							zone.translatePost(post);
+					() async {
+						for (final post in newThread.posts) {
+							if (zone.translatedPost(post.id) == null) {
+								await zone.translatePost(post);
+							}
 						}
-					}
+					}();
 				}
 			}
 			await tmpPersistentState.save();
@@ -2401,10 +2403,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										})]
 										else [('Translate', const Icon(Icons.translate, size: 19), () async {
 											widget.persistentState.autoTranslate = true;
-											for (final post in widget.persistentState.thread?.posts ?? []) {
+											for (final post in widget.persistentState.thread?.posts ?? <Post>[]) {
 												if (widget.zone.translatedPost(post.id) == null) {
 													try {
-														await widget.zone.translatePost(post.id);
+														await widget.zone.translatePost(post);
 													}
 													catch (e) {
 														// ignore, it will be shown on the post widget anyway
