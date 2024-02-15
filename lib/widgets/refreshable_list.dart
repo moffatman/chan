@@ -1397,7 +1397,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		Widget child;
 		Widget? collapsed;
 		bool loadingOmittedItems = false;
-		if (widget.treeAdapter != null && (useTree || value.representsStubChildren)) {
+		final TreeItemCollapseType? isHidden;
+		if (widget.treeAdapter != null && useTree) {
+			isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value));
+		}
+		else {
+			isHidden = null;
+		}
+		if (widget.treeAdapter != null && (useTree || value.representsStubChildren) && !isHidden.isHidden) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
 		if ((_searchFilter?.text.isNotEmpty ?? false) && widget.filteredItemBuilder != null) {
@@ -1420,7 +1427,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					child: Text('${value.representsKnownStubChildren.length} more replies...')
 				);
 			}
-			else {
+			else if (isHidden != TreeItemCollapseType.mutuallyChildCollapsed) {
 				child = Builder(
 					builder: (context) => widget.itemBuilder(context, value.item)
 				);
@@ -1439,8 +1446,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					);
 				}
 			}
+			else {
+				child = const SizedBox(width: double.infinity);
+			}
 			if (widget.treeAdapter != null && useTree) {
-				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value));
 				if (isHidden.isHidden) {
 					// Avoid possible heavy build+layout cost for hidden items
 					child = const SizedBox(width: double.infinity);
@@ -1514,36 +1523,24 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
 					child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
 				}
-				child = AnimatedSize(
-					duration: _treeAnimationDuration,
-					alignment: Alignment.topCenter,
-					curve: Curves.ease,
-					child: child
-				);
-				child = DefaultGestureDetector(
-					behavior: HitTestBehavior.translucent,
-					onTap: loadingOmittedItems ? null : () async {
-						if (!value.representsStubChildren) {
-							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
-								context.read<_RefreshableTreeItems>().swapSubtreeTo(value);
-								Future.delayed(_treeAnimationDuration, () => widget.controller?._alignToItemIfPartiallyAboveFold(value));
-							}
-							else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
-								context.read<_RefreshableTreeItems>().revealNewInsertsBelow(value);
-								// At the same time, trigger any loading
-								final stubParent = widget.controller?.items.tryFirstWhere((otherItem) {
-									return otherItem.item == value.item &&
-											otherItem.id == value.id &&
-											otherItem.parentIds == value.parentIds &&
-											otherItem.representsStubChildren;
-								});
-								if (stubParent != null) {
-									_loadOmittedItems(stubParent);
+				if (isHidden != TreeItemCollapseType.mutuallyChildCollapsed) {
+					child = AnimatedSize(
+						duration: _treeAnimationDuration,
+						alignment: Alignment.topCenter,
+						curve: Curves.ease,
+						child: child
+					);
+					child = DefaultGestureDetector(
+						behavior: HitTestBehavior.translucent,
+						onTap: loadingOmittedItems ? null : () async {
+							if (!value.representsStubChildren) {
+								if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
+									context.read<_RefreshableTreeItems>().swapSubtreeTo(value);
+									Future.delayed(_treeAnimationDuration, () => widget.controller?._alignToItemIfPartiallyAboveFold(value));
 								}
-							}
-							else if (isHidden != null) {
-								context.read<_RefreshableTreeItems>().unhideItem(value);
-								if (isHidden == TreeItemCollapseType.topLevelCollapsed) {
+								else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
+									context.read<_RefreshableTreeItems>().revealNewInsertsBelow(value);
+									// At the same time, trigger any loading
 									final stubParent = widget.controller?.items.tryFirstWhere((otherItem) {
 										return otherItem.item == value.item &&
 												otherItem.id == value.id &&
@@ -1554,18 +1551,32 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 										_loadOmittedItems(stubParent);
 									}
 								}
+								else if (isHidden != null) {
+									context.read<_RefreshableTreeItems>().unhideItem(value);
+									if (isHidden == TreeItemCollapseType.topLevelCollapsed) {
+										final stubParent = widget.controller?.items.tryFirstWhere((otherItem) {
+											return otherItem.item == value.item &&
+													otherItem.id == value.id &&
+													otherItem.parentIds == value.parentIds &&
+													otherItem.representsStubChildren;
+										});
+										if (stubParent != null) {
+											_loadOmittedItems(stubParent);
+										}
+									}
+								}
+								else if (value.treeDescendantIds.isNotEmpty || !(widget.treeAdapter?.collapsedItemsShowBody ?? false)) {
+									context.read<_RefreshableTreeItems>().hideItem(value);
+									widget.controller?._alignToItemIfPartiallyAboveFold(value);
+								}
 							}
-							else if (value.treeDescendantIds.isNotEmpty || !(widget.treeAdapter?.collapsedItemsShowBody ?? false)) {
-								context.read<_RefreshableTreeItems>().hideItem(value);
-								widget.controller?._alignToItemIfPartiallyAboveFold(value);
+							else {
+								_loadOmittedItems(value);
 							}
-						}
-						else {
-							_loadOmittedItems(value);
-						}
-					},
-					child: child
-				);
+						},
+						child: child
+					);
+				}
 			}
 			else if (widget.treeAdapter != null && value.representsStubChildren) {
 				child = GestureDetector(
