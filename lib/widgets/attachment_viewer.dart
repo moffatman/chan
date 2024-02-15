@@ -818,7 +818,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	String _downloadExt(bool convertForCompatibility) {
-		if (convertForCompatibility && attachment.type == AttachmentType.webm) {
+		if ((convertForCompatibility || cacheExt == '.mp4') && attachment.type == AttachmentType.webm) {
 			return '.mp4';
 		}
 		if (attachment.soundSource != null && !_soundSourceFailed) {
