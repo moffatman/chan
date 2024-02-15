@@ -305,7 +305,7 @@ class RefreshableListItem<T extends Object> {
 		int? depth
 	}) : treeDescendantIds = treeDescendantIds ?? {},
 	     _depth = depth,
-			 _key = _RefreshableTreeItemsCacheKey(parentIds, id, representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty),
+			 _key = state._internHashKey(_RefreshableTreeItemsCacheKey(parentIds, id, representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty)),
 			 _state = state;
 
 	@override
@@ -441,21 +441,21 @@ class _RefreshableTreeItemsCacheKey {
 	final List<int> parentIds;
 	final int thisId;
 	final bool representsStubChildren;
-	final String _cacheKey;
 
-	_RefreshableTreeItemsCacheKey(this.parentIds, this.thisId, this.representsStubChildren) :
-		_cacheKey = '${parentIds.join(',')},$thisId,$representsStubChildren';
+	_RefreshableTreeItemsCacheKey(this.parentIds, this.thisId, this.representsStubChildren);
 
 	@override
 	bool operator ==(Object other) =>
 		other is _RefreshableTreeItemsCacheKey &&
-		other._cacheKey == _cacheKey;
+		other.thisId == thisId &&
+		listEquals(other.parentIds, parentIds) &&
+		other.representsStubChildren == representsStubChildren;
 	
 	@override
-	int get hashCode => _cacheKey.hashCode;
+	int get hashCode => Object.hash(thisId, parentIds, representsStubChildren);
 
 	@override
-	String toString() => '_RefreshableTreeItemsCacheKey($_cacheKey)';
+	String toString() => '_RefreshableTreeItemsCacheKey(thisId: $thisId, parentIds: $parentIds, representsStubChildren: $representsStubChildren)';
 
 	bool isDirectParentOf(_RefreshableTreeItemsCacheKey child) {
 		if (parentIds.length + 1 != child.parentIds.length) {
@@ -491,7 +491,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final Map<int, int> defaultPrimarySubtreeParents = {};
 	final Map<int, int> primarySubtreeParents;
 	final Set<List<int>> loadingOmittedItems = {};
-	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = {};
+	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = Map.identity();
 	/// If the bool is false, we haven't laid out this item yet.
 	/// Don't show the indicator on the parent.
 	/// That's because its child might end up being shown.
@@ -1006,6 +1006,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		Map<int, Map<int, int>> treeChildrenIndexLookup
 	})? _lastTreeOrder;
 	bool _addedResumeCallback = false;
+	final Set<_RefreshableTreeItemsCacheKey> _internedHashKeys = {};
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
 	bool get treeBuildingFailed => _treeBuildingFailed;
@@ -1050,6 +1051,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			widget.updateAnimation?.addListener(_onUpdateAnimation);
 		}
 		if (oldWidget.id != widget.id) {
+			_internedHashKeys.clear();
 			autoUpdateTimer?.cancel();
 			autoUpdateTimer = null;
 			widget.controller?.newContentId(widget.id);
@@ -1185,6 +1187,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	void _unfocusSearch() {
 		_searchFocusNode.unfocus();
 		setState(() {});
+	}
+
+	_RefreshableTreeItemsCacheKey _internHashKey(_RefreshableTreeItemsCacheKey key) {
+		final existing = _internedHashKeys.lookup(key);
+		if (existing != null) {
+			return existing;
+		}
+		_internedHashKeys.add(key);
+		return key;
 	}
 
 	Future<void> _loadOmittedItems(RefreshableListItem<T> value) async {
@@ -1818,7 +1829,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				_refreshableTreeItems.newlyInsertedItems.putIfAbsent(ids, () => false);
 				_refreshableTreeItems._cache.removeWhere((k, _) => parentIds.contains(k.thisId));
 				if (parentIds.isEmpty) {
-					_refreshableTreeItems._cache.remove(_RefreshableTreeItemsCacheKey([], adapter.opId, false));
+					_refreshableTreeItems._cache.remove(_internHashKey(_RefreshableTreeItemsCacheKey([], adapter.opId, false)));
 				}
 			}
 			for (final child in node.children) {
