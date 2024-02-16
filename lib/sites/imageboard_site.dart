@@ -907,7 +907,6 @@ abstract class ImageboardSiteArchive {
 	ImageboardSiteArchive({
 		this.platformUserAgents = const {}
 	}) {
-		client.interceptors.add(LoggingInterceptor.instance);
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(SeparatedCookieManager(
 			wifiCookieJar: Persistence.wifiCookies,
@@ -921,6 +920,7 @@ abstract class ImageboardSiteArchive {
 			}
 		));
 		client.interceptors.add(CloudflareInterceptor());
+		client.interceptors.add(LoggingInterceptor.instance);
 	}
 	String get name;
 	Future<Post> getPost(String board, int id, {required RequestPriority priority});
