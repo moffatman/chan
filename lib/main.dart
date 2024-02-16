@@ -24,6 +24,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/rlimit.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/storage.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -55,6 +56,7 @@ import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:native_drag_n_drop/native_drag_n_drop.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/subjects.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chan/pages/tab.dart';
@@ -120,6 +122,63 @@ class ChanFailedApp extends StatelessWidget {
 						builder: (context, setState) => ErrorMessageCard(
 							'Sorry, an unrecoverable error has occured:\n${error.toStringDio()}\n$stackTrace',
 							remedies: {
+								if (EffectiveSettings.featureDumpData && Platform.isAndroid) 'Dump data': () async {
+									try {
+										final src = await getApplicationDocumentsDirectory();
+										final dst = await pickDirectory();
+										if (dst == null) {
+											return;
+										}
+										await for (final child in src.list(recursive: true)) {
+											if (child.statSync().type != FileSystemEntityType.file) {
+												continue;
+											}
+											final path = child.path.replaceFirst(src.path, '/');
+											final parts = path.split('/');
+											parts.removeWhere((p) => p.isEmpty);
+											final filename = parts.removeLast();
+											await saveFile(
+												destinationDir: dst,
+												destinationSubfolders: parts,
+												sourcePath: child.absolute.path,
+												destinationName: filename
+											);
+										}
+										if (context.mounted) {
+											showCupertinoDialog(
+												context: context,
+												builder: (context) => CupertinoAlertDialog(
+													title: const Text('Export successful!'),
+													actions: [
+														CupertinoDialogAction(
+															onPressed: () => Navigator.pop(context),
+															child: const Text('OK')
+														)
+													]
+												)
+											);
+										}
+									}
+									catch (e, st) {
+										print(e);
+										print(st);
+										if (context.mounted) {
+											showCupertinoDialog(
+												context: context,
+												builder: (context) => CupertinoAlertDialog(
+													title: const Text('Error'),
+													content: Text(e.toStringDio()),
+													actions: [
+														CupertinoDialogAction(
+															onPressed: () => Navigator.pop(context),
+															child: const Text('OK')
+														)
+													]
+												)
+											);
+										}
+									}
+								},
 								'Report via Email': () {
 									FlutterEmailSender.send(Email(
 										subject: 'Unrecoverable Chance Error',

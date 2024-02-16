@@ -2861,6 +2861,7 @@ class EffectiveSettings extends ChangeNotifier {
 
 	static const featureStatusBarWorkaround = true;
 	static const featureWebmTranscodingForPlayback = false;
+	static const featureDumpData = false;
 
 	EffectiveSettings._() {
 		_settings = Persistence.settings;
