@@ -273,6 +273,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		]);
 		listenable.removeListener(listener);
 		if (postShowedUp) {
+			receipt.spamFiltered = false;
 			showToast(
 				context: widget.longLivedCounterpartKey?.currentContext ?? context,
 				message: 'Post successful',
@@ -1021,7 +1022,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				subject: _subjectFieldController.text,
 				flag: flag
 			));
-			bool spamFiltered = false;
 			if (_captchaSolution is Chan4CustomCaptchaSolution) {
 				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
 				if (context.mounted) {
@@ -1072,13 +1072,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						});
 					}
 				}
-				// Now spam filter is quite broad on 4chan...
-				spamFiltered =
-					solution.challenge != 'noop' &&
-					// No spam filter checking for now in the catalog...
-					widget.threadId != null;
 			}
-			if (spamFiltered) {
+			if (receipt.spamFiltered) {
 				_listenForSpamFilter(receipt);
 			}
 			else {
@@ -1106,7 +1101,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			threadState.save();
 			mediumHapticFeedback();
 			widget.onReplyPosted(receipt);
-			if (mounted && !spamFiltered) {
+			if (mounted && !receipt.spamFiltered) {
 				showToast(
 					context: context,
 					message: 'Post successful',

@@ -853,7 +853,16 @@ class Site4Chan extends ImageboardSite {
 				name: name,
 				options: options,
 				time: DateTime.now(),
-				ip: captchaSolution.ip
+				ip: captchaSolution.ip,
+											// Catalog spam-filter check not supported yet
+				spamFiltered: threadId != null &&
+											// Non-trivial 4chan captchas only
+											switch (captchaSolution) {
+												Chan4CustomCaptchaSolution x => x.challenge != 'noop',
+												_ => false
+											} &&
+											// Seems this 4chan_pass= header is only set in true successful posts
+											!(response.headers['set-cookie'] ?? []).any((c) => c.startsWith('4chan_pass='))
 			);
 		}
 		else {
