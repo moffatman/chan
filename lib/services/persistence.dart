@@ -1720,4 +1720,11 @@ extension PseudoCookies on PersistCookieJar {
 	Future<void> writePseudoCookie(String key, String value) async {
 		await saveFromResponse(_pseudoCookieUri, [Cookie(key, value)..expires = DateTime.now().add(_expiresOffset)]);
 	}
+
+	Future<void> deletePseudoCookie(String key) async {
+		final toSave = await loadForRequest(_pseudoCookieUri);
+		toSave.removeWhere((c) => c.name == key);
+		await this.delete(_pseudoCookieUri);
+		await saveFromResponse(_pseudoCookieUri, toSave);
+	}
 }

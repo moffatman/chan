@@ -24,6 +24,10 @@ import 'package:provider/provider.dart';
 
 Captcha4ChanCustomChallenge? _challenge;
 
+bool _isFalsy(Object obj) {
+	return {false, 0, '', null}.contains(obj);
+}
+
 typedef _CloudGuess = ({
 	String answer,
 	double confidence,
@@ -75,7 +79,12 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	}
 	final ticket = data['ticket'];
 	if (ticket is Object) {
-		await Persistence.currentCookies.writePseudoCookie(Site4Chan.kTicketPseudoCookieKey, ticket.toString());
+		if (_isFalsy(ticket)) {
+			await Persistence.currentCookies.deletePseudoCookie(Site4Chan.kTicketPseudoCookieKey);
+		}
+		else {
+			await Persistence.currentCookies.writePseudoCookie(Site4Chan.kTicketPseudoCookieKey, ticket.toString());
+		}
 	}
 	if (site is Site4Chan) {
 		site.resetCaptchaTicketTimer();
