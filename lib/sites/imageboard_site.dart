@@ -32,6 +32,7 @@ import 'package:chan/sites/lainchan2.dart';
 import 'package:chan/sites/wizchan.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
@@ -1091,7 +1092,18 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					thread_.archiveName = archive.name;
 					fallback = thread_;
 					if (completer.isCompleted) return null;
-					await validator(thread_);
+					try {
+						await validator(thread_);
+					}
+					catch (e) {
+						if (
+							(e is AttachmentNotArchivedException || e is AttachmentNotFoundException) &&
+							identical(fallback, thread_)
+						) {
+							fallback = null;
+						}
+						rethrow;
+					}
 					if (!completer.isCompleted) {
 						completer.complete(thread_);
 					}
