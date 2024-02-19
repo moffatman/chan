@@ -466,10 +466,11 @@ packages:
   flutter_exif_rotation:
     dependency: "direct main"
     description:
-      name: flutter_exif_rotation
-      sha256: "642841fa8dbedb0ac7b7f005dd24a606ce237ab2de0fedef7b3419d58b97f2a7"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: HEAD
+      resolved-ref: a0968617ee6c040b7805f1e5534b1692c810a940
+      url: "https://github.com/moffatman/flutter_exif_rotation"
+    source: git
     version: "0.5.1"
   flutter_highlight:
     dependency: "direct main"

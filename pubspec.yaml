@@ -59,7 +59,9 @@ dependencies:
   crypto: ^3.0.1
   fluttertoast: ^8.2.1
   test: ^1.20.1
-  flutter_exif_rotation: ^0.5.0
+  flutter_exif_rotation:
+    git:
+      url: https://github.com/moffatman/flutter_exif_rotation
   normal: ^0.6.0
   pool: ^1.5.0
   connectivity_plus: ^4.0.2
