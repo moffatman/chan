@@ -99,7 +99,7 @@ class _PostsPageState extends State<PostsPage> {
 				}
 			}
 			else {
-				final archivedPost = widget.zone.postFromArchive(id);
+				final archivedPost = widget.zone.postFromArchive(widget.zone.board, id);
 				if (archivedPost != null) {
 					replies.add(_PostsPageItem.post(archivedPost));
 				}
