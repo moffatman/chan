@@ -92,6 +92,7 @@ dependencies:
   local_auth: ^2.1.6
   screenshot: ^2.1.0
   ffi: ^2.0.2
+  archive: ^3.4.10
 
 dev_dependencies:
   hive_generator: ^2.0.0
@@ -213,3 +214,13 @@ dependency_overrides:
       url: https://github.com/moffatman/media-kit.git
       ref: main
       path: libs/windows/media_kit_libs_windows_video_encoders_gpl
+  hive:
+    git:
+      url: https://github.com/moffatman/hive.git
+      ref: master
+      path: hive
+  hive_generator:
+    git:
+      url: https://github.com/moffatman/hive.git
+      ref: master
+      path: hive_generator

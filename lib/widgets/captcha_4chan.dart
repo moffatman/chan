@@ -542,10 +542,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	bool _cloudGuessFailed = false;
 	String? _ip;
 
-	int get numLetters => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters;
-	set numLetters(int setting) => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters = setting;
+	int get numLetters => Settings.instance.captcha4ChanCustomNumLetters;
+	set numLetters(int setting) => Settings.captcha4ChanCustomNumLettersSetting.value = setting;
 
-	bool get useNewCaptchaForm => context.read<EffectiveSettings>().useNewCaptchaForm && widget.request.possibleLetterCounts.isNotEmpty;
+	bool get useNewCaptchaForm => Settings.instance.useNewCaptchaForm && widget.request.possibleLetterCounts.isNotEmpty;
 
 	Future<void> _animateCloudGuess() async {
 		setState(() {
@@ -592,7 +592,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			extentOffset: min(numLetters, selection.extentOffset)
 		);
 		_guessConfidences = newGuess.confidences.toList();
-		if (mounted && context.read<EffectiveSettings>().supportMouse.value) {
+		if (mounted && context.read<MouseSettings>().supportMouse) {
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionNode.requestFocus();
 		}
@@ -648,7 +648,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			print(e);
 			print(st);
 		}
-		if (mounted && context.read<EffectiveSettings>().supportMouse.value) {
+		if (mounted && context.read<MouseSettings>().supportMouse) {
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionNode.requestFocus();
 		}
@@ -658,8 +658,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Future<void> _animateGuess() async {
-		final settings = context.read<EffectiveSettings>();
-		settings.useCloudCaptchaSolver = settings.useCloudCaptchaSolver ??= await showAdaptiveDialog<bool>(
+		Settings.useCloudCaptchaSolverSetting.value ??= await showAdaptiveDialog<bool>(
 			context: context,
 			barrierDismissible: true,
 			builder: (context) => AdaptiveAlertDialog(
@@ -682,7 +681,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				]
 			)
 		);
-		if (settings.useCloudCaptchaSolver ?? false) {
+		if (Settings.instance.useCloudCaptchaSolver ?? false) {
 			if (!_cloudGuessFailed) {
 				await _animateCloudGuess();
 				if (!_cloudGuessFailed) {

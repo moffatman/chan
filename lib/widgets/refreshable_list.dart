@@ -1251,7 +1251,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		else {
 			if (!_addedResumeCallback) {
-				EffectiveSettings.instance.addAppResumeCallback(_autoUpdate);
+				Settings.instance.addAppResumeCallback(_autoUpdate);
 			}
 			_addedResumeCallback = true;
 			resetTimer();
@@ -2201,7 +2201,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 											],
 											if (!widget.shrinkWrap && (sortedList?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
 												child: Container(
-													height: kMinInteractiveDimensionCupertino * max(1, context.select<EffectiveSettings, double>((s) => s.textScale)),
+													height: kMinInteractiveDimensionCupertino * max(1, Settings.textScaleSetting.watch(context)),
 													padding: const EdgeInsets.all(4),
 													child: Row(
 														mainAxisSize: MainAxisSize.min,
@@ -2225,7 +2225,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																			widget.onFilterChanged?.call(searchText);
 																		},
 																		controller: _searchController,
-																		enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
+																		enableIMEPersonalizedLearning: Settings.enableIMEPersonalizedLearningSetting.watch(context),
 																		focusNode: _searchFocusNode,
 																		placeholder: widget.filterHint,
 																		smartQuotesType: SmartQuotesType.disabled,

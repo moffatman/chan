@@ -3,7 +3,6 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class AdaptiveSegmentedControl<T extends Object> extends StatelessWidget {
 	final Map<T, (IconData?, String)> children;
@@ -94,7 +93,7 @@ class AdaptiveChoiceControl<T extends Object> extends StatelessWidget {
 	});
 
 	Widget _build(BuildContext context, double width) {
-		final textScale = context.select<EffectiveSettings, double>((s) => s.textScale);
+		final textScale = Settings.textScaleSetting.watch(context);
 		final isMaterial = ChanceTheme.materialOf(context);
 		final expectedWidth = 16 + (children.length * 16) + ((17 * textScale) * 0.8 * (children.values.map((c) => c.$2.length + (isMaterial && c.$1 != null ? 2 : 0)).fold(0, (a, b) => a + b)));
 		if (width < expectedWidth) {

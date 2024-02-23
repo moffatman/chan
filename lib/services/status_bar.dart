@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 Future<void> showStatusBar() async {
-	if (EffectiveSettings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
+	if (Settings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
 		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 	}
 	else {
@@ -15,7 +15,7 @@ Future<void> showStatusBar() async {
 }
 
 Future<void> hideStatusBar() async {
-	if (EffectiveSettings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
+	if (Settings.featureStatusBarWorkaround && Persistence.settings.useStatusBarWorkaround == true) {
 		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 	}
 	else {

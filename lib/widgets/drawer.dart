@@ -229,7 +229,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 		_tabController = TabController(
 			length: 3,
 			vsync: this,
-			initialIndex: switch(context.read<EffectiveSettings>().drawerMode) {
+			initialIndex: switch(Settings.instance.drawerMode) {
 					DrawerMode.tabs => 0,
 					DrawerMode.watchedThreads => 1,
 					_ => 2
@@ -248,7 +248,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 		// Note - a lot of this is lazy and missing listens.
 		// But it should always be updated when we open drawer so nbd.
 		final tabs = context.watch<ChanTabs>();
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final _DrawerList list;
 		if (settings.drawerMode == DrawerMode.tabs) {
 			list = _DrawerList<PersistentBrowserTab>(
@@ -287,7 +287,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 							tabs.addNewTab(
 								withImageboardKey: tab.imageboardKey,
 								atPosition: i + 1,
-								withBoard: tab.board?.name,
+								withBoard: tab.board,
 								withThread: tab.thread,
 								incognito: tab.incognito,
 								withInitialSearch: tab.initialSearch,
@@ -306,7 +306,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 				builder: (watch, builder) => ThreadWidgetBuilder(
 					imageboard: watch.imageboard,
 					persistence: null,
-					board: watch.imageboard.persistence.maybeGetBoard(watch.item.board),
+					boardName: watch.item.board,
 					thread: watch.item.threadIdentifier,
 					builder: builder
 				),
@@ -359,7 +359,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 				builder: (state, builder) => ThreadWidgetBuilder(
 					imageboard: state.imageboard,
 					persistence: null,
-					board: state.imageboard?.persistence.maybeGetBoard(state.board),
+					boardName: state.board,
 					thread: state.identifier,
 					builder: builder,
 				),
@@ -458,8 +458,8 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 									child: GestureDetector(
 										onLongPress: () {
 											mediumHapticFeedback();
-											final settings = context.read<EffectiveSettings>();
-											settings.recordThreadsInHistory = !settings.recordThreadsInHistory;
+											final settings = Settings.instance;
+											Settings.recordThreadsInHistorySetting.value = !settings.recordThreadsInHistory;
 											showToast(
 												context: context,
 												message: settings.recordThreadsInHistory ? 'History resumed' : 'History stopped',
@@ -475,7 +475,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 												_afterUse();
 											},
 											child: Icon(
-												context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? Icons.history : Icons.history_toggle_off,
+												Settings.recordThreadsInHistorySetting.watch(context) ? Icons.history : Icons.history_toggle_off,
 												color: tabs.mainTabIndex == 2 ? backgroundColor : primaryColor
 											)
 										)

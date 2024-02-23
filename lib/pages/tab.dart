@@ -35,14 +35,15 @@ class ImageboardTab extends StatelessWidget {
 				tab.didUpdate();
 			},
 			masterBuilder: (context, selectedThread, threadSetter) {
+				final boardName = tab.board;
 				return BoardPage(
 					key: tab.boardKey,
 					tab: tab,
-					initialBoard: tab.board,
+					initialBoard: boardName == null ? null : tab.imageboard?.persistence.maybeGetBoard(boardName),
 					isThreadSelected: selectedThread,
 					onThreadSelected: threadSetter,
 					onBoardChanged: (board) {
-						tab.board = board.item;
+						tab.board = board.item.name;
 						final didChangeSite = tab.imageboardKey != board.imageboard.key;
 						tab.imageboardKey = board.imageboard.key;
 						tab.initialSearch = null;

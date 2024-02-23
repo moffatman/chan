@@ -33,7 +33,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 	required BuildContext context,
 	required Post post
 }) async {
-	final settings = context.read<EffectiveSettings>();
+	final settings = Settings.instance;
 	final zone = context.read<PostSpanZoneData>();
 	final lastStyle = settings.lastShareablePostsStyle;
 	bool useTree = lastStyle.useTree;
@@ -242,7 +242,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 		)
 	);
 	if (ok ?? false) {
-		return settings.lastShareablePostsStyle = ShareablePostsStyle(
+		return Settings.lastShareablePostsStyleSetting.value = ShareablePostsStyle(
 			useTree: useTree,
 			overrideThemeKey: overrideThemeKey,
 			parentDepth: parentDepth,
@@ -278,7 +278,8 @@ Future<File> sharePostsAsImage({
 				filter: Filter.of(context, listen: false),
 				child: MultiProvider(
 					providers: [
-						ChangeNotifierProvider.value(value: context.read<EffectiveSettings>()),
+						ChangeNotifierProvider.value(value: Settings.instance),
+						ChangeNotifierProvider.value(value: context.read<MouseSettings>()),
 						ChangeNotifierProvider.value(value: imageboard),
 						Provider.value(value: context.read<ImageboardSite>()),
 						ChangeNotifierProvider.value(value: context.read<Persistence>()),
@@ -299,9 +300,7 @@ Future<File> sharePostsAsImage({
 		pixelRatio: mediaQueryData.devicePixelRatio,
 		delay: const Duration(milliseconds: 500)
 	);
-	final shareDirectory = Directory('${Persistence.temporaryDirectory.path}/sharecache');
-	await shareDirectory.create(recursive: true);
-	final file = File('${shareDirectory.path}/${imageboard.site.name}_${effectiveZone.board}_$primaryPostId.png');
+	final file = File('${Persistence.shareCacheDirectory.path}/${imageboard.site.name}_${effectiveZone.board}_$primaryPostId.png');
 	await file.writeAsBytes(img);
 	return file;
 }

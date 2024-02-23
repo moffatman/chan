@@ -42,7 +42,7 @@ class ThreadWatch extends Watch {
 	int lastSeenId;
 	@HiveField(3, defaultValue: true)
 	bool localYousOnly;
-	@HiveField(4, defaultValue: [])
+	@HiveField(4, defaultValue: <int>[], merger: SetLikePrimitiveListMerger<int>())
 	List<int> youIds;
 	@HiveField(5, defaultValue: false)
 	bool zombie;
@@ -139,8 +139,8 @@ class ThreadWatcher extends ChangeNotifier {
 		controller.registerWatcher(this);
 		_boxSubscription = Persistence.sharedThreadStateBox.watch().listen(_threadUpdated);
 		_setInitialCounts();
-		EffectiveSettings.instance.filterListenable.addListener(_didUpdateFilter);
-		EffectiveSettings.instance.addListener(_didUpdateSettings);
+		Settings.instance.filterListenable.addListener(_didUpdateFilter);
+		Settings.instance.addListener(_didUpdateSettings);
 		_lastHiddenImageMD5s = Persistence.settings.hiddenImageMD5s.toSet();
 	}
 
@@ -348,7 +348,7 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 		}
 		bool savedAnyThread = false;
-		for (final line in EffectiveSettings.instance.customFilterLines) {
+		for (final line in Settings.instance.customFilterLines) {
 			if (line.disabled || (!line.outputType.autoSave && line.outputType.autoWatch == null)) {
 				continue;
 			}
@@ -374,7 +374,7 @@ class ThreadWatcher extends ChangeNotifier {
 						if (!(persistence.browserState.autowatchedIds[board]?.contains(thread.id) ?? false)) {
 							final threadState = persistence.getThreadState(thread.identifier);
 							threadState.thread = thread;
-							final defaultThreadWatch = EffectiveSettings.instance.defaultThreadWatch;
+							final defaultThreadWatch = Settings.instance.defaultThreadWatch;
 							notifications.subscribeToThread(
 								thread: thread.identifier,
 								lastSeenId: thread.posts_.last.id,
@@ -421,8 +421,8 @@ class ThreadWatcher extends ChangeNotifier {
 		_boxSubscription = null;
 		unseenCount.dispose();
 		unseenYouCount.dispose();
-		EffectiveSettings.instance.filterListenable.removeListener(_didUpdateFilter);
-		EffectiveSettings.instance.removeListener(_didUpdateSettings);
+		Settings.instance.filterListenable.removeListener(_didUpdateFilter);
+		Settings.instance.removeListener(_didUpdateSettings);
 		super.dispose();
 	}
 }
@@ -457,7 +457,7 @@ class ThreadWatcherController extends ChangeNotifier {
 		if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
 			// Don't update when app is in background
 			if (!_addedResumeCallback) {
-				EffectiveSettings.instance.addAppResumeCallback(update);
+				Settings.instance.addAppResumeCallback(update);
 			}
 			_addedResumeCallback = true;
 			return;

@@ -53,7 +53,7 @@ class ThreadCounters extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final site = imageboard.site;
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final theme = context.watch<SavedTheme>();
 		final latestThread = threadState?.thread ?? thread;
 		final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), latestThread.posts_.length - 1);
@@ -213,7 +213,7 @@ class ThreadRow extends StatelessWidget {
 	}) : super(key: key);
 
 	Widget _build(BuildContext context, PersistentThreadState? threadState) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final theme = context.watch<SavedTheme>();
 		final imageboard = context.watch<Imageboard>();
 		final site = context.watch<ImageboardSite>();
@@ -683,7 +683,7 @@ class ThreadRow extends StatelessWidget {
 			transformation: (context, mq) => mq.copyWith(
 				textScaler: ChainedLinearTextScaler(
 					parent: mq.textScaler,
-					textScaleFactor: context.select<EffectiveSettings, double>((s) => s.catalogGridModeTextScale)
+					textScaleFactor: Settings.catalogGridModeTextScaleSetting.watch(context)
 				)
 			),
 			child: container

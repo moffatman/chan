@@ -18,6 +18,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/installed_fonts.dart';
+import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
@@ -29,7 +30,6 @@ import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/version.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -49,6 +49,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -58,7 +59,6 @@ import 'package:media_kit/media_kit.dart';
 import 'package:native_drag_n_drop/native_drag_n_drop.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/subjects.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
@@ -95,6 +95,7 @@ void main() async {
 			await updateDynamicColors();
 			await initializeFonts();
 			MediaKit.ensureInitialized();
+			await JsonCache.instance.initialize();
 			runApp(const ChanApp());
 		}
 		catch (e, st) {
@@ -122,7 +123,7 @@ class ChanFailedApp extends StatelessWidget {
 						builder: (context, setState) => ErrorMessageCard(
 							'Sorry, an unrecoverable error has occured:\n${error.toStringDio()}\n$stackTrace',
 							remedies: {
-								if (EffectiveSettings.featureDumpData && Platform.isAndroid) 'Dump data': () async {
+								if (Settings.featureDumpData && Platform.isAndroid) 'Dump data': () async {
 									try {
 										final src = await getApplicationDocumentsDirectory();
 										final dst = await pickDirectory();
@@ -270,7 +271,8 @@ class ChanApp extends StatefulWidget {
 }
 
 class _ChanAppState extends State<ChanApp> {
-	late Map<String, dynamic> _lastSites;
+	late Map<String, Map> _lastSites;
+	late Set<String> _lastSiteKeys;
 	final _navigatorKey = GlobalKey<NavigatorState>();
 	final _homePageKey = GlobalKey<_ChanHomePageState>();
 
@@ -281,29 +283,45 @@ class _ChanAppState extends State<ChanApp> {
 	@override
 	void initState() {
 		super.initState();
-		_lastSites = EffectiveSettings.instance.contentSettings.sites;
+		_lastSites = Map.from(JsonCache.instance.sites.value ?? defaultSites);
+		_lastSiteKeys = Set.from(Settings.instance.settings.contentSettings.siteKeys);
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
 		ImageboardRegistry.instance.initializeDev();
 		ImageboardRegistry.instance.handleSites(
 			context: context,
-			data: _lastSites
+			sites: _lastSites,
+			keys: _lastSiteKeys
 		);
-		EffectiveSettings.instance.addListener(_onSettingsUpdate);
+		Settings.instance.addListener(_onSettingsUpdate);
+		JsonCache.instance.sites.addListener(_onSitesUpdate);
 	}
 
 	@override
 	void dispose() {
 		super.dispose();
 		ImageboardRegistry.instance.removeListener(_onImageboardRegistryUpdate);
-		EffectiveSettings.instance.removeListener(_onSettingsUpdate);
+		Settings.instance.removeListener(_onSettingsUpdate);
+		JsonCache.instance.sites.removeListener(_onSitesUpdate);
+	}
+
+	void _onSitesUpdate() {
+		if (!mapEquals(JsonCache.instance.sites.value, _lastSites)) {
+			_lastSites = Map.from(JsonCache.instance.sites.value ?? _lastSites);
+			ImageboardRegistry.instance.handleSites(
+				context: context,
+				sites: _lastSites,
+				keys: _lastSiteKeys
+			);
+		}
 	}
 
 	void _onSettingsUpdate() {
-		if (EffectiveSettings.instance.contentSettings.sites != _lastSites) {
-			_lastSites = EffectiveSettings.instance.contentSettings.sites;
+		if (!setEquals(Settings.instance.settings.contentSettings.siteKeys, _lastSiteKeys)) {
+			_lastSiteKeys = Set.from(Settings.instance.settings.contentSettings.siteKeys);
 			ImageboardRegistry.instance.handleSites(
 				context: context,
-				data: _lastSites
+				sites: _lastSites,
+				keys: _lastSiteKeys
 			);
 		}
 	}
@@ -319,23 +337,23 @@ class _ChanAppState extends State<ChanApp> {
 		return CallbackShortcuts(
 			bindings: {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.equal): () {
-					if (EffectiveSettings.instance.interfaceScale < 2.0) {
-						EffectiveSettings.instance.interfaceScale += 0.05;
+					if (Settings.instance.interfaceScale < 2.0) {
+						Settings.interfaceScaleSetting.value += 0.05;
 					}
 				},
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.minus): () {
-					if (EffectiveSettings.instance.interfaceScale > 0.5) {
-						EffectiveSettings.instance.interfaceScale -= 0.05;
+					if (Settings.instance.interfaceScale > 0.5) {
+						Settings.interfaceScaleSetting.value -= 0.05;
 					}
 				}
 			},
 			child: MultiProvider(
 				providers: [
-					ChangeNotifierProvider.value(value: EffectiveSettings.instance),
-					ProxyProvider<EffectiveSettings, SavedTheme>(
+					ChangeNotifierProvider.value(value: Settings.instance),
+					ProxyProvider<Settings, SavedTheme>(
 						update: (context, settings, result) => settings.theme
 					),
-					ProxyProvider<EffectiveSettings, ChanceThemeKey>(
+					ProxyProvider<Settings, ChanceThemeKey>(
 						update: (context, settings, result) => ChanceThemeKey(settings.themeKey)
 					)
 				],
@@ -354,7 +372,7 @@ class _ChanAppState extends State<ChanApp> {
 									final home = Builder(
 										builder: (BuildContext context) {
 											ImageboardRegistry.instance.context = context;
-											final showPerformanceOverlay = context.select<EffectiveSettings, bool>((s) => s.showPerformanceOverlay);
+											final showPerformanceOverlay = Settings.showPerformanceOverlaySetting.watch(context);
 											return ImageboardRegistry.instance.initialized ? Stack(
 												children: [
 													// For some unexplained reason this improves performance
@@ -376,21 +394,30 @@ class _ChanAppState extends State<ChanApp> {
 											) : Container(
 												color: ChanceTheme.backgroundColorOf(context),
 												child: Center(
-													child: ImageboardRegistry.instance.setupError != null ? ErrorMessageCard(ImageboardRegistry.instance.setupError!, remedies: {
-														if (ImageboardRegistry.instance.setupStackTrace != null) 'More details': () {
-															alertError(context, ImageboardRegistry.instance.setupStackTrace!);
-														},
-														'Resynchronize': () {
-															EffectiveSettings.instance.updateContentSettings();
-														},
-														'Edit content preferences': () {
-															launchUrl(Uri.parse(EffectiveSettings.instance.contentSettingsUrl), mode: LaunchMode.externalApplication);
-															EffectiveSettings.instance.addAppResumeCallback(() async {
-																await Future.delayed(const Duration(seconds: 1));
-																EffectiveSettings.instance.updateContentSettings();
-															});
-														}
-													}) : const ChanSplashPage()
+													child: ImageboardRegistry.instance.setupError != null ? Builder(
+														builder: (context) => ErrorMessageCard(ImageboardRegistry.instance.setupError!, remedies: {
+															if (ImageboardRegistry.instance.setupStackTrace != null) 'More details': () {
+																alertError(context, ImageboardRegistry.instance.setupStackTrace!);
+															},
+															'Try editing sites': () async {
+																final list = Settings.instance.settings.contentSettings.siteKeys.toList();
+																await editStringList(
+																	context: context,
+																	name: 'site key',
+																	title: 'Site keys',
+																	list: list
+																);
+																Settings.instance.settings.contentSettings.siteKeys = list.toSet();
+																Settings.instance.didEdit();
+															},
+															if (_lastSites.keys.where(_lastSiteKeys.contains).isEmpty) 'Add dummy site': () {
+																Settings.instance.addSiteKey(kTestchanKey);
+															},
+															'Resynchronize': () {
+																JsonCache.instance.sites.update();
+															}
+														})
+													) : const ChanSplashPage()
 												)
 											);
 										}
@@ -399,10 +426,10 @@ class _ChanAppState extends State<ChanApp> {
 										DefaultCupertinoLocalizations.delegate,
 										DefaultMaterialLocalizations.delegate
 									];
-									final materialStyle = context.select<EffectiveSettings, bool>((s) => s.materialStyle);
-									final (theme, _) = context.select<EffectiveSettings, (SavedTheme, String?)>((s) => (s.theme, s.fontFamily));
-									final globalFilter = context.select<EffectiveSettings, Filter>((s) => s.globalFilter);
-									final interfaceScale = context.select<EffectiveSettings, double>((s) => s.interfaceScale);
+									final materialStyle = Settings.materialStyleSetting.watch(context);
+									final (theme, _) = context.select<Settings, (SavedTheme, String?)>((s) => (s.theme, s.fontFamily));
+									final globalFilter = context.select<Settings, Filter>((s) => s.globalFilter);
+									final interfaceScale = Settings.interfaceScaleSetting.watch(context);
 									return TransformedMediaQuery(
 										transformation: (context, mq) {
 											final additionalSafeAreaInsets = sumAdditionalSafeAreaInsets();
@@ -410,7 +437,7 @@ class _ChanAppState extends State<ChanApp> {
 												boldText: false,
 												textScaler: ChainedLinearTextScaler(
 													parent: mq.textScaler,
-													textScaleFactor: context.select<EffectiveSettings, double>((s) => s.textScale)
+													textScaleFactor: Settings.textScaleSetting.watch(context)
 												),
 												padding: (mq.padding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null),
 												viewPadding: (mq.viewPadding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null)
@@ -474,7 +501,7 @@ class ChanSplashPage extends StatelessWidget {
 					Transform.scale(
 						scale: 1 / (
 							2.0 * MediaQuery.of(context).devicePixelRatio *
-							context.select<EffectiveSettings, double>((s) => s.interfaceScale)
+							Settings.interfaceScaleSetting.watch(context)
 						),
 						child: ColorFiltered(
 							colorFilter: ColorFilter.mode(
@@ -674,7 +701,7 @@ class ChanTabs extends ChangeNotifier {
 		final pos = atPosition ?? Persistence.tabs.length;
 		final tab = PersistentBrowserTab(
 			imageboardKey: withImageboardKey,
-			board: withImageboardKey == null || withBoard == null ? null : ImageboardRegistry.instance.getImageboard(withImageboardKey)?.persistence.getBoard(withBoard),
+			board: withImageboardKey == null || withBoard == null ? null : withBoard,
 			thread: withThread ?? (withThreadId == null ? null : ThreadIdentifier(withBoard!, withThreadId)),
 			incognito: incognito,
 			initialSearch: withInitialSearch
@@ -776,7 +803,7 @@ class ChanTabs extends ChangeNotifier {
 									AdaptiveDialogAction(
 										onPressed: () => Navigator.of(context).pop(true),
 										isDestructiveAction: true,
-										child: Text('Close ${Persistence.tabs.length - 1 - (EffectiveSettings.instance.usingHomeBoard && Persistence.currentTabIndex != 0 ? 1 : 0)}')
+										child: Text('Close ${Persistence.tabs.length - 1 - (Settings.instance.usingHomeBoard && Persistence.currentTabIndex != 0 ? 1 : 0)}')
 									),
 									AdaptiveDialogAction(
 										onPressed: () => Navigator.of(context).pop(false),
@@ -789,7 +816,7 @@ class ChanTabs extends ChangeNotifier {
 							final beforeRemove = {...Persistence.tabs.asMap()};
 							final indexToPreserve = browseTabIndex;
 							PersistentBrowserTab? homeTabToPreserve;
-							if (indexToPreserve != 0 && EffectiveSettings.instance.usingHomeBoard) {
+							if (indexToPreserve != 0 && Settings.instance.usingHomeBoard) {
 								homeTabToPreserve = Persistence.tabs.first;
 								beforeRemove.remove(0); // Nothing to undo
 							}
@@ -847,7 +874,7 @@ class ChanTabs extends ChangeNotifier {
 		if (newThread != null && tab.imageboardKey != newThread.imageboard.key) {
 			tab.imageboardKey = newThread.imageboard.key;
 			// Old master-pane is no longer applicable
-			tab.board = newThread.imageboard.persistence.getBoard(newThread.item.board);
+			tab.board = newThread.item.board;
 			tab.boardKey.currentState?.swapBoard(newThread.imageboard.scope(newThread.imageboard.persistence.getBoard(newThread.item.board)));
 		}
 		tab.masterDetailKey.currentState?.setValue(0, newThread?.item, showAnimationsForward: showAnimationsForward);
@@ -915,7 +942,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _onSlowScrollDirectionChange() async {
-		if (!EffectiveSettings.instance.tabMenuHidesWhenScrollingDown) {
+		if (!Settings.instance.tabMenuHidesWhenScrollingDown) {
 			return;
 		}
 		if (_tabs.mainTabIndex != 0) {
@@ -966,7 +993,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Future<void> _consumeLink(String? link) async {
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		if (link == null) {
 			return;
 		}
@@ -1013,7 +1040,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										if (match == null) {
 											effectiveName = settings.addTheme(name, theme);
 										}
-										settings.lightThemeKey = match?.key ?? effectiveName;
+										Settings.lightThemeKeySetting.value = match?.key ?? effectiveName;
 										settings.handleThemesAltered();
 										Navigator.of(dialogContext).pop();
 									},
@@ -1026,7 +1053,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										if (match == null) {
 											effectiveName = settings.addTheme(name, theme);
 										}
-										settings.darkThemeKey = match?.key ?? effectiveName;
+										Settings.darkThemeKeySetting.value = match?.key ?? effectiveName;
 										settings.handleThemesAltered();
 										Navigator.of(dialogContext).pop();
 									},
@@ -1068,28 +1095,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				final siteKey = uri.pathSegments[0];
 				try {
 					if (ImageboardRegistry.instance.getImageboard(siteKey) == null) {
+						if (Settings.instance.contentSettings.siteKeys.trySingle == kTestchanKey) {
+							throw Exception('Not allowed to add arbitrary sites');
+						}
 						final consent = await confirm(context, 'Add site $siteKey?');
 						if (consent != true) {
 							return;
 						}
-						final siteResponse = await settings.client.get('$contentSettingsApiRoot/site/$siteKey');
-						if (siteResponse.data['error'] != null) {
-							throw Exception(siteResponse.data['error']);
-						}
-						final site = makeSite(siteResponse.data['data']);
-						String platform = Platform.operatingSystem;
-						if (Platform.isIOS && isDevelopmentBuild) {
-							platform += '-dev';
-						}
-						final response = await settings.client.put('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$siteKey', queryParameters: {
-							'platform': platform
-						});
-						if (response.data['error'] != null) {
-							throw Exception(response.data['error']);
-						}
 						if (!mounted) return;
-						await modalLoad(context, 'Setting up ${site.name}...', (_) async {
-							await settings.updateContentSettings();
+						await modalLoad(context, 'Setting up...', (_) async {
+							Settings.instance.addSiteKey(siteKey);
 							await Future.delayed(const Duration(milliseconds: 500)); // wait for rebuild of ChanHomePage
 						});
 					}
@@ -1224,7 +1239,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Future<void> _setAdditionalSafeAreaInsets() async {
 		await setAdditionalSafeAreaInsets('main', EdgeInsets.only(
 			bottom: 60 + 44 + (showTabPopup ? 80 : 0)
-		) * EffectiveSettings.instance.interfaceScale);
+		) * Settings.instance.interfaceScale);
 	}
 
 	void _onShouldShowTabPopup(bool newShowTabPopup) {
@@ -1278,14 +1293,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				if (choice != null) {
 					FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(choice);
 					if (!mounted) return;
-					context.read<EffectiveSettings>().promptedAboutCrashlytics = true;
+					Settings.promptedAboutCrashlyticsSetting.value = true;
 				}
 			});
 		}
 		WidgetsBinding.instance.addPostFrameCallback((_) {
 			_tabs._animateTabList();
 		});
-		if (EffectiveSettings.instance.askForAuthenticationOnLaunch) {
+		if (Settings.instance.askForAuthenticationOnLaunch) {
 			_authenticate();
 		}
 	}
@@ -1579,7 +1594,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							ro.localToGlobal(ro.semanticBounds.bottomRight)
 						),
 						actions: [
-							if (!EffectiveSettings.instance.usingHomeBoard || index < 0) TabMenuAction(
+							if (!Settings.instance.usingHomeBoard || index < 0) TabMenuAction(
 								icon: CupertinoIcons.xmark,
 								title: 'Close',
 								isDestructiveAction: true,
@@ -1608,7 +1623,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									_tabs.addNewTab(
 										withImageboardKey: Persistence.tabs[i].imageboardKey,
 										atPosition: i + 1,
-										withBoard: Persistence.tabs[i].board?.name,
+										withBoard: Persistence.tabs[i].board,
 										withThread: Persistence.tabs[i].thread,
 										incognito: Persistence.tabs[i].incognito,
 										withInitialSearch: Persistence.tabs[i].initialSearch,
@@ -1714,7 +1729,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Widget _buildTabList(Axis axis) {
-		final usingHomeBoard = context.read<EffectiveSettings>().usingHomeBoard;
+		final usingHomeBoard = Settings.instance.usingHomeBoard;
 		buildTabIcon(int i) => TabWidgetBuilder(
 			tab: Persistence.tabs[i],
 			builder: (context, data) => DecoratedBox(
@@ -1789,24 +1804,23 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	void _toggleHistory() {
 		mediumHapticFeedback();
-		final settings = context.read<EffectiveSettings>();
-		settings.recordThreadsInHistory = !settings.recordThreadsInHistory;
+		Settings.recordThreadsInHistorySetting.value = !Settings.instance.recordThreadsInHistory;
 		showToast(
 			context: context,
-			message: settings.recordThreadsInHistory ? 'History resumed' : 'History stopped',
-			icon: settings.recordThreadsInHistory ? CupertinoIcons.play : CupertinoIcons.stop
+			message: Settings.instance.recordThreadsInHistory ? 'History resumed' : 'History stopped',
+			icon: Settings.instance.recordThreadsInHistory ? CupertinoIcons.play : CupertinoIcons.stop
 		);
 	}
 
 	bool get isScreenWide => (MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);
 
-	bool get _androidDrawer => EffectiveSettings.instance.androidDrawer;
-	bool get androidDrawer => context.select<EffectiveSettings, bool>((s) => s.androidDrawer);
+	bool get _androidDrawer => Settings.instance.androidDrawer;
+	bool get androidDrawer => Settings.androidDrawerSetting.watch(context);
 
 	Rect? get hingeBounds => MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => f.type == DisplayFeatureType.hinge && f.bounds.left > 0 /* Only when hinge is vertical */)?.bounds;
 
 	bool get persistentDrawer {
-		return androidDrawer && context.select<EffectiveSettings, bool>((s) => s.persistentDrawer) && (hingeBounds != null || MediaQuery.sizeOf(context).width > 650);
+		return androidDrawer && Settings.persistentDrawerSetting.watch(context) && (hingeBounds != null || MediaQuery.sizeOf(context).width > 650);
 	}
 
 	double get persistentDrawerWidth {
@@ -1853,7 +1867,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			_devNotificationsSubscription?.subscription.cancel();
 			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen(_onDevNotificationTapped));
 		}
-		final filterError = context.select<EffectiveSettings, String?>((s) => s.filterError);
+		final filterError = context.select<Settings, String?>((s) => s.filterError);
 		Widget child = (androidDrawer || isScreenWide) ? NotificationListener2<ScrollNotification, ScrollMetricsNotification>(
 			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(
@@ -1924,11 +1938,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												),
 												GestureDetector(
 													onLongPress: _toggleHistory,
-													child: _buildTabletIcon(2, context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
+													child: _buildTabletIcon(2, Settings.recordThreadsInHistorySetting.watch(context) ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
 												),
 												_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
 												GestureDetector(
-													onLongPress: () => EffectiveSettings.instance.runQuickAction(context),
+													onLongPress: () => Settings.instance.runQuickAction(context),
 													child: _buildTabletIcon(4, NotifyingIcon(
 															icon: Icon(CupertinoIcons.settings, color: filterError != null ? Colors.red : null),
 															primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
@@ -2024,7 +2038,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								BottomNavigationBarItem(
 									icon: GestureDetector(
 										onLongPress: _toggleHistory,
-										child: context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28)
+										child: Settings.recordThreadsInHistorySetting.watch(context) ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28)
 									),
 									label: 'History'
 								),
@@ -2034,7 +2048,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								),
 								BottomNavigationBarItem(
 									icon: GestureDetector(
-										onLongPress: () => EffectiveSettings.instance.runQuickAction(context),
+										onLongPress: () => Settings.instance.runQuickAction(context),
 										child: NotifyingIcon(
 											icon: Icon(CupertinoIcons.settings, size: 28, color: filterError != null ? Colors.red : null),
 											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
@@ -2349,7 +2363,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 					onRightSwipe();
 				}
 			},
-			child: context.select<EffectiveSettings, bool>((s) => s.hideBarsWhenScrollingDown) ? AncestorScrollBuilder(
+			child: Settings.hideBarsWhenScrollingDownSetting.watch(context) ? AncestorScrollBuilder(
 				builder: (context, direction, _) => AnimatedOpacity(
 					opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
 					duration: const Duration(milliseconds: 350),
@@ -2366,7 +2380,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 	@override
 	bool opaque(BuildContext context) {
 		       // No hiding OR
-		return !context.select<EffectiveSettings, bool>((s) => s.hideBarsWhenScrollingDown) ||
+		return !Settings.hideBarsWhenScrollingDownSetting.watch(context) ||
 		       // Hack - If we always return false, we will get a ClipRect in super.build
 		       context.widget is! CupertinoTabScaffold;
 	}

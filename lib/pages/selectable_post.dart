@@ -47,7 +47,7 @@ class SelectablePostPage extends StatelessWidget {
 												isYourPost: zone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier)?.youIds.contains(post.id) ?? false,
 												showSiteIcon: false,
 												showBoardName: false,
-												settings: context.watch<EffectiveSettings>(),
+												settings: context.watch<Settings>(),
 												theme: context.watch<SavedTheme>(),
 												site: context.watch<ImageboardSite>(),
 												context: context,
@@ -55,7 +55,7 @@ class SelectablePostPage extends StatelessWidget {
 												interactive: false
 											),
 											const TextSpan(text: '\n'),
-											post.span.build(context, zone, context.watch<EffectiveSettings>(), context.watch<SavedTheme>(), PostSpanRenderOptions(
+											post.span.build(context, zone, context.watch<Settings>(), context.watch<SavedTheme>(), PostSpanRenderOptions(
 												showRawSource: true,
 												recognizer: TapGestureRecognizer(),
 												overrideRecognizer: true,

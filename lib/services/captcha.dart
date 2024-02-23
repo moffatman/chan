@@ -29,7 +29,7 @@ Future<CaptchaSolution?> solveCaptcha({
 		afterModal?.call();
 		return solution;
 	}
-	final settings = EffectiveSettings.instance;
+	final settings = Settings.instance;
 	switch (request) {
 		case RecaptchaRequest():
 			return pushModal((onCaptchaSolved) => CaptchaNoJS(

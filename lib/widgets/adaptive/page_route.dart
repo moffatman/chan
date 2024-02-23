@@ -1,4 +1,5 @@
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:flutter/material.dart';
 
@@ -28,7 +29,7 @@ PageRoute<T> adaptivePageRoute<T>({
 	bool? showAnimations,
 	bool? showAnimationsForward
 }) {
-	if (Persistence.settings.materialRoutes) {
+	if (Settings.instance.materialRoutes) {
 		return _MaterialPageRoute<T>(
 			builder: builder,
 			settings: settings,

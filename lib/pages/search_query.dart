@@ -97,7 +97,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									padding: const EdgeInsets.only(top: 8),
 									child: AdaptiveTextField(
 										controller: controller,
-										enableIMEPersonalizedLearning: context.watch<EffectiveSettings>().enableIMEPersonalizedLearning,
+										enableIMEPersonalizedLearning: context.watch<Settings>().enableIMEPersonalizedLearning,
 										autofocus: true,
 										keyboardType: TextInputType.number,
 										onSubmitted: (str) {
@@ -201,7 +201,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										context: context,
 										attachments: [attachment],
 										semanticParentIds: [-7],
-										heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+										heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 									),
 									showCrossThreadLabel: false,
 									showBoardName: true,
@@ -236,7 +236,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										context: context,
 										attachments: [attachment],
 										semanticParentIds: [-7],
-										heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+										heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 									),
 									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
 									countsUnreliable: true,

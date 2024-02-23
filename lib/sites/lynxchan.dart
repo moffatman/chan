@@ -271,7 +271,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		final captchaMode = persistence.maybeGetBoard(board)?.captchaMode ?? 0;
+		final captchaMode = persistence?.maybeGetBoard(board)?.captchaMode ?? 0;
 		if (captchaMode == 0 ||
 				(captchaMode == 1 && threadId != null)) {
 			return const NoCaptchaRequest();
@@ -283,7 +283,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	void _updateBoardInformation(String boardName, Map<String, dynamic> data) async {
 		try {
-			final board = persistence.maybeGetBoard(boardName)!;
+			final board = (persistence?.maybeGetBoard(boardName))!;
 			board.maxCommentCharacters = data['maxMessageLength'];
 			final fileSizeParts = (data['maxFileSize'] as String).split(' ');
 			double maxFileSize = double.parse(fileSizeParts.first);
@@ -504,7 +504,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	Future<void> clearPseudoCookies() async {
-		persistence.browserState.loginFields.remove(kLoginFieldLastSolvedCaptchaKey);
+		persistence?.browserState.loginFields.remove(kLoginFieldLastSolvedCaptchaKey);
 	}
 
 	static const kLoginFieldLastSolvedCaptchaKey = 'lc';

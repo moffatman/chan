@@ -45,7 +45,7 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 		else if (onDrawerButtonPressed != null) {
 			leadings.add(GestureDetector(
 				onLongPress: () {
-					context.read<EffectiveSettings>().runQuickAction(context);
+					Settings.instance.runQuickAction(context);
 				},
 				child: DrawerButton(
 					onPressed: onDrawerButtonPressed
@@ -179,14 +179,14 @@ class AdaptiveScaffold extends StatelessWidget {
 	});
 
 	double _calculateWideDrawerEdgeDragWidth(BuildContext context) {
-		final factor = context.select<EffectiveSettings, bool>((s) => s.openBoardSwitcherSlideGesture) ? 0.5 : 1;
-		final twoPaneBreakpoint = context.select<EffectiveSettings, double>((s) => s.twoPaneBreakpoint);
+		final factor = Settings.openBoardSwitcherSlideGestureSetting.watch(context) ? 0.5 : 1;
+		final twoPaneBreakpoint = Settings.twoPaneBreakpointSetting.watch(context);
 		final size = MediaQuery.sizeOf(context);
 		if (size.width < twoPaneBreakpoint) {
 			// Based on full screen width for one-pane
 			return size.width * factor;
 		}
-		final twoPaneSplit = context.select<EffectiveSettings, int>((s) => s.twoPaneSplit) / twoPaneSplitDenominator;
+		final twoPaneSplit = Settings.twoPaneSplitSetting.watch(context) / twoPaneSplitDenominator;
 		// Based on master pane width for two-pane
 		return size.width * factor * twoPaneSplit;
 	}
@@ -194,7 +194,7 @@ class AdaptiveScaffold extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final bar_ = bar;
-		final autoHideBars = !disableAutoBarHiding && context.select<EffectiveSettings, bool>((s) => s.hideBarsWhenScrollingDown);
+		final autoHideBars = !disableAutoBarHiding && Settings.hideBarsWhenScrollingDownSetting.watch(context);
 		if (ChanceTheme.materialOf(context)) {
 			VoidCallback? onDrawerButtonPressed;
 			final parentScaffold = Scaffold.maybeOf(context);

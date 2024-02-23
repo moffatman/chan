@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:mutex/mutex.dart';
-import 'package:provider/provider.dart';
 
 const _positionUpdatePeriod = Duration(milliseconds: 30);
 
@@ -213,18 +212,17 @@ class _VideoControlsState extends State<VideoControls> {
 						)
 					),
 					if (widget.controller.hasAudio && widget.showMuteButton) AnimatedBuilder(
-						animation: context.read<EffectiveSettings>().muteAudio,
+						animation: Settings.instance.muteAudio,
 						builder: (context, _) => AdaptiveIconButton(
 							icon: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
 							onPressed: () async {
-								final settings = context.read<EffectiveSettings>();
 								if (value.volume > 0) {
 									await videoPlayerController?.player.setVolume(0);
-									settings.setMuteAudio(true);
+									Settings.instance.setMuteAudio(true);
 								}
 								else {
 									await videoPlayerController?.player.setVolume(100);
-									settings.setMuteAudio(false);
+									Settings.instance.setMuteAudio(false);
 								}
 							}
 						)

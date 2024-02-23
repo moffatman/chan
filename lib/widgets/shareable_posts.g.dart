@@ -6,9 +6,91 @@ part of 'shareable_posts.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
+class ShareablePostsStyleFields {
+  static bool getUseTree(ShareablePostsStyle x) => x.useTree;
+  static const useTree = ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
+    getter: getUseTree,
+    fieldNumber: 0,
+    fieldName: 'useTree',
+    merger: PrimitiveMerger(),
+  );
+  static int getParentDepth(ShareablePostsStyle x) => x.parentDepth;
+  static const parentDepth = ReadOnlyHiveFieldAdapter<ShareablePostsStyle, int>(
+    getter: getParentDepth,
+    fieldNumber: 1,
+    fieldName: 'parentDepth',
+    merger: PrimitiveMerger(),
+  );
+  static int getChildDepth(ShareablePostsStyle x) => x.childDepth;
+  static const childDepth = ReadOnlyHiveFieldAdapter<ShareablePostsStyle, int>(
+    getter: getChildDepth,
+    fieldNumber: 2,
+    fieldName: 'childDepth',
+    merger: PrimitiveMerger(),
+  );
+  static double getWidth(ShareablePostsStyle x) => x.width;
+  static const width = ReadOnlyHiveFieldAdapter<ShareablePostsStyle, double>(
+    getter: getWidth,
+    fieldNumber: 3,
+    fieldName: 'width',
+    merger: PrimitiveMerger(),
+  );
+  static String? getOverrideThemeKey(ShareablePostsStyle x) =>
+      x.overrideThemeKey;
+  static const overrideThemeKey =
+      ReadOnlyHiveFieldAdapter<ShareablePostsStyle, String?>(
+    getter: getOverrideThemeKey,
+    fieldNumber: 4,
+    fieldName: 'overrideThemeKey',
+    merger: PrimitiveMerger(),
+  );
+  static bool getExpandPrimaryImage(ShareablePostsStyle x) =>
+      x.expandPrimaryImage;
+  static const expandPrimaryImage =
+      ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
+    getter: getExpandPrimaryImage,
+    fieldNumber: 5,
+    fieldName: 'expandPrimaryImage',
+    merger: PrimitiveMerger(),
+  );
+  static bool getRevealYourPosts(ShareablePostsStyle x) => x.revealYourPosts;
+  static const revealYourPosts =
+      ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
+    getter: getRevealYourPosts,
+    fieldNumber: 6,
+    fieldName: 'revealYourPosts',
+    merger: PrimitiveMerger(),
+  );
+  static bool getIncludeFooter(ShareablePostsStyle x) => x.includeFooter;
+  static const includeFooter =
+      ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
+    getter: getIncludeFooter,
+    fieldNumber: 7,
+    fieldName: 'includeFooter',
+    merger: PrimitiveMerger(),
+  );
+}
+
 class ShareablePostsStyleAdapter extends TypeAdapter<ShareablePostsStyle> {
+  const ShareablePostsStyleAdapter();
+
+  static const int kTypeId = 42;
+
   @override
-  final int typeId = 42;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<ShareablePostsStyle, dynamic>>
+      fields = const {
+    0: ShareablePostsStyleFields.useTree,
+    1: ShareablePostsStyleFields.parentDepth,
+    2: ShareablePostsStyleFields.childDepth,
+    3: ShareablePostsStyleFields.width,
+    4: ShareablePostsStyleFields.overrideThemeKey,
+    5: ShareablePostsStyleFields.expandPrimaryImage,
+    6: ShareablePostsStyleFields.revealYourPosts,
+    7: ShareablePostsStyleFields.includeFooter
+  };
 
   @override
   ShareablePostsStyle read(BinaryReader reader) {

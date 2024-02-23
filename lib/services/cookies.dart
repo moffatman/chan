@@ -15,7 +15,7 @@ class SeparatedCookieManager extends Interceptor {
 	});
 
 	CookieJar get cookieJar {
-		if (EffectiveSettings.instance.connectivity == ConnectivityResult.mobile) {
+		if (Settings.instance.connectivity == ConnectivityResult.mobile) {
 			return cellularCookieJar;
 		}
 		return wifiCookieJar;

@@ -73,7 +73,7 @@ class MediaScan {
 	final double? videoFramerate;
 	@HiveField(7)
 	final int? sizeInBytes;
-	@HiveField(8, defaultValue: null)
+	@HiveField(8, defaultValue: null, merger: MapEqualsMerger())
 	final Map? metadata;
 
 	MediaScan({

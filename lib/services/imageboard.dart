@@ -201,7 +201,8 @@ class ImageboardRegistry extends ChangeNotifier {
 	}
 
 	Future<void> handleSites({
-		required Map<String, dynamic> data,
+		required Map<String, Map> sites,
+		required Set<String> keys,
 		required BuildContext context
 	}) {
 		return _mutex.protect(() async {
@@ -211,7 +212,11 @@ class ImageboardRegistry extends ChangeNotifier {
 				final siteKeysToRemove = _sites.keys.toList();
 				final initializations = <Future<void>>[];
 				final microtasks = <Future<void> Function()>[];
-				for (final entry in data.entries) {
+				final yourSites = sites.entries.where((e) => keys.contains(e.key));
+				if (yourSites.isEmpty) {
+					throw Exception('No site data available for $keys');
+				}
+				for (final entry in yourSites) {
 					siteKeysToRemove.remove(entry.key);
 					if (_sites.containsKey(entry.key)) {
 						// Site not changed
@@ -233,7 +238,7 @@ class ImageboardRegistry extends ChangeNotifier {
 						}
 						final site = _sites[entry.key]!.site;
 						final savedFields = site.loginSystem?.getSavedLoginFields();
-						if (savedFields != null && EffectiveSettings.instance.isConnectedToWifi) {
+						if (savedFields != null && Settings.instance.isConnectedToWifi) {
 							try {
 								await site.loginSystem!.login(null, savedFields);
 								print('Auto-logged in');

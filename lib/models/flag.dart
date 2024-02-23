@@ -1,4 +1,5 @@
 import 'package:chan/models/intern.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 part 'flag.g.dart';
@@ -30,11 +31,22 @@ class ImageboardFlag implements Flag {
 
 	@override
 	String toString() => imageUrl.isEmpty ? 'ImageboardFlag.text($name)' : 'ImageboardFlag(name: $name, imageUrl: $imageUrl)';
+
+	@override
+	bool operator == (Object other) =>
+		other is ImageboardFlag &&
+		other.name == name &&
+		other.imageUrl == imageUrl &&
+		other.imageWidth == imageWidth &&
+		other.imageHeight == imageHeight;
+	
+	@override
+	int get hashCode => Object.hash(name, imageUrl, imageWidth, imageHeight);
 }
 
 @HiveType(typeId: 36)
 class ImageboardMultiFlag implements Flag {
-	@HiveField(0)
+	@HiveField(0, merger: ListEqualsMerger<ImageboardFlag>())
 	final List<ImageboardFlag> parts;
 
 	ImageboardMultiFlag({
@@ -46,4 +58,12 @@ class ImageboardMultiFlag implements Flag {
 
 	@override
 	String toString() => 'ImageboardMultiFlag(parts: $parts)';
+
+	@override
+	bool operator == (Object other) =>
+		other is ImageboardMultiFlag &&
+		listEquals(other.parts, parts);
+	
+	@override
+	int get hashCode => parts.hashCode;
 }

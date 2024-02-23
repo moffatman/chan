@@ -148,7 +148,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	}
 
 	void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
-		final setting = context.read<EffectiveSettings>().imagePeeking;
+		final setting = Settings.instance.imagePeeking;
 		final size = MediaQuery.sizeOf(context);
 		final shortestSide = min(size.shortestSide, 400);
 		_touchGlobalKey?.currentState?.setScale(
@@ -173,7 +173,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	void _onLongPressEnd(LongPressEndDetails details) => _onLongPressDone();
 
 	void _maybeStart(PointerEvent event) {
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		final now = DateTime.now();
 		final startTime = _startTime ??= now.add(Duration(milliseconds: settings.hoverPopupDelayMilliseconds));
 		if (startTime.isAfter(now)) {
@@ -185,7 +185,8 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 			_wouldStart = event;
 			return;
 		}
-		if (!settings.supportMouse.value) {
+		final mouseSettings = context.read<MouseSettings>();
+		if (!mouseSettings.supportMouse) {
 			return;
 		}
 		if (_entry != null) {
@@ -242,7 +243,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		}
 		else if (widget.style == HoverPopupStyle.floating) {
 			_globalKey = GlobalKey(debugLabel: '_HoverPopupState._globalKey');
-			final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
+			final scale = 1 / Settings.instance.interfaceScale;
 			_entry = OverlayEntry(
 				builder: (_) => _FloatingHoverPopup(
 					key: _globalKey,
@@ -285,7 +286,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	Widget build(BuildContext context) {
 		return Listener(
 			onPointerDown: (e) {
-				if (context.read<EffectiveSettings>().imagePeeking != ImagePeekingSetting.disabled) {
+				if (Settings.instance.imagePeeking != ImagePeekingSetting.disabled) {
 					recognizer.addPointer(e);
 				}
 			},
@@ -424,7 +425,7 @@ class _ScalerBlurrerState extends State<_ScalerBlurrer> {
 	@override
 	void initState() {
 		super.initState();
-		final setting = context.read<EffectiveSettings>().imagePeeking;
+		final setting = Settings.instance.imagePeeking;
 		scale = setting.minimumScale;
 		blur = setting.unsafe ? 0 : 50;
 	}

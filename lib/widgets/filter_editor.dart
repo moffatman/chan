@@ -37,7 +37,7 @@ class _FilterEditorState extends State<FilterEditor> {
 	@override
 	void initState() {
 		super.initState();
-		regexController = TextEditingController(text: context.read<EffectiveSettings>().filterConfiguration);
+		regexController = TextEditingController(text: Settings.instance.filterConfiguration);
 		regexFocusNode = FocusNode();
 	}
 
@@ -55,7 +55,7 @@ class _FilterEditorState extends State<FilterEditor> {
 	}
 
 	void _save() {
-		context.read<EffectiveSettings>().filterConfiguration = regexController.text;
+		Settings.instance.filterConfiguration = regexController.text;
 		regexFocusNode.unfocus();
 		setState(() {
 			dirty = false;
@@ -64,7 +64,7 @@ class _FilterEditorState extends State<FilterEditor> {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final filters = <int, CustomFilter>{};
 		for (final line in settings.filterConfiguration.split('\n').asMap().entries) {
 			if (line.value.isEmpty) {
@@ -487,7 +487,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														child: AdaptiveChoiceControl<NullSafeOptional>(
 															children: {
 																NullSafeOptional.false_: (null, 'Push off'),
-																NullSafeOptional.null_: (null, 'Default (push ${(EffectiveSettings.instance.defaultThreadWatch?.push ?? true) ? 'on' : 'off'})'),
+																NullSafeOptional.null_: (null, 'Default (push ${(Settings.instance.defaultThreadWatch?.push ?? true) ? 'on' : 'off'})'),
 																NullSafeOptional.true_: (null, 'Push on')
 															},
 															knownWidth: 0,
@@ -837,7 +837,7 @@ class _FilterEditorState extends State<FilterEditor> {
 						AdaptiveDialogAction(
 							isDefaultAction: true,
 							onPressed: () {
-								EffectiveSettings.instance.filterConfiguration = lastText;
+								Settings.instance.filterConfiguration = lastText;
 								Navigator.pop(context);
 							},
 							child: const Text('Save')

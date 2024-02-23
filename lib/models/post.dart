@@ -49,20 +49,41 @@ enum PostSpanFormat {
 	chan4Search
 }
 
+void _readHookPostFields(Map<int, dynamic> fields) {
+	final deprecatedAttachment = fields[6] as Attachment?;
+	List<Attachment> fallbackAttachments = const [];
+	if (deprecatedAttachment != null) {
+		fallbackAttachments = [deprecatedAttachment].toList(growable: false);
+	}
+	fields[PostFields.attachments.fieldNumber] ??= fallbackAttachments;
+}
+
+@HiveType(typeId: 11, isOptimized: true, readHook: _readHookPostFields)
 class Post implements Filterable {
 	@override
+	@HiveField(0)
 	final String board;
+	@HiveField(1)
 	final String text;
+	@HiveField(2)
 	final String name;
+	@HiveField(3)
 	final DateTime time;
+	@HiveField(4)
 	final int threadId;
 	@override
+	@HiveField(5)
 	final int id;
+	@HiveField(7, isOptimized: true, merger: PrimitiveMerger<Flag?>())
 	final Flag? flag;
+	@HiveField(8, isOptimized: true)
 	final String? posterId;
+	@HiveField(9)
 	PostSpanFormat spanFormat;
+	// Do not persist
 	PostNodeSpan? _span;
 	bool get isInitialized => _span != null;
+	@HiveField(12, isOptimized: true)
 	Map<String, int>? foolfuukaLinkedPostThreadIds;
 	PostNodeSpan _makeSpan() {
 		switch (spanFormat) {
@@ -105,6 +126,7 @@ class Post implements Filterable {
 			_span = _makeSpan();
 		}
 	}
+	// Do not persist
 	static const _kEmptyReplyIds = <int>[];
 	List<int> replyIds = const [];
 	void maybeAddReplyId(int replyId) {
@@ -118,16 +140,27 @@ class Post implements Filterable {
 			}
 		}
 	}
+	@HiveField(11, isOptimized: true, defaultValue: false)
 	bool attachmentDeleted;
+	@HiveField(13, isOptimized: true)
 	String? trip;
+	@HiveField(14, isOptimized: true)
 	int? passSinceYear;
+	@HiveField(15, isOptimized: true)
 	String? capcode;
+	@HiveField(16, isOptimized: true, defaultValue: <Attachment>[], merger: Attachment.unmodifiableListMerger)
 	List<Attachment> attachments;
+	@HiveField(17, isOptimized: true)
 	final int? upvotes;
+	@HiveField(18, isOptimized: true)
 	final int? parentId;
+	// field 19 was used for int omittedChildrenCount
+	@HiveField(20, isOptimized: true, defaultValue: false)
 	bool hasOmittedReplies;
 	@override
+	@HiveField(21, isOptimized: true, defaultValue: false)
 	bool isDeleted;
+	@HiveField(22, isOptimized: true)
 	int? ipNumber;
 
 	Post({
@@ -217,133 +250,6 @@ class Post implements Filterable {
 
 	@override
 	int get hashCode => Object.hash(board, id, upvotes, isDeleted, attachments);
-}
-
-class PostAdapter extends TypeAdapter<Post> {
-  @override
-  final int typeId = 11;
-
-  @override
-  Post read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final Map<int, dynamic> fields;
-		if (numOfFields == 255) {
-			// Use new method (dynamic number of fields)
-			fields = {};
-			while (true) {
-				final int fieldId = reader.readByte();
-				fields[fieldId] = reader.read();
-				if (fieldId == 0) {
-					break;
-				}
-			}
-		}
-		else {
-			fields = {
-				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-			};
-		}
-		final deprecatedAttachment = fields[6] as Attachment?;
-		List<Attachment> fallbackAttachments = const [];
-		if (deprecatedAttachment != null) {
-			fallbackAttachments = [deprecatedAttachment].toList(growable: false);
-		}
-    return Post(
-      board: fields[0] as String,
-      text: fields[1] as String,
-      name: fields[2] as String,
-      time: fields[3] as DateTime,
-      trip: fields[13] as String?,
-      threadId: fields[4] as int,
-      id: fields[5] as int,
-      spanFormat: fields[9] as PostSpanFormat,
-      flag: fields[7] as Flag?,
-      attachmentDeleted: fields[11] == null ? false : fields[11] as bool,
-      posterId: fields[8] as String?,
-      foolfuukaLinkedPostThreadIds: (fields[12] as Map?)?.cast<String, int>(),
-      passSinceYear: fields[14] as int?,
-      capcode: fields[15] as String?,
-      attachments: (fields[16] as List?)?.cast<Attachment>().toList(growable: false) ?? fallbackAttachments,
-			upvotes: fields[17] as int?,
-			parentId: fields[18] as int?,
-			//fields[19] was used for int omittedChildrenCount
-			hasOmittedReplies: fields[20] as bool? ?? false,
-			isDeleted: fields[21] as bool? ?? false,
-			ipNumber: fields[22] as int?,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, Post obj) {
-    writer
-      ..writeByte(255)
-      ..writeByte(1)
-      ..write(obj.text)
-      ..writeByte(2)
-      ..write(obj.name)
-      ..writeByte(3)
-      ..write(obj.time)
-      ..writeByte(4)
-      ..write(obj.threadId)
-      ..writeByte(5)
-      ..write(obj.id)
-      ..writeByte(9)
-      ..write(obj.spanFormat);
-		if (obj.flag != null) {
-      writer..writeByte(7)..write(obj.flag);
-		}
-		if (obj.posterId != null) {
-      writer..writeByte(8)..write(obj.posterId);
-		}
-		if (obj.attachmentDeleted) {
-			writer..writeByte(11)..write(true);
-		}
-		if (obj.foolfuukaLinkedPostThreadIds != null) {
-      writer..writeByte(12)..write(obj.foolfuukaLinkedPostThreadIds);
-		}
-		if (obj.trip != null) {
-      writer..writeByte(13)..write(obj.trip);
-		}
-		if (obj.passSinceYear != null) {
-      writer..writeByte(14)..write(obj.passSinceYear);
-		}
-		if (obj.capcode != null) {
-      writer..writeByte(15)..write(obj.capcode);
-		}
-		if (obj.attachments.isNotEmpty) {
-			writer..writeByte(16)..write(obj.attachments);
-		}
-		if (obj.upvotes != null) {
-			writer..writeByte(17)..write(obj.upvotes);
-		}
-		if (obj.parentId != null) {
-			writer..writeByte(18)..write(obj.parentId);
-		}
-		//fields[19] was used for int omittedChildrenCount
-		if (obj.hasOmittedReplies) {
-			writer..writeByte(20)..write(true);
-		}
-		if (obj.isDeleted) {
-			writer..writeByte(21)..write(true);
-		}
-		if (obj.ipNumber != null) {
-			writer..writeByte(22)..write(obj.ipNumber);
-		}
-		// End with field zero (terminator)
-		writer
-			..writeByte(0)
-      ..write(obj.board);
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PostAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
 }
 
 class PostIdentifier {

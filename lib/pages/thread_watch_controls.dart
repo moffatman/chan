@@ -28,7 +28,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final persistence = context.watch<Persistence>(); // rebuild when watch changes
 		final notifications = context.watch<Notifications>();
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		ThreadWatch? watch = notifications.getThreadWatch(thread);
 		_ThreadWatchingStatus localWatcherStatus = _ThreadWatchingStatus.off;
 		_ThreadWatchingStatus pushWatcherStatus = _ThreadWatchingStatus.off;
@@ -186,7 +186,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 												if (ok != true) {
 													return;
 												}
-												settings.defaultThreadWatch = ThreadWatch(
+												Settings.defaultThreadWatchSetting.value = ThreadWatch(
 													board: '',
 													threadId: 0,
 													lastSeenId: 0,
@@ -202,7 +202,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 										),
 										AdaptiveIconButton(
 											onPressed: settings.defaultThreadWatch == null ? null : () {
-												settings.defaultThreadWatch = null;
+												Settings.defaultThreadWatchSetting.value = null;
 											},
 											icon: const Icon(CupertinoIcons.xmark)
 										)

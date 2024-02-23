@@ -1,4 +1,4 @@
-import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/adaptive.dart';
 
 export 'adaptive/buttons.dart';
@@ -14,7 +14,7 @@ export 'adaptive/text_field.dart';
 
 class Adaptive {
 	static AdaptiveIconSet get icons {
-		if (Persistence.settings.materialStyle) {
+		if (Settings.instance.materialStyle) {
 			return const AdaptiveIconSetMaterial();
 		}
 		return const AdaptiveIconSetCupertino();

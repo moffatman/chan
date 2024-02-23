@@ -1,4 +1,3 @@
-import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
@@ -33,7 +32,7 @@ typedef ThreadWidgetData = ({
 class ThreadWidgetBuilder extends StatelessWidget {
 	final Imageboard? imageboard;
 	final Persistence? persistence;
-	final ImageboardBoard? board;
+	final String? boardName;
 	final ThreadIdentifier? thread;
 	final Widget Function(BuildContext, ThreadWidgetData) builder;
 	final String? initialSearch;
@@ -42,7 +41,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 		required this.imageboard,
 		required this.persistence,
 		required this.builder,
-		required this.board,
+		required this.boardName,
 		required this.thread,
 		this.initialSearch,
 		super.key
@@ -64,7 +63,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 					fit: BoxFit.contain,
 					child: ImageboardIcon(
 						imageboardKey: imageboard?.key,
-						boardName: board?.name
+						boardName: boardName
 					)
 				);
 				threadState = thread == null ? null : persistence?.getThreadStateIfExists(thread!);
@@ -94,8 +93,8 @@ class ThreadWidgetBuilder extends StatelessWidget {
 					unseenYouCount = threadState.unseenReplyIdsToYouCount() ?? 0;
 					unseenCount = threadState.unseenReplyCount() ?? 0;
 				}
-				else if (board != null && initialSearch != null) {
-					longTitle = '${imageboard?.site.formatBoardName(board!.name)} ("$initialSearch")';
+				else if (boardName != null && initialSearch != null) {
+					longTitle = '${imageboard?.site.formatBoardName(boardName!)} ("$initialSearch")';
 				}
 			}
 			else {
@@ -110,7 +109,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 				);
 			}
 		}
-		final shortTitle = (board != null ? imageboard?.site.formatBoardName(board!.name) : imageboard?.site.name) ?? 'None';
+		final shortTitle = (boardName != null ? imageboard?.site.formatBoardName(boardName!) : imageboard?.site.name) ?? 'None';
 		return (
 			primaryIcon: SizedBox(
 				height: 30,
@@ -186,7 +185,7 @@ class TabWidgetBuilder extends StatelessWidget {
 				return ThreadWidgetBuilder(
 					imageboard: tab.imageboard,
 					persistence: tab.persistence,
-					board: tab.board,
+					boardName: tab.board,
 					thread: tab.thread,
 					initialSearch: tab.initialSearch,
 					builder: (context, data) {

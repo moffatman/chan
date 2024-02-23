@@ -154,13 +154,13 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	bool _isAppropriateForCaptchaRequest(PersistentBrowserTab tab) {
-		return tab.imageboardKey == imageboard.key &&
-		    imageboard.persistence.getThreadStateIfExists(tab.thread)?.thread?.isArchived != true;
+		return tab.imageboardKey == imageboard?.key &&
+		    imageboard?.persistence.getThreadStateIfExists(tab.thread)?.thread?.isArchived != true;
 	}
 
 	void _onCaptchaTicketTimerFire() async {
 		final lifetime = captchaTicketLifetime;
-		if (lifetime == null || !EffectiveSettings.instance.useSpamFilterWorkarounds) {
+		if (lifetime == null || !Settings.instance.useSpamFilterWorkarounds) {
 			return;
 		}
 		final ticketTime = await Persistence.currentCookies.readPseudoCookieTime(kTicketPseudoCookieKey);
@@ -181,7 +181,7 @@ class Site4Chan extends ImageboardSite {
 		else {
 			tab = Persistence.tabs.tryFirstWhere(_isAppropriateForCaptchaRequest);
 		}
-		final request = await getCaptchaRequest(tab?.thread?.board ?? tab?.board?.name ?? persistence.boards.tryFirst?.name ?? '', tab?.thread?.id);
+		final request = await getCaptchaRequest(tab?.thread?.board ?? tab?.board ?? persistence?.boards.tryFirst?.name ?? '', tab?.thread?.id);
 		if (request is! Chan4CustomCaptchaRequest) {
 			return;
 		}
@@ -203,9 +203,9 @@ class Site4Chan extends ImageboardSite {
 	ConnectivityResult? _lastConnectivity;
 	bool _lastUseSpamFilterWorkarounds = false;
 	void _onSettingsUpdate() {
-		if (EffectiveSettings.instance.connectivity != _lastConnectivity ||
-		    EffectiveSettings.instance.useSpamFilterWorkarounds != _lastUseSpamFilterWorkarounds) {
-			if (!EffectiveSettings.instance.useSpamFilterWorkarounds && _lastUseSpamFilterWorkarounds) {
+		if (Settings.instance.connectivity != _lastConnectivity ||
+		    Settings.instance.useSpamFilterWorkarounds != _lastUseSpamFilterWorkarounds) {
+			if (!Settings.instance.useSpamFilterWorkarounds && _lastUseSpamFilterWorkarounds) {
 				// User disabled spam-filter workarounds
 				// Add a junk "x" at beginning of past IPs to start fresh
 				for (final threadState in Persistence.sharedThreadStateBox.values) {
@@ -221,8 +221,8 @@ class Site4Chan extends ImageboardSite {
 					}
 				}
 			}
-			_lastConnectivity = EffectiveSettings.instance.connectivity;
-			_lastUseSpamFilterWorkarounds = EffectiveSettings.instance.useSpamFilterWorkarounds;
+			_lastConnectivity = Settings.instance.connectivity;
+			_lastUseSpamFilterWorkarounds = Settings.instance.useSpamFilterWorkarounds;
 			_onCaptchaTicketTimerFire();
 			resetCaptchaTicketTimer();
 		}
@@ -234,9 +234,9 @@ class Site4Chan extends ImageboardSite {
 		if (captchaTicketLifetime != null) {
 			_onCaptchaTicketTimerFire();
 			resetCaptchaTicketTimer();
-			_lastConnectivity = EffectiveSettings.instance.connectivity;
-			_lastUseSpamFilterWorkarounds = EffectiveSettings.instance.useSpamFilterWorkarounds;
-			EffectiveSettings.instance.addListener(_onSettingsUpdate);
+			_lastConnectivity = Settings.instance.connectivity;
+			_lastUseSpamFilterWorkarounds = Settings.instance.useSpamFilterWorkarounds;
+			Settings.instance.addListener(_onSettingsUpdate);
 		}
 	}
 
@@ -253,7 +253,7 @@ class Site4Chan extends ImageboardSite {
 	void dispose() {
 		super.dispose();
 		_captchaTicketTimer?.cancel();
-		EffectiveSettings.instance.removeListener(_onSettingsUpdate);
+		Settings.instance.removeListener(_onSettingsUpdate);
 	}
 
 	static List<PostSpan> parsePlaintext(String text, {ThreadIdentifier? fromSearchThread}) {
@@ -959,17 +959,17 @@ class Site4Chan extends ImageboardSite {
 	@override
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
 		final lastActionTime = _lastActionTime[action]![board];
-		final b = persistence.getBoard(board);
+		final b = persistence?.getBoard(board);
 		int cooldownSeconds = 0;
 		switch (action) {
 			case ImageboardAction.postReply:
-				cooldownSeconds = b.replyCooldown ?? 0;
+				cooldownSeconds = b?.replyCooldown ?? 0;
 				break;
 			case ImageboardAction.postReplyWithImage:
-				cooldownSeconds = b.imageCooldown ?? 0;
+				cooldownSeconds = b?.imageCooldown ?? 0;
 				break;
 			case ImageboardAction.postThread:
-				cooldownSeconds = b.threadCooldown ?? 0;
+				cooldownSeconds = b?.threadCooldown ?? 0;
 				break;
 		}
 		if (loginSystem.passEnabled(board)) {
@@ -1219,7 +1219,7 @@ class Site4Chan extends ImageboardSite {
 				previewBuilder: PostTeXSpan.new
 			);
 		}
-		if (persistence.getBoard(board).spoilers == true) {
+		if (persistence?.getBoard(board).spoilers == true) {
 			yield const ImageboardSnippet.simple(
 				icon: CupertinoIcons.eye_slash,
 				name: 'Spoiler',
@@ -1356,12 +1356,12 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	DateTime getCaptchaUsableTime(CaptchaSolution captcha) {
-		if (captcha is Chan4CustomCaptchaSolution && EffectiveSettings.instance.useSpamFilterWorkarounds) {
+		if (captcha is Chan4CustomCaptchaSolution && Settings.instance.useSpamFilterWorkarounds) {
 			if (captcha.challenge == 'noop') {
 				return super.getCaptchaUsableTime(captcha);
 			}
 			final receipts = Persistence.sharedThreadStateBox.values.expand<PostReceipt>((state) {
-				if (state.imageboardKey != persistence.imageboardKey) {
+				if (state.imageboardKey != persistence?.imageboardKey) {
 					return const Iterable.empty();
 				}
 				return state.receipts.where((r) => r.ip == captcha.ip);

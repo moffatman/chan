@@ -5,7 +5,6 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class TabMenuAction {
 	final IconData icon;
@@ -212,8 +211,8 @@ Future<void> showTabMenu({
 	final entry = OverlayEntry(
 		builder: (context) => _TabMenuOverlay(
 			origin: Rect.fromPoints(
-				origin.topLeft / context.read<EffectiveSettings>().interfaceScale,
-				origin.bottomRight / context.read<EffectiveSettings>().interfaceScale
+				origin.topLeft / Settings.instance.interfaceScale,
+				origin.bottomRight / Settings.instance.interfaceScale
 			),
 			direction: direction,
 			actions: actions,

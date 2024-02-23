@@ -469,12 +469,12 @@ class SiteReddit extends ImageboardSite {
 					ext: '.jpeg'
 				)];
 			}
-			else if (uri.host.endsWith('redgifs.com') && uri.pathSegments.length == 2 && uri.pathSegments[0] == 'watch') {
+			else if (uri.host.endsWith('redgifs.com') && uri.pathSegments.length == 2 && uri.pathSegments[0] == 'watch' && persistence != null) {
 				final id = uri.pathSegments[1];
 				String redGifsToken = '';
 				Response? response;
 				try {
-					redGifsToken = await persistence.browserState.loginFields.putIfAbsentAsync(_loginFieldRedGifsTokenKey, _getRedgifsToken);
+					redGifsToken = await persistence!.browserState.loginFields.putIfAbsentAsync(_loginFieldRedGifsTokenKey, _getRedgifsToken);
 					response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
 						headers: {
 							'Authorization': 'Bearer $redGifsToken'
@@ -485,7 +485,7 @@ class SiteReddit extends ImageboardSite {
 					if (e is DioError) {
 						if (e.response?.statusCode == 401 && redGifsToken.isNotEmpty) {
 							// Token expired?
-							redGifsToken = persistence.browserState.loginFields[_loginFieldRedGifsTokenKey] = await _getRedgifsToken();
+							redGifsToken = persistence!.browserState.loginFields[_loginFieldRedGifsTokenKey] = await _getRedgifsToken();
 							response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
 								headers: {
 									'Authorization': 'Bearer $redGifsToken'
@@ -749,7 +749,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	Future<void> _updateBoardIfNeeded(String board, {required RequestPriority priority}) async {
-		final boardAge = DateTime.now().difference(persistence.maybeGetBoard(board)?.additionalDataTime ?? DateTime(2000));
+		final boardAge = DateTime.now().difference(persistence?.maybeGetBoard(board)?.additionalDataTime ?? DateTime(2000));
 		if (boardAge > const Duration(days: 3)) {
 			final ImageboardBoard newBoard;
 			if (board == 'popular' || board == 'all') {
@@ -769,8 +769,8 @@ class SiteReddit extends ImageboardSite {
 				));
 				newBoard = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
 			}
-			await persistence.setBoard(board, newBoard);
-			persistence.didUpdateBrowserState();
+			await persistence?.setBoard(board, newBoard);
+			persistence?.didUpdateBrowserState();
 		}
 	}
 

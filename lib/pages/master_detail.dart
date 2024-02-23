@@ -337,7 +337,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final displayWidth = MediaQuery.sizeOf(context).width;
 		double drawerWidth = 85;
 		if (settings.persistentDrawer && settings.androidDrawer) {

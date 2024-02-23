@@ -1,14 +1,17 @@
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
 class ImageboardIcon extends StatelessWidget {
+	final ImageboardSite? site;
 	final String? imageboardKey;
 	final String? boardName;
 	final double size;
 
 	const ImageboardIcon({
+		this.site,
 		this.imageboardKey,
 		this.boardName,
 		this.size = 16,
@@ -17,17 +20,21 @@ class ImageboardIcon extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		Imageboard? imageboard = context.watch<Imageboard?>();
-		if (imageboardKey != null) {
-			imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey!);
+		Imageboard? imageboard;
+		if (this.site == null) {
+			imageboard = context.watch<Imageboard?>();
+			if (imageboardKey != null) {
+				imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey!);
+			}
 		}
-		if (imageboard == null) {
+		final site = this.site ?? imageboard?.site;
+		if (site == null) {
 			return Icon(CupertinoIcons.exclamationmark_triangle_fill, size: size);
 		}
-		Uri url = imageboard.site.iconUrl;
+		Uri url = site.iconUrl;
 		bool clipOval = false;
 		if (boardName != null) {
-			final boardUrl = imageboard.persistence.getBoard(boardName!).icon;
+			final boardUrl = imageboard?.persistence.getBoard(boardName!).icon;
 			if (boardUrl != null) {
 				url = boardUrl;
 				clipOval = true;
@@ -38,7 +45,7 @@ class ImageboardIcon extends StatelessWidget {
 			dimension: size,
 			child: ExtendedImage.network(
 				url.toString(),
-				headers: imageboard.site.getHeaders(url),
+				headers: site.getHeaders(url),
 				cache: true,
 				enableLoadState: true,
 				loadStateChanged: (state) {

@@ -37,7 +37,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		_BoardWatchingStatus status;
 		final watch = widget.imageboard.notifications.boardWatches.tryFirstWhere((w) => w.board == widget.board.name);
 		if (watch == null) {
@@ -78,6 +78,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 									)
 								]
 							),
+							// TODO(sync): SettingWidget
 							const SizedBox(height: 16),
 							const Center(
 								child: Text('Catalog Layout')

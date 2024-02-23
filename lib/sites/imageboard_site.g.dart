@@ -7,8 +7,16 @@ part of 'imageboard_site.dart';
 // **************************************************************************
 
 class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
+  const CatalogVariantAdapter();
+
+  static const int kTypeId = 33;
+
   @override
-  final int typeId = 33;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<CatalogVariant, dynamic>> fields =
+      const {};
 
   @override
   CatalogVariant read(BinaryReader reader) {
@@ -251,8 +259,16 @@ class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
 }
 
 class ThreadVariantAdapter extends TypeAdapter<ThreadVariant> {
+  const ThreadVariantAdapter();
+
+  static const int kTypeId = 34;
+
   @override
-  final int typeId = 34;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<ThreadVariant, dynamic>> fields =
+      const {};
 
   @override
   ThreadVariant read(BinaryReader reader) {
@@ -310,8 +326,16 @@ class ThreadVariantAdapter extends TypeAdapter<ThreadVariant> {
 }
 
 class PostSortingMethodAdapter extends TypeAdapter<PostSortingMethod> {
+  const PostSortingMethodAdapter();
+
+  static const int kTypeId = 41;
+
   @override
-  final int typeId = 41;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<PostSortingMethod, dynamic>> fields =
+      const {};
 
   @override
   PostSortingMethod read(BinaryReader reader) {

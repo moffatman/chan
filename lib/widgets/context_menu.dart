@@ -205,8 +205,8 @@ class _ContextMenuState extends State<ContextMenu> {
 
 	@override
 	Widget build(BuildContext context) {
-		final iconSize = 24 * context.select<EffectiveSettings, double>((s) => s.textScale);
-		final interfaceScale = context.select<EffectiveSettings, double>((s) => s.interfaceScale);
+		final iconSize = 24 * Settings.textScaleSetting.watch(context);
+		final interfaceScale = Settings.interfaceScaleSetting.watch(context);
 		final child = GestureDetector(
 			onSecondaryTapUp: (event) {
 				_overlayEntry = OverlayEntry(

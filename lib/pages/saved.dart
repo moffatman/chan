@@ -168,7 +168,7 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: CupertinoIcons.bell_fill,
 					masterBuilder: (context, selected, setter) {
-						final settings = context.watch<EffectiveSettings>();
+						final settings = context.watch<Settings>();
 						return RefreshableList<ImageboardScoped<ThreadWatch>>(
 							header: Column(
 								mainAxisSize: MainAxisSize.min,
@@ -400,7 +400,7 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
-						final settings = context.watch<EffectiveSettings>();
+						final settings = context.watch<Settings>();
 						final sortMethod = getSavedThreadsSortMethod();
 						return RefreshableList<PersistentThreadState>(
 							header: AnimatedBuilder(
@@ -629,7 +629,7 @@ class _SavedPageState extends State<SavedPage> {
 														_yourPostsListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.post?.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 													},
 													semanticParentIds: [-8],
-													heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+													heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 												);
 											}
 										)
@@ -754,7 +754,7 @@ class _SavedPageState extends State<SavedPage> {
 															_postListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.item.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 														},
 														semanticParentIds: [-2],
-														heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+														heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 													);
 												}
 											)
@@ -1069,7 +1069,7 @@ class ThreadWatcherControls extends StatefulWidget {
 class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final w = ImageboardRegistry.threadWatcherController;
 		String notificationsError = '';
 		if (Notifications.staticError != null) {

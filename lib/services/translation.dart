@@ -48,7 +48,7 @@ class TranslationException implements Exception {
 
 Future<String> translateHtml(String html, {required String toLanguage}) async {
 	final compressed = compressHTML(html);
-	final response = await EffectiveSettings.instance.client.get(_translationApiRoot, queryParameters: {
+	final response = await Settings.instance.client.get(_translationApiRoot, queryParameters: {
 		'html': compressed.html,
 		'to': toLanguage
 	});

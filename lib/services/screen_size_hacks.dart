@@ -12,8 +12,8 @@ double estimateWidth(BuildContext context) {
 			|| MasterDetailLocation.twoPaneVerticalDetail
 			|| null => size.width,
 		MasterDetailLocation.twoPaneHorizontalMaster =>
-			(context.select<EffectiveSettings, int>((s) => s.twoPaneSplit) / twoPaneSplitDenominator) * size.width,
+			(Settings.twoPaneSplitSetting.watch(context) / twoPaneSplitDenominator) * size.width,
 		MasterDetailLocation.twoPaneHorizontalDetail =>
-			(1 - (context.select<EffectiveSettings, int>((s) => s.twoPaneSplit) / twoPaneSplitDenominator)) * size.width
+			(1 - (Settings.twoPaneSplitSetting.watch(context) / twoPaneSplitDenominator)) * size.width
 	};
 }

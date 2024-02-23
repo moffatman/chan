@@ -133,7 +133,7 @@ abstract class PostSpan {
 	const PostSpan();
 	Iterable<int> referencedPostIds(String forBoard) => const Iterable.empty();
 	Iterable<PostIdentifier> get referencedPostIdentifiers => const Iterable.empty();
-	InlineSpan build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options);
+	InlineSpan build(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
 	String buildText();
 	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
 	bool get containsLink => false;
@@ -201,7 +201,7 @@ class PostNodeSpan extends PostSpan {
 		);
 	}
 
-	Widget buildWidget(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
+	Widget buildWidget(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
 		final rows = <List<InlineSpan>>[[]];
 		int lines = preInjectRow != null ? 2 : 1;
 		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
@@ -408,7 +408,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 	}
 
-	(TextSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int actualThreadId) {
+	(TextSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int actualThreadId) {
 		String text = '>>';
 		if (zone.board != board) {
 			text += zone.imageboard.site.formatBoardNameWithoutTrailingSlash(board);
@@ -459,7 +459,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-  (TextSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options) {
+  (TextSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		final boardPrefix = board == zone.board ? '' : '${zone.imageboard.site.formatBoardNameWithoutTrailingSlash(board)}/';
 		String text = '>>$boardPrefix$postId';
 		if (zone.postFromArchiveError(board, postId) != null) {
@@ -484,7 +484,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
+	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
 		Color color = theme.secondaryColor;
 		if (postId == threadId) {
@@ -517,7 +517,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		};
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 			if (enableInteraction) {
-				if (!settings.supportMouse.value || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.popupPostsPage) {
+				if (!settings.mouseSettings.supportMouse || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.popupPostsPage) {
 					zone.highlightQuoteLinkId = postId;
 					await WeakNavigator.push(context, PostsPage(
 						zone: zone.childZoneFor(postId),
@@ -551,7 +551,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			onExit: options.onExit
 		), recognizer, enableUnconditionalInteraction);
 	}
-	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, SavedTheme theme, PostSpanRenderOptions options) {
+	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		int? actualThreadId = threadId;
 		if (threadId == null) {
 			// Dead links do not know their thread
@@ -1850,7 +1850,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		notifyListeners();
 		final threadState = imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		try {
-			final translated = await translateHtml(post.text, toLanguage: EffectiveSettings.instance.translationTargetLanguage);
+			final translated = await translateHtml(post.text, toLanguage: Settings.instance.translationTargetLanguage);
 			final translatedPost = Post(
 				board: post.board,
 				text: translated,
@@ -1939,7 +1939,7 @@ class ExpandingPost extends StatelessWidget {
 											context: context,
 											attachments: [attachment],
 											semanticParentIds: zone.stackIds,
-											heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+											heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 										);
 									},
 									shrinkWrap: true,
@@ -1958,7 +1958,7 @@ Iterable<TextSpan> _makeAttachmentInfo({
 	required BuildContext context,
 	required bool interactive,
 	required Post post,
-	required EffectiveSettings settings
+	required Settings settings
 }) sync* {
 	for (final attachment in post.attachments) {
 		if (settings.showFilenameOnPosts && attachment.filename.isNotEmpty) {
@@ -1995,7 +1995,7 @@ TextSpan buildPostInfoRow({
 	required bool isYourPost,
 	bool showSiteIcon = false,
 	bool showBoardName = false,
-	required EffectiveSettings settings,
+	required Settings settings,
 	required SavedTheme theme,
 	required ImageboardSite site,
 	required BuildContext context,

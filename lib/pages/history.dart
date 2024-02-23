@@ -81,7 +81,7 @@ class HistoryPageState extends State<HistoryPage> {
 							_valueInjector.value = v;
 						});
 						List<PersistentThreadState> states = [];
-						final settings = context.watch<EffectiveSettings>();
+						final settings = context.watch<Settings>();
 						return AdaptiveScaffold(
 							resizeToAvoidBottomInset: false,
 							bar: AdaptiveBar(
@@ -116,7 +116,7 @@ class HistoryPageState extends State<HistoryPage> {
 																				value: settings.includeThreadsYouRepliedToWhenDeletingHistory,
 																				onChanged: (v) {
 																					setDialogState(() {
-																						settings.includeThreadsYouRepliedToWhenDeletingHistory = v;
+																						Settings.includeThreadsYouRepliedToWhenDeletingHistorySetting.value = v;
 																					});
 																				}
 																			)
@@ -183,14 +183,14 @@ class HistoryPageState extends State<HistoryPage> {
 									),
 									Builder(
 										builder: (context) => AdaptiveIconButton(
-											icon: Icon(context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? CupertinoIcons.stop : CupertinoIcons.play),
+											icon: Icon(Settings.recordThreadsInHistorySetting.watch(context) ? CupertinoIcons.stop : CupertinoIcons.play),
 											onPressed: () {
-												context.read<EffectiveSettings>().recordThreadsInHistory = !context.read<EffectiveSettings>().recordThreadsInHistory;
+												Settings.recordThreadsInHistorySetting.value = !Settings.instance.recordThreadsInHistory;
 												threadSetter(context.read<MasterDetailHint>().currentValue);
 												showToast(
 													context: context,
-													message: context.read<EffectiveSettings>().recordThreadsInHistory ? 'History resumed' : 'History stopped',
-													icon: context.read<EffectiveSettings>().recordThreadsInHistory ? CupertinoIcons.play : CupertinoIcons.stop
+													message: Settings.instance.recordThreadsInHistory ? 'History resumed' : 'History stopped',
+													icon: Settings.instance.recordThreadsInHistory ? CupertinoIcons.play : CupertinoIcons.stop
 												);
 											}
 										)
@@ -314,7 +314,7 @@ class HistoryPageState extends State<HistoryPage> {
 																	_listController.animateTo((p) => p.thread!.attachments.any((a) => a.id == attachment.id));
 																},
 																semanticParentIds: [-3],
-																heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+																heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 															);
 														}
 													)

@@ -122,15 +122,15 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 									height: 75,
 								),
 								Checkbox.adaptive(
-									value: context.select<EffectiveSettings, bool>((p) => p.isMD5Hidden(attachment.md5)),
+									value: context.select<Settings, bool>((p) => p.isMD5Hidden(attachment.md5)),
 									onChanged: attachment.md5.isEmpty ? null : (value) {
 										if (value!) {
-											context.read<EffectiveSettings>().hideByMD5(attachment.md5);
+											Settings.instance.hideByMD5(attachment.md5);
 										}
 										else {
-											context.read<EffectiveSettings>().unHideByMD5(attachment.md5);
+											Settings.instance.unHideByMD5(attachment.md5);
 										}
-										context.read<EffectiveSettings>().didUpdateHiddenMD5s();
+										Settings.instance.didEdit();
 										widget.threadState.save();
 										setState(() {});
 									}
@@ -224,7 +224,7 @@ class PostRow extends StatelessWidget {
 		}
 		final parentZone = context.watch<PostSpanZoneData>();
 		final translatedPostSnapshot = parentZone.translatedPost(post.id);
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final theme = context.watch<SavedTheme>();
 		final parentZoneThreadState = parentZone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		final receipt = parentZoneThreadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
@@ -331,7 +331,7 @@ class PostRow extends StatelessWidget {
 										(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 											showCrossThreadLabel: showCrossThreadLabel,
 											shrinkWrap: shrinkWrap,
-											addExpandingPosts: settings.supportMouseSetting != TristateSystemSetting.a,
+											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
 											postInject: overrideReplyCount != null ? WidgetSpan(
 												alignment: PlaceholderAlignment.top,
 												child: Visibility(
@@ -461,9 +461,8 @@ class PostRow extends StatelessWidget {
 											child: PostSpanZone(
 												postId: latestPost.id,
 												style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
-												builder: (ctx) => ValueListenableBuilder<bool>(
-													valueListenable: settings.supportMouse,
-													builder: (context, supportMouse, child) => Text.rich(
+												builder: (ctx) => Consumer<MouseSettings>(
+													builder: (context, mouseSettings, child) => Text.rich(
 														TextSpan(
 															children: [
 																buildPostInfoRow(
@@ -479,7 +478,7 @@ class PostRow extends StatelessWidget {
 																	showPostNumber: showPostNumber,
 																	interactive: allowTappingLinks
 																),
-																if (supportMouse) ...[
+																if (mouseSettings.supportMouse) ...[
 																	...replyIds.map((id) =>  PostQuoteLinkSpan(
 																		board: latestPost.board,
 																		threadId: latestPost.threadId,

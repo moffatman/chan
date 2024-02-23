@@ -27,7 +27,7 @@ Future<bool> embedPossible({
 	required String url,
 	required BuildContext context
 }) async {
-	final embedRegexes = context.read<EffectiveSettings>().embedRegexes;
+	final embedRegexes = Settings.instance.embedRegexes;
 	if (url.startsWith('chance://site/') || url.startsWith('chance://theme')) {
 		return true;
 	}
@@ -59,7 +59,7 @@ String? findEmbedUrl({
 }) {
 	for (final element in linkify(text, linkifiers: const [LooseUrlLinkifier()])) {
 		if (element is UrlElement) {
-			for (final regex in context.read<EffectiveSettings>().embedRegexes) {
+			for (final regex in Settings.instance.embedRegexes) {
 				final match = regex.firstMatch(element.url);
 				if (match != null) {
 					return match.group(0);
@@ -97,7 +97,7 @@ Future<EmbedData?> loadEmbedData({
 	final client = context.read<ImageboardSite>().client;
 	if (url.startsWith('chance://site/')) {
 		try {
-			final response = await EffectiveSettings.instance.client.get(url.replaceFirst('chance://', '$contentSettingsApiRoot/'));
+			final response = await Settings.instance.client.get(url.replaceFirst('chance://', '$contentSettingsApiRoot/'));
 			if (response.data['data'] == null) {
 				throw Exception(response.data['error'] ?? 'Unknown error');
 			}

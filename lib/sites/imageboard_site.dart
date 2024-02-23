@@ -1001,7 +1001,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		await _ensureCookiesMemoizedForUrl(Uri.parse(attachment.thumbnailUrl));
 	}
 	Map<String, String> getHeaders(Uri url) {
-		if (EffectiveSettings.instance.connectivity == ConnectivityResult.mobile) {
+		if (Settings.instance.connectivity == ConnectivityResult.mobile) {
 			return {
 				'user-agent': userAgent,
 				..._memoizedCellularHeaders[url.host] ?? {}
@@ -1156,8 +1156,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
 		return WebReportMethod(Uri.parse(getWebUrlImpl(board, threadId, postId)));
 	}
-	late Imageboard imageboard;
-	Persistence get persistence => imageboard.persistence;
+	Imageboard? imageboard;
+	Persistence? get persistence => imageboard?.persistence;
 	ImageboardSiteLoginSystem? get loginSystem => null;
 	List<ImageboardEmote> getEmotes() => [];
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async => [];
@@ -1302,10 +1302,10 @@ abstract class ImageboardSiteLoginSystem {
 	List<ImageboardSiteLoginField> getLoginFields();
 	Future<void> login(String? board, Map<ImageboardSiteLoginField, String> fields);
 	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {
-		 if (parent.persistence.browserState.loginFields.isNotEmpty) {
+		 if (parent.persistence?.browserState.loginFields.isNotEmpty ?? false) {
 			 try {
 					final savedFields = {
-						for (final field in getLoginFields()) field: parent.persistence.browserState.loginFields[field.formKey]!
+						for (final field in getLoginFields()) field: parent.persistence!.browserState.loginFields[field.formKey]!
 					};
 					return savedFields;
 			 }
@@ -1316,8 +1316,8 @@ abstract class ImageboardSiteLoginSystem {
 		 return null;
 	}
 	Future<void> clearSavedLoginFields() async {
-		parent.persistence.browserState.loginFields.clear();
-		await parent.persistence.didUpdateBrowserState();
+		parent.persistence?.browserState.loginFields.clear();
+		await parent.persistence?.didUpdateBrowserState();
 	}
 	Future<void> clearLoginCookies(String? board, bool fromBothWifiAndCellular);
 }

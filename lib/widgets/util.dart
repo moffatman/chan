@@ -149,7 +149,7 @@ void showUndoToast({
 					});
 				},
 				icon: Text('Undo', style: TextStyle(
-					color: pressed ? null : EffectiveSettings.instance.theme.secondaryColor
+					color: pressed ? null : Settings.instance.theme.secondaryColor
 				))
 			)
 		),
@@ -434,7 +434,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			host: context.read<Imageboard?>()?.site.baseUrl,
 		);
 	}
-	final settings = context.read<EffectiveSettings>();
+	final settings = Settings.instance;
 	final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
 	openInChance() {
 		(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
@@ -892,7 +892,7 @@ class MaybeScrollbar extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		if (settings.showScrollbars) {
 			if (ChanceTheme.materialOf(context)) {
 				return Scrollbar(

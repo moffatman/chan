@@ -48,7 +48,7 @@ class ImageboardArchiveSearchQuery {
 	DateTime? startDate;
 	@HiveField(4)
 	DateTime? endDate;
-	@HiveField(5)
+	@HiveField(5, merger: SetLikePrimitiveListMerger<String>())
 	List<String> boards;
 	@HiveField(6)
 	String? md5;

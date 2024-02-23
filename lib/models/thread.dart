@@ -11,28 +11,63 @@ import 'package:hive/hive.dart';
 
 part 'thread.g.dart';
 
-class Thread implements Filterable {
+void _readHookThreadFields(Map<int, dynamic> fields) {
+	fields.update(ThreadFields.attachments.fieldNumber, (attachments) {
+		return (attachments as List?)?.toList(growable: false);
+	}, ifAbsent: () {
+		final deprecatedAttachment = fields[7] as Attachment?;
+		if (deprecatedAttachment != null) {
+			return [deprecatedAttachment].toList(growable: false);
+		}
+		return const <Attachment>[];
+	});
+}
+
+@HiveType(typeId: 15, isOptimized: true, readHook: _readHookThreadFields)
+class Thread extends HiveObject implements Filterable {
+	@HiveField(0, merger: MapLikeListMerger<Post, int>(
+		childMerger: AdaptedMerger(PostAdapter.kTypeId),
+		keyer: PostFields.getId,
+		maintainOrder: true
+	))
 	final List<Post> posts_;
+	@HiveField(1)
 	bool isArchived;
 	@override
+	@HiveField(2)
 	bool isDeleted;
 	@override
+	@HiveField(3)
 	final int replyCount;
+	@HiveField(4)
 	final int imageCount;
 	@override
+	@HiveField(5)
 	final int id;
 	@override
+	@HiveField(6)
 	final String board;
+	@HiveField(8)
 	final String? title;
+	@HiveField(9)
 	bool isSticky;
+	@HiveField(10)
 	final DateTime time;
+	@HiveField(11, isOptimized: true, merger: PrimitiveMerger())
 	final Flag? flair;
+	@HiveField(12, isOptimized: true)
 	int? currentPage;
+	@HiveField(13, isOptimized: true)
 	int? uniqueIPCount;
+	@HiveField(14, isOptimized: true)
 	int? customSpoilerId;
+	@HiveField(15, isOptimized: true, defaultValue: false)
 	bool attachmentDeleted;
+	@HiveField(16, merger: Attachment.unmodifiableListMerger)
 	List<Attachment> attachments;
+	@HiveField(17, isOptimized: true)
 	ThreadVariant? suggestedVariant;
+	@HiveField(18, isOptimized: true)
 	String? archiveName;
 	Thread({
 		required this.posts_,
@@ -265,118 +300,6 @@ class BoardThreadOrPostIdentifier {
 	bool operator == (Object other) => (other is BoardThreadOrPostIdentifier) && (other.board == board) && (other.threadId == threadId) && (other.postId == postId);
 	@override
 	int get hashCode => Object.hash(board, threadId, postId);
-}
-
-class ThreadAdapter extends TypeAdapter<Thread> {
-  @override
-  final int typeId = 15;
-
-  @override
-  Thread read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final Map<int, dynamic> fields;
-		if (numOfFields == 255) {
-			// New version (terminated with zero)
-			fields = {};
-			while (true) {
-				final int fieldId = reader.readByte();
-				fields[fieldId] = reader.read();
-				if (fieldId == 0) {
-					break;
-				}
-			}
-		}
-		else {
-			// Previous versions (last field is 16, numOfFields is untrustworthy)
-			fields = {
-				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-			};
-		}
-		final deprecatedAttachment = fields[7] as Attachment?;
-		List<Attachment> fallbackAttachments = const [];
-		if (deprecatedAttachment != null) {
-			fallbackAttachments = [deprecatedAttachment].toList(growable: false);
-		}
-    return Thread(
-      posts_: (fields[0] as List).cast<Post>(),
-      isArchived: fields[1] as bool,
-      isDeleted: fields[2] as bool,
-      replyCount: fields[3] as int,
-      imageCount: fields[4] as int,
-      id: fields[5] as int,
-      attachmentDeleted: fields[15] == null ? false : fields[15] as bool,
-      board: fields[6] as String,
-      title: fields[8] as String?,
-      isSticky: fields[9] as bool,
-      time: fields[10] as DateTime,
-      flair: fields[11] as Flag?,
-      currentPage: fields[12] as int?,
-      uniqueIPCount: fields[13] as int?,
-      customSpoilerId: fields[14] as int?,
-      attachments: (fields[16] as List?)?.cast<Attachment>().toList(growable: false) ?? fallbackAttachments,
-			suggestedVariant: fields[17] as ThreadVariant?,
-			archiveName: fields[18] as String?
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, Thread obj) {
-    writer
-      ..writeByte(255)
-      ..writeByte(1)
-      ..write(obj.isArchived)
-      ..writeByte(2)
-      ..write(obj.isDeleted)
-      ..writeByte(3)
-      ..write(obj.replyCount)
-      ..writeByte(4)
-      ..write(obj.imageCount)
-      ..writeByte(5)
-      ..write(obj.id)
-      ..writeByte(6)
-      ..write(obj.board)
-      ..writeByte(8)
-      ..write(obj.title)
-      ..writeByte(9)
-      ..write(obj.isSticky)
-      ..writeByte(10)
-      ..write(obj.time)
-      ..writeByte(15)
-      ..write(obj.attachmentDeleted)
-      ..writeByte(16)
-      ..write(obj.attachments);
-		if (obj.flair != null) {
-      writer..writeByte(11)..write(obj.flair);
-		}
-		if (obj.currentPage != null) {
-			writer..writeByte(12)..write(obj.currentPage);
-		}
-		if (obj.uniqueIPCount != null) {
-			writer..writeByte(13)..write(obj.uniqueIPCount);
-		}
-		if (obj.customSpoilerId != null) {
-			writer..writeByte(14)..write(obj.customSpoilerId);
-		}
-		if (obj.suggestedVariant != null) {
-			writer..writeByte(17)..write(obj.suggestedVariant);
-		}
-		if (obj.archiveName != null) {
-			writer..writeByte(18)..write(obj.archiveName);
-		}
-		writer
-      ..writeByte(0)
-      ..write(obj.posts_);
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ThreadAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
 }
 
 extension CompareTitle on Thread? {

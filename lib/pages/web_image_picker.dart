@@ -117,7 +117,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	}
 
 	void _search(String value) {
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		Uri url = Uri.parse(value);
 		if (url.scheme.isEmpty) {
 			url = settings.webImageSearchMethod.searchUrl(value);
@@ -129,13 +129,13 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		return AdaptiveScaffold(
 			bar: AdaptiveBar(
 				title: AdaptiveSearchTextField(
 					focusNode: urlFocusNode,
 					controller: urlController,
-					enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
+					enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 					smartDashesType: SmartDashesType.disabled,
 					smartQuotesType: SmartQuotesType.disabled,
 					onSubmitted: _search,
@@ -167,7 +167,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													},
 													groupValue: settings.webImageSearchMethod,
 													onValueChanged: (choice) {
-														settings.webImageSearchMethod = choice;
+														Settings.webImageSearchMethodSetting.value = choice;
 														setDialogState(() {});
 													}
 												),

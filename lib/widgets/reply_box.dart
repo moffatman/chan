@@ -667,7 +667,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	Future<void> setAttachment(File newAttachment, {bool forceRandomizeChecksum = false}) async {
 		_autoPostTimer?.cancel();
 		File? file = newAttachment;
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		final randomizeChecksum = forceRandomizeChecksum || settings.randomizeChecksumOnUploadedFiles;
 		setState(() {
 			_attachmentProgress = ('Processing', null);
@@ -830,12 +830,12 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 
 	Future<void> _solveCaptcha() async {
 		final site = context.read<ImageboardSite>();
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		final savedFields = site.loginSystem?.getSavedLoginFields();
 		if (savedFields != null) {
 			bool shouldAutoLogin = settings.connectivity != ConnectivityResult.mobile;
 			if (!shouldAutoLogin) {
-				settings.autoLoginOnMobileNetwork ??= await showAdaptiveDialog<bool>(
+				Settings.autoLoginOnMobileNetworkSetting.value ??= await showAdaptiveDialog<bool>(
 					context: context,
 					builder: (context) => AdaptiveAlertDialog(
 						title: Text('Use ${site.loginSystem?.name} on mobile networks?'),
@@ -868,7 +868,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						]
 					)
 				);
-				if (settings.autoLoginOnMobileNetwork == true) {
+				if (Settings.autoLoginOnMobileNetworkSetting.value == true) {
 					shouldAutoLogin = true;
 				}
 			}
@@ -916,7 +916,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	void _maybeShowDubsToast(int id) {
-		if (context.read<EffectiveSettings>().highlightRepeatingDigitsInPostIds && context.read<ImageboardSite>().explicitIds) {
+		if (Settings.instance.highlightRepeatingDigitsInPostIds && context.read<ImageboardSite>().explicitIds) {
 			final digits = id.toString();
 			int repeatingDigits = 1;
 			for (; repeatingDigits < digits.length; repeatingDigits++) {
@@ -960,7 +960,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		if (!mounted) return;
 		try {
 			final persistence = context.read<Persistence>();
-			final settings = context.read<EffectiveSettings>();
+			final settings = Settings.instance;
 			String? overrideAttachmentFilename;
 			if (_filenameController.text.isNotEmpty && attachment != null) {
 				overrideAttachmentFilename = '${_filenameController.text.normalizeSymbols}.${attachmentExt!}';
@@ -992,7 +992,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								});
 							},
 							icon: Text('Skip', style: TextStyle(
-								color: pressed ? null : EffectiveSettings.instance.theme.secondaryColor
+								color: pressed ? null : Settings.instance.theme.secondaryColor
 							))
 						)
 					),
@@ -1025,7 +1025,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			if (_captchaSolution is Chan4CustomCaptchaSolution) {
 				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
 				if (context.mounted) {
-					settings.contributeCaptchas ??= await showAdaptiveDialog<bool>(
+					Settings.contributeCaptchasSetting.value ??= await showAdaptiveDialog<bool>(
 						context: context,
 						builder: (context) => AdaptiveAlertDialog(
 							title: const Text('Contribute captcha solutions?'),
@@ -1110,7 +1110,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				);
 				_maybeShowDubsToast(receipt.id);
 				if (_promptForHeadlessSolve && (settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver == null)) {
-					settings.useHeadlessCloudCaptchaSolver = await showAdaptiveDialog<bool>(
+					Settings.useHeadlessCloudCaptchaSolverSetting.value = await showAdaptiveDialog<bool>(
 						context: context,
 						barrierDismissible: true,
 						builder: (context) => AdaptiveAlertDialog(
@@ -1330,7 +1330,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 
 	Widget _buildAttachmentOptions(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final fakeAttachment = Attachment(
 			ext: '.$attachmentExt',
 			url: '',
@@ -1420,7 +1420,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												),
 												onPressed: () {
 													setState(() {
-														settings.randomizeFilenames = !settings.randomizeFilenames;
+														Settings.randomizeFilenamesSetting.value = !settings.randomizeFilenames;
 													});
 												}
 											),
@@ -1551,7 +1551,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	Widget _buildOptions(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final persistence = context.watch<Persistence>();
 		final site = context.watch<ImageboardSite>();
 		final fields = site.loginSystem?.getSavedLoginFields();
@@ -1681,7 +1681,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	Widget _buildTextField(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
 		final snippets = context.read<ImageboardSite>().getBoardSnippets(widget.board);
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		return CallbackShortcuts(
 			bindings: {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit,
@@ -1742,7 +1742,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												if (!filename.contains('.')) {
 													filename += '.${content.mimeType.split('/').last}';
 												}
-												final f = File('${Persistence.temporaryDirectory.path}/sharecache/${DateTime.now().millisecondsSinceEpoch}/$filename');
+												final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
 												await f.create(recursive: true);
 												await f.writeAsBytes(data, flush: true);
 												setAttachment(f);
@@ -1828,7 +1828,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		};
 		final imageboard = context.read<Imageboard>();
 		final defaultTextStyle = DefaultTextStyle.of(context).style;
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.end,
 			children: [
@@ -1882,7 +1882,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														builder: (context, _) => DefaultTextStyle(
 															style: defaultTextStyle,
 															child: Text.rich(
-																snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
+																snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
 															)
 														)
 													),
@@ -2106,7 +2106,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		return Focus(
 			focusNode: _rootFocusNode,
 			child: Column(
@@ -2153,9 +2153,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									onPressed: () async {
 										final site = context.read<ImageboardSite>();
 										try {
-											final dir = await (Directory('${Persistence.temporaryDirectory.path}/sharecache')).create(recursive: true);
 											final data = await site.client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
-											final newFile = File('${dir.path}${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last.split('?').first}');
+											final newFile = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last.split('?').first}');
 											await newFile.writeAsBytes(data.data);
 											setAttachment(newFile);
 											_filenameController.text = _proposedAttachmentUrl!.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');

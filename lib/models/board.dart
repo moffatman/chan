@@ -1,24 +1,47 @@
 import 'package:hive/hive.dart';
+import 'package:chan/services/persistence.dart';
 
-class ImageboardBoard {
+part 'board.g.dart';
+
+@HiveType(typeId: 16, isOptimized: true)
+class ImageboardBoard extends HiveObject {
+	@HiveField(0)
 	final String name;
+	@HiveField(1)
 	final String title;
+	@HiveField(2)
 	final bool isWorksafe;
+	@HiveField(3)
 	final bool webmAudioAllowed;
+	@HiveField(4, isOptimized: true)
 	int? maxImageSizeBytes;
+	@HiveField(5, isOptimized: true)
 	int? maxWebmSizeBytes;
+	@HiveField(6, isOptimized: true)
 	final int? maxWebmDurationSeconds;
+	@HiveField(7, isOptimized: true)
 	int? maxCommentCharacters;
+	@HiveField(8, isOptimized: true)
 	int? threadCommentLimit;
+	@HiveField(9, isOptimized: true)
 	final int? threadImageLimit;
+	@HiveField(10, isOptimized: true)
 	int? pageCount;
+	@HiveField(11, isOptimized: true)
 	final int? threadCooldown;
+	@HiveField(12, isOptimized: true)
 	final int? replyCooldown;
+	@HiveField(13, isOptimized: true)
 	final int? imageCooldown;
+	@HiveField(14, isOptimized: true)
 	final bool? spoilers;
+	@HiveField(15, isOptimized: true)
 	DateTime? additionalDataTime;
+	@HiveField(16, isOptimized: true)
 	final String? subdomain;
+	@HiveField(17, isOptimized: true)
 	final Uri? icon;
+	@HiveField(18, isOptimized: true)
 	int? captchaMode;
 
 	ImageboardBoard({
@@ -70,122 +93,4 @@ class ImageboardBoard {
 
 	@override
 	int get hashCode => Object.hash(name, title, isWorksafe, webmAudioAllowed, maxImageSizeBytes, maxWebmSizeBytes, maxWebmDurationSeconds, maxCommentCharacters, threadCommentLimit, threadImageLimit, pageCount, threadCooldown, replyCooldown, imageCooldown, spoilers, additionalDataTime, subdomain, icon, captchaMode);
-}
-
-class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
-  @override
-  final int typeId = 16;
-
-  @override
-  ImageboardBoard read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-		final Map<int, dynamic> fields;
-		if (numOfFields == 255) {
-			// Dynamic number of fields
-			fields = {};
-			while (true) {
-				final int fieldId = reader.readByte();
-				fields[fieldId] = reader.read();
-				if (fieldId == 0) {
-					break;
-				}
-			}
-		}
-		else {
-			fields = <int, dynamic>{
-				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-			};
-		}
-    return ImageboardBoard(
-      name: fields[0] as String,
-      title: fields[1] as String,
-      isWorksafe: fields[2] as bool,
-      webmAudioAllowed: fields[3] as bool,
-      maxImageSizeBytes: fields[4] as int?,
-      maxWebmSizeBytes: fields[5] as int?,
-      maxWebmDurationSeconds: fields[6] as int?,
-      maxCommentCharacters: fields[7] as int?,
-      threadCommentLimit: fields[8] as int?,
-      threadImageLimit: fields[9] as int?,
-      pageCount: fields[10] as int?,
-      threadCooldown: fields[11] as int?,
-      replyCooldown: fields[12] as int?,
-      imageCooldown: fields[13] as int?,
-      spoilers: fields[14] as bool?,
-      additionalDataTime: fields[15] as DateTime?,
-      subdomain: fields[16] as String?,
-			icon: fields[17] as Uri?,
-			captchaMode: fields[18] as int?,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, ImageboardBoard obj) {
-    writer
-      ..writeByte(255)
-      ..writeByte(1)
-      ..write(obj.title)
-      ..writeByte(2)
-      ..write(obj.isWorksafe)
-      ..writeByte(3)
-      ..write(obj.webmAudioAllowed);
-		if (obj.maxImageSizeBytes != null) {
-      writer..writeByte(4)..write(obj.maxImageSizeBytes);
-		}
-		if (obj.maxWebmSizeBytes != null) {
-      writer..writeByte(5)..write(obj.maxWebmSizeBytes);
-		}
-		if (obj.maxWebmDurationSeconds != null) {
-      writer..writeByte(6)..write(obj.maxWebmDurationSeconds);
-		}
-		if (obj.maxCommentCharacters != null) {
-      writer..writeByte(7)..write(obj.maxCommentCharacters);
-		}
-		if (obj.threadCommentLimit != null) {
-      writer..writeByte(8)..write(obj.threadCommentLimit);
-		}
-		if (obj.threadImageLimit != null) {
-      writer..writeByte(9)..write(obj.threadImageLimit);
-		}
-		if (obj.pageCount != null) {
-      writer..writeByte(10)..write(obj.pageCount);
-		}
-		if (obj.threadCooldown != null) {
-      writer..writeByte(11)..write(obj.threadCooldown);
-		}
-		if (obj.replyCooldown != null) {
-      writer..writeByte(12)..write(obj.replyCooldown);
-		}
-		if (obj.imageCooldown != null) {
-      writer..writeByte(13)..write(obj.imageCooldown);
-		}
-		if (obj.spoilers != null) {
-      writer..writeByte(14)..write(obj.spoilers);
-		}
-		if (obj.additionalDataTime != null) {
-      writer..writeByte(15)..write(obj.additionalDataTime);
-		}
-		if (obj.subdomain != null) {
-      writer..writeByte(16)..write(obj.subdomain);
-		}
-		if (obj.icon != null) {
-			writer..writeByte(17)..write(obj.icon);
-		}
-		if (obj.captchaMode != null) {
-			writer..writeByte(18)..write(obj.captchaMode);
-		}
-		writer
-			..writeByte(0)
-      ..write(obj.name);
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ImageboardBoardAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
 }

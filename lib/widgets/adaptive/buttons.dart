@@ -72,15 +72,17 @@ class AdaptiveFilledButton extends StatelessWidget {
 
 class AdaptiveThinButton extends StatelessWidget {
 	final Widget child;
-	final VoidCallback onPressed;
+	final VoidCallback? onPressed;
 	final EdgeInsets padding;
 	final bool filled;
+	final Color? color;
 
 	const AdaptiveThinButton({
 		required this.child,
 		required this.onPressed,
 		this.padding = const EdgeInsets.all(16),
 		this.filled = false,
+		this.color,
 		super.key
 	});
 
@@ -92,6 +94,7 @@ class AdaptiveThinButton extends StatelessWidget {
 				onPressed: onPressed,
 				style: ButtonStyle(
 					foregroundColor: filled ? MaterialStateProperty.all(theme.backgroundColor) : null,
+					side: MaterialStateProperty.all(BorderSide(color: color ?? theme.primaryColor)),
 					backgroundColor: filled ? MaterialStateProperty.resolveWith((s) {
 						if (s.contains(MaterialState.pressed)) {
 							return theme.primaryColorWithBrightness(0.6);
@@ -109,6 +112,7 @@ class AdaptiveThinButton extends StatelessWidget {
 			onPressed: onPressed,
 			padding: padding,
 			filled: filled,
+			color: color,
 			child: child
 		);
 	}

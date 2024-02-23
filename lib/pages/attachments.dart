@@ -115,7 +115,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 			if (middleVisibleItem != _lastMiddleVisibleItem) {
 				widget.onChange?.call(middleVisibleItem);
 			}
-			final settings = context.read<EffectiveSettings>();
+			final settings = Settings.instance;
 			final maxColumnWidth = settings.attachmentsPageMaxCrossAxisExtent;
 			final screenWidth = (context.findRenderObject() as RenderBox?)?.paintBounds.width ?? double.infinity;
 			final columnCount = max(1, screenWidth / maxColumnWidth).ceil();
@@ -148,7 +148,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 				imageboard: context.read<Imageboard>(),
 				isPrimary: false
 			);
-			if (context.watch<EffectiveSettings>().autoloadAttachments && !attachment.attachment.isRateLimited) {
+			if (Settings.instance.autoloadAttachments && !attachment.attachment.isRateLimited) {
 				if (attachment.attachment.type.isVideo) {
 					_queueVideoLoading(controller);
 				}
@@ -172,7 +172,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 			(_controller.scrollController?.position as ScrollPositionWithSingleContext?)?.pointerScroll(-details.focalPointDelta.dy);
 		}
 		else {
-			context.read<EffectiveSettings>().attachmentsPageMaxCrossAxisExtent = max(100, context.read<EffectiveSettings>().attachmentsPageMaxCrossAxisExtent + (100 * (details.scale - _lastScale)));
+			Settings.attachmentsPageMaxCrossAxisExtentSetting.edit(context, (oldExtent) {
+				return max(100, oldExtent + (100 * (details.scale - _lastScale)));
+			});
 			_lastScale = details.scale;
 		}
 	}
@@ -185,7 +187,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final maxCrossAxisExtent = context.select<EffectiveSettings, double>((s) => s.attachmentsPageMaxCrossAxisExtent);
+		final maxCrossAxisExtent = Settings.attachmentsPageMaxCrossAxisExtentSetting.watch(context);
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			body: RawGestureDetector(
@@ -322,7 +324,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 															videoThumbnailMicroPadding: false,
 															onlyRenderVideoWhenPrimary: true,
 															fit: BoxFit.cover,
-															maxWidth: PlatformDispatcher.instance.views.first.physicalSize.width, // no zoom
+															maxWidth: PlatformDispatcher.instance.views.first.physicalSize.width * PlatformDispatcher.instance.views.first.devicePixelRatio, // no zoom
 															additionalContextMenuActions: [
 																ContextMenuAction(
 																	trailingIcon: CupertinoIcons.return_icon,

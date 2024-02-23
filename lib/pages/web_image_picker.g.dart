@@ -7,8 +7,16 @@ part of 'web_image_picker.dart';
 // **************************************************************************
 
 class WebImageSearchMethodAdapter extends TypeAdapter<WebImageSearchMethod> {
+  const WebImageSearchMethodAdapter();
+
+  static const int kTypeId = 35;
+
   @override
-  final int typeId = 35;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<WebImageSearchMethod, dynamic>>
+      fields = const {};
 
   @override
   WebImageSearchMethod read(BinaryReader reader) {

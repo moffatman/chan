@@ -71,7 +71,7 @@ class SiteDvach extends ImageboardSite {
 
 	void _updateBoardInformation(Map<String, dynamic> data) async {
 		try {
-			final board = persistence.maybeGetBoard(data['id'])!;
+			final board = (persistence?.maybeGetBoard(data['id']))!;
 			board.threadCommentLimit = data['bump_limit'];
 			board.maxCommentCharacters = data['max_comment'];
 			board.maxImageSizeBytes = data['max_files_size'];

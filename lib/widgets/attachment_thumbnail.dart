@@ -79,7 +79,7 @@ class AttachmentThumbnail extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final spoiler = attachment.spoiler && !revealSpoilers;
 		double effectiveWidth = width ?? settings.thumbnailSize;
 		double effectiveHeight = height ?? settings.thumbnailSize;
@@ -105,7 +105,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		}
 		bool resize = false;
 		String url = attachment.thumbnailUrl;
-		if ((overrideFullQuality ?? context.select<EffectiveSettings, bool>((s) => s.fullQualityThumbnails)) && attachment.type == AttachmentType.image && !attachment.isRateLimited) {
+		if ((overrideFullQuality ?? settings.fullQualityThumbnails) && attachment.type == AttachmentType.image && !attachment.isRateLimited) {
 			resize = true;
 			url = attachment.url;
 		}

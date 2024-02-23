@@ -8,7 +8,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 const _kLongPressToPopAllTime = Duration(milliseconds: 500);
 
@@ -64,7 +63,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		super.initState();
 		_opacity = ValueNotifierAnimation(1);
 		_scrollStopPosition = -1 * min(150.0 + widget.heightEstimate, context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height / 2);
-		_controller = ScrollController(initialScrollOffset: context.read<EffectiveSettings>().showAnimations ? _scrollStopPosition : 0);
+		_controller = ScrollController(initialScrollOffset: Settings.instance.showAnimations ? _scrollStopPosition : 0);
 		_controller.addListener(_onScrollUpdate);
 	}
 
@@ -100,7 +99,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		Future.delayed(_kLongPressToPopAllTime, () {
 			if (mounted &&
 			    WeakNavigator.of(context) != null &&
-			    !context.read<EffectiveSettings>().overscrollModalTapPopsAll &&
+			    !Settings.instance.overscrollModalTapPopsAll &&
 					(_pointersDown[event.pointer]?.$2 ?? false)) {
 				// Held long enough without moving to pop all
 				lightHapticFeedback();
@@ -125,7 +124,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			// Simulate onTap for the Spacers which fill the transparent space
 			// It's done here rather than using GestureDetector so it works during scroll-in
 			if (WeakNavigator.of(context) != null) {
-				if (context.read<EffectiveSettings>().overscrollModalTapPopsAll || DateTime.now().difference(downData.$3) > _kLongPressToPopAllTime) {
+				if (Settings.instance.overscrollModalTapPopsAll || DateTime.now().difference(downData.$3) > _kLongPressToPopAllTime) {
 					WeakNavigator.of(context)!.popAllExceptFirst(animated: true);
 				}
 				else {
@@ -199,7 +198,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								if ((event.position - downData!.$1).distance > kTouchSlop) {
 									// Moved too far, will no longer pop
 									if (WeakNavigator.of(context) != null &&
-											!context.read<EffectiveSettings>().overscrollModalTapPopsAll &&
+											!Settings.instance.overscrollModalTapPopsAll &&
 											DateTime.now().difference(downData.$3) > _kLongPressToPopAllTime) {
 										// We played the haptic feedback to say it was held long enough
 										// Do a double-vibrate to indicate cancel

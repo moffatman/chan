@@ -366,7 +366,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																	onSubmitted: (String q) {
 																		_submitQuery();
 																	},
-																	enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
+																	enableIMEPersonalizedLearning: Settings.enableIMEPersonalizedLearningSetting.watch(context),
 																	smartQuotesType: SmartQuotesType.disabled,
 																	smartDashesType: SmartDashesType.disabled,
 																	suffixVisible: _searchFocused,

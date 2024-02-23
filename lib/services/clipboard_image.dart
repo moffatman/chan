@@ -27,7 +27,7 @@ Future<File?> getClipboardImageAsFile() async {
 			ext = 'jpg';
 		}
 		if (ext != null) {
-			final f = File('${Persistence.temporaryDirectory.path}/sharecache/${DateTime.now().millisecondsSinceEpoch}.$ext');
+			final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}.$ext');
 			await f.create(recursive: true);
 			await f.writeAsBytes(image, flush: true);
 			return f;

@@ -26,7 +26,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 	@override
 	Widget build(BuildContext context) {
 		final persistence = context.watch<Persistence>();
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		return RefreshableList<Thread>(
 			gridDelegate: settings.useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtent(
 				maxCrossAxisExtent: settings.catalogGridWidth,

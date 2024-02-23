@@ -62,6 +62,21 @@ class ShareablePostsStyle {
 		this.revealYourPosts = true,
 		this.includeFooter = true
 	});
+
+	@override
+	bool operator == (Object other) =>
+		other is ShareablePostsStyle &&
+		other.useTree == useTree &&
+		other.parentDepth == parentDepth &&
+		other.childDepth == childDepth &&
+		other.width == width &&
+		other.overrideThemeKey == overrideThemeKey &&
+		other.expandPrimaryImage == expandPrimaryImage &&
+		other.revealYourPosts == revealYourPosts &&
+		other.includeFooter == includeFooter;
+	
+	@override
+	int get hashCode => Object.hash(useTree, parentDepth, childDepth, width, overrideThemeKey, expandPrimaryImage, revealYourPosts, includeFooter);
 }
 
 class ShareablePosts extends StatefulWidget {
@@ -128,7 +143,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						required double? peekContentHeight,
 						required List<ParentAndChildIdentifier>? stubChildIds
 					}) {
-						final settings = context.watch<EffectiveSettings>();
+						final settings = context.watch<Settings>();
 						if (peekContentHeight != null && value != null) {
 							final post = Builder(
 								builder: (context) => PostRow(

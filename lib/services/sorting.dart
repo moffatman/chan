@@ -24,7 +24,7 @@ Future<void> selectWatchedThreadsSortMethod(BuildContext context, {VoidCallback?
 				fontWeight: entry.key == Persistence.settings.watchedThreadsSortingMethod ? FontWeight.bold : null
 			)),
 			onPressed: () {
-				EffectiveSettings.instance.watchedThreadsSortingMethod = entry.key;
+				Settings.watchedThreadsSortingMethodSetting.value = entry.key;
 				Navigator.of(context, rootNavigator: true).pop();
 				onMutate?.call();
 			}
@@ -115,7 +115,7 @@ Future<void> selectSavedThreadsSortMethod(BuildContext context) => showAdaptiveM
 				fontWeight: entry.key == Persistence.settings.savedThreadsSortingMethod ? FontWeight.bold : null
 			)),
 			onPressed: () {
-				EffectiveSettings.instance.savedThreadsSortingMethod = entry.key;
+				Settings.savedThreadsSortingMethodSetting.value = entry.key;
 				Navigator.of(context, rootNavigator: true).pop();
 			}
 		)).toList(),

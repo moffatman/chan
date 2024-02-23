@@ -6,10 +6,166 @@ part of 'search.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
+class ImageboardArchiveSearchQueryFields {
+  static String getQuery(ImageboardArchiveSearchQuery x) => x.query;
+  static void setQuery(ImageboardArchiveSearchQuery x, String v) => x.query = v;
+  static const query = HiveFieldAdapter<ImageboardArchiveSearchQuery, String>(
+    getter: getQuery,
+    setter: setQuery,
+    fieldNumber: 0,
+    fieldName: 'query',
+    merger: PrimitiveMerger(),
+  );
+  static MediaFilter getMediaFilter(ImageboardArchiveSearchQuery x) =>
+      x.mediaFilter;
+  static void setMediaFilter(ImageboardArchiveSearchQuery x, MediaFilter v) =>
+      x.mediaFilter = v;
+  static const mediaFilter =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, MediaFilter>(
+    getter: getMediaFilter,
+    setter: setMediaFilter,
+    fieldNumber: 1,
+    fieldName: 'mediaFilter',
+    merger: PrimitiveMerger(),
+  );
+  static PostTypeFilter getPostTypeFilter(ImageboardArchiveSearchQuery x) =>
+      x.postTypeFilter;
+  static void setPostTypeFilter(
+          ImageboardArchiveSearchQuery x, PostTypeFilter v) =>
+      x.postTypeFilter = v;
+  static const postTypeFilter =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, PostTypeFilter>(
+    getter: getPostTypeFilter,
+    setter: setPostTypeFilter,
+    fieldNumber: 2,
+    fieldName: 'postTypeFilter',
+    merger: PrimitiveMerger(),
+  );
+  static DateTime? getStartDate(ImageboardArchiveSearchQuery x) => x.startDate;
+  static void setStartDate(ImageboardArchiveSearchQuery x, DateTime? v) =>
+      x.startDate = v;
+  static const startDate =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, DateTime?>(
+    getter: getStartDate,
+    setter: setStartDate,
+    fieldNumber: 3,
+    fieldName: 'startDate',
+    merger: PrimitiveMerger(),
+  );
+  static DateTime? getEndDate(ImageboardArchiveSearchQuery x) => x.endDate;
+  static void setEndDate(ImageboardArchiveSearchQuery x, DateTime? v) =>
+      x.endDate = v;
+  static const endDate =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, DateTime?>(
+    getter: getEndDate,
+    setter: setEndDate,
+    fieldNumber: 4,
+    fieldName: 'endDate',
+    merger: PrimitiveMerger(),
+  );
+  static List<String> getBoards(ImageboardArchiveSearchQuery x) => x.boards;
+  static void setBoards(ImageboardArchiveSearchQuery x, List<String> v) =>
+      x.boards = v;
+  static const boards =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, List<String>>(
+    getter: getBoards,
+    setter: setBoards,
+    fieldNumber: 5,
+    fieldName: 'boards',
+    merger: SetLikePrimitiveListMerger<String>(),
+  );
+  static String? getMd5(ImageboardArchiveSearchQuery x) => x.md5;
+  static void setMd5(ImageboardArchiveSearchQuery x, String? v) => x.md5 = v;
+  static const md5 = HiveFieldAdapter<ImageboardArchiveSearchQuery, String?>(
+    getter: getMd5,
+    setter: setMd5,
+    fieldNumber: 6,
+    fieldName: 'md5',
+    merger: PrimitiveMerger(),
+  );
+  static PostDeletionStatusFilter getDeletionStatusFilter(
+          ImageboardArchiveSearchQuery x) =>
+      x.deletionStatusFilter;
+  static void setDeletionStatusFilter(
+          ImageboardArchiveSearchQuery x, PostDeletionStatusFilter v) =>
+      x.deletionStatusFilter = v;
+  static const deletionStatusFilter =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, PostDeletionStatusFilter>(
+    getter: getDeletionStatusFilter,
+    setter: setDeletionStatusFilter,
+    fieldNumber: 7,
+    fieldName: 'deletionStatusFilter',
+    merger: PrimitiveMerger(),
+  );
+  static String? getImageboardKey(ImageboardArchiveSearchQuery x) =>
+      x.imageboardKey;
+  static void setImageboardKey(ImageboardArchiveSearchQuery x, String? v) =>
+      x.imageboardKey = v;
+  static const imageboardKey =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, String?>(
+    getter: getImageboardKey,
+    setter: setImageboardKey,
+    fieldNumber: 8,
+    fieldName: 'imageboardKey',
+    merger: PrimitiveMerger(),
+  );
+  static String? getName(ImageboardArchiveSearchQuery x) => x.name;
+  static void setName(ImageboardArchiveSearchQuery x, String? v) => x.name = v;
+  static const name = HiveFieldAdapter<ImageboardArchiveSearchQuery, String?>(
+    getter: getName,
+    setter: setName,
+    fieldNumber: 9,
+    fieldName: 'name',
+    merger: PrimitiveMerger(),
+  );
+  static String? getTrip(ImageboardArchiveSearchQuery x) => x.trip;
+  static void setTrip(ImageboardArchiveSearchQuery x, String? v) => x.trip = v;
+  static const trip = HiveFieldAdapter<ImageboardArchiveSearchQuery, String?>(
+    getter: getTrip,
+    setter: setTrip,
+    fieldNumber: 10,
+    fieldName: 'trip',
+    merger: PrimitiveMerger(),
+  );
+  static String? getSubject(ImageboardArchiveSearchQuery x) => x.subject;
+  static void setSubject(ImageboardArchiveSearchQuery x, String? v) =>
+      x.subject = v;
+  static const subject =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, String?>(
+    getter: getSubject,
+    setter: setSubject,
+    fieldNumber: 11,
+    fieldName: 'subject',
+    merger: PrimitiveMerger(),
+  );
+}
+
 class ImageboardArchiveSearchQueryAdapter
     extends TypeAdapter<ImageboardArchiveSearchQuery> {
+  const ImageboardArchiveSearchQueryAdapter();
+
+  static const int kTypeId = 5;
+
   @override
-  final int typeId = 5;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int,
+          ReadOnlyHiveFieldAdapter<ImageboardArchiveSearchQuery, dynamic>>
+      fields = const {
+    0: ImageboardArchiveSearchQueryFields.query,
+    1: ImageboardArchiveSearchQueryFields.mediaFilter,
+    2: ImageboardArchiveSearchQueryFields.postTypeFilter,
+    3: ImageboardArchiveSearchQueryFields.startDate,
+    4: ImageboardArchiveSearchQueryFields.endDate,
+    5: ImageboardArchiveSearchQueryFields.boards,
+    6: ImageboardArchiveSearchQueryFields.md5,
+    7: ImageboardArchiveSearchQueryFields.deletionStatusFilter,
+    8: ImageboardArchiveSearchQueryFields.imageboardKey,
+    9: ImageboardArchiveSearchQueryFields.name,
+    10: ImageboardArchiveSearchQueryFields.trip,
+    11: ImageboardArchiveSearchQueryFields.subject
+  };
 
   @override
   ImageboardArchiveSearchQuery read(BinaryReader reader) {
@@ -77,8 +233,16 @@ class ImageboardArchiveSearchQueryAdapter
 }
 
 class PostTypeFilterAdapter extends TypeAdapter<PostTypeFilter> {
+  const PostTypeFilterAdapter();
+
+  static const int kTypeId = 6;
+
   @override
-  final int typeId = 6;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<PostTypeFilter, dynamic>> fields =
+      const {};
 
   @override
   PostTypeFilter read(BinaryReader reader) {
@@ -126,8 +290,16 @@ class PostTypeFilterAdapter extends TypeAdapter<PostTypeFilter> {
 }
 
 class MediaFilterAdapter extends TypeAdapter<MediaFilter> {
+  const MediaFilterAdapter();
+
+  static const int kTypeId = 7;
+
   @override
-  final int typeId = 7;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<MediaFilter, dynamic>> fields =
+      const {};
 
   @override
   MediaFilter read(BinaryReader reader) {
@@ -171,8 +343,16 @@ class MediaFilterAdapter extends TypeAdapter<MediaFilter> {
 
 class PostDeletionStatusFilterAdapter
     extends TypeAdapter<PostDeletionStatusFilter> {
+  const PostDeletionStatusFilterAdapter();
+
+  static const int kTypeId = 26;
+
   @override
-  final int typeId = 26;
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<PostDeletionStatusFilter, dynamic>>
+      fields = const {};
 
   @override
   PostDeletionStatusFilter read(BinaryReader reader) {

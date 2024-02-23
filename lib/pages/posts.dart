@@ -122,7 +122,7 @@ class _PostsPageState extends State<PostsPage> {
 		final attachments = replies.expand<Attachment>((a) => a.post?.attachments ?? []).toList();
 		final subzone = widget.zone.hoistFakeRootZoneFor(0, style: PostSpanZoneStyle.linear, clearStack: widget.clearStack); // To avoid conflict with same semanticIds in tree
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.findPost(widget.postIdForBackground!);
-		final doubleTapScrollToReplies = context.select<EffectiveSettings, bool>((s) => s.doubleTapScrollToReplies);
+		final doubleTapScrollToReplies = Settings.doubleTapScrollToRepliesSetting.watch(context);
 		final isRepliesForPostId = widget.isRepliesForPostId;
 		bool reverse = false;
 		PersistentThreadState? isRepliesForPostThreadState;
@@ -225,7 +225,7 @@ class _PostsPageState extends State<PostsPage> {
 												onChange: (attachment) {
 													Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
 												},
-												heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+												heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 											);
 										}
 									)

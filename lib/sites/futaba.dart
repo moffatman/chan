@@ -76,7 +76,7 @@ class SiteFutaba extends ImageboardSite {
 		super.archives
 	});
 
-	String boardDomain(String board) => persistence.maybeGetBoard(board)?.subdomain ?? baseUrl;
+	String boardDomain(String board) => persistence?.maybeGetBoard(board)?.subdomain ?? baseUrl;
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parser.parseFragment(data);

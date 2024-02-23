@@ -427,7 +427,7 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _cacheAttachments({required bool automatic}) async {
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		await _updateCached(onscreenOnly: false);
 		if (!mounted) {
 			return;
@@ -582,7 +582,7 @@ class ThreadPageState extends State<ThreadPage> {
 			_scrollIfWarranted();
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
-		if (context.read<EffectiveSettings>().autoCacheAttachments) {
+		if (Settings.instance.autoCacheAttachments) {
 			_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 		}
 		else {
@@ -634,7 +634,7 @@ class ThreadPageState extends State<ThreadPage> {
 			_maybeUpdateWatch();
 			persistentState.save();
 			_scrollIfWarranted();
-			if (context.read<EffectiveSettings>().autoCacheAttachments) {
+			if (Settings.instance.autoCacheAttachments) {
 				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 			}
 			newPostIds.clear();
@@ -734,14 +734,14 @@ class ThreadPageState extends State<ThreadPage> {
 					return a.id == attachment.attachment.id;
 				}));
 			},
-			heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+			heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 		);
 	}
 
 	void _showGalleryFromNextImage({
 		bool initiallyShowGrid = false
 	}) {
-		if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
+		if (Settings.instance.showImages(context, widget.thread.board)) {
 			RefreshableListItem<Post>? nextPostWithImage = _listController.items.skip(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
 			nextPostWithImage ??= _listController.items.take(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
 			if (nextPostWithImage != null) {
@@ -800,7 +800,7 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		final notifications = context.read<Notifications>();
 		final watch = persistentState.threadWatch;
-		final defaultThreadWatch = context.read<EffectiveSettings>().defaultThreadWatch;
+		final defaultThreadWatch = Settings.instance.defaultThreadWatch;
 		if (defaultThreadWatch == null || long || !(watch?.settingsEquals(defaultThreadWatch) ?? true)) {
 			_showingWatchMenu = true;
 			await _weakNavigatorKey.currentState?.push(ThreadWatchControlsPage(
@@ -924,7 +924,7 @@ class ThreadPageState extends State<ThreadPage> {
 	Future<Thread> _getUpdatedThread() async {
 		final tmpPersistentState = persistentState;
 		final site = context.read<ImageboardSite>();
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		final notifications = context.read<Notifications>();
 		final bool firstLoad = tmpPersistentState.thread == null;
 		// The thread might switch in this interval
@@ -1050,7 +1050,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _popOutReplyBox(ValueChanged<ReplyBoxState>? onInitState) async {
 		final imageboard = context.read<Imageboard>();
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		final theme = context.read<SavedTheme>();
 		await showAdaptiveModalPopup(
 			context: context,
@@ -1123,7 +1123,7 @@ class ThreadPageState extends State<ThreadPage> {
 		String title = site.formatBoardName(widget.thread.board);
 		final threadTitle = persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title;
 		if (threadTitle != null) {
-			title += ' - ${context.read<EffectiveSettings>().filterProfanity(threadTitle)}';
+			title += ' - ${Settings.instance.filterProfanity(threadTitle)}';
 		}
 		else {
 			final threadText = (persistentState.thread ?? site.getThreadFromCatalogCache(widget.thread))?.posts_.first.span.buildText();
@@ -1143,7 +1143,7 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		if (!site.supportsMultipleBoards) {
 			if (threadTitle != null) {
-				title = context.read<EffectiveSettings>().filterProfanity(threadTitle);
+				title = Settings.instance.filterProfanity(threadTitle);
 			}
 			else {
 				title = widget.thread.id.toString();
@@ -1151,7 +1151,7 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		final notifications = context.watch<Notifications>();
 		final watch = context.select<Persistence, ThreadWatch?>((_) => persistentState.threadWatch);
-		final reverseIndicatorPosition = context.select<EffectiveSettings, bool>((s) => s.showListPositionIndicatorsOnLeft);
+		final reverseIndicatorPosition = Settings.showListPositionIndicatorsOnLeftSetting.watch(context);
 		zone.postSortingMethods = [
 			if (persistentState.postSortingMethod == PostSortingMethod.replyCount) (a, b) => b.replyCount.compareTo(a.replyCount)
 			else if ((site.isReddit || site.isHackerNews) && !useTree) (a, b) => a.id.compareTo(b.id)
@@ -1161,7 +1161,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final treeModeCollapsedPostsShowBody = context.select<Persistence, bool>((s) => s.browserState.treeModeCollapsedPostsShowBody);
 		final treeModeRepliesToOPAreTopLevel = context.select<Persistence, bool>((s) => s.browserState.treeModeRepliesToOPAreTopLevel);
 		final treeModeNewRepliesAreLinear = context.select<Persistence, bool>((s) => s.browserState.treeModeNewRepliesAreLinear);
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		Duration? autoUpdateDuration = Duration(seconds: _foreground ? settings.currentThreadAutoUpdatePeriodSeconds : settings.backgroundThreadAutoUpdatePeriodSeconds);
 		if (autoUpdateDuration.inDays > 1) {
 			autoUpdateDuration = null;
@@ -2233,7 +2233,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		await Future.delayed(const Duration(milliseconds: 100));
 		final scrollableHeight = _menuScrollController.tryPosition?.viewportDimension;
 		if (scrollableHeight != null) {
-			setAdditionalSafeAreaInsets('menu${widget.boardSemanticId}', EdgeInsets.only(bottom: scrollableHeight * EffectiveSettings.instance.interfaceScale));
+			setAdditionalSafeAreaInsets('menu${widget.boardSemanticId}', EdgeInsets.only(bottom: scrollableHeight * Settings.instance.interfaceScale));
 		}
 	}
 
@@ -2266,7 +2266,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final radiusAlone = BorderRadius.all(radius);
 		final radiusStart = widget.reversed ? BorderRadius.only(topRight: radius, bottomRight: radius) : BorderRadius.only(topLeft: radius, bottomLeft: radius);
 		final radiusEnd = widget.reversed ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : BorderRadius.only(topRight: radius, bottomRight: radius);
-		final scrollAnimationDuration = context.select<EffectiveSettings, bool>((s) => s.showAnimations) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
+		final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
 		scrollToTop() => widget.listController.scrollController?.animateTo(0, duration: scrollAnimationDuration, curve: Curves.ease);
 		scrollToBottom() => widget.listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration);
 		final youIds = widget.persistentState.youIds;
@@ -2274,7 +2274,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final uncachedMB = (widget.cachedAttachments.entries.map((e) => e.value.isCached ? 0 : e.key.sizeInBytes ?? 0).fold(0, (a, b) => a + b) / (1024*1024));
 		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value.isCached && e.key.sizeInBytes == null);
 		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
-		final showGalleryGridButton = context.select<EffectiveSettings, bool>((s) => s.showGalleryGridButton);
+		final showGalleryGridButton = Settings.showGalleryGridButtonSetting.watch(context);
 		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,

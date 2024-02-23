@@ -149,17 +149,17 @@ class CloudflareInterceptor extends Interceptor {
 			await controller.evaluateJavascript(source: '''
 				var style = document.createElement('style');
 				style.innerHTML = "* {\\
-					color: ${EffectiveSettings.instance.theme.primaryColor.toCssHex()} !important;\\
+					color: ${Settings.instance.theme.primaryColor.toCssHex()} !important;\\
 				}\\
 				div {\\
-					background: ${EffectiveSettings.instance.theme.backgroundColor.toCssHex()};\\
+					background: ${Settings.instance.theme.backgroundColor.toCssHex()};\\
 				}\\
 				html, p, h1, h2, h3, h4, h5 {\\
-					background: ${EffectiveSettings.instance.theme.backgroundColor.toCssHex()} !important;\\
+					background: ${Settings.instance.theme.backgroundColor.toCssHex()} !important;\\
 				}";
 				document.head.appendChild(style);
-				document.body.bgColor = "${EffectiveSettings.instance.theme.backgroundColor.toCssHex()}";
-				document.body.style.background = "${EffectiveSettings.instance.theme.backgroundColor.toCssHex()}";
+				document.body.bgColor = "${Settings.instance.theme.backgroundColor.toCssHex()}";
+				document.body.style.background = "${Settings.instance.theme.backgroundColor.toCssHex()}";
 			''');
 			if ((uri?.host.isEmpty ?? false) && uri?.scheme != 'data') {
 				final correctedUri = uri!.replace(

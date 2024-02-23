@@ -110,7 +110,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		currentImageboard.refreshBoards();
 		_fetchBoards();
 		scrollController.addListener(_onScroll);
-		if (context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus) {
+		if (Settings.instance.boardSwitcherHasKeyboardFocus) {
 			Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
 		}
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
@@ -163,7 +163,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	List<ImageboardScoped<ImageboardBoard>> getFilteredBoards() {
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		final normalized = searchString.toLowerCase();
 		List<ImageboardScoped<ImageboardBoard>> filteredBoards = boards.where((board) {
 			return
@@ -251,7 +251,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		_backgroundColor.value ??= ChanceTheme.backgroundColorOf(context);
 		final List<ImageboardScoped<ImageboardBoard?>> filteredBoards = getFilteredBoards().map((x) => x.nullify).toList();
 		filteredBoards.addAll(allImageboards.where((i) {
@@ -475,7 +475,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													},
 													groupValue: settings.onlyShowFavouriteBoardsInSwitcher,
 													onValueChanged: (setting) {
-														settings.onlyShowFavouriteBoardsInSwitcher = setting;
+														Settings.onlyShowFavouriteBoardsInSwitcherSetting.value = setting;
 														setDialogState(() {});
 													}
 												),
@@ -487,7 +487,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													},
 													groupValue: settings.useBoardSwitcherList,
 													onValueChanged: (setting) {
-														settings.useBoardSwitcherList = setting;
+														Settings.useBoardSwitcherListSetting.value = setting;
 														setDialogState(() {});
 													}
 												),
@@ -903,7 +903,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										builder: (context) => Container(
 											margin: MediaQuery.paddingOf(context),
 											padding: const EdgeInsets.all(16),
-											width: 300 * context.select<EffectiveSettings, double>((s) => s.textScale),
+											width: 300 * Settings.textScaleSetting.watch(context),
 											child: Container(
 												decoration: BoxDecoration(
 													borderRadius: BorderRadius.circular(16),

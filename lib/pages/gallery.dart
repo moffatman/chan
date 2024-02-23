@@ -174,7 +174,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		super.initState();
 		if (widget.initiallyShowGrid) {
 			// Hard to mute if loud when grid is covering
-			EffectiveSettings.instance.setMuteAudio(true);
+			Settings.instance.setMuteAudio(true);
 		}
 		_scrollCoalescer = BehaviorSubject();
 		_slideListenable = EasyListenable();
@@ -187,7 +187,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		pageController.addListener(_onPageControllerUpdate);
 		__onPageControllerUpdateSubscription = _scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		final attachment = widget.attachments[currentIndex];
-		if (context.read<EffectiveSettings>().autoloadAttachments || context.read<EffectiveSettings>().alwaysAutoloadTappedAttachment) {
+		if (Settings.instance.autoloadAttachments || Settings.instance.alwaysAutoloadTappedAttachment) {
 			_getController(attachment).loadFullAttachment().then((x) {
 				if (!mounted) return;
 				_currentAttachmentChanged.didUpdate();
@@ -213,8 +213,8 @@ class _GalleryPageState extends State<GalleryPage> {
 			final screenHeight = mediaQueryData.size.height;
 			final screenTopViewPadding = mediaQueryData.viewPadding.top;
 			final screenBottomViewPadding = mediaQueryData.viewPadding.bottom;
-			final gridViewHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((EffectiveSettings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding) + screenBottomViewPadding);
-			final gridViewRowCount = (gridViewHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
+			final gridViewHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Settings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding) + screenBottomViewPadding);
+			final gridViewRowCount = (gridViewHeight / (Settings.instance.thumbnailSize * 1.5)).ceil();
 			final gridViewSquareSize = gridViewHeight / gridViewRowCount;
 			final gridViewWidthEstimate = ((widget.attachments.length + 1) / gridViewRowCount).ceil() * gridViewSquareSize;
 			final gridviewMaxOffset = gridViewWidthEstimate - screenWidth;
@@ -249,7 +249,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			}
 			currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
 			pageController.jumpToPage(currentIndex);
-			if (context.read<EffectiveSettings>().autoloadAttachments) {
+			if (Settings.instance.autoloadAttachments) {
 				final attachment = widget.attachments[currentIndex];
 				_getController(attachment).loadFullAttachment().then((x) {
 					if (!mounted) return;
@@ -347,7 +347,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (context.read<EffectiveSettings>().autoloadAttachments && !attachment.attachment.isRateLimited) {
+		if (Settings.instance.autoloadAttachments && !attachment.attachment.isRateLimited) {
 			_getController(attachment).loadFullAttachment().then((x) {
 				if (mounted) {
 					_currentAttachmentChanged.didUpdate();
@@ -389,7 +389,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		widget.onChange?.call(attachment);
 		currentIndex = index;
 		if (!_animatingNow) {
-			final settings = context.read<EffectiveSettings>();
+			final settings = Settings.instance;
 			if (settings.autoloadAttachments && !attachment.attachment.isRateLimited) {
 				_getController(attachment).loadFullAttachment().then((x) {
 					if (!mounted) return;
@@ -501,7 +501,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	double get _maxScrollSheetSize => (_thumbnailSize + 8 + _gridViewHeight + kMinInteractiveDimensionCupertino + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height;
 
 	double get _minScrollSheetSize {
-		if (context.read<EffectiveSettings>().showThumbnailsInGallery) {
+		if (Settings.instance.showThumbnailsInGallery) {
 			return max(0.2, (kMinInteractiveDimensionCupertino + _thumbnailSize + 8 + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height);
 		}
 		if (currentController.videoPlayerController != null) {
@@ -516,8 +516,8 @@ class _GalleryPageState extends State<GalleryPage> {
 		final screenWidth = mediaQueryData.size.width;
 		final screenTopViewPadding = mediaQueryData.viewPadding.top;
 		final screenBottomViewPadding = mediaQueryData.viewPadding.bottom;
-		final maxHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((EffectiveSettings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding) + screenBottomViewPadding);
-		final maxRowCount = (maxHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
+		final maxHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Settings.featureStatusBarWorkaround && (Persistence.settings.useStatusBarWorkaround ?? false)) ? 0 : screenTopViewPadding) + screenBottomViewPadding);
+		final maxRowCount = (maxHeight / (Settings.instance.thumbnailSize * 1.5)).ceil();
 		final squareSize = maxHeight / maxRowCount;
 		final visibleSquaresPerRow = (screenWidth / squareSize).floor();
 		if ((widget.attachments.length + 1) > (maxRowCount * visibleSquaresPerRow)) {
@@ -527,7 +527,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	Widget _buildScrollSheetChild(ScrollController controller) {
-		final theme = context.read<EffectiveSettings>().darkTheme;
+		final theme = Settings.instance.darkTheme;
+		final showReplyCountsInGallery = Settings.showReplyCountsInGallerySetting.watch(context);
 		return AnimatedBuilder(
 			animation: _currentAttachmentChanged,
 			builder: (context, child) {
@@ -599,7 +600,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																			child: Icon(icon, size: 15),
 																		)
 																	),
-																	if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Container(
+																	if (showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Container(
 																		decoration: BoxDecoration(
 																			borderRadius: BorderRadius.circular(4),
 																			color: Colors.black54
@@ -630,7 +631,7 @@ class _GalleryPageState extends State<GalleryPage> {
 									scrollDirection: Axis.horizontal,
 									controller: _gridViewScrollController,
 									gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-										maxCrossAxisExtent: context.select<EffectiveSettings, double>((s) => s.thumbnailSize) * 1.5
+										maxCrossAxisExtent: Settings.thumbnailSizeSetting.watch(context) * 1.5
 									),
 									itemBuilder: (context, index) {
 										if (index == widget.attachments.length) {
@@ -698,7 +699,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																child: Icon(icon, size: 19),
 															)
 														),
-														if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Center(
+														if (showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Center(
 															child: Container(
 																decoration: BoxDecoration(
 																	borderRadius: BorderRadius.circular(8),
@@ -791,7 +792,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
 		final layoutInsets = MediaQuery.paddingOf(context);
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
@@ -1204,18 +1205,18 @@ Future<void> handleMutingBeforeShowingGallery() async {
 		Persistence.settings.deprecatedAlwaysStartVideosMuted = false;
 		Persistence.settings.save();
 	}
-	if (EffectiveSettings.instance.muteAudio.value) {
+	if (Settings.instance.muteAudio.value) {
 		// Already muted
 		return;
 	}
-	final shouldMute = EffectiveSettings.instance.muteAudioWhenOpeningGallery;
+	final shouldMute = Settings.instance.muteAudioWhenOpeningGallery;
 	if (shouldMute == TristateSystemSetting.a) {
 		// Don't auto-mute
 		return;
 	}
 	if (shouldMute == TristateSystemSetting.b) {
 		// Always auto-mte
-		EffectiveSettings.instance.setMuteAudio(true);
+		Settings.instance.setMuteAudio(true);
 		return;
 	}
 	// TristateSystemSetting.system
@@ -1223,7 +1224,7 @@ Future<void> handleMutingBeforeShowingGallery() async {
 	if (await areHeadphonesPluggedIn()) {
 		return;
 	}
-	EffectiveSettings.instance.setMuteAudio(true);
+	Settings.instance.setMuteAudio(true);
 }
 
 Future<Attachment?> showGalleryPretagged({

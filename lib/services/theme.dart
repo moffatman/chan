@@ -35,7 +35,7 @@ class ChanceTheme extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final theme = context.select<EffectiveSettings, SavedTheme>((s) => s.themes[themeKey] ?? s.theme);
+		final theme = context.select<Settings, SavedTheme>((s) => s.themes[themeKey] ?? s.theme);
 		final child1 = Provider.value(
 			value: theme,
 			child: Provider.value(
@@ -64,12 +64,9 @@ class ChanceTheme extends StatelessWidget {
 		);
 	}
 
-	static Color _selectBackgroundColor(SavedTheme theme) => theme.backgroundColor;
-	static Color backgroundColorOf(BuildContext context) => context.select<SavedTheme, Color>(_selectBackgroundColor);
-	static Color _selectBarColor(SavedTheme theme) => theme.barColor;
-	static Color barColorOf(BuildContext context) => context.select<SavedTheme, Color>(_selectBarColor);
-	static Color _selectPrimaryColor(SavedTheme theme) => theme.primaryColor;
-	static Color primaryColorOf(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColor);
+	static Color backgroundColorOf(BuildContext context) => context.select<SavedTheme, Color>(SavedThemeFields.backgroundColor.getter);
+	static Color barColorOf(BuildContext context) => context.select<SavedTheme, Color>(SavedThemeFields.barColor.getter);
+	static Color primaryColorOf(BuildContext context) => context.select<SavedTheme, Color>(SavedThemeFields.primaryColor.getter);
 	static Color _selectPrimaryColorWithBrightness10(SavedTheme theme) => theme.primaryColorWithBrightness(0.1);
 	static Color _selectPrimaryColorWithBrightness20(SavedTheme theme) => theme.primaryColorWithBrightness(0.2);
 	static Color _selectPrimaryColorWithBrightness30(SavedTheme theme) => theme.primaryColorWithBrightness(0.3);
@@ -84,17 +81,14 @@ class ChanceTheme extends StatelessWidget {
 	static Color primaryColorWithBrightness60Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness60);
 	static Color primaryColorWithBrightness70Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness70);
 	static Color primaryColorWithBrightness80Of(BuildContext context) => context.select<SavedTheme, Color>(_selectPrimaryColorWithBrightness80);
-	static Color _selectSecondaryColor(SavedTheme theme) => theme.secondaryColor;
-	static Color secondaryColorOf(BuildContext context) => context.select<SavedTheme, Color>(_selectSecondaryColor);
-	static Color _selectTextFieldColor(SavedTheme theme) => theme.textFieldColor;
-	static Color textFieldColorOf(BuildContext context) => context.select<SavedTheme, Color>(_selectTextFieldColor);
+	static Color secondaryColorOf(BuildContext context) => context.select<SavedTheme, Color>(SavedThemeFields.secondaryColor.getter);
+	static Color textFieldColorOf(BuildContext context) => context.select<SavedTheme, Color>(SavedThemeFields.textFieldColor.getter);
 	static Color _selectSearchTextFieldColor(SavedTheme theme) => theme.searchTextFieldColor;
 	static Color searchTextFieldColorOf(BuildContext context) => context.select<SavedTheme, Color>(_selectSearchTextFieldColor);
 	static Brightness _selectBrightness(SavedTheme theme) => theme.brightness;
 	static Brightness brightnessOf(BuildContext context) => context.select<SavedTheme, Brightness>(_selectBrightness);
-	static bool _selectMaterial(EffectiveSettings settings) => settings.materialStyle;
-	static bool materialOf(BuildContext context) => context.select<EffectiveSettings, bool>(_selectMaterial);
-	static bool materialOf_(BuildContext context) => context.read<EffectiveSettings>().materialStyle;
+	static bool materialOf(BuildContext context) => Settings.materialStyleSetting.watch(context);
+	static bool materialOf_(BuildContext context) => Settings.instance.materialStyle;
 
 	static String keyOf(BuildContext context, {bool listen = true}) => Provider.of<ChanceThemeKey>(context, listen: listen).key;
 }
@@ -105,7 +99,7 @@ Future<String?> selectThemeKey({
 	required String currentKey,
 	required bool allowEditing
 }) {
-	final settings = context.read<EffectiveSettings>();
+	final settings = Settings.instance;
 	return showAdaptiveDialog<String>(
 		barrierDismissible: true,
 		context: context,
@@ -224,10 +218,10 @@ Future<String?> selectThemeKey({
 																		final effectiveName = settings.addTheme(newName, themes[i].value);
 																		settings.themes.remove(themes[i].key);
 																		if (settings.lightThemeKey == themes[i].key) {
-																			settings.lightThemeKey = effectiveName;
+																			Settings.lightThemeKeySetting.value = effectiveName;
 																		}
 																		if (settings.darkThemeKey == themes[i].key) {
-																			settings.darkThemeKey = effectiveName;
+																			Settings.darkThemeKeySetting.value = effectiveName;
 																		}
 																		settings.handleThemesAltered();
 																		setDialogState(() {});

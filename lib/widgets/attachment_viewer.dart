@@ -458,7 +458,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (attachment.type.isVideo && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
 			return;
 		}
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		_errorMessage = null;
 		_goodImageSource = null;
 		_videoPlayerController?.player.dispose();
@@ -544,7 +544,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				final url = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive);
 				bool transcode = false;
 				if (attachment.type == AttachmentType.webm && url.path.endsWith('.webm')) {
-					transcode |= settings.webmTranscoding == WebmTranscodingSetting.always;
+					transcode |= Settings.featureWebmTranscodingForPlayback && settings.webmTranscoding == WebmTranscodingSetting.always;
 				}
 				transcode |= url.path.endsWith('.m3u8');
 				transcode |= soundSource != null;
@@ -554,7 +554,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						return;
 					}
 					_hasAudio = scan.hasAudio;
-					if (scan.codec == 'vp9' && settings.webmTranscoding == WebmTranscodingSetting.vp9) {
+					if (scan.codec == 'vp9' && Settings.featureWebmTranscodingForPlayback && settings.webmTranscoding == WebmTranscodingSetting.vp9) {
 						transcode = true;
 					}
 				}
@@ -839,8 +839,6 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	Future<File> _moveToShareCache({required bool convertForCompatibility}) async {
-		final systemTempDirectory = Persistence.temporaryDirectory;
-		final shareDirectory = Directory('${systemTempDirectory.path}/sharecache')..createSync(recursive: true);
 		final newFilename = '${Uri.encodeComponent(attachment.id)}${_downloadExt(convertForCompatibility)}';
 		File file = getFile();
 		if (convertForCompatibility && cacheExt == '.webm') {
@@ -850,7 +848,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				return (await conversion.start()).file;
 			}, cancellable: true);
 		}
-		return await file.copy('${shareDirectory.path}/$newFilename');
+		return await file.copy('${Persistence.shareCacheDirectory.path}/$newFilename');
 	}
 
 	Future<void> share(Rect? sharePosition) async {
@@ -900,7 +898,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> translate() async {
 		final rawBlocks = await recognizeText(_cachedFile!);
-		final translated = await batchTranslate(rawBlocks.map((r) => r.text).toList(), toLanguage: EffectiveSettings.instance.translationTargetLanguage);
+		final translated = await batchTranslate(rawBlocks.map((r) => r.text).toList(), toLanguage: Settings.instance.translationTargetLanguage);
 		_textBlocks = rawBlocks.asMap().entries.map((e) => (
 			text: e.key >= translated.length ? 'Nothing for ${e.key} (${translated.length}' : translated[e.key],
 			rect: e.value.rect
@@ -910,7 +908,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<String?> download({bool force = false, bool saveAs = false}) async {
 		if (_isDownloaded && !force) return null;
-		final settings = context.read<EffectiveSettings>();
+		final settings = Settings.instance;
 		String filename;
 		bool successful = false;
 		try {
@@ -947,7 +945,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					successful = path != null;
 				}
 				else {
-					settings.androidGallerySavePath ??= await pickDirectory();
+					Settings.androidGallerySavePathSetting.value ??= await pickDirectory();
 					if (settings.androidGallerySavePath != null) {
 						File source = getFile();
 						try {
@@ -962,11 +960,11 @@ class AttachmentViewerController extends ChangeNotifier {
 							successful = true;
 						}
 						on DirectoryNotFoundException {
-							settings.androidGallerySavePath = null;
+							Settings.androidGallerySavePathSetting.value = null;
 							rethrow;
 						}
 						on InsufficientPermissionException {
-							settings.androidGallerySavePath = null;
+							Settings.androidGallerySavePathSetting.value = null;
 							rethrow;
 						}
 					}
@@ -1418,19 +1416,19 @@ class AttachmentViewer extends StatelessWidget {
 						trailingIcon: a.trailingIcon,
 						child: a.child,
 					)),
-					if (context.select<EffectiveSettings, bool>((p) => p.isMD5Hidden(attachment.md5))) ContextMenuAction(
+					if (context.select<Settings, bool>((p) => p.isMD5Hidden(attachment.md5))) ContextMenuAction(
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							context.read<EffectiveSettings>().unHideByMD5s([attachment.md5]);
-							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
+							Settings.instance.unHideByMD5s([attachment.md5]);
+							Settings.instance.didEdit();
 						},
 						child: const Text('Unhide by image')
 					)
 					else ContextMenuAction(
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () async {
-							context.read<EffectiveSettings>().hideByMD5(attachment.md5);
-							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
+							Settings.instance.hideByMD5(attachment.md5);
+							Settings.instance.didEdit();
 						},
 						child: const Text('Hide by image')
 					),

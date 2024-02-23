@@ -3,15 +3,17 @@ import 'package:flutter/cupertino.dart';
 
 class CupertinoThinButton extends StatefulWidget {
 	final Widget child;
-	final VoidCallback onPressed;
+	final VoidCallback? onPressed;
 	final EdgeInsets padding;
 	final bool filled;
+	final Color? color;
 
 	const CupertinoThinButton({
 		required this.child,
 		required this.onPressed,
 		this.padding = const EdgeInsets.all(16),
 		this.filled = false,
+		this.color,
 		Key? key
 	}) : super(key: key);
 
@@ -24,15 +26,20 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 
 	@override
 	Widget build(BuildContext context) {
+		final baseOpacity = widget.onPressed == null ? 0.5 : 1.0;
+		final baseColor = (widget.color ?? ChanceTheme.primaryColorOf(context)).withOpacity(baseOpacity);
 		Color? color;
 		if (_pressed) {
-			color = ChanceTheme.primaryColorOf(context).withOpacity(widget.filled ? 0.8 : 0.2);
+			color = baseColor.withOpacity((widget.filled ? 0.8 : 0.2) * baseColor.opacity);
 		}
 		else if (widget.filled) {
-			color = ChanceTheme.primaryColorOf(context);
+			color = baseColor;
 		}
 		return GestureDetector(
 			onTapDown: (_) {
+				if (widget.onPressed == null) {
+					return;
+				}
 				setState(() {
 					_pressed = true;
 				});
@@ -46,18 +53,18 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 				setState(() {
 					_pressed = false;
 				});
-				widget.onPressed();
+				widget.onPressed?.call();
 			},
 			child: Container(
 				decoration: BoxDecoration(
-					border: Border.all(color: ChanceTheme.primaryColorOf(context)),
+					border: Border.all(color: baseColor),
 					borderRadius: const BorderRadius.all(Radius.circular(8)),
 					color: color
 				),
 				padding: widget.padding,
 				child: DefaultTextStyle.merge(
 					style: TextStyle(
-						color: widget.filled ? ChanceTheme.backgroundColorOf(context) : ChanceTheme.primaryColorOf(context)
+						color: widget.filled ? ChanceTheme.backgroundColorOf(context) : baseColor
 					),
 					child: widget.child
 				)

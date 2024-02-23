@@ -19,7 +19,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_apns_only/flutter_apns_only.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
@@ -76,7 +75,7 @@ class _UnifiedPushNotificationsToken implements _NotificationsToken {
 const _platform = MethodChannel('com.moffatman.chan/notifications');
 
 Future<void> promptForPushNotificationsIfNeeded(BuildContext context) async {
-	final settings = context.read<EffectiveSettings>();
+	final settings = Settings.instance;
 	if (settings.usePushNotifications == null) {
 		final choice = await showAdaptiveDialog<bool>(
 			context: context,
@@ -328,7 +327,7 @@ class Notifications {
 	static Future<void> initializeStatic() async {
 		try {
 			staticError = null;
-			EffectiveSettings.instance.filterListenable.addListener(_didUpdateFilter);
+			Settings.instance.filterListenable.addListener(_didUpdateFilter);
 			if (Platform.isAndroid) {
 				await FlutterLocalNotificationsPlugin().initialize(
 					const InitializationSettings(
@@ -462,7 +461,7 @@ class Notifications {
 					'token2': (await _getToken())?.toMap(),
 					'siteType': siteType,
 					'siteData': siteData,
-					'filters': EffectiveSettings.instance.filterConfiguration
+					'filters': Settings.instance.filterConfiguration
 				}));
 				final String digest = response.data['digest'];
 				if (digest != _calculateDigest()) {

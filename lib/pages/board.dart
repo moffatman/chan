@@ -67,7 +67,6 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 	@override
 	Widget build(BuildContext context) {
 		final imageboard = context.watch<Imageboard>();
-		final settings = context.watch<EffectiveSettings>();
 		return AdaptiveAlertDialog(
 			title: const Text('Thread Hiding'),
 			content: Column(
@@ -95,7 +94,7 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 						},
 					),
 					if (widget.thread.attachments.isNotEmpty)
-						if (!settings.applyImageFilterToThreads) ...[
+						if (!Settings.applyImageFilterToThreadsSetting.watch(context)) ...[
 							const SizedBox(height: 16),
 							const Text('Hiding by image in the catalog is disabled'),
 							const SizedBox(height: 8),
@@ -103,7 +102,7 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 								padding: const EdgeInsets.all(16),
 								child: const Text('Enable'),
 								onPressed: () {
-									settings.applyImageFilterToThreads = true;
+									Settings.applyImageFilterToThreadsSetting.value = true;
 								}
 							)
 						]
@@ -121,15 +120,15 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 											height: 75,
 										),
 										Checkbox.adaptive(
-											value: context.select<EffectiveSettings, bool>((p) => p.isMD5Hidden(attachment.md5)),
+											value: context.select<Settings, bool>((p) => p.isMD5Hidden(attachment.md5)),
 											onChanged: attachment.md5.isEmpty ? null : (value) {
 												if (value!) {
-													context.read<EffectiveSettings>().hideByMD5(attachment.md5);
+													Settings.instance.hideByMD5(attachment.md5);
 												}
 												else {
-													context.read<EffectiveSettings>().unHideByMD5(attachment.md5);
+													Settings.instance.unHideByMD5(attachment.md5);
 												}
-												context.read<EffectiveSettings>().didUpdateHiddenMD5s();
+												Settings.instance.didEdit();
 												setState(() {});
 											}
 										)
@@ -192,12 +191,12 @@ class BoardPageState extends State<BoardPage> {
 	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.name];
 	CatalogVariant get _defaultGlobalVariant {
 		if (context.read<ImageboardSite?>()?.isReddit ?? false) {
-			return context.read<EffectiveSettings>().redditCatalogVariant;
+			return Settings.instance.redditCatalogVariant;
 		}
 		if (context.read<ImageboardSite?>()?.isHackerNews ?? false) {
-			return context.read<EffectiveSettings>().hackerNewsCatalogVariant;
+			return Settings.instance.hackerNewsCatalogVariant;
 		}
-		return context.read<EffectiveSettings>().catalogVariant;
+		return Settings.instance.catalogVariant;
 	}
 
 	@override
@@ -465,7 +464,7 @@ class BoardPageState extends State<BoardPage> {
 	);
 
 	void _showGalleryFromNextImage({bool initiallyShowGrid = false}) {
-		if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
+		if (board != null && Settings.instance.showImages(context, board!.name)) {
 			final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.item.attachments.isNotEmpty, orElse: () {
 				return _listController.items.firstWhere((t) => t.item.attachments.isNotEmpty);
 			});
@@ -503,7 +502,8 @@ class BoardPageState extends State<BoardPage> {
 		}
 		final imageboard = context.watch<Imageboard?>();
 		final site = context.watch<ImageboardSite?>();
-		final settings = context.watch<EffectiveSettings>();
+		final settings = context.watch<Settings>();
+		final mouseSettings = context.watch<MouseSettings>();
 		final persistence = context.watch<Persistence?>();
 		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant);
 		final openInNewTabZone = context.read<OpenInNewTabZone?>();
@@ -511,7 +511,7 @@ class BoardPageState extends State<BoardPage> {
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isThreadHidden = context.select<Persistence, bool?>((p) => p.browserState.getThreadHiding(thread.identifier));
-			final isImageHidden = context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden(thread.md5s));
+			final isImageHidden = context.select<Settings, bool>((p) => p.areMD5sHidden(thread.md5s));
 			final isSelected = widget.isThreadSelected?.call(context, thread.identifier) ?? false;
 			final listFilterReason = context.watch<RefreshableListFilterReason?>();
 			final isThreadHiddenByIdOrMD5s = isThreadHidden ?? isImageHidden;
@@ -835,13 +835,13 @@ class BoardPageState extends State<BoardPage> {
 							switch (choice.$2) {
 								case _ThreadSortingMethodScope.global:
 									if (site?.isReddit ?? false) {
-										settings.redditCatalogVariant = choice.$1!;
+										Settings.redditCatalogVariantSetting.value = choice.$1!;
 									}
 									else if (site?.isHackerNews ?? false) {
-										settings.hackerNewsCatalogVariant = choice.$1!;
+										Settings.hackerNewsCatalogVariantSetting.value = choice.$1!;
 									}
 									else {
-										settings.catalogVariant = choice.$1!;
+										Settings.catalogVariantSetting.value = choice.$1!;
 									}
 									break;
 								case _ThreadSortingMethodScope.board:
@@ -866,7 +866,7 @@ class BoardPageState extends State<BoardPage> {
 				actions: [
 					if (
 						// Is root board on desktop
-						(settings.supportMouse.value && !Navigator.of(context).canPop()) ||
+						(mouseSettings.supportMouse && !Navigator.of(context).canPop()) ||
 						// Space is generally available
 						!(context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false)
 					) AdaptiveIconButton(
@@ -1111,7 +1111,7 @@ class BoardPageState extends State<BoardPage> {
 															animation: _listController.slowScrolls,
 															builder: (context, _) {
 																_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
-																final scrollAnimationDuration = context.select<EffectiveSettings, bool>((s) => s.showAnimations) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
+																final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
 																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: scrollAnimationDuration, curve: Curves.ease);
 																final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
 																return SafeArea(
