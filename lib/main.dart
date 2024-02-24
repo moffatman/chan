@@ -923,7 +923,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	({Notifications notifications, StreamSubscription<PostIdentifier> subscription})? _devNotificationsSubscription;
 	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
 	final devTab = PersistentBrowserTab();
-	final _tabletWillPopZones = <int, WillPopZone>{};
+	final _willPopZones = <int, WillPopZone>{};
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
 	final Map<String, ({Notifications notifications, StreamSubscription<PostIdentifier> subscription})> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
@@ -934,6 +934,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	({DateTime time, String link})? _lastLink;
 	bool _hideTabPopupAutomatically = false;
 	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
+	final _drawerScaffoldKey = GlobalKey<AdaptiveScaffoldState>(debugLabel: '_ChanHomePageState._drawerScaffoldKey');
 
 	bool get showTabPopup => _showTabPopup;
 	set showTabPopup(bool setting) {
@@ -1383,9 +1384,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								);
 								return MultiProvider(
 									providers: [
-										Provider.value(
-											value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone())
-										),
 										ChangeNotifierProvider.value(value: tabObject),
 										Provider.value(
 											value: OpenInNewTabZone(
@@ -1500,33 +1498,28 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							}
 						)
 					},
-					child: WillPopScope(
-						onWillPop: () async {
-							return !(await _tabs._settingsNavigatorKey.currentState?.maybePop() ?? false);
-						},
-						child: Provider.value(
-							value: OpenInNewTabZone(
-								onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
-									withImageboardKey: imageboardKey,
-									withBoard: thread.board,
-									withThreadId: thread.id,
-									activate: activate,
-									incognito: incognito
-								)
-							),
-							child: ImageboardScope(
-								imageboardKey: devImageboard?.key,
-								child: ChangeNotifierProvider.value(
-									value: devTab,
-									child: ClipRect(
-										child: PrimaryScrollControllerInjectingNavigator(
-											navigatorKey: _tabs._settingsNavigatorKey,
-											observers: [
-												HeroController(),
-												ScrollTrackerNavigatorObserver()
-											],
-											buildRoot: (context) => const SettingsPage()
-										)
+					child: Provider.value(
+						value: OpenInNewTabZone(
+							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
+								withImageboardKey: imageboardKey,
+								withBoard: thread.board,
+								withThreadId: thread.id,
+								activate: activate,
+								incognito: incognito
+							)
+						),
+						child: ImageboardScope(
+							imageboardKey: devImageboard?.key,
+							child: ChangeNotifierProvider.value(
+								value: devTab,
+								child: ClipRect(
+									child: PrimaryScrollControllerInjectingNavigator(
+										navigatorKey: _tabs._settingsNavigatorKey,
+										observers: [
+											HeroController(),
+											ScrollTrackerNavigatorObserver()
+										],
+										buildRoot: (context) => const SettingsPage()
 									)
 								)
 							)
@@ -1535,16 +1528,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 			}
 		}
-		child = KeyedSubtree(
-			key: _keys.putIfAbsent(index, () => GlobalKey(debugLabel: '_keys[$index]')),
-			child: child
-		);
-		if (index > 0) {
-			child = Provider.value(
-				value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
+		child = Provider.value(
+			value: _willPopZones.putIfAbsent(index, () => WillPopZone()),
+			child: KeyedSubtree(
+				key: _keys.putIfAbsent(index, () => GlobalKey(debugLabel: '_keys[$index]')),
 				child: child
-			);
-		}
+			)
+		);
 		return active ? child : PrimaryScrollController.none(child: child);
 	}
 
@@ -1669,7 +1659,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									_tabs._settingsNavigatorKey.currentState?.maybePop();
 								}
 								else {
-									_tabletWillPopZones[index]?.callback?.call();
+									_willPopZones[index]?.maybePop?.call();
 								}
 							} else if (index == 2) {
 								await _tabs._historyPageKey.currentState?.updateList();
@@ -1878,28 +1868,40 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								// Likely a text field is focused
 								return;
 							}
-							_tabletWillPopZones[_tabs.mainTabIndex]?.callback?.call();
+							_willPopZones[_tabs.mainTabIndex]?.maybePop?.call();
 							return null;
 						}
 					)
 				},
-				child: WillPopScope(
-					onWillPop: () async {
+				child: DescendantNavigatorPopScope(
+					canPop: () => false, // confirmExit always blocks
+					onPopInvoked: (didPop) async {
+						if (didPop) {
+							return;
+						}
+						if (_drawerScaffoldKey.currentState?.isDrawerOpen ?? false) {
+							_drawerScaffoldKey.currentState?.closeDrawer();
+							return;
+						}
+						final navigator = Navigator.of(context);
 						if (_tabs.mainTabIndex == 4) {
 							if ((await _tabs._settingsNavigatorKey.currentState?.maybePop()) ?? false) {
-								return false;
+								return;
 							}
 						}
-						else if (!((await _tabletWillPopZones[_tabs.mainTabIndex]?.callback?.call()) ?? true)) {
-							return false;
+						else if ((await _willPopZones[_tabs.mainTabIndex]?.maybePop?.call()) ?? false) {
+							return;
 						}
 						if (_tabs.mainTabIndex != 0) {
 							_tabs.mainTabIndex = 0;
-							return false;
+							return;
 						}
-						return await confirmExit();
+						if (await confirmExit()) {
+							navigator.pop();
+						}
 					},
 					child: AdaptiveScaffold(
+						key: _drawerScaffoldKey,
 						drawer: (androidDrawer && !persistentDrawer) ? const ChanceDrawer(persistent: false) : null,
 						body: SafeArea(
 							top: false,
@@ -1990,16 +1992,27 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						}
 					)
 				},
-				child: WillPopScope(
-					onWillPop: () async {
+				child: DescendantNavigatorPopScope(
+					canPop: () => false, // confirmExit always blocks
+					onPopInvoked: (didPop) async {
+						if (didPop) {
+							return;
+						}
+						if (_drawerScaffoldKey.currentState?.isDrawerOpen ?? false) {
+							_drawerScaffoldKey.currentState?.closeDrawer();
+							return;
+						}
+						final navigator = Navigator.of(context);
 						if (await _tabs._tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop() ?? false) {
-							return false;
+							return;
 						}
 						if (_tabs.mainTabIndex != 0) {
 							_tabs.mainTabIndex = 0;
-							return false;
+							return;
 						}
-						return await confirmExit();
+						if (await confirmExit()) {
+							navigator.pop();
+						}
 					},
 					child: CupertinoTabScaffold(
 						controller: _tabs._tabController,
@@ -2119,7 +2132,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										_tabs._settingsNavigatorKey.currentState?.maybePop();
 									}
 									else {
-										_tabletWillPopZones[index]?.callback?.call();
+										_willPopZones[index]?.maybePop?.call();
 									}
 								}
 								else if (showTabPopup) {

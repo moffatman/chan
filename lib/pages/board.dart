@@ -970,14 +970,13 @@ class BoardPageState extends State<BoardPage> {
 					position: PullTabPosition.left,
 					child: FilterZone(
 						filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.name)),
-						child: WillPopScope(
-							onWillPop: () async {
-								if (_replyBoxKey.currentState?.show ?? false) {
+						child: PopScope(
+							canPop: !(_replyBoxKey.currentState?.show ?? false),
+							onPopInvoked: (didPop) {
+								if (!didPop) {
 									_replyBoxKey.currentState?.hideReplyBox();
 									setState(() {});
-									return false;
 								}
-								return true;
 							},
 							child: Column(
 								children: [

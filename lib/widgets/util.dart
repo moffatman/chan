@@ -1644,3 +1644,35 @@ class ChanceDivider extends StatelessWidget {
 		);
 	}
 }
+
+class DescendantNavigatorPopScope extends StatelessWidget {
+	final bool Function() canPop;
+	final ValueChanged<bool>? onPopInvoked;
+	final Widget child;
+
+	const DescendantNavigatorPopScope({
+		required this.canPop,
+		this.onPopInvoked,
+		required this.child,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return StatefulBuilder(
+			builder: (context, setState) => NotificationListener<NavigationNotification>(
+				onNotification: (notification) {
+					setState(() {}); // recalculate canPop
+					return false;
+				},
+				child: PopScope(
+					canPop: canPop(),
+					onPopInvoked: (didPop) {
+						onPopInvoked?.call(didPop);
+					},
+					child: child
+				)
+			)
+		);
+	}
+}

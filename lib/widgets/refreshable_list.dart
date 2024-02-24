@@ -2111,13 +2111,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			);
 			final theme = context.watch<SavedTheme>();
 			final dividerColor = theme.primaryColorWithBrightness(0.2);
-			return WillPopScope(
-				onWillPop: () async {
-					if (_searchTapped) {
+			return PopScope(
+				canPop: !_searchTapped,
+				onPopInvoked: (didPop) {
+					if (!didPop) {
 						closeSearch();
-						return false;
 					}
-					return true;
 				},
 					child: NotificationListener<ScrollNotification>(
 					key: ValueKey(widget.id),

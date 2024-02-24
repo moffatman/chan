@@ -1166,14 +1166,13 @@ class ThreadPageState extends State<ThreadPage> {
 		if (autoUpdateDuration.inDays > 1) {
 			autoUpdateDuration = null;
 		}
-		return WillPopScope(
-			onWillPop: () async {
-				if (_replyBoxKey.currentState?.show ?? false) {
+		return PopScope(
+			canPop: !(_replyBoxKey.currentState?.show ?? false),
+			onPopInvoked: (didPop) async {
+				if (!didPop) {
 					_replyBoxKey.currentState?.hideReplyBox();
 					setState(() {});
-					return false;
 				}
-				return true;
 			},
 			child: FilterZone(
 				filter: persistentState.threadFilter,

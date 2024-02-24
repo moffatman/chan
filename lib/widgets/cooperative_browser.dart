@@ -94,13 +94,12 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 
 	@override
 	Widget build(BuildContext context) {
-		return WillPopScope(
-			onWillPop: () async {
-				if (_canGoBack) {
+		return PopScope(
+			canPop: !_canGoBack,
+			onPopInvoked: (didPop) {
+				if (!didPop) {
 					_controller?.goBack();
-					return false;
 				}
-				return true;
 			},
 			child: Container(
 				color: ChanceTheme.backgroundColorOf(context),

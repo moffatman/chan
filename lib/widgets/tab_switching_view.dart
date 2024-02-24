@@ -102,13 +102,18 @@ class _TabSwitchingViewState extends State<TabSwitchingView> {
     super.dispose();
   }
 
-  Future<bool> _onWillPop() async {
-    return (await willPopZones[widget.currentTabIndex].callback?.call()) ?? false;
+  bool _canPop() {
+    return willPopZones[widget.currentTabIndex].canPop?.call() ?? false;
+  }
+
+  Future<bool> _maybePop() async {
+    return (await willPopZones[widget.currentTabIndex].maybePop?.call()) ?? false;
   }
 
   @override
   Widget build(BuildContext context) {
-    context.watch<WillPopZone?>()?.callback = _onWillPop;
+    context.watch<WillPopZone?>()?.canPop = _canPop;
+    context.watch<WillPopZone?>()?.maybePop = _maybePop;
     return Stack(
       fit: StackFit.expand,
       children: List<Widget>.generate(widget.tabCount, (int index) {

@@ -101,13 +101,12 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (stack.isNotEmpty) {
+    return PopScope(
+      canPop: stack.isEmpty,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
           pop();
-          return false;
         }
-        return true;
       },
       child: ClipRect(
         child: Overlay(
@@ -159,6 +158,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     else {
       rootCoverAnimationController.forward();
     }
+    setState(() {});
     return entry.completer.future;
   }
 
@@ -172,6 +172,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     else {
       rootCoverAnimationController.reverse();
     }
+    setState(() {});
     await entry.forwardController.reverse(from: 1).orCancel;
     entry.overlayEntry.remove();
     entry.completer.complete(result);
@@ -195,6 +196,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       x.coverController.dispose();
     }
     stack.clear();
+    setState(() {});
   }
 
   @override

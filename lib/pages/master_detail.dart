@@ -64,7 +64,8 @@ const dontAutoPopSettings = RouteSettings(
 );
 
 class WillPopZone {
-	WillPopCallback? callback;
+	bool Function()? canPop;
+	Future<bool> Function()? maybePop;
 }
 
 class BuiltDetailPane {
@@ -323,15 +324,27 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		setState(() {});
 	}
 
-	Future<bool> _onWillPop() async {
+	bool _canPop() {
 		if (onePane) {
-			return !(await masterKey.currentState?.maybePop() ?? false);
+			return !(masterKey.currentState?.canPop() ?? false);
+		}
+		else {
+			if (detailKey.currentState?.canPop() ?? false) {
+				return false;
+			}
+			return !(masterKey.currentState?.canPop() ?? false);
+		}
+	}
+
+	Future<bool> _maybePop() async {
+		if (onePane) {
+			return await masterKey.currentState?.maybePop() ?? false;
 		}
 		else {
 			if (await detailKey.currentState?.maybePop() ?? false) {
-				return false;
+				return true;
 			}
-			return !(await masterKey.currentState?.maybePop() ?? false);
+			return await masterKey.currentState?.maybePop() ?? false;
 		}
 	}
 
@@ -473,82 +486,80 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			}
 		}
 		lastOnePane = onePane;
-		context.watch<WillPopZone?>()?.callback = _onWillPop;
-		return WillPopScope(
-			onWillPop: _onWillPop,
-			child: onePane ? Provider.value(
-				value: MasterDetailHint(
-					location: MasterDetailLocation.onePaneMaster,
-					primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-					currentValue: panes[_tabController.index].currentValue.value
-				),
-				child: masterNavigator
-			) : (horizontalSplit ? Row(
-				children: [
-					Flexible(
-						flex: settings.twoPaneSplit,
-						child: PrimaryScrollController.none(
-							child: Provider.value(
-								value: MasterDetailHint(
-									location: MasterDetailLocation.twoPaneHorizontalMaster,
-									primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-									currentValue: panes[_tabController.index].currentValue.value,
-								),
-								child: masterNavigator
-							)
-						)
-					),
-					VerticalDivider(
-						width: 0,
-						color: ChanceTheme.primaryColorWithBrightness20Of(context)
-					),
-					Flexible(
-						flex: twoPaneSplitDenominator - settings.twoPaneSplit,
+		context.watch<WillPopZone?>()?.canPop = _canPop;
+		context.watch<WillPopZone?>()?.maybePop = _maybePop;
+		return onePane ? Provider.value(
+			value: MasterDetailHint(
+				location: MasterDetailLocation.onePaneMaster,
+				primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+				currentValue: panes[_tabController.index].currentValue.value
+			),
+			child: masterNavigator
+		) : (horizontalSplit ? Row(
+			children: [
+				Flexible(
+					flex: settings.twoPaneSplit,
+					child: PrimaryScrollController.none(
 						child: Provider.value(
 							value: MasterDetailHint(
-								location: MasterDetailLocation.twoPaneHorizontalDetail,
+								location: MasterDetailLocation.twoPaneHorizontalMaster,
+								primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+								currentValue: panes[_tabController.index].currentValue.value,
+							),
+							child: masterNavigator
+						)
+					)
+				),
+				VerticalDivider(
+					width: 0,
+					color: ChanceTheme.primaryColorWithBrightness20Of(context)
+				),
+				Flexible(
+					flex: twoPaneSplitDenominator - settings.twoPaneSplit,
+					child: Provider.value(
+						value: MasterDetailHint(
+							location: MasterDetailLocation.twoPaneHorizontalDetail,
+							primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+							currentValue: panes[_tabController.index].currentValue.value,
+						),
+						child: detailNavigator
+					)
+				)
+			]
+		) : Column(
+			children: [
+				SizedBox(
+					height: settings.verticalTwoPaneMinimumPaneSize.abs(),
+					child: PrimaryScrollController.none(
+						child: Provider.value(
+							value: MasterDetailHint(
+								location: MasterDetailLocation.twoPaneVerticalMaster,
+								primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+								currentValue: panes[_tabController.index].currentValue.value,
+							),
+							child: masterNavigator
+						)
+					)
+				),
+				Divider(
+					height: 0,
+					color: ChanceTheme.primaryColorWithBrightness20Of(context)
+				),
+				Expanded(
+					child: TransformedMediaQuery(
+						transformation: (context, data) => data.removePadding(removeTop: true),
+						child: Provider.value(
+							value: MasterDetailHint(
+								location: MasterDetailLocation.twoPaneVerticalDetail,
 								primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
 								currentValue: panes[_tabController.index].currentValue.value,
 							),
 							child: detailNavigator
 						)
 					)
-				]
-			) : Column(
-				children: [
-					SizedBox(
-						height: settings.verticalTwoPaneMinimumPaneSize.abs(),
-						child: PrimaryScrollController.none(
-							child: Provider.value(
-								value: MasterDetailHint(
-									location: MasterDetailLocation.twoPaneVerticalMaster,
-									primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-									currentValue: panes[_tabController.index].currentValue.value,
-								),
-								child: masterNavigator
-							)
-						)
-					),
-					Divider(
-						height: 0,
-						color: ChanceTheme.primaryColorWithBrightness20Of(context)
-					),
-					Expanded(
-						child: TransformedMediaQuery(
-							transformation: (context, data) => data.removePadding(removeTop: true),
-							child: Provider.value(
-								value: MasterDetailHint(
-									location: MasterDetailLocation.twoPaneVerticalDetail,
-									primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-									currentValue: panes[_tabController.index].currentValue.value,
-								),
-								child: detailNavigator
-							)
-						)
-					)
-				]
-			))
-		);
+				)
+			]
+		));
 	}
 
 	@override

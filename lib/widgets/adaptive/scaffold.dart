@@ -160,7 +160,7 @@ class _CupertinoDrawer {
 	int get hashCode => key.hashCode;
 }
 
-class AdaptiveScaffold extends StatelessWidget {
+class AdaptiveScaffold extends StatefulWidget {
 	final Color? backgroundColor;
 	final Widget body;
 	final AdaptiveBar? bar;
@@ -178,6 +178,31 @@ class AdaptiveScaffold extends StatelessWidget {
 		super.key
 	});
 
+	@override
+	createState() => AdaptiveScaffoldState();
+}
+
+class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
+	final _materialScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'AdaptiveScaffold._materialScaffoldKey');
+	final _cupertinoDrawer = _CupertinoDrawer(GlobalKey<DrawerControllerState>(debugLabel: 'AdaptiveScaffold._cupertinoDrawerKey'));
+	bool _isCupertinoDrawerOpen = false;
+
+	bool get isDrawerOpen {
+		if (Settings.instance.materialStyle) {
+			return _materialScaffoldKey.currentState?.isDrawerOpen ?? false;
+		}
+		return _isCupertinoDrawerOpen;
+	}
+
+	void closeDrawer() {
+		if (Settings.instance.materialStyle) {
+			_materialScaffoldKey.currentState?.closeDrawer();
+		}
+		else {
+			_cupertinoDrawer.key.currentState?.close();
+		}
+	}
+
 	double _calculateWideDrawerEdgeDragWidth(BuildContext context) {
 		final factor = Settings.openBoardSwitcherSlideGestureSetting.watch(context) ? 0.5 : 1;
 		final twoPaneBreakpoint = Settings.twoPaneBreakpointSetting.watch(context);
@@ -193,8 +218,8 @@ class AdaptiveScaffold extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final bar_ = bar;
-		final autoHideBars = !disableAutoBarHiding && Settings.hideBarsWhenScrollingDownSetting.watch(context);
+		final bar_ = widget.bar;
+		final autoHideBars = !widget.disableAutoBarHiding && Settings.hideBarsWhenScrollingDownSetting.watch(context);
 		if (ChanceTheme.materialOf(context)) {
 			VoidCallback? onDrawerButtonPressed;
 			final parentScaffold = Scaffold.maybeOf(context);
@@ -206,17 +231,18 @@ class AdaptiveScaffold extends StatelessWidget {
 				onDrawerButtonPressed = null;
 			}
 			return Scaffold(
-				drawer: drawer,
-				drawerEdgeDragWidth: (drawer != null && context.select<ChanTabs?, bool>((t) => t?.shouldEnableWideDrawerGesture ?? false)) ? _calculateWideDrawerEdgeDragWidth(context) : null,
+				key: _materialScaffoldKey,
+				drawer: widget.drawer,
+				drawerEdgeDragWidth: (widget.drawer != null && context.select<ChanTabs?, bool>((t) => t?.shouldEnableWideDrawerGesture ?? false)) ? _calculateWideDrawerEdgeDragWidth(context) : null,
 				extendBodyBehindAppBar: autoHideBars || (bar_?.backgroundColor?.opacity ?? 1) < 1,
-				resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-				backgroundColor: backgroundColor,
+				resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+				backgroundColor: widget.backgroundColor,
 				appBar: bar_ == null ? null : _AppBarWithBackButtonPriority(
 					autoHideOnScroll: autoHideBars,
 					bar: bar_,
 					onDrawerButtonPressed: onDrawerButtonPressed
 				),
-				body: body,
+				body: widget.body,
 			);
 		}
 		final parentDrawer = context.watch<_CupertinoDrawer?>();
@@ -236,8 +262,8 @@ class AdaptiveScaffold extends StatelessWidget {
 			leadings.addAll(bar_!.leadings!);
 		}
 		final child = CupertinoPageScaffold(
-			resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-			backgroundColor: backgroundColor,
+			resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+			backgroundColor: widget.backgroundColor,
 			navigationBar: bar_ == null ? null : _CupertinoNavigationBar(
 				autoHideOnScroll: autoHideBars,
 				transitionBetweenRoutes: false,
@@ -253,19 +279,22 @@ class AdaptiveScaffold extends StatelessWidget {
 				),
 				brightness: bar_.brightness ?? ChanceTheme.brightnessOf(context)
 			),
-			child: body
+			child: widget.body
 		);
-		final drawer_ = drawer;
+		final drawer_ = widget.drawer;
 		if (drawer_ == null) {
 			return child;
 		}
-		return Provider<_CupertinoDrawer>(
-			create: (context) => _CupertinoDrawer(GlobalKey(debugLabel: 'AdaptiveScaffold._CupertinoDrawer')),
+		return Provider<_CupertinoDrawer>.value(
+			value: _cupertinoDrawer,
 			builder: (context, _) => Stack(
 				children: [
 					child,
 					DrawerController(
-						edgeDragWidth: (drawer != null && context.select<ChanTabs?, bool>((t) => t?.shouldEnableWideDrawerGesture ?? false)) ? _calculateWideDrawerEdgeDragWidth(context) : null,
+						edgeDragWidth: context.select<ChanTabs?, bool>((t) => t?.shouldEnableWideDrawerGesture ?? false) ? _calculateWideDrawerEdgeDragWidth(context) : null,
+						drawerCallback: (isOpen) {
+							_isCupertinoDrawerOpen = isOpen;
+						},
 						key: context.watch<_CupertinoDrawer>().key,
 						alignment: DrawerAlignment.start,
 						child: drawer_
