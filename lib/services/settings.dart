@@ -2731,6 +2731,12 @@ class Settings extends ChangeNotifier {
 	Settings._() {
 		mouseSettings = MouseSettings._(this);
 		client.interceptors.add(LoggingInterceptor.instance);
+		client.interceptors.add(InterceptorsWrapper(
+			onRequest: (options, handler) {
+				options.headers[HttpHeaders.acceptEncodingHeader] ??= 'gzip';
+				handler.next(options);
+			}
+		));
 		muteAudio.value = _settings.muteAudio;
 		_tryToSetupFilter();
 		JsonCache.instance.embedRegexes.addListener(_onEmbedRegexesUpdate);
