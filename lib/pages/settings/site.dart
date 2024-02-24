@@ -65,6 +65,7 @@ final siteSettings = [
 					child: AdaptiveButton(
 						padding: const EdgeInsets.all(8),
 						onPressed: () async {
+							final allSites = JsonCache.instance.sites.value ?? {};
 							final locked = Settings.instance.contentSettings.siteKeys.trySingle == kTestchanKey;
 							if (locked) {
 								// Always generate same name for same userId
@@ -119,12 +120,11 @@ final siteSettings = [
 										]
 									)
 								);
-								final sites = JsonCache.instance.sites.value ?? {};
 								if (url != null && context.mounted) {
 									try {
 										final siteKey = await modalLoad(context, 'Searching...', (_) async {
 											final postNotFoundOn = <ImageboardSite>[];
-											for (final entry in sites.entries) {
+											for (final entry in allSites.entries) {
 												final ImageboardSite site;
 												try {
 													site = makeSite(entry.value);
@@ -169,7 +169,7 @@ final siteSettings = [
 							}
 							else {
 								final sites = <String, ImageboardSite>{};
-								for (final entry in sites.entries) {
+								for (final entry in allSites.entries) {
 									if (Settings.instance.settings.contentSettings.siteKeys.contains(entry.key)) {
 										// Already added
 										continue;
