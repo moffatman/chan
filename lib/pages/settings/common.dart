@@ -611,6 +611,7 @@ class SliderSettingWidget extends StandardImmutableSettingWidget<double> {
 				mainAxisSize: MainAxisSize.min,
 				children: [
 					Row(
+						crossAxisAlignment: CrossAxisAlignment.start,
 						children: [
 							_makeIcon(),
 							Expanded(
