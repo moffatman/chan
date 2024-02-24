@@ -10,6 +10,7 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
+import 'package:html/dom.dart' as dom;
 
 class DvachException implements Exception {
 	final int code;
@@ -116,12 +117,24 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	Post _makePost(String board, int threadId, Map<String, dynamic> data) {
+		String? posterId = data['op'] == 1 ? 'OP' : null;
+		final name = StringBuffer();
+		final nameDoc = parseFragment(data['name'] ?? '');
+		for (final node in nameDoc.nodes) {
+			if (node is dom.Element && node.localName == 'span' && node.id.startsWith('id_tag_')) {
+				posterId = node.text;
+			}
+			else {
+				name.write(node.text);
+			}
+		}
 		return Post(
 			board: board,
 			threadId: threadId,
 			id: data['num'],
 			text: data['comment'],
-			name: data['name'],
+			name: name.toString().trim(),
+			posterId: posterId,
 			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
 			spanFormat: PostSpanFormat.lainchan,
 			attachments: _makeAttachments(board, threadId, data)

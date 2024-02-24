@@ -246,7 +246,7 @@ class Post implements Filterable {
 	bool get isStub => spanFormat == PostSpanFormat.stub;
 
 	@override
-	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.isDeleted == isDeleted && listEquals(other.attachments, attachments);
+	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.isDeleted == isDeleted && listEquals(other.attachments, attachments) && other.name != name;
 
 	@override
 	int get hashCode => Object.hash(board, id, upvotes, isDeleted, attachments);
