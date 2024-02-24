@@ -411,6 +411,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	(TextSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int actualThreadId) {
 		String text = '>>';
 		if (zone.board != board) {
+			text += '>';
 			text += zone.imageboard.site.formatBoardNameWithoutTrailingSlash(board);
 			text += '/';
 		}
