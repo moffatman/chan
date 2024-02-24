@@ -2152,6 +2152,16 @@ class SavedSettingsFields {
     fieldName: 'scrollbarThickness',
     merger: PrimitiveMerger(),
   );
+  static int getThumbnailPixelation(SavedSettings x) => x.thumbnailPixelation;
+  static void setThumbnailPixelation(SavedSettings x, int v) =>
+      x.thumbnailPixelation = v;
+  static const thumbnailPixelation = HiveFieldAdapter<SavedSettings, int>(
+    getter: getThumbnailPixelation,
+    setter: setThumbnailPixelation,
+    fieldNumber: 180,
+    fieldName: 'thumbnailPixelation',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2331,7 +2341,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     176: SavedSettingsFields.catalogGridModeTextScale,
     177: SavedSettingsFields.catalogGridModeCropThumbnails,
     178: SavedSettingsFields.useSpamFilterWorkarounds,
-    179: SavedSettingsFields.scrollbarThickness
+    179: SavedSettingsFields.scrollbarThickness,
+    180: SavedSettingsFields.thumbnailPixelation
   };
 
   @override
@@ -2525,13 +2536,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       catalogGridModeCropThumbnails: fields[177] as bool?,
       useSpamFilterWorkarounds: fields[178] as bool?,
       scrollbarThickness: fields[179] as double?,
+      thumbnailPixelation: fields[180] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(167)
+      ..writeByte(168)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -2865,7 +2877,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(178)
       ..write(obj.useSpamFilterWorkarounds)
       ..writeByte(179)
-      ..write(obj.scrollbarThickness);
+      ..write(obj.scrollbarThickness)
+      ..writeByte(180)
+      ..write(obj.thumbnailPixelation);
   }
 
   @override

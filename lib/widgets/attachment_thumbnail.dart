@@ -129,11 +129,24 @@ class AttachmentThumbnail extends StatelessWidget {
 				if (attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 			}
 		);
+		final pixelation = settings.thumbnailPixelation;
 		if (resize && effectiveWidth.isFinite && effectiveHeight.isFinite) {
 			image = ExtendedResizeImage(
 				image,
 				maxBytes: 800 << 10,
 				width: (effectiveWidth * MediaQuery.devicePixelRatioOf(context)).ceil()
+			);
+		}
+		else if (pixelation > 0) {
+			// In BoxFit.cover we see the shortest side
+			final targetLongestSide = fit != BoxFit.cover;
+			// maintain minimum pixels on shortest side
+			final targetHeight = (targetLongestSide && (attachment.aspectRatio < 1)) || 
+													 (!targetLongestSide && (attachment.aspectRatio > 1));
+			image = ExtendedResizeImage(
+				image,
+				width: targetHeight ? null : pixelation,
+				height: targetHeight ? pixelation : null,
 			);
 		}
 		final barColor = ChanceTheme.barColorOf(context);
@@ -187,7 +200,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						..style = PaintingStyle.stroke);
 					textPainter.paint(canvas, Alignment.center.inscribe(textPainter.size, badgeRect).topLeft + const Offset(1, 1));
 				},
-				//filterQuality: FilterQuality.high,
+				filterQuality: FilterQuality.none,
 				loadStateChanged: (loadstate) {
 					if (loadstate.extendedImageLoadState == LoadState.loading) {
 						return SizedBox(
@@ -199,7 +212,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						);
 					}
 					else if (loadstate.extendedImageLoadState == LoadState.failed ||
-						(((loadstate.extendedImageInfo?.image.height ?? 0) < 5) && ((loadstate.extendedImageInfo?.image.width ?? 0) < 5))) {
+						(attachment.type == AttachmentType.url && ((loadstate.extendedImageInfo?.image.height ?? 0) < 5) && ((loadstate.extendedImageInfo?.image.width ?? 0) < 5))) {
 						if (loadstate.extendedImageLoadState == LoadState.failed) {
 							onLoadError?.call(loadstate.lastException, loadstate.lastStack);
 						}

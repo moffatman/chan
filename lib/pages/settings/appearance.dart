@@ -655,6 +655,24 @@ final appearanceSettings = [
 		icon: CupertinoIcons.eyeglasses,
 		setting: Settings.blurThumbnailsSetting
 	),
+	SliderSettingWidget(
+		description: 'Pixelate image thumbnails',
+		icon: CupertinoIcons.square,
+		setting: const MappedSetting(
+			Settings.thumbnailPixelationSetting,
+			FieldMappers.toDoubleAbs,
+			FieldMappers.toIntAbs
+		),
+		min: 3,
+		max: 75,
+		step: 1,
+		textFormatter: (s) => 'Size: ${s.abs().round()}x${s.abs().round()}',
+		enabledSetting: MappedSetting(
+			Settings.thumbnailPixelationSetting,
+			(pixelation) => pixelation > 0,
+			(enabled) => Settings.instance.thumbnailPixelation.abs() * (enabled ? 1 : -1)
+		)
+	),
 	const SwitchSettingWidget(
 		description: 'Square thumbnails',
 		icon: CupertinoIcons.square,

@@ -1124,6 +1124,8 @@ class SavedSettings extends HiveObject {
 	bool useSpamFilterWorkarounds;
 	@HiveField(179)
 	double scrollbarThickness;
+	@HiveField(180)
+	int thumbnailPixelation;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1305,6 +1307,7 @@ class SavedSettings extends HiveObject {
 		bool? catalogGridModeCropThumbnails,
 		bool? useSpamFilterWorkarounds,
 		double? scrollbarThickness,
+		int? thumbnailPixelation,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1508,7 +1511,8 @@ class SavedSettings extends HiveObject {
 		catalogGridModeTextScale = catalogGridModeTextScale ?? 1.0,
 		catalogGridModeCropThumbnails = catalogGridModeCropThumbnails ?? true,
 		useSpamFilterWorkarounds = useSpamFilterWorkarounds ?? true,
-		scrollbarThickness = scrollbarThickness ?? 6 {
+		scrollbarThickness = scrollbarThickness ?? 6,
+		thumbnailPixelation = thumbnailPixelation ?? -12 {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1772,6 +1776,9 @@ class FieldMappers {
 	static int toInt(double x) => x.toInt();
 	static double toDouble(int x) => x.toDouble();
 	static double doubleAbs(double x) => x.abs();
+	static int intAbs(int x) => x.abs();
+	static double toDoubleAbs(int x) => x.abs().toDouble();
+	static int toIntAbs(double x) => x.abs().toInt();
 }
 
 class MappedSetting<T, New> extends ImmutableSetting<New> {
@@ -2595,6 +2602,9 @@ class Settings extends ChangeNotifier {
 
 	static const scrollbarThicknessSetting = SavedSetting(SavedSettingsFields.scrollbarThickness);
 	double get scrollbarThickness => scrollbarThicknessSetting(this);
+
+	static const thumbnailPixelationSetting = SavedSetting(SavedSettingsFields.thumbnailPixelation);
+	int get thumbnailPixelation => thumbnailPixelationSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
