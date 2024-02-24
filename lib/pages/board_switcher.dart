@@ -5,6 +5,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -244,6 +245,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (!_popping && _pointersDownCount == 0) {
 			if (_getOverscroll() > 50) {
 				_popping = true;
+				lightHapticFeedback();
 				Navigator.pop(context);
 			}
 		}
@@ -325,6 +327,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								if (filteredBoards.isNotEmpty) {
 									final selected = filteredBoards[effectiveSelectedIndex];
 									if (selected.item != null) {
+										lightHapticFeedback();
 										Navigator.of(context).pop(selected.unnullify);
 										return;
 									}
@@ -667,6 +670,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													)
 												),
 												onPressed: () {
+													lightHapticFeedback();
 													Navigator.of(context).pop(imageboard.scope(board));
 												}
 											)
@@ -827,6 +831,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													)
 												),
 												onPressed: () {
+													lightHapticFeedback();
 													Navigator.of(context).pop(item.unnullify);
 												}
 											)
