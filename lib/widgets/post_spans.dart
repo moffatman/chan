@@ -569,7 +569,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		else {
 			// Normal link
-			final span = _buildNormalLink(context, zone, settings, theme, options, threadId);
+			final span = _buildNormalLink(context, zone, settings, theme, options, actualThreadId);
 			final thisPostInThread = zone.findPost(postId);
 			final stackCount = zone.stackIds.countOf(postId);
 			final enableInteraction = switch(zone.style) {
