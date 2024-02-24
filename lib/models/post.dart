@@ -23,7 +23,7 @@ import 'attachment.dart';
 part 'post.g.dart';
 
 // Avoid creating too many small threads
-final _makeSpanPool = Pool((Platform.numberOfProcessors / 2).ceil());
+final _makeSpanPool = Pool(kDebugMode ? 1 : (Platform.numberOfProcessors / 2).ceil());
 
 @HiveType(typeId: 13)
 enum PostSpanFormat {
