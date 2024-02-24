@@ -632,10 +632,10 @@ class PostQuoteLinkSpan extends PostSpan {
 						child: Builder(
 							builder: (context) {
 								if (span.$3) {
-									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.$2.onTap ?? () {});
+									zone.registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
 								}
 								else if (zone.style == PostSpanZoneStyle.tree) {
-									zone.registerConditionalLineTapTarget('$board/$threadId/$postId', context, () {
+									zone.registerConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, () {
 										return zone.isPostOnscreen?.call(postId) != true;
 									}, span.$2.onTap ?? () {});
 								}
