@@ -953,7 +953,8 @@ class ThreadPageState extends State<ThreadPage> {
 		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site.placeOrphanPost);
 		final loadedReferencedThreads = await _loadReferencedThreads();
 		_checkForNewGeneral();
-		if (newThread != tmpPersistentState.thread) {
+		if (newThread != tmpPersistentState.thread &&
+		    !listEquals(newThread.posts_, tmpPersistentState.thread?.posts_)) {
 			await newThread.preinit();
 			tmpPersistentState.thread = newThread;
 			if (persistentState == tmpPersistentState) {
@@ -1016,7 +1017,7 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		_passedFirstLoad = true;
 		setState(() {});
-		return newThread;
+		return tmpPersistentState.thread ?? newThread;
 	}
 
 	void _runPostUpdateCallbacks() async {
