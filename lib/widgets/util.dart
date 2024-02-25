@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/gallery.dart';
@@ -428,6 +429,10 @@ class ErrorMessageCard extends StatelessWidget {
 }
 
 Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false, bool useCooperativeBrowser = false}) async {
+	if (url.isScheme('chance')) {
+		fakeLinkStream.add(url.toString());
+		return;
+	}
 	if (url.host.isEmpty && url.scheme.isEmpty) {
 		url = url.replace(
 			scheme: 'https',
