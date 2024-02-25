@@ -591,7 +591,6 @@ class ReplyBoxState extends State<ReplyBox> {
 					!(ext == 'jpeg' && transcode.outputFileExtension == 'jpg') &&
 					!(ext == 'jpg' && transcode.outputFileExtension == 'jpeg')) 'to .${transcode.outputFileExtension}',
 			if (size != null && maximumSize != null && (size > maximumSize)) 'compressing',
-			if (audioPresent == true && audioAllowed == false) 'removing audio',
 			if (durationInSeconds != null && maximumDurationInSeconds != null && (durationInSeconds > maximumDurationInSeconds)) 'clipping at ${maximumDurationInSeconds}s',
 		];
 		if (width != null && height != null && maximumDimension != null && (width > maximumDimension || height > maximumDimension)) {
@@ -604,6 +603,9 @@ class ReplyBoxState extends State<ReplyBox> {
 		transcode.copyStreams = solutions.isEmpty;
 		if (metadataPresent && !metadataAllowed) {
 			solutions.add('removing metadata');
+		}
+		if (audioPresent == true && audioAllowed == false) {
+			solutions.add('removing audio');
 		}
 		if (solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(ext)) {
 			return source;
