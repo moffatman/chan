@@ -782,7 +782,7 @@ class BoardPageState extends State<BoardPage> {
 						}
 					),
 					AdaptiveIconButton(
-						icon: (variant.icon != null && !variant.temporary) ? FittedBox(
+						icon: (variant.icon != null && !variant.temporary && variant != _defaultGlobalVariant) ? FittedBox(
 							fit: BoxFit.contain,
 							child: SizedBox(
 								width: 40,
