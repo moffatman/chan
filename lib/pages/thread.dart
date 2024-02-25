@@ -1754,6 +1754,9 @@ class ThreadPageState extends State<ThreadPage> {
 																							final x = _listController.items.map((i) => i.id).toList()..shuffle();
 																							persistentState.unseenPostIds.data.addAll(x.take(x.length ~/ 2));
 																						}
+																						else {
+																							persistentState.unseenPostIds.data.addAll(_listController.items.map((i) => i.id).where((x) => x > id));
+																						}
 																						persistentState.lastSeenPostId = id;
 																						persistentState.save();
 																						setState(() {});
