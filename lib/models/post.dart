@@ -215,6 +215,8 @@ class Post implements Filterable {
 				return attachments.map((a) => a.md5).join(' ');
 			case 'capcode':
 				return capcode;
+			case 'trip':
+				return trip;
 			default:
 				return null;
 		}
