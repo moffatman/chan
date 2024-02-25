@@ -81,6 +81,7 @@ class _SettingsPageState extends State<SettingsPage> {
 				},
 				child: const Text('Development News')
 			),
+			const SizedBox(height: 16),
 			AnimatedSize(
 				duration: const Duration(milliseconds: 250),
 				curve: Curves.ease,
@@ -120,9 +121,15 @@ class _SettingsPageState extends State<SettingsPage> {
 									boardSemanticId: -1,
 								)
 							)),
-							child: ConstrainedBox(
+							child: Container(
 								constraints: const BoxConstraints(
 									maxHeight: 125
+								),
+								foregroundDecoration: BoxDecoration(
+									border: Border(
+										top: BorderSide(color: settings.theme.primaryColorWithBrightness(0.2)),
+										bottom: BorderSide(color: settings.theme.primaryColorWithBrightness(0.2))
+									)
 								),
 								child: ThreadRow(
 									thread: thread,
@@ -136,23 +143,68 @@ class _SettingsPageState extends State<SettingsPage> {
 							));
 						}
 						children.add(const SizedBox(height: 16));
+						final imageboard = context.watch<Imageboard>();
 						children.add(Center(
-							child: AdaptiveFilledButton(
-								child: const Text('See more discussion'),
-								onPressed: () => Navigator.push(context, adaptivePageRoute(
-									builder: (context) => BoardPage(
-										initialBoard: ImageboardBoard(
-											name: 'chance',
-											title: 'Chance - Imageboard Browser',
-											isWorksafe: true,
-											webmAudioAllowed: false,
-											maxImageSizeBytes: 8000000,
-											maxWebmSizeBytes: 8000000
-										),
-										allowChangingBoard: false,
-										semanticId: -1
-									)
-								))
+							child: Padding(
+								padding: const EdgeInsets.symmetric(horizontal: 16),
+								child: AdaptiveThinButton(
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											const Icon(CupertinoIcons.chat_bubble_2),
+											const SizedBox(width: 16),
+											const Expanded(
+												child: Text('More discussion')
+											),
+											ValueListenableBuilder(
+												valueListenable: context.watch<ThreadWatcher>().unseenCount,
+												builder: (context, unseenCount, _) {
+													final nonStickyUnseenCount = unseenCount - (snapshot.data?.map((t) {
+														return imageboard.persistence.getThreadStateIfExists(t.identifier)?.unseenReplyCount() ?? 0;
+													}).fold<int>(0, (a, b) => a + b) ?? 0);
+													if (nonStickyUnseenCount <= 0) {
+														return const SizedBox.shrink();
+													}
+													return Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															const Icon(CupertinoIcons.reply_all, size: 17),
+															Text(' +$nonStickyUnseenCount')
+														]
+													);
+												}
+											),
+											ValueListenableBuilder(
+												valueListenable: context.watch<ThreadWatcher>().unseenYouCount,
+												builder: (context, unseenYouCount, _) {
+													final nonStickyUnseenYouCount = unseenYouCount - (snapshot.data?.map((t) {
+														return imageboard.persistence.getThreadStateIfExists(t.identifier)?.unseenReplyIdsToYouCount() ?? 0;
+													}).fold<int>(0, (a, b) => a + b) ?? 0);
+													if (nonStickyUnseenYouCount <= 0) {
+														return const SizedBox.shrink();
+													}
+													return Text(' +$nonStickyUnseenYouCount', style: TextStyle(color: settings.theme.secondaryColor));
+												}
+											),
+											const SizedBox(width: 8),
+											const Icon(CupertinoIcons.chevron_forward)
+										]
+									),
+									onPressed: () => Navigator.push(context, adaptivePageRoute(
+										builder: (context) => BoardPage(
+											initialBoard: ImageboardBoard(
+												name: 'chance',
+												title: 'Chance - Imageboard Browser',
+												isWorksafe: true,
+												webmAudioAllowed: false,
+												maxImageSizeBytes: 8000000,
+												maxWebmSizeBytes: 8000000
+											),
+											allowChangingBoard: false,
+											semanticId: -1
+										)
+									))
+								)
 							)
 						));
 						return Column(
@@ -162,9 +214,8 @@ class _SettingsPageState extends State<SettingsPage> {
 					}
 				)
 			),
-			const SizedBox(height: 32),
+			const SizedBox(height: 24),
 			...topLevelSettings.map((s) => s.build()),
-			const SizedBox(height: 16),
 			Center(
 				child: AdaptiveButton(
 					child: const Text('Licenses'),
@@ -175,7 +226,7 @@ class _SettingsPageState extends State<SettingsPage> {
 					}
 				)
 			),
-			const SizedBox(height: 16),
+			const SizedBox(height: 8),
 			Center(
 				child: Text('Chance $kChanceVersion', style: TextStyle(color: ChanceTheme.primaryColorWithBrightness50Of(context)))
 			)
