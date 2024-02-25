@@ -1,6 +1,7 @@
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
@@ -18,6 +19,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape_small.dart';
+import 'package:linkify/linkify.dart';
 import 'package:markdown/markdown.dart' as markdown;
 import 'package:html/dom.dart' as dom;
 
@@ -227,17 +229,26 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	static PostNodeSpan makeSpan(String board, int threadId, String text) {
-		final body = parseFragment(markdown.markdownToHtml(text,
-			inlineSyntaxes: [
-				_SuperscriptSyntax(),
-				_SpoilerSyntax(),
-				_StrikethroughSyntax()
-			],
-			blockSyntaxes: [
-				const markdown.TableSyntax(),
-				const markdown.BlockquoteSyntax()
-			]
-		).trim().replaceAll('<br />', ''));
+		final body = parseFragment(
+			markdown.markdownToHtml(
+				const LooseUrlLinkifier().parse(
+					[TextElement(text)],
+					const LinkifyOptions()
+				).map((e) => switch(e) {
+					UrlElement() => '[${e.url}](${e.text} ${e.url})',
+					_ => e.text
+				}).join(''),
+				inlineSyntaxes: [
+					_SuperscriptSyntax(),
+					_SpoilerSyntax(),
+					_StrikethroughSyntax()
+				],
+				blockSyntaxes: [
+					const markdown.TableSyntax(),
+					const markdown.BlockquoteSyntax()
+				]
+			).trim().replaceAll('<br />', '')
+		);
 		int spoilerSpanId = 0;
 		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
 			bool addLinebreakBefore = false;
