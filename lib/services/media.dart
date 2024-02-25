@@ -367,11 +367,13 @@ class MediaConversion {
 
 	File getDestination() {
 		String subdir = inputFile.host;
+		String filename = inputFile.pathSegments.last;
 		if (subdir.isEmpty) {
+			// This is a local file
 			subdir = base64.encode(md5.convert(utf8.encode(inputFile.pathSegments.take(inputFile.pathSegments.length - 1).join('_'))).bytes);
 		}
-		String filename = inputFile.pathSegments.last;
-		if (!filename.split('.').first.contains(RegExp(r'\d'))) {
+		else if (!filename.split('.').first.contains(RegExp(r'\d'))) {
+			// This is a remote file
 			// No numbers in the filename
 			// Probably the other pathSegments are the unique parts
 			filename = inputFile.pathSegments.join('_');
