@@ -201,7 +201,7 @@ class CloudflareInterceptor extends Interceptor {
 			);
 			await Future.any([
 				headlessCompleter.future,
-				Future.delayed(const Duration(seconds: 7))
+				Future.delayed(const Duration(seconds: 5))
 			]);
 			if (headlessCompleter.isCompleted) {
 				headlessWebView.dispose();
