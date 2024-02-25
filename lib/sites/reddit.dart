@@ -235,7 +235,7 @@ class SiteReddit extends ImageboardSite {
 					[TextElement(text)],
 					const LinkifyOptions()
 				).map((e) => switch(e) {
-					UrlElement() => '[${e.url}](${e.text} ${e.url})',
+					UrlElement() => '[${e.text}](${e.url})',
 					_ => e.text
 				}).join(''),
 				inlineSyntaxes: [
