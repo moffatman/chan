@@ -933,16 +933,15 @@ class ImageboardScopedSettingWidget extends SettingWidget {
 	Widget buildImpl(BuildContext context) {
 		return _ImageboardPicker(
 			builder: (imageboard, setImageboard) {
-				return Row(
-					crossAxisAlignment: CrossAxisAlignment.start,
-					children: [
-						Expanded(
-							child: builder(imageboard).build()
-						),
-						const SizedBox(width: 8),
-						Padding(
-							padding: const EdgeInsets.only(top: 20),
-							child: AdaptiveFilledButton(
+				return IntrinsicHeight(
+					child: Row(
+						crossAxisAlignment: CrossAxisAlignment.center,
+						children: [
+							Expanded(
+								child: builder(imageboard).build()
+							),
+							const SizedBox(width: 8),
+							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(8),
 								onPressed: () async {
 									final newImageboard = await _pickImageboard(context, imageboard);
@@ -961,8 +960,8 @@ class ImageboardScopedSettingWidget extends SettingWidget {
 									]
 								)
 							)
-						)
-					]
+						]
+					)
 				);
 			}
 		);
