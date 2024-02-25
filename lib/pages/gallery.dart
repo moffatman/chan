@@ -528,7 +528,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	Widget _buildScrollSheetChild(ScrollController controller) {
 		final theme = Settings.instance.darkTheme;
-		final showReplyCountsInGallery = Settings.showReplyCountsInGallerySetting.watch(context);
+		final showReplyCountsInGallery = Settings.instance.showReplyCountsInGallery;
 		return AnimatedBuilder(
 			animation: _currentAttachmentChanged,
 			builder: (context, child) {
