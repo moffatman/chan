@@ -123,12 +123,13 @@ abstract class SettingWidget {
 					child: Opacity(
 						opacity: disabled ? 0.5 : 1.0,
 						child: Padding(
-							padding: subsetting ? const EdgeInsets.only(
-								left: 16,
-								right: 16,
-								top: 0,
-								bottom: 0
-							) : const EdgeInsets.symmetric(vertical: 8),
+							padding: subsetting ? const EdgeInsets.symmetric(
+								vertical: 0,
+								horizontal: 32
+							) : const EdgeInsets.symmetric(
+								vertical: 8,
+								horizontal: 16
+							),
 							child: Builder(
 								builder: (context) => buildImpl(context)
 							)

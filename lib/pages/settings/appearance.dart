@@ -1247,7 +1247,6 @@ final appearanceSettings = [
 			ImageboardScopedSettingWidget(
 				description: 'Initially hide nested replies',
 				builder: (threadLayoutImageboard) => SwitchSettingWidget(
-					subsetting: true,
 					disabled: threadLayoutImageboard.dontUseTree,
 					description: 'Initially hide nested replies',
 					icon: CupertinoIcons.return_icon,
@@ -1265,7 +1264,6 @@ final appearanceSettings = [
 			ImageboardScopedSettingWidget(
 				description: 'Collapsed posts show body',
 				builder: (threadLayoutImageboard) => SwitchSettingWidget(
-					subsetting: true,
 					disabled: threadLayoutImageboard.dontUseTree,
 					description: 'Collapsed posts show body',
 					icon: CupertinoIcons.chevron_right_2,
@@ -1283,7 +1281,6 @@ final appearanceSettings = [
 			ImageboardScopedSettingWidget(
 				description: 'Show replies to OP at top level',
 				builder: (threadLayoutImageboard) => SwitchSettingWidget(
-					subsetting: true,
 					disabled: threadLayoutImageboard.dontUseTree,
 					description: 'Show replies to OP at top level',
 					icon: CupertinoIcons.increase_indent,
@@ -1301,7 +1298,6 @@ final appearanceSettings = [
 			ImageboardScopedSettingWidget(
 				description: 'New posts inserted at bottom',
 				builder: (threadLayoutImageboard) => SwitchSettingWidget(
-					subsetting: true,
 					disabled: threadLayoutImageboard.dontUseTree,
 					description: 'New posts inserted at bottom',
 					icon: CupertinoIcons.asterisk_circle,
