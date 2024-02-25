@@ -8,6 +8,7 @@ import 'package:chan/pages/settings/common.dart';
 import 'package:chan/pages/settings/data.dart';
 import 'package:chan/pages/settings/site.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -85,7 +86,15 @@ class _SettingsPageState extends State<SettingsPage> {
 				curve: Curves.ease,
 				alignment: Alignment.topCenter,
 				child: FutureBuilder<List<Thread>>(
-					future: context.read<ImageboardSite>().getCatalog('chance', priority: RequestPriority.interactive),
+					future: () async {
+						final imageboard = context.read<Imageboard>();
+						final list = (await imageboard.site.getCatalog('chance', priority: RequestPriority.interactive)).where((t) => t.isSticky).toList();
+						for (final thread in list) {
+							await thread.preinit(catalog: true);
+							await imageboard.persistence.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
+						}
+						return list;
+					}(),
 					initialData: context.read<ThreadWatcher>().peekLastCatalog('chance'),
 					builder: (context, snapshot) {
 						if (!snapshot.hasData) {
@@ -104,7 +113,7 @@ class _SettingsPageState extends State<SettingsPage> {
 								)
 							);
 						}
-						final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
+						final children = (snapshot.data ?? []).map<Widget>((thread) => GestureDetector(
 							onTap: () => Navigator.push(context, adaptivePageRoute(
 								builder: (context) => ThreadPage(
 									thread: thread.identifier,
