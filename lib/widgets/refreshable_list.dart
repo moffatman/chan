@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
@@ -1623,10 +1624,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	bool _shouldPreCollapseOnSubsequentEncounter(RefreshableListItem<T> item, _TreeNode<RefreshableListItem<T>> node) {
-		final width = (context.findRenderObject() as RenderBox?)?.paintBounds.width ?? 500;
+		if (node.children.isNotEmpty) {
+			return true;
+		}
+		final width = estimateWidth(context, listen: false);
 		final height = (widget.treeAdapter?.estimateHeight(item.item, width) ?? 0);
 		final parentCount = widget.treeAdapter?.getParentIds(item.item).length ?? 0;
-		return height > (100 * max(parentCount, 3)) || node.children.isNotEmpty;
+		return height > (100 * max(parentCount, 3));
 	}
 
 	({
