@@ -971,8 +971,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 class RefreshableListState<T extends Object> extends State<RefreshableList<T>> with TickerProviderStateMixin {
 	List<T>? originalList;
 	List<T>? sortedList;
-	String? errorMessage;
-	Type? errorType;
+	late final ValueNotifier<Object?> error;
 	SearchFilter? _searchFilter;
 	late final ValueNotifier<String?> updatingNow;
 	late final TextEditingController _searchController;
@@ -1016,6 +1015,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	void initState() {
 		super.initState();
 		updatingNow = ValueNotifier(null);
+		error = ValueNotifier(null);
 		_searchController = TextEditingController();
 		_searchFocusNode = FocusNode();
 		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
@@ -1062,8 +1062,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			closeSearch();
 			originalList = widget.initialList;
 			sortedList = null;
-			errorMessage = null;
-			errorType = null;
+			error.value = null;
 			_treeSplitId = widget.initialTreeSplitId;
 			lastUpdateTime = null;
 			_automaticallyCollapsedItems.clear();
@@ -1271,11 +1270,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final updatingWithId = widget.id;
 		List<T>? newList;
 		try {
-			setState(() {
-				errorMessage = null;
-				errorType = null;
-				updatingNow.value = widget.id;
-			});
+			error.value = null;
+			updatingNow.value = widget.id;
 			Duration minUpdateDuration = widget.minUpdateDuration;
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
 				minUpdateDuration *= 2;
@@ -1317,20 +1313,19 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			lastUpdateTime = DateTime.now();
 		}
 		catch (e, st) {
-			errorMessage = e.toStringDio();
-			errorType = e.runtimeType;
+			error.value = e;
 			if (mounted) {
 				if (widget.controller?.scrollController?.hasOnePosition ?? false) {
 					final position = widget.controller!.scrollController!.position;
 					if (position.extentAfter > 0) {
 						showToast(
 							context: context,
-							message: 'Error loading ${widget.id}: $errorMessage',
+							message: 'Error loading ${widget.id}: ${e.toStringDio()}',
 							icon: CupertinoIcons.exclamationmark_triangle
 						);
 					}
 				}
-				if (widget.remedies[errorType] == null) {
+				if (widget.remedies[e.runtimeType] == null) {
 					print('Error refreshing list: ${e.toStringDio()}');
 					print(st);
 					resetTimer();
@@ -1361,7 +1356,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		if (!mounted) return;
 		updatingNow.value = null;
-		if (mounted && (newList != null || originalList == null || errorMessage != null)) {
+		if (mounted && (newList != null || originalList == null || error.value != null)) {
 			if (hapticFeedback) {
 				mediumHapticFeedback();
 			}
@@ -2488,17 +2483,27 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												top: false,
 												sliver: SliverToBoxAdapter(
 													child: RepaintBoundary(
-														child: RefreshableListFooter(
-															key: _footerKey,
-															updater: _updateOrExtendWithHapticFeedback,
-															updatingNow: updatingNow.value != null,
-															lastUpdateTime: lastUpdateTime,
-															nextUpdateTime: nextUpdateTime,
-															errorMessage: errorMessage,
-															remedy: widget.remedies[errorType]?.call(context, _updateOrExtendWithHapticFeedback),
-															overscrollFactor: widget.controller?.overscrollFactor,
-															pointerDownNow: () {
-																return _pointerDownCount > 0;
+														child: ValueListenableBuilder(
+															valueListenable: error,
+															builder: (context, error, _) {
+																final errorMessage = error?.toStringDio();
+																final errorType = error.runtimeType;
+																return ValueListenableBuilder(
+																	valueListenable: updatingNow,
+																	builder: (context, updatingNow, _) => RefreshableListFooter(
+																		key: _footerKey,
+																		updater: _updateOrExtendWithHapticFeedback,
+																		updatingNow: updatingNow != null,
+																		lastUpdateTime: lastUpdateTime,
+																		nextUpdateTime: nextUpdateTime,
+																		errorMessage: errorMessage,
+																		remedy: widget.remedies[errorType]?.call(context, _updateOrExtendWithHapticFeedback),
+																		overscrollFactor: widget.controller?.overscrollFactor,
+																		pointerDownNow: () {
+																			return _pointerDownCount > 0;
+																		}
+																	)
+																);
 															}
 														)
 													)
@@ -2513,37 +2518,43 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				)
 			);
 		}
-		else if (errorMessage != null) {
-			return Center(
-				child: Column(
-					mainAxisAlignment: MainAxisAlignment.center,
-					children: [
-						ErrorMessageCard('Error loading ${widget.id}:\n${errorMessage?.toStringDio()}'),
-						CupertinoButton(
-							onPressed: _updateWithHapticFeedback,
-							child: const Text('Retry')
-						),
-						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, _updateWithHapticFeedback),
-						if (widget.initialList?.isNotEmpty ?? false) CupertinoButton(
-							onPressed: () {
-								originalList = widget.initialList;
-								sortedList = originalList?.toList();
-								if (sortedList != null) {
-									_sortList();
-								}
-								setState(() {});
-							},
-							child: const Text('View cached')
+		return ValueListenableBuilder(
+			valueListenable: error,
+			builder: (context, error, _) {
+				if (error != null) {
+					final remedy = widget.remedies[error.runtimeType];
+					return Center(
+						child: Column(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								ErrorMessageCard('Error loading ${widget.id}:\n${error.toStringDio()}'),
+								CupertinoButton(
+									onPressed: _updateWithHapticFeedback,
+									child: const Text('Retry')
+								),
+								if (remedy != null) remedy(context, _updateWithHapticFeedback),
+								if (widget.initialList?.isNotEmpty ?? false) CupertinoButton(
+									onPressed: () {
+										originalList = widget.initialList;
+										sortedList = originalList?.toList();
+										if (sortedList != null) {
+											_sortList();
+										}
+										setState(() {});
+									},
+									child: const Text('View cached')
+								)
+							]
 						)
-					]
-				)
-			);
-		}
-		else {
-			return const Center(
-				child: CircularProgressIndicator.adaptive()
-			);
-		}
+					);
+				}
+				else {
+					return const Center(
+						child: CircularProgressIndicator.adaptive()
+					);
+				}
+			}
+		);
 	}
 }
 
