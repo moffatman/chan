@@ -551,6 +551,7 @@ class _GalleryPageState extends State<GalleryPage> {
 										itemBuilder: (context, index) {
 											final attachment = widget.attachments[index];
 											final icon = attachment.attachment.icon;
+											final isNormalAttachment = widget.overrideSources[attachment.attachment]?.scheme != 'file';
 											return AdaptiveIconButton(
 												minSize: 0,
 												onPressed: () {
@@ -574,7 +575,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																children: [
 																	ClipRRect(
 																		borderRadius: BorderRadius.circular(4),
-																		child: widget.overrideSources[attachment.attachment]?.scheme != 'file' ? AttachmentThumbnail(
+																		child: isNormalAttachment ? AttachmentThumbnail(
 																			gaplessPlayback: true,
 																			attachment: attachment.attachment,
 																			width: _thumbnailSize,
@@ -585,7 +586,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																			fit: BoxFit.cover
 																		)
 																	),
-																	Positioned(
+																	if (isNormalAttachment) Positioned(
 																		bottom: 0,
 																		right: 0,
 																		child: Container(
@@ -655,6 +656,7 @@ class _GalleryPageState extends State<GalleryPage> {
 										}
 										final attachment = widget.attachments[index];
 										final icon = attachment.attachment.icon;
+										final isNormalAttachment = widget.overrideSources[attachment.attachment]?.scheme != 'file';
 										return AdaptiveIconButton(
 											minSize: 0,
 											onPressed: () {
@@ -672,7 +674,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													children: [
 														ClipRRect(
 															borderRadius: BorderRadius.circular(8),
-															child: widget.overrideSources[attachment.attachment]?.scheme != 'file' ? AttachmentThumbnail(
+															child: isNormalAttachment ? AttachmentThumbnail(
 																gaplessPlayback: true,
 																attachment: attachment.attachment,
 																hero: null,
@@ -684,7 +686,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																fit: BoxFit.cover
 															)
 														),
-														Positioned(
+														if (isNormalAttachment) Positioned(
 															bottom: 0,
 															right: 0,
 															child: Container(
