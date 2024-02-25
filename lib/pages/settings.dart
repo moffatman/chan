@@ -236,6 +236,16 @@ class _SettingsPageState extends State<SettingsPage> {
 	Iterable<Widget> _buildResults() {
 		final q = query.toLowerCase();
 		final results = topLevelSettings.expand((e) =>  e.search(q));
+		if (results.isEmpty) {
+			return [
+				const Center(
+					child: Padding(
+						padding: EdgeInsets.all(16),
+						child: Text('No results')
+					)
+				)
+			];
+		}
 		return results.map((r) => r.build());
 	}
 
