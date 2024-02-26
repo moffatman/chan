@@ -1297,7 +1297,21 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
 				final newItems = (await Future.wait([widget.listExtender!(originalList!.last), Future<List<T>?>.delayed(minUpdateDuration)])).first!;
-				newList = originalList!.followedBy(newItems).toList();
+				final filterableAdapter = widget.filterableAdapter;
+				if (filterableAdapter != null) {
+					// We have the ability to get identifier for each item
+					final oldIds = originalList!.map((i) => filterableAdapter(i).id).toSet();
+					newList = originalList!.followedBy(newItems.where((newItem) {
+						// Item may be already seen in old list
+						// This could be because of long time between updates, the item
+						// changed in position in the server's list.
+						return !oldIds.contains(filterableAdapter(newItem).id);
+					})).toList();
+				}
+				else {
+					// Just append the new items
+					newList = originalList!.followedBy(newItems).toList();
+				}
 			}
 			else {
 				newList = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
