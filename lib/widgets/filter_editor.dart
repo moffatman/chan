@@ -107,6 +107,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			AutoWatchType? autoWatch = filter.outputType.autoWatch;
 			bool notify = filter.outputType.notify;
 			bool collapse = filter.outputType.collapse;
+			bool hideReplies = filter.outputType.hideReplies;
 			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
 			return showAdaptiveModalPopup<(bool, CustomFilter?)>(
 				context: context,
@@ -459,6 +460,7 @@ class _FilterEditorState extends State<FilterEditor> {
 												('Auto-watch', autoWatch != null, (v) => autoWatch = (v ? const AutoWatchType(push: null) : null)),
 												('Notify', notify, (v) => notify = v),
 												('Collapse (tree mode)', collapse, (v) => collapse = v),
+												('Hide replies', hideReplies, (v) => hideReplies = v),
 											].map((t) => AdaptiveListTile(
 												title: Text(t.$1),
 												trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
@@ -529,6 +531,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										maxReplyCount: maxReplyCount,
 										outputType: FilterResultType(
 											hide: hide,
+											hideReplies: hideReplies,
 											highlight: highlight,
 											pinToTop: pinToTop,
 											autoSave: autoSave,
@@ -671,7 +674,8 @@ class _FilterEditorState extends State<FilterEditor> {
 							if (filter.value.outputType.autoSave) Icon(Adaptive.icons.bookmarkFilled),
 							if (filter.value.outputType.autoWatch != null) const Icon(CupertinoIcons.bell),
 							if (filter.value.outputType.notify) const Icon(CupertinoIcons.bell_fill),
-							if (filter.value.outputType.collapse) const Icon(CupertinoIcons.chevron_down_square)
+							if (filter.value.outputType.collapse) const Icon(CupertinoIcons.chevron_down_square),
+							if (filter.value.outputType.hideReplies) const Icon(CupertinoIcons.reply_all)
 						];
 						return AdaptiveListTile(
 							faded: filter.value.disabled,

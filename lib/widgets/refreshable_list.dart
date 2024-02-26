@@ -1971,6 +1971,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		widget.controller?.topOffset = MediaQuery.paddingOf(context).top;
 		widget.controller?.bottomOffset = MediaQuery.paddingOf(context).bottom;
 		if (sortedList != null) {
+			final filterableAdapter = widget.filterableAdapter;
+			if (filterableAdapter != null) {
+				MetaFilter.of(context)?.seed(sortedList!.map(filterableAdapter).toList());
+			}
 			final pinnedValues = <RefreshableListItem<T>>[];
 			List<RefreshableListItem<T>> values = [];
 			filteredValues = <RefreshableListItem<T>>[];
@@ -1981,7 +1985,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			for (final item in sortedList!) {
 				bool handled = false;
 				for (final filter in filters) {
-					final result = widget.filterableAdapter != null ? filter.filter(widget.filterableAdapter!(item)) : null;
+					final result = filterableAdapter != null ? filter.filter(filterableAdapter(item)) : null;
 					if (result != null) {
 						bool pinned = false;
 						if (result.type.pinToTop && widget.allowReordering) {

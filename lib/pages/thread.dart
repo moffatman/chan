@@ -1177,408 +1177,423 @@ class ThreadPageState extends State<ThreadPage> {
 			},
 			child: FilterZone(
 				filter: persistentState.threadFilter,
-				child: MultiProvider(
-					providers: [
-						Provider.value(
-							value: ReplyBoxZone(
-								onTapPostId: (int threadId, int id) {
-									if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-										_popOutReplyBox((state) => state.onTapPostId(threadId, id));
+				child: MetaFilterZone(
+					child: MultiProvider(
+						providers: [
+							Provider.value(
+								value: ReplyBoxZone(
+									onTapPostId: (int threadId, int id) {
+										if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+											_popOutReplyBox((state) => state.onTapPostId(threadId, id));
+										}
+										else {
+											_replyBoxKey.currentState?.onTapPostId(threadId, id);
+										}
+										setState(() {});
+									},
+									onQuoteText: (String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
+										if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+											_popOutReplyBox((state) => state.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink));
+										}
+										else {
+											_replyBoxKey.currentState?.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink);
+										}
+										setState(() {});
 									}
-									else {
-										_replyBoxKey.currentState?.onTapPostId(threadId, id);
-									}
-									setState(() {});
-								},
-								onQuoteText: (String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
-									if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-										_popOutReplyBox((state) => state.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink));
-									}
-									else {
-										_replyBoxKey.currentState?.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink);
-									}
-									setState(() {});
-								}
-							)
-						),
-						ChangeNotifierProvider<PostSpanZoneData>.value(value: zone)
-					],
-					child: AdaptiveScaffold(
-						resizeToAvoidBottomInset: false,
-						bar: AdaptiveBar(
-							title: GestureDetector(
-								onTap: () {
-									alert(context, 'Thread title', title);
-								},
-								child: Padding(
-									padding: const EdgeInsets.only(top: 8, bottom: 8),
-									child: Row(
-										mainAxisAlignment: MainAxisAlignment.center,
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											if (persistentState.incognito) const Padding(
-												padding: EdgeInsets.only(right: 6),
-												child: Icon(CupertinoIcons.eyeglasses)
-											),
-											if (ImageboardRegistry.instance.count > 1) Padding(
-												padding: const EdgeInsets.only(right: 6),
-												child: ImageboardIcon(
-													boardName: widget.thread.board
-												)
-											),
-											Flexible(
-												child: AutoSizeText(
-													title,
-													minFontSize: 17,
-													maxLines: 1,
-													overflow: TextOverflow.ellipsis,
-												)
-											)
-										]
-									)
 								)
 							),
-							actions: [
-								GestureDetector(
-									onLongPress: () => _tapWatchButton(long: true),
-									child: AdaptiveIconButton(
-										onPressed: () => _tapWatchButton(long: false),
-										icon: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
+							ChangeNotifierProvider<PostSpanZoneData>.value(value: zone)
+						],
+						child: AdaptiveScaffold(
+							resizeToAvoidBottomInset: false,
+							bar: AdaptiveBar(
+								title: GestureDetector(
+									onTap: () {
+										alert(context, 'Thread title', title);
+									},
+									child: Padding(
+										padding: const EdgeInsets.only(top: 8, bottom: 8),
+										child: Row(
+											mainAxisAlignment: MainAxisAlignment.center,
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												if (persistentState.incognito) const Padding(
+													padding: EdgeInsets.only(right: 6),
+													child: Icon(CupertinoIcons.eyeglasses)
+												),
+												if (ImageboardRegistry.instance.count > 1) Padding(
+													padding: const EdgeInsets.only(right: 6),
+													child: ImageboardIcon(
+														boardName: widget.thread.board
+													)
+												),
+												Flexible(
+													child: AutoSizeText(
+														title,
+														minFontSize: 17,
+														maxLines: 1,
+														overflow: TextOverflow.ellipsis,
+													)
+												)
+											]
+										)
 									)
 								),
-								if (!persistentState.showInHistory) AdaptiveIconButton(
-									onPressed: () {
-										lightHapticFeedback();
-										persistentState.showInHistory = true;
-										showToast(
-											context: context,
-											message: 'Thread restored to history',
-											icon: CupertinoIcons.archivebox
-										);
-										persistentState.save();
-										setState(() {});
-									},
-									icon: const Icon(CupertinoIcons.eye_slash)
-								)
-								else GestureDetector(
-									onLongPress: () {
-										lightHapticFeedback();
-										persistentState.savedTime = null;
-										persistentState.showInHistory = false;
-										showToast(
-											context: context,
-											message: 'Thread hidden from history',
-											icon: CupertinoIcons.eye_slash
-										);
-										persistentState.save();
-										setState(() {});
-									},
-									child: AdaptiveIconButton(
-										onPressed: persistentState.incognito ? null : () {
+								actions: [
+									GestureDetector(
+										onLongPress: () => _tapWatchButton(long: true),
+										child: AdaptiveIconButton(
+											onPressed: () => _tapWatchButton(long: false),
+											icon: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
+										)
+									),
+									if (!persistentState.showInHistory) AdaptiveIconButton(
+										onPressed: () {
 											lightHapticFeedback();
-											if (persistentState.savedTime != null) {
-												persistentState.savedTime = null;
-											}
-											else {
-												persistentState.savedTime = DateTime.now();
-											}
+											persistentState.showInHistory = true;
+											showToast(
+												context: context,
+												message: 'Thread restored to history',
+												icon: CupertinoIcons.archivebox
+											);
 											persistentState.save();
 											setState(() {});
 										},
-										icon: Icon(persistentState.incognito ?
-																	CupertinoIcons.eye_slash :
-																	persistentState.savedTime == null ?
-																		Adaptive.icons.bookmark :
-																		Adaptive.icons.bookmarkFilled)
+										icon: const Icon(CupertinoIcons.eye_slash)
 									)
-								),
-								if (site.threadVariants.isNotEmpty) AdaptiveIconButton(
-									padding: EdgeInsets.zero,
-									icon: FittedBox(
-										fit: BoxFit.contain,
-										child: SizedBox(
-											width: 40,
-											height: 40,
-											child: Stack(
-												children: [
-													Align(
-														alignment: Alignment.bottomRight,
-														child: Icon(persistentState.variant?.icon ?? persistentState.thread?.suggestedVariant?.icon ?? site.threadVariants.first.icon)
-													),
-													const Align(
-														alignment: Alignment.topLeft,
-														child: Icon(CupertinoIcons.sort_down)
-													)
-												]
-											)
-										)
-									),
-									onPressed: () async {
-										final choice = await showAdaptiveModalPopup<ThreadVariant>(
-											useRootNavigator: false,
-											context: context,
-											builder: (context) => AdaptiveActionSheet(
-												title: const Text('Thread Sorting'),
-												actions: site.threadVariants.map((variant) => AdaptiveActionSheetAction(
-													child: Row(
-														children: [
-															SizedBox(
-																width: 40,
-																child: Center(
-																	child: Icon(variant.icon),
-																)
-															),
-															Expanded(
-																child: Text(
-																	variant.name,
-																	textAlign: TextAlign.left,
-																	style: TextStyle(
-																		fontWeight: variant == (persistentState.variant ?? persistentState.thread?.suggestedVariant ?? site.threadVariants.first) ? FontWeight.bold : null
-																	)
-																)
-															)
-														]
-													),
-													onPressed: () {
-														Navigator.of(context).pop(variant);
-													}
-												)).toList(),
-												cancelButton: AdaptiveActionSheetAction(
-													child: const Text('Cancel'),
-													onPressed: () => Navigator.of(context).pop()
-												)
-											)
-										);
-										if (choice != null && mounted) {
-											persistentState.variant = choice;
+									else GestureDetector(
+										onLongPress: () {
+											lightHapticFeedback();
+											persistentState.savedTime = null;
+											persistentState.showInHistory = false;
+											showToast(
+												context: context,
+												message: 'Thread hidden from history',
+												icon: CupertinoIcons.eye_slash
+											);
 											persistentState.save();
 											setState(() {});
-											await Future.delayed(const Duration(milliseconds: 30));
-											await _listController.blockAndUpdate();
-											setState(() {});
-										}
-									}
-								),
-								Builder(
-									builder: (context) => AdaptiveIconButton(
-										key: _shareButtonKey,
-										icon: Icon(Adaptive.icons.share),
-										onPressed: () {
-											final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-											final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-											final openInNewTabZone = context.read<OpenInNewTabZone?>();
-											shareOne(
+										},
+										child: AdaptiveIconButton(
+											onPressed: persistentState.incognito ? null : () {
+												lightHapticFeedback();
+												if (persistentState.savedTime != null) {
+													persistentState.savedTime = null;
+												}
+												else {
+													persistentState.savedTime = DateTime.now();
+												}
+												persistentState.save();
+												setState(() {});
+											},
+											icon: Icon(persistentState.incognito ?
+																		CupertinoIcons.eye_slash :
+																		persistentState.savedTime == null ?
+																			Adaptive.icons.bookmark :
+																			Adaptive.icons.bookmarkFilled)
+										)
+									),
+									if (site.threadVariants.isNotEmpty) AdaptiveIconButton(
+										padding: EdgeInsets.zero,
+										icon: FittedBox(
+											fit: BoxFit.contain,
+											child: SizedBox(
+												width: 40,
+												height: 40,
+												child: Stack(
+													children: [
+														Align(
+															alignment: Alignment.bottomRight,
+															child: Icon(persistentState.variant?.icon ?? persistentState.thread?.suggestedVariant?.icon ?? site.threadVariants.first.icon)
+														),
+														const Align(
+															alignment: Alignment.topLeft,
+															child: Icon(CupertinoIcons.sort_down)
+														)
+													]
+												)
+											)
+										),
+										onPressed: () async {
+											final choice = await showAdaptiveModalPopup<ThreadVariant>(
+												useRootNavigator: false,
 												context: context,
-												text: site.getWebUrl(
-													board: widget.thread.board,
-													threadId: widget.thread.id,
-													archiveName: archiveName
-												),
-												type: "text",
-												sharePositionOrigin: (offset != null && size != null) ? offset & size : null,
-												additionalOptions: {
-													if (openInNewTabZone != null) 'Open in new tab': () => openInNewTabZone.onWantOpenThreadInNewTab(context.read<Imageboard>().key, widget.thread),
-													'Share as image': () async {
-														try {
-															final file = await modalLoad(context, 'Rendering...', (c) => sharePostsAsImage(context: context, primaryPostId: widget.thread.id, style: const ShareablePostsStyle(
-																expandPrimaryImage: true,
-																width: 400
-															)));
-															if (context.mounted) {
-																shareOne(
-																	context: context,
-																	text: file.path,
-																	type: 'file',
-																	sharePositionOrigin: null
-																);
-															}
+												builder: (context) => AdaptiveActionSheet(
+													title: const Text('Thread Sorting'),
+													actions: site.threadVariants.map((variant) => AdaptiveActionSheetAction(
+														child: Row(
+															children: [
+																SizedBox(
+																	width: 40,
+																	child: Center(
+																		child: Icon(variant.icon),
+																	)
+																),
+																Expanded(
+																	child: Text(
+																		variant.name,
+																		textAlign: TextAlign.left,
+																		style: TextStyle(
+																			fontWeight: variant == (persistentState.variant ?? persistentState.thread?.suggestedVariant ?? site.threadVariants.first) ? FontWeight.bold : null
+																		)
+																	)
+																)
+															]
+														),
+														onPressed: () {
+															Navigator.of(context).pop(variant);
 														}
-														catch (e, st) {
-															Future.error(e, st); // Report to crashlytics
-															if (context.mounted) {
-																alertError(context, e.toStringDio());
+													)).toList(),
+													cancelButton: AdaptiveActionSheetAction(
+														child: const Text('Cancel'),
+														onPressed: () => Navigator.of(context).pop()
+													)
+												)
+											);
+											if (choice != null && mounted) {
+												persistentState.variant = choice;
+												persistentState.save();
+												setState(() {});
+												await Future.delayed(const Duration(milliseconds: 30));
+												await _listController.blockAndUpdate();
+												setState(() {});
+											}
+										}
+									),
+									Builder(
+										builder: (context) => AdaptiveIconButton(
+											key: _shareButtonKey,
+											icon: Icon(Adaptive.icons.share),
+											onPressed: () {
+												final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+												final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+												final openInNewTabZone = context.read<OpenInNewTabZone?>();
+												shareOne(
+													context: context,
+													text: site.getWebUrl(
+														board: widget.thread.board,
+														threadId: widget.thread.id,
+														archiveName: archiveName
+													),
+													type: "text",
+													sharePositionOrigin: (offset != null && size != null) ? offset & size : null,
+													additionalOptions: {
+														if (openInNewTabZone != null) 'Open in new tab': () => openInNewTabZone.onWantOpenThreadInNewTab(context.read<Imageboard>().key, widget.thread),
+														'Share as image': () async {
+															try {
+																final file = await modalLoad(context, 'Rendering...', (c) => sharePostsAsImage(context: context, primaryPostId: widget.thread.id, style: const ShareablePostsStyle(
+																	expandPrimaryImage: true,
+																	width: 400
+																)));
+																if (context.mounted) {
+																	shareOne(
+																		context: context,
+																		text: file.path,
+																		type: 'file',
+																		sharePositionOrigin: null
+																	);
+																}
+															}
+															catch (e, st) {
+																Future.error(e, st); // Report to crashlytics
+																if (context.mounted) {
+																	alertError(context, e.toStringDio());
+																}
 															}
 														}
 													}
-												}
-											);
-										}
+												);
+											}
+										)
+									),
+									if (site.supportsPosting) AdaptiveIconButton(
+										onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
+											if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+												_popOutReplyBox(null);
+											}
+											else {
+												_replyBoxKey.currentState?.toggleReplyBox();
+											}
+											setState(() {});
+										},
+										icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
 									)
-								),
-								if (site.supportsPosting) AdaptiveIconButton(
-									onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
-										if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-											_popOutReplyBox(null);
-										}
-										else {
-											_replyBoxKey.currentState?.toggleReplyBox();
-										}
-										setState(() {});
-									},
-									icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
-								)
-							]
-						),
-						body: Column(
-							children: [
-								Flexible(
-									flex: 1,
-									child: TransformedMediaQuery(
-										transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
-										child: Shortcuts(
-											shortcuts: {
-												LogicalKeySet(LogicalKeyboardKey.keyG): const OpenGalleryIntent()
-											},
-											child: Actions(
-												actions: {
-													OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
-														onInvoke: (i) {
-															if (_listController.state?.searchHasFocus ?? false) {
-																return;
-															}
-															_showGalleryFromNextImage();
-															return null;
-														}
-													)
+								]
+							),
+							body: Column(
+								children: [
+									Flexible(
+										flex: 1,
+										child: TransformedMediaQuery(
+											transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
+											child: Shortcuts(
+												shortcuts: {
+													LogicalKeySet(LogicalKeyboardKey.keyG): const OpenGalleryIntent()
 												},
-												child: Focus(
-													autofocus: true,
-													child: WeakNavigator(
-														key: _weakNavigatorKey,
-														child: Stack(
-															fit: StackFit.expand,
-															children: [
-																if (_buildRefreshableList) RefreshableList<Post>(
-																	filterableAdapter: (t) => t,
-																	initialFilter: widget.initialSearch,
-																	onFilterChanged: (filter) {
-																		_searching = filter != null;
-																		setState(() {});
-																	},
-																	key: _listKey,
-																	sortMethods: zone.postSortingMethods,
-																	id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																	disableUpdates: persistentState.disableUpdates,
-																	autoUpdateDuration: autoUpdateDuration,
-																	initialList: persistentState.thread?.posts ?? site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1),
-																	initialTreeSplitId: persistentState.treeSplitId,
-																	onTreeSplitIdChanged: (newId) {
-																		persistentState.treeSplitId = newId;
-																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-																	},
-																	useTree: useTree,
-																	initialCollapsedItems: persistentState.collapsedItems,
-																	initialPrimarySubtreeParents: persistentState.primarySubtreeParents,
-																	onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {
-																		persistentState.collapsedItems = newCollapsedItems.toList();
-																		persistentState.primarySubtreeParents = newPrimarySubtreeParents;
-																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-																	},
-																	treeAdapter: RefreshableTreeAdapter(
-																		getId: (p) => p.id,
-																		getParentIds: (p) => p.repliedToIds,
-																		getIsStub: (p) => p.isStub,
-																		getHasOmittedReplies: (p) => p.hasOmittedReplies,
-																		updateWithStubItems: (_, ids) => _updateWithStubItems(ids),
-																		opId: widget.thread.id,
-																		wrapTreeChild: (child, parentIds) {
-																			PostSpanZoneData childZone = zone;
-																			for (final id in parentIds) {
-																				childZone = childZone.childZoneFor(id, style: PostSpanZoneStyle.tree);
-																			}
-																			return ChangeNotifierProvider.value(
-																				value: childZone,
-																				child: child
-																			);
+												child: Actions(
+													actions: {
+														OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
+															onInvoke: (i) {
+																if (_listController.state?.searchHasFocus ?? false) {
+																	return;
+																}
+																_showGalleryFromNextImage();
+																return null;
+															}
+														)
+													},
+													child: Focus(
+														autofocus: true,
+														child: WeakNavigator(
+															key: _weakNavigatorKey,
+															child: Stack(
+																fit: StackFit.expand,
+																children: [
+																	if (_buildRefreshableList) RefreshableList<Post>(
+																		filterableAdapter: (t) => t,
+																		initialFilter: widget.initialSearch,
+																		onFilterChanged: (filter) {
+																			_searching = filter != null;
+																			setState(() {});
 																		},
-																		estimateHeight: (post, width) {
-																			final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
-																			return post.span.estimateLines(
-																				(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
-																			).ceil() * fontSize;
+																		key: _listKey,
+																		sortMethods: zone.postSortingMethods,
+																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
+																		disableUpdates: persistentState.disableUpdates,
+																		autoUpdateDuration: autoUpdateDuration,
+																		initialList: persistentState.thread?.posts ?? site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1),
+																		initialTreeSplitId: persistentState.treeSplitId,
+																		onTreeSplitIdChanged: (newId) {
+																			persistentState.treeSplitId = newId;
+																			runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 																		},
-																		initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
-																		collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
-																		repliesToOPAreTopLevel: treeModeRepliesToOPAreTopLevel,
-																		newRepliesAreLinear: treeModeNewRepliesAreLinear
-																	),
-																	footer: Container(
-																		padding: const EdgeInsets.all(16),
-																		child: (persistentState.thread == null) ? null : Opacity(
-																			opacity: persistentState.thread?.isArchived == true ? 0.5 : 1,
-																			child: Row(
-																				children: [
-																					const Spacer(),
-																					const Icon(CupertinoIcons.reply),
-																					const SizedBox(width: 8),
-																					_limitCounter(persistentState.thread!.replyCount, context.read<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
-																					const Spacer(),
-																					Icon(Adaptive.icons.photo),
-																					const SizedBox(width: 8),
-																					_limitCounter(persistentState.thread!.imageCount, context.read<Persistence>().getBoard(widget.thread.board).threadImageLimit),
-																					const Spacer(),
-																					if (persistentState.thread!.uniqueIPCount != null) ...[
-																						const Icon(CupertinoIcons.person),
-																						const SizedBox(width: 8),
-																						Text('${persistentState.thread!.uniqueIPCount}'),
-																						const Spacer(),
-																					],
-																					if (persistentState.thread!.currentPage != null) ...[
-																						const Icon(CupertinoIcons.doc),
-																						const SizedBox(width: 8),
-																						_limitCounter(persistentState.thread!.currentPage!, context.read<Persistence>().getBoard(widget.thread.board).pageCount),
-																						const Spacer()
-																					],
-																					if (persistentState.thread!.isArchived || persistentState.thread!.isDeleted) ...[
-																						GestureDetector(
-																							behavior: HitTestBehavior.opaque,
-																							onTap: _switchToLive,
-																							child: Row(
-																								children: [
-																									Icon(persistentState.thread!.isDeleted ? CupertinoIcons.trash : CupertinoIcons.archivebox),
-																									const SizedBox(width: 8),
-																									Text(persistentState.thread!.archiveName ?? (persistentState.thread!.isDeleted ? 'Deleted' : 'Archived'))
-																								]
-																							)
-																						),
-																						const Spacer()
-																					]
-																				]
-																			)
-																		)
-																	),
-																	remedies: {
-																		if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => AdaptiveFilledButton(
-																			child: const Text('Try archive'),
-																			onPressed: () {
-																				persistentState.useArchive = true;
-																				persistentState.save();
-																				updater();
-																			}
-																		)
-																	},
-																	listUpdater: () async {
-																		return (await _getUpdatedThread()).posts;
-																	},
-																	controller: _listController,
-																	itemBuilder: (context, post) {
-																		return AnimatedBuilder(
-																			animation: _glowingPostsAnimation,
-																			builder: (context, child) {
-																				return TweenAnimationBuilder<double>(
-																					tween: Tween(begin: 0, end: _glowingPostId == post.id ? 0.2 : 0),
-																					duration: const Duration(milliseconds: 350),
-																					child: child,
-																					builder: (context, factor, child) => factor == 0 ? child! : ColorFiltered(
-																						colorFilter: ui.ColorFilter.mode(
-																							theme.secondaryColor.withOpacity(factor),
-																							BlendMode.srcOver
-																						),
-																						child: child
-																					)
+																		useTree: useTree,
+																		initialCollapsedItems: persistentState.collapsedItems,
+																		initialPrimarySubtreeParents: persistentState.primarySubtreeParents,
+																		onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {
+																			persistentState.collapsedItems = newCollapsedItems.toList();
+																			persistentState.primarySubtreeParents = newPrimarySubtreeParents;
+																			runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+																		},
+																		treeAdapter: RefreshableTreeAdapter(
+																			getId: (p) => p.id,
+																			getParentIds: (p) => p.repliedToIds,
+																			getIsStub: (p) => p.isStub,
+																			getHasOmittedReplies: (p) => p.hasOmittedReplies,
+																			updateWithStubItems: (_, ids) => _updateWithStubItems(ids),
+																			opId: widget.thread.id,
+																			wrapTreeChild: (child, parentIds) {
+																				PostSpanZoneData childZone = zone;
+																				for (final id in parentIds) {
+																					childZone = childZone.childZoneFor(id, style: PostSpanZoneStyle.tree);
+																				}
+																				return ChangeNotifierProvider.value(
+																					value: childZone,
+																					child: child
 																				);
 																			},
-																			child: PostRow(
+																			estimateHeight: (post, width) {
+																				final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
+																				return post.span.estimateLines(
+																					(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
+																				).ceil() * fontSize;
+																			},
+																			initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
+																			collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
+																			repliesToOPAreTopLevel: treeModeRepliesToOPAreTopLevel,
+																			newRepliesAreLinear: treeModeNewRepliesAreLinear
+																		),
+																		footer: Container(
+																			padding: const EdgeInsets.all(16),
+																			child: (persistentState.thread == null) ? null : Opacity(
+																				opacity: persistentState.thread?.isArchived == true ? 0.5 : 1,
+																				child: Row(
+																					children: [
+																						const Spacer(),
+																						const Icon(CupertinoIcons.reply),
+																						const SizedBox(width: 8),
+																						_limitCounter(persistentState.thread!.replyCount, context.read<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
+																						const Spacer(),
+																						Icon(Adaptive.icons.photo),
+																						const SizedBox(width: 8),
+																						_limitCounter(persistentState.thread!.imageCount, context.read<Persistence>().getBoard(widget.thread.board).threadImageLimit),
+																						const Spacer(),
+																						if (persistentState.thread!.uniqueIPCount != null) ...[
+																							const Icon(CupertinoIcons.person),
+																							const SizedBox(width: 8),
+																							Text('${persistentState.thread!.uniqueIPCount}'),
+																							const Spacer(),
+																						],
+																						if (persistentState.thread!.currentPage != null) ...[
+																							const Icon(CupertinoIcons.doc),
+																							const SizedBox(width: 8),
+																							_limitCounter(persistentState.thread!.currentPage!, context.read<Persistence>().getBoard(widget.thread.board).pageCount),
+																							const Spacer()
+																						],
+																						if (persistentState.thread!.isArchived || persistentState.thread!.isDeleted) ...[
+																							GestureDetector(
+																								behavior: HitTestBehavior.opaque,
+																								onTap: _switchToLive,
+																								child: Row(
+																									children: [
+																										Icon(persistentState.thread!.isDeleted ? CupertinoIcons.trash : CupertinoIcons.archivebox),
+																										const SizedBox(width: 8),
+																										Text(persistentState.thread!.archiveName ?? (persistentState.thread!.isDeleted ? 'Deleted' : 'Archived'))
+																									]
+																								)
+																							),
+																							const Spacer()
+																						]
+																					]
+																				)
+																			)
+																		),
+																		remedies: {
+																			if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => AdaptiveFilledButton(
+																				child: const Text('Try archive'),
+																				onPressed: () {
+																					persistentState.useArchive = true;
+																					persistentState.save();
+																					updater();
+																				}
+																			)
+																		},
+																		listUpdater: () async {
+																			return (await _getUpdatedThread()).posts;
+																		},
+																		controller: _listController,
+																		itemBuilder: (context, post) {
+																			return AnimatedBuilder(
+																				animation: _glowingPostsAnimation,
+																				builder: (context, child) {
+																					return TweenAnimationBuilder<double>(
+																						tween: Tween(begin: 0, end: _glowingPostId == post.id ? 0.2 : 0),
+																						duration: const Duration(milliseconds: 350),
+																						child: child,
+																						builder: (context, factor, child) => factor == 0 ? child! : ColorFiltered(
+																							colorFilter: ui.ColorFilter.mode(
+																								theme.secondaryColor.withOpacity(factor),
+																								BlendMode.srcOver
+																							),
+																							child: child
+																						)
+																					);
+																				},
+																				child: PostRow(
+																					post: post,
+																					onThumbnailTap: (attachment) {
+																						_showGallery(initialAttachment: TaggedAttachment(
+																							attachment: attachment,
+																							semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																						));
+																					},
+																					onRequestArchive: () => _replacePostFromArchive(post),
+																					highlight: newPostIds.contains(post.id),
+																				)
+																			);
+																		},
+																		filteredItemBuilder: (context, post, resetPage, filterText) {
+																			return PostRow(
 																				post: post,
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: TaggedAttachment(
@@ -1587,262 +1602,248 @@ class ThreadPageState extends State<ThreadPage> {
 																					));
 																				},
 																				onRequestArchive: () => _replacePostFromArchive(post),
-																				highlight: newPostIds.contains(post.id),
-																			)
-																		);
-																	},
-																	filteredItemBuilder: (context, post, resetPage, filterText) {
-																		return PostRow(
-																			post: post,
-																			onThumbnailTap: (attachment) {
-																				_showGallery(initialAttachment: TaggedAttachment(
-																					attachment: attachment,
-																					semanticParentIds: context.read<PostSpanZoneData>().stackIds
-																				));
-																			},
-																			onRequestArchive: () => _replacePostFromArchive(post),
-																			onTap: () async {
-																				resetPage();
-																				await Future.delayed(const Duration(milliseconds: 250));
-																				await _listController.animateTo((val) => val.id == post.id);
-																				await _glowPost(post.id);
-																			},
-																			baseOptions: PostSpanRenderOptions(
-																				highlightString: filterText
-																			),
-																			highlight: newPostIds.contains(post.id)
-																		);
-																	},
-																	collapsedItemBuilder: ({
-																		required BuildContext context,
-																		required Post? value,
-																		required Set<int> collapsedChildIds,
-																		required bool loading,
-																		required double? peekContentHeight,
-																		required List<ParentAndChildIdentifier>? stubChildIds
-																	}) {
-																		final newCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
-																		final unseenCount = collapsedChildIds.where((id) => persistentState.unseenPostIds.data.contains(id)).length;
-																		if (peekContentHeight != null && value != null) {
-																			final style = TextStyle(
-																				color: theme.secondaryColor,
-																				fontWeight: FontWeight.bold
+																				onTap: () async {
+																					resetPage();
+																					await Future.delayed(const Duration(milliseconds: 250));
+																					await _listController.animateTo((val) => val.id == post.id);
+																					await _glowPost(post.id);
+																				},
+																				baseOptions: PostSpanRenderOptions(
+																					highlightString: filterText
+																				),
+																				highlight: newPostIds.contains(post.id)
 																			);
-																			final post = Builder(
-																				builder: (context) => PostRow(
-																					post: value,
-																					dim: peekContentHeight.isFinite,
-																					highlight: newPostIds.contains(value.id),
-																					onThumbnailTap: (attachment) {
-																						_showGallery(initialAttachment: TaggedAttachment(
-																							attachment: attachment,
-																							semanticParentIds: context.read<PostSpanZoneData>().stackIds
-																						));
-																					},
-																					onRequestArchive: () => _replacePostFromArchive(value),
-																					overrideReplyCount: Row(
-																						mainAxisSize: MainAxisSize.min,
+																		},
+																		collapsedItemBuilder: ({
+																			required BuildContext context,
+																			required Post? value,
+																			required Set<int> collapsedChildIds,
+																			required bool loading,
+																			required double? peekContentHeight,
+																			required List<ParentAndChildIdentifier>? stubChildIds
+																		}) {
+																			final newCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
+																			final unseenCount = collapsedChildIds.where((id) => persistentState.unseenPostIds.data.contains(id)).length;
+																			if (peekContentHeight != null && value != null) {
+																				final style = TextStyle(
+																					color: theme.secondaryColor,
+																					fontWeight: FontWeight.bold
+																				);
+																				final post = Builder(
+																					builder: (context) => PostRow(
+																						post: value,
+																						dim: peekContentHeight.isFinite,
+																						highlight: newPostIds.contains(value.id),
+																						onThumbnailTap: (attachment) {
+																							_showGallery(initialAttachment: TaggedAttachment(
+																								attachment: attachment,
+																								semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																							));
+																						},
+																						onRequestArchive: () => _replacePostFromArchive(value),
+																						overrideReplyCount: Row(
+																							mainAxisSize: MainAxisSize.min,
+																							children: [
+																								RotatedBox(
+																									quarterTurns: 1,
+																									child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: theme.secondaryColor)
+																								),
+																								if (collapsedChildIds.isNotEmpty) Text(
+																									' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
+																									style: style
+																								),
+																								if (unseenCount > 0) Text(
+																									' ($unseenCount unseen)',
+																									style: style
+																								)
+																								else if (newCount > 0) Text(
+																									' ($newCount new)',
+																									style: style
+																								)
+																							]
+																						)
+																					)
+																				);
+																				return IgnorePointer(
+																					ignoring: peekContentHeight.isFinite,
+																					child: ConstrainedBox(
+																						constraints: BoxConstraints(
+																							maxHeight: peekContentHeight
+																						),
+																						child: post
+																					)
+																				);
+																			}
+																			const style = TextStyle(fontSize: 16);
+																			return IgnorePointer(
+																				child: Container(
+																					width: double.infinity,
+																					padding: const EdgeInsets.all(8),
+																					// TODO: The below?
+																					color: ([value?.id, ...(stubChildIds?.map((x) => x.childId) ?? <int>[])]).any((x) => newPostIds.contains(x)) ? theme.primaryColorWithBrightness(0.1) : null,
+																					child: Row(
 																						children: [
-																							RotatedBox(
-																								quarterTurns: 1,
-																								child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: theme.secondaryColor)
-																							),
+																							if (value != null) Expanded(
+																								child: Text.rich(
+																									buildPostInfoRow(
+																										post: value,
+																										isYourPost: persistentState.youIds.contains(value.id),
+																										settings: settings,
+																										theme: theme,
+																										site: site,
+																										context: context,
+																										zone: zone
+																									)
+																								)
+																							)
+																							else const Spacer(),
+																							if (loading) ...[
+																								SizedBox(
+																									width: 18,
+																									height: 18,
+																									child: Transform.scale(
+																										scale: 0.9,
+																										child: const CircularProgressIndicator.adaptive()
+																									)
+																								),
+																								const Text(' ', style: style)
+																							],
 																							if (collapsedChildIds.isNotEmpty) Text(
-																								' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
+																								'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} ',
 																								style: style
 																							),
 																							if (unseenCount > 0) Text(
-																								' ($unseenCount unseen)',
+																								'($unseenCount unseen) ',
 																								style: style
 																							)
 																							else if (newCount > 0) Text(
-																								' ($newCount new)',
+																								'($newCount new) ',
 																								style: style
-																							)
+																							),
+																							Icon(CupertinoIcons.chevron_down, size: MediaQuery.textScalerOf(context).scale(18))
 																						]
 																					)
 																				)
 																			);
-																			return IgnorePointer(
-																				ignoring: peekContentHeight.isFinite,
-																				child: ConstrainedBox(
-																					constraints: BoxConstraints(
-																						maxHeight: peekContentHeight
-																					),
-																					child: post
-																				)
-																			);
-																		}
-																		const style = TextStyle(fontSize: 16);
-																		return IgnorePointer(
-																			child: Container(
-																				width: double.infinity,
-																				padding: const EdgeInsets.all(8),
-																				// TODO: The below?
-																				color: ([value?.id, ...(stubChildIds?.map((x) => x.childId) ?? <int>[])]).any((x) => newPostIds.contains(x)) ? theme.primaryColorWithBrightness(0.1) : null,
-																				child: Row(
-																					children: [
-																						if (value != null) Expanded(
-																							child: Text.rich(
-																								buildPostInfoRow(
-																									post: value,
-																									isYourPost: persistentState.youIds.contains(value.id),
-																									settings: settings,
-																									theme: theme,
-																									site: site,
-																									context: context,
-																									zone: zone
-																								)
-																							)
-																						)
-																						else const Spacer(),
-																						if (loading) ...[
-																							SizedBox(
-																								width: 18,
-																								height: 18,
-																								child: Transform.scale(
-																									scale: 0.9,
-																									child: const CircularProgressIndicator.adaptive()
-																								)
-																							),
-																							const Text(' ', style: style)
-																						],
-																						if (collapsedChildIds.isNotEmpty) Text(
-																							'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} ',
-																							style: style
-																						),
-																						if (unseenCount > 0) Text(
-																							'($unseenCount unseen) ',
-																							style: style
-																						)
-																						else if (newCount > 0) Text(
-																							'($newCount new) ',
-																							style: style
-																						),
-																						Icon(CupertinoIcons.chevron_down, size: MediaQuery.textScalerOf(context).scale(18))
-																					]
-																				)
-																			)
-																		);
-																	},
-																	filterHint: 'Search in thread'
-																),
-																SafeArea(
-																	child: Align(
-																		alignment: reverseIndicatorPosition ? Alignment.bottomLeft : Alignment.bottomRight,
-																		child: _ThreadPositionIndicator(
-																			key: _indicatorKey,
-																			reversed: reverseIndicatorPosition,
-																			persistentState: persistentState,
-																			thread: persistentState.thread,
-																			threadIdentifier: widget.thread,
-																			listController: _listController,
-																			zone: zone,
-																			filter: Filter.of(context),
-																			useTree: useTree,
-																			newPostIds: newPostIds,
-																			searching: _searching,
-																			passedFirstLoad: _passedFirstLoad,
-																			blocked: blocked,
-																			boardSemanticId: widget.boardSemanticId,
-																			developerModeButtons: [
-																				[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
-																					final id = _listController.lastVisibleItem?.id;
-																					if (id != null) {
-																						if (useTree) {
-																							// Something arbitrary
-																							final x = _listController.items.map((i) => i.id).toList()..shuffle();
-																							persistentState.unseenPostIds.data.addAll(x.take(x.length ~/ 2));
+																		},
+																		filterHint: 'Search in thread'
+																	),
+																	SafeArea(
+																		child: Align(
+																			alignment: reverseIndicatorPosition ? Alignment.bottomLeft : Alignment.bottomRight,
+																			child: _ThreadPositionIndicator(
+																				key: _indicatorKey,
+																				reversed: reverseIndicatorPosition,
+																				persistentState: persistentState,
+																				thread: persistentState.thread,
+																				threadIdentifier: widget.thread,
+																				listController: _listController,
+																				zone: zone,
+																				useTree: useTree,
+																				newPostIds: newPostIds,
+																				searching: _searching,
+																				passedFirstLoad: _passedFirstLoad,
+																				blocked: blocked,
+																				boardSemanticId: widget.boardSemanticId,
+																				developerModeButtons: [
+																					[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
+																						final id = _listController.lastVisibleItem?.id;
+																						if (id != null) {
+																							if (useTree) {
+																								// Something arbitrary
+																								final x = _listController.items.map((i) => i.id).toList()..shuffle();
+																								persistentState.unseenPostIds.data.addAll(x.take(x.length ~/ 2));
+																							}
+																							else {
+																								persistentState.unseenPostIds.data.addAll(_listController.items.map((i) => i.id).where((x) => x > id));
+																							}
+																							persistentState.lastSeenPostId = id;
+																							persistentState.save();
+																							setState(() {});
 																						}
-																						else {
-																							persistentState.unseenPostIds.data.addAll(_listController.items.map((i) => i.id).where((x) => x > id));
-																						}
-																						persistentState.lastSeenPostId = id;
-																						persistentState.save();
-																						setState(() {});
+																					})]
+																				],
+																				cachedAttachments: _cached,
+																				attachmentsCachingQueue: _cachingQueue,
+																				startCaching: () => _cacheAttachments(automatic: false),
+																				openGalleryGrid: () => _showGalleryFromNextImage(initiallyShowGrid: true),
+																				suggestedThread: _suggestedNewGeneral == null ? null : (
+																					label: _suggestedNewGeneral?.$2 ?? '',
+																					onAccept: () {
+																						widget.onWantChangeThread?.call(_suggestedNewGeneral!.$1);
+																					},
+																					onReject: () {
+																						setState(() {
+																							_rejectedNewGeneralSuggestion = _suggestedNewGeneral?.$1;
+																							_suggestedNewGeneral = null;
+																						});
 																					}
-																				})]
-																			],
-																			cachedAttachments: _cached,
-																			attachmentsCachingQueue: _cachingQueue,
-																			startCaching: () => _cacheAttachments(automatic: false),
-																			openGalleryGrid: () => _showGalleryFromNextImage(initiallyShowGrid: true),
-																			suggestedThread: _suggestedNewGeneral == null ? null : (
-																				label: _suggestedNewGeneral?.$2 ?? '',
-																				onAccept: () {
-																					widget.onWantChangeThread?.call(_suggestedNewGeneral!.$1);
-																				},
-																				onReject: () {
-																					setState(() {
-																						_rejectedNewGeneralSuggestion = _suggestedNewGeneral?.$1;
-																						_suggestedNewGeneral = null;
-																					});
-																				}
+																				)
+																			)
+																		)
+																	),
+																	if (blocked) Builder(
+																		builder: (context) => Container(
+																			color: theme.backgroundColor,
+																			child: const Center(
+																				child: CircularProgressIndicator.adaptive()
 																			)
 																		)
 																	)
-																),
-																if (blocked) Builder(
-																	builder: (context) => Container(
-																		color: theme.backgroundColor,
-																		child: const Center(
-																			child: CircularProgressIndicator.adaptive()
-																		)
-																	)
-																)
-															]
+																]
+															)
 														)
 													)
 												)
 											)
 										)
+									),
+									RepaintBoundary(
+										child: ReplyBox(
+											key: _replyBoxKey,
+											board: widget.thread.board,
+											threadId: widget.thread.id,
+											isArchived: persistentState.thread?.isArchived ?? false,
+											initialText: persistentState.draftReply,
+											onTextChanged: (text) {
+												persistentState.draftReply = text;
+												runWhenIdle(const Duration(seconds: 3), persistentState.save);
+											},
+											onReplyPosted: (receipt) async {
+												if (site.supportsPushNotifications) {
+													await promptForPushNotificationsIfNeeded(context);
+												}
+												if (!mounted) return;
+												if (settings.watchThreadAutomaticallyWhenReplying) {
+													notifications.subscribeToThread(
+														thread: widget.thread,
+														lastSeenId: receipt.id,
+														localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
+														pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
+														foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
+														push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
+														youIds: persistentState.freshYouIds()
+													);
+												}
+												if (settings.saveThreadAutomaticallyWhenReplying) {
+													persistentState.savedTime ??= DateTime.now();
+													runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+												}
+												if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
+													// If already at the bottom, pre-mark the created post as seen
+													persistentState.lastSeenPostId = receipt.id;
+													runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+												}
+												_listController.update();
+												Future.delayed(const Duration(seconds: 12), _listController.update);
+											},
+											onVisibilityChanged: () {
+												setState(() {});
+											}
+										)
 									)
-								),
-								RepaintBoundary(
-									child: ReplyBox(
-										key: _replyBoxKey,
-										board: widget.thread.board,
-										threadId: widget.thread.id,
-										isArchived: persistentState.thread?.isArchived ?? false,
-										initialText: persistentState.draftReply,
-										onTextChanged: (text) {
-											persistentState.draftReply = text;
-											runWhenIdle(const Duration(seconds: 3), persistentState.save);
-										},
-										onReplyPosted: (receipt) async {
-											if (site.supportsPushNotifications) {
-												await promptForPushNotificationsIfNeeded(context);
-											}
-											if (!mounted) return;
-											if (settings.watchThreadAutomaticallyWhenReplying) {
-												notifications.subscribeToThread(
-													thread: widget.thread,
-													lastSeenId: receipt.id,
-													localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
-													pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
-													foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
-													push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-													youIds: persistentState.freshYouIds()
-												);
-											}
-											if (settings.saveThreadAutomaticallyWhenReplying) {
-												persistentState.savedTime ??= DateTime.now();
-												runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-											}
-											if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
-												// If already at the bottom, pre-mark the created post as seen
-												persistentState.lastSeenPostId = receipt.id;
-												runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-											}
-											_listController.update();
-											Future.delayed(const Duration(seconds: 12), _listController.update);
-										},
-										onVisibilityChanged: () {
-											setState(() {});
-										}
-									)
-								)
-							]
+								]
+							)
 						)
 					)
 				)
@@ -1874,7 +1875,6 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final Thread? thread;
 	final ThreadIdentifier threadIdentifier;
 	final RefreshableListController<Post> listController;
-	final Filter filter;
 	final PostSpanZoneData zone;
 	final bool reversed;
 	final bool useTree;
@@ -1895,7 +1895,6 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.thread,
 		required this.threadIdentifier,
 		required this.listController,
-		required this.filter,
 		required this.zone,
 		this.reversed = false,
 		required this.useTree,
@@ -1941,6 +1940,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 	late final ScrollController _menuScrollController;
 	ValueNotifier<String?>? _lastUpdatingNow;
 	late bool _useCatalogCache;
+	Filter? _lastFilter;
 
 	Future<bool> _updateCounts() async {
 		final site = context.read<ImageboardSite>();
@@ -2158,6 +2158,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		}
 		_useCatalogCache = widget.thread == null;
 		_pollForOnSlowScroll();
+		_lastFilter = Filter.of(context, listen: false);
 	}
 
 	@override
@@ -2168,7 +2169,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			_lastLastVisibleItemId = null;
 		}
 		if (widget.thread != oldWidget.thread ||
-		    widget.filter != oldWidget.filter ||
 				widget.useTree != oldWidget.useTree) {
 			if (widget.thread == null) {
 				_filteredPosts = null;
@@ -2229,6 +2229,23 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		}
 		else {
 			_scheduleAdditionalSafeAreaInsetsHide();
+		}
+		final newFilter = Filter.of(context);
+		if (newFilter != _lastFilter) {
+			// Reset some state
+			if (widget.thread == null) {
+				_filteredPosts = null;
+				_filteredItems = null;
+				_useCatalogCache = true;
+			}
+			else {
+				_filteredPosts = widget.persistentState.filteredPosts();
+				_filteredItems = null; // Likely not built yet
+				furthestSeenIndexTop = 9999999;
+				furthestSeenIndexBottom = 0;
+				_useCatalogCache = false;
+			}
+			_pollForOnSlowScroll();
 		}
 	}
 

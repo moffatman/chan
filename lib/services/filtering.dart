@@ -27,6 +27,7 @@ class FilterResultType {
 	final AutoWatchType? autoWatch;
 	final bool notify;
 	final bool collapse;
+	final bool hideReplies;
 
 	const FilterResultType({
 		this.hide = false,
@@ -35,7 +36,8 @@ class FilterResultType {
 		this.autoSave = false,
 		this.autoWatch,
 		this.notify = false,
-		this.collapse = false
+		this.collapse = false,
+		this.hideReplies = false
 	});
 
 	static const FilterResultType empty = FilterResultType();
@@ -48,7 +50,8 @@ class FilterResultType {
 		if (autoSave) 'autoSave',
 		if (autoWatch != null) autoWatch.toString(),
 		if (notify) 'notify',
-		if (collapse) 'collapse'
+		if (collapse) 'collapse',
+		if (hideReplies) 'hideReplies'
 	].join(', ')})';
 
 	@override
@@ -60,10 +63,11 @@ class FilterResultType {
 		other.autoSave == autoSave &&
 		other.autoWatch == autoWatch &&
 		other.notify == notify &&
-		other.collapse == collapse;
+		other.collapse == collapse &&
+		other.hideReplies == hideReplies;
 
 	@override
-	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, autoWatch, notify, collapse);
+	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, autoWatch, notify, collapse, hideReplies);
 }
 
 class FilterResult {
@@ -122,6 +126,8 @@ abstract class Filter {
 	static Filter of(BuildContext context, {bool listen = true}) {
 		return (listen ? context.watch<Filter?>() : context.read<Filter?>()) ?? const DummyFilter();
 	}
+
+	bool get supportsMetaFilter;
 }
 
 class FilterCache<T extends Filter> implements Filter {
@@ -143,6 +149,9 @@ class FilterCache<T extends Filter> implements Filter {
 		}
 		return _cache.get(item);
 	}
+
+	@override
+	bool get supportsMetaFilter => wrappedFilter.supportsMetaFilter;
 
 	@override
 	String toString() => 'FilterCache($wrappedFilter)';
@@ -246,6 +255,7 @@ class CustomFilter implements Filter {
 			AutoWatchType? autoWatch;
 			bool notify = false;
 			bool collapse = false;
+			bool hideReplies = false;
 			while (true) {
 				final s = match.group(i);
 				if (s == null) {
@@ -291,6 +301,9 @@ class CustomFilter implements Filter {
 				}
 				else if (s == 'show') {
 					hide = false;
+				}
+				else if (s == 'hideReplies') {
+					hideReplies = true;
 				}
 				else if (s.startsWith('type:')) {
 					filter.patternFields = s.split(separator).skip(1).toList();
@@ -354,7 +367,8 @@ class CustomFilter implements Filter {
 				autoSave: autoSave,
 				autoWatch: autoWatch,
 				notify: notify,
-				collapse: collapse
+				collapse: collapse,
+				hideReplies: hideReplies
 			);
 			return filter;
 		}
@@ -408,8 +422,13 @@ class CustomFilter implements Filter {
 		if (outputType.collapse) {
 			out.write(';collapse');
 		}
-		if (outputType == FilterResultType.empty) {
+		if (outputType.hideReplies) {
+			out.write(';hideReplies');
+		}
+		if (outputType == FilterResultType.empty ||
+		    outputType == const FilterResultType(hideReplies: true)) {
 			// Kind of a dummy filter, just used to override others
+			// Also lets you hideReplies without hiding primary post
 			out.write(';show');
 		}
 		if (patternFields.isNotEmpty && !setEquals(patternFields.toSet(), defaultPatternFields.toSet())) {
@@ -452,6 +471,9 @@ class CustomFilter implements Filter {
 	}
 
 	@override
+	bool get supportsMetaFilter => outputType.hideReplies;
+
+	@override
 	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadsOnly: $threadsOnly, minRepliedTo: $minRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
 
 	@override
@@ -480,6 +502,9 @@ class IDFilter implements Filter {
 			return null;
 		}
 	}
+
+	@override
+	bool get supportsMetaFilter => false;
 
 	@override
 	String toString() => 'IDFilter(hideIds: $hideIds, showIds: $showIds)';
@@ -522,6 +547,9 @@ class ThreadFilter implements Filter {
 	}
 
 	@override
+	bool get supportsMetaFilter => false;
+
+	@override
 	String toString() => 'ThreadFilter(hideIds: $hideIds, showIds: $showIds, repliedToIds: $repliedToIds, posterIds: $posterIds)';
 
 	@override
@@ -545,6 +573,9 @@ class MD5Filter implements Filter {
 	}
 
 	@override
+	bool get supportsMetaFilter => false;
+
+	@override
 	String toString() => 'MD5Filter(md5s: $md5s, applyToThreads: $applyToThreads)';
 
 	@override
@@ -563,6 +594,9 @@ class SearchFilter implements Filter {
 			return item.getFilterFieldText(field) ?? '';
 		}).join(' ').toLowerCase()}'.contains(text) ? null : FilterResult(const FilterResultType(hide: true), 'Search for "$text"');
 	}
+
+	@override
+	bool get supportsMetaFilter => false;
 
 	@override
 	String toString() => 'SearchFilter(text: $text)';
@@ -589,6 +623,9 @@ class FilterGroup<T extends Filter> implements Filter {
 	}
 
 	@override
+	bool get supportsMetaFilter => filters.any((f) => f.supportsMetaFilter);
+
+	@override
 	String toString() => 'FilterGroup(filters: $filters)';
 
 	@override
@@ -602,6 +639,9 @@ class DummyFilter implements Filter {
 	const DummyFilter();
 	@override
 	FilterResult? filter(Filterable item) => null;
+
+	@override
+	bool get supportsMetaFilter => false;
 
 	@override
 	operator == (dynamic other) => other is DummyFilter;
@@ -657,4 +697,115 @@ class FilterZone extends StatelessWidget {
 			child: child
 		);
 	}
+}
+
+class MetaFilterZone extends StatefulWidget {
+	final Widget child;
+
+	const MetaFilterZone({
+		required this.child,
+		super.key
+	});
+
+	@override
+	createState() => _MetaFilterZoneState();
+}
+
+class _MetaFilterZoneState extends State<MetaFilterZone> {
+	late MetaFilter metaFilter;
+
+	@override
+	void initState() {
+		super.initState();
+		metaFilter = MetaFilter(const DummyFilter());
+	}
+
+	@override
+	void didChangeDependencies() {
+		super.didChangeDependencies();
+		final parent = Filter.of(context);
+		if (parent != metaFilter.parent) {
+			// Parent filter has updated
+			final oldList = metaFilter._lastList;
+			metaFilter = MetaFilter(parent);
+			if (oldList != null) {
+				metaFilter.seed(oldList);
+			}
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		// TODO: Check how often this gets rebuilt and cache thrown away
+		return ChangeNotifierProvider<MetaFilter>.value(
+			value: metaFilter,
+			child: ProxyProvider<MetaFilter, Filter>(
+				// Tweaked FilterZone here, because we want the metafilter to be applied second
+				update: (context, metaFilter, result) => FilterCache(FilterGroup([Filter.of(context), metaFilter])),
+				child: widget.child
+			)
+		);
+	}
+}
+
+class MetaFilter extends ChangeNotifier implements Filter {
+	final bool active;
+	final Filter parent;
+	final toxicRepliedToIds = <int, FilterResult>{};
+	List<Filterable>? _lastList;
+
+	MetaFilter(this.parent) : active = parent.supportsMetaFilter;
+
+	static MetaFilter? of(BuildContext context, {bool listen = true}) {
+		return listen ? context.watch<MetaFilter?>() : context.read<MetaFilter?>();
+	}
+
+	void seed(List<Filterable> list) {
+		if (!active) {
+			return;
+		}
+		if (listEquals(_lastList, list)) {
+			// No change
+			return;
+		}
+		final before = Map.of(toxicRepliedToIds);
+		toxicRepliedToIds.clear();
+		for (final item in list) {
+			final result = parent.filter(item);
+			if (result != null && result.type.hideReplies) {
+				toxicRepliedToIds[item.id] = result;
+			}
+		}
+		if (!mapEquals(before, toxicRepliedToIds)) {
+			Future.microtask(notifyListeners);
+		}
+	}
+
+	@override
+	FilterResult? filter(Filterable item) {
+		if (!active) {
+			return null;
+		}
+		if (toxicRepliedToIds.isEmpty) {
+			return null;
+		}
+		for (final id in item.repliedToIds) {
+			final match = toxicRepliedToIds[id];
+			if (match != null) {
+				return FilterResult(const FilterResultType(hide: true), 'Replied to $id (${match.reason})');
+			}
+		}
+		return null;
+	}
+
+	@override
+	bool get supportsMetaFilter => false;
+
+	@override
+	bool operator == (Object other) =>
+		other is MetaFilter &&
+		other.parent == parent;
+	
+	@override
+	int get hashCode => parent.hashCode;
 }

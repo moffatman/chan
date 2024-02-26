@@ -218,6 +218,9 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 		if (type?.collapse == true) {
 			results.add('Collapsed (tree mode)');
 		}
+		if (type?.hideReplies == true) {
+			results.add('Replies hidden');
+		}
 		if (results.isEmpty) {
 			return 'No action';
 		}
