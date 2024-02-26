@@ -66,8 +66,7 @@ class Imageboard extends ChangeNotifier {
 	}
 
 	Future<void> initialize({
-		List<String> threadWatcherWatchForStickyOnBoards = const [],
-		bool isNewSiteAfterStartup = false
+		List<String> threadWatcherWatchForStickyOnBoards = const []
 	}) async {
 		try {
 			_site = makeSite(siteData);
@@ -92,12 +91,7 @@ class Imageboard extends ChangeNotifier {
 			notifications.localWatcher = threadWatcher;
 			_threadWatcherInitialized = true;
 			if (persistence.boards.isEmpty) {
-				if (isNewSiteAfterStartup) {
-					await setupBoards();
-				}
-				else {
-					setupBoards(); // don't await
-				}
+				await setupBoards();
 			}
 			site.initState();
 			initialized = true;
@@ -227,9 +221,7 @@ class ImageboardRegistry extends ChangeNotifier {
 							siteData: entry.value,
 							key: entry.key
 						);
-						initializations.add(_sites[entry.key]!.initialize(
-							isNewSiteAfterStartup: initialized
-						));
+						initializations.add(_sites[entry.key]!.initialize());
 					}
 					// Only try to reauth on wifi
 					microtasks.add(() async {
