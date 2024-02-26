@@ -594,6 +594,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'`;watch` Automatically watch matching threads\n'
 													'    Append `:push` to ensure push is enabled on the watches, or `:noPush` to ensure it\'s disabled\n'
 													'`;collapse` Automatically collapse matching posts in tree mode\n'
+													'`;hideReplies` Hide replies to matching posts too\n'
 													'`;show` Show matches (use it to override later filters)\n'
 													'`;file:only` Only apply to posts with files\n'
 													'`;file:no` Only apply to posts without files\n'
