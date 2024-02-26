@@ -163,6 +163,23 @@ Set<String> getDefaultSiteKeys() {
 	return defaultSites.keys.toSet();
 }
 
+ContentSettings getDefaultContentSettings() {
+	if (Platform.isAndroid) {
+		return ContentSettings(
+			images: true,
+			nsfwImages: true,
+			nsfwBoards: true,
+			nsfwText: true
+		);
+	}
+	return ContentSettings(
+		images: true,
+		nsfwImages: false,
+		nsfwBoards: false,
+		nsfwText: false
+	);
+}
+
 @HiveType(typeId: 20)
 class ContentSettings {
 	@HiveField(0)
@@ -1317,7 +1334,7 @@ class SavedSettings extends HiveObject {
 		autoRotateInGallery = autoRotateInGallery ?? false,
 		useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
 		userId = userId ?? (const Uuid()).v4(),
-		contentSettings = contentSettings ?? ContentSettings(),
+		contentSettings = contentSettings ?? getDefaultContentSettings(),
 		filterConfiguration = filterConfiguration ?? '',
 		boardSwitcherHasKeyboardFocus = boardSwitcherHasKeyboardFocus ?? true,
 		deprecatedLightTheme = deprecatedLightTheme ?? SavedTheme(
