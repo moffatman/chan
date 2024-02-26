@@ -231,7 +231,8 @@ class SiteReddit extends ImageboardSite {
 	static PostNodeSpan makeSpan(String board, int threadId, String text) {
 		final body = parseFragment(
 			markdown.markdownToHtml(
-				const LooseUrlLinkifier().parse(
+				// Lazy... but this means at least one link is already done properly
+				text.contains('](') ? text : const LooseUrlLinkifier().parse(
 					[TextElement(text)],
 					const LinkifyOptions()
 				).map((e) => switch(e) {
