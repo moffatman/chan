@@ -478,20 +478,38 @@ class _SearchComposePageState extends State<SearchComposePage> {
 											final result = await modalLoad(context, 'Finding post...', (controller) async {
 												try {
 													final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3), priority: RequestPriority.interactive);
-													return ImageboardArchiveSearchResult.thread(thread);
+													return SelectedSearchResult(
+														fromArchive: false,
+														threadSearch: null,
+														imageboard: target.$1,
+														result: ImageboardArchiveSearchResult.thread(thread)
+													);
 												}
 												on ThreadNotFoundException {
 													// Not a thread
 												}
 												final post = await target.$1.site.getPostFromArchive(target.$2, target.$3, priority: RequestPriority.interactive);
-												return ImageboardArchiveSearchResult.post(post);
+												try {
+													final liveThread = await target.$1.site.getThread(post.threadIdentifier, priority: RequestPriority.interactive);
+													final livePost = liveThread.posts_.firstWhere((p) => p.id == target.$3);
+													return SelectedSearchResult(
+														fromArchive: false,
+														threadSearch: null,
+														imageboard: target.$1,
+														result: ImageboardArchiveSearchResult.post(livePost)
+													);
+												}
+												catch (_) {
+													// Truly archived
+													return SelectedSearchResult(
+														fromArchive: true,
+														threadSearch: null,
+														imageboard: target.$1,
+														result: ImageboardArchiveSearchResult.post(post)
+													);
+												}
 											});
-											widget.onManualResult(SelectedSearchResult(
-												fromArchive: true,
-												threadSearch: null,
-												imageboard: target.$1,
-												result: result
-											));
+											widget.onManualResult(result);
 										}
 										catch (e) {
 											if (context.mounted) {
