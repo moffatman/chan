@@ -261,6 +261,8 @@ class _SettingsPageState extends State<SettingsPage> {
 			body: Builder(
 				builder: (context) => MaybeScrollbar(
 					child: ListView(
+						// This will override default AlwaysScrollable for [primary]
+						physics: ScrollConfiguration.of(context).getScrollPhysics(context),
 						padding: MediaQuery.paddingOf(context) + const EdgeInsets.all(16),
 						key: scrollKey,
 						children: [
