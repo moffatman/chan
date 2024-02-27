@@ -313,8 +313,14 @@ class CustomFilter implements Filter {
 						filter.threadsOnly = true;
 					}
 				}
-				else if (s.startsWith('boards:')) {
-					filter.boards = s.split(separator).skip(1).toList();
+				else if (s.startsWith('boards:') || s.startsWith('board:')) {
+					if (filter.boards.isEmpty) {
+						// It could be initialized to a const list, better just replace it
+						filter.boards = s.split(separator).skip(1).toList();
+					}
+					else {
+						filter.boards.addAll(s.split(separator).skip(1));
+					}
 				}
 				else if (s.startsWith('exclude:')) {
 					filter.excludeBoards = s.split(separator).skip(1).toList();
