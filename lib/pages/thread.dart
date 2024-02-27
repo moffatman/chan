@@ -1058,58 +1058,61 @@ class ThreadPageState extends State<ThreadPage> {
 			builder: (ctx) => ImageboardScope(
 				imageboardKey: null,
 				imageboard: imageboard,
-				child: Padding(
-					padding: MediaQuery.viewInsetsOf(ctx),
-					child: Container(
-						color: theme.backgroundColor,
-						child: ReplyBox(
-							longLivedCounterpartKey: _replyBoxKey,
-							board: widget.thread.board,
-							threadId: widget.thread.id,
-							onInitState: onInitState,
-							isArchived: persistentState.thread?.isArchived ?? false,
-							initialText: persistentState.draftReply,
-							onTextChanged: (text) async {
-								persistentState.draftReply = text;
-								await SchedulerBinding.instance.endOfFrame;
-								_replyBoxKey.currentState?.text = text;
-								runWhenIdle(const Duration(seconds: 3), persistentState.save);
-							},
-							initialOptions: _replyBoxKey.currentState?.options ?? '',
-							onOptionsChanged: (options) async {
-								await SchedulerBinding.instance.endOfFrame;
-								_replyBoxKey.currentState?.options = options;
-							},
-							onReplyPosted: (receipt) async {
-								if (imageboard.site.supportsPushNotifications) {
-									await promptForPushNotificationsIfNeeded(context);
-								}
-								if (!mounted) return;
-								if (settings.watchThreadAutomaticallyWhenReplying) {
-									imageboard.notifications.subscribeToThread(
-										thread: widget.thread,
-										lastSeenId: receipt.id,
-										localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
-										pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
-										foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
-										push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-										youIds: persistentState.freshYouIds()
-									);
-								}
-								if (settings.saveThreadAutomaticallyWhenReplying) {
-									persistentState.savedTime ??= DateTime.now();
-									runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-								}
-								if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
-									// If already at the bottom, pre-mark the created post as seen
-									persistentState.lastSeenPostId = receipt.id;
-									runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-								}
-								_listController.update();
-								Future.delayed(const Duration(seconds: 12), _listController.update);
-								Navigator.of(ctx).pop();
-							},
-							fullyExpanded: true
+				child: ChangeNotifierProvider<PostSpanZoneData>.value(
+					value: zone,
+					child: Padding(
+						padding: MediaQuery.viewInsetsOf(ctx),
+						child: Container(
+							color: theme.backgroundColor,
+							child: ReplyBox(
+								longLivedCounterpartKey: _replyBoxKey,
+								board: widget.thread.board,
+								threadId: widget.thread.id,
+								onInitState: onInitState,
+								isArchived: persistentState.thread?.isArchived ?? false,
+								initialText: persistentState.draftReply,
+								onTextChanged: (text) async {
+									persistentState.draftReply = text;
+									await SchedulerBinding.instance.endOfFrame;
+									_replyBoxKey.currentState?.text = text;
+									runWhenIdle(const Duration(seconds: 3), persistentState.save);
+								},
+								initialOptions: _replyBoxKey.currentState?.options ?? '',
+								onOptionsChanged: (options) async {
+									await SchedulerBinding.instance.endOfFrame;
+									_replyBoxKey.currentState?.options = options;
+								},
+								onReplyPosted: (receipt) async {
+									if (imageboard.site.supportsPushNotifications) {
+										await promptForPushNotificationsIfNeeded(context);
+									}
+									if (!mounted) return;
+									if (settings.watchThreadAutomaticallyWhenReplying) {
+										imageboard.notifications.subscribeToThread(
+											thread: widget.thread,
+											lastSeenId: receipt.id,
+											localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
+											pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
+											foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
+											push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
+											youIds: persistentState.freshYouIds()
+										);
+									}
+									if (settings.saveThreadAutomaticallyWhenReplying) {
+										persistentState.savedTime ??= DateTime.now();
+										runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+									}
+									if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
+										// If already at the bottom, pre-mark the created post as seen
+										persistentState.lastSeenPostId = receipt.id;
+										runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+									}
+									_listController.update();
+									Future.delayed(const Duration(seconds: 12), _listController.update);
+									Navigator.of(ctx).pop();
+								},
+								fullyExpanded: true
+							)
 						)
 					)
 				)

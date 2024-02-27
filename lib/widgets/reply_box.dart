@@ -383,7 +383,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_captchaSolution = otherState._captchaSolution;
 		}
 		final persistence = context.read<Persistence>();
-		_textFieldController = TextEditingController(text: widget.initialText);
+		_textFieldController = ReplyBoxTextEditingController(text: widget.initialText, parent: this);
 		_subjectFieldController = TextEditingController(text: widget.initialSubject);
 		_optionsFieldController = TextEditingController(text: widget.initialOptions ?? persistence.getThreadStateIfExists(thread)?.replyOptions);
 		_filenameController = TextEditingController(text: otherState?._filenameController.text ?? '');
@@ -2294,5 +2294,130 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			otherState._captchaSolution = _captchaSolution;
 		}
 		_focusTimer.cancel();
+	}
+}
+
+extension _TextRangeOverlap on TextRange {
+	bool overlapsWith(TextRange other) {
+		if (!isNormalized || !other.isNormalized) {
+			return false;
+		}
+		return start <= other.end && other.start <= end;
+	}
+}
+
+class ReplyBoxTextEditingController extends TextEditingController {
+	final ReplyBoxState parent;
+
+	ReplyBoxTextEditingController({
+		required this.parent,
+		super.text
+	});
+
+	static final greentextRegex = RegExp(r'^>.*$', multiLine: true);
+	static final quotelinkRegex = RegExp(r'>>(?:(>\/[a-zA-Z0-9]*\/[a-zA-Z0-9]*)|(\d+))');
+
+	@override
+	TextSpan buildTextSpan({required BuildContext context, TextStyle? style , required bool withComposing}) {
+		try {
+			assert(!value.composing.isValid || !withComposing || value.isComposingRangeValid);
+			final bool composingRegionOutOfRange = !value.isComposingRangeValid || !withComposing;
+
+			final zone = parent.context.read<PostSpanZoneData?>();
+			final theme = Settings.instance.theme;
+
+			final ranges = <(TextRange, TextStyle)>[];
+
+			if (!composingRegionOutOfRange) {
+				ranges.add((value.composing, const TextStyle(decoration: TextDecoration.underline)));
+			}
+
+			final text = this.text;
+
+			final quotelinkStyle = TextStyle(
+				color: theme.secondaryColor,
+				decoration: TextDecoration.underline,
+				decorationColor: theme.secondaryColor
+			);
+			final deadQuotelinkStyle = TextStyle(
+				color: theme.secondaryColor,
+				decoration: TextDecoration.lineThrough,
+				decorationColor: theme.secondaryColor
+			);
+			for (final match in quotelinkRegex.allMatches(text)) {
+				if (match.start > 0 && text[match.start - 1] == '>') {
+					// Triple '>' - not a quotelink
+					continue;
+				}
+				final range = TextRange(start: match.start, end: match.end);
+				if (range.overlapsWith(value.composing)) {
+					// Show composing rather than quotelink
+					continue;
+				}
+				final bool targetExists;
+				if (zone == null || (match.group(1)?.isNotEmpty ?? false)) {
+					// No ability to check post, or it is cross-board
+					targetExists = true;
+				}
+				else {
+					targetExists = zone.findPost(int.tryParse(match.group(2) ?? '') ?? 0) != null;
+				}
+				ranges.add((range, targetExists ? quotelinkStyle : deadQuotelinkStyle));
+			}
+
+			final greentextStyle = TextStyle(
+				color: theme.quoteColor,
+				decorationColor: theme.quoteColor
+			);
+			for (final match in greentextRegex.allMatches(text)) {
+				if (ranges.any((r) => r.$1.start == match.start)) {
+					continue;
+				}
+				ranges.add((TextRange(start: match.start, end: match.end), greentextStyle));
+			}
+
+			mergeSort(ranges, compare: (a, b) {
+				return a.$1.start.compareTo(b.$1.start);
+			});
+
+			final spans = <TextSpan>[];
+			int start = 0;
+			final stack = <(TextRange, TextStyle)>[];
+			for (int i = 0; i < text.length; i++) {
+				if (ranges.tryFirst?.$1.start == i || stack.any((r) => r.$1.end == i)) {
+					if (start != i) {
+						// Cut off previous stack
+						spans.add(TextSpan(
+							text: TextRange(start: start, end: i).textInside(text),
+							style: stack.fold<TextStyle>(style ?? const TextStyle(), (style, range) => style.merge(range.$2))
+						));
+						start = i;
+					}
+					stack.addAll(ranges.where((r) => r.$1.start == i));
+					ranges.removeWhere((r) => r.$1.start == i);
+					stack.removeWhere((r) => r.$1.end == i);
+				}
+			}
+			if (start < text.length) {
+				// Add final range
+				spans.add(TextSpan(
+					text: TextRange(start: start, end: text.length).textInside(text),
+					style: stack.fold<TextStyle>(style ?? const TextStyle(), (style, range) => style.merge(range.$2))
+				));
+			}
+
+			return TextSpan(
+				style: style,
+				children: spans
+			);
+		}
+		catch (e, st) {
+			Future.error(e, st); // crashlytics
+			return super.buildTextSpan(
+				context: context,
+				style: style,
+				withComposing: withComposing
+			);
+		}
 	}
 }
