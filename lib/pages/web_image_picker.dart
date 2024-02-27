@@ -336,7 +336,10 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													left: rect.left,
 													alt: img.alt,
 													visible1: rect.bottom >= 0 && rect.right >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight) && rect.left <= (window.innerWidth || document.documentElement.clientWidth),
-													visible2: document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2) == img
+													visible2: (
+														document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2) ||
+														document.elementFromPoint((rect.left + rect.right) / 2, (0.8 * rect.top) + (0.2 * rect.bottom))
+													) == img
 												}
 											})'''
 										);
