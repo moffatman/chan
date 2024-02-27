@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -97,11 +98,11 @@ Future<EmbedData?> loadEmbedData({
 	final client = context.read<ImageboardSite>().client;
 	if (url.startsWith('chance://site/')) {
 		try {
-			final response = await Settings.instance.client.get(url.replaceFirst('chance://', '$contentSettingsApiRoot/'));
-			if (response.data['data'] == null) {
-				throw Exception(response.data['error'] ?? 'Unknown error');
+			Map? data = JsonCache.instance.sites.value?[Uri.parse(url).pathSegments.tryFirst];
+			if (data == null) {
+				throw Exception('No such site ${Uri.parse(url).pathSegments}');
 			}
-			final site = makeSite(response.data['data']);
+			final site = makeSite(data);
 			return EmbedData(
 				title: site.name,
 				provider: site.baseUrl,
