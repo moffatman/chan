@@ -6,6 +6,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -362,6 +363,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												final image = images[i];
 												Widget imageWidget = ExtendedImage.network(
 													image['src'],
+													cache: true,
 													fit: BoxFit.contain
 												);
 												Uint8List? data;
@@ -374,15 +376,41 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												}
 												return GestureDetector(
 													onTap: () async {
-														if (data != null) {
-															Navigator.of(context).pop(data);
-														}
-														else {
-															final response = await (widget.site?.client ?? settings.client).get(image['src'], options: Options(
-																responseType: ResponseType.bytes
-															));
+														try {
+															if (data != null) {
+																Navigator.of(context).pop(data);
+																return;
+															}
+															final file = await getCachedImageFile(image['src']);
+															if (!mounted) return;
+															if (file != null) {
+																// Avoid second download
+																Navigator.pop(context, await file.readAsBytes());
+																return;
+															}
+															final response = await modalLoad(context, 'Downloading...', (controller) async {
+																final token = CancelToken();
+																controller.onCancel = token.cancel;
+																final response = await settings.client.get(image['src'], options: Options(
+																	responseType: ResponseType.bytes
+																), cancelToken: token);
+																if (response.data is Uint8List) {
+																	return response;
+																}
+																// Something this happens with cloudflare clearance,
+																// we get <img> as String, just try again
+																return await settings.client.get(image['src'], options: Options(
+																	responseType: ResponseType.bytes
+																), cancelToken: token);
+															}, cancellable: true);
 															if (!mounted) return;
 															Navigator.of(context).pop(response.data);
+														}
+														catch (e, st) {
+															Future.error(e, st); // crashlytics
+															if (mounted) {
+																alertError(context, e.toStringDio());
+															}
 														}
 													},
 													child: Column(
