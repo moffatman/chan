@@ -3,6 +3,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 final _greentextRegex = RegExp(r'^>.*$', multiLine: true);
@@ -22,9 +23,23 @@ TextSpan buildHighlightedCommentTextSpan({
 	PostSpanZoneData? zone,
 	TextStyle? style,
 	TextRange? composing,
+	TextStyle misspelledTextStyle = const TextStyle(),
+	SpellCheckResults? spellCheckResults
 }) {
 	final theme = Settings.instance.theme;
 	final ranges = <(TextRange, TextStyle)>[];
+
+	if (spellCheckResults != null) {
+		List<SuggestionSpan> spellCheckResultsSpans = spellCheckResults.suggestionSpans;
+		final String spellCheckResultsText = spellCheckResults.spellCheckedText;
+
+		if (spellCheckResultsText != text) {
+			spellCheckResultsSpans = correctSpellCheckResults(
+					text, spellCheckResultsText, spellCheckResults.suggestionSpans);
+		}
+
+		ranges.addAll(spellCheckResultsSpans.map((span) => (span.range, misspelledTextStyle)));
+	}
 
 	if (composing != null) {
 		ranges.add((composing, const TextStyle(decoration: TextDecoration.underline)));
@@ -46,8 +61,11 @@ TextSpan buildHighlightedCommentTextSpan({
 			continue;
 		}
 		final range = TextRange(start: match.start, end: match.end);
-		if (composing != null && range.overlapsWith(composing)) {
-			// Show composing rather than quotelink
+		if (
+			(composing != null && range.overlapsWith(composing)) ||
+			(spellCheckResults?.suggestionSpans.any((s) => s.range.overlapsWith(range)) ?? false)
+		) {
+			// De-prioritize quotelink
 			continue;
 		}
 		final bool targetExists;
