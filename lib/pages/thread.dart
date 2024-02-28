@@ -991,6 +991,9 @@ class ThreadPageState extends State<ThreadPage> {
 				_postUpdateCallbacks.add(() => _cacheAttachments(automatic: true));
 			}
 		}
+		else if (firstLoad && tmpPersistentState == persistentState) {
+			shouldScroll = true;
+		}
 		final newPostIdsBefore = newPostIds.toSet();
 		// unseenPostIds is filled-up during PersistentThreadState thread setter
 		// This will clear out all the posts which were "seen" since last update
@@ -1006,6 +1009,7 @@ class ThreadPageState extends State<ThreadPage> {
 			// Trigger update of counts in case new post is drawn fully onscreen
 			_listController.slowScrolls.didUpdate();
 		});
+		print('shouldScroll=$shouldScroll');
 		if (shouldScroll) {
 			_scrollIfWarranted(const Duration(milliseconds: 500))
 				.then((_) async {
