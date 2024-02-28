@@ -273,12 +273,14 @@ class PostTextSpan extends PostSpan {
 	final String text;
 	const PostTextSpan(this.text);
 
+	static final _escapePattern = RegExp(r'[.*+?^${}()|[\]\\]');
+
 	@override
 	InlineSpan build(context, zone, settings, theme, options) {
 		final children = <TextSpan>[];
 		final str = settings.filterProfanity(text);
 		if (options.highlightString != null) {
-			final escapedHighlight = options.highlightString!.replaceAllMapped(RegExp(r'[.*+?^${}()|[\]\\]'), (m) => '\\${m.group(0)}');
+			final escapedHighlight = options.highlightString!.replaceAllMapped(_escapePattern, (m) => '\\${m.group(0)}');
 			final nonHighlightedParts = str.split(RegExp(escapedHighlight, caseSensitive: false));
 			int pos = 0;
 			for (int i = 0; i < nonHighlightedParts.length; i++) {
@@ -739,14 +741,16 @@ class PostCodeSpan extends PostSpan {
 
 	const PostCodeSpan(this.text);
 
+	static final _newlinePattern = RegExp(r'\n');
+	static final _startsWithCapitalLetterPattern = RegExp(r'^[A-Z]');
+
 	@override
 	build(context, zone, settings, theme, options) {
-		final lineCount = RegExp(r'\n').allMatches(text).length + 1;
+		final lineCount = _newlinePattern.allMatches(text).length + 1;
 		final result = zone.getFutureForComputation(
 			id: 'languagedetect ${identityHashCode(text)} ${text.substring(0, math.min(10, text.length - 1))}',
 			work: () async {
-				final startsWithCapitalLetter = RegExp(r'^[A-Z]');
-				if (lineCount == 1 || lineCount < 10 && startsWithCapitalLetter.hasMatch(text)) {
+				if (lineCount == 1 || lineCount < 10 && _startsWithCapitalLetterPattern.hasMatch(text)) {
 					// Probably just plaintext
 					return [TextSpan(text: text)];
 				}
@@ -907,11 +911,14 @@ class PostLinkSpan extends PostSpan {
 	final String url;
 	final String? name;
 	const PostLinkSpan(this.url, {this.name});
+
+	static final _trailingJunkPattern = RegExp(r'(\.[A-Za-z0-9\-._~]+)[^A-Za-z0-9\-._~\.\/?]+$');
+
 	@override
 	build(context, zone, settings, theme, options) {
 		// Remove trailing bracket or other punctuation
 		final cleanedUrl = url.replaceAllMapped(
-			RegExp(r'(\.[A-Za-z0-9\-._~]+)[^A-Za-z0-9\-._~\.\/?]+$'),
+			_trailingJunkPattern,
 			(m) => m.group(1)!
 		);
 		final cleanedUri = Uri.tryParse(cleanedUrl);

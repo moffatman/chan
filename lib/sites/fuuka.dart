@@ -30,6 +30,10 @@ class FuukaException implements Exception {
 final _threadLinkMatcher = RegExp(r'\/([a-zA-Z]+)\/thread\/S?(\d+)(#p(\d+))?$');
 final _postLinkMatcher = RegExp(r'\/([a-zA-Z]+)\/post\/S?(\d+)$');
 final _crossBoardLinkMatcher = RegExp(r'^>>>\/([A-Za-z]+)\/(\d+)$');
+final _quoteLinkMatcher = RegExp(r'^#p(\d+)$');
+final _attachmentUrlMatcher = RegExp(r'\/data\/([A-Za-z]+)\/img\/\d+\/\d+\/(\d+)(\..+)$');
+final _attachmentDetailsMatcher = RegExp(r'File: ([^ ]+) ([KMG]?B), (\d+)x(\d+), (.+)');
+final _threadIdMatcher = RegExp(r'^p(\d+)$');
 
 class FuukaArchive extends ImageboardSiteArchive {
 	List<ImageboardBoard>? boards;
@@ -70,7 +74,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 						));
 					}
 					else {
-						final match = RegExp(r'^#p(\d+)$').firstMatch(node.attributes['href']!);
+						final match = _quoteLinkMatcher.firstMatch(node.attributes['href']!);
 						if (match != null) {
 							elements.add(PostQuoteLinkSpan(
 								board: board,
@@ -96,11 +100,11 @@ class FuukaArchive extends ImageboardSiteArchive {
 	Attachment? _makeAttachment(dom.Element? element, int threadId) {
 		if (element != null) {
 			final String url = element.attributes['href']!;
-			final urlMatch = RegExp(r'\/data\/([A-Za-z]+)\/img\/\d+\/\d+\/(\d+)(\..+)$').firstMatch(url)!;
+			final urlMatch = _attachmentUrlMatcher.firstMatch(url)!;
 			final ext = urlMatch.group(3)!;
 			RegExpMatch? fileDetailsMatch;
 			for (final span in element.parent!.querySelectorAll('span')) {
-				fileDetailsMatch = RegExp(r'File: ([^ ]+) ([KMG]?B), (\d+)x(\d+), (.+)').firstMatch(span.text);
+				fileDetailsMatch = _attachmentDetailsMatcher.firstMatch(span.text);
 				if (fileDetailsMatch != null) {
 					break;
 				}
@@ -240,7 +244,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			}
 			else {
 				if (child.localName == 'div') {
-					final match = RegExp(r'^p(\d+)$').firstMatch(child.id);
+					final match = _threadIdMatcher.firstMatch(child.id);
 					if (match != null) {
 						threadId = int.parse(match.group(1)!);
 					}

@@ -34,9 +34,11 @@ final _iosUserAgentsPost16_4 = [
 	'Mozilla/5.0 (iPhone; CPU OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1'
 ];
 
+final _iosVersionPattern = RegExp(r'(Version )?(\d\d)(\.(\d+))?');
+
 bool _isIOSGreaterThan16_4() {
 	if (Platform.isIOS) {
-		final match = RegExp(r'(Version )?(\d\d)(\.(\d+))?').firstMatch(Platform.operatingSystemVersion);
+		final match = _iosVersionPattern.firstMatch(Platform.operatingSystemVersion);
 		if (match != null) {
 			int major = int.tryParse(match.group(2) ?? '') ?? 15;
 			int minor = int.tryParse(match.group(4) ?? '') ?? 0;

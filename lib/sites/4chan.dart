@@ -84,6 +84,8 @@ class _QuoteLinkElement extends LinkifyElement {
 class _QuoteLinkLinkifier extends Linkifier {
   const _QuoteLinkLinkifier();
 
+	static final _pattern = RegExp(r'(?:^|(?<= ))>>(\d+)');
+
   @override
   List<LinkifyElement> parse(elements, options) {
     final list = <LinkifyElement>[];
@@ -92,7 +94,7 @@ class _QuoteLinkLinkifier extends Linkifier {
       if (element is TextElement) {
 				String text = element.text;
 				while (text.isNotEmpty) {
-        	final match = RegExp(r'(?:^|(?<= ))>>(\d+)').firstMatch(text);
+        	final match = _pattern.firstMatch(text);
 					if (match == null) {
 						if (text == element.text) {
 							list.add(element);
@@ -284,11 +286,16 @@ class Site4Chan extends ImageboardSite {
 		}).toList();
 	}
 
+	static final _mathPattern = RegExp(r'\[math\](.+?)\[\/math\]');
+	static final _eqnPattern = RegExp(r'\[eqn\](.+?)\[\/eqn\]');
+	static final _catalogSearchPattern = RegExp(r'^catalog#s=(.+)$');
+	static final _trailingBrPattern = RegExp(r'<br>$');
+
 	static PostNodeSpan makeSpan(String board, int threadId, String data, {bool fromSearch = false}) {
 		final fromSearchThread = fromSearch ? ThreadIdentifier(board, threadId) : null;
-		final body = parseFragment((fromSearch ? data.trim() : data).replaceAll('<wbr>', '').replaceAllMapped(RegExp(r'\[math\](.+?)\[\/math\]'), (match) {
+		final body = parseFragment((fromSearch ? data.trim() : data).replaceAll('<wbr>', '').replaceAllMapped(_mathPattern, (match) {
 			return '<tex>${match.group(1)!}</tex>';
-		}).replaceAllMapped(RegExp(r'\[eqn\](.+?)\[\/eqn\]'), (match) {
+		}).replaceAllMapped(_eqnPattern, (match) {
 			return '<tex>${match.group(1)!}</tex>';
 		}));
 		final List<PostSpan> elements = [];
@@ -337,7 +344,7 @@ class Site4Chan extends ImageboardSite {
 					else {
 						// href looks like '//boards.4chan.org/pol/'
 						final parts = node.attributes['href']!.split('/');
-						final catalogSearchMatch = RegExp(r'^catalog#s=(.+)$').firstMatch(parts.last);
+						final catalogSearchMatch = _catalogSearchPattern.firstMatch(parts.last);
 						if (catalogSearchMatch != null) {
 							elements.add(PostCatalogSearchSpan(board: parts[parts.length - 2], query: Uri.decodeFull(catalogSearchMatch.group(1)!)));
 						}
@@ -411,7 +418,7 @@ class Site4Chan extends ImageboardSite {
 					elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
 				}
 				else if (node.localName == 'pre') {
-					elements.add(PostCodeSpan(unescape.convert(node.innerHtml.replaceFirst(RegExp(r'<br>$'), '').replaceAll('<br>', '\n'))));
+					elements.add(PostCodeSpan(unescape.convert(node.innerHtml.replaceFirst(_trailingBrPattern, '').replaceAll('<br>', '\n'))));
 				}
 				else if (node.localName == 'b' || node.localName == 'strong') {
 					final child = PostBoldSpan(makeSpan(board, threadId, node.innerHtml));

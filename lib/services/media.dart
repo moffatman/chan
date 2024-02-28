@@ -241,7 +241,8 @@ class MediaConversion {
 
 	static final pool = Pool(sqrt(Platform.numberOfProcessors).ceil());
 
-	static bool get _isVideoToolboxSupported => Platform.isIOS && !RegExp(r'Version 15\.[01]').hasMatch(Platform.operatingSystemVersion);
+	static final _badVideoToolboxIosVersionPattern = RegExp(r'Version 15\.[01]');
+	static bool get _isVideoToolboxSupported => Platform.isIOS && !_badVideoToolboxIosVersionPattern.hasMatch(Platform.operatingSystemVersion);
 	bool _hasVideoToolboxFailed = false;
 
 	MediaConversion({
@@ -371,6 +372,8 @@ class MediaConversion {
 		);
 	}
 
+	static final _digitPattern = RegExp(r'\d');
+
 	File getDestination() {
 		String subdir = inputFile.host;
 		String filename = inputFile.pathSegments.last;
@@ -378,7 +381,7 @@ class MediaConversion {
 			// This is a local file
 			subdir = base64.encode(md5.convert(utf8.encode(inputFile.pathSegments.take(inputFile.pathSegments.length - 1).join('_'))).bytes);
 		}
-		else if (!filename.split('.').first.contains(RegExp(r'\d'))) {
+		else if (!filename.split('.').first.contains(_digitPattern)) {
 			// This is a remote file
 			// No numbers in the filename
 			// Probably the other pathSegments are the unique parts

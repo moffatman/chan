@@ -237,6 +237,8 @@ class CustomFilter implements Filter {
 		return FilterResult(outputType, label.isEmpty ? 'Matched "$configuration"' : '$label filter');
 	}
 
+	static final _separatorPattern = RegExp(r':|,');
+
 	factory CustomFilter.fromStringConfiguration(String configuration) {
 		final match = _configurationLinePattern.firstMatch(configuration);
 		if (match == null) {
@@ -250,7 +252,6 @@ class CustomFilter implements Filter {
 				label: match.group(1)!,
 				pattern: RegExp(match.group(2)!, multiLine: !flags.contains('s'), caseSensitive: !flags.contains('i'))
 			);
-			final separator = RegExp(r':|,');
 			int i = 5;
 			bool hide = true;
 			bool highlight = false;
@@ -279,7 +280,7 @@ class CustomFilter implements Filter {
 				}
 				else if (s == 'watch' || s.startsWith('watch:')) {
 					bool? push;
-					for (final part in s.split(separator).skip(1)) {
+					for (final part in s.split(_separatorPattern).skip(1)) {
 						if (part == 'push') {
 							push = true;
 						}
@@ -310,7 +311,7 @@ class CustomFilter implements Filter {
 					hideReplies = true;
 				}
 				else if (s.startsWith('type:')) {
-					filter.patternFields = s.split(separator).skip(1).toList();
+					filter.patternFields = s.split(_separatorPattern).skip(1).toList();
 					if (filter.patternFields.remove('thread')) {
 						// 4chan-X filters use ;type:thread instead of ;thread
 						// Move it from patternFields
@@ -320,14 +321,14 @@ class CustomFilter implements Filter {
 				else if (s.startsWith('boards:') || s.startsWith('board:')) {
 					if (filter.boards.isEmpty) {
 						// It could be initialized to a const list, better just replace it
-						filter.boards = s.split(separator).skip(1).toList();
+						filter.boards = s.split(_separatorPattern).skip(1).toList();
 					}
 					else {
-						filter.boards.addAll(s.split(separator).skip(1));
+						filter.boards.addAll(s.split(_separatorPattern).skip(1));
 					}
 				}
 				else if (s.startsWith('exclude:')) {
-					filter.excludeBoards = s.split(separator).skip(1).toList();
+					filter.excludeBoards = s.split(_separatorPattern).skip(1).toList();
 				}
 				else if (s == 'file:only') {
 					filter.hasFile = true;

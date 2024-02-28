@@ -212,6 +212,8 @@ class ThreadRow extends StatelessWidget {
 		Key? key
 	}) : super(key: key);
 
+	static final _leadingWwwPattern = RegExp(r'^www\.');
+
 	Widget _build(BuildContext context, PersistentThreadState? threadState) {
 		final settings = context.watch<Settings>();
 		final theme = context.watch<SavedTheme>();
@@ -230,7 +232,7 @@ class ThreadRow extends StatelessWidget {
 		final opacityBasedBackgroundColor = isSelected ? theme.primaryColor.withOpacity(0.25) : null;
 		final borderColor = isSelected ? theme.primaryColorWithBrightness(0.8) : theme.primaryColorWithBrightness(0.2);
 		if (firstUrl != null) {
-			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(RegExp(r'^www\.'), '');
+			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(_leadingWwwPattern, '');
 		}
 		if (threadState?.lastSeenPostId != null) {
 			if (threadState?.useTree ?? context.read<Persistence>().browserState.useTree ?? site.useTree) {

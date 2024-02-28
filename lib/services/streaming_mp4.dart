@@ -129,8 +129,10 @@ class VideoServer {
 		required this.insignificantByteThreshold
 	});
 
+	static final _bytesRangePattern = RegExp(r'^bytes=(\d+)-(\d+)?$');
+
 	static _RawRange? _parseRange(HttpHeaders headers) {
-		final match = RegExp(r'^bytes=(\d+)-(\d+)?$').firstMatch(headers[HttpHeaders.rangeHeader]?.first ?? '');
+		final match = _bytesRangePattern.firstMatch(headers[HttpHeaders.rangeHeader]?.first ?? '');
 		if (match != null) {
 			return (start: int.parse(match.group(1)!), inclusiveEnd: int.tryParse(match.group(2) ?? ''));
 		}

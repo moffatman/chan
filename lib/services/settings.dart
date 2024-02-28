@@ -38,13 +38,15 @@ part 'settings.g.dart';
 class ChanceLinkifier extends Linkifier {
   const ChanceLinkifier();
 
+	static final _pattern = RegExp(r'^(.*?)((?:chance:\/\/|www\.)[^\s/$.?#].[^\s]*)');
+
   @override
   List<LinkifyElement> parse(elements, options) {
     final list = <LinkifyElement>[];
 
     for (final element in elements) {
       if (element is TextElement) {
-        var match = RegExp(r'^(.*?)((?:chance:\/\/|www\.)[^\s/$.?#].[^\s]*)').firstMatch(element.text);
+        var match = _pattern.firstMatch(element.text);
 
         if (match == null) {
           list.add(element);
@@ -1600,7 +1602,7 @@ class SavedSettings extends HiveObject {
 		}
 		String name = fontFamily!;
 		if (name.endsWith('.ttf')) {
-			name = name.replaceFirst(RegExp(r'\.ttf$'), '');
+			name = name.substring(0, name.length - 4);
 		}
 		return allowedGoogleFonts[name]?.call() ?? TextStyle(
 			fontFamily: name

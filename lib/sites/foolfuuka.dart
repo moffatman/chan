@@ -205,15 +205,17 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		return null;
 	}
+
+	static final _postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]{1,18})/');
+
 	Future<Post> _makePost(dynamic data, {bool resolveIds = true, required RequestPriority priority}) async {
 		final String board = data['board']['shortname'];
 		final int threadId = int.parse(data['thread_num']);
 		final int id = int.parse(data['num']);
 		_precachePostThreadId(board, id, threadId);
-		final postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]{1,18})/');
 		final Map<String, int> linkedPostThreadIds = {};
 		if (resolveIds) {
-			for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
+			for (final match in _postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
 				final board = match.group(1)!;
 				final postId = int.parse(match.group(2)!);
 				final threadId = await _getPostThreadId(board, postId, priority: priority);

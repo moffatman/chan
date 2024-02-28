@@ -58,6 +58,8 @@ class SiteLainchan extends ImageboardSite {
 		}).toList();
 	}
 
+	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+).html#(\d+)');
+
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parseFragment(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
@@ -67,7 +69,7 @@ class SiteLainchan extends ImageboardSite {
 					elements.add(const PostLineBreakSpan());
 				}
 				else if (node.localName == 'a' && node.attributes['href'] != null) {
-					final match = RegExp(r'^\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);
+					final match = _quoteLinkPattern.firstMatch(node.attributes['href']!);
 					if (match != null) {
 						elements.add(PostQuoteLinkSpan(
 							board: match.group(1)!,

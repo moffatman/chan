@@ -425,9 +425,10 @@ extension DateTimeConversion on DateTime {
 		const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 		return days[weekday];
 	}
+	static final _yearPattern = RegExp('Y+');
 	String formatDate(String format) {
 		return format
-			.replaceAllMapped(RegExp('Y+'), (m) => (year % pow(10, m.end - m.start)).toString())
+			.replaceAllMapped(_yearPattern, (m) => (year % pow(10, m.end - m.start)).toString())
 			.replaceAll('MM', month.toString().padLeft(2, '0'))
 			.replaceAll('M', month.toString())
 			.replaceAll('DD', day.toString().padLeft(2, '0'))

@@ -111,6 +111,8 @@ class SiteHackerNews extends ImageboardSite {
 		_cachedOpIds = oldSite._cachedOpIds;
 	}
 
+	static final _trailingNewlinePattern = RegExp(r'\n$');
+
 	static PostNodeSpan makeSpan(String text) {
 		final body = parseFragment(text);
 		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
@@ -167,7 +169,7 @@ class SiteHackerNews extends ImageboardSite {
 						}
 					}
 					else if (node.localName == 'pre') {
-						yield PostCodeSpan(node.text.replaceFirst(RegExp(r'\n$'), ''));
+						yield PostCodeSpan(node.text.replaceFirst(_trailingNewlinePattern, ''));
 						if (node.text.endsWith('\n')) {
 							yield const PostLineBreakSpan();
 						}
