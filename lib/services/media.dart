@@ -75,6 +75,7 @@ class MediaScan {
 	final int? sizeInBytes;
 	@HiveField(8, defaultValue: null, merger: MapEqualsMerger())
 	final Map? metadata;
+	static const kMetadataFieldRotation = '_rotation';
 
 	MediaScan({
 		required this.hasAudio,
@@ -129,6 +130,7 @@ class MediaScan {
 				int width = 0;
 				int height = 0;
 				double? videoFramerate;
+				Map? metadata = data['format']?['tags'];
 				for (final stream in (data['streams'] as List<dynamic>)) {
 					width = max(width, stream['width'] ?? 0);
 					height = max(height, stream['height'] ?? 0);
@@ -137,6 +139,10 @@ class MediaScan {
 						final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
 						if (match != null) {
 							videoFramerate = int.parse(match.group(1)!) / int.parse(match.group(2)!);
+						}
+						final rotation = (((stream['side_data_list'] as List?)?.tryFirst as Map?)?['rotation'] as num?)?.toDouble();
+						if (rotation != null) {
+							(metadata ??= {})[kMetadataFieldRotation] = rotation;
 						}
 					}
 				}
@@ -149,7 +155,7 @@ class MediaScan {
 					codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
 					videoFramerate: videoFramerate,
 					sizeInBytes: int.tryParse(data['format']?['size'] ?? ''),
-					metadata: data['format']?['tags']
+					metadata: metadata
 				);
 			});
 		}
@@ -514,7 +520,21 @@ class MediaConversion {
 						vfs.add('crop=trunc(iw/2)*2:trunc(ih/2)*2');
 					}
 					if (!copyStreams && newSize != null) {
-						vfs.add('scale=${newSize.$1}:${newSize.$2}');
+						final rotation = scan.metadata?[MediaScan.kMetadataFieldRotation] as double?;
+						final bool invertSize;
+						if (rotation != null) {
+							// rotation is closer to 90, -90, 270... than 0, 180, 360, etc
+							invertSize = (rotation / 90).round() % 2 != 0;
+						}
+						else {
+							invertSize = false;
+						}
+						if (invertSize) {
+							vfs.add('scale=${newSize.$2}:${newSize.$1}');
+						}
+						else {
+							vfs.add('scale=${newSize.$1}:${newSize.$2}');
+						}
 					}
 					if (randomizeChecksum) {
 						vfs.add('noise=alls=10:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
