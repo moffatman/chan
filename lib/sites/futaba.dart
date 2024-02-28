@@ -439,7 +439,13 @@ class SiteFutaba extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	bool operator == (Object other) => (other is SiteFutaba) && (other.baseUrl == baseUrl) && (other.name == name) && (other.maxUploadSizeBytes == maxUploadSizeBytes) && listEquals(other.archives, archives);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is SiteFutaba) &&
+		(other.baseUrl == baseUrl) &&
+		(other.name == name) &&
+		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
+		listEquals(other.archives, archives);
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, archives);

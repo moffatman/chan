@@ -328,7 +328,12 @@ class FuukaArchive extends ImageboardSiteArchive {
 	});
 
 	@override
-	bool operator == (Object other) => (other is FuukaArchive) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.boards, boards);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is FuukaArchive) &&
+		(other.baseUrl == baseUrl) &&
+		(other.name == name) &&
+		listEquals(other.boards, boards);
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, boards);

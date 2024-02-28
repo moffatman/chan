@@ -38,6 +38,7 @@ class SelectedSearchResult {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		(other is SelectedSearchResult) &&
 		(other.imageboard == imageboard) &&
 		(other.result == result) &&

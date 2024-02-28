@@ -91,6 +91,7 @@ class _PersistentThreadStateSnapshot {
 	
 	@override
 	bool operator == (Object o) =>
+		identical(this, o) ||
 		(o is _PersistentThreadStateSnapshot) &&
 		(o.thread == thread) &&
 		(o.hiddenPostIdsLength == hiddenPostIdsLength) &&

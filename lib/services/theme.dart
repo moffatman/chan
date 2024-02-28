@@ -16,6 +16,7 @@ class ChanceThemeKey {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is ChanceThemeKey &&
 		other.key == key;
 	

@@ -155,7 +155,10 @@ class _CupertinoDrawer {
 	const _CupertinoDrawer(this.key);
 
 	@override
-	bool operator == (Object other) => other is _CupertinoDrawer && other.key == key;
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is _CupertinoDrawer &&
+		other.key == key;
 	@override
 	int get hashCode => key.hashCode;
 }

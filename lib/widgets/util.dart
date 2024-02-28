@@ -1560,6 +1560,7 @@ class ChainedLinearTextScaler extends TextScaler {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is ChainedLinearTextScaler &&
 		other.parent == parent &&
 		other._textScaleFactor == _textScaleFactor;

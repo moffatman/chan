@@ -47,7 +47,10 @@ class Chan4CustomCaptchaLetterKey {
 	const Chan4CustomCaptchaLetterKey._(this._key);
 
 	@override
-	bool operator == (Object other) => other is Chan4CustomCaptchaLetterKey && other._key == _key;
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is Chan4CustomCaptchaLetterKey &&
+		other._key == _key;
 	@override
 	int get hashCode => _key.hashCode;
 

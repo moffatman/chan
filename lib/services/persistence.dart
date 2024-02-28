@@ -1743,6 +1743,7 @@ class EfficientlyStoredIntSet {
 
 	@override
 	bool operator ==(Object other) =>
+		identical(this, other) ||
 		other is EfficientlyStoredIntSet &&
 		setEquals(other.data, data);
 

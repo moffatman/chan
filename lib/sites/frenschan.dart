@@ -72,7 +72,12 @@ class SiteFrenschan extends SiteSoyjak {
 	}
 
 	@override
-	bool operator ==(Object other) => (other is SiteFrenschan) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.archives, archives);
+	bool operator ==(Object other) =>
+		identical(this, other) ||
+		(other is SiteFrenschan) &&
+		(other.baseUrl == baseUrl) &&
+		(other.name == name) &&
+		listEquals(other.archives, archives);
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, archives);

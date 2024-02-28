@@ -70,7 +70,9 @@ class ImageboardBoard extends HiveObject {
 	String toString() => '/$name/';
 
 	@override
-	bool operator == (Object other) => (other is ImageboardBoard) &&
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is ImageboardBoard) &&
 		(other.name == name) &&
 		(other.title == title) &&
 		(other.isWorksafe == isWorksafe) &&

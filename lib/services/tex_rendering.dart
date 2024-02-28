@@ -162,7 +162,10 @@ class TeXImageProvider extends ImageProvider<TeXImageProvider> {
 	}
 
 	@override
-	bool operator == (dynamic other) => (other is TeXImageProvider) && (other.tex == tex);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is TeXImageProvider) &&
+		(other.tex == tex);
 
 	@override
 	int get hashCode => tex.hashCode;

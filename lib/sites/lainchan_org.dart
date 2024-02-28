@@ -47,7 +47,14 @@ class SiteLainchanOrg extends SiteLainchan {
 	String get siteData => baseUrl;
 
 	@override
-	bool operator ==(Object other) => (other is SiteLainchanOrg) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.archives, archives) && (other.faviconPath == faviconPath) && (other.defaultUsername == defaultUsername);
+	bool operator ==(Object other) =>
+		identical(this, other) ||
+		(other is SiteLainchanOrg) &&
+		(other.baseUrl == baseUrl) &&
+		(other.name == name) &&
+		listEquals(other.archives, archives) &&
+		(other.faviconPath == faviconPath) &&
+		(other.defaultUsername == defaultUsername);
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, archives, faviconPath, defaultUsername);

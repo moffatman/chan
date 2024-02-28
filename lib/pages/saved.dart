@@ -52,7 +52,12 @@ class _PostThreadCombo {
 	});
 
 	@override
-	bool operator == (dynamic o) => (o is _PostThreadCombo) && (o.imageboard == imageboard) && (o.post?.id == post?.id) && (o.threadState.identifier == threadState.identifier);
+	bool operator == (Object o) =>
+		identical(this, o) ||
+		(o is _PostThreadCombo) &&
+		(o.imageboard == imageboard) &&
+		(o.post?.id == post?.id) &&
+		(o.threadState.identifier == threadState.identifier);
 	@override
 	int get hashCode => Object.hash(imageboard, post, threadState);
 }

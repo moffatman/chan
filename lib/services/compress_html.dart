@@ -15,7 +15,11 @@ class CompressedTag implements CompressedNode {
 	@override
 	Node reconstruct() => Element.tag(localName)..attributes = attributes;
 	@override
-	bool operator == (Object other) => (other is CompressedTag) && (other.localName == localName) && mapEquals(other.attributes, attributes);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is CompressedTag) &&
+		(other.localName == localName) &&
+		mapEquals(other.attributes, attributes);
 	@override
 	int get hashCode => Object.hash(localName, attributes);
 	@override
@@ -28,7 +32,10 @@ class CompressedText implements CompressedNode {
 	@override
 	Node reconstruct() => Text(text);
 	@override
-	bool operator == (Object other) => (other is CompressedText) && (other.text == text);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is CompressedText) &&
+		(other.text == text);
 	@override
 	int get hashCode => text.hashCode;
 	@override

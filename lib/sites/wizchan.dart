@@ -18,7 +18,12 @@ class SiteWizchan extends SiteLainchanOrg {
 	String get siteType => 'wizchan';
 
 	@override
-	bool operator ==(Object other) => (other is SiteWizchan) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.archives, archives);
+	bool operator ==(Object other) =>
+		identical(this, other) ||
+		(other is SiteWizchan) &&
+		(other.baseUrl == baseUrl) &&
+		(other.name == name) &&
+		listEquals(other.archives, archives);
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, archives);

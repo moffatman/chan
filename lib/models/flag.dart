@@ -34,6 +34,7 @@ class ImageboardFlag implements Flag {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is ImageboardFlag &&
 		other.name == name &&
 		other.imageUrl == imageUrl &&
@@ -61,6 +62,7 @@ class ImageboardMultiFlag implements Flag {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is ImageboardMultiFlag &&
 		listEquals(other.parts, parts);
 	

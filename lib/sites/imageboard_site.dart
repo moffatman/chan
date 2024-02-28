@@ -546,6 +546,7 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is Chan4CustomCaptchaRequest &&
 		other.challengeUrl == challengeUrl &&
 		mapEquals(other.challengeHeaders, challengeHeaders) &&
@@ -717,6 +718,7 @@ class ImageboardArchiveSearchResult {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		(other is ImageboardArchiveSearchResult) &&
 		(other.post == post) &&
 		(other.thread == thread);

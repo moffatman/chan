@@ -1286,7 +1286,9 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	bool operator == (Object other) => (other is SiteReddit);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is SiteReddit);
 
 	@override
 	int get hashCode => 0;

@@ -48,6 +48,7 @@ class MasterDetailHint {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is MasterDetailHint &&
 		other.location == location &&
 		other.primaryInterceptorKey == primaryInterceptorKey &&

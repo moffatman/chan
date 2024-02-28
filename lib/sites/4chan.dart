@@ -72,7 +72,10 @@ class _QuoteLinkElement extends LinkifyElement {
 	_QuoteLinkElement(this.id) : super('>>$id');
 
   @override
-  bool operator ==(other) => (other is _QuoteLinkElement) && (other.id == id);
+  bool operator ==(Object other) =>
+		identical(this, other) ||
+		(other is _QuoteLinkElement) &&
+		(other.id == id);
 
 	@override
 	int get hashCode => id.hashCode;
@@ -1178,7 +1181,21 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysUrl == sysUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives) && mapEquals(other.captchaUserAgents, captchaUserAgents) && (other.searchUrl == searchUrl) && listEquals(other.possibleCaptchaLetterCounts, possibleCaptchaLetterCounts) && mapEquals(other.postingHeaders, postingHeaders);
+	bool operator ==(Object other) =>
+		identical(this, other) ||
+		(other is Site4Chan) &&
+		(other.name == name) &&
+		(other.imageUrl == imageUrl) &&
+		(other.captchaKey == captchaKey) &&
+		(other.apiUrl == apiUrl) &&
+		(other.sysUrl == sysUrl) &&
+		(other.baseUrl == baseUrl) &&
+		(other.staticUrl == staticUrl) &&
+		listEquals(other.archives, archives) &&
+		mapEquals(other.captchaUserAgents, captchaUserAgents) &&
+		(other.searchUrl == searchUrl) &&
+		listEquals(other.possibleCaptchaLetterCounts, possibleCaptchaLetterCounts) &&
+		mapEquals(other.postingHeaders, postingHeaders);
 
 	@override
 	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives, captchaUserAgents, searchUrl, possibleCaptchaLetterCounts, postingHeaders);

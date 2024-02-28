@@ -110,6 +110,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		(other is SiteLainchan2) &&
 		(other.baseUrl == baseUrl) &&
 		(other.name == name) &&

@@ -526,7 +526,15 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	bool get hasPagedCatalog => true;
 
 	@override
-	bool operator == (Object other) => (other is FoolFuukaArchive) && (other.name == name) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && (other.useRandomUseragent == useRandomUseragent) && listEquals(other.boards, boards) && (other.hasAttachmentRateLimit == hasAttachmentRateLimit);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is FoolFuukaArchive) &&
+		(other.name == name) &&
+		(other.baseUrl == baseUrl) &&
+		(other.staticUrl == staticUrl) &&
+		(other.useRandomUseragent == useRandomUseragent) &&
+		listEquals(other.boards, boards) &&
+		(other.hasAttachmentRateLimit == hasAttachmentRateLimit);
 
 	@override
 	int get hashCode => Object.hash(name, baseUrl, staticUrl, useRandomUseragent, boards, hasAttachmentRateLimit);

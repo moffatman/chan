@@ -319,7 +319,10 @@ class NullWrapper<T extends Object> {
 	String toString() => 'NullWrapper($value)';
 
 	@override
-	bool operator == (Object other) => other is NullWrapper && other.value == value;
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is NullWrapper &&
+		other.value == value;
 	@override
 	int get hashCode => value.hashCode;
 }

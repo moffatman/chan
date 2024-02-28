@@ -698,7 +698,10 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	bool operator == (Object other) => (other is SiteHackerNews) && (other.catalogThreadsPerPage == catalogThreadsPerPage);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is SiteHackerNews) &&
+		(other.catalogThreadsPerPage == catalogThreadsPerPage);
 
 	@override
 	int get hashCode => catalogThreadsPerPage.hashCode;

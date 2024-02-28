@@ -270,7 +270,10 @@ class _TreeNode<T extends Object> {
 	String toString() => '_TreeNode<$T>(item: $item, id: $id, ${children.length > 5 ? '# children: ${children.length}' : 'children: $children'}, ${parents.length > 5 ? '# parents: ${parents.length}' : 'parents: $parents'}';
 
 	@override
-	bool operator == (Object o) => (o is _TreeNode<T>) && (o.item == item);
+	bool operator == (Object o) =>
+		identical(this, o) ||
+		(o is _TreeNode<T>) &&
+		(o.item == item);
 
 	@override
 	int get hashCode => item.hashCode;
@@ -313,7 +316,9 @@ class RefreshableListItem<T extends Object> {
 	String toString() => 'RefreshableListItem<$T>(item: $item, id: $id, representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}, treeDescendantIds: $treeDescendantIds)';
 
 	@override
-	bool operator == (Object other) => (other is RefreshableListItem<T>) &&
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is RefreshableListItem<T>) &&
 		(other.item == item) &&
 		(other.id == id) &&
 		(other.representsUnknownStubChildren == representsUnknownStubChildren) &&
@@ -447,6 +452,7 @@ class _RefreshableTreeItemsCacheKey {
 
 	@override
 	bool operator ==(Object other) =>
+		identical(this, other) ||
 		other is _RefreshableTreeItemsCacheKey &&
 		other.thisId == thisId &&
 		listEquals(other.parentIds, parentIds) &&
@@ -810,6 +816,7 @@ class _DividerKey<T extends Object> {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is _DividerKey &&
 		other.item == item;
 	
@@ -869,6 +876,7 @@ class RefreshableListFilterReason {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is RefreshableListFilterReason &&
 		other.reason == reason;
 	@override
@@ -2723,7 +2731,10 @@ class _BuiltRefreshableListItem<T extends Object> {
 	_BuiltRefreshableListItem(this.item);
 
 	@override
-	bool operator == (dynamic o) => (o is _BuiltRefreshableListItem<T>) && o.item == item;
+	bool operator == (Object o) =>
+		identical(this, o) ||
+		(o is _BuiltRefreshableListItem<T>) &&
+		o.item == item;
 
 	@override
 	int get hashCode => item.hashCode;

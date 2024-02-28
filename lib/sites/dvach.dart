@@ -362,7 +362,12 @@ class SiteDvach extends ImageboardSite {
 	String get defaultUsername => 'Аноним';
 
 	@override
-	bool operator ==(Object other) => (other is SiteDvach) && (other.name == name) && (other.baseUrl == baseUrl) && listEquals(other.archives, archives);
+	bool operator ==(Object other) =>
+		identical(this, other) ||
+		(other is SiteDvach) &&
+		(other.name == name) &&
+		(other.baseUrl == baseUrl) &&
+		listEquals(other.archives, archives);
 
 	@override
 	int get hashCode => Object.hash(name, baseUrl, archives);

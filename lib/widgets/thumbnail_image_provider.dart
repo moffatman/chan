@@ -38,7 +38,11 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 	Future<ThumbnailImageProvider> obtainKey(ImageConfiguration configuration) => SynchronousFuture<ThumbnailImageProvider>(this);
 
 	@override
-	bool operator == (dynamic other) => (other is ThumbnailImageProvider) && (other.file.path == file.path) && (other.scale == scale);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is ThumbnailImageProvider) &&
+		(other.file.path == file.path) &&
+		(other.scale == scale);
 
 	@override
 	int get hashCode => Object.hash(file.path, scale);

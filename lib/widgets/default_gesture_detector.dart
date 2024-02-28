@@ -7,6 +7,7 @@ class DefaultOnTapCallback {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is DefaultOnTapCallback &&
 		other.onTap == onTap;
 	

@@ -65,6 +65,7 @@ class ShareablePostsStyle {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is ShareablePostsStyle &&
 		other.useTree == useTree &&
 		other.parentDepth == parentDepth &&

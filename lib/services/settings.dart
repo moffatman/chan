@@ -206,6 +206,7 @@ class ContentSettings {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is ContentSettings &&
 		other.images == images &&
 		other.nsfwBoards == nsfwBoards &&
@@ -352,7 +353,9 @@ class SavedTheme {
 		textFieldColor = original.textFieldColor;
 	
 	@override
-	bool operator ==(dynamic other) => (other is SavedTheme) &&
+	bool operator ==(Object other) =>
+		identical(this, other) ||
+		other is SavedTheme &&
 		backgroundColor == other.backgroundColor &&
 		barColor == other.barColor &&
 		primaryColor == other.primaryColor &&
@@ -1777,7 +1780,7 @@ class SavedSettingEquals<T> extends MutableSetting<bool> {
 
 	@override
 	bool operator == (Object other) =>
-		other is SavedSettingEquals ||
+		identical(this, other) ||
 		other is SavedSettingEquals &&
 		other.setting == setting &&
 		other.value == value;

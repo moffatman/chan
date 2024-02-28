@@ -208,18 +208,19 @@ class Thread extends HiveObject implements Filterable {
 	}
 
 	@override
-	bool operator == (dynamic other) {
-		return (other is Thread)
-			&& (other.id == id)
-			&& (other.posts_.length == posts_.length)
-			&& other.posts_.last == posts_.last
-			&& other.currentPage == currentPage
-			&& other.isArchived == isArchived
-			&& other.isDeleted == isDeleted
-			&& other.isSticky == isSticky
-			&& other.replyCount == replyCount
-			&& listEquals(other.attachments, attachments);
-	}
+	bool operator ==(Object other) =>
+		identical(this, other) ||
+		other is Thread &&
+		other.id == id &&
+		other.posts_.length == posts_.length &&
+		other.posts_.last == posts_.last &&
+		other.currentPage == currentPage &&
+		other.isArchived == isArchived &&
+		other.isDeleted == isDeleted &&
+		other.isSticky == isSticky &&
+		other.replyCount == replyCount &&
+		listEquals(other.attachments, attachments);
+
 	@override
 	int get hashCode => id;
 
@@ -277,7 +278,11 @@ class ThreadIdentifier {
 	String toString() => 'ThreadIdentifier: /$board/$id';
 
 	@override
-	bool operator == (dynamic other) => (other is ThreadIdentifier) && (other.board == board) && (other.id == id);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is ThreadIdentifier &&
+		other.board == board &&
+		other.id == id;
 	@override
 	int get hashCode => board.hashCode * 31 + id.hashCode;
 }
@@ -297,7 +302,12 @@ class BoardThreadOrPostIdentifier {
 																						PostIdentifier(board, threadId!, postId!);
 
 	@override
-	bool operator == (Object other) => (other is BoardThreadOrPostIdentifier) && (other.board == board) && (other.threadId == threadId) && (other.postId == postId);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is BoardThreadOrPostIdentifier) &&
+		(other.board == board) &&
+		(other.threadId == threadId) &&
+		(other.postId == postId);
 	@override
 	int get hashCode => Object.hash(board, threadId, postId);
 }

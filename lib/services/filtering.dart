@@ -56,6 +56,7 @@ class FilterResultType {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is FilterResultType &&
 		other.hide == hide &&
 		other.highlight == highlight &&
@@ -157,7 +158,10 @@ class FilterCache<T extends Filter> implements Filter {
 	String toString() => 'FilterCache($wrappedFilter)';
 
 	@override
-	bool operator ==(dynamic other) => other is FilterCache && other.wrappedFilter == wrappedFilter;
+	bool operator ==(Object other) =>
+		identical(this, other) ||
+		other is FilterCache &&
+		other.wrappedFilter == wrappedFilter;
 
 	@override
 	int get hashCode => wrappedFilter.hashCode;
@@ -483,7 +487,10 @@ class CustomFilter implements Filter {
 	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadsOnly: $threadsOnly, minRepliedTo: $minRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
 
 	@override
-	operator == (dynamic other) => other is CustomFilter && other.configuration == configuration;
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is CustomFilter &&
+		other.configuration == configuration;
 
 	@override
 	int get hashCode => configuration.hashCode;
@@ -516,7 +523,11 @@ class IDFilter implements Filter {
 	String toString() => 'IDFilter(hideIds: $hideIds, showIds: $showIds)';
 
 	@override
-	operator == (Object other) => other is IDFilter && listEquals(other.hideIds, hideIds) && listEquals(other.showIds, showIds);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is IDFilter &&
+		listEquals(other.hideIds, hideIds) &&
+		listEquals(other.showIds, showIds);
 
 	@override
 	int get hashCode => Object.hash(hideIds, showIds);
@@ -559,7 +570,13 @@ class ThreadFilter implements Filter {
 	String toString() => 'ThreadFilter(hideIds: $hideIds, showIds: $showIds, repliedToIds: $repliedToIds, posterIds: $posterIds)';
 
 	@override
-	operator == (dynamic other) => other is ThreadFilter && listEquals(other.hideIds, hideIds) && listEquals(other.showIds, showIds) && listEquals(other.repliedToIds, repliedToIds) && listEquals(other.posterIds, posterIds);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is ThreadFilter &&
+		listEquals(other.hideIds, hideIds) &&
+		listEquals(other.showIds, showIds) &&
+		listEquals(other.repliedToIds, repliedToIds) &&
+		listEquals(other.posterIds, posterIds);
 
 	@override
 	int get hashCode => Object.hash(hideIds, showIds, repliedToIds, posterIds);
@@ -585,7 +602,11 @@ class MD5Filter implements Filter {
 	String toString() => 'MD5Filter(md5s: $md5s, applyToThreads: $applyToThreads)';
 
 	@override
-	operator == (dynamic other) => other is MD5Filter && setEquals(other.md5s, md5s) && other.applyToThreads == applyToThreads;
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is MD5Filter &&
+		setEquals(other.md5s, md5s) &&
+		other.applyToThreads == applyToThreads;
 
 	@override
 	int get hashCode => Object.hash(md5s, applyToThreads);
@@ -608,7 +629,10 @@ class SearchFilter implements Filter {
 	String toString() => 'SearchFilter(text: $text)';
 
 	@override
-	operator == (dynamic other) => other is SearchFilter && other.text == text;
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is SearchFilter &&
+		other.text == text;
 
 	@override
 	int get hashCode => text.hashCode;
@@ -635,7 +659,10 @@ class FilterGroup<T extends Filter> implements Filter {
 	String toString() => 'FilterGroup(filters: $filters)';
 
 	@override
-	operator == (dynamic other) => other is FilterGroup && listEquals(other.filters, filters);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is FilterGroup &&
+		listEquals(other.filters, filters);
 
 	@override
 	int get hashCode => filters.hashCode;
@@ -650,7 +677,9 @@ class DummyFilter implements Filter {
 	bool get supportsMetaFilter => false;
 
 	@override
-	operator == (dynamic other) => other is DummyFilter;
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is DummyFilter;
 
 	@override
 	int get hashCode => 0;
@@ -809,6 +838,7 @@ class MetaFilter extends ChangeNotifier implements Filter {
 
 	@override
 	bool operator == (Object other) =>
+		identical(this, other) ||
 		other is MetaFilter &&
 		other.parent == parent;
 	
