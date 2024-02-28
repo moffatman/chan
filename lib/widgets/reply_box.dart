@@ -2504,15 +2504,35 @@ class ReplyBoxTextEditingController extends TextEditingController {
 
 	@override
 	TextSpan buildTextSpan({required BuildContext context, TextStyle? style , required bool withComposing}) {
+		return buildTextSpanWithSpellCheckingResults(
+			context: context,
+			style: style,
+			misspelledTextStyle: const TextStyle(), // Doesn't matter
+			withComposing: withComposing,
+			spellCheckResults: SpellCheckResults(text, const []) // Doesn't matter
+		);
+	}
+
+	@override
+	TextSpan buildTextSpanWithSpellCheckingResults({
+    required BuildContext context,
+    TextStyle? style,
+    required TextStyle misspelledTextStyle,
+    required bool withComposing,
+    required SpellCheckResults spellCheckResults
+  }) {
 		try {
 			assert(!value.composing.isValid || !withComposing || value.isComposingRangeValid);
 			final bool composingRegionOutOfRange = !value.isComposingRangeValid || !withComposing;
+			final bool usingComposing = !composingRegionOutOfRange && defaultTargetPlatform == TargetPlatform.android;
 
 			return buildHighlightedCommentTextSpan(
 				text: text,
 				style: style,
 				zone: context.read<PostSpanZoneData?>(),
-				composing: composingRegionOutOfRange ? null : value.composing
+				composing: usingComposing ? value.composing : null,
+				misspelledTextStyle: misspelledTextStyle,
+				spellCheckResults: spellCheckResults
 			);
 		}
 		catch (e, st) {
