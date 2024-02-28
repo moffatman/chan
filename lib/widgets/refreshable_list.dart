@@ -1823,7 +1823,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final automaticallyCollapsed = <List<int>>[];
 		final Set<int> automaticallyTopLevelCollapsed = {};
 		Set<int> dumpNode(_TreeNode<RefreshableListItem<T>> node, List<int> parentIds, {bool addOmittedChildNode = true}) {
-			if (out.length > (kDebugMode ? 15000 : 150000)) {
+			if (out.length > (kDebugMode ? 15000 : 50000)) {
 				// Bail
 				throw const _TreeTooDeepException();
 			}
