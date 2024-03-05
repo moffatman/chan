@@ -1009,7 +1009,6 @@ class ThreadPageState extends State<ThreadPage> {
 			// Trigger update of counts in case new post is drawn fully onscreen
 			_listController.slowScrolls.didUpdate();
 		});
-		print('shouldScroll=$shouldScroll');
 		if (shouldScroll) {
 			_scrollIfWarranted(const Duration(milliseconds: 500))
 				.then((_) async {
