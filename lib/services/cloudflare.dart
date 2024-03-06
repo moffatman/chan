@@ -302,7 +302,7 @@ class CloudflareInterceptor extends Interceptor {
 					cookieUrl: response.requestOptions.uri,
 					userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
 					initialData: InAppWebViewInitialData(
-						data: switch (response.requestOptions.responseType) {
+						data: response.data is String ? response.data : switch (response.requestOptions.responseType) {
 							ResponseType.bytes => utf8.decode(response.data),
 							ResponseType.json => jsonEncode(response.data),
 							ResponseType.plain => response.data,
@@ -340,7 +340,7 @@ class CloudflareInterceptor extends Interceptor {
 					cookieUrl: err.requestOptions.uri,
 					userAgent: err.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
 					initialData: InAppWebViewInitialData(
-						data: switch (err.requestOptions.responseType) {
+						data: err.response?.data is String ? err.response!.data : switch (err.requestOptions.responseType) {
 							ResponseType.bytes => utf8.decode(err.response!.data),
 							ResponseType.json => jsonEncode(err.response!.data),
 							ResponseType.plain => err.response!.data,
