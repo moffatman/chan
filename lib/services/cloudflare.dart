@@ -359,8 +359,10 @@ class CloudflareInterceptor extends Interceptor {
 			catch (e) {
 				handler.reject(DioError(
 					requestOptions: err.requestOptions,
+					response: err.response,
 					error: e
 				));
+				return;
 			}
 		}
 		handler.next(err);
