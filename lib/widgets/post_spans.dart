@@ -1077,7 +1077,7 @@ class PostLinkSpan extends PostSpan {
 
 	@override
 	String buildText() {
-		if (name != null) {
+		if (name != null && 'https://$name' != url) {
 			return '[$name]($url)';
 		}
 		else {
