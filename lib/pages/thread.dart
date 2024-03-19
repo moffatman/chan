@@ -954,8 +954,7 @@ class ThreadPageState extends State<ThreadPage> {
 		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site.placeOrphanPost);
 		final loadedReferencedThreads = await _loadReferencedThreads();
 		_checkForNewGeneral();
-		if (newThread != tmpPersistentState.thread &&
-		    !listEquals(newThread.posts_, tmpPersistentState.thread?.posts_)) {
+		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
 			tmpPersistentState.thread = newThread;
 			if (persistentState == tmpPersistentState) {

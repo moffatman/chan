@@ -219,7 +219,8 @@ class Thread extends HiveObject implements Filterable {
 		other.isDeleted == isDeleted &&
 		other.isSticky == isSticky &&
 		other.replyCount == replyCount &&
-		listEquals(other.attachments, attachments);
+		listEquals(other.attachments, attachments) &&
+		listEquals(other.posts_, posts_);
 
 	@override
 	int get hashCode => id;
