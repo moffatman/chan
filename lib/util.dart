@@ -534,3 +534,8 @@ extension NonEmptyOrNull on String {
 		return this;
 	}
 }
+
+T dprint<T>(T obj, {String label = 'dprint'}) {
+	print('$label: $obj');
+	return obj;
+}
