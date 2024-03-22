@@ -6,6 +6,251 @@ part of 'imageboard_site.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
+class ImageboardBoardFlagFields {
+  static String getCode(ImageboardBoardFlag x) => x.code;
+  static const code = ReadOnlyHiveFieldAdapter<ImageboardBoardFlag, String>(
+    getter: getCode,
+    fieldNumber: 0,
+    fieldName: 'code',
+    merger: PrimitiveMerger(),
+  );
+  static String getName(ImageboardBoardFlag x) => x.name;
+  static const name = ReadOnlyHiveFieldAdapter<ImageboardBoardFlag, String>(
+    getter: getName,
+    fieldNumber: 1,
+    fieldName: 'name',
+    merger: PrimitiveMerger(),
+  );
+  static String getImageUrl(ImageboardBoardFlag x) => x.imageUrl;
+  static const imageUrl = ReadOnlyHiveFieldAdapter<ImageboardBoardFlag, String>(
+    getter: getImageUrl,
+    fieldNumber: 2,
+    fieldName: 'imageUrl',
+    merger: PrimitiveMerger(),
+  );
+}
+
+class ImageboardBoardFlagAdapter extends TypeAdapter<ImageboardBoardFlag> {
+  const ImageboardBoardFlagAdapter();
+
+  static const int kTypeId = 46;
+
+  @override
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<ImageboardBoardFlag, dynamic>>
+      fields = const {
+    0: ImageboardBoardFlagFields.code,
+    1: ImageboardBoardFlagFields.name,
+    2: ImageboardBoardFlagFields.imageUrl
+  };
+
+  @override
+  ImageboardBoardFlag read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return ImageboardBoardFlag(
+      code: fields[0] as String,
+      name: fields[1] as String,
+      imageUrl: fields[2] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ImageboardBoardFlag obj) {
+    writer
+      ..writeByte(3)
+      ..writeByte(0)
+      ..write(obj.code)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.imageUrl);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ImageboardBoardFlagAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class DraftPostFields {
+  static String getBoard(DraftPost x) => x.board;
+  static const board = ReadOnlyHiveFieldAdapter<DraftPost, String>(
+    getter: getBoard,
+    fieldNumber: 0,
+    fieldName: 'board',
+    merger: PrimitiveMerger(),
+  );
+  static int? getThreadId(DraftPost x) => x.threadId;
+  static const threadId = ReadOnlyHiveFieldAdapter<DraftPost, int?>(
+    getter: getThreadId,
+    fieldNumber: 1,
+    fieldName: 'threadId',
+    merger: PrimitiveMerger(),
+  );
+  static String? getName(DraftPost x) => x.name;
+  static void setName(DraftPost x, String? v) => x.name = v;
+  static const name = HiveFieldAdapter<DraftPost, String?>(
+    getter: getName,
+    setter: setName,
+    fieldNumber: 2,
+    fieldName: 'name',
+    merger: PrimitiveMerger(),
+  );
+  static String? getOptions(DraftPost x) => x.options;
+  static const options = ReadOnlyHiveFieldAdapter<DraftPost, String?>(
+    getter: getOptions,
+    fieldNumber: 3,
+    fieldName: 'options',
+    merger: PrimitiveMerger(),
+  );
+  static String? getSubject(DraftPost x) => x.subject;
+  static const subject = ReadOnlyHiveFieldAdapter<DraftPost, String?>(
+    getter: getSubject,
+    fieldNumber: 4,
+    fieldName: 'subject',
+    merger: PrimitiveMerger(),
+  );
+  static String getText(DraftPost x) => x.text;
+  static const text = ReadOnlyHiveFieldAdapter<DraftPost, String>(
+    getter: getText,
+    fieldNumber: 5,
+    fieldName: 'text',
+    merger: PrimitiveMerger(),
+  );
+  static String? getFile(DraftPost x) => x.file;
+  static const file = ReadOnlyHiveFieldAdapter<DraftPost, String?>(
+    getter: getFile,
+    fieldNumber: 6,
+    fieldName: 'file',
+    merger: PrimitiveMerger(),
+  );
+  static bool? getSpoiler(DraftPost x) => x.spoiler;
+  static const spoiler = ReadOnlyHiveFieldAdapter<DraftPost, bool?>(
+    getter: getSpoiler,
+    fieldNumber: 7,
+    fieldName: 'spoiler',
+    merger: PrimitiveMerger(),
+  );
+  static String? getOverrideFilenameWithoutExtension(DraftPost x) =>
+      x.overrideFilenameWithoutExtension;
+  static const overrideFilenameWithoutExtension =
+      ReadOnlyHiveFieldAdapter<DraftPost, String?>(
+    getter: getOverrideFilenameWithoutExtension,
+    fieldNumber: 8,
+    fieldName: 'overrideFilenameWithoutExtension',
+    merger: PrimitiveMerger(),
+  );
+  static ImageboardBoardFlag? getFlag(DraftPost x) => x.flag;
+  static const flag = ReadOnlyHiveFieldAdapter<DraftPost, ImageboardBoardFlag?>(
+    getter: getFlag,
+    fieldNumber: 9,
+    fieldName: 'flag',
+    merger: NullableMerger(AdaptedMerger(ImageboardBoardFlagAdapter.kTypeId)),
+  );
+  static bool? getUseLoginSystem(DraftPost x) => x.useLoginSystem;
+  static void setUseLoginSystem(DraftPost x, bool? v) => x.useLoginSystem = v;
+  static const useLoginSystem = HiveFieldAdapter<DraftPost, bool?>(
+    getter: getUseLoginSystem,
+    setter: setUseLoginSystem,
+    fieldNumber: 10,
+    fieldName: 'useLoginSystem',
+    merger: PrimitiveMerger(),
+  );
+}
+
+class DraftPostAdapter extends TypeAdapter<DraftPost> {
+  const DraftPostAdapter();
+
+  static const int kTypeId = 47;
+
+  @override
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<DraftPost, dynamic>> fields = const {
+    0: DraftPostFields.board,
+    1: DraftPostFields.threadId,
+    2: DraftPostFields.name,
+    3: DraftPostFields.options,
+    4: DraftPostFields.subject,
+    5: DraftPostFields.text,
+    6: DraftPostFields.file,
+    7: DraftPostFields.spoiler,
+    8: DraftPostFields.overrideFilenameWithoutExtension,
+    9: DraftPostFields.flag,
+    10: DraftPostFields.useLoginSystem
+  };
+
+  @override
+  DraftPost read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return DraftPost(
+      board: fields[0] as String,
+      threadId: fields[1] as int?,
+      name: fields[2] as String?,
+      options: fields[3] as String?,
+      subject: fields[4] as String?,
+      text: fields[5] as String,
+      file: fields[6] as String?,
+      spoiler: fields[7] as bool?,
+      overrideFilenameWithoutExtension: fields[8] as String?,
+      flag: fields[9] as ImageboardBoardFlag?,
+      useLoginSystem: fields[10] as bool?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, DraftPost obj) {
+    writer
+      ..writeByte(11)
+      ..writeByte(0)
+      ..write(obj.board)
+      ..writeByte(1)
+      ..write(obj.threadId)
+      ..writeByte(2)
+      ..write(obj.name)
+      ..writeByte(3)
+      ..write(obj.options)
+      ..writeByte(4)
+      ..write(obj.subject)
+      ..writeByte(5)
+      ..write(obj.text)
+      ..writeByte(6)
+      ..write(obj.file)
+      ..writeByte(7)
+      ..write(obj.spoiler)
+      ..writeByte(8)
+      ..write(obj.overrideFilenameWithoutExtension)
+      ..writeByte(9)
+      ..write(obj.flag)
+      ..writeByte(10)
+      ..write(obj.useLoginSystem);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DraftPostAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
   const CatalogVariantAdapter();
 

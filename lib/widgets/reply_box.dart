@@ -5,21 +5,20 @@ import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
-import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/apple.dart';
-import 'package:chan/services/captcha.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/services/share.dart';
+import 'package:chan/services/text_highlighting.dart';
 import 'package:chan/services/text_normalization.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
@@ -28,9 +27,8 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
-import 'package:chan/widgets/captcha_nojs.dart';
+import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/post_spans.dart';
-import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -38,7 +36,6 @@ import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -46,9 +43,6 @@ import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:linkify/linkify.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
-import 'package:string_similarity/string_similarity.dart';
-
-const _captchaContributionServer = 'https://captcha.chance.surf';
 
 class _StoppedValueListenable<T> implements ValueListenable<T> {
 	@override
@@ -78,37 +72,23 @@ class ReplyBox extends StatefulWidget {
 	final String board;
 	final int? threadId;
 	final ValueChanged<PostReceipt> onReplyPosted;
-	final String initialText;
-	final ValueChanged<String>? onTextChanged;
-	final String initialSubject;
-	final ValueChanged<String>? onSubjectChanged;
+	final DraftPost? initialDraft;
+	final ValueChanged<DraftPost?>? onDraftChanged;
 	final VoidCallback? onVisibilityChanged;
 	final bool isArchived;
 	final bool fullyExpanded;
-	final String? initialOptions;
-	final ValueChanged<String>? onOptionsChanged;
-	final String? initialFilePath;
-	final ValueChanged<String?>? onFilePathChanged;
 	final ValueChanged<ReplyBoxState>? onInitState;
-	final GlobalKey<ReplyBoxState>? longLivedCounterpartKey;
 
 	const ReplyBox({
 		required this.board,
 		this.threadId,
 		required this.onReplyPosted,
-		this.initialText = '',
-		this.onTextChanged,
-		this.initialSubject = '',
-		this.onSubjectChanged,
+		this.initialDraft,
+		this.onDraftChanged,
 		this.onVisibilityChanged,
 		this.isArchived = false,
 		this.fullyExpanded = false,
-		this.initialOptions,
-		this.onOptionsChanged,
-		this.initialFilePath,
-		this.onFilePathChanged,
 		this.onInitState,
-		this.longLivedCounterpartKey,
 		Key? key
 	}) : super(key: key);
 
@@ -123,20 +103,17 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _optionsFieldController;
 	late final TextEditingController _filenameController;
 	late final FocusNode _textFocusNode;
-	bool loading = false;
 	(MediaScan, FileStat, Digest)? _attachmentScan;
 	File? attachment;
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
 	bool _showOptions = false;
-	bool get showOptions => _showOptions && !loading;
+	bool get showOptions => _showOptions;
 	bool _showAttachmentOptions = false;
-	bool get showAttachmentOptions => _showAttachmentOptions && !loading;
+	bool get showAttachmentOptions => _showAttachmentOptions;
 	bool _show = false;
 	bool get show => widget.fullyExpanded || (_show && !_willHideOnPanEnd);
 	String? _lastFoundUrl;
 	String? _proposedAttachmentUrl;
-	CaptchaSolution? _captchaSolution;
-	Timer? _autoPostTimer;
 	bool spoiler = false;
 	List<ImageboardBoardFlag> _flags = [];
 	ImageboardBoardFlag? flag;
@@ -145,15 +122,13 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _willHideOnPanEnd = false;
 	late final FocusNode _rootFocusNode;
 	(String, MediaConversion?)? _attachmentProgress;
-	PostReceipt? _spamFilterCheckingReceipt;
 	static List<String> _previouslyUsedNames = [];
 	static List<String> _previouslyUsedOptions = [];
 	late final Timer _focusTimer;
 	(DateTime, FocusNode)? _lastNearbyFocus;
-	bool _headlessSolveFailed = false;
-	bool _promptForHeadlessSolve = false;
 	bool _disableLoginSystem = false;
 	final Map<ImageboardSnippet, TextEditingController> _snippetControllers = {};
+	final List<QueuedPost> _submittingPosts = [];
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
 		int threadId => ThreadIdentifier(widget.board, threadId),
@@ -165,6 +140,54 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	String get options => _optionsFieldController.text;
 	set options(String newOptions) => _optionsFieldController.text = newOptions;
+
+	String get defaultName => context.read<Persistence?>()?.browserState.postingNames[widget.board] ?? '';
+
+	static final _quotelinkPattern = RegExp(r'>>(\d+)');
+	set draft(DraftPost? draft) {
+		if (draft != null) {
+			String text = draft.text;
+			if (draft.board != widget.board) {
+				// Adjust quotelinks to match cross-board paste
+				text = text.replaceAllMapped(_quotelinkPattern, (match) {
+					return '>>>/${draft.board}/${match.group(1)}';
+				});
+			}
+			_textFieldController.text = text;
+			_optionsFieldController.text = draft.options ?? '';
+			_filenameController.text = draft.overrideFilenameWithoutExtension ?? '';
+			_nameFieldController.text = draft.name ?? defaultName;
+			final subject = draft.subject;
+			if (subject != null) {
+				_subjectFieldController.text = subject;
+			}
+			_disableLoginSystem = switch (draft.useLoginSystem) {
+				false => true,
+				null || true => false
+			};
+		}
+		else {
+			_textFieldController.clear();
+			// Don't clear options
+			_subjectFieldController.clear();
+			_nameFieldController.text = defaultName;
+			// Don't clear disableLoginSystem
+		}
+		final file = draft?.file;
+		if (file == attachment?.path) {
+			// Do nothing
+		}
+		else {
+			attachment = null;
+			_showAttachmentOptions = false;
+			_attachmentScan = null;
+			_filenameController.clear();
+			if (file != null) {
+				// TODO: Careful here. What if we keep trying the same junk file.
+				_tryUsingInitialFile(file);
+			}
+		}
+	}
 
 	static bool _previousPostReceiptIsTooOld(DateTime? time) {
 		return DateTime.now().difference(time ?? DateTime(2000)).inDays > 30;
@@ -215,113 +238,8 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	bool get _haveValidCaptcha {
-		if (_captchaSolution == null) {
-			return false;
-		}
-		return _captchaSolution?.expiresAt?.isAfter(DateTime.now()) ?? true;
-	}
-
-	void _listenForSpamFilter(PostReceipt receipt) async {
-		final start = DateTime.now();
-		_spamFilterCheckingReceipt = receipt;
-		final postShowedUpCompleter = Completer<bool>();
-		final imageboard = context.read<Imageboard>();
-		final threadState = imageboard.persistence.getThreadStateIfExists(thread);
-		if (threadState == null) {
-			return;
-		}
-		final listenable = imageboard.persistence.listenForPersistentThreadStateChanges(threadState.identifier);
-		Future.delayed(const Duration(seconds: 12), () {
-			if (context.mounted && thread == threadState.identifier) {
-				// No need to do anything, ThreadPage is handling the update
-				return;
-			}
-			// Either the thread has switched or we are closed in zombie mode
-			// Trigger our own update
-			imageboard.threadWatcher.updateThread(threadState.identifier);
-		});
-		void listener() {
-			bool? found;
-			for (final post in threadState.thread?.posts_.reversed ?? <Post>[]) {
-				if (post.id > receipt.id) {
-					found = false;
-				}
-				else if (post.id == receipt.id) {
-					final similarity = post.span.buildText().similarityTo(_textFieldController.text);
-					found = similarity > 0.65;
-					break;
-				}
-				else {
-					// post.id < receipt.id
-					break;
-				}
-			}
-			if (found != null) {
-				// Post is certainly there or not
-				postShowedUpCompleter.complete(found);
-			}
-			else if (DateTime.now().difference(start) > const Duration(seconds: 12)) {
-				// On first update after 12 seconds, give up
-				postShowedUpCompleter.complete(false);
-			}
-		}
-		listenable.addListener(listener);
-		final postShowedUp = await Future.any<bool>([
-			postShowedUpCompleter.future,
-			Future.delayed(const Duration(seconds: 20), () => false)
-		]);
-		listenable.removeListener(listener);
-		if (postShowedUp) {
-			receipt.spamFiltered = false;
-			showToast(
-				context: widget.longLivedCounterpartKey?.currentContext ?? context,
-				message: 'Post successful',
-				icon: CupertinoIcons.smiley,
-				hapticFeedback: false
-			);
-			_maybeShowDubsToast(receipt.id);
-			if (_spamFilterCheckingReceipt == receipt) {
-				// User hasn't edited the reply form since submitting
-				_textFieldController.clear();
-				_nameFieldController.clear();
-				_optionsFieldController.clear();
-				_subjectFieldController.clear();
-				_filenameController.clear();
-				attachment = null;
-				_attachmentScan = null;
-				widget.onFilePathChanged?.call(null);
-				_showAttachmentOptions = false;
-				_disableLoginSystem = false;
-				setState(() {});
-			}
-		}
-		else {
-			receipt.spamFiltered = true;
-			imageboard.persistence.didUpdateBrowserState();
-			if (_spamFilterCheckingReceipt == receipt) {
-				// User hasn't edited the reply form since submitting
-				alertError(
-					widget.longLivedCounterpartKey?.currentContext ?? context,
-					'Your post seems to have been blocked by 4chan\'s anti-spam firewall.\nIt has been saved in the reply form for you to try again.',
-					barrierDismissible: true
-				);
-			}
-			else {
-				showToast(
-					context: widget.longLivedCounterpartKey?.currentContext ?? context,
-					message: 'Post spam-filtered',
-					icon: CupertinoIcons.exclamationmark_shield,
-					hapticFeedback: false
-				);
-			}
-		}
-	}
-
 	void _onTextChanged() async {
-		_spamFilterCheckingReceipt = null;
-		widget.onTextChanged?.call(_textFieldController.text);
-		_autoPostTimer?.cancel();
+		_didUpdateDraft();
 		if (mounted) setState(() {});
 		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier()]).tryMapOnce<String>((element) {
 			if (element is UrlElement) {
@@ -370,31 +288,46 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
+	DraftPost _makeDraft() => DraftPost(
+		board: widget.board,
+		threadId: widget.threadId,
+		subject: _subjectFieldController.text,
+		name: null, // It will be stored in postingNames[board]
+		options: _optionsFieldController.text,
+		text: _textFieldController.text,
+		file: attachment?.path,
+		spoiler: spoiler,
+		overrideFilenameWithoutExtension: _filenameController.text,
+		flag: flag,
+		useLoginSystem: switch (_disableLoginSystem) {
+			true => false,
+			_ => null
+		}
+	);
+
+	void _didUpdateDraft() {
+		final draft = _makeDraft();
+		widget.onDraftChanged?.call(_isNonTrivial(draft) ? draft : null);
+	}
+
 	@override
 	void initState() {
 		super.initState();
-		final otherState = widget.longLivedCounterpartKey?.currentState;
-		if (otherState != null) {
-			_showOptions = otherState._showOptions;
-			_showAttachmentOptions = otherState._showAttachmentOptions;
-			spoiler = otherState.spoiler;
-			attachment = otherState.attachment;
-			_attachmentScan = otherState._attachmentScan;
-			_captchaSolution = otherState._captchaSolution;
-		}
 		final persistence = context.read<Persistence>();
-		_textFieldController = ReplyBoxTextEditingController(text: widget.initialText, parent: this);
-		_subjectFieldController = TextEditingController(text: widget.initialSubject);
-		_optionsFieldController = TextEditingController(text: widget.initialOptions ?? persistence.getThreadStateIfExists(thread)?.replyOptions);
-		_filenameController = TextEditingController(text: otherState?._filenameController.text ?? '');
+		_textFieldController = ReplyBoxTextEditingController(text: widget.initialDraft?.text);
+		_subjectFieldController = TextEditingController(text: widget.initialDraft?.subject);
+		_optionsFieldController = TextEditingController(text: widget.initialDraft?.options);
+		_filenameController = TextEditingController(text: widget.initialDraft?.overrideFilenameWithoutExtension);
 		_nameFieldController = TextEditingController(text: persistence.browserState.postingNames[widget.board]);
+		spoiler = widget.initialDraft?.spoiler ?? false;
+		flag = widget.initialDraft?.flag;
+		if (widget.initialDraft?.useLoginSystem == false) {
+			_disableLoginSystem = true;
+		}
 		_textFocusNode = FocusNode();
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
-		_subjectFieldController.addListener(() {
-			_spamFilterCheckingReceipt = null;
-			widget.onSubjectChanged?.call(_subjectFieldController.text);
-		});
+		_subjectFieldController.addListener(_didUpdateDraft);
 		context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
 			if (!mounted) return;
 			setState(() {
@@ -407,7 +340,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty) {
 			_showOptions = true;
 		}
-		_tryUsingInitialFile();
+		_tryUsingInitialFile(widget.initialDraft?.file);
 		widget.onInitState?.call(this);
 		_focusTimer = Timer.periodic(const Duration(milliseconds: 200), (_) => _pollFocus());
 	}
@@ -426,17 +359,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	void didUpdateWidget(ReplyBox oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (oldWidget.board != widget.board || oldWidget.threadId != widget.threadId) {
-			_textFieldController.text = widget.initialText;
-			_subjectFieldController.text = widget.initialSubject;
-			_optionsFieldController.text = widget.initialOptions ?? '';
-			attachment = null;
-			_showAttachmentOptions = false;
-			_attachmentScan = null;
-			spoiler = false;
-			flag = null;
-			widget.onFilePathChanged?.call(null);
-			_disableLoginSystem = false;
-			_spamFilterCheckingReceipt = null;
+			draft = widget.initialDraft;
 		}
 		if (oldWidget.board != widget.board) {
 			context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
@@ -447,9 +370,9 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	void _tryUsingInitialFile() async {
-		if (widget.initialFilePath?.isNotEmpty == true) {
-			final file = File(widget.initialFilePath!);
+	void _tryUsingInitialFile(String? path) async {
+		if (path != null) {
+			final file = File(path);
 			if (await file.exists()) {
 				setAttachment(file);
 			}
@@ -460,7 +383,6 @@ class ReplyBoxState extends State<ReplyBox> {
 					message: 'Previously-selected file is no longer accessible'
 				);
 			}
-			widget.onFilePathChanged?.call(null);
 		}
 	}
 
@@ -536,11 +458,11 @@ class ReplyBoxState extends State<ReplyBox> {
 				_showOptions = true;
 			}
 		}
-		if (_optionsFieldController.text.isEmpty) {
-			final options = persistence.getThreadStateIfExists(thread)?.replyOptions;
-			if (options?.isNotEmpty ?? false) {
-				_optionsFieldController.text = options ?? '';
-				_showOptions = true;
+		for (final draft in Outbox.instance.queuedPostsFor(context.read<Imageboard>().key, widget.board, widget.threadId)) {
+			if (!_submittingPosts.contains(draft)) {
+				// This is some message restored from persistence.outbox (previous app launch)
+				_submittingPosts.add(draft);
+				_listenToReplyPosting(draft);
 			}
 		}
 		setState(() {
@@ -667,7 +589,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	Future<void> setAttachment(File newAttachment, {bool forceRandomizeChecksum = false}) async {
-		_autoPostTimer?.cancel();
 		File? file = newAttachment;
 		final settings = Settings.instance;
 		final randomizeChecksum = forceRandomizeChecksum || settings.randomizeChecksumOnUploadedFiles;
@@ -813,9 +734,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				setState(() {
 					attachment = file;
 				});
-				_spamFilterCheckingReceipt = null;
 				_filenameController.text = file.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), '');
-				widget.onFilePathChanged?.call(file.path);
+				_didUpdateDraft();
 			}
 		}
 		catch (e, st) {
@@ -830,395 +750,128 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		}
 	}
 
-	Future<void> _solveCaptcha() async {
+	Future<bool> _shouldUseLoginSystem() async {
 		final site = context.read<ImageboardSite>();
 		final settings = Settings.instance;
 		final savedFields = site.loginSystem?.getSavedLoginFields();
-		if (savedFields != null) {
-			bool shouldAutoLogin = settings.connectivity != ConnectivityResult.mobile;
-			if (!shouldAutoLogin) {
-				Settings.autoLoginOnMobileNetworkSetting.value ??= await showAdaptiveDialog<bool>(
-					context: context,
-					builder: (context) => AdaptiveAlertDialog(
-						title: Text('Use ${site.loginSystem?.name} on mobile networks?'),
-						actions: [
-							AdaptiveDialogAction(
-								child: const Text('Never'),
-								onPressed: () {
-									Navigator.of(context).pop(false);
-								}
-							),
-							AdaptiveDialogAction(
-								child: const Text('Not now'),
-								onPressed: () {
-									Navigator.of(context).pop();
-								}
-							),
-							AdaptiveDialogAction(
-								child: const Text('Just once'),
-								onPressed: () {
-									shouldAutoLogin = true;
-									Navigator.of(context).pop();
-								}
-							),
-							AdaptiveDialogAction(
-								child: const Text('Always'),
-								onPressed: () {
-									Navigator.of(context).pop(true);
-								}
-							)
-						]
+		if (_disableLoginSystem) {
+			return false;
+		}
+		if (savedFields == null) {
+			return false;
+		}
+		if (settings.connectivity != ConnectivityResult.mobile) {
+			return true;
+		}
+		bool? justOnce;
+		Settings.autoLoginOnMobileNetworkSetting.value ??= await showAdaptiveDialog<bool>(
+			context: context,
+			builder: (context) => AdaptiveAlertDialog(
+				title: Text('Use ${site.loginSystem?.name} on mobile networks?'),
+				actions: [
+					AdaptiveDialogAction(
+						child: const Text('Never'),
+						onPressed: () {
+							Navigator.of(context).pop(false);
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Not now'),
+						onPressed: () {
+							Navigator.of(context).pop();
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Just once'),
+						onPressed: () {
+							justOnce = true;
+							Navigator.of(context).pop();
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Always'),
+						onPressed: () {
+							Navigator.of(context).pop(true);
+						}
 					)
-				);
-				if (Settings.autoLoginOnMobileNetworkSetting.value == true) {
-					shouldAutoLogin = true;
-				}
-			}
-			if (_disableLoginSystem) {
-				shouldAutoLogin = false;
-			}
-			if (shouldAutoLogin) {
-				try {
-					await site.loginSystem?.login(widget.board, savedFields);
-				}
-				catch (e) {
-					if (mounted) {
-						showToast(
-							context: context,
-							icon: CupertinoIcons.exclamationmark_triangle,
-							message: 'Failed to log in to ${site.loginSystem?.name}'
-						);
-					}
-					print('Problem auto-logging in: $e');
-				}
-			}
-			else {
-				await site.loginSystem?.clearLoginCookies(widget.board, false);
-			}
-		}
-		try {
-			final captchaRequest = await site.getCaptchaRequest(widget.board, widget.threadId);
-			_promptForHeadlessSolve = captchaRequest.cloudSolveSupported;
-			if (!mounted) return;
-			_captchaSolution = await solveCaptcha(
-				context: context,
-				site: site,
-				request: captchaRequest,
-				beforeModal: hideReplyBox,
-				afterModal: showReplyBox,
-				disableHeadlessSolve: _headlessSolveFailed
-			);
-		}
-		catch (e, st) {
-			print(e);
-			print(st);
-			if (!mounted) return;
-			alertError(context, 'Error getting captcha request:\n${e.toStringDio()}');
-		}
-	}
-
-	void _maybeShowDubsToast(int id) {
-		if (Settings.instance.highlightRepeatingDigitsInPostIds && context.read<ImageboardSite>().explicitIds) {
-			final digits = id.toString();
-			int repeatingDigits = 1;
-			for (; repeatingDigits < digits.length; repeatingDigits++) {
-				if (digits[digits.length - 1 - repeatingDigits] != digits[digits.length - 1]) {
-					break;
-				}
-			}
-			if (repeatingDigits > 1) {
-				showToast(
-					context: context,
-					icon: CupertinoIcons.hand_point_right,
-					message: switch(repeatingDigits) {
-						< 3 => 'Dubs GET!',
-						3 => 'Trips GET!',
-						4 => 'Quads GET!',
-						5 => 'Quints GET!',
-						6 => 'Sexts GET!',
-						7 => 'Septs GET!',
-						8 => 'Octs GET!',
-						_ => 'Insane GET!!'
-					}
-				);
-			}
-		}
+				]
+			)
+		);
+		return justOnce ?? Settings.autoLoginOnMobileNetworkSetting.value ?? false;
 	}
 
 	Future<void> _submit() async {
-		final site = context.read<ImageboardSite>();
-		setState(() {
-			loading = true;
-		});
-		if (_captchaSolution == null) {
-			await _solveCaptcha();
-		}
-		if (_captchaSolution == null) {
-			setState(() {
-				loading = false;
-			});
+		final shouldUseLoginSystem = await _shouldUseLoginSystem();
+		if (!mounted) {
 			return;
 		}
-		if (!mounted) return;
-		try {
-			final persistence = context.read<Persistence>();
-			final settings = Settings.instance;
-			String? overrideAttachmentFilename;
-			if (_filenameController.text.isNotEmpty && attachment != null) {
-				overrideAttachmentFilename = '${_filenameController.text.normalizeSymbols}.${attachmentExt!}';
-			}
-			if (settings.randomizeFilenames && attachment != null) {
-				overrideAttachmentFilename = '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.${attachmentExt!}';
-			}
-			// Replace known-bad special symbols
-			_textFieldController.text = _textFieldController.text.normalizeSymbols;
-			_nameFieldController.text = _nameFieldController.text.normalizeSymbols;
-			_optionsFieldController.text = _optionsFieldController.text.normalizeSymbols;
-			_subjectFieldController.text = _subjectFieldController.text.normalizeSymbols;
-			lightHapticFeedback();
-			final delay = site.getCaptchaUsableTime(_captchaSolution!).difference(DateTime.now());
-			final skipCompleter = Completer<void>();
-			if (delay > const Duration(seconds: 3)) {
-				bool pressed = false;
-				showToast(
-					context: context,
-					message: 'Waiting ${delay.inSeconds.ceil()}s to avoid spam filter',
-					button: StatefulBuilder(
-						builder: (context, setState) => AdaptiveIconButton(
-							padding: EdgeInsets.zero,
-							minSize: 0,
-							onPressed: pressed ? null : () {
-								skipCompleter.complete();
-								setState(() {
-									pressed = true;
-								});
-							},
-							icon: Text('Skip', style: TextStyle(
-								color: pressed ? null : Settings.instance.theme.secondaryColor
-							))
-						)
-					),
-					icon: CupertinoIcons.clock
-				);
-			}
-			await Future.any([Future.delayed(delay), skipCompleter.future]);
-			final receipt = (widget.threadId != null) ? (await site.postReply(
-				thread: ThreadIdentifier(widget.board, widget.threadId!),
-				name: _nameFieldController.text,
-				options: _optionsFieldController.text,
-				captchaSolution: _captchaSolution!,
-				text: _textFieldController.text,
-				file: attachment,
-				spoiler: spoiler,
-				overrideFilename: overrideAttachmentFilename,
-				flag: flag
-			)) : (await site.createThread(
-				board: widget.board,
-				name: _nameFieldController.text,
-				options: _optionsFieldController.text,
-				captchaSolution: _captchaSolution!,
-				text: _textFieldController.text,
-				file: attachment,
-				spoiler: spoiler,
-				overrideFilename: overrideAttachmentFilename,
-				subject: _subjectFieldController.text,
-				flag: flag
-			));
-			if (_captchaSolution is Chan4CustomCaptchaSolution) {
-				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
-				if (context.mounted) {
-					Settings.contributeCaptchasSetting.value ??= await showAdaptiveDialog<bool>(
-						context: context,
-						builder: (context) => AdaptiveAlertDialog(
-							title: const Text('Contribute captcha solutions?'),
-							content: const Text('The captcha images you solve will be collected to improve the automated solver'),
-							actions: [
-								AdaptiveDialogAction(
-									child: const Text('Contribute'),
-									onPressed: () {
-										Navigator.of(context).pop(true);
-									}
-								),
-								AdaptiveDialogAction(
-									child: const Text('No'),
-									onPressed: () {
-										Navigator.of(context).pop(false);
-									}
-								)
-							]
-						)
-					);
-				}
-				if (settings.contributeCaptchas == true) {
-					final bytes = await solution.alignedImage?.toByteData(format: ImageByteFormat.png);
-					if (bytes == null) {
-						print('Something went wrong converting the captcha image to bytes');
-					}
-					else {
-						site.client.post(
-							_captchaContributionServer,
-							data: dio.FormData.fromMap({
-								'text': solution.response,
-								'image': dio.MultipartFile.fromBytes(
-									bytes.buffer.asUint8List(),
-									filename: 'upload.png',
-									contentType: MediaType("image", "png")
-								)
-							}),
-							options: dio.Options(
-								validateStatus: (x) => true,
-								responseType: dio.ResponseType.plain
-							)
-						).then((response) {
-							print(response.data);
-						});
-					}
-				}
-			}
-			if (receipt.spamFiltered) {
-				_listenForSpamFilter(receipt);
-			}
-			else {
-				_textFieldController.clear();
-				_nameFieldController.clear();
-				_optionsFieldController.clear();
-				_subjectFieldController.clear();
-				_filenameController.clear();
-				attachment = null;
-				_attachmentScan = null;
-				widget.onFilePathChanged?.call(null);
-				_showAttachmentOptions = false;
-				_disableLoginSystem = false;
-			}
-			_show = false;
-			loading = false;
-			if (mounted) setState(() {});
-			print(receipt);
-			_rootFocusNode.unfocus();
-			final threadState = persistence.getThreadState((widget.threadId != null) ?
-				ThreadIdentifier(widget.board, widget.threadId!) :
-				ThreadIdentifier(widget.board, receipt.id));
-			threadState.receipts = [...threadState.receipts, receipt];
-			threadState.didUpdateYourPosts();
-			threadState.save();
-			mediumHapticFeedback();
-			widget.onReplyPosted(receipt);
-			if (mounted && !receipt.spamFiltered) {
-				showToast(
-					context: context,
-					message: 'Post successful',
-					icon: (_captchaSolution?.autoSolved ?? false) ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
-					hapticFeedback: false
-				);
-				_maybeShowDubsToast(receipt.id);
-				if (_promptForHeadlessSolve && (settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver == null)) {
-					Settings.useHeadlessCloudCaptchaSolverSetting.value = await showAdaptiveDialog<bool>(
-						context: context,
-						barrierDismissible: true,
-						builder: (context) => AdaptiveAlertDialog(
-							title: const Text('Skip captcha confirmation?'),
-							content: const Text('Cloud captcha solutions will be submitted directly without showing a popup and asking for confirmation.'),
-							actions: [
-								AdaptiveDialogAction(
-									isDefaultAction: true,
-									child: const Text('Skip confirmation'),
-									onPressed: () {
-										Navigator.of(context).pop(true);
-									},
-								),
-								AdaptiveDialogAction(
-									child: const Text('No'),
-									onPressed: () {
-										Navigator.of(context).pop(false);
-									}
-								)
-							]
-						)
-					);
-				}
-			}
+		final imageboard = context.read<Imageboard>();
+		// Replace known-bad special symbols
+		_textFieldController.text = _textFieldController.text.normalizeSymbols;
+		_nameFieldController.text = _nameFieldController.text.normalizeSymbols;
+		_optionsFieldController.text = _optionsFieldController.text.normalizeSymbols;
+		_subjectFieldController.text = _subjectFieldController.text.normalizeSymbols;
+		_filenameController.text = _filenameController.text.normalizeSymbols;
+		lightHapticFeedback();
+		final post = _makeDraft();
+		post.name = _nameFieldController.text;
+		post.useLoginSystem = shouldUseLoginSystem;
+		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(context,
+			beforeModal: hideReplyBox,
+			afterModal: showReplyBox
+		));
+		mediumHapticFeedback();
+		_textFieldController.clear();
+		_nameFieldController.text = defaultName;
+		// Don't clear options field, it should be remembered
+		_subjectFieldController.clear();
+		_filenameController.clear();
+		attachment = null;
+		_attachmentScan = null;
+		_didUpdateDraft();
+		_rootFocusNode.unfocus();
+		// Remember _disableLoginSystem, it will also be kept in the draft
+		if (!_disableLoginSystem) {
+			_showAttachmentOptions = false;
 		}
-		catch (e, st) {
-			print(e);
-			print(st);
+		_submittingPosts.add(entry);
+		_listenToReplyPosting(entry);
+		_show = false;
+		setState(() {});
+	}
+
+	void _listenToReplyPosting(QueuedPost post) {
+		QueueState<PostResult>? lastState;
+		void listener() async {
 			if (!mounted) {
+				post.removeListener(listener);
 				return;
 			}
-			setState(() {
-				loading = false;
-			});
-			final bannedCaptchaRequest = site.getBannedCaptchaRequest(_captchaSolution?.cloudflare ?? false);
-			if (e is BannedException && bannedCaptchaRequest != null) {
-				await showAdaptiveDialog(
-					context: context,
-					builder: (context) {
-						return AdaptiveAlertDialog(
-							title: const Text('Error'),
-							content: Text(e.toString()),
-							actions: [
-								AdaptiveDialogAction(
-									child: const Text('See reason'),
-									onPressed: () async {
-										if (bannedCaptchaRequest is RecaptchaRequest) {
-											final solution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
-												builder: (context) => OverscrollModalPage(
-													child: CaptchaNoJS(
-														site: site,
-														request: bannedCaptchaRequest,
-														onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
-													)
-												)
-											));
-											if (solution != null) {
-												final reason = await site.getBannedReason(solution);
-												if (!mounted) return;
-												alertError(context, reason);
-											}
-										}
-										else {
-											alertError(context, 'Unexpected captcha request type: ${bannedCaptchaRequest.runtimeType}');
-										}
-									}
-								),
-								AdaptiveDialogAction(
-									child: const Text('OK'),
-									onPressed: () {
-										Navigator.of(context).pop();
-									}
-								)
-							]
-						);
-					}
-				);
+			final state = post.state;
+			if (state == lastState) {
+				// Sometimes notifyListeners() just used to internally rebuild
+				return;
 			}
-			else if (e is WebAuthenticationRequiredException) {
-				alertError(context, 'Web authentication required\n\nMaking a post via the website is required to whitelist your IP for posting via Chance.', actions: {
-					'Go to web': () => shareOne(
-						context: context,
-						text: site.getWebUrl(
-							board: widget.board,
-							threadId: widget.threadId
-						),
-						type: 'text',
-						sharePositionOrigin: null
-					)
-				});
+			lastState = state;
+			if (state is QueueStateDeleted<PostResult>) {
+				// Don't remove listener, in case undeleted
+				_submittingPosts.remove(post);
+				setState(() {});
+				return;
 			}
-			else {
-				if (e.toStringDio().toLowerCase().contains('captcha')) {
-					// Captcha didn't work. For now, let's disable the auto captcha solver
-					_headlessSolveFailed = true;
-				}
-				if (e is ActionableException) {
-					alertError(context, e.message, actions: e.actions);
-				}
-				else {
-					alertError(context, e.toStringDio());
-				}
+			if (!_submittingPosts.contains(post)) {
+				// Undelete
+				_submittingPosts.add(post);
+				setState(() {});
+			}
+			if (state is QueueStateDone<PostResult>) {
+				post.removeListener(listener);
+				_submittingPosts.remove(post);
+				widget.onReplyPosted(state.result.receipt);
 			}
 		}
-		_captchaSolution = null;
-		_promptForHeadlessSolve = false;
+		post.addListener(listener);
+		listener();
 	}
 
 	void _pickEmote() async {
@@ -1298,7 +951,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											children: [
 												if (flag.code == '0') const SizedBox(width: 16)
 												else ExtendedImage.network(
-													flag.image.toString(),
+													flag.imageUrl,
 													fit: BoxFit.contain,
 													cache: true
 												),
@@ -1489,13 +1142,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												minSize: 30,
 												icon: const Icon(CupertinoIcons.xmark),
 												onPressed: () {
-													widget.onFilePathChanged?.call(null);
 													setState(() {
 														attachment = null;
 														_attachmentScan = null;
 														_showAttachmentOptions = false;
 														_filenameController.clear();
 													});
+													_didUpdateDraft();
 												}
 											)
 										]
@@ -1554,7 +1207,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 
 	Widget _buildOptions(BuildContext context) {
 		final settings = context.watch<Settings>();
-		final persistence = context.watch<Persistence>();
 		final site = context.watch<ImageboardSite>();
 		final fields = site.loginSystem?.getSavedLoginFields();
 		return Container(
@@ -1641,17 +1293,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								icon: const Icon(CupertinoIcons.list_bullet, size: 20)
 							),
 							onChanged: (s) {
-								persistence.getThreadStateIfExists(thread)
-							    ?..replyOptions = s
-									..save();
-								widget.onOptionsChanged?.call(s);
+								_didUpdateDraft();
 							}
 						)
 					),
 					if (fields != null) Padding(
 						padding: const EdgeInsets.only(left: 8),
 						child: AdaptiveIconButton(
-							onPressed: _haveValidCaptcha ? null : () {
+							onPressed: () {
 								setState(() {
 									_disableLoginSystem = !_disableLoginSystem;
 								});
@@ -1708,7 +1357,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					children: [
 						if (widget.threadId == null) ...[
 							AdaptiveTextField(
-								enabled: !loading,
 								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 								smartDashesType: SmartDashesType.disabled,
 								smartQuotesType: SmartQuotesType.disabled,
@@ -1725,7 +1373,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							child: Stack(
 								children: [
 									AdaptiveTextField(
-										enabled: !loading,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 										smartDashesType: SmartDashesType.disabled,
 										smartQuotesType: SmartQuotesType.disabled,
@@ -1817,17 +1464,17 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	Widget _buildButtons(BuildContext context) {
-		final expandAttachmentOptions = loading ? null : () {
+		void expandAttachmentOptions() {
 			setState(() {
 				_showAttachmentOptions = !_showAttachmentOptions;
 			});
-		};
-		final expandOptions = loading ? null : () {
+		}
+		void expandOptions() {
 			_checkPreviousPostReceipts();
 			setState(() {
 				_showOptions = !_showOptions;
 			});
-		};
+		}
 		final imageboard = context.read<Imageboard>();
 		final defaultTextStyle = DefaultTextStyle.of(context).style;
 		final settings = context.watch<Settings>();
@@ -1918,7 +1565,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						onPressed: _pickFlag,
 						icon: IgnorePointer(
 							child: flag != null ? ExtendedImage.network(
-								flag!.image.toString(),
+								flag!.imageUrl,
 								cache: true,
 							) : const Icon(CupertinoIcons.flag)
 						)
@@ -2020,7 +1667,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										),
 										for (final picker in getAttachmentSources(context: context, includeClipboard: false)) AdaptiveIconButton(
 											onPressed: () async {
-												_autoPostTimer?.cancel();
 												FocusNode? focusToRestore;
 												if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
 													focusToRestore = _lastNearbyFocus?.$2;
@@ -2052,58 +1698,68 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					onPressed: expandOptions,
 					icon: const Icon(CupertinoIcons.gear)
 				),
-				TimedRebuilder<(bool, DateTime?, Duration?)>(
-					interval: const Duration(seconds: 1),
-					enabled: show,
-					function: () {
-						final timeout = context.read<ImageboardSite>().getActionAllowedTime(widget.board, widget.threadId == null ? 
-							ImageboardAction.postThread :
-							(attachment != null) ? ImageboardAction.postReplyWithImage : ImageboardAction.postReply);
-						return (loading, timeout, timeout?.difference(DateTime.now()));
-					},
-					builder: (context, data) {
-						final (loading, timeout, diff) = data;
-						if (timeout != null && diff != null && !(diff.isNegative)) {
-							return GestureDetector(
-								child: AdaptiveIconButton(
-									icon: Column(
-										mainAxisSize: MainAxisSize.min,
-										crossAxisAlignment: CrossAxisAlignment.center,
-										children: [
-											if (_autoPostTimer?.isActive ?? false) const Text('Auto', style: TextStyle(fontSize: 12)),
-											Text((diff.inMilliseconds / 1000).round().toString())
-										]
-									),
-									onPressed: () async {
-										if (!(_autoPostTimer?.isActive ?? false)) {
-											if (!_haveValidCaptcha) {
-												await _solveCaptcha();
-											}
-											if (_haveValidCaptcha) {
-												_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
-												_rootFocusNode.unfocus();
-											}
-										}
-										else {
-											_autoPostTimer!.cancel();
-										}
-										setState(() {});
-									}
-								),
-								onLongPress: () {
-									_autoPostTimer?.cancel();
-									_submit();
-								}
-							);
-						}
-						return AdaptiveIconButton(
-							onPressed: (loading || _attachmentProgress != null) ? null : _submit,
-							icon: const Icon(CupertinoIcons.paperplane)
+				GestureDetector(
+					onLongPress: () {
+						// Save as draft
+						final persistence = context.read<Persistence>();
+						final post = _makeDraft();
+						post.name = _nameFieldController.text;
+						persistence.browserState.outbox.add(post);
+						runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
+						final entry = Outbox.instance.submitPost(imageboard.key, post, const QueueStateIdle());
+						_submittingPosts.add(entry);
+						_listenToReplyPosting(entry);
+						draft = null; // Clear
+						showToast(
+							context: context,
+							icon: CupertinoIcons.tray_arrow_up,
+							message: 'Saved draft'
 						);
-					}
+					},
+					child: AdaptiveIconButton(
+						onPressed: _attachmentProgress != null ? null : _submit,
+						icon: const Icon(CupertinoIcons.paperplane)
+					)
 				)
 			]
 		);
+	}
+
+	bool _isNonTrivial(DraftPost draft) {
+		return
+			// Non-default name
+			draft.name != _nameFieldController.text ||
+			// Non-default options
+			draft.options != _optionsFieldController.text ||
+			(draft.file?.isNotEmpty ?? false) ||
+			draft.flag != null ||
+			(draft.overrideFilenameWithoutExtension?.isNotEmpty ?? false) ||
+			(draft.subject?.isNotEmpty ?? false) ||
+			draft.text.isNotEmpty;
+	}
+
+	void _onDraftTap(QueuedPost entry, bool deleteOriginal) {
+		if (!entry.state.isIdle) {
+			entry.cancel();
+			return;
+		}
+		// Save current contents
+		final old = _makeDraft();
+		old.name = _nameFieldController.text;
+		// Apply the new draft
+		draft = entry.post;
+		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty) {
+			setState(() {_showOptions = true;});
+		}
+		// Delete that draft from the outbox
+		if (deleteOriginal) {
+			entry.delete();
+		}
+		// Add the old content as a draft to the outbox, if non-trivial
+		if (_isNonTrivial(old)) {
+			Outbox.instance.submitPost(context.read<Imageboard>().key, old, const QueueStateIdle());
+		}
+		setState(() {});
 	}
 
 	@override
@@ -2114,6 +1770,84 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
+					Align(
+						alignment: Alignment.centerRight,
+						child: AnimatedSize(
+							duration: const Duration(milliseconds: 300),
+							child: AnimatedBuilder(
+								animation: Outbox.instance,
+								builder: (context, _) {
+									final activeCount = Outbox.instance.activeCount;
+									if (_submittingPosts.length >= activeCount || !show) {
+										return const SizedBox(width: double.infinity);
+									}
+									return Container(
+										width: double.infinity,
+										decoration: BoxDecoration(
+											border: Border(
+												top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))
+											),
+											color: ChanceTheme.barColorOf(context)
+										),
+										child: AdaptiveButton(
+											onPressed: () async {
+												final selected = await showOutboxModalForThread(
+													context: context,
+													imageboardKey: context.read<Imageboard?>()?.key,
+													board: widget.board,
+													threadId: widget.threadId,
+													canPopWithDraft: true
+												);
+												if (selected != null) {
+													_onDraftTap(selected.post, selected.deleteOriginal);
+												}
+											},
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													const Icon(CupertinoIcons.tray_arrow_up, size: 18),
+													const SizedBox(width: 8),
+													Text(describeCount(activeCount - _submittingPosts.length, 'reply in outbox', plural: 'replies in outbox'))
+												]
+											)
+										)
+									);
+								}
+							)
+						)
+					),
+					AnimatedSize(
+						duration: const Duration(milliseconds: 300),
+						alignment: Alignment.topCenter,
+						child: show ? ConstrainedBox(
+							constraints: const BoxConstraints(
+								maxHeight: 200
+							),
+							child: TransformedMediaQuery(
+								transformation: (context, mq) => mq.copyWith(
+									padding: EdgeInsets.zero,
+									viewPadding: EdgeInsets.zero,
+									viewInsets: EdgeInsets.zero
+								),
+								child: MaybeScrollbar(
+									child: ListView.builder(
+										primary: false,
+										shrinkWrap: true,
+										itemCount: _submittingPosts.length,
+										itemBuilder: (context, i) {
+											final p = _submittingPosts[i];
+											return QueueEntryWidget(
+												entry: p,
+												replyBoxMode: true,
+												onMove: () => _onDraftTap(p, true),
+												onCopy: () => _onDraftTap(p, false),
+											);
+										}
+									)
+								)
+							)
+						) : const SizedBox(width: double.infinity)
+					),
 					Expander(
 						expanded: showAttachmentOptions && show,
 						bottomSafe: true,
@@ -2238,26 +1972,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								Flexible(
 									child: Container(
 										color: ChanceTheme.backgroundColorOf(context),
-										child: Stack(
-											children: [
-												Column(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														
-														Expanded(child: _buildTextField(context)),
-													]
-												),
-												if (loading) Positioned.fill(
-														child: Container(
-														alignment: Alignment.bottomCenter,
-														child: LinearProgressIndicator(
-															valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-															backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
-														)
-													)
-												)
-											]
-										)
+										child: _buildTextField(context)
 									)
 								)
 							]
@@ -2281,41 +1996,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		for (final controller in _snippetControllers.values) {
 			controller.dispose();
 		}
-		final otherState = widget.longLivedCounterpartKey?.currentState;
-		if (otherState != null) {
-			otherState._showOptions = _showOptions;
-			otherState._showAttachmentOptions = _showAttachmentOptions;
-			otherState.spoiler = spoiler;
-			WidgetsBinding.instance.addPostFrameCallback((_) {
-				otherState._filenameController.text = _filenameController.text;
-			});
-			otherState.attachment = attachment;
-			otherState._attachmentScan = _attachmentScan;
-			otherState._captchaSolution = _captchaSolution;
-		}
 		_focusTimer.cancel();
 	}
 }
 
-extension _TextRangeOverlap on TextRange {
-	bool overlapsWith(TextRange other) {
-		if (!isNormalized || !other.isNormalized) {
-			return false;
-		}
-		return start <= other.end && other.start <= end;
-	}
-}
-
 class ReplyBoxTextEditingController extends TextEditingController {
-	final ReplyBoxState parent;
-
 	ReplyBoxTextEditingController({
-		required this.parent,
 		super.text
 	});
-
-	static final greentextRegex = RegExp(r'^>.*$', multiLine: true);
-	static final quotelinkRegex = RegExp(r'>>(?:(>\/[a-zA-Z0-9]*\/[a-zA-Z0-9]*)|(\d+))');
 
 	@override
 	TextSpan buildTextSpan({required BuildContext context, TextStyle? style , required bool withComposing}) {
@@ -2323,92 +2011,11 @@ class ReplyBoxTextEditingController extends TextEditingController {
 			assert(!value.composing.isValid || !withComposing || value.isComposingRangeValid);
 			final bool composingRegionOutOfRange = !value.isComposingRangeValid || !withComposing;
 
-			final zone = parent.context.read<PostSpanZoneData?>();
-			final theme = Settings.instance.theme;
-
-			final ranges = <(TextRange, TextStyle)>[];
-
-			if (!composingRegionOutOfRange) {
-				ranges.add((value.composing, const TextStyle(decoration: TextDecoration.underline)));
-			}
-
-			final text = this.text;
-
-			final quotelinkStyle = TextStyle(
-				color: theme.secondaryColor,
-				decoration: TextDecoration.underline,
-				decorationColor: theme.secondaryColor
-			);
-			final deadQuotelinkStyle = TextStyle(
-				color: theme.secondaryColor,
-				decoration: TextDecoration.lineThrough,
-				decorationColor: theme.secondaryColor
-			);
-			for (final match in quotelinkRegex.allMatches(text)) {
-				if (match.start > 0 && text[match.start - 1] == '>') {
-					// Triple '>' - not a quotelink
-					continue;
-				}
-				final range = TextRange(start: match.start, end: match.end);
-				if (range.overlapsWith(value.composing)) {
-					// Show composing rather than quotelink
-					continue;
-				}
-				final bool targetExists;
-				if (zone == null || (match.group(1)?.isNotEmpty ?? false)) {
-					// No ability to check post, or it is cross-board
-					targetExists = true;
-				}
-				else {
-					targetExists = zone.findPost(int.tryParse(match.group(2) ?? '') ?? 0) != null;
-				}
-				ranges.add((range, targetExists ? quotelinkStyle : deadQuotelinkStyle));
-			}
-
-			final greentextStyle = TextStyle(
-				color: theme.quoteColor,
-				decorationColor: theme.quoteColor
-			);
-			for (final match in greentextRegex.allMatches(text)) {
-				if (ranges.any((r) => r.$1.start == match.start)) {
-					continue;
-				}
-				ranges.add((TextRange(start: match.start, end: match.end), greentextStyle));
-			}
-
-			mergeSort(ranges, compare: (a, b) {
-				return a.$1.start.compareTo(b.$1.start);
-			});
-
-			final spans = <TextSpan>[];
-			int start = 0;
-			final stack = <(TextRange, TextStyle)>[];
-			for (int i = 0; i < text.length; i++) {
-				if (ranges.tryFirst?.$1.start == i || stack.any((r) => r.$1.end == i)) {
-					if (start != i) {
-						// Cut off previous stack
-						spans.add(TextSpan(
-							text: TextRange(start: start, end: i).textInside(text),
-							style: stack.fold<TextStyle>(style ?? const TextStyle(), (style, range) => style.merge(range.$2))
-						));
-						start = i;
-					}
-					stack.addAll(ranges.where((r) => r.$1.start == i));
-					ranges.removeWhere((r) => r.$1.start == i);
-					stack.removeWhere((r) => r.$1.end == i);
-				}
-			}
-			if (start < text.length) {
-				// Add final range
-				spans.add(TextSpan(
-					text: TextRange(start: start, end: text.length).textInside(text),
-					style: stack.fold<TextStyle>(style ?? const TextStyle(), (style, range) => style.merge(range.$2))
-				));
-			}
-
-			return TextSpan(
+			return buildHighlightedCommentTextSpan(
+				text: text,
 				style: style,
-				children: spans
+				zone: context.read<PostSpanZoneData?>(),
+				composing: composingRegionOutOfRange ? null : value.composing
 			);
 		}
 		catch (e, st) {

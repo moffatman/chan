@@ -89,11 +89,25 @@ class HTTPStatusException implements Exception {
 	String toString() => 'HTTP Error $code';
 }
 
+class CooldownException implements Exception {
+	final DateTime tryAgainAt;
+	const CooldownException(this.tryAgainAt);
+	@override
+	String toString() => 'Try again at $tryAgainAt';
+}
+
 class PostFailedException implements Exception {
 	String reason;
 	PostFailedException(this.reason);
 	@override
 	String toString() => 'Posting failed: $reason';
+}
+
+class PostCooldownException extends CooldownException {
+	final String message;
+	const PostCooldownException(this.message, super.tryAgainAt);
+	@override
+	String toString() => 'PostCooldownException: $message, try again at $tryAgainAt';
 }
 
 class WebAuthenticationRequiredException implements Exception {
@@ -147,7 +161,8 @@ class ReportFailedException implements Exception {
 enum ImageboardAction {
 	postThread,
 	postReply,
-	postReplyWithImage
+	postReplyWithImage,
+	report
 }
 
 @HiveType(typeId: 33)
@@ -602,6 +617,9 @@ abstract class CaptchaSolution {
 		this.autoSolved = false,
 		this.ip
 	});
+
+	@mustCallSuper
+	void dispose() {}
 }
 
 class NoCaptchaSolution extends CaptchaSolution {
@@ -642,6 +660,12 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	DateTime? get expiresAt => acquiredAt.add(lifetime);
 	@override
 	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';
+
+	@override
+	void dispose() {
+		super.dispose();
+		alignedImage?.dispose();
+	}
 }
 
 class SecurimageCaptchaSolution extends CaptchaSolution {
@@ -775,15 +799,29 @@ class ImageboardEmote {
 	});
 }
 
+@HiveType(typeId: 46)
 class ImageboardBoardFlag {
+	@HiveField(0)
 	final String code;
+	@HiveField(1)
 	final String name;
-	final Uri image;
+	@HiveField(2)
+	final String imageUrl;
 	const ImageboardBoardFlag({
 		required this.code,
 		required this.name,
-		required this.image
+		required this.imageUrl
 	});
+
+	@override
+	bool operator == (Object other) =>
+		other is ImageboardBoardFlag &&
+		other.code == code &&
+		other.name == name &&
+		other.imageUrl == imageUrl;
+	
+	@override
+	int get hashCode => Object.hash(code, name, imageUrl);
 }
 
 class ImageboardSnippet {
@@ -889,16 +927,101 @@ class WebReportMethod extends ImageboardReportMethod {
 typedef ChoiceReportMethodChoice = ({String name, Map<String, String> value});
 
 class ChoiceReportMethod extends ImageboardReportMethod {
+	final PostIdentifier post;
 	final String question;
 	final List<ChoiceReportMethodChoice> choices;
-	final CaptchaRequest captchaRequest;
-	final Future<void> Function(Map<String, String> choice, CaptchaSolution captchaSolution) onSubmit;
+	final Future<CaptchaRequest> Function() getCaptchaRequest;
+	final Future<void> Function(ChoiceReportMethodChoice choice, CaptchaSolution captchaSolution) onSubmit;
 	const ChoiceReportMethod({
+		required this.post,
 		required this.question,
 		required this.choices,
-		required this.captchaRequest,
+		required this.getCaptchaRequest,
 		required this.onSubmit
 	});
+}
+
+@HiveType(typeId: 47)
+class DraftPost {
+	@HiveField(0)
+	final String board;
+	@HiveField(1)
+	final int? threadId;
+	@HiveField(2)
+	String? name;
+	@HiveField(3)
+	final String? options;
+	@HiveField(4)
+	final String? subject;
+	@HiveField(5)
+	final String text;
+	@HiveField(6)
+	final String? file;
+	@HiveField(7)
+	final bool? spoiler;
+	@HiveField(8)
+	final String? overrideFilenameWithoutExtension;
+	@HiveField(9)
+	final ImageboardBoardFlag? flag;
+	@HiveField(10)
+	bool? useLoginSystem;
+
+	DraftPost({
+		required this.board,
+		required this.threadId,
+		required this.name,
+		required this.options,
+		this.subject,
+		required this.text,
+		this.file,
+		this.spoiler,
+		this.overrideFilenameWithoutExtension,
+		this.flag,
+		required this.useLoginSystem
+	});
+
+	ImageboardAction get action =>
+		threadId == null ?
+			ImageboardAction.postThread :
+			(file != null) ?
+				ImageboardAction.postReplyWithImage :
+				ImageboardAction.postReply;
+	
+	ThreadIdentifier? get thread => threadId == null ? null : ThreadIdentifier(board, threadId!);
+
+	String? get fileExt => file?.split('.').last.toLowerCase();
+
+	String? get overrideFilename {
+		final override = overrideFilenameWithoutExtension;
+		if ((override?.isEmpty ?? true) || file == null) {
+			return null;
+		}
+		if (Settings.instance.randomizeFilenames) {
+			return '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.$fileExt';
+		}
+		return '$override.$fileExt';
+	}
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is DraftPost &&
+		other.board == board &&
+		other.threadId == threadId &&
+		other.name == name &&
+		other.options == options &&
+		other.subject == subject &&
+		other.file == file &&
+		other.spoiler == spoiler &&
+		other.overrideFilenameWithoutExtension == overrideFilenameWithoutExtension &&
+		other.flag == flag &&
+		other.useLoginSystem == useLoginSystem;
+	
+	@override
+	int get hashCode => Object.hash(board, threadId, name, options, subject, file, spoiler, overrideFilenameWithoutExtension, flag, useLoginSystem);
+
+	@override
+	String toString() => 'DraftPost(board: $board, threadId: $threadId, name: $name, options: $options, subject: $subject, file: $file, spoiler: $spoiler, overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension, flag: $flag, useLoginSystem: $useLoginSystem)';
 }
 
 abstract class ImageboardSiteArchive {
@@ -1019,30 +1142,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get imageUrl;
 	Uri get iconUrl;
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]);
-	Future<PostReceipt> createThread({
-		required String board,
-		String name = '',
-		String options = '',
-		String subject = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	});
-	Future<PostReceipt> postReply({
-		required ThreadIdentifier thread,
-		String name = '',
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	});
-	DateTime? getActionAllowedTime(String board, ImageboardAction action) => null;
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken);
+	Duration getActionCooldown(String board, ImageboardAction action, bool cellular) => const Duration(seconds: 3);
 	Future<void> deletePost(String board, int threadId, PostReceipt receipt);
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) async {
 		final Map<String, String> errorMessages = {};
@@ -1155,8 +1256,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		throw Exception('Search failed - exhausted all archives$s');
 	}
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
-	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
-		return WebReportMethod(Uri.parse(getWebUrlImpl(board, threadId, postId)));
+	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
+		return WebReportMethod(Uri.parse(getWebUrlImpl(post.board, post.threadId, post.postId)));
 	}
 	Imageboard? imageboard;
 	Persistence? get persistence => imageboard?.persistence;
@@ -1296,6 +1397,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		}
 		return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(500) + 450));
 	}
+	/// Different cooldowns, but queue is shared
+	ImageboardAction getQueue(ImageboardAction action) => switch(action) {
+		ImageboardAction.postReply || ImageboardAction.postReplyWithImage => ImageboardAction.postReply,
+		ImageboardAction.postThread => ImageboardAction.postThread,
+		ImageboardAction.report => ImageboardAction.report
+	};
 }
 
 abstract class ImageboardSiteLoginSystem {

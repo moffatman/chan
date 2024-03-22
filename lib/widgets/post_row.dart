@@ -875,9 +875,7 @@ class PostRow extends StatelessWidget {
 					onPressed: () => reportPost(
 						context: context,
 						site: context.read<ImageboardSite>(),
-						board: latestPost.board,
-						threadId: latestPost.threadId,
-						postId: latestPost.id
+						post: latestPost.identifier
 					)
 				),
 				if (receipt != null) ContextMenuAction(

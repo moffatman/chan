@@ -5,13 +5,11 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
-import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:dio/dio.dart';
-import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -26,7 +24,7 @@ class WrappedArchive extends ImageboardSite {
   Dio get client => archive.client;
 
   @override
-  Future<PostReceipt> createThread({required String board, String name = '', String options = '', String subject = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
+  Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) {
     throw UnimplementedError();
   }
 
@@ -93,11 +91,6 @@ class WrappedArchive extends ImageboardSite {
 
   @override
   bool get hasPagedCatalog => archive.hasPagedCatalog;
-
-  @override
-  Future<PostReceipt> postReply({required ThreadIdentifier thread, String name = '', String options = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
-    throw UnimplementedError();
-  }
 
   @override
   Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) {

@@ -1,5 +1,4 @@
 import 'package:chan/models/attachment.dart';
-import 'dart:io';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/services/persistence.dart';
@@ -219,32 +218,22 @@ class SiteDvach extends ImageboardSite {
 		throw DvachException(0, 'No supported captcha (unsupported: ${response.data['types'].map((t) => t['id']).toList()})');
 	}
 
-	Future<PostReceipt> _post({
-		required String board,
-		int? threadId,
-		String name = '',
-		String? subject,
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) async {
+	@override
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		final file = post.file;
 		final Map<String, dynamic> fields = {
 			'task': 'post',
-			'board': board,
-			'name': name,
-			'email': options,
+			'board': post.board,
+			'name': post.name ?? '',
+			'email': post.options ?? '',
 			if (captchaSolution is DvachCaptchaSolution) ...{
 				'captcha_type': '2chcaptcha',
 				'2chcaptcha_id': captchaSolution.id,
 				'2chcaptcha_value': captchaSolution.response
 			},
-			'comment': text,
-			if (file != null) 'formimages[]': await MultipartFile.fromFile(file.path, filename: overrideFilename),
-			if (threadId != null) 'thread': threadId.toString()
+			'comment': post.text,
+			if (file != null) 'formimages[]': await MultipartFile.fromFile(file, filename: post.overrideFilename),
+			if (post.threadId != null) 'thread': post.threadId.toString()
 		};
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/user/posting'),
@@ -253,9 +242,10 @@ class SiteDvach extends ImageboardSite {
 				responseType: ResponseType.json,
 				validateStatus: (x) => true,
 				headers: {
-					'Referer': getWebUrlImpl(board, threadId)
+					'Referer': getWebUrlImpl(post.board, post.threadId)
 				}
-			)
+			),
+			cancelToken: cancelToken
 		);
 		print(response.statusCode);
 		if (response.data['error'] != null) {
@@ -264,61 +254,12 @@ class SiteDvach extends ImageboardSite {
 		return PostReceipt(
 			password: '',
 			id: response.data['num'],
-			name: name,
-			options: options,
+			name: post.name ?? '',
+			options: post.options ?? '',
 			time: DateTime.now(),
 			ip: captchaSolution.ip
 		);
 	}
-
-	@override
-	Future<PostReceipt> createThread({
-		required String board,
-		String name = '',
-		String options = '',
-		String subject = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: board,
-		name: name,
-		options: options,
-		subject: subject,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
-
-	@override
-	Future<PostReceipt> postReply({
-		required ThreadIdentifier thread,
-		String name = '',
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: thread.board,
-		threadId: thread.id,
-		name: name,
-		options: options,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
 
 	@override
 	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {

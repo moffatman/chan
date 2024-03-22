@@ -431,6 +431,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(const ImagePeekingSettingAdapter());
 		Hive.registerAdapter(const MouseModeQuoteLinkBehaviorAdapter());
 		Hive.registerAdapter(const DrawerModeAdapter());
+		Hive.registerAdapter(const DraftPostAdapter());
 	}
 
 	static Future<void> initializeStatic() async {
@@ -484,6 +485,29 @@ class Persistence extends ChangeNotifier {
 		}
 		sharedThreadsBox = await _openLazyBoxWithBackup<Thread>(sharedThreadsBoxName, gzip: true);
 		_startBoxBackupTimer(sharedThreadsBoxName, gzip: true);
+		for (final tab in tabs) {
+			final board = tab.board;
+			if (board != null &&
+			    ((tab.deprecatedDraftThread?.isNotEmpty ?? false) ||
+					 (tab.deprecatedDraftOptions?.isNotEmpty ?? false) ||
+					 (tab.deprecatedDraftSubject?.isNotEmpty ?? false) ||
+					 (tab.deprecatedDraftFilePath?.isNotEmpty ?? false))) {
+				tab.draft = DraftPost(
+					board: board,
+					threadId: null,
+					name: null,
+					options: tab.deprecatedDraftOptions,
+					text: tab.deprecatedDraftThread ?? '',
+					subject: tab.deprecatedDraftSubject,
+					file: tab.deprecatedDraftFilePath,
+					useLoginSystem: null
+				);
+				tab.deprecatedDraftThread = '';
+				tab.deprecatedDraftOptions = '';
+				tab.deprecatedDraftSubject = '';
+				tab.deprecatedDraftFilePath = null;
+			}
+		}
 		if (settings.homeImageboardKey != null) {
 			currentTabIndex = 0;
 		}
@@ -661,7 +685,7 @@ class Persistence extends ChangeNotifier {
 					newTs.useArchive = ts.useArchive;
 					newTs.postsMarkedAsYou = ts.postsMarkedAsYou;
 					newTs.hiddenPostIds = ts.hiddenPostIds;
-					newTs.draftReply = ts.draftReply;
+					newTs.deprecatedDraftReply = ts.deprecatedDraftReply;
 					newTs.treeHiddenPostIds = ts.treeHiddenPostIds;
 					newTs.hiddenPosterIds = ts.hiddenPosterIds;
 					newTs.translatedPosts = ts.translatedPosts;
@@ -721,7 +745,8 @@ class Persistence extends ChangeNotifier {
 			catalogVariants: {},
 			postingNames: {},
 			useCatalogGridPerBoard: {},
-			overrideShowIds: {}
+			overrideShowIds: {},
+			outbox: []
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey) != null) {
 			print('Migrating tabs');
@@ -845,6 +870,25 @@ class Persistence extends ChangeNotifier {
 			final threadToBump = _threadIdToBumpInHistory?.$2;
 			if (threadToBump != null) {
 				getThreadStateIfExists(threadToBump)?..lastOpenedTime = DateTime.now()..save();
+			}
+		}
+		for (final threadState in sharedThreadStateBox.values) {
+			if (threadState.imageboardKey != imageboardKey) {
+				continue;
+			}
+			final reply = threadState.deprecatedDraftReply;
+			final options = threadState.deprecatedReplyOptions;
+			if ((reply?.isNotEmpty ?? false) || (options?.isNotEmpty ?? false)) {
+				threadState.draft = DraftPost(
+					board: threadState.board,
+					threadId: threadState.id,
+					name: null,
+					options: options,
+					text: reply ?? '',
+					useLoginSystem: null
+				);
+				threadState.deprecatedDraftReply = null;
+				threadState.deprecatedReplyOptions = null;
 			}
 		}
 		if (settings.automaticCacheClearDays < 100000) {
@@ -1137,8 +1181,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	List<int> postsMarkedAsYou = [];
 	@HiveField(8, defaultValue: <int>[], merger: SetLikePrimitiveListMerger<int>())
 	List<int> hiddenPostIds = [];
-	@HiveField(9, defaultValue: '')
-	String draftReply = '';
+	@HiveField(9)
+	String? deprecatedDraftReply;
 	// Don't persist this
 	EphemeralThreadStateOwner? ephemeralOwner;
 	@HiveField(10, defaultValue: <int>[], merger: SetLikePrimitiveListMerger<int>())
@@ -1178,10 +1222,12 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	final EfficientlyStoredIntSet postIdsToStartRepliesAtBottom;
 	@HiveField(28, defaultValue: <int>[], merger: SetLikePrimitiveListMerger<int>())
 	List<int> overrideShowPostIds = [];
-	@HiveField(29, defaultValue: '')
-	String replyOptions;
+	@HiveField(29)
+	String? deprecatedReplyOptions;
 	@HiveField(30)
 	int? treeSplitId;
+	@HiveField(31)
+	DraftPost? draft;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -1196,7 +1242,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		EfficientlyStoredIntSet? unseenPostIds,
 		this.postSortingMethod = PostSortingMethod.none,
 		EfficientlyStoredIntSet? postIdsToStartRepliesAtBottom,
-		this.replyOptions = '',
+		this.draft
 	}) : lastOpenedTime = DateTime.now(),
 	     unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({}),
 			 postIdsToStartRepliesAtBottom = postIdsToStartRepliesAtBottom ?? EfficientlyStoredIntSet({});
@@ -1499,10 +1545,10 @@ class PersistentBrowserTab extends EasyListenable {
 	String? board;
 	@HiveField(1)
 	ThreadIdentifier? thread;
-	@HiveField(2, defaultValue: '')
-	String draftThread;
-	@HiveField(3, defaultValue: '')
-	String draftSubject;
+	@HiveField(2)
+	String? deprecatedDraftThread;
+	@HiveField(3)
+	String? deprecatedDraftSubject;
 	@HiveField(4)
 	String? imageboardKey;
 	Imageboard? get imageboard => imageboardKey == null ? null : ImageboardRegistry.instance.getImageboard(imageboardKey!);
@@ -1522,10 +1568,10 @@ class PersistentBrowserTab extends EasyListenable {
 	final masterDetailKey = GlobalKey<MultiMasterDetailPageState>(debugLabel: 'PersistentBrowserTab.masterDetailKey');
 	// Do not persist
 	final unseen = ValueNotifier(0);
-	@HiveField(5, defaultValue: '')
-	String draftOptions;
+	@HiveField(5)
+	String? deprecatedDraftOptions;
 	@HiveField(6)
-	String? draftFilePath;
+	String? deprecatedDraftFilePath;
 	@HiveField(7)
 	String? initialSearch;
 	@HiveField(8)
@@ -1537,19 +1583,22 @@ class PersistentBrowserTab extends EasyListenable {
 	/// For ease of merging
 	@HiveField(10, defaultValue: '')
 	String id;
+	@HiveField(11)
+	DraftPost? draft;
 
 	PersistentBrowserTab({
 		this.board,
 		this.thread,
-		this.draftThread = '',
-		this.draftSubject = '',
+		this.deprecatedDraftThread = '',
+		this.deprecatedDraftSubject = '',
 		this.imageboardKey,
-		this.draftOptions = '',
-		this.draftFilePath,
+		this.deprecatedDraftOptions = '',
+		this.deprecatedDraftFilePath,
 		this.initialSearch,
 		this.catalogVariant,
 		this.incognito = false,
-		String id = ''
+		String id = '',
+		this.draft
 	}) : id = id.isEmpty ? const Uuid().v4() : id;
 
 	IncognitoPersistence? incognitoPersistence;
@@ -1669,6 +1718,8 @@ class PersistentBrowserState {
 		SetLikePrimitiveListMerger()
 	))
 	final Map<String, List<int>> autowatchedIds;
+	@HiveField(28, defaultValue: [], merger: OrderedSetLikePrimitiveListMerger())
+	final List<DraftPost> outbox;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1694,7 +1745,8 @@ class PersistentBrowserState {
 		this.useCatalogGrid,
 		required this.useCatalogGridPerBoard,
 		required this.overrideShowIds,
-		this.treeModeNewRepliesAreLinear = true
+		this.treeModeNewRepliesAreLinear = true,
+		required this.outbox
 	}) : notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};

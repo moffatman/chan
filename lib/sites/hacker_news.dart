@@ -5,7 +5,6 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/4chan.dart';
-import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -374,8 +373,8 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<PostReceipt> createThread({required String board, String name = '', String options = '', String subject = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
-		// TODO: implement createThread
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) {
+		// TODO: implement submitPost
 		throw UnimplementedError();
 	}
 
@@ -541,13 +540,6 @@ class SiteHackerNews extends ImageboardSite {
 
 	@override
 	String get name => 'Hacker News';
-
-	@override
-	Future<PostReceipt> postReply({required ThreadIdentifier thread, String name = '', String options = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
-		// TODO: implement postReply
-		throw UnimplementedError();
-	}
-
 
 	@override
 	String get siteData => '';

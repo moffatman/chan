@@ -40,6 +40,12 @@ class CloudflareHandlerRateLimitException implements Exception {
 	String toString() => message;
 }
 
+class CloudflareHandlerNotAllowedException implements Exception {
+	const CloudflareHandlerNotAllowedException();
+	@override
+	String toString() => 'Cloudflare handling disabled for this request';
+}
+
 class CloudflareHandlerInterruptedException implements Exception {
 	const CloudflareHandlerInterruptedException();
 	@override
@@ -296,7 +302,15 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		if (_responseMatches(response) && response.requestOptions.priority.shouldPopupCloudflare) {
+		if (_responseMatches(response)) {
+			if (!response.requestOptions.priority.shouldPopupCloudflare) {
+				handler.reject(DioError(
+					requestOptions: response.requestOptions,
+					response: response,
+					error: const CloudflareHandlerNotAllowedException()
+				));
+				return;
+			}
 			try {
 				final data = await _useWebview(
 					cookieUrl: response.requestOptions.uri,
@@ -321,6 +335,7 @@ class CloudflareInterceptor extends Interceptor {
 			catch (e) {
 				handler.reject(DioError(
 					requestOptions: response.requestOptions,
+					response: response,
 					error: e
 				));
 				return;
@@ -333,8 +348,15 @@ class CloudflareInterceptor extends Interceptor {
 	void onError(DioError err, ErrorInterceptorHandler handler) async {
 		if (err.type == DioErrorType.response &&
 		    err.response != null &&
-				_responseMatches(err.response!) &&
-				err.requestOptions.priority.shouldPopupCloudflare) {
+				_responseMatches(err.response!)) {
+			if (!err.requestOptions.priority.shouldPopupCloudflare) {
+				handler.reject(DioError(
+					requestOptions: err.requestOptions,
+					response: err.response,
+					error: const CloudflareHandlerNotAllowedException()
+				));
+				return;
+			}
 			try {
 				final data = await _useWebview(
 					cookieUrl: err.requestOptions.uri,

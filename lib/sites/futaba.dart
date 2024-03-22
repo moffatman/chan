@@ -361,70 +361,10 @@ class SiteFutaba extends ImageboardSite {
 	@override
 	String get imageUrl => baseUrl;
 
-	Future<PostReceipt> _post({
-		required String board,
-		int? threadId,
-		String name = '',
-		String? subject,
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) async {
+	@override
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		throw UnimplementedError('2chan posting is not implemented');
 	}
-
-	@override
-	Future<PostReceipt> createThread({
-		required String board,
-		String name = '',
-		String options = '',
-		String subject = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: board,
-		name: name,
-		options: options,
-		subject: subject,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
-
-	@override
-	Future<PostReceipt> postReply({
-		required ThreadIdentifier thread,
-		String name = '',
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: thread.board,
-		threadId: thread.id,
-		name: name,
-		options: options,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
 
 	@override
 	String get siteData => baseUrl;

@@ -43,8 +43,16 @@ typedef CloudGuessedCaptcha4ChanCustom = ({
 
 class Captcha4ChanCustomChallengeException implements Exception {
 	final String message;
-	final DateTime? tryAgainAt;
-	const Captcha4ChanCustomChallengeException(this.message, this.tryAgainAt);
+	const Captcha4ChanCustomChallengeException(this.message);
+
+	@override
+	String toString() => 'Failed to get 4chan captcha: $message';
+}
+
+class Captcha4ChanCustomChallengeCooldownException extends CooldownException implements Captcha4ChanCustomChallengeException {
+	@override
+	final String message;
+	const Captcha4ChanCustomChallengeCooldownException(this.message, DateTime tryAgainAt) : super(tryAgainAt);
 
 	@override
 	String toString() => 'Failed to get 4chan captcha: $message';
@@ -55,7 +63,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	required Chan4CustomCaptchaRequest request,
 	RequestPriority priority = RequestPriority.interactive
 }) async {
-	final challengeResponse = await site.client.getUri(request.challengeUrl.replace(
+	final Response challengeResponse = await site.client.getUri(request.challengeUrl.replace(
 		queryParameters: {
 			...request.challengeUrl.queryParameters,
 			'ticket': await Persistence.currentCookies.readPseudoCookie(Site4Chan.kTicketPseudoCookieKey)
@@ -67,13 +75,13 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		}
 	));
 	if (challengeResponse.statusCode != 200) {
-		throw Captcha4ChanCustomChallengeException('Got status code ${challengeResponse.statusCode}', null);
+		throw Captcha4ChanCustomChallengeException('Got status code ${challengeResponse.statusCode}');
 	}
 	dynamic data = challengeResponse.data;
 	if (data is String) {
 		final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(data);
 		if (match == null) {
-			throw const Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system', null);
+			throw const Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system');
 		}
 		data = jsonDecode(match.group(1)!)['twister'];
 	}
@@ -90,14 +98,20 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		site.resetCaptchaTicketTimer();
 	}
 	if (data['pcd'] != null) {
-		throw Captcha4ChanCustomChallengeException(data['pcd_msg'] ?? 'Please wait a while.', DateTime.now().add(Duration(seconds: data['pcd'].toInt() + 2)));
+		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] ?? 'Please wait a while.', DateTime.now().add(Duration(seconds: data['pcd'].toInt() + 2)));
 	}
-	DateTime? tryAgainAt;
+	final DateTime? tryAgainAt;
 	if (data['cd'] != null) {
 		tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2));
 	}
+	else {
+		tryAgainAt = null;
+	}
 	if (data['error'] != null) {
-		throw Captcha4ChanCustomChallengeException(data['error'], tryAgainAt);
+		if (tryAgainAt != null) {
+			throw Captcha4ChanCustomChallengeCooldownException(data['error'], tryAgainAt);
+		}
+		throw Captcha4ChanCustomChallengeException(data['error']);
 	}
 	Completer<ui.Image>? foregroundImageCompleter;
 	if (data['img'] != null) {
@@ -224,7 +238,8 @@ Future<_CloudGuess> _cloudGuess({
 
 Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 	required ImageboardSite site,
-	required Chan4CustomCaptchaRequest request
+	required Chan4CustomCaptchaRequest request,
+	required RequestPriority priority
 }) async {
 	if (_challenge?.isReusableFor(request, const Duration(seconds: 10)) == false) {
 		_challenge?.dispose();
@@ -233,7 +248,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 
 	final challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
 		site: site,
-		request: request
+		request: request,
+		priority: priority
 	);
 
 	final Chan4CustomCaptchaSolution solution;
@@ -416,7 +432,8 @@ class Captcha4ChanCustom extends StatefulWidget {
 	final Chan4CustomCaptchaRequest request;
 	final ValueChanged<Chan4CustomCaptchaSolution> onCaptchaSolved;
 	final CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
-	final Captcha4ChanCustomChallengeException? initialCloudChallengeException;
+	final Exception? initialCloudChallengeException;
+	final ValueChanged<DateTime>? onTryAgainAt;
 
 	const Captcha4ChanCustom({
 		required this.site,
@@ -424,6 +441,7 @@ class Captcha4ChanCustom extends StatefulWidget {
 		required this.onCaptchaSolved,
 		this.initialCloudGuess,
 		this.initialCloudChallengeException,
+		this.onTryAgainAt,
 		Key? key
 	}) : super(key: key);
 
@@ -736,8 +754,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			await _setupChallenge();
 		}
 		catch(e, st) {
-			if (e is Captcha4ChanCustomChallengeException) {
-				tryAgainAt = e.tryAgainAt ?? tryAgainAt;
+			if (e is Captcha4ChanCustomChallengeCooldownException) {
+				widget.onTryAgainAt?.call(e.tryAgainAt);
+				tryAgainAt = e.tryAgainAt;
 			}
 			print(e);
 			print(st);
@@ -895,8 +914,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		final guess = widget.initialCloudGuess;
 		final exception = widget.initialCloudChallengeException;
 		if (exception != null) {
-			errorMessage = exception.message;
-			tryAgainAt = exception.tryAgainAt;
+			if (exception is Captcha4ChanCustomChallengeException) {
+				errorMessage = exception.message;
+				if (exception is Captcha4ChanCustomChallengeCooldownException) {
+					tryAgainAt = exception.tryAgainAt;
+				}
+			}
+			else {
+				errorMessage = exception.toString();
+			}
 		}
 		else if (guess != null) {
 			_ip = guess.solution.ip;

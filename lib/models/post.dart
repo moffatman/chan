@@ -265,10 +265,10 @@ class Post implements Filterable {
 class PostIdentifier {
 	final String board;
 	final int threadId;
-	final int? postId;
+	final int postId;
 	PostIdentifier(this.board, this.threadId, this.postId);
 
-	PostIdentifier.thread(ThreadIdentifier identifier) : board = identifier.board, threadId = identifier.id, postId = null;
+	PostIdentifier.thread(ThreadIdentifier identifier) : board = identifier.board, threadId = identifier.id, postId = identifier.id;
 
 	@override
 	String toString() => 'PostIdentifier: /$board/$threadId/$postId';

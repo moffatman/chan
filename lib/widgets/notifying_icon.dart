@@ -81,12 +81,12 @@ class StationaryNotifyingIcon extends StatelessWidget {
 
 class NotifyingIcon extends StatelessWidget {
 	final Widget icon;
-	final ValueListenable<int> primaryCount;
+	final ValueListenable<int>? primaryCount;
 	final ValueListenable<int>? secondaryCount;
 	final double topOffset;
 	const NotifyingIcon({
 		required this.icon,
-		required this.primaryCount,
+		this.primaryCount,
 		this.secondaryCount,
 		this.topOffset = 0,
 		Key? key
@@ -94,13 +94,23 @@ class NotifyingIcon extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return ValueListenableBuilder(
+		final primaryCount = this.primaryCount;
+		final secondaryCount = this.secondaryCount;
+		return (primaryCount == null) ? ValueListenableBuilder(
+			valueListenable: secondaryCount!,
+			builder: (BuildContext context, int secondary, Widget? child) => StationaryNotifyingIcon(
+				icon: icon,
+				primary: 0,
+				secondary: secondary,
+				topOffset: topOffset
+			)
+		): ValueListenableBuilder(
 			valueListenable: primaryCount,
 			builder: (BuildContext context, int primary, Widget? child) => (secondaryCount == null) ? StationaryNotifyingIcon(
 				icon: icon,
 				primary: primary
 			) : ValueListenableBuilder(
-				valueListenable: secondaryCount!,
+				valueListenable: secondaryCount,
 				builder: (BuildContext context, int secondary, Widget? child) => StationaryNotifyingIcon(
 					icon: icon,
 					primary: primary,

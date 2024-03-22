@@ -9,7 +9,6 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
-import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -354,8 +353,8 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<PostReceipt> createThread({required String board, String name = '', String options = '', String subject = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
-		// TODO: implement createThread
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) {
+		// TODO: implement submitPost
 		throw UnimplementedError();
 	}
 
@@ -1115,12 +1114,6 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	String get name => 'Reddit';
-
-	@override
-	Future<PostReceipt> postReply({required ThreadIdentifier thread, String name = '', String options = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
-		// TODO: implement postReply
-		throw UnimplementedError();
-	}
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {

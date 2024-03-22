@@ -156,14 +156,16 @@ class PersistentThreadStateFields {
     fieldName: 'hiddenPostIds',
     merger: SetLikePrimitiveListMerger<int>(),
   );
-  static String getDraftReply(PersistentThreadState x) => x.draftReply;
-  static void setDraftReply(PersistentThreadState x, String v) =>
-      x.draftReply = v;
-  static const draftReply = HiveFieldAdapter<PersistentThreadState, String>(
-    getter: getDraftReply,
-    setter: setDraftReply,
+  static String? getDeprecatedDraftReply(PersistentThreadState x) =>
+      x.deprecatedDraftReply;
+  static void setDeprecatedDraftReply(PersistentThreadState x, String? v) =>
+      x.deprecatedDraftReply = v;
+  static const deprecatedDraftReply =
+      HiveFieldAdapter<PersistentThreadState, String?>(
+    getter: getDeprecatedDraftReply,
+    setter: setDeprecatedDraftReply,
     fieldNumber: 9,
-    fieldName: 'draftReply',
+    fieldName: 'deprecatedDraftReply',
     merger: PrimitiveMerger(),
   );
   static List<int> getTreeHiddenPostIds(PersistentThreadState x) =>
@@ -359,14 +361,16 @@ class PersistentThreadStateFields {
     fieldName: 'overrideShowPostIds',
     merger: SetLikePrimitiveListMerger<int>(),
   );
-  static String getReplyOptions(PersistentThreadState x) => x.replyOptions;
-  static void setReplyOptions(PersistentThreadState x, String v) =>
-      x.replyOptions = v;
-  static const replyOptions = HiveFieldAdapter<PersistentThreadState, String>(
-    getter: getReplyOptions,
-    setter: setReplyOptions,
+  static String? getDeprecatedReplyOptions(PersistentThreadState x) =>
+      x.deprecatedReplyOptions;
+  static void setDeprecatedReplyOptions(PersistentThreadState x, String? v) =>
+      x.deprecatedReplyOptions = v;
+  static const deprecatedReplyOptions =
+      HiveFieldAdapter<PersistentThreadState, String?>(
+    getter: getDeprecatedReplyOptions,
+    setter: setDeprecatedReplyOptions,
     fieldNumber: 29,
-    fieldName: 'replyOptions',
+    fieldName: 'deprecatedReplyOptions',
     merger: PrimitiveMerger(),
   );
   static int? getTreeSplitId(PersistentThreadState x) => x.treeSplitId;
@@ -378,6 +382,15 @@ class PersistentThreadStateFields {
     fieldNumber: 30,
     fieldName: 'treeSplitId',
     merger: PrimitiveMerger(),
+  );
+  static DraftPost? getDraft(PersistentThreadState x) => x.draft;
+  static void setDraft(PersistentThreadState x, DraftPost? v) => x.draft = v;
+  static const draft = HiveFieldAdapter<PersistentThreadState, DraftPost?>(
+    getter: getDraft,
+    setter: setDraft,
+    fieldNumber: 31,
+    fieldName: 'draft',
+    merger: NullableMerger(AdaptedMerger(DraftPostAdapter.kTypeId)),
   );
   static String getBoard(PersistentThreadState x) => x.board;
   static void setBoard(PersistentThreadState x, String v) => x.board = v;
@@ -418,7 +431,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
     5: PersistentThreadStateFields.useArchive,
     7: PersistentThreadStateFields.postsMarkedAsYou,
     8: PersistentThreadStateFields.hiddenPostIds,
-    9: PersistentThreadStateFields.draftReply,
+    9: PersistentThreadStateFields.deprecatedDraftReply,
     10: PersistentThreadStateFields.treeHiddenPostIds,
     11: PersistentThreadStateFields.hiddenPosterIds,
     12: PersistentThreadStateFields.translatedPosts,
@@ -436,8 +449,9 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
     26: PersistentThreadStateFields.postSortingMethod,
     27: PersistentThreadStateFields.postIdsToStartRepliesAtBottom,
     28: PersistentThreadStateFields.overrideShowPostIds,
-    29: PersistentThreadStateFields.replyOptions,
+    29: PersistentThreadStateFields.deprecatedReplyOptions,
     30: PersistentThreadStateFields.treeSplitId,
+    31: PersistentThreadStateFields.draft,
     19: PersistentThreadStateFields.board,
     20: PersistentThreadStateFields.id
   };
@@ -458,7 +472,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
           ? PostSortingMethod.none
           : fields[26] as PostSortingMethod,
       postIdsToStartRepliesAtBottom: fields[27] as EfficientlyStoredIntSet?,
-      replyOptions: fields[29] == null ? '' : fields[29] as String,
+      draft: fields[31] as DraftPost?,
     )
       ..lastSeenPostId = fields[0] as int?
       ..lastOpenedTime = fields[1] as DateTime
@@ -469,7 +483,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..postsMarkedAsYou =
           fields[7] == null ? [] : (fields[7] as List).cast<int>()
       ..hiddenPostIds = fields[8] == null ? [] : (fields[8] as List).cast<int>()
-      ..draftReply = fields[9] == null ? '' : fields[9] as String
+      ..deprecatedDraftReply = fields[9] as String?
       ..treeHiddenPostIds =
           fields[10] == null ? [] : (fields[10] as List).cast<int>()
       ..hiddenPosterIds =
@@ -492,13 +506,14 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..firstVisiblePostAlignment = fields[25] as double?
       ..overrideShowPostIds =
           fields[28] == null ? [] : (fields[28] as List).cast<int>()
+      ..deprecatedReplyOptions = fields[29] as String?
       ..treeSplitId = fields[30] as int?;
   }
 
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(30)
+      ..writeByte(31)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -516,7 +531,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(8)
       ..write(obj.hiddenPostIds)
       ..writeByte(9)
-      ..write(obj.draftReply)
+      ..write(obj.deprecatedDraftReply)
       ..writeByte(10)
       ..write(obj.treeHiddenPostIds)
       ..writeByte(11)
@@ -552,9 +567,11 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(28)
       ..write(obj.overrideShowPostIds)
       ..writeByte(29)
-      ..write(obj.replyOptions)
+      ..write(obj.deprecatedReplyOptions)
       ..writeByte(30)
       ..write(obj.treeSplitId)
+      ..writeByte(31)
+      ..write(obj.draft)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)
@@ -886,24 +903,28 @@ class PersistentBrowserTabFields {
     fieldName: 'thread',
     merger: NullableMerger(AdaptedMerger(ThreadIdentifierAdapter.kTypeId)),
   );
-  static String getDraftThread(PersistentBrowserTab x) => x.draftThread;
-  static void setDraftThread(PersistentBrowserTab x, String v) =>
-      x.draftThread = v;
-  static const draftThread = HiveFieldAdapter<PersistentBrowserTab, String>(
-    getter: getDraftThread,
-    setter: setDraftThread,
+  static String? getDeprecatedDraftThread(PersistentBrowserTab x) =>
+      x.deprecatedDraftThread;
+  static void setDeprecatedDraftThread(PersistentBrowserTab x, String? v) =>
+      x.deprecatedDraftThread = v;
+  static const deprecatedDraftThread =
+      HiveFieldAdapter<PersistentBrowserTab, String?>(
+    getter: getDeprecatedDraftThread,
+    setter: setDeprecatedDraftThread,
     fieldNumber: 2,
-    fieldName: 'draftThread',
+    fieldName: 'deprecatedDraftThread',
     merger: PrimitiveMerger(),
   );
-  static String getDraftSubject(PersistentBrowserTab x) => x.draftSubject;
-  static void setDraftSubject(PersistentBrowserTab x, String v) =>
-      x.draftSubject = v;
-  static const draftSubject = HiveFieldAdapter<PersistentBrowserTab, String>(
-    getter: getDraftSubject,
-    setter: setDraftSubject,
+  static String? getDeprecatedDraftSubject(PersistentBrowserTab x) =>
+      x.deprecatedDraftSubject;
+  static void setDeprecatedDraftSubject(PersistentBrowserTab x, String? v) =>
+      x.deprecatedDraftSubject = v;
+  static const deprecatedDraftSubject =
+      HiveFieldAdapter<PersistentBrowserTab, String?>(
+    getter: getDeprecatedDraftSubject,
+    setter: setDeprecatedDraftSubject,
     fieldNumber: 3,
-    fieldName: 'draftSubject',
+    fieldName: 'deprecatedDraftSubject',
     merger: PrimitiveMerger(),
   );
   static String? getImageboardKey(PersistentBrowserTab x) => x.imageboardKey;
@@ -916,24 +937,28 @@ class PersistentBrowserTabFields {
     fieldName: 'imageboardKey',
     merger: PrimitiveMerger(),
   );
-  static String getDraftOptions(PersistentBrowserTab x) => x.draftOptions;
-  static void setDraftOptions(PersistentBrowserTab x, String v) =>
-      x.draftOptions = v;
-  static const draftOptions = HiveFieldAdapter<PersistentBrowserTab, String>(
-    getter: getDraftOptions,
-    setter: setDraftOptions,
+  static String? getDeprecatedDraftOptions(PersistentBrowserTab x) =>
+      x.deprecatedDraftOptions;
+  static void setDeprecatedDraftOptions(PersistentBrowserTab x, String? v) =>
+      x.deprecatedDraftOptions = v;
+  static const deprecatedDraftOptions =
+      HiveFieldAdapter<PersistentBrowserTab, String?>(
+    getter: getDeprecatedDraftOptions,
+    setter: setDeprecatedDraftOptions,
     fieldNumber: 5,
-    fieldName: 'draftOptions',
+    fieldName: 'deprecatedDraftOptions',
     merger: PrimitiveMerger(),
   );
-  static String? getDraftFilePath(PersistentBrowserTab x) => x.draftFilePath;
-  static void setDraftFilePath(PersistentBrowserTab x, String? v) =>
-      x.draftFilePath = v;
-  static const draftFilePath = HiveFieldAdapter<PersistentBrowserTab, String?>(
-    getter: getDraftFilePath,
-    setter: setDraftFilePath,
+  static String? getDeprecatedDraftFilePath(PersistentBrowserTab x) =>
+      x.deprecatedDraftFilePath;
+  static void setDeprecatedDraftFilePath(PersistentBrowserTab x, String? v) =>
+      x.deprecatedDraftFilePath = v;
+  static const deprecatedDraftFilePath =
+      HiveFieldAdapter<PersistentBrowserTab, String?>(
+    getter: getDeprecatedDraftFilePath,
+    setter: setDeprecatedDraftFilePath,
     fieldNumber: 6,
-    fieldName: 'draftFilePath',
+    fieldName: 'deprecatedDraftFilePath',
     merger: PrimitiveMerger(),
   );
   static String? getInitialSearch(PersistentBrowserTab x) => x.initialSearch;
@@ -976,6 +1001,15 @@ class PersistentBrowserTabFields {
     fieldName: 'id',
     merger: PrimitiveMerger(),
   );
+  static DraftPost? getDraft(PersistentBrowserTab x) => x.draft;
+  static void setDraft(PersistentBrowserTab x, DraftPost? v) => x.draft = v;
+  static const draft = HiveFieldAdapter<PersistentBrowserTab, DraftPost?>(
+    getter: getDraft,
+    setter: setDraft,
+    fieldNumber: 11,
+    fieldName: 'draft',
+    merger: NullableMerger(AdaptedMerger(DraftPostAdapter.kTypeId)),
+  );
 }
 
 class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
@@ -991,15 +1025,16 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
       fields = const {
     0: PersistentBrowserTabFields.board,
     1: PersistentBrowserTabFields.thread,
-    2: PersistentBrowserTabFields.draftThread,
-    3: PersistentBrowserTabFields.draftSubject,
+    2: PersistentBrowserTabFields.deprecatedDraftThread,
+    3: PersistentBrowserTabFields.deprecatedDraftSubject,
     4: PersistentBrowserTabFields.imageboardKey,
-    5: PersistentBrowserTabFields.draftOptions,
-    6: PersistentBrowserTabFields.draftFilePath,
+    5: PersistentBrowserTabFields.deprecatedDraftOptions,
+    6: PersistentBrowserTabFields.deprecatedDraftFilePath,
     7: PersistentBrowserTabFields.initialSearch,
     8: PersistentBrowserTabFields.catalogVariant,
     9: PersistentBrowserTabFields.incognito,
-    10: PersistentBrowserTabFields.id
+    10: PersistentBrowserTabFields.id,
+    11: PersistentBrowserTabFields.draft
   };
 
   @override
@@ -1012,36 +1047,37 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
     return PersistentBrowserTab(
       board: fields[0] as String?,
       thread: fields[1] as ThreadIdentifier?,
-      draftThread: fields[2] == null ? '' : fields[2] as String,
-      draftSubject: fields[3] == null ? '' : fields[3] as String,
+      deprecatedDraftThread: fields[2] as String?,
+      deprecatedDraftSubject: fields[3] as String?,
       imageboardKey: fields[4] as String?,
-      draftOptions: fields[5] == null ? '' : fields[5] as String,
-      draftFilePath: fields[6] as String?,
+      deprecatedDraftOptions: fields[5] as String?,
+      deprecatedDraftFilePath: fields[6] as String?,
       initialSearch: fields[7] as String?,
       catalogVariant: fields[8] as CatalogVariant?,
       incognito: fields[9] == null ? false : fields[9] as bool,
       id: fields[10] == null ? '' : fields[10] as String,
+      draft: fields[11] as DraftPost?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserTab obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.board)
       ..writeByte(1)
       ..write(obj.thread)
       ..writeByte(2)
-      ..write(obj.draftThread)
+      ..write(obj.deprecatedDraftThread)
       ..writeByte(3)
-      ..write(obj.draftSubject)
+      ..write(obj.deprecatedDraftSubject)
       ..writeByte(4)
       ..write(obj.imageboardKey)
       ..writeByte(5)
-      ..write(obj.draftOptions)
+      ..write(obj.deprecatedDraftOptions)
       ..writeByte(6)
-      ..write(obj.draftFilePath)
+      ..write(obj.deprecatedDraftFilePath)
       ..writeByte(7)
       ..write(obj.initialSearch)
       ..writeByte(8)
@@ -1049,7 +1085,9 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
       ..writeByte(9)
       ..write(obj.incognito)
       ..writeByte(10)
-      ..write(obj.id);
+      ..write(obj.id)
+      ..writeByte(11)
+      ..write(obj.draft);
   }
 
   @override
@@ -1288,6 +1326,14 @@ class PersistentBrowserStateFields {
     fieldName: 'autowatchedIds',
     merger: MapMerger<String, List<int>>(SetLikePrimitiveListMerger()),
   );
+  static List<DraftPost> getOutbox(PersistentBrowserState x) => x.outbox;
+  static const outbox =
+      ReadOnlyHiveFieldAdapter<PersistentBrowserState, List<DraftPost>>(
+    getter: getOutbox,
+    fieldNumber: 28,
+    fieldName: 'outbox',
+    merger: OrderedSetLikePrimitiveListMerger(),
+  );
 }
 
 class PersistentBrowserStateAdapter
@@ -1322,7 +1368,8 @@ class PersistentBrowserStateAdapter
     24: PersistentBrowserStateFields.treeModeRepliesToOPAreTopLevel,
     25: PersistentBrowserStateFields.overrideShowIds,
     26: PersistentBrowserStateFields.treeModeNewRepliesAreLinear,
-    27: PersistentBrowserStateFields.autowatchedIds
+    27: PersistentBrowserStateFields.autowatchedIds,
+    28: PersistentBrowserStateFields.outbox
   };
 
   @override
@@ -1387,13 +1434,14 @@ class PersistentBrowserStateAdapter
               MapEntry(k as String, (v as List).cast<int>())),
       treeModeNewRepliesAreLinear:
           fields[26] == null ? true : fields[26] as bool,
+      outbox: fields[28] == null ? [] : (fields[28] as List).cast<DraftPost>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(20)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -1433,7 +1481,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(26)
       ..write(obj.treeModeNewRepliesAreLinear)
       ..writeByte(27)
-      ..write(obj.autowatchedIds);
+      ..write(obj.autowatchedIds)
+      ..writeByte(28)
+      ..write(obj.outbox);
   }
 
   @override

@@ -8,6 +8,7 @@ import 'package:chan/firebase_options.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/board.dart';
 import 'package:chan/pages/history.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
@@ -965,7 +966,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	void _onDevNotificationTapped(PostIdentifier id) async {
+	void _onDevNotificationTapped(BoardThreadOrPostIdentifier id) async {
 		_tabs.mainTabIndex = 4;
 		if (showTabPopup) {
 			setState(() {
@@ -976,20 +977,35 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		for (int i = 0; i < 200 && _tabs._settingsNavigatorKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
 		}
-		if (devTab.threadPageState?.widget.thread != id.thread) {
+		final thread = id.threadIdentifier;
+		final postId = id.postId;
+		if (thread == null) {
+			// Load board page
+			_tabs._settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
+			_tabs._settingsNavigatorKey.currentState?.push(
+				adaptivePageRoute(
+					builder: (context) => BoardPage(
+						initialBoard: ImageboardRegistry.instance.dev!.persistence.getBoard(id.board),
+						allowChangingBoard: false,
+						semanticId: -1
+					)
+				)
+			);
+		}
+		else if (devTab.threadPageState?.widget.thread != thread) {
 			_tabs._settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
 			_tabs._settingsNavigatorKey.currentState?.push(
 				adaptivePageRoute(
 					builder: (context) => ThreadPage(
-						thread: id.thread,
-						initialPostId: id.postId,
+						thread: thread,
+						initialPostId: postId,
 						boardSemanticId: -1
 					)
 				)
 			);
 		}
-		else if (id.postId != id.threadId && id.postId != null) {
-			await devTab.threadPageState?.scrollToPost(id.postId!);
+		else if (postId != null) {
+			await devTab.threadPageState?.scrollToPost(postId);
 		}
 	}
 
@@ -1129,7 +1145,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			// ignore this, it is handled elsewhere
 		}
 		else {
-			final devDest = (await devImageboard?.site.decodeUrl(link))?.postIdentifier;
+			final devDest = await devImageboard?.site.decodeUrl(link);
 			if (devDest != null) {
 				_onDevNotificationTapped(devDest);
 				return;
@@ -1856,7 +1872,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		final dev = devImageboard;
 		if (dev != null && _devNotificationsSubscription?.notifications != dev.notifications) {
 			_devNotificationsSubscription?.subscription.cancel();
-			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen(_onDevNotificationTapped));
+			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen((target) {
+				_onDevNotificationTapped(target.boardThreadOrPostId);
+			}));
 		}
 		final filterError = context.select<Settings, String?>((s) => s.filterError);
 		Widget child = (androidDrawer || isScreenWide) ? NotificationListener2<ScrollNotification, ScrollMetricsNotification>(

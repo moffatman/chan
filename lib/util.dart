@@ -293,6 +293,33 @@ class CombiningValueListenable<T> extends ChangeNotifier implements ValueListena
 	T get value => combine(children.map((c) => c.value));
 }
 
+class MappingValueListenable<B extends Listenable, T> extends ChangeNotifier implements ValueListenable<T> {
+	final B parent;
+	final T Function(B) mapper;
+	late T _value;
+	MappingValueListenable({
+		required this.parent,
+		required this.mapper
+	}) {
+		_value = mapper(parent);
+		parent.addListener(_listen);
+	}
+
+	void _listen() {
+		_value = mapper(parent);
+		notifyListeners();
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		parent.removeListener(_listen);
+	}
+
+	@override
+	T get value => _value;
+}
+
 final Map<Function, ({Timer timer, Completer<void> completer})> _functionIdleTimers = {};
 Future<void> runWhenIdle(Duration duration, FutureOr Function() function) {
 	final completer = _functionIdleTimers[function]?.completer ?? Completer();
@@ -496,5 +523,14 @@ extension FriendlyCompare on String {
 			return 1;
 		}
 		return 0;
+	}
+}
+
+extension NonEmptyOrNull on String {
+	String? get nonEmptyOrNull {
+		if (isEmpty) {
+			return null;
+		}
+		return this;
 	}
 }

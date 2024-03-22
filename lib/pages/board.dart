@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
 import 'package:chan/models/board.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/board_settings.dart';
 import 'package:chan/pages/master_detail.dart';
@@ -11,6 +12,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
+import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/report_post.dart';
@@ -26,6 +28,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
@@ -676,9 +679,7 @@ class BoardPageState extends State<BoardPage> {
 						onPressed: () => reportPost(
 							context: context,
 							site: context.read<ImageboardSite>(),
-							board: thread.board,
-							threadId: thread.id,
-							postId: thread.id
+							post: PostIdentifier.thread(thread.identifier)
 						)
 					)
 				],
@@ -875,75 +876,58 @@ class BoardPageState extends State<BoardPage> {
 							_listController.blockAndUpdate();
 						}
 					),
-					if (imageboard?.site.supportsPosting ?? false) AdaptiveIconButton(
-						icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
-						onPressed: () {
-							if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-								showAdaptiveModalPopup(
-									context: context,
-									builder: (ctx) => ImageboardScope(
-										imageboardKey: null,
-										imageboard: imageboard!,
-										child: Padding(
-											padding: MediaQuery.viewInsetsOf(ctx),
-											child: Container(
-												color: ChanceTheme.backgroundColorOf(ctx),
-												child: ReplyBox(
-													fullyExpanded: true,
-													board: board!.name,
-													initialText: widget.tab?.draftThread ?? '',
-													onTextChanged: (text) {
-														widget.tab?.mutate((tab) => tab.draftThread = text);
-													},
-													initialSubject: widget.tab?.draftSubject ?? '',
-													onSubjectChanged: (subject) {
-														widget.tab?.mutate((tab) => tab.draftSubject = subject);
-													},
-													initialOptions: widget.tab?.draftOptions ?? '',
-													onOptionsChanged: (options) {
-														widget.tab?.mutate((tab) => tab.draftOptions = options);
-													},
-													initialFilePath: widget.tab?.draftFilePath ?? '',
-													onFilePathChanged: (filePath) {
-														widget.tab?.mutate((tab) => tab.draftFilePath = filePath);
-													},
-													onReplyPosted: (receipt) async {
-														if (imageboard.site.supportsPushNotifications) {
-															await promptForPushNotificationsIfNeeded(ctx);
+					if (imageboard?.site.supportsPosting ?? false) NotifyingIcon(
+						primaryCount: MappingValueListenable(
+							parent: Outbox.instance,
+							mapper: (o) =>
+								o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+						),
+						secondaryCount: MappingValueListenable(
+							parent: Outbox.instance,
+							mapper: (o) => o.submittableCount - o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+						),
+						icon: AdaptiveIconButton(
+							icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
+							onPressed: () {
+								if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+									showAdaptiveModalPopup(
+										context: context,
+										builder: (ctx) => ImageboardScope(
+											imageboardKey: null,
+											imageboard: imageboard!,
+											child: Padding(
+												padding: MediaQuery.viewInsetsOf(ctx),
+												child: Container(
+													color: ChanceTheme.backgroundColorOf(ctx),
+													child: ReplyBox(
+														fullyExpanded: true,
+														board: board!.name,
+														initialDraft: widget.tab?.draft,
+														onDraftChanged: (draft) {
+															widget.tab?.mutate((tab) => tab.draft = draft);
+														},
+														onReplyPosted: (receipt) async {
+															if (imageboard.site.supportsPushNotifications) {
+																await promptForPushNotificationsIfNeeded(ctx);
+															}
+															if (!mounted) return;
+															final newThread = ThreadIdentifier(board!.name, receipt.id);
+															_listController.update();
+															_onThreadSelected(newThread);
+															Navigator.of(ctx).pop();
 														}
-														if (!mounted) return;
-														final newThread = ThreadIdentifier(board!.name, receipt.id);
-														if (settings.watchThreadAutomaticallyWhenReplying) {
-															imageboard.notifications.subscribeToThread(
-																thread: newThread,
-																lastSeenId: receipt.id,
-																localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
-																pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
-																foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
-																push: settings.defaultThreadWatch?.push ?? true,
-																youIds: [receipt.id]
-															);
-														}
-														if (settings.saveThreadAutomaticallyWhenReplying) {
-															final persistentState = imageboard.persistence.getThreadState(newThread);
-															persistentState.savedTime ??= DateTime.now();
-															runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-														}
-														_listController.update();
-														_onThreadSelected(newThread);
-														Navigator.of(ctx).pop();
-													}
+													)
 												)
 											)
 										)
-									)
-								);
+									);
+								}
+								else {
+									_replyBoxKey.currentState?.toggleReplyBox();
+									setState(() {});
+								}
 							}
-							else {
-								_replyBoxKey.currentState?.toggleReplyBox();
-								setState(() {});
-							}
-						}
+						)
 					)
 				]
 			),
@@ -1186,44 +1170,15 @@ class BoardPageState extends State<BoardPage> {
 										child: ReplyBox(
 											key: _replyBoxKey,
 											board: board!.name,
-											initialText: widget.tab?.draftThread ?? '',
-											onTextChanged: (text) {
-												widget.tab?.mutate((tab) => tab.draftThread = text);
-											},
-											initialSubject: widget.tab?.draftSubject ?? '',
-											onSubjectChanged: (subject) {
-												widget.tab?.mutate((tab) => tab.draftSubject = subject);
-											},
-											initialOptions: widget.tab?.draftOptions ?? '',
-											onOptionsChanged: (options) {
-												widget.tab?.mutate((tab) => tab.draftOptions = options);
-											},
-											initialFilePath: widget.tab?.draftFilePath ?? '',
-											onFilePathChanged: (filePath) {
-												widget.tab?.mutate((tab) => tab.draftFilePath = filePath);
+											initialDraft: widget.tab?.draft,
+											onDraftChanged: (draft) {
+												widget.tab?.mutate((tab) => tab.draft = draft);
 											},
 											onReplyPosted: (receipt) async {
 												if (imageboard?.site.supportsPushNotifications == true) {
 													await promptForPushNotificationsIfNeeded(context);
 												}
 												if (!mounted) return;
-												final newThread = ThreadIdentifier(board!.name, receipt.id);
-												if (settings.watchThreadAutomaticallyWhenReplying) {
-													imageboard?.notifications.subscribeToThread(
-														thread: newThread,
-														lastSeenId: receipt.id,
-														localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
-														pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
-														foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
-														push: settings.defaultThreadWatch?.push ?? true,
-														youIds: [receipt.id]
-													);
-												}
-												if (settings.saveThreadAutomaticallyWhenReplying) {
-													final persistentState = imageboard!.persistence.getThreadState(newThread);
-													persistentState.savedTime ??= DateTime.now();
-													runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-												}
 												_listController.update();
 												_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
 											},

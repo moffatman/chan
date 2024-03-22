@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/flag.dart';
@@ -275,46 +274,36 @@ class SiteLainchan extends ImageboardSite {
 		)).toList();
 	}
 
-	Future<PostReceipt> _post({
-		required String board,
-		int? threadId,
-		String name = '',
-		String? subject,
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) async {
+	@override
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
-		final referer = _getWebUrl(board, threadId: threadId, mod: loginSystem._adminEnabled.putIfAbsent(Persistence.currentCookies, () => false));
-		final page = await client.get(referer, options: Options(validateStatus: (x) => true));
+		final referer = _getWebUrl(post.board, threadId: post.threadId, mod: loginSystem._adminEnabled.putIfAbsent(Persistence.currentCookies, () => false));
+		final page = await client.get(referer, options: Options(validateStatus: (x) => true), cancelToken: cancelToken);
 		final Map<String, dynamic> fields = {
 			for (final field in parse(page.data).querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
 				field.attributes['name']!: field.attributes['value'] ?? field.text
 		};
-		fields['body'] = text;
+		fields['body'] = post.text;
 		fields['password'] = password;
-		if (threadId != null) {
-			fields['thread'] = threadId.toString();
+		if (post.threadId != null) {
+			fields['thread'] = post.threadId.toString();
 		}
-		if (subject != null) {
-			fields['subject'] = subject;
+		if (post.subject != null) {
+			fields['subject'] = post.subject;
 		}
+		final file = post.file;
 		if (file != null) {
-			fields['attachment'] = await MultipartFile.fromFile(file.path, filename: overrideFilename);
+			fields['attachment'] = await MultipartFile.fromFile(file, filename: post.overrideFilename);
 		}
-		if (spoiler == true) {
+		if (post.spoiler == true) {
 			fields['spoiler'] = 'on';
 		}
-		if (name.isNotEmpty) {
-			fields['name'] = name;
+		if (post.name?.isNotEmpty ?? false) {
+			fields['name'] = post.name;
 		}
-		if (options.isNotEmpty) {
-			fields['email'] = options;
+		if (post.options?.isNotEmpty ?? false) {
+			fields['email'] = post.options;
 		}
 		if (captchaSolution is SecurimageCaptchaSolution) {
 			fields['captcha_cookie'] = captchaSolution.cookie;
@@ -333,7 +322,8 @@ class SiteLainchan extends ImageboardSite {
 					'Referer': referer,
 					'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/122.0 Mobile/15E148 Safari/605.1.15'
 				}
-			)
+			),
+			cancelToken: cancelToken
 		);
 		if ((response.statusCode ?? 0) >= 400) {
 			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'HTTP Error ${response.statusCode}');
@@ -344,8 +334,8 @@ class SiteLainchan extends ImageboardSite {
 				return PostReceipt(
 					id: int.parse(digitMatches.last.group(0)!),
 					password: password,
-					name: name,
-					options: options,
+					name: post.name ?? '',
+					options: post.options ?? '',
 					time: DateTime.now(),
 					ip: captchaSolution.ip
 				);
@@ -363,18 +353,19 @@ class SiteLainchan extends ImageboardSite {
 		}
 		// This doesn't work if user has quoted someone, but it shouldn't be needed
 		int? newPostId;
+		final threadId = post.threadId;
 		await Future.delayed(const Duration(milliseconds: 500));
 		for (int i = 0; newPostId == null && i < 10; i++) {
 			if (threadId == null) {
-				for (final thread in (await getCatalog(board, priority: RequestPriority.interactive)).reversed) {
-					if (thread.title == subject && (thread.posts[0].span.buildText().similarityTo(text) > 0.9) && (thread.time.compareTo(now) >= 0)) {
+				for (final thread in (await getCatalog(post.board, priority: RequestPriority.interactive)).reversed) {
+					if (thread.title == post.subject && (thread.posts[0].span.buildText().similarityTo(post.text) > 0.9) && (thread.time.compareTo(now) >= 0)) {
 						newPostId = thread.id;
 					}
 				}
 			}
 			else {
-				for (final post in (await getThread(ThreadIdentifier(board, threadId), priority: RequestPriority.interactive)).posts) {
-					if ((post.span.buildText().similarityTo(text) > 0.9) && (post.time.compareTo(now) >= 0)) {
+				for (final post in (await getThread(ThreadIdentifier(post.board, threadId), priority: RequestPriority.interactive)).posts) {
+					if ((post.span.buildText().similarityTo(post.text) > 0.9) && (post.time.compareTo(now) >= 0)) {
 						newPostId = post.id;
 					}
 				}
@@ -387,61 +378,12 @@ class SiteLainchan extends ImageboardSite {
 		return PostReceipt(
 			id: newPostId,
 			password: password,
-			name: name,
-			options: options,
+			name: post.name ?? '',
+			options: post.options ?? '',
 			time: DateTime.now(),
 			ip: captchaSolution.ip
 		);
 	}
-
-	@override
-	Future<PostReceipt> createThread({
-		required String board,
-		String name = '',
-		String options = '',
-		String subject = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: board,
-		name: name,
-		options: options,
-		subject: subject,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
-
-	@override
-	Future<PostReceipt> postReply({
-		required ThreadIdentifier thread,
-		String name = '',
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: thread.board,
-		threadId: thread.id,
-		name: name,
-		options: options,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
 
 	@override
 	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
@@ -471,8 +413,8 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
-		return WebReportMethod(Uri.https(baseUrl, '/report.php?post=delete_$postId&board=$board'));
+	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
+		return WebReportMethod(Uri.https(baseUrl, '/report.php?post=delete_${post.postId}&board=${post.board}'));
 	}
 
 	@override

@@ -1,18 +1,34 @@
 
 
+import 'dart:async';
+import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/captcha.dart';
 import 'package:chan/services/notifications.dart';
+import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:mutex/mutex.dart';
+import 'package:string_similarity/string_similarity.dart';
+
+const _captchaContributionServer = 'https://captcha.chance.surf';
 
 class ImageboardNotFoundException implements Exception {
 	String board;
@@ -59,7 +75,8 @@ class Imageboard extends ChangeNotifier {
 				notifyListeners();
 			}
 		}
-		catch (e) {
+		catch (e, st) {
+			Future.error(e, st); // Crashlytics
 			setupErrorMessage = e.toStringDio();
 			notifyListeners();
 		}
@@ -95,6 +112,14 @@ class Imageboard extends ChangeNotifier {
 			}
 			site.initState();
 			initialized = true;
+			for (final draft in persistence.browserState.outbox) {
+				final thread = draft.thread;
+				if (thread != null) {
+					// Load for [title], [isArchived]
+					await persistence.getThreadStateIfExists(thread)?.ensureThreadLoaded();
+				}
+				Outbox.instance.submitPost(key, draft, const QueueStateIdle());
+			}
 		}
 		catch (e, st) {
 			setupErrorMessage = e.toStringDio();
@@ -135,6 +160,351 @@ class Imageboard extends ChangeNotifier {
 		final freshBoards = await site.getBoards(priority: RequestPriority.interactive);
 		await persistence.storeBoards(freshBoards);
 		return freshBoards;
+	}
+
+	void _maybeShowDubsToast(int id) {
+		if (Settings.instance.highlightRepeatingDigitsInPostIds && site.explicitIds) {
+			final digits = id.toString();
+			int repeatingDigits = 1;
+			for (; repeatingDigits < digits.length; repeatingDigits++) {
+				if (digits[digits.length - 1 - repeatingDigits] != digits[digits.length - 1]) {
+					break;
+				}
+			}
+			if (repeatingDigits > 1) {
+				showToast(
+					context: ImageboardRegistry.instance.context!,
+					icon: CupertinoIcons.hand_point_right,
+					message: switch(repeatingDigits) {
+						< 3 => 'Dubs GET!',
+						3 => 'Trips GET!',
+						4 => 'Quads GET!',
+						5 => 'Quints GET!',
+						6 => 'Sexts GET!',
+						7 => 'Septs GET!',
+						8 => 'Octs GET!',
+						_ => 'Insane GET!!'
+					}
+				);
+			}
+		}
+	}
+
+	void _listenForSpamFilter(DraftPost submittedPost, PostReceipt receipt) async {
+		final threadIdentifier =
+			// Reply
+			submittedPost.thread ??
+			// Thread
+			ThreadIdentifier(submittedPost.board, receipt.id);
+		final start = DateTime.now();
+		final postShowedUpCompleter = Completer<bool>();
+		final listenable = persistence.listenForPersistentThreadStateChanges(threadIdentifier);
+		Future.delayed(const Duration(seconds: 12), () {
+			if (!postShowedUpCompleter.isCompleted) {
+				threadWatcher.updateThread(threadIdentifier);
+			}
+		});
+		void listener() {
+			final threadState = persistence.getThreadStateIfExists(threadIdentifier);
+			bool? found;
+			for (final post in threadState?.thread?.posts_.reversed ?? <Post>[]) {
+				if (post.id > receipt.id) {
+					found = false;
+				}
+				else if (post.id == receipt.id) {
+					final similarity = post.span.buildText().similarityTo(submittedPost.text);
+					found = similarity > 0.65;
+					break;
+				}
+				else {
+					// post.id < receipt.id
+					break;
+				}
+			}
+			if (found != null) {
+				// Post is certainly there or not
+				postShowedUpCompleter.complete(found);
+			}
+			else if (DateTime.now().difference(start) > const Duration(seconds: 12)) {
+				// On first update after 12 seconds, give up
+				postShowedUpCompleter.complete(false);
+			}
+		}
+		listenable.addListener(listener);
+		final postShowedUp = await Future.any<bool>([
+			postShowedUpCompleter.future,
+			Future.delayed(const Duration(seconds: 20), () => false)
+		]);
+		listenable.removeListener(listener);
+		if (postShowedUp) {
+			receipt.spamFiltered = false;
+			showToast(
+				context: ImageboardRegistry.instance.context!,
+				message: 'Post successful',
+				icon: CupertinoIcons.smiley,
+				hapticFeedback: false
+			);
+			_maybeShowDubsToast(receipt.id);
+		}
+		else {
+			receipt.spamFiltered = true;
+			persistence.didUpdateBrowserState();
+			// Put it back in the Outbox, also don't remove it from persistence.outbox
+			Outbox.instance.submitPost(key, submittedPost, const QueueStateIdle());
+			showToast(
+				context: ImageboardRegistry.instance.context!,
+				message: '${submittedPost.threadId == null ? 'Thread' : 'Post'} spam-filtered',
+				icon: CupertinoIcons.exclamationmark_shield,
+				easyButton: ('More info', () => alertError(
+					ImageboardRegistry.instance.context!,
+					'Your ${submittedPost.threadId == null ? 'thread' : 'post'} seems to have been blocked by ${site.name}\'s anti-spam firewall.\nIt has been restored as a draft for you to try again.',
+					barrierDismissible: true
+				)),
+				hapticFeedback: false
+			);
+		}
+	}
+
+	/// Handles contribution and disposal of captcha solution
+	void _handleCaptchaSolutionSubmission(CaptchaSolution solution) async {
+		try {
+			if (solution is! Chan4CustomCaptchaSolution) {
+				return;
+			}
+			if (Settings.contributeCaptchasSetting.value == null && (random.nextDouble() > 0.25)) {
+				// 75% chance -> don't even ask
+				return;
+			}
+			final showPopupCompleter = Completer<bool>();
+			showToast(
+				context: ImageboardRegistry.instance.context!,
+				message: 'Contribute captcha?',
+				icon: CupertinoIcons.group,
+				hapticFeedback: false,
+				easyButton: ('More info', () => showPopupCompleter.complete(true))
+			);
+			// Maybe there are a lot of queued toasts idk
+			if (!await showPopupCompleter.future.timeout(const Duration(seconds: 30), onTimeout: () => false)) {
+				// User didn't press 'More info'
+				return;
+			}
+			if (Settings.contributeCaptchasSetting.value ??= await showAdaptiveDialog<bool>(
+				context: ImageboardRegistry.instance.context!,
+				builder: (context) => AdaptiveAlertDialog(
+					title: const Text('Contribute captcha solutions?'),
+					content: const Text('The captcha images you solve will be collected to improve the automated solver'),
+					actions: [
+						AdaptiveDialogAction(
+							child: const Text('Contribute'),
+							onPressed: () {
+								Navigator.of(context).pop(true);
+							}
+						),
+						AdaptiveDialogAction(
+							child: const Text('No'),
+							onPressed: () {
+								Navigator.of(context).pop(false);
+							}
+						)
+					]
+				)
+			) != true) {
+				return;
+			}
+			final bytes = await solution.alignedImage?.toByteData(format: ImageByteFormat.png);
+			if (bytes == null) {
+				print('Something went wrong converting the captcha image to bytes');
+				return;
+			}
+			final response = await Settings.instance.client.post(
+				_captchaContributionServer,
+				data: dio.FormData.fromMap({
+					'text': solution.response,
+					'image': dio.MultipartFile.fromBytes(
+						bytes.buffer.asUint8List(),
+						filename: 'upload.png',
+						contentType: MediaType("image", "png")
+					)
+				}),
+				options: dio.Options(
+					validateStatus: (x) => true,
+					responseType: dio.ResponseType.plain
+				)
+			);
+			print(response.data);
+		}
+		finally {
+			solution.dispose();
+		}
+	}
+
+	void listenToReplyPosting(QueuedPost post) {
+		QueueState<PostResult>? lastState;
+		void listener() async {
+			final state = post.state;
+			if (state == lastState) {
+				// Sometimes notifyListeners() just used to internally rebuild
+				return;
+			}
+			lastState = state;
+			if (state is QueueStateDeleted<PostResult>) {
+				// Don't remove listener, in case undeleted
+				// Who cares about a leak....
+				return;
+			}
+			if (state is QueueStateDone<PostResult>) {
+				post.removeListener(listener);
+				_handleCaptchaSolutionSubmission(state.result.captchaSolution);
+				print(state.result.receipt);
+				mediumHapticFeedback();
+				if (state.result.receipt.spamFiltered) {
+					showToast(
+						context: ImageboardRegistry.instance.context!,
+						message: 'Spam-filter possible...',
+						icon: CupertinoIcons.question_diamond,
+						hapticFeedback: false
+					);
+					_listenForSpamFilter(post.post, state.result.receipt);
+				}
+				else {
+					showToast(
+						context: ImageboardRegistry.instance.context!,
+						message: 'Post successful',
+						icon: state.result.captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
+						hapticFeedback: false
+					);
+					_maybeShowDubsToast(state.result.receipt.id);
+					if (state.result.captchaSolution.autoSolved && (Settings.instance.useCloudCaptchaSolver ?? false) && (Settings.instance.useHeadlessCloudCaptchaSolver == null)) {
+						Settings.useHeadlessCloudCaptchaSolverSetting.value = await showAdaptiveDialog<bool>(
+							context: ImageboardRegistry.instance.context!,
+							barrierDismissible: true,
+							builder: (context) => AdaptiveAlertDialog(
+								title: const Text('Skip captcha confirmation?'),
+								content: const Text('Cloud captcha solutions will be submitted directly without showing a popup and asking for confirmation.'),
+								actions: [
+									AdaptiveDialogAction(
+										isDefaultAction: true,
+										child: const Text('Skip confirmation'),
+										onPressed: () {
+											Navigator.of(context).pop(true);
+										},
+									),
+									AdaptiveDialogAction(
+										child: const Text('No'),
+										onPressed: () {
+											Navigator.of(context).pop(false);
+										}
+									)
+								]
+							)
+						);
+					}
+				}
+			}
+			else if (state is QueueStateFailed<PostResult>) {
+				final e = state.error;
+				final bannedCaptchaRequest = post.site.getBannedCaptchaRequest(state.captchaSolution?.cloudflare ?? false);
+				if (e is BannedException && bannedCaptchaRequest != null) {
+					await showAdaptiveDialog(
+						context: ImageboardRegistry.instance.context!,
+						builder: (context) {
+							return AdaptiveAlertDialog(
+								title: const Text('Error'),
+								content: Text(e.toStringDio()),
+								actions: [
+									AdaptiveDialogAction(
+										child: const Text('See reason'),
+										onPressed: () async {
+											final solution = await solveCaptcha(
+												context: context,
+												site: post.site,
+												request: bannedCaptchaRequest
+											);
+											if (solution != null) {
+												final reason = await post.site.getBannedReason(solution);
+												if (!context.mounted) return;
+												alertError(context, reason);
+											}
+											solution?.dispose();
+										}
+									),
+									AdaptiveDialogAction(
+										child: const Text('OK'),
+										onPressed: () {
+											Navigator.of(context).pop();
+										}
+									)
+								]
+							);
+						}
+					);
+				}
+				else if (e is WebAuthenticationRequiredException) {
+					alertError(ImageboardRegistry.instance.context!, 'Web authentication required\n\nMaking a post via the website is required to whitelist your IP for posting via Chance.', actions: {
+						'Go to web': () => shareOne(
+							context: ImageboardRegistry.instance.context!,
+							text: post.site.getWebUrl(
+								board: post.post.board,
+								threadId: post.post.threadId
+							),
+							type: 'text',
+							sharePositionOrigin: null
+						)
+					});
+				}
+				else {
+					if (e.toStringDio().toLowerCase().contains('captcha')) {
+						// Captcha didn't work. For now, let's disable the auto captcha solver
+						Outbox.instance.headlessSolveFailed = true;
+					}
+					alertError(ImageboardRegistry.instance.context!, e.toStringDio(), actions: {
+						'Open outbox': () => showOutboxModalForThread(
+							context: ImageboardRegistry.instance.context!,
+							imageboardKey: key,
+							board: post.post.board,
+							threadId: post.post.threadId,
+							canPopWithDraft: false
+						)
+					});
+				}
+			}
+		}
+		post.addListener(listener);
+		listener();
+	}
+
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, dio.CancelToken cancelToken) async {
+		final path = post.file;
+		if (path != null && !File(path).existsSync()) {
+			throw Exception('Selected file not found: $path');
+		}
+		persistence.browserState.outbox.add(post); // For restoration if app is closed
+		runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
+		final receipt = await site.submitPost(post, captchaSolution, cancelToken);
+		persistence.browserState.outbox.remove(post);
+		runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
+		final thread = ThreadIdentifier(post.board, post.threadId ?? receipt.id);
+		final persistentState = persistence.getThreadState(thread);
+		persistentState.receipts = [...persistentState.receipts, receipt];
+		persistentState.didUpdateYourPosts();
+		await persistentState.save();
+		final settings = Settings.instance;
+		if (settings.watchThreadAutomaticallyWhenReplying) {
+			notifications.subscribeToThread(
+				thread: thread,
+				lastSeenId: receipt.id,
+				localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? post.threadId != null,
+				pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? post.threadId != null,
+				foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
+				push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
+				youIds: persistentState.freshYouIds()
+			);
+		}
+		if (settings.saveThreadAutomaticallyWhenReplying) {
+			persistentState.savedTime ??= DateTime.now();
+			runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+		}
+		return receipt;
 	}
 
 	@override
@@ -233,7 +603,7 @@ class ImageboardRegistry extends ChangeNotifier {
 						if (savedFields != null && Settings.instance.isConnectedToWifi) {
 							try {
 								await site.loginSystem!.login(null, savedFields);
-								print('Auto-logged in');
+								print('Auto-logged-in to ${site.loginSystem?.name}');
 							}
 							catch (e) {
 								if (context.mounted) {
@@ -243,7 +613,7 @@ class ImageboardRegistry extends ChangeNotifier {
 										message: 'Failed to log in to ${site.loginSystem?.name}'
 									);
 								}
-								print('Problem auto-logging in: $e');
+								print('Problem auto-logging-in to ${site.loginSystem?.name}: $e');
 							}
 						}
 					});

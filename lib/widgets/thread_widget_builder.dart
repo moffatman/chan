@@ -8,15 +8,6 @@ import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-extension _NonEmptyOrNull on String {
-	String? get nonEmptyOrNull {
-		if (isEmpty) {
-			return null;
-		}
-		return this;
-	}
-}
-
 typedef ThreadWidgetData = ({
 	Widget primaryIcon,
 	Widget? secondaryIcon,

@@ -30,18 +30,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ActionableException implements Exception {
-	final String message;
-	final Map<String, VoidCallback> actions;
-	const ActionableException({
-		required this.message,
-		required this.actions
-	});
-
-	@override
-	String toString() => 'ActionableException(message: $message, ${actions.length} actions)';
-}
-
 Future<void> alert(BuildContext context, String title, String message, {
 	Map<String, VoidCallback> actions = const {},
 	bool barrierDismissible = true
@@ -55,7 +43,10 @@ Future<void> alert(BuildContext context, String title, String message, {
 				content: Text(message),
 				actions: [
 					for (final action in actions.entries) AdaptiveDialogAction(
-						onPressed: action.value,
+						onPressed: () {
+							Navigator.of(context).pop();
+							action.value();
+						},
 						child: Text(action.key)
 					),
 					AdaptiveDialogAction(
@@ -81,11 +72,30 @@ void showToast({
 	required IconData? icon,
 	bool hapticFeedback = true,
 	Widget? button,
+	(String, VoidCallback)? easyButton,
 	Duration duration = const Duration(seconds: 2),
 	EdgeInsets padding = EdgeInsets.zero
 }) {
 	if (hapticFeedback) {
 		lightHapticFeedback();
+	}
+	if (easyButton != null) {
+		bool pressed = false;
+		button = StatefulBuilder(
+			builder: (context, setState) => AdaptiveIconButton(
+				padding: EdgeInsets.zero,
+				minSize: 0,
+				onPressed: pressed ? null : () {
+					easyButton.$2();
+					setState(() {
+						pressed = true;
+					});
+				},
+				icon: Text(easyButton.$1, style: TextStyle(
+					color: pressed ? null : Settings.instance.theme.secondaryColor
+				))
+			)
+		);
 	}
 	final theme = context.read<SavedTheme>();
 	FToast().init(context).showToast(
@@ -133,31 +143,14 @@ void showUndoToast({
 	required String message,
 	required VoidCallback onUndo,
 	EdgeInsets padding = EdgeInsets.zero
-}) {
-	bool pressed = false;
-	showToast(
-		context: context,
-		message: message,
-		icon: null,
-		button: StatefulBuilder(
-			builder: (context, setState) => AdaptiveIconButton(
-				padding: EdgeInsets.zero,
-				minSize: 0,
-				onPressed: pressed ? null : () {
-					onUndo();
-					setState(() {
-						pressed = true;
-					});
-				},
-				icon: Text('Undo', style: TextStyle(
-					color: pressed ? null : Settings.instance.theme.secondaryColor
-				))
-			)
-		),
-		duration: const Duration(milliseconds: 3500),
-		padding: padding
-	);
-}
+}) => showToast(
+	context: context,
+	message: message,
+	icon: null,
+	easyButton: ('Undo', onUndo),
+	duration: const Duration(milliseconds: 3500),
+	padding: padding
+);
 
 class ModalLoadController {
 	final progress = ValueNotifier<double?>(null);

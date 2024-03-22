@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:chan/models/flag.dart';
@@ -8,7 +9,6 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/util.dart';
-import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
@@ -106,28 +106,18 @@ class SiteLynxchan extends ImageboardSite {
 		return null;
 	}
 
-	Future<PostReceipt> _post({
-		required String board,
-		int? threadId,
-		String name = '',
-		String? subject,
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) async {
+	@override
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final password = makeRandomBase64String(16).substring(0, 8);
 		String? fileSha256;
 		bool fileAlreadyUploaded = false;
+		final file = post.file;
 		if (file != null) {
-			fileSha256 = sha256.convert(await file.readAsBytes()).bytes.map((b) => b.toRadixString(16)).join();
+			fileSha256 = sha256.convert(await File(file).readAsBytes()).bytes.map((b) => b.toRadixString(16)).join();
 			final filePresentResponse = await client.getUri(Uri.https(baseUrl, '/checkFileIdentifier.js', {
 				'json': '1',
 				'identifier': fileSha256
-			}));
+			}), cancelToken: cancelToken);
 			if (filePresentResponse.data is bool) {
 				fileAlreadyUploaded = filePresentResponse.data;
 			}
@@ -138,32 +128,33 @@ class SiteLynxchan extends ImageboardSite {
 				fileAlreadyUploaded = filePresentResponse.data['data'];
 			}
 		}
-		final response = await client.postUri(Uri.https(baseUrl, threadId == null ? '/newThread.js' : '/replyThread.js', {
+		final flag = post.flag;
+		final response = await client.postUri(Uri.https(baseUrl, post.threadId == null ? '/newThread.js' : '/replyThread.js', {
 			'json': '1'
 		}), data: FormData.fromMap({
-			if (name.isNotEmpty) 'name': name,
-			if (options.isNotEmpty )'email': options,
-			'message': text,
-			'subject': subject,
+			if (post.name?.isNotEmpty ?? false) 'name': post.name,
+			if (post.options?.isNotEmpty ?? false)'email': post.options,
+			'message': post.text,
+			'subject': post.subject,
 			'password': password,
-			'boardUri': board,
-			if (threadId != null) 'threadId': threadId.toString(),
+			'boardUri': post.board,
+			if (post.threadId != null) 'threadId': post.threadId.toString(),
 			if (captchaSolution is LynxchanCaptchaSolution) ...{
 				'captchaId': captchaSolution.id,
 				'captcha': captchaSolution.answer
 			},
-			if (spoiler ?? false) 'spoiler': 'spoiler',
+			if (post.spoiler ?? false) 'spoiler': 'spoiler',
 			if (flag != null) 'flag': flag.code,
 			if (file != null) ...{
 				'fileSha256': fileSha256,
-				'fileMime': lookupMimeType(file.path),
-				'fileSpoiler': (spoiler ?? false) ? 'spoiler': '',
-				'fileName': overrideFilename ?? file.path.split('/').last,
-				if (!fileAlreadyUploaded) 'files': await MultipartFile.fromFile(file.path, filename: overrideFilename)
+				'fileMime': lookupMimeType(file),
+				'fileSpoiler': (post.spoiler ?? false) ? 'spoiler': '',
+				'fileName': post.overrideFilename ?? file.split('/').last,
+				if (!fileAlreadyUploaded) 'files': await MultipartFile.fromFile(file, filename: post.overrideFilename)
 			}
 		}), options: Options(
 			validateStatus: (x) => true
-		));
+		), cancelToken: cancelToken);
 		if (response.data is String) {
 			final document = parse(response.data);
 			if (response.statusCode != 200) {
@@ -174,8 +165,8 @@ class SiteLynxchan extends ImageboardSite {
 				return PostReceipt(
 					id: match.group(2) != null ? int.parse(match.group(2)!) : int.parse(match.group(1)!),
 					password: password,
-					name: name,
-					options: options,
+					name: post.name ?? '',
+					options: post.options ?? '',
 					time: DateTime.now(),
 					ip: captchaSolution.ip
 				);
@@ -188,37 +179,12 @@ class SiteLynxchan extends ImageboardSite {
 		return PostReceipt(
 			id: response.data['data'],
 			password: password,
-			name: name,
-			options: options,
+			name: post.name ?? '',
+			options: post.options ?? '',
 			time: DateTime.now(),
 			ip: captchaSolution.ip
 		);
 	}
-
-	@override
-	Future<PostReceipt> createThread({
-		required String board,
-		String name = '',
-		String options = '',
-		String subject = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: board,
-		name: name,
-		options: options,
-		subject: subject,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
 
 	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
@@ -465,30 +431,6 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	String get imageUrl => baseUrl;
-
-	@override
-	Future<PostReceipt> postReply({
-		required ThreadIdentifier thread,
-		String name = '',
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: thread.board,
-		threadId: thread.id,
-		name: name,
-		options: options,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
 
 	@override
 	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [

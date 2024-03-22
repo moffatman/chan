@@ -137,14 +137,10 @@ class Site4Chan extends ImageboardSite {
 	final Map<String, String> postingHeaders;
 	final Duration? captchaTicketLifetime;
 	Timer? _captchaTicketTimer;
+	final Duration reportCooldown = const Duration(seconds: 20);
 	final Map<String, Map<String, String>> boardFlags;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
-	Map<ImageboardAction, Map<String, DateTime>> _lastActionTime = {
-		ImageboardAction.postReply: <String, DateTime>{},
-		ImageboardAction.postReplyWithImage: <String, DateTime>{},
-		ImageboardAction.postThread: <String, DateTime>{},
-	};
 
 	@override
 	late final Site4ChanPassLoginSystem loginSystem = Site4ChanPassLoginSystem(this);
@@ -251,7 +247,6 @@ class Site4Chan extends ImageboardSite {
 		_threadCache = oldSite._threadCache;
 		_catalogCaches = oldSite._catalogCaches;
 		loginSystem._passEnabled = oldSite.loginSystem._passEnabled;
-		_lastActionTime = oldSite._lastActionTime;
 	}
 
 	@override
@@ -794,65 +789,46 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	
-	Future<PostReceipt> _post({
-		required String board,
-		int? threadId,
-		String name = '',
-		String? subject,
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) async {
+	@override
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final password = makeRandomBase64String(66);
+		final file = post.file;
+		final flag = post.flag;
 		final response = await client.postUri(
-			Uri.https(sysUrl, '/$board/post'),
+			Uri.https(sysUrl, '/${post.board}/post'),
 			data: FormData.fromMap({
-				if (threadId != null) 'resto': threadId.toString(),
-				if (subject != null) 'sub': subject,
-				'com': text,
+				if (post.threadId != null) 'resto': post.threadId.toString(),
+				if (post.subject != null) 'sub': post.subject,
+				'com': post.text,
 				'mode': 'regist',
 				'pwd': password,
-				'name': name,
-				'email': options,
+				'name': post.name ?? '',
+				'email': post.options ?? '',
 				if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
 				else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
 					't-challenge': captchaSolution.challenge,
 					't-response': captchaSolution.response
 				},
-				if (file != null) 'upfile': await MultipartFile.fromFile(file.path, filename: overrideFilename),
-				if (spoiler == true) 'spoiler': 'on',
+				if (file != null) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename),
+				if (post.spoiler == true) 'spoiler': 'on',
 				if (flag != null) 'flag': flag.code
 			}),
 			options: Options(
 				responseType: ResponseType.plain,
 				headers: {
-					'referer': getWebUrlImpl(board, threadId),
+					'referer': getWebUrlImpl(post.board, post.threadId),
 					'origin': 'https://$baseUrl',
 					...postingHeaders
 				},
 				extra: {
 					if (captchaSolution.cloudflare) 'cloudflare': true
 				}
-			)
+			),
+			cancelToken: cancelToken
 		);
 		final document = parse(response.data);
 		final metaTag = document.querySelector('meta[http-equiv="refresh"]');
 		if (metaTag != null) {
-			if (!response.cloudflare) {
-				if (threadId == null) {
-					_lastActionTime[ImageboardAction.postThread]![board] = DateTime.now();
-				}
-				else {
-					_lastActionTime[ImageboardAction.postReply]![board] = DateTime.now();
-					if (file != null) {
-						_lastActionTime[ImageboardAction.postReplyWithImage]![board] = DateTime.now();
-					}
-				}
-			}
 			final id = int.tryParse(metaTag.attributes['content']!.split(RegExp(r'\/|(#p)')).last);
 			if (id == null) {
 				throw PostFailedException('4chan rejected your post. ${file == null ? 'Your post might contained spam-filtered text.' : 'You may have been trying to post an image which is spam-filtered.'}');
@@ -860,12 +836,12 @@ class Site4Chan extends ImageboardSite {
 			return PostReceipt(
 				id: id,
 				password: password,
-				name: name,
-				options: options,
+				name: post.name ?? '',
+				options: post.options ?? '',
 				time: DateTime.now(),
 				ip: captchaSolution.ip,
 											// Catalog spam-filter check not supported yet
-				spamFiltered: threadId != null &&
+				spamFiltered: post.threadId != null &&
 											// Non-trivial 4chan captchas only
 											switch (captchaSolution) {
 												Chan4CustomCaptchaSolution x => x.challenge != 'noop',
@@ -884,6 +860,10 @@ class Site4Chan extends ImageboardSite {
 				String message = errSpan.text;
 				if (response.cloudflare && message.toLowerCase().contains('our system thinks your post is spam')) {
 					message += '\n--\nNote from Chance: This occurs often when encountering Cloudflare. The post will likely be accepted if you try resubmitting it.';
+				}
+				final cooldown = int.tryParse(_cooldownRegex.firstMatch(message)?.group(1) ?? '');
+				if (cooldown != null) {
+					throw PostCooldownException(message, DateTime.now().add(Duration(seconds: cooldown + 1)));
 				}
 				throw PostFailedException(message);
 			}
@@ -918,74 +898,19 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<PostReceipt> createThread({
-		required String board,
-		String name = '',
-		String options = '',
-		String subject = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: board,
-		name: name,
-		options: options,
-		subject: subject,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
-
-	@override
-	Future<PostReceipt> postReply({
-		required ThreadIdentifier thread,
-		String name = '',
-		String options = '',
-		required String text,
-		required CaptchaSolution captchaSolution,
-		File? file,
-		bool? spoiler,
-		String? overrideFilename,
-		ImageboardBoardFlag? flag
-	}) => _post(
-		board: thread.board,
-		threadId: thread.id,
-		name: name,
-		options: options,
-		text: text,
-		captchaSolution: captchaSolution,
-		file: file,
-		spoiler: spoiler,
-		overrideFilename: overrideFilename,
-		flag: flag
-	);
-
-	@override
-	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
-		final lastActionTime = _lastActionTime[action]![board];
+	Duration getActionCooldown(String board, ImageboardAction action, bool cellular) {
 		final b = persistence?.getBoard(board);
-		int cooldownSeconds = 0;
-		switch (action) {
-			case ImageboardAction.postReply:
-				cooldownSeconds = b?.replyCooldown ?? 0;
-				break;
-			case ImageboardAction.postReplyWithImage:
-				cooldownSeconds = b?.imageCooldown ?? 0;
-				break;
-			case ImageboardAction.postThread:
-				cooldownSeconds = b?.threadCooldown ?? 0;
-				break;
+		var (Duration cooldown, bool isPassReduced) = switch (action) {
+			ImageboardAction.postReply => (Duration(seconds: b?.replyCooldown ?? 0), true),
+			ImageboardAction.postReplyWithImage => (Duration(seconds: b?.imageCooldown ?? 0), true),
+			ImageboardAction.postThread => (Duration(seconds: b?.threadCooldown ?? 0), true),
+			ImageboardAction.report => (reportCooldown, false)
+		};
+		if (isPassReduced &&
+		    loginSystem.passEnabled(cellular ? Persistence.cellularCookies : Persistence.wifiCookies)) {
+			return cooldown ~/ 2;
 		}
-		if (loginSystem.passEnabled(board)) {
-			cooldownSeconds ~/= 2;
-		}
-		return lastActionTime?.add(Duration(seconds: cooldownSeconds));
+		return cooldown;
 	}
 
 	@override
@@ -1031,17 +956,71 @@ class Site4Chan extends ImageboardSite {
 		}
 	}
 
+	static final _cooldownRegex = RegExp(r'You must wait +(\d+) +seconds before');
+	final Map<PostIdentifier, List<ChoiceReportMethodChoice>> _cachedReportForms = {};
+
 	@override
-	Future<ImageboardReportMethod> getPostReportMethod(String board, int threadId, int postId) async {
-		final endpoint = Uri.https(sysUrl, '/$board/imgboard.php', {
+	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
+		final endpoint = Uri.https(sysUrl, '/${post.board}/imgboard.php', {
 			'mode': 'report',
-			'no': postId.toString()
+			'no': post.postId.toString()
 		});
+		Future<void> onSubmit(ChoiceReportMethodChoice choice, CaptchaSolution captchaSolution) async {
+			final response = await client.postUri(endpoint, data: {
+				...choice.value,
+				if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
+				else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
+					't-response': captchaSolution.response,
+					't-challenge': captchaSolution.challenge
+				},
+				'board': post.board,
+				'no': post.postId.toString(),
+			}, options: Options(
+				responseType: ResponseType.plain,
+				contentType: Headers.formUrlEncodedContentType,
+				headers: {
+					'referer': endpoint.toString()
+				},
+				extra: {
+					if (captchaSolution.cloudflare) 'cloudflare': true
+				}
+			));
+			final responseDocument = parse(response.data);
+			final message = responseDocument.querySelector('font')?.text;
+			if (message == null || !message.contains('submitted')) {
+				throw ReportFailedException(message ?? 'Could not find response text');
+			}
+		}
 		try {
 			final response = await client.getUri(endpoint);
 			final document = parse(response.data);
 			final error = document.querySelector('h3 > font[color="#FF0000"]')?.text;
 			if (error != null) {
+				if (error.toLowerCase().contains('wait a while')) {
+					// Rate-limited
+					// "You have to wait a while before reporting another post"
+					final cached = _cachedReportForms[post] ?? _cachedReportForms.entries.tryFirstWhere((e) {
+						// Try methods in the same thread
+						return e.key.thread == post.thread;
+					})?.value ?? _cachedReportForms.entries.tryFirstWhere((e) {
+						// Try methods in the same board
+						return e.key.board == post.board;
+					})?.value;
+					if (cached != null) {
+						return ChoiceReportMethod(
+							choices: cached,
+							post: post,
+							question: 'Report type',
+							getCaptchaRequest: () async {
+								if (loginSystem.passEnabled(Persistence.currentCookies)) {
+									return const NoCaptchaRequest();
+								}
+								return await getCaptchaRequest(post.board, 1);
+							},
+							onSubmit: onSubmit
+						);
+					}
+				}
 				throw ReportFailedException(error);
 			}
 			final choices = <ChoiceReportMethodChoice>[];
@@ -1065,45 +1044,26 @@ class Site4Chan extends ImageboardSite {
 					'cat_id': option.attributes['value']!
 				}
 			)).where((choice) => choice.name.isNotEmpty));
-			final CaptchaRequest captchaRequest;
+			_cachedReportForms[post] = choices;
+			Future.delayed(reportCooldown * 2, () {
+				// Lazy cache cleaning
+				if (identical(_cachedReportForms[post], choices)) {
+					_cachedReportForms.remove(post);
+				}
+			});
 			final captchaScript = document.querySelector('#pass script')?.text ?? '';
 			final captchaMatch = RegExp(r"TCaptcha\.init\(document\.getElementById\('t-root'\), '([^']+)', (\d+)\)").firstMatch(captchaScript);
-			if (captchaMatch != null) {
-				captchaRequest = await getCaptchaRequest(captchaMatch.group(1)!, int.parse(captchaMatch.group(2)!));
-			}
-			else {
-				captchaRequest = const NoCaptchaRequest();
-			}
 			return ChoiceReportMethod(
 				question: 'Report type',
-				captchaRequest: captchaRequest,
-				choices: choices,
-				onSubmit: (choice, captchaSolution) async {
-					final response = await client.postUri(endpoint, data: {
-						...choice,
-						if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
-						else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
-							't-response': captchaSolution.response,
-							't-challenge': captchaSolution.challenge
-						},
-						'board': board,
-						'no': postId.toString(),
-					}, options: Options(
-						responseType: ResponseType.plain,
-						contentType: Headers.formUrlEncodedContentType,
-						headers: {
-							'referer': endpoint.toString()
-						},
-						extra: {
-							if (captchaSolution.cloudflare) 'cloudflare': true
-						}
-					));
-					final responseDocument = parse(response.data);
-					final message = responseDocument.querySelector('font')?.text;
-					if (message == null || !message.contains('submitted')) {
-						throw ReportFailedException(message ?? 'Could not find response text');
+				getCaptchaRequest: () async {
+					if (loginSystem.passEnabled(Persistence.currentCookies)) {
+						return const NoCaptchaRequest();
 					}
-				}
+					return await getCaptchaRequest(captchaMatch?.group(1) ?? post.board, int.tryParse(captchaMatch?.group(2) ?? '') ?? 1);
+				},
+				post: post,
+				choices: choices,
+				onSubmit: onSubmit
 			);
 		}
 		on ReportFailedException {
@@ -1182,7 +1142,7 @@ class Site4Chan extends ImageboardSite {
 			return flagMap.entries.map((entry) => ImageboardBoardFlag(
 				code: entry.key,
 				name: entry.value,
-				image: Uri.https(staticUrl, '/image/flags/$board/${entry.key.toLowerCase()}.gif')
+				imageUrl: Uri.https(staticUrl, '/image/flags/$board/${entry.key.toLowerCase()}.gif').toString()
 			)).toList();
 		});
 	}
@@ -1490,8 +1450,8 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 		_passEnabled[Persistence.currentCookies] = true;
   }
 
-	bool passEnabled(String board) {
-		return _passEnabled.putIfAbsent(Persistence.currentCookies, () => false);
+	bool passEnabled(PersistCookieJar jar) {
+		return _passEnabled.putIfAbsent(jar, () => false);
 	}
 
   @override

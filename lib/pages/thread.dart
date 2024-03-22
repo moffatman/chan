@@ -15,6 +15,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
+import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/settings.dart';
@@ -30,6 +31,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -883,10 +885,10 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		final crossThreads = <ThreadIdentifier, Set<int>>{};
 		for (final id in newThread.posts.expand((p) => p.span.referencedPostIdentifiers)) {
-			if (id.threadId == newThread.id || id.postId == id.threadId || id.postId == null || id.board != newThread.board) {
+			if (id.threadId == newThread.id || id.postId == id.threadId || id.board != newThread.board) {
 				continue;
 			}
-			crossThreads.putIfAbsent(id.thread, () => {}).add(id.postId!);
+			crossThreads.putIfAbsent(id.thread, () => {}).add(id.postId);
 		}
 		// Only fetch threads with multiple cross-referenced posts
 		bool loadedAnything = false;
@@ -1054,7 +1056,6 @@ class ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _popOutReplyBox(ValueChanged<ReplyBoxState>? onInitState) async {
 		final imageboard = context.read<Imageboard>();
-		final settings = Settings.instance;
 		final theme = context.read<SavedTheme>();
 		await showAdaptiveModalPopup(
 			context: context,
@@ -1068,50 +1069,28 @@ class ThreadPageState extends State<ThreadPage> {
 						child: Container(
 							color: theme.backgroundColor,
 							child: ReplyBox(
-								longLivedCounterpartKey: _replyBoxKey,
 								board: widget.thread.board,
 								threadId: widget.thread.id,
 								onInitState: onInitState,
 								isArchived: persistentState.thread?.isArchived ?? false,
-								initialText: persistentState.draftReply,
-								onTextChanged: (text) async {
-									persistentState.draftReply = text;
+								initialDraft: persistentState.draft,
+								onDraftChanged: (draft) async {
+									persistentState.draft = draft;	
 									await SchedulerBinding.instance.endOfFrame;
-									_replyBoxKey.currentState?.text = text;
+									_replyBoxKey.currentState?.draft = draft;
 									runWhenIdle(const Duration(seconds: 3), persistentState.save);
-								},
-								initialOptions: _replyBoxKey.currentState?.options ?? '',
-								onOptionsChanged: (options) async {
-									await SchedulerBinding.instance.endOfFrame;
-									_replyBoxKey.currentState?.options = options;
 								},
 								onReplyPosted: (receipt) async {
 									if (imageboard.site.supportsPushNotifications) {
 										await promptForPushNotificationsIfNeeded(context);
 									}
 									if (!mounted) return;
-									if (settings.watchThreadAutomaticallyWhenReplying) {
-										imageboard.notifications.subscribeToThread(
-											thread: widget.thread,
-											lastSeenId: receipt.id,
-											localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
-											pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
-											foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
-											push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-											youIds: persistentState.freshYouIds()
-										);
-									}
-									if (settings.saveThreadAutomaticallyWhenReplying) {
-										persistentState.savedTime ??= DateTime.now();
-										runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-									}
 									if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
 										// If already at the bottom, pre-mark the created post as seen
 										persistentState.lastSeenPostId = receipt.id;
 										runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 									}
 									_listController.update();
-									Future.delayed(const Duration(seconds: 12), _listController.update);
 									Navigator.of(ctx).pop();
 								},
 								fullyExpanded: true
@@ -1160,7 +1139,6 @@ class ThreadPageState extends State<ThreadPage> {
 				title = widget.thread.id.toString();
 			}
 		}
-		final notifications = context.watch<Notifications>();
 		final watch = context.select<Persistence, ThreadWatch?>((_) => persistentState.threadWatch);
 		final reverseIndicatorPosition = Settings.showListPositionIndicatorsOnLeftSetting.watch(context);
 		zone.postSortingMethods = [
@@ -1416,17 +1394,28 @@ class ThreadPageState extends State<ThreadPage> {
 											}
 										)
 									),
-									if (site.supportsPosting) AdaptiveIconButton(
-										onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
-											if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-												_popOutReplyBox(null);
-											}
-											else {
-												_replyBoxKey.currentState?.toggleReplyBox();
-											}
-											setState(() {});
-										},
-										icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
+									if (site.supportsPosting) NotifyingIcon(
+										primaryCount: MappingValueListenable(
+											parent: Outbox.instance,
+											mapper: (o) =>
+												o.queuedPostsFor(persistentState.imageboardKey, widget.thread.board, widget.thread.id).where((e) => e.state.isSubmittable).length
+										),
+										secondaryCount: MappingValueListenable(
+											parent: Outbox.instance,
+											mapper: (o) => o.submittableCount - o.queuedPostsFor(persistentState.imageboardKey, widget.thread.board, widget.thread.id).where((e) => e.state.isSubmittable).length
+										),
+										icon: AdaptiveIconButton(
+											onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
+												if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+													_popOutReplyBox(null);
+												}
+												else {
+													_replyBoxKey.currentState?.toggleReplyBox();
+												}
+												setState(() {});
+											},
+											icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
+										)
 									)
 								]
 							),
@@ -1814,30 +1803,14 @@ class ThreadPageState extends State<ThreadPage> {
 											board: widget.thread.board,
 											threadId: widget.thread.id,
 											isArchived: persistentState.thread?.isArchived ?? false,
-											initialText: persistentState.draftReply,
-											onTextChanged: (text) {
-												persistentState.draftReply = text;
+											initialDraft: persistentState.draft,
+											onDraftChanged: (draft) {
+												persistentState.draft = draft;
 												runWhenIdle(const Duration(seconds: 3), persistentState.save);
 											},
 											onReplyPosted: (receipt) async {
 												if (site.supportsPushNotifications) {
 													await promptForPushNotificationsIfNeeded(context);
-												}
-												if (!mounted) return;
-												if (settings.watchThreadAutomaticallyWhenReplying) {
-													notifications.subscribeToThread(
-														thread: widget.thread,
-														lastSeenId: receipt.id,
-														localYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
-														pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
-														foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
-														push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-														youIds: persistentState.freshYouIds()
-													);
-												}
-												if (settings.saveThreadAutomaticallyWhenReplying) {
-													persistentState.savedTime ??= DateTime.now();
-													runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 												}
 												if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
 													// If already at the bottom, pre-mark the created post as seen
@@ -1845,7 +1818,6 @@ class ThreadPageState extends State<ThreadPage> {
 													runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 												}
 												_listController.update();
-												Future.delayed(const Duration(seconds: 12), _listController.update);
 											},
 											onVisibilityChanged: () {
 												setState(() {});
