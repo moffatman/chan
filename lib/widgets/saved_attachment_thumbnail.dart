@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:chan/services/media.dart';
 import 'package:chan/widgets/thumbnail_image_provider.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class SavedAttachmentThumbnail extends StatefulWidget {
@@ -70,6 +71,9 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 									image: ThumbnailImageProvider(
 										file: widget.file
 									),
+									errorBuilder: (context, e, st) {
+										return const Icon(CupertinoIcons.question_square);
+									},
 									fit: widget.fit
 								),
 								if (label != null) Align(
@@ -90,6 +94,9 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 				else {
 					return Image(
 						image: ThumbnailImageProvider(file: widget.file),
+						errorBuilder: (context, e, st) {
+							return const Icon(CupertinoIcons.question_square);
+						},
 						fit: widget.fit
 					);
 				}
