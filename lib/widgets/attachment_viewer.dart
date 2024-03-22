@@ -713,6 +713,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			_errorMessage = e.toStringDio();
 			print(e);
 			print(st);
+			Future.error(e, st); // Crashlytics
 			if (_isDisposed) return;
 			_scheduleHidingOfLoadingProgress();
 			notifyListeners();

@@ -415,6 +415,9 @@ class VideoServer {
 			headers: headers
 		);
 		cachingFile._client = interruptibleClient;
+		if (!file.existsSync()) {
+			await file.create(recursive: true);
+		}
 		final handle = await file.open(mode:cachingFile.currentBytes == 0 ? FileMode.writeOnly : FileMode.writeOnlyAppend);
 		() async {
 			try {
