@@ -338,16 +338,16 @@ final appearanceSettings = [
 							onPressed: () => Navigator.pop(context, allowedGoogleFonts.keys.toList())
 						),
 						AdaptiveDialogAction(
-							child: const Text('Pick .ttf file...'),
+							child: const Text('Pick font file...'),
 							onPressed: () async {
 								try {
-									final pickerResult = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['ttf']);
+									final pickerResult = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['ttf', 'otf']);
 									final path = pickerResult?.files.tryFirst?.path;
 									if (path == null) {
 										return;
 									}
 									final basename = path.split('/').last;
-									final ttfFolder = await Directory('${Persistence.documentsDirectory.path}/ttf').create();
+									final ttfFolder = await Directory('${Persistence.documentsDirectory.path}/${Persistence.fontsDir}').create();
 									await File(path).copy('${ttfFolder.path}/$basename');
 									if (context.mounted) {
 										Navigator.pop(context, [basename]);
@@ -376,10 +376,10 @@ final appearanceSettings = [
 				return;
 			}
 			if (availableFonts.isEmpty) {
-				if (family?.endsWith('.ttf') ?? false) {
-					// Cleanup previous picked .ttf
+				if (family != null && (family.endsWith('.ttf') || family.endsWith('.otf'))) {
+					// Cleanup previous picked font
 					try {
-						await File('${Persistence.documentsDirectory.path}/ttf/$family').delete();
+						await File('${Persistence.documentsDirectory.path}/${Persistence.fontsDir}/$family').delete();
 					}
 					catch (e, st) {
 						Future.error(e, st);
@@ -424,10 +424,10 @@ final appearanceSettings = [
 			if (selectedFont != null) {
 				final oldFont = family;
 				setFamily(selectedFont);
-				if (oldFont != selectedFont && (oldFont?.endsWith('.ttf') ?? false)) {
-					// Cleanup previous picked .ttf
+				if (oldFont != selectedFont && oldFont != null && (oldFont.endsWith('.ttf') || oldFont.endsWith('.otf'))) {
+					// Cleanup previous picked font
 					try {
-						await File('${Persistence.documentsDirectory.path}/ttf/$oldFont').delete();
+						await File('${Persistence.documentsDirectory.path}/${Persistence.fontsDir}/$oldFont').delete();
 					}
 					catch (e, st) {
 						Future.error(e, st);
@@ -436,7 +436,7 @@ final appearanceSettings = [
 						}
 					}
 				}
-				if (selectedFont.endsWith('.ttf')) {
+				if (selectedFont.endsWith('.ttf') || selectedFont.endsWith('.otf')) {
 					await initializeFonts();
 				}
 				else {

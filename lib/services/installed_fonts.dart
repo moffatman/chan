@@ -4,7 +4,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:flutter/services.dart';
 
-final _pattern = RegExp(r'([^/]+).ttf');
+final _pattern = RegExp(r'([^/]+).[ot]tf');
 
 Future<List<String>> getInstalledFontFamilies() async {
 	if (Platform.isAndroid) {
@@ -28,10 +28,11 @@ Future<void> initializeFonts() async {
 	fontLoadingError = null;
 	try {
 		final fontFamilyName = Persistence.settings.fontFamily;
-		if (fontFamilyName?.endsWith('.ttf') ?? false) {
-			// If fontFamily ends with .ttf, load it from documents dir
-			final family = fontFamilyName!.split('.').first;
-			final file = File('${Persistence.documentsDirectory.path}/ttf/$fontFamilyName');
+		if (fontFamilyName != null &&
+		    (fontFamilyName.endsWith('.ttf') || fontFamilyName.endsWith('.otf'))) {
+			// If fontFamily ends with .ttf or .otf, load it from documents dir
+			final family = fontFamilyName.split('.').first;
+			final file = File('${Persistence.documentsDirectory.path}/${Persistence.fontsDir}/$fontFamilyName');
 			if (!file.existsSync()) {
 				throw FileSystemException('Font file not found', file.path);
 			}

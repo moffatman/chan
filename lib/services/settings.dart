@@ -1601,7 +1601,7 @@ class SavedSettings extends HiveObject {
 			);
 		}
 		String name = fontFamily!;
-		if (name.endsWith('.ttf')) {
+		if (name.endsWith('.ttf') || name.endsWith('.otf')) {
 			name = name.substring(0, name.length - 4);
 		}
 		return allowedGoogleFonts[name]?.call() ?? TextStyle(
