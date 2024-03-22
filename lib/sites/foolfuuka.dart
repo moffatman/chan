@@ -262,9 +262,6 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				'num': id.toString()
 			}),
 			options: Options(
-				headers: {
-					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
-				},
 				extra: {
 					kPriority: priority
 				}
@@ -347,9 +344,6 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			}),
 			options: Options(
 				validateStatus: (x) => true,
-				headers: {
-					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
-				},
 				extra: {
 					kPriority: priority
 				}
@@ -373,9 +367,6 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			'board': board,
 			'page': pageNumber.toString()
 		}), options: Options(
-				headers: {
-					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
-				},
 				extra: {
 					kPriority: priority
 				}
@@ -398,9 +389,6 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<List<ImageboardBoard>> _getBoards({required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/archives'), options: Options(
 			validateStatus: (x) => true,
-			headers: {
-				if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
-			},
 			extra: {
 				kPriority: priority
 			}
@@ -468,10 +456,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				if (query.trip != null) 'tripcode': query.trip
  			}),
 			options: Options(
-				validateStatus: (x) => true,
-				headers: {
-					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
-				}
+				validateStatus: (x) => true
 			)
 		);
 		if (response.statusCode != 200) {
@@ -522,6 +507,14 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		client.interceptors.add(HTTP429BackoffInterceptor(
 			client: client
 		));
+	}
+
+	@override
+	String get userAgent {
+		if (useRandomUseragent) {
+			return makeRandomUserAgent();
+		}
+		return super.userAgent;
 	}
 
 	@override
