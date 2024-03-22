@@ -266,7 +266,7 @@ String formatRelativeTime(DateTime time) {
 }
 
 String formatDuration(Duration d) {
-	return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
+	return '${d.inMinutes}:${((d.inMilliseconds / 1000).round() % 60).toString().padLeft(2, '0')}';
 }
 
 String formatFilesize(int sizeInBytes) {
