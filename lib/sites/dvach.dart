@@ -1,6 +1,7 @@
 import 'package:chan/models/attachment.dart';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
@@ -115,6 +116,8 @@ class SiteDvach extends ImageboardSite {
 		}).toList();
 	}
 
+	static final _iconFlagPattern = RegExp(r'<img.*src="(.*\/([^.]+)\.[^."]+)"');
+
 	Post _makePost(String board, int threadId, Map<String, dynamic> data) {
 		String? posterId = data['op'] == 1 ? 'OP' : null;
 		final name = StringBuffer();
@@ -136,7 +139,16 @@ class SiteDvach extends ImageboardSite {
 			posterId: posterId,
 			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
 			spanFormat: PostSpanFormat.lainchan,
-			attachments: _makeAttachments(board, threadId, data)
+			attachments: _makeAttachments(board, threadId, data),
+			flag: switch (_iconFlagPattern.firstMatch(data['icon'] ?? '')) {
+				null => null,
+				RegExpMatch flagMatch => ImageboardFlag(
+					imageHeight: 12,
+					imageWidth: 18,
+					name: flagMatch.group(2) ?? 'Unknown',
+					imageUrl: 'https://$baseUrl${flagMatch.group(1)}'
+				)
+			}
 		);
 	}
 
