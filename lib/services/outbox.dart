@@ -240,7 +240,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				if (context != null && context.mounted) {
 					showToast(
 						context: context,
-						message: 'Need to wait ${(e.tryAgainAt.difference(DateTime.now()).inMilliseconds / 1000).round()}s to get captcha',
+						message: 'Need to wait ${formatDuration(e.tryAgainAt.difference(DateTime.now()))} to get captcha',
 						icon: CupertinoIcons.exclamationmark_shield
 					);
 				}
@@ -322,7 +322,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					if (context != null && context.mounted) {
 						showToast(
 							context: context,
-							message: 'Need to wait ${(e.tryAgainAt.difference(DateTime.now()).inMilliseconds / 1000).round()}s to post',
+							message: 'Need to wait ${formatDuration(e.tryAgainAt.difference(DateTime.now()))} to post',
 							icon: CupertinoIcons.exclamationmark_shield
 						);
 					}

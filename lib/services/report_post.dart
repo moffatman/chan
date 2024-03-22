@@ -155,7 +155,7 @@ Future<void> reportPost({
 								showToast(
 									context: context,
 									icon: CupertinoIcons.clock,
-									message: 'Waiting ${(delta.inMilliseconds / 1000).round()}s to submit report'
+									message: 'Waiting ${formatDuration(delta)} to submit report'
 								);
 							}
 						}
