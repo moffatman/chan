@@ -832,15 +832,19 @@ class AttachmentViewerController extends ChangeNotifier {
 		return attachment.ext;
 	}
 
-	String _downloadFilename(bool convertForCompatibility, {bool serverSideName = false}) {
-		if (serverSideName) {
-			return attachment.id + _downloadExt(convertForCompatibility);
+	String _downloadFilename(bool convertForCompatibility) {
+		final String filename;
+		if (Settings.instance.downloadUsingServerSideFilenames) {
+			filename = attachment.id.split('/').last;
 		}
-		return attachment.filename.replaceFirst(RegExp(r'\.[^.]+$'), _downloadExt(convertForCompatibility));
+		else {
+			filename = attachment.filename;
+		}
+		return filename.replaceFirst(RegExp(r'\.[^.]+$'), '') + _downloadExt(convertForCompatibility);
 	}
 
 	Future<File> _moveToShareCache({required bool convertForCompatibility}) async {
-		final newFilename = '${Uri.encodeComponent(attachment.id)}${_downloadExt(convertForCompatibility)}';
+		final newFilename = _downloadFilename(convertForCompatibility);
 		File file = getFile();
 		if (convertForCompatibility && cacheExt == '.webm') {
 			file = await modalLoad(context, 'Converting...', (c) async {
@@ -937,7 +941,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				successful = true;
 			}
 			else if (Platform.isAndroid) {
-				filename = _downloadFilename(false, serverSideName: settings.downloadUsingServerSideFilenames);
+				filename = _downloadFilename(false);
 				if (saveAs) {
 					final path = await saveFileAs(
 						sourcePath: getFile().path,
