@@ -1207,11 +1207,11 @@ class AttachmentViewer extends StatelessWidget {
 				);
 			}
 		}
-		buildChild(bool useRealGestureKey) => AbsorbPointer(
+		buildChild({required bool inContextMenu}) => AbsorbPointer(
 			absorbing: !allowGestures,
 			child: ExtendedImage(
 				image: image,
-				extendedImageGestureKey: useRealGestureKey ? controller.gestureKey : null,
+				extendedImageGestureKey: inContextMenu ? null : controller.gestureKey,
 				color: const Color.fromRGBO(238, 242, 255, 1),
 				colorBlendMode: BlendMode.dstOver,
 				enableSlideOutPage: true,
@@ -1222,7 +1222,7 @@ class AttachmentViewer extends StatelessWidget {
 				height: size?.height ?? double.infinity,
 				enableLoadState: true,
 				handleLoadingProgress: true,
-				layoutInsets: layoutInsets,
+				layoutInsets: inContextMenu ? EdgeInsets.zero : layoutInsets,
 				afterPaintImage: (canvas, rect, image, paint) {
 					final transform = Matrix4.identity();
 					transform.setFromTranslationRotationScale(Vector3(rect.left, rect.top, 0), Quaternion.identity(), Vector3(rect.width / image.width, rect.height / image.height, 0));
@@ -1284,7 +1284,7 @@ class AttachmentViewer extends StatelessWidget {
 								child = _centeredLoader(
 									active: controller.isFullResolution,
 									value: loadingValue,
-									useRealKey: useRealGestureKey
+									useRealKey: !inContextMenu
 								);
 							}
 							final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect?.shift(
@@ -1362,7 +1362,7 @@ class AttachmentViewer extends StatelessWidget {
 				}
 				controller._doubleTapDragAnchor = null;
 			},
-			child: !allowContextMenu ? buildChild(true) : ContextMenu(
+			child: !allowContextMenu ? buildChild(inContextMenu: false) : ContextMenu(
 				actions: [
 					ContextMenuAction(
 						trailingIcon: CupertinoIcons.cloud_download,
@@ -1434,10 +1434,10 @@ class AttachmentViewer extends StatelessWidget {
 					),
 					...additionalContextMenuActions
 				],
-				child: buildChild(true),
+				child: buildChild(inContextMenu: false),
 				previewBuilder: (context, child) => AspectRatio(
 					aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
-					child: buildChild(false)
+					child: buildChild(inContextMenu: true)
 				)
 			)
 		);
