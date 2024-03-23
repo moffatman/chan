@@ -72,7 +72,7 @@ dependencies:
   mime: ^1.0.2
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0
-  firebase_core: ^2.1.1
+  firebase_core: ^2.26.0
   unifiedpush: ^4.0.0
   flutter_apns_only: ^1.6.0
   flutter_local_notifications: ^13.0.0
@@ -176,6 +176,8 @@ dependency_overrides:
       ref: main
   markdown: ^7.2.1 # Needed to resolve a conflict with flutter_tex
   screenshot: ^2.1.0 # Needed to run with current moffatman/flutter tag
+  firebase_core_web: ^2.11.5 # Needed to run with current moffatman/flutter tag
+  web: ^0.5.1 # Needed to run with current moffatman/flutter tag
   connectivity_plus: # Needed to prioritize Mobile over VPN on Android
     git:
       url: https://github.com/ente-io/plus_plugins.git
