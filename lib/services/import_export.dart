@@ -410,7 +410,7 @@ Future<List<ImportLog>> import(File archive) async {
 			type: 'Settings',
 			merger: const ResolvedAdaptedMerger(SavedSettingsAdapter()),
 			yours: Persistence.settings,
-			base: null, // Better to use this to avoid any "too clever" reversions
+			base: SavedSettings(),
 			skipPaths: [
 				SavedSettingsFields.userId.fieldName
 			]
