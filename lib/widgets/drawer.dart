@@ -556,7 +556,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 													title: 'Sort...',
 													onPressed: () => selectWatchedThreadsSortMethod(context)
 												),
-												...thread_actions.getWatchedThreadsActions(context)
+												...thread_actions.getWatchedThreadsActions(context, onMutate: () => setState(() {}))
 											]
 										);
 									}

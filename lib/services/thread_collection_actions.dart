@@ -28,7 +28,7 @@ bool anyUnreadWatches() {
 			(w) => (i.persistence.getThreadStateIfExists(w.threadIdentifier)?.unseenReplyCount() ?? 0) > 0));
 }
 
-Future<void> markAllWatchedThreadsAsRead(BuildContext context) async {
+Future<void> markAllWatchedThreadsAsRead(BuildContext context, {VoidCallback? onMutate}) async {
 	final watches = await loadWatches();
 	final cleared = <({
 		PersistentThreadState threadState,
@@ -60,9 +60,11 @@ Future<void> markAllWatchedThreadsAsRead(BuildContext context) async {
 					item.threadState.didUpdate();
 					await item.threadState.save();
 				}
+				onMutate?.call();
 			}
 		);
 	}
+	onMutate?.call();
 }
 
 bool anyWatches() {
@@ -135,19 +137,19 @@ Future<void> removeAllWatches(BuildContext context, {VoidCallback? onMutate}) =>
 	onMutate?.call();
 });
 
-List<TabMenuAction> getWatchedThreadsActions(BuildContext context) => [
+List<TabMenuAction> getWatchedThreadsActions(BuildContext context, {VoidCallback? onMutate}) => [
 	TabMenuAction(
 		icon: CupertinoIcons.xmark_circle,
 		title: 'Mark all as read',
 		onPressed: anyUnreadWatches() ? () {
-			markAllWatchedThreadsAsRead(context);
+			markAllWatchedThreadsAsRead(context, onMutate: onMutate);
 		} : null
 	),
 	TabMenuAction(
 		icon: CupertinoIcons.bin_xmark,
 		title: 'Remove archived',
 		onPressed: anyZombieWatches() ? () {
-			removeZombieWatches(context);
+			removeZombieWatches(context, onMutate: onMutate);
 		} : null,
 		isDestructiveAction: true
 	),
@@ -155,7 +157,7 @@ List<TabMenuAction> getWatchedThreadsActions(BuildContext context) => [
 		icon: CupertinoIcons.xmark,
 		title: 'Remove all',
 		onPressed: anyWatches() ? () {
-			removeAllWatches(context);
+			removeAllWatches(context, onMutate: onMutate);
 		} : null,
 		isDestructiveAction: true
 	)
