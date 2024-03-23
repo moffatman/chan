@@ -551,7 +551,8 @@ class ImageboardRegistry extends ChangeNotifier {
 	Imageboard? dev;
 
 	Future<void> initializeDev() async {
-		final tmpDev = Imageboard(
+		dev?.dispose();
+		final tmpDev = dev = Imageboard(
 			key: _devImageboardKey,
 			siteData: defaultSite,
 			threadWatcherController: ThreadWatcherController(interval: const Duration(minutes: 10))
@@ -559,8 +560,6 @@ class ImageboardRegistry extends ChangeNotifier {
 		await tmpDev.initialize(
 			threadWatcherWatchForStickyOnBoards: ['chance']
 		);
-		dev?.dispose();
-		dev = tmpDev;
 		notifyListeners();
 	}
 
