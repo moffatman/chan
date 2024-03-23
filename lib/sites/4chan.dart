@@ -1248,6 +1248,9 @@ class Site4Chan extends ImageboardSite {
 		}), options: Options(
 			headers: {
 				if (userAgent != null) 'user-agent': userAgent
+			},
+			extra: {
+				kPriority: RequestPriority.interactive
 			}
 		));
 		final document = parse(response.data);

@@ -1125,7 +1125,11 @@ class SiteReddit extends ImageboardSite {
 						'after': lastResult.posts.last.redditApiId
 					else if (page < lastResult.page)
 						'before': lastResult.posts.first.redditApiId
-			}));
+			}), options: Options(
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			));
 		}
 		else {
 			response = await client.getUri(Uri.https(baseUrl, query.boards.isEmpty ? '/search.json' : '/r/${query.boards.first}/search.json', {
@@ -1138,7 +1142,11 @@ class SiteReddit extends ImageboardSite {
 						'after': lastResult.posts.last.redditApiId
 					else if (page < lastResult.page)
 						'before': lastResult.posts.first.redditApiId
-			}));
+			}), options: Options(
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			));
 		}
 		return ImageboardArchiveSearchResultPage(
 			page: page,

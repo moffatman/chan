@@ -289,7 +289,10 @@ class FuukaArchive extends ImageboardSiteArchive {
 				if (query.name != null) 'search_username': query.name,
 				if (query.trip != null) 'search_tripcode': query.trip
 		}), options: Options(
-			responseType: ResponseType.plain
+			responseType: ResponseType.plain,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
 		));
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);

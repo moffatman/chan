@@ -456,7 +456,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				if (query.trip != null) 'tripcode': query.trip
  			}),
 			options: Options(
-				validateStatus: (x) => true
+				validateStatus: (x) => true,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
 			)
 		);
 		if (response.statusCode != 200) {

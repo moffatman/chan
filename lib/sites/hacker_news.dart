@@ -613,7 +613,11 @@ class SiteHackerNews extends ImageboardSite {
 			'query': query.query,
 			'page': page - 1,
 			if (query.name != null) 'tags': 'author_${query.name}'
-		});
+		}, options: Options(
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
+		));
 		return ImageboardArchiveSearchResultPage(
 			page: response.data['page'] + 1,
 			maxPage: response.data['nbPages'],
