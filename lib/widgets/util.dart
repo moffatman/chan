@@ -1313,7 +1313,8 @@ Future<Attachment?> whichAttachment(BuildContext context, List<Attachment> attac
 						gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1),
 						children: attachments.map((a) => CupertinoButton(
 							child: AttachmentThumbnail(
-								attachment: a
+								attachment: a,
+								mayObscure: false
 							),
 							onPressed: () => Navigator.pop(innerContext, a)
 						)).toList()

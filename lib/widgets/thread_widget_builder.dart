@@ -75,6 +75,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 								gaplessPlayback: true,
 								fit: BoxFit.cover,
 								attachment: attachment,
+								mayObscure: true,
 								width: 30,
 								height: 30,
 								site: imageboard?.site

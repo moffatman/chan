@@ -120,6 +120,7 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 									attachment: attachment,
 									width: 75,
 									height: 75,
+									mayObscure: false
 								),
 								Checkbox.adaptive(
 									value: context.select<Settings, bool>((p) => p.isMD5Hidden(attachment.md5)),
@@ -396,6 +397,7 @@ class PostRow extends StatelessWidget {
 												),
 												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 												shrinkHeight: !settings.squareThumbnails,
+												mayObscure: true,
 												showIconInCorner: (
 													backgroundColor: theme.backgroundColor,
 													borderColor: theme.primaryColorWithBrightness(0.2),
@@ -517,6 +519,7 @@ class PostRow extends StatelessWidget {
 														height: largeImageWidth,
 														shrinkHeight: true,
 														overrideFullQuality: true,
+														mayObscure: true,
 														hero: TaggedAttachment(
 															attachment: a,
 															semanticParentIds: parentZone.stackIds

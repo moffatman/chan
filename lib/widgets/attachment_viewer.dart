@@ -1507,7 +1507,8 @@ class AttachmentViewer extends StatelessWidget {
 											rotate90DegreesClockwise: rotate90DegreesClockwise,
 											gaplessPlayback: true,
 											revealSpoilers: true,
-											site: controller.site
+											site: controller.site,
+											mayObscure: false
 										)
 									)
 								)
@@ -1732,7 +1733,8 @@ class AttachmentViewer extends StatelessWidget {
 							rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
 							gaplessPlayback: true,
 							revealSpoilers: true,
-							site: controller.site
+							site: controller.site,
+							mayObscure: false
 						),
 						Center(
 							child: ErrorMessageCard(

@@ -56,6 +56,8 @@ class AttachmentThumbnail extends StatelessWidget {
 	final ImageboardSite? site;
 	final bool shrinkHeight;
 	final bool? overrideFullQuality;
+	/// Whether it is actually a thumbnail (preview) like in catalog/thread
+	final bool mayObscure;
 	final ({Color backgroundColor, Color borderColor, double? size})? showIconInCorner;
 
 	const AttachmentThumbnail({
@@ -74,6 +76,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.site,
 		this.overrideFullQuality,
 		this.showIconInCorner,
+		required this.mayObscure,
 		Key? key
 	}) : super(key: key);
 
@@ -130,14 +133,9 @@ class AttachmentThumbnail extends StatelessWidget {
 			}
 		);
 		final pixelation = settings.thumbnailPixelation;
-		if (resize && effectiveWidth.isFinite && effectiveHeight.isFinite) {
-			image = ExtendedResizeImage(
-				image,
-				maxBytes: 800 << 10,
-				width: (effectiveWidth * MediaQuery.devicePixelRatioOf(context)).ceil()
-			);
-		}
-		else if (pixelation > 0) {
+		final FilterQuality filterQuality;
+		if (pixelation > 0 && mayObscure) {
+			filterQuality = FilterQuality.none;
 			// In BoxFit.cover we see the shortest side
 			final targetLongestSide = fit != BoxFit.cover;
 			// maintain minimum pixels on shortest side
@@ -148,6 +146,17 @@ class AttachmentThumbnail extends StatelessWidget {
 				width: targetHeight ? null : pixelation,
 				height: targetHeight ? pixelation : null,
 			);
+		}
+		else if (resize && effectiveWidth.isFinite && effectiveHeight.isFinite) {
+			filterQuality = FilterQuality.low;
+			image = ExtendedResizeImage(
+				image,
+				maxBytes: 800 << 10,
+				width: (effectiveWidth * MediaQuery.devicePixelRatioOf(context)).ceil()
+			);
+		}
+		else {
+			filterQuality = FilterQuality.low;
 		}
 		final barColor = ChanceTheme.barColorOf(context);
 		Widget child;
@@ -200,7 +209,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						..style = PaintingStyle.stroke);
 					textPainter.paint(canvas, Alignment.center.inscribe(textPainter.size, badgeRect).topLeft + const Offset(1, 1));
 				},
-				filterQuality: FilterQuality.none,
+				filterQuality: filterQuality,
 				loadStateChanged: (loadstate) {
 					if (loadstate.extendedImageLoadState == LoadState.loading) {
 						return SizedBox(
@@ -232,7 +241,7 @@ class AttachmentThumbnail extends StatelessWidget {
 					return null;
 				}
 			);
-			if (settings.blurThumbnails) {
+			if (settings.blurThumbnails && mayObscure) {
 				child = ClipRect(
 					child: ImageFiltered(
 						imageFilter: ImageFilter.blur(

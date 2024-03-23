@@ -580,7 +580,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																			attachment: attachment.attachment,
 																			width: _thumbnailSize,
 																			height: _thumbnailSize,
-																			fit: BoxFit.cover
+																			fit: BoxFit.cover,
+																			mayObscure: true
 																		) : SavedAttachmentThumbnail(
 																			file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
 																			fit: BoxFit.cover
@@ -681,6 +682,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																width: 9999,
 																height: 9999,
 																fit: BoxFit.cover,
+																mayObscure: true
 															) : SavedAttachmentThumbnail(
 																file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
 																fit: BoxFit.cover

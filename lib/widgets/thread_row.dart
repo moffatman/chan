@@ -381,6 +381,7 @@ class ThreadRow extends StatelessWidget {
 										onLoadError: onThumbnailLoadError,
 										attachment: attachment,
 										thread: latestThread.identifier,
+										mayObscure: true,
 										hero: TaggedAttachment(
 											attachment: attachment,
 											semanticParentIds: semanticParentIds
@@ -497,6 +498,7 @@ class ThreadRow extends StatelessWidget {
 								attachment: attachment,
 								thread: latestThread.identifier,
 								onLoadError: onThumbnailLoadError,
+								mayObscure: true,
 								hero: TaggedAttachment(
 									attachment: attachment,
 									semanticParentIds: semanticParentIds

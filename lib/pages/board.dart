@@ -121,6 +121,7 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 											attachment: attachment,
 											width: 75,
 											height: 75,
+											mayObscure: false
 										),
 										Checkbox.adaptive(
 											value: context.select<Settings, bool>((p) => p.isMD5Hidden(attachment.md5)),
