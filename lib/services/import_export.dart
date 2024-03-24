@@ -1,6 +1,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
@@ -11,12 +12,35 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:archive/archive_io.dart';
 
+/// For isolate usage
+Future<void> _export({
+	required String destination,
+	required List<String> compressibleFiles,
+	required List<(String, String)> renamedCompressibleFiles,
+	required List<String> uncompressibleDirs
+}) async {
+	final encoder = ZipFileEncoder();
+	encoder.create(destination);
+	for (final path in compressibleFiles) {
+		await encoder.addFile(File(path));
+	}
+	for (final pair in renamedCompressibleFiles) {
+		await encoder.addFile(File(pair.$1), pair.$2);
+	}
+	for (final path in uncompressibleDirs) {
+		await encoder.addDirectory(Directory(path), level: ZipFileEncoder.STORE);
+	}
+	encoder.close();
+}
+
 Future<File> export({
 	required bool includeSavedAttachments,
 	required bool includeFullHistory
 }) async {
-	final encoder = ZipFileEncoder();
-	encoder.create('${Persistence.temporaryDirectory.path}/${DateTime.now().millisecondsSinceEpoch ~/ 1000}.backup.zip');
+	final destination = '${Persistence.temporaryDirectory.path}/${DateTime.now().millisecondsSinceEpoch ~/ 1000}.backup.zip';
+	final compressibleFiles = <String>[];
+	final renamedCompressibleFiles = <(String, String)>[];
+	final uncompressibleDirs = <String>[];
 	for (final filename in [
 		'${Persistence.settingsBoxName}.hive',
 		'${Persistence.sharedBoardsBoxName}.hive',
@@ -25,7 +49,7 @@ Future<File> export({
 	]) {
 		final file = File('${Persistence.documentsDirectory.path}/$filename');
 		if (await file.exists()) {
-			await encoder.addFile(file);
+			compressibleFiles.add(file.path);
 		}
 	}
 	LazyBox<Thread>? temporaryThreadsBox;
@@ -50,7 +74,7 @@ Future<File> export({
 				}
 			}
 		}
-		await encoder.addFile(File(temporaryThreadsBox.path!), '${Persistence.sharedThreadsBoxName}.hive');
+		renamedCompressibleFiles.add((temporaryThreadsBox.path!, '${Persistence.sharedThreadsBoxName}.hive'));
 	}
 	for (final dirname in [
 		if (includeSavedAttachments) Persistence.savedAttachmentsDir,
@@ -60,12 +84,17 @@ Future<File> export({
 		final dir = Directory('${Persistence.documentsDirectory.path}/$dirname');
 		if (await dir.exists()) {
 			// These folders probably can't be compressed
-			await encoder.addDirectory(dir, level: ZipFileEncoder.STORE);
+			uncompressibleDirs.add(dir.path);
 		}
 	}
-	encoder.close();
+	await Isolate.run(() => _export(
+		destination: destination,
+		compressibleFiles: compressibleFiles,
+		renamedCompressibleFiles: renamedCompressibleFiles,
+		uncompressibleDirs: uncompressibleDirs
+	));
 	await temporaryThreadsBox?.deleteFromDisk();
-	return File(encoder.zipPath);
+	return File(destination);
 }
 
 Future<File> exportJson() async {
