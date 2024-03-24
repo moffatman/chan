@@ -647,7 +647,7 @@ packages:
     description:
       path: hive
       ref: master
-      resolved-ref: "3f20adf1c46de74ff307194b3b9e99a3e8d0ff99"
+      resolved-ref: b03709b365ac71768268e2f48e71e9fb19ea8f0c
       url: "https://github.com/moffatman/hive.git"
     source: git
     version: "3.0.0-dev"
