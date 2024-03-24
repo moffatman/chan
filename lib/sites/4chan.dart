@@ -868,7 +868,7 @@ class Site4Chan extends ImageboardSite {
 				}
 				final cooldown = int.tryParse(_cooldownRegex.firstMatch(message)?.group(1) ?? '');
 				if (cooldown != null) {
-					throw PostCooldownException(message, DateTime.now().add(Duration(seconds: cooldown + 1)));
+					throw PostCooldownException(message, DateTime.now().add(Duration(seconds: cooldown)));
 				}
 				throw PostFailedException(message);
 			}

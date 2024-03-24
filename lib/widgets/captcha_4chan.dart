@@ -98,11 +98,11 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		site.resetCaptchaTicketTimer();
 	}
 	if (data['pcd'] != null) {
-		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] ?? 'Please wait a while.', DateTime.now().add(Duration(seconds: data['pcd'].toInt() + 2)));
+		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] ?? 'Please wait a while.', DateTime.now().add(Duration(seconds: data['pcd'].toInt())));
 	}
 	final DateTime? tryAgainAt;
 	if (data['cd'] != null) {
-		tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2));
+		tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt()));
 	}
 	else {
 		tryAgainAt = null;
