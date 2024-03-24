@@ -1635,7 +1635,7 @@ class PersistentBrowserTab extends EasyListenable {
 
 	Future<void> mutate(FutureOr<void> Function(PersistentBrowserTab tab) mutator) async {
 		await mutator(this);
-		runWhenIdle(const Duration(seconds: 3), Persistence.saveTabs);
+		runWhenIdle(const Duration(seconds: 1), Persistence.saveTabs);
 	}
 
 	@override
