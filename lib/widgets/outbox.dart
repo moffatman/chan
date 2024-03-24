@@ -243,7 +243,6 @@ class QueueEntryWidget<T> extends StatelessWidget {
 						)
 					],
 					child: Container(
-						alignment: Alignment.center,
 						decoration: BoxDecoration(
 							border: Border(
 								top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))
@@ -380,62 +379,64 @@ class QueueEntryWidget<T> extends StatelessWidget {
 										)
 									]
 								),
-								Container(
-									margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-									foregroundDecoration: BoxDecoration(
-										border: Border.all(color: ChanceTheme.primaryColorWithBrightness20Of(context))
-									),
-									child: CupertinoButton(
-										padding: const EdgeInsets.all(16),
-										onPressed: canPress ? () async {
-											if (!entry.isArchived) {
-												(onGoToThread ?? onMove)?.call();
-												return;
+								Flexible(
+									child: Container(
+										margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+										foregroundDecoration: BoxDecoration(
+											border: Border.all(color: ChanceTheme.primaryColorWithBrightness20Of(context))
+										),
+										child: CupertinoButton(
+											padding: const EdgeInsets.all(16),
+											onPressed: canPress ? () async {
+												if (!entry.isArchived) {
+													(onGoToThread ?? onMove)?.call();
+													return;
+												}
+												final outerContext = context;
+												final action = await showAdaptiveDialog<VoidCallback>(
+													barrierDismissible: true,
+													context: context,
+													builder: (context) => AdaptiveAlertDialog(
+														title: const Text('Thread is archived'),
+														content: const Text('What would you like to do with this orphan draft reply?'),
+														actions: [
+															if (onMove != null) AdaptiveDialogAction(
+																onPressed: () => Navigator.pop(context, onMove),
+																child: const Text('Move to current thread')
+															),
+															if (onCopy != null) AdaptiveDialogAction(
+																onPressed: () => Navigator.pop(context, onCopy),
+																child: const Text('Copy to current thread')
+															),
+															AdaptiveDialogAction(
+																onPressed: () => Navigator.pop(context, onGoToThread),
+																child: const Text('Go to archived thread')
+															),
+															AdaptiveDialogAction(
+																onPressed: () => Navigator.pop(context, () {
+																	entry.delete();
+																	showUndoToast(
+																		context: outerContext,
+																		message: 'Deleted queued ${entry.lowercaseName}',
+																		onUndo: entry.undelete
+																	);
+																}),
+																child: const Text('Delete it')
+															),
+															AdaptiveDialogAction(
+																onPressed: () => Navigator.pop(context),
+																child: const Text('Cancel')
+															)
+														]
+													)
+												);
+												action?.call();
+											} : null,
+											child: switch (entry) {
+												QueuedPost() => _buildQueuedPost(entry as QueuedPost),
+												QueuedReport() => _buildQueuedReport(entry as QueuedReport)
 											}
-											final outerContext = context;
-											final action = await showAdaptiveDialog<VoidCallback>(
-												barrierDismissible: true,
-												context: context,
-												builder: (context) => AdaptiveAlertDialog(
-													title: const Text('Thread is archived'),
-													content: const Text('What would you like to do with this orphan draft reply?'),
-													actions: [
-														if (onMove != null) AdaptiveDialogAction(
-															onPressed: () => Navigator.pop(context, onMove),
-															child: const Text('Move to current thread')
-														),
-														if (onCopy != null) AdaptiveDialogAction(
-															onPressed: () => Navigator.pop(context, onCopy),
-															child: const Text('Copy to current thread')
-														),
-														AdaptiveDialogAction(
-															onPressed: () => Navigator.pop(context, onGoToThread),
-															child: const Text('Go to archived thread')
-														),
-														AdaptiveDialogAction(
-															onPressed: () => Navigator.pop(context, () {
-																entry.delete();
-																showUndoToast(
-																	context: outerContext,
-																	message: 'Deleted queued ${entry.lowercaseName}',
-																	onUndo: entry.undelete
-																);
-															}),
-															child: const Text('Delete it')
-														),
-														AdaptiveDialogAction(
-															onPressed: () => Navigator.pop(context),
-															child: const Text('Cancel')
-														)
-													]
-												)
-											);
-											action?.call();
-										} : null,
-										child: switch (entry) {
-											QueuedPost() => _buildQueuedPost(entry as QueuedPost),
-											QueuedReport() => _buildQueuedReport(entry as QueuedReport)
-										}
+										)
 									)
 								)
 							]
