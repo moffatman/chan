@@ -384,8 +384,8 @@ Future<List<ImportLog>> import(File archive) async {
 				final relative = child.path.replaceFirst('${folder.path}/', '');
 				final destPath = '${Persistence.documentsDirectory.path}/$subdir/$relative';
 				if (srcStat.type == FileSystemEntityType.directory) {
-					Directory(destPath).create(recursive: true);
-					return;
+					await Directory(destPath).create(recursive: true);
+					continue;
 				}
 				final dest = File(destPath);
 				if (await dest.exists()) {
@@ -398,6 +398,9 @@ Future<List<ImportLog>> import(File archive) async {
 					}
 				}
 				else {
+					if (!await dest.parent.exists()) {
+						await dest.parent.create();
+					}
 					newCount++;
 				}
 				await File(child.path).copy(dest.path);
