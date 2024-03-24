@@ -7,6 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/thread_watcher.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:archive/archive_io.dart';
 
@@ -420,7 +421,22 @@ Future<List<ImportLog>> import(File archive) async {
 			yours: Persistence.settings,
 			base: SavedSettings(),
 			skipPaths: [
-				SavedSettingsFields.userId.fieldName
+				SavedSettingsFields.userId.fieldName,
+				SavedSettingsFields.replyBoxHeightOffset.fieldName,
+				[
+					SavedSettingsFields.browserStateBySite.fieldName,
+					'*',
+					PersistentBrowserStateFields.threadWatches.fieldName,
+					'*',
+					ThreadWatchFields.lastSeenId.fieldName
+				].join('/'),
+				[
+					SavedSettingsFields.browserStateBySite.fieldName,
+					'*',
+					PersistentBrowserStateFields.threadWatches.fieldName,
+					'*',
+					ThreadWatchFields.watchTime.fieldName
+				].join('/')
 			]
 		);
 		await hiveImportMap<ImageboardBoard>(
