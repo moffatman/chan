@@ -633,10 +633,11 @@ void subscribeToBoard({
 			clearOverlayNotifications(this, watch);
 			await updateNotificationsBadgeCount();
 		}
-		final couldUpdate = watch.lastSeenId != lastKnownId;
-		watch.lastSeenId = lastKnownId;
-		if (couldUpdate && Persistence.settings.usePushNotifications == true && watch.push) {
-			_update(watch);
+		if (lastKnownId > watch.lastSeenId) {
+			watch.lastSeenId = lastKnownId;
+			if (Persistence.settings.usePushNotifications == true && watch.push) {
+				_update(watch);
+			}
 		}
 	}
 
