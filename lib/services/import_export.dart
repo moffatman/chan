@@ -76,13 +76,14 @@ Future<File> exportJson() async {
 		final buffer = utf8.encode(Hive.encodeJson(object));
 		encoder.addArchiveFile(ArchiveFile(path, buffer.length, buffer));
 	}
-	void dumpAll<T>(String dir, Box<T> box) {
+	Future<void> dumpAll<T>(String dir, Box<T> box) async {
 		for (final key in box.keys) {
 			final value = box.get(key);
 			if (value == null) {
 				continue;
 			}
 			dumpOne('$dir/$key.json', value);
+			await Future.microtask(() => {});
 		}
 	}
 	Future<void> dumpAllLazy<T>(String dir, LazyBox<T> box) async {
@@ -92,11 +93,12 @@ Future<File> exportJson() async {
 				continue;
 			}
 			dumpOne('$dir/$key.json', value);
+			await Future.microtask(() => {});
 		}
 	}
 	dumpOne('settings.json', Persistence.settings);
-	dumpAll('boards', Persistence.sharedBoardsBox);
-	dumpAll('threadStates', Persistence.sharedThreadStateBox);
+	await dumpAll('boards', Persistence.sharedBoardsBox);
+	await dumpAll('threadStates', Persistence.sharedThreadStateBox);
 	await dumpAllLazy('threads', Persistence.sharedThreadsBox);
 	encoder.close();
 	return File(encoder.zipPath);
