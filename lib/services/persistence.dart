@@ -355,6 +355,10 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
+	static bool isThreadCached(String imageboardKey, String board, int id) {
+		return sharedThreadsBox.containsKey('$imageboardKey/$board/$id');
+	}
+
 	static Future<Thread?> getCachedThread(String imageboardKey, String board, int id) async {
 		return await sharedThreadsBox.get('$imageboardKey/$board/$id');
 	}
@@ -1262,6 +1266,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	Future<Thread?> getThread() async {
 		return _thread ?? (await Persistence.getCachedThread(imageboardKey, board, id));
 	}
+
+	bool get isThreadCached => Persistence.isThreadCached(imageboardKey, board, id);
 
 	Thread? get thread => _thread;
 	set thread(Thread? newThread) {

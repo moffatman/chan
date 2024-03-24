@@ -36,11 +36,13 @@ class HistorySearchPage extends StatefulWidget {
 	final String query;
 	final ImageboardScoped<PostIdentifier>? selectedResult;
 	final ValueChanged<ImageboardScoped<PostIdentifier>?> onResultSelected;
+	final bool? initialYourPostsOnly;
 
 	const HistorySearchPage({
 		required this.query,
 		required this.selectedResult,
 		required this.onResultSelected,
+		this.initialYourPostsOnly,
 		super.key
 	});
 
@@ -58,10 +60,12 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	bool? _filterHasAttachment;
 	bool? _filterContainsLink;
 	bool? _filterIsThread;
+	bool? _filterYourPostsOnly;
 
 	@override
 	void initState() {
 		super.initState();
+		_filterYourPostsOnly = widget.initialYourPostsOnly;
 		_runQuery();
 	}
 
@@ -76,7 +80,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					!mounted ||
 					(_filterBoard != null &&
 					(_filterBoard!.imageboard != threadState.imageboard ||
-						_filterBoard!.item.name != threadState.board))) {
+						_filterBoard!.item.name != threadState.board)) ||
+					((_filterYourPostsOnly ?? false) && threadState.youIds.isEmpty)) {
 				numer++;
 				return;
 			}
@@ -100,6 +105,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 						continue;
 					}
 					if (_filterDateEnd != null && _filterDateEnd!.isBefore(post.time)) {
+						continue;
+					}
+					if (_filterYourPostsOnly != null && _filterYourPostsOnly != threadState.youIds.contains(post.id)) {
 						continue;
 					}
 					if (post.id == thread.id) {
@@ -144,6 +152,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 										Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
 									]
 								),
+								if (_filterYourPostsOnly != null)
+									_filterYourPostsOnly! ? const Text('(You)') : const Text('Not (You)'),
 								if (_filterDateStart != null && _filterDateEnd != null)
 									Text(_filterDateStart!.startOfDay == _filterDateEnd!.startOfDay ?
 										_filterDateStart!.toISO8601Date :
@@ -294,6 +304,20 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 															setDialogState(() {});
 															anyChange = true;
 														}
+													),
+													const SizedBox(height: 16),
+													AdaptiveSegmentedControl<NullSafeOptional>(
+														groupValue: _filterYourPostsOnly.value,
+														children: const {
+															NullSafeOptional.false_: (null, 'Only others\' posts'),
+															NullSafeOptional.null_: (null, 'Any'),
+															NullSafeOptional.true_: (null, 'Only your posts')
+														},
+														onValueChanged: (v) {
+															_filterYourPostsOnly = v.value;
+															setDialogState(() {});
+															anyChange = true;
+														}
 													)
 												]
 											)
@@ -341,7 +365,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 			) : MaybeScrollbar(
 				child: RefreshableList<ImageboardScoped<HistorySearchResult>>(
 					listUpdater: () => throw UnimplementedError(),
-					id: 'historysearch',
+					id: 'historysearch[${widget.selectedResult}]',
 					filterableAdapter: (i) => i.item.post ?? i.item.thread,
 					initialList: results,
 					disableUpdates: true,

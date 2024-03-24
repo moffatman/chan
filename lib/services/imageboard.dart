@@ -525,6 +525,9 @@ class Imageboard extends ChangeNotifier {
 		imageboard: this,
 		item: item
 	);
+
+	@override
+	String toString() => 'Imageboard($key)';
 }
 
 const _devImageboardKey = 'devsite';
@@ -726,4 +729,7 @@ class ImageboardScoped<T> {
 		(other.item == item);
 	@override
 	int get hashCode => Object.hash(imageboard, item);
+
+	@override
+	String toString() => 'ImageboardScoped(${imageboard.key}, $item)';
 }

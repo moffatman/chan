@@ -7,6 +7,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/pages/history_search.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
@@ -64,17 +65,19 @@ class _PostThreadCombo {
 
 class SavedPage extends StatefulWidget {
 	final bool isActive;
-	final GlobalKey<MultiMasterDetailPageState>? masterDetailKey;
+	final GlobalKey<MultiMasterDetailPageState> masterDetailKey;
 
 	const SavedPage({
 		required this.isActive,
-		this.masterDetailKey,
+		required this.masterDetailKey,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	createState() => _SavedPageState();
 }
+
+const _yourPostsChunkSize = 25;
 
 class _SavedPageState extends State<SavedPage> {
 	late final RefreshableListController<ImageboardScoped<ThreadWatch>> _watchedListController;
@@ -89,6 +92,10 @@ class _SavedPageState extends State<SavedPage> {
 	late final ScrollController _savedAttachmentsController;
 	late final EasyListenable _removeArchivedHack;
 	List<ImageboardScoped<SavedAttachment>> _savedAttachments = [];
+	/// for optimization and pagination of loading your posts
+	Map<(Imageboard, String), List<PostIdentifier>> _yourPostsLists = {};
+	List<_PostThreadCombo> _yourPostsMissingThreads = [];
+	late final ValueNotifier<_PostThreadCombo?> _yourPostsValueInjector;
 
 	@override
 	void initState() {
@@ -99,6 +106,7 @@ class _SavedPageState extends State<SavedPage> {
 		_yourPostsListController = RefreshableListController();
 		_savedAttachmentsController = ScrollController();
 		_removeArchivedHack = EasyListenable();
+		_yourPostsValueInjector = ValueNotifier(null);
 	}
 
 	@override
@@ -119,6 +127,43 @@ class _SavedPageState extends State<SavedPage> {
 				child: Text(message)
 			)
 		);
+	}
+
+	void _onYourPostsHistorySearch(String query) {
+		widget.masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
+			builder: (context) => ValueListenableBuilder(
+				valueListenable: _yourPostsValueInjector,
+				builder: (context, _PostThreadCombo? selectedResult, child) {
+					final post = selectedResult?.post?.identifier;
+					return HistorySearchPage(
+						query: query,
+						initialYourPostsOnly: true,
+						selectedResult: post == null ? null : selectedResult?.imageboard.scope(post),
+						onResultSelected: (result) async {
+							if (result == null) {
+								widget.masterDetailKey.currentState!.setValue(2, null);
+								return;
+							}
+							final threadState = result.imageboard.persistence.getThreadStateIfExists(result.item.thread);
+							if (threadState == null) {
+								return;
+							}
+							await threadState.ensureThreadLoaded();
+							final post = threadState.thread?.posts.tryFirstWhere((p) => p.id == result.item.postId);
+							if (post == null) {
+								return;
+							}
+							widget.masterDetailKey.currentState!.setValue(2, _PostThreadCombo(
+								imageboard: result.imageboard,
+								threadState: threadState,
+								post: post
+							));
+						}
+					);
+				}
+			),
+			settings: dontAutoPopSettings
+		));
 	}
 
 	@override
@@ -542,6 +587,56 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
+						Future<_PostThreadCombo?> takePost() async {
+							final heads = <(Imageboard, PostIdentifier, DateTime)>[];
+							for (final entry in _yourPostsLists.entries) {
+								if (entry.value.isEmpty) {
+									continue;
+								}
+								final last = entry.value.last;
+								final state = entry.key.$1.persistence.getThreadState(last.thread);
+								final receiptTime = state.receipts.tryFirstWhere((r) => r.id == last.postId)?.time;
+								if (receiptTime != null) {
+									// Easiest situation - date is recorded on receipt
+									heads.add((entry.key.$1, last, receiptTime));
+									continue;
+								}
+								// Have to load thread from disk
+								await state.ensureThreadLoaded();
+								final thread = state.thread;
+								if (thread == null) {
+									continue;
+								}
+								final post = thread.posts_.tryFirstWhere((p) => p.id == last.postId);
+								if (post == null) {
+									// Weird situation... just skip it
+									continue;
+								}
+								heads.add((entry.key.$1, last, post.time));
+							}
+							(Imageboard, PostIdentifier, DateTime)? latestHead;
+							for (final head in heads) {
+								if (latestHead == null || head.$3.isAfter(latestHead.$3)) {
+									latestHead = head;
+								}
+							}
+							final ret = latestHead;
+							if (ret == null) {
+								// No more entries
+								return null;
+							}
+							final threadState = ret.$1.persistence.getThreadState(ret.$2.thread);
+							final l = _yourPostsLists[(ret.$1, ret.$2.board)];
+							if (l != null && l.isNotEmpty) {
+								// This should always be non-null and non-empty. But just avoid crash.
+								l.removeLast();
+							}
+							return _PostThreadCombo(
+								imageboard: ret.$1,
+								post: threadState.thread?.posts.tryFirstWhere((p) => p.id == ret.$2.postId),
+								threadState: threadState
+							);
+						}
 						return RefreshableList<_PostThreadCombo>(
 							header: AnimatedBuilder(
 								animation: _yourPostsListController,
@@ -566,36 +661,59 @@ class _SavedPageState extends State<SavedPage> {
 							filterableAdapter: (t) => t.post ?? EmptyFilterable(t.threadState.id),
 							controller: _yourPostsListController,
 							listUpdater: () async {
-								final states = Persistence.sharedThreadStateBox.values.where((v) {
-									return v.imageboard != null;
-								}).map((v) => v.imageboard!.scope(v)).where((i) => i.item.youIds.isNotEmpty).toList();
-								await Future.wait(states.map((s) => s.item.ensureThreadLoaded()));
-								final replies = <_PostThreadCombo>[];
-								for (final s in states) {
-									if (s.item.thread != null) {
-										for (final id in s.item.youIds) {
-											final reply = s.item.thread!.posts.tryFirstWhere((p) => p.id == id);
-											if (reply != null) {
-												replies.add(_PostThreadCombo(
-													imageboard: s.imageboard,
-													post: reply,
-													threadState: s.item
-												));
-											}
-										}
+								_yourPostsLists = {};
+								_yourPostsMissingThreads = [];
+								for (final state in Persistence.sharedThreadStateBox.values) {
+									final imageboard = state.imageboard;
+									if (imageboard == null || state.youIds.isEmpty) {
+										continue;
 									}
-									else {
-										replies.add(_PostThreadCombo(
-											imageboard: s.imageboard,
-											post: null,
-											threadState: s.item
+									if (!state.isThreadCached) {
+										_yourPostsMissingThreads.add(_PostThreadCombo(
+											imageboard: imageboard,
+											threadState: state,
+											post: null
 										));
+										continue;
+									}
+									final l = _yourPostsLists.putIfAbsent((imageboard, state.board), () => []);
+									for (final id in state.youIds) {
+										l.add(PostIdentifier(state.board, state.id, id));
 									}
 								}
-								return replies;
+								for (final list in _yourPostsLists.values) {
+									list.sort((a, b) => a.postId.compareTo(b.postId));
+								}
+								// First chunk should include all with missing threads
+								final ret = _yourPostsMissingThreads.toList();
+								for (int i = 0; i < _yourPostsChunkSize; i++) {
+									final p = await takePost();
+									if (p == null) {
+										break;
+									}
+									ret.add(p);
+								}
+								return ret;
+							},
+							listExtender: (_) async {
+								final ret = <_PostThreadCombo>[];
+								for (int i = 0; i < _yourPostsChunkSize; i++) {
+									final p = await takePost();
+									if (p == null) {
+										break;
+									}
+									ret.add(p);
+								}
+								return ret;
 							},
 							key: _yourPostsListKey,
 							id: 'yourPosts',
+							filterHint: 'Search your posts...',
+							filterAlternative: FilterAlternative(
+								name: 'full history',
+								suggestWhenFilterEmpty: true,
+								handler: _onYourPostsHistorySearch
+							),
 							updateAnimation: threadStateBoxesAnimation,
 							minUpdateDuration: Duration.zero,
 							sortMethods: [(a, b) => (b.post?.time ?? b.threadState.lastOpenedTime).compareTo(a.post?.time ?? a.threadState.lastOpenedTime)],
@@ -643,17 +761,22 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						);
 					},
-					detailBuilder: (selected, setter, poppedOut) => BuiltDetailPane(
-						widget: selected == null ? _placeholder('Select a post') : ImageboardScope(
-							imageboardKey: selected.imageboard.key,
-							child: ThreadPage(
-								thread: selected.threadState.identifier,
-								initialPostId: selected.post?.id,
-								boardSemanticId: -8
-							)
-						),
-						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
-					)
+					detailBuilder: (selected, setter, poppedOut) {
+						WidgetsBinding.instance.addPostFrameCallback((_){
+							_yourPostsValueInjector.value = selected;
+						});
+						return BuiltDetailPane(
+							widget: selected == null ? _placeholder('Select a post') : ImageboardScope(
+								imageboardKey: selected.imageboard.key,
+								child: ThreadPage(
+									thread: selected.threadState.identifier,
+									initialPostId: selected.post?.id,
+									boardSemanticId: -8
+								)
+							),
+							pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
+						);
+					}
 				),
 				MultiMasterPane<ImageboardScoped<SavedPost>>(
 					navigationBar: AdaptiveBar(
@@ -959,7 +1082,7 @@ class _SavedPageState extends State<SavedPage> {
 									},
 									onChange: (a) {
 										final originalL = _savedAttachments.tryFirstWhere((l) => l.item.attachment == a.attachment);
-										widget.masterDetailKey?.currentState?.setValue(4, originalL, updateDetailPane: false);
+										widget.masterDetailKey.currentState?.setValue(4, originalL, updateDetailPane: false);
 									},
 									allowScroll: true,
 									allowPop: poppedOut,
@@ -1057,6 +1180,7 @@ class _SavedPageState extends State<SavedPage> {
 		_postListController.dispose();
 		_savedAttachmentsController.dispose();
 		_removeArchivedHack.dispose();
+		_yourPostsValueInjector.dispose();
 	}
 }
 

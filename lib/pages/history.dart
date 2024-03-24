@@ -76,10 +76,6 @@ class HistoryPageState extends State<HistoryPage> {
 			paneCreator: () => [
 				MultiMasterPane<ImageboardScoped<PostIdentifier>>(
 					masterBuilder: (context, selectedThread, threadSetter) {
-						final v = context.watch<MasterDetailHint>().currentValue;
-						WidgetsBinding.instance.addPostFrameCallback((_){
-							_valueInjector.value = v;
-						});
 						List<PersistentThreadState> states = [];
 						final settings = context.watch<Settings>();
 						return AdaptiveScaffold(
@@ -329,6 +325,9 @@ class HistoryPageState extends State<HistoryPage> {
 						);
 					},
 					detailBuilder: (selectedThread, setter, poppedOut) {
+						WidgetsBinding.instance.addPostFrameCallback((_){
+							_valueInjector.value = selectedThread;
+						});
 						return BuiltDetailPane(
 							widget: selectedThread != null ? ImageboardScope(
 								imageboardKey: selectedThread.imageboard.key,
