@@ -379,7 +379,11 @@ class _ImportLogConflictWidgetState<Ancestor extends HiveObjectMixin, T> extends
 						const Icon(CupertinoIcons.doc, size: 14),
 						const SizedBox(width: 4),
 						Expanded(
-							child: Text('${widget.conflict.filename} -> ${widget.conflict.conflict.path}', style: const TextStyle(fontSize: 14), textAlign: TextAlign.left)
+							child: Text([
+								widget.conflict.filename,
+								if (widget.conflict.key != null) widget.conflict.key!,
+								widget.conflict.conflict.path
+							].join(' -> '), style: const TextStyle(fontSize: 14), textAlign: TextAlign.left)
 						)
 					]
 				),

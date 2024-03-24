@@ -112,6 +112,7 @@ sealed class ImportLog {
 }
 
 class ImportLogConflict<Ancestor extends HiveObjectMixin, T> extends ImportLog {
+	final String? key;
 	final MergeConflict<Ancestor, T> conflict;
 	final Ancestor yours;
 	final Ancestor theirs;
@@ -119,13 +120,14 @@ class ImportLogConflict<Ancestor extends HiveObjectMixin, T> extends ImportLog {
 	const ImportLogConflict({
 		required super.type,
 		required super.filename,
+		required this.key,
 		required this.conflict,
 		required this.yours,
 		required this.theirs
 	});
 
 	@override
-	String toString() => 'ImportLogConflict(type: $type, filename: $filename, conflict: ${conflict.path}, yours: ${conflict.get(yours)}, theirs: ${conflict.get(theirs)})';
+	String toString() => 'ImportLogConflict(type: $type, filename: $filename, key: $key, conflict: ${conflict.path}, yours: ${conflict.get(yours)}, theirs: ${conflict.get(theirs)})';
 }
 
 class ImportLogFailure extends ImportLog {
@@ -202,6 +204,7 @@ Future<List<ImportLog>> import(File archive) async {
 				log.add(ImportLogConflict(
 					type: type,
 					filename: '$name.hive',
+					key: null,
 					conflict: conflict,
 					yours: yours,
 					theirs: theirs
@@ -277,6 +280,7 @@ Future<List<ImportLog>> import(File archive) async {
 					log.add(ImportLogConflict(
 						type: type,
 						filename: '${yourBox.name}.hive',
+						key: key,
 						conflict: conflict,
 						yours: yours,
 						theirs: theirs
@@ -339,6 +343,7 @@ Future<List<ImportLog>> import(File archive) async {
 					log.add(ImportLogConflict(
 						type: type,
 						filename: '${yourBox.name}.hive',
+						key: key,
 						conflict: conflict,
 						yours: yours,
 						theirs: theirs
