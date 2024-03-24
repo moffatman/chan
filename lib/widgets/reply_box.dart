@@ -240,7 +240,6 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	void _onTextChanged() async {
 		_didUpdateDraft();
-		if (mounted) setState(() {});
 		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier()]).tryMapOnce<String>((element) {
 			if (element is UrlElement) {
 				final path = Uri.parse(element.url).path;
@@ -281,10 +280,12 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		if (rawUrl == null) {
 			// Nothing at all in the text
-			setState(() {
-				_proposedAttachmentUrl = null;
-				_lastFoundUrl = null;
-			});
+			_lastFoundUrl = null;
+			if (_proposedAttachmentUrl != null && mounted) {
+				setState(() {
+					_proposedAttachmentUrl = null;
+				});
+			}
 		}
 	}
 
@@ -1331,7 +1332,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 
 	Widget _buildTextField(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
-		final snippets = context.read<ImageboardSite>().getBoardSnippets(widget.board);
+		final site = context.watch<ImageboardSite>();
+		final subjectCharacterLimit = site.subjectCharacterLimit;
+		final snippets = site.getBoardSnippets(widget.board);
+		const infiniteLimit = 1 << 50;
 		final settings = context.watch<Settings>();
 		return CallbackShortcuts(
 			bindings: {
@@ -1369,92 +1373,129 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							),
 							const SizedBox(height: 8),
 						],
-						Flexible(
-							child: Stack(
-								children: [
-									AdaptiveTextField(
-										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-										smartDashesType: SmartDashesType.disabled,
-										smartQuotesType: SmartQuotesType.disabled,
-										controller: _textFieldController,
-										autofocus: widget.fullyExpanded,
-										contentInsertionConfiguration: ContentInsertionConfiguration(
-											onContentInserted: (content) async {
-												final data = content.data;
-												if (data == null) {
-													return;
-												}
-												if (data.isEmpty) {
-													return;
-												}
-												String filename = Uri.parse(content.uri).pathSegments.last;
-												if (!filename.contains('.')) {
-													filename += '.${content.mimeType.split('/').last}';
-												}
-												final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
-												await f.create(recursive: true);
-												await f.writeAsBytes(data, flush: true);
-												setAttachment(f);
-											}
-										),
-										spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
-										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
-											anchors: editableTextState.contextMenuAnchors,
-											buttonItems: [
-												...editableTextState.contextMenuButtonItems.map((item) {
-													if (item.type == ContextMenuButtonType.paste) {
-														return item.copyWith(
-															onPressed: () {
-																item.onPressed?.call();
-																_handleImagePaste(manual: false);
-															}
-														);
-													}
-													return item;
-												}),
-												ContextMenuButtonItem(
-													onPressed: _handleImagePaste,
-													label: 'Paste image'
-												),
-												if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
-													return ContextMenuButtonItem(
-														onPressed: () {
-															final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
-															editableTextState.userUpdateTextEditingValue(
-																editableTextState.textEditingValue.replaced(
-																	editableTextState.textEditingValue.selection,
-																	snippet.wrap(selectedText)
-																),
-																SelectionChangedCause.toolbar
-															);
-														},
-														label: snippet.name
-													);
-												})
-											]
-										),
-										placeholder: 'Comment',
-										maxLines: null,
-										minLines: 100,
-										focusNode: _textFocusNode,
-										textCapitalization: TextCapitalization.sentences,
-										keyboardAppearance: ChanceTheme.brightnessOf(context),
-									),
-									if (board.maxCommentCharacters != null && ((_textFieldController.text.length / board.maxCommentCharacters!) > 0.5)) IgnorePointer(
-										child: Align(
-											alignment: Alignment.bottomRight,
-											child: Container(
-												padding: const EdgeInsets.only(bottom: 4, right: 8),
-												child: Text(
-													'${_textFieldController.text.length} / ${board.maxCommentCharacters}',
-													style: TextStyle(
-														color: (_textFieldController.text.length > board.maxCommentCharacters!) ? Colors.red : Colors.grey
-													)
-												)
+						if (subjectCharacterLimit != null || board.maxCommentCharacters != null) AnimatedBuilder(
+							animation: Listenable.merge([
+								_textFieldController,
+								_subjectFieldController
+							]),
+							builder: (context, _) {
+								final greyColor = ChanceTheme.primaryColorWithBrightness50Of(context);
+								final subjectLimit = subjectCharacterLimit ?? infiniteLimit;
+								final subjectLength = _subjectFieldController.text.length;
+								final showSubjectLimit = subjectLength > (subjectLimit * 0.5);
+								final subjectLimitColor = subjectLength > subjectLimit ? Colors.red : greyColor;
+								final textLimit = board.maxCommentCharacters ?? infiniteLimit;
+								final textLength = _textFieldController.text.length;
+								final showTextLimit = textLength > (textLimit * 0.5);
+								final textLimitColor = textLength > textLimit ? Colors.red : greyColor;
+								return IgnorePointer(
+									child: AnimatedSize(
+										alignment: Alignment.topCenter,
+										duration: const Duration(milliseconds: 250),
+										curve: Curves.ease,
+										child: (showSubjectLimit || showTextLimit) ? Padding(
+											padding: const EdgeInsets.only(bottom: 8),
+											child: Row(
+												mainAxisAlignment: MainAxisAlignment.end,
+												children: [
+													if (showSubjectLimit) ...[
+														Icon(CupertinoIcons.arrow_up, size: 16, color: subjectLimitColor),
+														const SizedBox(width: 4),
+														Text(
+															'$subjectLength / $subjectLimit',
+															style: TextStyle(
+																color: subjectLimitColor,
+																fontFeatures: const [FontFeature.tabularFigures()]
+															)
+														),
+													],
+													if (showTextLimit) ...[
+														const SizedBox(width: 4),
+														Icon(CupertinoIcons.arrow_down, size: 16, color: textLimitColor),
+														const SizedBox(width: 4),
+														Text(
+															'$textLength / $textLimit',
+															style: TextStyle(
+																color: textLimitColor,
+																fontFeatures: const [FontFeature.tabularFigures()]
+															)
+														)
+													]
+												]
 											)
-										)
+										) : const SizedBox(width: double.infinity)
 									)
-								]
+								);
+							}
+						),
+						Flexible(
+							child: AdaptiveTextField(
+								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+								smartDashesType: SmartDashesType.disabled,
+								smartQuotesType: SmartQuotesType.disabled,
+								controller: _textFieldController,
+								autofocus: widget.fullyExpanded,
+								contentInsertionConfiguration: ContentInsertionConfiguration(
+									onContentInserted: (content) async {
+										final data = content.data;
+										if (data == null) {
+											return;
+										}
+										if (data.isEmpty) {
+											return;
+										}
+										String filename = Uri.parse(content.uri).pathSegments.last;
+										if (!filename.contains('.')) {
+											filename += '.${content.mimeType.split('/').last}';
+										}
+										final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
+										await f.create(recursive: true);
+										await f.writeAsBytes(data, flush: true);
+										setAttachment(f);
+									}
+								),
+								spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
+								contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
+									anchors: editableTextState.contextMenuAnchors,
+									buttonItems: [
+										...editableTextState.contextMenuButtonItems.map((item) {
+											if (item.type == ContextMenuButtonType.paste) {
+												return item.copyWith(
+													onPressed: () {
+														item.onPressed?.call();
+														_handleImagePaste(manual: false);
+													}
+												);
+											}
+											return item;
+										}),
+										ContextMenuButtonItem(
+											onPressed: _handleImagePaste,
+											label: 'Paste image'
+										),
+										if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
+											return ContextMenuButtonItem(
+												onPressed: () {
+													final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
+													editableTextState.userUpdateTextEditingValue(
+														editableTextState.textEditingValue.replaced(
+															editableTextState.textEditingValue.selection,
+															snippet.wrap(selectedText)
+														),
+														SelectionChangedCause.toolbar
+													);
+												},
+												label: snippet.name
+											);
+										})
+									]
+								),
+								placeholder: 'Comment',
+								maxLines: null,
+								minLines: 100,
+								focusNode: _textFocusNode,
+								textCapitalization: TextCapitalization.sentences,
+								keyboardAppearance: ChanceTheme.brightnessOf(context),
 							)
 						)
 					]

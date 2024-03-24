@@ -1403,6 +1403,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		ImageboardAction.postThread => ImageboardAction.postThread,
 		ImageboardAction.report => ImageboardAction.report
 	};
+	int? get subjectCharacterLimit => null;
 }
 
 abstract class ImageboardSiteLoginSystem {
@@ -1505,6 +1506,7 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == '4chan') {
 		final captchaTicketLifetime = data['captchaTicketLifetime'] as int?;
+		final reportCooldown = data ['reportCooldown'] as int?;
 		return Site4Chan(
 			name: data['name'],
 			imageUrl: data['imageUrl'],
@@ -1517,6 +1519,11 @@ ImageboardSite makeSite(dynamic data) {
 			possibleCaptchaLetterCounts: (data['possibleCaptchaLetterCounts'] as List?)?.cast<int>() ?? [],
 			postingHeaders: (data['postingHeaders'] as Map?)?.cast<String, String>() ?? {},
 			captchaTicketLifetime: captchaTicketLifetime == null ? null : Duration(seconds: captchaTicketLifetime),
+			reportCooldown: Duration(seconds: reportCooldown ?? 20),
+			spamFilterCaptchaDelayGreen: Duration(milliseconds: data['spamFilterCaptchaDelayGreen'] ?? 1000),
+			spamFilterCaptchaDelayYellow: Duration(milliseconds: data['spamFilterCaptchaDelayYellow'] ?? 5000),
+			spamFilterCaptchaDelayRed: Duration(milliseconds: data['spamFilterCaptchaDelayRed'] ?? 12000),
+			subjectCharacterLimit: data['subjectCharacterLimit'],
 			platformUserAgents: platformUserAgents,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
 			searchUrl: data['searchUrl'] ?? '',

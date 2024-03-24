@@ -137,7 +137,12 @@ class Site4Chan extends ImageboardSite {
 	final Map<String, String> postingHeaders;
 	final Duration? captchaTicketLifetime;
 	Timer? _captchaTicketTimer;
-	final Duration reportCooldown = const Duration(seconds: 20);
+	final Duration reportCooldown;
+	@override
+	final int? subjectCharacterLimit;
+	final Duration spamFilterCaptchaDelayGreen;
+	final Duration spamFilterCaptchaDelayYellow;
+	final Duration spamFilterCaptchaDelayRed;
 	final Map<String, Map<String, String>> boardFlags;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
@@ -1092,7 +1097,12 @@ class Site4Chan extends ImageboardSite {
 		required this.boardFlags,
 		required this.possibleCaptchaLetterCounts,
 		required this.postingHeaders,
-		required this.captchaTicketLifetime
+		required this.captchaTicketLifetime,
+		required this.reportCooldown,
+		required this.subjectCharacterLimit,
+		required this.spamFilterCaptchaDelayGreen,
+		required this.spamFilterCaptchaDelayYellow,
+		required this.spamFilterCaptchaDelayRed,
 	});
 
 
@@ -1358,22 +1368,32 @@ class Site4Chan extends ImageboardSite {
 				return (a.time ?? nullTime).compareTo(b.time ?? nullTime);
 			});
 			// Sorted so newest receipt is last
+			Duration delay;
 			if (receipts.isEmpty) {
 				// Fresh IP
-				return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(1000) + 1000));
+				delay = spamFilterCaptchaDelayGreen;
 			}
 			else if (receipts.last.spamFiltered) {
 				// Last post was spam-filtered
-				return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(4000) + 12000));
+				delay = spamFilterCaptchaDelayRed;
 			}
 			else if (receipts.any((r) => r.spamFiltered) && captcha.ip != null) {
 				// Some previous post was spam-filtered
-				return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(4000) + 5000));
+				delay = spamFilterCaptchaDelayYellow;
 			}
 			else {
 				// Never spam-filtered
-				return captcha.acquiredAt.add(Duration(milliseconds: random.nextInt(1000) + 1000));
+				delay = spamFilterCaptchaDelayGreen;
 			}
+			if (delay > const Duration(seconds: 4)) {
+				// +[0-4]s
+				delay += Duration(milliseconds: random.nextInt(4000));
+			}
+			else {
+				// +[0-100]%
+				delay *= (1 + random.nextDouble());
+			}
+			return captcha.acquiredAt.add(delay);
 		}
 		return super.getCaptchaUsableTime(captcha);
 	}
