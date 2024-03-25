@@ -1116,7 +1116,7 @@ class Site4Chan extends ImageboardSite {
 	String get siteData => apiUrl;
 
 	BoardThreadOrPostIdentifier? _decodeUrl(String base, String url) {
-		final pattern = RegExp(r'https?:\/\/' + base.replaceAll('.', r'\.') + r'\/([^\/]+)\/(thread\/(\d+)(#p(\d+))?)?');
+		final pattern = RegExp(r'https?:\/\/' + base.replaceAll('.', r'\.') + r'\/([^\/]+)\/(thread\/(\d+)(\/?#[pq](\d+))?)?');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
 			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(3) ?? ''), int.tryParse(match.group(5) ?? ''));
