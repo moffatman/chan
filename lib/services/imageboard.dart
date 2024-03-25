@@ -487,7 +487,6 @@ class Imageboard extends ChangeNotifier {
 		final persistentState = persistence.getThreadState(thread);
 		persistentState.receipts = [...persistentState.receipts, receipt];
 		persistentState.didUpdateYourPosts();
-		await persistentState.save();
 		final settings = Settings.instance;
 		if (settings.watchThreadAutomaticallyWhenReplying) {
 			notifications.subscribeToThread(
@@ -502,8 +501,8 @@ class Imageboard extends ChangeNotifier {
 		}
 		if (settings.saveThreadAutomaticallyWhenReplying) {
 			persistentState.savedTime ??= DateTime.now();
-			runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 		}
+		await persistentState.save();
 		return receipt;
 	}
 
