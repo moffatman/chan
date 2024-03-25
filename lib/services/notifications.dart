@@ -6,6 +6,7 @@ import 'package:chan/main.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -326,6 +327,7 @@ class Notifications {
 
 	static Future<void> initializeStatic() async {
 		try {
+			_client.interceptors.add(LoggingInterceptor.instance);
 			staticError = null;
 			Settings.instance.filterListenable.addListener(_didUpdateFilter);
 			if (Platform.isAndroid) {
