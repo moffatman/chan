@@ -29,6 +29,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -103,13 +104,15 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _optionsFieldController;
 	late final TextEditingController _filenameController;
 	late final FocusNode _textFocusNode;
+	QueuedPost? _postingPost;
+	bool get loading => _postingPost != null;
 	(MediaScan, FileStat, Digest)? _attachmentScan;
 	File? attachment;
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
 	bool _showOptions = false;
-	bool get showOptions => _showOptions;
+	bool get showOptions => _showOptions && !loading;
 	bool _showAttachmentOptions = false;
-	bool get showAttachmentOptions => _showAttachmentOptions;
+	bool get showAttachmentOptions => _showAttachmentOptions && !loading;
 	bool _show = false;
 	bool get show => widget.fullyExpanded || (_show && !_willHideOnPanEnd);
 	String? _lastFoundUrl;
@@ -460,7 +463,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 		}
 		for (final draft in Outbox.instance.queuedPostsFor(context.read<Imageboard>().key, widget.board, widget.threadId)) {
-			if (!_submittingPosts.contains(draft)) {
+			if (!_submittingPosts.contains(draft) && draft != _postingPost) {
 				// This is some message restored from persistence.outbox (previous app launch)
 				_submittingPosts.add(draft);
 				_listenToReplyPosting(draft);
@@ -821,7 +824,22 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			beforeModal: hideReplyBox,
 			afterModal: showReplyBox
 		));
-		mediumHapticFeedback();
+		// Remember _disableLoginSystem, it will also be kept in the draft
+		if (!_disableLoginSystem) {
+			_showAttachmentOptions = false;
+		}
+		final oldPostingPost = _postingPost;
+		if (oldPostingPost != null) {
+			// This should never happen tbqh
+			_submittingPosts.add(oldPostingPost);
+		}
+		_postingPost = entry;
+		// This needs to happen last so it doesn't eagerly assume this is an undeletion
+		_listenToReplyPosting(entry);
+		setState(() {});
+	}
+
+	void _reset() {
 		_textFieldController.clear();
 		_nameFieldController.text = defaultName;
 		// Don't clear options field, it should be remembered
@@ -830,15 +848,32 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		attachment = null;
 		_attachmentScan = null;
 		_didUpdateDraft();
-		_rootFocusNode.unfocus();
-		// Remember _disableLoginSystem, it will also be kept in the draft
-		if (!_disableLoginSystem) {
-			_showAttachmentOptions = false;
+	}
+
+	void _postInBackground() {
+		final toMove = _postingPost;
+		if (toMove == null) {
+			return;
 		}
-		_submittingPosts.add(entry);
-		_listenToReplyPosting(entry);
-		_show = false;
-		setState(() {});
+		_submittingPosts.add(toMove);
+		_reset();
+		setState(() {
+			_postingPost = null;
+		});
+	}
+
+	/// Return the primary outgoing post to the reply box
+	void _cancel() {
+		final post = _postingPost;
+		if (post == null) {
+			return;
+		}
+		post.cancel();
+		post.delete();
+		setState(() {
+			_postingPost = null;
+		});
+		// The old contents should still be in the reply box.
 	}
 
 	void _listenToReplyPosting(QueuedPost post) {
@@ -860,7 +895,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				setState(() {});
 				return;
 			}
-			if (!_submittingPosts.contains(post)) {
+			if (!_submittingPosts.contains(post) && post != _postingPost) {
 				// Undelete
 				_submittingPosts.add(post);
 				setState(() {});
@@ -869,6 +904,16 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				post.removeListener(listener);
 				_submittingPosts.remove(post);
 				widget.onReplyPosted(state.result.receipt);
+				mediumHapticFeedback();
+				if (post == _postingPost) {
+					_reset();
+					_rootFocusNode.unfocus();
+					// Hide reply box
+					setState(() {
+						_show = false;
+						_postingPost = null;
+					});
+				}
 			}
 		}
 		post.addListener(listener);
@@ -1023,7 +1068,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											child: SizedBox(
 												height: settings.materialStyle ? 55 : 35,
 												child: AdaptiveTextField(
-													enabled: !settings.randomizeFilenames,
+													enabled: !settings.randomizeFilenames && !loading,
 													controller: _filenameController,
 													placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
 													maxLines: 1,
@@ -1220,6 +1265,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				children: [
 					Flexible(
 						child: AdaptiveTextField(
+							enabled: !loading,
 							maxLines: 1,
 							placeholder: 'Name',
 							keyboardAppearance: ChanceTheme.brightnessOf(context),
@@ -1261,6 +1307,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					const SizedBox(width: 8),
 					Flexible(
 						child: AdaptiveTextField(
+							enabled: !loading,
 							maxLines: 1,
 							placeholder: 'Options',
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
@@ -1361,6 +1408,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					children: [
 						if (widget.threadId == null) ...[
 							AdaptiveTextField(
+								enabled: !loading,
 								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 								smartDashesType: SmartDashesType.disabled,
 								smartQuotesType: SmartQuotesType.disabled,
@@ -1429,73 +1477,90 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							}
 						),
 						Flexible(
-							child: AdaptiveTextField(
-								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-								smartDashesType: SmartDashesType.disabled,
-								smartQuotesType: SmartQuotesType.disabled,
-								controller: _textFieldController,
-								autofocus: widget.fullyExpanded,
-								contentInsertionConfiguration: ContentInsertionConfiguration(
-									onContentInserted: (content) async {
-										final data = content.data;
-										if (data == null) {
-											return;
-										}
-										if (data.isEmpty) {
-											return;
-										}
-										String filename = Uri.parse(content.uri).pathSegments.last;
-										if (!filename.contains('.')) {
-											filename += '.${content.mimeType.split('/').last}';
-										}
-										final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
-										await f.create(recursive: true);
-										await f.writeAsBytes(data, flush: true);
-										setAttachment(f);
-									}
-								),
-								spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
-								contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
-									anchors: editableTextState.contextMenuAnchors,
-									buttonItems: [
-										...editableTextState.contextMenuButtonItems.map((item) {
-											if (item.type == ContextMenuButtonType.paste) {
-												return item.copyWith(
-													onPressed: () {
-														item.onPressed?.call();
-														_handleImagePaste(manual: false);
-													}
-												);
+							child: Stack(
+								alignment: Alignment.center,
+								children: [
+									AdaptiveTextField(
+										enabled: !loading,
+										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+										smartDashesType: SmartDashesType.disabled,
+										smartQuotesType: SmartQuotesType.disabled,
+										controller: _textFieldController,
+										autofocus: widget.fullyExpanded,
+										contentInsertionConfiguration: ContentInsertionConfiguration(
+											onContentInserted: (content) async {
+												final data = content.data;
+												if (data == null) {
+													return;
+												}
+												if (data.isEmpty) {
+													return;
+												}
+												String filename = Uri.parse(content.uri).pathSegments.last;
+												if (!filename.contains('.')) {
+													filename += '.${content.mimeType.split('/').last}';
+												}
+												final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
+												await f.create(recursive: true);
+												await f.writeAsBytes(data, flush: true);
+												setAttachment(f);
 											}
-											return item;
-										}),
-										ContextMenuButtonItem(
-											onPressed: _handleImagePaste,
-											label: 'Paste image'
 										),
-										if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
-											return ContextMenuButtonItem(
-												onPressed: () {
-													final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
-													editableTextState.userUpdateTextEditingValue(
-														editableTextState.textEditingValue.replaced(
-															editableTextState.textEditingValue.selection,
-															snippet.wrap(selectedText)
-														),
-														SelectionChangedCause.toolbar
+										spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
+										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
+											anchors: editableTextState.contextMenuAnchors,
+											buttonItems: [
+												...editableTextState.contextMenuButtonItems.map((item) {
+													if (item.type == ContextMenuButtonType.paste) {
+														return item.copyWith(
+															onPressed: () {
+																item.onPressed?.call();
+																_handleImagePaste(manual: false);
+															}
+														);
+													}
+													return item;
+												}),
+												ContextMenuButtonItem(
+													onPressed: _handleImagePaste,
+													label: 'Paste image'
+												),
+												if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
+													return ContextMenuButtonItem(
+														onPressed: () {
+															final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
+															editableTextState.userUpdateTextEditingValue(
+																editableTextState.textEditingValue.replaced(
+																	editableTextState.textEditingValue.selection,
+																	snippet.wrap(selectedText)
+																),
+																SelectionChangedCause.toolbar
+															);
+														},
+														label: snippet.name
 													);
-												},
-												label: snippet.name
-											);
-										})
-									]
-								),
-								placeholder: 'Comment',
-								maxLines: null,
-								minLines: 100,
-								focusNode: _textFocusNode,
-								textCapitalization: TextCapitalization.sentences,
-								keyboardAppearance: ChanceTheme.brightnessOf(context),
+												})
+											]
+										),
+										placeholder: 'Comment',
+										maxLines: null,
+										minLines: 100,
+										focusNode: _textFocusNode,
+										textCapitalization: TextCapitalization.sentences,
+										keyboardAppearance: ChanceTheme.brightnessOf(context),
+									),
+									if (loading) AdaptiveButton(
+										onPressed: _postInBackground,
+										child: const Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												Icon(CupertinoIcons.tray_arrow_up),
+												SizedBox(width: 8),
+												Text('Post in background...')
+											]
+										)
+									)
+								]
 							)
 						)
 					]
@@ -1758,8 +1823,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						);
 					},
 					child: AdaptiveIconButton(
-						onPressed: _attachmentProgress != null ? null : _submit,
-						icon: const Icon(CupertinoIcons.paperplane)
+						onPressed: _attachmentProgress != null ? null : (loading ? _cancel : _submit),
+						icon: Icon(loading ? CupertinoIcons.xmark : CupertinoIcons.paperplane)
 					)
 				)
 			]
@@ -1787,6 +1852,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		// Save current contents
 		final old = _makeDraft();
 		old.name = _nameFieldController.text;
+		// Needed to make equality work
+		old.useLoginSystem = entry.useLoginSystem;
 		// Apply the new draft
 		draft = entry.post;
 		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty) {
@@ -1797,7 +1864,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			entry.delete();
 		}
 		// Add the old content as a draft to the outbox, if non-trivial
-		if (_isNonTrivial(old)) {
+		if (_isNonTrivial(old) && old != entry.post) {
 			Outbox.instance.submitPost(context.read<Imageboard>().key, old, const QueueStateIdle());
 		}
 		setState(() {});
@@ -1818,40 +1885,99 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							child: AnimatedBuilder(
 								animation: Outbox.instance,
 								builder: (context, _) {
-									final activeCount = Outbox.instance.activeCount;
-									if (_submittingPosts.length >= activeCount || !show) {
-										return const SizedBox(width: double.infinity);
-									}
-									return Container(
-										width: double.infinity,
-										decoration: BoxDecoration(
-											border: Border(
-												top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))
+									final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)] as OutboxQueue<PostResult>?;
+									Widget build(BuildContext context) {
+										final ourCount = _submittingPosts.length + (_postingPost != null ? 1 : 0);
+										final activeCount = Outbox.instance.activeCount;
+										final othersCount = queue?.list.where((e) => !e.state.isIdle && (e as QueuedPost).post.thread != thread).length ?? 0;
+										final DateTime time;
+										final now = DateTime.now();
+										if (queue != null && queue.captchaAllowedTime.isAfter(now)) {
+											time = queue.captchaAllowedTime;
+										}
+										else if (queue != null && queue.allowedTime.isAfter(now)) {
+											time = queue.allowedTime;
+										}
+										else {
+											time = now;
+										}
+										final shouldShow =
+											// There are outbox things in other threads
+											(activeCount > ourCount) ||
+											// There is a cooldown and nothing else is showing it
+											(time != now && _submittingPosts.isEmpty);
+										if (!(show && shouldShow)) {
+											return const SizedBox(width: double.infinity);
+										}
+										return Container(
+											width: double.infinity,
+											decoration: BoxDecoration(
+												border: Border(
+													top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))
+												),
+												color: ChanceTheme.barColorOf(context)
 											),
-											color: ChanceTheme.barColorOf(context)
-										),
-										child: AdaptiveButton(
-											onPressed: () async {
-												final selected = await showOutboxModalForThread(
-													context: context,
-													imageboardKey: context.read<Imageboard?>()?.key,
-													board: widget.board,
-													threadId: widget.threadId,
-													canPopWithDraft: true
-												);
-												if (selected != null) {
-													_onDraftTap(selected.post, selected.deleteOriginal);
-												}
-											},
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													const Icon(CupertinoIcons.tray_arrow_up, size: 18),
-													const SizedBox(width: 8),
-													Text(describeCount(activeCount - _submittingPosts.length, 'reply in outbox', plural: 'replies in outbox'))
-												]
+											child: AdaptiveButton(
+												onPressed: () async {
+													final selected = await showOutboxModalForThread(
+														context: context,
+														imageboardKey: context.read<Imageboard?>()?.key,
+														board: widget.board,
+														threadId: widget.threadId,
+														canPopWithDraft: true
+													);
+													if (selected != null) {
+														_onDraftTap(selected.post, selected.deleteOriginal);
+													}
+												},
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														if (time != now) TimedRebuilder<String?>(
+															interval: const Duration(seconds: 1),
+															function: () {
+																final delta = time.difference(DateTime.now());
+																if (delta.isNegative) {
+																	return null;
+																}
+																return formatDuration(delta);
+															},
+															builder: (context, str) {
+																if (str == null) {
+																	return const SizedBox.shrink();
+																}
+																return Row(
+																	children: [
+																		const Icon(CupertinoIcons.clock, size: 18),
+																		const SizedBox(width: 8),
+																		Text(str, style: const TextStyle(
+																			fontFeatures: [FontFeature.tabularFigures()]
+																		))
+																	]
+																);
+															}
+														),
+														if (activeCount > ourCount) ...[
+															const Icon(CupertinoIcons.tray_arrow_up, size: 18),
+															const SizedBox(width: 8),
+															Text(
+																[
+																	describeCount(activeCount - ourCount, 'reply in outbox', plural: 'replies in outbox'),
+																	if (othersCount > 0) '($othersCount queued on ${context.watch<ImageboardSite>().formatBoardName(widget.board)})'
+																].join(' ')
+															)
+														]
+													]
+												)
 											)
-										)
+										);
+									}
+									if (queue == null) {
+										return build(context);
+									}
+									return AnimatedBuilder(
+										animation: queue,
+										builder: (context, _) => build(context)
 									);
 								}
 							)
@@ -2013,7 +2139,20 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								Flexible(
 									child: Container(
 										color: ChanceTheme.backgroundColorOf(context),
-										child: _buildTextField(context)
+										child: Stack(
+											children: [
+												_buildTextField(context),
+												if (loading) Positioned.fill(
+													child: Container(
+														alignment: Alignment.bottomCenter,
+														child: LinearProgressIndicator(
+															valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+															backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
+														)
+													)
+												)
+											]
+										)
 									)
 								)
 							]

@@ -332,8 +332,11 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				catch (e, st) {
 					print(e);
 					print(st);
-					_state = QueueStateFailed(e, st, captchaSolution: captchaSolution);
-					notifyListeners();
+					if (_state is! QueueStateDeleted<T>) {
+						// Don't revive due to exception from cancellation
+						_state = QueueStateFailed(e, st, captchaSolution: captchaSolution);
+						notifyListeners();
+					}
 				}
 			}
 		});
@@ -594,6 +597,12 @@ class Outbox extends ChangeNotifier {
 				queue.value.allowedTime = DateTime.now().add(queue.value.list[1]._cooldown);
 				// Retrigger wakeup immediately to look at next post for captcha purposes
 				nextWakeups.add(DateTime.now());
+			}
+			else {
+				// Just use current queue subitem type. It could be corrected if a different subtype is submitted
+				queue.value.allowedTime = DateTime.now().add(queue.value.list.first._cooldown);
+				// Mainly to notifyListeners() and freshen up widgets that show timer 
+				nextWakeups.add(queue.value.allowedTime);
 			}
 		}
 		if (nextWakeups.isNotEmpty) {
