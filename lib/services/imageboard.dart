@@ -429,6 +429,12 @@ class Imageboard extends ChangeNotifier {
 										}
 									),
 									AdaptiveDialogAction(
+										child: const Text('Clear cookies'),
+										onPressed: () {
+											Persistence.clearCookies(fromWifi: null);
+										}
+									),
+									AdaptiveDialogAction(
 										child: const Text('OK'),
 										onPressed: () {
 											Navigator.of(context).pop();

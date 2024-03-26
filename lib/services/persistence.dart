@@ -28,7 +28,8 @@ import 'package:chan/widgets/util.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart' as webview;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -1072,6 +1073,34 @@ class Persistence extends ChangeNotifier {
 	static Future<void> removeRecentWebImageSearch(String query) async {
 		recentWebImageSearches.remove(query);
 		await settings.save();
+	}
+
+	static Future<void> clearCookies({required bool? fromWifi}) async {
+		final icon = switch (fromWifi ?? Settings.instance.isConnectedToWifi) {
+			true => CupertinoIcons.wifi,
+			false => CupertinoIcons.antenna_radiowaves_left_right
+		};
+		try {
+			await ImageboardRegistry.instance.clearAllPseudoCookies();
+			await webview.CookieManager.instance().deleteAllCookies();
+			await (switch (fromWifi) {
+				true => Persistence.wifiCookies,
+				null => Persistence.currentCookies,
+				false => Persistence.cellularCookies
+			}).deleteAll();
+			showToast(
+				context: ImageboardRegistry.instance.context!,
+				icon: icon,
+				message: 'Cleared cookies'
+			);
+		}
+		on PathNotFoundException {
+			showToast(
+				context: ImageboardRegistry.instance.context!,
+				icon: icon,
+				message: 'Cookies already cleared'
+			);
+		}
 	}
 
 	@override

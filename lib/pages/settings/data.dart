@@ -17,7 +17,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
@@ -599,18 +598,14 @@ final dataSettings = [
 		description: 'Clear Wi-Fi cookies',
 		icon: CupertinoIcons.wifi,
 		onPressed: (context) {
-			CookieManager.instance().deleteAllCookies();
-			Persistence.wifiCookies.deleteAll();
-			ImageboardRegistry.instance.clearAllPseudoCookies();
+			Persistence.clearCookies(fromWifi: true);
 		}
 	),
 	SimpleButtonSettingWidget(
 		description: 'Clear cellular cookies',
 		icon: CupertinoIcons.antenna_radiowaves_left_right,
 		onPressed: (context) {
-			CookieManager.instance().deleteAllCookies();
-			Persistence.cellularCookies.deleteAll();
-			ImageboardRegistry.instance.clearAllPseudoCookies();
+			Persistence.clearCookies(fromWifi: false);
 		}
 	),
 	ImmutableButtonSettingWidget(
