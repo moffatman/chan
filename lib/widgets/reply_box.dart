@@ -1957,6 +1957,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																);
 															}
 														),
+														if (time != now && activeCount > ourCount) const SizedBox(width: 16),
 														if (activeCount > ourCount) ...[
 															const Icon(CupertinoIcons.tray_arrow_up, size: 18),
 															const SizedBox(width: 8),
