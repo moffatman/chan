@@ -732,6 +732,48 @@ class _ContextMenuRoute<T> extends PopupRoute<T> {
   final Rect _previousChildRect;
   double? _scale = 1.0;
   final GlobalKey _sheetGlobalKey = GlobalKey(debugLabel: '_ContextMenuRoute._sheetGlobalKey');
+  bool _dismissing = false;
+
+  @override
+  Widget buildModalBarrier() {
+    if (barrierColor.alpha != 0 && !offstage) {
+      final Animation<Color?> color = animation!.drive(
+        ColorTween(
+          begin: barrierColor.withOpacity(0.0),
+          end: barrierColor,
+        ).chain(CurveTween(curve: barrierCurve))
+      );
+      return Builder(
+        builder: (context) => AnimatedModalBarrier(
+          color: color,
+          dismissible: barrierDismissible,
+          semanticsLabel: barrierLabel,
+          onDismiss: () {
+            if (_dismissing) {
+              return;
+            }
+            _dismissing = true;
+            Navigator.of(context).maybePop();
+          },
+          barrierSemanticsDismissible: semanticsDismissible,
+        )
+      );
+    }
+    return Builder(
+      builder: (context) => ModalBarrier(
+        dismissible: barrierDismissible,
+        semanticsLabel: barrierLabel,
+        onDismiss: () {
+          if (_dismissing) {
+            return;
+          }
+          _dismissing = true;
+          Navigator.of(context).maybePop();
+        },
+        barrierSemanticsDismissible: semanticsDismissible,
+      )
+    );
+  }
 
   static final CurveTween _curve = CurveTween(
     curve: Curves.easeOutBack,
@@ -828,6 +870,10 @@ class _ContextMenuRoute<T> extends PopupRoute<T> {
   }
 
   void _onDismiss(BuildContext context, double scale, double opacity) {
+    if (_dismissing) {
+      return;
+    }
+    _dismissing = true;
     _scale = scale;
     _opacityTween.end = opacity;
     _sheetOpacity = _opacityTween.animate(CurvedAnimation(
