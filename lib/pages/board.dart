@@ -40,6 +40,7 @@ import 'package:flutter/cupertino.dart';
 
 import 'package:chan/models/thread.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -210,7 +211,7 @@ class BoardPageState extends State<BoardPage> {
 		_variant = widget.tab?.catalogVariant;
 		board = widget.initialBoard;
 		if (board == null) {
-			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
+			SchedulerBinding.instance.addPostFrameCallback((_) => _selectBoard());
 		}
 		ThreadIdentifier? selectedThread;
 		final hint = context.read<MasterDetailHint?>();
