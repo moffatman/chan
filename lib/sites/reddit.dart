@@ -396,7 +396,11 @@ class SiteReddit extends ImageboardSite {
 	);
 
 	Future<String> _getRedgifsToken() async {
-		final response = await client.getUri(Uri.https('api.redgifs.com', '/v2/auth/temporary'));
+		final response = await client.getUri(Uri.https('api.redgifs.com', '/v2/auth/temporary'), options: Options(
+			extra: {
+				kPriority: RequestPriority.cosmetic
+			}
+		));
 		return response.data['token'];
 	}
 
@@ -409,6 +413,9 @@ class SiteReddit extends ImageboardSite {
 				final response = await client.getUri(Uri.https('api.imgur.com', '/3/image/$hash'), options: Options(
 					headers: {
 						'Authorization': 'Client-ID 714791ea4513f83'
+					},
+					extra: {
+						kPriority: RequestPriority.cosmetic
 					}
 				));
 				final link = response.data['data']?['link'] as String?;
@@ -428,6 +435,9 @@ class SiteReddit extends ImageboardSite {
 				final response = await client.getUri(Uri.https('api.imgur.com', '/3/album/$hash/images'), options: Options(
 					headers: {
 						'Authorization': 'Client-ID 714791ea4513f83'
+					},
+					extra: {
+						kPriority: RequestPriority.cosmetic
 					}
 				));
 				final imageData = response.data['data'] as List<dynamic>?;
@@ -451,11 +461,18 @@ class SiteReddit extends ImageboardSite {
 					headers: {
 						'Authorization': '2_YQH1hg'
 					},
+					extra: {
+						kPriority: RequestPriority.cosmetic
+					},
 					validateStatus: (status) => (status != null) && ((status >= 200 && status < 300) || (status == 404))
 				));
 				if (response.statusCode == 404) {
 					// Sometimes gfycat redirects to redgifs
-					final redirectResponse = await client.head(url);
+					final redirectResponse = await client.head(url, options: Options(
+						extra: {
+							kPriority: RequestPriority.cosmetic
+						}
+					));
 					if (!redirectResponse.realUri.host.contains('gfycat')) {
 						return _resolveUrl(redirectResponse.realUri.toString());
 					}
@@ -489,6 +506,9 @@ class SiteReddit extends ImageboardSite {
 					response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
 						headers: {
 							'Authorization': 'Bearer $redGifsToken'
+						},
+						extra: {
+							kPriority: RequestPriority.cosmetic
 						}
 					));
 				}
@@ -500,6 +520,9 @@ class SiteReddit extends ImageboardSite {
 							response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
 								headers: {
 									'Authorization': 'Bearer $redGifsToken'
+								},
+								extra: {
+									kPriority: RequestPriority.cosmetic
 								}
 							));
 						}
