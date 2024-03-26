@@ -1155,6 +1155,7 @@ class ThreadPageState extends State<ThreadPage> {
 		if (autoUpdateDuration.inDays > 1) {
 			autoUpdateDuration = null;
 		}
+		final variant = persistentState.variant ?? persistentState.thread?.suggestedVariant;
 		return PopScope(
 			canPop: !(_replyBoxKey.currentState?.show ?? false),
 			onPopInvoked: (didPop) async {
@@ -1283,7 +1284,7 @@ class ThreadPageState extends State<ThreadPage> {
 									),
 									if (site.threadVariants.isNotEmpty) AdaptiveIconButton(
 										padding: EdgeInsets.zero,
-										icon: FittedBox(
+										icon: (variant != null && variant != site.threadVariants.tryFirst) ? FittedBox(
 											fit: BoxFit.contain,
 											child: SizedBox(
 												width: 40,
@@ -1292,7 +1293,7 @@ class ThreadPageState extends State<ThreadPage> {
 													children: [
 														Align(
 															alignment: Alignment.bottomRight,
-															child: Icon(persistentState.variant?.icon ?? persistentState.thread?.suggestedVariant?.icon ?? site.threadVariants.first.icon)
+															child: Icon(variant.icon)
 														),
 														const Align(
 															alignment: Alignment.topLeft,
@@ -1301,7 +1302,7 @@ class ThreadPageState extends State<ThreadPage> {
 													]
 												)
 											)
-										),
+										) : const Icon(CupertinoIcons.sort_down),
 										onPressed: () async {
 											final choice = await showAdaptiveModalPopup<ThreadVariant>(
 												useRootNavigator: false,
