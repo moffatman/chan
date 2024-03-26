@@ -271,44 +271,47 @@ class Imageboard extends ChangeNotifier {
 			if (solution is! Chan4CustomCaptchaSolution) {
 				return;
 			}
-			if (Settings.contributeCaptchasSetting.value == null && (random.nextDouble() > 0.25)) {
-				// 75% chance -> don't even ask
-				return;
+			if (Settings.contributeCaptchasSetting.value == null) {
+				if (random.nextDouble() > 0.25) {
+					// 75% chance -> don't even ask
+					return;
+				}
+				final showPopupCompleter = Completer<bool>();
+				showToast(
+					context: ImageboardRegistry.instance.context!,
+					message: 'Contribute captcha?',
+					icon: CupertinoIcons.group,
+					hapticFeedback: false,
+					easyButton: ('More info', () => showPopupCompleter.complete(true))
+				);
+				// Maybe there are a lot of queued toasts idk
+				if (!await showPopupCompleter.future.timeout(const Duration(seconds: 30), onTimeout: () => false)) {
+					// User didn't press 'More info'
+					return;
+				}
+				Settings.contributeCaptchasSetting.value ??= await showAdaptiveDialog<bool>(
+					context: ImageboardRegistry.instance.context!,
+					builder: (context) => AdaptiveAlertDialog(
+						title: const Text('Contribute captcha solutions?'),
+						content: const Text('The captcha images you solve will be collected to improve the automated solver'),
+						actions: [
+							AdaptiveDialogAction(
+								child: const Text('Contribute'),
+								onPressed: () {
+									Navigator.of(context).pop(true);
+								}
+							),
+							AdaptiveDialogAction(
+								child: const Text('No'),
+								onPressed: () {
+									Navigator.of(context).pop(false);
+								}
+							)
+						]
+					)
+				);
 			}
-			final showPopupCompleter = Completer<bool>();
-			showToast(
-				context: ImageboardRegistry.instance.context!,
-				message: 'Contribute captcha?',
-				icon: CupertinoIcons.group,
-				hapticFeedback: false,
-				easyButton: ('More info', () => showPopupCompleter.complete(true))
-			);
-			// Maybe there are a lot of queued toasts idk
-			if (!await showPopupCompleter.future.timeout(const Duration(seconds: 30), onTimeout: () => false)) {
-				// User didn't press 'More info'
-				return;
-			}
-			if (Settings.contributeCaptchasSetting.value ??= await showAdaptiveDialog<bool>(
-				context: ImageboardRegistry.instance.context!,
-				builder: (context) => AdaptiveAlertDialog(
-					title: const Text('Contribute captcha solutions?'),
-					content: const Text('The captcha images you solve will be collected to improve the automated solver'),
-					actions: [
-						AdaptiveDialogAction(
-							child: const Text('Contribute'),
-							onPressed: () {
-								Navigator.of(context).pop(true);
-							}
-						),
-						AdaptiveDialogAction(
-							child: const Text('No'),
-							onPressed: () {
-								Navigator.of(context).pop(false);
-							}
-						)
-					]
-				)
-			) != true) {
+			if (Settings.contributeCaptchasSetting.value != true) {
 				return;
 			}
 			final bytes = await solution.alignedImage?.toByteData(format: ImageByteFormat.png);
