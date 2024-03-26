@@ -258,124 +258,127 @@ class QueueEntryWidget<T> extends StatelessWidget {
 											valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
 											backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
 										),
-										Row(
-											children: [
-												const SizedBox(width: 16),
-												if (state is QueueStateFailed<T>) AdaptiveIconButton(
-													icon: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red),
-													onPressed: () => alertError(context, state.error.toStringDio())
-												),
-												Expanded(
-													child: Text(
-														switch (state) {
-															QueueStateSubmitting<T>() => state.message ?? 'Submitting',
-															QueueStateNeedsCaptcha<T>() => 'Waiting',
-															QueueStateWaitingWithCaptcha<T>() => 'Waiting with captcha',
-															QueueStateIdle<T>() => 'Draft',
-															QueueStateDeleted<T>() || QueueStateFailed<T>() || QueueStateDone<T>() => ''
-														},
-														style: TextStyle(
-															color: switch (state) {
-																QueueStateSubmitting<T>() => ChanceTheme.primaryColorWithBrightness50Of(context),
-																_ => ChanceTheme.primaryColorWithBrightness30Of(context)
+										Padding(
+											padding: const EdgeInsets.symmetric(vertical: 8),
+											child: Row(
+												children: [
+													const SizedBox(width: 16),
+													if (state is QueueStateFailed<T>) AdaptiveIconButton(
+														icon: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red),
+														onPressed: () => alertError(context, state.error.toStringDio())
+													),
+													Expanded(
+														child: Text(
+															switch (state) {
+																QueueStateSubmitting<T>() => state.message ?? 'Submitting',
+																QueueStateNeedsCaptcha<T>() => 'Waiting',
+																QueueStateWaitingWithCaptcha<T>() => 'Waiting with captcha',
+																QueueStateIdle<T>() => 'Draft',
+																QueueStateDeleted<T>() || QueueStateFailed<T>() || QueueStateDone<T>() => ''
+															},
+															style: TextStyle(
+																color: switch (state) {
+																	QueueStateSubmitting<T>() => ChanceTheme.primaryColorWithBrightness50Of(context),
+																	_ => ChanceTheme.primaryColorWithBrightness30Of(context)
+																}
+															)
+														)
+													),
+													// Skip queue timer button
+													if (!state.isIdle && queue != null) StatefulBuilder(
+														builder: (context, setState) => AnimatedBuilder(
+															animation: queue,
+															builder: (context, _) {
+																final (DateTime, VoidCallback) pair;
+																if (queue.captchaAllowedTime.isAfter(DateTime.now())) {
+																	pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now());
+																}
+																else if (queue.allowedTime.isAfter(DateTime.now())) {
+																	pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now());
+																}
+																else {
+																	return const SizedBox.shrink();
+																}
+																return AdaptiveThinButton(
+																	padding: const EdgeInsets.all(4),
+																	onPressed: skipQueuePressed ? null : () {
+																		pair.$2();
+																		setState(() {
+																			skipQueuePressed = true;
+																		});
+																	},
+																	child: TimedRebuilder<String>(
+																		interval: const Duration(seconds: 1),
+																		function: () => formatDuration(pair.$1.difference(DateTime.now())),
+																		builder: (context, s) => Text(s, style: const TextStyle(
+																			fontFeatures: [FontFeature.tabularFigures()]
+																		))
+																	)
+																);
 															}
 														)
-													)
-												),
-												// Skip queue timer button
-												if (!state.isIdle && queue != null) StatefulBuilder(
-													builder: (context, setState) => AnimatedBuilder(
-														animation: queue,
-														builder: (context, _) {
-															final (DateTime, VoidCallback) pair;
-															if (queue.captchaAllowedTime.isAfter(DateTime.now())) {
-																pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now());
-															}
-															else if (queue.allowedTime.isAfter(DateTime.now())) {
-																pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now());
-															}
-															else {
-																return const SizedBox.shrink();
-															}
-															return AdaptiveThinButton(
+													),
+													if (wait != null) Padding(
+														padding: const EdgeInsets.only(right: 8),
+														child: StatefulBuilder(
+															builder: (context, setState) => AdaptiveThinButton(
 																padding: const EdgeInsets.all(4),
-																onPressed: skipQueuePressed ? null : () {
-																	pair.$2();
+																onPressed: skipWaitPressed ? null : () {
+																	wait!.skip();
 																	setState(() {
-																		skipQueuePressed = true;
+																		skipWaitPressed = true;
 																	});
 																},
 																child: TimedRebuilder<String>(
 																	interval: const Duration(seconds: 1),
-																	function: () => formatDuration(pair.$1.difference(DateTime.now())),
+																	function: () => formatDuration(wait!.until.difference(DateTime.now())),
 																	builder: (context, s) => Text(s, style: const TextStyle(
 																		fontFeatures: [FontFeature.tabularFigures()]
 																	))
 																)
-															);
-														}
-													)
-												),
-												if (wait != null) Padding(
-													padding: const EdgeInsets.only(right: 8),
-													child: StatefulBuilder(
-														builder: (context, setState) => AdaptiveThinButton(
-															padding: const EdgeInsets.all(4),
-															onPressed: skipWaitPressed ? null : () {
-																wait!.skip();
-																setState(() {
-																	skipWaitPressed = true;
-																});
-															},
-															child: TimedRebuilder<String>(
-																interval: const Duration(seconds: 1),
-																function: () => formatDuration(wait!.until.difference(DateTime.now())),
-																builder: (context, s) => Text(s, style: const TextStyle(
-																	fontFeatures: [FontFeature.tabularFigures()]
-																))
 															)
 														)
-													)
-												),
-												if (entry.state.isSubmittable && entry.site.loginSystem?.getSavedLoginFields() != null) AdaptiveIconButton(
-													onPressed: entry.isArchived ? null : () {
-														entry.useLoginSystem = !entry.useLoginSystem;
-													},
-													icon: Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															SizedBox(
-																width: 16,
-																height: 16,
-																child: ExtendedImage.network(
-																	entry.site.passIconUrl.toString(),
-																	cache: true,
-																	enableLoadState: false,
-																	fit: BoxFit.contain
-																)
-															),
-															const SizedBox(width: 4),
-															Icon(entry.useLoginSystem ? CupertinoIcons.checkmark_square : CupertinoIcons.square)
-														]
-													)
-												),
-												if (cancelToken != null || state is QueueStateNeedsCaptcha<T> || state is QueueStateWaitingWithCaptcha<T>) StatefulBuilder(
-													builder: (context, setState) => AdaptiveIconButton(
-														onPressed: cancelPressed ? null : () {
-															entry.cancel();
-															setState(() {
-																cancelPressed = true;
-															});
+													),
+													if (entry.state.isSubmittable && entry.site.loginSystem?.getSavedLoginFields() != null) AdaptiveIconButton(
+														onPressed: entry.isArchived ? null : () {
+															entry.useLoginSystem = !entry.useLoginSystem;
 														},
-														icon: const Icon(CupertinoIcons.xmark, size: 20)
+														icon: Row(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																SizedBox(
+																	width: 16,
+																	height: 16,
+																	child: ExtendedImage.network(
+																		entry.site.passIconUrl.toString(),
+																		cache: true,
+																		enableLoadState: false,
+																		fit: BoxFit.contain
+																	)
+																),
+																const SizedBox(width: 4),
+																Icon(entry.useLoginSystem ? CupertinoIcons.checkmark_square : CupertinoIcons.square)
+															]
+														)
+													),
+													if (cancelToken != null || state is QueueStateNeedsCaptcha<T> || state is QueueStateWaitingWithCaptcha<T>) StatefulBuilder(
+														builder: (context, setState) => AdaptiveIconButton(
+															onPressed: cancelPressed ? null : () {
+																entry.cancel();
+																setState(() {
+																	cancelPressed = true;
+																});
+															},
+															icon: const Icon(CupertinoIcons.xmark, size: 20)
+														)
 													)
-												)
-												else if (state.isSubmittable) AdaptiveIconButton(
-													icon: const Icon(CupertinoIcons.paperplane, size: 20),
-													onPressed: entry.isArchived ? null : () => entry.submit(aboveAnimatedBuilderContext)
-												),
-												const SizedBox(width: 16)
-											]
+													else if (state.isSubmittable) AdaptiveIconButton(
+														icon: const Icon(CupertinoIcons.paperplane, size: 20),
+														onPressed: entry.isArchived ? null : () => entry.submit(aboveAnimatedBuilderContext)
+													),
+													const SizedBox(width: 16)
+												]
+											)
 										)
 									]
 								),
