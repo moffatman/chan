@@ -367,6 +367,7 @@ class QueuedPost extends QueueEntry<PostResult> {
 	void delete() {
 		super.delete();
 		imageboard.persistence.browserState.outbox.remove(post);
+		imageboard.persistence.didUpdateBrowserState();
 	}
 
 	@override
