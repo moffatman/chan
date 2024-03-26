@@ -43,7 +43,8 @@ typedef CloudGuessedCaptcha4ChanCustom = ({
 
 class Captcha4ChanCustomChallengeException implements Exception {
 	final String message;
-	const Captcha4ChanCustomChallengeException(this.message);
+	final bool cloudflare;
+	const Captcha4ChanCustomChallengeException(this.message, this.cloudflare);
 
 	@override
 	String toString() => 'Failed to get 4chan captcha: $message';
@@ -52,7 +53,9 @@ class Captcha4ChanCustomChallengeException implements Exception {
 class Captcha4ChanCustomChallengeCooldownException extends CooldownException implements Captcha4ChanCustomChallengeException {
 	@override
 	final String message;
-	const Captcha4ChanCustomChallengeCooldownException(this.message, DateTime tryAgainAt) : super(tryAgainAt);
+	@override
+	final bool cloudflare;
+	const Captcha4ChanCustomChallengeCooldownException(this.message, this.cloudflare, DateTime tryAgainAt) : super(tryAgainAt);
 
 	@override
 	String toString() => 'Failed to get 4chan captcha: $message';
@@ -75,13 +78,13 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		}
 	));
 	if (challengeResponse.statusCode != 200) {
-		throw Captcha4ChanCustomChallengeException('Got status code ${challengeResponse.statusCode}');
+		throw Captcha4ChanCustomChallengeException('Got status code ${challengeResponse.statusCode}', challengeResponse.cloudflare);
 	}
 	dynamic data = challengeResponse.data;
 	if (data is String) {
 		final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(data);
 		if (match == null) {
-			throw const Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system');
+			throw Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system', challengeResponse.cloudflare);
 		}
 		data = jsonDecode(match.group(1)!)['twister'];
 	}
@@ -98,7 +101,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		site.resetCaptchaTicketTimer();
 	}
 	if (data['pcd'] != null) {
-		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] ?? 'Please wait a while.', DateTime.now().add(Duration(seconds: data['pcd'].toInt())));
+		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] ?? 'Please wait a while.', challengeResponse.cloudflare, DateTime.now().add(Duration(seconds: data['pcd'].toInt())));
 	}
 	final DateTime? tryAgainAt;
 	if (data['cd'] != null) {
@@ -109,9 +112,9 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	}
 	if (data['error'] != null) {
 		if (tryAgainAt != null) {
-			throw Captcha4ChanCustomChallengeCooldownException(data['error'], tryAgainAt);
+			throw Captcha4ChanCustomChallengeCooldownException(data['error'], challengeResponse.cloudflare, tryAgainAt);
 		}
-		throw Captcha4ChanCustomChallengeException(data['error']);
+		throw Captcha4ChanCustomChallengeException(data['error'], challengeResponse.cloudflare);
 	}
 	Completer<ui.Image>? foregroundImageCompleter;
 	if (data['img'] != null) {
@@ -246,11 +249,29 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 		_challenge = null;
 	}
 
-	final challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
-		site: site,
-		request: request,
-		priority: priority
-	);
+	Captcha4ChanCustomChallenge challenge;
+	try {
+		challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
+			site: site,
+			request: request,
+			priority: priority
+		);
+	}
+	on Captcha4ChanCustomChallengeCooldownException catch (e) {
+		if (!e.cloudflare) {
+			rethrow;
+		}
+		// If we cleared cloudflare on challenge
+		// Just try again, we appparently will get a better captcha
+		await Future.delayed(const Duration(seconds: 1));
+		challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
+			site: site,
+			request: request,
+			priority: RequestPriority.cosmetic
+		);
+	}
+
+	print('final $challenge');
 
 	final Chan4CustomCaptchaSolution solution;
 	final bool confident;
