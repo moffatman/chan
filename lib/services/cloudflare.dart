@@ -52,6 +52,12 @@ class CloudflareHandlerInterruptedException implements Exception {
 	String toString() => 'Cloudflare challenge handler interrupted';
 }
 
+class CloudflareHandlerBlockedException implements Exception {
+	const CloudflareHandlerBlockedException();
+	@override
+	String toString() => 'Cloudflare clearance was blocked by the server';
+}
+
 dynamic _decode(String data) {
 	if (data.startsWith('{') || data.startsWith('[')) {
 		try {
@@ -120,6 +126,22 @@ class CloudflareInterceptor extends Interceptor {
 		return false;
 	}
 
+	static bool _bodyMatchesBlock(String data) {
+		final lower = data.toLowerCase();
+		return [
+			'you have been blocked',
+			'the action you just performed triggered the security solution',
+			'https://www.cloudflare.com/5xx-error-landing'
+		].every((substring) => lower.contains(substring));
+	}
+
+	static bool _responseMatchesBlock(Response response) {
+		if ([403, 503].contains(response.statusCode) && response.headers.value(Headers.contentTypeHeader)!.contains('text/html')) {
+			return _bodyMatchesBlock(response.data);
+		}
+		return false;
+	}
+
 	Future<void> _saveCookies(Uri uri) async {
 		final cookies = await CookieManager.instance().getCookies(url: WebUri.uri(uri));
 		await Persistence.currentCookies.saveFromResponse(uri, cookies.map((cookie) {
@@ -151,7 +173,7 @@ class CloudflareInterceptor extends Interceptor {
 			clearSessionCache: true,
 			transparentBackground: true
 		);
-		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback) => (controller, uri) async {
+		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback, ValueChanged<Exception> errorCallback) => (controller, uri) async {
 			await controller.evaluateJavascript(source: '''
 				var style = document.createElement('style');
 				style.innerHTML = "* {\\
@@ -189,6 +211,10 @@ class CloudflareInterceptor extends Interceptor {
 					callback((content: html, uri: uri));
 				}
 			}
+			final html = await controller.getHtml() ?? '';
+			if (_bodyMatchesBlock(html)) {
+				errorCallback(const CloudflareHandlerBlockedException());
+			}
 		};
 		HeadlessInAppWebView? headlessWebView;
 		if (!skipHeadless) {
@@ -197,7 +223,7 @@ class CloudflareInterceptor extends Interceptor {
 				initialSettings: initialSettings,
 				initialUrlRequest: initialUrlRequest,
 				initialData: initialData,
-				onLoadStop: buildOnLoadStop(headlessCompleter.complete)
+				onLoadStop: buildOnLoadStop(headlessCompleter.complete, headlessCompleter.completeError)
 			);
 			await headlessWebView.run();
 			showToast(
@@ -218,7 +244,7 @@ class CloudflareInterceptor extends Interceptor {
 			// User recently rejected a non-interactive cloudflare login, reject it
 			throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
 		}
-		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<_CloudflareResponse>(adaptivePageRoute(
+		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push(adaptivePageRoute(
 			builder: (context) => AdaptiveScaffold(
 				bar: const AdaptiveBar(
 					title: Text('Cloudflare Login')
@@ -230,7 +256,7 @@ class CloudflareInterceptor extends Interceptor {
 						initialSettings: initialSettings,
 						initialUrlRequest: initialUrlRequest,
 						initialData: initialData,
-						onLoadStop: buildOnLoadStop(Navigator.of(context).pop),
+						onLoadStop: buildOnLoadStop(Navigator.of(context).pop, Navigator.of(context).pop),
 					)
 				)
 			)
@@ -243,6 +269,9 @@ class CloudflareInterceptor extends Interceptor {
 				hostPasses: cookieUrl.host
 			);
 			throw const CloudflareHandlerInterruptedException();
+		}
+		else if (ret is Exception) {
+			throw ret;
 		}
 		if (cookieUrl.host == _allowNonInteractiveWebviewWhen.hostPasses) {
 			// Cloudflare passed on the previously-blocked host
@@ -302,6 +331,14 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
+		if (_responseMatchesBlock(response)) {
+			handler.reject(DioError(
+				requestOptions: response.requestOptions,
+				response: response,
+				error: const CloudflareHandlerBlockedException()
+			));
+			return;
+		}
 		if (_responseMatches(response)) {
 			if (!response.requestOptions.priority.shouldPopupCloudflare) {
 				handler.reject(DioError(
@@ -346,6 +383,16 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onError(DioError err, ErrorInterceptorHandler handler) async {
+		if (err.type == DioErrorType.response &&
+		    err.response != null &&
+				_responseMatchesBlock(err.response!)) {
+			handler.reject(DioError(
+				requestOptions: err.requestOptions,
+				response: err.response,
+				error: const CloudflareHandlerBlockedException()
+			));
+			return;
+		}
 		if (err.type == DioErrorType.response &&
 		    err.response != null &&
 				_responseMatches(err.response!)) {
