@@ -38,6 +38,7 @@ import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -1924,6 +1925,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 	ValueNotifier<String?>? _lastUpdatingNow;
 	late bool _useCatalogCache;
 	Filter? _lastFilter;
+	bool _skipNextSwipe = false;
 
 	Future<bool> _updateCounts() async {
 		final site = context.read<ImageboardSite>();
@@ -2729,6 +2731,35 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													scrollToBottom();
 												}
 												mediumHapticFeedback();
+											},
+											onPanStart: (details) {
+												_skipNextSwipe = eventTooCloseToEdge(details.globalPosition);
+											},
+											onPanEnd: (details) {
+												if (_skipNextSwipe) {
+													return;
+												}
+												final position = widget.listController.scrollController?.tryPosition;
+												if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
+													mediumHapticFeedback();
+													if (position != null && position.extentAfter > 0) {
+														scrollToBottom();
+													}
+													else {
+														// Not possible, do a "double buzz"
+														Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+													}
+												}
+												else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
+													mediumHapticFeedback();
+													if (position != null && position.extentBefore > 0) {
+														scrollToTop();
+													}
+													else {
+														// Not possible, do a "double buzz"
+														Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+													}
+												}
 											},
 											child: CupertinoButton(
 												padding: EdgeInsets.zero,

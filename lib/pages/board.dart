@@ -36,6 +36,7 @@ import 'package:chan/widgets/pull_tab.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:chan/models/thread.dart';
@@ -192,6 +193,7 @@ class BoardPageState extends State<BoardPage> {
 	int _page = 1;
 	DateTime? _lastCatalogUpdateTime;
 	bool _searching = false;
+	bool _skipNextIndicatorSwipe = false;
 
 	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.name];
 	CatalogVariant get _defaultGlobalVariant {
@@ -1098,6 +1100,7 @@ class BoardPageState extends State<BoardPage> {
 																_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
 																final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
 																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: scrollAnimationDuration, curve: Curves.ease);
+																scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration);
 																final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
 																return SafeArea(
 																	child: Align(
@@ -1118,8 +1121,43 @@ class BoardPageState extends State<BoardPage> {
 																					],
 																					GestureDetector(
 																						onLongPress: () {
-																							lightHapticFeedback();
-																							_listController.animateTo((item) => false, orElseLast: (item) => true, alignment: 1.0, duration: scrollAnimationDuration);
+																							final position = _listController.scrollController?.tryPosition;
+																							if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
+																								scrollToTop();
+																							}
+																							else {
+																								scrollToBottom();
+																							}
+																							mediumHapticFeedback();
+																						},
+																						onPanStart: (details) {
+																							_skipNextIndicatorSwipe = eventTooCloseToEdge(details.globalPosition);
+																						},
+																						onPanEnd: (details) {
+																							if (_skipNextIndicatorSwipe) {
+																								return;
+																							}
+																							final position =_listController.scrollController?.tryPosition;
+																							if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
+																								mediumHapticFeedback();
+																								if (position != null && position.extentAfter > 0) {
+																									scrollToBottom();
+																								}
+																								else {
+																									// Not possible, do a "double buzz"
+																									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+																								}
+																							}
+																							else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
+																								mediumHapticFeedback();
+																								if (position != null && position.extentBefore > 0) {
+																									scrollToTop();
+																								}
+																								else {
+																									// Not possible, do a "double buzz"
+																									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+																								}
+																							}
 																						},
 																						child: AdaptiveFilledButton(
 																							onPressed: () async {
