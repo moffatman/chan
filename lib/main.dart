@@ -2173,10 +2173,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												navigatorObservers: [
 													ScrollTrackerNavigatorObserver()
 												],
-												builder: (context) => AnimatedBuilder(
-													animation: _tabs._tabController,
-													builder: (context, child) => _buildTab(context, index, _tabs.mainTabIndex == index)
-												)
+												builder: (context) {
+													final child = AnimatedBuilder(
+														animation: _tabs._tabController,
+														builder: (context, child) => _buildTab(context, index, _tabs.mainTabIndex == index)
+													);
+													if (Settings.materialStyleSetting.watch(context)) {
+														return Material(
+															child: child
+														);
+													}
+													return child;
+												}
 											)
 										),
 										if (index == 0) Expander(
