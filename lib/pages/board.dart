@@ -20,6 +20,7 @@ import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -517,6 +518,7 @@ class BoardPageState extends State<BoardPage> {
 		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.name] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
+			final watch = context.select<Persistence, ThreadWatch?>((p) => p.getThreadStateIfExists(thread.identifier)?.threadWatch);
 			final isThreadHidden = context.select<Persistence, bool?>((p) => p.browserState.getThreadHiding(thread.identifier));
 			final isImageHidden = context.select<Settings, bool>((p) => p.areMD5sHidden(thread.md5s));
 			final isSelected = widget.isThreadSelected?.call(context, thread.identifier) ?? false;
@@ -582,6 +584,63 @@ class BoardPageState extends State<BoardPage> {
 									threadState.savedTime = null;
 									threadState.save();
 									context.read<Persistence>().didUpdateBrowserState();
+									setState(() {});
+								}
+							);
+						}
+					),
+					if (watch != null) ContextMenuAction(
+						child: const Text('Unwatch thread'),
+						trailingIcon: CupertinoIcons.bell_slash,
+						onPressed: () async {
+							if (imageboard == null) {
+								return;
+							}
+							await imageboard.notifications.removeWatch(watch);
+							setState(() {});
+							if (context.mounted) {
+								showUndoToast(
+									context: context,
+									message: 'Thread unwatched',
+									onUndo: () {
+										imageboard.notifications.subscribeToThread(
+											thread: watch.threadIdentifier,
+											lastSeenId: watch.lastSeenId,
+											localYousOnly: watch.localYousOnly,
+											pushYousOnly: watch.pushYousOnly,
+											push: watch.push,
+											youIds: watch.youIds,
+											zombie: watch.zombie
+										);
+										setState(() {});
+									}
+								);
+							}
+						}
+					)
+					else ContextMenuAction(
+						child: const Text('Watch thread'),
+						trailingIcon: CupertinoIcons.bell,
+						onPressed: () async {
+							if (imageboard == null) {
+								return;
+							}
+							final threadState = imageboard.persistence.getThreadStateIfExists(thread.identifier);
+							imageboard.notifications.subscribeToThread(
+								thread: thread.identifier,
+								lastSeenId: threadState?.lastSeenPostId ?? thread.id,
+								localYousOnly: false,
+								pushYousOnly: true,
+								// So if you do a subsequent reply, notifications still work as expected
+								push: true,
+								youIds: threadState?.youIds ?? []
+							);
+							setState(() {});
+							showUndoToast(
+								context: context,
+								message: 'Thread watched',
+								onUndo: () {
+									imageboard.notifications.unsubscribeFromThread(thread.identifier);
 									setState(() {});
 								}
 							);
