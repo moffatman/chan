@@ -662,7 +662,7 @@ class ThreadRow extends StatelessWidget {
 								children: [
 									if (threadState?.showInHistory == false && forceShowInHistory == true) Icon(CupertinoIcons.eye_slash, color: otherMetadataColor, size: 18),
 									if (watch != null) Icon(CupertinoIcons.bell_fill, color: otherMetadataColor, size: 18),
-									if (watch?.localYousOnly == false) Icon(CupertinoIcons.asterisk_circle, color: otherMetadataColor, size: 18),
+									if (watch?.push == true && watch?.pushYousOnly == false) Icon(CupertinoIcons.asterisk_circle, color: otherMetadataColor, size: 18),
 									if (threadState?.savedTime != null) Icon(Adaptive.icons.bookmarkFilled, color: otherMetadataColor, size: 18)
 								]
 							)
