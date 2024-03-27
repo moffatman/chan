@@ -877,7 +877,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	void _listenToReplyPosting(QueuedPost post) {
-		QueueState<PostResult>? lastState;
+		QueueState<PostReceipt>? lastState;
 		void listener() async {
 			if (!mounted) {
 				post.removeListener(listener);
@@ -889,7 +889,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				return;
 			}
 			lastState = state;
-			if (state is QueueStateDeleted<PostResult>) {
+			if (state is QueueStateDeleted<PostReceipt>) {
 				// Don't remove listener, in case undeleted
 				_submittingPosts.remove(post);
 				setState(() {});
@@ -900,10 +900,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				_submittingPosts.add(post);
 				setState(() {});
 			}
-			if (state is QueueStateDone<PostResult>) {
+			if (state is QueueStateDone<PostReceipt>) {
 				post.removeListener(listener);
 				_submittingPosts.remove(post);
-				widget.onReplyPosted(state.result.receipt);
+				widget.onReplyPosted(state.result);
 				mediumHapticFeedback();
 				if (post == _postingPost) {
 					_reset();
@@ -1885,7 +1885,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							child: AnimatedBuilder(
 								animation: Outbox.instance,
 								builder: (context, _) {
-									final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)] as OutboxQueue<PostResult>?;
+									final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)] as OutboxQueue<PostReceipt>?;
 									Widget build(BuildContext context) {
 										final ourCount = _submittingPosts.length + (_postingPost != null ? 1 : 0);
 										final activeCount = Outbox.instance.activeCount;

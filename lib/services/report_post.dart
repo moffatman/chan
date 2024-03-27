@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chan/models/post.dart';
+import 'package:chan/services/captcha.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/theme.dart';
@@ -129,6 +130,7 @@ Future<void> reportPost({
 					}
 					lastState = state;
 					if (state is QueueStateDone<void>) {
+						onSuccessfulCaptchaSubmitted(state.captchaSolution);
 						entry.removeListener(listener);
 						showToast(
 							context: context,

@@ -87,8 +87,9 @@ class QueueStateFailed<T> extends QueueState<T> {
 
 class QueueStateDone<T> extends QueueState<T> {
 	final DateTime time;
+	final CaptchaSolution captchaSolution;
 	final T result;
-	const QueueStateDone(this.time, this.result);
+	const QueueStateDone(this.time, this.result, this.captchaSolution);
 	@override
 	bool get isIdle => true;
 	@override
@@ -274,6 +275,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			final deadline = DateTime.now().add(const Duration(seconds: 5));
 			final expiresAt = initialState.captchaSolution.expiresAt;
 			if (expiresAt != null && expiresAt.isBefore(deadline)) {
+				initialState.captchaSolution.dispose();
 				_state = initialNeedsCaptchaState ?? const QueueStateNeedsCaptcha(null);
 				notifyListeners();
 			}
@@ -312,7 +314,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					);
 					notifyListeners();
 					final result = await _submitImpl(captchaSolution, cancelToken);
-					_state = QueueStateDone(DateTime.now(), result);
+					_state = QueueStateDone(DateTime.now(), result, captchaSolution);
 					notifyListeners();
 				}
 				on CooldownException catch (e) {
@@ -343,9 +345,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	}
 }
 
-typedef PostResult = ({PostReceipt receipt, CaptchaSolution captchaSolution});
-
-class QueuedPost extends QueueEntry<PostResult> {
+class QueuedPost extends QueueEntry<PostReceipt> {
 	final DraftPost post;
 	@override
 	bool get useLoginSystem => post.useLoginSystem ?? true;
@@ -353,11 +353,8 @@ class QueuedPost extends QueueEntry<PostResult> {
 	set _useLoginSystem(bool newUseLoginSystem) => post.useLoginSystem = newUseLoginSystem;
 
 	@override
-	Future<PostResult> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		return (
-			captchaSolution: captchaSolution,
-			receipt: await imageboard.submitPost(post, captchaSolution, cancelToken)
-		);
+	Future<PostReceipt> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		return await imageboard.submitPost(post, captchaSolution, cancelToken);
 	}
 
 	@override
@@ -618,7 +615,7 @@ class Outbox extends ChangeNotifier {
 		notifyListeners();
 	});
 
-	QueuedPost submitPost(String imageboardKey, DraftPost post, QueueState<PostResult> initialState) {
+	QueuedPost submitPost(String imageboardKey, DraftPost post, QueueState<PostReceipt> initialState) {
 		final entry = QueuedPost(
 			imageboardKey: imageboardKey,
 			post: post,
@@ -668,7 +665,7 @@ class Outbox extends ChangeNotifier {
 		for (final queue in queues.values) {
 			for (final entry in queue.list) {
 				if (entry is QueuedPost &&
-				    entry.state is! QueueStateDone<PostResult> &&
+				    entry.state is! QueueStateDone<PostReceipt> &&
 						entry.imageboardKey == imageboardKey &&
 						entry.post.board == board &&
 						entry.post.threadId == threadId) {

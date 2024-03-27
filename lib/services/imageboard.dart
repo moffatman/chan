@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
@@ -24,11 +23,8 @@ import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:mutex/mutex.dart';
 import 'package:string_similarity/string_similarity.dart';
-
-const _captchaContributionServer = 'https://captcha.chance.surf';
 
 class ImageboardNotFoundException implements Exception {
 	String board;
@@ -265,84 +261,8 @@ class Imageboard extends ChangeNotifier {
 		}
 	}
 
-	/// Handles contribution and disposal of captcha solution
-	void _handleCaptchaSolutionSubmission(CaptchaSolution solution) async {
-		try {
-			if (solution is! Chan4CustomCaptchaSolution) {
-				return;
-			}
-			if (Settings.contributeCaptchasSetting.value == null) {
-				if (random.nextDouble() > 0.25) {
-					// 75% chance -> don't even ask
-					return;
-				}
-				final showPopupCompleter = Completer<bool>();
-				showToast(
-					context: ImageboardRegistry.instance.context!,
-					message: 'Contribute captcha?',
-					icon: CupertinoIcons.group,
-					hapticFeedback: false,
-					easyButton: ('More info', () => showPopupCompleter.complete(true))
-				);
-				// Maybe there are a lot of queued toasts idk
-				if (!await showPopupCompleter.future.timeout(const Duration(seconds: 30), onTimeout: () => false)) {
-					// User didn't press 'More info'
-					return;
-				}
-				Settings.contributeCaptchasSetting.value ??= await showAdaptiveDialog<bool>(
-					context: ImageboardRegistry.instance.context!,
-					builder: (context) => AdaptiveAlertDialog(
-						title: const Text('Contribute captcha solutions?'),
-						content: const Text('The captcha images you solve will be collected to improve the automated solver'),
-						actions: [
-							AdaptiveDialogAction(
-								child: const Text('Contribute'),
-								onPressed: () {
-									Navigator.of(context).pop(true);
-								}
-							),
-							AdaptiveDialogAction(
-								child: const Text('No'),
-								onPressed: () {
-									Navigator.of(context).pop(false);
-								}
-							)
-						]
-					)
-				);
-			}
-			if (Settings.contributeCaptchasSetting.value != true) {
-				return;
-			}
-			final bytes = await solution.alignedImage?.toByteData(format: ImageByteFormat.png);
-			if (bytes == null) {
-				print('Something went wrong converting the captcha image to bytes');
-				return;
-			}
-			final response = await Settings.instance.client.post(
-				_captchaContributionServer,
-				data: dio.FormData.fromMap({
-					'text': solution.response,
-					'image': dio.MultipartFile.fromBytes(
-						bytes.buffer.asUint8List(),
-						filename: 'upload.png',
-						contentType: MediaType("image", "png")
-					)
-				}),
-				options: dio.Options(
-					validateStatus: (x) => true,
-					responseType: dio.ResponseType.plain
-				)
-			);
-			print(response.data);
-		}
-		finally {
-			solution.dispose();
-		}
-	}
-
 	void listenToReplyPosting(QueuedPost post) {
-		QueueState<PostResult>? lastState;
+		QueueState<PostReceipt>? lastState;
 		void listener() async {
 			final state = post.state;
 			if (state == lastState) {
@@ -350,34 +270,34 @@ class Imageboard extends ChangeNotifier {
 				return;
 			}
 			lastState = state;
-			if (state is QueueStateDeleted<PostResult>) {
+			if (state is QueueStateDeleted<PostReceipt>) {
 				// Don't remove listener, in case undeleted
 				// Who cares about a leak....
 				return;
 			}
-			if (state is QueueStateDone<PostResult>) {
+			if (state is QueueStateDone<PostReceipt>) {
 				post.removeListener(listener);
-				_handleCaptchaSolutionSubmission(state.result.captchaSolution);
-				print(state.result.receipt);
+				onSuccessfulCaptchaSubmitted(state.captchaSolution);
+				print(state.result);
 				mediumHapticFeedback();
-				if (state.result.receipt.spamFiltered) {
+				if (state.result.spamFiltered) {
 					showToast(
 						context: ImageboardRegistry.instance.context!,
 						message: 'Spam-filter possible...',
 						icon: CupertinoIcons.question_diamond,
 						hapticFeedback: false
 					);
-					_listenForSpamFilter(post.post, state.result.receipt);
+					_listenForSpamFilter(post.post, state.result);
 				}
 				else {
 					showToast(
 						context: ImageboardRegistry.instance.context!,
 						message: 'Post successful',
-						icon: state.result.captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
+						icon: state.captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
 						hapticFeedback: false
 					);
-					_maybeShowDubsToast(state.result.receipt.id);
-					if (state.result.captchaSolution.autoSolved && (Settings.instance.useCloudCaptchaSolver ?? false) && (Settings.instance.useHeadlessCloudCaptchaSolver == null)) {
+					_maybeShowDubsToast(state.result.id);
+					if (state.captchaSolution.autoSolved && (Settings.instance.useCloudCaptchaSolver ?? false) && (Settings.instance.useHeadlessCloudCaptchaSolver == null)) {
 						Settings.useHeadlessCloudCaptchaSolverSetting.value = await showAdaptiveDialog<bool>(
 							context: ImageboardRegistry.instance.context!,
 							barrierDismissible: true,
@@ -404,7 +324,7 @@ class Imageboard extends ChangeNotifier {
 					}
 				}
 			}
-			else if (state is QueueStateFailed<PostResult>) {
+			else if (state is QueueStateFailed<PostReceipt>) {
 				final e = state.error;
 				final bannedCaptchaRequest = post.site.getBannedCaptchaRequest(state.captchaSolution?.cloudflare ?? false);
 				if (e is BannedException && bannedCaptchaRequest != null) {

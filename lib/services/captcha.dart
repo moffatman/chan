@@ -1,8 +1,14 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/captcha_dvach.dart';
 import 'package:chan/widgets/captcha_lynxchan.dart';
@@ -10,8 +16,12 @@ import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/captcha_secucap.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:http_parser/http_parser.dart';
+
+const _captchaContributionServer = 'https://captcha.chance.surf';
 
 bool canCaptchaBeSolvedHeadlessly({
 	required CaptchaRequest request
@@ -87,7 +97,7 @@ Future<CaptchaSolution?> solveCaptcha({
 					else if (e is Captcha4ChanCustomChallengeException) {
 						initialCloudChallengeException = e;
 					}
-					else if (e is DioError && e.error is CloudflareHandlerInterruptedException) {
+					else if (e is dio.DioError && e.error is CloudflareHandlerInterruptedException) {
 						// Avoid two cloudflare popups
 						initialCloudChallengeException = e.error;
 					}
@@ -140,5 +150,81 @@ Future<CaptchaSolution?> solveCaptcha({
 			));
 		case NoCaptchaRequest():
 			return NoCaptchaSolution(DateTime.now());
+	}
+}
+
+/// Handles contribution and disposal of captcha solution
+void onSuccessfulCaptchaSubmitted(CaptchaSolution solution) async {
+	try {
+		if (solution is! Chan4CustomCaptchaSolution) {
+			return;
+		}
+		if (Settings.contributeCaptchasSetting.value == null) {
+			if (random.nextDouble() > 0.25) {
+				// 75% chance -> don't even ask
+				return;
+			}
+			final showPopupCompleter = Completer<bool>();
+			showToast(
+				context: ImageboardRegistry.instance.context!,
+				message: 'Contribute captcha?',
+				icon: CupertinoIcons.group,
+				hapticFeedback: false,
+				easyButton: ('More info', () => showPopupCompleter.complete(true))
+			);
+			// Maybe there are a lot of queued toasts idk
+			if (!await showPopupCompleter.future.timeout(const Duration(seconds: 30), onTimeout: () => false)) {
+				// User didn't press 'More info'
+				return;
+			}
+			Settings.contributeCaptchasSetting.value ??= await showAdaptiveDialog<bool>(
+				context: ImageboardRegistry.instance.context!,
+				builder: (context) => AdaptiveAlertDialog(
+					title: const Text('Contribute captcha solutions?'),
+					content: const Text('The captcha images you solve will be collected to improve the automated solver'),
+					actions: [
+						AdaptiveDialogAction(
+							child: const Text('Contribute'),
+							onPressed: () {
+								Navigator.of(context).pop(true);
+							}
+						),
+						AdaptiveDialogAction(
+							child: const Text('No'),
+							onPressed: () {
+								Navigator.of(context).pop(false);
+							}
+						)
+					]
+				)
+			);
+		}
+		if (Settings.contributeCaptchasSetting.value != true) {
+			return;
+		}
+		final bytes = await solution.alignedImage?.toByteData(format: ImageByteFormat.png);
+		if (bytes == null) {
+			print('Something went wrong converting the captcha image to bytes');
+			return;
+		}
+		final response = await Settings.instance.client.post(
+			_captchaContributionServer,
+			data: dio.FormData.fromMap({
+				'text': solution.response,
+				'image': dio.MultipartFile.fromBytes(
+					bytes.buffer.asUint8List(),
+					filename: 'upload.png',
+					contentType: MediaType("image", "png")
+				)
+			}),
+			options: dio.Options(
+				validateStatus: (x) => true,
+				responseType: dio.ResponseType.plain
+			)
+		);
+		print(response.data);
+	}
+	finally {
+		solution.dispose();
 	}
 }
