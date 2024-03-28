@@ -3562,6 +3562,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											)
 										),
 										GestureDetector(
+											longPressDuration: const Duration(milliseconds: 300),
 											onLongPress: () {
 												final position = widget.listController.scrollController?.tryPosition;
 												if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
