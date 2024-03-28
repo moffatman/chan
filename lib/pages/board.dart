@@ -1176,6 +1176,7 @@ class BoardPageState extends State<BoardPage> {
 																						const SizedBox(width: 8),
 																					],
 																					GestureDetector(
+																						longPressDuration: const Duration(milliseconds: 300),
 																						onLongPress: () {
 																							final position = _listController.scrollController?.tryPosition;
 																							if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
