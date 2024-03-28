@@ -20,6 +20,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/installed_fonts.dart';
 import 'package:chan/services/json_cache.dart';
+import 'package:chan/services/media.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
@@ -97,6 +98,7 @@ void main() async {
 			await initializeFonts();
 			MediaKit.ensureInitialized();
 			await JsonCache.instance.initialize();
+			await MediaScan.initializeStatic();
 			runApp(const ChanApp());
 		}
 		catch (e, st) {

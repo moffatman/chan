@@ -57,6 +57,7 @@ class MediaConversionResult {
 
 @HiveType(typeId: 38)
 class MediaScan {
+	static final Map<String, MediaScan> _fileScans = {};
 	@HiveField(0)
 	final bool hasAudio;
 	@HiveField(1)
@@ -177,26 +178,58 @@ class MediaScan {
 		});
 	}
 
+	static MediaScan? peekCachedFileScan(String path) {
+		final result = _fileScans[path];
+		if (result == null) {
+			return null;
+		}
+		final size = File(path).statSync().size;
+		if (size != result.sizeInBytes) {
+			return null;
+		}
+		return result;
+	}
+
 	static Future<MediaScan> scan(Uri file, {
 		Map<String, String> headers = const {}
 	}) async {
 		if (file.scheme == 'file') {
-			final size = (await File(file.path).stat()).size;
+			final peeked = peekCachedFileScan(file.path);
+			if (peeked != null) {
+				return peeked;
+			}
+			// Not cached or file size doesn't match
 			return _boxLock.protect(() async {
 				runWhenIdle(const Duration(seconds: 1), _closeBox);
 				final mediaScanBox = _mediaScanBox ??= await Hive.openLazyBox<MediaScan>('mediaScans');
-				final cachedScan = await mediaScanBox.get(base64.encode(md5.convert(utf8.encode(file.path)).bytes));
-				if (cachedScan?.sizeInBytes == size) {
-					await mediaScanBox.close();
-					return cachedScan!;
-				}
 				final scan = await _scan(file);
+				_fileScans[file.path] = scan;
 				await mediaScanBox.put(file.path, scan);
 				return scan;
 			});
 		}
 		else {
 			return _scan(file, headers: headers);
+		}
+	}
+
+	static Future<void> initializeStatic() async {
+		try {
+			// Fill up _fileScans from disk
+			await _boxLock.protect(() async {
+				runWhenIdle(const Duration(seconds: 1), _closeBox);
+				final mediaScanBox = _mediaScanBox ??= await Hive.openLazyBox<MediaScan>('mediaScans');
+				for (final key in mediaScanBox.keys) {
+					final value = await mediaScanBox.get(key);
+					if (value != null) {
+						_fileScans[key] = value;
+					}
+				}
+			});
+		}
+		catch (e, st) {
+			// Don't block app startup
+			Future.error(e, st); // crashlytics
 		}
 	}
 
