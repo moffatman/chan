@@ -915,6 +915,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					});
 				}
 			}
+			else if (state is QueueStateFailed<PostReceipt> && post == _postingPost) {
+				post.removeListener(listener);
+				post.delete();
+				setState(() {
+					_postingPost = null;
+				});
+			}
 		}
 		post.addListener(listener);
 		listener();
