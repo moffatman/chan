@@ -627,14 +627,13 @@ class _SavedPageState extends State<SavedPage> {
 								}
 								final last = entry.value.last;
 								final state = entry.key.$1.persistence.getThreadState(last.thread);
+								cost |= state.thread?.posts_.last.isInitialized != true;
 								final receiptTime = state.receipts.tryFirstWhere((r) => r.id == last.postId)?.time;
 								if (receiptTime != null) {
 									// Easiest situation - date is recorded on receipt
 									heads.add((entry.key.$1, last, receiptTime));
 									continue;
 								}
-								// Have to load thread from disk or parse from memory
-								cost = state.thread?.posts_.last.isInitialized != true;
 								await state.ensureThreadLoaded();
 								final thread = state.thread;
 								if (thread == null) {

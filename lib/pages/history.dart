@@ -71,24 +71,20 @@ class HistoryPageState extends State<HistoryPage> {
 		if (startIndex < 0) {
 			return [];
 		}
-		int budget = _historyPageSize;
+		final futures = <Future<void>>[];
 		final out = <PersistentThreadState>[];
-		for (int i = startIndex; i < states.length; i++) {
-			if (budget <= 0) {
-				break;
-			}
+		for (int i = startIndex; i < states.length && futures.length < _historyPageSize; i++) {
 			final p = states[i];
 			if (p.thread?.posts_.last.isInitialized ?? false) {
 				out.add(p);
-				continue;
 			}
-			await p.ensureThreadLoaded();
-			if (p.thread != null) {
-				budget--;
+			else if (p.isThreadCached) {
 				out.add(p);
+				futures.add(p.ensureThreadLoaded());
 			}
 		}
-		return out;
+		await Future.wait(futures);
+		return out.where((s) => s.thread != null).toList();
 	}
 
 	@override
