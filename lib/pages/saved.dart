@@ -246,6 +246,34 @@ class _SavedPageState extends State<SavedPage> {
 								childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
 							) : null,
 							canTapFooter: false,
+							footer: Padding(
+								padding: const EdgeInsets.all(16),
+								child: AnimatedBuilder(
+									animation: Listenable.merge([
+										_removeArchivedHack,
+										threadStateBoxesAnimation,
+									]),
+									builder: (context, _) => Wrap(
+										spacing: 16,
+										runSpacing: 16,
+										alignment: WrapAlignment.spaceEvenly,
+										runAlignment: WrapAlignment.center,
+										children: thread_actions.getWatchedThreadsActions(context, onMutate: _removeArchivedHack.didUpdate).map((a) => CupertinoButton(
+											onPressed: a.onPressed,
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(a.icon),
+													const SizedBox(width: 8),
+													Flexible(
+														child: Text(a.title, textAlign: TextAlign.center)
+													)
+												]
+											)
+										)).toList()
+									)
+								)
+							),
 							itemBuilder: (itemContext, watch) {
 								final isSelected = selected(itemContext, watch);
 								final openInNewTabZone = context.read<OpenInNewTabZone?>();
