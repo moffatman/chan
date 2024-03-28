@@ -391,6 +391,8 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 		required this.post,
 		required super.state
 	}) {
+		// This is really important that it happens first
+		// The listener in ReplyBox may mutate us...
 		imageboard.listenToReplyPosting(this);
 	}
 }

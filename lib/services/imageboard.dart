@@ -18,7 +18,6 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
-import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter/cupertino.dart';
@@ -386,15 +385,7 @@ class Imageboard extends ChangeNotifier {
 						// Captcha didn't work. For now, let's disable the auto captcha solver
 						Outbox.instance.headlessSolveFailed = true;
 					}
-					alertError(ImageboardRegistry.instance.context!, e.toStringDio(), actions: {
-						'Open outbox': () => showOutboxModalForThread(
-							context: ImageboardRegistry.instance.context!,
-							imageboardKey: key,
-							board: post.post.board,
-							threadId: post.post.threadId,
-							canPopWithDraft: false
-						)
-					});
+					alertError(ImageboardRegistry.instance.context!, e.toStringDio());
 				}
 			}
 		}
