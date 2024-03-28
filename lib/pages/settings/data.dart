@@ -796,6 +796,7 @@ final dataSettings = [
 			}
 			try {
 				final log = await modalLoad(context, 'Importing...', (_) => import(File(picked)));
+				await Settings.instance.didEdit();
 				if (!context.mounted) {
 					return;
 				}
