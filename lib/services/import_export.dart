@@ -42,10 +42,10 @@ Future<File> export({
 	final renamedCompressibleFiles = <(String, String)>[];
 	final uncompressibleDirs = <String>[];
 	for (final filename in [
-		'${Persistence.settingsBoxName}.hive',
-		'${Persistence.sharedBoardsBoxName}.hive',
-		'${Persistence.sharedThreadStatesBoxName}.hive',
-		if (includeFullHistory) '${Persistence.sharedThreadsBoxName}.hive',
+		'${Persistence.settingsBoxName.toLowerCase()}.hive',
+		'${Persistence.sharedBoardsBoxName.toLowerCase()}.hive',
+		'${Persistence.sharedThreadStatesBoxName.toLowerCase()}.hive',
+		if (includeFullHistory) '${Persistence.sharedThreadsBoxName.toLowerCase()}.hive',
 	]) {
 		final file = File('${Persistence.documentsDirectory.path}/$filename');
 		if (await file.exists()) {
@@ -74,7 +74,7 @@ Future<File> export({
 				}
 			}
 		}
-		renamedCompressibleFiles.add((temporaryThreadsBox.path!, '${Persistence.sharedThreadsBoxName}.hive'));
+		renamedCompressibleFiles.add((temporaryThreadsBox.path!, '${Persistence.sharedThreadsBoxName.toLowerCase()}.hive'));
 	}
 	for (final dirname in [
 		if (includeSavedAttachments) Persistence.savedAttachmentsDir,
@@ -127,7 +127,7 @@ Future<File> exportJson() async {
 	}
 	dumpOne('settings.json', Persistence.settings);
 	await dumpAll('boards', Persistence.sharedBoardsBox);
-	await dumpAll('threadStates', Persistence.sharedThreadStateBox);
+	await dumpAll('threadstates', Persistence.sharedThreadStateBox);
 	await dumpAllLazy('threads', Persistence.sharedThreadsBox);
 	encoder.close();
 	return File(encoder.zipPath);
