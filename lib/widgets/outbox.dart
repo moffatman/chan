@@ -267,6 +267,10 @@ class QueueEntryWidget<T> extends StatelessWidget {
 														icon: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red),
 														onPressed: () => alertError(context, state.error.toStringDio())
 													),
+													if (entry.isArchived) Padding(
+														padding: const EdgeInsets.all(8),
+														child: Icon(CupertinoIcons.archivebox, color: ChanceTheme.primaryColorWithBrightness50Of(context))
+													),
 													Expanded(
 														child: Text(
 															switch (state) {
@@ -274,12 +278,15 @@ class QueueEntryWidget<T> extends StatelessWidget {
 																QueueStateNeedsCaptcha<T>() => 'Waiting',
 																QueueStateWaitingWithCaptcha<T>() => 'Waiting with captcha',
 																QueueStateIdle<T>() => 'Draft',
-																QueueStateDeleted<T>() || QueueStateFailed<T>() || QueueStateDone<T>() => ''
+																QueueStateDeleted<T>() || QueueStateFailed<T>() || QueueStateDone<T>() => switch (entry.isArchived) {
+																	true => 'Thread archived',
+																	false => ''
+																}
 															},
 															style: TextStyle(
 																color: switch (state) {
-																	QueueStateSubmitting<T>() => ChanceTheme.primaryColorWithBrightness50Of(context),
-																	_ => ChanceTheme.primaryColorWithBrightness30Of(context)
+																	QueueStateSubmitting<T>() => ChanceTheme.primaryColorWithBrightness80Of(context),
+																	_ => ChanceTheme.primaryColorWithBrightness50Of(context)
 																}
 															)
 														)
