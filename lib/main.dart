@@ -99,6 +99,9 @@ void main() async {
 			MediaKit.ensureInitialized();
 			await JsonCache.instance.initialize();
 			await MediaScan.initializeStatic();
+			if (kDebugMode) {
+				await resetAdditionalSafeAreaInsets();
+			}
 			runApp(const ChanApp());
 		}
 		catch (e, st) {
