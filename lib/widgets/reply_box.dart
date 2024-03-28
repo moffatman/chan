@@ -910,9 +910,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					_rootFocusNode.unfocus();
 					// Hide reply box
 					setState(() {
-						_show = false;
 						_postingPost = null;
 					});
+					hideReplyBox();
 				}
 			}
 			else if (state is QueueStateFailed<PostReceipt> && post == _postingPost) {
