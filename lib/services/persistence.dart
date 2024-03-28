@@ -436,6 +436,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(const ImagePeekingSettingAdapter());
 		Hive.registerAdapter(const MouseModeQuoteLinkBehaviorAdapter());
 		Hive.registerAdapter(const DrawerModeAdapter());
+		Hive.registerAdapter(const ImageboardBoardFlagAdapter());
 		Hive.registerAdapter(const DraftPostAdapter());
 	}
 
