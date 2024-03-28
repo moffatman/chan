@@ -501,7 +501,7 @@ class PostRow extends StatelessWidget {
 												)
 											)
 										),
-										if (largeAttachments.isNotEmpty) ...largeAttachments.map((a) => Align(
+										if (largeAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) ...largeAttachments.map((a) => Align(
 											child: Padding(
 												padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
 												child: CupertinoButton(

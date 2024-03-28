@@ -491,7 +491,7 @@ class ThreadRow extends StatelessWidget {
 		];
 		List<Widget> buildContentFocused() {
 			final attachment = latestThread.attachments.tryFirst;
-			Widget? att = attachment == null ? null : PopupAttachment(
+			Widget? att = attachment == null || !settings.showImages(context, thread.board) ? null : PopupAttachment(
 				attachment: attachment,
 				child: GestureDetector(
 					child: Stack(
