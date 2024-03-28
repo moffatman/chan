@@ -167,7 +167,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	bool _thumbnailsDesynced = false;
 	/// To prevent Hero when entering with grid initially enabled
 	bool _doneInitialTransition = false;
-	bool _autoRotate = false;
+	bool _autoRotate = Settings.instance.autoRotateInGallery;
 
 	@override
 	void initState() {
@@ -1101,17 +1101,31 @@ class _GalleryPageState extends State<GalleryPage> {
 															animation: _currentAttachmentChanged,
 															builder: (context, _) => AnimatedSwitcher(
 																duration: const Duration(milliseconds: 300),
-																child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton && (showChrome || settings.showOverlaysInGallery)) ? AdaptiveIconButton(
-																	padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-																	icon: Transform(
-																		alignment: Alignment.center,
-																		transform: !_autoRotate ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																		child: const Icon(CupertinoIcons.rotate_left)
-																	),
-																	onPressed: () {
-																		_autoRotate = !_autoRotate;
-																		setState(() {});
-																	}
+																child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton && (showChrome || settings.showOverlaysInGallery)) ? GestureDetector(
+																	onLongPress: () {
+																		if (Settings.autoRotateInGallerySetting.value == _autoRotate) {
+																			// nothing to do
+																			return;
+																		}
+																		Settings.autoRotateInGallerySetting.value = _autoRotate;
+																		showToast(
+																			context: context,
+																			icon: CupertinoIcons.rotate_left,
+																			message: '${_autoRotate ? 'Enabled' : 'Disabled'} auto-rotation preference'
+																		);
+																	},
+																	child: AdaptiveIconButton(
+																		padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+																		icon: Transform(
+																			alignment: Alignment.center,
+																			transform: !_autoRotate ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																			child: const Icon(CupertinoIcons.rotate_left)
+																		),
+																		onPressed: () {
+																			_autoRotate = !_autoRotate;
+																			setState(() {});
+																		}
+																	)
 																) : const SizedBox.shrink()
 															)
 														)

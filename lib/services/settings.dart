@@ -2050,6 +2050,8 @@ class Settings extends ChangeNotifier {
 
 	static const savedThreadsSortingMethodSetting = SavedSetting(SavedSettingsFields.savedThreadsSortingMethod);
 	ThreadSortingMethod get savedThreadsSortingMethod => savedThreadsSortingMethodSetting(this);
+	static const autoRotateInGallerySetting = SavedSetting(SavedSettingsFields.autoRotateInGallery);
+	bool get autoRotateInGallery => autoRotateInGallerySetting(this);
 	ContentSettings get contentSettings => _settings.contentSettings;
 
 
