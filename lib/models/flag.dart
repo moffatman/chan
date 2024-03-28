@@ -6,6 +6,7 @@ part 'flag.g.dart';
 
 abstract class Flag {
 	String get name;
+	List<ImageboardFlag> get parts;
 }
 
 @HiveType(typeId: 14)
@@ -19,6 +20,9 @@ class ImageboardFlag implements Flag {
 	final double imageWidth;
 	@HiveField(3)
 	final double imageHeight;
+
+	@override
+	List<ImageboardFlag> get parts => [this];
 
 	ImageboardFlag({
 		required String name,
@@ -48,6 +52,7 @@ class ImageboardFlag implements Flag {
 @HiveType(typeId: 36)
 class ImageboardMultiFlag implements Flag {
 	@HiveField(0, merger: ListEqualsMerger<ImageboardFlag>())
+	@override
 	final List<ImageboardFlag> parts;
 
 	ImageboardMultiFlag({

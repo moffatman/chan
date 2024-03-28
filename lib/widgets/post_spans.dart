@@ -13,6 +13,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
@@ -1962,19 +1963,34 @@ class ExpandingPost extends StatelessWidget {
 	}
 }
 
+typedef _AttachmentMetadata = ({
+	String filename,
+	int? sizeInBytes,
+	int? width,
+	int? height
+});
+
+extension _EllipsizedFilename on _AttachmentMetadata {
+	String? get ellipsizedFilename {
+		if (filename.length <= 53) {
+			return null;
+		}
+		return '${filename.substring(0, 25)}...${filename.substring(filename.length - 25)}';
+	}
+}
+
 Iterable<TextSpan> _makeAttachmentInfo({
-	required BuildContext context,
-	required bool interactive,
-	required Post post,
+	required BuildContext? context,
+	required Iterable<_AttachmentMetadata> metadata,
 	required Settings settings
 }) sync* {
-	for (final attachment in post.attachments) {
+	for (final attachment in metadata) {
 		if (settings.showFilenameOnPosts && attachment.filename.isNotEmpty) {
 			final ellipsizedFilename = attachment.ellipsizedFilename;
 			if (ellipsizedFilename != null && settings.ellipsizeLongFilenamesOnPosts) {
 				yield TextSpan(
 					text: '$ellipsizedFilename ',
-					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
+					recognizer: context != null ? (TapGestureRecognizer()..onTap = () {
 						alert(context, 'Full filename', attachment.filename);
 					}) : null
 				);
@@ -2046,6 +2062,8 @@ TextSpan buildPostInfoRow({
 		],
 		if (post.id == post.threadId && thread?.flair != null && !(thread?.title?.contains(thread.flair?.name ?? '') ?? false)) ...[
 			makeFlagSpan(
+				context: context,
+				zone: zone,
 				flag: thread!.flair!,
 				includeTextOnlyContent: true,
 				appendLabels: false,
@@ -2131,9 +2149,13 @@ TextSpan buildPostInfoRow({
 			]
 			else if (field == PostDisplayField.attachmentInfo && post.attachments.isNotEmpty) TextSpan(
 				children: _makeAttachmentInfo(
-					context: context,
-					interactive: interactive,
-					post: post,
+					context: interactive ? context : null,
+					metadata: post.attachments.map((a) => (
+						filename: a.filename,
+						sizeInBytes: a.sizeInBytes,
+						width: a.width,
+						height: a.height
+					)),
 					settings: settings
 				).toList(),
 				style: TextStyle(
@@ -2149,6 +2171,8 @@ TextSpan buildPostInfoRow({
 			]
 			else if (field == PostDisplayField.flag && settings.showFlagOnPosts && post.flag != null) ...[
 				makeFlagSpan(
+					context: context,
+					zone: zone,
 					flag: post.flag!,
 					includeTextOnlyContent: true,
 					appendLabels: combineFlagNames && settings.showCountryNameOnPosts,
@@ -2213,6 +2237,111 @@ TextSpan buildPostInfoRow({
 				alignment: PlaceholderAlignment.middle
 			),
 			TextSpan(text: '${post.upvotes ?? '—'} ', style: TextStyle(color: theme.primaryColorWithBrightness(0.5)))
+		]);
+	}
+	return TextSpan(
+		style: const TextStyle(fontSize: 16),
+		children: children
+	);
+}
+
+TextSpan buildDraftInfoRow({
+	required DraftPost post,
+	required Settings settings,
+	required SavedTheme theme,
+	required Imageboard imageboard
+}) {
+	final thread = imageboard.persistence.getThreadStateIfExists(post.thread)?.thread;
+	final isOP = imageboard.site.supportsUserInfo && post.name == thread?.posts_.tryFirst?.name;
+	final uniqueIPCount = thread?.uniqueIPCount;
+	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
+	const lineBreak = TextSpan(text: '\n');
+	final name = post.name ?? imageboard.site.defaultUsername;
+	final file = post.file;
+	final scan = file == null ? null : MediaScan.peekCachedFileScan(file);
+	final children = [
+		if (post.threadId == null && (post.subject?.isNotEmpty ?? false)) TextSpan(
+			text: '${post.subject}\n',
+			style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
+		),
+		for (final field in settings.postDisplayFieldOrder)
+			if (field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && imageboard.site.explicitIds) TextSpan(
+				text: '#${thread?.replyCount ?? 1} ',
+				style: TextStyle(color: theme.primaryColor.withOpacity(0.5))
+			)
+			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && uniqueIPCount != null) ...[
+				WidgetSpan(
+					child: Icon(CupertinoIcons.person_fill, color: theme.secondaryColor, size: 15),
+					alignment: PlaceholderAlignment.middle
+				),
+				TextSpan(
+					text: '${uniqueIPCount + 1} ',
+					style: TextStyle(
+						color: theme.secondaryColor,
+						fontWeight: FontWeight.w600
+					)
+				)
+			]
+			else if (field == PostDisplayField.name) ...[
+				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && name == imageboard.site.defaultUsername)) TextSpan(
+					text: '${settings.filterProfanity(name)} (You)${isOP ? ' (OP)' : ''}',
+					style: TextStyle(fontWeight: FontWeight.w600, color: theme.secondaryColor)
+				)
+				else TextSpan(
+					text: '(You)',
+					style: TextStyle(fontWeight: FontWeight.w600, color: theme.secondaryColor)
+				),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.attachmentInfo && file != null) TextSpan(
+				children: _makeAttachmentInfo(
+					context: null,
+					metadata: [
+						(
+							filename: post.overrideFilename ?? file.split('/').last,
+							sizeInBytes: scan?.sizeInBytes,
+							width: scan?.width,
+							height: scan?.height
+						)
+					],
+					settings: settings
+				).toList(),
+				style: TextStyle(
+					color: theme.primaryColorWithBrightness(0.8)
+				)
+			)
+			else if (field == PostDisplayField.flag && settings.showFlagOnPosts && post.flag != null) ...[
+				makeFlagSpan(
+					context: null,
+					zone: null,
+					flag: post.flag!,
+					includeTextOnlyContent: true,
+					appendLabels: combineFlagNames && settings.showCountryNameOnPosts,
+					style: TextStyle(color: theme.primaryColor.withOpacity(0.75), fontSize: 16)
+				),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null && !combineFlagNames) TextSpan(
+				text: '${post.flag!.name} ',
+				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
+			)
+			else if (field == PostDisplayField.lineBreak && settings.showLineBreakInPostInfoRow) lineBreak,
+	];
+	if (children.last == lineBreak &&
+	    settings.postDisplayFieldOrder.last != PostDisplayField.lineBreak) {
+		// "Optional line-break" use case
+		// The line-break is positioned before some optional fields
+		// If the optional fields aren't there, get rid of the blank line by removing
+		// the line break.
+		children.removeLast();
+	}
+	if (imageboard.site.isReddit) {
+		children.addAll([
+			WidgetSpan(
+				child: Icon(CupertinoIcons.arrow_up, size: 15, color: theme.primaryColorWithBrightness(0.5)),
+				alignment: PlaceholderAlignment.middle
+			),
+			TextSpan(text: '— ', style: TextStyle(color: theme.primaryColorWithBrightness(0.5)))
 		]);
 	}
 	return TextSpan(

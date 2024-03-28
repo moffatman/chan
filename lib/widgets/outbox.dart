@@ -75,7 +75,6 @@ class QueueEntryWidget<T> extends StatelessWidget {
 			title = '${title?.substring(0, firstSpaceBefore25)}...';
 		}
 		final file = post.file;
-		final subject = post.subject;
 		return Row(
 			children: [
 				if (file != null) Padding(
@@ -94,42 +93,44 @@ class QueueEntryWidget<T> extends StatelessWidget {
 					)
 				),
 				Expanded(
-					child: Text.rich(
-						TextSpan(
-							children: [
-								if (subject?.isNotEmpty ?? false) TextSpan(
-									text: '$subject\n',
-									style: TextStyle(
-										color: Settings.instance.theme.titleColor,
-										fontWeight: FontWeight.bold
+					child: Builder(
+						builder: (context) => Text.rich(
+							TextSpan(
+								children: [
+									buildDraftInfoRow(
+										imageboard: entry.imageboard,
+										post: entry.post,
+										settings: context.watch<Settings>(),
+										theme: context.watch<SavedTheme>()
+									),
+									const TextSpan(text: '\n'),
+									buildHighlightedCommentTextSpan(
+										text: post.text
+									),
+									if (!replyBoxMode) TextSpan(
+										children: [
+											if (post.text.isNotEmpty) const TextSpan(text: '\n'),
+											if (onGoToThread == null)
+												const TextSpan(text: 'In current thread')
+											else if (post.threadId == null)
+												TextSpan(text: 'New thread on ${entry.site.formatBoardName(post.board)}')
+											else ...[
+												const TextSpan(text: 'In '),
+												TextSpan(
+													text: '>>>${entry.site.formatBoardNameWithoutTrailingSlash(post.board)}/${post.threadId}${entry.isArchived ? ' (Archived)' : ''}',
+													style: TextStyle(
+														color: Settings.instance.theme.secondaryColor,
+														decoration: TextDecoration.underline
+													)
+												),
+												if (title != null) TextSpan(text: ' ($title)')
+											]
+										],
+										style: TextStyle(color: Settings.instance.theme.primaryColorWithBrightness(0.5))
 									)
-								),
-								buildHighlightedCommentTextSpan(
-									text: post.text
-								),
-								if (!replyBoxMode) TextSpan(
-									children: [
-										if (post.text.isNotEmpty) const TextSpan(text: '\n'),
-										if (onGoToThread == null)
-											const TextSpan(text: 'In current thread')
-										else if (post.threadId == null)
-											TextSpan(text: 'New thread on ${entry.site.formatBoardName(post.board)}')
-										else ...[
-											const TextSpan(text: 'In '),
-											TextSpan(
-												text: '>>>${entry.site.formatBoardNameWithoutTrailingSlash(post.board)}/${post.threadId}${entry.isArchived ? ' (Archived)' : ''}',
-												style: TextStyle(
-													color: Settings.instance.theme.secondaryColor,
-													decoration: TextDecoration.underline
-												)
-											),
-											if (title != null) TextSpan(text: ' ($title)')
-										]
-									],
-									style: TextStyle(color: Settings.instance.theme.primaryColorWithBrightness(0.5))
-								)
-							],
-							style: TextStyle(color: Settings.instance.theme.primaryColor)
+								],
+								style: TextStyle(color: Settings.instance.theme.primaryColor)
+							)
 						)
 					)
 				)

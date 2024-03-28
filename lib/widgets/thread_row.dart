@@ -289,6 +289,8 @@ class ThreadRow extends StatelessWidget {
 			],
 			if (settings.showFlagInCatalogHeader && latestThread.posts_.first.flag != null) ...[
 				makeFlagSpan(
+					context: context,
+					zone: null,
 					flag: latestThread.posts_.first.flag!,
 					includeTextOnlyContent: true,
 					appendLabels: settings.showCountryNameInCatalogHeader,
@@ -352,6 +354,8 @@ class ThreadRow extends StatelessWidget {
 				if (!latestThread.title!.contains(latestThread.flair?.name ?? '')) {
 					headerRow.insert(0, const TextSpan(text: ' '));
 					headerRow.insert(0, makeFlagSpan(
+						context: context,
+						zone: null,
 						flag: latestThread.flair!,
 						includeTextOnlyContent: true,
 						appendLabels: false,

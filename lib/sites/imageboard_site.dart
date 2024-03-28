@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
@@ -800,11 +801,13 @@ class ImageboardEmote {
 }
 
 @HiveType(typeId: 46)
-class ImageboardBoardFlag {
+class ImageboardBoardFlag implements ImageboardFlag {
 	@HiveField(0)
 	final String code;
+	@override
 	@HiveField(1)
 	final String name;
+	@override
 	@HiveField(2)
 	final String imageUrl;
 	const ImageboardBoardFlag({
@@ -812,6 +815,13 @@ class ImageboardBoardFlag {
 		required this.name,
 		required this.imageUrl
 	});
+
+	@override
+	double get imageWidth => 16;
+	@override
+	double get imageHeight => 16;
+	@override
+	List<ImageboardFlag> get parts => [this];
 
 	@override
 	bool operator == (Object other) =>
