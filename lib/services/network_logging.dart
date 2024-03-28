@@ -2,9 +2,11 @@
 import 'dart:io';
 
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/version.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:mutex/mutex.dart';
 
@@ -13,6 +15,19 @@ class LoggingInterceptor extends Interceptor {
 	late final IOSink file = File(path).openWrite();
 	final lock = Mutex();
 	static final instance = LoggingInterceptor._();
+
+	Future<void> reportViaShareSheet(BuildContext context) async => lock.protect(() async {
+		final gzippedPath = '$path.gz';
+		await copyGzipped(path, gzippedPath);
+		if (!context.mounted) return;
+		await shareOne(
+			context: context,
+			text: gzippedPath,
+			subject: gzippedPath.split('/').last,
+			type: 'file',
+			sharePositionOrigin: null
+		);
+	});
 
 	Future<void> reportViaEmail() async => lock.protect(() async {
 		final gzippedPath = '$path.gz';

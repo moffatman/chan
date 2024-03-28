@@ -672,6 +672,11 @@ final dataSettings = [
 		onPressed: (context) => LoggingInterceptor.instance.reportViaEmail()
 	),
 	SimpleButtonSettingWidget(
+		description: 'Share network logs',
+		icon: CupertinoIcons.share,
+		onPressed: (context) => LoggingInterceptor.instance.reportViaShareSheet(context)
+	),
+	SimpleButtonSettingWidget(
 		description: 'Export data to JSON',
 		icon: CupertinoIcons.chevron_left_slash_chevron_right,
 		onPressed: (context) async {
