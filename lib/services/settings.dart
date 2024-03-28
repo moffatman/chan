@@ -17,6 +17,7 @@ import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -646,7 +647,11 @@ enum SettingsQuickAction {
 	@HiveField(4)
 	toggleListPositionIndicatorLocation,
 	@HiveField(5)
-	toggleVerticalTwoPaneSplit
+	toggleVerticalTwoPaneSplit,
+	@HiveField(6)
+	toggleImages,
+	@HiveField(7)
+	togglePixelatedThumbnails
 }
 
 @HiveType(typeId: 32)
@@ -674,6 +679,10 @@ extension SettingsQuickActionName on SettingsQuickAction? {
 				return 'Toggle list position indicator location';
 			case SettingsQuickAction.toggleVerticalTwoPaneSplit:
 				return 'Toggle vertical two-pane layout';
+			case SettingsQuickAction.toggleImages:
+				return 'Toggle images';
+			case SettingsQuickAction.togglePixelatedThumbnails:
+				return 'Toggle pixelated thumbnails';
 			case null:
 				return 'None';
 		}
@@ -2737,6 +2746,24 @@ class Settings extends ChangeNotifier {
 					context: context,
 					icon: verticalTwoPaneMinimumPaneSize.isNegative ? CupertinoIcons.rectangle : CupertinoIcons.rectangle_grid_1x2,
 					message: verticalTwoPaneMinimumPaneSize.isNegative ? 'Disabled vertical two-pane layout' : 'Enabled vertical two-pane layout'
+				);
+				break;
+			case SettingsQuickAction.toggleImages:
+				contentSettings.images = !contentSettings.images;
+				didEdit();
+				showToast(
+					context: context,
+					icon: contentSettings.images ? Adaptive.icons.photo : CupertinoIcons.xmark,
+					message: contentSettings.images ? 'Enabled images' : 'Disabled images'
+				);
+				break;
+			case SettingsQuickAction.togglePixelatedThumbnails:
+				thumbnailPixelationSetting.value = -1 * thumbnailPixelation;
+				didEdit();
+				showToast(
+					context: context,
+					icon: thumbnailPixelation.isNegative ? Adaptive.icons.photo : CupertinoIcons.square,
+					message: thumbnailPixelation.isNegative ? 'Disabled pixelated thumbnails' : 'Enabled pixelated thumbnails'
 				);
 				break;
 			case null:
