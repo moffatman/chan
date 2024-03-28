@@ -32,12 +32,13 @@ class HistoryPage extends StatefulWidget {
 	createState() => HistoryPageState();
 }
 
-const _historyPageSize = 50;
+const _historyPageSize = 35;
 
 class HistoryPageState extends State<HistoryPage> {
 	final masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	late final RefreshableListController<PersistentThreadState> _listController;
 	late final ValueNotifier<ImageboardScoped<PostIdentifier>?> _valueInjector;
+	List<PersistentThreadState> states = [];
 
 	@override
 	void initState() {
@@ -66,6 +67,30 @@ class HistoryPageState extends State<HistoryPage> {
 
 	Future<void> updateList() => _listController.update();
 
+	Future<List<PersistentThreadState>> _load(int startIndex) async {
+		if (startIndex < 0) {
+			return [];
+		}
+		int budget = _historyPageSize;
+		final out = <PersistentThreadState>[];
+		for (int i = startIndex; i < states.length; i++) {
+			if (budget <= 0) {
+				break;
+			}
+			final p = states[i];
+			if (p.thread?.posts_.last.isInitialized ?? false) {
+				out.add(p);
+				continue;
+			}
+			await p.ensureThreadLoaded();
+			if (p.thread != null) {
+				budget--;
+				out.add(p);
+			}
+		}
+		return out;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => widget.isActive);
@@ -76,7 +101,6 @@ class HistoryPageState extends State<HistoryPage> {
 			paneCreator: () => [
 				MultiMasterPane<ImageboardScoped<PostIdentifier>>(
 					masterBuilder: (context, selectedThread, threadSetter) {
-						List<PersistentThreadState> states = [];
 						final settings = context.watch<Settings>();
 						return AdaptiveScaffold(
 							resizeToAvoidBottomInset: false,
@@ -205,27 +229,10 @@ class HistoryPageState extends State<HistoryPage> {
 								listUpdater: () async {
 									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && s.showInHistory).toList();
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
-									final part = states.take(_historyPageSize).toList();
-									final futures = <Future<void>>[];
-									for (final p in part) {
-										if (p.thread?.posts_.last.isInitialized ?? false) {
-											continue;
-										}
-										futures.add(p.ensureThreadLoaded());
-									}
-									if (futures.isNotEmpty) {
-										await Future.wait(futures);
-									}
-									return part.where((p) => p.thread != null).toList();
+									return _load(0);
 								},
 								listExtender: (after) async {
-									final index = states.indexOf(after);
-									if (index != -1) {
-										final part = states.skip(index + 1).take(_historyPageSize).toList();
-										await Future.wait(part.map((p) => p.ensureThreadLoaded()));
-										return part.where((p) => p.thread != null).toList();
-									}
-									return [];
+									return _load(states.indexOf(after));
 								},
 								minUpdateDuration: Duration.zero,
 								id: 'history',

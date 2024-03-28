@@ -61,6 +61,9 @@ class _PostThreadCombo {
 		(o.threadState.identifier == threadState.identifier);
 	@override
 	int get hashCode => Object.hash(imageboard, post, threadState);
+
+	@override
+	String toString() => '_PostThreadCombo($imageboard, $threadState, $post)';
 }
 
 class SavedPage extends StatefulWidget {
@@ -615,8 +618,9 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
-						Future<_PostThreadCombo?> takePost() async {
+						Future<(_PostThreadCombo, bool)?> takePost() async {
 							final heads = <(Imageboard, PostIdentifier, DateTime)>[];
+							bool cost = false;
 							for (final entry in _yourPostsLists.entries) {
 								if (entry.value.isEmpty) {
 									continue;
@@ -629,7 +633,8 @@ class _SavedPageState extends State<SavedPage> {
 									heads.add((entry.key.$1, last, receiptTime));
 									continue;
 								}
-								// Have to load thread from disk
+								// Have to load thread from disk or parse from memory
+								cost = state.thread?.posts_.last.isInitialized != true;
 								await state.ensureThreadLoaded();
 								final thread = state.thread;
 								if (thread == null) {
@@ -659,11 +664,11 @@ class _SavedPageState extends State<SavedPage> {
 								// This should always be non-null and non-empty. But just avoid crash.
 								l.removeLast();
 							}
-							return _PostThreadCombo(
+							return (_PostThreadCombo(
 								imageboard: ret.$1,
 								post: threadState.thread?.posts.tryFirstWhere((p) => p.id == ret.$2.postId),
 								threadState: threadState
-							);
+							), cost);
 						}
 						return RefreshableList<_PostThreadCombo>(
 							header: AnimatedBuilder(
@@ -719,7 +724,11 @@ class _SavedPageState extends State<SavedPage> {
 									if (p == null) {
 										break;
 									}
-									ret.add(p);
+									ret.add(p.$1);
+									if (!p.$2) {
+										// Don't count this one, it was free
+										i--;
+									}
 								}
 								return ret;
 							},
@@ -730,7 +739,11 @@ class _SavedPageState extends State<SavedPage> {
 									if (p == null) {
 										break;
 									}
-									ret.add(p);
+									ret.add(p.$1);
+									if (!p.$2) {
+										// Don't count this one, it was free
+										i--;
+									}
 								}
 								return ret;
 							},
