@@ -1824,6 +1824,31 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
+	Future<void> _backButton() async {
+		final navigator = Navigator.of(context);
+		if (_drawerScaffoldKey.currentState?.isDrawerOpen ?? false) {
+			_drawerScaffoldKey.currentState?.closeDrawer();
+			// Closed the side drawer
+		}
+		else if (_tabs.mainTabIndex == 4 && (await _tabs._settingsNavigatorKey.currentState?.maybePop() ?? false)) {
+			// Popped something in Settings page
+		}
+		else if (await _willPopZones[_tabs.mainTabIndex]?.maybePop?.call() ?? false) {
+			// Popped something generically
+		}
+		else if (await _tabs._tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop() ?? false) {
+			// Popped something on the CupertinoTabView (this shouldn't happen)
+		}
+		else if (_tabs.mainTabIndex != 0) {
+			_tabs.mainTabIndex = 0;
+			// Returned to the browse pane
+		}
+		else if (await confirmExit()) {
+			navigator.pop();
+			// Exited the app
+		}
+	}
+
 	bool get isScreenWide => (MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);
 
 	bool get _androidDrawer => Settings.instance.androidDrawer;
@@ -1899,30 +1924,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				},
 				child: DescendantNavigatorPopScope(
 					canPop: () => false, // confirmExit always blocks
-					onPopInvoked: (didPop) async {
+					onPopInvoked: (didPop) {
 						if (didPop) {
 							return;
 						}
-						if (_drawerScaffoldKey.currentState?.isDrawerOpen ?? false) {
-							_drawerScaffoldKey.currentState?.closeDrawer();
-							return;
-						}
-						final navigator = Navigator.of(context);
-						if (_tabs.mainTabIndex == 4) {
-							if ((await _tabs._settingsNavigatorKey.currentState?.maybePop()) ?? false) {
-								return;
-							}
-						}
-						else if ((await _willPopZones[_tabs.mainTabIndex]?.maybePop?.call()) ?? false) {
-							return;
-						}
-						if (_tabs.mainTabIndex != 0) {
-							_tabs.mainTabIndex = 0;
-							return;
-						}
-						if (await confirmExit()) {
-							navigator.pop();
-						}
+						_backButton();
 					},
 					child: AdaptiveScaffold(
 						key: _drawerScaffoldKey,
@@ -2011,32 +2017,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								// Likely a text field is focused
 								return;
 							}
-							_tabs._tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop();
+							_backButton();
 							return null;
 						}
 					)
 				},
 				child: DescendantNavigatorPopScope(
 					canPop: () => false, // confirmExit always blocks
-					onPopInvoked: (didPop) async {
+					onPopInvoked: (didPop) {
 						if (didPop) {
 							return;
 						}
-						if (_drawerScaffoldKey.currentState?.isDrawerOpen ?? false) {
-							_drawerScaffoldKey.currentState?.closeDrawer();
-							return;
-						}
-						final navigator = Navigator.of(context);
-						if (await _tabs._tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop() ?? false) {
-							return;
-						}
-						if (_tabs.mainTabIndex != 0) {
-							_tabs.mainTabIndex = 0;
-							return;
-						}
-						if (await confirmExit()) {
-							navigator.pop();
-						}
+						_backButton();
 					},
 					child: CupertinoTabScaffold(
 						controller: _tabs._tabController,

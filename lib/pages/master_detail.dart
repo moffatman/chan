@@ -65,7 +65,7 @@ const dontAutoPopSettings = RouteSettings(
 );
 
 class WillPopZone {
-	bool Function()? canPop;
+	/// True = did pop
 	Future<bool> Function()? maybePop;
 }
 
@@ -325,18 +325,6 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		setState(() {});
 	}
 
-	bool _canPop() {
-		if (onePane) {
-			return !(masterKey.currentState?.canPop() ?? false);
-		}
-		else {
-			if (detailKey.currentState?.canPop() ?? false) {
-				return false;
-			}
-			return !(masterKey.currentState?.canPop() ?? false);
-		}
-	}
-
 	Future<bool> _maybePop() async {
 		if (onePane) {
 			return await masterKey.currentState?.maybePop() ?? false;
@@ -487,7 +475,6 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			}
 		}
 		lastOnePane = onePane;
-		context.watch<WillPopZone?>()?.canPop = _canPop;
 		context.watch<WillPopZone?>()?.maybePop = _maybePop;
 		return onePane ? Provider.value(
 			value: MasterDetailHint(
