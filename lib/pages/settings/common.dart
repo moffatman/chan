@@ -534,10 +534,17 @@ class NullableSteppableSettingWidget<T extends num> extends StandardImmutableSet
 				),
 				_makeSyncButton(setting.syncPaths),
 				_makeHelpButton(context),
+				AdaptiveButton(
+					padding: const EdgeInsets.only(left: 8, right: 8),
+					onPressed: value == null ? null : () {
+						setting.write(context, null);
+					},
+					child: const Text('Reset')
+				),
 				AdaptiveIconButton(
 					padding: EdgeInsets.zero,
 					onPressed: (value ?? (min + 1)) <= min ? null : () {
-						setting.write(context, value ?? (max + step) - step as T);
+						setting.write(context, (value ?? (max + step)) - step as T);
 					},
 					icon: const Icon(CupertinoIcons.minus)
 				),
@@ -545,7 +552,7 @@ class NullableSteppableSettingWidget<T extends num> extends StandardImmutableSet
 				AdaptiveIconButton(
 					padding: EdgeInsets.zero,
 					onPressed: (value ?? (max) - 1) >= max ? null : () {
-						setting.write(context, value ?? (min - step) + step as T);
+						setting.write(context, (value ?? (min - step)) + step as T);
 					},
 					icon: const Icon(CupertinoIcons.plus)
 				)
