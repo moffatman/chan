@@ -102,10 +102,8 @@ class AttachmentFields {
     merger: PrimitiveMerger(),
   );
   static String getId(Attachment x) => x.id;
-  static void setId(Attachment x, String v) => x.id = v;
-  static const id = HiveFieldAdapter<Attachment, String>(
+  static const id = ReadOnlyHiveFieldAdapter<Attachment, String>(
     getter: getId,
-    setter: setId,
     fieldNumber: 13,
     fieldName: 'id',
     merger: PrimitiveMerger(),

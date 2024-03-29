@@ -51,6 +51,15 @@ void _readHookAttachmentFields(Map<int, dynamic> fields) {
 		}
 		return url;
 	});
+	fields.update(AttachmentFields.id.fieldNumber, (id) {
+		if (id != null) {
+			return id;
+		}
+		// This attachment was written a very long time ago
+		// fields[1] is probably "int deprecatedId"
+		// Or I guess it could be null, in that case it still works to fix launching
+		return '${fields[1]}';
+	});
 }
 
 @HiveType(typeId: 9, isOptimized: true, readHook: _readHookAttachmentFields)
@@ -80,7 +89,7 @@ class Attachment {
 	@HiveField(12, isOptimized: true)
 	int? sizeInBytes;
 	@HiveField(13)
-	String id;
+	final String id;
 	@HiveField(14, isOptimized: true, defaultValue: false)
 	final bool useRandomUseragent;
 	@HiveField(15, isOptimized: true, defaultValue: false)
