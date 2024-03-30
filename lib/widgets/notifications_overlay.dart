@@ -245,8 +245,7 @@ class NotificationContent extends StatelessWidget {
 								if (post != null) ...[
 									const TextSpan(text: '\n'),
 									post.span.build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions(
-										shrinkWrap: true,
-										avoidBuggyClippers: true
+										shrinkWrap: true
 									))
 								]
 							]

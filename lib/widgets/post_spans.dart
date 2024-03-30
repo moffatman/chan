@@ -50,7 +50,6 @@ class PostSpanRenderOptions {
 	final bool addExpandingPosts;
 	final TextStyle baseTextStyle;
 	final bool showRawSource;
-	final bool avoidBuggyClippers;
 	final PointerEnterEventListener? onEnter;
 	final PointerExitEventListener? onExit;
 	final bool ownLine;
@@ -71,7 +70,6 @@ class PostSpanRenderOptions {
 		this.addExpandingPosts = false,
 		this.baseTextStyle = const TextStyle(),
 		this.showRawSource = false,
-		this.avoidBuggyClippers = false,
 		this.onEnter,
 		this.onExit,
 		this.ownLine = false,
@@ -96,7 +94,6 @@ class PostSpanRenderOptions {
 		bool? showCrossThreadLabel,
 		bool? shrinkWrap,
 		bool? addExpandingPosts,
-		bool? avoidBuggyClippers,
 		PointerEnterEventListener? onEnter,
 		PointerExitEventListener? onExit,
 		int? maxLines,
@@ -113,7 +110,6 @@ class PostSpanRenderOptions {
 		addExpandingPosts: addExpandingPosts ?? this.addExpandingPosts,
 		baseTextStyle: baseTextStyle ?? this.baseTextStyle,
 		showRawSource: showRawSource,
-		avoidBuggyClippers: avoidBuggyClippers ?? this.avoidBuggyClippers,
 		onEnter: onEnter ?? this.onEnter,
 		onExit: onExit ?? this.onExit,
 		ownLine: ownLine ?? this.ownLine,
@@ -851,7 +847,7 @@ class PostCodeSpan extends PostSpan {
 					color: Colors.black,
 					borderRadius: BorderRadius.all(Radius.circular(8))
 				),
-				child: options.avoidBuggyClippers ? child : SingleChildScrollView(
+				child: SingleChildScrollView(
 					scrollDirection: Axis.horizontal,
 					child: child
 				)
@@ -1056,10 +1052,7 @@ class PostLinkSpan extends PostSpan {
 					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
-						child: options.avoidBuggyClippers ? GestureDetector(
-							onTap: onTap,
-							child: tapChild
-						) : CupertinoButton(
+						child: CupertinoButton(
 							padding: EdgeInsets.zero,
 							onPressed: onTap,
 							child: tapChild
@@ -1143,7 +1136,7 @@ class PostTeXSpan extends PostSpan {
 			text: buildText()
 		) : WidgetSpan(
 			alignment: PlaceholderAlignment.middle,
-			child: options.avoidBuggyClippers ? child : SingleChildScrollView(
+			child: SingleChildScrollView(
 				scrollDirection: Axis.horizontal,
 				child: child
 			)
@@ -1393,7 +1386,7 @@ class PostShiftJISSpan extends PostSpan {
 		return WidgetSpan(
 			child: Padding(
 				padding: const EdgeInsets.all(8),
-				child: options.avoidBuggyClippers ? child1 : SingleChildScrollView(
+				child: SingleChildScrollView(
 					scrollDirection: Axis.horizontal,
 					child: child1
 				)
