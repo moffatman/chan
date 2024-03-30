@@ -686,9 +686,7 @@ final appearanceSettings = [
 				height: 200,
 				decoration: _threadAndPostRowDecorationOf(context),
 				child: IgnorePointer(
-					child: ClipRect(
-						child: _buildFakePostRow()
-					)
+					child: _buildFakePostRow()
 				)
 			)
 		),
@@ -934,13 +932,11 @@ final appearanceSettings = [
 						bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)),
 					)
 				),
-				child: ClipRect(
-					child: ThreadRow(
-						contentFocus: false,
-						isSelected: false,
-						thread: _makeFakeThread(),
-						showLastReplies: Settings.showLastRepliesInCatalogSetting.watch(context)
-					)
+				child: ThreadRow(
+					contentFocus: false,
+					isSelected: false,
+					thread: _makeFakeThread(),
+					showLastReplies: Settings.showLastRepliesInCatalogSetting.watch(context)
 				)
 			)
 		),
