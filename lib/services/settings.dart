@@ -2106,13 +2106,13 @@ class Settings extends ChangeNotifier {
 
 	String? filterError;
 	final filterListenable = EasyListenable();
-	FilterCache<FilterGroup<CustomFilter>>? _filter;
-	Iterable<CustomFilter> get customFilterLines => _filter?.wrappedFilter.filters ?? const Iterable.empty();
-	Filter get filter => _filter ?? const DummyFilter();
+	FilterCache<FilterGroup<CustomFilter>> _filter = FilterCache(FilterGroup([]));
+	Iterable<CustomFilter> get customFilterLines => _filter.wrappedFilter.filters;
+	Filter get filter => _filter;
 	void _tryToSetupFilter() {
 		try {
 			final newFilter = makeFilter(filterConfiguration);
-			if (newFilter != _filter?.wrappedFilter) {
+			if (newFilter != _filter.wrappedFilter) {
 				_filter = FilterCache(newFilter);
 			}
 			filterError = null;
@@ -2667,16 +2667,19 @@ class Settings extends ChangeNotifier {
 	void hideByMD5(String md5) {
 		_settings.hiddenImageMD5s.add(md5);
 		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
+		filterListenable.didUpdate();
 	}
 
 	void unHideByMD5(String md5) {
 		_settings.hiddenImageMD5s.remove(md5);
 		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
+		filterListenable.didUpdate();
 	}
 
 	void unHideByMD5s(Iterable<String> md5s) {
 		_settings.hiddenImageMD5s.removeAll(md5s);
 		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
+		filterListenable.didUpdate();
 	}
 
 	void setHiddenImageMD5s(Iterable<String> md5s) {
@@ -2691,6 +2694,7 @@ class Settings extends ChangeNotifier {
 			return md5;
 		}));
 		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
+		filterListenable.didUpdate();
 	}
 
 	Future<void> didEdit() async {

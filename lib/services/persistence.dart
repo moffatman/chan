@@ -1279,7 +1279,20 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		this.draft
 	}) : lastOpenedTime = DateTime.now(),
 	     unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({}),
-			 postIdsToStartRepliesAtBottom = postIdsToStartRepliesAtBottom ?? EfficientlyStoredIntSet({});
+			 postIdsToStartRepliesAtBottom = postIdsToStartRepliesAtBottom ?? EfficientlyStoredIntSet({}) {
+		Settings.instance.filterListenable.addListener(_onGlobalFilterUpdate);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		Settings.instance.filterListenable.removeListener(_onGlobalFilterUpdate);
+	}
+
+	void _onGlobalFilterUpdate() {
+		metaFilter = _makeMetaFilter();
+		_invalidate();
+	}
 
 	void _invalidate() {
 		_replyIdsToYou = null;
@@ -1287,10 +1300,17 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}
 
 	Future<void> ensureThreadLoaded({bool preinit = true, bool catalog = false}) async {
-		_thread ??= await Persistence.getCachedThread(imageboardKey, board, id);
-		if (preinit) {
-			await _thread?.preinit(catalog: catalog);
+		Thread? thread = _thread;
+		if (thread != null) {
+			await thread.preinit(catalog: catalog);
+			return;
 		}
+		// This is to do preinit before setting _thread (which will generate metafilter)
+		thread = await Persistence.getCachedThread(imageboardKey, board, id);
+		if (preinit) {
+			await thread?.preinit(catalog: catalog);
+		}
+		_thread = thread ?? _thread;
 	}
 
 	Future<Thread?> getThread() async {
@@ -1308,6 +1328,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			}
 			Persistence.setCachedThread(imageboardKey, board, id, newThread);
 			_thread = newThread;
+			metaFilter = _makeMetaFilter();
 			_youIds = null;
 			_invalidate();
 			save(); // Inform listeners
@@ -1335,25 +1356,15 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}();
 
 	int? unseenReplyIdsToYouCount() => replyIdsToYou()?.where(unseenPostIds.data.contains).length;
-	(Filter, List<Post>)? _filteredPosts;
+	List<Post>? _filteredPosts;
 	List<Post>? filteredPosts() {
-		if (_filteredPosts != null && _filteredPosts?.$1 != Settings.instance.globalFilter) {
-			_filteredPosts = null;
-		}
-		return (_filteredPosts ??= () {
-			if (lastSeenPostId == null) {
-				return null;
-			}
-			final posts = thread?.posts.where((p) {
-				return threadFilter.filter(p)?.type.hide != true
-					&& Settings.instance.globalFilter.filter(p)?.type.hide != true;
-			}).toList();
-			if (posts != null) {
-				return (Settings.instance.globalFilter, posts);
-			}
-			return null;
-		}())?.$2;
+		return _filteredPosts ??= _makeFilteredPosts();
 	}
+	List<Post>? _makeFilteredPosts() => thread?.posts.where((p) {
+		return threadFilter.filter(p)?.type.hide != true
+		  && metaFilter.filter(p)?.type.hide != true
+			&& Settings.instance.globalFilter.filter(p)?.type.hide != true;
+	}).toList(growable: false);
 	int? unseenReplyCount() => filteredPosts()?.where((p) => unseenPostIds.data.contains(p.id)).length;
 	int? unseenImageCount() => filteredPosts()?.map((p) {
 		if (!unseenPostIds.data.contains(p.id)) {
@@ -1386,13 +1397,15 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	@override
 	bool get isDeleted => thread?.isDeleted ?? false;
 
-	Filter get _makeThreadFilter => FilterCache(ThreadFilter(
+	Filter _makeThreadFilter() => FilterCache(ThreadFilter(
 		hideIds: hiddenPostIds,
 		showIds: overrideShowPostIds,
 		repliedToIds: treeHiddenPostIds,
 		posterIds: hiddenPosterIds
 	));
-	late Filter threadFilter = _makeThreadFilter;
+	late Filter threadFilter = _makeThreadFilter();
+	MetaFilter _makeMetaFilter() => MetaFilter(Settings.instance.globalFilter, thread?.posts);
+	late MetaFilter metaFilter = _makeMetaFilter();
 	void setPostHiding(int id, PostHidingState state) {
 		switch (state) {
 			case PostHidingState.none:
@@ -1425,7 +1438,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 				break;
 		}
 		// invalidate cache
-		threadFilter = _makeThreadFilter;
+		threadFilter = _makeThreadFilter();
 		_invalidate();
 	}
 	PostHidingState getPostHiding(int id) {
@@ -1444,13 +1457,13 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	void hidePosterId(String id) {
 		hiddenPosterIds.add(id);
 		// invalidate cache
-		threadFilter = _makeThreadFilter;
+		threadFilter = _makeThreadFilter();
 		_invalidate();
 	}
 	void unHidePosterId(String id) {
 		hiddenPosterIds.remove(id);
 		// invalidate cache
-		threadFilter = _makeThreadFilter;
+		threadFilter = _makeThreadFilter();
 		_invalidate();
 	}
 

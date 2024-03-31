@@ -12,13 +12,14 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/default_gesture_detector.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart' hide WeakMap;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide WeakMap;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:weak_map/weak_map.dart';
 
 const double _overscrollTriggerThreshold = 100;
 const _treeAnimationDuration = Duration(milliseconds: 250);
@@ -980,12 +981,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	List<T>? originalList;
 	List<T>? sortedList;
 	late final ValueNotifier<Object?> error;
-	SearchFilter? _searchFilter;
 	late final ValueNotifier<String?> updatingNow;
 	late final TextEditingController _searchController;
 	late final FocusNode _searchFocusNode;
 	bool get searchHasFocus => _searchFocusNode.hasFocus;
-	bool get searching => _searchFilter != null;
+	bool get searching => _searchController.text.isNotEmpty;
 	DateTime? lastUpdateTime;
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
@@ -1015,6 +1015,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	})? _lastTreeOrder;
 	bool _addedResumeCallback = false;
 	final Set<_RefreshableTreeItemsCacheKey> _internedHashKeys = {};
+	final WeakMap<Filterable, String?> _searchStrings = WeakMap();
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
 	bool get treeBuildingFailed => _treeBuildingFailed;
@@ -1024,13 +1025,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		super.initState();
 		updatingNow = ValueNotifier(null);
 		error = ValueNotifier(null);
-		_searchController = TextEditingController();
+		_searchController = TextEditingController(text: widget.initialFilter ?? '');
 		_searchFocusNode = FocusNode();
 		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
-		if (widget.initialFilter != null) {
-			_searchFilter = SearchFilter(widget.initialFilter!.toLowerCase());
+		if (widget.initialFilter?.isNotEmpty ?? false) {
 			_searchTapped = true;
-			_searchController.text = widget.initialFilter!;
 		}
 		widget.controller?.attach(this);
 		widget.controller?.newContentId(widget.id);
@@ -1179,7 +1178,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		setState(() {
 			_lastTreeOrder = null;
 			_searchTapped = false;
-			_searchFilter = null;
 		});
 		WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
 			widget.onFilterChanged?.call(null);
@@ -1425,9 +1423,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (widget.treeAdapter != null && (useTree || value.representsStubChildren) && !isHidden.isHidden) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
-		if ((_searchFilter?.text.isNotEmpty ?? false) && widget.filteredItemBuilder != null) {
+		if (_searchTapped && _searchController.text.isNotEmpty && widget.filteredItemBuilder != null) {
 			child = value.representsStubChildren ? const SizedBox.shrink() : Builder(
-				builder: (context) => widget.filteredItemBuilder!(context, value.item, closeSearch, _searchFilter!.text)
+				builder: (context) => widget.filteredItemBuilder!(context, value.item, closeSearch, _searchController.text)
 			);
 		}
 		else {
@@ -1987,27 +1985,32 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return (tree: out, automaticallyCollapsed: automaticallyCollapsed, automaticallyTopLevelCollapsed: automaticallyTopLevelCollapsed);
 	}
 
+	bool _matchesSearchFilter(Filterable item, String query) {
+		return (_searchStrings[item] ??= '${item.id} ${defaultPatternFields.map((field) {
+			return item.getFilterFieldText(field) ?? '';
+		}).join(' ').toLowerCase()}').contains(query);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.maybeOf(context));
 		widget.controller?.topOffset = MediaQuery.paddingOf(context).top;
 		widget.controller?.bottomOffset = MediaQuery.paddingOf(context).bottom;
+		final query = _searchController.text.toLowerCase();
+		final sortedList = this.sortedList;
 		if (sortedList != null) {
 			final filterableAdapter = widget.filterableAdapter;
-			if (filterableAdapter != null) {
-				MetaFilter.of(context)?.seed(sortedList!.map(filterableAdapter).toList());
-			}
 			final pinnedValues = <RefreshableListItem<T>>[];
 			List<RefreshableListItem<T>> values = [];
 			filteredValues = <RefreshableListItem<T>>[];
-			final filters = [
-				if (_searchFilter != null) _searchFilter!,
-				Filter.of(context)
-			];
-			for (final item in sortedList!) {
-				bool handled = false;
-				for (final filter in filters) {
-					final result = filterableAdapter != null ? filter.filter(filterableAdapter(item)) : null;
+			final filter = Filter.of(context);
+			for (final item in sortedList) {
+				final item_ = filterableAdapter?.call(item);
+				if (item_ != null) {
+					if (query.isNotEmpty && !_matchesSearchFilter(item_, query)) {
+						continue;
+					}
+					final result = filterableAdapter != null ? filter.filter(item_) : null;
 					if (result != null) {
 						bool pinned = false;
 						if (result.type.pinToTop && widget.allowReordering) {
@@ -2044,17 +2047,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 								state: this
 							));
 						}
-						handled = true;
-						break;
+						continue;
 					}
 				}
-				if (!handled) {
-					values.add(RefreshableListItem(
-						item: item,
-						id: widget.treeAdapter?.getId(item) ?? 0,
-						state: this
-					));
-				}
+				values.add(RefreshableListItem(
+					item: item,
+					id: widget.treeAdapter?.getId(item) ?? 0,
+					state: this
+				));
 			}
 			_treeBuildingFailed = false;
 			values.insertAll(0, pinnedValues);
@@ -2223,7 +2223,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													child: widget.header
 												)
 											],
-											if (!widget.shrinkWrap && (sortedList?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
+											if (!widget.shrinkWrap && sortedList.isNotEmpty && widget.filterableAdapter != null) SliverToBoxAdapter(
 												child: Container(
 													height: kMinInteractiveDimensionCupertino * max(1, Settings.textScaleSetting.watch(context)),
 													padding: const EdgeInsets.all(4),
@@ -2244,7 +2244,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																				if (searchText.isEmpty) {
 																					_lastTreeOrder = null;
 																				}
-																				_searchFilter = SearchFilter(searchText.toLowerCase());
 																			});
 																			widget.onFilterChanged?.call(searchText);
 																		},
@@ -2267,7 +2266,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												)
 											),
 											if (widget.filterAlternative != null &&
-													((_searchFilter?.text.isNotEmpty ?? false) ||
+													(searching ||
 													(_searchTapped && widget.filterAlternative!.suggestWhenFilterEmpty))) SliverToBoxAdapter(
 												child: Container(
 													decoration: BoxDecoration(
@@ -2280,7 +2279,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														padding: const EdgeInsets.all(16),
 														onPressed: () {
 															_searchFocusNode.unfocus();
-															widget.filterAlternative!.handler(_searchFilter?.text ?? '');
+															widget.filterAlternative!.handler(query);
 														},
 														child: Row(
 															children: [
@@ -2304,7 +2303,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															}
 														),
 														list: values,
-														id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
+														id: '$query${widget.sortMethods}$forceRebuildId',
 														didFinishLayout: widget.controller?.didFinishLayout,
 														childCount: values.length,
 														addRepaintBoundaries: false,
@@ -2334,7 +2333,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														},
 														separatorSentinel: dividerColor,
 														list: values,
-														id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
+														id: '$query${widget.sortMethods}$forceRebuildId',
 														childCount: values.length * 2,
 														findChildIndexCallback: (key) {
 															if (key is ValueKey<RefreshableListItem<T>>) {
@@ -2562,7 +2561,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 								if (widget.initialList?.isNotEmpty ?? false) CupertinoButton(
 									onPressed: () {
 										originalList = widget.initialList;
-										sortedList = originalList?.toList();
+										this.sortedList = originalList?.toList();
 										if (sortedList != null) {
 											_sortList();
 										}
@@ -3159,7 +3158,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	void didFinishLayout(int startIndex, int endIndex) {
-		if (state?._searchFilter == null) {
+		if (state?.searching == false) {
 			for (int i = startIndex; i <= endIndex; i++) {
 				_tryCachingItem(i, _items[i]);
 			}

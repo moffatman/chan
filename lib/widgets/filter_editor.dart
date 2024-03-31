@@ -108,6 +108,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool notify = filter.outputType.notify;
 			bool collapse = filter.outputType.collapse;
 			bool hideReplies = filter.outputType.hideReplies;
+			bool hideReplyChains = filter.outputType.hideReplyChains;
 			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
 			return showAdaptiveModalPopup<(bool, CustomFilter?)>(
 				context: context,
@@ -460,7 +461,18 @@ class _FilterEditorState extends State<FilterEditor> {
 												('Auto-watch', autoWatch != null, (v) => autoWatch = (v ? const AutoWatchType(push: null) : null)),
 												('Notify', notify, (v) => notify = v),
 												('Collapse (tree mode)', collapse, (v) => collapse = v),
-												('Hide replies', hideReplies, (v) => hideReplies = v),
+												('Hide replies', hideReplies, (v) {
+													hideReplies = v;
+													if (v && hideReplyChains) {
+														hideReplyChains = false;
+													}
+												}),
+												('Hide reply chains', hideReplyChains, (v) {
+													hideReplyChains = v;
+													if (v && hideReplies) {
+														hideReplies = false;
+													}
+												}),
 											].map((t) => AdaptiveListTile(
 												title: Text(t.$1),
 												trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
@@ -532,6 +544,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										outputType: FilterResultType(
 											hide: hide,
 											hideReplies: hideReplies,
+											hideReplyChains: hideReplyChains,
 											highlight: highlight,
 											pinToTop: pinToTop,
 											autoSave: autoSave,
@@ -595,6 +608,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'    Append `:push` to ensure push is enabled on the watches, or `:noPush` to ensure it\'s disabled\n'
 													'`;collapse` Automatically collapse matching posts in tree mode\n'
 													'`;hideReplies` Hide replies to matching posts too\n'
+													'`;hideReplyChains` Hide replies and their replies (...) to matching posts too\n'
 													'`;show` Show matches (use it to override later filters)\n'
 													'`;file:only` Only apply to posts with files\n'
 													'`;file:no` Only apply to posts without files\n'
@@ -676,7 +690,11 @@ class _FilterEditorState extends State<FilterEditor> {
 							if (filter.value.outputType.autoWatch != null) const Icon(CupertinoIcons.bell),
 							if (filter.value.outputType.notify) const Icon(CupertinoIcons.bell_fill),
 							if (filter.value.outputType.collapse) const Icon(CupertinoIcons.chevron_down_square),
-							if (filter.value.outputType.hideReplies) const Icon(CupertinoIcons.reply_all)
+							if (filter.value.outputType.hideReplies) const Icon(CupertinoIcons.reply_all),
+							if (filter.value.outputType.hideReplyChains) ...[
+								const Icon(CupertinoIcons.reply_all),
+								const Icon(CupertinoIcons.repeat)
+							]
 						];
 						return AdaptiveListTile(
 							faded: filter.value.disabled,

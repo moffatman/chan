@@ -1,3 +1,4 @@
+import 'package:chan/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' hide WeakMap;
 import 'package:provider/provider.dart';
@@ -28,6 +29,7 @@ class FilterResultType {
 	final bool notify;
 	final bool collapse;
 	final bool hideReplies;
+	final bool hideReplyChains;
 
 	const FilterResultType({
 		this.hide = false,
@@ -37,7 +39,8 @@ class FilterResultType {
 		this.autoWatch,
 		this.notify = false,
 		this.collapse = false,
-		this.hideReplies = false
+		this.hideReplies = false,
+		this.hideReplyChains = false
 	});
 
 	static const FilterResultType empty = FilterResultType();
@@ -51,7 +54,8 @@ class FilterResultType {
 		if (autoWatch != null) autoWatch.toString(),
 		if (notify) 'notify',
 		if (collapse) 'collapse',
-		if (hideReplies) 'hideReplies'
+		if (hideReplies) 'hideReplies',
+		if (hideReplyChains) 'hideReplyChains'
 	].join(', ')})';
 
 	@override
@@ -65,10 +69,11 @@ class FilterResultType {
 		other.autoWatch == autoWatch &&
 		other.notify == notify &&
 		other.collapse == collapse &&
-		other.hideReplies == hideReplies;
+		other.hideReplies == hideReplies &&
+		other.hideReplyChains == hideReplyChains;
 
 	@override
-	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, autoWatch, notify, collapse, hideReplies);
+	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, autoWatch, notify, collapse, hideReplies, hideReplyChains);
 }
 
 class FilterResult {
@@ -261,6 +266,7 @@ class CustomFilter implements Filter {
 			bool notify = false;
 			bool collapse = false;
 			bool hideReplies = false;
+			bool hideReplyChains = false;
 			while (true) {
 				final s = match.group(i);
 				if (s == null) {
@@ -309,6 +315,9 @@ class CustomFilter implements Filter {
 				}
 				else if (s == 'hideReplies') {
 					hideReplies = true;
+				}
+				else if (s == 'hideReplyChains') {
+					hideReplyChains = true;
 				}
 				else if (s.startsWith('type:')) {
 					filter.patternFields = s.split(_separatorPattern).skip(1).toList();
@@ -379,7 +388,8 @@ class CustomFilter implements Filter {
 				autoWatch: autoWatch,
 				notify: notify,
 				collapse: collapse,
-				hideReplies: hideReplies
+				hideReplies: hideReplies,
+				hideReplyChains: hideReplyChains
 			);
 			return filter;
 		}
@@ -436,8 +446,12 @@ class CustomFilter implements Filter {
 		if (outputType.hideReplies) {
 			out.write(';hideReplies');
 		}
+		if (outputType.hideReplyChains) {
+			out.write(';hideReplyChains');
+		}
 		if (outputType == FilterResultType.empty ||
-		    outputType == const FilterResultType(hideReplies: true)) {
+		    outputType == const FilterResultType(hideReplies: true) ||
+				outputType == const FilterResultType(hideReplyChains: true)) {
 			// Kind of a dummy filter, just used to override others
 			// Also lets you hideReplies without hiding primary post
 			out.write(';show');
@@ -482,7 +496,7 @@ class CustomFilter implements Filter {
 	}
 
 	@override
-	bool get supportsMetaFilter => outputType.hideReplies;
+	bool get supportsMetaFilter => outputType.hideReplies || outputType.hideReplyChains;
 
 	@override
 	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadsOnly: $threadsOnly, minRepliedTo: $minRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
@@ -613,32 +627,6 @@ class MD5Filter implements Filter {
 	int get hashCode => Object.hash(md5s, applyToThreads);
 }
 
-class SearchFilter implements Filter {
-	final String text;
-	SearchFilter(this.text);
-	@override
-	FilterResult? filter(Filterable item) {
-		return '${item.id} ${defaultPatternFields.map((field) {
-			return item.getFilterFieldText(field) ?? '';
-		}).join(' ').toLowerCase()}'.contains(text) ? null : FilterResult(const FilterResultType(hide: true), 'Search for "$text"');
-	}
-
-	@override
-	bool get supportsMetaFilter => false;
-
-	@override
-	String toString() => 'SearchFilter(text: $text)';
-
-	@override
-	bool operator == (Object other) =>
-		identical(this, other) ||
-		other is SearchFilter &&
-		other.text == text;
-
-	@override
-	int get hashCode => text.hashCode;
-}
-
 class FilterGroup<T extends Filter> implements Filter {
 	final List<T> filters;
 	FilterGroup(this.filters);
@@ -735,100 +723,50 @@ class FilterZone extends StatelessWidget {
 	}
 }
 
-class MetaFilterZone extends StatefulWidget {
-	final Widget child;
-
-	const MetaFilterZone({
-		required this.child,
-		super.key
-	});
-
-	@override
-	createState() => _MetaFilterZoneState();
-}
-
-class _MetaFilterZoneState extends State<MetaFilterZone> {
-	late MetaFilter metaFilter;
-
-	@override
-	void initState() {
-		super.initState();
-		metaFilter = MetaFilter(const DummyFilter());
-	}
-
-	@override
-	void didChangeDependencies() {
-		super.didChangeDependencies();
-		final parent = Filter.of(context);
-		if (parent != metaFilter.parent) {
-			// Parent filter has updated
-			final oldList = metaFilter._lastList;
-			metaFilter = MetaFilter(parent);
-			if (oldList != null) {
-				metaFilter.seed(oldList);
-			}
-		}
-	}
-
-	@override
-	Widget build(BuildContext context) {
-		// TODO: Check how often this gets rebuilt and cache thrown away
-		return ChangeNotifierProvider<MetaFilter>.value(
-			value: metaFilter,
-			child: ProxyProvider<MetaFilter, Filter>(
-				// Tweaked FilterZone here, because we want the metafilter to be applied second
-				update: (context, metaFilter, result) => FilterCache(FilterGroup([Filter.of(context), metaFilter])),
-				child: widget.child
-			)
-		);
-	}
-}
-
-class MetaFilter extends ChangeNotifier implements Filter {
-	final bool active;
-	final Filter parent;
+class MetaFilter implements Filter {
 	final toxicRepliedToIds = <int, FilterResult>{};
-	List<Filterable>? _lastList;
+	final treeToxicRepliedToIds = <int, FilterResult>{};
 
-	MetaFilter(this.parent) : active = parent.supportsMetaFilter;
-
-	static MetaFilter? of(BuildContext context, {bool listen = true}) {
-		return listen ? context.watch<MetaFilter?>() : context.read<MetaFilter?>();
-	}
-
-	void seed(List<Filterable> list) {
-		if (!active) {
+	MetaFilter(Filter parent, List<Filterable>? list) {
+		if (list == null || !parent.supportsMetaFilter) {
+			// Nothing to do
 			return;
 		}
-		if (listEquals(_lastList, list)) {
-			// No change
-			return;
-		}
-		final before = Map.of(toxicRepliedToIds);
-		toxicRepliedToIds.clear();
-		for (final item in list) {
+		// Not all sites ensure strictly chronological sorting
+		// This is important so that only one pass is needed to tree-hide
+		final sorted = list.toList();
+		sorted.sort((a, b) => a.id.compareTo(b.id));
+
+		for (final item in sorted) {
 			final result = parent.filter(item);
 			if (result != null && result.type.hideReplies) {
 				toxicRepliedToIds[item.id] = result;
 			}
-		}
-		if (!mapEquals(before, toxicRepliedToIds)) {
-			Future.microtask(notifyListeners);
+			else if (result != null && result.type.hideReplyChains) {
+				treeToxicRepliedToIds[item.id] = result;
+			}
+			if (item.repliedToIds.any(treeToxicRepliedToIds.containsKey)) {
+				final match = item.repliedToIds.tryMapOnce((id) => treeToxicRepliedToIds[id]);
+				if (match != null) {
+					treeToxicRepliedToIds[item.id] = match;
+				}
+			}
 		}
 	}
 
 	@override
 	FilterResult? filter(Filterable item) {
-		if (!active) {
-			return null;
-		}
-		if (toxicRepliedToIds.isEmpty) {
+		if (toxicRepliedToIds.isEmpty && treeToxicRepliedToIds.isEmpty) {
 			return null;
 		}
 		for (final id in item.repliedToIds) {
 			final match = toxicRepliedToIds[id];
 			if (match != null) {
 				return FilterResult(const FilterResultType(hide: true), 'Replied to $id (${match.reason})');
+			}
+			final treeMatch = treeToxicRepliedToIds[id];
+			if (treeMatch != null) {
+				return FilterResult(const FilterResultType(hide: true), 'In reply chain of $id (${treeMatch.reason})');
 			}
 		}
 		return null;
@@ -839,10 +777,8 @@ class MetaFilter extends ChangeNotifier implements Filter {
 
 	@override
 	bool operator == (Object other) =>
-		identical(this, other) ||
-		other is MetaFilter &&
-		other.parent == parent;
+		identical(this, other);
 	
 	@override
-	int get hashCode => parent.hashCode;
+	int get hashCode => identityHashCode(this);
 }

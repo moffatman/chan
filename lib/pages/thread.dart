@@ -1167,7 +1167,8 @@ class ThreadPageState extends State<ThreadPage> {
 			},
 			child: FilterZone(
 				filter: persistentState.threadFilter,
-				child: MetaFilterZone(
+				child: FilterZone(
+					filter: persistentState.metaFilter,
 					child: MultiProvider(
 						providers: [
 							Provider.value(
