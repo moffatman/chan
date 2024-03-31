@@ -1222,9 +1222,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					}
 					return thread_;
 				}
-				catch(e) {
+				catch(e, st) {
 					if (e is! BoardNotFoundException) {
 						print('Error getting $thread from ${archive.name}: ${e.toStringDio()}');
+						print(st);
 						errorMessages[archive.name] = e.toStringDio();
 					}
 				}

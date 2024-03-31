@@ -67,11 +67,20 @@ class FuukaArchive extends ImageboardSiteArchive {
 					if (match != null) {
 						final board = match.group(1)!;
 						final postId = int.parse(match.group(2)!);
-						elements.add(PostQuoteLinkSpan(
-							board: board,
-							postId: postId,
-							threadId: linkedPostThreadIds['$board/$postId'] ?? threadId
-						));
+						final linkedThreadId = linkedPostThreadIds['$board/$postId'];
+						if (linkedThreadId != null) {
+							elements.add(PostQuoteLinkSpan(
+								board: board,
+								postId: postId,
+								threadId: linkedThreadId
+							));
+						}
+						else {
+							elements.add(PostQuoteLinkSpan.dead(
+								board: board,
+								postId: postId
+							));
+						}
 					}
 					else {
 						final match = _quoteLinkMatcher.firstMatch(node.attributes['href']!);
@@ -156,7 +165,9 @@ class FuukaArchive extends ImageboardSiteArchive {
 						kPriority: priority
 					}
 				));
-				linkedPostThreadIds['${linkMatches.group(1)!}/${linkMatches.group(2)!}'] = int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!);
+				if (response.redirects.isNotEmpty) {
+					linkedPostThreadIds['${linkMatches.group(1)!}/${linkMatches.group(2)!}'] = int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!);
+				}
 			}
 		}
 		final a = _makeAttachment(element.querySelector('.thumb')?.parent, threadId);
