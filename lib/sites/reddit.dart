@@ -692,7 +692,16 @@ class SiteReddit extends ImageboardSite {
 			}
 		}
 		final String url = data['url'];
-		String text = (data['selftext'] ?? '').isNotEmpty ? unescape.convert(data['selftext']) : '[${url.split('#').first.split('?').first.replaceFirst(RegExp(r'^https://'), '')}](${data['url']})';
+		String text = '';
+		if (data['is_self'] ?? false) {
+			text = data['selftext'] ?? '';
+		}
+		else {
+			text = '[${url.split('#').first.split('?').first.replaceFirst(RegExp(r'^https://'), '')}](${data['url']})';
+			if ((data['selftext'] ?? '').isNotEmpty) {
+				text += '\n\n${data['selftext']}';
+			}
+		}
 		final Map? crosspostParent = (data['crosspost_parent_list'] as List?)?.tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']);
 		if (crosspostParent != null) {
 			await dumpAttachments(crosspostParent);
