@@ -93,6 +93,7 @@ class AdaptiveThinButton extends StatelessWidget {
 			return OutlinedButton(
 				onPressed: onPressed,
 				style: ButtonStyle(
+					padding: MaterialStateProperty.all(padding),
 					foregroundColor: filled ? MaterialStateProperty.all(theme.backgroundColor) : null,
 					side: MaterialStateProperty.all(BorderSide(color: color ?? theme.primaryColor)),
 					backgroundColor: filled ? MaterialStateProperty.resolveWith((s) {
