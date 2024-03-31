@@ -1361,9 +1361,19 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		return _filteredPosts ??= _makeFilteredPosts();
 	}
 	List<Post>? _makeFilteredPosts() => thread?.posts.where((p) {
-		return threadFilter.filter(p)?.type.hide != true
-		  && metaFilter.filter(p)?.type.hide != true
-			&& Settings.instance.globalFilter.filter(p)?.type.hide != true;
+		final threadResult = threadFilter.filter(p);
+		if (threadResult != null) {
+			return !threadResult.type.hide;
+		}
+		final metaResult = metaFilter.filter(p);
+		if (metaResult != null) {
+			return !metaResult.type.hide;
+		}
+		final globalResult = Settings.instance.globalFilter.filter(p);
+		if (globalResult != null) {
+			return !globalResult.type.hide;
+		}
+		return true;
 	}).toList(growable: false);
 	int? unseenReplyCount() => filteredPosts()?.where((p) => unseenPostIds.data.contains(p.id)).length;
 	int? unseenImageCount() => filteredPosts()?.map((p) {
