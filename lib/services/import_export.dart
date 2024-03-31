@@ -274,7 +274,8 @@ Future<List<ImportLog>> import(File archive) async {
 		Future<void> hiveImportMap<T extends HiveObjectMixin>({
 			required String type,
 			required FieldMerger<T> merger,
-			required Box<T> yourBox
+			required Box<T> yourBox,
+			List<String> skipPaths = const []
 		}) async {
 			if (!(await Hive.boxExists(yourBox.name, path: dir.path))) {
 				log.add(ImportLogFailure(filename: '${yourBox.name}.hive', type: type, message: 'File missing'));
@@ -306,7 +307,8 @@ Future<List<ImportLog>> import(File archive) async {
 				final results = Hive.merge(
 					merger: merger,
 					yours: yours,
-					theirs: theirs
+					theirs: theirs,
+					skipPaths: skipPaths
 				);
 				for (final conflict in results.conflicts) {
 					log.add(ImportLogConflict(
@@ -467,6 +469,11 @@ Future<List<ImportLog>> import(File archive) async {
 					PersistentBrowserStateFields.threadWatches.fieldName,
 					'*',
 					ThreadWatchFields.watchTime.fieldName
+				].join('/'),
+				[
+					SavedSettingsFields.browserStateBySite.fieldName,
+					'*',
+					PersistentBrowserStateFields.notificationsId.fieldName
 				].join('/')
 			]
 		);
@@ -478,7 +485,14 @@ Future<List<ImportLog>> import(File archive) async {
 		await hiveImportMap<PersistentThreadState>(
 			type: 'Thread States',
 			merger: const ResolvedAdaptedMerger(PersistentThreadStateAdapter()),
-			yourBox: Persistence.sharedThreadStateBox
+			yourBox: Persistence.sharedThreadStateBox,
+			skipPaths: [
+				PersistentThreadStateFields.lastSeenPostId.fieldName,
+				PersistentThreadStateFields.lastOpenedTime.fieldName,
+				PersistentThreadStateFields.firstVisiblePostId.fieldName,
+				PersistentThreadStateFields.firstVisiblePostAlignment.fieldName,
+				PersistentThreadStateFields.useArchive.fieldName
+			]
 		);
 		await hiveImportLazyMap<Thread>(
 			type: 'Threads',
