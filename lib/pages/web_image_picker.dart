@@ -68,6 +68,15 @@ enum WebImageSearchMethod {
 	}
 }
 
+enum _NavigationState {
+	/// No specific URL loaded yet
+	initial,
+	/// First URL loaded after search
+	firstPage,
+	/// Some further navigation after the search landing
+	furtherPage
+}
+
 class WebImagePickerPage extends StatefulWidget {
 	final ImageboardSite? site;
 
@@ -84,7 +93,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	InAppWebViewController? webViewController;
 
 	late final PullToRefreshController pullToRefreshController;
-	String url = "";
+	_NavigationState _navigationState = _NavigationState.initial;
 	bool startedInitialLoad = false;
 	bool canGoBack = false;
 	bool canGoForward = false;
@@ -94,12 +103,14 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	static const _kMobileUserAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1';
 	static const _kDesktopUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15';
 	bool useDesktopUserAgent = false;
+	bool showSearchHistory = true;
 
 	@override
 	void initState() {
 		super.initState();
 		urlController = TextEditingController();
 		urlFocusNode = FocusNode();
+		urlFocusNode.addListener(_onUrlFocusChange);
 		pullToRefreshController = PullToRefreshController(
 			settings: PullToRefreshSettings(
 				color: Colors.blue,
@@ -117,9 +128,34 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 		urlFocusNode.requestFocus();
 	}
 
+	void _onUrlFocusChange() {
+		if (urlFocusNode.hasPrimaryFocus) {
+			setState(() {
+				showSearchHistory = true;
+			});
+		}
+	}
+
+	void _onNewUrl(WebUri? url) {
+		if (url == null) {
+			return;
+		}
+		if (_navigationState == _NavigationState.furtherPage) {
+			final urlStr = url.toString();
+			if (urlStr != 'about:blank') {
+				urlController.text = urlStr;
+			}
+		}
+	}
+
 	void _search(String value) {
+		urlController.text = value;
 		final settings = Settings.instance;
 		Uri url = Uri.parse(value);
+		_navigationState = _NavigationState.initial;
+		setState(() {
+			showSearchHistory = false;
+		});
 		if (url.scheme.isEmpty) {
 			url = settings.webImageSearchMethod.searchUrl(value);
 			// Don't pop-in behind loading search
@@ -140,9 +176,13 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 					smartDashesType: SmartDashesType.disabled,
 					smartQuotesType: SmartQuotesType.disabled,
 					onSubmitted: _search,
+					onChanged: (_) {
+						setState(() {});
+					},
 					onSuffixTap: () {
 						urlController.clear();
 						urlFocusNode.requestFocus();
+						setState(() {});
 					},
 				),
 				actions: [
@@ -229,11 +269,12 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											webViewController = controller;
 										},
 										onLoadStart: (controller, url) {
-											setState(() {
-												startedInitialLoad = true;
-												this.url = url.toString();
-												if (url.toString() != 'about:blank') urlController.text = this.url;
-											});
+											startedInitialLoad = true;
+											_navigationState = switch(_navigationState) {
+												_NavigationState.initial => _NavigationState.firstPage,
+												_NavigationState.firstPage || _NavigationState.furtherPage => _NavigationState.furtherPage
+											};
+											_onNewUrl(url);
 										},
 										onPermissionRequest: (controller, request) async {
 											return PermissionResponse(
@@ -243,10 +284,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										},
 										onLoadStop: (controller, url) async {
 											pullToRefreshController.endRefreshing();
-											setState(() {
-												this.url = url.toString();
-												if (url.toString() != 'about:blank') urlController.text = this.url;
-											});
+											_onNewUrl(url);
 										},
 										onReceivedError: (controller, url, code) {
 											pullToRefreshController.endRefreshing();
@@ -257,7 +295,6 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											}
 											setState(() {
 												this.progress = progress / 100;
-												if (url.toString() != 'about:blank') urlController.text = url;
 											});
 										},
 										onTitleChanged: (controller, title) async {
@@ -267,42 +304,64 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										onUpdateVisitedHistory: (controller, url, androidIsReload) async {
 											canGoBack = await controller.canGoBack();
 											canGoForward = await controller.canGoForward();
-											setState(() {
-												this.url = url.toString();
-												if (url.toString() != 'about:blank') urlController.text = this.url;
-											});
+											_onNewUrl(url);
 										}
 									),
-									if (!startedInitialLoad) ListView(
-										children: Persistence.recentWebImageSearches.map((query) {
-											return CupertinoButton(
-												padding: EdgeInsets.zero,
-												onPressed: () => _search(query),
-												child: Container(
-													decoration: BoxDecoration(
-														border: Border(bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
-													),
-													padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-													child: Row(
-														children: [
-															Expanded(
-																child: Text(query)
-															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
-																child: const Icon(CupertinoIcons.xmark),
-																onPressed: () {
-																	Persistence.removeRecentWebImageSearch(query);
-																	setState(() {});
-																}
-															)
-														]
+									if (showSearchHistory) Container(
+										color: ChanceTheme.backgroundColorOf(context),
+										child: ListView(
+											children: Persistence.recentWebImageSearches.where((s) {
+													return s.toLowerCase().contains(urlController.text.toLowerCase());
+											}).map((query) {
+												return CupertinoButton(
+													padding: EdgeInsets.zero,
+													onPressed: () => _search(query),
+													child: Container(
+														decoration: BoxDecoration(
+															border: Border(bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
+														),
+														padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+														child: Row(
+															children: [
+																Expanded(
+																	child: Text(query)
+																),
+																CupertinoButton(
+																	padding: EdgeInsets.zero,
+																	child: const Icon(CupertinoIcons.xmark),
+																	onPressed: () {
+																		Persistence.removeRecentWebImageSearch(query);
+																		setState(() {});
+																	}
+																)
+															]
+														)
 													)
-												)
-											);
-										}).toList()
+												);
+											}).toList()
+										)
 									)
-									else if (progress < 1.0) LinearProgressIndicator(value: progress)
+									else if (progress < 1.0) LinearProgressIndicator(value: progress),
+									if (showSearchHistory && startedInitialLoad) Align(
+										alignment: Alignment.bottomCenter,
+										child: Padding(
+											padding: const EdgeInsets.only(bottom: 16),
+											child: AdaptiveFilledButton(
+												padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+												child: const Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(CupertinoIcons.xmark),
+														SizedBox(width: 8),
+														Text('Back to browser')
+													]
+												),
+												onPressed: () => setState(() {
+													showSearchHistory = false;
+												})
+											)
+										)
+									)
 								],
 							),
 						),
