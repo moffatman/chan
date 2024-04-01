@@ -124,6 +124,61 @@ class _SavedPageState extends State<SavedPage> {
 		}
 	}
 
+	Future<(_PostThreadCombo, bool)?> _takeYourPost() async {
+		final heads = <(Imageboard, PostIdentifier, DateTime)>[];
+		bool cost = false;
+		for (final entry in _yourPostsLists.entries) {
+			if (entry.value.isEmpty) {
+				continue;
+			}
+			final last = entry.value.last;
+			final state = entry.key.$1.persistence.getThreadState(last.thread);
+			final receiptTime = state.receipts.tryFirstWhere((r) => r.id == last.postId)?.time;
+			if (receiptTime != null) {
+				// Easiest situation - date is recorded on receipt
+				heads.add((entry.key.$1, last, receiptTime));
+				continue;
+			}
+			cost |= state.thread?.posts_.last.isInitialized != true;
+			if (state.thread?.posts_.last.isInitialized != true) {
+				print('cost incurred because of $entry');
+			}
+			await state.ensureThreadLoaded();
+			final thread = state.thread;
+			if (thread == null) {
+				continue;
+			}
+			final post = thread.posts_.tryFirstWhere((p) => p.id == last.postId);
+			if (post == null) {
+				// Weird situation... just skip it
+				continue;
+			}
+			heads.add((entry.key.$1, last, post.time));
+		}
+		(Imageboard, PostIdentifier, DateTime)? latestHead;
+		for (final head in heads) {
+			if (latestHead == null || head.$3.isAfter(latestHead.$3)) {
+				latestHead = head;
+			}
+		}
+		final ret = latestHead;
+		if (ret == null) {
+			// No more entries
+			return null;
+		}
+		final threadState = ret.$1.persistence.getThreadState(ret.$2.thread);
+		final l = _yourPostsLists[(ret.$1, ret.$2.board)];
+		if (l != null && l.isNotEmpty) {
+			// This should always be non-null and non-empty. But just avoid crash.
+			l.removeLast();
+		}
+		return (_PostThreadCombo(
+			imageboard: ret.$1,
+			post: threadState.thread?.posts.tryFirstWhere((p) => p.id == ret.$2.postId),
+			threadState: threadState
+		), cost);
+	}
+
 	Widget _placeholder(String message) {
 		return AdaptiveScaffold(
 			body: Center(
@@ -618,57 +673,6 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
-						Future<(_PostThreadCombo, bool)?> takePost() async {
-							final heads = <(Imageboard, PostIdentifier, DateTime)>[];
-							bool cost = false;
-							for (final entry in _yourPostsLists.entries) {
-								if (entry.value.isEmpty) {
-									continue;
-								}
-								final last = entry.value.last;
-								final state = entry.key.$1.persistence.getThreadState(last.thread);
-								cost |= state.thread?.posts_.last.isInitialized != true;
-								final receiptTime = state.receipts.tryFirstWhere((r) => r.id == last.postId)?.time;
-								if (receiptTime != null) {
-									// Easiest situation - date is recorded on receipt
-									heads.add((entry.key.$1, last, receiptTime));
-									continue;
-								}
-								await state.ensureThreadLoaded();
-								final thread = state.thread;
-								if (thread == null) {
-									continue;
-								}
-								final post = thread.posts_.tryFirstWhere((p) => p.id == last.postId);
-								if (post == null) {
-									// Weird situation... just skip it
-									continue;
-								}
-								heads.add((entry.key.$1, last, post.time));
-							}
-							(Imageboard, PostIdentifier, DateTime)? latestHead;
-							for (final head in heads) {
-								if (latestHead == null || head.$3.isAfter(latestHead.$3)) {
-									latestHead = head;
-								}
-							}
-							final ret = latestHead;
-							if (ret == null) {
-								// No more entries
-								return null;
-							}
-							final threadState = ret.$1.persistence.getThreadState(ret.$2.thread);
-							final l = _yourPostsLists[(ret.$1, ret.$2.board)];
-							if (l != null && l.isNotEmpty) {
-								// This should always be non-null and non-empty. But just avoid crash.
-								l.removeLast();
-							}
-							return (_PostThreadCombo(
-								imageboard: ret.$1,
-								post: threadState.thread?.posts.tryFirstWhere((p) => p.id == ret.$2.postId),
-								threadState: threadState
-							), cost);
-						}
 						return RefreshableList<_PostThreadCombo>(
 							header: AnimatedBuilder(
 								animation: _yourPostsListController,
@@ -719,7 +723,7 @@ class _SavedPageState extends State<SavedPage> {
 								// First chunk should include all with missing threads
 								final ret = _yourPostsMissingThreads.toList();
 								for (int i = 0; i < _yourPostsChunkSize; i++) {
-									final p = await takePost();
+									final p = await _takeYourPost();
 									if (p == null) {
 										break;
 									}
@@ -734,7 +738,7 @@ class _SavedPageState extends State<SavedPage> {
 							listExtender: (_) async {
 								final ret = <_PostThreadCombo>[];
 								for (int i = 0; i < _yourPostsChunkSize; i++) {
-									final p = await takePost();
+									final p = await _takeYourPost();
 									if (p == null) {
 										break;
 									}
