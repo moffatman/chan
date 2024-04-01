@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
@@ -18,6 +20,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 extension _Unnullify on ImageboardScoped<ImageboardBoard?> {
@@ -69,6 +72,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	int _selectedIndex = 0;
 	bool _showSelectedItem = isOnMac;
 	late TextEditingController _textEditingController;
+	late StreamSubscription<BoxEvent> _boardsBoxSubscription;
 
 	bool isPhoneSoftwareKeyboard() {
 		return MediaQueryData.fromView(View.of(context)).viewInsets.bottom > 100;
@@ -115,6 +119,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
 		}
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
+		_boardsBoxSubscription = Persistence.sharedBoardsBox.watch().listen(_onBoardsBoxUpdate);
 		ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.down;
 		_textEditingController = TextEditingController();
 	}
@@ -123,6 +128,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		final newAllImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
 		currentImageboardIndex = max(0, newAllImageboards.indexOf(currentImageboard));
 		allImageboards = newAllImageboards;
+		_fetchBoards();
+		setState(() {});
+	}
+
+	void _onBoardsBoxUpdate(BoxEvent _) {
 		_fetchBoards();
 		setState(() {});
 	}
@@ -251,6 +261,16 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 	}
 
+	Future<void> _pop(ImageboardScoped<ImageboardBoard> item) async {
+		if (item.imageboard.persistence.maybeGetBoard(item.item.name) == null) {
+			// In case it is found by typeahead or something
+			await item.imageboard.persistence.setBoard(item.item.name, item.item);
+		}
+		if (context.mounted) {
+			Navigator.pop(context, item);
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
@@ -328,7 +348,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									final selected = filteredBoards[effectiveSelectedIndex];
 									if (selected.item != null) {
 										lightHapticFeedback();
-										Navigator.of(context).pop(selected.unnullify);
+										_pop(selected.unnullify);
 										return;
 									}
 									setState(() {
@@ -378,26 +398,26 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														onPressed: () => showAdaptiveDialog(
 															barrierDismissible: true,
 															context: context,
-															builder: (context) => AdaptiveAlertDialog(
-																title: Padding(
-																	padding: const EdgeInsets.only(bottom: 16),
-																	child: Row(
-																		mainAxisAlignment: MainAxisAlignment.center,
-																		children: [
-																			if (allImageboards.length > 1) Padding(
-																				padding: const EdgeInsets.only(right: 8),
-																				child: ImageboardIcon(
-																					imageboardKey: currentImageboard.key,
+															builder: (context) => StatefulBuilder(
+																builder: (context, setDialogState) => AdaptiveAlertDialog(
+																	title: Padding(
+																		padding: const EdgeInsets.only(bottom: 16),
+																		child: Row(
+																			mainAxisAlignment: MainAxisAlignment.center,
+																			children: [
+																				if (allImageboards.length > 1) Padding(
+																					padding: const EdgeInsets.only(right: 8),
+																					child: ImageboardIcon(
+																						imageboardKey: currentImageboard.key,
+																					)
+																				),
+																				const Flexible(
+																					child: Text('Favourite boards')
 																				)
-																			),
-																			const Flexible(
-																				child: Text('Favourite boards')
-																			)
-																		]
-																	)
-																),
-																content: StatefulBuilder(
-																	builder: (context, setDialogState) => SizedBox(
+																			]
+																		)
+																	),
+																	content: SizedBox(
 																		height: 300,
 																		child: ReorderableList(
 																			itemCount: currentImageboard.persistence.browserState.favouriteBoards.length,
@@ -442,30 +462,30 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				)
 																			)
 																		)
-																	)
-																),
-																actions: [
-																	AdaptiveDialogAction(
-																		child: const Text('Add board'),
-																		onPressed: () async {
-																			final board = await Navigator.push<ImageboardScoped<ImageboardBoard>>(context, TransparentRoute(
-																				builder: (ctx) => ImageboardScope(
-																					imageboardKey: null,
-																					imageboard: currentImageboard,
-																					child: const BoardSwitcherPage(currentlyPickingFavourites: true)
-																				)
-																			));
-																			if (board != null && !currentImageboard.persistence.browserState.favouriteBoards.contains(board.item.name)) {
-																				currentImageboard.persistence.browserState.favouriteBoards.add(board.item.name);
-																				setDialogState(() {});
-																			}
-																		}
 																	),
-																	AdaptiveDialogAction(
-																		child: const Text('Close'),
-																		onPressed: () => Navigator.pop(context)
-																	)
-																]
+																	actions: [
+																		AdaptiveDialogAction(
+																			child: const Text('Add board'),
+																			onPressed: () async {
+																				final board = await Navigator.push<ImageboardScoped<ImageboardBoard>>(context, TransparentRoute(
+																					builder: (ctx) => ImageboardScope(
+																						imageboardKey: null,
+																						imageboard: currentImageboard,
+																						child: const BoardSwitcherPage(currentlyPickingFavourites: true)
+																					)
+																				));
+																				if (board != null && !currentImageboard.persistence.browserState.favouriteBoards.contains(board.item.name)) {
+																					currentImageboard.persistence.browserState.favouriteBoards.add(board.item.name);
+																					setDialogState(() {});
+																				}
+																			}
+																		),
+																		AdaptiveDialogAction(
+																			child: const Text('Close'),
+																			onPressed: () => Navigator.pop(context)
+																		)
+																	]
+																)
 															)
 														)
 													)
@@ -671,7 +691,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												),
 												onPressed: () {
 													lightHapticFeedback();
-													Navigator.of(context).pop(imageboard.scope(board));
+													_pop(imageboard.scope(board));
 												}
 											)
 										);
@@ -832,7 +852,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												),
 												onPressed: () {
 													lightHapticFeedback();
-													Navigator.of(context).pop(item.unnullify);
+													_pop(item.unnullify);
 												}
 											)
 										);
@@ -974,5 +994,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_focusNode.dispose();
 		_textEditingController.dispose();
 		ImageboardRegistry.instance.removeListener(_onImageboardRegistryUpdate);
+		_boardsBoxSubscription.cancel();
 	}
 }
