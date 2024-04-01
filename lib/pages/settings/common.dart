@@ -113,6 +113,9 @@ abstract class SettingWidget {
 	@protected
 	Widget buildImpl(BuildContext context);
 
+	@protected
+	double get leftPadding => 16;
+
 	Widget build() {
 		return Builder(
 			key: ValueKey(this),
@@ -126,9 +129,11 @@ abstract class SettingWidget {
 							padding: subsetting ? const EdgeInsets.symmetric(
 								vertical: 0,
 								horizontal: 32
-							) : const EdgeInsets.symmetric(
-								vertical: 8,
-								horizontal: 16
+							) : EdgeInsets.only(
+								top: 8,
+								bottom: 8,
+								right: 16,
+								left: leftPadding
 							),
 							child: Builder(
 								builder: (context) => buildImpl(context)
@@ -399,7 +404,7 @@ class SegmentedSettingWidget<T extends Object> extends StandardImmutableSettingW
 				),
 				const SizedBox(height: 16),
 				Padding(
-					padding: const EdgeInsets.symmetric(horizontal: 16),
+					padding: const EdgeInsets.symmetric(horizontal: 0),
 					child: StatefulBuilder(
 						builder: (context, setState) => AdaptiveChoiceControl<T>(
 							children: children,
@@ -729,19 +734,36 @@ class ImmutableButtonSettingWidget<T> extends StandardImmutableSettingWidget<T> 
 		return Padding(
 			padding: const EdgeInsets.symmetric(vertical: 8),
 			child: Row(
+				mainAxisAlignment: MainAxisAlignment.spaceBetween,
 				children: [
-					_makeIcon(color),
 					Expanded(
-						child: Text(description, style: TextStyle(color: color))
+						child: Row(
+							children: [
+								_makeIcon(color),
+								Expanded(
+									child: Text(description, style: TextStyle(color: color))
+								)
+							]
+						)
 					),
-					_makeSyncButton(setting.syncPaths),
-					_makeHelpButton(context),
-					if (injectButton != null) injectButton(context, setting.watch(context), makeWriter(context)),
-					AdaptiveFilledButton(
-						padding: const EdgeInsets.all(8),
-						color: color,
-						onPressed: () => onPressed(context, setting.read(context), makeWriter(context)),
-						child: builder(setting.watch(context))
+					Flexible(
+						child: Row(
+							mainAxisAlignment: MainAxisAlignment.end,
+							children: [
+								_makeSyncButton(setting.syncPaths),
+								_makeHelpButton(context),
+								if (injectButton != null) injectButton(context, setting.watch(context), makeWriter(context)),
+								Flexible(
+									flex: 1,
+									child: AdaptiveFilledButton(
+										padding: const EdgeInsets.all(8),
+										color: color,
+										onPressed: () => onPressed(context, setting.read(context), makeWriter(context)),
+										child: builder(setting.watch(context))
+									)
+								)
+							]
+						)
 					)
 				]
 			),
@@ -937,6 +959,10 @@ class ImageboardScopedSettingWidget extends SettingWidget {
 		}
 	}
 
+	/// The [builder] will provide the left padding
+	@override
+	double get leftPadding => 0;
+
 	@override
 	Widget buildImpl(BuildContext context) {
 		return _ImageboardPicker(
@@ -948,7 +974,6 @@ class ImageboardScopedSettingWidget extends SettingWidget {
 							Expanded(
 								child: builder(imageboard).build()
 							),
-							const SizedBox(width: 8),
 							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(8),
 								onPressed: () async {
@@ -1019,8 +1044,6 @@ class ImageboardScopedSettingGroup extends SettingWidget {
 	@override
 	Widget buildImpl(BuildContext context) {
 		return Container(
-			margin: const EdgeInsets.all(16),
-			padding: const EdgeInsets.all(16),
 			decoration: BoxDecoration(
 				color: ChanceTheme.primaryColorWithBrightness10Of(context),
 				borderRadius: BorderRadius.circular(12)
@@ -1029,8 +1052,10 @@ class ImageboardScopedSettingGroup extends SettingWidget {
 				builder: (imageboard, setImageboard) => Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
+						const SizedBox(height: 16),
 						Row(
 							children: [
+								const SizedBox(width: 16),
 								Expanded(
 									child: Text(title)
 								),
@@ -1053,7 +1078,8 @@ class ImageboardScopedSettingGroup extends SettingWidget {
 											Text(imageboard.site.name)
 										]
 									)
-								)
+								),
+								const SizedBox(width: 16)
 							]
 						),
 						...settings.map((s) => s.builder(imageboard).build())

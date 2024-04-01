@@ -76,10 +76,10 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 				borderRadius: const BorderRadius.all(Radius.circular(8)),
 				color: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
 			),
-			margin: const EdgeInsets.all(16),
 			padding: const EdgeInsets.all(16),
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
+				crossAxisAlignment: CrossAxisAlignment.stretch,
 				children: [
 					// SizedBox is used here to avoid changing layout when deleting (rows will be gone)
 					SizedBox(
@@ -100,7 +100,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 												return TableRow(
 													children: [
 														Padding(
-															padding: const EdgeInsets.only(bottom: 8),
+															padding: const EdgeInsets.only(bottom: 8, right: 8),
 															child: Text(entry.key, textAlign: TextAlign.left)
 														),
 														Text('${megabytes.toStringAsFixed(1)} MB', textAlign: TextAlign.right)
@@ -113,8 +113,11 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 						)
 					),
 					const SizedBox(height: 8),
-					Row(
-						mainAxisAlignment: MainAxisAlignment.spaceBetween,
+					Wrap(
+						alignment: WrapAlignment.spaceBetween,
+						runAlignment: WrapAlignment.end,
+						spacing: 16,
+						runSpacing: 16,
 						children: [
 							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(16),
@@ -188,18 +191,22 @@ class SettingsThreadsPanel extends StatelessWidget {
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
 						color: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
 					),
-					margin: const EdgeInsets.all(16),
-					padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+					padding: const EdgeInsets.all(16),
 					child: Table(
 						columnWidths: const {
-							0: FlexColumnWidth(2)
+							0: FlexColumnWidth(1),
+							1: IntrinsicColumnWidth(),
+							2: IntrinsicColumnWidth()
 						},
 						defaultVerticalAlignment: TableCellVerticalAlignment.middle,
 						children: [
 							TableRow(
 								children: [
 									const Text('Saved threads', textAlign: TextAlign.left),
-									Text(savedThreads.length.toString(), textAlign: TextAlign.right),
+									Padding(
+										padding: const EdgeInsets.symmetric(horizontal: 16),
+										child: Text(savedThreads.length.toString(), textAlign: TextAlign.right)
+									),
 									AdaptiveIconButton(
 										onPressed: savedThreads.isEmpty ? null : () => confirmDelete(savedThreads, itemType: 'saved thread'),
 										icon: const Text('Delete')
@@ -209,7 +216,10 @@ class SettingsThreadsPanel extends StatelessWidget {
 							TableRow(
 								children: [
 									const Text('Watched threads', textAlign: TextAlign.left),
-									Text(watchedThreads.length.toString(), textAlign: TextAlign.right),
+									Padding(
+										padding: const EdgeInsets.symmetric(horizontal: 16),
+										child: Text(watchedThreads.length.toString(), textAlign: TextAlign.right)
+									),
 									AdaptiveIconButton(
 										onPressed: watchedThreads.isEmpty ? null : () => confirmDelete(watchedThreads, itemType: 'watched thread'),
 										icon: const Text('Delete')
@@ -220,7 +230,10 @@ class SettingsThreadsPanel extends StatelessWidget {
 								return TableRow(
 									children: [
 										Text('Over ${entry.$1} days old', textAlign: TextAlign.left),
-										Text(entry.$2.length.toString(), textAlign: TextAlign.right),
+										Padding(
+											padding: const EdgeInsets.symmetric(horizontal: 16),
+											child: Text(entry.$2.length.toString(), textAlign: TextAlign.right)
+										),
 										AdaptiveIconButton(
 											onPressed: entry.$2.isEmpty ? null : () => confirmDelete(entry.$2),
 											icon: const Text('Delete')
