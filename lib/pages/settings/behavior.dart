@@ -516,5 +516,11 @@ final behaviorSettings = [
 		icon: CupertinoIcons.exclamationmark_shield,
 		helpText: 'Automatic waiting to use captcha after spam-filter encountered on current IP, automatic refresh of post ticket in background.',
 		setting: Settings.useSpamFilterWorkaroundsSetting
+	),
+	const SwitchSettingWidget(
+		description: 'Bottom-bar swipe gestures',
+		icon: CupertinoIcons.arrow_left_right_square,
+		helpText: 'Swipe left and right to switch tabs. Swipe up and down to show and hide the tab bar.',
+		setting: Settings.swipeGesturesOnBottomBarSetting
 	)
 ];

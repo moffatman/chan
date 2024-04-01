@@ -2174,6 +2174,17 @@ class SavedSettingsFields {
     fieldName: 'catalogGridModeTextAboveAttachment',
     merger: PrimitiveMerger(),
   );
+  static bool getSwipeGesturesOnBottomBar(SavedSettings x) =>
+      x.swipeGesturesOnBottomBar;
+  static void setSwipeGesturesOnBottomBar(SavedSettings x, bool v) =>
+      x.swipeGesturesOnBottomBar = v;
+  static const swipeGesturesOnBottomBar = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getSwipeGesturesOnBottomBar,
+    setter: setSwipeGesturesOnBottomBar,
+    fieldNumber: 182,
+    fieldName: 'swipeGesturesOnBottomBar',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2355,7 +2366,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     178: SavedSettingsFields.useSpamFilterWorkarounds,
     179: SavedSettingsFields.scrollbarThickness,
     180: SavedSettingsFields.thumbnailPixelation,
-    181: SavedSettingsFields.catalogGridModeTextAboveAttachment
+    181: SavedSettingsFields.catalogGridModeTextAboveAttachment,
+    182: SavedSettingsFields.swipeGesturesOnBottomBar
   };
 
   @override
@@ -2551,13 +2563,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       scrollbarThickness: fields[179] as double?,
       thumbnailPixelation: fields[180] as int?,
       catalogGridModeTextAboveAttachment: fields[181] as bool?,
+      swipeGesturesOnBottomBar: fields[182] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(169)
+      ..writeByte(170)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -2895,7 +2908,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(180)
       ..write(obj.thumbnailPixelation)
       ..writeByte(181)
-      ..write(obj.catalogGridModeTextAboveAttachment);
+      ..write(obj.catalogGridModeTextAboveAttachment)
+      ..writeByte(182)
+      ..write(obj.swipeGesturesOnBottomBar);
   }
 
   @override

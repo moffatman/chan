@@ -2384,7 +2384,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 				_skipNextSwipe = eventTooCloseToEdge(details.globalPosition);
 			},
 			onPanEnd: (details) {
-				if (_skipNextSwipe) {
+				if (_skipNextSwipe || !Settings.instance.swipeGesturesOnBottomBar) {
 					return;
 				}
 				if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
