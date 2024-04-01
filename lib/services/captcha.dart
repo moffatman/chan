@@ -12,6 +12,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/captcha_dvach.dart';
 import 'package:chan/widgets/captcha_lynxchan.dart';
+import 'package:chan/widgets/captcha_mccaptcha.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/captcha_secucap.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
@@ -144,6 +145,12 @@ Future<CaptchaSolution?> solveCaptcha({
 			));
 		case SecucapCaptchaRequest():
 			return pushModal((onCaptchaSolved) => CaptchaSecucap(
+				request: request,
+				onCaptchaSolved: onCaptchaSolved,
+				site: site
+			));
+		case McCaptchaRequest():
+			return pushModal((onCaptchaSolved) => CaptchaMcCaptcha(
 				request: request,
 				onCaptchaSolved: onCaptchaSolved,
 				site: site

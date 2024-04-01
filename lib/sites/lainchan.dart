@@ -312,6 +312,11 @@ class SiteLainchan extends ImageboardSite {
 		else if (captchaSolution is SecucapCaptchaSolution) {
 			fields['captcha'] = captchaSolution.response;
 		}
+		else if (captchaSolution is McCaptchaSolution) {
+			fields['guid'] = captchaSolution.guid;
+			fields['x'] = captchaSolution.x.toString();
+			fields['y'] = captchaSolution.y.toString();
+		}
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/post.php'),
 			data: FormData.fromMap(fields),

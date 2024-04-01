@@ -1,3 +1,4 @@
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:flutter/foundation.dart';
 
@@ -16,6 +17,13 @@ class SiteSoyjak extends SiteLainchanOrg {
 
 	@override
 	String get siteType => 'soyjak';
+
+	@override
+	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+		return McCaptchaRequest(
+			challengeUrl: Uri.https(baseUrl, '/inc/mccaptcha/entrypoint.php', {'mode': 'captcha'})
+		);
+	}
 
 	@override
 	bool operator ==(Object other) =>

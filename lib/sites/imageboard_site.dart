@@ -606,6 +606,15 @@ class SecucapCaptchaRequest extends CaptchaRequest {
 	String toString() => 'SecucapCaptchaRequest(challengeUrl: $challengeUrl)';
 }
 
+class McCaptchaRequest extends CaptchaRequest {
+	final Uri challengeUrl;
+	const McCaptchaRequest({
+		required this.challengeUrl
+	});
+	@override
+	String toString() => 'McCaptchaRequest(challengeUrl: $challengeUrl)';
+}
+
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
 	final DateTime acquiredAt;
@@ -729,6 +738,21 @@ class SecucapCaptchaSolution extends CaptchaSolution {
 	String toString() => 'SecucapCaptchaSolution(response: $response)';
 }
 
+class McCaptchaSolution extends CaptchaSolution {
+	final String guid;
+	final int x;
+	final int y;
+	@override
+	DateTime? get expiresAt => acquiredAt.add(const Duration(seconds: 90));
+	McCaptchaSolution({
+		required super.acquiredAt,
+		required this.guid,
+		required this.x,
+		required this.y
+	});
+	@override
+	String toString() => 'McCaptchaSolution(guid: $guid, x: $x, y: $y)';
+}
 class ImageboardArchiveSearchResult {
 	final Post? post;
 	final Thread? thread;
