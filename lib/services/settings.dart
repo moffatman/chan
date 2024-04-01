@@ -1157,6 +1157,8 @@ class SavedSettings extends HiveObject {
 	double scrollbarThickness;
 	@HiveField(180)
 	int thumbnailPixelation;
+	@HiveField(181)
+	bool catalogGridModeTextAboveAttachment;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1339,6 +1341,7 @@ class SavedSettings extends HiveObject {
 		bool? useSpamFilterWorkarounds,
 		double? scrollbarThickness,
 		int? thumbnailPixelation,
+		bool? catalogGridModeTextAboveAttachment,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1543,7 +1546,8 @@ class SavedSettings extends HiveObject {
 		catalogGridModeCropThumbnails = catalogGridModeCropThumbnails ?? true,
 		useSpamFilterWorkarounds = useSpamFilterWorkarounds ?? true,
 		scrollbarThickness = scrollbarThickness ?? 6,
-		thumbnailPixelation = thumbnailPixelation ?? -12 {
+		thumbnailPixelation = thumbnailPixelation ?? -12,
+		catalogGridModeTextAboveAttachment = catalogGridModeTextAboveAttachment ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2638,6 +2642,9 @@ class Settings extends ChangeNotifier {
 
 	static const thumbnailPixelationSetting = SavedSetting(SavedSettingsFields.thumbnailPixelation);
 	int get thumbnailPixelation => thumbnailPixelationSetting(this);
+
+	static const catalogGridModeTextAboveAttachmentSetting = SavedSetting(SavedSettingsFields.catalogGridModeTextAboveAttachment);
+	bool get catalogGridModeTextAboveAttachment => catalogGridModeTextAboveAttachmentSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

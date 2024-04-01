@@ -235,7 +235,7 @@ class ThreadRow extends StatelessWidget {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(_leadingWwwPattern, '');
 		}
 		if (threadState?.lastSeenPostId != null) {
-			if (threadState?.useTree ?? context.read<Persistence>().browserState.useTree ?? site.useTree) {
+			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
 				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
 			}
 			else {
@@ -508,14 +508,17 @@ class ThreadRow extends StatelessWidget {
 								)
 							),
 							if (latestThread.attachments.length > 1 || attachment.icon != null) Positioned(
-								top: settings.catalogGridModeAttachmentInBackground ? 0 : null,
-								bottom: settings.catalogGridModeAttachmentInBackground ? null : 0,
-								right: 0,
+								top: (settings.catalogGridModeAttachmentInBackground ^ settings.catalogGridModeTextAboveAttachment) ? 0 : null,
+								bottom: (settings.catalogGridModeAttachmentInBackground ^ settings.catalogGridModeTextAboveAttachment) ? null : 0,
+								left: settings.catalogGridModeAttachmentInBackground && settings.catalogGridModeTextAboveAttachment ? 0 : null,
+								right: settings.catalogGridModeAttachmentInBackground && settings.catalogGridModeTextAboveAttachment ? null : 0,
 								child: Container(
 									decoration: BoxDecoration(
 										borderRadius: settings.catalogGridModeAttachmentInBackground ?
-											const BorderRadius.only(bottomLeft: Radius.circular(6)) :
-											const BorderRadius.only(topLeft: Radius.circular(6)),
+																		settings.catalogGridModeTextAboveAttachment ?
+																			const BorderRadius.only(topRight: Radius.circular(6)) :
+																			const BorderRadius.only(bottomLeft: Radius.circular(6))
+																		: const BorderRadius.only(topLeft: Radius.circular(6)),
 										color: backgroundColor,
 										border: Border.all(color: borderColor)
 									),
@@ -546,23 +549,28 @@ class ThreadRow extends StatelessWidget {
 						imageboard: imageboard,
 						style: PostSpanZoneStyle.linear
 					),
-					builder: (ctx, _) => IgnorePointer(
-						child: Text.rich(
-							TextSpan(
-								children: [
-									...headerRow,
-									if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
-									if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-										maxLines: 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
-										charactersPerLine: (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
-									)),
-									if (!settings.useFullWidthForCatalogCounters) countersPlaceholder,
-									if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText) TextSpan(text: '\n' * 25)
-								]
-							),
-							maxLines: settings.catalogGridModeTextLinesLimit
-						)
-					)
+					builder: (ctx, _) {
+						final others = [
+							if (site.classicCatalogStyle && latestThread.posts_.first.text.isNotEmpty) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+								maxLines: 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
+								charactersPerLine: (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
+							)),
+							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) countersPlaceholder,
+							if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText) TextSpan(text: '\n' * 25)
+						];
+						return IgnorePointer(
+							child: Text.rich(
+								TextSpan(
+									children: [
+										...headerRow,
+										if (headerRow.isNotEmpty && others.isNotEmpty) const TextSpan(text: '\n'),
+										...others
+									]
+								),
+								maxLines: settings.catalogGridModeTextLinesLimit
+							)
+						);
+					}
 				)
 			);
 			if (settings.catalogGridModeAttachmentInBackground) {
@@ -575,7 +583,7 @@ class ThreadRow extends StatelessWidget {
 				return [
 					if (att != null) att,
 					Align(
-						alignment: Alignment.bottomCenter,
+						alignment: settings.catalogGridModeTextAboveAttachment ? Alignment.topCenter : Alignment.bottomCenter,
 						child: ClipRect(
 							child: BackdropFilter(
 								filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
@@ -596,7 +604,9 @@ class ThreadRow extends StatelessWidget {
 				}
 				return [
 					CustomMultiChildLayout(
-						delegate: _ContentFocusedMultiChildLayoutDelegate(),
+						delegate: _ContentFocusedMultiChildLayoutDelegate(
+							textAboveAttachment: settings.catalogGridModeTextAboveAttachment
+						),
 						children: [
 							LayoutId(
 								id: _ContentFocusedMultiChildLayoutId.attachment,
@@ -722,6 +732,11 @@ enum _ContentFocusedMultiChildLayoutId {
 }
 
 class _ContentFocusedMultiChildLayoutDelegate extends MultiChildLayoutDelegate {
+	final bool textAboveAttachment;
+	_ContentFocusedMultiChildLayoutDelegate({
+		required this.textAboveAttachment
+	});
+
 	@override
 	void performLayout(Size size) {
 		final textSize = layoutChild(_ContentFocusedMultiChildLayoutId.text, BoxConstraints(
@@ -731,18 +746,18 @@ class _ContentFocusedMultiChildLayoutDelegate extends MultiChildLayoutDelegate {
 			maxHeight: size.height / 2
 		));
 		final attachmentHeight = size.height - textSize.height;
-		positionChild(_ContentFocusedMultiChildLayoutId.text, Offset(0, attachmentHeight));
+		positionChild(_ContentFocusedMultiChildLayoutId.text, Offset(0, textAboveAttachment ? 0 : attachmentHeight));
 		layoutChild(_ContentFocusedMultiChildLayoutId.attachment, BoxConstraints(
 			minWidth: size.width,
 			maxWidth: size.width,
 			minHeight: attachmentHeight,
 			maxHeight: attachmentHeight
 		));
-		positionChild(_ContentFocusedMultiChildLayoutId.attachment, Offset.zero);
+		positionChild(_ContentFocusedMultiChildLayoutId.attachment, Offset(0, textAboveAttachment ? size.height - attachmentHeight : 0));
 	}
 
 	@override
 	bool shouldRelayout(_ContentFocusedMultiChildLayoutDelegate oldDelegate) {
-		return false;
+		return textAboveAttachment != oldDelegate.textAboveAttachment;
 	}
 }

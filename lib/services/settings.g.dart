@@ -2162,6 +2162,18 @@ class SavedSettingsFields {
     fieldName: 'thumbnailPixelation',
     merger: PrimitiveMerger(),
   );
+  static bool getCatalogGridModeTextAboveAttachment(SavedSettings x) =>
+      x.catalogGridModeTextAboveAttachment;
+  static void setCatalogGridModeTextAboveAttachment(SavedSettings x, bool v) =>
+      x.catalogGridModeTextAboveAttachment = v;
+  static const catalogGridModeTextAboveAttachment =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getCatalogGridModeTextAboveAttachment,
+    setter: setCatalogGridModeTextAboveAttachment,
+    fieldNumber: 181,
+    fieldName: 'catalogGridModeTextAboveAttachment',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2342,7 +2354,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     177: SavedSettingsFields.catalogGridModeCropThumbnails,
     178: SavedSettingsFields.useSpamFilterWorkarounds,
     179: SavedSettingsFields.scrollbarThickness,
-    180: SavedSettingsFields.thumbnailPixelation
+    180: SavedSettingsFields.thumbnailPixelation,
+    181: SavedSettingsFields.catalogGridModeTextAboveAttachment
   };
 
   @override
@@ -2537,13 +2550,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       useSpamFilterWorkarounds: fields[178] as bool?,
       scrollbarThickness: fields[179] as double?,
       thumbnailPixelation: fields[180] as int?,
+      catalogGridModeTextAboveAttachment: fields[181] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(168)
+      ..writeByte(169)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -2879,7 +2893,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(179)
       ..write(obj.scrollbarThickness)
       ..writeByte(180)
-      ..write(obj.thumbnailPixelation);
+      ..write(obj.thumbnailPixelation)
+      ..writeByte(181)
+      ..write(obj.catalogGridModeTextAboveAttachment);
   }
 
   @override

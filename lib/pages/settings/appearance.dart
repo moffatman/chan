@@ -1024,6 +1024,10 @@ final appearanceSettings = [
 			const SwitchSettingWidget(
 				description: 'Crop image to fit',
 				setting: Settings.catalogGridModeCropThumbnailsSetting,
+			),
+			const SwitchSettingWidget(
+				description: 'Text above image',
+				setting: Settings.catalogGridModeTextAboveAttachmentSetting
 			)
 		]
 	),
