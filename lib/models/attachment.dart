@@ -51,10 +51,7 @@ void _readHookAttachmentFields(Map<int, dynamic> fields) {
 		}
 		return url;
 	});
-	fields.update(AttachmentFields.id.fieldNumber, (id) {
-		if (id != null) {
-			return id;
-		}
+	fields.putIfAbsent(AttachmentFields.id.fieldNumber, () {
 		// This attachment was written a very long time ago
 		// fields[1] is probably "int deprecatedId"
 		// Or I guess it could be null, in that case it still works to fix launching
