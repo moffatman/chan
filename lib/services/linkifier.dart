@@ -7,7 +7,7 @@ final _looseUrlRegex = RegExp(
 );
 
 final _wikipediaUrlRegex = RegExp(
-  r'^(.*?)((https?:\/\/)?((?:[^\.]+\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&//=]*\([^\)]+\))',
+  r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&//=]*\([^\)\n]+\))',
   caseSensitive: false,
   dotAll: true,
 );
