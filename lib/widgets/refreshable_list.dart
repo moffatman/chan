@@ -3060,6 +3060,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				// prevent overscroll
 				estimate = min(estimate, scrollController!.position.maxScrollExtent);
 			}
+			estimate = max(0, estimate);
 			_itemCacheCallbacks.putIfAbsent((targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
 			final delay = Duration(milliseconds: min(300, max(1, (estimate - scrollController!.position.pixels).abs() ~/ 100)));
 			scrollController!.animateTo(
@@ -3070,7 +3071,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 32)), Future.delayed(delay ~/ 4)])]);
 			return (_items[targetIndex].cachedOffset != null);
 		}
-		if (_items[targetIndex].cachedOffset == null) {
+		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
 			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 5 && targetIndex == currentTargetIndex) {
 				c = Curves.linear;
 			}
@@ -3085,19 +3086,32 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			Duration timeLeft = duration - DateTime.now().difference(start);
 			d = Duration(milliseconds: max(timeLeft.inMilliseconds, duration.inMilliseconds ~/ 4));
 		}
-		if (_items[targetIndex].cachedOffset == null) {
+		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
 			throw Exception('Scrolling timed out');
 		}
 		double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset;
 		final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset - bottomOffset;
-		if (_items[targetIndex] == _items.last) {
+		if (targetIndex == _items.length - 1) {
 			// add offset to reveal the full footer
 			atAlignment0 += 110;
+		}
+		else if (targetIndex == 0 && state?.widget.filterableAdapter != null) {
+			// subtract offset to reveal the search bar
+			atAlignment0 = 0;
 		}
 		else {
 			atAlignment0 += 1;
 		}
-		double finalDestination = (atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent);
+		// The scrollController's maxScrollExtent is not trustworthy
+		final double maxScrollExtent;
+		if (_items.last.cachedHeight != null && _items.last.cachedOffset != null) {
+			final footerHeight = state?.widget.footer != null ? 56 : 0; // Lazy estimate
+			maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset;
+		}
+		else {
+			maxScrollExtent = scrollController!.position.maxScrollExtent;
+		}
+		double finalDestination = (atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, maxScrollExtent);
 		await scrollController!.animateTo(
 			max(0, finalDestination),
 			duration: Duration(milliseconds: max(1, d.inMilliseconds)),
@@ -3117,7 +3131,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				// Search field will mean that the _items.lastIndexWhere search will return -1
 				return 0;
 			}
-			return _items.lastIndexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && (i.cachedOffset! <= scrollController!.position.pixels));
+			return _items.lastIndexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && (i.cachedOffset! <= (scrollController!.position.pixels + topOffset)));
 		}
 		return -1;
 	}
@@ -3130,9 +3144,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			// A guess at alignment
 			return (item: _items[index].item.item, alignment: 0);
 		}
-		final scrollPosition = scrollController!.position.pixels;
-		final height = _items[index].cachedOffset ?? scrollPosition;
-		final alignment = (height - scrollPosition) / (scrollController!.position.viewportDimension - (_items[index].cachedHeight ?? 0));
+		final viewportStart = scrollController!.position.pixels + topOffset;
+		final itemStart = _items[index].cachedOffset ?? viewportStart;
+		final alignment = (itemStart - viewportStart) / (scrollController!.position.viewportDimension - ((_items[index].cachedHeight ?? 0) + topOffset + bottomOffset));
 		return (item: _items[index].item.item, alignment: alignment);
 	}
 	T? get middleVisibleItem {
@@ -3155,7 +3169,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					_items.first.cachedHeight! > (scrollController!.position.pixels + scrollController!.position.viewportDimension)) {
 				return 0;
 			}
-			return _items.lastIndexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
+			return _items.lastIndexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset));
 		}
 		return -1;
 	}
