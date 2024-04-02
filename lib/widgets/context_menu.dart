@@ -7,6 +7,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_context_menu2.dart';
@@ -72,6 +73,7 @@ class _ContextMenuState extends State<ContextMenu> {
 		final l = ((lastTap?.dx ?? 0) / Persistence.settings.interfaceScale) + 5;
 		final t = ((lastTap?.dy ?? 0) / Persistence.settings.interfaceScale) + 5;
 		final s = context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size;
+		mediumHapticFeedback();
 		final action = await showMenu(
 			useRootNavigator: true,
 			items: widget.actions.map((action) => PopupMenuItem(
