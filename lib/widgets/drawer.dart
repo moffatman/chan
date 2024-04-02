@@ -318,16 +318,8 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					setState(() {});
 					return (
 						message: 'Unwatched thread',
-						onUndo: () {
-							watch.imageboard.notifications.subscribeToThread(
-								thread: watch.item.threadIdentifier,
-								lastSeenId: watch.item.lastSeenId,
-								localYousOnly: watch.item.localYousOnly,
-								pushYousOnly: watch.item.pushYousOnly,
-								push: watch.item.push,
-								youIds: watch.item.youIds,
-								zombie: watch.item.zombie
-							);
+						onUndo: () async {
+							await watch.imageboard.notifications.insertWatch(watch.item);
 							setState(() {});
 						}
 					);

@@ -7,6 +7,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -179,7 +180,13 @@ class HistoryPageState extends State<HistoryPage> {
 												)
 											);
 											if (toDelete != null) {
+												final watches = <ImageboardScoped<ThreadWatch>>[];
 												for (final state in toDelete) {
+													final watch = state.threadWatch;
+													final imageboard = state.imageboard;
+													if (watch != null && imageboard != null) {
+														watches.add(imageboard.scope(watch));
+													}
 													await state.delete();
 												}
 												if (mounted) {
@@ -189,6 +196,9 @@ class HistoryPageState extends State<HistoryPage> {
 														onUndo: () async {
 															for (final state in toDelete) {
 																await Persistence.sharedThreadStateBox.put(state.boxKey, state);
+															}
+															for (final watch in watches) {
+																await watch.imageboard.notifications.insertWatch(watch.item);
 															}
 														}
 													);
@@ -270,6 +280,10 @@ class HistoryPageState extends State<HistoryPage> {
 											ContextMenuAction(
 												child: const Text('Remove'),
 												onPressed: () async {
+													final watch = state.threadWatch;
+													if (watch != null) {
+														await state.imageboard?.notifications.removeWatch(watch);
+													}
 													await state.delete();
 													_listController.update();
 													if (context.mounted) {
@@ -278,6 +292,9 @@ class HistoryPageState extends State<HistoryPage> {
 															message: 'Removed thread',
 															onUndo: () async {
 																await Persistence.sharedThreadStateBox.put(state.boxKey, state);
+																if (watch != null) {
+																	await state.imageboard?.notifications.insertWatch(watch);
+																}
 																_listController.update();
 															}
 														);

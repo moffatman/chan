@@ -602,16 +602,8 @@ class BoardPageState extends State<BoardPage> {
 								showUndoToast(
 									context: context,
 									message: 'Thread unwatched',
-									onUndo: () {
-										imageboard.notifications.subscribeToThread(
-											thread: watch.threadIdentifier,
-											lastSeenId: watch.lastSeenId,
-											localYousOnly: watch.localYousOnly,
-											pushYousOnly: watch.pushYousOnly,
-											push: watch.push,
-											youIds: watch.youIds,
-											zombie: watch.zombie
-										);
+									onUndo: () async {
+										await imageboard.notifications.insertWatch(watch);
 										setState(() {});
 									}
 								);

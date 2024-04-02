@@ -137,15 +137,16 @@ class ThreadWatcher extends ChangeNotifier {
 	}) {
 		controller.registerWatcher(this);
 		_boxSubscription = Persistence.sharedThreadStateBox.watch().listen(_threadUpdated);
-		_setInitialCounts();
+		setInitialCounts();
 		Settings.instance.filterListenable.addListener(_didUpdateFilter);
 	}
 
 	void _didUpdateFilter() {
-		_setInitialCounts();
+		setInitialCounts();
 	}
 
-	Future<void> _setInitialCounts() async {
+	/// Exposed to allow re-initialize after importing
+	Future<void> setInitialCounts() async {
 		for (final watch in persistence.browserState.threadWatches.values) {
 			await persistence.getThreadStateIfExists(watch.threadIdentifier)?.ensureThreadLoaded();
 			watch.watchTime ??= persistence.getThreadStateIfExists(watch.threadIdentifier)?.thread?.posts_.last.time;

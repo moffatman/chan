@@ -499,7 +499,20 @@ class Notifications {
 		return boardWatches.tryFirstWhere((w) => w.board == boardName);
 	}
 
-	void subscribeToThread({
+	Future<void> insertWatch(ThreadWatch watch) async {
+		final existingWatch = threadWatches[watch.threadIdentifier];
+		if (existingWatch != null) {
+			return;
+		}
+		threadWatches[watch.threadIdentifier] = watch;
+		if (Persistence.settings.usePushNotifications == true && watch.push) {
+			_create(watch);
+		}
+		localWatcher?.onWatchUpdated(watch);
+		persistence.didUpdateBrowserState();
+	}
+
+	Future<void> subscribeToThread({
 		required ThreadIdentifier thread,
 		required int lastSeenId,
 		required bool localYousOnly,
@@ -508,7 +521,7 @@ class Notifications {
 		required List<int> youIds,
 		bool foregroundMuted = false,
 		bool zombie = false
-	}) {
+	}) async {
 		final existingWatch = threadWatches[thread];
 		if (existingWatch != null) {
 			existingWatch.youIds = youIds;
@@ -516,7 +529,7 @@ class Notifications {
 			didUpdateWatch(existingWatch);
 		}
 		else {
-			final watch = ThreadWatch(
+			await insertWatch(ThreadWatch(
 				board: thread.board,
 				threadId: thread.id,
 				lastSeenId: lastSeenId,
@@ -527,13 +540,7 @@ class Notifications {
 				foregroundMuted: foregroundMuted,
 				zombie: zombie,
 				watchTime: DateTime.now()
-			);
-			threadWatches[thread] = watch;
-			if (Persistence.settings.usePushNotifications == true && watch.push) {
-				_create(watch);
-			}
-			localWatcher?.onWatchUpdated(watch);
-			persistence.didUpdateBrowserState();
+			));
 		}
 	}
 
@@ -560,10 +567,10 @@ class Notifications {
 		}
 	}
 
-	void unsubscribeFromThread(ThreadIdentifier thread) {
+	Future<void> unsubscribeFromThread(ThreadIdentifier thread) async {
 		final watch = getThreadWatch(thread);
 		if (watch != null) {
-			removeWatch(watch);
+			await removeWatch(watch);
 		}
 	}
 

@@ -629,6 +629,21 @@ class ImageboardRegistry extends ChangeNotifier {
 			await i.site.clearPseudoCookies();
 		}
 	}
+
+	Future<void> didImport() async {
+		// Need to do some reinitialization
+		// This will both set the counts and also load the threads from disk
+		try {
+			final devFuture = dev?.threadWatcher.setInitialCounts();
+			await Future.wait([
+				...imageboards.map((i) => i.threadWatcher.setInitialCounts()),
+				if (devFuture != null) devFuture
+			]);
+		}
+		catch (e, st) {
+			Future.error(e, st);
+		}
+	}
 }
 
 class ImageboardScoped<T> {

@@ -91,15 +91,7 @@ Future<void> removeZombieWatches(BuildContext context, {VoidCallback? onMutate})
 			message: 'Removed ${describeCount(toRemove.length, 'watch', plural: 'watches')}',
 			onUndo: () => _watchMutex.protectWrite(() async {
 				for (final watch in toRemove) {
-					watch.imageboard.notifications.subscribeToThread(
-						thread: watch.item.threadIdentifier,
-						lastSeenId: watch.item.lastSeenId,
-						localYousOnly: watch.item.localYousOnly,
-						pushYousOnly: watch.item.pushYousOnly,
-						push: watch.item.push,
-						youIds: watch.item.youIds,
-						zombie: watch.item.zombie
-					);
+					await watch.imageboard.notifications.insertWatch(watch.item);
 				}
 				onMutate?.call();
 			})
@@ -120,15 +112,7 @@ Future<void> removeAllWatches(BuildContext context, {VoidCallback? onMutate}) =>
 			message: 'Removed ${describeCount(toRemove.length, 'watch', plural: 'watches')}',
 			onUndo: () => _watchMutex.protectWrite(() async {
 				for (final watch in toRemove) {
-					watch.imageboard.notifications.subscribeToThread(
-						thread: watch.item.threadIdentifier,
-						lastSeenId: watch.item.lastSeenId,
-						localYousOnly: watch.item.localYousOnly,
-						pushYousOnly: watch.item.pushYousOnly,
-						push: watch.item.push,
-						youIds: watch.item.youIds,
-						zombie: watch.item.zombie
-					);
+					await watch.imageboard.notifications.insertWatch(watch.item);
 				}
 				onMutate?.call();
 			})

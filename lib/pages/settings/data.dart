@@ -809,7 +809,12 @@ final dataSettings = [
 			}
 			try {
 				final log = await modalLoad(context, 'Importing...', (_) => import(File(picked)));
+				// Propagate new Settings
 				await Settings.instance.didEdit();
+				// ImageboardRegistry.handleSites should be called by ChanApp
+				await Future.microtask(() {});
+				// Load needed new threads from disk
+				await ImageboardRegistry.instance.didImport();
 				if (!context.mounted) {
 					return;
 				}

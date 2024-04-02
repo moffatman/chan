@@ -284,6 +284,24 @@ class _SavedPageState extends State<SavedPage> {
 									ThreadWatcherControls(
 										isActive: widget.isActive
 									),
+									MissingThreadsControls(
+										missingThreads: _watchedListController.items.expand((item) {
+											final state = item.item.imageboard.persistence.getThreadStateIfExists(item.item.item.threadIdentifier);
+											if (state?.thread == null) {
+												return [item.item.imageboard.scope(item.item.item.threadIdentifier)];
+											}
+											return const <ImageboardScoped<ThreadIdentifier>>[];
+										}).toList(),
+										afterFix: () {
+											_watchedListController.state?.forceRebuildId++;
+											_watchedListController.update();
+										},
+										onFixAbandonedForThreads: (threadsToDelete) async {
+											for (final thread in threadsToDelete) {
+												await thread.imageboard.notifications.unsubscribeFromThread(thread.item);
+											}
+										}
+									),
 									const ChanceDivider()
 								]
 							),
@@ -356,16 +374,8 @@ class _SavedPageState extends State<SavedPage> {
 														showUndoToast(
 															context: context,
 															message: 'Unwatched',
-															onUndo: () {
-																watch.imageboard.notifications.subscribeToThread(
-																	thread: watch.item.threadIdentifier,
-																	lastSeenId: watch.item.lastSeenId,
-																	localYousOnly: watch.item.localYousOnly,
-																	pushYousOnly: watch.item.pushYousOnly,
-																	push: watch.item.push,
-																	youIds: watch.item.youIds,
-																	zombie: watch.item.zombie
-																);
+															onUndo: () async {
+																await watch.imageboard.notifications.insertWatch(watch.item);
 																_watchedListController.update();
 															}
 														);
@@ -446,13 +456,6 @@ class _SavedPageState extends State<SavedPage> {
 												builder: (context, child) {
 													final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
 													if (threadState?.thread == null) {
-														// Make sure this isn't a newly-created thread/watch
-														if (threadState == null || DateTime.now().difference(threadState.lastOpenedTime) > const Duration(days: 30)) {
-															// Probably the thread was deleted during a cleanup
-															Future.delayed(const Duration(seconds: 1), () {
-																watch.imageboard.notifications.removeWatch(watch.item);
-															});
-														}
 														return const SizedBox.shrink();
 													}
 													else {
