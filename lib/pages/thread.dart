@@ -2273,7 +2273,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final radiusStart = widget.reversed ? BorderRadius.only(topRight: radius, bottomRight: radius) : BorderRadius.only(topLeft: radius, bottomLeft: radius);
 		final radiusEnd = widget.reversed ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : BorderRadius.only(topRight: radius, bottomRight: radius);
 		final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
-		scrollToTop() => widget.listController.scrollController?.animateTo(0, duration: scrollAnimationDuration, curve: Curves.ease);
+		scrollToTop() => widget.listController.animateTo((post) => true, duration: scrollAnimationDuration);
 		scrollToBottom() => widget.listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration);
 		final youIds = widget.persistentState.youIds;
 		final uncachedCount = widget.cachedAttachments.values.where((v) => !v.isCached).length;

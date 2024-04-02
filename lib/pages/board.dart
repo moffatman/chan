@@ -1150,7 +1150,7 @@ class BoardPageState extends State<BoardPage> {
 															builder: (context, _) {
 																_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
 																final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
-																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: scrollAnimationDuration, curve: Curves.ease);
+																scrollToTop() => _listController.animateTo((post) => true, duration: scrollAnimationDuration);
 																scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration);
 																final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
 																return SafeArea(

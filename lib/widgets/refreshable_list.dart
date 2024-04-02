@@ -1238,6 +1238,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
+	void _rebuild() {
+		if (mounted) {
+			setState(() {});
+		}
+	}
+
 	void _mergeTrees({required bool rebuild}) {
 		final newTreeSplitId = widget.controller?._items.fold<int>(0, (m, i) => max(m, i.item.representsKnownStubChildren.fold<int>(i.item.id, (n, j) => max(n, j.childId))));
 		_lastTreeOrder = null; // Reorder OK
@@ -1409,7 +1415,36 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return _refreshableTreeItems.isItemHidden(item).isHidden;
 	}
 
-	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value) {
+	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy) {
+		if (dummy) {
+			// Terrible hack
+			if (_refreshableTreeItems.isItemHidden(value).isHidden) {
+				return const SizedBox(width: double.infinity);
+			}
+			/// 0 -> 0.1
+			final factor = 0.0001 * (identityHashCode(value) % 1000);
+			final child = Container(
+				margin: const EdgeInsets.all(16),
+				width: widget.gridDelegate == null ? double.infinity : null,
+				height: widget.gridDelegate == null ? 32 : null,
+				color: Settings.instance.theme.primaryColorWithBrightness(factor)
+			);
+			if (useTree && value.depth > 0) {
+				return Container(
+					margin: EdgeInsets.only(
+						left: min(estimateWidth(context) / 2, (pow(value.depth, 0.60) * 20) - 5)
+					),
+					decoration: BoxDecoration(
+						border: Border(left: BorderSide(
+							width: 5,
+							color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withOpacity(0.7)
+						))
+					),
+					child: child
+				);
+			}
+			return child;
+		}
 		Widget child;
 		Widget? collapsed;
 		bool loadingOmittedItems = false;
@@ -2299,11 +2334,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														(context, i) => Builder(
 															builder: (context) {
 																widget.controller?.registerItem(i, values[i], context);
-																return _itemBuilder(context, values[i]);
+																final range = widget.controller?.useDummyItemsInRange;
+																return _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1);
 															}
 														),
 														list: values,
-														id: '$query${widget.sortMethods}$forceRebuildId',
+														id: '$query${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
 														didFinishLayout: widget.controller?.didFinishLayout,
 														childCount: values.length,
 														addRepaintBoundaries: false,
@@ -2319,7 +2355,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																key: ValueKey(values[childIndex]),
 																builder: (context) {
 																	widget.controller?.registerItem(childIndex, values[childIndex], context);
-																	return _itemBuilder(context, values[childIndex]);
+																	final range = widget.controller?.useDummyItemsInRange;
+																	return _itemBuilder(context, values[childIndex], range != null && childIndex < range.$2 && childIndex > range.$1);
 																}
 															);
 														},
@@ -2333,7 +2370,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														},
 														separatorSentinel: dividerColor,
 														list: values,
-														id: '$query${widget.sortMethods}$forceRebuildId',
+														id: '$query${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
 														childCount: values.length * 2,
 														findChildIndexCallback: (key) {
 															if (key is ValueKey<RefreshableListItem<T>>) {
@@ -2397,7 +2434,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																children: [
 																	Provider.value(
 																		value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
-																		builder: (context, _) => _itemBuilder(context, filteredValues[i])
+																		builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
 																	),
 																	Align(
 																		alignment: Alignment.topRight,
@@ -2444,7 +2481,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																			padding: const EdgeInsets.all(8),
 																			child: Provider.value(
 																				value: RefreshableListFilterReason(filteredValues[childIndex].filterReason ?? 'Unknown'),
-																				builder: (context, _) => _itemBuilder(context, filteredValues[childIndex])
+																				builder: (context, _) => _itemBuilder(context, filteredValues[childIndex], false)
 																			)
 																		)
 																	]
@@ -2757,6 +2794,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	RefreshableListState<T>? state;
 	final Map<(int, bool), List<Completer<void>>> _itemCacheCallbacks = {};
 	int? currentTargetIndex;
+	(int, int)? useDummyItemsInRange;
 	bool? _useTree;
 	final Map<int, RefreshableListItem<T>> _newInsertIndices = {};
 	bool _autoExtendEnabled = true;
@@ -2969,7 +3007,47 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		await animateToIndex(targetIndex, alignment: alignment, duration: duration);
 	}
 	Future<void> animateToIndex(int targetIndex, {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
-		print('$contentId animating to $targetIndex');
+		final (int, int) proposedRange;
+		final rangeBonus = (state?.useTree == true || state?.widget.gridDelegate != null) ? 5 : 0;
+		if (targetIndex > firstVisibleIndex) {
+			// Scrolling forwards
+			proposedRange = (lastVisibleIndex + 3, targetIndex - 12 - rangeBonus);
+		}
+		else {
+			// Scrolling backwards
+			proposedRange = (targetIndex + 7 + rangeBonus, firstVisibleIndex - 3);
+		}
+		if ((proposedRange.$2 - proposedRange.$1) > 20) {
+			useDummyItemsInRange = proposedRange;
+			for (final item in _items) {
+				item.cachedOffset = null;
+				item.cachedHeight = null;
+			}
+			state?._rebuild();
+			try {
+				await SchedulerBinding.instance.endOfFrame;
+				await _animateToIndex(targetIndex, alignment: alignment, duration: duration);
+			}
+			catch (e) {
+				print(e);
+			}
+			for (final item in _items) {
+				item.cachedOffset = null;
+				item.cachedHeight = null;
+			}
+			useDummyItemsInRange = null;
+			state?._rebuild();
+			await SchedulerBinding.instance.endOfFrame;
+			await SchedulerBinding.instance.endOfFrame;
+		}
+		else {
+			// Just to be safe
+			useDummyItemsInRange = null;
+		}
+		await _animateToIndex(targetIndex, alignment: alignment, duration: duration);
+	}
+	Future<void> _animateToIndex(int targetIndex, {required double alignment, required Duration duration}) async {
+		print('$contentId animating to $targetIndex (${_items[targetIndex].item.item}) (alignment: $alignment)');
 		final start = DateTime.now();
 		currentTargetIndex = targetIndex;
 		Duration d = duration;
