@@ -282,10 +282,10 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		}
 	});
 
-	Future<void> _submit() async {
+	Future<bool> _submit() async {
 		// _lock is not re-entrant...
 		await _preSubmit();
-		await _lock.protect(() async {
+		return await _lock.protect(() async {
 			final initialState = state;
 			if (initialState is QueueStateWaitingWithCaptcha<T>) {
 				final cancelToken = CancelToken();
@@ -306,7 +306,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					if (cancelToken.isCancelled) {
 						_state = const QueueStateIdle();
 						notifyListeners();
-						return;
+						return false;
 					}
 					_state = QueueStateSubmitting(
 						message: 'Submitting',
@@ -316,6 +316,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					final result = await _submitImpl(captchaSolution, cancelToken);
 					_state = QueueStateDone(DateTime.now(), result, captchaSolution);
 					notifyListeners();
+					return true;
 				}
 				on CooldownException catch (e) {
 					print('got cd $e');
@@ -341,6 +342,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					}
 				}
 			}
+			return false;
 		});
 	}
 }
@@ -592,15 +594,19 @@ class Outbox extends ChangeNotifier {
 			}
 			print('Try submitting first entry');
 			// Submit the post
-			await queue.value.list.first._submit();
+			final submitted = await queue.value.list.first._submit();
 			if (queue.value.list.length > 1 && !queue.value.list[1].state.isIdle) {
-				queue.value.allowedTime = DateTime.now().add(queue.value.list[1]._cooldown);
+				if (submitted) {
+					queue.value.allowedTime = DateTime.now().add(queue.value.list[1]._cooldown);
+				}
 				// Retrigger wakeup immediately to look at next post for captcha purposes
 				nextWakeups.add(DateTime.now());
 			}
 			else {
 				// Just use current queue subitem type. It could be corrected if a different subtype is submitted
-				queue.value.allowedTime = DateTime.now().add(queue.value.list.first._cooldown);
+				if (submitted) {
+					queue.value.allowedTime = DateTime.now().add(queue.value.list.first._cooldown);
+				}
 				// Mainly to notifyListeners() and freshen up widgets that show timer 
 				nextWakeups.add(queue.value.allowedTime);
 			}
