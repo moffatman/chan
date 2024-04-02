@@ -537,7 +537,7 @@ class Notifications {
 		}
 	}
 
-void subscribeToBoard({
+	void subscribeToBoard({
 		required String boardName,
 		required bool threadsOnly
 	}) {
