@@ -722,7 +722,7 @@ class StreamingMP4Conversion {
 					scheme: 'http',
 					host: 'localhost',
 					port: VideoServer.instance.port,
-					path: streamingConversion.getDestination().path.replaceFirst('${Persistence.temporaryDirectory.path}/webmcache/', '')
+					path: streamingConversion.getDestination().path.replaceFirst('${Persistence.webmCacheDirectory.path}/', '')
 				),
 				progress: streamingConversion.progress,
 				mp4File: _joinedCompleter.future,
