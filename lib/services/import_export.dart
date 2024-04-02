@@ -42,10 +42,10 @@ Future<File> export({
 	final renamedCompressibleFiles = <(String, String)>[];
 	final uncompressibleDirs = <String>[];
 	for (final filename in [
-		'${Persistence.settingsBoxName.toLowerCase()}.hive',
-		'${Persistence.sharedBoardsBoxName.toLowerCase()}.hive',
-		'${Persistence.sharedThreadStatesBoxName.toLowerCase()}.hive',
-		if (includeFullHistory) '${Persistence.sharedThreadsBoxName.toLowerCase()}.hive',
+		'${Persistence.settingsBoxName}.hive',
+		'${Persistence.sharedBoardsBoxName}.hive',
+		'${Persistence.sharedThreadStatesBoxName}.hive',
+		if (includeFullHistory) '${Persistence.sharedThreadsBoxName}.hive',
 	]) {
 		final file = File('${Persistence.documentsDirectory.path}/$filename');
 		if (await file.exists()) {
@@ -74,7 +74,7 @@ Future<File> export({
 				}
 			}
 		}
-		renamedCompressibleFiles.add((temporaryThreadsBox.path!, '${Persistence.sharedThreadsBoxName.toLowerCase()}.hive'));
+		renamedCompressibleFiles.add((temporaryThreadsBox.path!, '${Persistence.sharedThreadsBoxName}.hive'));
 	}
 	for (final dirname in [
 		if (includeSavedAttachments) Persistence.savedAttachmentsDir,

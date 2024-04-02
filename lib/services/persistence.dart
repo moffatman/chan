@@ -169,7 +169,7 @@ class Persistence extends ChangeNotifier {
 	static final recentSearchesListenable = EasyListenable();
 	static const settingsBoxName = 'settings';
 	static const settingsBoxKey = 'settings';
-	static const sharedThreadStatesBoxName = 'threadStates';
+	static const sharedThreadStatesBoxName = 'threadstates';
 	static const sharedBoardsBoxName = 'boards';
 	static const sharedThreadsBoxName = 'threads';
 	static const savedAttachmentThumbnailsDir = 'saved_attachments_thumbs';
@@ -191,9 +191,6 @@ class Persistence extends ChangeNotifier {
 			if (await File(boxPath).exists()) {
 				await File(boxPath).copy(backupBoxPath);
 			}
-			else if (await File(boxPath.toLowerCase()).exists()) {
-				await File(boxPath.toLowerCase()).copy(backupBoxPath);
-			}
 		}
 		catch (e, st) {
 			if (await File(backupBoxPath).exists()) {
@@ -203,10 +200,6 @@ class Persistence extends ChangeNotifier {
 				if (await File(boxPath).exists()) {
 					await File(boxPath).copy('${documentsDirectory.path}/$boxName.broken.hive');
 					await File(backupBoxPath).copy(boxPath);
-				}
-				else if (await File(boxPath.toLowerCase()).exists()) {
-					await File(boxPath.toLowerCase()).copy('${documentsDirectory.path}/$boxName.broken.hive');
-					await File(backupBoxPath).copy(boxPath.toLowerCase());
 				}
 				box = await Hive.openBox<T>(boxName, compactionStrategy: compactionStrategy);
 				Future.delayed(const Duration(seconds: 5), () {
@@ -256,23 +249,6 @@ class Persistence extends ChangeNotifier {
 						await File(backupBoxPath).copy(boxPath);
 					}
 				}
-				else if (await File(boxPath.toLowerCase()).exists()) {
-					await File(boxPath.toLowerCase()).copy('${documentsDirectory.path}/$boxName.broken.hive');
-					if (gzip) {
-						try {
-							await copyUngzipped(backupBoxPath, boxPath.toLowerCase());
-						}
-						on FormatException {
-							// Backup box is corrupted
-							backupCorrupted = true;
-							await File(backupBoxPath).rename('${documentsDirectory.path}/$backupBoxName.broken.hive.gz');
-							await File(boxPath.toLowerCase()).delete();
-						}
-					}
-					else {
-						await File(backupBoxPath).copy(boxPath.toLowerCase());
-					}
-				}
 				box = await Hive.openLazyBox<T>(boxName, compactionStrategy: compactionStrategy);
 				Future.delayed(const Duration(seconds: 5), () {
 					String message = 'Database corruption\n';
@@ -299,14 +275,6 @@ class Persistence extends ChangeNotifier {
 			}
 			else {
 				await File(boxPath).copy(backupBoxPath);
-			}
-		}
-		else if (await File(boxPath.toLowerCase()).exists()) {
-			if (gzip) {
-				await copyGzipped(boxPath.toLowerCase(), backupBoxPath);
-			}
-			else {
-				await File(boxPath.toLowerCase()).copy(backupBoxPath);
 			}
 		}
 		else {
@@ -458,6 +426,24 @@ class Persistence extends ChangeNotifier {
 		}
 		await ensureTemporaryDirectoriesExist();
 		documentsDirectory = await getApplicationDocumentsDirectory();
+		try {
+			// Boxes were always saved as lowercase, but backups may have been
+			// upper case in the past. Just correct all '*.hive*' to be lower case.
+			for (final doc in documentsDirectory.listSync()) {
+				final filename = doc.path.split('/').last;
+				if (!filename.contains('.hive')) {
+					continue;
+				}
+				final lowerCase = filename.toLowerCase();
+				if (lowerCase == filename) {
+					continue;
+				}
+				doc.renameSync(doc.path.replaceFirst('/$filename', '/$lowerCase'));
+			}
+		}
+		catch (e, st) {
+			Future.error(e, st);
+		}
 		wifiCookies = PersistCookieJar(
 			storage: FileStorage(temporaryDirectory.path)
 		);
