@@ -2341,6 +2341,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 						curve: Curves.ease,
 						padding: EdgeInsets.only(bottom: (widget.suggestedThread != null ? 50 : 0) + (_whiteCountAbove > 0 ? 50 : 0) + 50),
 						child: SingleChildScrollView(
+							// The contents are not really rectangular and have an intentionally transparent background
+							hitTestBehavior: HitTestBehavior.deferToChild,
 							reverse: true,
 							primary: false,
 							controller: _menuScrollController,
