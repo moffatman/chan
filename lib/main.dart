@@ -1825,7 +1825,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Future<void> _backButton() async {
-		final navigator = Navigator.of(context);
 		if (_drawerScaffoldKey.currentState?.isDrawerOpen ?? false) {
 			_drawerScaffoldKey.currentState?.closeDrawer();
 			// Closed the side drawer
@@ -1843,8 +1842,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			_tabs.mainTabIndex = 0;
 			// Returned to the browse pane
 		}
-		else if (await confirmExit()) {
-			navigator.pop();
+		else if (Platform.isAndroid && await confirmExit()) {
+			await SystemNavigator.pop();
 			// Exited the app
 		}
 	}
