@@ -1349,6 +1349,11 @@ class Site4Chan extends ImageboardSite {
 		);
 	}
 
+	@override
+	Future<void> clearPseudoCookies() async {
+		await Persistence.currentCookies.deletePseudoCookie(kTicketPseudoCookieKey);
+	}
+
 	static const kTicketPseudoCookieKey = '4chan_ticket';
 
 	@override
