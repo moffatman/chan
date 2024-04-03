@@ -1,5 +1,7 @@
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/util.dart';
@@ -54,6 +56,50 @@ class _SettingsFilterPageState extends State<SettingsFilterPage> {
 										spacing: 16,
 										runSpacing: 16,
 										children: [
+											AdaptiveFilledButton(
+												padding: const EdgeInsets.all(8),
+												borderRadius: BorderRadius.circular(4),
+												minSize: 0,
+												child: const Text('Reset auto-saved'),
+												onPressed: () async {
+													final reset = await showAdaptiveDialog<bool>(
+														context: context,
+														barrierDismissible: true,
+														builder: (context) => AdaptiveAlertDialog(
+															title: const Text('Reset auto-saved'),
+															content: const Text('The thread watcher remembers previously auto-watched and auto-saved threads and doesn\'t process them again. You can reset it here if you have changed your filters and want to see them applied fresh.'),
+															actions: [
+																AdaptiveDialogAction(
+																	onPressed: () => Navigator.pop(context, true),
+																	isDefaultAction: true,
+																	child: const Text('Reset')
+																),
+																AdaptiveDialogAction(
+																	onPressed: () => Navigator.pop(context),
+																	child: const Text('Cancel'),
+																)
+															]
+														)
+													);
+													if (reset ?? false) {
+														int count = 0;
+														for (final imageboard in ImageboardRegistry.instance.imageboards) {
+															count += imageboard.persistence.browserState.autosavedIds.length;
+															imageboard.persistence.browserState.autosavedIds.clear();
+															count += imageboard.persistence.browserState.autowatchedIds.length;
+															imageboard.persistence.browserState.autowatchedIds.clear();
+															await imageboard.persistence.didUpdateBrowserState();
+														}
+														if (context.mounted) {
+															showToast(
+																context: context,
+																icon: CupertinoIcons.refresh,
+																message: 'Forgot about ${describeCount(count, 'auto-saved/auto-watched thread')}'
+															);
+														}
+													}
+												}
+											),
 											AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),
 												borderRadius: BorderRadius.circular(4),
