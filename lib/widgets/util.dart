@@ -1006,160 +1006,135 @@ Future<void> editStringList({
 	required BuildContext context,
 	required List<String> list,
 	required String name,
-	required String title
+	required String title,
+	bool startEditsWithAllSelected = true
 }) async {
 	final theme = context.read<SavedTheme>();
 	await showAdaptiveDialog(
 		barrierDismissible: true,
 		context: context,
-		builder: (context) => AdaptiveAlertDialog(
-			title: Padding(
-				padding: const EdgeInsets.only(bottom: 16),
-				child: Text(title)
-			),
-			content: StatefulBuilder(
-				builder: (context, setDialogState) => SizedBox(
+		builder: (context) => StatefulBuilder(
+			builder: (context, setDialogState) => AdaptiveAlertDialog(
+				title: Padding(
+					padding: const EdgeInsets.only(bottom: 16),
+					child: Text(title)
+				),
+				content: SizedBox(
 					width: 100,
 					height: 350,
-					child: Stack(
-						children: [
-							ListView.builder(
-								padding: const EdgeInsets.only(bottom: 128),
-								itemCount: list.length,
-								itemBuilder: (context, i) => Padding(
-									padding: const EdgeInsets.all(4),
-									child: GestureDetector(
-										onTap: () async {
-											final controller = TextEditingController(text: list[i]);
-											controller.selection = TextSelection(baseOffset: 0, extentOffset: list[i].length);
-											final newItem = await showAdaptiveDialog<String>(
-												context: context,
-												barrierDismissible: true,
-												builder: (context) => AdaptiveAlertDialog(
-													title: Text('Edit $name'),
-													content: AdaptiveTextField(
-														autofocus: true,
-														autocorrect: false,
-														enableIMEPersonalizedLearning: false,
-														smartDashesType: SmartDashesType.disabled,
-														smartQuotesType: SmartQuotesType.disabled,
-														controller: controller,
-														onSubmitted: (s) => Navigator.pop(context, s)
-													),
-													actions: [
-														AdaptiveDialogAction(
-															isDefaultAction: true,
-															child: const Text('Change'),
-															onPressed: () => Navigator.pop(context, controller.text)
-														),
-														AdaptiveDialogAction(
-															child: const Text('Cancel'),
-															onPressed: () => Navigator.pop(context)
-														)
-													]
-												)
-											);
-											if (newItem != null) {
-												list[i] = newItem;
-												setDialogState(() {});
-											}
-											controller.dispose();
-										},
-										child: Container(
-											decoration: BoxDecoration(
-												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												color: theme.primaryColor.withOpacity(0.1)
+					child: ListView.builder(
+						itemCount: list.length,
+						itemBuilder: (context, i) => Padding(
+							padding: const EdgeInsets.all(4),
+							child: GestureDetector(
+								onTap: () async {
+									final controller = TextEditingController(text: list[i]);
+									if (startEditsWithAllSelected) {
+										controller.selection = TextSelection(baseOffset: 0, extentOffset: list[i].length);
+									}
+									final newItem = await showAdaptiveDialog<String>(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											title: Text('Edit $name'),
+											content: AdaptiveTextField(
+												autofocus: true,
+												autocorrect: false,
+												enableIMEPersonalizedLearning: false,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled,
+												controller: controller,
+												onSubmitted: (s) => Navigator.pop(context, s)
 											),
-											padding: const EdgeInsets.only(left: 16),
-											child: Row(
-												children: [
-													Expanded(
-														child: Text(list[i], style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
-													),
-													CupertinoButton(
-														child: const Icon(CupertinoIcons.delete),
-														onPressed: () {
-															list.removeAt(i);
-															setDialogState(() {});
-														}
-													)
-												]
-											)
+											actions: [
+												AdaptiveDialogAction(
+													isDefaultAction: true,
+													child: const Text('Change'),
+													onPressed: () => Navigator.pop(context, controller.text)
+												),
+												AdaptiveDialogAction(
+													child: const Text('Cancel'),
+													onPressed: () => Navigator.pop(context)
+												)
+											]
 										)
-									)
-								)
-							),
-							Align(
-								alignment: Alignment.bottomCenter,
-								child: ClipRect(
-									child: BackdropFilter(
-										filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-											child: Container(
-											color: theme.backgroundColor.withOpacity(0.1),
-											child: Column(
-												mainAxisSize: MainAxisSize.min,
-												crossAxisAlignment: CrossAxisAlignment.stretch,
-												children: [
-													CupertinoButton(
-														child: Row(
-															mainAxisAlignment: MainAxisAlignment.center,
-															children: [
-																const Icon(CupertinoIcons.add),
-																Text(' Add $name')
-															]
-														),
-														onPressed: () async {
-															final controller = TextEditingController();
-															final newItem = await showAdaptiveDialog<String>(
-																context: context,
-																barrierDismissible: true,
-																builder: (context) => AdaptiveAlertDialog(
-																	title: Text('New $name'),
-																	content: AdaptiveTextField(
-																		autofocus: true,
-																		controller: controller,
-																		autocorrect: false,
-																		enableIMEPersonalizedLearning: false,
-																		smartDashesType: SmartDashesType.disabled,
-																		smartQuotesType: SmartQuotesType.disabled,
-																		onSubmitted: (s) => Navigator.pop(context, s)
-																	),
-																	actions: [
-																		AdaptiveDialogAction(
-																			isDefaultAction: true,
-																			child: const Text('Add'),
-																			onPressed: () => Navigator.pop(context, controller.text)
-																		),
-																		AdaptiveDialogAction(
-																			child: const Text('Cancel'),
-																			onPressed: () => Navigator.pop(context)
-																		)
-																	]
-																)
-															);
-															if (newItem != null) {
-																list.add(newItem);
-																setDialogState(() {});
-															}
-															controller.dispose();
-														}
-													)
-												]
+									);
+									if (newItem != null) {
+										list[i] = newItem;
+										setDialogState(() {});
+									}
+									controller.dispose();
+								},
+								child: Container(
+									decoration: BoxDecoration(
+										borderRadius: const BorderRadius.all(Radius.circular(4)),
+										color: theme.primaryColor.withOpacity(0.1)
+									),
+									padding: const EdgeInsets.only(left: 16),
+									child: Row(
+										children: [
+											Expanded(
+												child: Text(list[i], style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
+											),
+											CupertinoButton(
+												child: const Icon(CupertinoIcons.delete),
+												onPressed: () {
+													list.removeAt(i);
+													setDialogState(() {});
+												}
 											)
-										)
+										]
 									)
 								)
 							)
-						]
+						)
 					)
-				)
-			),
-			actions: [
-				AdaptiveDialogAction(
-					child: const Text('Close'),
-					onPressed: () => Navigator.pop(context)
-				)
-			]
+				),
+				actions: [
+					AdaptiveDialogAction(
+						child: Text('Add $name'),
+						onPressed: () async {
+							final controller = TextEditingController();
+							final newItem = await showAdaptiveDialog<String>(
+								context: context,
+								barrierDismissible: true,
+								builder: (context) => AdaptiveAlertDialog(
+									title: Text('New $name'),
+									content: AdaptiveTextField(
+										autofocus: true,
+										controller: controller,
+										autocorrect: false,
+										enableIMEPersonalizedLearning: false,
+										smartDashesType: SmartDashesType.disabled,
+										smartQuotesType: SmartQuotesType.disabled,
+										onSubmitted: (s) => Navigator.pop(context, s)
+									),
+									actions: [
+										AdaptiveDialogAction(
+											isDefaultAction: true,
+											child: const Text('Add'),
+											onPressed: () => Navigator.pop(context, controller.text)
+										),
+										AdaptiveDialogAction(
+											child: const Text('Cancel'),
+											onPressed: () => Navigator.pop(context)
+										)
+									]
+								)
+							);
+							if (newItem != null) {
+								list.add(newItem);
+								setDialogState(() {});
+							}
+							controller.dispose();
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Close'),
+						onPressed: () => Navigator.pop(context)
+					)
+				]
+			)
 		)
 	);
 }

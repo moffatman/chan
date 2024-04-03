@@ -29,6 +29,55 @@ class FilterEditor extends StatefulWidget {
 	createState() => _FilterEditorState();
 }
 
+/// Lazy hack to deal with pipe within groups
+List<String> _splitByTopLevelPipe(String str) {
+	final out = <String>[];
+	final buffer = StringBuffer();
+	bool escapeNext = false;
+	final stack = <String>[];
+	for (int i = 0; i < str.length; i++) {
+		final c = str[i];
+		if (c == '|' && stack.isEmpty) {
+			out.add(buffer.toString());
+			buffer.clear();
+			continue;
+		}
+		buffer.write(c);
+		if (escapeNext) {
+			escapeNext = false;
+			continue;
+		}
+		if (c == '\\') {
+			escapeNext = true;
+		}
+		else if (c == '(' || c == '[') {
+			stack.add(c);
+		}
+		else if (c == ')') {
+			if (stack.tryLast == '(') {
+				stack.removeLast();
+			}
+			else {
+				// Bail
+				Future.error(FormatException('Missing opening (', str, i), StackTrace.current);
+				return [str];
+			}
+		}
+		else if (c == ']') {
+			if (stack.tryLast == '[') {
+				stack.removeLast();
+			}
+			else {
+				// Bail
+				Future.error(FormatException('Missing opening [', str, i), StackTrace.current);
+				return [str];
+			}
+		}
+	}
+	out.add(buffer.toString());
+	return out;
+}
+
 class _FilterEditorState extends State<FilterEditor> {
 	late final TextEditingController regexController;
 	late final FocusNode regexFocusNode;
@@ -88,6 +137,7 @@ class _FilterEditorState extends State<FilterEditor> {
 				pattern: RegExp('', caseSensitive: false)
 			);
 			final patternController = TextEditingController(text: filter.pattern.pattern);
+			final useListEditor = _splitByTopLevelPipe(filter.pattern.pattern).isNotEmpty;
 			bool isCaseSensitive = filter.pattern.isCaseSensitive;
 			bool isSingleLine = !filter.pattern.isMultiLine;
 			final labelController = TextEditingController(text: filter.label);
@@ -148,6 +198,25 @@ class _FilterEditorState extends State<FilterEditor> {
 											)
 										)
 									),
+									if (useListEditor) ...[
+										AdaptiveFilledButton(
+											padding: const EdgeInsets.all(16),
+											onPressed: () async {
+												final list = _splitByTopLevelPipe(patternController.text);
+												await editStringList(
+													context: context,
+													list: list,
+													name: 'pattern',
+													title: 'Edit patterns',
+													startEditsWithAllSelected: false
+												);
+												patternController.text = list.join('|');
+												setInnerState(() {});
+											},
+											child: const Text('Edit pattern as list')
+										),
+										const SizedBox(height: 32),
+									],
 									AdaptiveListSection(
 										children: [
 											AdaptiveListTile(
