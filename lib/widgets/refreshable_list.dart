@@ -2561,8 +2561,22 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		].join(' ')).contains(query);
 	}
 
+	bool _handleStatusBarTap() {
+		if (!mounted || widget.controller == null || widget.controller?.scrollController?.tryPosition == null) {
+			// probably dead
+			return false;
+		}
+		// Logic copied from Scaffold / CupertinoPageScaffold
+		widget.controller?.animateToIndex(0,
+			duration: platformIsMaterial ? const Duration(milliseconds: 1000) : const Duration(milliseconds: 500),
+			curve: platformIsMaterial ? Curves.easeOutCirc : Curves.linearToEaseOut
+		);
+		return true;
+	}
+
 	@override
 	Widget build(BuildContext context) {
+		ModalRoute.find(context)?.handleStatusBarTap = _handleStatusBarTap;
 		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.maybeOf(context));
 		widget.controller?.topOffset = MediaQuery.paddingOf(context).top;
 		widget.controller?.bottomOffset = MediaQuery.paddingOf(context).bottom;
