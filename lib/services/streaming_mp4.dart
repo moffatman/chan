@@ -274,6 +274,9 @@ class VideoServer {
 		}
 	}
 
+	// TODO: Maybe switch to base36?
+	// Because a lot of filesystems are case-insensitive, the odds of collision here
+	// are much higher. My estimate about 99x more likely.
 	File getFile(String digest) => File('${httpRoot.path}/${base64Url.encode(md5.convert(base64Url.decode(digest)).bytes)}');
 
 	File optimisticallyGetFile(Uri uri) => getFile(_encodeDigest(uri));
