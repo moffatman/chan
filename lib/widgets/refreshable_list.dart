@@ -2964,7 +2964,13 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		return RenderAbstractViewport.of(object).getOffsetToReveal(object, 0.0).offset;
 	}
 	double? _estimateOffset(int targetIndex) {
+		if (targetIndex == 0) {
+			return 0;
+		}
 		final heightedItems = _items.tryMap((i) => i.cachedHeight);
+		if (heightedItems.isEmpty) {
+			return null;
+		}
 		final averageItemHeight = heightedItems.fold<double>(0, (a, b) => a + b) / heightedItems.length;
 		int nearestDistance = _items.length + 1;
 		double? estimate;
@@ -2979,7 +2985,12 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		return estimate;
 	}
-	Future<void> animateTo(bool Function(T val) f, {double alignment = 0.0, bool Function(T val)? orElseLast, Duration duration = const Duration(milliseconds: 200)}) async {
+	Future<void> animateTo(bool Function(T val) f, {
+		double alignment = 0.0,
+		bool Function(T val)? orElseLast,
+		Duration duration = const Duration(milliseconds: 200),
+		Curve curve = Curves.easeInOut
+	}) async {
 		int targetIndex = _items.indexWhere((i) => f(i.item.item));
 		if (targetIndex == -1) {
 			if (orElseLast != null) {
@@ -2989,7 +3000,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				throw const ItemNotFoundException('No matching item to scroll to');
 			}
 		}
-		await animateToIndex(targetIndex, alignment: alignment, duration: duration);
+		await animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve);
 	}
 	Future<void> animateToIfOffscreen(bool Function(T val) f, {double alignment = 0.0, bool Function(T val)? orElseLast, Duration duration = const Duration(milliseconds: 200)}) async {
 		int targetIndex = _items.indexWhere((i) => f(i.item.item));
@@ -3006,12 +3017,17 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		await animateToIndex(targetIndex, alignment: alignment, duration: duration);
 	}
-	Future<void> animateToIndex(int targetIndex, {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
+	Future<void> animateToIndex(int targetIndex, {
+		double alignment = 0.0,
+		Duration duration = const Duration(milliseconds: 200),
+		Curve curve = Curves.easeInOut
+	}) async {
+		final startPixels = scrollController?.tryPosition?.pixels ?? 0;
 		final (int, int) proposedRange;
 		final rangeBonus = (state?.useTree == true || state?.widget.gridDelegate != null) ? 5 : 0;
 		if (targetIndex > firstVisibleIndex) {
 			// Scrolling forwards
-			proposedRange = (lastVisibleIndex + 3, targetIndex - 12 - rangeBonus);
+			proposedRange = (lastVisibleIndex + 1, targetIndex - 12 - rangeBonus);
 		}
 		else {
 			// Scrolling backwards
@@ -3026,34 +3042,48 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			state?._rebuild();
 			try {
 				await SchedulerBinding.instance.endOfFrame;
-				await _animateToIndex(targetIndex, alignment: alignment, duration: duration);
+				await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels);
 			}
 			catch (e) {
 				print(e);
 			}
-			for (final item in _items) {
-				item.cachedOffset = null;
-				item.cachedHeight = null;
+			for (int i = 0; i < _items.length; i++) {
+				_items[i].cachedOffset = null;
+				if (i < proposedRange.$2 && i > proposedRange.$1) {
+					_items[i].cachedHeight = null;
+				}
 			}
 			useDummyItemsInRange = null;
 			state?._rebuild();
-			await SchedulerBinding.instance.endOfFrame;
 			await SchedulerBinding.instance.endOfFrame;
 		}
 		else {
 			// Just to be safe
 			useDummyItemsInRange = null;
+			await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels);
 		}
-		await _animateToIndex(targetIndex, alignment: alignment, duration: duration);
 	}
-	Future<void> _animateToIndex(int targetIndex, {required double alignment, required Duration duration}) async {
+	Future<void> _animateToIndex(int targetIndex, {
+		required double alignment,
+		required Duration duration,
+		Curve curve = Curves.easeInOut,
+		required double startPixels
+	}) async {
 		print('$contentId animating to $targetIndex (${_items[targetIndex].item.item}) (alignment: $alignment)');
 		final start = DateTime.now();
 		currentTargetIndex = targetIndex;
-		Duration d = duration;
-		Curve c = Curves.easeIn;
 		final initialContentId = contentId;
+		if (_estimateOffset(targetIndex) == null) {
+			// Or it will hang
+			final minDuration = const Duration(seconds: 5) * _items.length;
+			if (minDuration < duration) {
+				duration = minDuration;
+			}
+		}
 		Future<bool> attemptResolve() async {
+			if (scrollController!.position.outOfRange) {
+				scrollController!.position.jumpTo(scrollController!.position.maxScrollExtent);
+			}
 			final completer = Completer<void>();
 			double estimate = (_estimateOffset(targetIndex) ?? ((targetIndex > (_items.length / 2)) ? scrollController!.position.maxScrollExtent : 0)) - topOffset;
 			if (_items.last.cachedOffset != null) {
@@ -3062,18 +3092,26 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			}
 			estimate = max(0, estimate);
 			_itemCacheCallbacks.putIfAbsent((targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
-			final delay = Duration(milliseconds: min(300, max(1, (estimate - scrollController!.position.pixels).abs() ~/ 100)));
+			final cc = curve.recurve(
+				start: startPixels,
+				current: scrollController!.position.pixels,
+				end: estimate
+			);
+			if ((estimate - scrollController!.position.pixels < 50)) {
+				await _tryCachingItem(targetIndex, _items[targetIndex]);
+			}
+			final delay = Duration(milliseconds: max(50, (duration * ((estimate - scrollController!.position.pixels) / (startPixels - estimate)).abs()).inMilliseconds));
 			scrollController!.animateTo(
 				estimate,
 				duration: delay,
-				curve: c
+				curve: cc
 			);
-			await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 32)), Future.delayed(delay ~/ 4)])]);
+			await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 50)), Future.delayed(duration ~/ 4)])]);
 			return (_items[targetIndex].cachedOffset != null);
 		}
 		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
-			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 5 && targetIndex == currentTargetIndex) {
-				c = Curves.linear;
+			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 15 && targetIndex == currentTargetIndex) {
+				// Keep trying
 			}
 			if (initialContentId != contentId) {
 				print('List was hijacked ($initialContentId -> $contentId)');
@@ -3083,8 +3121,6 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				print('animateTo was hijacked ($targetIndex -> $currentTargetIndex)');
 				return;
 			}
-			Duration timeLeft = duration - DateTime.now().difference(start);
-			d = Duration(milliseconds: max(timeLeft.inMilliseconds, duration.inMilliseconds ~/ 4));
 		}
 		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
 			throw Exception('Scrolling timed out');
@@ -3102,22 +3138,45 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		else {
 			atAlignment0 += 1;
 		}
+		final finalDestinationUnclamped = atAlignment0 - (alignmentSlidingWindow * alignment);
+		if (finalDestinationUnclamped > scrollController!.position.maxScrollExtent &&
+		    (_items.last.cachedHeight == null || _items.last.cachedOffset == null)) {
+			// Need to actually figure out the height
+			final penultimateDuration = duration * ((scrollController!.position.maxScrollExtent - scrollController!.position.pixels) / (startPixels - scrollController!.position.maxScrollExtent)).abs();
+			await scrollController!.animateTo(
+				scrollController!.position.maxScrollExtent,
+				duration: penultimateDuration > const Duration(milliseconds: 50) ? penultimateDuration : const Duration(milliseconds: 50),
+				curve: curve.recurve(
+					start: startPixels,
+					current: scrollController!.position.pixels,
+					end: scrollController!.position.maxScrollExtent
+				)
+			);
+		}
+
 		// The scrollController's maxScrollExtent is not trustworthy
 		final double maxScrollExtent;
 		if (_items.last.cachedHeight != null && _items.last.cachedOffset != null) {
-			final footerHeight = state?.widget.footer != null ? 56 : 0; // Lazy estimate
+			final footerHeight = state?.widget.footer != null ? 40 : 0; // Lazy estimate
 			maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset;
 		}
 		else {
 			maxScrollExtent = scrollController!.position.maxScrollExtent;
 		}
-		double finalDestination = (atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, maxScrollExtent);
-		await scrollController!.animateTo(
-			max(0, finalDestination),
-			duration: Duration(milliseconds: max(1, d.inMilliseconds)),
-			curve: Curves.easeOut
-		);
-		await SchedulerBinding.instance.endOfFrame;
+		double finalDestination = finalDestinationUnclamped.clamp(0, maxScrollExtent);
+		if (scrollController!.position.pixels != finalDestination) {
+			final finalDuration = duration * ((finalDestination - scrollController!.position.pixels) / (startPixels - finalDestination)).abs();
+			await scrollController!.animateTo(
+				finalDestination,
+				duration: finalDuration > const Duration(milliseconds: 50) ? finalDuration : const Duration(milliseconds: 50),
+				curve: curve.recurve(
+					start: startPixels,
+					current: scrollController!.position.pixels,
+					end: finalDestination
+				)
+			);
+			await SchedulerBinding.instance.endOfFrame;
+		}
 	}
 	void cancelCurrentAnimation() {
 		currentTargetIndex = null;
@@ -3301,4 +3360,51 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	void mergeTrees() {
 		state?._mergeTrees(rebuild: true);
 	}
+}
+
+extension _Recurve on Curve {
+	Curve recurve({
+		required double start,
+		required double current,
+		required double end
+	}) {
+		// Recurved curve
+		final baseIn = ((current - start) / (end - start));
+		if (baseIn >= 0.98) {
+			// Give up
+			return Curves.easeOut;
+		}
+		final slopeIn = (end - current) / (end - start);
+		final baseOut = transform(baseIn);
+		final slopeOut = 1 / (1 - baseOut);
+		return _RecurvedCurve(
+			curve: this,
+			baseIn: baseIn,
+			slopeIn: slopeIn,
+			baseOut: baseOut,
+			slopeOut: slopeOut
+		);
+	}
+}
+
+class _RecurvedCurve extends Curve {
+	const _RecurvedCurve({
+		required this.curve,
+		required this.baseIn,
+		required this.slopeIn,
+		required this.baseOut,
+		required this.slopeOut
+	});
+
+	final Curve curve;
+	final double baseIn;
+	final double slopeIn;
+	final double baseOut;
+	final double slopeOut;
+
+	@override
+	double transformInternal(double t) => (slopeOut * (curve.transform((baseIn + (slopeIn * t)).clamp(0, 1)) - baseOut));
+
+	@override
+	String toString() => '_RecurveCurved($curve, $baseIn -> ${baseIn + slopeIn}, -$baseOut * $slopeOut)';
 }
