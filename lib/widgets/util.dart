@@ -1139,6 +1139,184 @@ Future<void> editStringList({
 	);
 }
 
+String _defaultMapEntryFormatter(MapEntry<String, String> entry) {
+	return '${entry.key}\n${entry.value}';
+}
+
+Future<void> editStringMap({
+	required BuildContext context,
+	required Map<String, String> map,
+	required String name,
+	String keyName = 'Key',
+	String valueName = 'Value',
+	String Function(MapEntry<String, String>) formatter = _defaultMapEntryFormatter,
+	required String title
+}) async {
+	final theme = context.read<SavedTheme>();
+	final entries = map.entries.toList();
+	await showAdaptiveDialog(
+		barrierDismissible: true,
+		context: context,
+		builder: (context) => StatefulBuilder(
+			builder: (context, setDialogState) => AdaptiveAlertDialog(
+				title: Padding(
+					padding: const EdgeInsets.only(bottom: 16),
+					child: Text(title)
+				),
+				content: SizedBox(
+					width: 100,
+					height: 350,
+					child: ListView.builder(
+						itemCount: entries.length,
+						itemBuilder: (context, i) => Padding(
+							padding: const EdgeInsets.all(4),
+							child: GestureDetector(
+								onTap: () async {
+									final keyController = TextEditingController(text: entries[i].key);
+									final valueController = TextEditingController(text: entries[i].value);
+									final change = await showAdaptiveDialog<bool>(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											title: Text('Edit $name'),
+											content: Column(
+												crossAxisAlignment: CrossAxisAlignment.start,
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Text(keyName),
+													AdaptiveTextField(
+														autocorrect: false,
+														enableIMEPersonalizedLearning: false,
+														smartDashesType: SmartDashesType.disabled,
+														smartQuotesType: SmartQuotesType.disabled,
+														controller: keyController,
+														onSubmitted: (s) => Navigator.pop(context, s)
+													),
+													const SizedBox(height: 16),
+													Text(valueName),
+													AdaptiveTextField(
+														autocorrect: false,
+														enableIMEPersonalizedLearning: false,
+														smartDashesType: SmartDashesType.disabled,
+														smartQuotesType: SmartQuotesType.disabled,
+														controller: valueController,
+														onSubmitted: (s) => Navigator.pop(context, s)
+													),
+												]
+											),
+											actions: [
+												AdaptiveDialogAction(
+													isDefaultAction: true,
+													child: const Text('Change'),
+													onPressed: () => Navigator.pop(context, true)
+												),
+												AdaptiveDialogAction(
+													child: const Text('Cancel'),
+													onPressed: () => Navigator.pop(context)
+												)
+											]
+										)
+									);
+									if (change ?? false) {
+										entries[i] = MapEntry<String, String>(keyController.text, valueController.text);
+										setDialogState(() {});
+									}
+									keyController.dispose();
+									valueController.dispose();
+								},
+								child: Container(
+									decoration: BoxDecoration(
+										borderRadius: const BorderRadius.all(Radius.circular(4)),
+										color: theme.primaryColor.withOpacity(0.1)
+									),
+									padding: const EdgeInsets.only(left: 16),
+									child: Row(
+										children: [
+											Expanded(
+												child: Text(formatter(entries[i]), style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
+											),
+											CupertinoButton(
+												child: const Icon(CupertinoIcons.delete),
+												onPressed: () {
+													entries.removeAt(i);
+													setDialogState(() {});
+												}
+											)
+										]
+									)
+								)
+							)
+						)
+					)
+				),
+				actions: [
+					AdaptiveDialogAction(
+						child: Text('Add $name'),
+						onPressed: () async {
+							final keyController = TextEditingController();
+							final valueController = TextEditingController();
+							final add = await showAdaptiveDialog<bool>(
+								context: context,
+								barrierDismissible: true,
+								builder: (context) => AdaptiveAlertDialog(
+									title: Text('New $name'),
+									content: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Text(keyName),
+											AdaptiveTextField(
+												autocorrect: false,
+												enableIMEPersonalizedLearning: false,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled,
+												controller: keyController,
+												onSubmitted: (s) => Navigator.pop(context, s)
+											),
+											const SizedBox(height: 16),
+											Text(valueName),
+											AdaptiveTextField(
+												autocorrect: false,
+												enableIMEPersonalizedLearning: false,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled,
+												controller: valueController,
+												onSubmitted: (s) => Navigator.pop(context, s)
+											),
+										]
+									),
+									actions: [
+										AdaptiveDialogAction(
+											isDefaultAction: true,
+											child: const Text('Add'),
+											onPressed: () => Navigator.pop(context, true)
+										),
+										AdaptiveDialogAction(
+											child: const Text('Cancel'),
+											onPressed: () => Navigator.pop(context)
+										)
+									]
+								)
+							);
+							if (add ?? false) {
+								entries.add(MapEntry<String, String>(keyController.text, valueController.text));
+								setDialogState(() {});
+							}
+							keyController.dispose();
+							valueController.dispose();
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Close'),
+						onPressed: () => Navigator.pop(context)
+					)
+				]
+			)
+		)
+	);
+	map.clear();
+	map.addEntries(entries);
+}
+
 class ConditionalTapGestureRecognizer extends TapGestureRecognizer {
 	bool Function(PointerDownEvent) condition;
 

@@ -522,5 +522,22 @@ final behaviorSettings = [
 		icon: CupertinoIcons.arrow_left_right_square,
 		helpText: 'Swipe left and right to switch tabs. Swipe up and down to show and hide the tab bar.',
 		setting: Settings.swipeGesturesOnBottomBarSetting
+	),
+	MutableButtonSettingWidget(
+		description: 'MPV options',
+		icon: CupertinoIcons.play_rectangle,
+		helpText: 'MPV is used as the video player in Chance. You can set some custom flags to pass to MPV here.',
+		setting: Settings.mpvOptionsSetting,
+		builder: (map) => Text(map.isEmpty ? 'Set up' : describeCount(map.length, 'option')),
+		onPressed: (context, map, didEdit) async {
+			await editStringMap(
+				context: context,
+				map: map,
+				name: 'Option',
+				title: 'MPV Options',
+				formatter: (e) => '--${e.key}${e.value.isEmpty ? '' : '='}${e.value}'
+			);
+			didEdit();
+		}
 	)
 ];

@@ -2185,6 +2185,17 @@ class SavedSettingsFields {
     fieldName: 'swipeGesturesOnBottomBar',
     merger: PrimitiveMerger(),
   );
+  static Map<String, String> getMpvOptions(SavedSettings x) => x.mpvOptions;
+  static void setMpvOptions(SavedSettings x, Map<String, String> v) =>
+      x.mpvOptions = v;
+  static const mpvOptions =
+      HiveFieldAdapter<SavedSettings, Map<String, String>>(
+    getter: getMpvOptions,
+    setter: setMpvOptions,
+    fieldNumber: 183,
+    fieldName: 'mpvOptions',
+    merger: MapMerger(PrimitiveMerger()),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2367,7 +2378,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     179: SavedSettingsFields.scrollbarThickness,
     180: SavedSettingsFields.thumbnailPixelation,
     181: SavedSettingsFields.catalogGridModeTextAboveAttachment,
-    182: SavedSettingsFields.swipeGesturesOnBottomBar
+    182: SavedSettingsFields.swipeGesturesOnBottomBar,
+    183: SavedSettingsFields.mpvOptions
   };
 
   @override
@@ -2564,13 +2576,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       thumbnailPixelation: fields[180] as int?,
       catalogGridModeTextAboveAttachment: fields[181] as bool?,
       swipeGesturesOnBottomBar: fields[182] as bool?,
+      mpvOptions: (fields[183] as Map?)?.cast<String, String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(170)
+      ..writeByte(171)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -2910,7 +2923,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(181)
       ..write(obj.catalogGridModeTextAboveAttachment)
       ..writeByte(182)
-      ..write(obj.swipeGesturesOnBottomBar);
+      ..write(obj.swipeGesturesOnBottomBar)
+      ..writeByte(183)
+      ..write(obj.mpvOptions);
   }
 
   @override

@@ -306,11 +306,24 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 	}
 
-	VideoController _ensureController() {
-		return _videoPlayerController ??= (VideoController(Player())
-			..player.stream.error.listen(_onPlayerError)
-			..player.stream.log.listen(_onPlayerLog))
-			..player.stream.videoParams.listen(_onPlayerVideoParams);
+	Future<VideoController> _ensureController() async {
+		final existing = _videoPlayerController;
+		if (existing != null) {
+			return existing;
+		}
+		final player = Player();
+		final controller = VideoController(player);
+		controller.player.stream.error.listen(_onPlayerError);
+		controller.player.stream.log.listen(_onPlayerLog);
+		controller.player.stream.videoParams.listen(_onPlayerVideoParams);
+		final platformPlayer = player.platform;
+		if (platformPlayer is NativePlayer) {
+			for (final option in Settings.instance.mpvOptions.entries) {
+				await platformPlayer.setProperty(option.key, option.value);
+			}
+		}
+		_videoPlayerController = controller;
+		return controller;
 	}
 
 	void _onPlayerError(String error) {
@@ -573,7 +586,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (!transcode) {
 					if (url.scheme == 'file') {
 						final file = File(url.toStringFFMPEG());
-						await _ensureController().player.open(Media(file.path), play: false);
+						await (await _ensureController()).player.open(Media(file.path), play: false);
 						onCacheCompleted(file);
 					}
 					else {
@@ -595,7 +608,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						_videoLoadingProgress = progressNotifier;
 						notifyListeners();
 						if (!background) {
-							await _ensureController().player.open(Media(VideoServer.instance.getUri(hash).toString()), play: false);
+							await (await _ensureController()).player.open(Media(VideoServer.instance.getUri(hash).toString()), play: false);
 						}
 					}
 				}
@@ -609,14 +622,14 @@ class AttachmentViewerController extends ChangeNotifier {
 					_hasAudio = result.hasAudio;
 					if (result is StreamingMP4ConvertedFile) {
 						if (isPrimary || !background) {
-							await _ensureController().player.open(Media(result.mp4File.path), play: false);
+							await (await _ensureController()).player.open(Media(result.mp4File.path), play: false);
 						}
 						_cachedFile = result.mp4File;
 						attachment.sizeInBytes ??= result.mp4File.statSync().size;
 					}
 					else if (result is StreamingMP4ConversionStream) {
 						if (isPrimary || !background) {
-							await _ensureController().player.open(Media(result.hlsStream.toString()), play: false);
+							await (await _ensureController()).player.open(Media(result.hlsStream.toString()), play: false);
 						}
 						_videoLoadingProgress = result.progress;
 						result.mp4File.then((mp4File) async {
@@ -640,7 +653,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							return;
 						}
 						if (isPrimary || !background) {
-							await _ensureController().player.open(Media(mp4File.path), play: false);
+							await (await _ensureController()).player.open(Media(mp4File.path), play: false);
 						}
 						if (_isDisposed) {
 							return;

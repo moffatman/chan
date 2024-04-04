@@ -1161,6 +1161,8 @@ class SavedSettings extends HiveObject {
 	bool catalogGridModeTextAboveAttachment;
 	@HiveField(182)
 	bool swipeGesturesOnBottomBar;
+	@HiveField(183)
+	Map<String, String> mpvOptions;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1345,6 +1347,7 @@ class SavedSettings extends HiveObject {
 		int? thumbnailPixelation,
 		bool? catalogGridModeTextAboveAttachment,
 		bool? swipeGesturesOnBottomBar,
+		Map<String, String>? mpvOptions,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1551,7 +1554,8 @@ class SavedSettings extends HiveObject {
 		scrollbarThickness = scrollbarThickness ?? 6,
 		thumbnailPixelation = thumbnailPixelation ?? -12,
 		catalogGridModeTextAboveAttachment = catalogGridModeTextAboveAttachment ?? false,
-		swipeGesturesOnBottomBar = swipeGesturesOnBottomBar ?? true {
+		swipeGesturesOnBottomBar = swipeGesturesOnBottomBar ?? true,
+		mpvOptions = mpvOptions ?? {} {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2652,6 +2656,9 @@ class Settings extends ChangeNotifier {
 
 	static const swipeGesturesOnBottomBarSetting = SavedSetting(SavedSettingsFields.swipeGesturesOnBottomBar);
 	bool get swipeGesturesOnBottomBar => swipeGesturesOnBottomBarSetting(this);
+
+	static const mpvOptionsSetting = SavedSetting(SavedSettingsFields.mpvOptions);
+	Map<String, String> get mpvOptions => mpvOptionsSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
