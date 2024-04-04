@@ -505,7 +505,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		required this.name,
 		this.useRandomUseragent = false,
 		this.hasAttachmentRateLimit = false,
-		this.boards
+		this.boards,
+		super.platformUserAgents
 	}) : super() {
 		client.interceptors.add(HTTP429BackoffInterceptor(
 			client: client

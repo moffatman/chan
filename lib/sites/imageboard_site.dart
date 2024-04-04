@@ -1563,6 +1563,7 @@ ImageboardSite makeSite(dynamic data) {
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
 			searchUrl: data['searchUrl'] ?? '',
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
+				final archivePlatformUserAgents = (archive['platformUserAgents'] as Map?)?.cast<String, String>() ?? const {};
 				final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
 					title: b['title'],
 					name: b['name'],
@@ -1577,13 +1578,15 @@ ImageboardSite makeSite(dynamic data) {
 						boards: boards,
 						useRandomUseragent: archive['useRandomUseragent'] ?? false,
 						hasAttachmentRateLimit: archive['hasAttachmentRateLimit'] ?? false,
+						platformUserAgents: archivePlatformUserAgents
 					);
 				}
 				else if (archive['type'] == 'fuuka') {
 					return FuukaArchive(
 						name: archive['name'],
 						baseUrl: archive['baseUrl'],
-						boards: boards
+						boards: boards,
+						platformUserAgents: archivePlatformUserAgents
 					);
 				}
 				else {

@@ -342,7 +342,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 	FuukaArchive({
 		required this.baseUrl,
 		required this.name,
-		this.boards
+		this.boards,
+		super.platformUserAgents
 	});
 
 	@override
