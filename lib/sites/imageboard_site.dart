@@ -1173,7 +1173,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 	String get baseUrl;
-	String get imageUrl;
 	Uri get iconUrl;
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]);
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken);

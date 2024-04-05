@@ -449,9 +449,6 @@ class SiteLainchan extends ImageboardSite {
 	];
 
 	@override
-	String get imageUrl => baseUrl;
-
-	@override
 	String get siteType => 'lainchan';
 	@override
 	String get siteData => baseUrl;

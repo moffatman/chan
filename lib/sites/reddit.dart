@@ -1142,9 +1142,6 @@ class SiteReddit extends ImageboardSite {
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 
 	@override
-	String get imageUrl => 'i.redd.it';
-
-	@override
 	String get name => 'Reddit';
 
 	@override

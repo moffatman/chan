@@ -359,9 +359,6 @@ class SiteFutaba extends ImageboardSite {
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 
 	@override
-	String get imageUrl => baseUrl;
-
-	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		throw UnimplementedError('2chan posting is not implemented');
 	}

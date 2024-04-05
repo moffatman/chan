@@ -430,9 +430,6 @@ class SiteLynxchan extends ImageboardSite {
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 
 	@override
-	String get imageUrl => baseUrl;
-
-	@override
 	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [
 		greentextSnippet
 	];

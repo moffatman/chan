@@ -536,9 +536,6 @@ class SiteHackerNews extends ImageboardSite {
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 
 	@override
-	String get imageUrl => baseUrl;
-
-	@override
 	String get name => 'Hacker News';
 
 	@override

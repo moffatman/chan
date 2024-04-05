@@ -129,7 +129,6 @@ class Site4Chan extends ImageboardSite {
 	final String sysUrl;
 	final String apiUrl;
 	final String searchUrl;
-	@override
 	final String imageUrl;
 	final String captchaKey;
 	final Map<String, String> captchaUserAgents;
