@@ -228,6 +228,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	static PostNodeSpan makeSpan(String board, int threadId, String text) {
+		text = unescape.convert(text);
 		final body = parseFragment(
 			markdown.markdownToHtml(
 				// Lazy... but this means at least one link is already done properly
