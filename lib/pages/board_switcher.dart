@@ -62,7 +62,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	int currentImageboardIndex = 0;
 	Imageboard get currentImageboard => allImageboards[currentImageboardIndex];
 	late List<ImageboardScoped<ImageboardBoard>> boards;
-	({String query, List<ImageboardScoped<ImageboardBoard>> results}) typeahead = const (query: '', results: []);
+	final Map<String, List<ImageboardBoard>> typeahead = {};
+	final Set<String> typeaheadLoading = {};
 	String searchString = '';
 	String? errorMessage;
 	late final ScrollController scrollController;
@@ -159,17 +160,28 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	Future<void> _updateTypeaheadBoards(String query) async {
-		if (query.isEmpty) {
-			setState(() {
-				typeahead = const (query: '', results: []);
-			});
+		if (query.isEmpty || typeaheadLoading.contains(query)) {
 			return;
 		}
-		final newTypeaheadBoards = await currentImageboard.site.getBoardsForQuery(query);
-		if (mounted && searchString.indexOf(query) == 0 && query.length > typeahead.query.length) {
-			setState(() {
-				typeahead = (query: query, results: newTypeaheadBoards.map(currentImageboard.scope).toList());
-			});
+		final imageboard = currentImageboard;
+		typeaheadLoading.add(query);
+		try {
+			final newTypeaheadBoards = await imageboard.site.getBoardsForQuery(query);
+			if (currentImageboard != imageboard) {
+				// Site switched
+				return;
+			}
+			typeaheadLoading.remove(query);
+			typeahead[query] = newTypeaheadBoards;
+			if (mounted) {
+				setState(() {});
+			}
+		}
+		catch (e, st) {
+			Future.error(e, st);
+			if (currentImageboard == imageboard) {
+				typeaheadLoading.remove(query);
+			}
 		}
 	}
 
@@ -218,11 +230,19 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
 			return (imageboardPriority[a.imageboard] ?? imageboards.length) - (imageboardPriority[b.imageboard] ?? imageboards.length);
 		});
+		List<ImageboardBoard> typeaheadBoards = [];
+		int longestTypeaheadMatchLength = 0;
 		if (searchString.isNotEmpty) {
-			for (final board in typeahead.results) {
-				if (!filteredBoards.any((b) => b.item.name == board.item.name && b.imageboard == currentImageboard)) {
-					filteredBoards.add(board);
+			for (final pair in typeahead.entries) {
+				if (searchString.startsWith(pair.key) && pair.key.length > longestTypeaheadMatchLength) {
+					typeaheadBoards = pair.value;
+					longestTypeaheadMatchLength = pair.key.length;
 				}
+			}
+		}
+		for (final board in typeaheadBoards) {
+			if (!filteredBoards.any((b) => b.item.name == board.name)) {
+				filteredBoards.add(currentImageboard.scope(board));
 			}
 		}
 		if (settings.onlyShowFavouriteBoardsInSwitcher) {
@@ -354,7 +374,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									setState(() {
 										currentImageboardIndex = allImageboards.indexOf(selected.imageboard);
 									});
-									typeahead = const (query: '', results: []);
+									typeahead.clear();
+									typeaheadLoading.clear();
 									_updateTypeaheadBoards(searchString);
 								}
 								_focusNode.requestFocus();
@@ -740,7 +761,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												setState(() {
 													currentImageboardIndex = allImageboards.indexOf(imageboard);
 												});
-												typeahead = const (query: '', results: []);
+												typeahead.clear();
+												typeaheadLoading.clear();
 												_updateTypeaheadBoards(searchString);
 											}
 										);
@@ -900,7 +922,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											setState(() {
 												currentImageboardIndex = allImageboards.indexOf(imageboard);
 											});
-											typeahead = const (query: '', results: []);
+											typeahead.clear();
+											typeaheadLoading.clear();
 											_updateTypeaheadBoards(searchString);
 										}
 									);
