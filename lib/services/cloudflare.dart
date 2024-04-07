@@ -114,7 +114,9 @@ class CloudflareInterceptor extends Interceptor {
 		].any((snippet) => title.contains(snippet)) || [
 			'…',
 			'...'
-		].any((ending) => title.endsWith(ending));
+		].any((ending) => title.endsWith(ending)) || [
+			'McChallenge'
+		].any((str) => title == str);
 	}
 
 	static bool _responseMatches(Response response) {
@@ -122,6 +124,11 @@ class CloudflareInterceptor extends Interceptor {
 			final document = parse(response.data);
 			final title = document.querySelector('title')?.text ?? '';
 			return _titleMatches(title);
+		}
+		if ((response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false) &&
+				response.data is String &&
+				response.data.contains('<title>McChallenge</title>')) {
+			return true;
 		}
 		return false;
 	}
