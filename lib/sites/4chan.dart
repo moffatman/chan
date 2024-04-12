@@ -348,7 +348,7 @@ class Site4Chan extends ImageboardSite {
 							elements.add(PostCatalogSearchSpan(board: parts[parts.length - 2], query: Uri.decodeFull(catalogSearchMatch.group(1)!)));
 						}
 						else {
-							elements.add(PostBoardLink(parts[parts.length - 2]));
+							elements.add(PostBoardLinkSpan(parts[parts.length - 2]));
 						}
 					}
 				}

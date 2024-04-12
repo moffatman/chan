@@ -106,7 +106,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				}
 			}
 			else {
-				elements.add(PostBoardLink(linkedBoard));
+				elements.add(PostBoardLinkSpan(linkedBoard));
 			}
 		}
 		for (final node in body.nodes) {

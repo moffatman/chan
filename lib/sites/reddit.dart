@@ -65,6 +65,52 @@ class _StrikethroughSyntax extends markdown.InlineSyntax {
   }
 }
 
+class _RedditSimplifiedLinkSyntax extends markdown.InlineSyntax {
+	final String localName;
+	_RedditSimplifiedLinkSyntax({
+		required String leading,
+		required this.localName
+	}) : super('$leading/([^ ]+)', startCharacter: leading.codeUnitAt(0));
+
+	@override
+	bool onMatch(markdown.InlineParser parser, Match match) {
+		parser.addNode(markdown.Element.text(localName, match.group(1)!));
+    return true;
+	}
+}
+
+const _kSubredditLinkLocalName = 'rslash';
+
+class _SubredditWithoutLeadingSlashSyntax extends _RedditSimplifiedLinkSyntax {
+  _SubredditWithoutLeadingSlashSyntax() : super(
+		leading: 'r',
+		localName: _kSubredditLinkLocalName
+	);
+}
+
+class _SubredditWithLeadingSlashSyntax extends _RedditSimplifiedLinkSyntax {
+  _SubredditWithLeadingSlashSyntax() : super(
+		leading: '/r',
+		localName: _kSubredditLinkLocalName
+	);
+}
+
+const _kUserLinkLocalName = 'uslash';
+
+class _UserWithoutLeadingSlashSyntax extends _RedditSimplifiedLinkSyntax {
+  _UserWithoutLeadingSlashSyntax() : super(
+		leading: 'u',
+		localName: _kUserLinkLocalName
+	);
+}
+
+class _UserWithLeadingSlashSyntax extends _RedditSimplifiedLinkSyntax {
+  _UserWithLeadingSlashSyntax() : super(
+		leading: '/u',
+		localName: _kUserLinkLocalName
+	);
+}
+
 extension _RedditApiName on ThreadVariant {
 	String? get redditApiName {
 		switch (this) {
@@ -228,6 +274,16 @@ class SiteReddit extends ImageboardSite {
 		return ret;
 	}
 
+	static final _inlineSyntaxes = [
+		_SuperscriptSyntax(),
+		_SpoilerSyntax(),
+		_StrikethroughSyntax(),
+		_SubredditWithoutLeadingSlashSyntax(),
+		_SubredditWithLeadingSlashSyntax(),
+		_UserWithoutLeadingSlashSyntax(),
+		_UserWithLeadingSlashSyntax()
+	];
+
 	static PostNodeSpan makeSpan(String board, int threadId, String text) {
 		text = unescape.convert(text);
 		final body = parseFragment(
@@ -240,14 +296,10 @@ class SiteReddit extends ImageboardSite {
 					UrlElement() => '[${e.text}](${e.url})',
 					_ => e.text
 				}).join(''),
-				inlineSyntaxes: [
-					_SuperscriptSyntax(),
-					_SpoilerSyntax(),
-					_StrikethroughSyntax()
-				],
-				blockSyntaxes: [
-					const markdown.TableSyntax(),
-					const markdown.BlockquoteSyntax()
+				inlineSyntaxes: _inlineSyntaxes,
+				blockSyntaxes: const [
+					markdown.TableSyntax(),
+					markdown.BlockquoteSyntax()
 				]
 			).trim().replaceAll('<br />', '')
 		);
@@ -335,6 +387,12 @@ class SiteReddit extends ImageboardSite {
 							threadId: fromRedditId(node.attributes['id']!),
 							postId: fromRedditId(node.attributes['id']!)
 						);
+					}
+					else if (node.localName == _kSubredditLinkLocalName) {
+						yield PostBoardLinkSpan(node.text);
+					}
+					else if (node.localName == _kUserLinkLocalName) {
+						yield PostUserLinkSpan(node.text);
 					}
 					else if (node.attributes.values.every((v) => v.isEmpty)) {
 						// Some joker made up their own span

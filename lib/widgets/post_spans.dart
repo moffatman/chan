@@ -685,13 +685,13 @@ class PostQuoteLinkSpan extends PostSpan {
 	}
 }
 
-class PostBoardLink extends PostSpan {
+class PostBoardLinkSpan extends PostSpan {
 	final String board;
-	PostBoardLink(String board) : board = intern(board);
+	PostBoardLinkSpan(String board) : board = intern(board);
 	@override
 	build(context, zone, settings, theme, options) {
 		return TextSpan(
-			text: '>>/$board/',
+			text: zone.imageboard.site.isReddit ? '/r/$board' : '>>/$board/',
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? theme.secondaryColor,
 				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
@@ -1396,6 +1396,41 @@ class PostShiftJISSpan extends PostSpan {
 
 	@override
 	buildText() => '[sjis]$text[/sjis]';
+}
+
+class PostUserLinkSpan extends PostSpan {
+	final String username;
+
+	const PostUserLinkSpan(this.username);
+
+	@override
+	build(context, zone, settings, theme, options) {
+		return TextSpan(
+			text: '/u/$username',
+			style: options.baseTextStyle.copyWith(
+				color: options.overrideTextColor ?? theme.secondaryColor,
+				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
+				decoration: TextDecoration.underline
+			),
+			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
+				final postIdsToShow = zone.findThread(zone.primaryThreadId)?.posts.where((p) => p.name == username).map((p) => p.id).toList() ?? [];
+				WeakNavigator.push(context, PostsPage(
+					postsIdsToShow: postIdsToShow,
+					zone: zone,
+					clearStack: true,
+					header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(zone.board).options.name || zone.imageboard.site.supportsSearch(null).options.name) ? UserInfoPanel(
+						username: username,
+						board: zone.board
+					) : null
+				));
+			}),
+			onEnter: options.onEnter,
+			onExit: options.onExit
+		);
+	}
+
+	@override
+	buildText() => '/u/$username';
 }
 
 class PostSpanZone extends StatelessWidget {
