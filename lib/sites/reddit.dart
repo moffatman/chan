@@ -7,6 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 
@@ -659,9 +660,7 @@ class SiteReddit extends ImageboardSite {
 					ext: url.$2.ext,
 					filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
 					url: url.$2.url,
-					thumbnailUrl: url.$2.thumbnailUrl ?? Uri.https('thumbs.chance.surf', '/', {
-						'url': url.$2.url
-					}).toString(),
+					thumbnailUrl: url.$2.thumbnailUrl ?? generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString(),
 					md5: '',
 					width: null,
 					height: null,

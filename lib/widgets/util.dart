@@ -13,6 +13,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -519,9 +520,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				ext: '',
 				filename: '',
 				url: url.toString(),
-				thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
-					'url': url.toString()
-				}).toString(),
+				thumbnailUrl: generateThumbnailerForUrl(url).toString(),
 				md5: '',
 				width: null,
 				height: null,

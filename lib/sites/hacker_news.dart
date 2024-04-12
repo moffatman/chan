@@ -4,6 +4,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/sites/4chan.dart';
 
 import 'package:chan/sites/imageboard_site.dart';
@@ -192,9 +193,7 @@ class SiteHackerNews extends ImageboardSite {
 		ext: '',
 		filename: '',
 		url: url.toString(),
-		thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
-			'url': url.toString()
-		}).toString(),
+		thumbnailUrl: generateThumbnailerForUrl(url).toString(),
 		md5: '',
 		width: null,
 		height: null,
