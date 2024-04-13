@@ -11,6 +11,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:archive/archive_io.dart';
+import 'package:uuid/uuid.dart';
 
 /// For isolate usage
 Future<void> _export({
@@ -448,6 +449,7 @@ Future<List<ImportLog>> import(File archive) async {
 			));
 		}
 
+		final browserStatesBefore = Persistence.settings.browserStateBySite.keys.toSet();
 		await hiveImportSingleton<SavedSettings>(
 			type: 'Settings',
 			merger: const ResolvedAdaptedMerger(SavedSettingsAdapter()),
@@ -456,6 +458,7 @@ Future<List<ImportLog>> import(File archive) async {
 			skipPaths: [
 				SavedSettingsFields.userId.fieldName,
 				SavedSettingsFields.replyBoxHeightOffset.fieldName,
+				SavedSettingsFields.currentTabIndex.fieldName,
 				[
 					SavedSettingsFields.browserStateBySite.fieldName,
 					'*',
@@ -477,6 +480,14 @@ Future<List<ImportLog>> import(File archive) async {
 				].join('/')
 			]
 		);
+		for (final pair in Persistence.settings.browserStateBySite.entries) {
+			if (browserStatesBefore.contains(pair.key)) {
+				// Not new
+				continue;
+			}
+			// It is not safe to reuse notificationsId
+			pair.value.notificationsId = (const Uuid()).v4();
+		}
 		await hiveImportMap<ImageboardBoard>(
 			type: 'Boards',
 			merger: const ResolvedAdaptedMerger(ImageboardBoardAdapter()),
@@ -513,6 +524,7 @@ Future<List<ImportLog>> import(File archive) async {
 			type: 'Fonts'
 		);
 		await dir.delete(recursive: true);
+		Persistence.ensureSane();
 	}
 	catch (e, st) {
 		Future.error(e, st); // crashlytics

@@ -512,6 +512,15 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
+	static void ensureSane() {
+		if (tabs.isEmpty) {
+			tabs.add(PersistentBrowserTab());
+		}
+		if (currentTabIndex >= tabs.length) {
+			currentTabIndex = 0;
+		}
+	}
+
 	static Future<Map<String, int>> getFilesystemCacheSizes() async {
 		final folderSizes = <String, int>{};
 		final systemTempDirectory = Persistence.temporaryDirectory;
