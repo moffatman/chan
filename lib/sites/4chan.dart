@@ -844,15 +844,16 @@ class Site4Chan extends ImageboardSite {
 				options: post.options ?? '',
 				time: DateTime.now(),
 				ip: captchaSolution.ip,
-											// Catalog spam-filter check not supported yet
-				spamFiltered: post.threadId != null &&
-											// Non-trivial 4chan captchas only
-											switch (captchaSolution) {
+				spamFiltered: switch (captchaSolution) {
 												Chan4CustomCaptchaSolution x => x.challenge != 'noop',
 												_ => false
 											} &&
+											(
 											// Seems this 4chan_pass= header is only set in true successful posts
-											!(response.headers['set-cookie'] ?? []).any((c) => c.startsWith('4chan_pass='))
+												!(response.headers['set-cookie'] ?? []).any((c) => c.startsWith('4chan_pass=')) ||
+												// The first cloudflare-cleared post gets spam-filtered often
+												captchaSolution.cloudflare
+											)
 			);
 		}
 		else {
