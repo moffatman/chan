@@ -394,6 +394,20 @@ class SiteReddit extends ImageboardSite {
 					else if (node.localName == _kUserLinkLocalName) {
 						yield PostUserLinkSpan(node.text);
 					}
+					else if (node.localName == 'img' && (node.attributes['src']?.startsWith('emote|') ?? false)) {
+						final parts = node.attributes['src']?.split('|') ?? [];
+						if (parts.length == 3) {
+							yield PostInlineImageSpan(
+								src: Uri.https('www.redditstatic.com', '/marketplace-assets/v1/core/emotes/snoomoji_emotes/${parts[1]}/${parts[2]}.gif').toString(),
+								width: 16,
+								height: 16
+							);
+						}
+						else {
+							// Give up
+							yield PostTextSpan(node.outerHtml);
+						}
+					}
 					else if (node.attributes.values.every((v) => v.isEmpty)) {
 						// Some joker made up their own span
 						yield PostTextSpan('<${[node.localName, ...node.attributes.keys].join(' ')}>');
