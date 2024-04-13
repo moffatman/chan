@@ -1318,8 +1318,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	set thread(Thread? newThread) {
 		if (newThread != _thread) {
 			if (_thread != null && newThread != null) {
-				final oldMaxId = _thread?.posts_.fold(0, (m, p) => max(m, p.id)) ?? 0;
-				unseenPostIds.data.addAll(newThread.posts_.map((p) => p.id).where((id) => id > oldMaxId && !youIds.contains(id)));
+				final oldIds = _thread?.posts_.map((p) => p.id).toSet() ?? {};
+				unseenPostIds.data.addAll(newThread.posts_.map((p) => p.id).where((id) => !oldIds.contains(id) && !youIds.contains(id)));
 			}
 			Persistence.setCachedThread(imageboardKey, board, id, newThread);
 			_thread = newThread;
