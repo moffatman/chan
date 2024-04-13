@@ -61,7 +61,6 @@ class _VideoControlsState extends State<VideoControls> {
 		if (widget.controller != old.controller) {
 			old.controller.removeListener(_onControllerUpdate);
 			widget.controller.addListener(_onControllerUpdate);
-			videoPlayerController = widget.controller.videoPlayerController!;
 			Future.microtask(_onControllerUpdate);
 		}
 	}
@@ -142,6 +141,7 @@ class _VideoControlsState extends State<VideoControls> {
 
 	@override
 	Widget build(BuildContext context) {
+		print('Build _VideoControlsState with controller ${videoPlayerController?.player.state} and value $value');
 		final primaryColor = ChanceTheme.primaryColorOf(context);
 		return SizedBox(
 			height: 44,
