@@ -1163,6 +1163,8 @@ class SavedSettings extends HiveObject {
 	bool swipeGesturesOnBottomBar;
 	@HiveField(183)
 	Map<String, String> mpvOptions;
+	@HiveField(184)
+	int dynamicIPKeepAlivePeriodSeconds;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1348,6 +1350,7 @@ class SavedSettings extends HiveObject {
 		bool? catalogGridModeTextAboveAttachment,
 		bool? swipeGesturesOnBottomBar,
 		Map<String, String>? mpvOptions,
+		int? dynamicIPKeepAlivePeriodSeconds,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1555,7 +1558,8 @@ class SavedSettings extends HiveObject {
 		thumbnailPixelation = thumbnailPixelation ?? -12,
 		catalogGridModeTextAboveAttachment = catalogGridModeTextAboveAttachment ?? false,
 		swipeGesturesOnBottomBar = swipeGesturesOnBottomBar ?? true,
-		mpvOptions = mpvOptions ?? {} {
+		mpvOptions = mpvOptions ?? {},
+		dynamicIPKeepAlivePeriodSeconds = dynamicIPKeepAlivePeriodSeconds ?? -15 {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2659,6 +2663,15 @@ class Settings extends ChangeNotifier {
 
 	static const mpvOptionsSetting = SavedSetting(SavedSettingsFields.mpvOptions);
 	Map<String, String> get mpvOptions => mpvOptionsSetting(this);
+
+	static const dynamicIPKeepAlivePeriodSecondsSetting = SavedSetting(SavedSettingsFields.dynamicIPKeepAlivePeriodSeconds);
+	int get dynamicIPKeepAlivePeriodSeconds => dynamicIPKeepAlivePeriodSecondsSetting(this);
+	Duration? get dynamicIPKeepAlivePeriod {
+		if (dynamicIPKeepAlivePeriodSeconds <= 0) {
+			return null;
+		}
+		return Duration(seconds: dynamicIPKeepAlivePeriodSeconds);
+	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

@@ -170,6 +170,7 @@ dependency_overrides:
     git:
       url: https://github.com/moffatman/dio.git
       path: dio
+      ref: develop
   photo_manager:
     git:
       url: https://github.com/moffatman/flutter_photo_manager.git

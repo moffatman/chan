@@ -286,8 +286,8 @@ packages:
     dependency: "direct main"
     description:
       path: dio
-      ref: HEAD
-      resolved-ref: "8e8305cb60a7ba8283233001994c5d01645bb9f4"
+      ref: develop
+      resolved-ref: "1ec2dbe5031ab904b52ce6567144bc9fd15cf3f8"
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "4.0.6"

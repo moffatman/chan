@@ -539,5 +539,24 @@ final behaviorSettings = [
 			);
 			didEdit();
 		}
-	)
+	),
+	SliderSettingWidget(
+		description: 'Dynamic IP workaround',
+		icon: CupertinoIcons.globe,
+		setting: const MappedSetting(
+			Settings.dynamicIPKeepAlivePeriodSecondsSetting,
+			FieldMappers.toDoubleAbs,
+			FieldMappers.toIntAbs
+		),
+		min: 3,
+		max: 120,
+		step: 1,
+		textFormatter: (s) => 'Interval: ${s.abs().round()}s',
+		helpText: 'Some ISPs (T-Mobile, for one) use network routing "solutions" that cause IP addresses to change on every connection. You can try using this setting to have Chance keep making requests to keep your IP stable, as some sites require a stable IP to complete the posting flow.',
+		enabledSetting: MappedSetting(
+			Settings.dynamicIPKeepAlivePeriodSecondsSetting,
+			(seconds) => seconds > 0,
+			(enabled) => Settings.instance.dynamicIPKeepAlivePeriodSeconds.abs() * (enabled ? 1 : -1)
+		)
+	),
 ];

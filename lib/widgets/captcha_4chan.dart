@@ -263,6 +263,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 		}
 		// If we cleared cloudflare on challenge
 		// Just try again, we appparently will get a better captcha
+		// This is also meaningful, because we can have an actual HTTP socket to
+		// KeepAlive (for the T-Mobile IPv4 CGNAT issue)
 		await Future.delayed(const Duration(seconds: 1));
 		challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
 			site: site,

@@ -136,6 +136,7 @@ class Site4Chan extends ImageboardSite {
 	final Map<String, String> postingHeaders;
 	final Duration? captchaTicketLifetime;
 	Timer? _captchaTicketTimer;
+	Timer? _dynamicIPKeepAliveTimer;
 	final Duration reportCooldown;
 	@override
 	final int? subjectCharacterLimit;
@@ -161,6 +162,27 @@ class Site4Chan extends ImageboardSite {
 	bool _isAppropriateForCaptchaRequest(PersistentBrowserTab tab) {
 		return tab.imageboardKey == imageboard?.key &&
 		    imageboard?.persistence.getThreadStateIfExists(tab.thread)?.thread?.isArchived != true;
+	}
+
+	void _onDynamicIPKeepAliveTimerFire() async {
+		final period = _lastDynamicIPKeepAlivePeriod;
+		if (period == null) {
+			return;
+		}
+		try {
+			// Just try to keep TCP session alive to sysUrl, /post is 404 but should work
+			await client.headUri(Uri.https(sysUrl, '/post'), options: Options(
+				extra: {
+					kPriority: RequestPriority.cosmetic
+				},
+				validateStatus: (x) => true
+			));
+		}
+		catch (e) {
+			// Ignore, hopefully it still works?
+		}
+		_captchaTicketTimer?.cancel(); // in case of race
+		_captchaTicketTimer = Timer(period, _onDynamicIPKeepAliveTimerFire);
 	}
 
 	void _onCaptchaTicketTimerFire() async {
@@ -207,6 +229,7 @@ class Site4Chan extends ImageboardSite {
 
 	ConnectivityResult? _lastConnectivity;
 	bool _lastUseSpamFilterWorkarounds = false;
+	Duration? _lastDynamicIPKeepAlivePeriod;
 	void _onSettingsUpdate() {
 		if (Settings.instance.connectivity != _lastConnectivity ||
 		    Settings.instance.useSpamFilterWorkarounds != _lastUseSpamFilterWorkarounds) {
@@ -231,6 +254,10 @@ class Site4Chan extends ImageboardSite {
 			_onCaptchaTicketTimerFire();
 			resetCaptchaTicketTimer();
 		}
+		if (Settings.instance.dynamicIPKeepAlivePeriod != _lastDynamicIPKeepAlivePeriod) {
+			_lastDynamicIPKeepAlivePeriod = Settings.instance.dynamicIPKeepAlivePeriod;
+			_onDynamicIPKeepAliveTimerFire();
+		}
 	}
 
 	@override
@@ -239,10 +266,14 @@ class Site4Chan extends ImageboardSite {
 		if (captchaTicketLifetime != null) {
 			_onCaptchaTicketTimerFire();
 			resetCaptchaTicketTimer();
-			_lastConnectivity = Settings.instance.connectivity;
-			_lastUseSpamFilterWorkarounds = Settings.instance.useSpamFilterWorkarounds;
-			Settings.instance.addListener(_onSettingsUpdate);
 		}
+		_lastConnectivity = Settings.instance.connectivity;
+		_lastUseSpamFilterWorkarounds = Settings.instance.useSpamFilterWorkarounds;
+		_lastDynamicIPKeepAlivePeriod = Settings.instance.dynamicIPKeepAlivePeriod;
+		if (_lastDynamicIPKeepAlivePeriod != null) {
+			_onDynamicIPKeepAliveTimerFire();
+		}
+		Settings.instance.addListener(_onSettingsUpdate);
 	}
 
 	@override
@@ -257,6 +288,7 @@ class Site4Chan extends ImageboardSite {
 	void dispose() {
 		super.dispose();
 		_captchaTicketTimer?.cancel();
+		_dynamicIPKeepAliveTimer?.cancel();
 		Settings.instance.removeListener(_onSettingsUpdate);
 	}
 
@@ -849,7 +881,7 @@ class Site4Chan extends ImageboardSite {
 												_ => false
 											} &&
 											(
-											// Seems this 4chan_pass= header is only set in true successful posts
+												// Seems this 4chan_pass= header is only set in true successful posts
 												!(response.headers['set-cookie'] ?? []).any((c) => c.startsWith('4chan_pass=')) ||
 												// The first cloudflare-cleared post gets spam-filtered often
 												captchaSolution.cloudflare
