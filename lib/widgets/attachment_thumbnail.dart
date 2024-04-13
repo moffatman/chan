@@ -143,6 +143,7 @@ class AttachmentThumbnail extends StatelessWidget {
 													 (!targetLongestSide && (attachment.aspectRatio > 1));
 			image = ExtendedResizeImage(
 				image,
+				maxBytes: null,
 				width: targetHeight ? null : pixelation,
 				height: targetHeight ? pixelation : null,
 			);

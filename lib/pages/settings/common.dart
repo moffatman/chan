@@ -645,7 +645,7 @@ class SliderSettingWidget extends StandardImmutableSettingWidget<double> {
 							_makeSyncButton(setting.syncPaths),
 							_makeHelpButton(context),
 							if (widgetFormatter != null) widgetFormatter(value),
-							if (divisions >= 100) ...[
+							if (divisions >= 100 || (divisions >= 50 && step == 1)) ...[
 								AdaptiveIconButton(
 									padding: EdgeInsets.zero,
 									onPressed: value <= min ? null : () {
