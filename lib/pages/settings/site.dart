@@ -45,6 +45,51 @@ final siteSettings = [
 							Expanded(
 								child: Text(imageboard.site.name)
 							),
+							if (imageboard.site.archives.isNotEmpty) AdaptiveIconButton(
+								icon: const Icon(CupertinoIcons.archivebox),
+								onPressed: () => showAdaptiveDialog<bool>(
+									context: context,
+									barrierDismissible: true,
+									builder: (context) => StatefulBuilder(
+										builder: (context, setDialogState) => AdaptiveAlertDialog(
+											title: const Text('Archives'),
+											content: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													const SizedBox(height: 16),
+													for (final archive in imageboard.site.archives) Row(
+														children: [
+															Expanded(
+																child: Text(archive.name, textAlign: TextAlign.left)
+															),
+															AdaptiveSwitch(
+																value: !imageboard.persistence.browserState.disabledArchiveNames.contains(archive.name),
+																onChanged: (enable) {
+																	if (enable) {
+																		imageboard.persistence.browserState.disabledArchiveNames.remove(archive.name);
+																	}
+																	else {
+																		imageboard.persistence.browserState.disabledArchiveNames.add(archive.name);
+																	}
+																	imageboard.persistence.didUpdateBrowserState();
+																	setDialogState(() {});
+																}
+															)
+														]
+													)
+												]
+											),
+											actions: [
+												AdaptiveDialogAction(
+													isDefaultAction: true,
+													onPressed: () => Navigator.pop(context, true),
+													child: const Text('Close'),
+												)
+											]
+										)
+									)
+								)
+							),
 							AdaptiveIconButton(
 								icon: const Icon(CupertinoIcons.delete),
 								onPressed: () async {

@@ -1181,6 +1181,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) async {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
+			if (persistence?.browserState.disabledArchiveNames.contains(archive.name) ?? false) {
+				continue;
+			}
 			try {
 				final post = await archive.getPost(board, id, priority: priority);
 				await Future.wait(post.attachments.map(_ensureCookiesMemoizedForAttachment));
@@ -1275,6 +1278,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<ImageboardArchiveSearchResultPage> searchArchives(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
 		String s = '';
 		for (final archive in archives) {
+			if (persistence?.browserState.disabledArchiveNames.contains(archive.name) ?? false) {
+				continue;
+			}
 			try {
 				return await archive.search(query, page: page, lastResult: lastResult);
 			}

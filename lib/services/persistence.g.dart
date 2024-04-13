@@ -1334,6 +1334,15 @@ class PersistentBrowserStateFields {
     fieldName: 'outbox',
     merger: OrderedSetLikePrimitiveListMerger(),
   );
+  static Set<String> getDisabledArchiveNames(PersistentBrowserState x) =>
+      x.disabledArchiveNames;
+  static const disabledArchiveNames =
+      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Set<String>>(
+    getter: getDisabledArchiveNames,
+    fieldNumber: 29,
+    fieldName: 'disabledArchiveNames',
+    merger: PrimitiveSetMerger(),
+  );
 }
 
 class PersistentBrowserStateAdapter
@@ -1369,7 +1378,8 @@ class PersistentBrowserStateAdapter
     25: PersistentBrowserStateFields.overrideShowIds,
     26: PersistentBrowserStateFields.treeModeNewRepliesAreLinear,
     27: PersistentBrowserStateFields.autowatchedIds,
-    28: PersistentBrowserStateFields.outbox
+    28: PersistentBrowserStateFields.outbox,
+    29: PersistentBrowserStateFields.disabledArchiveNames
   };
 
   @override
@@ -1435,13 +1445,15 @@ class PersistentBrowserStateAdapter
       treeModeNewRepliesAreLinear:
           fields[26] == null ? true : fields[26] as bool,
       outbox: fields[28] == null ? [] : (fields[28] as List).cast<DraftPost>(),
+      disabledArchiveNames:
+          fields[29] == null ? {} : (fields[29] as Set).cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(21)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -1483,7 +1495,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(27)
       ..write(obj.autowatchedIds)
       ..writeByte(28)
-      ..write(obj.outbox);
+      ..write(obj.outbox)
+      ..writeByte(29)
+      ..write(obj.disabledArchiveNames);
   }
 
   @override

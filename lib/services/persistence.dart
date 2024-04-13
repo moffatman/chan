@@ -747,7 +747,8 @@ class Persistence extends ChangeNotifier {
 			postingNames: {},
 			useCatalogGridPerBoard: {},
 			overrideShowIds: {},
-			outbox: []
+			outbox: [],
+			disabledArchiveNames: {}
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey) != null) {
 			print('Migrating tabs');
@@ -1774,6 +1775,8 @@ class PersistentBrowserState {
 	final Map<String, List<int>> autowatchedIds;
 	@HiveField(28, defaultValue: [], merger: OrderedSetLikePrimitiveListMerger())
 	final List<DraftPost> outbox;
+	@HiveField(29, defaultValue: <String>{}, merger: PrimitiveSetMerger())
+	final Set<String> disabledArchiveNames;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1800,7 +1803,8 @@ class PersistentBrowserState {
 		required this.useCatalogGridPerBoard,
 		required this.overrideShowIds,
 		this.treeModeNewRepliesAreLinear = true,
-		required this.outbox
+		required this.outbox,
+		required this.disabledArchiveNames
 	}) : notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
