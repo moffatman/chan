@@ -324,8 +324,7 @@ class SiteLainchan extends ImageboardSite {
 				responseType: ResponseType.plain,
 				validateStatus: (x) => true,
 				headers: {
-					'Referer': referer,
-					'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/122.0 Mobile/15E148 Safari/605.1.15'
+					'Referer': referer
 				}
 			),
 			cancelToken: cancelToken
