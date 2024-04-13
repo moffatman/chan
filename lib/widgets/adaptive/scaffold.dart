@@ -254,11 +254,16 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 		    parentDrawer != null &&
 				context.read<MasterDetailHint?>()?.location.isDetail != true) {
 			// Only if at root route
-			leadings.add(CupertinoButton(
-				onPressed: () => parentDrawer.key.currentState?.open(),
-				minSize: 0,
-				padding: EdgeInsets.zero,
-				child: const Icon(Icons.menu)
+			leadings.add(GestureDetector(
+				onLongPress: () {
+					Settings.instance.runQuickAction(context);
+				},
+				child: CupertinoButton(
+					onPressed: () => parentDrawer.key.currentState?.open(),
+					minSize: 0,
+					padding: EdgeInsets.zero,
+					child: const Icon(Icons.menu)
+				)
 			));
 		}
 		if (bar_?.leadings != null) {
