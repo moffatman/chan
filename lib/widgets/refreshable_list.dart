@@ -3044,8 +3044,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				await SchedulerBinding.instance.endOfFrame;
 				await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels);
 			}
-			catch (e) {
+			catch (e, st) {
 				print(e);
+				print(st);
 			}
 			for (int i = 0; i < _items.length; i++) {
 				_items[i].cachedOffset = null;
@@ -3085,12 +3086,23 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				scrollController!.position.jumpTo(scrollController!.position.maxScrollExtent);
 			}
 			final completer = Completer<void>();
-			double estimate = (_estimateOffset(targetIndex) ?? ((targetIndex > (_items.length / 2)) ? scrollController!.position.maxScrollExtent : 0)) - topOffset;
+			double estimate = switch (_estimateOffset(targetIndex)) {
+				double e => e - topOffset,
+				null => (
+									// We are at the top
+									scrollController!.position.extentBefore == 0 ||
+									// Item is in the second half of the list
+									targetIndex > (_items.length / 2)
+								) ? scrollController!.position.maxScrollExtent : 0
+			};
 			if (_items.last.cachedOffset != null) {
 				// prevent overscroll
 				estimate = min(estimate, scrollController!.position.maxScrollExtent);
 			}
 			estimate = max(0, estimate);
+			if (startPixels == estimate) {
+				return true;
+			}
 			_itemCacheCallbacks.putIfAbsent((targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
 			final cc = curve.recurve(
 				start: startPixels,
@@ -3370,7 +3382,7 @@ extension _Recurve on Curve {
 	}) {
 		// Recurved curve
 		final baseIn = ((current - start) / (end - start));
-		if (baseIn >= 0.98) {
+		if (baseIn >= 0.98 || baseIn.isNaN || baseIn.isInfinite) {
 			// Give up
 			return Curves.easeOut;
 		}
