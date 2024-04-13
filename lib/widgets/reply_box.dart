@@ -1828,6 +1828,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							icon: CupertinoIcons.tray_arrow_up,
 							message: 'Saved draft'
 						);
+						setState(() {});
 					},
 					child: AdaptiveIconButton(
 						onPressed: _attachmentProgress != null ? null : (loading ? _cancel : _submit),
