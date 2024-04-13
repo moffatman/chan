@@ -128,15 +128,18 @@ class _ContextMenuState extends State<ContextMenu> {
 		final persistence = context.select<Persistence?, Persistence?>((p) => p);
 		final threadWatcher = context.select<ThreadWatcher?, ThreadWatcher?>((w) => w);
 		final notifications = context.watch<Notifications?>();
+		final navigator = Navigator.of(context, rootNavigator: true);
 		final actions = widget.actions.map((action) => CupertinoContextMenuAction2(
 			trailingIcon: action.trailingIcon,
 			key: action.key,
 			onPressed: () async {
-				Navigator.of(context, rootNavigator: true).pop();
 				try {
+					navigator.pop();
 					await action.onPressed();
 				}
-				catch (e) {
+				catch (e, st) {
+					print(e);
+					print(st);
 					if (context.mounted) {
 						alertError(context, e.toStringDio());
 					}

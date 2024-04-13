@@ -680,13 +680,20 @@ class PostRow extends StatelessWidget {
 					child: const Text('Share text'),
 					trailingIcon: Adaptive.icons.share,
 					onPressed: () {
-						final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-						final size = rootContext.findRenderObject()?.semanticBounds.size;
+						final Rect? sharePositionOrigin;
+						if (rootContext.mounted) {
+							final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+							final size = rootContext.findRenderObject()?.semanticBounds.size;
+							sharePositionOrigin = (offset != null && size != null) ? offset & size : null;
+						}
+						else {
+							sharePositionOrigin = null;
+						}
 						shareOne(
 							context: context,
 							text: (translatedPostSnapshot?.data ?? latestPost).span.buildText(),
 							type: "text",
-							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+							sharePositionOrigin: sharePositionOrigin
 						);
 					}
 				),
@@ -807,8 +814,15 @@ class PostRow extends StatelessWidget {
 					child: const Text('Share link'),
 					trailingIcon: Adaptive.icons.share,
 					onPressed: () {
-						final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-						final size = rootContext.findRenderObject()?.semanticBounds.size;
+						final Rect? sharePositionOrigin;
+						if (rootContext.mounted) {
+							final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+							final size = rootContext.findRenderObject()?.semanticBounds.size;
+							sharePositionOrigin = (offset != null && size != null) ? offset & size : null;
+						}
+						else {
+							sharePositionOrigin = null;
+						}
 						shareOne(
 							context: context,
 							text: site.getWebUrl(
@@ -818,7 +832,7 @@ class PostRow extends StatelessWidget {
 								archiveName: parentZoneThreadState?.thread?.archiveName
 							),
 							type: "text",
-							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+							sharePositionOrigin: sharePositionOrigin
 						);
 					}
 				),
