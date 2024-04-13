@@ -139,6 +139,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	DateTime? get allowedTime => queue?.allowedTime;
 	Duration get _cooldown => site.getActionCooldown(_board, _action, !Settings.instance.isConnectedToWifi);
 	ThreadIdentifier? get thread;
+	Duration get _regretDelay => Duration.zero;
 
 	void submit(BuildContext? context) async {
 		_state = QueueStateNeedsCaptcha(context);
@@ -291,22 +292,42 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				final cancelToken = CancelToken();
 				final captchaSolution = initialState.captchaSolution;
 				try {
-					final delay = site.getCaptchaUsableTime(captchaSolution).difference(DateTime.now());
-					final skipCompleter = Completer<void>();
-					_state = QueueStateSubmitting(
-						message: 'Waiting to use captcha',
-						wait: delay > const Duration(seconds: 3) ? (
-							until: DateTime.now().add(delay),
-							skip: skipCompleter.complete
-						) : null,
-						cancelToken: cancelToken
-					);
-					notifyListeners();
-					await Future.any([Future.delayed(delay), skipCompleter.future, cancelToken.whenCancel]);
-					if (cancelToken.isCancelled) {
-						_state = const QueueStateIdle();
+					if (_regretDelay > Duration.zero) {
+						final skipCompleter = Completer<void>();
+						_state = QueueStateSubmitting(
+							message: 'Waiting ${formatDuration(_regretDelay)}',
+							wait: (
+								until: DateTime.now().add(_regretDelay),
+								skip: skipCompleter.complete
+							),
+							cancelToken: cancelToken
+						);
 						notifyListeners();
-						return false;
+						await Future.any([Future.delayed(_regretDelay), skipCompleter.future, cancelToken.whenCancel]);
+						if (cancelToken.isCancelled) {
+							_state = const QueueStateIdle();
+							notifyListeners();
+							return false;
+						}
+					}
+					final delay = site.getCaptchaUsableTime(captchaSolution).difference(DateTime.now());
+					if (delay > Duration.zero) {
+						final skipCompleter = Completer<void>();
+						_state = QueueStateSubmitting(
+							message: 'Waiting to use captcha',
+							wait: delay > const Duration(seconds: 3) ? (
+								until: DateTime.now().add(delay),
+								skip: skipCompleter.complete
+							) : null,
+							cancelToken: cancelToken
+						);
+						notifyListeners();
+						await Future.any([Future.delayed(delay), skipCompleter.future, cancelToken.whenCancel]);
+						if (cancelToken.isCancelled) {
+							_state = const QueueStateIdle();
+							notifyListeners();
+							return false;
+						}
 					}
 					_state = QueueStateSubmitting(
 						message: 'Submitting',
@@ -377,6 +398,9 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 
 	@override
 	ThreadIdentifier? get thread => post.thread;
+
+	@override
+	Duration get _regretDelay => Settings.instance.postingRegretDelay;
 
 	@override
 	bool get isArchived {

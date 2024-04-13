@@ -2208,6 +2208,17 @@ class SavedSettingsFields {
     fieldName: 'dynamicIPKeepAlivePeriodSeconds',
     merger: PrimitiveMerger(),
   );
+  static int getPostingRegretDelaySeconds(SavedSettings x) =>
+      x.postingRegretDelaySeconds;
+  static void setPostingRegretDelaySeconds(SavedSettings x, int v) =>
+      x.postingRegretDelaySeconds = v;
+  static const postingRegretDelaySeconds = HiveFieldAdapter<SavedSettings, int>(
+    getter: getPostingRegretDelaySeconds,
+    setter: setPostingRegretDelaySeconds,
+    fieldNumber: 185,
+    fieldName: 'postingRegretDelaySeconds',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2392,7 +2403,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     181: SavedSettingsFields.catalogGridModeTextAboveAttachment,
     182: SavedSettingsFields.swipeGesturesOnBottomBar,
     183: SavedSettingsFields.mpvOptions,
-    184: SavedSettingsFields.dynamicIPKeepAlivePeriodSeconds
+    184: SavedSettingsFields.dynamicIPKeepAlivePeriodSeconds,
+    185: SavedSettingsFields.postingRegretDelaySeconds
   };
 
   @override
@@ -2591,13 +2603,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       swipeGesturesOnBottomBar: fields[182] as bool?,
       mpvOptions: (fields[183] as Map?)?.cast<String, String>(),
       dynamicIPKeepAlivePeriodSeconds: fields[184] as int?,
+      postingRegretDelaySeconds: fields[185] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(172)
+      ..writeByte(173)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -2941,7 +2954,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(183)
       ..write(obj.mpvOptions)
       ..writeByte(184)
-      ..write(obj.dynamicIPKeepAlivePeriodSeconds);
+      ..write(obj.dynamicIPKeepAlivePeriodSeconds)
+      ..writeByte(185)
+      ..write(obj.postingRegretDelaySeconds);
   }
 
   @override

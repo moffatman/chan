@@ -1165,6 +1165,8 @@ class SavedSettings extends HiveObject {
 	Map<String, String> mpvOptions;
 	@HiveField(184)
 	int dynamicIPKeepAlivePeriodSeconds;
+	@HiveField(185)
+	int postingRegretDelaySeconds;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1351,6 +1353,7 @@ class SavedSettings extends HiveObject {
 		bool? swipeGesturesOnBottomBar,
 		Map<String, String>? mpvOptions,
 		int? dynamicIPKeepAlivePeriodSeconds,
+		int? postingRegretDelaySeconds,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1559,7 +1562,8 @@ class SavedSettings extends HiveObject {
 		catalogGridModeTextAboveAttachment = catalogGridModeTextAboveAttachment ?? false,
 		swipeGesturesOnBottomBar = swipeGesturesOnBottomBar ?? true,
 		mpvOptions = mpvOptions ?? {},
-		dynamicIPKeepAlivePeriodSeconds = dynamicIPKeepAlivePeriodSeconds ?? -15 {
+		dynamicIPKeepAlivePeriodSeconds = dynamicIPKeepAlivePeriodSeconds ?? -15,
+		postingRegretDelaySeconds = postingRegretDelaySeconds ?? -10 {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2671,6 +2675,15 @@ class Settings extends ChangeNotifier {
 			return null;
 		}
 		return Duration(seconds: dynamicIPKeepAlivePeriodSeconds);
+	}
+
+	static const postingRegretDelaySecondsSetting = SavedSetting(SavedSettingsFields.postingRegretDelaySeconds);
+	int get postingRegretDelaySeconds => postingRegretDelaySecondsSetting(this);
+	Duration get postingRegretDelay {
+		if (postingRegretDelaySeconds <= 0) {
+			return Duration.zero;
+		}
+		return Duration(seconds: postingRegretDelaySeconds);
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

@@ -559,4 +559,23 @@ final behaviorSettings = [
 			(enabled) => Settings.instance.dynamicIPKeepAlivePeriodSeconds.abs() * (enabled ? 1 : -1)
 		)
 	),
+	SliderSettingWidget(
+		description: 'Wait before posting',
+		icon: CupertinoIcons.clock,
+		setting: const MappedSetting(
+			Settings.postingRegretDelaySecondsSetting,
+			FieldMappers.toDoubleAbs,
+			FieldMappers.toIntAbs
+		),
+		min: 1,
+		max: 30,
+		step: 1,
+		textFormatter: (s) => '${s.abs().round()}s',
+		helpText: 'Adds a wait period before submitting each post, so you can cancel it in case of a typo.',
+		enabledSetting: MappedSetting(
+			Settings.postingRegretDelaySecondsSetting,
+			(seconds) => seconds > 0,
+			(enabled) => Settings.instance.postingRegretDelaySeconds.abs() * (enabled ? 1 : -1)
+		)
+	),
 ];
