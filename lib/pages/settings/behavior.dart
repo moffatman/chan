@@ -12,6 +12,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -578,4 +579,47 @@ final behaviorSettings = [
 			(enabled) => Settings.instance.postingRegretDelaySeconds.abs() * (enabled ? 1 : -1)
 		)
 	),
+	ImageboardScopedSettingWidget(
+		description: 'Default post sorting method',
+		builder: (imageboard) => ImmutableButtonSettingWidget(
+			description: 'Default post sorting method',
+			icon: CupertinoIcons.sort_down,
+			setting: SettingWithFallback(
+				SavedSetting(
+					ChainedFieldWriter(
+						ChainedFieldReader(
+							SavedSettingsFields.browserStateBySite,
+							MapFieldWriter<String, PersistentBrowserState>(key: imageboard.key)
+						),
+						PersistentBrowserStateFields.postSortingMethod
+					)
+				),
+				PostSortingMethod.none
+			),
+			builder: (method) => Text(method.displayName),
+			onPressed: (context, currentMethod, setMethod) async {
+				final newMethod = await showAdaptiveDialog<PostSortingMethod>(
+					context: context,
+					barrierDismissible: true,
+					builder: (context) => AdaptiveAlertDialog(
+						title: Text('Pick default post sorting method for ${imageboard.site.name}'),
+						actions: [
+							...PostSortingMethod.values.map((method) => AdaptiveDialogAction(
+								isDefaultAction: method == currentMethod,
+								onPressed: () => Navigator.pop(context, method),
+								child: Text(method.displayName)
+							)),
+							AdaptiveDialogAction(
+								onPressed: () => Navigator.pop(context),
+								child: const Text('Cancel')
+							)
+						]
+					)
+				);
+				if (newMethod != null) {
+					setMethod(newMethod);
+				}
+			}
+		)
+	)
 ];

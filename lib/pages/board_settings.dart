@@ -5,6 +5,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/filter_editor.dart';
@@ -99,6 +100,31 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 									}
 									else {
 										widget.imageboard.persistence.browserState.useCatalogGridPerBoard.remove(widget.board.name);
+									}
+									widget.imageboard.persistence.didUpdateBrowserState();
+									setState(() {});
+								},
+							),
+							const SizedBox(height: 16),
+							const Center(
+								child: Text('Default post sorting method')
+							),
+							const SizedBox(height: 16),
+							AdaptiveChoiceControl(
+								groupValue: NullWrapper(widget.imageboard.persistence.browserState.postSortingMethodPerBoard[widget.board.name]),
+								knownWidth: (context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false) ? 0 : MediaQuery.sizeOf(context).width,
+								children: {
+									const NullWrapper<PostSortingMethod>(null): (null, 'Default (${(widget.imageboard.persistence.browserState.postSortingMethod ?? PostSortingMethod.none).displayName})'),
+									for (final method in PostSortingMethod.values)
+										NullWrapper(method): (null, method.displayName)
+								},
+								onValueChanged: (v) {
+									final newValue = v.value;
+									if (newValue != null) {
+										widget.imageboard.persistence.browserState.postSortingMethodPerBoard[widget.board.name] = newValue;
+									}
+									else {
+										widget.imageboard.persistence.browserState.postSortingMethodPerBoard.remove(widget.board.name);
 									}
 									widget.imageboard.persistence.didUpdateBrowserState();
 									setState(() {});

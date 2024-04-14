@@ -510,6 +510,17 @@ class Persistence extends ChangeNotifier {
 			tabs.first.board = null; // settings.initialBoardName will be handled in specific initialize() below
 			tabs.first.thread = null;
 		}
+		if (!settings.appliedMigrations.contains('ps')) {
+			// ps = "post sorting", need to nullify it to allow taking default from site
+			for (final threadState in sharedThreadStateBox.values) {
+				if (threadState.postSortingMethod == PostSortingMethod.none) {
+					threadState.postSortingMethod = null;
+					await threadState.save();
+				}
+			}
+			settings.appliedMigrations.add('ps');
+			await settings.save();
+		}
 	}
 
 	static void ensureSane() {
@@ -748,7 +759,8 @@ class Persistence extends ChangeNotifier {
 			useCatalogGridPerBoard: {},
 			overrideShowIds: {},
 			outbox: [],
-			disabledArchiveNames: {}
+			disabledArchiveNames: {},
+			postSortingMethodPerBoard: {}
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey) != null) {
 			print('Migrating tabs');
@@ -1246,8 +1258,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	final EfficientlyStoredIntSet unseenPostIds;
 	@HiveField(25)
 	double? firstVisiblePostAlignment;
-	@HiveField(26, defaultValue: PostSortingMethod.none)
-	PostSortingMethod postSortingMethod;
+	@HiveField(26)
+	PostSortingMethod? postSortingMethod;
 	@HiveField(27)
 	final EfficientlyStoredIntSet postIdsToStartRepliesAtBottom;
 	@HiveField(28, defaultValue: <int>[], merger: SetLikePrimitiveListMerger<int>())
@@ -1270,7 +1282,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		required this.showInHistory,
 		this.ephemeralOwner,
 		EfficientlyStoredIntSet? unseenPostIds,
-		this.postSortingMethod = PostSortingMethod.none,
+		this.postSortingMethod,
 		EfficientlyStoredIntSet? postIdsToStartRepliesAtBottom,
 		this.draft
 	}) : lastOpenedTime = DateTime.now(),
@@ -1502,6 +1514,12 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	ThreadWatch? get threadWatch => imageboard?.notifications.getThreadWatch(identifier);
 
 	String get boxKey => '$imageboardKey/$board/$id';
+
+	PostSortingMethod get effectivePostSortingMethod =>
+		postSortingMethod ??
+		imageboard?.persistence.browserState.postSortingMethodPerBoard[board] ??
+		imageboard?.persistence.browserState.postSortingMethod ??
+		PostSortingMethod.none;
 }
 
 @HiveType(typeId: 4)
@@ -1777,6 +1795,10 @@ class PersistentBrowserState {
 	final List<DraftPost> outbox;
 	@HiveField(29, defaultValue: <String>{}, merger: PrimitiveSetMerger())
 	final Set<String> disabledArchiveNames;
+	@HiveField(30)
+	PostSortingMethod? postSortingMethod;
+	@HiveField(31, defaultValue: {})
+	final Map<String, PostSortingMethod> postSortingMethodPerBoard;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1804,7 +1826,9 @@ class PersistentBrowserState {
 		required this.overrideShowIds,
 		this.treeModeNewRepliesAreLinear = true,
 		required this.outbox,
-		required this.disabledArchiveNames
+		required this.disabledArchiveNames,
+		this.postSortingMethod,
+		required this.postSortingMethodPerBoard
 	}) : notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};

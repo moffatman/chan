@@ -63,7 +63,7 @@ class _PersistentThreadStateSnapshot {
 	final int treeHiddenIdsLength;
 	final int hiddenPosterIdsLength;
 	final bool? useTree;
-	final PostSortingMethod postSortingMethod;
+	final PostSortingMethod? postSortingMethod;
 	final int overrideShowPostIdsLength;
 
 	_PersistentThreadStateSnapshot.empty() :
@@ -1142,8 +1142,9 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		final watch = context.select<Persistence, ThreadWatch?>((_) => persistentState.threadWatch);
 		final reverseIndicatorPosition = Settings.showListPositionIndicatorsOnLeftSetting.watch(context);
+		final sortingMethod = context.select<Persistence, PostSortingMethod>((_) => persistentState.effectivePostSortingMethod);
 		zone.postSortingMethods = [
-			if (persistentState.postSortingMethod == PostSortingMethod.replyCount) (a, b) => b.replyCount.compareTo(a.replyCount)
+			if (sortingMethod == PostSortingMethod.replyCount) (a, b) => b.replyCount.compareTo(a.replyCount)
 			else if ((site.isReddit || site.isHackerNews) && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
 		zone.style = useTree ? PostSpanZoneStyle.tree : PostSpanZoneStyle.linear;
@@ -2282,6 +2283,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
 		final showGalleryGridButton = Settings.showGalleryGridButtonSetting.watch(context);
 		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
+		final postSortingMethod = widget.persistentState.effectivePostSortingMethod;
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
 			children: [
@@ -2423,18 +2425,25 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											setState(() {});
 										})],
 										[
-											('${widget.persistentState.postSortingMethod == PostSortingMethod.none ? 'Sort' : widget.persistentState.postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19), () async {
-												final choice = await showAdaptiveModalPopup<PostSortingMethod>(
+											('${postSortingMethod == PostSortingMethod.none ? 'Sort' : postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19), () async {
+												final defaultMethod = widget.persistentState.imageboard?.persistence.browserState.postSortingMethodPerBoard[widget.persistentState.board] ?? widget.persistentState.imageboard?.persistence.browserState.postSortingMethod ?? PostSortingMethod.none;
+												final choice = await showAdaptiveModalPopup<NullWrapper<PostSortingMethod>>(
 													context: context,
 													useRootNavigator: false,
 													builder: (context) => AdaptiveActionSheet(
 														title: const Text('Sort by...'),
-														actions: PostSortingMethod.values.map((v) => AdaptiveActionSheetAction(
-															onPressed: () => Navigator.pop(context, v),
-															child: Text(v.displayName, style: TextStyle(
-																fontWeight: v == widget.persistentState.postSortingMethod ? FontWeight.bold : null
+														actions: [
+															AdaptiveActionSheetAction(
+																onPressed: () => Navigator.pop(context, const NullWrapper<PostSortingMethod>(null)),
+																isDefaultAction: widget.persistentState.postSortingMethod == null,
+																child: Text('Default (${defaultMethod.displayName})')
+															),
+															...PostSortingMethod.values.map((v) => AdaptiveActionSheetAction(
+																onPressed: () => Navigator.pop(context, NullWrapper(v)),
+																isDefaultAction: v == widget.persistentState.postSortingMethod,
+																child: Text(v.displayName)
 															))
-														)).toList(),
+														],
 														cancelButton: AdaptiveActionSheetAction(
 															child: const Text('Cancel'),
 															onPressed: () => Navigator.pop(context)
@@ -2444,7 +2453,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												if (choice == null) {
 													return;
 												}
-												widget.persistentState.postSortingMethod = choice;
+												widget.persistentState.postSortingMethod = choice.value;
 												widget.listController.state?.forceRebuildId++;
 												widget.persistentState.save();
 											}),

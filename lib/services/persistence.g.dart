@@ -326,13 +326,13 @@ class PersistentThreadStateFields {
     fieldName: 'firstVisiblePostAlignment',
     merger: PrimitiveMerger(),
   );
-  static PostSortingMethod getPostSortingMethod(PersistentThreadState x) =>
+  static PostSortingMethod? getPostSortingMethod(PersistentThreadState x) =>
       x.postSortingMethod;
   static void setPostSortingMethod(
-          PersistentThreadState x, PostSortingMethod v) =>
+          PersistentThreadState x, PostSortingMethod? v) =>
       x.postSortingMethod = v;
   static const postSortingMethod =
-      HiveFieldAdapter<PersistentThreadState, PostSortingMethod>(
+      HiveFieldAdapter<PersistentThreadState, PostSortingMethod?>(
     getter: getPostSortingMethod,
     setter: setPostSortingMethod,
     fieldNumber: 26,
@@ -468,9 +468,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       id: fields[20] == null ? 0 : fields[20] as int,
       showInHistory: fields[22] == null ? true : fields[22] as bool,
       unseenPostIds: fields[24] as EfficientlyStoredIntSet?,
-      postSortingMethod: fields[26] == null
-          ? PostSortingMethod.none
-          : fields[26] as PostSortingMethod,
+      postSortingMethod: fields[26] as PostSortingMethod?,
       postIdsToStartRepliesAtBottom: fields[27] as EfficientlyStoredIntSet?,
       draft: fields[31] as DraftPost?,
     )
@@ -1343,6 +1341,29 @@ class PersistentBrowserStateFields {
     fieldName: 'disabledArchiveNames',
     merger: PrimitiveSetMerger(),
   );
+  static PostSortingMethod? getPostSortingMethod(PersistentBrowserState x) =>
+      x.postSortingMethod;
+  static void setPostSortingMethod(
+          PersistentBrowserState x, PostSortingMethod? v) =>
+      x.postSortingMethod = v;
+  static const postSortingMethod =
+      HiveFieldAdapter<PersistentBrowserState, PostSortingMethod?>(
+    getter: getPostSortingMethod,
+    setter: setPostSortingMethod,
+    fieldNumber: 30,
+    fieldName: 'postSortingMethod',
+    merger: PrimitiveMerger(),
+  );
+  static Map<String, PostSortingMethod> getPostSortingMethodPerBoard(
+          PersistentBrowserState x) =>
+      x.postSortingMethodPerBoard;
+  static const postSortingMethodPerBoard = ReadOnlyHiveFieldAdapter<
+      PersistentBrowserState, Map<String, PostSortingMethod>>(
+    getter: getPostSortingMethodPerBoard,
+    fieldNumber: 31,
+    fieldName: 'postSortingMethodPerBoard',
+    merger: MapMerger(PrimitiveMerger()),
+  );
 }
 
 class PersistentBrowserStateAdapter
@@ -1379,7 +1400,9 @@ class PersistentBrowserStateAdapter
     26: PersistentBrowserStateFields.treeModeNewRepliesAreLinear,
     27: PersistentBrowserStateFields.autowatchedIds,
     28: PersistentBrowserStateFields.outbox,
-    29: PersistentBrowserStateFields.disabledArchiveNames
+    29: PersistentBrowserStateFields.disabledArchiveNames,
+    30: PersistentBrowserStateFields.postSortingMethod,
+    31: PersistentBrowserStateFields.postSortingMethodPerBoard
   };
 
   @override
@@ -1447,13 +1470,17 @@ class PersistentBrowserStateAdapter
       outbox: fields[28] == null ? [] : (fields[28] as List).cast<DraftPost>(),
       disabledArchiveNames:
           fields[29] == null ? {} : (fields[29] as Set).cast<String>(),
+      postSortingMethod: fields[30] as PostSortingMethod?,
+      postSortingMethodPerBoard: fields[31] == null
+          ? {}
+          : (fields[31] as Map).cast<String, PostSortingMethod>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(22)
+      ..writeByte(24)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -1497,7 +1524,11 @@ class PersistentBrowserStateAdapter
       ..writeByte(28)
       ..write(obj.outbox)
       ..writeByte(29)
-      ..write(obj.disabledArchiveNames);
+      ..write(obj.disabledArchiveNames)
+      ..writeByte(30)
+      ..write(obj.postSortingMethod)
+      ..writeByte(31)
+      ..write(obj.postSortingMethodPerBoard);
   }
 
   @override
