@@ -246,7 +246,11 @@ class ReplyBoxState extends State<ReplyBox> {
 		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier()]).tryMapOnce<String>((element) {
 			if (element is UrlElement) {
 				final path = Uri.parse(element.url).path;
-				if (['.jpg', '.jpeg', '.png', '.gif', '.webm'].any(path.endsWith)) {
+				if ([
+					'.jpg', '.jpeg', '.png', '.gif', '.webm',
+					'.heic', '.avif', '.webp',
+					'.mp4', '.mov', '.m4v', '.mkv', '.mpeg', '.avi', '.3gp', '.m2ts'
+				].any(path.endsWith)) {
 					return element.url;
 				}
 			}
@@ -254,6 +258,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 		if (rawUrl != _lastFoundUrl && rawUrl != null) {
 			try {
+				// TODO: How to show it's happening? Cancel? _preproposedAttachmentUrl?
 				await context.read<ImageboardSite>().client.head(rawUrl);
 				_lastFoundUrl = rawUrl;
 				_proposedAttachmentUrl = rawUrl;
@@ -702,7 +707,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
 				);
 			}
-			else if (ext == 'mp4' || ext == 'mov' || ext == 'm4v' || ext == 'mkv' || ext == 'mpeg') {
+			else if (ext == 'mp4' || ext == 'mov' || ext == 'm4v' || ext == 'mkv' || ext == 'mpeg' || ext == 'avi' || ext == '3gp' || ext == 'm2ts') {
 				file = await _showTranscodeWindow(
 					source: file,
 					audioAllowed: board.webmAudioAllowed,
