@@ -1355,6 +1355,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.board == board && tab.thread?.id == threadId);
 		final tabAlreadyExisted = tab != null;
 		if (openNewTabIfNeeded) {
+			if (tab == null && threadId != null) {
+				// Maybe we can reuse a tab sitting at catalog for this board
+				final catalogTab = tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.board == board && tab.thread == null);
+				if (catalogTab != null) {
+					if (postId != null) {
+						catalogTab.initialPostId[ThreadIdentifier(board, threadId)] = postId;
+					}
+					catalogTab.masterDetailKey.currentState?.setValue(0, ThreadIdentifier(board, threadId));
+					catalogTab.didUpdate();
+				}
+			}
 			tab ??= _tabs.addNewTab(
 				activate: false,
 				withImageboardKey: imageboardKey,
