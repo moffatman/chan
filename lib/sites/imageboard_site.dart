@@ -36,6 +36,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -1381,6 +1382,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		_catalogCache.addAll(oldSite._catalogCache);
 		_memoizedWifiHeaders = oldSite._memoizedWifiHeaders;
 		_memoizedCellularHeaders = oldSite._memoizedCellularHeaders;
+		final oldLoggedIn = oldSite.loginSystem?.loggedIn;
+		if (oldLoggedIn != null) {
+			loginSystem?.loggedIn = oldLoggedIn;
+		}
 	}
 	@mustCallSuper
 	void initState() {}
@@ -1447,10 +1452,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 }
 
 abstract class ImageboardSiteLoginSystem {
+	@protected
+	Map<PersistCookieJar, bool> loggedIn = {};
 	ImageboardSite get parent;
 	String get name;
 	List<ImageboardSiteLoginField> getLoginFields();
-	Future<void> login(String? board, Map<ImageboardSiteLoginField, String> fields);
+	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
 	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {
 		 if (parent.persistence?.browserState.loginFields.isNotEmpty ?? false) {
 			 try {
@@ -1469,7 +1476,10 @@ abstract class ImageboardSiteLoginSystem {
 		parent.persistence?.browserState.loginFields.clear();
 		await parent.persistence?.didUpdateBrowserState();
 	}
-	Future<void> clearLoginCookies(String? board, bool fromBothWifiAndCellular);
+	Future<void> logout(bool fromBothWifiAndCellular);
+	bool isLoggedIn(PersistCookieJar jar) {
+		return loggedIn.putIfAbsent(jar, () => false);
+	}
 }
 
 ImageboardSite makeSite(dynamic data) {

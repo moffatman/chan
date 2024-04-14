@@ -189,7 +189,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				final savedFields = site.loginSystem?.getSavedLoginFields();
 				if (useLoginSystem && savedFields != null) {
 					try {
-						await site.loginSystem?.login(_board, savedFields);
+						await site.loginSystem?.login(savedFields);
 					}
 					catch (e) {
 						final context = initialState.context ?? ImageboardRegistry.instance.context;
@@ -204,7 +204,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					}
 				}
 				else {
-					await site.loginSystem?.clearLoginCookies(_board, false);
+					await site.loginSystem?.logout(false);
 				}
 				DateTime? tryAgainAt0;
 				final request = await _getCaptchaRequest();

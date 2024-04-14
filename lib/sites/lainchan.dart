@@ -8,7 +8,6 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
-import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -278,7 +277,7 @@ class SiteLainchan extends ImageboardSite {
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
-		final referer = _getWebUrl(post.board, threadId: post.threadId, mod: loginSystem._adminEnabled.putIfAbsent(Persistence.currentCookies, () => false));
+		final referer = _getWebUrl(post.board, threadId: post.threadId, mod: loginSystem.isLoggedIn(Persistence.currentCookies));
 		final page = await client.get(referer, options: Options(validateStatus: (x) => true), cancelToken: cancelToken);
 		final Map<String, dynamic> fields = {
 			for (final field in parse(page.data).querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
@@ -494,8 +493,6 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 	@override
 	final SiteLainchan parent;
 
-	final Map<PersistCookieJar, bool> _adminEnabled = {};
-
 	SiteLainchanLoginSystem(this.parent);
 
   @override
@@ -515,7 +512,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> clearLoginCookies(String? board, bool fromBothWifiAndCellular) async {
+  Future<void> logout(bool fromBothWifiAndCellular) async {
 		final jars = fromBothWifiAndCellular ? [
 			Persistence.wifiCookies,
 			Persistence.cellularCookies
@@ -525,7 +522,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 		for (final jar in jars) {
 			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
 			await jar.delete(Uri.https(parent.baseUrl, '/mod.php'), true);
-			_adminEnabled[jar] = false;
+			loggedIn[jar] = false;
 		}
 		await CookieManager.instance().deleteCookies(
 			url: WebUri(parent.baseUrl)
@@ -533,7 +530,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> login(String? board, Map<ImageboardSiteLoginField, String> fields) async {
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
     final response = await parent.client.postUri(
 			Uri.https(parent.baseUrl, '/mod.php'),
 			data: {
@@ -548,10 +545,10 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 		);
 		final document = parse(response.data);
 		if (document.querySelector('h2') != null) {
-			await clearLoginCookies(board, false);
+			await logout(false);
 			throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
 		}
-		_adminEnabled[Persistence.currentCookies] = true;
+		loggedIn[Persistence.currentCookies] = true;
   }
 
   @override

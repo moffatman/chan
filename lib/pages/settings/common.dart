@@ -1280,7 +1280,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 		if (cont == true) {
 			print(fields);
 			try {
-				await widget.loginSystem.login(null, fields);
+				await widget.loginSystem.login(fields);
 				widget.loginSystem.parent.persistence?.browserState.loginFields.clear();
 				widget.loginSystem.parent.persistence?.browserState.loginFields.addAll({
 					for (final field in fields.entries) field.key.formKey: field.value
@@ -1316,7 +1316,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 										loading = true;
 									});
 									try {
-										await widget.loginSystem.clearLoginCookies(null, true);
+										await widget.loginSystem.logout(true);
 										await widget.loginSystem.clearSavedLoginFields();
 									}
 									catch (e) {

@@ -17,7 +17,6 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -281,7 +280,6 @@ class Site4Chan extends ImageboardSite {
 		super.migrateFromPrevious(oldSite);
 		_threadCache = oldSite._threadCache;
 		_catalogCaches = oldSite._catalogCaches;
-		loginSystem._passEnabled = oldSite.loginSystem._passEnabled;
 	}
 
 	@override
@@ -807,7 +805,7 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		if (loginSystem._passEnabled.putIfAbsent(Persistence.currentCookies, () => false)) {
+		if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 			return const NoCaptchaRequest();
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
@@ -944,7 +942,7 @@ class Site4Chan extends ImageboardSite {
 			ImageboardAction.report => (reportCooldown, false)
 		};
 		if (isPassReduced &&
-		    loginSystem.passEnabled(cellular ? Persistence.cellularCookies : Persistence.wifiCookies)) {
+		    loginSystem.isLoggedIn(cellular ? Persistence.cellularCookies : Persistence.wifiCookies)) {
 			return cooldown ~/ 2;
 		}
 		return cooldown;
@@ -1049,7 +1047,7 @@ class Site4Chan extends ImageboardSite {
 							post: post,
 							question: 'Report type',
 							getCaptchaRequest: () async {
-								if (loginSystem.passEnabled(Persistence.currentCookies)) {
+								if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 									return const NoCaptchaRequest();
 								}
 								return await getCaptchaRequest(post.board, 1);
@@ -1093,7 +1091,7 @@ class Site4Chan extends ImageboardSite {
 			return ChoiceReportMethod(
 				question: 'Report type',
 				getCaptchaRequest: () async {
-					if (loginSystem.passEnabled(Persistence.currentCookies)) {
+					if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 						return const NoCaptchaRequest();
 					}
 					return await getCaptchaRequest(captchaMatch?.group(1) ?? post.board, int.tryParse(captchaMatch?.group(2) ?? '') ?? 1);
@@ -1440,8 +1438,6 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 	@override
 	final Site4Chan parent;
 
-	Map<PersistCookieJar, bool> _passEnabled = {};
-
 	Site4ChanPassLoginSystem(this.parent);
 
   @override
@@ -1462,11 +1458,12 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> clearLoginCookies(String? board, bool fromBothWifiAndCellular) async {
-		if (!fromBothWifiAndCellular && _passEnabled[Persistence.currentCookies] == false) {
+  Future<void> logout(bool fromBothWifiAndCellular) async {
+		if (!fromBothWifiAndCellular && loggedIn[Persistence.currentCookies] == false) {
 			// No need to clear
 			return;
 		}
+		// loggedIn may be null here. Logout is still appropriate because we could be logged in from previous session.
 		final jars = fromBothWifiAndCellular ? [
 			Persistence.wifiCookies,
 			Persistence.cellularCookies
@@ -1483,12 +1480,12 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 			await CookieManager.instance().deleteCookies(
 				url: WebUri(parent.sysUrl)
 			);
-			_passEnabled[jar] = false;
+			loggedIn[jar] = false;
 		}
   }
 
   @override
-  Future<void> login(String? board, Map<ImageboardSiteLoginField, String> fields) async {
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
 		final response = await parent.client.postUri(
 			Uri.https(parent.sysUrl, '/auth'),
 			data: FormData.fromMap({
@@ -1498,21 +1495,17 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 		final document = parse(response.data);
 		final message = document.querySelector('h2')?.text;
 		if (message == null) {
-			_passEnabled[Persistence.currentCookies] = false;
-			await clearLoginCookies(board, false);
+			loggedIn[Persistence.currentCookies] = false;
+			await logout(false);
 			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
 		}
 		if (!message.contains('Success!')) {
-			_passEnabled[Persistence.currentCookies] = false;
-			await clearLoginCookies(board, false);
+			loggedIn[Persistence.currentCookies] = false;
+			await logout(false);
 			throw ImageboardSiteLoginException(message);
 		}
-		_passEnabled[Persistence.currentCookies] = true;
+		loggedIn[Persistence.currentCookies] = true;
   }
-
-	bool passEnabled(PersistCookieJar jar) {
-		return _passEnabled.putIfAbsent(jar, () => false);
-	}
 
   @override
   String get name => '4chan Pass';
