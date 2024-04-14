@@ -7,6 +7,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -88,15 +89,30 @@ extension on _CloudflareResponse {
 			}
 		);
 	}
-} 
+}
 
-final _lock = Mutex();
+extension _TopLevelHost on Uri {
+	String get topLevelHost {
+		final host = this.host;
+		final lastDotPos = host.lastIndexOf('.');
+		if (lastDotPos <= 0) {
+			// Something weird just give up
+			return host;
+		}
+		final secondLastDotPos = host.lastIndexOf('.', lastDotPos - 1);
+		if (secondLastDotPos == -1) {
+			// No subdomain
+			return host;
+		}
+		return host.substring(secondLastDotPos + 1);
+	}
+}
 
 /// Block any processing while Cloudflare is clearing, so that the new cookies
 /// can be injected by a later interceptor
 class CloudflareBlockingInterceptor extends Interceptor {
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) => _lock.protect(() async {
+	void onRequest(RequestOptions options, RequestInterceptorHandler handler) => runEphemerallyLocked(options.uri.topLevelHost, () async {
 		handler.next(options);
 	});
 }
@@ -149,7 +165,7 @@ class CloudflareInterceptor extends Interceptor {
 		return false;
 	}
 
-	Future<void> _saveCookies(Uri uri) async {
+	static Future<void> _saveCookies(Uri uri) async {
 		final cookies = await CookieManager.instance().getCookies(url: WebUri.uri(uri));
 		await Persistence.currentCookies.saveFromResponse(uri, cookies.map((cookie) {
 			final newCookie = io.Cookie(cookie.name, cookie.value);
@@ -164,14 +180,15 @@ class CloudflareInterceptor extends Interceptor {
 		}).toList());
 	}
 
-	Future<_CloudflareResponse> _useWebview({
+	static final _webViewLock = Mutex();
+	static Future<_CloudflareResponse> _useWebview({
 		bool skipHeadless = false,
 		InAppWebViewInitialData? initialData,
 		URLRequest? initialUrlRequest,
 		required String userAgent,
 		required Uri cookieUrl,
 		required RequestPriority priority
-	}) => _lock.protect(() async {
+	}) => runEphemerallyLocked(cookieUrl.topLevelHost, () => _webViewLock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
 		await CookieManager.instance().deleteAllCookies();
 		final initialSettings = InAppWebViewSettings(
@@ -285,7 +302,7 @@ class CloudflareInterceptor extends Interceptor {
 			_allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
 		}
 		return ret;
-	});
+	}));
 
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
