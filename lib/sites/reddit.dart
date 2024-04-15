@@ -325,7 +325,7 @@ class SiteReddit extends ImageboardSite {
 					else if (node.localName == 'em') {
 						yield PostItalicSpan(PostTextSpan(node.text));
 					}
-					else if (node.localName == 'h1') {
+					else if (node.localName == 'h1' || node.localName == 'h2' || node.localName == 'h3') {
 						yield PostBoldSpan(PostTextSpan(node.text));
 					}
 					else if (node.localName == 'a') {
