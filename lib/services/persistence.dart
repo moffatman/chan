@@ -511,6 +511,7 @@ class Persistence extends ChangeNotifier {
 			tabs.first.thread = null;
 		}
 		if (!settings.appliedMigrations.contains('ps')) {
+			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
 			// ps = "post sorting", need to nullify it to allow taking default from site
 			for (final threadState in sharedThreadStateBox.values) {
 				if (threadState.postSortingMethod == PostSortingMethod.none) {
@@ -519,6 +520,24 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 			settings.appliedMigrations.add('ps');
+			await settings.save();
+		}
+		if (!settings.appliedMigrations.contains('sf')) {
+			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
+			// sf = "spam filter", invalidate previous IPs as it had some false positives
+			for (final threadState in sharedThreadStateBox.values) {
+				bool modified = false;
+				for (final receipt in threadState.receipts) {
+					if (receipt.spamFiltered && receipt.ip != null) {
+						receipt.ip = 'x${receipt.ip}';
+						modified = true;
+					}
+				}
+				if (modified) {
+					await threadState.save();
+				}
+			}
+			settings.appliedMigrations.add('sf');
 			await settings.save();
 		}
 	}
