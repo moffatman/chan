@@ -29,6 +29,7 @@ import 'package:flutter/material.dart';
 
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/util.dart';
@@ -903,6 +904,26 @@ class PostRow extends StatelessWidget {
 						await site.deletePost(latestPost.board, latestPost.threadId, receipt);
 						if (context.mounted) {
 							showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
+						}
+					}
+				),
+				if (latestPost.attachments.isNotEmpty) ContextMenuAction(
+					child: Text('Copy ${latestPost.attachments.first.type.noun} link'),
+					trailingIcon: CupertinoIcons.link,
+					onPressed: () async {
+						final which = await whichAttachment(context, latestPost.attachments);
+						if (which == null) {
+							return;
+						}
+						Clipboard.setData(ClipboardData(
+							text: which.url
+						));
+						if (context.mounted) {
+							showToast(
+								context: context,
+								message: 'Copied "${which.url}" to clipboard',
+								icon: CupertinoIcons.doc_on_clipboard
+							);
 						}
 					}
 				),

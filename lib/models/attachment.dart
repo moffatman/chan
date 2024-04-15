@@ -36,6 +36,13 @@ enum AttachmentType {
 	}
 	bool get isVideo => this == AttachmentType.webm || this == AttachmentType.mp4;
 	bool get isImageSearchable => isVideo || this == AttachmentType.image;
+	String get noun => switch (this) {
+		webm || mp4 => 'video',
+		image => 'image',
+		mp3 => 'mp3',
+		url => 'web',
+		pdf => 'pdf'
+	};
 }
 
 void _readHookAttachmentFields(Map<int, dynamic> fields) {

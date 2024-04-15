@@ -675,6 +675,26 @@ class BoardPageState extends State<BoardPage> {
 							);
 						}
 					),
+					if (thread.attachments.isNotEmpty) ContextMenuAction(
+						child: Text('Copy ${thread.attachments.first.type.noun} link'),
+						trailingIcon: CupertinoIcons.link,
+						onPressed: () async {
+							final which = await whichAttachment(context, thread.attachments);
+							if (which == null) {
+								return;
+							}
+							Clipboard.setData(ClipboardData(
+								text: which.url
+							));
+							if (context.mounted) {
+								showToast(
+									context: context,
+									message: 'Copied "${which.url}" to clipboard',
+									icon: CupertinoIcons.doc_on_clipboard
+								);
+							}
+						}
+					),
 					if (thread.attachments.any((a) => a.type.isImageSearchable)) ...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments.where((a) => a.type.isImageSearchable).toList())),
 					ContextMenuAction(
 						trailingIcon: Adaptive.icons.share,

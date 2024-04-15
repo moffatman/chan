@@ -34,6 +34,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide ContextMenu;
 import 'package:media_kit_video/media_kit_video_controls/src/controls/extensions/duration.dart';
 import 'package:mutex/mutex.dart';
@@ -1413,6 +1414,21 @@ class AttachmentViewer extends StatelessWidget {
 						},
 						key: controller.contextMenuShareButtonKey,
 						child: const Text('Share')
+					),
+					ContextMenuAction(
+						child: const Text('Copy link'),
+						trailingIcon: CupertinoIcons.link,
+						onPressed: () async {
+							final text = controller.goodImageSource?.toString() ?? controller.attachment.url;
+							Clipboard.setData(ClipboardData(
+								text: text
+							));
+							showToast(
+								context: context,
+								message: 'Copied "$text" to clipboard',
+								icon: CupertinoIcons.doc_on_clipboard
+							);
+						}
 					),
 					if (isTextRecognitionSupported) ContextMenuAction(
 						trailingIcon: Icons.translate,
