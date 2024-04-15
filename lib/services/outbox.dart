@@ -33,10 +33,11 @@ class QueueStateIdle<T> extends QueueState<T> {
 }
 
 class QueueStateNeedsCaptcha<T> extends QueueState<T> {
+	final DateTime submittedAt;
 	final BuildContext? context;
 	final VoidCallback? beforeModal;
 	final VoidCallback? afterModal;
-	const QueueStateNeedsCaptcha(this.context, {this.beforeModal, this.afterModal});
+	const QueueStateNeedsCaptcha(this.submittedAt, this.context, {this.beforeModal, this.afterModal});
 	@override
 	bool get isIdle => false;
 	@override
@@ -46,8 +47,9 @@ class QueueStateNeedsCaptcha<T> extends QueueState<T> {
 }
 
 class QueueStateWaitingWithCaptcha<T> extends QueueState<T> {
+	final DateTime submittedAt;
 	final CaptchaSolution captchaSolution;
-	const QueueStateWaitingWithCaptcha(this.captchaSolution);
+	const QueueStateWaitingWithCaptcha(this.submittedAt, this.captchaSolution);
 	@override
 	bool get isIdle => false;
 	@override
@@ -142,7 +144,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	Duration get _regretDelay => Duration.zero;
 
 	void submit(BuildContext? context) async {
-		_state = QueueStateNeedsCaptcha(context);
+		_state = QueueStateNeedsCaptcha(DateTime.now(), context);
 		notifyListeners();
 		if (queue?.captchaAllowedTime.isAfter(DateTime.now()) == false) {
 			// Grab the new captcha right away
@@ -225,7 +227,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				);
 				final tryAgainAt = tryAgainAt0;
 				if (captcha != null) {
-					_state = QueueStateWaitingWithCaptcha(captcha);
+					_state = QueueStateWaitingWithCaptcha(initialState.submittedAt, captcha);
 				}
 				else if (tryAgainAt != null) {
 					queue?.captchaAllowedTime = tryAgainAt;
@@ -277,7 +279,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			final expiresAt = initialState.captchaSolution.expiresAt;
 			if (expiresAt != null && expiresAt.isBefore(deadline)) {
 				initialState.captchaSolution.dispose();
-				_state = initialNeedsCaptchaState ?? const QueueStateNeedsCaptcha(null);
+				_state = initialNeedsCaptchaState ?? QueueStateNeedsCaptcha(initialState.submittedAt, null);
 				notifyListeners();
 			}
 		}
@@ -292,18 +294,19 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				final cancelToken = CancelToken();
 				final captchaSolution = initialState.captchaSolution;
 				try {
-					if (_regretDelay > Duration.zero) {
+					final regretTime = initialState.submittedAt.add(_regretDelay);
+					if (regretTime.isAfter(DateTime.now())) {
 						final skipCompleter = Completer<void>();
 						_state = QueueStateSubmitting(
 							message: 'Waiting ${formatDuration(_regretDelay)}',
 							wait: (
-								until: DateTime.now().add(_regretDelay),
+								until: regretTime,
 								skip: skipCompleter.complete
 							),
 							cancelToken: cancelToken
 						);
 						notifyListeners();
-						await Future.any([Future.delayed(_regretDelay), skipCompleter.future, cancelToken.whenCancel]);
+						await Future.any([Future.delayed(regretTime.difference(DateTime.now())), skipCompleter.future, cancelToken.whenCancel]);
 						if (cancelToken.isCancelled) {
 							_state = const QueueStateIdle();
 							notifyListeners();
@@ -662,7 +665,7 @@ class Outbox extends ChangeNotifier {
 			imageboardKey: imageboardKey,
 			method: method,
 			choice: choice,
-			state: QueueStateNeedsCaptcha(context),
+			state: QueueStateNeedsCaptcha(DateTime.now(), context),
 			useLoginSystem: useLoginSystem
 		);
 		Future.microtask(() => _process(entry));

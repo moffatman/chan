@@ -825,7 +825,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final post = _makeDraft();
 		post.name = _nameFieldController.text;
 		post.useLoginSystem = shouldUseLoginSystem;
-		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(context,
+		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(DateTime.now(), context,
 			beforeModal: hideReplyBox,
 			afterModal: showReplyBox
 		));
@@ -1396,6 +1396,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final snippets = site.getBoardSnippets(widget.board);
 		const infiniteLimit = 1 << 50;
 		final settings = context.watch<Settings>();
+		final postingPost = _postingPost;
 		return CallbackShortcuts(
 			bindings: {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit,
@@ -1561,16 +1562,106 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										textCapitalization: TextCapitalization.sentences,
 										keyboardAppearance: ChanceTheme.brightnessOf(context),
 									),
-									if (loading) AdaptiveButton(
-										onPressed: _postInBackground,
-										child: const Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Icon(CupertinoIcons.tray_arrow_up),
-												SizedBox(width: 8),
-												Text('Post in background...')
-											]
-										)
+									if (loading) Column(
+										mainAxisAlignment: MainAxisAlignment.center,
+										children: [
+											AnimatedBuilder(
+												animation: Outbox.instance,
+												builder: (context, _) {
+													final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)] as OutboxQueue<PostReceipt>?;
+													if (queue == null) {
+														return const SizedBox.shrink();
+													}
+													return AnimatedBuilder(
+														animation: queue,
+														builder: (context, _) {
+															final (DateTime, VoidCallback) pair;
+															if (queue.captchaAllowedTime.isAfter(DateTime.now())) {
+																pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now());
+															}
+															else if (queue.allowedTime.isAfter(DateTime.now())) {
+																pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now());
+															}
+															else {
+																return const SizedBox.shrink();
+															}
+															return Padding(
+																padding: const EdgeInsets.only(bottom: 16),
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		TimedRebuilder(
+																			interval: const Duration(seconds: 1),
+																			function: () => formatDuration(pair.$1.difference(DateTime.now())),
+																			builder: (context, delta) => Text(
+																				'Waiting for cooldown ($delta)',
+																				style: const TextStyle(
+																					fontFeatures: [FontFeature.tabularFigures()]
+																				)
+																			)
+																		),
+																		const SizedBox(width: 16),
+																		AdaptiveThinButton(
+																			onPressed: pair.$2,
+																			padding: const EdgeInsets.all(8),
+																			child: const Text('Try to skip')
+																		)
+																	]
+																)
+															);
+														}
+													);
+												}
+											),
+											if (postingPost != null) AnimatedBuilder(
+												animation: postingPost,
+												builder: (context, _) {
+													final state = postingPost.state;
+													if (state is QueueStateSubmitting<PostReceipt>) {
+														final wait = state.wait;
+														if (wait != null) {
+															return Padding(
+																padding: const EdgeInsets.only(bottom: 16),
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		TimedRebuilder(
+																			interval: const Duration(seconds: 1),
+																			function: () => formatDuration(wait.until.difference(DateTime.now())),
+																			builder: (context, delta) => Text(
+																				'${state.message} ($delta)',
+																				style: const TextStyle(
+																					fontFeatures: [FontFeature.tabularFigures()]
+																				)
+																			)
+																		),
+																		const SizedBox(width: 16),
+																		AdaptiveThinButton(
+																			onPressed: wait.skip,
+																			padding: const EdgeInsets.all(8),
+																			child: const Text('Skip')
+																		)
+																	]
+																)
+															);
+														}
+													}
+													return const SizedBox.shrink();
+												}
+											),
+											AdaptiveThinButton(
+												padding: const EdgeInsets.all(8),
+												onPressed: _postInBackground,
+												child: const Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(CupertinoIcons.tray_arrow_up),
+														SizedBox(width: 8),
+														Text('Post in background')
+													]
+												)
+											)
+										]
 									)
 								]
 							)
@@ -1918,7 +2009,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											// There are outbox things in other threads
 											(activeCount > ourCount) ||
 											// There is a cooldown and nothing else is showing it
-											(time != now && _submittingPosts.isEmpty);
+											(time != now && _submittingPosts.isEmpty && _postingPost == null);
 										if (!(show && shouldShow)) {
 											return const SizedBox(width: double.infinity);
 										}
