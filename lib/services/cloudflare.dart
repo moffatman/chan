@@ -59,8 +59,8 @@ class CloudflareHandlerBlockedException implements Exception {
 	String toString() => 'Cloudflare clearance was blocked by the server';
 }
 
-dynamic _decode(String data) {
-	if (data.startsWith('{') || data.startsWith('[')) {
+dynamic _decode(ResponseType type, String data) {
+	if (type == ResponseType.json && (data.startsWith('{') || data.startsWith('['))) {
 		try {
 			return jsonDecode(data);
 		}
@@ -78,7 +78,7 @@ extension on _CloudflareResponse {
 	Response? response(RequestOptions options) {
 		return Response(
 			requestOptions: options,
-			data: content == null ? null : _decode(content!),
+			data: content == null ? null : _decode(options.responseType, content!),
 			isRedirect: uri != options.uri,
 			redirects: [
 				if (uri != null && uri != options.uri) RedirectRecord(302, 'GET', uri!)
@@ -165,6 +165,8 @@ class CloudflareInterceptor extends Interceptor {
 		return false;
 	}
 
+	static final _bodyStartsWithOpeningCurlyBrace = RegExp(r'<body[^>]*>{');
+
 	static Future<void> _saveCookies(Uri uri) async {
 		final cookies = await CookieManager.instance().getCookies(url: WebUri.uri(uri));
 		await Persistence.currentCookies.saveFromResponse(uri, cookies.map((cookie) {
@@ -230,6 +232,11 @@ class CloudflareInterceptor extends Interceptor {
 					// Raw JSON response, but web-view has put it within a <pre>
 					final document = parse(html);
 					callback((content: document.querySelector('pre')!.text, uri: uri));
+				}
+				else if (_bodyStartsWithOpeningCurlyBrace.hasMatch(html) && html.contains('}</body>')) {
+					// Raw JSON response, but web-view has put it within a <body>
+					final document = parse(html);
+					callback((content: document.body!.text, uri: uri));
 				}
 				else {
 					callback((content: html, uri: uri));
