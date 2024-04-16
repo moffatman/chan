@@ -70,12 +70,16 @@ class _RedditSimplifiedLinkSyntax extends markdown.InlineSyntax {
 	_RedditSimplifiedLinkSyntax({
 		required String leading,
 		required this.localName
-	}) : super('$leading/([A-Za-z0-9_\\-]+)(\\s|\$)', startCharacter: leading.codeUnitAt(0));
+	}) : super('(\\s|^)$leading/([A-Za-z0-9_\\-]+)(\\s|\$)');
 
 	@override
 	bool onMatch(markdown.InlineParser parser, Match match) {
-		parser.addNode(markdown.Element.text(localName, match.group(1)!));
-		final after = match.group(2) ?? '';
+		final before = match.group(1) ?? '';
+		if (before.isNotEmpty) {
+			parser.addNode(markdown.Text(before));
+		}
+		parser.addNode(markdown.Element.text(localName, match.group(2)!));
+		final after = match.group(3) ?? '';
 		if (after.isNotEmpty) {
 			parser.addNode(markdown.Text(after));
 		}
