@@ -58,6 +58,15 @@ class _StoppedValueListenable<T> implements ValueListenable<T> {
 	void removeListener(VoidCallback listener) { }	
 }
 
+extension _ClampAboveZero on Duration {
+	Duration get clampAboveZero {
+		if (isNegative) {
+			return Duration.zero;
+		}
+		return this;
+	}
+}
+
 class ReplyBoxZone {
 	final void Function(int threadId, int id) onTapPostId;
 
@@ -1592,7 +1601,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																	children: [
 																		TimedRebuilder(
 																			interval: const Duration(seconds: 1),
-																			function: () => formatDuration(pair.$1.difference(DateTime.now())),
+																			function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
 																			builder: (context, delta) => Text(
 																				'Waiting for cooldown ($delta)',
 																				style: const TextStyle(
@@ -1628,7 +1637,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																	children: [
 																		TimedRebuilder(
 																			interval: const Duration(seconds: 1),
-																			function: () => formatDuration(wait.until.difference(DateTime.now())),
+																			function: () => formatDuration(wait.until.difference(DateTime.now()).clampAboveZero),
 																			builder: (context, delta) => Text(
 																				'${state.message} ($delta)',
 																				style: const TextStyle(
