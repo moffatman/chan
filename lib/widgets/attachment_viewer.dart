@@ -34,6 +34,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide ContextMenu;
 import 'package:media_kit_video/media_kit_video_controls/src/controls/extensions/duration.dart';
@@ -1469,8 +1470,19 @@ class AttachmentViewer extends StatelessWidget {
 					...additionalContextMenuActions
 				],
 				child: buildChild(inContextMenu: false),
+				trimStartRect: (rect) {
+					// Remove the layoutInsets
+					final laidOut = layoutInsets.deflateRect(rect);
+					// Clip to aspectRatio
+					final size = RenderAspectRatio(aspectRatio: attachment.aspectRatio).getDryLayout(BoxConstraints.loose(laidOut.size));
+					return Rect.fromCenter(
+						center: laidOut.center,
+						width: size.width,
+						height: size.height
+					);
+				},
 				previewBuilder: (context, child) => AspectRatio(
-					aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
+					aspectRatio: attachment.aspectRatio,
 					child: buildChild(inContextMenu: true)
 				)
 			)

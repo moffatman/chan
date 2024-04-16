@@ -50,6 +50,7 @@ class ContextMenu extends StatefulWidget {
 	/// Use LayoutBuilder if your child is going to be close to the max width
 	/// of the screen to avoid text relayout visual jank
 	final bool useLayoutBuilder;
+	final Rect Function(Rect)? trimStartRect;
 
 	const ContextMenu({
 		required this.actions,
@@ -58,6 +59,7 @@ class ContextMenu extends StatefulWidget {
 		this.previewBuilder,
 		this.backgroundColor,
 		this.useLayoutBuilder = true,
+		this.trimStartRect,
 		Key? key
 	}) : super(key: key);
 
@@ -170,6 +172,7 @@ class _ContextMenuState extends State<ContextMenu> {
 			return CupertinoContextMenu2(
 				actions: actions,
 				previewBuilder: (context, animation, child) => previewBuilder(context),
+				trimStartRect: widget.trimStartRect,
 				child: child
 			);
 		}
@@ -203,6 +206,7 @@ class _ContextMenuState extends State<ContextMenu> {
 						);
 					}
 				),
+				trimStartRect: widget.trimStartRect,
 				child: child
 			)
 		);

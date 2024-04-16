@@ -180,14 +180,15 @@ typedef _ContextMenuPreviewBuilderChildless = Widget Function(
 
 // Given a GlobalKey, return the Rect of the corresponding RenderBox's
 // paintBounds in global coordinates.
-Rect _getRect(GlobalKey globalKey) {
+Rect _getRect(GlobalKey globalKey, {Rect Function(Rect)? trim}) {
   assert(globalKey.currentContext != null);
   final RenderBox renderBoxContainer = globalKey.currentContext!.findRenderObject()! as RenderBox;
+  final Rect rect = trim?.call(renderBoxContainer.paintBounds) ?? renderBoxContainer.paintBounds;
   return Rect.fromPoints(renderBoxContainer.localToGlobal(
-    renderBoxContainer.paintBounds.topLeft,
+    rect.topLeft,
     ancestor: Overlay.of(globalKey.currentContext!, rootOverlay: true).context.findRenderObject()
   ), renderBoxContainer.localToGlobal(
-    renderBoxContainer.paintBounds.bottomRight,
+    rect.bottomRight,
     ancestor: Overlay.of(globalKey.currentContext!, rootOverlay: true).context.findRenderObject()
   ));
 }
@@ -241,6 +242,7 @@ class CupertinoContextMenu2 extends StatefulWidget {
     required this.actions,
     required this.child,
     this.previewBuilder,
+    this.trimStartRect,
   });
 
   /// The widget that can be "opened" with the [CupertinoContextMenu].
@@ -328,6 +330,10 @@ class CupertinoContextMenu2 extends StatefulWidget {
   /// {@end-tool}
   final ContextMenuPreviewBuilder? previewBuilder;
 
+  /// To strip padding from origin child rect.
+  /// It's intentionally not passed through to use on the destination rect.
+  final Rect Function(Rect)? trimStartRect;
+
   @override
   State<CupertinoContextMenu2> createState() => _CupertinoContextMenuState2();
 }
@@ -377,7 +383,7 @@ class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Tick
   // of the screen when the menu is open, and the actions will be centered below
   // it.
   _ContextMenuLocation get _contextMenuLocation {
-    final Rect childRect = _getRect(_childGlobalKey);
+    final Rect childRect = _getRect(_childGlobalKey, trim: widget.trimStartRect);
     final double screenWidth = MediaQuery.sizeOf(context).width;
 
     final double center = screenWidth / 2;
@@ -505,7 +511,7 @@ class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Tick
       _childHidden = true;
     });
 
-    final Rect childRect = _getRect(_childGlobalKey);
+    final Rect childRect = _getRect(_childGlobalKey, trim: widget.trimStartRect);
     _decoyChildEndRect = Rect.fromCenter(
       center: childRect.center,
       width: childRect.width * _kOpenScale,
