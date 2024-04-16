@@ -398,7 +398,10 @@ class Imageboard extends ChangeNotifier {
 		if (path != null && !File(path).existsSync()) {
 			throw Exception('Selected file not found: $path');
 		}
+		if (!persistence.browserState.outbox.contains(post)) {
+			// It may already be in the outbox if it's a draft
 		persistence.browserState.outbox.add(post); // For restoration if app is closed
+		}
 		runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
 		final receipt = await site.submitPost(post, captchaSolution, cancelToken);
 		persistence.browserState.outbox.remove(post);
