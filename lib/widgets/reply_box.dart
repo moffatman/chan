@@ -936,6 +936,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					_postingPost = null;
 				});
 			}
+			else if (state is QueueStateIdle<PostReceipt> && post == _postingPost) {
+				// User cancelled captcha
+				post.removeListener(listener);
+				post.delete();
+				setState(() {
+					_postingPost = null;
+				});
+			}
 		}
 		post.addListener(listener);
 		listener();
