@@ -2041,8 +2041,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										final shouldShow =
 											// There are outbox things in other threads
 											(activeCount > ourCount) ||
-											// There is a cooldown and nothing else is showing it
-											(time != now && _submittingPosts.isEmpty && _postingPost == null);
+											// There is a meaningful cooldown and nothing else is showing it
+											((time.difference(now) > const Duration(seconds: 5)) && _submittingPosts.isEmpty && _postingPost == null);
 										if (!(show && shouldShow)) {
 											return const SizedBox(width: double.infinity);
 										}
