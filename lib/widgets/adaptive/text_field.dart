@@ -2,7 +2,7 @@ import 'package:chan/services/theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class AdaptiveTextField extends StatelessWidget {
+class AdaptiveTextField extends StatefulWidget {
 	final bool autocorrect;
 	final Iterable<String>? autofillHints;
 	final bool autofocus;
@@ -62,6 +62,13 @@ class AdaptiveTextField extends StatelessWidget {
 		super.key
 	});
 
+	@override
+	createState() => AdaptiveTextFieldState();
+}
+
+class AdaptiveTextFieldState extends State<AdaptiveTextField> {
+	final _textFieldKey = GlobalKey(debugLabel: 'AdaptiveTextFieldState._textFieldKey');
+
 	 static Widget _defaultMaterialContextMenuBuilder(BuildContext context, EditableTextState editableTextState) {
 		return AdaptiveTextSelectionToolbar.editableText(
 			editableTextState: editableTextState,
@@ -74,19 +81,28 @@ class AdaptiveTextField extends StatelessWidget {
 		);
 	}
 
+	EditableTextState? get editableText {
+		final textFieldState = _textFieldKey.currentState;
+		if (textFieldState is TextSelectionGestureDetectorBuilderDelegate) {
+			return (textFieldState as TextSelectionGestureDetectorBuilderDelegate).editableTextKey.currentState;
+		}
+		return null;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		if (ChanceTheme.materialOf(context)) {
 			return TextField(
-				autocorrect: autocorrect,
-				autofillHints: autofillHints,
-				autofocus: autofocus,
-				contentInsertionConfiguration: contentInsertionConfiguration,
-				contextMenuBuilder: contextMenuBuilder ?? _defaultMaterialContextMenuBuilder,
-				controller: controller,
+				key: _textFieldKey,
+				autocorrect: widget.autocorrect,
+				autofillHints: widget.autofillHints,
+				autofocus: widget.autofocus,
+				contentInsertionConfiguration: widget.contentInsertionConfiguration,
+				contextMenuBuilder: widget.contextMenuBuilder ?? _defaultMaterialContextMenuBuilder,
+				controller: widget.controller,
 				decoration: InputDecoration(
 					fillColor: ChanceTheme.textFieldColorOf(context),
-					alignLabelWithHint: (maxLines ?? 2) > 1,
+					alignLabelWithHint: (widget.maxLines ?? 2) > 1,
 					border: OutlineInputBorder(
 						borderSide: BorderSide(
 							color: ChanceTheme.primaryColorWithBrightness70Of(context),
@@ -99,51 +115,52 @@ class AdaptiveTextField extends StatelessWidget {
 							width: 0
 						)
 					),
-					labelText: placeholder,
+					labelText: widget.placeholder,
 					labelStyle: TextStyle(
 						color: ChanceTheme.primaryColorWithBrightness50Of(context)
-					).merge(placeholderStyle),
-					suffixIcon: (controller == null || suffix == null) ? suffix : AnimatedBuilder(
-						animation: controller!,
+					).merge(widget.placeholderStyle),
+					suffixIcon: (widget.controller == null || widget.suffix == null) ? widget.suffix : AnimatedBuilder(
+						animation: widget.controller!,
 						builder: (context, _) {
 							Widget? ret;
-							if (controller!.text.isNotEmpty) {
-								ret = suffix;
+							if (widget.controller!.text.isNotEmpty) {
+								ret = widget.suffix;
 							}
 							return ret ?? const SizedBox.shrink();
 						}
 					),
 					isDense: true
 				),
-				enabled: enabled,
-				enableIMEPersonalizedLearning: enableIMEPersonalizedLearning,
-				enableSuggestions: enableSuggestions,
-				focusNode: focusNode,
-				keyboardAppearance: keyboardAppearance,
-				keyboardType: keyboardType,
-				maxLines: maxLines,
-				minLines: minLines,
-				onChanged: onChanged,
-				onSubmitted: onSubmitted,
-				onTap: onTap,
-				smartDashesType: smartDashesType,
-				smartQuotesType: smartQuotesType,
-				spellCheckConfiguration: spellCheckConfiguration,
-				style: style,
-				textAlign: textAlign,
-				textCapitalization: textCapitalization
+				enabled: widget.enabled,
+				enableIMEPersonalizedLearning: widget.enableIMEPersonalizedLearning,
+				enableSuggestions: widget.enableSuggestions,
+				focusNode: widget.focusNode,
+				keyboardAppearance: widget.keyboardAppearance,
+				keyboardType: widget.keyboardType,
+				maxLines: widget.maxLines,
+				minLines: widget.minLines,
+				onChanged: widget.onChanged,
+				onSubmitted: widget.onSubmitted,
+				onTap: widget.onTap,
+				smartDashesType: widget.smartDashesType,
+				smartQuotesType: widget.smartQuotesType,
+				spellCheckConfiguration: widget.spellCheckConfiguration,
+				style: widget.style,
+				textAlign: widget.textAlign,
+				textCapitalization: widget.textCapitalization
 			);
 		}
 		final placeholderColor = ChanceTheme.primaryColorOf(context).withOpacity(0.75);
 		return Opacity(
-			opacity: enabled ? 1 : 0.5,
+			opacity: widget.enabled ? 1 : 0.5,
 			child: CupertinoTextField(
-				autocorrect: autocorrect,
-				autofillHints: autofillHints,
-				autofocus: autofocus,
-				contentInsertionConfiguration: contentInsertionConfiguration,
-				contextMenuBuilder: contextMenuBuilder ?? _defaultCupertinoContextMenuBuilder,
-				controller: controller,
+				key: _textFieldKey,
+				autocorrect: widget.autocorrect,
+				autofillHints: widget.autofillHints,
+				autofocus: widget.autofocus,
+				contentInsertionConfiguration: widget.contentInsertionConfiguration,
+				contextMenuBuilder: widget.contextMenuBuilder ?? _defaultCupertinoContextMenuBuilder,
+				controller: widget.controller,
 				decoration: BoxDecoration(
 					color: ChanceTheme.textFieldColorOf(context),
 					border: Border.all(
@@ -155,30 +172,30 @@ class AdaptiveTextField extends StatelessWidget {
 					),
 					borderRadius: const BorderRadius.all(Radius.circular(5.0))
 				),
-				enabled: enabled,
-				enableIMEPersonalizedLearning: enableIMEPersonalizedLearning,
-				enableSuggestions: enableSuggestions,
-				focusNode: focusNode,
-				keyboardAppearance: keyboardAppearance,
-				keyboardType: keyboardType,
-				maxLines: maxLines,
-				minLines: minLines,
-				onChanged: onChanged,
-				onSubmitted: onSubmitted,
-				onTap: onTap,
-				placeholder: placeholder,
-				placeholderStyle: placeholderStyle ?? TextStyle(
+				enabled: widget.enabled,
+				enableIMEPersonalizedLearning: widget.enableIMEPersonalizedLearning,
+				enableSuggestions: widget.enableSuggestions,
+				focusNode: widget.focusNode,
+				keyboardAppearance: widget.keyboardAppearance,
+				keyboardType: widget.keyboardType,
+				maxLines: widget.maxLines,
+				minLines: widget.minLines,
+				onChanged: widget.onChanged,
+				onSubmitted: widget.onSubmitted,
+				onTap: widget.onTap,
+				placeholder: widget.placeholder,
+				placeholderStyle: widget.placeholderStyle ?? TextStyle(
 					fontWeight: FontWeight.w400,
 					color: placeholderColor,
 				),
-				smartDashesType: smartDashesType,
-				smartQuotesType: smartQuotesType,
-				spellCheckConfiguration: spellCheckConfiguration,
-				style: style,
-				suffix: suffix,
-				suffixMode: suffixMode,
-				textAlign: textAlign,
-				textCapitalization: textCapitalization
+				smartDashesType: widget.smartDashesType,
+				smartQuotesType: widget.smartQuotesType,
+				spellCheckConfiguration: widget.spellCheckConfiguration,
+				style: widget.style,
+				suffix: widget.suffix,
+				suffixMode: widget.suffixMode,
+				textAlign: widget.textAlign,
+				textCapitalization: widget.textCapitalization
 			)
 		);
 	}

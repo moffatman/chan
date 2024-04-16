@@ -107,6 +107,7 @@ class ReplyBox extends StatefulWidget {
 }
 
 class ReplyBoxState extends State<ReplyBox> {
+	final _textFieldKey = GlobalKey<AdaptiveTextFieldState>(debugLabel: 'ReplyBoxState._textFieldKey');
 	late final TextEditingController _textFieldController;
 	late final TextEditingController _nameFieldController;
 	late final TextEditingController _subjectFieldController;
@@ -404,6 +405,17 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
+	/// If we use userUpdateTextEditingValue, the text field animates properly
+	set _textFieldValue(TextEditingValue value) {
+		final editableText = _textFieldKey.currentState?.editableText;
+		if (editableText != null) {
+			editableText.userUpdateTextEditingValue(value, null);
+		}
+		else {
+			_textFieldController.value = value;
+		}
+	}
+
 	void _insertText(String insertedText, {bool addNewlineIfAtEnd = true, TextSelection? initialSelection}) {
 		final selection = initialSelection ?? _textFieldController.selection;
 		if (selection.isCollapsed) {
@@ -415,7 +427,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			if (addNewlineIfAtEnd && currentPos == _textFieldController.text.length) {
 				insertedText += '\n';
 			}
-			_textFieldController.value = TextEditingValue(
+			_textFieldValue = TextEditingValue(
 				selection: TextSelection(
 					baseOffset: currentPos + insertedText.length,
 					extentOffset: currentPos + insertedText.length
@@ -425,7 +437,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		else {
 			// Replace selected text
-			_textFieldController.value = TextEditingValue(
+			_textFieldValue = TextEditingValue(
 				selection: TextSelection(
 					baseOffset: selection.baseOffset,
 					extentOffset: selection.baseOffset + insertedText.length
@@ -1511,6 +1523,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								alignment: Alignment.center,
 								children: [
 									AdaptiveTextField(
+										key: _textFieldKey,
 										enabled: !loading,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 										smartDashesType: SmartDashesType.disabled,
