@@ -999,9 +999,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	late final AnimationController _footerShakeAnimation;
 	DateTime _lastPointerUpTime = DateTime(2000);
 	final List<List<int>> _automaticallyCollapsedItems = [];
-	final List<List<int>> _overrideExpandAutomaticallyCollapsedItems = [];
+	static final Map<String, List<List<int>>> _overrideExpandAutomaticallyCollapsedItemsCache = {};
+	List<List<int>> get _overrideExpandAutomaticallyCollapsedItems => _overrideExpandAutomaticallyCollapsedItemsCache.putIfAbsent(widget.id, () => []);
 	final Set<int> _automaticallyCollapsedTopLevelItems = {};
-	final Set<int> _overrideExpandAutomaticallyCollapsedTopLevelItems = {};
+	static final Map<String, Set<int>> _overrideExpandAutomaticallyCollapsedTopLevelItemsCache = {};
+	Set<int> get _overrideExpandAutomaticallyCollapsedTopLevelItems => _overrideExpandAutomaticallyCollapsedTopLevelItemsCache.putIfAbsent(widget.id, () => {});
 	List<RefreshableListItem<T>> filteredValues = [];
 	late _RefreshableTreeItems _refreshableTreeItems;
 	int forceRebuildId = 0;
@@ -1073,9 +1075,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_treeSplitId = widget.initialTreeSplitId;
 			lastUpdateTime = null;
 			_automaticallyCollapsedItems.clear();
-			_overrideExpandAutomaticallyCollapsedItems.clear();
 			_automaticallyCollapsedTopLevelItems.clear();
-			_overrideExpandAutomaticallyCollapsedTopLevelItems.clear();
 			_refreshableTreeItems.dispose();
 			_refreshableTreeItems = _RefreshableTreeItems<T>(
 				manuallyCollapsedItems: widget.initialCollapsedItems?.toList() ?? [],
