@@ -8,6 +8,7 @@ import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -18,6 +19,7 @@ import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:provider/provider.dart';
@@ -1009,6 +1011,31 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				child: Column(
 					children: [
 						Text(errorMessage!),
+						if (errorMessage?.contains('Posting on this board requires a verified email') ?? false) ...[
+							const SizedBox(height: 16),
+							const ChanceDivider(),
+							const SizedBox(height: 16),
+							Text.rich(TextSpan(
+								children: [
+									const TextSpan(text: 'Note from Chance:\nGo to '),
+									TextSpan(
+										text: 'https://sys.4chan.org/signin',
+										recognizer: TapGestureRecognizer()..onTap = () => shareOne(
+											context: context,
+											text: 'https://sys.4chan.org/signin',
+											type: 'text',
+											sharePositionOrigin: null
+										),
+										style: TextStyle(
+											color: Settings.instance.theme.secondaryColor,
+											decoration: TextDecoration.underline
+										)
+									),
+									const TextSpan(text: ' in your browser and enter your email. Then paste the emailed verification link within Chance Settings -> Site Settings -> '),
+									const WidgetSpan(child: Icon(CupertinoIcons.link, size: 16))
+								]
+							))
+						],
 						_cooldownedRetryButton(context)
 					]
 				)

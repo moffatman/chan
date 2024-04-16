@@ -120,7 +120,8 @@ class WebAuthenticationRequiredException implements Exception {
 
 class BannedException implements Exception {
 	String reason;
-	BannedException(this.reason);
+	Uri? url;
+	BannedException(this.reason, this.url);
 	@override
 	String toString() => 'Posting failed: $reason';
 }
@@ -1309,8 +1310,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get siteData;
 	String get defaultUsername;
 	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const Iterable.empty();
-	CaptchaRequest? getBannedCaptchaRequest(bool cloudflare) => null;
-	Future<String> getBannedReason(CaptchaSolution captchaSolution) async => 'Unknown';
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async => [];
 	bool get allowsArbitraryBoards => false;
 	bool get classicCatalogStyle => true;
@@ -1449,6 +1448,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		ImageboardAction.report => ImageboardAction.report
 	};
 	int? get subjectCharacterLimit => null;
+	bool get hasEmailLinkCookieAuth => false;
 }
 
 abstract class ImageboardSiteLoginSystem {

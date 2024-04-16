@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/cookie_browser.dart';
 import 'package:chan/services/captcha.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/outbox.dart';
@@ -325,8 +326,8 @@ class Imageboard extends ChangeNotifier {
 			}
 			else if (state is QueueStateFailed<PostReceipt>) {
 				final e = state.error;
-				final bannedCaptchaRequest = post.site.getBannedCaptchaRequest(state.captchaSolution?.cloudflare ?? false);
-				if (e is BannedException && bannedCaptchaRequest != null) {
+				if (e is BannedException) {
+					final url = e.url;
 					await showAdaptiveDialog(
 						context: ImageboardRegistry.instance.context!,
 						builder: (context) {
@@ -334,21 +335,9 @@ class Imageboard extends ChangeNotifier {
 								title: const Text('Error'),
 								content: Text(e.toStringDio()),
 								actions: [
-									AdaptiveDialogAction(
+									if (url != null) AdaptiveDialogAction(
 										child: const Text('See reason'),
-										onPressed: () async {
-											final solution = await solveCaptcha(
-												context: context,
-												site: post.site,
-												request: bannedCaptchaRequest
-											);
-											if (solution != null) {
-												final reason = await post.site.getBannedReason(solution);
-												if (!context.mounted) return;
-												alertError(context, reason);
-											}
-											solution?.dispose();
-										}
+										onPressed: () => openCookieBrowser(context, url)
 									),
 									AdaptiveDialogAction(
 										child: const Text('Clear cookies'),
@@ -400,7 +389,7 @@ class Imageboard extends ChangeNotifier {
 		}
 		if (!persistence.browserState.outbox.contains(post)) {
 			// It may already be in the outbox if it's a draft
-		persistence.browserState.outbox.add(post); // For restoration if app is closed
+			persistence.browserState.outbox.add(post); // For restoration if app is closed
 		}
 		runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
 		final receipt = await site.submitPost(post, captchaSolution, cancelToken);

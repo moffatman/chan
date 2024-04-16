@@ -1131,6 +1131,21 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
+	static Future<void> saveCookiesFromWebView(Uri uri) async {
+		final cookies = await webview.CookieManager.instance().getCookies(url: webview.WebUri.uri(uri));
+		await currentCookies.saveFromResponse(uri, cookies.map((cookie) {
+			final newCookie = Cookie(cookie.name, cookie.value);
+			newCookie.domain = cookie.domain;
+			if (cookie.expiresDate != null) {
+				newCookie.expires = DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!);
+			}
+			newCookie.httpOnly = cookie.isHttpOnly ?? false;
+			newCookie.path = cookie.path;
+			newCookie.secure = cookie.isSecure ?? false;
+			return newCookie;
+		}).toList());
+	}
+
 	@override
 	String toString() => 'Persistence($imageboardKey)';
 }

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:chan/pages/cookie_browser.dart';
 import 'package:chan/pages/settings/common.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
@@ -44,6 +45,64 @@ final siteSettings = [
 							const SizedBox(width: 16),
 							Expanded(
 								child: Text(imageboard.site.name)
+							),
+							if (imageboard.site.hasEmailLinkCookieAuth) AdaptiveIconButton(
+								icon: const Icon(CupertinoIcons.link),
+								onPressed: () async {
+									final controller = TextEditingController();
+									final linkStr = await showAdaptiveDialog<String>(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											title: const Text('Verification Link'),
+											content: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													const SizedBox(height: 10),
+													AdaptiveTextField(
+														controller: controller,
+														autofocus: true,
+														smartDashesType: SmartDashesType.disabled,
+														smartQuotesType: SmartQuotesType.disabled,
+														minLines: 1,
+														maxLines: 1,
+														onSubmitted: (s) => Navigator.pop(context, s)
+													)
+												]
+											),
+											actions: [
+												AdaptiveDialogAction(
+													isDefaultAction: true,
+													child: const Text('Submit'),
+													onPressed: () => Navigator.pop(context, controller.text.isEmpty ? null : controller.text)
+												),
+												AdaptiveDialogAction(
+													child: const Text('Cancel'),
+													onPressed: () => Navigator.pop(context)
+												)
+											]
+										)
+									);
+									controller.dispose();
+									if (linkStr == null) {
+										return;
+									}
+									final url = Uri.tryParse(linkStr);
+									if (url == null) {
+										if (context.mounted) {
+											alertError(context, 'Invalid URL');
+										}
+										return;
+									}
+									await imageboard.site.loginSystem?.logout(false);
+									if (!context.mounted) {
+										return;
+									}
+									openCookieBrowser(
+										context,
+										url,
+									);
+								}
 							),
 							if (imageboard.site.archives.isNotEmpty) AdaptiveIconButton(
 								icon: const Icon(CupertinoIcons.archivebox),

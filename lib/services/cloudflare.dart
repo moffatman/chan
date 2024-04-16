@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:chan/services/imageboard.dart';
@@ -167,21 +166,6 @@ class CloudflareInterceptor extends Interceptor {
 
 	static final _bodyStartsWithOpeningCurlyBrace = RegExp(r'<body[^>]*>{');
 
-	static Future<void> _saveCookies(Uri uri) async {
-		final cookies = await CookieManager.instance().getCookies(url: WebUri.uri(uri));
-		await Persistence.currentCookies.saveFromResponse(uri, cookies.map((cookie) {
-			final newCookie = io.Cookie(cookie.name, cookie.value);
-			newCookie.domain = cookie.domain;
-			if (cookie.expiresDate != null) {
-				newCookie.expires = DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!);
-			}
-			newCookie.httpOnly = cookie.isHttpOnly ?? false;
-			newCookie.path = cookie.path;
-			newCookie.secure = cookie.isSecure ?? false;
-			return newCookie;
-		}).toList());
-	}
-
 	static final _webViewLock = Mutex();
 	static Future<_CloudflareResponse> _useWebview({
 		bool skipHeadless = false,
@@ -220,13 +204,13 @@ class CloudflareInterceptor extends Interceptor {
 					scheme: cookieUrl.scheme,
 					host: cookieUrl.host
 				);
-				await _saveCookies(correctedUri);
+				await Persistence.saveCookiesFromWebView(correctedUri);
 				callback((content: null, uri: correctedUri));
 				return;
 			}
 			final title = await controller.getTitle() ?? '';
 			if (!_titleMatches(title)) {
-				await _saveCookies(uri!);
+				await Persistence.saveCookiesFromWebView(uri!);
 				final html = await controller.getHtml() ?? '';
 				if (html.contains('<pre')) {
 					// Raw JSON response, but web-view has put it within a <pre>

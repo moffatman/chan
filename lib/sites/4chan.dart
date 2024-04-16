@@ -890,7 +890,7 @@ class Site4Chan extends ImageboardSite {
 			final errSpan = document.querySelector('#errmsg');
 			if (errSpan != null) {
 				if (errSpan.text.toLowerCase().contains('ban') || errSpan.text.toLowerCase().contains('warn')) {
-					throw BannedException(errSpan.text);
+					throw BannedException(errSpan.text, _bannedUrl);
 				}
 				String message = errSpan.text;
 				if (response.cloudflare && message.toLowerCase().contains('our system thinks your post is spam')) {
@@ -910,27 +910,6 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	Uri get _bannedUrl => Uri.https('www.4chan.org', '/banned');
-
-	@override
-	CaptchaRequest? getBannedCaptchaRequest(bool cloudflare) => RecaptchaRequest(
-		key: captchaKey,
-		sourceUrl: _bannedUrl.toString(),
-		cloudflare: cloudflare
-	);
-
-	@override
-	Future<String> getBannedReason(CaptchaSolution captchaSolution) async {
-		final response = await client.postUri(_bannedUrl, data: {
-			if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
-		}, options: Options(
-			contentType: Headers.formUrlEncodedContentType,
-			extra: {
-				if (captchaSolution.cloudflare) 'cloudflare': true
-			}
-		));
-		final document = parse(response.data);
-		return document.querySelector('.boxcontent')?.text ?? 'Unknown: The banned page doesn\'t match expectations';
-	}
 
 	@override
 	Duration getActionCooldown(String board, ImageboardAction action, bool cellular) {
@@ -1432,6 +1411,9 @@ class Site4Chan extends ImageboardSite {
 		}
 		return super.getCaptchaUsableTime(captcha);
 	}
+
+	@override
+	bool get hasEmailLinkCookieAuth => true;
 }
 
 class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
