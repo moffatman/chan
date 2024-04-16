@@ -83,7 +83,7 @@ class ReplyBox extends StatefulWidget {
 	final int? threadId;
 	final ValueChanged<PostReceipt> onReplyPosted;
 	final DraftPost? initialDraft;
-	final ValueChanged<DraftPost?>? onDraftChanged;
+	final ValueChanged<DraftPost?> onDraftChanged;
 	final VoidCallback? onVisibilityChanged;
 	final bool isArchived;
 	final bool fullyExpanded;
@@ -94,7 +94,7 @@ class ReplyBox extends StatefulWidget {
 		this.threadId,
 		required this.onReplyPosted,
 		this.initialDraft,
-		this.onDraftChanged,
+		required this.onDraftChanged,
 		this.onVisibilityChanged,
 		this.isArchived = false,
 		this.fullyExpanded = false,
@@ -326,7 +326,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	void _didUpdateDraft() {
 		final draft = _makeDraft();
-		widget.onDraftChanged?.call(_isNonTrivial(draft) ? draft : null);
+		widget.onDraftChanged(_isNonTrivial(draft) ? draft : null);
 	}
 
 	@override
@@ -2304,6 +2304,27 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	@override
 	void dispose() {
 		super.dispose();
+		if (_postingPost != null) {
+			// Since we didn't clear out the reply field yet. Just send a fake draft above.
+			if (_optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
+				// A few things we have to save
+				widget.onDraftChanged(DraftPost(
+					board: widget.board,
+					threadId: widget.threadId,
+					name: null,
+					options: _optionsFieldController.text,
+					text: '',
+					useLoginSystem: switch (_disableLoginSystem) {
+						true => false,
+						false => null
+					}
+				));
+			}
+			else {
+				// Just wipe out the draft
+				widget.onDraftChanged(null);
+			}
+		}
 		_textFieldController.dispose();
 		_nameFieldController.dispose();
 		_subjectFieldController.dispose();
