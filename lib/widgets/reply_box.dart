@@ -346,7 +346,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			Future.error(e, st); // Crashlytics
 			print('Error getting flags for ${widget.board}: $e');
 		});
-		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty) {
+		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
 			_showOptions = true;
 		}
 		_tryUsingInitialFile(widget.initialDraft?.file);
@@ -1963,7 +1963,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		old.useLoginSystem = entry.useLoginSystem;
 		// Apply the new draft
 		draft = entry.post;
-		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty) {
+		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
 			setState(() {_showOptions = true;});
 		}
 		// Delete that draft from the outbox
