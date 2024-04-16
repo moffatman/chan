@@ -6,6 +6,7 @@ class CupertinoThinButton extends StatefulWidget {
 	final VoidCallback? onPressed;
 	final EdgeInsets padding;
 	final bool filled;
+	final bool backgroundFilled;
 	final Color? color;
 
 	const CupertinoThinButton({
@@ -13,6 +14,7 @@ class CupertinoThinButton extends StatefulWidget {
 		required this.onPressed,
 		this.padding = const EdgeInsets.all(16),
 		this.filled = false,
+		this.backgroundFilled = false,
 		this.color,
 		Key? key
 	}) : super(key: key);
@@ -59,7 +61,7 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 				decoration: BoxDecoration(
 					border: Border.all(color: baseColor),
 					borderRadius: const BorderRadius.all(Radius.circular(8)),
-					color: color
+					color: widget.backgroundFilled ? ChanceTheme.backgroundColorOf(context) : color
 				),
 				padding: widget.padding,
 				child: DefaultTextStyle.merge(

@@ -75,6 +75,7 @@ class AdaptiveThinButton extends StatelessWidget {
 	final VoidCallback? onPressed;
 	final EdgeInsets padding;
 	final bool filled;
+	final bool backgroundFilled;
 	final Color? color;
 
 	const AdaptiveThinButton({
@@ -82,6 +83,7 @@ class AdaptiveThinButton extends StatelessWidget {
 		required this.onPressed,
 		this.padding = const EdgeInsets.all(16),
 		this.filled = false,
+		this.backgroundFilled = false,
 		this.color,
 		super.key
 	});
@@ -104,7 +106,15 @@ class AdaptiveThinButton extends StatelessWidget {
 							return theme.primaryColorWithBrightness(0.8);
 						}
 						return theme.primaryColor;
-					}) : null
+					}) : (backgroundFilled ? MaterialStateProperty.resolveWith((s) {
+						if (s.contains(MaterialState.pressed)) {
+							return theme.primaryColorWithBrightness(0.3);
+						}
+						if (s.contains(MaterialState.hovered)) {
+							return theme.primaryColorWithBrightness(0.1);
+						}
+						return theme.backgroundColor;
+					}) : null)
 				),
 				child: child
 			);
@@ -113,6 +123,7 @@ class AdaptiveThinButton extends StatelessWidget {
 			onPressed: onPressed,
 			padding: padding,
 			filled: filled,
+			backgroundFilled: backgroundFilled,
 			color: color,
 			child: child
 		);

@@ -1602,6 +1602,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																		),
 																		const SizedBox(width: 16),
 																		AdaptiveThinButton(
+																			backgroundFilled: true,
 																			onPressed: pair.$2,
 																			padding: const EdgeInsets.all(8),
 																			child: const Text('Try to skip')
@@ -1637,6 +1638,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																		),
 																		const SizedBox(width: 16),
 																		AdaptiveThinButton(
+																			backgroundFilled: true,
 																			onPressed: wait.skip,
 																			padding: const EdgeInsets.all(8),
 																			child: const Text('Skip')
@@ -1652,6 +1654,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											AdaptiveThinButton(
 												padding: const EdgeInsets.all(8),
 												onPressed: _postInBackground,
+												backgroundFilled: true,
 												child: const Row(
 													mainAxisSize: MainAxisSize.min,
 													children: [
