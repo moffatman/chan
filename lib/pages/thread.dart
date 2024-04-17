@@ -2337,212 +2337,227 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 							reverse: true,
 							primary: false,
 							controller: _menuScrollController,
-							child: Column(
-								crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-								mainAxisSize: MainAxisSize.min,
+							child: Stack(
 								children: [
-									for (final buttons in [
-										[(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
-												WeakNavigator.push(context, PostsPage(
-													zone: widget.zone,
-													postsIdsToShow: youIds,
-													onTap: (post) {
-														widget.listController.animateTo((p) => p.id == post.id);
-														WeakNavigator.pop(context);
-													}
-												)
-											);
-										})],
-										[(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _youIds.isEmpty ? null : () {
-												WeakNavigator.push(context, PostsPage(
-													zone: widget.zone,
-													postsIdsToShow: _youIds,
-													onTap: (post) {
-														widget.listController.animateTo((p) => p.id == post.id);
-														WeakNavigator.pop(context);
-													}
-												)
-											);
-										})],
-										[(
-											describeCount(realImageCount, 'image'),
-											const RotatedBox(
-												quarterTurns: 1,
-												child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
-											),
-											() async {
-												const commonParentIds = [-101];
-												final nextPostWithImage = widget.listController.items.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.item.attachments.isNotEmpty, orElse: () {
-													return widget.listController.items.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.item.attachments.isNotEmpty);
-												});
-												final imageboard = context.read<Imageboard>();
-												final attachments = widget.listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
-													attachment: a,
-													semanticParentIds: commonParentIds.followedBy(item.parentIds)
-												))).toList();
-												final initialAttachment = TaggedAttachment(
-													attachment: nextPostWithImage.item.attachments.first,
-													semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds)
-												);
-												final found = <Attachment, TaggedAttachment>{};
-												for (final a in attachments) {
-													found.putIfAbsent(a.attachment, () => a);
-												}
-												found[initialAttachment.attachment] = initialAttachment;
-												attachments.removeWhere((a) => found[a.attachment] != a);
-												final dest = await Navigator.of(context).push<TaggedAttachment>(adaptivePageRoute(
-													builder: (context) => ImageboardScope(
-														imageboardKey: null,
-														imageboard: imageboard,
-														child: AttachmentsPage(
-															attachments: attachments,
-															initialAttachment: initialAttachment,
-															threadState: widget.persistentState
-															//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
-														)
-													)
-												));
-												if (dest != null) {
-													final destPost = widget.thread?.posts.tryFirstWhere((p) => p.attachments.contains(dest.attachment));
-													if (destPost != null) {
-														widget.zone.onNeedScrollToPost?.call(destPost);
-													}
-												}
-											}
-										), (
-											uncachedCount == 0 ? '' : 'Preload $uncachedCount${uncachedMB == 0 ? '' : ' (${uncachedMBIsUncertain ? '>' : ''}${uncachedMB.ceil()} MB)'}',
-											const Icon(CupertinoIcons.cloud_download, size: 19),
-											(widget.attachmentsCachingQueue.isEmpty && widget.cachedAttachments.values.any((v) => !v.isCached)) ? widget.startCaching : null
-										)],
-										[('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch)],
-										if (context.read<ImageboardSite>().archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), null)]
-										else if (widget.persistentState.useArchive) [('Live', const ImageboardIcon(), () {
-											widget.persistentState.useArchive = false;
-											widget.persistentState.save();
-											setState(() {});
-											widget.listController.blockAndUpdate();
-										})]
-										else [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
-											widget.persistentState.useArchive = true;
-											widget.persistentState.save();
-											setState(() {});
-											widget.listController.blockAndUpdate();
-										})],
-										if (widget.persistentState.autoTranslate) [('Original', const Icon(Icons.translate, size: 19), () {
-											widget.persistentState.autoTranslate = false;
-											widget.persistentState.translatedPosts.clear();
-											widget.zone.clearTranslatedPosts();
-											widget.persistentState.save();
-											setState(() {});
-										})]
-										else [('Translate', const Icon(Icons.translate, size: 19), () async {
-											widget.persistentState.autoTranslate = true;
-											for (final post in widget.persistentState.thread?.posts ?? <Post>[]) {
-												if (widget.zone.translatedPost(post.id) == null) {
-													try {
-														await widget.zone.translatePost(post);
-													}
-													catch (e) {
-														// ignore, it will be shown on the post widget anyway
-													}
-												}
-											}
-											widget.persistentState.save();
-											setState(() {});
-										})],
-										[
-											('${postSortingMethod == PostSortingMethod.none ? 'Sort' : postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19), () async {
-												final defaultMethod = widget.persistentState.imageboard?.persistence.browserState.postSortingMethodPerBoard[widget.persistentState.board] ?? widget.persistentState.imageboard?.persistence.browserState.postSortingMethod ?? PostSortingMethod.none;
-												final choice = await showAdaptiveModalPopup<NullWrapper<PostSortingMethod>>(
-													context: context,
-													useRootNavigator: false,
-													builder: (context) => AdaptiveActionSheet(
-														title: const Text('Sort by...'),
-														actions: [
-															AdaptiveActionSheetAction(
-																onPressed: () => Navigator.pop(context, const NullWrapper<PostSortingMethod>(null)),
-																isDefaultAction: widget.persistentState.postSortingMethod == null,
-																child: Text('Default (${defaultMethod.displayName})')
-															),
-															...PostSortingMethod.values.map((v) => AdaptiveActionSheetAction(
-																onPressed: () => Navigator.pop(context, NullWrapper(v)),
-																isDefaultAction: v == widget.persistentState.postSortingMethod,
-																child: Text(v.displayName)
-															))
-														],
-														cancelButton: AdaptiveActionSheetAction(
-															child: const Text('Cancel'),
-															onPressed: () => Navigator.pop(context)
-														)
-													)
-												);
-												if (choice == null) {
-													return;
-												}
-												widget.persistentState.postSortingMethod = choice.value;
-												widget.listController.state?.forceRebuildId++;
-												widget.persistentState.save();
-											}),
-											if (widget.useTree) ('Linear', const Icon(CupertinoIcons.list_bullet, size: 19), () => setState(() {
-												widget.persistentState.useTree = false;
-												widget.persistentState.save();
-											}))
-											else ('Tree', const Icon(CupertinoIcons.list_bullet_indent, size: 19), () => setState(() {
-												widget.persistentState.useTree = true;
-												widget.persistentState.save();
-											}))
-										],
-										[('Update', const Icon(CupertinoIcons.refresh, size: 19), widget.listController.update)],
-										[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), scrollToTop)],
-										[
-											('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
-												if (widget.useTree) {
-													int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
-														return entry.key > furthestSeenIndexBottom &&
-															(widget.newPostIds.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.newPostIds.contains(id.childId))) &&
-															!entry.value.filterCollapsed;
-													})?.key ?? -1;
-													if (targetIndex != -1) {
-														while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
-															// Align to parent if the target has been collapsed
-															targetIndex++;
-														}
-														widget.listController.animateToIndex(targetIndex);
-													}
-												}
-												else {
-													widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0);
-												}
-											}),
-											('Bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
-										],
-										if (developerMode) ...widget.developerModeButtons
-									]) Padding(
-										padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: buttons.expand((button) => [
-												const SizedBox(width: 8),
-												AdaptiveFilledButton(
-													disabledColor: theme.primaryColorWithBrightness(0.4),
-													padding: const EdgeInsets.all(8),
-													minSize: 0,
-													onPressed: button.$3 == null ? null : () {
-														lightHapticFeedback();
-														button.$3?.call();
-														_hideMenu();
-													},
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															Text(button.$1),
-															if (button.$1.isNotEmpty) const SizedBox(width: 8),
-															button.$2
-														]
-													)
-												)
-											]).skip(1).toList()
+									// To absorb scroll in padding around shortest buttons
+									Positioned(
+										top: 0,
+										bottom: 0,
+										left: widget.reversed ? 0 : null,
+										right: widget.reversed ? null : 0,
+										child: const SizedBox(
+											width: 100,
+											child: AbsorbPointer()
 										)
+									),
+									Column(
+										crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											for (final buttons in [
+												[(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
+														WeakNavigator.push(context, PostsPage(
+															zone: widget.zone,
+															postsIdsToShow: youIds,
+															onTap: (post) {
+																widget.listController.animateTo((p) => p.id == post.id);
+																WeakNavigator.pop(context);
+															}
+														)
+													);
+												})],
+												[(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _youIds.isEmpty ? null : () {
+														WeakNavigator.push(context, PostsPage(
+															zone: widget.zone,
+															postsIdsToShow: _youIds,
+															onTap: (post) {
+																widget.listController.animateTo((p) => p.id == post.id);
+																WeakNavigator.pop(context);
+															}
+														)
+													);
+												})],
+												[(
+													describeCount(realImageCount, 'image'),
+													const RotatedBox(
+														quarterTurns: 1,
+														child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
+													),
+													() async {
+														const commonParentIds = [-101];
+														final nextPostWithImage = widget.listController.items.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.item.attachments.isNotEmpty, orElse: () {
+															return widget.listController.items.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.item.attachments.isNotEmpty);
+														});
+														final imageboard = context.read<Imageboard>();
+														final attachments = widget.listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
+															attachment: a,
+															semanticParentIds: commonParentIds.followedBy(item.parentIds)
+														))).toList();
+														final initialAttachment = TaggedAttachment(
+															attachment: nextPostWithImage.item.attachments.first,
+															semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds)
+														);
+														final found = <Attachment, TaggedAttachment>{};
+														for (final a in attachments) {
+															found.putIfAbsent(a.attachment, () => a);
+														}
+														found[initialAttachment.attachment] = initialAttachment;
+														attachments.removeWhere((a) => found[a.attachment] != a);
+														final dest = await Navigator.of(context).push<TaggedAttachment>(adaptivePageRoute(
+															builder: (context) => ImageboardScope(
+																imageboardKey: null,
+																imageboard: imageboard,
+																child: AttachmentsPage(
+																	attachments: attachments,
+																	initialAttachment: initialAttachment,
+																	threadState: widget.persistentState
+																	//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+																)
+															)
+														));
+														if (dest != null) {
+															final destPost = widget.thread?.posts.tryFirstWhere((p) => p.attachments.contains(dest.attachment));
+															if (destPost != null) {
+																widget.zone.onNeedScrollToPost?.call(destPost);
+															}
+														}
+													}
+												), (
+													uncachedCount == 0 ? '' : 'Preload $uncachedCount${uncachedMB == 0 ? '' : ' (${uncachedMBIsUncertain ? '>' : ''}${uncachedMB.ceil()} MB)'}',
+													const Icon(CupertinoIcons.cloud_download, size: 19),
+													(widget.attachmentsCachingQueue.isEmpty && widget.cachedAttachments.values.any((v) => !v.isCached)) ? widget.startCaching : null
+												)],
+												[('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch)],
+												if (context.read<ImageboardSite>().archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), null)]
+												else if (widget.persistentState.useArchive) [('Live', const ImageboardIcon(), () {
+													widget.persistentState.useArchive = false;
+													widget.persistentState.save();
+													setState(() {});
+													widget.listController.blockAndUpdate();
+												})]
+												else [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
+													widget.persistentState.useArchive = true;
+													widget.persistentState.save();
+													setState(() {});
+													widget.listController.blockAndUpdate();
+												})],
+												if (widget.persistentState.autoTranslate) [('Original', const Icon(Icons.translate, size: 19), () {
+													widget.persistentState.autoTranslate = false;
+													widget.persistentState.translatedPosts.clear();
+													widget.zone.clearTranslatedPosts();
+													widget.persistentState.save();
+													setState(() {});
+												})]
+												else [('Translate', const Icon(Icons.translate, size: 19), () async {
+													widget.persistentState.autoTranslate = true;
+													for (final post in widget.persistentState.thread?.posts ?? <Post>[]) {
+														if (widget.zone.translatedPost(post.id) == null) {
+															try {
+																await widget.zone.translatePost(post);
+															}
+															catch (e) {
+																// ignore, it will be shown on the post widget anyway
+															}
+														}
+													}
+													widget.persistentState.save();
+													setState(() {});
+												})],
+												[
+													('${postSortingMethod == PostSortingMethod.none ? 'Sort' : postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19), () async {
+														final defaultMethod = widget.persistentState.imageboard?.persistence.browserState.postSortingMethodPerBoard[widget.persistentState.board] ?? widget.persistentState.imageboard?.persistence.browserState.postSortingMethod ?? PostSortingMethod.none;
+														final choice = await showAdaptiveModalPopup<NullWrapper<PostSortingMethod>>(
+															context: context,
+															useRootNavigator: false,
+															builder: (context) => AdaptiveActionSheet(
+																title: const Text('Sort by...'),
+																actions: [
+																	AdaptiveActionSheetAction(
+																		onPressed: () => Navigator.pop(context, const NullWrapper<PostSortingMethod>(null)),
+																		isDefaultAction: widget.persistentState.postSortingMethod == null,
+																		child: Text('Default (${defaultMethod.displayName})')
+																	),
+																	...PostSortingMethod.values.map((v) => AdaptiveActionSheetAction(
+																		onPressed: () => Navigator.pop(context, NullWrapper(v)),
+																		isDefaultAction: v == widget.persistentState.postSortingMethod,
+																		child: Text(v.displayName)
+																	))
+																],
+																cancelButton: AdaptiveActionSheetAction(
+																	child: const Text('Cancel'),
+																	onPressed: () => Navigator.pop(context)
+																)
+															)
+														);
+														if (choice == null) {
+															return;
+														}
+														widget.persistentState.postSortingMethod = choice.value;
+														widget.listController.state?.forceRebuildId++;
+														widget.persistentState.save();
+													}),
+													if (widget.useTree) ('Linear', const Icon(CupertinoIcons.list_bullet, size: 19), () => setState(() {
+														widget.persistentState.useTree = false;
+														widget.persistentState.save();
+													}))
+													else ('Tree', const Icon(CupertinoIcons.list_bullet_indent, size: 19), () => setState(() {
+														widget.persistentState.useTree = true;
+														widget.persistentState.save();
+													}))
+												],
+												[('Update', const Icon(CupertinoIcons.refresh, size: 19), widget.listController.update)],
+												[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), scrollToTop)],
+												[
+													('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
+														if (widget.useTree) {
+															int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
+																return entry.key > furthestSeenIndexBottom &&
+																	(widget.newPostIds.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.newPostIds.contains(id.childId))) &&
+																	!entry.value.filterCollapsed;
+															})?.key ?? -1;
+															if (targetIndex != -1) {
+																while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
+																	// Align to parent if the target has been collapsed
+																	targetIndex++;
+																}
+																widget.listController.animateToIndex(targetIndex);
+															}
+														}
+														else {
+															widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0);
+														}
+													}),
+													('Bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
+												],
+												if (developerMode) ...widget.developerModeButtons
+											]) Padding(
+												padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: buttons.expand((button) => [
+														const SizedBox(width: 8),
+														AdaptiveFilledButton(
+															disabledColor: theme.primaryColorWithBrightness(0.4),
+															padding: const EdgeInsets.all(8),
+															minSize: 0,
+															onPressed: button.$3 == null ? null : () {
+																lightHapticFeedback();
+																button.$3?.call();
+																_hideMenu();
+															},
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	Text(button.$1),
+																	if (button.$1.isNotEmpty) const SizedBox(width: 8),
+																	button.$2
+																]
+															)
+														)
+													]).skip(1).toList()
+												)
+											)
+										]
 									)
 								]
 							)
