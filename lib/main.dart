@@ -973,12 +973,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	void _onDevNotificationTapped(BoardThreadOrPostIdentifier id) async {
 		_tabs.mainTabIndex = 4;
-		if (showTabPopup) {
-			setState(() {
-				_hideTabPopupAutomatically = true;
-				showTabPopup = false;
-			});
-		}
 		for (int i = 0; i < 200 && _tabs._settingsNavigatorKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
 		}
@@ -1230,12 +1224,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						_savedFakeTab.initialPostId[notification.threadIdentifier!] = notification.postId!;
 					}
 					_tabs._savedMasterDetailKey.currentState?.setValue(0, imageboard.scope(watch));
-				}
-				if (showTabPopup) {
-					setState(() {
-						_hideTabPopupAutomatically = true;
-						showTabPopup = false;
-					});
 				}
 			}
 		}
@@ -2160,12 +2148,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									else {
 										_willPopZones[index]?.maybePop?.call();
 									}
-								}
-								else if (showTabPopup) {
-									setState(() {
-										_hideTabPopupAutomatically = true;
-										showTabPopup = false;
-									});
 								}
 								_tabs._lastIndex = index;
 							}
