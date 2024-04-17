@@ -297,7 +297,7 @@ class SiteReddit extends ImageboardSite {
 		final body = parseFragment(
 			markdown.markdownToHtml(
 				// Lazy... but this means at least one link is already done properly
-				text.contains('](') ? text : const LooseUrlLinkifier().parse(
+				text.contains('](') ? text : const LooseUrlLinkifier(unescapeBackslashes: true).parse(
 					[TextElement(text)],
 					const LinkifyOptions()
 				).map((e) => switch(e) {

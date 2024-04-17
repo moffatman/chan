@@ -6,8 +6,20 @@ final _looseUrlRegex = RegExp(
   dotAll: true,
 );
 
+final _looseUrlRegexWithBackslash = RegExp(
+  r'^(.*?)((https?:\/\/)?(?:www\.)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=,!\\]|(?:\(\d+\)))*)',
+  caseSensitive: false,
+  dotAll: true,
+);
+
 final _wikipediaUrlRegex = RegExp(
   r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&//=]*\([^\)\n]+\))',
+  caseSensitive: false,
+  dotAll: true,
+);
+
+final _wikipediaUrlRegexWithBackslash = RegExp(
+  r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&//=\\]*\([^\)\n]+\))',
   caseSensitive: false,
   dotAll: true,
 );
@@ -47,8 +59,18 @@ final _validTlds = {
   'za', 'zappos', 'zara', 'zero', 'zip', 'zm', 'zone', 'zuerich', 'zw'
 };
 
+final _escapeSymbolPattern = RegExp(r'''\\([!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~])''');
+
 class LooseUrlLinkifier extends Linkifier {
-  const LooseUrlLinkifier();
+  final bool unescapeBackslashes;
+  const LooseUrlLinkifier({this.unescapeBackslashes = false});
+
+  String _handleBackslashes(String str) {
+    if (!unescapeBackslashes) {
+      return str;
+    }
+    return str.replaceAllMapped(_escapeSymbolPattern, (m) => m.group(1)!);
+  }
 
   @override
   List<LinkifyElement> parse(elements, options) {
@@ -56,7 +78,9 @@ class LooseUrlLinkifier extends Linkifier {
 
     for (final element in elements) {
       if (element is TextElement) {
-        final match = _wikipediaUrlRegex.firstMatch(element.text) ?? _looseUrlRegex.firstMatch(element.text);
+        final match =
+          (unescapeBackslashes ? _wikipediaUrlRegexWithBackslash : _wikipediaUrlRegex).firstMatch(element.text) ??
+          (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
 
         if (match == null || (match.group(4)?.contains('..') ?? false) || !_validTlds.contains((match.group(4) ?? '').split('.').last.toLowerCase())) {
           list.add(element);
@@ -68,7 +92,7 @@ class LooseUrlLinkifier extends Linkifier {
           }
 
           if (match.group(2)?.isNotEmpty == true) {
-            String originalUrl = match.group(2)!;
+            String originalUrl = _handleBackslashes(match.group(2)!);
             String? end;
 
             if (options.excludeLastPeriod) {
