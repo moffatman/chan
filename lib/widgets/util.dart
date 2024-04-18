@@ -679,7 +679,6 @@ class Expander extends StatefulWidget {
 	final Widget child;
 	final Duration duration;
 	final Curve curve;
-	final double height;
 	final bool expanded;
 	final bool bottomSafe;
 
@@ -687,7 +686,6 @@ class Expander extends StatefulWidget {
 		required this.child,
 		this.duration = const Duration(milliseconds: 300),
 		this.curve = Curves.ease,
-		required this.height,
 		required this.expanded,
 		this.bottomSafe = false,
 		Key? key
@@ -737,25 +735,13 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 			bottom: !widget.bottomSafe,
 			child: AnimatedBuilder(
 				animation: animation,
-				builder: (context, _) => SizedBox(
-					height: widget.curve.transform(animation.value) * widget.height,
-					child: Stack(
-						clipBehavior: Clip.hardEdge,
-						children: [
-							Positioned(
-								top: 0,
-								left: 0,
-								right: 0,
-								child: SizedBox(
-									height: widget.height,
-									child: FadeTransition(
-										opacity: animation,
-										child: widget.child
-									)
-								)
-							)
-						]
-					)
+				builder: (context, child) => _HiddenBox(
+					factor: widget.curve.transform(animation.value),
+					child: child
+				),
+				child: FadeTransition(
+					opacity: animation,
+					child: widget.child
 				)
 			)
 		);
@@ -767,6 +753,72 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 		super.dispose();
 	}
 }
+
+class _HiddenBox extends SingleChildRenderObjectWidget {
+	final double factor;
+
+	const _HiddenBox({
+		required super.child,
+		required this.factor
+	});
+
+	@override
+	_RenderHiddenBox createRenderObject(BuildContext context) {
+		return _RenderHiddenBox(factor: factor);
+	}
+	
+	@override
+	void updateRenderObject(BuildContext context, _RenderHiddenBox renderObject) {
+		renderObject.factor = factor;
+	}
+}
+
+class _RenderHiddenBox extends RenderProxyBox {
+	_RenderHiddenBox({
+		required double factor
+	}) : _factor = factor;
+
+	double _factor;
+	set factor(double value) {
+		if (value == _factor) {
+			return;
+		}
+		_factor = value;
+		markNeedsLayout();
+	}
+
+  @override
+  void performLayout() {
+    if (child != null) {
+      child!.layout(constraints, parentUsesSize: true);
+			size = Size(
+				child!.size.width,
+				child!.size.height * _factor
+			);
+    } else {
+      size = computeSizeForNoChild(constraints);
+    }
+  }
+
+	@override
+  void paint(PaintingContext context, Offset offset) {
+    if (child != null && _factor > 0) {
+			if (_factor >= 1) {
+				context.paintChild(child!, offset);
+			}
+			else {
+				layer = context.pushClipRect(
+					needsCompositing,
+					offset,
+					Offset.zero & size,
+					(context, offset) => context.paintChild(child!, offset),
+					oldLayer: layer as ClipRectLayer?,
+				);
+			}
+    }
+  }
+}
+
 
 InlineSpan buildFakeMarkdown(BuildContext context, String input) {
 	return TextSpan(

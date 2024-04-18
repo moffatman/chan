@@ -1100,26 +1100,24 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Flexible(
 						flex: 1,
 						child: Column(
+							mainAxisSize: MainAxisSize.min,
 							mainAxisAlignment: MainAxisAlignment.spaceBetween,
 							crossAxisAlignment: CrossAxisAlignment.start,
 							children: [
 								Row(
 									children: [
 										Flexible(
-											child: SizedBox(
-												height: (settings.materialStyle ? 55 : 35) * settings.textScale,
-												child: AdaptiveTextField(
-													enabled: !settings.randomizeFilenames && !loading,
-													controller: _filenameController,
-													placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
-													maxLines: 1,
-													textCapitalization: TextCapitalization.none,
-													autocorrect: false,
-													enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-													smartDashesType: SmartDashesType.disabled,
-													smartQuotesType: SmartQuotesType.disabled,
-													keyboardAppearance: ChanceTheme.brightnessOf(context)
-												)
+											child: AdaptiveTextField(
+												enabled: !settings.randomizeFilenames && !loading,
+												controller: _filenameController,
+												placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+												maxLines: 1,
+												textCapitalization: TextCapitalization.none,
+												autocorrect: false,
+												enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled,
+												keyboardAppearance: ChanceTheme.brightnessOf(context)
 											)
 										),
 										const SizedBox(width: 8),
@@ -1447,6 +1445,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			child: Container(
 				padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
 				child: Column(
+					mainAxisSize: MainAxisSize.min,
 					children: [
 						if (widget.threadId == null) ...[
 							AdaptiveTextField(
@@ -1518,7 +1517,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								);
 							}
 						),
-						Flexible(
+						ConstrainedBox(
+							constraints: BoxConstraints(
+								maxHeight: 100 + settings.replyBoxHeightOffset,
+							),
 							child: Stack(
 								alignment: Alignment.center,
 								children: [
@@ -2156,7 +2158,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: showAttachmentOptions && show,
 						bottomSafe: true,
-						height: (settings.materialStyle ? 125 : 110) * sqrt(settings.textScale),
 						child: Focus(
 							descendantsAreFocusable: showAttachmentOptions && show,
 							child: _buildAttachmentOptions(context)
@@ -2165,7 +2166,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: showOptions && show,
 						bottomSafe: true,
-						height: settings.materialStyle ? 75 : 55,
 						child: Focus(
 							descendantsAreFocusable: showOptions && show,
 							child: _buildOptions(context)
@@ -2174,7 +2174,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: show && _proposedAttachmentUrl != null,
 						bottomSafe: true,
-						height: 100,
 						child: Row(
 							mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 							children: [
@@ -2225,7 +2224,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: show,
 						bottomSafe: !show,
-						height: ((widget.threadId == null) ? 150 + (settings.materialStyle ? 50 : 0) : 100 + (settings.materialStyle ? 25 : 0)) + settings.replyBoxHeightOffset,
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
 							children: [

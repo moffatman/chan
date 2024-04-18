@@ -73,10 +73,10 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 						)
 					),
 					Expander(
-						height: 400,
 						expanded: showBox,
 						duration: const Duration(milliseconds: 200),
 						child: Container(
+							height: 400,
 							color: const Color.fromARGB(255, 173, 44, 216),
 							alignment: Alignment.center,
 							child: CupertinoButton(

@@ -2177,12 +2177,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											)
 										),
 										if (index == 0) Expander(
-											height: 80,
 											bottomSafe: true,
 											expanded: showTabPopup,
 											duration: const Duration(milliseconds: 200),
 											curve: Curves.ease,
-											child: const SizedBox.shrink()
+											child: const SizedBox(height: 80)
 										)
 									]
 								),
@@ -2190,7 +2189,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									mainAxisAlignment: MainAxisAlignment.end,
 									children: [
 										Expander(
-											height: 80,
 											bottomSafe: false,
 											expanded: showTabPopup,
 											duration: const Duration(milliseconds: 200),
@@ -2214,6 +2212,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												},
 												child: Container(
 													color: ChanceTheme.barColorOf(context),
+													height: 80,
 													child: Row(
 														children: [
 															Expanded(
