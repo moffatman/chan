@@ -3289,6 +3289,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		state?.originalList = null;
 		state?.sortedList = null;
 		state?._lastTreeOrder = null;
+		state?._rebuild(); // Force [block]
 		setItems([]);
 		await state?.update();
 		slowScrolls.didUpdate();
