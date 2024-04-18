@@ -140,9 +140,6 @@ class _SavedPageState extends State<SavedPage> {
 				continue;
 			}
 			cost |= state.thread?.posts_.last.isInitialized != true;
-			if (state.thread?.posts_.last.isInitialized != true) {
-				print('cost incurred because of $entry');
-			}
 			await state.ensureThreadLoaded();
 			final thread = state.thread;
 			if (thread == null) {
