@@ -315,7 +315,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 			image = await recorder.endRecording().toImage(width, height);
 		}
 		else {
-			image = challenge.foregroundImage!;
+			// Need to clone it to dispose properly in both places
+			image = challenge.foregroundImage!.clone();
 		}
 
 		final cloudGuess = await _cloudGuess(
