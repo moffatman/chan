@@ -130,13 +130,14 @@ class _ContextMenuState extends State<ContextMenu> {
 		final persistence = context.select<Persistence?, Persistence?>((p) => p);
 		final threadWatcher = context.select<ThreadWatcher?, ThreadWatcher?>((w) => w);
 		final notifications = context.watch<Notifications?>();
-		final navigator = Navigator.of(context, rootNavigator: true);
+		// Need to be null-safe here. Because we could be building within export-image environment
+		final navigator = Navigator.maybeOf(context, rootNavigator: true);
 		final actions = widget.actions.map((action) => CupertinoContextMenuAction2(
 			trailingIcon: action.trailingIcon,
 			key: action.key,
 			onPressed: () async {
 				try {
-					navigator.pop();
+					navigator?.pop();
 					await action.onPressed();
 				}
 				catch (e, st) {
