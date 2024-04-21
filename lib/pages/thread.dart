@@ -859,7 +859,9 @@ class ThreadPageState extends State<ThreadPage> {
 			return;
 		}
 		await WidgetsBinding.instance.endOfFrame; // Hack - let board win lock first
+		if (!mounted) return;
 		final catalog = await imageboard.site.getCatalog(widget.thread.board, priority: _priority, acceptCachedAfter: DateTime.now().subtract(const Duration(seconds: 30)));
+		if (!mounted) return;
 		ThreadIdentifier candidate = widget.thread;
 		for (final thread in catalog) {
 			if (thread.id > candidate.id) {
