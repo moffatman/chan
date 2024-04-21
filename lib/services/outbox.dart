@@ -472,6 +472,21 @@ class QueuedReport extends QueueEntry<void> {
 
 class OutboxQueue<T> extends ChangeNotifier {
 	final List<QueueEntry<T>> list = [];
+	void _sortList() {
+		mergeSort(list, compare: (a, b) {
+			final aIdle = a.state.isIdle;
+			final bIdle = b.state.isIdle;
+			if (aIdle == bIdle) {
+				return 0;
+			}
+			else if (aIdle) {
+				return 1;
+			}
+			else {
+				return -1;
+			}
+		});
+	}
 	DateTime allowedTimeWifi = DateTime.now();
 	DateTime allowedTimeCellular = DateTime.now();
 	DateTime get allowedTime {
@@ -589,19 +604,7 @@ class Outbox extends ChangeNotifier {
 				continue;
 			}
 			// Put idle entries at the end
-			mergeSort<QueueEntry>(queue.value.list, compare: (a, b) {
-				final aIdle = a.state.isIdle;
-				final bIdle = b.state.isIdle;
-				if (aIdle == bIdle) {
-					return 0;
-				}
-				else if (aIdle) {
-					return 1;
-				}
-				else {
-					return -1;
-				}
-			});
+			queue.value._sortList();
 			if (queue.value.captchaAllowedTime.isAfter(DateTime.now()) && queue.value.list.first.state._needsCaptcha) {
 				print('Can\'t fill first captcha yet');
 				// Need captcha and not allowed yet, go to sleep
