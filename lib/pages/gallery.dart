@@ -386,9 +386,9 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	void _onPageChanged(int index) async {
 		final attachment = widget.attachments[index];
-		widget.onChange?.call(attachment);
 		currentIndex = index;
 		if (!_animatingNow) {
+			widget.onChange?.call(attachment);
 			final settings = Settings.instance;
 			if (settings.autoloadAttachments && !attachment.attachment.isRateLimited) {
 				_getController(attachment).loadFullAttachment().then((x) {
