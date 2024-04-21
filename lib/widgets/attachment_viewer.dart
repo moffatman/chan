@@ -344,6 +344,8 @@ class AttachmentViewerController extends ChangeNotifier {
 			return;
 		}
 		try {
+			attachment.width ??= dw;
+			attachment.height ??= dh;
 			await _videoPlayerController?.setSize(height: dh, width: dw);
 		}
 		on UnsupportedError {
