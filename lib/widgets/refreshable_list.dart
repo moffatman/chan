@@ -3383,12 +3383,16 @@ extension _Recurve on Curve {
 	}) {
 		// Recurved curve
 		final baseIn = ((current - start) / (end - start));
-		if (baseIn >= 0.98 || baseIn.isNaN || baseIn.isInfinite) {
+		if (baseIn <= 0.02 || baseIn >= 0.98 || baseIn.isNaN || baseIn.isInfinite) {
 			// Give up
 			return Curves.easeOut;
 		}
 		final slopeIn = (end - current) / (end - start);
 		final baseOut = transform(baseIn);
+		if (baseOut == 0) {
+			// Give up
+			return Curves.easeOut;
+		}
 		final slopeOut = 1 / (1 - baseOut);
 		return _RecurvedCurve(
 			curve: this,
