@@ -69,8 +69,19 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 	}
 
 	void _newNotification(Imageboard imageboard, PushNotification notification) async {
-		if (imageboard.persistence.getThreadStateIfExists(notification.target.thread)?.youIds.contains(notification.target.postId) ?? false) {
+		final threadState = imageboard.persistence.getThreadStateIfExists(notification.target.thread);
+		if (threadState?.youIds.contains(notification.target.postId) ?? false) {
 			// Push server won race first, don't show this notification
+			return;
+		}
+		await threadState?.ensureThreadLoaded();
+		if (
+			// This post is loaded locally
+			threadState?.thread?.posts_.any((p) => p.id == notification.target.postId) == true &&
+			// It's not in the set of unseen posts
+			threadState?.unseenPostIds.data.contains(notification.target.postId) == false
+		) {
+			// We already saw this post locally
 			return;
 		}
 		final autoCloseAnimation = AnimationController(
