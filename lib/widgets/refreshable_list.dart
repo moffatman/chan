@@ -3122,7 +3122,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			return (_items[targetIndex].cachedOffset != null);
 		}
 		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
-			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 15 && targetIndex == currentTargetIndex) {
+			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 7 && targetIndex == currentTargetIndex) {
 				// Keep trying
 			}
 			if (initialContentId != contentId) {
