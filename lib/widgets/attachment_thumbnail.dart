@@ -213,9 +213,10 @@ class AttachmentThumbnail extends StatelessWidget {
 				filterQuality: filterQuality,
 				loadStateChanged: (loadstate) {
 					if (loadstate.extendedImageLoadState == LoadState.loading) {
-						return SizedBox(
+						return Container(
 							width: effectiveWidth,
 							height: effectiveHeight,
+							color: barColor,
 							child: const Center(
 								child: CircularProgressIndicator.adaptive()
 							)
