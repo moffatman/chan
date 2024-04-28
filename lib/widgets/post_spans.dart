@@ -691,7 +691,7 @@ class PostBoardLinkSpan extends PostSpan {
 	@override
 	build(context, zone, settings, theme, options) {
 		return TextSpan(
-			text: zone.imageboard.site.isReddit ? '/r/$board' : '>>/$board/',
+			text: zone.imageboard.site.formatBoardLink(board),
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? theme.secondaryColor,
 				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
@@ -2258,7 +2258,7 @@ TextSpan buildPostInfoRow({
 		// the line break.
 		children.removeLast();
 	}
-	if (site.isReddit) {
+	if (site.supportsPostUpvotes) {
 		children.addAll([
 			WidgetSpan(
 				child: Icon(CupertinoIcons.arrow_up, size: 15, color: theme.primaryColorWithBrightness(0.5)),
@@ -2363,7 +2363,9 @@ TextSpan buildDraftInfoRow({
 		// the line break.
 		children.removeLast();
 	}
-	if (imageboard.site.isReddit) {
+	if (post.threadId == null
+				? imageboard.site.supportsThreadUpvotes :
+				  imageboard.site.supportsPostUpvotes) {
 		children.addAll([
 			WidgetSpan(
 				child: Icon(CupertinoIcons.arrow_up, size: 15, color: theme.primaryColorWithBrightness(0.5)),

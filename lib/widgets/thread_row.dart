@@ -128,7 +128,7 @@ class ThreadCounters extends StatelessWidget {
 						Text(latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
 						const SizedBox(width: 4),
 					],
-					if (site.isReddit || site.isHackerNews) ...[
+					if (site.supportsThreadUpvotes) ...[
 						Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
 						const SizedBox(width: 2),
 						Text(latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),

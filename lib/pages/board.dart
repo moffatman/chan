@@ -197,15 +197,7 @@ class BoardPageState extends State<BoardPage> {
 	bool _skipNextIndicatorSwipe = false;
 
 	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.name];
-	CatalogVariant get _defaultGlobalVariant {
-		if (context.read<ImageboardSite?>()?.isReddit ?? false) {
-			return Settings.instance.redditCatalogVariant;
-		}
-		if (context.read<ImageboardSite?>()?.isHackerNews ?? false) {
-			return Settings.instance.hackerNewsCatalogVariant;
-		}
-		return Settings.instance.catalogVariant;
-	}
+	CatalogVariant? get _defaultGlobalVariant => context.read<ImageboardSite?>()?.defaultCatalogVariant;
 
 	@override
 	void initState() {
@@ -513,7 +505,7 @@ class BoardPageState extends State<BoardPage> {
 		final settings = context.watch<Settings>();
 		final mouseSettings = context.watch<MouseSettings>();
 		final persistence = context.watch<Persistence?>();
-		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant);
+		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant) ?? CatalogVariant.unsorted;
 		final openInNewTabZone = context.read<OpenInNewTabZone?>();
 		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.name] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
@@ -910,15 +902,7 @@ class BoardPageState extends State<BoardPage> {
 							}
 							switch (choice.$2) {
 								case _ThreadSortingMethodScope.global:
-									if (site?.isReddit ?? false) {
-										Settings.redditCatalogVariantSetting.value = choice.$1!;
-									}
-									else if (site?.isHackerNews ?? false) {
-										Settings.hackerNewsCatalogVariantSetting.value = choice.$1!;
-									}
-									else {
-										Settings.catalogVariantSetting.value = choice.$1!;
-									}
+									site?.defaultCatalogVariant = choice.$1!;
 									break;
 								case _ThreadSortingMethodScope.board:
 									persistence?.browserState.catalogVariants[board!.name] = choice.$1!;

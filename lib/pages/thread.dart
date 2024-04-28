@@ -674,7 +674,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _scrollIfWarranted([Duration delayBeforeScroll = Duration.zero]) async {
 		final int? explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
-		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && (context.read<ImageboardSite>().isReddit || context.read<ImageboardSite>().isHackerNews) && persistentState.firstVisiblePostId == null))) {
+		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && context.read<ImageboardSite>().useTree && persistentState.firstVisiblePostId == null))) {
 			await _blockAndScrollToPostIfNeeded(delayBeforeScroll: delayBeforeScroll);
 		}
 	}
@@ -1147,7 +1147,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final sortingMethod = context.select<Persistence, PostSortingMethod>((_) => persistentState.effectivePostSortingMethod);
 		zone.postSortingMethods = [
 			if (sortingMethod == PostSortingMethod.replyCount) (a, b) => b.replyCount.compareTo(a.replyCount)
-			else if ((site.isReddit || site.isHackerNews) && !useTree) (a, b) => a.id.compareTo(b.id)
+			else if (site.useTree && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
 		zone.style = useTree ? PostSpanZoneStyle.tree : PostSpanZoneStyle.linear;
 		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);

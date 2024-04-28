@@ -1329,9 +1329,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		);
 	}
 	bool get supportsPosting => true;
+	bool get supportsThreadUpvotes => false;
+	bool get supportsPostUpvotes => false;
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority}) async => throw UnimplementedError();
-	bool get isHackerNews => false;
-	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;
 	bool get supportsPushNotifications => false;
 	bool get supportsUserInfo => false;
@@ -1376,6 +1376,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	List<ThreadVariant> get threadVariants => const [];
 	String formatBoardName(String name) => '/$name/';
 	String formatBoardNameWithoutTrailingSlash(String name) => '/$name';
+	String formatBoardLink(String name) => '>>/$name/';
 	@mustCallSuper
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
 		_catalogCache.addAll(oldSite._catalogCache);
@@ -1449,6 +1450,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	};
 	int? get subjectCharacterLimit => null;
 	bool get hasEmailLinkCookieAuth => false;
+	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
+	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
 }
 
 abstract class ImageboardSiteLoginSystem {

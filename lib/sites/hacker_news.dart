@@ -4,6 +4,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/sites/4chan.dart';
 
@@ -556,7 +557,7 @@ class SiteHackerNews extends ImageboardSite {
 	@override
 	bool get supportsPosting => false;
 	@override
-	bool get isHackerNews => true;
+	bool get supportsThreadUpvotes => true;
 	@override
 	bool get supportsMultipleBoards => false;
 	@override
@@ -684,6 +685,11 @@ class SiteHackerNews extends ImageboardSite {
 			totalKarma: response.data['karma']
 		);
 	}
+
+	@override
+	CatalogVariant get defaultCatalogVariant => Settings.instance.hackerNewsCatalogVariant;
+	@override
+	set defaultCatalogVariant(CatalogVariant value) => Settings.hackerNewsCatalogVariantSetting.set(Settings.instance, value);
 
 	@override
 	bool operator == (Object other) =>

@@ -7,6 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
@@ -1298,7 +1299,9 @@ class SiteReddit extends ImageboardSite {
 	@override
 	bool get supportsPosting => false;
 	@override
-	bool get isReddit => true;
+	bool get supportsThreadUpvotes => true;
+	@override
+	bool get supportsPostUpvotes => true;
 	@override
 	bool get hasPagedCatalog => true;
 
@@ -1364,6 +1367,9 @@ class SiteReddit extends ImageboardSite {
 	String formatBoardNameWithoutTrailingSlash(String name) => '/r/$name';
 
 	@override
+	String formatBoardLink(String name) => '/r/$name';
+
+	@override
 	int placeOrphanPost(List<Post> posts, Post post) {
 		// No idea where to put it
 		posts.add(post);
@@ -1388,6 +1394,11 @@ class SiteReddit extends ImageboardSite {
 			linkKarma: aboutResponse.data['data']['link_karma']
 		);
 	}
+
+	@override
+	CatalogVariant get defaultCatalogVariant => Settings.instance.redditCatalogVariant;
+	@override
+	set defaultCatalogVariant(CatalogVariant value) => Settings.redditCatalogVariantSetting.set(Settings.instance, value);
 
 	@override
 	bool operator == (Object other) =>
