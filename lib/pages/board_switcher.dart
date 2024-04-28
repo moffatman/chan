@@ -192,7 +192,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			return
 				settings.showBoard(board.item) &&
 				(board.item.name.toLowerCase().contains(normalized) ||
-				 board.item.title.toLowerCase().contains(normalized));
+				 board.item.title.toLowerCase().contains(normalized) ||
+				 board.imageboard.site.name.toLowerCase().contains(normalized));
 		}).toList();
 		if (searchString.isNotEmpty) {
 			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
@@ -204,6 +205,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		});
 		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
 			return (b.item.name.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.name.contains(normalized) ? 1 : 0);
+		});
+		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
+			return (b.item.title.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.title.contains(normalized) ? 1 : 0);
 		});
 		final imageboards = allImageboards.toList();
 		imageboards.remove(currentImageboard);
