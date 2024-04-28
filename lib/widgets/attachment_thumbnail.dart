@@ -113,7 +113,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			url = attachment.url;
 		}
 		if (spoiler && !settings.alwaysShowSpoilers) {
-			url = s.getSpoilerImageUrl(attachment, thread: thread).toString();
+			url = s.getSpoilerImageUrl(attachment, thread: thread)?.toString() ?? '';
 		}
 		if (url.isEmpty) {
 			return SizedBox(

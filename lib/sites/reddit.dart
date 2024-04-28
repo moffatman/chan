@@ -1085,12 +1085,6 @@ class SiteReddit extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	@override
-	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		// TODO: implement getSpoilerImageUrl
-		throw UnimplementedError();
-	}
-
 	Flag? _makeFlag(List<dynamic>? data) {
 		if (data == null || data.isEmpty) {
 			return null;

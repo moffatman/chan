@@ -294,11 +294,6 @@ class SiteDvach extends ImageboardSite {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => SiteLainchan.decodeGenericUrl(baseUrl, url);
 
 	@override
-	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		throw UnimplementedError();
-	}
-
-	@override
 	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [
 		greentextSnippet
 	];

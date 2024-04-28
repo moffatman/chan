@@ -1297,7 +1297,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		}
 		throw Exception('Search failed - exhausted all archives$s');
 	}
-	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
+	Uri? getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) => null;
 	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
 		return WebReportMethod(Uri.parse(getWebUrlImpl(post.board, post.threadId, post.postId)));
 	}

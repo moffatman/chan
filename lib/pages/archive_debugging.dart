@@ -4,7 +4,6 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
-import 'package:chan/models/attachment.dart';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -61,11 +60,6 @@ class WrappedArchive extends ImageboardSite {
   @override
   Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) {
     return archive.getPost(board, id, priority: priority);
-  }
-
-  @override
-  Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-    throw UnimplementedError();
   }
 
   @override

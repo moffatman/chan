@@ -960,7 +960,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
+	Uri? getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
 		final customSpoilerId = (thread == null) ? null : _threadCache['${thread.board}/${thread.id}']?.thread.customSpoilerId;
 		if (customSpoilerId != null) {
 			return Uri.https(staticUrl, '/image/spoiler-${attachment.board}$customSpoilerId.png');

@@ -349,11 +349,6 @@ class SiteLynxchan extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	@override
-	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		throw UnimplementedError();
-	}
-
 	Post _makePost(String board, int threadId, int id, Map<String, dynamic> obj) {
 		return Post(
 			board: board,

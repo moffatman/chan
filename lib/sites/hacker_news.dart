@@ -501,12 +501,6 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		// TODO: implement getSpoilerImageUrl
-		throw UnimplementedError();
-	}
-
-	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final item = await _getAlgolia(thread.id, priority: priority);
 		if (item is! _HNStory) {

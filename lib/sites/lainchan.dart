@@ -420,11 +420,6 @@ class SiteLainchan extends ImageboardSite {
 		return WebReportMethod(Uri.https(baseUrl, '/report.php?post=delete_${post.postId}&board=${post.board}'));
 	}
 
-	@override
-	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		return Uri();
-	}
-
 	String _getWebUrl(String board, {int? threadId, int? postId, bool mod = false}) {
 		String threadUrl = 'https://$baseUrl/${mod ? 'mod.php?/' : ''}$board/';
 		if (threadId != null) {

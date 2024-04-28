@@ -219,11 +219,6 @@ class SiteFutaba extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	@override
-	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		throw UnimplementedError();
-	}
-
 	Post _makePost(dom.Element element, String board, int threadId, List<Post> precedingPosts) {
 		// Futaba has implicit quotes, need to find the text in previous posts in thread.
 		final blockquote = element.querySelector('blockquote')!;
