@@ -221,8 +221,15 @@ class AttachmentThumbnail extends StatelessWidget {
 							)
 						);
 					}
-					else if (loadstate.extendedImageLoadState == LoadState.failed ||
-						(attachment.type == AttachmentType.url && ((loadstate.extendedImageInfo?.image.height ?? 0) < 5) && ((loadstate.extendedImageInfo?.image.width ?? 0) < 5))) {
+					else if (
+						// Image loading failed
+						loadstate.extendedImageLoadState == LoadState.failed ||
+						(
+							// The real image dimensions were 1x1 (thumbnailer-failed placeholder)
+							pixelation > 1 &&
+							(loadstate.extendedImageInfo?.image.height ?? 0) == 1) &&
+							((loadstate.extendedImageInfo?.image.width ?? 0) == 1)
+						) {
 						if (loadstate.extendedImageLoadState == LoadState.failed) {
 							onLoadError?.call(loadstate.lastException, loadstate.lastStack);
 						}
