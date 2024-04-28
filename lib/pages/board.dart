@@ -1116,7 +1116,7 @@ class BoardPageState extends State<BoardPage> {
 																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 															}
 															_lastCatalogUpdateTime = DateTime.now();
-															if (settings.hideOldStickiedThreads && list.length > 100) {
+															if (settings.hideOldStickiedThreads && board?.name != 'chance') {
 																list = list.where((thread) {
 																	return !thread.isSticky || _lastCatalogUpdateTime!.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
 																}).toList();
