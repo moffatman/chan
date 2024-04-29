@@ -1047,12 +1047,15 @@ class ThreadPageState extends State<ThreadPage> {
 		if (widget.thread != thread.identifier) {
 			throw Exception('Thread changed');
 		}
+		final oldIds = thread.posts_.map((p) => p.id).toSet();
+		persistentState.unseenPostIds.data.addAll(newChildren.map((p) => p.id).where((id) => !oldIds.contains(id) && !persistentState.youIds.contains(id)));
 		thread.mergePosts(null, newChildren, site.placeOrphanPost);
 		if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
 			// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
 			thread.posts_.tryFirstWhere((p) => p.id == ids.single.childId)?.hasOmittedReplies = false;
 		}
 		zone.addThread(thread);
+		persistentState.didMutateThread();
 		persistentState.save();
 		return thread.posts;
 	}
