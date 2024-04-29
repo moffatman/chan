@@ -8,6 +8,7 @@ import 'package:chan/pages/settings/common.dart';
 import 'package:chan/pages/settings/data.dart';
 import 'package:chan/pages/settings/site.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/pages/tree_debugging.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
@@ -65,8 +66,8 @@ class _SettingsPageState extends State<SettingsPage> {
 		final settings = context.watch<Settings>();
 		return [
 			GestureDetector(
-				onDoubleTap: () {
-					showAdaptiveDialog(
+				onDoubleTap: () async {
+					final route = await showAdaptiveDialog<Route>(
 						context: context,
 						barrierDismissible: true,
 						builder: (context) => AdaptiveAlertDialog(
@@ -74,6 +75,14 @@ class _SettingsPageState extends State<SettingsPage> {
 								loginSystem: site.loginSystem!
 							),
 							actions: [
+								AdaptiveDialogAction(
+									onPressed: () {
+										Navigator.pop(context, adaptivePageRoute(
+											builder: (context) => const TreeDebuggingPage()
+										));
+									},
+									child: const Text('Tree Debugging')
+								),
 								AdaptiveDialogAction(
 									onPressed: () {
 										Settings.showPerformanceOverlaySetting.value = !settings.showPerformanceOverlay;
@@ -88,6 +97,9 @@ class _SettingsPageState extends State<SettingsPage> {
 							]
 						)
 					);
+					if (mounted && route != null) {
+						Navigator.push(context, route);
+					}
 				},
 				child: const Text('Development News')
 			),
