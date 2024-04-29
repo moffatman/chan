@@ -1377,6 +1377,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String formatBoardName(String name) => '/$name/';
 	String formatBoardNameWithoutTrailingSlash(String name) => '/$name';
 	String formatBoardLink(String name) => '>>/$name/';
+	String formatUsername(String name) => name;
 	@mustCallSuper
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
 		_catalogCache.addAll(oldSite._catalogCache);

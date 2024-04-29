@@ -279,7 +279,7 @@ class ThreadRow extends StatelessWidget {
 		final headerRow = [
 			if (settings.showNameInCatalog && !(settings.hideDefaultNamesInCatalog && latestThread.posts_.first.name == site.defaultUsername)) ...[
 				TextSpan(
-					text: settings.filterProfanity(latestThread.posts_.first.name),
+					text: settings.filterProfanity(site.formatUsername(latestThread.posts_.first.name)),
 					style: TextStyle(
 						fontWeight: FontWeight.w600,
 						fontSize: subheaderFontSize

@@ -1406,7 +1406,7 @@ class PostUserLinkSpan extends PostSpan {
 	@override
 	build(context, zone, settings, theme, options) {
 		return TextSpan(
-			text: '/u/$username',
+			text: '/u/${zone.imageboard.site.formatUsername(username)}',
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? theme.secondaryColor,
 				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
@@ -2123,12 +2123,12 @@ TextSpan buildPostInfoRow({
 			]
 			else if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
-					text: settings.filterProfanity(post.name) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (isOP ? ' (OP)' : ''),
+					text: settings.filterProfanity(site.formatUsername(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (isOP ? ' (OP)' : ''),
 					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : (isOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
 					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
 						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
-							alertError(context, 'Could not find any posts with name "${post.name}". This is likely a problem with Chance...');
+							alertError(context, 'Could not find any posts with name "${site.formatUsername(post.name)}". This is likely a problem with Chance...');
 						}
 						else {
 							WeakNavigator.push(context, PostsPage(

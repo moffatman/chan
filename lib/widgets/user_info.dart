@@ -75,7 +75,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 										child: ImageboardIcon(size: 24)
 									),
 									Expanded(
-										child: Text(widget.username, style: const TextStyle(
+										child: Text(site.formatUsername(widget.username), style: const TextStyle(
 											fontSize: 20,
 											fontWeight: FontWeight.w600
 										))
@@ -153,7 +153,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 									openSearch(context: context, query: ImageboardArchiveSearchQuery(
 										imageboardKey: context.read<Imageboard>().key,
 										boards: site.supportsSearch(null).options.name ? [] : [widget.board],
-										name: widget.username
+										name: site.formatUsername(widget.username)
 									));
 								} : null,
 								child: Row(
