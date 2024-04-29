@@ -19,7 +19,7 @@ extension on Attachment {
 
 List<ContextMenuAction> buildImageSearchActions(BuildContext context, Future<Attachment?> Function() getAttachment) {
 	return [
-		if (context.read<ImageboardSite?>()?.supportsSearch('').options == ImageboardSearchOptions.all) ContextMenuAction(
+		if (context.read<ImageboardSite?>()?.supportsSearch('').options.imageMD5 ?? false) ContextMenuAction(
 			trailingIcon: Icons.image_search,
 			onPressed: () async {
 				final attachment = await getAttachment();

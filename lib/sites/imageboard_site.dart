@@ -901,19 +901,43 @@ const greentextSnippet = ImageboardSnippet.complex(
 	previewBuilder: _previewQuoteSnippet
 );
 
-enum ImageboardSearchOptions {
-	none,
-	textOnly,
-	nameAndTextOnly,
-	all;
-	bool get name => switch (this) {
-		none || textOnly => false,
-		nameAndTextOnly || all => true
-	};
-	bool get text => switch (this) {
-		none => false,
-		textOnly || nameAndTextOnly || all => true
-	};
+class ImageboardSearchOptions {
+	final bool text;
+	final bool name;
+	final bool date;
+	final bool imageMD5;
+	final bool subject;
+	final bool trip;
+	final bool isDeleted;
+	final bool withMedia;
+	final Set<PostTypeFilter> supportedPostTypeFilters;
+
+	const ImageboardSearchOptions({
+		this.text = false,
+		this.name = false,
+		this.date = false,
+		this.imageMD5 = false,
+		this.subject = false,
+		this.trip = false,
+		this.isDeleted = false,
+		this.withMedia = false,
+		this.supportedPostTypeFilters = const {PostTypeFilter.none}
+	});
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is ImageboardSearchOptions &&
+		other.text == text &&
+		other.name == name &&
+		other.date == date &&
+		other.subject == subject &&
+		other.trip == trip &&
+		other.isDeleted == isDeleted &&
+		other.withMedia == withMedia &&
+		setEquals(other.supportedPostTypeFilters, supportedPostTypeFilters);
+	@override
+	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, supportedPostTypeFilters);
 }
 
 class ImageboardSearchMetadata {
@@ -1320,12 +1344,27 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		if (board != null && archives.isNotEmpty) {
 			return ImageboardSearchMetadata(
 				name: '$name archives',
-				options: ImageboardSearchOptions.all
+				options: const ImageboardSearchOptions(
+					text: true,
+					name: true,
+					date: true,
+					supportedPostTypeFilters: {
+						PostTypeFilter.none,
+						PostTypeFilter.onlyOPs,
+						PostTypeFilter.onlyReplies,
+						PostTypeFilter.onlyStickies
+					},
+					imageMD5: true,
+					isDeleted: true,
+					withMedia: true,
+					subject: true,
+					trip: true
+				)
 			);
 		}
 		return ImageboardSearchMetadata(
 			name: name,
-			options: ImageboardSearchOptions.none
+			options: const ImageboardSearchOptions()
 		);
 	}
 	bool get supportsPosting => true;

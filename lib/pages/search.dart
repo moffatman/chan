@@ -317,6 +317,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 			)
 		);
 		final support = imageboard?.site.supportsSearch(query.boards.tryFirst);
+		final options = support?.options ?? const ImageboardSearchOptions();
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			disableAutoBarHiding: true, // Don't hide search bar
@@ -530,18 +531,21 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				switchOutCurve: Curves.easeOut,
 				child: (_searchFocused &&
 				        query.imageboardKey != null &&
-								(support?.options.name ?? false)
+								(options.name || options.imageMD5 || options.supportedPostTypeFilters.length > 1 || options.date || options.subject || options.trip || options.isDeleted || options.withMedia)
 								) ? ListView(
 					key: const ValueKey(true),
 					children: [
 						const SizedBox(height: 16),
-						if (support?.options == ImageboardSearchOptions.all) ...[
+						if (options.supportedPostTypeFilters.length > 1) ...[
 							AdaptiveChoiceControl<PostTypeFilter>(
-								children: const {
-									PostTypeFilter.none: (null, 'All posts'),
-									PostTypeFilter.onlyOPs: (null, 'Threads'),
-									PostTypeFilter.onlyReplies: (null, 'Replies'),
-									PostTypeFilter.onlyStickies: (null, 'Stickies')
+								children: {
+									for (final type in options.supportedPostTypeFilters)
+										type: switch (type) {
+											PostTypeFilter.none => (null, 'All posts'),
+											PostTypeFilter.onlyOPs => (null, 'Threads'),
+											PostTypeFilter.onlyReplies => (null, 'Replies'),
+											PostTypeFilter.onlyStickies => (null, 'Stickies')
+										}
 								},
 								groupValue: query.postTypeFilter,
 								onValueChanged: (newValue) {
@@ -550,12 +554,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								}
 							),
 							const SizedBox(height: 16),
+						],
+						if (options.withMedia || options.imageMD5) ...[
 							AdaptiveChoiceControl<_MediaFilter>(
-								children: const {
+								children: {
 									_MediaFilter.none: (null, 'All posts'),
-									_MediaFilter.onlyWithMedia: (null, 'With images'),
-									_MediaFilter.onlyWithNoMedia: (null, 'Without images'),
-									_MediaFilter.withSpecificMedia: (null, 'With MD5')
+									if (options.withMedia) _MediaFilter.onlyWithMedia: (null, 'With images'),
+									if (options.withMedia) _MediaFilter.onlyWithNoMedia: (null, 'Without images'),
+									if (options.imageMD5) _MediaFilter.withSpecificMedia: (null, 'With MD5')
 								},
 								groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
 								onValueChanged: (newValue) async {
@@ -576,6 +582,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								}
 							),
 							const SizedBox(height: 16),
+						],
+						if (options.isDeleted) ...[
 							AdaptiveChoiceControl<PostDeletionStatusFilter>(
 								children: const {
 									PostDeletionStatusFilter.none: (null, 'All posts'),
@@ -589,6 +597,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								}
 							),
 							const SizedBox(height: 16),
+						],
+						if (options.date) ...[
 							Wrap(
 								runSpacing: 16,
 								alignment: WrapAlignment.center,
@@ -639,22 +649,22 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								]
 							),
 						],
-						Wrap(
+						if (options.name || options.subject || options.trip) Wrap(
 							alignment: WrapAlignment.center,
 							runAlignment: WrapAlignment.center,
 							children: [
 								for (final field in [
-									if (support?.options == ImageboardSearchOptions.all) (
+									if (options.subject) (
 										name: 'Subject',
 										cb: (String s) => query.subject = s,
 										controller: _subjectFieldController
 									),
-									(
+									if (options.name) (
 										name: 'Name',
 										cb: (String s) => query.name = s,
 										controller: _nameFieldController
 									),
-									if (support?.options == ImageboardSearchOptions.all) (
+									if (options.trip) (
 										name: 'Trip',
 										cb: (String s) => query.trip = s,
 										controller: _tripFieldController
@@ -676,7 +686,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								)
 							]
 						),
-						if (support?.options == ImageboardSearchOptions.all && query.md5 != null) Container(
+						if (options.imageMD5) Container(
 							padding: const EdgeInsets.only(top: 16),
 							alignment: Alignment.center,
 							child: Text('MD5: ${query.md5}')

@@ -796,7 +796,7 @@ class BoardPageState extends State<BoardPage> {
 		if (imageboard != null) {
 			navigationBarBoardName = board != null ? imageboard.site.formatBoardName(board!.name) : 'Select Board';
 		}
-		final supportsSearch = imageboard?.site.supportsSearch(board?.name) ?? const ImageboardSearchMetadata(name: '', options: ImageboardSearchOptions.none);
+		final supportsSearch = imageboard?.site.supportsSearch(board?.name) ?? const ImageboardSearchMetadata(name: '', options: ImageboardSearchOptions());
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			bar: AdaptiveBar(

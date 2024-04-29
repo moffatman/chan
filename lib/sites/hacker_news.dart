@@ -550,7 +550,10 @@ class SiteHackerNews extends ImageboardSite {
 	@override
 	ImageboardSearchMetadata supportsSearch(String? board) {
 		return ImageboardSearchMetadata(
-			options: ImageboardSearchOptions.nameAndTextOnly,
+			options: const ImageboardSearchOptions(
+				name: true,
+				text: true
+			),
 			name: name
 		);
 	}

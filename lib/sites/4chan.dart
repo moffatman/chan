@@ -1249,7 +1249,7 @@ class Site4Chan extends ImageboardSite {
 		if (board == null) {
 			return ImageboardSearchMetadata(
 				name: searchUrl,
-				options: ImageboardSearchOptions.textOnly
+				options: const ImageboardSearchOptions(text: true)
 			);
 		}
 		return super.supportsSearch(board);
