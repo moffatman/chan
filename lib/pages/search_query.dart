@@ -239,7 +239,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 									),
 									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
-									countsUnreliable: true,
+									countsUnreliable: result.data!.countsUnreliable,
 									semanticParentIds: const [-7],
 									showBoardName: true,
 									showLastReplies: true,

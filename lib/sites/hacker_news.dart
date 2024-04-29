@@ -615,6 +615,7 @@ class SiteHackerNews extends ImageboardSite {
 		return ImageboardArchiveSearchResultPage(
 			page: response.data['page'] + 1,
 			maxPage: response.data['nbPages'],
+			countsUnreliable: false,
 			archive: this,
 			posts: (response.data['hits'] as List).map((hit) {
 				final id = int.parse(hit['objectID']);
@@ -644,7 +645,7 @@ class SiteHackerNews extends ImageboardSite {
 				);
 				return ImageboardArchiveSearchResult.thread(Thread(
 					posts_: [op],
-					replyCount: 0,
+					replyCount: hit['num_comments'],
 					imageCount: 0,
 					id: op.id,
 					board: '',

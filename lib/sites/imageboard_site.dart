@@ -780,11 +780,13 @@ class ImageboardArchiveSearchResult {
 
 class ImageboardArchiveSearchResultPage {
 	final List<ImageboardArchiveSearchResult> posts;
+	final bool countsUnreliable;
 	final int page;
 	final int? maxPage;
 	final ImageboardSiteArchive archive;
 	ImageboardArchiveSearchResultPage({
 		required this.posts,
+		required this.countsUnreliable,
 		required this.page,
 		required this.maxPage,
 		required this.archive

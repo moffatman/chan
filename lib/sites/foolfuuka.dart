@@ -319,7 +319,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return Thread(
 			board: thread.board,
 			isDeleted: op['deleted'] == '1',
-			replyCount: posts.length - 1,
+			replyCount: op['nreplies'] ?? (posts.length - 1),
 			imageCount: posts.skip(1).expand((post) => post.attachments).length,
 			isArchived: true,
 			posts_: posts,
@@ -473,6 +473,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map(_makeResult))).toList(),
 			page: page,
 			maxPage: (data['meta']['total_found'] / 25).ceil(),
+			countsUnreliable: true,
 			archive: this
 		);
 	}

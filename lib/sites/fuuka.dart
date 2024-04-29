@@ -312,6 +312,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		return ImageboardArchiveSearchResultPage(
 			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map((d) => _makePost(d, priority: RequestPriority.interactive)))).map((p) => ImageboardArchiveSearchResult.post(p)).toList(),
 			page: page,
+			countsUnreliable: true,
 			maxPage: 100,
 			archive: this
 		);

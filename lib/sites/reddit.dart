@@ -1253,6 +1253,7 @@ class SiteReddit extends ImageboardSite {
 			));
 		}
 		return ImageboardArchiveSearchResultPage(
+			countsUnreliable: false,
 			page: page,
 			maxPage: // No next-page hint AND
 			         response.data['data']['after'] == null &&
