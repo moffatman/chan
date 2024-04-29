@@ -1497,7 +1497,7 @@ class _KeepAliverState extends State<KeepAliver> with AutomaticKeepAliveClientMi
 	bool get wantKeepAlive => true;
 }
 
-Future<Attachment?> whichAttachment(BuildContext context, List<Attachment> attachments) async {
+Future<Attachment?> whichAttachment(BuildContext context, Iterable<Attachment> attachments) async {
 	if (attachments.isEmpty) {
 		return null;
 	}

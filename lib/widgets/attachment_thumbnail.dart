@@ -22,7 +22,7 @@ class TaggedAttachment {
 	TaggedAttachment({
 		required this.attachment,
 		required this.semanticParentIds
-	}) : _tag = '${semanticParentIds.join('/')}/${attachment.id}';
+	}) : _tag = '${semanticParentIds.join('/')}/${attachment.id}/${attachment.inlineWithinPostId}';
 
 	@override
 	bool operator == (Object other) {

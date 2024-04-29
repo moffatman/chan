@@ -277,7 +277,7 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 		}
 		if (newThread != threadState.thread) {
-			newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site.placeOrphanPost);
+			newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site);
 			threadState.thread = newThread;
 			threadState.save();
 			return true;
@@ -326,7 +326,7 @@ class ThreadWatcher extends ChangeNotifier {
 					try {
 						final newThread = await site.getThread(threadState.thread!.identifier, priority: RequestPriority.functional);
 						if (newThread != threadState.thread) {
-							newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site.placeOrphanPost);
+							newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site);
 							threadState.thread = newThread;
 							await threadState.save();
 						}

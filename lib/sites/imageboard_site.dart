@@ -31,6 +31,7 @@ import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/sites/lainchan2.dart';
 import 'package:chan/sites/wizchan.dart';
+import 'package:chan/sites/xenforo.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
@@ -784,12 +785,14 @@ class ImageboardArchiveSearchResultPage {
 	final int page;
 	final int? maxPage;
 	final ImageboardSiteArchive archive;
+	final Map<String, Object> memo;
 	ImageboardArchiveSearchResultPage({
 		required this.posts,
 		required this.countsUnreliable,
 		required this.page,
 		required this.maxPage,
-		required this.archive
+		required this.archive,
+		this.memo = const {}
 	});
 }
 
@@ -1372,6 +1375,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get supportsPosting => true;
 	bool get supportsThreadUpvotes => false;
 	bool get supportsPostUpvotes => false;
+	int? get postsPerPage => null;
+	bool get isPaged => postsPerPage != null;
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority}) async => throw UnimplementedError();
 	bool get supportsMultipleBoards => true;
 	bool get supportsPushNotifications => false;
@@ -1683,6 +1688,16 @@ ImageboardSite makeSite(dynamic data) {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()
 			}
+		);
+	}
+	else if (data['type'] == 'xenforo') {
+		return SiteXenforo(
+			name: data['name'],
+			baseUrl: data['baseUrl'],
+			basePath: data['basePath'],
+			faviconPath: data['faviconPath'],
+			postsPerPage: data['postsPerPage'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else {

@@ -48,7 +48,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 	final Object? separatorSentinel;
 	final String? id;
 	final void Function(int, int)? _didFinishLayout;
-	final bool Function(T)? shouldIgnoreForHeightEstimation;
+	final double? Function(T)? fastHeightEstimate;
 	final NullableIndexedWidgetBuilder? separatorBuilder;
 
 	const SliverDontRebuildChildBuilderDelegate(
@@ -64,7 +64,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
     super.semanticIndexCallback,
     super.semanticIndexOffset,
 		void Function(int, int)? didFinishLayout,
-		this.shouldIgnoreForHeightEstimation,
+		this.fastHeightEstimate,
 		this.separatorBuilder
   }) : _didFinishLayout = didFinishLayout;
 
@@ -88,46 +88,65 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 				(separatorBuilder == null && lastIndex == items.length - 1)) {
 			return trailingScrollOffset;
 		}
-		final shouldIgnore = shouldIgnoreForHeightEstimation;
-		int totalCount;
+		final estimater = fastHeightEstimate;
+		int knownCount;
 		int remainingCount;
-		if (shouldIgnore == null) {
-			totalCount = separatorBuilder == null ? lastIndex : lastIndex ~/ 2;
-			remainingCount = items.length - totalCount;
+		double knownOffset = trailingScrollOffset;
+		if (estimater == null) {
+			knownCount = separatorBuilder == null ? lastIndex : lastIndex ~/ 2;
+			remainingCount = items.length - knownCount;
 		}
 		else {
 			remainingCount = 0;
 			if (separatorBuilder != null) {
 				for (int i = lastIndex ~/ 2; i < items.length; i++) {
-					if (!shouldIgnore(items[i])) {
+					final estimate = estimater(items[i]);
+					if (estimate != 0) {
 						remainingCount++;
 					}
 				}
 			}
 			else {
 				for (int i = lastIndex; i < items.length; i++) {
-					if (!shouldIgnore(items[i])) {
+					final estimate = estimater(items[i]);
+					if (estimate != 0) {
 						remainingCount++;
 					}
 				}
 			}
-			totalCount = 0;
+			knownCount = 0;
 			if (separatorBuilder != null) {
 				for (int i = 0; i <= min(items.length - 1, lastIndex ~/ 2); i++) {
-					if (!shouldIgnore(items[i])) {
-						totalCount++;
+					final estimate = estimater(items[i]);
+					if (estimate != null) {
+						knownOffset -= estimate;
+					}
+					else {
+						knownCount++;
 					}
 				}
 			}
 			else {
 				for (int i = 0; i <= lastIndex; i++) {
-					if (!shouldIgnore(items[i])) {
-						totalCount++;
+					final estimate = estimater(items[i]);
+					if (estimate != null) {
+						knownOffset -= estimate;
+					}
+					else {
+						knownCount++;
 					}
 				}
 			}
 		}
-		final double averageExtent = trailingScrollOffset / totalCount;
+		final double averageExtent;
+		if (knownOffset > 100) {
+			averageExtent = knownOffset / knownCount;
+		}
+		else {
+			// This is a bad situation, due to use of dummies, we are currently
+			// way underestimating the current [pixels]. Idk what to do here, just bail.
+			averageExtent = trailingScrollOffset / knownCount;
+		}
     return trailingScrollOffset + averageExtent * remainingCount;
 	}
 
@@ -284,6 +303,7 @@ class RefreshableListItem<T extends Object> {
 	final T item;
 	final bool representsUnknownStubChildren;
 	final List<ParentAndChildIdentifier> representsKnownStubChildren;
+	final List<int> representsUnloadedPages;
 	final bool highlighted;
 	final bool pinned;
 	bool filterCollapsed;
@@ -307,6 +327,7 @@ class RefreshableListItem<T extends Object> {
 		Set<int>? treeDescendantIds,
 		this.representsUnknownStubChildren = false,
 		this.representsKnownStubChildren = const [],
+		this.representsUnloadedPages = const [],
 		int? depth
 	}) : treeDescendantIds = treeDescendantIds ?? {},
 	     _depth = depth,
@@ -314,7 +335,7 @@ class RefreshableListItem<T extends Object> {
 			 _state = state;
 
 	@override
-	String toString() => 'RefreshableListItem<$T>(item: $item, id: $id, representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}, treeDescendantIds: $treeDescendantIds)';
+	String toString() => 'RefreshableListItem<$T>(item: $item, id: $id, representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}, representsUnloadedPages: $representsUnloadedPages, treeDescendantIds: $treeDescendantIds)';
 
 	@override
 	bool operator == (Object other) =>
@@ -324,6 +345,7 @@ class RefreshableListItem<T extends Object> {
 		(other.id == id) &&
 		(other.representsUnknownStubChildren == representsUnknownStubChildren) &&
 		listEquals(other.representsKnownStubChildren, representsKnownStubChildren) &&
+		listEquals(other.representsUnloadedPages, representsUnloadedPages) &&
 		(other.highlighted == highlighted) &&
 		(other.pinned == pinned) &&
 		(other.filterCollapsed == filterCollapsed) &&
@@ -334,7 +356,7 @@ class RefreshableListItem<T extends Object> {
 		(other._state == _state);
 
 	@override
-	int get hashCode => Object.hash(item, representsUnknownStubChildren, representsKnownStubChildren.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth, _state);
+	int get hashCode => Object.hash(item, representsUnknownStubChildren, representsKnownStubChildren.length, representsUnloadedPages.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth, _state);
 
 	RefreshableListItem<T> copyWith({
 		List<int>? parentIds,
@@ -352,6 +374,7 @@ class RefreshableListItem<T extends Object> {
 		treeDescendantIds: treeDescendantIds,
 		representsUnknownStubChildren: representsUnknownStubChildren ?? this.representsUnknownStubChildren,
 		representsKnownStubChildren: representsKnownStubChildren ?? this.representsKnownStubChildren,
+		representsUnloadedPages: representsUnloadedPages,
 		depth: depth,
 		state: _state
 	);
@@ -360,7 +383,17 @@ class RefreshableListItem<T extends Object> {
 		if (_depth != null) {
 			return _depth!;
 		}
-		final offset = ((_state.widget.treeAdapter?.repliesToOPAreTopLevel ?? false) && parentIds.tryFirst == _state.widget.treeAdapter?.opId) ? -1 : 0;
+		final offset = (
+			(
+				(_state.widget.treeAdapter?.repliesToOPAreTopLevel ?? false) &&
+				parentIds.tryFirst == _state.widget.treeAdapter?.opId
+			) ||
+			(
+				(_state.widget.treeAdapter?.isPaged ?? false) &&
+				// Is parent of a page#
+				(parentIds.tryFirst?.isNegative ?? false)
+			)
+		) ? -1 : 0;
 		if (representsStubChildren) {
 			return max(0, parentIds.length + 1 + offset);
 		}
@@ -388,11 +421,13 @@ class RefreshableTreeAdapter<T extends Object> {
 	final int opId;
 	final double Function(T item, double width) estimateHeight;
 	final bool Function(T item) getIsStub;
+	final bool Function(T item) getIsPageStub;
 	final bool initiallyCollapseSecondLevelReplies;
 	final bool collapsedItemsShowBody;
 	final bool Function(RefreshableListItem<T> item)? filter;
 	final bool repliesToOPAreTopLevel;
 	final bool newRepliesAreLinear;
+	final bool isPaged;
 
 	const RefreshableTreeAdapter({
 		required this.getId,
@@ -403,10 +438,12 @@ class RefreshableTreeAdapter<T extends Object> {
 		required this.wrapTreeChild,
 		required this.estimateHeight,
 		required this.getIsStub,
+		required this.getIsPageStub,
 		required this.initiallyCollapseSecondLevelReplies,
 		required this.collapsedItemsShowBody,
 		required this.repliesToOPAreTopLevel,
 		required this.newRepliesAreLinear,
+		required this.isPaged,
 		this.filter
 	});
 }
@@ -500,6 +537,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final Map<int, int> primarySubtreeParents;
 	final Set<List<int>> loadingOmittedItems = {};
 	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = Map.identity();
+	final Map<_RefreshableTreeItemsCacheKey, bool> _dummyCache = Map.identity();
 	/// If the bool is false, we haven't laid out this item yet.
 	/// Don't show the indicator on the parent.
 	/// That's because its child might end up being shown.
@@ -1222,6 +1260,25 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
+	Future<void> _loadPage(RefreshableListItem<T> value, int page) async {
+		assert(page.isNegative);
+		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id);
+		try {
+			originalList = await widget.treeAdapter!.updateWithStubItems(originalList!, [ParentAndChildIdentifier.same(page)]);
+			sortedList = originalList!.toList();
+			_sortList();
+			setState(() { });
+		}
+		catch (e) {
+			if (context.mounted) {
+				alertError(context, e.toStringDio());
+			}
+		}
+		finally {
+			_refreshableTreeItems.itemLoadingOmittedItemsEnded(value);
+		}
+	}
+
 	void _onUpdateAnimation() {
 		if (DateTime.now().difference(lastUpdateTime ?? DateTime(2000)) > const Duration(seconds: 1)) {
 			update();
@@ -1411,11 +1468,22 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		await update(hapticFeedback: true, extend: true, mergeTrees: true);
 	}
 
-	bool _shouldIgnoreForHeightEstimation(RefreshableListItem<T> item) {
-		return _refreshableTreeItems.isItemHidden(item).isHidden;
+	double? _fastHeightEstimate(RefreshableListItem<T> item) {
+		if (_refreshableTreeItems.isItemHidden(item).isHidden) {
+			return 0;
+		}
+		if (item.representsUnloadedPages.isNotEmpty) {
+			return 50;
+		}
+		if (_refreshableTreeItems._dummyCache[item._key] ?? false) {
+			// Match to dummy builder
+			return 64;
+		}
+		return null;
 	}
 
 	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy) {
+		_refreshableTreeItems._dummyCache[value._key] = dummy;
 		if (dummy) {
 			// Terrible hack
 			if (_refreshableTreeItems.isItemHidden(value).isHidden) {
@@ -1455,7 +1523,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		else {
 			isHidden = null;
 		}
-		if (widget.treeAdapter != null && (useTree || value.representsStubChildren) && !isHidden.isHidden) {
+		if (widget.treeAdapter != null && (useTree || value.representsStubChildren || value.representsUnloadedPages.isNotEmpty) && !isHidden.isHidden) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
 		if (_searchTapped && _searchController.text.isNotEmpty && widget.filteredItemBuilder != null) {
@@ -1464,7 +1532,97 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			);
 		}
 		else {
-			if (value.representsStubChildren) {
+			if (value.representsUnloadedPages.isNotEmpty) {
+				final grey = Settings.instance.theme.primaryColorWithBrightness(0.5);
+				final single = value.representsUnloadedPages.trySingle;
+				if (single != null) {
+					child = CupertinoButton(
+						padding: const EdgeInsets.all(8),
+						onPressed: () => _loadPage(value, value.representsUnloadedPages.first),
+						child: Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								const Icon(CupertinoIcons.doc),
+								const SizedBox(width: 8),
+								Flexible(
+									child: Text(
+										'Page ${value.representsUnloadedPages.first.abs()}',
+										textAlign: TextAlign.center
+									)
+								),
+								const SizedBox(width: 8),
+								const Icon(CupertinoIcons.arrow_up_down)
+							]
+						)
+					);
+				}
+				else {
+					child = CupertinoButton(
+						padding: const EdgeInsets.all(8),
+						onPressed: () async {
+							if (value.representsUnloadedPages.length == 3) {
+								_loadPage(value, value.representsUnloadedPages[1]);
+							}
+							final page = await showAdaptiveDialog<int>(
+								context: context,
+								barrierDismissible: true,
+								builder: (context) => AdaptiveAlertDialog(
+									title: const Text('Select Page'),
+									content: SizedBox(
+										height: 300,
+										child: ListView.separated(
+											itemCount: value.representsUnloadedPages.length,
+											itemBuilder: (context, i) {
+												final page = value.representsUnloadedPages[i];
+												return CupertinoButton(
+													padding: const EdgeInsets.all(4),
+													child: Text('Load Page ${-page}'),
+													onPressed: () => Navigator.pop(context, page)
+												);
+											},
+											separatorBuilder: (context, i) => const ChanceDivider(),
+										)
+									),
+									actions: [
+										AdaptiveDialogAction(
+											onPressed: () => Navigator.pop(context),
+											child: const Text('Cancel')
+										)
+									]
+								)
+							);
+							if (page != null) {
+								_loadPage(value, page);
+							}
+						},
+						child: Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								Icon(CupertinoIcons.doc, color: grey),
+								const SizedBox(width: 8),
+								Flexible(
+									child: Text(
+										'Pages ${value.representsUnloadedPages[0].abs()}-${value.representsUnloadedPages[value.representsUnloadedPages.length - 1].abs()}',
+										textAlign: TextAlign.center,
+										style: TextStyle(
+											color: grey
+										)
+									)
+								),
+								const SizedBox(width: 8),
+								Icon(CupertinoIcons.arrow_up_down, color: grey)
+							]
+						)
+					);
+				}
+				child = Stack(
+					children: [
+						if (loadingOmittedItems) const LinearProgressIndicator(),
+						child
+					]
+				);
+			}
+			else if (value.representsStubChildren) {
 				child = widget.collapsedItemBuilder?.call(
 					context: context,
 					value: null,
@@ -1683,6 +1841,23 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return height > (100 * max(parentCount, 3));
 	}
 
+	/// Group into (a) | (a, b) | (a, b+c+d, e)
+	Iterable<RefreshableListItem<T>> _groupUnloadedPages(List<RefreshableListItem<T>> pages) {
+		final Iterable<List<RefreshableListItem<T>>> groups;
+		if (pages.length < 3) {
+			groups = pages.map((p) => [p]);
+		}
+		else {
+			groups = [[pages[0]], pages.sublist(1, pages.length - 1), [pages[pages.length - 1]]];
+		}
+		return groups.map((g) => RefreshableListItem(
+			item: g.first.item, // arbitrary
+			id: g.first.id, // arbitrary
+			state: this,
+			representsUnloadedPages: g.map((i) => i.id).toList()
+		));
+	}
+
 	({
 		List<RefreshableListItem<T>> tree,
 		List<List<int>> automaticallyCollapsed,
@@ -1783,6 +1958,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else {
 				bool foundAParent = false;
 				bool foundOP = false;
+				_TreeNode<RefreshableListItem<T>>? parentPage;
 				final orphanParents = <int>[];
 				for (final parentId in parentIds) {
 					if (parentId == id) {
@@ -1794,6 +1970,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						foundOP = true;
 						continue;
 					}
+					if (adapter.isPaged && parentId.isNegative) {
+						final page = treeMap[parentId];
+						if (page != null) {
+							parentPage = page;
+							continue;
+						}
+					}
 					treeMap[parentId]?.children.add(node);
 					if (treeMap[parentId] == null) {
 						orphanParents.add(parentId);
@@ -1803,8 +1986,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 				}
 				if (!foundAParent) {
-					for (final parentId in orphanParents) {
-						orphans.putIfAbsent(parentId, () => []).add(node);
+					if (parentPage != null) {
+						// Only put under page if no other parent
+						parentPage.children.add(node);
+					}
+					else {
+						for (final parentId in orphanParents) {
+							orphans.putIfAbsent(parentId, () => []).add(node);
+						}
 					}
 				}
 				if (foundOP) {
@@ -1827,36 +2016,58 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		linear.where((item) => item.id <= treeSplitId).forEach(visitLinear);
 		linear.where((item) => item.id > treeSplitId).forEach(visitLinear);
 
-		final treeRoots = treeRoots1.followedBy(treeRoots2).toList();
-		final stubRoots = <_TreeNode<RefreshableListItem<T>>>[];
-
-		final lastTreeOrder = _lastTreeOrder;
-		if (lastTreeOrder != null) {
-			const infiniteIndex = 1 << 50;
-			mergeSort(treeRoots, compare: (a, b) {
-				final idxA = lastTreeOrder.treeRootIndexLookup[a.id] ?? infiniteIndex;
-				final idxB = lastTreeOrder.treeRootIndexLookup[b.id] ?? infiniteIndex;
-				return idxA.compareTo(idxB);
-			});
-			for (final entry in treeMap.entries) {
-				mergeSort(entry.value.children, compare: (a, b) {
-					final idxA = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[a.id] ?? infiniteIndex;
-					final idxB = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[b.id] ?? infiniteIndex;
-					return idxA.compareTo(idxB);
-				});
+		final treeRoots = <_TreeNode<RefreshableListItem<T>>>[];
+		// Combine adjacent unloaded pages
+		final unloadedPages = <RefreshableListItem<T>>[];
+		for (final root in treeRoots1.followedBy(treeRoots2)) {
+			if (root.children.isEmpty
+			    && adapter.getHasOmittedReplies(root.item.item)
+					&& adapter.getIsPageStub(root.item.item)) {
+				unloadedPages.add(root.item);
+			}
+			else {
+				if (unloadedPages.isNotEmpty) {
+					treeRoots.addAll(_groupUnloadedPages(unloadedPages).map((g) => _TreeNode(g, g.id, false)));
+					unloadedPages.clear();
+				}
+				treeRoots.add(root);
 			}
 		}
+		if (unloadedPages.isNotEmpty) {
+			treeRoots.addAll(_groupUnloadedPages(unloadedPages).map((g) => _TreeNode(g, g.id, false)));
+		}
 
-		_lastTreeOrder = (
-			treeRootIndexLookup: {
-				for (int i = 0; i < treeRoots.length; i++)
-					treeRoots[i].id: i
-			},
-			treeChildrenIndexLookup: treeMap.map((k, v) => MapEntry(k, {
-				for (int i = 0; i < v.children.length; i++)
-					v.children[i].id: i
-			}))
-		);
+		final stubRoots = <_TreeNode<RefreshableListItem<T>>>[];
+
+		if (!adapter.isPaged) {
+			final lastTreeOrder = _lastTreeOrder;
+			if (lastTreeOrder != null) {
+				const infiniteIndex = 1 << 50;
+				mergeSort(treeRoots, compare: (a, b) {
+					final idxA = lastTreeOrder.treeRootIndexLookup[a.id] ?? infiniteIndex;
+					final idxB = lastTreeOrder.treeRootIndexLookup[b.id] ?? infiniteIndex;
+					return idxA.compareTo(idxB);
+				});
+				for (final entry in treeMap.entries) {
+					mergeSort(entry.value.children, compare: (a, b) {
+						final idxA = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[a.id] ?? infiniteIndex;
+						final idxB = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[b.id] ?? infiniteIndex;
+						return idxA.compareTo(idxB);
+					});
+				}
+			}
+
+			_lastTreeOrder = (
+				treeRootIndexLookup: {
+					for (int i = 0; i < treeRoots.length; i++)
+						treeRoots[i].id: i
+				},
+				treeChildrenIndexLookup: treeMap.map((k, v) => MapEntry(k, {
+					for (int i = 0; i < v.children.length; i++)
+						v.children[i].id: i
+				}))
+			);
+		}
 
 		final out = <RefreshableListItem<T>>[];
 		final Map<int, RefreshableListItem<T>> encountered = {};
@@ -1997,6 +2208,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				depth: 0
 			));
 		}
+		if (out.isNotEmpty) {
+			if (adapter.getIsPageStub(out.last.item) && out.last.representsUnknownStubChildren) {
+				// Don't show "load more" stub for last page.
+				// Reloading the whole list is the right thing to do instead.
+				out.removeLast();
+			}
+		}
 		if (!adapter.newRepliesAreLinear && linear.length > 1) {
 			// In "old" tree behaviour, we use treeSplitId to track new insertions
 			// It needs to be updated after each rebuild
@@ -2121,9 +2339,45 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else if (widget.treeAdapter != null) {
 				final adapter = widget.treeAdapter!;
 				RefreshableListItem<T>? stubItem;
+				final unloadedPages = <RefreshableListItem<T>>[];
+				RefreshableListItem<T>? deferredUnloadedPage;
 				final items = values;
 				values = [];
 				for (final item in items) {
+					final isUnloadedPage = adapter.getHasOmittedReplies(item.item) && adapter.getIsPageStub(item.item);
+					if (stubItem != null && !adapter.getIsStub(item.item)) {
+						values.add(stubItem);
+						stubItem = null;
+					}
+					if (unloadedPages.isNotEmpty && !isUnloadedPage) {
+						if (adapter.getParentIds(item.item).contains(unloadedPages.last.id)) {
+							// We are in a child of the last page in this unloaded group. Defer the stub item.
+							deferredUnloadedPage = unloadedPages.removeLast();
+							if (unloadedPages.isNotEmpty) {
+								// Still dump any earlier unloaded pages in the right spot
+								values.addAll(_groupUnloadedPages(unloadedPages));
+								unloadedPages.clear();
+							}
+							values.add(deferredUnloadedPage); // Entry for top of the page
+						}
+						else {
+							values.addAll(_groupUnloadedPages(unloadedPages));
+							unloadedPages.clear();
+						}
+					}
+					if (deferredUnloadedPage != null) {
+						if (!adapter.getParentIds(item.item).contains(deferredUnloadedPage.id)) {
+							// We now out of the deferred pages' children
+							// Show the entry for the bottom of the partially loaded page
+							values.add(RefreshableListItem(
+								id: deferredUnloadedPage.id,
+								item: deferredUnloadedPage.item,
+								state: this,
+								representsUnloadedPages: [deferredUnloadedPage.id]
+							));
+							deferredUnloadedPage = null;
+						}
+					}
 					if (adapter.getIsStub(item.item)) {
 						stubItem ??= RefreshableListItem(
 							item: item.item, // Arbitrary
@@ -2136,11 +2390,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							childId: adapter.getId(item.item)
 						));
 					}
+					else if (isUnloadedPage) {
+						unloadedPages.add(item);
+					}
 					else {
-						if (stubItem != null) {
-							values.add(stubItem);
-							stubItem = null;
-						}
 						values.add(item);
 						if (adapter.getHasOmittedReplies(item.item)) {
 							stubItem ??= RefreshableListItem(
@@ -2156,6 +2409,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						}
 					}
 				}
+				if (unloadedPages.isNotEmpty) {
+					values.addAll(_groupUnloadedPages(unloadedPages));
+				}
+				// Intentionally not adding deferred final page. It confuses reloading.
+				// If you just pull to refresh you will get latest page.
 				if (stubItem != null) {
 					values.add(stubItem);
 				}
@@ -2344,7 +2602,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														childCount: values.length,
 														addRepaintBoundaries: false,
 														addAutomaticKeepAlives: false,
-														shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation
+														fastHeightEstimate: _fastHeightEstimate
 													)
 												)
 												else SliverList(
@@ -2387,7 +2645,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															}
 															return null;
 														},
-														shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation,
+														fastHeightEstimate: _fastHeightEstimate,
 														didFinishLayout: (startIndex, endIndex) {
 															widget.controller?.didFinishLayout.call((startIndex / 2).ceil(), (endIndex / 2).floor());
 														},
@@ -2456,7 +2714,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															childCount: filteredValues.length,
 															addRepaintBoundaries: false,
 															addAutomaticKeepAlives: false,
-															shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation
+															fastHeightEstimate: _fastHeightEstimate
 														)
 													)
 													else SliverList(
@@ -2498,7 +2756,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															childCount: filteredValues.length * 2,
 															addRepaintBoundaries: false,
 															addAutomaticKeepAlives: false,
-															shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation
+															fastHeightEstimate: _fastHeightEstimate
 														)
 													)
 											],

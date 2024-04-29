@@ -154,7 +154,7 @@ class Thread extends HiveObject implements Filterable {
 		}
 	}
 
-	void mergePosts(Thread? other, List<Post> otherPosts, int Function(List<Post> list, Post newPost) placeNewPost) {
+	void mergePosts(Thread? other, List<Post> otherPosts, ImageboardSite site) {
 		if (other != null) {
 			_markNewIPs(other);
 		}
@@ -171,24 +171,24 @@ class Thread extends HiveObject implements Filterable {
 				}
 				else {
 					postToReplace.ipNumber ??= newChild.ipNumber;
-					for (final attachment in postToReplace.attachments) {
-						final otherAttachment = newChild.attachments.tryFirstWhere((a) => a.id == attachment.id);
+					for (final attachment in postToReplace.attachments_) {
+						final otherAttachment = newChild.attachments_.tryFirstWhere((a) => a.id == attachment.id);
 						attachment.sizeInBytes ??= otherAttachment?.sizeInBytes;
 						attachment.width ??= otherAttachment?.width;
 						attachment.height ??= otherAttachment?.height;
 					}
 					if (postToReplace.attachmentDeleted && !newChild.attachmentDeleted) {
-						postToReplace.attachments = newChild.attachments;
+						postToReplace.attachments_ = newChild.attachments_;
 						postToReplace.attachmentDeleted = false;
 						if (postToReplace.id == id && attachmentDeleted) {
-							attachments = newChild.attachments;
+							attachments = newChild.attachments_;
 							attachmentDeleted = false;
 						}
 					}
 				}
 			}
 			else {
-				final newIndex = placeNewPost(posts_, newChild);
+				final newIndex = site.placeOrphanPost(posts_, newChild);
 				postIdToListIndex.updateAll((postId, listIndex) {
 					if (listIndex >= newIndex) {
 						return listIndex + 1;
@@ -196,12 +196,52 @@ class Thread extends HiveObject implements Filterable {
 					return listIndex;
 				});
 				postIdToListIndex[newChild.id] = newIndex;
-				// This only handles single-parent case but no real imageboards have omitted replies
-				final parentIndex = postIdToListIndex[newChild.parentId];
-				if (parentIndex != null) {
-					final parent = posts_[parentIndex];
-					parent.maybeAddReplyId(newChild.id);
-					parent.hasOmittedReplies = false;
+				if (site.isPaged) {
+					// For paged sites, we can load in parents after children
+					for (final post in posts_) {
+						if (post.repliedToIds.contains(newChild.id)) {
+							newChild.maybeAddReplyId(post.id);
+						}
+					}
+					// We can also load multi-parent children
+					for (final repliedToId in newChild.repliedToIds) {
+						final parentIndex = postIdToListIndex[repliedToId];
+						if (parentIndex != null) {
+							final parent = posts_[parentIndex];
+							parent.maybeAddReplyId(newChild.id);
+						}
+					}
+				}
+				else {
+					// This only handles single-parent case but no real imageboards have omitted replies
+						final parentIndex = postIdToListIndex[newChild.parentId];
+						if (parentIndex != null) {
+							final parent = posts_[parentIndex];
+							parent.maybeAddReplyId(newChild.id);
+							parent.hasOmittedReplies = false;
+						}
+				}
+			}
+		}
+		final postsPerPage = site.postsPerPage;
+		if (postsPerPage != null) {
+			final Map<int, Post> pageMap = {};
+			final Map<int, int> pageChildCountMap = {};
+			for (final post in posts_) {
+				if (post.id.isNegative) {
+					pageMap[post.id] = post;
+				}
+				else {
+					final page = post.parentId;
+					if (page != null) {
+						pageChildCountMap.update(page, (c) => c + 1, ifAbsent: () => 1);
+					}
+				}
+			}
+			for (final pair in pageChildCountMap.entries) {
+				if (pair.value >= postsPerPage) {
+					// We have all the posts for this page
+					pageMap[pair.key]?.hasOmittedReplies = false;
 				}
 			}
 		}

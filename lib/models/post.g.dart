@@ -120,13 +120,13 @@ class PostFields {
     fieldName: 'capcode',
     merger: PrimitiveMerger(),
   );
-  static List<Attachment> getAttachments(Post x) => x.attachments;
-  static void setAttachments(Post x, List<Attachment> v) => x.attachments = v;
-  static const attachments = HiveFieldAdapter<Post, List<Attachment>>(
-    getter: getAttachments,
-    setter: setAttachments,
+  static List<Attachment> getAttachments_(Post x) => x.attachments_;
+  static void setAttachments_(Post x, List<Attachment> v) => x.attachments_ = v;
+  static const attachments_ = HiveFieldAdapter<Post, List<Attachment>>(
+    getter: getAttachments_,
+    setter: setAttachments_,
     fieldNumber: 16,
-    fieldName: 'attachments',
+    fieldName: 'attachments_',
     merger: Attachment.unmodifiableListMerger,
   );
   static int? getUpvotes(Post x) => x.upvotes;
@@ -196,7 +196,7 @@ class PostAdapter extends TypeAdapter<Post> {
     13: PostFields.trip,
     14: PostFields.passSinceYear,
     15: PostFields.capcode,
-    16: PostFields.attachments,
+    16: PostFields.attachments_,
     17: PostFields.upvotes,
     18: PostFields.parentId,
     20: PostFields.hasOmittedReplies,
@@ -239,7 +239,7 @@ class PostAdapter extends TypeAdapter<Post> {
       foolfuukaLinkedPostThreadIds: (fields[12] as Map?)?.cast<String, int>(),
       passSinceYear: fields[14] as int?,
       capcode: fields[15] as String?,
-      attachments:
+      attachments_:
           fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
       upvotes: fields[17] as int?,
       parentId: fields[18] as int?,
@@ -267,7 +267,7 @@ class PostAdapter extends TypeAdapter<Post> {
       if (obj.trip != null) 13: obj.trip,
       if (obj.passSinceYear != null) 14: obj.passSinceYear,
       if (obj.capcode != null) 15: obj.capcode,
-      if (obj.attachments.isNotEmpty) 16: obj.attachments,
+      if (obj.attachments_.isNotEmpty) 16: obj.attachments_,
       if (obj.upvotes != null) 17: obj.upvotes,
       if (obj.parentId != null) 18: obj.parentId,
       if (obj.hasOmittedReplies) 20: obj.hasOmittedReplies,
@@ -328,6 +328,10 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         return PostSpanFormat.lynxchan;
       case 9:
         return PostSpanFormat.chan4Search;
+      case 10:
+        return PostSpanFormat.xenforo;
+      case 11:
+        return PostSpanFormat.pageStub;
       default:
         return PostSpanFormat.chan4;
     }
@@ -365,6 +369,12 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         break;
       case PostSpanFormat.chan4Search:
         writer.writeByte(9);
+        break;
+      case PostSpanFormat.xenforo:
+        writer.writeByte(10);
+        break;
+      case PostSpanFormat.pageStub:
+        writer.writeByte(11);
         break;
     }
   }

@@ -302,7 +302,7 @@ class SiteFutaba extends ImageboardSite {
 				int.parse(timeMatch.group(5)!),
 				int.parse(timeMatch.group(6)!)
 			),
-			attachments: attachment == null ? [] : [attachment]
+			attachments_: attachment == null ? [] : [attachment]
 		);
 	}
 
@@ -321,7 +321,7 @@ class SiteFutaba extends ImageboardSite {
 			title: element.querySelector('.csb')?.text,
 			isSticky: false,
 			time: posts.first.time,
-			attachments: posts.first.attachments,
+			attachments: posts.first.attachments_,
 		);
 	}
 

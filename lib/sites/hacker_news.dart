@@ -311,7 +311,7 @@ class SiteHackerNews extends ImageboardSite {
 			threadId: id,
 			id: id,
 			spanFormat: PostSpanFormat.hackerNews,
-			attachments: [
+			attachments_: [
 				if (url != null) _makeAttachment(id, url)
 			],
 			upvotes: d['score']
@@ -324,7 +324,7 @@ class SiteHackerNews extends ImageboardSite {
 			title: d['title'],
 			isSticky: false,
 			time: op.time,
-			attachments: op.attachments,
+			attachments: op.attachments_,
 			replyCount: d['descendants'] ?? 0
 		);
 	}
@@ -339,7 +339,7 @@ class SiteHackerNews extends ImageboardSite {
 				threadId: item.story,
 				id: item.id,
 				spanFormat: PostSpanFormat.hackerNews,
-				attachments: [],
+				attachments_: [],
 				upvotes: item.score,
 				parentId: item.parent
 			);
@@ -363,7 +363,7 @@ class SiteHackerNews extends ImageboardSite {
 				threadId: item.id,
 				id: item.id,
 				spanFormat: PostSpanFormat.hackerNews,
-				attachments: [
+				attachments_: [
 					if (item.url != null) _makeAttachment(item.id, item.url!)
 				],
 				upvotes: item.score
@@ -517,7 +517,7 @@ class SiteHackerNews extends ImageboardSite {
 			title: item.title,
 			isSticky: false,
 			time: item.time,
-			attachments: posts.first.attachments
+			attachments: posts.first.attachments_
 		);
 	}
 
@@ -628,7 +628,7 @@ class SiteHackerNews extends ImageboardSite {
 						threadId: hit['story_id'],
 						id: id,
 						spanFormat: PostSpanFormat.hackerNews,
-						attachments: []
+						attachments_: []
 					));
 				}
 				final op = Post(
@@ -639,7 +639,7 @@ class SiteHackerNews extends ImageboardSite {
 					threadId: id,
 					id: id,
 					spanFormat: PostSpanFormat.hackerNews,
-					attachments: [
+					attachments_: [
 						if (hit['url'] != null) _makeAttachment(id, Uri.parse(hit['url']!))
 					]
 				);
@@ -652,7 +652,7 @@ class SiteHackerNews extends ImageboardSite {
 					title: hit['title'],
 					isSticky: false,
 					time: op.time,
-					attachments: op.attachments
+					attachments: op.attachments_
 				));
 			}).toList()
 		);

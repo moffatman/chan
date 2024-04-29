@@ -12,6 +12,7 @@ import 'package:chan/sites/hacker_news.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
+import 'package:chan/sites/xenforo.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:pool/pool.dart';
@@ -46,7 +47,15 @@ enum PostSpanFormat {
 	@HiveField(8)
 	lynxchan,
 	@HiveField(9)
-	chan4Search
+	chan4Search,
+	@HiveField(10)
+	xenforo,
+	@HiveField(11)
+	pageStub;
+	bool get hasInlineAttachments => switch (this) {
+		xenforo => true,
+		_ => false
+	};
 }
 
 void _readHookPostFields(Map<int, dynamic> fields) {
@@ -55,7 +64,7 @@ void _readHookPostFields(Map<int, dynamic> fields) {
 	if (deprecatedAttachment != null) {
 		fallbackAttachments = [deprecatedAttachment].toList(growable: false);
 	}
-	fields[PostFields.attachments.fieldNumber] ??= fallbackAttachments;
+	fields[PostFields.attachments_.fieldNumber] ??= fallbackAttachments;
 }
 
 @HiveType(typeId: 11, isOptimized: true, readHook: _readHookPostFields)
@@ -109,6 +118,12 @@ class Post implements Filterable {
 				return SiteLynxchan.makeSpan(board, threadId, text);
 			case PostSpanFormat.chan4Search:
 				return Site4Chan.makeSpan(board, threadId, text, fromSearch: true);
+			case PostSpanFormat.xenforo:
+				return SiteXenforo.makeSpan(board, threadId, id, text);
+			case PostSpanFormat.pageStub:
+				return PostNodeSpan([
+					PostTextSpan('Page $id')
+				]);
 		}
 	}
 	PostNodeSpan get span {
@@ -149,7 +164,8 @@ class Post implements Filterable {
 	@HiveField(15, isOptimized: true)
 	String? capcode;
 	@HiveField(16, isOptimized: true, defaultValue: <Attachment>[], merger: Attachment.unmodifiableListMerger)
-	List<Attachment> attachments;
+	List<Attachment> attachments_;
+	Iterable<Attachment> get attachments => spanFormat.hasInlineAttachments ? span.inlineAttachments : attachments_;
 	@HiveField(17, isOptimized: true)
 	final int? upvotes;
 	@HiveField(18, isOptimized: true)
@@ -178,13 +194,13 @@ class Post implements Filterable {
 		this.foolfuukaLinkedPostThreadIds,
 		this.passSinceYear,
 		this.capcode,
-		required List<Attachment> attachments,
+		required List<Attachment> attachments_,
 		this.upvotes,
 		this.parentId,
 		this.hasOmittedReplies = false,
 		this.isDeleted = false,
 		this.ipNumber
-	}) : board = intern(board), name = intern(name), attachments = attachments.isEmpty ? const [] : attachments;
+	}) : board = intern(board), name = intern(name), attachments_ = attachments_.isEmpty ? const [] : attachments_;
 
 	@override
 	String toString() {
@@ -247,6 +263,9 @@ class Post implements Filterable {
 
 	bool get isStub => spanFormat == PostSpanFormat.stub;
 
+	/// For indicating unloaded page
+	bool get isPageStub => spanFormat == PostSpanFormat.pageStub;
+
 	@override
 	bool operator ==(Object other) =>
 		identical(this, other) ||
@@ -255,11 +274,12 @@ class Post implements Filterable {
 		other.id == id &&
 		other.upvotes == upvotes &&
 		other.isDeleted == isDeleted &&
-		listEquals(other.attachments, attachments) &&
-		other.name == name;
+		listEquals(other.attachments_, attachments_) &&
+		other.name == name &&
+		other.hasOmittedReplies == hasOmittedReplies;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, isDeleted, attachments, name);
+	int get hashCode => Object.hash(board, id, upvotes, isDeleted, attachments, name, hasOmittedReplies);
 }
 
 class PostIdentifier {

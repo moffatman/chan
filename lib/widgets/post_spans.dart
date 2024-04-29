@@ -2,6 +2,7 @@ import 'dart:isolate';
 import 'dart:math' as math;
 
 import 'package:chan/main.dart';
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/intern.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
@@ -21,9 +22,11 @@ import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/reply_box.dart';
@@ -41,6 +44,7 @@ import 'package:provider/provider.dart';
 import 'package:highlight/highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:string_similarity/string_similarity.dart';
 
 class PostSpanRenderOptions {
 	final TapGestureRecognizer? recognizer;
@@ -62,6 +66,9 @@ class PostSpanRenderOptions {
 	final bool revealYourPosts;
 	final bool ensureTrailingNewline;
 	final bool hiddenWithinSpoiler;
+	final ValueChanged<Attachment>? onThumbnailTap;
+	final void Function(Object?, StackTrace?)? onThumbnailLoadError;
+	final bool revealSpoilerImages;
 	const PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -81,7 +88,10 @@ class PostSpanRenderOptions {
 		this.imageShareMode = false,
 		this.revealYourPosts = true,
 		this.ensureTrailingNewline = false,
-		this.hiddenWithinSpoiler = false
+		this.hiddenWithinSpoiler = false,
+		this.onThumbnailTap,
+		this.onThumbnailLoadError,
+		this.revealSpoilerImages = false
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
@@ -101,7 +111,10 @@ class PostSpanRenderOptions {
 		InlineSpan? postInject,
 		bool removePostInject = false,
 		bool? ensureTrailingNewline,
-		bool? hiddenWithinSpoiler
+		bool? hiddenWithinSpoiler,
+		ValueChanged<Attachment>? onThumbnailTap,
+		void Function(Object?, StackTrace?)? onThumbnailLoadError,
+		bool? revealSpoilerImages
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer ?? this.recognizer,
 		overrideRecognizer: overrideRecognizer ?? this.overrideRecognizer,
@@ -121,7 +134,10 @@ class PostSpanRenderOptions {
 		imageShareMode: imageShareMode,
 		revealYourPosts: revealYourPosts,
 		ensureTrailingNewline: ensureTrailingNewline ?? this.ensureTrailingNewline,
-		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler
+		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler,
+		onThumbnailTap: onThumbnailTap ?? this.onThumbnailTap,
+		onThumbnailLoadError: onThumbnailLoadError ?? this.onThumbnailLoadError,
+		revealSpoilerImages: revealSpoilerImages ?? this.revealSpoilerImages
 	);
 }
 
@@ -131,9 +147,14 @@ abstract class PostSpan {
 	Iterable<int> referencedPostIds(String forBoard) => const Iterable.empty();
 	Iterable<PostIdentifier> get referencedPostIdentifiers => const Iterable.empty();
 	InlineSpan build(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
-	String buildText();
+	String buildText({bool forQuoteComparison = false});
 	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
+	Iterable<Attachment> get inlineAttachments => const Iterable.empty();
 	bool get containsLink => false;
+	@override
+	String toString() {
+		return '$runtimeType(${buildText()})';
+	}
 }
 
 class _PostWrapperSpan extends PostSpan {
@@ -142,7 +163,7 @@ class _PostWrapperSpan extends PostSpan {
 	@override
 	InlineSpan build(context, zone, settings, theme, options) => span;
 	@override
-	String buildText() => span.toPlainText();
+	String buildText({bool forQuoteComparison = false}) => span.toPlainText();
 }
 
 class PostNodeSpan extends PostSpan {
@@ -162,6 +183,9 @@ class PostNodeSpan extends PostSpan {
 			yield* child.referencedPostIdentifiers;
 		}
 	}
+
+	@override
+	Iterable<Attachment> get inlineAttachments => children.expand((c) => c.inlineAttachments);
 
 	@override
 	InlineSpan build(context, zone, settings, theme, options) {
@@ -241,8 +265,8 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
-		return children.map((x) => x.buildText()).join('');
+	String buildText({bool forQuoteComparison = false}) {
+		return children.map((x) => x.buildText(forQuoteComparison: forQuoteComparison)).join('');
 	}
 
 	@override
@@ -264,6 +288,81 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	bool get containsLink => children.any((c) => c.containsLink);
+
+	@override
+	String toString() => 'PostNodeSpan($children)';
+}
+
+class PostAttachmentsSpan extends PostSpan {
+	final List<Attachment> attachments;
+	const PostAttachmentsSpan(this.attachments);
+
+	@override
+	Iterable<Attachment> get inlineAttachments => attachments;
+
+	@override
+	InlineSpan build(context, zone, settings, theme, options) {
+		if (options.showRawSource) {
+			return TextSpan(text: buildText());
+		}
+		return WidgetSpan(
+			child: Wrap(
+				spacing: 16,
+				runSpacing: 16,
+				children: attachments.map((attachment) {
+					final stackIds = zone.stackIds.toList();
+					if (stackIds.isNotEmpty) {
+						stackIds.removeLast();
+					}
+					return PopupAttachment(
+						attachment: attachment,
+						child: CupertinoButton(
+							padding: EdgeInsets.zero,
+							minSize: 0,
+							child: ConstrainedBox(
+								constraints: const BoxConstraints(
+									minHeight: 75
+								),
+								child: AttachmentThumbnail(
+									attachment: attachment,
+									revealSpoilers: options.revealSpoilerImages,
+									thread: zone.primaryThread,
+									onLoadError: options.onThumbnailLoadError,
+									hero: TaggedAttachment(
+										attachment: attachment,
+										semanticParentIds: stackIds
+									),
+									fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+									shrinkHeight: !settings.squareThumbnails,
+									// On the website these are huge (full-width). Put them to a largeish size here.
+									width: 250,
+									height: 250,
+									mayObscure: true,
+									showIconInCorner: (
+										backgroundColor: theme.backgroundColor,
+										borderColor: theme.primaryColorWithBrightness(0.2),
+										size: null
+									)
+								)
+							),
+							onPressed: () {
+								options.onThumbnailTap?.call(attachment);
+							}
+						)
+					);
+				}).toList()
+			)
+		);
+	}
+
+	@override
+	String buildText({bool forQuoteComparison = false}) {
+		if (forQuoteComparison) {
+			// Make it look like a SiteXenforo quote (the only use case)
+			return '${attachments.map((a) => '[View Attachment ${a.id}](${a.url})').join('')}\n';
+		}
+		return '${attachments.map((a) => a.url).join(', ')}\n';
+	}
 }
 
 class PostTextSpan extends PostSpan {
@@ -317,7 +416,7 @@ class PostTextSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
+	String buildText({bool forQuoteComparison = false}) {
 		return text;
 	}
 }
@@ -338,7 +437,7 @@ class PostUnderlinedSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() => child.buildText();
+	String buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 
 	@override
 	bool get containsLink => child.containsLink;
@@ -351,7 +450,10 @@ class PostLineBreakSpan extends PostSpan {
 	InlineSpan build(context, zone, settings, theme, options) =>  const TextSpan(text: '\n');
 
 	@override
-	String buildText() => '\n';
+	String buildText({bool forQuoteComparison = false}) => '\n';
+
+	@override
+	String toString() => 'PostLineBreakSpan()';
 }
 
 class PostQuoteSpan extends PostSpan {
@@ -366,12 +468,26 @@ class PostQuoteSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
+	String buildText({bool forQuoteComparison = false}) {
+		if (forQuoteComparison) {
+			// Nested quotes not used
+			return '';
+		}
 		return child.buildText();
 	}
 
 	@override
 	bool get containsLink => child.containsLink;
+
+	@override
+	Iterable<int> referencedPostIds(String forBoard) => child.referencedPostIds(forBoard);
+	@override
+	Iterable<PostIdentifier> get referencedPostIdentifiers => child.referencedPostIdentifiers;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
+
+	@override
+	String toString() => 'PostQuoteSpan($child)';
 }
 
 class PostQuoteLinkSpan extends PostSpan {
@@ -680,9 +796,58 @@ class PostQuoteLinkSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
+	String buildText({bool forQuoteComparison = false}) {
 		return '>>$postId';
 	}
+}
+
+class PostQuoteLinkWithContextSpan extends PostSpan {
+	final PostQuoteLinkSpan quoteLink;
+	final PostQuoteSpan context;
+
+	const PostQuoteLinkWithContextSpan({
+		required this.quoteLink,
+		required this.context
+	});
+
+	@override
+	build(context, zone, settings, theme, options) {
+		final thePost = zone.findPost(quoteLink.postId);
+		final theText = thePost?.span.buildText(forQuoteComparison: true);
+		final contextText = this.context.child.buildText(forQuoteComparison: true);
+		final similarity = theText?.similarityTo(contextText) ?? 0;
+		return TextSpan(
+			children: [
+				quoteLink.build(context, zone, settings, theme, options),
+				const TextSpan(text: '\n'),
+				if (similarity < 0.85) ...[
+					// Partial quote, include the snippet
+					this.context.build(context, zone, settings, theme, options),
+					const TextSpan(text: '\n'),
+				]
+			]
+		);
+	}
+
+	@override
+	String buildText({bool forQuoteComparison = false}) {
+		if (forQuoteComparison) {
+			return quoteLink.buildText();
+		}
+		return '${quoteLink.buildText()}\n${context.buildText()}';
+	}
+
+	@override
+	Iterable<int> referencedPostIds(String forBoard) => quoteLink.referencedPostIds(forBoard);
+
+	@override
+	Iterable<PostIdentifier> get referencedPostIdentifiers => quoteLink.referencedPostIdentifiers;
+
+	@override
+	Iterable<Attachment> get inlineAttachments => context.inlineAttachments;
+
+	@override
+	String toString() => 'PostQuoteLinkWithContextSpan($quoteLink, $context)';
 }
 
 class PostBoardLinkSpan extends PostSpan {
@@ -717,7 +882,7 @@ class PostBoardLinkSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
+	String buildText({bool forQuoteComparison = false}) {
 		return '>>/$board/';
 	}
 }
@@ -856,7 +1021,7 @@ class PostCodeSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
+	String buildText({bool forQuoteComparison = false}) {
 		return '[code]$text[/code]';
 	}
 }
@@ -896,8 +1061,8 @@ class PostSpoilerSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
-		return '[spoiler]${child.buildText()}[/spoiler]';
+	String buildText({bool forQuoteComparison = false}) {
+		return '[spoiler]${child.buildText(forQuoteComparison: forQuoteComparison)}[/spoiler]';
 	}
 
 	@override
@@ -907,7 +1072,8 @@ class PostSpoilerSpan extends PostSpan {
 class PostLinkSpan extends PostSpan {
 	final String url;
 	final String? name;
-	const PostLinkSpan(this.url, {this.name});
+	final EmbedData? embedData;
+	const PostLinkSpan(this.url, {this.name, this.embedData});
 
 	static final _trailingJunkPattern = RegExp(r'(\.[A-Za-z0-9\-._~]+)[^A-Za-z0-9\-._~\.\/?]+$');
 
@@ -920,21 +1086,32 @@ class PostLinkSpan extends PostSpan {
 		);
 		final cleanedUri = Uri.tryParse(cleanedUrl);
 		if (!options.showRawSource && settings.useEmbeds) {
-			final check = zone.getFutureForComputation(
-				id: 'embedcheck $url',
-				work: () => embedPossible(
-					context: context,
-					url: url
-				)
-			);
-			if (check.data == true) {
-				final snapshot = zone.getFutureForComputation(
-					id: 'noembed $url',
-					work: () => loadEmbedData(
+			final AsyncSnapshot<EmbedData?>? snapshot;
+			if (embedData != null) {
+				snapshot = AsyncSnapshot.withData(ConnectionState.done, embedData);
+			}
+			else {
+				final check = zone.getFutureForComputation(
+					id: 'embedcheck $url',
+					work: () => embedPossible(
 						context: context,
 						url: url
 					)
 				);
+				if (check.data == true) {
+					snapshot = zone.getFutureForComputation(
+						id: 'noembed $url',
+						work: () => loadEmbedData(
+							context: context,
+							url: url
+						)
+					);
+				}
+				else {
+					snapshot = null;
+				}
+			}
+			if (snapshot != null) {
 				Widget buildEmbed({
 					required Widget left,
 					required Widget center,
@@ -996,7 +1173,7 @@ class PostLinkSpan extends PostSpan {
 				}
 				if (snapshot.data?.thumbnailWidget != null || snapshot.data?.thumbnailUrl != null) {
 					final lines = [
-						if (name != null && !url.contains(name!)) name!,
+						if (name != null && !url.contains(name!) && (snapshot.data?.title?.contains(name!) != true)) name!,
 						if (snapshot.data?.title?.isNotEmpty ?? false) snapshot.data!.title!
 						else if (name == null || url.contains(name!)) url
 					];
@@ -1070,7 +1247,7 @@ class PostLinkSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
+	String buildText({bool forQuoteComparison = false}) {
 		if (name != null && 'https://$name' != url) {
 			return '[$name]($url)';
 		}
@@ -1118,7 +1295,7 @@ class PostCatalogSearchSpan extends PostSpan {
 	}
 
 	@override
-	String buildText() {
+	String buildText({bool forQuoteComparison = false}) {
 		return '>>/$board/$query';
 	}
 }
@@ -1143,7 +1320,7 @@ class PostTeXSpan extends PostSpan {
 		);
 	}
 	@override
-	String buildText() => '[math]$tex[/math]';
+	String buildText({bool forQuoteComparison = false}) => '[math]$tex[/math]';
 }
 
 class PostInlineImageSpan extends PostSpan {
@@ -1176,7 +1353,7 @@ class PostInlineImageSpan extends PostSpan {
 		);
 	}
 	@override
-	String buildText() => '';
+	String buildText({bool forQuoteComparison = false}) => src;
 }
 
 class PostColorSpan extends PostSpan {
@@ -1191,7 +1368,7 @@ class PostColorSpan extends PostSpan {
 		));
 	}
 	@override
-	buildText() => child.buildText();
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
 }
@@ -1207,7 +1384,7 @@ class PostSecondaryColorSpan extends PostSpan {
 		));
 	}
 	@override
-	buildText() => child.buildText();
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
 }
@@ -1223,7 +1400,7 @@ class PostBoldSpan extends PostSpan {
 		));
 	}
 	@override
-	buildText() => child.buildText();
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
 }
@@ -1239,7 +1416,7 @@ class PostItalicSpan extends PostSpan {
 		));
 	}
 	@override
-	buildText() => child.buildText();
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
 }
@@ -1255,7 +1432,7 @@ class PostSuperscriptSpan extends PostSpan {
 		));
 	}
 	@override
-	buildText() => child.buildText();
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
 }
@@ -1271,7 +1448,7 @@ class PostStrikethroughSpan extends PostSpan {
 		));
 	}
 	@override
-	buildText() => child.buildText();
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
 }
@@ -1316,7 +1493,7 @@ class PostPopupSpan extends PostSpan {
 	}
 
 	@override
-	buildText() => '$title\n${popup.buildText()}';
+	buildText({bool forQuoteComparison = false}) => '$title\n${popup.buildText(forQuoteComparison: forQuoteComparison)}';
 }
 
 class PostTableSpan extends PostSpan {
@@ -1328,25 +1505,53 @@ class PostTableSpan extends PostSpan {
 			return TextSpan(text: buildText());
 		}
 		return WidgetSpan(
-			child: Table(
-				defaultColumnWidth: const IntrinsicColumnWidth(flex: 1),
-				children: rows.map((row) => TableRow(
-					children: row.map((col) => TableCell(
-						child: Padding(
-							padding: const EdgeInsets.all(4),
-							child: Text.rich(
-								col.build(context, zone, settings, theme, options),
-								textAlign: TextAlign.left,
-								textScaler: TextScaler.noScaling
+			child: SingleChildScrollView(
+				scrollDirection: Axis.horizontal,
+				physics: const BouncingScrollPhysics(),
+				child: Table(
+					defaultColumnWidth: const IntrinsicColumnWidth(flex: null),
+					border: TableBorder.all(
+						color: theme.primaryColor
+					),
+					children: rows.map((row) => TableRow(
+						children: row.map((col) => TableCell(
+							child: Padding(
+								padding: const EdgeInsets.all(4),
+								child: Text.rich(
+									col.build(context, zone, settings, theme, options),
+									textAlign: TextAlign.left,
+									textScaler: TextScaler.noScaling
+								)
 							)
-						)
+						)).toList()
 					)).toList()
-				)).toList()
+				)
 			)
 		);
 	}
 	@override
-	buildText() => rows.map((r) => r.map((r) => r.buildText()).join(', ')).join('\n');
+	buildText({bool forQuoteComparison = false}) => rows.map((r) => r.map((r) => r.buildText(forQuoteComparison: forQuoteComparison)).join(', ')).join('\n');
+
+	@override
+	Iterable<int> referencedPostIds(String forBoard) sync* {
+		for (final row in rows) {
+			for (final child in row) {
+				yield* child.referencedPostIds(forBoard);
+			}
+		}
+	}
+
+	@override
+	Iterable<PostIdentifier> get referencedPostIdentifiers sync* {
+		for (final row in rows) {
+			for (final child in row) {
+				yield* child.referencedPostIdentifiers;
+			}
+		}
+	}
+
+	@override
+	Iterable<Attachment> get inlineAttachments => rows.expand((r) => r.expand((c) => c.inlineAttachments));
 }
 
 class PostDividerSpan extends PostSpan {
@@ -1357,7 +1562,7 @@ class PostDividerSpan extends PostSpan {
 	);
 
 	@override
-	buildText() => '\n';
+	buildText({bool forQuoteComparison = false}) => '\n';
 }
 
 class PostShiftJISSpan extends PostSpan {
@@ -1395,7 +1600,7 @@ class PostShiftJISSpan extends PostSpan {
 	}
 
 	@override
-	buildText() => '[sjis]$text[/sjis]';
+	buildText({bool forQuoteComparison = false}) => '[sjis]$text[/sjis]';
 }
 
 class PostUserLinkSpan extends PostSpan {
@@ -1430,7 +1635,7 @@ class PostUserLinkSpan extends PostSpan {
 	}
 
 	@override
-	buildText() => '/u/$username';
+	buildText({bool forQuoteComparison = false}) => '/u/$username';
 }
 
 class PostSpanZone extends StatelessWidget {
@@ -1898,7 +2103,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 				id: post.id,
 				spanFormat: post.spanFormat,
 				flag: post.flag,
-				attachments: post.attachments,
+				attachments_: post.attachments_,
 				attachmentDeleted: post.attachmentDeleted,
 				posterId: post.posterId,
 				foolfuukaLinkedPostThreadIds: post.foolfuukaLinkedPostThreadIds,
@@ -2042,6 +2247,46 @@ Iterable<TextSpan> _makeAttachmentInfo({
 	}
 }
 
+int _calculatePostNumber(ImageboardSite site, Thread thread, Post post) {
+	final postsPerPage = site.postsPerPage;
+	if (postsPerPage == null) {
+		// "Simple" algorithm
+		return thread.replyCount - ((thread.posts.length - 1) - (thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1));
+	}
+	final parentPage = post.parentId;
+	if (parentPage == null) {
+		return 1; // No idea
+	}
+	// First find the post in the list
+	final postIndex = thread.posts.binarySearchFirstIndexWhere((p) {
+		if (p.id.isNegative) {
+			// Page
+			if (-p.id > -parentPage) {
+				// This page comes after our page and therefore our post
+				return true;
+			}
+			else {
+				// This page comes before our post
+				return false;
+			}
+		}
+		else {
+			return p.id >= post.id;
+		}
+	});
+	if (postIndex == -1) {
+		return 1; // No idea
+	}
+	// Then find how far down the post is on the page
+	for (int i = postIndex; i >= 0; i--) {
+		if (thread.posts[i].id == parentPage) {
+			final postOnPageNumber = postIndex - i;
+			return (postsPerPage * (-parentPage - 1)) + postOnPageNumber;
+		}
+	}
+	return 1; // No idea
+}
+
 TextSpan buildPostInfoRow({
 	required Post post,
 	required bool isYourPost,
@@ -2105,7 +2350,7 @@ TextSpan buildPostInfoRow({
 		),
 		for (final field in settings.postDisplayFieldOrder)
 			if (thread != null && showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
-				text: post.id == post.threadId ? '#1 ' : '#${thread.replyCount - ((thread.posts.length - 1) - (thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1))} ',
+				text: post.id == post.threadId ? '#1 ' : '#${_calculatePostNumber(site, thread, post)} ',
 				style: TextStyle(color: theme.primaryColor.withOpacity(0.5))
 			)
 			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[

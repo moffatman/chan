@@ -139,7 +139,7 @@ class SiteDvach extends ImageboardSite {
 			posterId: posterId,
 			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
 			spanFormat: PostSpanFormat.lainchan,
-			attachments: _makeAttachments(board, threadId, data),
+			attachments_: _makeAttachments(board, threadId, data),
 			flag: switch (_iconFlagPattern.firstMatch(data['icon'] ?? '')) {
 				null => null,
 				RegExpMatch flagMatch => ImageboardFlag(
@@ -179,7 +179,7 @@ class SiteDvach extends ImageboardSite {
 				title: e.value['subject'],
 				isSticky: e.value['sticky'] != 0,
 				time: op.time,
-				attachments: op.attachments,
+				attachments: op.attachments_,
 				currentPage: threadsPerPage == null ? null : ((e.key ~/ threadsPerPage) + 1),
 				replyCount: e.value['posts_count'] - 1,
 				imageCount: e.value['files_count'] - op.attachments.length,
@@ -204,7 +204,7 @@ class SiteDvach extends ImageboardSite {
 			title: response.data['threads'].first['posts'].first['subject'],
 			isSticky: response.data['threads'].first['posts'].first['sticky'] != 0,
 			time: posts.first.time,
-			attachments: posts.first.attachments,
+			attachments: posts.first.attachments_,
 			posts_: posts,
 			replyCount: response.data['posts_count'] - 1,
 			imageCount: response.data['files_count'] - posts.first.attachments.length

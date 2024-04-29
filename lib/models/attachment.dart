@@ -98,6 +98,8 @@ class Attachment {
 	final bool useRandomUseragent;
 	@HiveField(15, isOptimized: true, defaultValue: false)
 	final bool isRateLimited;
+	// Do not persist, for avoiding Hero conflict when posts quote others so image shows up twice
+	final int? inlineWithinPostId;
 	Attachment({
 		required this.type,
 		required String board,
@@ -113,7 +115,8 @@ class Attachment {
 		required this.threadId,
 		required this.sizeInBytes,
 		this.useRandomUseragent = false,
-		this.isRateLimited = false
+		this.isRateLimited = false,
+		this.inlineWithinPostId
 	}) : board = intern(board), ext = intern(ext);
 
 	double get aspectRatio {

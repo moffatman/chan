@@ -800,7 +800,7 @@ class SiteReddit extends ImageboardSite {
 			id: id,
 			text: text,
 			spanFormat: PostSpanFormat.reddit,
-			attachments: data['is_self'] == true ? [] : attachments,
+			attachments_: data['is_self'] == true ? [] : attachments,
 			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'],
 			capcode: data['distinguished']
 		);
@@ -811,7 +811,7 @@ class SiteReddit extends ImageboardSite {
 			isSticky: data['stickied'],
 			time: asPost.time,
 			posts_: [asPost],
-			attachments: asPost.attachments,
+			attachments: asPost.attachments_,
 			replyCount: data['num_comments'],
 			imageCount: 0,
 			flair: _makeFlag(data['link_flair_richtext']) ?? (
@@ -1003,7 +1003,7 @@ class SiteReddit extends ImageboardSite {
 						parentId: parentId,
 						id: id,
 						spanFormat: PostSpanFormat.reddit,
-						attachments: inlineImageUrls.map((url) => Attachment(
+						attachments_: inlineImageUrls.map((url) => Attachment(
 							type: AttachmentType.image,
 							board: thread.board,
 							id: '${id}_${url.$2}',
@@ -1044,7 +1044,7 @@ class SiteReddit extends ImageboardSite {
 					threadId: thread.id,
 					id: id.childId,
 					spanFormat: PostSpanFormat.reddit,
-					attachments: [],
+					attachments_: [],
 					parentId: id.parentId
 				));
 			}
@@ -1131,7 +1131,7 @@ class SiteReddit extends ImageboardSite {
 			threadId: thread.id,
 			id: id,
 			spanFormat: PostSpanFormat.reddit,
-			attachments: inlineImageUrls.map((url) => Attachment(
+			attachments_: inlineImageUrls.map((url) => Attachment(
 				type: AttachmentType.image,
 				board: thread.board,
 				id: '${id}_${url.$2}',
@@ -1187,7 +1187,7 @@ class SiteReddit extends ImageboardSite {
 							id: id,
 							spanFormat: PostSpanFormat.stub,
 							parentId: parentId,
-							attachments: []
+							attachments_: []
 						));
 					}
 				}

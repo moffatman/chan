@@ -179,7 +179,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			time: DateTime.fromMillisecondsSinceEpoch(int.parse(element.querySelector('.posttime')!.attributes['title']!)),
 			id: postId ?? threadId,
 			threadId: threadId,
-			attachments: a == null ? [] : [a],
+			attachments_: a == null ? [] : [a],
 			spanFormat: PostSpanFormat.fuuka,
 			foolfuukaLinkedPostThreadIds: linkedPostThreadIds
 		);
@@ -209,7 +209,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			isSticky: false,
 			title: title == 'post' ? null : title,
 			board: board,
-			attachments: posts[0].attachments,
+			attachments: posts[0].attachments_,
 			replyCount: posts.length - 1,
 			isArchived: true,
 			imageCount: posts.skip(1).expand((post) => post.attachments).length

@@ -66,7 +66,17 @@ class ThreadCounters extends StatelessWidget {
 		Color? imageCountColor;
 		Color? otherMetadataColor;
 		final threadSeen = threadState?.lastSeenPostId != null && (forceShowInHistory ?? (threadState?.showInHistory ?? false));
-		if (threadSeen && showUnseenCounters) {
+		bool showReplyTimeInsteadOfReplyCount = false;
+		if (site.isPaged) {
+			showReplyTimeInsteadOfReplyCount = thread.posts_.tryFirst?.time != thread.posts_.tryLast?.time;
+			if (thread.posts_.tryLast?.time == threadState?.thread?.posts_.tryLast?.time) {
+				// No new posts
+				replyCountColor = grey;
+				otherMetadataColor = grey;
+				imageCountColor = grey;
+			}
+		}
+		else if (threadSeen && showUnseenCounters) {
 			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
 				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
 			}
@@ -79,7 +89,7 @@ class ThreadCounters extends StatelessWidget {
 			imageCountColor = unseenImageCount <= 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
 		}
-		if (!showUnseenColors) {
+		else if (!showUnseenColors) {
 			replyCountColor = grey;
 			imageCountColor = grey;
 			otherMetadataColor = grey;
@@ -102,7 +112,7 @@ class ThreadCounters extends StatelessWidget {
 						),
 						const SizedBox(width: 4)
 					],
-					if (latestThread.isSticky) ... [
+					if (thread.isSticky) ... [
 						Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
 						const SizedBox(width: 4),
 					],
@@ -136,7 +146,8 @@ class ThreadCounters extends StatelessWidget {
 					],
 					Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
 					const SizedBox(width: 4),
-					if (countsUnreliable && latestThread == thread) const Text('—')
+					if (showReplyTimeInsteadOfReplyCount) Text(formatRelativeTime(thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
+					else if (countsUnreliable && latestThread == thread) const Text('—')
 					else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 					if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
 					if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
@@ -152,6 +163,16 @@ class ThreadCounters extends StatelessWidget {
 						else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
 						else Text('$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 						const SizedBox(width: 2),
+					],
+					if (site.isPaged) ...[
+						const SizedBox(width: 6),
+						Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
+						const SizedBox(width: 4),
+						Text((-(switch (thread.posts_.tryLast?.isPageStub) {
+							true => thread.posts_.tryLast?.id,
+							false => thread.posts_.tryLast?.parentId,
+							null => null
+						} ?? -1)).toString(), style: TextStyle(color: otherMetadataColor))
 					]
 				]
 			)
@@ -453,7 +474,7 @@ class ThreadRow extends StatelessWidget {
 													height: 16
 												)
 											),
-											...thread.posts.skip(max(1, thread.posts.length - 3)).map((post) => WidgetSpan(
+											...thread.posts.skip(max(1, thread.posts.length - 3)).where((p) => !p.isStub && !p.isPageStub).map((post) => WidgetSpan(
 												child: TransformedMediaQuery(
 													transformation: (context, mq) => mq.copyWith(textScaler: TextScaler.noScaling),
 														child: Padding(

@@ -17,29 +17,32 @@ class _DebuggingItem {
 	final int id;
 	final List<int> parentIds;
 	final bool isStub;
+	final bool isPageStub;
 	final bool hasUnknownStubChildren;
 
 	const _DebuggingItem({
 		required this.id,
 		required this.parentIds,
 		required this.isStub,
+		required this.isPageStub,
 		required this.hasUnknownStubChildren
 	});
 
 	@override
-	String toString() => '_DebuggingItem(id: $id, parentIds: $parentIds, isStub: $isStub, hasUnknownStubChildren: $hasUnknownStubChildren)';
+	String toString() => '_DebuggingItem(id: $id, parentIds: $parentIds, isStub: $isStub, isPageStub: $isPageStub, hasUnknownStubChildren: $hasUnknownStubChildren)';
 }
 
 class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 	late final RefreshableListController<_DebuggingItem> controller;
 	final List<_DebuggingItem> items = [];
 	int _id = 0;
+	bool _useTree = true;
 
 	@override
 	void initState() {
 		super.initState();
 		controller = RefreshableListController();
-		items.add(_DebuggingItem(id: _id++, parentIds: [], isStub: false, hasUnknownStubChildren: false));
+		items.add(_DebuggingItem(id: _id++, parentIds: [], isStub: false, isPageStub: false, hasUnknownStubChildren: false));
 	}
 
 	@override
@@ -47,67 +50,73 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 		return RefreshableList<_DebuggingItem>(
 			controller: controller,
 			itemBuilder: (context, item) => SizedBox(
-				height: 50,
 				width: double.infinity,
-				child: Stack(
-					alignment: Alignment.center,
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
 					children: [
-						Text('Item ${item.id}${item.isStub ? ' [STUB]}' : ''}'),
-						Positioned.fill(
-							child: Align(
-								alignment: Alignment.bottomLeft,
-								child: Row(
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										CupertinoButton(
-											onPressed: () {
-												int idx = items.indexOf(item);
-												if (idx == -1) {
-													idx = items.length;
-												}
-												items.insert(idx, _DebuggingItem(
-													id: _id++,
-													parentIds: [item.id],
-													isStub: false,
-													hasUnknownStubChildren: false
-												));
-												setState(() {});
-											},
-											child: const Icon(CupertinoIcons.add)
-										),
-										CupertinoButton(
-											onPressed: () {
-												int idx = items.indexOf(item);
-												if (idx == -1) {
-													idx = items.length;
-												}
-												items.insert(idx, _DebuggingItem(
-													id: _id++,
-													parentIds: [item.id],
-													isStub: true,
-													hasUnknownStubChildren: false
-												));
-												setState(() {});
-											},
-											child: const Icon(CupertinoIcons.add_circled)
-										),
-										CupertinoButton(
-											onPressed: () {
-												final i = items.indexOf(item);
-												items[i] = _DebuggingItem(
-													id: item.id,
-													parentIds: item.parentIds,
-													isStub: false,
-													hasUnknownStubChildren: !item.hasUnknownStubChildren
-												);
-												setState(() {});
-											},
-											child: const Icon(CupertinoIcons.asterisk_circle)
-										)
-									]
+						const SizedBox(height: 16),
+						Text([
+							'Item ${item.id}',
+							if (item.isStub) '[STUB]',
+							if (item.isPageStub) '[PAGE]',
+							if (item.hasUnknownStubChildren) '[H_U_S_C]'
+						].join(' ')),
+						const SizedBox(height: 16),
+						Wrap(
+							spacing: 16,
+							runSpacing: 16,
+							children: [
+								AdaptiveThinButton(
+									onPressed: () {
+										int idx = items.indexOf(item);
+										if (idx == -1) {
+											idx = items.length;
+										}
+										items.insert(idx, _DebuggingItem(
+											id: _id++,
+											parentIds: [item.id],
+											isStub: false,
+											isPageStub: false,
+											hasUnknownStubChildren: false
+										));
+										setState(() {});
+									},
+									child: const Text('Add child')
+								),
+								AdaptiveThinButton(
+									onPressed: () {
+										int idx = items.indexOf(item);
+										if (idx == -1) {
+											idx = items.length;
+										}
+										items.insert(idx, _DebuggingItem(
+											id: _id++,
+											parentIds: [item.id],
+											isStub: true,
+											isPageStub: false,
+											hasUnknownStubChildren: false
+										));
+										setState(() {});
+									},
+									child: const Text('Add stub child')
+								),
+								AdaptiveThinButton(
+									onPressed: () {
+										final i = items.indexOf(item);
+										items[i] = _DebuggingItem(
+											id: item.id,
+											parentIds: item.parentIds,
+											isStub: false,
+											isPageStub: item.isPageStub,
+											hasUnknownStubChildren: !item.hasUnknownStubChildren
+										);
+										setState(() {});
+									},
+									child: const Text('Toggle h_u_s_c')
 								)
-							)
-						)
+							]
+						),
+						const SizedBox(height: 16)
 					]
 				)
 			),
@@ -116,7 +125,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 			id: 'treeDebugging',
 			initialList: items.toList(),
 			filterableAdapter: null,
-			useTree: true,
+			useTree: _useTree,
 			treeAdapter: RefreshableTreeAdapter(
 				getId: (i) => i.id,
 				getParentIds: (i) => i.parentIds,
@@ -124,7 +133,13 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				updateWithStubItems: (input, stubIds) async {
 					final output = input.map((item) {
 						if (stubIds.any((i) => i.childId == item.id)) {
-							return _DebuggingItem(id: item.id, parentIds: item.parentIds, isStub: false, hasUnknownStubChildren: false);
+							return _DebuggingItem(
+								id: item.id,
+								parentIds: item.parentIds,
+								isStub: false,
+								isPageStub: false,
+								hasUnknownStubChildren: false
+							);
 						}
 						return item;
 					}).toList();
@@ -134,6 +149,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 							id: _id++,
 							parentIds: [stubIds.single.childId],
 							isStub: false,
+							isPageStub: false,
 							hasUnknownStubChildren: false
 						));
 					}
@@ -145,6 +161,8 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				wrapTreeChild: (c, l) => c,
 				estimateHeight: (i, w) => 50,
 				getIsStub: (i) => i.isStub,
+				getIsPageStub: (i) => i.isPageStub,
+				isPaged: false,
 				initiallyCollapseSecondLevelReplies: false,
 				collapsedItemsShowBody: false,
 				repliesToOPAreTopLevel: true,
@@ -152,41 +170,63 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 			),
 			footer: Padding(
 				padding: const EdgeInsets.all(16),
-				child: Row(
-					mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+				child: Wrap(
+					spacing: 16,
+					runSpacing: 16,
 					children: [
-						AdaptiveIconButton(
-							icon: const Icon(CupertinoIcons.pencil),
+						AdaptiveThinButton(
+							child: const Text('Insert...'),
 							onPressed: () async {
-								final list = <String>[];
-								await editStringList(
-									context: context,
-									list: list,
-									name: 'id',
-									title: 'ID chain'
-								);
-								final ids = list.tryMap((v) => int.tryParse(v)).toList();
-								if (ids.isNotEmpty) {
-									items.add(_DebuggingItem(
-										id: ids.last,
-										parentIds: ids.sublist(0, ids.length - 1),
-										isStub: list.last == 's',
-										hasUnknownStubChildren: false
-									));
-									setState(() {});
+								try {
+									final list = <String>[];
+									await editStringList(
+										context: context,
+										list: list,
+										name: 'item',
+										title: 'Items'
+									);
+									final newItems = list.map((str) {
+										final list = str.split('/');
+										final ids = list.tryMap((v) => int.tryParse(v)).toList();
+										return _DebuggingItem(
+											id: ids.last,
+											parentIds: ids.sublist(0, ids.length - 1),
+											isStub: list.last.contains('s'),
+											isPageStub: list.last.contains('p'),
+											hasUnknownStubChildren: list.last.contains('u')
+										);
+									}).toList();
+									if (newItems.isNotEmpty) {
+										items.addAll(newItems);
+										setState(() {});
+									}
+								}
+								catch (e, st) {
+									Future.error(e, st);
+									if (context.mounted) {
+										alertError(context, e.toStringDio());
+									}
 								}
 							}
 						),
-						AdaptiveIconButton(
-							icon: const Icon(CupertinoIcons.tree),
-							onPressed: controller.mergeTrees
+						AdaptiveThinButton(
+							onPressed: controller.mergeTrees,
+							child: const Text('Merge trees')
 						),
-						AdaptiveIconButton(
-							icon: const Icon(CupertinoIcons.shuffle),
+						AdaptiveThinButton(
+							child: const Text('Shuffle()'),
 							onPressed: () {
 								items.shuffle();
 								setState(() {});
 							}
+						),
+						AdaptiveThinButton(
+							onPressed: () {
+								setState(() {
+									_useTree = !_useTree;
+								});
+							},
+							child: _useTree ? const Text('->Linear') : const Text('->Tree')
 						)
 					]
 				)

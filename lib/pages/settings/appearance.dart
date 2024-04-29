@@ -97,7 +97,7 @@ Thread _makeFakeThread() {
 				id: 123455,
 				passSinceYear: 2020,
 				flag: flag,
-				attachments: [attachment],
+				attachments_: [attachment],
 				spanFormat: PostSpanFormat.chan4,
 				ipNumber: 1
 			),
@@ -111,7 +111,7 @@ Thread _makeFakeThread() {
 				id: 123456,
 				passSinceYear: 2023,
 				flag: flag,
-				attachments: [],
+				attachments_: [],
 				spanFormat: PostSpanFormat.chan4,
 				ipNumber: 2
 			),
@@ -125,7 +125,7 @@ Thread _makeFakeThread() {
 				id: 123457,
 				passSinceYear: 2023,
 				flag: flag,
-				attachments: [],
+				attachments_: [],
 				spanFormat: PostSpanFormat.chan4,
 				ipNumber: 2
 			)

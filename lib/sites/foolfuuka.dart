@@ -243,7 +243,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
 			id: id,
 			threadId: threadId,
-			attachments: a == null ? [] : [a],
+			attachments_: a == null ? [] : [a],
 			spanFormat: PostSpanFormat.foolFuuka,
 			flag: _makeFlag(data),
 			posterId: data['poster_hash'],

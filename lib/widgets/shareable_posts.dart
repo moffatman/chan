@@ -241,6 +241,8 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						getId: (p) => p.id,
 						getParentIds: (p) => p.repliedToIds,
 						getIsStub: (p) => p.isStub,
+						getIsPageStub: (p) => p.isPageStub,
+						isPaged: imageboard.site.isPaged,
 						getHasOmittedReplies: (p) => p.hasOmittedReplies,
 						updateWithStubItems: (_, ids) => throw UnimplementedError(),
 						opId: zone.primaryThreadId,

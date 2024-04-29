@@ -261,8 +261,18 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 		}
 		else if (post == null) {
-			// Maybe not loaded yet?
-			await _listController.update();
+			if (context.read<ImageboardSite>().isPaged) {
+				// This will find the page and load the post
+				await _updateWithStubItems([ParentAndChildIdentifier(
+					parentId: widget.thread.id,
+					childId: postId
+				)]);
+				_listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+			}
+			else {
+				// Maybe not loaded yet?
+				await _listController.update();
+			}
 		}
 	}
 
@@ -343,7 +353,10 @@ class ThreadPageState extends State<ThreadPage> {
 				await WidgetsBinding.instance.endOfFrame;
 				await _listController.animateTo(
 					(post) => post.id == scrollTo!.$1,
-					orElseLast: (post) => post.id <= scrollTo!.$1,
+					// Lazy hack. but it works somehow to get to the unloadedPage stub
+					orElseLast: scrollTo.$1.isNegative
+						? (post) => post.id.isNegative && post.id > scrollTo!.$1
+						: (post) => post.id <= scrollTo!.$1,
 					alignment: scrollTo.$2,
 					duration: const Duration(milliseconds: 1)
 				);
@@ -776,7 +789,7 @@ class ThreadPageState extends State<ThreadPage> {
 			final tmpPersistentState = persistentState;
 			final site = context.read<ImageboardSite>();
 			final asArchived = await site.getPostFromArchive(post.board, post.id, priority: RequestPriority.interactive);
-			tmpPersistentState.thread?.mergePosts(null, [asArchived], site.placeOrphanPost);
+			tmpPersistentState.thread?.mergePosts(null, [asArchived], site);
 			await tmpPersistentState.save();
 			setState(() {});
 		}
@@ -956,7 +969,7 @@ class ThreadPageState extends State<ThreadPage> {
 			_checkForeground();
 			notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
 		}
-		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site.placeOrphanPost);
+		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site);
 		final loadedReferencedThreads = await _loadReferencedThreads();
 		_checkForNewGeneral();
 		if (newThread != tmpPersistentState.thread) {
@@ -1049,7 +1062,7 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		final oldIds = thread.posts_.map((p) => p.id).toSet();
 		persistentState.unseenPostIds.data.addAll(newChildren.map((p) => p.id).where((id) => !oldIds.contains(id) && !persistentState.youIds.contains(id)));
-		thread.mergePosts(null, newChildren, site.placeOrphanPost);
+		thread.mergePosts(null, newChildren, site);
 		if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
 			// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
 			thread.posts_.tryFirstWhere((p) => p.id == ids.single.childId)?.hasOmittedReplies = false;
@@ -1488,6 +1501,8 @@ class ThreadPageState extends State<ThreadPage> {
 																			getId: (p) => p.id,
 																			getParentIds: (p) => p.repliedToIds,
 																			getIsStub: (p) => p.isStub,
+																			getIsPageStub: (p) => p.isPageStub,
+																			isPaged: site.isPaged,
 																			getHasOmittedReplies: (p) => p.hasOmittedReplies,
 																			updateWithStubItems: (_, ids) => _updateWithStubItems(ids),
 																			opId: widget.thread.id,

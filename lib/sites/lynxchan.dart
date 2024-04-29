@@ -298,7 +298,7 @@ class SiteLynxchan extends ImageboardSite {
 				threadId: obj['threadId'],
 				id: obj['threadId'],
 				spanFormat: PostSpanFormat.lynxchan,
-				attachments: (obj['files'] as List).map((f) => Attachment(
+				attachments_: (obj['files'] as List).map((f) => Attachment(
 					type: AttachmentType.fromFilename(f['path']),
 					board: board,
 					id: f['path'],
@@ -322,7 +322,7 @@ class SiteLynxchan extends ImageboardSite {
 				title: (obj['subject'] as String?)?.unescapeHtml,
 				isSticky: obj['pinned'],
 				time: DateTime.parse(obj['creation']),
-				attachments: op.attachments,
+				attachments: op.attachments_,
 				currentPage: page
 			);
 		}).toList();
@@ -361,7 +361,7 @@ class SiteLynxchan extends ImageboardSite {
 			posterId: obj['id'],
 			id: id,
 			spanFormat: PostSpanFormat.lynxchan,
-			attachments: (obj['files'] as List).asMap().entries.map((e) => Attachment(
+			attachments_: (obj['files'] as List).asMap().entries.map((e) => Attachment(
 				type: AttachmentType.fromFilename(e.value['path']),
 				board: board,
 				// Lynxchan dedupes images. Prepend some uniqueness here to avoid Hero problems later.
@@ -404,7 +404,7 @@ class SiteLynxchan extends ImageboardSite {
 			title: (response.data['subject'] as String?)?.unescapeHtml,
 			isSticky: response.data['pinned'],
 			time: op.time,
-			attachments: op.attachments,
+			attachments: op.attachments_,
 			isArchived: response.data['archived'] ?? false
 		);
 	}

@@ -6,6 +6,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -18,14 +19,15 @@ import 'package:provider/provider.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 
 class _PostsPageItem {
-	final bool stub;
+	final ParentAndChildIdentifier? stubId;
 	final Post? post;
 	final List<ParentAndChildIdentifier>? stubIds;
+	bool get stub => stubId != null || stubIds != null;
 	bool loading = false;
 
-	_PostsPageItem.post(this.post) : stubIds = null, stub = false;
-	_PostsPageItem.primaryStub(List<ParentAndChildIdentifier> this.stubIds) : post = null, stub = true;
-	_PostsPageItem.secondaryStub(this.post) : stubIds = null, stub = true;
+	_PostsPageItem.post(Post this.post) : stubIds = null, stubId = null;
+	_PostsPageItem.primaryStub(List<ParentAndChildIdentifier> this.stubIds) : post = null, stubId = null;
+	_PostsPageItem.secondaryStub(ParentAndChildIdentifier this.stubId) : stubIds = null, post = null;
 
 	@override
 	String toString() => '_PostsPageItem(post: $post, stub: $stub, stubIds: $stubIds)';
@@ -92,11 +94,21 @@ class _PostsPageState extends State<PostsPage> {
 			final matchingPost = widget.zone.findPost(id);
 			if (matchingPost != null) {
 				if (matchingPost.isStub) {
-					replies.add(_PostsPageItem.secondaryStub(matchingPost));
+					replies.add(_PostsPageItem.secondaryStub(ParentAndChildIdentifier(
+						parentId: matchingPost.parentId ?? matchingPost.threadId,
+						childId: matchingPost.id
+					)));
 				}
 				else {
 					replies.add(_PostsPageItem.post(matchingPost));
 				}
+			}
+			else if (context.read<ImageboardSite?>()?.isPaged ?? false) {
+				// It must be on another page
+				replies.add(_PostsPageItem.secondaryStub(ParentAndChildIdentifier(
+					parentId: widget.zone.primaryThreadId,
+					childId: id
+				)));
 			}
 			else {
 				final archivedPost = widget.zone.postFromArchive(widget.zone.board, id);
@@ -108,12 +120,9 @@ class _PostsPageState extends State<PostsPage> {
 		for (final method in widget.zone.postSortingMethods) {
 			mergeSort<_PostsPageItem>(replies, compare: (a, b) => method(a.post!, b.post!));
 		}
-		final stubPosts = replies.where((p) => p.stub).map((p) => p.post);
-		if (stubPosts.isNotEmpty) {
-			replies.add(_PostsPageItem.primaryStub(stubPosts.map((p) => ParentAndChildIdentifier(
-				parentId: p!.parentId ?? p.threadId,
-				childId: p.id
-			)).toList()));
+		final stubIds = replies.tryMap((r) => r.stubId).toList();
+		if (stubIds.isNotEmpty) {
+			replies.add(_PostsPageItem.primaryStub(stubIds));
 		}
 	}
 

@@ -507,7 +507,7 @@ class Site4Chan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
 			threadId: threadId,
-			attachments: a == null ? const [] : [a].toList(growable: false),
+			attachments_: a == null ? const [] : [a].toList(growable: false),
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.chan4,
 			flag: _makeFlag(data, board),
@@ -712,7 +712,7 @@ class Site4Chan extends ImageboardSite {
 						threadId: id,
 						id: id,
 						spanFormat: PostSpanFormat.chan4,
-						attachments: const []
+						attachments_: const []
 					)
 				]
 			);
@@ -1285,7 +1285,7 @@ class Site4Chan extends ImageboardSite {
 						threadId: int.parse(linkMatch.group(2)!),
 						id: int.parse(linkMatch.group(3)!),
 						spanFormat: PostSpanFormat.chan4Search,
-						attachments: const []
+						attachments_: const []
 					));
 				});
 			}
@@ -1335,7 +1335,7 @@ class Site4Chan extends ImageboardSite {
 					threadId: threadId,
 					id: postId,
 					spanFormat: PostSpanFormat.chan4Search,
-					attachments: (postId != threadId || attachment == null) ? const [] : [attachment]
+					attachments_: (postId != threadId || attachment == null) ? const [] : [attachment]
 				);
 			}).toList();
 			return [ImageboardArchiveSearchResult.thread(Thread(
@@ -1347,7 +1347,7 @@ class Site4Chan extends ImageboardSite {
 				title: thread.querySelector('.subject')?.text.trim(),
 				isSticky: false,
 				time: posts.first.time,
-				attachments: posts.first.attachments
+				attachments: posts.first.attachments_
 			))];
 		}).toList();
 		return ImageboardArchiveSearchResultPage(

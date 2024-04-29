@@ -98,7 +98,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 								]
 							),
 							if (site.supportsUserInfo) SizedBox(
-								height: 100,
+								height: 110,
 								child: Row(
 									mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 									children: [

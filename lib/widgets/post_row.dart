@@ -162,7 +162,7 @@ class PostRow extends StatelessWidget {
 	final bool allowTappingLinks;
 	final bool shrinkWrap;
 	final bool isSelected;
-	final Function(Object?, StackTrace?)? onThumbnailLoadError;
+	final void Function(Object?, StackTrace?)? onThumbnailLoadError;
 	final PostSpanRenderOptions? baseOptions;
 	final bool showSiteIcon;
 	final bool showBoardName;
@@ -204,16 +204,37 @@ class PostRow extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		if (post.isPageStub) {
+			return Padding(
+				padding: const EdgeInsets.all(4),
+				child: Row(
+					mainAxisAlignment: MainAxisAlignment.center,
+					children: [
+						const Icon(CupertinoIcons.doc, size: 16),
+						const SizedBox(width: 8),
+						Flexible(
+							child: Text(
+								'Page ${post.id.abs()}',
+								textAlign: TextAlign.center,
+								style: const TextStyle(
+									fontSize: 16
+								)
+							)
+						)
+					]
+				)
+			);
+		}
 		final rootContext = context;
 		final site = context.watch<ImageboardSite>();
 		final notifications = context.watch<Notifications>();
 		final savedPost = context.select<Persistence, SavedPost?>((p) => p.getSavedPost(post));
 		Post latestPost = savedPost?.post ?? post;
 		bool didUpdateAttachments = false;
-		for (int i = 0; i < latestPost.attachments.length; i++) {
-			final attachment = post.attachments.tryFirstWhere((a) => a.id == latestPost.attachments[i].id);
-			if (attachment?.url != latestPost.attachments[i].url) {
-				latestPost.attachments[i] = attachment!;
+		for (int i = 0; i < latestPost.attachments_.length; i++) {
+			final attachment = post.attachments_.tryFirstWhere((a) => a.id == latestPost.attachments_[i].id);
+			if (attachment != null && attachment.url != latestPost.attachments_[i].url) {
+				latestPost.attachments_[i] = attachment;
 				didUpdateAttachments = true;
 			}
 		}
@@ -233,8 +254,9 @@ class PostRow extends StatelessWidget {
 		final isYourPost = revealYourPosts && (receipt?.markAsYou ?? false) || (parentZoneThreadState?.postsMarkedAsYou.contains(post.id) ?? false);
 		Border? border;
 		final largeImageWidth = this.largeImageWidth ?? settings.centeredPostThumbnailSize;
-		final List<Attachment> largeAttachments = largeImageWidth == null ? [] : latestPost.attachments;
-		final List<Attachment> smallAttachments = largeImageWidth == null ? latestPost.attachments : [];
+		// These use attachments_ on purpose to avoid pulling out inlines
+		final List<Attachment> largeAttachments = largeImageWidth == null ? [] : latestPost.attachments_;
+		final List<Attachment> smallAttachments = largeImageWidth == null ? latestPost.attachments_ : [];
 		if (isYourPost && showYourPostBorder) {
 			border = Border(
 				left: BorderSide(color: theme.secondaryColor, width: 10)
@@ -333,6 +355,9 @@ class PostRow extends StatelessWidget {
 										(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 											showCrossThreadLabel: showCrossThreadLabel,
 											shrinkWrap: shrinkWrap,
+											onThumbnailTap: onThumbnailTap,
+											onThumbnailLoadError: onThumbnailLoadError,
+											revealSpoilerImages: revealSpoilerImages,
 											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
 											postInject: overrideReplyCount != null ? WidgetSpan(
 												alignment: PlaceholderAlignment.top,

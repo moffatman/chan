@@ -99,7 +99,7 @@ void main() {
 				threadId: 0,
 				id: 0,
 				spanFormat: PostSpanFormat.stub,
-				attachments: const []
+				attachments_: const []
 			);
 			final attachment = Attachment(
 				type: AttachmentType.url,
@@ -123,7 +123,7 @@ void main() {
 				threadId: 0,
 				id: 0,
 				spanFormat: PostSpanFormat.stub,
-				attachments: [attachment].toList(growable: false)
+				attachments_: [attachment].toList(growable: false)
 			);
 			final results = Hive.merge(
         merger: const ResolvedAdaptedMerger(PostAdapter()),
