@@ -580,7 +580,7 @@ class SiteXenforo extends ImageboardSite {
 		// Find last sibling
 		int index = posts.lastIndexWhere((p) => p.parentId == post.parentId);
 		if (index == -1) {
-			// No last sibling, find parent parent
+			// No last sibling, find parent page
 			index = posts.indexWhere((p) => p.id == post.parentId);
 			if (index != -1) {
 				// After parent
@@ -588,7 +588,16 @@ class SiteXenforo extends ImageboardSite {
 			}
 		}
 		else {
-			// After last sibling
+			// Walk back to find proper sequence within siblings
+			while (
+				index >= 0 &&
+				post.parentId == posts[index].parentId &&
+				post.id < posts[index].id
+			) {
+				// The sibling comes before us
+				index--;
+			}
+			// After sibling
 			index++;
 		}
 		if (index == -1) {
