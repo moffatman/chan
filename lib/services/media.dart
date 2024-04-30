@@ -228,6 +228,11 @@ class MediaScan {
 			});
 		}
 		catch (e, st) {
+			// Must be a corrupt box, delete it
+			_boxLock.protect(() async {
+				_mediaScanBox = null;
+				await Hive.deleteBoxFromDisk('mediaScans');
+			});
 			// Don't block app startup
 			Future.error(e, st); // crashlytics
 		}
