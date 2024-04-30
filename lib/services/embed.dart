@@ -5,11 +5,14 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:html/parser.dart';
+import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
 import 'package:provider/provider.dart';
 
@@ -32,7 +35,11 @@ Future<bool> embedPossible({
 	if (url.startsWith('chance://site/') || url.startsWith('chance://theme')) {
 		return true;
 	}
-	if (url.contains('twitter.com/') || url.contains('imgur.com/') || url.contains('imgur.io/')) {
+	if (url.contains('instagram.com/p/')) {
+		return true;
+	}
+	// Twitter should be contained in embedRegexes already 
+	if (url.contains('imgur.com/') || url.contains('imgur.io/')) {
 		return false;
 	}
 	if (url.contains('youtube.com/shorts')) {
@@ -91,6 +98,49 @@ class EmbedData {
 	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl, thumbnailWidget: $thumbnailWidget)';
 }
 
+final _twitterPattern = RegExp(r'twitter\.com/[^/]+/status/(\d+)');
+
+Future<EmbedData?> _loadTwitter(String id) async {
+	final response = await Settings.instance.client.getUri(Uri.https('api.vxtwitter.com', '/_/status/$id'));
+	return EmbedData(
+		title: response.data['text'],
+		provider: 'Twitter',
+		author: response.data['user_name'],
+		thumbnailUrl: switch ((response.data['media_extended'] as List?)?.tryFirst['thumbnail_url']) {
+			String url => generateThumbnailerForUrl(Uri.parse(url)).toString(),
+			_ => response.data['user_profile_image_url']
+		}
+	);
+}
+
+final _instagramPattern = RegExp(r'instagram\.com/p/([^/]+)');
+
+Future<EmbedData?> _loadInstagram(String id) async {
+	final response = await Settings.instance.client.getUri(Uri.https('www.instagram.com', '/p/$id/embed/captioned'));
+	final document = parse(response.data);
+	final caption = document.querySelector('.Caption');
+	final src = document.querySelector('.EmbeddedMediaImage')?.attributes['src'];
+	if (caption == null || src == null) {
+		return null;
+	}
+	return EmbedData(
+		author: caption.querySelector('.CaptionUsername')!.text,
+		title: caption.nodes.map((e) {
+			if (e is dom.Element) {
+				if (e.classes.contains('CaptionUsername') || e.classes.contains('CaptionComments')) {
+					return '';
+				}
+				if (e.localName == 'br') {
+					return '\n';
+				}
+			}
+			return e.text ?? '';
+		}).join('').trim(),
+		provider: 'Instagram',
+		thumbnailUrl: generateThumbnailerForUrl(Uri.parse(src)).toString()
+	);
+}
+
 Future<EmbedData?> loadEmbedData({
 	required String url,
 	required BuildContext context
@@ -138,6 +188,14 @@ Future<EmbedData?> loadEmbedData({
 		);
 	}
 	else {
+		final twitterMatch = _twitterPattern.firstMatch(url);
+		if (twitterMatch != null) {
+			return _loadTwitter(twitterMatch.group(1)!);
+		}
+		final instagramMatch = _instagramPattern.firstMatch(url);
+		if (instagramMatch != null) {
+			return _loadInstagram(instagramMatch.group(1)!);
+		}
 		final target = await ImageboardRegistry.instance.decodeUrl(url);
 		if (target != null && target.$2.threadId != null) {
 			Thread? thread;
