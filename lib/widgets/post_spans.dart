@@ -797,6 +797,10 @@ class PostQuoteLinkSpan extends PostSpan {
 
 	@override
 	String buildText({bool forQuoteComparison = false}) {
+		if (forQuoteComparison) {
+			// Xenforo does not nest quotes
+			return '';
+		}
 		return '>>$postId';
 	}
 }
@@ -832,7 +836,8 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 	@override
 	String buildText({bool forQuoteComparison = false}) {
 		if (forQuoteComparison) {
-			return quoteLink.buildText();
+			// Xenforo does not nest quotes
+			return '';
 		}
 		return '${quoteLink.buildText()}\n${context.buildText()}';
 	}
