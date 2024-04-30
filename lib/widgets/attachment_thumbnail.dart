@@ -227,7 +227,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						loadstate.extendedImageLoadState == LoadState.failed ||
 						(
 							// The real image dimensions were 1x1 (thumbnailer-failed placeholder)
-							pixelation > 1 &&
+							pixelation != 1 &&
 							(loadstate.extendedImageInfo?.image.height ?? 0) == 1) &&
 							((loadstate.extendedImageInfo?.image.width ?? 0) == 1)
 						) {
