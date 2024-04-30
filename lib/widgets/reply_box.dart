@@ -27,6 +27,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
@@ -142,6 +143,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _disableLoginSystem = false;
 	final Map<ImageboardSnippet, TextEditingController> _snippetControllers = {};
 	final List<QueuedPost> _submittingPosts = [];
+	bool _showSubmittingPosts = true;
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
 		int threadId => ThreadIdentifier(widget.board, threadId),
@@ -1950,6 +1952,17 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					onPressed: expandOptions,
 					icon: const Icon(CupertinoIcons.gear)
 				),
+				if (_submittingPosts.isNotEmpty) AdaptiveIconButton(
+					icon: StationaryNotifyingIcon(
+						icon: Icon(_showSubmittingPosts ? CupertinoIcons.tray_arrow_down : CupertinoIcons.tray_arrow_up, size: 20),
+						primary: _showSubmittingPosts ? 0 : _submittingPosts.length
+					),
+					onPressed: () {
+						setState(() {
+							_showSubmittingPosts = !_showSubmittingPosts;
+						});
+					}
+				),
 				GestureDetector(
 					onLongPress: () {
 						// Save as draft
@@ -2131,37 +2144,41 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							)
 						)
 					),
-					AnimatedSize(
-						duration: const Duration(milliseconds: 300),
-						alignment: Alignment.topCenter,
-						child: show ? ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxHeight: 200
-							),
-							child: TransformedMediaQuery(
-								transformation: (context, mq) => mq.copyWith(
-									padding: EdgeInsets.zero,
-									viewPadding: EdgeInsets.zero,
-									viewInsets: EdgeInsets.zero
+					Expander(
+						expanded: _showSubmittingPosts,
+						bottomSafe: true,
+						child: AnimatedSize(
+							duration: const Duration(milliseconds: 300),
+							alignment: Alignment.topCenter,
+							child: show ? ConstrainedBox(
+								constraints: const BoxConstraints(
+									maxHeight: 200
 								),
-								child: MaybeScrollbar(
-									child: ListView.builder(
-										primary: false,
-										shrinkWrap: true,
-										itemCount: _submittingPosts.length,
-										itemBuilder: (context, i) {
-											final p = _submittingPosts[i];
-											return QueueEntryWidget(
-												entry: p,
-												replyBoxMode: true,
-												onMove: () => _onDraftTap(p, true),
-												onCopy: () => _onDraftTap(p, false),
-											);
-										}
+								child: TransformedMediaQuery(
+									transformation: (context, mq) => mq.copyWith(
+										padding: EdgeInsets.zero,
+										viewPadding: EdgeInsets.zero,
+										viewInsets: EdgeInsets.zero
+									),
+									child: MaybeScrollbar(
+										child: ListView.builder(
+											primary: false,
+											shrinkWrap: true,
+											itemCount: _submittingPosts.length,
+											itemBuilder: (context, i) {
+												final p = _submittingPosts[i];
+												return QueueEntryWidget(
+													entry: p,
+													replyBoxMode: true,
+													onMove: () => _onDraftTap(p, true),
+													onCopy: () => _onDraftTap(p, false),
+												);
+											}
+										)
 									)
 								)
-							)
-						) : const SizedBox(width: double.infinity)
+							) : const SizedBox(width: double.infinity)
+						)
 					),
 					Expander(
 						expanded: showAttachmentOptions && show,
