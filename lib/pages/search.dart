@@ -49,6 +49,14 @@ class SelectedSearchResult {
 	int get hashCode => Object.hash(imageboard, result, threadSearch, fromArchive);
 }
 
+extension _PreferBoardSpecificSearch on ImageboardSite {
+	bool get preferBoardSpecificSearch =>
+		// There are multiple boards on this site
+		supportsMultipleBoards
+		// Full-site and board search have different support (assuming board search is more powerful)
+		&& supportsSearch('').options != supportsSearch(null).options;
+}
+
 class SearchPage extends StatefulWidget {
 	const SearchPage({
 		Key? key
@@ -199,6 +207,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	bool _searchFocused = false;
 	bool _showingPicker = false;
 	String? _lastImageboardKey;
+	String? _lastBoardName;
 	late final TextEditingController _subjectFieldController;
 	late final TextEditingController _nameFieldController;
 	late final TextEditingController _tripFieldController;
@@ -208,10 +217,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		super.initState();
 		_controller = TextEditingController();
 		_focusNode = FocusNode();
-		_lastImageboardKey = Persistence.tabs[Persistence.currentTabIndex].imageboardKey;
+		final imageboard = Persistence.tabs[Persistence.currentTabIndex].imageboard;
+		_lastImageboardKey = imageboard?.key;
+		_lastBoardName = Persistence.tabs[Persistence.currentTabIndex].board;
 		query = ImageboardArchiveSearchQuery(
 			imageboardKey: _lastImageboardKey,
-			boards: []
+			boards: [
+				if ((imageboard?.site.preferBoardSpecificSearch ?? false) && _lastBoardName != null) _lastBoardName!
+			]
 		);
 		_focusNode.addListener(() {
 			final bool isFocused = _focusNode.hasFocus;
@@ -251,9 +264,23 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		if (currentImageboard.key != _lastImageboardKey && (currentImageboard.site.supportsSearch(null).options.text || currentImageboard.site.supportsSearch('').options.text)) {
 			if (query.imageboardKey == _lastImageboardKey) {
 				query.imageboardKey = currentImageboard.key;
+				query.boards = [];
+				_lastBoardName = null;
 			}
 		}
 		_lastImageboardKey = currentImageboard.key;
+		final currentBoardName = Persistence.tabs[Persistence.currentTabIndex].board;
+		if (currentBoardName != _lastBoardName) {
+			if (
+				query.boards.tryLast == _lastBoardName
+				&& currentImageboard.site.preferBoardSpecificSearch
+				&& currentBoardName != null) {
+				query.boards = [
+					currentBoardName
+				];
+			}
+			_lastBoardName = currentBoardName;
+		}
 		final imageboard = query.imageboard;
 		final String? boardName;
 		if (imageboard != null && query.boards.isNotEmpty) {
