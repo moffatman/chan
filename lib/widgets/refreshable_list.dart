@@ -1053,7 +1053,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		Map<int, int> treeRootIndexLookup,
 		Map<int, Map<int, int>> treeChildrenIndexLookup
 	})? _lastTreeOrder;
-	bool _addedResumeCallback = false;
+	bool _addedAppResumeCallback = false;
+	bool _addedNetworkResumeCallback = false;
 	final Set<_RefreshableTreeItemsCacheKey> _internedHashKeys = {};
 	final WeakMap<Filterable, String?> _searchStrings = WeakMap();
 
@@ -1314,17 +1315,25 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> _autoUpdate() async { 
-		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-			_addedResumeCallback = false;
-			await update();
-		}
-		else {
-			if (!_addedResumeCallback) {
+		if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+			if (!_addedAppResumeCallback) {
 				Settings.instance.addAppResumeCallback(_autoUpdate);
 			}
-			_addedResumeCallback = true;
+			_addedAppResumeCallback = true;
 			resetTimer();
+			return;
 		}
+		_addedAppResumeCallback = false;
+		if (Settings.instance.isNetworkDown) {
+			if (!_addedNetworkResumeCallback) {
+				Settings.instance.addNetworkResumeCallback(_autoUpdate);
+			}
+			_addedNetworkResumeCallback = true;
+			resetTimer();
+			return;
+		}
+		_addedNetworkResumeCallback = false;
+		await update();
 	}
 
 	Future<void> update({

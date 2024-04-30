@@ -428,7 +428,8 @@ class ThreadWatcherController extends ChangeNotifier {
 	final Set<ThreadWatcher> _watchers = {};
 	final Set<ThreadWatcher> _doghouse = {};
 	bool updatingNow = false;
-	bool _addedResumeCallback = false;
+	bool _addedAppResumeCallback = false;
+	bool _addedNetworkResumeCallback = false;
 
 	ThreadWatcherController({
 		this.interval = const Duration(seconds: 90),
@@ -447,13 +448,22 @@ class ThreadWatcherController extends ChangeNotifier {
 	Future<void> update() async {
 		if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
 			// Don't update when app is in background
-			if (!_addedResumeCallback) {
+			if (!_addedAppResumeCallback) {
 				Settings.instance.addAppResumeCallback(update);
 			}
-			_addedResumeCallback = true;
+			_addedAppResumeCallback = true;
 			return;
 		}
-		_addedResumeCallback = false;
+		_addedAppResumeCallback = false;
+		if (Settings.instance.isNetworkDown) {
+			// Don't update when app is in background
+			if (!_addedNetworkResumeCallback) {
+				Settings.instance.addNetworkResumeCallback(update);
+			}
+			_addedNetworkResumeCallback = true;
+			return;
+		}
+		_addedNetworkResumeCallback = false;
 		updatingNow = true;
 		notifyListeners();
 		if (!ImageboardRegistry.instance.initialized || _watchers.isEmpty) {

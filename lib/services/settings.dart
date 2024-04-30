@@ -2035,9 +2035,15 @@ class Settings extends ChangeNotifier {
 		return _connectivity;
 	}
 	set connectivity(ConnectivityResult? newConnectivity) {
+		if (_connectivity == ConnectivityResult.none) {
+			// Network coming up
+			ImageboardRegistry.instance.retryFailedBoardSetup();
+			_runNetworkResumeCallbacks();
+		}
 		_connectivity = newConnectivity;
 		notifyListeners();
 	}
+	bool get isNetworkDown => _connectivity == ConnectivityResult.none;
 	bool get isConnectedToWifi => switch (_connectivity) {
 		ConnectivityResult.mobile || null => false,
 		_ => true
@@ -2692,9 +2698,31 @@ class Settings extends ChangeNotifier {
 	}
 	void _runAppResumeCallbacks() {
 		for (final task in _appResumeCallbacks) {
-			task();
+			try {
+				task();
+			}
+			catch (e, st) {
+				// Ignore
+				Future.error(e, st);
+			}
 		}
 		_appResumeCallbacks.clear();
+	}
+	final List<VoidCallback> _networkResumeCallbacks = [];
+	void addNetworkResumeCallback(VoidCallback task) {
+		_networkResumeCallbacks.add(task);
+	}
+	void _runNetworkResumeCallbacks() {
+		for (final task in _networkResumeCallbacks) {
+			try {
+				task();
+			}
+			catch (e, st) {
+				// Ignore
+				Future.error(e, st);
+			}
+		}
+		_networkResumeCallbacks.clear();
 	}
 
 	bool get isCrashlyticsCollectionEnabled => FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled;
@@ -2911,9 +2939,6 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 		WidgetsBinding.instance.addObserver(this);
 		_checkConnectivity();
 		connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
-			if (Settings.instance.connectivity == ConnectivityResult.none) {
-				ImageboardRegistry.instance.retryFailedBoardSetup();
-			}
 			Settings.instance.connectivity = result;
 		});
 		if (isDesktop()) {
