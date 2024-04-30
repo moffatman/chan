@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/firebase_options.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
@@ -1565,32 +1566,49 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}) {
 		final content = AnimatedBuilder(
 			animation: _tabs._tabController,
-			builder: (context, _) => Opacity(
-				opacity: (index <= 0 ? (_tabs.mainTabIndex == 0 && index == -1 * _tabs.activeBrowserTab.value) : index == _tabs.mainTabIndex) ? 1.0 : 0.5,
-				child: Column(
-					mainAxisAlignment: MainAxisAlignment.center,
-					children: [
-						icon,
-						if (label != null) ...[
-							const SizedBox(height: 4),
-							FittedBox(
-								fit: BoxFit.contain,
-								child: Row(
-									mainAxisSize: MainAxisSize.min,
-									mainAxisAlignment: MainAxisAlignment.center,
-									children: [
-										if (preLabelInjection != null) ...[
-											preLabelInjection,
-											const SizedBox(width: 4)
-										],
-										Text(label, style: const TextStyle(fontSize: 15))
-									]
+			builder: (context, _) {
+				final selected = (index <= 0 ? (_tabs.mainTabIndex == 0 && index == -1 * _tabs.activeBrowserTab.value) : index == _tabs.mainTabIndex);
+				return Opacity(
+					opacity: selected ? 1.0 : 0.5,
+					child: Column(
+						mainAxisAlignment: MainAxisAlignment.center,
+						children: [
+							icon,
+							if (label != null) ...[
+								const SizedBox(height: 4),
+								ConstrainedBox(
+									constraints: BoxConstraints(
+										maxWidth: axis == Axis.vertical ? double.infinity : (selected ? 200 : 64),
+									),
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										mainAxisAlignment: MainAxisAlignment.center,
+										children: [
+											if (preLabelInjection != null) ...[
+												preLabelInjection,
+												const SizedBox(width: 4)
+											],
+											Flexible(
+												child: AutoSizeText(
+													label,
+													style: const TextStyle(fontSize: 15),
+													maxLines: 1,
+													overflow: TextOverflow.ellipsis,
+													textAlign: TextAlign.center,
+													minFontSize: switch (axis) {
+														Axis.vertical => 11,
+														Axis.horizontal => 12
+													},
+												)
+											)
+										]
+									)
 								)
-							)
+							]
 						]
-					]
-				)
-			)
+					)
+				);
+			}
 		);
 		return Builder(
 			builder: (context) {
