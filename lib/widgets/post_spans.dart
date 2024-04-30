@@ -2320,7 +2320,8 @@ TextSpan buildPostInfoRow({
 		postIdNonRepeatingSegment = digits;
 		postIdRepeatingSegment = null;
 	}
-	final isOP = site.supportsUserInfo && post.name == thread?.posts_.tryFirst?.name;
+	final op = site.isPaged ? thread?.posts_.tryFirstWhere((p) => !p.isPageStub) : thread?.posts_.tryFirst;
+	final isOP = site.supportsUserInfo && post.name == op?.name;
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
 	const lineBreak = TextSpan(text: '\n');
 	final children = [
@@ -2333,7 +2334,7 @@ TextSpan buildPostInfoRow({
 				)
 			),
 		],
-		if (post.id == post.threadId && thread?.flair != null && !(thread?.title?.contains(thread.flair?.name ?? '') ?? false)) ...[
+		if (post == op && thread?.flair != null && !(thread?.title?.contains(thread.flair?.name ?? '') ?? false)) ...[
 			makeFlagSpan(
 				context: context,
 				zone: zone,
@@ -2344,7 +2345,7 @@ TextSpan buildPostInfoRow({
 			),
 			const TextSpan(text: ' '),
 		],
-		if (post.id == post.threadId && thread?.title != null) TextSpan(
+		if (post == op && thread?.title != null) TextSpan(
 			text: '${thread?.title}\n',
 			style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
 		),
