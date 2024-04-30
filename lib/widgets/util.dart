@@ -748,7 +748,10 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 				animation: animation,
 				builder: (context, child) => _HiddenBox(
 					factor: widget.curve.transform(animation.value),
-					child: child
+					child: TickerMode(
+						enabled: animation.value > 0,
+						child: child!
+					)
 				),
 				child: FadeTransition(
 					opacity: animation,
