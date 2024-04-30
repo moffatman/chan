@@ -206,16 +206,19 @@ class SiteXenforo extends ImageboardSite {
 							}
 							else {
 								yield quote;
+								yield const PostLineBreakSpan();
 							}
 						}
 						else {
 							final instagramLink = node.attributes['data-instgrm-permalink'];
 							if (instagramLink != null) {
 								yield PostLinkSpan(instagramLink);
+								yield const PostLineBreakSpan();
 							}
 							else {
 								// Idk
 								yield PostTextSpan(node.outerHtml);
+								yield const PostLineBreakSpan();
 							}
 						}
 					}
