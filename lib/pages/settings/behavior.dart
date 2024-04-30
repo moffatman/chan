@@ -149,6 +149,11 @@ final behaviorSettings = [
 		setting: Settings.autoloadAttachmentsSetting
 	),
 	const SwitchSettingWidget(
+		description: 'Auto-rotate attachments in gallery',
+		icon: CupertinoIcons.rotate_right,
+		setting: Settings.autoRotateInGallerySetting
+	),
+	const SwitchSettingWidget(
 		description: 'Always automatically load tapped attachment',
 		icon: Icons.touch_app_outlined,
 		setting: Settings.alwaysAutoloadTappedAttachmentSetting
