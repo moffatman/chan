@@ -381,7 +381,14 @@ class SiteReddit extends ImageboardSite {
 						yield PostStrikethroughSpan(PostTextSpan(node.text));
 					}
 					else if (node.localName == 'blockquote') {
-						yield PostQuoteSpan(PostNodeSpan(node.children.isNotEmpty ? visit(node.children).toList() : visit(node.nodes).toList()));
+						final text = node.text.trim();
+						if (text.startsWith('!') && text.endsWith('!<')) {
+							// Mis-parsed spoiler (at beginning of line, it also starts with ">")
+							yield PostSpoilerSpan(PostNodeSpan(Site4Chan.parsePlaintext(text.substring(1, text.length - 2))), spoilerSpanId++);
+						}
+						else {
+							yield PostQuoteSpan(PostNodeSpan(node.children.isNotEmpty ? visit(node.children).toList() : visit(node.nodes).toList()));
+						}
 					}
 					else if (node.localName == 'pre') {
 						yield PostCodeSpan(node.text.trimRight());
