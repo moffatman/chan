@@ -686,7 +686,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								)
 							]
 						),
-						if (options.imageMD5) Container(
+						if (options.imageMD5 && query.md5 != null) Container(
 							padding: const EdgeInsets.only(top: 16),
 							alignment: Alignment.center,
 							child: Text('MD5: ${query.md5}')
