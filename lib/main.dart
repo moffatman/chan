@@ -1352,7 +1352,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					if (postId != null) {
 						catalogTab.initialPostId[ThreadIdentifier(board, threadId)] = postId;
 					}
-					catalogTab.masterDetailKey.currentState?.setValue(0, ThreadIdentifier(board, threadId));
+					() async {
+						for (int i = 0; i < 200 && catalogTab.masterDetailKey.currentState == null; i++) {
+							await Future.delayed(const Duration(milliseconds: 50));
+						}
+						catalogTab.masterDetailKey.currentState?.setValue(0, ThreadIdentifier(board, threadId));
+					}();
 					catalogTab.didUpdate();
 				}
 			}
