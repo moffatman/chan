@@ -1022,6 +1022,7 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						]
 					),
+					useRootNavigator: true,
 					icon: Adaptive.icons.photo,
 					masterBuilder: (context, selected, setter) => AnimatedBuilder(
 						key: _savedAttachmentsAnimatedBuilderKey,

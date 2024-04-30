@@ -124,6 +124,7 @@ class MultiMasterPane<T> {
 	ValueNotifier<T?> currentValue;
 	final ValueChanged<T?>? onValueChanged;
 	DateTime? _lastAutomatedPop;
+	final bool useRootNavigator;
 
 	MultiMasterPane({
 		required this.masterBuilder,
@@ -132,6 +133,7 @@ class MultiMasterPane<T> {
 		this.navigationBar,
 		this.icon,
 		T? initialValue,
+		this.useRootNavigator = false,
 		this.onValueChanged
 	}) : currentValue = ValueNotifier<T?>(initialValue);
 
@@ -313,7 +315,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		if (onePane) {
 			if (pane.currentValue.value != null) {
 				_popMasterValueRoutes();
-				masterKey.currentState!.push(pane.buildDetailRoute(
+				(pane.useRootNavigator ? Navigator.of(context, rootNavigator: true) : masterKey.currentState!).push(pane.buildDetailRoute(
 					() => _onNewValue(pane, showAnimationsForward: false),
 					showAnimationsForward: showAnimationsForward
 				)).then(pane.onPushReturn);
