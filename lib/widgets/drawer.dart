@@ -303,13 +303,18 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 			sortWatchedThreads(watches);
 			list = _DrawerList<ImageboardScoped<ThreadWatch>>(
 				list: watches,
-				builder: (watch, builder) => ThreadWidgetBuilder(
-					imageboard: watch.imageboard,
-					persistence: null,
-					boardName: watch.item.board,
-					thread: watch.item.threadIdentifier,
-					builder: builder
-				),
+				builder: (watch, builder) {
+					if (!Persistence.isThreadCached(watch.imageboard.key, watch.item.board, watch.item.threadId)) {
+						return const SizedBox(width: double.infinity);
+					}
+					return ThreadWidgetBuilder(
+						imageboard: watch.imageboard,
+						persistence: null,
+						boardName: watch.item.board,
+						thread: watch.item.threadIdentifier,
+						builder: builder
+					);
+				},
 				onRefresh: ImageboardRegistry.threadWatcherController.update,
 				onReorder: null,
 				onClose: (i) {
