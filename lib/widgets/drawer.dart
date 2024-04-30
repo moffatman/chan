@@ -99,7 +99,7 @@ class _TabListTile extends StatelessWidget {
 	}
 }
 
-class _DrawerList<T extends Object> {
+class DrawerList<T extends Object> {
 	final List<T> list;
 	final Widget Function(T, Widget Function(BuildContext, ThreadWidgetData)) builder;
 	final void Function(int, int)? onReorder;
@@ -109,21 +109,25 @@ class _DrawerList<T extends Object> {
 	final Iterable<TabMenuAction> Function(int, T) buildAdditionalActions;
 	final Future<void> Function()? onRefresh;
 	final bool pinFirstItem;
+	final AxisDirection menuAxisDirection;
+	final Widget? footer;
 
 	static Iterable<TabMenuAction> _buildNothing(int i, Object t) => const Iterable.empty();
 
 	static int _undoId = 0;
 
-	const _DrawerList({
+	const DrawerList({
 		required this.list,
 		required this.builder,
 		required this.onClose,
 		required this.isSelected,
 		required this.onSelect,
+		required this.menuAxisDirection,
 		this.buildAdditionalActions = _buildNothing,
 		this.onReorder,
 		this.onRefresh,
-		this.pinFirstItem = false
+		this.pinFirstItem = false,
+		this.footer
 	});
 
 	Widget itemBuilder(BuildContext context, int i) {
@@ -135,7 +139,7 @@ class _DrawerList<T extends Object> {
 					final ro = context.findRenderObject()! as RenderBox;
 					showTabMenu(
 						context: context,
-						direction: AxisDirection.right,
+						direction: menuAxisDirection,
 						titles: null,
 						origin: Rect.fromPoints(
 							ro.localToGlobal(ro.semanticBounds.topLeft),
@@ -204,6 +208,93 @@ class _DrawerList<T extends Object> {
 			child: innerBuilder
 		);
 	}
+
+	static DrawerList<PersistentBrowserTab> tabs({
+		required ChanTabs tabs,
+		required Settings settings,
+		required VoidCallback afterUse,
+		required AxisDirection menuAxisDirection,
+	}) => DrawerList<PersistentBrowserTab>(
+		menuAxisDirection: menuAxisDirection,
+		pinFirstItem: settings.usingHomeBoard,
+		list: Persistence.tabs,
+		builder: (tab, builder) => TabWidgetBuilder(
+			tab: tab,
+			builder: builder
+		),
+		onReorder: tabs.onReorder,
+		onClose: Persistence.tabs.length > 1 ? (i) {
+			final previouslyActiveTab = tabs.browseTabIndex;
+			final closedTab = Persistence.tabs[i];
+			tabs.closeBrowseTab(i);
+			return (
+				message: 'Closed tab',
+				onUndo: closedTab.board == null ? null : () {
+					tabs.insertInitializedTab(i, closedTab);
+					tabs.browseTabIndex = previouslyActiveTab;
+				}
+			);
+			} : null,
+		isSelected: (i) => tabs.mainTabIndex == 0 && tabs.browseTabIndex == i,
+		onSelect: (i) {
+			if (tabs.mainTabIndex != 0) {
+				tabs.mainTabIndex = 0;
+			}
+			tabs.browseTabIndex = i;
+			afterUse();
+		},
+		buildAdditionalActions: (i, tab) => [
+			TabMenuAction(
+				icon: Icons.copy,
+				title: 'Clone',
+				onPressed: () {
+					tabs.addNewTab(
+						withImageboardKey: tab.imageboardKey,
+						atPosition: i + 1,
+						withBoard: tab.board,
+						withThread: tab.thread,
+						incognito: tab.incognito,
+						withInitialSearch: tab.initialSearch,
+						activate: true
+					);
+				}
+			)
+		],
+		footer: Builder(
+			builder: (context) => RawGestureDetector(
+				gestures: {
+					WeakHorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakHorizontalDragGestureRecognizer>(
+						() => WeakHorizontalDragGestureRecognizer(weakness: 1, sign: 1),
+						(recognizer) {
+							recognizer.onEnd = (details) {
+								tabs.showNewTabPopup(
+									context: context,
+									direction: menuAxisDirection,
+									titles: null,
+								);
+							};
+						}
+					)
+				},
+				child: ListTile(
+					onTap: () {
+						lightHapticFeedback();
+						settings.drawerMode = DrawerMode.tabs;
+						tabs.addNewTab(activate: true);
+						afterUse();
+					},
+					tileColor: ChanceTheme.barColorOf(context),
+					onLongPress: () => tabs.showNewTabPopup(
+						context: context,
+						direction: menuAxisDirection,
+						titles: null,
+					),
+					leading: const Icon(Icons.add),
+					title: const Text('New Tab')
+				)
+			)
+		)
+	);
 }
 
 final _ensuredThreads = WeakMap<PersistentThreadState, bool?>();
@@ -249,59 +340,19 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 		// But it should always be updated when we open drawer so nbd.
 		final tabs = context.watch<ChanTabs>();
 		final settings = context.watch<Settings>();
-		final _DrawerList list;
+		final DrawerList list;
 		if (settings.drawerMode == DrawerMode.tabs) {
-			list = _DrawerList<PersistentBrowserTab>(
-				pinFirstItem: settings.usingHomeBoard,
-				list: Persistence.tabs,
-				builder: (tab, builder) => TabWidgetBuilder(
-					tab: tab,
-					builder: builder
-				),
-				onReorder: tabs.onReorder,
-				onClose: Persistence.tabs.length > 1 ? (i) {
-					final previouslyActiveTab = tabs.browseTabIndex;
-					final closedTab = Persistence.tabs[i];
-					tabs.closeBrowseTab(i);
-					return (
-						message: 'Closed tab',
-						onUndo: closedTab.board == null ? null : () {
-							tabs.insertInitializedTab(i, closedTab);
-							tabs.browseTabIndex = previouslyActiveTab;
-						}
-					);
-				 } : null,
-				isSelected: (i) => tabs.mainTabIndex == 0 && tabs.browseTabIndex == i,
-				onSelect: (i) {
-					if (tabs.mainTabIndex != 0) {
-						tabs.mainTabIndex = 0;
-					}
-					tabs.browseTabIndex = i;
-					_afterUse();
-				},
-				buildAdditionalActions: (i, tab) => [
-					TabMenuAction(
-						icon: Icons.copy,
-						title: 'Clone',
-						onPressed: () {
-							tabs.addNewTab(
-								withImageboardKey: tab.imageboardKey,
-								atPosition: i + 1,
-								withBoard: tab.board,
-								withThread: tab.thread,
-								incognito: tab.incognito,
-								withInitialSearch: tab.initialSearch,
-								activate: true
-							);
-						}
-					)
-				]
+			list = DrawerList.tabs(
+				tabs: tabs,
+				settings: settings,
+				afterUse: _afterUse,
+				menuAxisDirection: AxisDirection.right
 			);
 		}
 		else if (settings.drawerMode == DrawerMode.watchedThreads) {
 			final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.values.map(i.scope)).toList();
 			sortWatchedThreads(watches);
-			list = _DrawerList<ImageboardScoped<ThreadWatch>>(
+			list = DrawerList<ImageboardScoped<ThreadWatch>>(
 				list: watches,
 				builder: (watch, builder) {
 					if (!Persistence.isThreadCached(watch.imageboard.key, watch.item.board, watch.item.threadId)) {
@@ -337,7 +388,8 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					}
 					tabs.setCurrentBrowserThread(watch.imageboard.scope(watch.item.threadIdentifier), showAnimationsForward: false);
 					_afterUse();
-				}
+				},
+				menuAxisDirection: AxisDirection.right
 			);
 		}
 		else {
@@ -351,7 +403,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					_ensuredThreads.add(key: state, value: true);
 				}
 			}
-			list = _DrawerList<PersistentThreadState>(
+			list = DrawerList<PersistentThreadState>(
 				list: states,
 				builder: (state, builder) => ThreadWidgetBuilder(
 					imageboard: state.imageboard,
@@ -391,7 +443,8 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 					}
 					tabs.setCurrentBrowserThread(state.imageboard!.scope(state.identifier), showAnimationsForward: false);
 					_afterUse();
-				}
+				},
+				menuAxisDirection: AxisDirection.right
 			);
 		}
 		final backgroundColor = ChanceTheme.backgroundColorOf(context);
@@ -620,40 +673,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 							)
 						)
 					),
-					if (settings.drawerMode == DrawerMode.tabs) Builder(
-						builder: (context) => RawGestureDetector(
-							gestures: {
-								WeakHorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakHorizontalDragGestureRecognizer>(
-									() => WeakHorizontalDragGestureRecognizer(weakness: 1, sign: 1),
-									(recognizer) {
-										recognizer.onEnd = (details) {
-											tabs.showNewTabPopup(
-												context: context,
-												direction: AxisDirection.right,
-												titles: null,
-											);
-										};
-									}
-								)
-							},
-							child: ListTile(
-								onTap: () {
-									lightHapticFeedback();
-									settings.drawerMode = DrawerMode.tabs;
-									tabs.addNewTab(activate: true);
-									_afterUse();
-								},
-								tileColor: ChanceTheme.barColorOf(context),
-								onLongPress: () => tabs.showNewTabPopup(
-									context: context,
-									direction: AxisDirection.right,
-									titles: null,
-								),
-								leading: const Icon(Icons.add),
-								title: const Text('New Tab')
-							)
-						)
-					),
+					if (list.footer != null) list.footer!,
 					SizedBox(
 						height: MediaQuery.paddingOf(context).bottom
 					)

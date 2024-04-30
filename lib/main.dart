@@ -15,6 +15,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/settings.dart';
 import 'package:chan/pages/saved.dart';
+import 'package:chan/pages/tabs.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
@@ -1831,6 +1832,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		) ?? false);
 	}
 
+	void _popUpDrawer() {
+		Navigator.push(context, TransparentRoute(
+			builder: (context) => ChangeNotifierProvider.value(
+				value: _tabs,
+				child: const TabsPage()
+			)
+		));
+	}
+
 	void _toggleHistory() {
 		mediumHapticFeedback();
 		Settings.recordThreadsInHistorySetting.value = !Settings.instance.recordThreadsInHistory;
@@ -2054,12 +2064,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							inactiveColor: ChanceTheme.primaryColorOf(context).withOpacity(0.4),
 							items: [
 								BottomNavigationBarItem(
-									icon: AnimatedBuilder(
-										animation: _tabs.browseCountListenable,
-										builder: (context, child) => StationaryNotifyingIcon(
-											icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
-											primary: 0,
-											secondary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != _tabs.browseTabIndex || _tabs.mainTabIndex > 0).map((x) => x.value.unseen.value).reduce((a, b) => a + b)
+									icon: GestureDetector(
+										onLongPress: () {
+											mediumHapticFeedback();
+											_popUpDrawer();
+										},
+										child: AnimatedBuilder(
+											animation: _tabs.browseCountListenable,
+											builder: (context, child) => StationaryNotifyingIcon(
+												icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
+												primary: 0,
+												secondary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != _tabs.browseTabIndex || _tabs.mainTabIndex > 0).map((x) => x.value.unseen.value).reduce((a, b) => a + b)
+											)
 										)
 									),
 									label: 'Browse'
@@ -2104,10 +2120,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								)
 							],
 							onUpSwipe: () {
-								if (showTabPopup || _tabs.mainTabIndex != 0) {
+								if (_tabs.mainTabIndex != 0) {
 									return;
 								}
 								mediumHapticFeedback();
+								if (showTabPopup) {
+									_popUpDrawer();
+									return;
+								}
 								setState(() {
 									showTabPopup = true;
 								});
