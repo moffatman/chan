@@ -1075,6 +1075,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									aspectRatio: challenge!.foregroundImage!.width / challenge!.foregroundImage!.height,
 									child: GestureDetector(
 										onDoubleTap: () async {
+											_cloudGuessFailed = false;
 											if (challenge?.backgroundImage != null) {
 												backgroundSlide = await _alignImage(challenge!);
 												setState(() {});
