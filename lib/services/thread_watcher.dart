@@ -350,7 +350,8 @@ class ThreadWatcher extends ChangeNotifier {
 				}
 				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board, priority: RequestPriority.functional);
 				for (final thread in catalog) {
-					if (line.filter(thread)?.type.autoSave ?? false) {
+					final result = Settings.instance.globalFilter.filter(thread);
+					if (result?.type.autoSave ?? false) {
 						if (!(persistence.browserState.autosavedIds[board]?.contains(thread.id) ?? false)) {
 							final threadState = persistence.getThreadState(thread.identifier);
 							threadState.savedTime = DateTime.now();
@@ -360,7 +361,7 @@ class ThreadWatcher extends ChangeNotifier {
 							savedAnyThread = true;
 						}
 					}
-					final autoWatch = line.filter(thread)?.type.autoWatch;
+					final autoWatch = result?.type.autoWatch;
 					if (autoWatch != null) {
 						if (!(persistence.browserState.autowatchedIds[board]?.contains(thread.id) ?? false)) {
 							final threadState = persistence.getThreadState(thread.identifier);
