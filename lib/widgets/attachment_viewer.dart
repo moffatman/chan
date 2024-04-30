@@ -375,6 +375,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
+		final alreadyCached = await optimisticallyFindCachedFile(attachment);
+		if (alreadyCached != null) {
+			return alreadyCached.uri;
+		}
 		final attachmentUrl = Uri.parse(attachment.url);
 		Response result = await site.client.requestUri(attachmentUrl, options: Options(
 			method: attachmentUrl.path.endsWith('.m3u8') ? 'GET' : 'HEAD',
