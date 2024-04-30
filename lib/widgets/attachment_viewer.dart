@@ -691,7 +691,7 @@ class AttachmentViewerController extends ChangeNotifier {
 								_playerErrorStream.firstOrNull.then((error) async {
 									if (error != null) {
 										// Sometimes MPV sends bogus errors when trying different decoders
-										await Future.delayed(const Duration(seconds: 6));
+										await Future.delayed(const Duration(seconds: 10));
 									}
 									return error;
 								})
@@ -706,7 +706,7 @@ class AttachmentViewerController extends ChangeNotifier {
 									return;
 								}
 								// Sometimes MPV sends bogus errors when trying different decoders
-								await Future.delayed(const Duration(seconds: 6));
+								await Future.delayed(const Duration(seconds: 10));
 								if (controller.player.state.position == Duration.zero && context.mounted) {
 									showToast(
 										context: context,
