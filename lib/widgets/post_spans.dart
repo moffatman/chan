@@ -2326,7 +2326,9 @@ TextSpan buildPostInfoRow({
 		postIdRepeatingSegment = null;
 	}
 	final op = site.isPaged ? thread?.posts_.tryFirstWhere((p) => !p.isPageStub) : thread?.posts_.tryFirst;
-	final isOP = site.supportsUserInfo && post.name == op?.name;
+	// During catalog-peek the post == op equality won't hold. Just use simple check.
+	final thisPostIsOP = site.isPaged ? post == op : post.id == post.threadId;
+	final thisPostIsPostedByOP = site.supportsUserInfo && post.name == op?.name;
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
 	const lineBreak = TextSpan(text: '\n');
 	final children = [
@@ -2339,7 +2341,7 @@ TextSpan buildPostInfoRow({
 				)
 			),
 		],
-		if (post == op && thread?.flair != null && !(thread?.title?.contains(thread.flair?.name ?? '') ?? false)) ...[
+		if (thisPostIsOP && thread?.flair != null && !(thread?.title?.contains(thread.flair?.name ?? '') ?? false)) ...[
 			makeFlagSpan(
 				context: context,
 				zone: zone,
@@ -2350,7 +2352,7 @@ TextSpan buildPostInfoRow({
 			),
 			const TextSpan(text: ' '),
 		],
-		if (post == op && thread?.title != null) TextSpan(
+		if (thisPostIsOP && thread?.title != null) TextSpan(
 			text: '${thread?.title}\n',
 			style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
 		),
@@ -2374,8 +2376,8 @@ TextSpan buildPostInfoRow({
 			]
 			else if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
-					text: settings.filterProfanity(site.formatUsername(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (isOP ? ' (OP)' : ''),
-					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : (isOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
+					text: settings.filterProfanity(site.formatUsername(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (thisPostIsPostedByOP ? ' (OP)' : ''),
+					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : (thisPostIsPostedByOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
 					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
 						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
