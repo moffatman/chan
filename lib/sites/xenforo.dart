@@ -230,7 +230,7 @@ class SiteXenforo extends ImageboardSite {
 					}
 					else if (node.localName == 'img' && node.classes.contains('smilie')) {
 						final src = node.attributes['src']?.nonEmptyOrNull;
-						if (src != null) {
+						if (src != null && !src.startsWith('data:')) {
 							yield PostInlineImageSpan(src: src, width: 60, height: 60);
 						}
 						else {
