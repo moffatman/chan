@@ -522,7 +522,7 @@ class ThreadPageState extends State<ThreadPage> {
 			style: useTree ? PostSpanZoneStyle.tree : PostSpanZoneStyle.linear,
 			threads: [
 				if (persistentState.thread != null) persistentState.thread!
-				else if (threadFromCatalogCache != null) threadFromCatalogCache
+				else if (threadFromCatalogCache != null && !imageboard.site.isPaged) threadFromCatalogCache
 			],
 			imageboard: imageboard,
 			semanticRootIds: [widget.boardSemanticId, 0],
@@ -638,7 +638,7 @@ class ThreadPageState extends State<ThreadPage> {
 				primaryThread: widget.thread,
 				threads: [
 					if (persistentState.thread != null) persistentState.thread!
-					else if (threadFromCatalogCache != null) threadFromCatalogCache
+					else if (threadFromCatalogCache != null && !imageboard.site.isPaged) threadFromCatalogCache
 				],
 				imageboard: imageboard,
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
@@ -1483,7 +1483,7 @@ class ThreadPageState extends State<ThreadPage> {
 																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
 																		disableUpdates: persistentState.disableUpdates,
 																		autoUpdateDuration: autoUpdateDuration,
-																		initialList: persistentState.thread?.posts ?? site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1),
+																		initialList: persistentState.thread?.posts ?? (site.isPaged ? null : site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1)),
 																		initialTreeSplitId: persistentState.treeSplitId,
 																		onTreeSplitIdChanged: (newId) {
 																			persistentState.treeSplitId = newId;
