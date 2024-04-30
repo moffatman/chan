@@ -3589,6 +3589,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	void didFinishLayout(int startIndex, int endIndex) {
+		if (endIndex >= _items.length) {
+			// Out of sync
+			return;
+		}
 		if (state?.searching == false) {
 			for (int i = startIndex; i <= endIndex; i++) {
 				_tryCachingItem(i, _items[i]);
