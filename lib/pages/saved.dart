@@ -1465,7 +1465,7 @@ class MissingThreadsControls extends StatelessWidget {
 						else {
 							failedThreads.add(thread);
 						}
-						controller.progress.value = (i + 1) / threads.length;
+						controller.progress.value = ('${i + 1} / ${threads.length}', (i + 1) / threads.length);
 						i++;
 					}
 					if (failedThreads.length == threads.length && context.mounted) {

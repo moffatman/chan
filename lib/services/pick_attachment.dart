@@ -4,6 +4,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -12,6 +13,8 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/services/clipboard_image.dart';
+import 'package:dio/dio.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +23,12 @@ import 'package:provider/provider.dart';
 
 final List<String> receivedFilePaths = [];
 final attachmentSourceNotifier = EasyListenable();
+
+final supportedFileExtensions = [
+	'.jpg', '.jpeg', '.png', '.gif', '.webm',
+	'.heic', '.avif', '.webp',
+	'.mp4', '.mov', '.m4v', '.mkv', '.mpeg', '.avi', '.3gp', '.m2ts'
+];
 
 Future<String?> _copyFileToSafeLocation(String? path) async {
 	if (path == null) {
@@ -36,10 +45,45 @@ Future<String?> _copyFileToSafeLocation(String? path) async {
 	return path;
 }
 
+Future<File?> downloadToShareCache({
+	required BuildContext context,
+	required Uri url
+}) async {
+	final client = context.read<ImageboardSite?>()?.client ?? Settings.instance.client;
+	final path = '${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}_${url.pathSegments.last}';
+	return await modalLoad(context, 'Downloading...', (controller) async {
+		final alreadyCached = await getCachedImageFile(url.toString());
+		if (alreadyCached != null) {
+			return alreadyCached;
+		}
+		final token = CancelToken();
+		controller.onCancel = token.cancel;
+		try {
+			await client.downloadUri(url, path, onReceiveProgress: (received, total) {
+				if (total > 0) {
+					controller.progress.value = ('${formatFilesize(received)} / ${formatFilesize(total)}', received / total);
+				}
+				else {
+					controller.progress.value = ('', null);
+				}
+			}, cancelToken: token);
+			return File(path);
+		}
+		on DioError catch (e) {
+			if (e.type == DioErrorType.cancel) {
+				// User cancelled, don't throw
+				return null;
+			}
+			// Else it is a normal error
+			rethrow;
+		}
+	}, cancellable: true, wait: const Duration(milliseconds: 50));
+}
+
 class AttachmentPickingSource {
 	final String name;
 	final IconData icon;
-	final Future<String?> Function() pick;
+	final Future<String?> Function(BuildContext context) pick;
 	final double iconSizeMultiplier;
 
 	const AttachmentPickingSource({
@@ -51,24 +95,23 @@ class AttachmentPickingSource {
 }
 
 List<AttachmentPickingSource> getAttachmentSources({
-	required BuildContext context,
 	required bool includeClipboard
 }) {
 	final gallery = AttachmentPickingSource(
 		name: 'Image Gallery',
 		icon: Adaptive.icons.photo,
-		pick: () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => _copyFileToSafeLocation(x?.files.single.path))
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.image).then((x) => _copyFileToSafeLocation(x?.files.single.path))
 	);
 	final videoGallery = AttachmentPickingSource(
 		name: 'Video Gallery',
 		icon: CupertinoIcons.play_rectangle,
-		pick: () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => _copyFileToSafeLocation(x?.files.single.path))
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.video).then((x) => _copyFileToSafeLocation(x?.files.single.path))
 	);
 	final picker = ImagePicker();
 	final camera = AttachmentPickingSource(
 		name: 'Camera',
 		icon: CupertinoIcons.camera,
-		pick: () async {
+		pick: (context) async {
 			final video = await showAdaptiveDialog<bool>(
 				context: context,
 				barrierDismissible: true,
@@ -93,25 +136,22 @@ List<AttachmentPickingSource> getAttachmentSources({
 				.then((x) => _copyFileToSafeLocation(x?.path));
 		}
 	);
-	final site = context.read<ImageboardSite?>();
 	final web = AttachmentPickingSource(
 		name: 'Web',
 		icon: CupertinoIcons.globe,
-		pick: () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
-			builder: (_) => WebImagePickerPage(
-				site: site
-			)
+		pick: (context) => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
+			builder: (_) => const WebImagePickerPage()
 		)).then((x) => x?.path)
 	);
 	final file = AttachmentPickingSource(
 		name: 'File',
 		icon: CupertinoIcons.folder,
-		pick: () => FilePicker.platform.pickFiles(type: FileType.any).then((x) => _copyFileToSafeLocation(x?.files.single.path))
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.any).then((x) => _copyFileToSafeLocation(x?.files.single.path))
 	);
 	final clipboard = AttachmentPickingSource(
 		name: 'Clipboard',
 		icon: CupertinoIcons.doc_on_clipboard,
-		pick: () => getClipboardImageAsFile().then((x) {
+		pick: (context) => getClipboardImageAsFile().then((x) {
 			if (x == null) {
 				showToast(
 					context: context,
@@ -122,20 +162,19 @@ List<AttachmentPickingSource> getAttachmentSources({
 			return x?.path;
 		})
 	);
-	final anySaved = context.read<Persistence?>()?.savedAttachments.isNotEmpty ?? false;
-	final theme = context.read<SavedTheme>();
+	final anySaved = ImageboardRegistry.instance.imageboards.any((i) => i.persistence.savedAttachments.isNotEmpty);
 	final saved = AttachmentPickingSource(
 		name: 'Saved Attachments',
 		icon: Adaptive.icons.bookmark,
-		pick: () {
-			final savedAttachments = context.read<Persistence>().savedAttachments.values.toList();
+		pick: (context) {
+			final savedAttachments = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values).toList();
 			savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 			return Navigator.of(context).push<String>(TransparentRoute(
 				builder: (context) => OverscrollModalPage(
 					child: Container(
 						width: double.infinity,
 						padding: const EdgeInsets.all(16),
-						color: theme.backgroundColor,
+						color: context.read<SavedTheme>().backgroundColor,
 						child: GridView.builder(
 							gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
 								maxCrossAxisExtent: 100,
@@ -199,7 +238,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 Future<File?> pickAttachment({
 	required BuildContext context
 }) async {
-	final sources = getAttachmentSources(context: context, includeClipboard: true);
+	final sources = getAttachmentSources(includeClipboard: true);
 	bool loadingPick = false;
 	final theme = context.read<SavedTheme>();
 	return Navigator.of(context).push<File>(TransparentRoute(
@@ -231,7 +270,7 @@ Future<File?> pickAttachment({
 												loadingPick = true;
 												setPickerDialogState(() {});
 												try {
-													final path = await entry.pick();
+													final path = await entry.pick(context);
 													loadingPick = false;
 													setPickerDialogState(() {});
 													if (path != null && context.mounted) {

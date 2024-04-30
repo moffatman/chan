@@ -154,7 +154,7 @@ void showUndoToast({
 );
 
 class ModalLoadController {
-	final progress = ValueNotifier<double?>(null);
+	final progress = ValueNotifier<(String, double?)>(('', null));
 	bool cancelled = false;
 	VoidCallback? onCancel;
 
@@ -184,7 +184,18 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 							const SizedBox(height: 16),
 							ValueListenableBuilder(
 								valueListenable: controller.progress,
-								builder: (context, value, _) => LinearProgressIndicator(value: value)
+								builder: (context, value, _) => Column(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										LinearProgressIndicator(value: value.$2),
+										if (value.$1.isNotEmpty) Padding(
+											padding: const EdgeInsets.only(top: 8),
+											child: Text(value.$1, style: const TextStyle(
+												fontFeatures: [ui.FontFeature.tabularFigures()]
+											))
+										)
+									]
+								)
 							),
 							if (cancellable) CupertinoButton(
 								padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),

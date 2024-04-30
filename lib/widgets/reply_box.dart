@@ -126,7 +126,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _show = false;
 	bool get show => widget.fullyExpanded || (_show && !_willHideOnPanEnd);
 	String? _lastFoundUrl;
-	String? _proposedAttachmentUrl;
+	(String, int)? _proposedAttachmentUrl;
 	bool spoiler = false;
 	List<ImageboardBoardFlag> _flags = [];
 	ImageboardBoardFlag? flag;
@@ -256,11 +256,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier()]).tryMapOnce<String>((element) {
 			if (element is UrlElement) {
 				final path = Uri.parse(element.url).path;
-				if ([
-					'.jpg', '.jpeg', '.png', '.gif', '.webm',
-					'.heic', '.avif', '.webp',
-					'.mp4', '.mov', '.m4v', '.mkv', '.mpeg', '.avi', '.3gp', '.m2ts'
-				].any(path.endsWith)) {
+				if (supportedFileExtensions.any(path.endsWith)) {
 					return element.url;
 				}
 			}
@@ -268,10 +264,10 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 		if (rawUrl != _lastFoundUrl && rawUrl != null) {
 			try {
-				// TODO: How to show it's happening? Cancel? _preproposedAttachmentUrl?
-				await context.read<ImageboardSite>().client.head(rawUrl);
-				_lastFoundUrl = rawUrl;
-				_proposedAttachmentUrl = rawUrl;
+				_lastFoundUrl = rawUrl; // Avoid race
+				final response = await context.read<ImageboardSite>().client.head(rawUrl);
+				final byteCount = int.tryParse(response.headers.value(dio.Headers.contentLengthHeader) ?? '') ?? 0 /* chunked encoding? */;
+				_proposedAttachmentUrl = (rawUrl, byteCount);
 				if (mounted) setState(() {});
 				return;
 			}
@@ -286,7 +282,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				final embedData = await loadEmbedData(url: possibleEmbed, context: context);
 				_lastFoundUrl = possibleEmbed;
 				if (embedData?.thumbnailUrl != null) {
-					_proposedAttachmentUrl = embedData!.thumbnailUrl!;
+					_proposedAttachmentUrl = (embedData!.thumbnailUrl!, 0);
 					if (mounted) setState(() {});
 					return;
 				}
@@ -1909,7 +1905,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												)
 											)
 										),
-										for (final picker in getAttachmentSources(context: context, includeClipboard: false)) AdaptiveIconButton(
+										for (final picker in getAttachmentSources(includeClipboard: false)) AdaptiveIconButton(
 											onPressed: () async {
 												FocusNode? focusToRestore;
 												if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
@@ -1917,15 +1913,27 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												}
 												_attachmentProgress = ('Picking', null);
 												setState(() {});
-												final path = await picker.pick();
-												if (path != null) {
-													await setAttachment(File(path));
+												// Local [context] is not safe. It will die when we go to 'Picking'
+												try {
+													final path = await picker.pick(this.context);
+													if (path != null) {
+														await setAttachment(File(path));
+													}
+													else {
+														_attachmentProgress = null;
+													}
 												}
-												else if (mounted) {
+												catch (e, st) {
+													Future.error(e, st);
+													if (mounted) {
+														alertError(context, e.toStringDio());
+													}
 													_attachmentProgress = null;
-													setState(() {});
 												}
 												focusToRestore?.requestFocus();
+												if (mounted) {
+													setState(() {});
+												}
 											},
 											icon: Transform.scale(
 												scale: picker.iconSizeMultiplier,
@@ -2174,51 +2182,83 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: show && _proposedAttachmentUrl != null,
 						bottomSafe: true,
-						child: Row(
-							mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-							children: [
-								if (_proposedAttachmentUrl != null) Padding(
-									padding: const EdgeInsets.all(8),
-									child: ClipRRect(
-										borderRadius: const BorderRadius.all(Radius.circular(8)),
-										child: Image.network(
-											_proposedAttachmentUrl!,
-											width: 100
+						child: Padding(
+							padding: const EdgeInsets.all(16),
+							child: Row(
+								mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+								children: [
+									if (_proposedAttachmentUrl != null) Padding(
+										padding: const EdgeInsets.all(8),
+										child: _proposedAttachmentUrl!.$2 > 4e6 /* 4 MB */ ? const SizedBox(
+											// Image is large, don't eagerly show it
+											width: 100,
+											child: Icon(CupertinoIcons.exclamationmark_shield)
+										) : ClipRRect(
+											borderRadius: const BorderRadius.all(Radius.circular(8)),
+											child: Image.network(
+												_proposedAttachmentUrl!.$1,
+												width: 100
+											)
 										)
-									)
-								),
-								Flexible(child: AdaptiveFilledButton(
-									padding: const EdgeInsets.all(4),
-									child: const Text('Use suggested image', textAlign: TextAlign.center),
-									onPressed: () async {
-										final site = context.read<ImageboardSite>();
-										try {
-											final data = await site.client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
-											final newFile = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last.split('?').first}');
-											await newFile.writeAsBytes(data.data);
-											setAttachment(newFile);
-											_filenameController.text = _proposedAttachmentUrl!.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
-											_proposedAttachmentUrl = null;
-											setState(() {});
-										}
-										catch (e, st) {
-											print(e);
-											print(st);
-											if (context.mounted) {
-												alertError(context, e.toStringDio());
+									),
+									Flexible(child: AdaptiveFilledButton(
+										padding: const EdgeInsets.all(4),
+										child: Text.rich(TextSpan(
+												children: [
+													const TextSpan(text: 'Attach file from link?\n'),
+													TextSpan(
+														text: (_proposedAttachmentUrl?.$1).toString(),
+														style: TextStyle(
+															color: settings.theme.backgroundColor.withOpacity(0.7),
+															fontSize: 14
+														)
+													)
+												]
+										), textAlign: TextAlign.center),
+										onPressed: () async {
+											final proposed = _proposedAttachmentUrl;
+											if (proposed == null) {
+												return;
+											}
+											try {
+												if (proposed.$2 > 4e6 /* 4 MB */) {
+													// Make sure they really want to download this big image
+													final ok = await confirm(context, 'Really download this ${formatFilesize(proposed.$2)} file?');
+													if (!context.mounted || !ok) {
+														return;
+													}
+												}
+												final newFile = await downloadToShareCache(
+													context: context,
+													url: Uri.parse(_proposedAttachmentUrl!.$1)
+												);
+												if (newFile == null) {
+													return;
+												}
+												setAttachment(newFile);
+												_filenameController.text = _proposedAttachmentUrl!.$1.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
+												_proposedAttachmentUrl = null;
+												setState(() {});
+											}
+											catch (e, st) {
+												print(e);
+												print(st);
+												if (context.mounted) {
+													alertError(context, e.toStringDio());
+												}
 											}
 										}
-									}
-								)),
-								AdaptiveIconButton(
-									icon: const Icon(CupertinoIcons.xmark),
-									onPressed: () {
-										setState(() {
-											_proposedAttachmentUrl = null;
-										});
-									}
-								)
-							]
+									)),
+									AdaptiveIconButton(
+										icon: const Icon(CupertinoIcons.xmark),
+										onPressed: () {
+											setState(() {
+												_proposedAttachmentUrl = null;
+											});
+										}
+									)
+								]
+							)
 						)
 					),
 					Expander(

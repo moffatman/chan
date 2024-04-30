@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
@@ -78,12 +78,9 @@ enum _NavigationState {
 }
 
 class WebImagePickerPage extends StatefulWidget {
-	final ImageboardSite? site;
-
 	const WebImagePickerPage({
-		required this.site,
-		Key? key
-	}) : super(key: key);
+		super.key
+	});
 
 	@override
 	createState() => _WebImagePickerPageState();
@@ -148,10 +145,28 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 		}
 	}
 
-	void _search(String value) {
+	void _search(String value) async {
+		Uri url = Uri.parse(value);
+		if (supportedFileExtensions.any(url.path.endsWith)) {
+			// Download it directly?
+			if (url.scheme.isEmpty) {
+				url = Uri.parse('https://$value');
+			}
+			if (url.path.isNotEmpty || value.startsWith('https://')) {
+				// No downloading junk like "something.png"
+				final file = await downloadToShareCache(context: context, url: url);
+				if (!mounted) {
+					return;
+				}
+				if (file != null) {
+					Navigator.pop(context, file);
+					return;
+				}
+			}
+			// User cancelled, just go forward to the URL
+		}
 		urlController.text = value;
 		final settings = Settings.instance;
-		Uri url = Uri.parse(value);
 		_navigationState = _NavigationState.initial;
 		setState(() {
 			showSearchHistory = false;
