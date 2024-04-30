@@ -280,6 +280,9 @@ class Imageboard extends ChangeNotifier {
 				onSuccessfulCaptchaSubmitted(state.captchaSolution);
 				print(state.result);
 				mediumHapticFeedback();
+				if (state.captchaSolution.autoSolved) {
+					Outbox.instance.headlessSolveFailed = false;
+				}
 				if (state.result.spamFiltered) {
 					showToast(
 						context: ImageboardRegistry.instance.context!,

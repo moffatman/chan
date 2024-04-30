@@ -584,6 +584,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	CancelableOperation<Chan4CustomCaptchaGuesses>? _guessInProgress;
 	bool _offerGuess = false;
 	bool _cloudGuessFailed = false;
+	String? _lastCloudGuess;
 	String? _ip;
 
 	int get numLetters => Settings.instance.captcha4ChanCustomNumLetters;
@@ -624,6 +625,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	void _useCloudGuess(String answer) {
+		_lastCloudGuess = answer;
 		final newGuess = Chan4CustomCaptchaGuess.dummy(answer);
 		_lastGuess = newGuess;
 		_lastGuesses = Chan4CustomCaptchaGuesses.dummy(answer, max(answer.length, 6));
@@ -794,6 +796,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Future<void> _setupChallenge() async {
+		_lastCloudGuess = null; // Forget about previous challenge guess
 		if (challenge!.backgroundImage != null) {
 			final bestSlide = await _alignImage(challenge!);
 			if (!mounted) return;
@@ -913,7 +916,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			lifetime: challenge!.lifetime,
 			alignedImage: await _screenshotImage(),
 			cloudflare: challenge!.cloudflare,
-			ip: _ip
+			ip: _ip,
+			autoSolved: response == _lastCloudGuess
 		));
 		challenge?.dispose();
 		challenge = null;
