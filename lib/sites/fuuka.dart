@@ -310,7 +310,23 @@ class FuukaArchive extends ImageboardSiteArchive {
 		}
 		final document = parse(response.data);
 		return ImageboardArchiveSearchResultPage(
-			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map((d) => _makePost(d, priority: RequestPriority.interactive)))).map((p) => ImageboardArchiveSearchResult.post(p)).toList(),
+			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map((e) async {
+				final p = await _makePost(e, priority: RequestPriority.interactive);
+				if (p.id == p.threadId) {
+					return ImageboardArchiveSearchResult.thread(Thread(
+						board: p.board,
+						id: p.threadId,
+						replyCount: 0,
+						imageCount: 0,
+						title: e.querySelector('.filetitle')?.text,
+						isSticky: false,
+						time: p.time,
+						attachments: p.attachments_,
+						posts_: [p]
+					));
+				}
+				return ImageboardArchiveSearchResult.post(p);
+			}))).toList(),
 			page: page,
 			countsUnreliable: true,
 			maxPage: 100,
