@@ -498,14 +498,13 @@ class ImageboardRegistry extends ChangeNotifier {
 					if (_sites.containsKey(entry.key)) {
 						// Site not changed
 						_sites[entry.key]?.updateSiteData(entry.value);
+						continue;
 					}
-					else {
-						_sites[entry.key] = Imageboard(
-							siteData: entry.value,
-							key: entry.key
-						);
-						initializations.add(_sites[entry.key]!.initialize());
-					}
+					_sites[entry.key] = Imageboard(
+						siteData: entry.value,
+						key: entry.key
+					);
+					initializations.add(_sites[entry.key]!.initialize());
 					// Only try to reauth on wifi
 					microtasks.add(() async {
 						if (!_sites[entry.key]!.initialized) {
