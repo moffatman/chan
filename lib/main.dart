@@ -1584,7 +1584,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								const SizedBox(height: 4),
 								ConstrainedBox(
 									constraints: BoxConstraints(
-										maxWidth: axis == Axis.vertical ? double.infinity : (selected ? 200 : 64),
+										maxWidth: axis == Axis.vertical ? double.infinity : (selected ? 200 : 80),
 									),
 									child: Row(
 										mainAxisSize: MainAxisSize.min,
