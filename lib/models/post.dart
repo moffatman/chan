@@ -165,7 +165,7 @@ class Post implements Filterable {
 	String? capcode;
 	@HiveField(16, isOptimized: true, defaultValue: <Attachment>[], merger: Attachment.unmodifiableListMerger)
 	List<Attachment> attachments_;
-	Iterable<Attachment> get attachments => spanFormat.hasInlineAttachments ? span.inlineAttachments : attachments_;
+	Iterable<Attachment> get attachments => spanFormat.hasInlineAttachments ? attachments_.followedBy(span.inlineAttachments) : attachments_;
 	@HiveField(17, isOptimized: true)
 	final int? upvotes;
 	@HiveField(18, isOptimized: true)

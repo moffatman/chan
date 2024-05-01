@@ -555,7 +555,20 @@ class SiteXenforo extends ImageboardSite {
 					},
 				time: _parseTime(e.querySelector('.message-attribution-main time')!),
 				spanFormat: PostSpanFormat.xenforo,
-				attachments_: const []
+				attachments_: e.querySelectorAll('.message-attachments .file-preview img').map((img) => Attachment(
+					board: board,
+					threadId: threadId,
+					type: AttachmentType.image,
+					id: img.attributes['src']!,
+					ext: '.${img.attributes['src']!.split('.').last}',
+					filename: img.attributes['alt'] ?? img.attributes['src']!.split('/').last,
+					url: img.attributes['src']!,
+					thumbnailUrl: generateThumbnailerForUrl(Uri.parse(img.attributes['src']!)).toString(),
+					md5: '',
+					width: int.tryParse(img.attributes['width'] ?? ''),
+					height: int.tryParse(img.attributes['height'] ?? ''),
+					sizeInBytes: null
+				)).toList(growable: false)
 			);
 		});
 		return pagesBefore.followedBy(realPosts).followedBy(pagesAfter).toList();
