@@ -2671,7 +2671,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															)
 														)
 													),
-											if (!widget.shrinkWrap && filteredValues.isNotEmpty) ...[
+											if (!widget.shrinkWrap && filteredValues.isNotEmpty && Settings.showHiddenItemsFooterSetting.watch(context)) ...[
 												SliverToBoxAdapter(
 													child: GestureDetector(
 														onTap: () {

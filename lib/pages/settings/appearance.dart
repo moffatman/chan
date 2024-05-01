@@ -1371,5 +1371,10 @@ final appearanceSettings = [
 		description: 'Show gallery grid button in catalog and thread',
 		icon: CupertinoIcons.square_grid_2x2,
 		setting: Settings.showGalleryGridButtonSetting
+	),
+	const SwitchSettingWidget(
+		description: 'Show filtered posts/threads at bottom of lists',
+		icon: CupertinoIcons.eye_slash,
+		setting: Settings.showHiddenItemsFooterSetting
 	)
 ];

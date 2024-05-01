@@ -1167,6 +1167,8 @@ class SavedSettings extends HiveObject {
 	int dynamicIPKeepAlivePeriodSeconds;
 	@HiveField(185)
 	int postingRegretDelaySeconds;
+	@HiveField(186)
+	bool showHiddenItemsFooter;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1354,6 +1356,7 @@ class SavedSettings extends HiveObject {
 		Map<String, String>? mpvOptions,
 		int? dynamicIPKeepAlivePeriodSeconds,
 		int? postingRegretDelaySeconds,
+		bool? showHiddenItemsFooter,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1563,7 +1566,8 @@ class SavedSettings extends HiveObject {
 		swipeGesturesOnBottomBar = swipeGesturesOnBottomBar ?? true,
 		mpvOptions = mpvOptions ?? {},
 		dynamicIPKeepAlivePeriodSeconds = dynamicIPKeepAlivePeriodSeconds ?? -15,
-		postingRegretDelaySeconds = postingRegretDelaySeconds ?? -10 {
+		postingRegretDelaySeconds = postingRegretDelaySeconds ?? -10,
+		showHiddenItemsFooter = showHiddenItemsFooter ?? true {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2691,6 +2695,9 @@ class Settings extends ChangeNotifier {
 		}
 		return Duration(seconds: postingRegretDelaySeconds);
 	}
+
+	static const showHiddenItemsFooterSetting = SavedSetting(SavedSettingsFields.showHiddenItemsFooter);
+	bool get showHiddenItemsFooter => showHiddenItemsFooterSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

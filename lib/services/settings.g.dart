@@ -2219,6 +2219,17 @@ class SavedSettingsFields {
     fieldName: 'postingRegretDelaySeconds',
     merger: PrimitiveMerger(),
   );
+  static bool getShowHiddenItemsFooter(SavedSettings x) =>
+      x.showHiddenItemsFooter;
+  static void setShowHiddenItemsFooter(SavedSettings x, bool v) =>
+      x.showHiddenItemsFooter = v;
+  static const showHiddenItemsFooter = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getShowHiddenItemsFooter,
+    setter: setShowHiddenItemsFooter,
+    fieldNumber: 186,
+    fieldName: 'showHiddenItemsFooter',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2404,7 +2415,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     182: SavedSettingsFields.swipeGesturesOnBottomBar,
     183: SavedSettingsFields.mpvOptions,
     184: SavedSettingsFields.dynamicIPKeepAlivePeriodSeconds,
-    185: SavedSettingsFields.postingRegretDelaySeconds
+    185: SavedSettingsFields.postingRegretDelaySeconds,
+    186: SavedSettingsFields.showHiddenItemsFooter
   };
 
   @override
@@ -2604,13 +2616,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       mpvOptions: (fields[183] as Map?)?.cast<String, String>(),
       dynamicIPKeepAlivePeriodSeconds: fields[184] as int?,
       postingRegretDelaySeconds: fields[185] as int?,
+      showHiddenItemsFooter: fields[186] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(173)
+      ..writeByte(174)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -2956,7 +2969,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(184)
       ..write(obj.dynamicIPKeepAlivePeriodSeconds)
       ..writeByte(185)
-      ..write(obj.postingRegretDelaySeconds);
+      ..write(obj.postingRegretDelaySeconds)
+      ..writeByte(186)
+      ..write(obj.showHiddenItemsFooter);
   }
 
   @override
