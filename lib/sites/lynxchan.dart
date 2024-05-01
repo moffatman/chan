@@ -219,6 +219,10 @@ class SiteLynxchan extends ImageboardSite {
 				kPriority: priority
 			}
 		));
+		return _getBoardsFromResponse(response);
+	}
+
+	List<ImageboardBoard> _getBoardsFromResponse(Response response) {
 		final document = parse(response.data);
 		final list = <ImageboardBoard>[];
 		final linkPattern = RegExp(r'^\/([^/]+)\/ - (.*)$');
@@ -235,6 +239,18 @@ class SiteLynxchan extends ImageboardSite {
 			));
 		}
 		return list;
+	}
+
+	@override
+	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
+		final response = await client.getUri(Uri.https(baseUrl, '/boards.js', {
+			'boardUri': query
+		}), options: Options(
+			extra: {
+				kPriority: RequestPriority.functional
+			}
+		));
+		return _getBoardsFromResponse(response);
 	}
 
 	@override
