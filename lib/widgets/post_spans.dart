@@ -149,7 +149,7 @@ abstract class PostSpan {
 	InlineSpan build(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
 	String buildText({bool forQuoteComparison = false});
 	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
-	Iterable<Attachment> get inlineAttachments => const Iterable.empty();
+	Iterable<Attachment> get inlineAttachments;
 	bool get containsLink => false;
 	@override
 	String toString() {
@@ -164,6 +164,8 @@ class _PostWrapperSpan extends PostSpan {
 	InlineSpan build(context, zone, settings, theme, options) => span;
 	@override
 	String buildText({bool forQuoteComparison = false}) => span.toPlainText();
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostNodeSpan extends PostSpan {
@@ -419,6 +421,9 @@ class PostTextSpan extends PostSpan {
 	String buildText({bool forQuoteComparison = false}) {
 		return text;
 	}
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostUnderlinedSpan extends PostSpan {
@@ -441,6 +446,9 @@ class PostUnderlinedSpan extends PostSpan {
 
 	@override
 	bool get containsLink => child.containsLink;
+
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostLineBreakSpan extends PostSpan {
@@ -454,6 +462,9 @@ class PostLineBreakSpan extends PostSpan {
 
 	@override
 	String toString() => 'PostLineBreakSpan()';
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostQuoteSpan extends PostSpan {
@@ -803,6 +814,9 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		return '>>$postId';
 	}
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostQuoteLinkWithContextSpan extends PostSpan {
@@ -890,6 +904,9 @@ class PostBoardLinkSpan extends PostSpan {
 	String buildText({bool forQuoteComparison = false}) {
 		return '>>/$board/';
 	}
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class _DetectLanguageParam {
@@ -1029,6 +1046,9 @@ class PostCodeSpan extends PostSpan {
 	String buildText({bool forQuoteComparison = false}) {
 		return '[code]$text[/code]';
 	}
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostSpoilerSpan extends PostSpan {
@@ -1072,6 +1092,9 @@ class PostSpoilerSpan extends PostSpan {
 
 	@override
 	bool get containsLink => child.containsLink;
+
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostLinkSpan extends PostSpan {
@@ -1263,6 +1286,9 @@ class PostLinkSpan extends PostSpan {
 
 	@override
 	bool get containsLink => true;
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostCatalogSearchSpan extends PostSpan {
@@ -1303,6 +1329,9 @@ class PostCatalogSearchSpan extends PostSpan {
 	String buildText({bool forQuoteComparison = false}) {
 		return '>>/$board/$query';
 	}
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostTeXSpan extends PostSpan {
@@ -1326,6 +1355,8 @@ class PostTeXSpan extends PostSpan {
 	}
 	@override
 	String buildText({bool forQuoteComparison = false}) => '[math]$tex[/math]';
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostInlineImageSpan extends PostSpan {
@@ -1359,6 +1390,8 @@ class PostInlineImageSpan extends PostSpan {
 	}
 	@override
 	String buildText({bool forQuoteComparison = false}) => src;
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostColorSpan extends PostSpan {
@@ -1376,6 +1409,8 @@ class PostColorSpan extends PostSpan {
 	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostSecondaryColorSpan extends PostSpan {
@@ -1392,6 +1427,8 @@ class PostSecondaryColorSpan extends PostSpan {
 	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostBoldSpan extends PostSpan {
@@ -1408,6 +1445,8 @@ class PostBoldSpan extends PostSpan {
 	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostItalicSpan extends PostSpan {
@@ -1424,6 +1463,8 @@ class PostItalicSpan extends PostSpan {
 	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostSuperscriptSpan extends PostSpan {
@@ -1440,6 +1481,8 @@ class PostSuperscriptSpan extends PostSpan {
 	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostStrikethroughSpan extends PostSpan {
@@ -1456,6 +1499,8 @@ class PostStrikethroughSpan extends PostSpan {
 	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
 	@override
 	bool get containsLink => child.containsLink;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 
@@ -1499,6 +1544,8 @@ class PostPopupSpan extends PostSpan {
 
 	@override
 	buildText({bool forQuoteComparison = false}) => '$title\n${popup.buildText(forQuoteComparison: forQuoteComparison)}';
+	@override
+	Iterable<Attachment> get inlineAttachments => popup.inlineAttachments;
 }
 
 class PostTableSpan extends PostSpan {
@@ -1568,6 +1615,9 @@ class PostDividerSpan extends PostSpan {
 
 	@override
 	buildText({bool forQuoteComparison = false}) => '\n';
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostShiftJISSpan extends PostSpan {
@@ -1606,6 +1656,9 @@ class PostShiftJISSpan extends PostSpan {
 
 	@override
 	buildText({bool forQuoteComparison = false}) => '[sjis]$text[/sjis]';
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostUserLinkSpan extends PostSpan {
@@ -1641,6 +1694,9 @@ class PostUserLinkSpan extends PostSpan {
 
 	@override
 	buildText({bool forQuoteComparison = false}) => '/u/$username';
+
+	@override
+	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class PostSpanZone extends StatelessWidget {
