@@ -457,7 +457,11 @@ class SiteXenforo extends ImageboardSite {
 						board: board,
 						id: id,
 						text: '',
-						name: e.querySelector('a.username')?.attributes['href']?.split('/').tryLastWhere((p) => p.isNotEmpty) ?? '<unknown user>',
+						name: e.querySelector('a.username')?.attributes['href']?.split('/').tryLastWhere((p) => p.isNotEmpty)
+							?? switch (e.querySelector('.username[data-user-id]')) {
+								dom.Element e => '${e.text.trim()}.${e.attributes['data-user-id']}',
+								null => '<unknown user>'
+							},
 						time: time,
 						threadId: id,
 						spanFormat: PostSpanFormat.xenforo,
