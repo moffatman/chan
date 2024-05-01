@@ -417,14 +417,26 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 	}
 
-	void _downloadAll() async {
-		final toDownload = widget.attachments.where((a) => !_getController(a).isDownloaded).toList();
+	void _downloadAll({bool saveAs = false}) async {
+		final List<TaggedAttachment> toDownload;
+		final String? dir;
+		if (saveAs) {
+			dir = await pickDirectory();
+			if (!mounted || dir == null) {
+				return;
+			}
+			toDownload = widget.attachments.toList();
+		}
+		else {
+			dir = null;
+			toDownload = widget.attachments.where((a) => !_getController(a).isDownloaded).toList();
+		}
 		final shouldDownload = await showAdaptiveDialog<bool>(
 			context: context,
 			barrierDismissible: true,
 			builder: (context) => AdaptiveAlertDialog(
 				title: const Text('Download all?'),
-				content: Text("${describeCount(toDownload.length, 'attachment')} will be saved to your library"),
+				content: Text("${describeCount(toDownload.length, 'attachment')} will be saved to ${dir ?? 'your library'}"),
 				actions: [
 					AdaptiveDialogAction(
 						isDefaultAction: true,
@@ -441,48 +453,20 @@ class _GalleryPageState extends State<GalleryPage> {
 					)
 				]
 			)
-		);
-		if (shouldDownload == true && mounted) {
-			final loadingStream = ValueNotifier<int>(0);
-			bool cancel = false;
-			showAdaptiveDialog(
-				context: context,
-				barrierDismissible: false,
-				builder: (context) => AdaptiveAlertDialog(
-					title: const Text('Bulk Download'),
-					content: ValueListenableBuilder<int>(
-						valueListenable: loadingStream,
-						builder: (context, completedCount, child) => Column(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								Text('${loadingStream.value} / ${toDownload.length} complete'),
-								const SizedBox(height: 8),
-								LinearProgressIndicator(
-									value: completedCount / toDownload.length
-								)
-							]	
-						)
-					),
-					actions: [
-						AdaptiveDialogAction(
-							isDestructiveAction: true,
-							child: const Text('Cancel'),
-							onPressed: () {
-								cancel = true;
-								Navigator.of(context).pop();
-							}
-						)
-					]
-				)
-			);
-			for (final attachment in toDownload) {
-				if (cancel) return;
-				await _getController(attachment).preloadFullAttachment();
-				await _getController(attachment).download();
-				loadingStream.value = loadingStream.value + 1;
-			}
-			if (!cancel && mounted) Navigator.of(context, rootNavigator: true).pop();
+		) ?? false;
+		if (!mounted || !shouldDownload) {
+			return;
 		}
+		await modalLoad(context, 'Bulk Download', (controller) async {
+			int downloaded = 0;
+			for (final attachment in toDownload) {
+				if (controller.cancelled) return;
+				await _getController(attachment).preloadFullAttachment();
+				await _getController(attachment).download(dir: dir);
+				downloaded++;
+				controller.progress.value = ('$downloaded / ${toDownload.length}', downloaded / toDownload.length);
+			}
+		}, cancellable: true);
 	}
 
 	void _toggleChrome() {
@@ -639,17 +623,20 @@ class _GalleryPageState extends State<GalleryPage> {
 										if (index == widget.attachments.length) {
 											return Padding(
 												padding: const EdgeInsets.all(6),
-												child: AdaptiveFilledButton(
-													padding: const EdgeInsets.all(8),
-													onPressed: _downloadAll,
-													child: const FittedBox(
-														fit: BoxFit.contain,
-														child: Column(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																Icon(CupertinoIcons.cloud_download, size: 50),
-																Text('Download all')
-															]
+												child: GestureDetector(
+													onLongPress: isSaveFileAsSupported ? () => _downloadAll(saveAs: true) : null,
+													child: AdaptiveFilledButton(
+														padding: const EdgeInsets.all(8),
+														onPressed: _downloadAll,
+														child: const FittedBox(
+															fit: BoxFit.contain,
+															child: Column(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	Icon(CupertinoIcons.cloud_download, size: 50),
+																	Text('Download all')
+																]
+															)
 														)
 													)
 												)

@@ -932,8 +932,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Future<String?> download({bool force = false, bool saveAs = false}) async {
-		if (_isDownloaded && !force) return null;
+	Future<String?> download({bool force = false, bool saveAs = false, String? dir}) async {
+		if (_isDownloaded && !force && dir == null) return null;
 		final settings = Settings.instance;
 		String filename;
 		bool successful = false;
@@ -971,26 +971,30 @@ class AttachmentViewerController extends ChangeNotifier {
 					successful = path != null;
 				}
 				else {
-					Settings.androidGallerySavePathSetting.value ??= await pickDirectory();
-					if (settings.androidGallerySavePath != null) {
+					final destination = dir ?? (Settings.androidGallerySavePathSetting.value ??= await pickDirectory());
+					if (destination != null) {
 						File source = getFile();
 						try {
 							// saveFile may modify name if there is a collision
 							filename = await saveFile(
 								sourcePath: source.path,
-								destinationDir: settings.androidGallerySavePath!,
-								destinationSubfolders: settings.gallerySavePathOrganizing.subfoldersFor(this),
+								destinationDir: destination,
+								destinationSubfolders: dir != null ? [] : settings.gallerySavePathOrganizing.subfoldersFor(this),
 								destinationName: filename
 							);
 							_isDownloaded = true;
 							successful = true;
 						}
 						on DirectoryNotFoundException {
-							Settings.androidGallerySavePathSetting.value = null;
+							if (dir == null) {
+								Settings.androidGallerySavePathSetting.value = null;
+							}
 							rethrow;
 						}
 						on InsufficientPermissionException {
-							Settings.androidGallerySavePathSetting.value = null;
+							if (dir == null) {
+								Settings.androidGallerySavePathSetting.value = null;
+							}
 							rethrow;
 						}
 					}
