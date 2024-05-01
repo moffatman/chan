@@ -111,7 +111,7 @@ class SiteXenforo extends ImageboardSite {
 						// Note for future:
 						// These links can be target="_blank", path=".../attachments/1000022703-png.539627/".
 						// So the fakeAttachment viewer won't recognize them.
-						yield PostLinkSpan(Uri.encodeFull(node.attributes['href']!), name: node.text);
+						yield PostLinkSpan(Uri.encodeFull(node.attributes['href']!), name: node.text.trim().nonEmptyOrNull);
 					}
 					else if (node.localName == 'p') {
 						yield* visit(node.nodes);
