@@ -486,9 +486,17 @@ final appearanceSettings = [
 		),
 		CustomMutableSettingWidget<SavedTheme>(
 			description: 'Theme',
-			setting: MappedMutableSetting(
-				theme.setting,
-				(key) => Persistence.settings.themes[key] ?? Settings.instance.lightTheme,
+			setting: CustomMutableSetting(
+				reader: (context) => Settings.instance.themes[theme.setting.value] ?? Settings.instance.lightTheme,
+				watcher: (context) {
+					final key = theme.setting.watch(context);
+					// Rebuild whenever a value changes
+					context.select<Settings, String?>((s) => s.themes[key]?.encode());
+					return Settings.instance.themes[key] ?? Settings.instance.lightTheme;
+				},
+				didMutater: (context) async {
+					Settings.instance.didEdit();
+				}
 			),
 			builder: (theme, didModify) => Container(
 				margin: const EdgeInsets.only(left: 16, right: 16),
