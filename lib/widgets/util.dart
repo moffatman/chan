@@ -640,6 +640,16 @@ extension OffsetBrightness on Color {
 	}
 }
 
+extension Contrast on Color {
+	double contrastWith(Color other) {
+		final luminance = computeLuminance();
+		final otherLuminance = other.computeLuminance();
+		return (math.max(luminance, otherLuminance) + 0.05) / (math.min(luminance, otherLuminance) + 0.05);
+	}
+	bool isReadableOn(Color other) =>
+		contrastWith(other) > 3;
+}
+
 Color colorToHex(String hexString) {
 	final buffer = StringBuffer();
 	if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');

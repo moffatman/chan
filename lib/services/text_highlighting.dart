@@ -1,6 +1,7 @@
 import 'package:chan/services/settings.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
@@ -60,15 +61,18 @@ TextSpan buildHighlightedCommentTextSpan({
 		ranges.add((range, targetExists ? quotelinkStyle : deadQuotelinkStyle));
 	}
 
-	final greentextStyle = TextStyle(
-		color: theme.quoteColor,
-		decorationColor: theme.quoteColor
-	);
-	for (final match in _greentextRegex.allMatches(text)) {
-		if (ranges.any((r) => r.$1.start == match.start)) {
-			continue;
+	if (theme.quoteColor.isReadableOn(theme.textFieldColor)) {
+		// Only if greentext color is readable
+		final greentextStyle = TextStyle(
+			color: theme.quoteColor,
+			decorationColor: theme.quoteColor
+		);
+		for (final match in _greentextRegex.allMatches(text)) {
+			if (ranges.any((r) => r.$1.start == match.start)) {
+				continue;
+			}
+			ranges.add((TextRange(start: match.start, end: match.end), greentextStyle));
 		}
-		ranges.add((TextRange(start: match.start, end: match.end), greentextStyle));
 	}
 
 	mergeSort(ranges, compare: (a, b) {
