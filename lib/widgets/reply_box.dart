@@ -2285,7 +2285,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							mainAxisSize: MainAxisSize.min,
 							children: [
 								GestureDetector(
-									behavior: HitTestBehavior.opaque,
+									behavior: HitTestBehavior.translucent,
 									supportedDevices: const {
 										PointerDeviceKind.mouse,
 										PointerDeviceKind.stylus,
@@ -2293,11 +2293,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										PointerDeviceKind.touch,
 										PointerDeviceKind.unknown
 									},
-									onPanStart: (event) {
+									onVerticalDragStart: (event) {
 										_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
 										_panStartDy = event.globalPosition.dy;
 									},
-									onPanUpdate: (event) {
+									onVerticalDragUpdate: (event) {
 										final view = PlatformDispatcher.instance.views.first;
 										final r = view.devicePixelRatio;
 										setState(() {
@@ -2308,7 +2308,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											}
 										});
 									},
-									onPanEnd: (event) {
+									onVerticalDragEnd: (event) {
 										if (_willHideOnPanEnd) {
 											Future.delayed(const Duration(milliseconds: 350), () {
 												settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
