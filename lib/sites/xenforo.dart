@@ -94,14 +94,14 @@ class SiteXenforo extends ImageboardSite {
 						yield const PostLineBreakSpan();
 					}
 					else if (node.localName == 'strong' || node.localName == 'b') {
-						yield PostBoldSpan(PostTextSpan(node.text));
+						yield PostBoldSpan(PostNodeSpan(visit(node.nodes).toList()));
 					}
 					else if (node.localName == 'h1' || node.localName == 'h2' || node.localName == 'h3') {
 						yield PostBoldSpan(PostNodeSpan(visit(node.nodes).toList()));
 						yield const PostLineBreakSpan();
 					}
 					else if (node.localName == 'em' || node.localName == 'i') {
-						yield PostItalicSpan(PostTextSpan(node.text));
+						yield PostItalicSpan(PostNodeSpan(visit(node.nodes).toList()));
 					}
 					else if (node.localName == 'a' && node.classes.contains('username') && (node.text.length > 1) && node.attributes.containsKey('data-user-id')) {
 						// Looks like "@username"
@@ -184,10 +184,10 @@ class SiteXenforo extends ImageboardSite {
 						yield const PostDividerSpan();
 					}
 					else if (node.localName == 'sup') {
-						yield PostSuperscriptSpan(PostTextSpan(node.text));
+						yield PostSuperscriptSpan(PostNodeSpan(visit(node.nodes).toList()));
 					}
 					else if (node.localName == 'strikethrough') {
-						yield PostStrikethroughSpan(PostTextSpan(node.text));
+						yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList()));
 					}
 					else if (node.localName == 'blockquote') {
 						final quoteContent = node.querySelector('.bbCodeBlock-expandContent');
