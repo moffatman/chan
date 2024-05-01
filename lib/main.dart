@@ -734,6 +734,11 @@ class ChanTabs extends ChangeNotifier {
 	}) {
 		tab.addListener(_onTabUpdate);
 		Persistence.tabs.insert(pos, tab);
+		if (pos <= browseTabIndex) {
+			// Keep the same current tab afterwards
+			Persistence.currentTabIndex++;
+			activeBrowserTab.value++;
+		}
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		if (activate) {
 			_tabController.index = 0;
@@ -765,11 +770,20 @@ class ChanTabs extends ChangeNotifier {
 		final removed = Persistence.tabs.removeAt(browseIndex);
 		removed.removeListener(_onTabUpdate);
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
-		final newActiveTabIndex = min(activeBrowserTab.value, Persistence.tabs.length - 1);
-		activeBrowserTab.value = newActiveTabIndex;
-		Persistence.currentTabIndex = newActiveTabIndex;
-		_didModifyPersistentTabData();
-		notifyListeners();
+		final int newActiveTabIndex;
+		if (browseIndex > browseTabIndex) {
+			// The removed tab was after our current tab, don't have to do anything
+			newActiveTabIndex = browseTabIndex;
+		}
+		else if (browseIndex == browseTabIndex) {
+			// The current tab was removed
+			newActiveTabIndex = min(browseTabIndex, Persistence.tabs.length - 1);
+		}
+		else {
+			// A tab before the current one was removed, need to fix the index
+			newActiveTabIndex = browseTabIndex - 1;
+		}
+		browseTabIndex = newActiveTabIndex;
 	}
 
 	Future<void> showNewTabPopup({
@@ -854,7 +868,6 @@ class ChanTabs extends ChangeNotifier {
 												insertInitializedTab(pair.key, pair.value);
 											}
 										}
-										browseTabIndex = indexToPreserve;
 									},
 									padding: const EdgeInsets.only(bottom: 50)
 								);
@@ -1634,7 +1647,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								title: 'Close',
 								isDestructiveAction: true,
 								onPressed: Persistence.tabs.length == 1 ? null : () {
-									final previouslyActiveTab = _tabs.browseTabIndex;
 									final closedTab = Persistence.tabs[-1 * index];
 									_tabs.closeBrowseTab(-1 * index);
 									if (closedTab.board != null) {
@@ -1643,7 +1655,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											message: 'Closed tab',
 											onUndo: () {
 												_tabs.insertInitializedTab(-1 * index, closedTab);
-												_tabs.browseTabIndex = previouslyActiveTab;
 											},
 											padding: const EdgeInsets.only(bottom: 50)
 										);
