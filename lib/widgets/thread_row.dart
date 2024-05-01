@@ -69,7 +69,11 @@ class ThreadCounters extends StatelessWidget {
 		bool showReplyTimeInsteadOfReplyCount = false;
 		if (site.isPaged) {
 			showReplyTimeInsteadOfReplyCount = thread.posts_.tryFirst?.time != thread.posts_.tryLast?.time;
-			if (thread.posts_.tryLast?.time == threadState?.thread?.posts_.tryLast?.time) {
+			final catalogLastTime = thread.posts_.tryLast?.time;
+			final threadLastTime = threadState?.thread?.posts_.tryLast?.time;
+			if (catalogLastTime != null &&
+			    threadLastTime != null &&
+					!catalogLastTime.isAfter(threadLastTime)) {
 				// No new posts
 				replyCountColor = grey;
 				otherMetadataColor = grey;
