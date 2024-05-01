@@ -171,6 +171,7 @@ class ModalLoadController {
 Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(ModalLoadController controller) work, {Duration wait = Duration.zero, bool cancellable = false}) async {
 	final rootNavigator = Navigator.of(context, rootNavigator: true);
 	final controller = ModalLoadController();
+	bool popped = false;
 	final timer = Timer(wait, () {
 		showAdaptiveDialog(
 			context: context,
@@ -203,6 +204,12 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 								onPressed: controller.cancelled ? null : () {
 									controller.cancel();
 									setDialogState(() {});
+									Future.delayed(const Duration(milliseconds: 750), () {
+										if (!popped) {
+											popped = true;
+											Navigator.pop(context);
+										}
+									});
 								},
 								child: const Text('Cancel')
 							)
@@ -220,7 +227,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 		if (timer.isActive) {
 			timer.cancel();
 		}
-		else {
+		else if (!popped) {
 			rootNavigator.pop();
 		}
 		Future.delayed(const Duration(seconds: 1), controller.dispose);
