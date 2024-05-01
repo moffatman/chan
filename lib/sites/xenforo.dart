@@ -548,7 +548,11 @@ class SiteXenforo extends ImageboardSite {
 				id: int.parse(e.id.split('-')[2]),
 				text: _fixRelativeUrls(e.querySelector('.message-body .bbWrapper')!.innerHtml),
 				parentId: -currentPageNumber,
-				name: e.querySelector('.message-name a')?.attributes['href']?.split('/').tryLastWhere((p) => p.isNotEmpty) ?? '',
+				name: e.querySelector('.message-name a')?.attributes['href']?.split('/').tryLastWhere((p) => p.isNotEmpty)
+					?? switch (e.querySelector('.message-name .username[data-user-id]')) {
+						dom.Element e => '${e.text.trim()}.${e.attributes['data-user-id']}',
+						null => '<unknown user>'
+					},
 				time: _parseTime(e.querySelector('.message-attribution-main time')!),
 				spanFormat: PostSpanFormat.xenforo,
 				attachments_: const []
