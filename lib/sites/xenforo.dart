@@ -269,6 +269,16 @@ class SiteXenforo extends ImageboardSite {
 					else if (node.localName == 'iframe' && node.attributes.containsKey('src')) {
 						yield PostLinkSpan(node.attributes['src']!);
 					}
+					else if (node.localName == 'video') {
+						final src = node.querySelector('source')?.attributes['src'];
+						if (src != null) {
+							yield PostLinkSpan(src);
+						}
+						else {
+							// Something is not as expected
+							yield PostTextSpan(node.outerHtml);
+						}
+					}
 					else if (node.localName == 'span') {
 						final iframeJsonStr = node.attributes['data-s9e-mediaembed-iframe'];
 						if (iframeJsonStr != null) {
