@@ -3240,14 +3240,25 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		final averageItemHeight = heightedItems.fold<double>(0, (a, b) => a + b) / heightedItems.length;
 		int nearestDistance = _items.length + 1;
-		double? estimate;
+		int nearestIndex = 0;
 		for (int i = 0; i < _items.length; i++) {
 			if (_items[i].cachedOffset != null) {
 				final distance = (targetIndex - i).abs();
 				if (distance < nearestDistance) {
-					estimate = _items[i].cachedOffset! + (averageItemHeight * (targetIndex - i));
+					nearestIndex = i;
 					nearestDistance = distance;
 				}
+			}
+		}
+		double estimate = _items[nearestIndex].cachedOffset!;
+		if (targetIndex > nearestIndex) {
+			for (int j = nearestIndex; j < targetIndex; j++) {
+				estimate += _items[j].cachedHeight ?? averageItemHeight;
+			}
+		}
+		else if (targetIndex < nearestIndex) {
+			for (int j = targetIndex; j < nearestIndex; j++) {
+				estimate += _items[j].cachedHeight ?? averageItemHeight;
 			}
 		}
 		return estimate;
