@@ -3253,7 +3253,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		else if (targetIndex < nearestIndex) {
 			for (int j = targetIndex; j < nearestIndex; j++) {
-				estimate += _items[j].cachedHeight ?? averageItemHeight;
+				estimate -= _items[j].cachedHeight ?? averageItemHeight;
 			}
 		}
 		return estimate;
