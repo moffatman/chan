@@ -474,6 +474,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	final bool isMediaLink = [
 		'.webm',
 		'.mkv',
+		'.mov',
 		'.mp4',
 		'.png',
 		'.jpg',
