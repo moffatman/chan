@@ -30,7 +30,6 @@ import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:home_indicator/home_indicator.dart';
 
 const double _thumbnailSize = 60;
@@ -151,7 +150,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	bool showingOverlays = true;
 	final Key _pageControllerKey = GlobalKey(debugLabel: 'GalleryPage._pageControllerKey');
 	final Key _thumbnailsKey = GlobalKey(debugLabel: 'GalleryPage._thumbnailsKey');
-	late final BehaviorSubject<void> _scrollCoalescer;
+	late final BufferedListenable _scrollCoalescer;
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
 	final _shareButtonKey = GlobalKey(debugLabel: 'GalleryPage._shareButtonKey');
@@ -162,7 +161,6 @@ class _GalleryPageState extends State<GalleryPage> {
 	late final EasyListenable _currentAttachmentChanged;
 	late final DraggableScrollableController _scrollSheetController;
 	final _draggableScrollableSheetKey = GlobalKey(debugLabel: 'GalleryPage._draggableScrollableSheetKey');
-	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
 	bool _gridViewDesynced = false;
 	bool _thumbnailsDesynced = false;
 	/// To prevent Hero when entering with grid initially enabled
@@ -176,7 +174,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			// Hard to mute if loud when grid is covering
 			Settings.instance.setMuteAudio(true);
 		}
-		_scrollCoalescer = BehaviorSubject();
+		_scrollCoalescer = BufferedListenable(const Duration(milliseconds: 10));
 		_slideListenable = EasyListenable();
 		_shouldShowPosition = ValueNotifier(false);
 		_currentAttachmentChanged = EasyListenable();
@@ -184,8 +182,8 @@ class _GalleryPageState extends State<GalleryPage> {
 		showChrome = widget.initiallyShowGrid || widget.initiallyShowChrome;
 		currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
 		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
-		pageController.addListener(_onPageControllerUpdate);
-		__onPageControllerUpdateSubscription = _scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
+		pageController.addListener(_scrollCoalescer.didUpdate);
+		_scrollCoalescer.addListener(__onPageControllerUpdate);
 		final attachment = widget.attachments[currentIndex];
 		if (Settings.instance.autoloadAttachments || Settings.instance.alwaysAutoloadTappedAttachment) {
 			_getController(attachment).loadFullAttachment().then((x) {
@@ -324,10 +322,6 @@ class _GalleryPageState extends State<GalleryPage> {
 			await hideStatusBar();
 			showingOverlays = false;
 		}
-	}
-
-	void _onPageControllerUpdate() {
-		_scrollCoalescer.add(null);
 	}
 
 	void __onPageControllerUpdate() {
@@ -1179,7 +1173,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	@override
 	void dispose() {
 		pageController.dispose();
-		_scrollCoalescer.close();
+		_scrollCoalescer.dispose();
 		_currentAttachmentChanged.dispose();
 		if (showChromeOnce) {
 			thumbnailScrollController.dispose();
@@ -1190,7 +1184,6 @@ class _GalleryPageState extends State<GalleryPage> {
 			controller.dispose();
 		}
 		_shouldShowPosition.dispose();
-		__onPageControllerUpdateSubscription.cancel();
 		super.dispose();
 	}
 }

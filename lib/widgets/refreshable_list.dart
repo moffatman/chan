@@ -18,7 +18,6 @@ import 'package:flutter/material.dart' hide WeakMap;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:weak_map/weak_map.dart';
 
 const double _overscrollTriggerThreshold = 100;
@@ -1195,7 +1194,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				return;
 			}
 			widget.controller?.invalidateAfter(item, looseEquality);
-			widget.controller?._scrollStream.add(null);
+			widget.controller?.slowScrolls.didUpdate();
 			total += incremental;
 		}
 	}
@@ -3052,9 +3051,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	RefreshableListItem<T> getItem(int i) => _items[i].item;
 	ScrollController? scrollController;
 	late final ValueNotifier<double> overscrollFactor = ValueNotifier<double>(0);
-	late final BehaviorSubject<void> _scrollStream = BehaviorSubject();
-	late final EasyListenable slowScrolls = EasyListenable();
-	late final StreamSubscription<List<void>> _slowScrollSubscription;
+	final slowScrolls = BufferedListenable(const Duration(milliseconds: 100));
 	double topOffset = 0;
 	double bottomOffset = 0;
 	String? contentId;
@@ -3067,7 +3064,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	bool _autoExtendEnabled = true;
 	bool _isDisposed = false;
 	RefreshableListController() {
-		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
+		slowScrolls.addListener(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
 	}
 	void invalidateAfter(RefreshableListItem<T> item, bool looseEquality) {
@@ -3110,7 +3107,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			}
 		}
 	}
-	Future<void> _onSlowScroll(void update) async {
+	Future<void> _onSlowScroll() async {
 		final extentAfter = scrollController?.tryPosition?.extentAfter;
 		if (extentAfter != null) {
 			if (extentAfter < 1000 && _autoExtendEnabled) {
@@ -3126,11 +3123,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				item.context = null;
 			}
 		}
-		slowScrolls.didUpdate();
 	}
 	void _onScrollControllerNotification() {
-		_scrollStream.add(null);
-		if ((scrollControllerPositionLooksGood)) {
+		slowScrolls.didUpdate();
+		if (scrollControllerPositionLooksGood) {
 			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
 			overscrollFactor.value = (overscrollAmount / _overscrollTriggerThreshold).clamp(0, 1);
 		}
@@ -3156,9 +3152,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	void dispose() {
 		super.dispose();
 		_isDisposed = true;
-		_scrollStream.close();
-		_slowScrollSubscription.cancel();
 		scrollController?.removeListener(_onScrollControllerNotification);
+		slowScrolls.removeListener(_onSlowScroll);
 		slowScrolls.dispose();
 		overscrollFactor.dispose();
 	}
@@ -3217,7 +3212,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			if (_isDisposed) {
 				return;
 			}
-			slowScrolls.didUpdate();
+			slowScrolls.didUpdate(now: true);
 			notifyListeners();
 		});
 	}
@@ -3570,7 +3565,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		state?._rebuild(); // Force [block]
 		setItems([]);
 		await state?.update();
-		slowScrolls.didUpdate();
+		slowScrolls.didUpdate(now: true);
 	}
 	Future<void> update() async {
 		await state?.update();

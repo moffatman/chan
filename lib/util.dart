@@ -380,6 +380,50 @@ class EasyListenable extends ChangeNotifier {
 	}
 }
 
+class BufferedListenable extends ChangeNotifier {
+	final Duration bufferTime;
+	BufferedListenable(this.bufferTime);
+	Timer? _timer;
+
+	void didUpdate({bool now = false}) {
+		if (now) {
+			_timer?.cancel();
+			_timer = null;
+			notifyListeners();
+		}
+		else {
+			_timer ??= Timer(bufferTime, _onTimerFire);
+		}
+	}
+
+	void _onTimerFire() {
+		_timer = null;
+		notifyListeners();
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_timer?.cancel();
+	}
+}
+
+class BufferedValueNotifier<T> extends BufferedListenable implements ValueNotifier<T> {
+	T _value;
+	BufferedValueNotifier(super.bufferTime, T value) : _value = value;
+
+	@override
+	T get value => _value;
+	@override
+	set value(T newValue) {
+		if (newValue == _value) {
+			return;
+		}
+		_value = newValue;
+		didUpdate();
+	}
+}
+
 extension LazyCeil on double {
 	int lazyCeil() {
 		if (isFinite) {

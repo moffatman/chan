@@ -29,7 +29,6 @@ dependencies:
   dio_cookie_manager: ^2.0.0
   cookie_jar: ^3.0.1
   html: ^0.15.0
-  rxdart: ^0.27.1
   provider: ^6.0.0
   extended_image: ^6.0.1
   html_unescape: ^2.0.0

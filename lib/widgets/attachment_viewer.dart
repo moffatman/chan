@@ -41,7 +41,6 @@ import 'package:media_kit_video/media_kit_video_controls/src/controls/extensions
 import 'package:mutex/mutex.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart'; 
 import 'package:vector_math/vector_math_64.dart' show Vector3, Quaternion;
@@ -201,7 +200,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	final _conversionDisposers = <VoidCallback>[];
 	bool _checkArchives = false;
 	final _showLoadingProgress = ValueNotifier<bool>(false);
-	final _longPressFactorStream = BehaviorSubject<double>();
+	final _longPressFactor = BufferedValueNotifier<double>(const Duration(milliseconds: 50), 0);
 	int _millisecondsBeforeLongPress = 0;
 	bool _currentlyWithinLongPress = false;
 	bool _playingBeforeLongPress = false;
@@ -210,7 +209,6 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _isDisposed = false;
 	bool _isDownloaded;
 	Offset? _doubleTapDragAnchor;
-	late final StreamSubscription<List<double>> _longPressFactorSubscription;
 	bool _loadingProgressHideScheduled = false;
 	bool? _useRandomUserAgent;
 	ValueListenable<double?> _videoLoadingProgress = ValueNotifier(null);
@@ -218,7 +216,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _hideVideoPlayerController = false;
 	List<RecognizedTextBlock> _textBlocks = [];
 	bool _soundSourceFailed = false;
-	final _playerErrorStream = PublishSubject<String>();
+	final _playerErrorStream = StreamController<String>.broadcast();
 	({
 		ValueNotifier<int> currentBytes,
 		int totalBytes,
@@ -287,11 +285,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		bool isPrimary = false,
 		bool isDownloaded = false,
 	}) : _isPrimary = isPrimary, _isDownloaded = isDownloaded {
-		_longPressFactorSubscription = _longPressFactorStream.bufferTime(const Duration(milliseconds: 50)).listen((x) {
-			if (x.isNotEmpty) {
-				_onCoalescedLongPressUpdate(x.last);
-			}
-		});
+		_longPressFactor.addListener(_onCoalescedLongPressUpdate);
 		// optimistic
 		_goodImageSource = initialGoodSource;
 		_isFullResolution = initialGoodSource != null;
@@ -692,7 +686,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						if (attachment.type.isVideo) {
 							final error = await Future.any<String?>([
 								firstFrameFuture.then((_) => null),
-								_playerErrorStream.firstOrNull.then((error) async {
+								_playerErrorStream.stream.firstOrNull.then((error) async {
 									if (error != null) {
 										// Sometimes MPV sends bogus errors when trying different decoders
 										await Future.delayed(const Duration(seconds: 10));
@@ -705,7 +699,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							}
 						}
 						else {
-							_playerErrorStream.firstOrNull.then((error) async {
+							_playerErrorStream.stream.firstOrNull.then((error) async {
 								if (error == null) {
 									return;
 								}
@@ -784,13 +778,14 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (_isDisposed) {
 			return;
 		}
-		_longPressFactorStream.add(factor);
+		_longPressFactor.value = factor;
 	}
 
-	void _onCoalescedLongPressUpdate(double factor) async {
+	void _onCoalescedLongPressUpdate() async {
 		if (_isDisposed) {
 			return;
 		}
+		final factor = _longPressFactor.value;
 		if (_currentlyWithinLongPress) {
 			final duration = videoPlayerController!.player.state.duration.inMilliseconds;
 			final newPosition = Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)).clamp(0, duration)).round());
@@ -1049,8 +1044,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		_showLoadingProgress.dispose();
 		_videoPlayerController?.player.pause().then((_) => videoPlayerController?.player.dispose());
-		_longPressFactorSubscription.cancel();
-		_longPressFactorStream.close();
+		_longPressFactor.dispose();
 		_videoControllers.remove(this);
 		_ongoingConversion?.cancelIfActive();
 		_playerErrorStream.close();

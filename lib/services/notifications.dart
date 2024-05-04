@@ -20,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_apns_only/flutter_apns_only.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
 abstract class PushNotification {
@@ -138,8 +137,8 @@ class Notifications {
 	static String? staticError;
 	String? error;
 	static final Map<String, Notifications> _children = {};
-	final tapStream = BehaviorSubject<PostIdentifier>();
-	final foregroundStream = BehaviorSubject<PushNotification>();
+	final tapStream = StreamController<PostIdentifier>.broadcast();
+	final foregroundStream = StreamController<PushNotification>.broadcast();
 	final Persistence persistence;
 	ThreadWatcher? localWatcher;
 	final String siteType;

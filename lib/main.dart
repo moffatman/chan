@@ -62,14 +62,13 @@ import 'package:local_auth/local_auth.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:native_drag_n_drop/native_drag_n_drop.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:rxdart/subjects.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
 import 'package:uni_links/uni_links.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
-final fakeLinkStream = PublishSubject<String?>();
+final fakeLinkStream = StreamController<String?>.broadcast();
 bool _initialConsume = false;
 final zeroValueNotifier = ValueNotifier(0);
 bool _promptedAboutCrashlytics = false;
@@ -1285,7 +1284,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			ReceiveSharingIntent.getInitialMedia().then((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		}
 		_linkSubscription = linkStream.listen(_consumeLink);
-		_fakeLinkSubscription = fakeLinkStream.listen(_consumeLink);
+		_fakeLinkSubscription = fakeLinkStream.stream.listen(_consumeLink);
 		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 		_initialConsume = true;
@@ -1936,7 +1935,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		for (final board in ImageboardRegistry.instance.imageboards) {
 			if (_notificationsSubscriptions[board.key]?.notifications != board.notifications) {
 				_notificationsSubscriptions[board.key]?.subscription.cancel();
-				_notificationsSubscriptions[board.key] = (notifications: board.notifications, subscription: board.notifications.tapStream.listen((target) {
+				_notificationsSubscriptions[board.key] = (notifications: board.notifications, subscription: board.notifications.tapStream.stream.listen((target) {
 					_onNotificationTapped(board, target.boardThreadOrPostId);
 				}));
 			}
@@ -1944,7 +1943,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		final dev = devImageboard;
 		if (dev != null && _devNotificationsSubscription?.notifications != dev.notifications) {
 			_devNotificationsSubscription?.subscription.cancel();
-			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen((target) {
+			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.stream.listen((target) {
 				_onDevNotificationTapped(target.boardThreadOrPostId);
 			}));
 		}

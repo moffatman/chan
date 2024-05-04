@@ -130,7 +130,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 	void initState() {
 		super.initState();
 		subscriptions.addAll({
-			for (final i in widget.imageboards) i: i.notifications.foregroundStream.listen((message) => _newNotification(i, message))
+			for (final i in widget.imageboards) i: i.notifications.foregroundStream.stream.listen((message) => _newNotification(i, message))
 		});
 	}
 
@@ -139,7 +139,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		super.didUpdateWidget(oldWidget);
 		for (final i in widget.imageboards) {
 			if (!subscriptions.containsKey(i)) {
-				subscriptions[i] = i.notifications.foregroundStream.listen((message) => _newNotification(i, message));
+				subscriptions[i] = i.notifications.foregroundStream.stream.listen((message) => _newNotification(i, message));
 			}
 		}
 		for (final i in oldWidget.imageboards) {
