@@ -1617,7 +1617,7 @@ class AttachmentViewer extends StatelessWidget {
 									)
 								)
 							),
-							if (controller.videoPlayerController != null) Positioned.fill(
+							if (controller.videoPlayerController != null && allowGestures) Positioned.fill(
 								child: Flex(
 									direction: rotate90DegreesClockwise ? Axis.vertical : Axis.horizontal,
 									children: [
