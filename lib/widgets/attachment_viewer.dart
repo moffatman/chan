@@ -308,7 +308,11 @@ class AttachmentViewerController extends ChangeNotifier {
 			return existing;
 		}
 		final player = Player();
-		final controller = VideoController(player);
+		final controller = VideoController(player, configuration: Platform.isIOS ? VideoControllerConfiguration(
+			// Try to avoid bad size-getting thread lock in VideoOutput.swift
+			width: attachment.width,
+			height: attachment.height
+		) : const VideoControllerConfiguration());
 		controller.player.stream.error.listen(_onPlayerError);
 		controller.player.stream.log.listen(_onPlayerLog);
 		controller.player.stream.videoParams.listen(_onPlayerVideoParams);
