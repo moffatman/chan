@@ -239,6 +239,7 @@ class MediaScan {
 	}
 
 	bool get isAudioOnly => videoFramerate?.isNaN ?? true;
+	bool get hasVideo => videoFramerate?.isNaN == false;
 
 	bool get hasMetadata {
 		final map = metadata;
@@ -580,7 +581,6 @@ class MediaConversion {
 					if (randomizeChecksum) {
 						vfs.add('noise=alls=10:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
 					}
-					final inputFileIsVideoLike = inputFile.path.endsWith('.gif') || inputFile.path.endsWith('.webm');
 					Uri inputUri = inputFile;
 					Map<String, String> inputHeaders = headers;
 					if (soundSource != null && inputFile.toStringFFMPEG().startsWith('http')) {
@@ -597,7 +597,7 @@ class MediaConversion {
 							inputHeaders.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
 						],
 						if (soundSource != null)
-							if (inputFileIsVideoLike) ...[
+							if (scan.hasVideo) ...[
 								'-stream_loop', '-1',
 							]
 							else ...[
