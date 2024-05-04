@@ -3495,12 +3495,11 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	T? get middleVisibleItem {
 		if (scrollControllerPositionLooksGood) {
-			int index = _items.indexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && (i.cachedOffset! > (scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2))));
+			int index = _items.indexWhere((i) =>
+				(i.cachedHeight != null) &&
+				(i.cachedOffset != null) &&
+				((i.cachedOffset! + i.cachedHeight!) > (scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2))));
 			if (index != -1) {
-				if (index > 0) {
-					// It will be one too far, we want the item which covers the middle pixel row
-					index--;
-				}
 				return _items[index].item.item;
 			}
 		}
