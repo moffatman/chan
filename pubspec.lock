@@ -969,10 +969,11 @@ packages:
   media_kit_native_event_loop:
     dependency: "direct main"
     description:
-      name: media_kit_native_event_loop
-      sha256: a605cf185499d14d58935b8784955a92a4bf0ff4e19a23de3d17a9106303930e
-      url: "https://pub.dev"
-    source: hosted
+      path: media_kit_native_event_loop
+      ref: deadlock
+      resolved-ref: "8e592af463a213f64bfb5dfa399369cf34c69587"
+      url: "https://github.com/moffatman/media-kit.git"
+    source: git
     version: "1.0.8"
   media_kit_video:
     dependency: "direct main"
