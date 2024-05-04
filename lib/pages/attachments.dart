@@ -104,8 +104,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 				_controller.animateTo((a) => a.attachment.id == widget.initialAttachment?.attachment.id);
 			});
 		}
-		Future.delayed(const Duration(seconds: 1), () {
+		Future.microtask(() {
 			_controller.slowScrolls.addListener(_onSlowScroll);
+			_onSlowScroll();
 		});
 	}
 
