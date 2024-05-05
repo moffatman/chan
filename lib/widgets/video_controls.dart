@@ -141,7 +141,6 @@ class _VideoControlsState extends State<VideoControls> {
 
 	@override
 	Widget build(BuildContext context) {
-		print('Build _VideoControlsState with controller ${videoPlayerController?.player.state} and value $value');
 		final primaryColor = ChanceTheme.primaryColorOf(context);
 		return SizedBox(
 			height: 44,
