@@ -561,10 +561,8 @@ class MediaConversion {
 					final soundDuration = soundScan.duration;
 					if (soundDuration != null) {
 						final ms = outputDurationInMilliseconds = max(outputDurationInMilliseconds ?? soundDuration.inMilliseconds, soundDuration.inMilliseconds);
-						if (copyStreams && outputFileExtension == 'webm') {
-							// Some bug on Android where it will loop forever, need to set a target time
-							maximumDurationInSeconds = ms / 1000;
-						}
+						// Use params for it to loop forever then cut off at the right time
+						maximumDurationInSeconds = ms / 1000;
 					}
 				}
 				final results = await pool.withResource(() async {
@@ -618,8 +616,10 @@ class MediaConversion {
 						'-i', inputUri.toStringFFMPEG(),
 						if (soundSource != null) ...[
 							'-i', soundSource!.toStringFFMPEG(),
-							'-shortest',
-							'-fflags', '+shortest',
+							if (maximumDurationInSeconds == null) ...[
+								'-shortest',
+								'-fflags', '+shortest',
+							],
 							'-map', '0:v:0',
 							'-map', '1:a:0',
 						],
