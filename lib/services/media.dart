@@ -239,7 +239,18 @@ class MediaScan {
 	}
 
 	bool get isAudioOnly => videoFramerate?.isNaN ?? true;
-	bool get hasVideo => videoFramerate?.isNaN == false;
+	bool get hasVideo {
+		final framerate = videoFramerate;
+		if (framerate == null || framerate.isNaN) {
+			return false;
+		}
+		final microseconds = duration?.inMicroseconds;
+		if (microseconds == null) {
+			return false;
+		}
+		final frames = (microseconds * framerate) / Duration.microsecondsPerSecond;
+		return frames.round() > 1;
+	}
 
 	bool get hasMetadata {
 		final map = metadata;
