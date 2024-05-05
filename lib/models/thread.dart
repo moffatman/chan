@@ -291,6 +291,10 @@ class Thread extends HiveObject implements Filterable {
 				return posts_.first.flag?.name;
 			case 'md5':
 				return attachments.map((a) => a.md5).join(' ');
+			case 'capcode':
+				return posts_.first.capcode;
+			case 'trip':
+				return posts_.first.trip;
 			default:
 				return null;
 		}
