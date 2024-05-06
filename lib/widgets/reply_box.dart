@@ -143,7 +143,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _disableLoginSystem = false;
 	final Map<ImageboardSnippet, TextEditingController> _snippetControllers = {};
 	final List<QueuedPost> _submittingPosts = [];
-	bool _showSubmittingPosts = true;
+	bool _showSubmittingPosts = false;
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
 		int threadId => ThreadIdentifier(widget.board, threadId),
