@@ -3,9 +3,14 @@ import 'package:chan/sites/lainchan_org.dart';
 import 'package:flutter/foundation.dart';
 
 class SiteSoyjak extends SiteLainchanOrg {
+	final String? captchaQuestion;
+	final List<String>? boardsWithCaptcha;
+
 	SiteSoyjak({
 		required super.baseUrl,
 		required super.name,
+		this.captchaQuestion,
+		this.boardsWithCaptcha,
 		super.platformUserAgents,
 		super.archives,
 		super.faviconPath = '/static/favicon.png',
@@ -20,9 +25,14 @@ class SiteSoyjak extends SiteLainchanOrg {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		return McCaptchaRequest(
-			challengeUrl: Uri.https(baseUrl, '/inc/mccaptcha/entrypoint.php', {'mode': 'captcha'})
-		);
+		if (boardsWithCaptcha?.contains(board) ?? true) {
+			// If boardsWithCaptcha == null, every board has captcha
+			return McCaptchaRequest(
+				question: captchaQuestion,
+				challengeUrl: Uri.https(baseUrl, '/inc/mccaptcha/entrypoint.php', {'mode': 'captcha'})
+			);
+		}
+		return const NoCaptchaRequest();
 	}
 
 	@override

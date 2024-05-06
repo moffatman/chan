@@ -53,10 +53,12 @@ class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 	CaptchaMcCaptchaChallenge? challenge;
 	/// Unit vector (0,1)
 	Offset? tappedPosition;
+	late final TextEditingController answerController;
 
 	@override
 	void initState() {
 		super.initState();
+		answerController = TextEditingController();
 		_tryRequestChallenge();
 	}
 
@@ -143,6 +145,19 @@ class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 							)
 						)
 					),
+					if (widget.request.question != null) ...[
+						const SizedBox(height: 16),
+						Text(widget.request.question!),
+						const SizedBox(height: 16),
+						SizedBox(
+							width: 150,
+							child: AdaptiveTextField(
+								controller: answerController,
+								enableIMEPersonalizedLearning: false,
+								autocorrect: false,
+							)
+						)
+					],
 					const SizedBox(height: 16),
 					Row(
 						mainAxisSize: MainAxisSize.min,
@@ -155,6 +170,7 @@ class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 							AdaptiveIconButton(
 								onPressed: tappedPosition == null ? null : () {
 									widget.onCaptchaSolved(McCaptchaSolution(
+										answer: answerController.text,
 										acquiredAt: challenge.acquiredAt,
 										guid: challenge.guid,
 										x: (tappedPosition.dx * challenge.image.width).round(),
@@ -194,6 +210,7 @@ class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 	void dispose() {
 		super.dispose();
 		challenge?.image.dispose();
+		answerController.dispose();
 	}
 }
 

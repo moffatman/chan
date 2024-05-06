@@ -315,6 +315,9 @@ class SiteLainchan extends ImageboardSite {
 			fields['guid'] = captchaSolution.guid;
 			fields['x'] = captchaSolution.x.toString();
 			fields['y'] = captchaSolution.y.toString();
+			if (captchaSolution.answer.isNotEmpty) {
+				fields['captcha_text'] = captchaSolution.answer;
+			}
 		}
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/post.php'),

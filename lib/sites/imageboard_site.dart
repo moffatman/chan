@@ -611,11 +611,13 @@ class SecucapCaptchaRequest extends CaptchaRequest {
 
 class McCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
+	final String? question;
 	const McCaptchaRequest({
-		required this.challengeUrl
+		required this.challengeUrl,
+		required this.question
 	});
 	@override
-	String toString() => 'McCaptchaRequest(challengeUrl: $challengeUrl)';
+	String toString() => 'McCaptchaRequest(challengeUrl: $challengeUrl, question: $question)';
 }
 
 abstract class CaptchaSolution {
@@ -745,16 +747,18 @@ class McCaptchaSolution extends CaptchaSolution {
 	final String guid;
 	final int x;
 	final int y;
+	final String answer;
 	@override
 	DateTime? get expiresAt => acquiredAt.add(const Duration(seconds: 90));
 	McCaptchaSolution({
 		required super.acquiredAt,
 		required this.guid,
 		required this.x,
-		required this.y
+		required this.y,
+		required this.answer
 	});
 	@override
-	String toString() => 'McCaptchaSolution(guid: $guid, x: $x, y: $y)';
+	String toString() => 'McCaptchaSolution(guid: $guid, x: $x, y: $y, answer: $answer)';
 }
 class ImageboardArchiveSearchResult {
 	final Post? post;
@@ -1546,7 +1550,9 @@ ImageboardSite makeSite(dynamic data) {
 		return SiteSoyjak(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			platformUserAgents: platformUserAgents
+			platformUserAgents: platformUserAgents,
+			boardsWithCaptcha: (data['boardsWithCaptcha'] as List?)?.cast<String>(),
+			captchaQuestion: data['captchaQuestion']
 		);
 	}
 	else if (data['type'] == 'frenschan') {
