@@ -3361,12 +3361,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			final completer = Completer<void>();
 			double estimate = switch (_estimateOffset(targetIndex)) {
 				double e => e - topOffset,
-				null => (
-									// We are at the top
-									scrollController!.position.extentBefore == 0 ||
-									// Item is in the second half of the list
-									targetIndex > (_items.length / 2)
-								) ? scrollController!.position.maxScrollExtent : 0
+				null =>
+					// This is a dumb estimate. But it won't ever get stuck.
+					scrollController!.position.extentBefore > scrollController!.position.extentAfter ?
+						0 : scrollController!.position.maxScrollExtent
 			};
 			if (_items.last.cachedOffset != null) {
 				// prevent overscroll
