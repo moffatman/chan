@@ -1592,8 +1592,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										textCapitalization: TextCapitalization.sentences,
 										keyboardAppearance: ChanceTheme.brightnessOf(context),
 									),
-									if (loading) Column(
-										mainAxisAlignment: MainAxisAlignment.center,
+									if (loading) Wrap(
+										direction: Axis.vertical,
+										spacing: 12,
+										runSpacing: 12,
+										alignment: WrapAlignment.start,
+										runAlignment: WrapAlignment.center,
+										crossAxisAlignment: WrapCrossAlignment.center,
 										children: [
 											AnimatedBuilder(
 												animation: Outbox.instance,
@@ -1615,29 +1620,19 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 															else {
 																return const SizedBox.shrink();
 															}
-															return Padding(
-																padding: const EdgeInsets.only(bottom: 16),
-																child: Row(
-																	mainAxisSize: MainAxisSize.min,
-																	children: [
-																		TimedRebuilder(
-																			interval: const Duration(seconds: 1),
-																			function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
-																			builder: (context, delta) => Text(
-																				'Waiting for cooldown ($delta)',
-																				style: const TextStyle(
-																					fontFeatures: [FontFeature.tabularFigures()]
-																				)
-																			)
-																		),
-																		const SizedBox(width: 16),
-																		AdaptiveThinButton(
-																			backgroundFilled: true,
-																			onPressed: pair.$2,
-																			padding: const EdgeInsets.all(8),
-																			child: const Text('Try to skip')
+															return AdaptiveThinButton(
+																backgroundFilled: true,
+																onPressed: pair.$2,
+																padding: const EdgeInsets.all(8),
+																child: TimedRebuilder(
+																	interval: const Duration(seconds: 1),
+																	function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
+																	builder: (context, delta) => Text(
+																		'Waiting for cooldown ($delta)',
+																		style: const TextStyle(
+																			fontFeatures: [FontFeature.tabularFigures()]
 																		)
-																	]
+																	)
 																)
 															);
 														}
@@ -1651,29 +1646,19 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													if (state is QueueStateSubmitting<PostReceipt>) {
 														final wait = state.wait;
 														if (wait != null) {
-															return Padding(
-																padding: const EdgeInsets.only(bottom: 16),
-																child: Row(
-																	mainAxisSize: MainAxisSize.min,
-																	children: [
-																		TimedRebuilder(
-																			interval: const Duration(seconds: 1),
-																			function: () => formatDuration(wait.until.difference(DateTime.now()).clampAboveZero),
-																			builder: (context, delta) => Text(
-																				'${state.message} ($delta)',
-																				style: const TextStyle(
-																					fontFeatures: [FontFeature.tabularFigures()]
-																				)
-																			)
-																		),
-																		const SizedBox(width: 16),
-																		AdaptiveThinButton(
-																			backgroundFilled: true,
-																			onPressed: wait.skip,
-																			padding: const EdgeInsets.all(8),
-																			child: const Text('Skip')
+															return AdaptiveThinButton(
+																backgroundFilled: true,
+																onPressed: wait.skip,
+																padding: const EdgeInsets.all(8),
+																child: TimedRebuilder(
+																	interval: const Duration(seconds: 1),
+																	function: () => formatDuration(wait.until.difference(DateTime.now()).clampAboveZero),
+																	builder: (context, delta) => Text(
+																		'${state.message} ($delta)',
+																		style: const TextStyle(
+																			fontFeatures: [FontFeature.tabularFigures()]
 																		)
-																	]
+																	)
 																)
 															);
 														}
@@ -1688,7 +1673,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												child: const Row(
 													mainAxisSize: MainAxisSize.min,
 													children: [
-														Icon(CupertinoIcons.tray_arrow_up),
+														Icon(CupertinoIcons.tray_arrow_up, size: 16),
 														SizedBox(width: 8),
 														Text('Post in background')
 													]
