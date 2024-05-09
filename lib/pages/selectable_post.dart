@@ -2,7 +2,9 @@ import 'package:chan/models/post.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/translation.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -96,6 +98,40 @@ class SelectablePostPage extends StatelessWidget {
 													'q': editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text)
 												})),
 												label: 'Google'
+											),
+											ContextMenuButtonItem(
+												onPressed: () {
+													final text = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
+													final future = translateHtml(text, toLanguage: Settings.instance.translationTargetLanguage);
+													showAdaptiveDialog(
+														context: context,
+														barrierDismissible: true,
+														builder: (context) => AdaptiveAlertDialog(
+															title: const Text('Translation'),
+															content: FutureBuilder(
+																future: future,
+																builder: (context, snapshot) {
+																	final data = snapshot.data;
+																	if (data != null) {
+																		return Text(data, style: const TextStyle(fontSize: 16));
+																	}
+																	final error = snapshot.error;
+																	if (error != null) {
+																		return Text('Error: ${error.toStringDio()}');
+																	}
+																	return const CircularProgressIndicator.adaptive();
+																}
+															),
+															actions: [
+																AdaptiveDialogAction(
+																	onPressed: () => Navigator.pop(context),
+																	child: const Text('Close')
+																)
+															],
+														)
+													);
+												},
+												label: 'Translate'
 											)
 										]
 									),
