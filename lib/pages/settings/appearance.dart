@@ -8,6 +8,7 @@ import 'package:chan/pages/settings/common.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/installed_fonts.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
@@ -1376,5 +1377,35 @@ final appearanceSettings = [
 		description: 'Show filtered posts/threads at bottom of lists',
 		icon: CupertinoIcons.eye_slash,
 		setting: Settings.showHiddenItemsFooterSetting
+	),
+	const SegmentedSettingWidget(
+		knownWidth: 300,
+		description: 'Scrolling images layout',
+		icon: CupertinoIcons.rectangle_split_3x1,
+		children: {
+			false: (null, 'Continuous grid'),
+			true: (null, 'Paged')
+		},
+		setting: Settings.attachmentsPageUsePageViewSetting
+	),
+	SteppableSettingWidget(
+		description: 'Scrolling images grid columns',
+		icon: CupertinoIcons.rectangle_split_3x3,
+		disabled: Settings.attachmentsPageUsePageViewSetting,
+		min: 1,
+		step: 1,
+		max: 10,
+		formatter: (cols) => cols.toString(),
+		setting: 
+		AssociatedSetting<double, double, int>(
+			setting: Settings.attachmentsPageMaxCrossAxisExtentSetting,
+			associated: CustomImmutableSetting(
+				reader: (context) => estimateDetailWidth(context, listen: false),
+				watcher: (context) => estimateDetailWidth(context, listen: true),
+				writer: (context, v) async {}
+			),
+			forwards: (maxExtent, width) => (width / maxExtent).ceil(),
+			reverse: (columns, width) => (columns / width).floorToDouble()
+		)
 	)
 ];

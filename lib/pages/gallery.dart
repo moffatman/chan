@@ -111,6 +111,7 @@ class GalleryPage extends StatefulWidget {
 	final bool heroOtherEndIsBoxFitCover;
 	final List<ContextMenuAction> Function(TaggedAttachment)? additionalContextMenuActionsBuilder;
 	final bool initiallyShowGrid;
+	final Axis axis;
 
 	const GalleryPage({
 		required this.attachments,
@@ -131,6 +132,7 @@ class GalleryPage extends StatefulWidget {
 		required this.heroOtherEndIsBoxFitCover,
 		this.additionalContextMenuActionsBuilder,
 		this.initiallyShowGrid = false,
+		this.axis = Axis.horizontal,
 		Key? key
 	}) : super(key: key);
 
@@ -476,7 +478,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		return offset.distance / threshold;
 	}
 
-	double get _maxScrollSheetSize => (_thumbnailSize + 8 + _gridViewHeight + kMinInteractiveDimensionCupertino + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height;
+	double get _maxScrollSheetSize => ((_thumbnailSize + 8 + _gridViewHeight + kMinInteractiveDimensionCupertino + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height).clamp(0, 1);
 
 	double get _minScrollSheetSize {
 		if (Settings.instance.showThumbnailsInGallery) {
@@ -976,6 +978,7 @@ class _GalleryPageState extends State<GalleryPage> {
 										KeyedSubtree(
 											key: _pageControllerKey,
 											child: ExtendedImageGesturePageView.builder(
+												scrollDirection: widget.axis,
 												physics: settings.showAnimations ? const _FasterSnappingPageScrollPhysics() : const _VeryFastSnappingPageScrollPhysics(),
 												canScrollPage: (x) => settings.allowSwipingInGallery && widget.allowScroll && widget.attachments.length > 1,
 												onPageChanged: _onPageChanged,
@@ -1046,7 +1049,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												padding: showChrome ? EdgeInsets.only(
 													bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0) - 16,
 													right: 8
-												) : const EdgeInsets.only(right: 8),
+												) : layoutInsets + const EdgeInsets.only(right: 8),
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
 													crossAxisAlignment: CrossAxisAlignment.end,

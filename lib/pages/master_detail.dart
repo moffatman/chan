@@ -1,6 +1,6 @@
 import 'dart:math';
-import 'dart:ui';
 
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
@@ -342,16 +342,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
-		final displayWidth = MediaQuery.sizeOf(context).width;
-		double drawerWidth = 85;
-		if (settings.persistentDrawer && settings.androidDrawer) {
-			final hingeBounds = MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => (f.type == DisplayFeatureType.hinge && f.bounds.left > 0 /* Only when hinge is vertical */))?.bounds;
-			if (hingeBounds != null || displayWidth > 700) {
-				drawerWidth = hingeBounds?.left ?? 304;
-			}
-		}
-		// For legacy behaviour reasons, don't count 85 px of drawer width here
-		final horizontalSplit = (displayWidth + 85 - drawerWidth) >= settings.twoPaneBreakpoint;
+		final horizontalSplit = shouldHorizontalSplit(context, listen: true);
 		final verticalSplit = !settings.verticalTwoPaneMinimumPaneSize.isNegative && MediaQuery.sizeOf(context).height >= (settings.verticalTwoPaneMinimumPaneSize * 2);
 		onePane = !(horizontalSplit || verticalSplit);
 		final masterNavigator = Provider.value(

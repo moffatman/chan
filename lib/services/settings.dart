@@ -1169,6 +1169,8 @@ class SavedSettings extends HiveObject {
 	int postingRegretDelaySeconds;
 	@HiveField(186)
 	bool showHiddenItemsFooter;
+	@HiveField(187)
+	bool attachmentsPageUsePageView;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1357,6 +1359,7 @@ class SavedSettings extends HiveObject {
 		int? dynamicIPKeepAlivePeriodSeconds,
 		int? postingRegretDelaySeconds,
 		bool? showHiddenItemsFooter,
+		bool? attachmentsPageUsePageView,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1567,7 +1570,8 @@ class SavedSettings extends HiveObject {
 		mpvOptions = mpvOptions ?? {},
 		dynamicIPKeepAlivePeriodSeconds = dynamicIPKeepAlivePeriodSeconds ?? -15,
 		postingRegretDelaySeconds = postingRegretDelaySeconds ?? -10,
-		showHiddenItemsFooter = showHiddenItemsFooter ?? true {
+		showHiddenItemsFooter = showHiddenItemsFooter ?? true,
+		attachmentsPageUsePageView = attachmentsPageUsePageView ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1647,6 +1651,7 @@ abstract class MutableSetting<T> {
 	const MutableSetting();
 	T read(BuildContext context);
 	T watch(BuildContext context);
+	T get(BuildContext context, listen) => listen ? watch(context) : read(context);
 	Future<void> didMutate(BuildContext context);
 	Future<void> Function() makeDidMutate(BuildContext context) => () => didMutate(context);
 	List<String> get syncPaths;
@@ -2025,6 +2030,47 @@ class HookedSetting<T> extends ImmutableSetting<T> {
 	@override
 	int get hashCode => Object.hash(setting, beforeChange);
 }
+
+class AssociatedSetting<Old, Associated, New> extends ImmutableSetting<New> {
+	final ImmutableSetting<Old> setting;
+	final MutableSetting<Associated> associated;
+	final New Function(Old, Associated) forwards;
+	final Old Function(New, Associated) reverse;
+	const AssociatedSetting({
+		required this.setting,
+		required this.associated,
+		required this.forwards,
+		required this.reverse
+	});
+
+	@override
+	New read(BuildContext context) => forwards(setting.read(context), associated.read(context));
+
+	@override
+	New watch(BuildContext context) => forwards(setting.watch(context), associated.watch(context));
+
+	@override
+	Future<void> write(BuildContext context, New value) => setting.write(context, reverse(value, associated.read(context)));
+
+	@override
+	List<String> get syncPaths => [
+		...setting.syncPaths,
+		...associated.syncPaths
+	];
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is AssociatedSetting &&
+		other.setting == setting &&
+		other.associated == associated &&
+		other.forwards == forwards &&
+		other.reverse == reverse;
+	
+	@override
+	int get hashCode => Object.hash(setting, associated, forwards, reverse);
+}
+
 
 class Settings extends ChangeNotifier {
 	static Settings? _instance;
@@ -2698,6 +2744,9 @@ class Settings extends ChangeNotifier {
 
 	static const showHiddenItemsFooterSetting = SavedSetting(SavedSettingsFields.showHiddenItemsFooter);
 	bool get showHiddenItemsFooter => showHiddenItemsFooterSetting(this);
+
+	static const attachmentsPageUsePageViewSetting = SavedSetting(SavedSettingsFields.attachmentsPageUsePageView);
+	bool get attachmentsPageUsePageView => attachmentsPageUsePageViewSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
