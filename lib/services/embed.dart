@@ -39,6 +39,9 @@ Future<bool> embedPossible({
 		return true;
 	}
 	// Twitter should be contained in embedRegexes already 
+	if (url.contains('/x.com/')) {
+		return true;
+	}
 	if (url.contains('imgur.com/') || url.contains('imgur.io/')) {
 		return false;
 	}
@@ -98,7 +101,7 @@ class EmbedData {
 	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl, thumbnailWidget: $thumbnailWidget)';
 }
 
-final _twitterPattern = RegExp(r'twitter\.com/[^/]+/status/(\d+)');
+final _twitterPattern = RegExp(r'(?:x|twitter)\.com/[^/]+/status/(\d+)');
 
 Future<EmbedData?> _loadTwitter(String id) async {
 	final response = await Settings.instance.client.getUri(Uri.https('api.vxtwitter.com', '/_/status/$id'));
