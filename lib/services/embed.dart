@@ -109,7 +109,7 @@ Future<EmbedData?> _loadTwitter(String id) async {
 		title: response.data['text'],
 		provider: 'Twitter',
 		author: response.data['user_name'],
-		thumbnailUrl: switch ((response.data['media_extended'] as List?)?.tryFirst['thumbnail_url']) {
+		thumbnailUrl: switch ((response.data['media_extended'] as List?)?.tryFirst?['thumbnail_url']) {
 			String url => generateThumbnailerForUrl(Uri.parse(url)).toString(),
 			_ => response.data['user_profile_image_url']
 		}
