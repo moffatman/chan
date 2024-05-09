@@ -1133,7 +1133,20 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				resetTimer();
 			}
 		}
-		else if ((widget.disableUpdates || originalList == null) && !listEquals(oldWidget.initialList, widget.initialList) && (updatingNow.value != widget.id)) {
+		else if (
+			(
+				// Normal non-listUpdater usecase
+				widget.disableUpdates ||
+				// Allow setting it from null
+				originalList == null ||
+				// Allow changing it
+				(widget.initialList != null && widget.initialList != originalList)
+			) &&
+			// There is some change in the list
+			!listEquals(oldWidget.initialList, widget.initialList) &&
+			// Not in the middle of an update
+			(updatingNow.value != widget.id)
+		) {
 			originalList = widget.initialList;
 			sortedList = originalList?.toList();
 			if (originalList != null) {
