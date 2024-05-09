@@ -583,3 +583,8 @@ T dprint<T>(T obj, {String label = 'dprint'}) {
 	print('$label: $obj');
 	return obj;
 }
+
+VoidCallback? bind1<In, Out>(Out Function(In)? f, In v) => switch (f) {
+	Out Function(In) func => () => func(v),
+	null => null
+};

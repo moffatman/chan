@@ -408,6 +408,7 @@ class PostRow extends StatelessWidget {
 									child: CupertinoButton(
 										padding: EdgeInsets.zero,
 										minSize: 0,
+										onPressed: bind1(onThumbnailTap, attachment),
 										child: ConstrainedBox(
 											constraints: const BoxConstraints(
 												minHeight: 75
@@ -430,10 +431,7 @@ class PostRow extends StatelessWidget {
 													size: null
 												)
 											)
-										),
-										onPressed: () {
-											onThumbnailTap?.call(attachment);
-										}
+										)
 									)
 								)).expand((x) => [const SizedBox(height: 8), x]),
 								cloverStyleRepliesButton ? const SizedBox(height: 24) : const SizedBox(height: 8)
