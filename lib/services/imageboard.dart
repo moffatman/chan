@@ -194,6 +194,7 @@ class Imageboard extends ChangeNotifier {
 			ThreadIdentifier(submittedPost.board, receipt.id);
 		final start = DateTime.now();
 		final postShowedUpCompleter = Completer<bool>();
+		int? lastPostsCount;
 		final listenable = persistence.listenForPersistentThreadStateChanges(threadIdentifier);
 		Future.delayed(const Duration(seconds: 12), () {
 			if (!postShowedUpCompleter.isCompleted) {
@@ -201,9 +202,13 @@ class Imageboard extends ChangeNotifier {
 			}
 		});
 		void listener() {
-			final threadState = persistence.getThreadStateIfExists(threadIdentifier);
+			final posts = persistence.getThreadStateIfExists(threadIdentifier)?.thread?.posts_;
 			bool? found;
-			for (final post in threadState?.thread?.posts_.reversed ?? <Post>[]) {
+			if (posts?.length == lastPostsCount) {
+				return;
+			}
+			lastPostsCount = posts?.length;
+			for (final post in posts?.reversed ?? <Post>[]) {
 				if (post.id > receipt.id) {
 					found = false;
 				}
@@ -234,13 +239,6 @@ class Imageboard extends ChangeNotifier {
 		listenable.removeListener(listener);
 		if (postShowedUp) {
 			receipt.spamFiltered = false;
-			showToast(
-				context: ImageboardRegistry.instance.context!,
-				message: 'Post successful',
-				icon: CupertinoIcons.smiley,
-				hapticFeedback: false
-			);
-			_maybeShowDubsToast(receipt.id);
 		}
 		else {
 			receipt.spamFiltered = true;
@@ -284,47 +282,39 @@ class Imageboard extends ChangeNotifier {
 					Outbox.instance.headlessSolveFailed = false;
 				}
 				if (state.result.spamFiltered) {
-					showToast(
-						context: ImageboardRegistry.instance.context!,
-						message: 'Spam-filter possible...',
-						icon: CupertinoIcons.question_diamond,
-						hapticFeedback: false
-					);
 					_listenForSpamFilter(post.post, state.result);
 				}
-				else {
-					showToast(
+				showToast(
+					context: ImageboardRegistry.instance.context!,
+					message: 'Post successful',
+					icon: state.captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
+					hapticFeedback: false
+				);
+				_maybeShowDubsToast(state.result.id);
+				if (state.captchaSolution.autoSolved && (Settings.instance.useCloudCaptchaSolver ?? false) && (Settings.instance.useHeadlessCloudCaptchaSolver == null)) {
+					Settings.useHeadlessCloudCaptchaSolverSetting.value = await showAdaptiveDialog<bool>(
 						context: ImageboardRegistry.instance.context!,
-						message: 'Post successful',
-						icon: state.captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
-						hapticFeedback: false
+						barrierDismissible: true,
+						builder: (context) => AdaptiveAlertDialog(
+							title: const Text('Skip captcha confirmation?'),
+							content: const Text('Cloud captcha solutions will be submitted directly without showing a popup and asking for confirmation.'),
+							actions: [
+								AdaptiveDialogAction(
+									isDefaultAction: true,
+									child: const Text('Skip confirmation'),
+									onPressed: () {
+										Navigator.of(context).pop(true);
+									},
+								),
+								AdaptiveDialogAction(
+									child: const Text('No'),
+									onPressed: () {
+										Navigator.of(context).pop(false);
+									}
+								)
+							]
+						)
 					);
-					_maybeShowDubsToast(state.result.id);
-					if (state.captchaSolution.autoSolved && (Settings.instance.useCloudCaptchaSolver ?? false) && (Settings.instance.useHeadlessCloudCaptchaSolver == null)) {
-						Settings.useHeadlessCloudCaptchaSolverSetting.value = await showAdaptiveDialog<bool>(
-							context: ImageboardRegistry.instance.context!,
-							barrierDismissible: true,
-							builder: (context) => AdaptiveAlertDialog(
-								title: const Text('Skip captcha confirmation?'),
-								content: const Text('Cloud captcha solutions will be submitted directly without showing a popup and asking for confirmation.'),
-								actions: [
-									AdaptiveDialogAction(
-										isDefaultAction: true,
-										child: const Text('Skip confirmation'),
-										onPressed: () {
-											Navigator.of(context).pop(true);
-										},
-									),
-									AdaptiveDialogAction(
-										child: const Text('No'),
-										onPressed: () {
-											Navigator.of(context).pop(false);
-										}
-									)
-								]
-							)
-						);
-					}
 				}
 			}
 			else if (state is QueueStateFailed<PostReceipt>) {
