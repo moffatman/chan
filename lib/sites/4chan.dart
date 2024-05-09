@@ -868,6 +868,7 @@ class Site4Chan extends ImageboardSite {
 				throw PostFailedException('4chan rejected your post. ${file == null ? 'Your post might contained spam-filtered text.' : 'You may have been trying to post an image which is spam-filtered.'}');
 			}
 			return PostReceipt(
+				post: post,
 				id: id,
 				password: password,
 				name: post.name ?? '',

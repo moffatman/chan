@@ -338,6 +338,7 @@ class SiteLainchan extends ImageboardSite {
 			final digitMatches = RegExp(r'\d+').allMatches(response.redirects.last.location.toString());
 			if (digitMatches.isNotEmpty) {
 				return PostReceipt(
+					post: post,
 					id: int.parse(digitMatches.last.group(0)!),
 					password: password,
 					name: post.name ?? '',
@@ -382,6 +383,7 @@ class SiteLainchan extends ImageboardSite {
 			throw TimeoutException('Could not find post ID after submission', const Duration(seconds: 20));
 		}
 		return PostReceipt(
+			post: post,
 			id: newPostId,
 			password: password,
 			name: post.name ?? '',

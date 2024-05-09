@@ -1582,18 +1582,21 @@ class PostReceipt {
 	bool spamFiltered;
 	@HiveField(7)
 	String? ip;
+	@HiveField(8)
+	DraftPost? post;
 	PostReceipt({
 		required this.password,
 		required this.id,
 		required this.name,
 		required this.options,
 		required this.time,
+		required this.post,
 		this.markAsYou = true,
 		this.spamFiltered = false,
 		this.ip
 	});
 	@override
-	String toString() => 'PostReceipt(id: $id, password: $password, name: $name, options: $options, time: $time, markAsYou: $markAsYou, spamFiltered: $spamFiltered, ip: $ip)';
+	String toString() => 'PostReceipt(id: $id, password: $password, name: $name, options: $options, time: $time, markAsYou: $markAsYou, spamFiltered: $spamFiltered, ip: $ip, post: $post)';
 }
 
 @HiveType(typeId: 18)

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:chan/main.dart';
@@ -6,17 +5,15 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
-import 'package:chan/services/settings.dart';
-import 'package:chan/services/text_highlighting.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/draft_post.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
-import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -61,82 +58,6 @@ class QueueEntryWidget<T> extends StatelessWidget {
 		this.onGoToThread,
 		super.key
 	});
-
-	Widget _buildQueuedPost(QueuedPost entry) {
-		final post = entry.post;
-		final thread = entry.site.persistence?.getThreadStateIfExists(post.thread)?.thread;
-		String? title = (thread?.title ?? thread?.posts_.tryFirst?.span.buildText().nonEmptyOrNull);
-		if ((title?.length ?? 0) > 25) {
-			int firstSpaceBefore25 = title?.lastIndexOf(' ', 25) ?? 0;
-			if (firstSpaceBefore25 < 10) {
-				// Don't make it way too short
-				firstSpaceBefore25 = 25;
-			}
-			title = '${title?.substring(0, firstSpaceBefore25)}...';
-		}
-		final file = post.file;
-		return Row(
-			children: [
-				if (file != null) Padding(
-					padding: const EdgeInsets.only(right: 12),
-					child: ClipRRect(
-						borderRadius: BorderRadius.circular(8),
-						child: ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxWidth: 64,
-								maxHeight: 64
-							),
-							child: SavedAttachmentThumbnail(
-								file: File(file)
-							)
-						)
-					)
-				),
-				Expanded(
-					child: Builder(
-						builder: (context) => Text.rich(
-							TextSpan(
-								children: [
-									buildDraftInfoRow(
-										imageboard: entry.imageboard,
-										post: entry.post,
-										settings: context.watch<Settings>(),
-										theme: context.watch<SavedTheme>()
-									),
-									const TextSpan(text: '\n'),
-									buildHighlightedCommentTextSpan(
-										text: post.text
-									),
-									if (!replyBoxMode) TextSpan(
-										children: [
-											if (post.text.isNotEmpty) const TextSpan(text: '\n'),
-											if (onGoToThread == null)
-												const TextSpan(text: 'In current thread')
-											else if (post.threadId == null)
-												TextSpan(text: 'New thread on ${entry.site.formatBoardName(post.board)}')
-											else ...[
-												const TextSpan(text: 'In '),
-												TextSpan(
-													text: '>>>${entry.site.formatBoardNameWithoutTrailingSlash(post.board)}/${post.threadId}${entry.isArchived ? ' (Archived)' : ''}',
-													style: TextStyle(
-														color: Settings.instance.theme.secondaryColor,
-														decoration: TextDecoration.underline
-													)
-												),
-												if (title != null) TextSpan(text: ' ($title)')
-											]
-										],
-										style: TextStyle(color: Settings.instance.theme.primaryColorWithBrightness(0.5))
-									)
-								],
-								style: TextStyle(color: Settings.instance.theme.primaryColor)
-							)
-						)
-					)
-				)
-			]
-		);
-	}
 
 	Widget _buildQueuedReport(QueuedReport entry) {
 		final thread = entry.imageboard.persistence.getThreadStateIfExists(entry.thread)?.thread;
@@ -444,7 +365,14 @@ class QueueEntryWidget<T> extends StatelessWidget {
 												action?.call();
 											} : null,
 											child: switch (entry) {
-												QueuedPost() => _buildQueuedPost(entry as QueuedPost),
+												QueuedPost() => DraftPostWidget(
+													imageboard: entry.imageboard,
+													post: (entry as QueuedPost).post,
+													origin: switch (onGoToThread) {
+														null => DraftPostWidgetOrigin.inCurrentThread,
+														_ => DraftPostWidgetOrigin.elsewhere
+													}
+												),
 												QueuedReport() => _buildQueuedReport(entry as QueuedReport)
 											}
 										)

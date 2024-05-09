@@ -650,6 +650,15 @@ class PostReceiptFields {
     fieldName: 'ip',
     merger: PrimitiveMerger(),
   );
+  static DraftPost? getPost(PostReceipt x) => x.post;
+  static void setPost(PostReceipt x, DraftPost? v) => x.post = v;
+  static const post = HiveFieldAdapter<PostReceipt, DraftPost?>(
+    getter: getPost,
+    setter: setPost,
+    fieldNumber: 8,
+    fieldName: 'post',
+    merger: NullableMerger(AdaptedMerger(DraftPostAdapter.kTypeId)),
+  );
 }
 
 class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
@@ -670,7 +679,8 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
     4: PostReceiptFields.time,
     5: PostReceiptFields.markAsYou,
     6: PostReceiptFields.spamFiltered,
-    7: PostReceiptFields.ip
+    7: PostReceiptFields.ip,
+    8: PostReceiptFields.post
   };
 
   @override
@@ -685,6 +695,7 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
       name: fields[2] == null ? '' : fields[2] as String,
       options: fields[3] == null ? '' : fields[3] as String,
       time: fields[4] as DateTime?,
+      post: fields[8] as DraftPost?,
       markAsYou: fields[5] == null ? true : fields[5] as bool,
       spamFiltered: fields[6] == null ? false : fields[6] as bool,
       ip: fields[7] as String?,
@@ -694,7 +705,7 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
   @override
   void write(BinaryWriter writer, PostReceipt obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.password)
       ..writeByte(1)
@@ -710,7 +721,9 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
       ..writeByte(6)
       ..write(obj.spamFiltered)
       ..writeByte(7)
-      ..write(obj.ip);
+      ..write(obj.ip)
+      ..writeByte(8)
+      ..write(obj.post);
   }
 
   @override

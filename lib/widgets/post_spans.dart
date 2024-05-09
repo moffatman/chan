@@ -2348,6 +2348,27 @@ int _calculatePostNumber(ImageboardSite site, Thread thread, Post post) {
 	return 1; // No idea
 }
 
+(String nonRepeating, String? repeating) splitPostId(int? id, ImageboardSite site) {
+	if (id == null) {
+		return ('', null);
+	}
+	int repeatingDigits = 1;
+	final digits = id.toString();
+	if (Settings.instance.highlightRepeatingDigitsInPostIds && site.explicitIds) {
+		for (; repeatingDigits < digits.length; repeatingDigits++) {
+			if (digits[digits.length - 1 - repeatingDigits] != digits[digits.length - 1]) {
+				break;
+			}
+		}
+	}
+	if (repeatingDigits > 1) {
+		return (digits.substring(0, digits.length - repeatingDigits), digits.substring(digits.length - repeatingDigits));
+	}
+	else {
+		return (digits, null);
+	}
+}
+
 TextSpan buildPostInfoRow({
 	required Post post,
 	required bool isYourPost,
@@ -2362,25 +2383,7 @@ TextSpan buildPostInfoRow({
 	bool showPostNumber = true
 }) {
 	final thread = zone.findThread(post.threadId);
-	int repeatingDigits = 1;
-	final digits = post.id.toString();
-	if (settings.highlightRepeatingDigitsInPostIds && site.explicitIds) {
-		for (; repeatingDigits < digits.length; repeatingDigits++) {
-			if (digits[digits.length - 1 - repeatingDigits] != digits[digits.length - 1]) {
-				break;
-			}
-		}
-	}
-	final String postIdNonRepeatingSegment;
-	final String? postIdRepeatingSegment;
-	if (repeatingDigits > 1) {
-		postIdNonRepeatingSegment = digits.substring(0, digits.length - repeatingDigits);
-		postIdRepeatingSegment = digits.substring(digits.length - repeatingDigits);
-	}
-	else {
-		postIdNonRepeatingSegment = digits;
-		postIdRepeatingSegment = null;
-	}
+	final (postIdNonRepeatingSegment, postIdRepeatingSegment) = splitPostId(post.id, site);
 	final op = site.isPaged ? thread?.posts_.tryFirstWhere((p) => !p.isPageStub) : thread?.posts_.tryFirst;
 	// During catalog-peek the post == op equality won't hold. Just use simple check.
 	final thisPostIsOP = site.isPaged ? post == op : post.id == post.threadId;
@@ -2586,9 +2589,12 @@ TextSpan buildDraftInfoRow({
 	required DraftPost post,
 	required Settings settings,
 	required SavedTheme theme,
-	required Imageboard imageboard
+	required Imageboard imageboard,
+	DateTime? time,
+	int? id
 }) {
 	final thread = imageboard.persistence.getThreadStateIfExists(post.thread)?.thread;
+	final (postIdNonRepeatingSegment, postIdRepeatingSegment) = splitPostId(id, imageboard.site);
 	final isOP = imageboard.site.supportsUserInfo && post.name == thread?.posts_.tryFirst?.name;
 	final uniqueIPCount = thread?.uniqueIPCount;
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
@@ -2662,6 +2668,27 @@ TextSpan buildDraftInfoRow({
 				text: '${post.flag!.name} ',
 				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 			)
+			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts && time != null) TextSpan(
+				text: '${formatTime(time)} '
+			)
+			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts && time != null) TextSpan(
+				text: '${formatRelativeTime(time)} ago '
+			)
+			else if (field == PostDisplayField.postId && postIdNonRepeatingSegment.isNotEmpty) ...[
+				TextSpan(
+					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}$postIdNonRepeatingSegment',
+					style: TextStyle(
+						color: theme.primaryColor.withOpacity(0.5)
+					)
+				),
+				if (postIdRepeatingSegment != null) TextSpan(
+					text: postIdRepeatingSegment,
+					style: TextStyle(
+						color: theme.secondaryColor
+					)
+				),
+				const TextSpan(text: ' ')
+			]
 			else if (field == PostDisplayField.lineBreak && settings.showLineBreakInPostInfoRow) lineBreak,
 	];
 	if (children.last == lineBreak &&

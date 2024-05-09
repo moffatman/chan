@@ -264,6 +264,7 @@ class SiteDvach extends ImageboardSite {
 			throw DvachException(response.data['error']['code'], response.data['error']['message']);
 		}
 		return PostReceipt(
+			post: post,
 			password: '',
 			id: response.data['num'],
 			name: post.name ?? '',

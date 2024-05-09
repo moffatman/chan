@@ -163,6 +163,7 @@ class SiteLynxchan extends ImageboardSite {
 			final match = RegExp(r'(\d+)\.html#(\d+)?').firstMatch(document.querySelector('#linkRedirect')?.attributes['href'] ?? '');
 			if (match != null) {
 				return PostReceipt(
+					post: post,
 					id: match.group(2) != null ? int.parse(match.group(2)!) : int.parse(match.group(1)!),
 					password: password,
 					name: post.name ?? '',
@@ -182,6 +183,7 @@ class SiteLynxchan extends ImageboardSite {
 			name: post.name ?? '',
 			options: post.options ?? '',
 			time: DateTime.now(),
+			post: post,
 			ip: captchaSolution.ip
 		);
 	}

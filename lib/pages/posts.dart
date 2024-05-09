@@ -4,33 +4,41 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/draft_post.dart';
+import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 
 class _PostsPageItem {
 	final ParentAndChildIdentifier? stubId;
 	final Post? post;
+	final PostReceipt? spamFiltered;
 	final List<ParentAndChildIdentifier>? stubIds;
 	bool get stub => stubId != null || stubIds != null;
 	bool loading = false;
 
-	_PostsPageItem.post(Post this.post) : stubIds = null, stubId = null;
-	_PostsPageItem.primaryStub(List<ParentAndChildIdentifier> this.stubIds) : post = null, stubId = null;
-	_PostsPageItem.secondaryStub(ParentAndChildIdentifier this.stubId) : stubIds = null, post = null;
+	_PostsPageItem.post(Post this.post) : stubIds = null, stubId = null, spamFiltered = null;
+	_PostsPageItem.primaryStub(List<ParentAndChildIdentifier> this.stubIds) : post = null, stubId = null, spamFiltered = null;
+	_PostsPageItem.secondaryStub(ParentAndChildIdentifier this.stubId) : stubIds = null, post = null, spamFiltered = null;
+	_PostsPageItem.spamFiltered(PostReceipt this.spamFiltered) : post = null, stubIds = null, stubId = null;
 
 	@override
-	String toString() => '_PostsPageItem(post: $post, stub: $stub, stubIds: $stubIds)';
+	String toString() => '_PostsPageItem(post: $post, stub: $stub, stubIds: $stubIds, spamFiltered: $spamFiltered)';
 }
 
 class PostsPage extends StatefulWidget {
@@ -64,11 +72,18 @@ class _PostsPageState extends State<PostsPage> {
 	@override
 	void initState() {
 		super.initState();
+		widget.zone.addListener(_onZoneUpdate);
 		_setReplies();
 		if (replies.tryLast?.stub ?? false) {
 			// If there are only stubs, load them upon opening
 			_onTapStub(replies.last);
 		}
+	}
+
+	void _onZoneUpdate() {
+		_setReplies();
+		_forceRebuildId++; // We may mutate [replies], so need to force sliver delegate to rebuild
+		setState(() {});
 	}
 
 	Future<void> _onTapStub(_PostsPageItem reply) async {
@@ -92,6 +107,7 @@ class _PostsPageState extends State<PostsPage> {
 		replies.clear();
 		for (final id in widget.postsIdsToShow) {
 			final matchingPost = widget.zone.findPost(id);
+			final matchingDraft = widget.zone.primaryThreadState?.receipts.tryFirstWhere((r) => r.id == id);
 			if (matchingPost != null) {
 				if (matchingPost.isStub) {
 					replies.add(_PostsPageItem.secondaryStub(ParentAndChildIdentifier(
@@ -102,6 +118,9 @@ class _PostsPageState extends State<PostsPage> {
 				else {
 					replies.add(_PostsPageItem.post(matchingPost));
 				}
+			}
+			else if (matchingDraft != null) {
+				replies.add(_PostsPageItem.spamFiltered(matchingDraft));
 			}
 			else if (context.read<ImageboardSite?>()?.isPaged ?? false) {
 				// It must be on another page
@@ -128,6 +147,7 @@ class _PostsPageState extends State<PostsPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final outerContext = context;
 		final attachments = replies.expand<Attachment>((a) => a.post?.attachments ?? []).toList();
 		final subzone = widget.zone.hoistFakeRootZoneFor(0, style: PostSpanZoneStyle.linear, clearStack: widget.clearStack); // To avoid conflict with same semanticIds in tree
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.findPost(widget.postIdForBackground!);
@@ -209,10 +229,96 @@ class _PostsPageState extends State<PostsPage> {
 											)
 										)
 									),
-									secondChild: reply.post == null ? const SizedBox(
-										height: 0,
-										width: double.infinity
-									) : PostRow(
+									secondChild: reply.post == null ? (reply.spamFiltered != null ? TimedRebuilder<Duration>(
+										interval: const Duration(seconds: 1),
+										function: () {
+											final enoughTime = reply.spamFiltered?.time?.add(const Duration(seconds: 15));
+											if (enoughTime == null) {
+												return Duration.zero;
+											}
+											return enoughTime.difference(DateTime.now());
+										},
+										builder: (context, countdown) {
+											if (countdown > Duration.zero) {
+												return Padding(
+													padding: const EdgeInsets.all(8),
+													child: Text('Recently submitted post (${formatDuration(countdown)})')
+												);
+											}
+											final post = reply.spamFiltered?.post;
+											if (post == null) {
+												return Padding(
+													padding: const EdgeInsets.all(8),
+													child: Text('Submitted post ${reply.spamFiltered?.id} is missing! This post must have been spam-filtered by ${widget.zone.imageboard.site.name}. Since it was submitted before the Chance v1.2.2 update, it wasn\'t saved for resubmission (😞).')
+												);
+											}
+											return ContextMenu(
+												backgroundColor: theme.backgroundColor,
+												actions: [
+													ContextMenuAction(
+														onPressed: () {
+															Clipboard.setData(ClipboardData(
+																text: post.text
+															));
+															showToast(
+																context: context,
+																message: 'Copied "${post.text}" to clipboard',
+																icon: CupertinoIcons.doc_on_clipboard
+															);
+														},
+														child: const Text('Copy'),
+														trailingIcon: CupertinoIcons.doc_on_clipboard
+													),
+													ContextMenuAction(
+														onPressed: () {
+															Outbox.instance.submitPost(widget.zone.imageboard.key, post, QueueStateNeedsCaptcha(DateTime.now(), outerContext));
+															showToast(
+																context: context,
+																icon: CupertinoIcons.paperplane,
+																message: 'Posting...',
+																easyButton: ('Outbox', () => showOutboxModalForThread(
+																	context: outerContext,
+																	imageboardKey: widget.zone.imageboard.key,
+																	board: post.board,
+																	threadId: post.threadId,
+																	canPopWithDraft: false
+																))
+															);
+														},
+														child: const Text('Resubmit'),
+														trailingIcon: CupertinoIcons.paperplane
+													)
+												],
+												child: Container(
+													decoration: const BoxDecoration(
+														border: Border(
+															left: BorderSide(color: Colors.red, width: 10)
+														)
+													),
+													// Left-padding needs to be a little higher to account for border
+													padding: const EdgeInsets.only(left: 10, right: 8, top: 8, bottom: 8),
+													child: Column(
+														mainAxisSize: MainAxisSize.min,
+														crossAxisAlignment: CrossAxisAlignment.end,
+														children: [
+															DraftPostWidget(
+																imageboard: widget.zone.imageboard,
+																post: post,
+																time: reply.spamFiltered?.time,
+																id: reply.spamFiltered?.id,
+																origin: DraftPostWidgetOrigin.none
+															),
+															const Text(
+																'Post submitted, but never showed up!\nIt was probably spam-filtered.',
+																textAlign: TextAlign.right,
+																style: TextStyle(color: Colors.red)
+															)
+														]
+													)
+												)
+											);
+										}
+									) : const Text('Missing post')) : PostRow(
 										post: reply.post!,
 										onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
 										onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
@@ -251,5 +357,11 @@ class _PostsPageState extends State<PostsPage> {
 				)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		widget.zone.removeListener(_onZoneUpdate);
 	}
 }
