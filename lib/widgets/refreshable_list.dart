@@ -3138,6 +3138,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 	}
 	void _onScrollControllerNotification() {
+		if (_isDisposed) {
+			return;
+		}
 		slowScrolls.didUpdate();
 		if (scrollControllerPositionLooksGood) {
 			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
