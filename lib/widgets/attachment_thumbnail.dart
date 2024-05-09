@@ -108,7 +108,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		}
 		bool resize = false;
 		String url = attachment.thumbnailUrl;
-		if ((overrideFullQuality ?? settings.fullQualityThumbnails) && attachment.type == AttachmentType.image && !attachment.isRateLimited) {
+		if ((overrideFullQuality ?? (settings.fullQualityThumbnails && !attachment.isRateLimited)) && attachment.type == AttachmentType.image) {
 			resize = true;
 			url = attachment.url;
 		}
@@ -153,7 +153,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			image = ExtendedResizeImage(
 				image,
 				maxBytes: 800 << 10,
-				width: (effectiveWidth * MediaQuery.devicePixelRatioOf(context)).ceil()
+				width: overrideFullQuality == true ? null : (effectiveWidth * MediaQuery.devicePixelRatioOf(context)).ceil()
 			);
 		}
 		else {

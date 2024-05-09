@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/services/filtering.dart';
@@ -13,6 +11,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/shareable_posts.dart';
+import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -266,6 +265,18 @@ Future<File> sharePostsAsImage({
 	final mediaQueryData = context.getInheritedWidgetOfExactType<MediaQuery>()!.data;
 	final imageboard = context.read<Imageboard>();
 	final effectiveZone = zone ?? context.read<PostSpanZoneData>();
+	bool needToLoadThumbnails = false;
+	for (final attachment in effectiveZone.findPost(primaryPostId)?.attachments ?? <Attachment>[]) {
+		final url = style.expandPrimaryImage && attachment.type == AttachmentType.image ? attachment.url : attachment.thumbnailUrl;
+		final file = await getCachedImageFile(url);
+		if (file == null) {
+			needToLoadThumbnails = true;
+			break;
+		}
+	}
+	if (!context.mounted) {
+		throw Exception('Context died');
+	}
 	final img = await controller.captureFromLongWidget(
 		MediaQuery(
 			data: mediaQueryData.copyWith(
@@ -298,7 +309,8 @@ Future<File> sharePostsAsImage({
 			)
 		),
 		pixelRatio: mediaQueryData.devicePixelRatio,
-		delay: const Duration(milliseconds: 500)
+		// Lazy hack
+		delay: needToLoadThumbnails ? const Duration(seconds: 2) : const Duration(milliseconds: 500)
 	);
 	final file = File('${Persistence.shareCacheDirectory.path}/${imageboard.site.name}_${effectiveZone.board}_$primaryPostId.png');
 	await file.writeAsBytes(img);
