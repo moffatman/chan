@@ -1121,18 +1121,12 @@ class PostLinkSpan extends PostSpan {
 			else {
 				final check = zone.getFutureForComputation(
 					id: 'embedcheck $url',
-					work: () => embedPossible(
-						context: context,
-						url: url
-					)
+					work: () => embedPossible(url)
 				);
 				if (check.data == true) {
 					snapshot = zone.getFutureForComputation(
 						id: 'noembed $url',
-						work: () => loadEmbedData(
-							context: context,
-							url: url
-						)
+						work: () => loadEmbedData(url)
 					);
 				}
 				else {

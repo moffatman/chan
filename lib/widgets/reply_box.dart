@@ -253,8 +253,13 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	void _onTextChanged() async {
+	void _onTextChanged() {
 		_didUpdateDraft();
+		runWhenIdle(const Duration(milliseconds: 50), _scanForUrl);
+	}
+
+	Future<void> _scanForUrl() async {
+		final original = _textFieldController.text;
 		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier()]).tryMapOnce<String>((element) {
 			if (element is UrlElement) {
 				final path = Uri.parse(element.url).path;
@@ -268,6 +273,10 @@ class ReplyBoxState extends State<ReplyBox> {
 			try {
 				_lastFoundUrl = rawUrl; // Avoid race
 				final response = await context.read<ImageboardSite>().client.head(rawUrl);
+				if (_textFieldController.text != original) {
+					// Text changed
+					return;
+				}
 				final byteCount = int.tryParse(response.headers.value(dio.Headers.contentLengthHeader) ?? '') ?? 0 /* chunked encoding? */;
 				_proposedAttachmentUrl = (rawUrl, byteCount);
 				if (mounted) setState(() {});
@@ -279,9 +288,17 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 		}
 		else {
-			final possibleEmbed = findEmbedUrl(text: _textFieldController.text, context: context);
+			final possibleEmbed = await findEmbedUrl(_textFieldController.text);
+			if (_textFieldController.text != original) {
+				// Text changed
+				return;
+			}
 			if (possibleEmbed != _lastFoundUrl && possibleEmbed != null) {
-				final embedData = await loadEmbedData(url: possibleEmbed, context: context);
+				final embedData = await loadEmbedData(possibleEmbed);
+				if (_textFieldController.text != original) {
+					// Text changed
+					return;
+				}
 				_lastFoundUrl = possibleEmbed;
 				if (embedData?.thumbnailUrl != null) {
 					_proposedAttachmentUrl = (embedData!.thumbnailUrl!, 0);
@@ -2184,9 +2201,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: show && _proposedAttachmentUrl != null,
 						bottomSafe: true,
-						child: Padding(
-							padding: const EdgeInsets.all(16),
-							child: Row(
+						child: Container(
+							padding: const EdgeInsets.all(8),
+							height: 64,
+							child: _proposedAttachmentUrl == null ? const SizedBox() : Row(
 								mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 								children: [
 									if (_proposedAttachmentUrl != null) Padding(

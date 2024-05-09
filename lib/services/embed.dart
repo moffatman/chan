@@ -14,7 +14,6 @@ import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
-import 'package:provider/provider.dart';
 
 final _youtubeShortsRegex = RegExp(r'youtube.com\/shorts\/([^?]+)');
 
@@ -27,10 +26,7 @@ class _EmbedParam {
 	});
 }
 
-Future<bool> embedPossible({
-	required String url,
-	required BuildContext context
-}) async {
+Future<bool> embedPossible(String url) async {
 	final embedRegexes = Settings.instance.embedRegexes;
 	if (url.startsWith('chance://site/') || url.startsWith('chance://theme')) {
 		return true;
@@ -64,17 +60,11 @@ Future<bool> embedPossible({
 	}
 }
 
-String? findEmbedUrl({
-	required String text,
-	required BuildContext context
-}) {
+Future<String?>? findEmbedUrl(String text) async {
 	for (final element in linkify(text, linkifiers: const [LooseUrlLinkifier()])) {
 		if (element is UrlElement) {
-			for (final regex in Settings.instance.embedRegexes) {
-				final match = regex.firstMatch(element.url);
-				if (match != null) {
-					return match.group(0);
-				}
+			if (await embedPossible(element.url)) {
+				return element.url;
 			}
 		}
 	}
@@ -144,11 +134,7 @@ Future<EmbedData?> _loadInstagram(String id) async {
 	);
 }
 
-Future<EmbedData?> loadEmbedData({
-	required String url,
-	required BuildContext context
-}) async {
-	final client = context.read<ImageboardSite>().client;
+Future<EmbedData?> loadEmbedData(String url) async {
 	if (url.startsWith('chance://site/')) {
 		try {
 			Map? data = JsonCache.instance.sites.value?[Uri.parse(url).pathSegments.tryFirst];
@@ -236,7 +222,7 @@ Future<EmbedData?> loadEmbedData({
 		if (youtubeShortsMatch != null) {
 			url = 'https://www.youtube.com/watch?v=${youtubeShortsMatch.group(1)}';
 		}
-		final response = await client.get('https://noembed.com/embed', queryParameters: {
+		final response = await Settings.instance.client.get('https://noembed.com/embed', queryParameters: {
 			'url': url
 		});
 		if (response.data != null) {
