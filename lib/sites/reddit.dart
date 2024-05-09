@@ -330,7 +330,14 @@ class SiteReddit extends ImageboardSite {
 						yield PostBoldSpan(PostTextSpan(node.text));
 					}
 					else if (node.localName == 'a') {
-						yield PostLinkSpan(Uri.encodeFull(node.attributes['href']!), name: node.text);
+						final href = node.attributes['href'];
+						if (href != null) {
+							yield PostLinkSpan(Uri.encodeFull(href), name: node.text);
+						}
+						else {
+							// Some edge case
+							yield PostTextSpan(node.outerHtml);
+						}
 					}
 					else if (node.localName == 'p') {
 						yield* visit(node.nodes);
