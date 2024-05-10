@@ -320,7 +320,7 @@ class QueueEntryWidget<T> extends StatelessWidget {
 										child: CupertinoButton(
 											padding: const EdgeInsets.all(16),
 											onPressed: canPress ? () async {
-												if (!entry.isArchived) {
+												if (!entry.isArchived || replyBoxMode) {
 													(onGoToThread ?? onMove)?.call();
 													return;
 												}
@@ -340,7 +340,7 @@ class QueueEntryWidget<T> extends StatelessWidget {
 																onPressed: () => Navigator.pop(context, onCopy),
 																child: const Text('Copy to current thread')
 															),
-															AdaptiveDialogAction(
+															if (onGoToThread != null) AdaptiveDialogAction(
 																onPressed: () => Navigator.pop(context, onGoToThread),
 																child: const Text('Go to archived thread')
 															),

@@ -463,7 +463,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void onTapPostId(int threadId, int id) {
-		if (!widget.isArchived && (context.read<ImageboardSite?>()?.supportsPosting ?? false)) {
+		if (context.read<ImageboardSite?>()?.supportsPosting ?? false) {
 			if (threadId != widget.threadId) {
 				showToast(
 					context: context,
@@ -477,7 +477,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void onQuoteText(String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
-		if (!widget.isArchived && (context.read<ImageboardSite?>()?.supportsPosting ?? false)) {
+		if (context.read<ImageboardSite?>()?.supportsPosting ?? false) {
 			if (fromThreadId != widget.threadId) {
 				showToast(
 					context: context,
@@ -861,6 +861,52 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final post = _makeDraft();
 		post.name = _nameFieldController.text;
 		post.useLoginSystem = shouldUseLoginSystem;
+		if (widget.isArchived) {
+			showAdaptiveDialog(
+				barrierDismissible: true,
+				context: context,
+				builder: (context) => AdaptiveAlertDialog(
+					title: const Text('Thread is archived!'),
+					actions: [
+						AdaptiveDialogAction(
+							onPressed: () {
+								Clipboard.setData(ClipboardData(text: post.text));
+								showToast(
+									context: context,
+									message: 'Copied "${post.text}" to clipboard',
+									icon: CupertinoIcons.doc_on_clipboard
+								);
+								Navigator.pop(context);
+							},
+							child: const Text('Copy text')
+						),
+						AdaptiveDialogAction(
+							onPressed: () {
+								imageboard.persistence.browserState.outbox.add(post);
+								runWhenIdle(const Duration(milliseconds: 500), imageboard.persistence.didUpdateBrowserState);
+								final entry = Outbox.instance.submitPost(imageboard.key, post, const QueueStateIdle());
+								_submittingPosts.add(entry);
+								_listenToReplyPosting(entry);
+								draft = null; // Clear
+								showToast(
+									context: context,
+									icon: CupertinoIcons.tray_arrow_up,
+									message: 'Saved draft'
+								);
+								setState(() {});
+								Navigator.pop(context);
+							},
+							child: const Text('Save as draft')
+						),
+						AdaptiveDialogAction(
+							onPressed: () => Navigator.pop(context),
+							child: const Text('Cancel')
+						)
+					]
+				)
+			);
+			return;
+		}
 		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(DateTime.now(), context,
 			beforeModal: hideReplyBox,
 			afterModal: showReplyBox
@@ -1984,9 +2030,12 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						);
 						setState(() {});
 					},
-					child: AdaptiveIconButton(
-						onPressed: _attachmentProgress != null ? null : (loading ? _cancel : _submit),
-						icon: Icon(loading ? CupertinoIcons.xmark : CupertinoIcons.paperplane)
+					child: Opacity(
+						opacity: widget.isArchived ? 0.5 : 1,
+						child: AdaptiveIconButton(
+							onPressed: _attachmentProgress != null ? null : (loading ? _cancel : _submit),
+							icon: Icon(loading ? CupertinoIcons.xmark : CupertinoIcons.paperplane)
+						)
 					)
 				)
 			]

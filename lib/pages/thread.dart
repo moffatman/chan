@@ -1427,17 +1427,20 @@ class ThreadPageState extends State<ThreadPage> {
 											parent: Outbox.instance,
 											mapper: (o) => o.submittableCount - o.queuedPostsFor(persistentState.imageboardKey, widget.thread.board, widget.thread.id).where((e) => e.state.isSubmittable).length
 										),
-										icon: AdaptiveIconButton(
-											onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
-												if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-													_popOutReplyBox(null);
-												}
-												else {
-													_replyBoxKey.currentState?.toggleReplyBox();
-												}
-												setState(() {});
-											},
-											icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
+										icon: Opacity(
+											opacity: (persistentState.thread?.isArchived ?? false) ? 0.5 : 1,
+											child: AdaptiveIconButton(
+												onPressed: () {
+													if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+														_popOutReplyBox(null);
+													}
+													else {
+														_replyBoxKey.currentState?.toggleReplyBox();
+													}
+													setState(() {});
+												},
+												icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
+											)
 										)
 									)
 								]
