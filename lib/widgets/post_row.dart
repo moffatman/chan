@@ -531,9 +531,7 @@ class PostRow extends StatelessWidget {
 												child: CupertinoButton(
 													padding: EdgeInsets.zero,
 													minSize: 0,
-													onPressed: () {
-														onThumbnailTap?.call(a);
-													},
+													onPressed: bind1(onThumbnailTap, a),
 													child: AttachmentThumbnail(
 														attachment: a,
 														revealSpoilers: revealSpoilerImages,
