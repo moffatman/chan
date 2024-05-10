@@ -609,15 +609,18 @@ class BoardPageState extends State<BoardPage> {
 							if (imageboard == null) {
 								return;
 							}
-							final threadState = imageboard.persistence.getThreadStateIfExists(thread.identifier);
+							final threadState = imageboard.persistence.getThreadState(thread.identifier);
+							// Need this to be populated for initial showing before first watcher update
+							await threadState.ensureThreadLoaded();
+							threadState.thread ??= thread;
 							imageboard.notifications.subscribeToThread(
 								thread: thread.identifier,
-								lastSeenId: threadState?.lastSeenPostId ?? thread.id,
+								lastSeenId: threadState.lastSeenPostId ?? thread.id,
 								localYousOnly: false,
 								pushYousOnly: true,
 								// So if you do a subsequent reply, notifications still work as expected
 								push: true,
-								youIds: threadState?.youIds ?? []
+								youIds: threadState.youIds
 							);
 							setState(() {});
 							showUndoToast(
