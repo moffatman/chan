@@ -1534,7 +1534,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						),
 						ConstrainedBox(
 							constraints: BoxConstraints(
-								maxHeight: 100 + settings.replyBoxHeightOffset,
+								maxHeight: min(MediaQuery.sizeOf(context).height - (kMinInteractiveDimensionCupertino * 3), 100 + settings.replyBoxHeightOffset),
 							),
 							child: Stack(
 								alignment: Alignment.center,
