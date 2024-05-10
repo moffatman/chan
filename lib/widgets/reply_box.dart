@@ -2299,13 +2299,30 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												}
 												final newFile = await downloadToShareCache(
 													context: context,
-													url: Uri.parse(_proposedAttachmentUrl!.$1)
+													url: Uri.parse(proposed.$1)
 												);
 												if (newFile == null) {
 													return;
 												}
 												setAttachment(newFile);
-												_filenameController.text = _proposedAttachmentUrl!.$1.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
+												_filenameController.text = proposed.$1.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
+												final original = _textFieldController.text;
+												final replaced = original.replaceFirst(proposed.$1, '');
+												if (replaced.length != _textFieldController.text.length) {
+													_textFieldController.text = replaced;
+													if (mounted) {
+														showToast(
+															context: context,
+															icon: CupertinoIcons.link,
+															message: 'Removed URL from text',
+															easyButton: ('Restore', () {
+																// To prevent "finding" the same URL again
+																_lastFoundUrl = proposed.$1;
+																_textFieldController.text = original;
+															})
+														);
+													}
+												}
 												_proposedAttachmentUrl = null;
 												setState(() {});
 											}
