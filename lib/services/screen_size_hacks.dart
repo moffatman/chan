@@ -44,7 +44,7 @@ bool shouldHorizontalSplit(BuildContext context, {bool listen = true}) {
 
 double estimateDetailWidth(BuildContext context, {bool listen = true}) {
 	final size = listen ? MediaQuery.sizeOf(context) : context.mediaQuery.size;
-	if (shouldHorizontalSplit(context)) {
+	if (shouldHorizontalSplit(context, listen: listen)) {
 		final twoPaneSplit = Settings.twoPaneSplitSetting.get(context, listen);
 		return (1 - (twoPaneSplit / twoPaneSplitDenominator)) * size.width;
 	}

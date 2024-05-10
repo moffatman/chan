@@ -473,7 +473,12 @@ class SteppableSettingWidget<T extends num> extends StandardImmutableSettingWidg
 				AdaptiveIconButton(
 					padding: EdgeInsets.zero,
 					onPressed: value <= min ? null : () {
-						setting.write(context, value - step as T);
+						if (value > max) {
+							setting.write(context, max);
+						}
+						else {
+							setting.write(context, value - step as T);
+						}
 					},
 					icon: const Icon(CupertinoIcons.minus)
 				),
@@ -481,7 +486,12 @@ class SteppableSettingWidget<T extends num> extends StandardImmutableSettingWidg
 				AdaptiveIconButton(
 					padding: EdgeInsets.zero,
 					onPressed: value >= max ? null : () {
-						setting.write(context, value + step as T);
+						if (value < min) {
+							setting.write(context, min);
+						}
+						else {
+							setting.write(context, value + step as T);
+						}
 					},
 					icon: const Icon(CupertinoIcons.plus)
 				)

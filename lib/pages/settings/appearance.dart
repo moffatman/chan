@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/flag.dart';
@@ -1404,8 +1405,8 @@ final appearanceSettings = [
 				watcher: (context) => estimateDetailWidth(context, listen: true),
 				writer: (context, v) async {}
 			),
-			forwards: (maxExtent, width) => (width / maxExtent).ceil(),
-			reverse: (columns, width) => (columns / width).floorToDouble()
+			forwards: (maxExtent, width) => (width / math.max(1, maxExtent)).ceil(),
+			reverse: (columns, width) => (width / columns).ceilToDouble()
 		)
 	)
 ];
