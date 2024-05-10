@@ -186,7 +186,7 @@ class Imageboard extends ChangeNotifier {
 		}
 	}
 
-	void _listenForSpamFilter(DraftPost submittedPost, PostReceipt receipt) async {
+	void _listenForSpamFilter(DraftPost submittedPost, PostReceipt receipt, CaptchaSolution captchaSolution) async {
 		final threadIdentifier =
 			// Reply
 			submittedPost.thread ??
@@ -238,9 +238,11 @@ class Imageboard extends ChangeNotifier {
 		]);
 		listenable.removeListener(listener);
 		if (postShowedUp) {
+			onSuccessfulCaptchaSubmitted(captchaSolution);
 			receipt.spamFiltered = false;
 		}
 		else {
+			captchaSolution.dispose(); // junk
 			receipt.spamFiltered = true;
 			persistence.didUpdateBrowserState();
 			// Put it back in the Outbox, also don't remove it from persistence.outbox
@@ -275,14 +277,16 @@ class Imageboard extends ChangeNotifier {
 			}
 			if (state is QueueStateDone<PostReceipt>) {
 				post.removeListener(listener);
-				onSuccessfulCaptchaSubmitted(state.captchaSolution);
 				print(state.result);
 				mediumHapticFeedback();
 				if (state.captchaSolution.autoSolved) {
 					Outbox.instance.headlessSolveFailed = false;
 				}
 				if (state.result.spamFiltered) {
-					_listenForSpamFilter(post.post, state.result);
+					_listenForSpamFilter(post.post, state.result, state.captchaSolution);
+				}
+				else {
+					onSuccessfulCaptchaSubmitted(state.captchaSolution);
 				}
 				showToast(
 					context: ImageboardRegistry.instance.context!,
