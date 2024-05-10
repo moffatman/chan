@@ -212,8 +212,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 									CupertinoButton(
 										padding: EdgeInsets.zero,
 										onPressed: () async {
-											final wasPrimary = _getController(attachment).isPrimary;
-											_getController(attachment).isPrimary = false;
+											final lastPrimary = _lastPrimaryController;
+											lastPrimary?.isPrimary = false;
 											final goodSource = _getController(attachment).goodImageSource;
 											if (attachment.attachment.type == AttachmentType.image && goodSource != null) {
 												// Ensure full-resolution copy is loaded into the image cache
@@ -266,7 +266,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 													)
 												]
 											);
-											_getController(attachment).isPrimary = wasPrimary;
+											lastPrimary?.isPrimary = true;
 											Future.microtask(() => _getController(attachment).loadFullAttachment());
 										},
 										child: Hero(
