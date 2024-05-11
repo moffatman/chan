@@ -926,7 +926,7 @@ packages:
     description:
       path: media_kit
       ref: main
-      resolved-ref: "1853ddf946f2ccc47135b1da72552e0fab4e3275"
+      resolved-ref: "210c821d5240412351c2c622a06d3e082ca9bafe"
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.1.10+1"
@@ -980,7 +980,7 @@ packages:
     description:
       path: media_kit_video
       ref: main
-      resolved-ref: "59370d93f818a50b5798acb571e976b8a6b20a3f"
+      resolved-ref: "210c821d5240412351c2c622a06d3e082ca9bafe"
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.2.4"

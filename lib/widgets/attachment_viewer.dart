@@ -307,6 +307,18 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (existing != null) {
 			return existing;
 		}
+		_videoControllers.add(this);
+		if (_videoControllers.length > _maxVideoControllers) {
+			AttachmentViewerController removed = _videoControllers.removeAt(0);
+			if (removed.isPrimary) {
+				// Unlucky order, should be able to fix it by cycling
+				_videoControllers.add(removed);
+				removed = _videoControllers.removeAt(0);
+			}
+			if (!removed._isDisposed && removed != this) {
+				await removed._goToThumbnail();
+			}
+		}
 		final player = Player();
 		final controller = VideoController(player, configuration: Platform.isIOS ? VideoControllerConfiguration(
 			// Try to avoid bad size-getting thread lock in VideoOutput.swift
@@ -331,7 +343,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onPlayerLog(PlayerLog log) {
-		print(log);
+		print('$log [${attachment.filename}]');
 	}
 
 	void _onPlayerVideoParams(VideoParams params) async {
@@ -352,12 +364,21 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	set isPrimary(bool val) {
-		if (val) {
-			videoPlayerController?.player.play();
+		if (isPrimary == val) {
+			return;
 		}
-		else {
-			videoPlayerController?.player.pause();
+		if (val && _videoControllers.remove(this)) {
+			// Bump to bottom of stack
+			_videoControllers.add(this);
 		}
+		_lock.protect(() async {
+			if (val) {
+				await videoPlayerController?.player.play();
+			}
+			else {
+				await videoPlayerController?.player.pause();
+			}
+		});
 		_isPrimary = val;
 		notifyListeners();
 	}
@@ -451,16 +472,14 @@ class AttachmentViewerController extends ChangeNotifier {
 		_showLoadingProgress.value = false;
 	}
 
-	void goToThumbnail() {
+	Future<void> _goToThumbnail() async {
 		_isFullResolution = false;
 		_showLoadingProgress.value = false;
 		final controller = videoPlayerController;
 		_videoPlayerController = null;
-		if (controller != null) {
-			controller.player.pause().then((_) => controller.player.dispose());
-		}
 		_goodImageSource = null;
 		notifyListeners();
+		await controller?.player.dispose();
 	}
 
 	Future<void> _loadFullAttachment(bool background, {bool force = false}) => _lock.protect(() async {
@@ -577,22 +596,12 @@ class AttachmentViewerController extends ChangeNotifier {
 						transcode = true;
 					}
 				}
-				_videoControllers.add(this);
-				if (_videoControllers.length > _maxVideoControllers) {
-					AttachmentViewerController removed = _videoControllers.removeAt(0);
-					if (!removed._isDisposed && removed != this) {
-						if (removed.isPrimary) {
-							// Unlucky order, should be able to fix it by cycling
-							_videoControllers.add(removed);
-							removed = _videoControllers.removeAt(0);
-						}
-						removed.goToThumbnail();
-					}
-				}
 				if (!transcode) {
 					if (url.scheme == 'file') {
 						final file = File(url.toStringFFMPEG());
-						await (await _ensureController()).player.open(Media(file.path), play: false);
+						if (isPrimary || !background) {
+							await (await _ensureController()).player.open(Media(file.path), play: false);
+						}
 						onCacheCompleted(file);
 					}
 					else {
@@ -613,7 +622,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						if (_isDisposed) return;
 						_videoLoadingProgress = progressNotifier;
 						notifyListeners();
-						if (!background) {
+						if (isPrimary || !background) {
 							await (await _ensureController()).player.open(Media(VideoServer.instance.getUri(hash).toString()), play: false);
 						}
 					}
