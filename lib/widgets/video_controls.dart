@@ -34,6 +34,7 @@ class _VideoControlsState extends State<VideoControls> {
 	StreamSubscription<Duration>? _positionSubscription;
 	StreamSubscription<bool>? _playingSubscription;
 	StreamSubscription<Duration>? _durationSubscription;
+	StreamSubscription<double>? _volumeSubscription;
 	final position = ValueNotifier(Duration.zero);
 	bool _playingBeforeLongPress = false;
 	bool _currentlyWithinLongPress = false;
@@ -48,6 +49,7 @@ class _VideoControlsState extends State<VideoControls> {
 		_playingSubscription = videoPlayerController?.player.stream.playing.listen(_onVideoUpdate);
 		_positionSubscription = videoPlayerController?.player.stream.position.listen(_onVideoUpdate);
 		_durationSubscription = videoPlayerController?.player.stream.duration.listen(_onVideoUpdate);
+		_volumeSubscription = videoPlayerController?.player.stream.volume.listen(_onVideoUpdate);
 		value = videoPlayerController?.player.state ?? const PlayerState();
 		position.value = value.position;
 		wasAlreadyPlaying = value.playing;
@@ -73,9 +75,11 @@ class _VideoControlsState extends State<VideoControls> {
 			_positionSubscription?.cancel();
 			_playingSubscription?.cancel();
 			_durationSubscription?.cancel();
+			_volumeSubscription?.cancel();
 			videoPlayerController = widget.controller.videoPlayerController;
 			_positionSubscription = videoPlayerController?.player.stream.position.listen(_onVideoUpdate);
 			_playingSubscription = videoPlayerController?.player.stream.playing.listen(_onVideoUpdate);
+			_volumeSubscription = videoPlayerController?.player.stream.volume.listen(_onVideoUpdate);
 			_durationSubscription = videoPlayerController?.player.stream.duration.listen(_onVideoUpdate);
 		}
 		setState(() {});
@@ -248,5 +252,7 @@ class _VideoControlsState extends State<VideoControls> {
 		widget.controller.removeListener(_onControllerUpdate);
 		_positionSubscription?.cancel();
 		_playingSubscription?.cancel();
+		_durationSubscription?.cancel();
+		_volumeSubscription?.cancel();
 	}
 }
