@@ -285,7 +285,9 @@ final siteSettings = [
 									try {
 										sites[entry.key] = makeSite(entry.value);
 									}
-									catch (_) {
+									catch (e, st) {
+										print(e);
+										print(st);
 										// Must not be supported yet
 										continue;
 									}
