@@ -623,14 +623,16 @@ class BoardPageState extends State<BoardPage> {
 								youIds: threadState.youIds
 							);
 							setState(() {});
-							showUndoToast(
-								context: context,
-								message: 'Thread watched',
-								onUndo: () {
-									imageboard.notifications.unsubscribeFromThread(thread.identifier);
-									setState(() {});
-								}
-							);
+							if (context.mounted) {
+								showUndoToast(
+									context: context,
+									message: 'Thread watched',
+									onUndo: () {
+										imageboard.notifications.unsubscribeFromThread(thread.identifier);
+										setState(() {});
+									}
+								);
+							}
 						}
 					),
 					if (isThreadHidden ?? false) ContextMenuAction(
