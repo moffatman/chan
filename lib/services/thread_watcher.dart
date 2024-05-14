@@ -257,6 +257,7 @@ class ThreadWatcher extends ChangeNotifier {
 				notifications.zombifyThreadWatch(watch);
 			}
 			if (site.archives.isEmpty) {
+				await threadState.ensureThreadLoaded();
 				// No archives possible
 				threadState.thread?.isDeleted = true;
 				threadState.save();

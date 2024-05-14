@@ -341,6 +341,10 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
+	Listenable listenForThreadChanges(ThreadIdentifier thread) {
+		return sharedThreadsBox.listenable(keys: ['$imageboardKey/${thread.board}/${thread.id}']);
+	}
+
 	static Future<void> ensureTemporaryDirectoriesExist() async {
 		await webmCacheDirectory.create(recursive: true);
 		final oldHttpCache = Directory('${webmCacheDirectory.path}/httpcache');

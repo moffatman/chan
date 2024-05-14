@@ -86,6 +86,11 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
   Future<void> initialize() => parent.initialize();
 
   @override
+  Listenable listenForThreadChanges(ThreadIdentifier thread) {
+		return parent.listenForThreadChanges(thread);
+	}
+
+  @override
   Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
 		return _ephemeralThreadStates[thread]?.$2 ?? parent.listenForPersistentThreadStateChanges(thread);
 	}

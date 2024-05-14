@@ -192,17 +192,20 @@ class Imageboard extends ChangeNotifier {
 			submittedPost.thread ??
 			// Thread
 			ThreadIdentifier(submittedPost.board, receipt.id);
-		final start = DateTime.now();
 		final postShowedUpCompleter = Completer<bool>();
 		int? lastPostsCount;
-		final listenable = persistence.listenForPersistentThreadStateChanges(threadIdentifier);
-		Future.delayed(const Duration(seconds: 12), () {
+		// Using listenForThreadChanges so it works on incognito tabs too
+		final listenable = persistence.listenForThreadChanges(threadIdentifier);
+		final forcedCheckFuture = () async {
+			await Future.delayed(const Duration(seconds: 12));
 			if (!postShowedUpCompleter.isCompleted) {
-				threadWatcher.updateThread(threadIdentifier);
+				await threadWatcher.updateThread(threadIdentifier);
+				// Give listener() some time to always finish first
+				await Future.delayed(const Duration(seconds: 1));
 			}
-		});
-		void listener() {
-			final posts = persistence.getThreadStateIfExists(threadIdentifier)?.thread?.posts_;
+		}();
+		void listener() async {
+			final posts = (await Persistence.getCachedThread(key, threadIdentifier.board, threadIdentifier.id))?.posts_;
 			bool? found;
 			if (posts?.length == lastPostsCount) {
 				return;
@@ -226,15 +229,19 @@ class Imageboard extends ChangeNotifier {
 				// Post is certainly there or not
 				postShowedUpCompleter.complete(found);
 			}
-			else if (DateTime.now().difference(start) > const Duration(seconds: 12)) {
-				// On first update after 12 seconds, give up
-				postShowedUpCompleter.complete(false);
-			}
 		}
 		listenable.addListener(listener);
 		final postShowedUp = await Future.any<bool>([
 			postShowedUpCompleter.future,
-			Future.delayed(const Duration(seconds: 20), () => false)
+			Future.wait([
+				// Wait for both forcedCheck and minimum time
+				// Because if dart is paused while backgrounded, the minimum time
+				// will be misleading
+				forcedCheckFuture.catchError((e, st) {
+					Future.error(e, st); // crashlytics
+				}),
+				Future.delayed(const Duration(seconds: 20))
+			]).then((_) => false)
 		]);
 		listenable.removeListener(listener);
 		if (postShowedUp) {
