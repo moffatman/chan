@@ -80,9 +80,10 @@ class LoggingInterceptor extends Interceptor {
 			}
 			else {
 				final resp = response.data.toString();
-				if (resp.length > 1000) {
-					file.write(resp.substring(0, 1000));
+				if (resp.length > 1500) {
+					file.write(resp.substring(0, 750));
 					file.writeln('...');
+					file.write(resp.substring(resp.length - 750));
 				}
 				else {
 					file.writeln(resp);
