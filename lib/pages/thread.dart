@@ -1776,15 +1776,16 @@ class ThreadPageState extends State<ThreadPage> {
 																				boardSemanticId: widget.boardSemanticId,
 																				developerModeButtons: [
 																					[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
+																						final allIds = (persistentState.thread?.posts_.map((i) => i.id) ?? _listController.items.map((i) => i.id));
 																						final id = _listController.lastVisibleItem?.id;
 																						if (id != null) {
 																							if (useTree) {
 																								// Something arbitrary
-																								final x = _listController.items.map((i) => i.id).toList()..shuffle();
+																								final x = allIds.toList()..shuffle();
 																								persistentState.unseenPostIds.data.addAll(x.take(x.length ~/ 2));
 																							}
 																							else {
-																								persistentState.unseenPostIds.data.addAll(_listController.items.map((i) => i.id).where((x) => x > id));
+																								persistentState.unseenPostIds.data.addAll(allIds.where((x) => x > id));
 																							}
 																							persistentState.lastSeenPostId = id;
 																							persistentState.save();
