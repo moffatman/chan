@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/flag.dart';
@@ -8,6 +9,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -161,13 +163,64 @@ class SiteLainchan extends ImageboardSite {
 		return null;
 	}
 
+	Future<ImageboardPoll?> _getPoll(ThreadIdentifier thread) async {
+		try {
+			final response = await client.postUri(Uri.https(baseUrl, '/poll.php'), data: {
+				'query_poll': '1',
+				'id': thread.id.toString(),
+				'board': thread.board
+			}, options: Options(
+				contentType: Headers.formUrlEncodedContentType,
+				responseType: ResponseType.plain
+			));
+			final data = jsonDecode((response.data as String).trim());
+			final colors = (data['colors'] as List?)?.cast<String>();
+			final question = (data['question'] as List).cast<Map>();
+			final rows = <ImageboardPollRow>[];
+			for (int i = 0; i < question.length; i++) {
+				final entry = question[i].entries.trySingle;
+				if (entry != null) {
+					rows.add(ImageboardPollRow(
+						name: entry.key,
+						votes: entry.value,
+						color: switch (colors?[i]) {
+							String hex => colorToHex(hex),
+							null => null
+						}
+					));
+				}
+				// Else some in-band metadata
+			}
+			return ImageboardPoll(
+				title: null,
+				rows: rows
+			);
+		}
+		catch (e, st) {
+			// Not fatal
+			Future.error(e, st);
+			return null;
+		}
+	}
+
+	static final _pollFormPattern = RegExp('<div [^>]+class=\'pollform\'>.*<\\/div>(?:<br\\/>)?');
+
 	Post _makePost(String board, int threadId, dynamic data) {
+		final int id = data['no'];
+		final String text;
+		if (id == threadId) {
+			// Only OP can have inline poll metadata
+			text = (data['com'] as String? ?? '').replaceFirst(_pollFormPattern, '');
+		}
+		else {
+			text = data['com'] as String? ?? '';
+		}
 		return Post(
 			board: board,
-			text: data['com'] ?? '',
+			text: text,
 			name: data['name'] ?? '',
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
-			id: data['no'],
+			id: id,
 			threadId: threadId,
 			attachments_: _makeAttachments(board, threadId, data),
 			attachmentDeleted: data['filedeleted'] == 1 || data['ext'] == 'deleted',
@@ -201,6 +254,7 @@ class SiteLainchan extends ImageboardSite {
 			throw HTTPStatusException(response.statusCode ?? 0);
 		}
 		final firstPost = response.data['posts'][0];
+		final hasPoll = _pollFormPattern.hasMatch(firstPost['com'] as String? ?? '');
 		final List<Post> posts = (response.data['posts'] ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
 		return Thread(
 			board: thread.board,
@@ -212,7 +266,8 @@ class SiteLainchan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(firstPost['time'] * 1000),
 			replyCount: posts.length - 1,
 			imageCount: posts.skip(1).expand((p) => p.attachments).length,
-			posts_: posts
+			posts_: posts,
+			poll: hasPoll ? await _getPoll(thread) : null
 		);
 	}
 	@override
@@ -248,6 +303,7 @@ class SiteLainchan extends ImageboardSite {
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
 					currentPage: currentPage == null ? null : currentPage + 1
+					// Not fetching poll here, it will take too long. Just get it when the thread is opened
 				);
 				threads.add(thread);
 			}

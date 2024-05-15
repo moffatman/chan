@@ -410,6 +410,8 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(const DrawerModeAdapter());
 		Hive.registerAdapter(const ImageboardBoardFlagAdapter());
 		Hive.registerAdapter(const DraftPostAdapter());
+		Hive.registerAdapter(const ImageboardPollRowAdapter());
+		Hive.registerAdapter(const ImageboardPollAdapter());
 	}
 
 	static Future<void> initializeStatic() async {

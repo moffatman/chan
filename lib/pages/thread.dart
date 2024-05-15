@@ -8,6 +8,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
+import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/attachments.dart';
 import 'package:chan/pages/thread_watch_controls.dart';
@@ -32,6 +33,7 @@ import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/notifying_icon.dart';
+import 'package:chan/widgets/poll.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -2308,6 +2310,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final showGalleryGridButton = Settings.showGalleryGridButtonSetting.watch(context);
 		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
 		final postSortingMethod = widget.persistentState.effectivePostSortingMethod;
+		final poll = widget.thread?.poll;
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
 			children: [
@@ -2736,6 +2739,16 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												child: Icon(CupertinoIcons.exclamationmark, color: theme.backgroundColor, size: 19)
 											),
 											const SizedBox(width: 8)
+										],
+										if (poll != null) ...[
+											AdaptiveFilledButton(
+												padding: const EdgeInsets.all(8),
+												onPressed: () => WeakNavigator.push(context, OverscrollModalPage(
+													child: PollWidget(poll: poll)
+												)),
+												child: Icon(Icons.bar_chart, size: 19, color: theme.backgroundColor)
+											),
+											const SizedBox(width: 8),
 										],
 										if (showGalleryGridButton && realImageCount > 1) ...[
 											AdaptiveFilledButton(

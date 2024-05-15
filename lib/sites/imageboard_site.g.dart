@@ -251,6 +251,145 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
           typeId == other.typeId;
 }
 
+class ImageboardPollRowFields {
+  static String getName(ImageboardPollRow x) => x.name;
+  static const name = ReadOnlyHiveFieldAdapter<ImageboardPollRow, String>(
+    getter: getName,
+    fieldNumber: 0,
+    fieldName: 'name',
+    merger: PrimitiveMerger(),
+  );
+  static int getVotes(ImageboardPollRow x) => x.votes;
+  static const votes = ReadOnlyHiveFieldAdapter<ImageboardPollRow, int>(
+    getter: getVotes,
+    fieldNumber: 1,
+    fieldName: 'votes',
+    merger: PrimitiveMerger(),
+  );
+  static Color? getColor(ImageboardPollRow x) => x.color;
+  static const color = ReadOnlyHiveFieldAdapter<ImageboardPollRow, Color?>(
+    getter: getColor,
+    fieldNumber: 2,
+    fieldName: 'color',
+    merger: NullableMerger(AdaptedMerger(ColorAdapter.kTypeId)),
+  );
+}
+
+class ImageboardPollRowAdapter extends TypeAdapter<ImageboardPollRow> {
+  const ImageboardPollRowAdapter();
+
+  static const int kTypeId = 48;
+
+  @override
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<ImageboardPollRow, dynamic>> fields =
+      const {
+    0: ImageboardPollRowFields.name,
+    1: ImageboardPollRowFields.votes,
+    2: ImageboardPollRowFields.color
+  };
+
+  @override
+  ImageboardPollRow read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return ImageboardPollRow(
+      name: fields[0] as String,
+      votes: fields[1] as int,
+      color: fields[2] as Color?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ImageboardPollRow obj) {
+    writer
+      ..writeByte(3)
+      ..writeByte(0)
+      ..write(obj.name)
+      ..writeByte(1)
+      ..write(obj.votes)
+      ..writeByte(2)
+      ..write(obj.color);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ImageboardPollRowAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class ImageboardPollFields {
+  static String? getTitle(ImageboardPoll x) => x.title;
+  static const title = ReadOnlyHiveFieldAdapter<ImageboardPoll, String?>(
+    getter: getTitle,
+    fieldNumber: 1,
+    fieldName: 'title',
+    merger: PrimitiveMerger(),
+  );
+  static List<ImageboardPollRow> getRows(ImageboardPoll x) => x.rows;
+  static const rows =
+      ReadOnlyHiveFieldAdapter<ImageboardPoll, List<ImageboardPollRow>>(
+    getter: getRows,
+    fieldNumber: 2,
+    fieldName: 'rows',
+    merger: ListEqualsMerger<ImageboardPollRow>(),
+  );
+}
+
+class ImageboardPollAdapter extends TypeAdapter<ImageboardPoll> {
+  const ImageboardPollAdapter();
+
+  static const int kTypeId = 49;
+
+  @override
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<ImageboardPoll, dynamic>> fields =
+      const {1: ImageboardPollFields.title, 2: ImageboardPollFields.rows};
+
+  @override
+  ImageboardPoll read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return ImageboardPoll(
+      title: fields[1] as String?,
+      rows: (fields[2] as List).cast<ImageboardPollRow>(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ImageboardPoll obj) {
+    writer
+      ..writeByte(2)
+      ..writeByte(1)
+      ..write(obj.title)
+      ..writeByte(2)
+      ..write(obj.rows);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ImageboardPollAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
   const CatalogVariantAdapter();
 

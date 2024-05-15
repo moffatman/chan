@@ -157,6 +157,15 @@ class ThreadFields {
     fieldName: 'archiveName',
     merger: PrimitiveMerger(),
   );
+  static ImageboardPoll? getPoll(Thread x) => x.poll;
+  static void setPoll(Thread x, ImageboardPoll? v) => x.poll = v;
+  static const poll = HiveFieldAdapter<Thread, ImageboardPoll?>(
+    getter: getPoll,
+    setter: setPoll,
+    fieldNumber: 19,
+    fieldName: 'poll',
+    merger: NullableMerger(AdaptedMerger(ImageboardPollAdapter.kTypeId)),
+  );
 }
 
 class ThreadAdapter extends TypeAdapter<Thread> {
@@ -186,7 +195,8 @@ class ThreadAdapter extends TypeAdapter<Thread> {
     15: ThreadFields.attachmentDeleted,
     16: ThreadFields.attachments,
     17: ThreadFields.suggestedVariant,
-    18: ThreadFields.archiveName
+    18: ThreadFields.archiveName,
+    19: ThreadFields.poll
   };
 
   @override
@@ -227,6 +237,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       customSpoilerId: fields[14] as int?,
       attachments: (fields[16] as List).cast<Attachment>(),
       suggestedVariant: fields[17] as ThreadVariant?,
+      poll: fields[19] as ImageboardPoll?,
       archiveName: fields[18] as String?,
     );
   }
@@ -252,6 +263,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       16: obj.attachments,
       if (obj.suggestedVariant != null) 17: obj.suggestedVariant,
       if (obj.archiveName != null) 18: obj.archiveName,
+      if (obj.poll != null) 19: obj.poll,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

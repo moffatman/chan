@@ -575,6 +575,7 @@ class SiteXenforo extends ImageboardSite {
 	}
 
 	static final _postNumberPattern = RegExp(r'#([\d,]+)');
+	static final _pollVotesPattern = RegExp(r'Votes: (\d+)');
 
   @override
   Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
@@ -599,7 +600,17 @@ class SiteXenforo extends ImageboardSite {
 			isSticky: false,
 			time: _parseTime(document.querySelector('.p-description time')!),
 			attachments: [],
-			posts_: _getPostsFromThreadPage(thread.board, thread.id, document)
+			posts_: _getPostsFromThreadPage(thread.board, thread.id, document),
+			poll: switch (document.querySelectorAll('form').tryFirstWhere((e) => e.classes.any((c) => c.startsWith('js-pollContainer-')))) {
+				null => null,
+				dom.Element poll => ImageboardPoll(
+					title: poll.querySelector('.block-header')!.text.trim(),
+					rows: poll.querySelectorAll('.pollResult').map((e) => ImageboardPollRow(
+						name: e.querySelector('.pollResult-response')!.text,
+						votes: int.parse(_pollVotesPattern.firstMatch(e.querySelector('.fauxBlockLink-blockLink')!.text)!.group(1)!)
+					)).toList()
+				)
+			}
 		);
   }
 

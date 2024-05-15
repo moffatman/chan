@@ -1093,6 +1093,62 @@ class DraftPost {
 	String toString() => 'DraftPost(board: $board, threadId: $threadId, name: $name, options: $options, subject: $subject, file: $file, spoiler: $spoiler, overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension, flag: $flag, useLoginSystem: $useLoginSystem)';
 }
 
+@HiveType(typeId: 48)
+class ImageboardPollRow {
+	@HiveField(0)
+	final String name;
+	@HiveField(1)
+	final int votes;
+	@HiveField(2)
+	final Color? color;
+
+	const ImageboardPollRow({
+		required this.name,
+		required this.votes,
+		this.color
+	});
+
+	@override
+	String toString() => 'ImageboardPollRow(name: $name, votes: $votes, color: $color)';
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is ImageboardPollRow &&
+		other.name == name &&
+		other.votes == votes &&
+		other.color == color;
+	
+	@override
+	int get hashCode => Object.hash(name, votes, color);
+}
+
+@HiveType(typeId: 49)
+class ImageboardPoll {
+	@HiveField(1)
+	final String? title;
+	@HiveField(2, merger: ListEqualsMerger<ImageboardPollRow>())
+	final List<ImageboardPollRow> rows;
+
+	const ImageboardPoll({
+		required this.title,
+		required this.rows
+	});
+
+	@override
+	String toString() => 'ImageboardPoll(title: $title, rows: $rows)';
+
+	@override
+	bool operator == (Object other) =>
+		identical(other, this) ||
+		other is ImageboardPoll &&
+		other.title == title &&
+		listEquals(other.rows, rows);
+	
+	@override
+	int get hashCode => Object.hash(title, rows);
+}
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};

@@ -69,6 +69,8 @@ class Thread extends HiveObject implements Filterable {
 	ThreadVariant? suggestedVariant;
 	@HiveField(18, isOptimized: true)
 	String? archiveName;
+	@HiveField(19, isOptimized: true)
+	ImageboardPoll? poll;
 	Thread({
 		required this.posts_,
 		this.isArchived = false,
@@ -87,6 +89,7 @@ class Thread extends HiveObject implements Filterable {
 		this.customSpoilerId,
 		required this.attachments,
 		this.suggestedVariant,
+		this.poll,
 		this.archiveName
 	}) : board = intern(board);
 	
@@ -260,7 +263,8 @@ class Thread extends HiveObject implements Filterable {
 		other.isSticky == isSticky &&
 		other.replyCount == replyCount &&
 		listEquals(other.attachments, attachments) &&
-		listEquals(other.posts_, posts_);
+		listEquals(other.posts_, posts_) &&
+		other.poll == poll;
 
 	@override
 	int get hashCode => id;
