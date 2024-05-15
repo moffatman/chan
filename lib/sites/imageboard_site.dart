@@ -1734,7 +1734,8 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			boards: boards,
-			platformUserAgents: platformUserAgents
+			platformUserAgents: platformUserAgents,
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
 		);
 	}
 	else if (data['type'] == 'lainchan2') {

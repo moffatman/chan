@@ -15,6 +15,7 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:mime/mime.dart';
@@ -24,6 +25,8 @@ class SiteLynxchan extends ImageboardSite {
 	final String name;
 	@override
 	final String baseUrl;
+	@override
+	final String defaultUsername;
 	final List<ImageboardBoard>? boards;
 
 	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?res\/(\d+).html#(\d+)');
@@ -82,6 +85,7 @@ class SiteLynxchan extends ImageboardSite {
 		required this.name,
 		required this.baseUrl,
 		required this.boards,
+		required this.defaultUsername,
 		super.platformUserAgents,
 		super.archives
 	});
@@ -192,9 +196,6 @@ class SiteLynxchan extends ImageboardSite {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
 		return SiteLainchan.decodeGenericUrl(baseUrl, url);
 	}
-
-	@override
-	String get defaultUsername => 'Anon';
 
 	@override
 	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
@@ -462,4 +463,17 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	static const kLoginFieldLastSolvedCaptchaKey = 'lc';
+
+	@override
+	bool operator == (Object other) =>
+		identical(other, this) ||
+		other is SiteLynxchan &&
+		other.name == name &&
+		other.baseUrl == baseUrl &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		listEquals(other.boards, boards) &&
+		other.defaultUsername == defaultUsername;
+	
+	@override
+	int get hashCode => Object.hash(name, baseUrl, platformUserAgents, boards, defaultUsername);
 }
