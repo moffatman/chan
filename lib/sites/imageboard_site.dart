@@ -1738,6 +1738,12 @@ ImageboardSite makeSite(dynamic data) {
 		);
 	}
 	else if (data['type'] == 'lainchan2') {
+		final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
+			title: b['title'],
+			name: b['name'],
+			isWorksafe: b['isWorksafe'],
+			webmAudioAllowed: true
+		)).toList();
 		return SiteLainchan2(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
@@ -1746,6 +1752,7 @@ ImageboardSite makeSite(dynamic data) {
 			boardsPath: data['boardsPath'],
 			defaultUsername: data['defaultUsername'],
 			platformUserAgents: platformUserAgents,
+			boards: boards,
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()

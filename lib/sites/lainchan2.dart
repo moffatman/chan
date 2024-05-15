@@ -1,3 +1,5 @@
+import 'package:chan/models/board.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -85,6 +87,7 @@ class FormBypassInterceptor extends Interceptor {
 class SiteLainchan2 extends SiteLainchanOrg {
 	@override
 	final String? imageThumbnailExtension;
+	final List<ImageboardBoard>? boards;
 	final Map<String, Map<String, String>> formBypass;
 	final formLock = Mutex();
 
@@ -97,10 +100,16 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		super.archives,
 		super.faviconPath,
 		super.boardsPath,
+		this.boards,
 		super.defaultUsername
 	}) {
 		client.interceptors.insert(1, FormBypassBlockingInterceptor(this));
 		client.interceptors.add(FormBypassInterceptor(this));
+	}
+	
+	@override
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+		return boards ?? (await super.getBoards(priority: priority));
 	}
 
 	@override
@@ -121,8 +130,9 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		mapEquals(other.formBypass, formBypass) &&
 		(other.imageThumbnailExtension == imageThumbnailExtension) &&
 		(other.boardsPath == boardsPath) &&
-		(other.faviconPath == faviconPath);
+		(other.faviconPath == faviconPath) &&
+		listEquals(other.boards, boards);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, archives, faviconPath, defaultUsername, formBypass, imageThumbnailExtension, boardsPath, faviconPath);
+	int get hashCode => Object.hash(baseUrl, name, archives, faviconPath, defaultUsername, formBypass, imageThumbnailExtension, boardsPath, faviconPath, boards);
 }
