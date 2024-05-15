@@ -58,7 +58,7 @@ class SiteLainchan extends ImageboardSite {
 		}).toList();
 	}
 
-	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+).html#(\d+)');
+	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+)(?:\.html)?#(\d+)');
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parseFragment(data.replaceAll('<wbr>', ''));
