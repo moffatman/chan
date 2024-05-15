@@ -1,6 +1,8 @@
 import 'package:chan/models/board.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan_org.dart';
+import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
@@ -110,6 +112,60 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		return boards ?? (await super.getBoards(priority: priority));
+	}
+
+	@override
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+		final broken = await super.getThreadImpl(thread, priority: priority);
+		if (imageThumbnailExtension != '') {
+			return broken;
+		}
+		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'), options: Options(
+			extra: {
+				kPriority: priority
+			}
+		));
+		final document = parse(response.data);
+		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
+		for (final attachment in broken.posts_.expand((p) => p.attachments)) {
+			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id) ?? false);
+			if (thumbnailUrl != null) {
+				attachment.thumbnailUrl =
+					thumbnailUrl.startsWith('/') ?
+						Uri.https(baseUrl, thumbnailUrl).toString() :
+						thumbnailUrl;
+			}
+		}
+		// Copy corrected thumbnail URLs to thread from posts_.first
+		for (final a in broken.posts_.first.attachments) {
+			broken.attachments.tryFirstWhere((a2) => a.id == a2.id)?.thumbnailUrl = a.thumbnailUrl;
+		}
+		return broken;
+	}
+
+	@override
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+		final broken = await super.getCatalogImpl(board, priority: priority);
+		if (imageThumbnailExtension != '') {
+			return broken;
+		}
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.html'), options: Options(
+			extra: {
+				kPriority: priority
+			}
+		));
+		final document = parse(response.data);
+		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();
+		for (final attachment in broken.expand((t) => t.attachments)) {
+			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id.toString()) ?? false);
+			if (thumbnailUrl != null) {
+				attachment.thumbnailUrl =
+					thumbnailUrl.startsWith('/') ?
+						Uri.https(baseUrl, thumbnailUrl).toString() :
+						thumbnailUrl;
+			}
+		}
+		return broken;
 	}
 
 	@override
