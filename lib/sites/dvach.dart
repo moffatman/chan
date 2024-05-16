@@ -35,55 +35,29 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/'), options: Options(
-			responseType: ResponseType.plain,
+		final response = await client.getUri(Uri.https(baseUrl, '/index.json'), options: Options(
+			responseType: ResponseType.json,
 			extra: {
 				kPriority: priority
 			}
 		));
-		final document = parse(response.data);
-		final boards = <ImageboardBoard>[];
-		bool nsfw = false;
-		for (final element in document.querySelectorAll('.boards li')) {
-			if (element.classes.isEmpty) {
-				final link = element.querySelector('a');
-				final href = link?.attributes['href'];
-				if (href != null && href.startsWith('/') && href.endsWith('/')) {
-					boards.add(ImageboardBoard(
-						name: href.substring(1, href.length - 1),
-						title: link!.text,
-						isWorksafe: !nsfw,
-						webmAudioAllowed: true
-					));
-				}
-			}
-			else if (element.classes.contains('boards__title')) {
-				nsfw = element.text.contains('18+');
-			}
-		}
-		return boards;
+		return (response.data['boards'] as List).map((board) => ImageboardBoard(
+			name: board['id'],
+			title: board['name'],
+			isWorksafe: board['category'] != 'Взрослым',
+			webmAudioAllowed: true,
+			threadCommentLimit: board['bump_limit'],
+			maxCommentCharacters: board['max_comment'],
+			maxImageSizeBytes: board['max_files_size'],
+			maxWebmSizeBytes: board['max_files_size'],
+			pageCount: board['max_pages']
+		)).toList();
 	}
 
 
 	@override
 	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
 		throw UnimplementedError();
-	}
-
-	void _updateBoardInformation(Map<String, dynamic> data) async {
-		try {
-			final board = (persistence?.maybeGetBoard(data['id']))!;
-			board.threadCommentLimit = data['bump_limit'];
-			board.maxCommentCharacters = data['max_comment'];
-			board.maxImageSizeBytes = data['max_files_size'];
-			board.maxWebmSizeBytes = data['max_files_size'];
-			board.pageCount = data['max_pages'];
-			board.additionalDataTime = DateTime.now();
-		}
-		catch (e, st) {
-			print(e);
-			print(st);
-		}
 	}
 
 	List<Attachment> _makeAttachments(String board, int threadId, Map<String, dynamic> data) {
@@ -166,9 +140,6 @@ class SiteDvach extends ImageboardSite {
 		else if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
 		}
-		if (response.data['board'] != null) {
-			_updateBoardInformation(response.data['board']);
-		}
 		final int? threadsPerPage = response.data['board']['threads_per_page'];
 		return (response.data['threads'] as List<dynamic>).cast<Map<String, dynamic>>().asMap().entries.map((e) {
 			final op = _makePost(board, e.value['num'], e.value);
@@ -194,9 +165,6 @@ class SiteDvach extends ImageboardSite {
 				kPriority: priority
 			}
 		));
-		if (response.data['board'] != null) {
-			_updateBoardInformation(response.data['board']);
-		}
 		final posts = (response.data['threads'].first['posts'] as List<dynamic>).map((data) => _makePost(thread.board, thread.id, data)).toList();
 		return Thread(
 			board: thread.board,
