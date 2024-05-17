@@ -19,7 +19,6 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/text_highlighting.dart';
-import 'package:chan/services/text_normalization.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -851,12 +850,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			return;
 		}
 		final imageboard = context.read<Imageboard>();
-		// Replace known-bad special symbols
-		_textFieldController.text = _textFieldController.text.normalizeSymbols;
-		_nameFieldController.text = _nameFieldController.text.normalizeSymbols;
-		_optionsFieldController.text = _optionsFieldController.text.normalizeSymbols;
-		_subjectFieldController.text = _subjectFieldController.text.normalizeSymbols;
-		_filenameController.text = _filenameController.text.normalizeSymbols;
 		lightHapticFeedback();
 		final post = _makeDraft();
 		post.name = _nameFieldController.text;
