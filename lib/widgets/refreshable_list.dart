@@ -866,9 +866,11 @@ class _Divider<T extends Object> extends StatelessWidget {
 	final Color color;
 	final RefreshableListItem<T> itemBefore;
 	final RefreshableListItem<T>? itemAfter;
+	final bool dummy;
 
 	const _Divider({
 		required this.color,
+		required this.dummy,
 		required this.itemBefore,
 		required this.itemAfter,
 		super.key
@@ -876,15 +878,39 @@ class _Divider<T extends Object> extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final treeItems = context.read<_RefreshableTreeItems>();
+		if (!treeItems.state.useTree) {
+			return Divider(
+				thickness: 1,
+				height: 0,
+				color: color
+			);
+		}
 		final int? itemBeforeDepth;
-		if (context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemBefore).isHidden)) {
+		if (dummy) {
+			if (!treeItems.isItemHidden(itemBefore).isHidden) {
+				itemBeforeDepth = itemBefore.depth;
+			}
+			else {
+				itemBeforeDepth = null;
+			}
+		}
+		else if (context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemBefore).isHidden)) {
 			itemBeforeDepth = itemBefore.depth;
 		}
 		else {
 			itemBeforeDepth = null;
 		}
 		final int? itemAfterDepth;
-		if (itemAfter != null && context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemAfter!).isHidden)) {
+		if (dummy) {
+			if (itemAfter != null && !treeItems.isItemHidden(itemAfter!).isHidden) {
+				itemAfterDepth = itemAfter!.depth;
+			}
+			else {
+				itemAfterDepth = null;
+			}
+		}
+		else if (itemAfter != null && context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemAfter!).isHidden)) {
 			itemAfterDepth = itemAfter!.depth;
 		}
 		else {
@@ -2640,8 +2666,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															);
 														},
 														separatorBuilder: (context, childIndex) {
+															final range = widget.controller?.useDummyItemsInRange;
 															return _Divider(
 																key: ValueKey(_DividerKey(values[childIndex])),
+																dummy: range != null && childIndex < range.$2 && childIndex > range.$1,
 																itemBefore: values[childIndex],
 																itemAfter: (childIndex < values.length - 1) ? values[childIndex + 1] : null,
 																color: dividerColor
