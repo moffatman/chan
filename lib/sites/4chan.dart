@@ -853,9 +853,6 @@ class Site4Chan extends ImageboardSite {
 					'referer': getWebUrlImpl(post.board, post.threadId),
 					'origin': 'https://$baseUrl',
 					...postingHeaders
-				},
-				extra: {
-					if (captchaSolution.cloudflare) 'cloudflare': true
 				}
 			),
 			cancelToken: cancelToken
@@ -990,9 +987,6 @@ class Site4Chan extends ImageboardSite {
 				contentType: Headers.formUrlEncodedContentType,
 				headers: {
 					'referer': endpoint.toString()
-				},
-				extra: {
-					if (captchaSolution.cloudflare) 'cloudflare': true
 				}
 			));
 			final responseDocument = parse(response.data);
