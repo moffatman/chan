@@ -259,8 +259,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 			priority: priority
 		);
 	}
-	on Captcha4ChanCustomChallengeCooldownException catch (e) {
-		if (!e.cloudflare) {
+	on Captcha4ChanCustomChallengeCooldownException catch (first) {
+		if (!first.cloudflare) {
 			rethrow;
 		}
 		// If we cleared cloudflare on challenge
@@ -268,11 +268,20 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 		// This is also meaningful, because we can have an actual HTTP socket to
 		// KeepAlive (for the T-Mobile IPv4 CGNAT issue)
 		await Future.delayed(const Duration(seconds: 1));
-		challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
-			site: site,
-			request: request,
-			priority: RequestPriority.cosmetic
-		);
+		try {
+			challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
+				site: site,
+				request: request,
+				priority: RequestPriority.cosmetic
+			);
+		}
+		on DioError catch (second) {
+			if (second.error is! CloudflareHandlerNotAllowedException) {
+				rethrow;
+			}
+			print('Retry after cloudflare still got cloudflare!');
+			throw first;
+		}
 	}
 
 	print('final $challenge');
