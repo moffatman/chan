@@ -1124,6 +1124,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		}
 	}
 
+	double get _maxReplyBoxHeight => (MediaQuery.sizeOf(context).height - MediaQuery.paddingOf(context).vertical) - (kMinInteractiveDimensionCupertino * 3);
+
 	Widget _buildAttachmentOptions(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
 		final settings = context.watch<Settings>();
@@ -1573,7 +1575,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						),
 						ConstrainedBox(
 							constraints: BoxConstraints(
-								maxHeight: min(MediaQuery.sizeOf(context).height - (kMinInteractiveDimensionCupertino * 3), 100 + settings.replyBoxHeightOffset),
+								maxHeight: min(_maxReplyBoxHeight, 100 + settings.replyBoxHeightOffset),
 							),
 							child: Stack(
 								alignment: Alignment.center,
@@ -2366,7 +2368,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
 											if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= -50)) {
 												// touch not above keyboard
-												settings.replyBoxHeightOffset = min(MediaQuery.sizeOf(context).height / 2 - kMinInteractiveDimensionCupertino, max(-50, settings.replyBoxHeightOffset - event.delta.dy));
+												settings.replyBoxHeightOffset = min(_maxReplyBoxHeight, max(-50, settings.replyBoxHeightOffset - event.delta.dy));
 											}
 										});
 									},
