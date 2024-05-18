@@ -1300,8 +1300,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					),
 					const SizedBox(width: 8),
 					(attachment != null) ? ConstrainedBox(
-						constraints: BoxConstraints(
-							maxWidth: settings.thumbnailSize
+						constraints: const BoxConstraints(
+							maxWidth: 100,
+							maxHeight: 100
 						),
 						child: GestureDetector(
 							child: Hero(
