@@ -1293,7 +1293,7 @@ class PostLinkSpan extends PostSpan {
 
 	@override
 	String buildText({bool forQuoteComparison = false}) {
-		if (name != null && 'https://$name' != url) {
+		if (name != null && !url.endsWith(name!)) {
 			return '[$name]($url)';
 		}
 		else {
