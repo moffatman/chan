@@ -1032,70 +1032,73 @@ class _SavedPageState extends State<SavedPage> {
 							list.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
 							_savedAttachments = list;
 							final padding = MediaQuery.paddingOf(context);
-							return CustomScrollView(
+							return MaybeScrollbar(
 								controller: _savedAttachmentsController,
-								slivers: [
-									SliverPadding(
-										padding: EdgeInsets.only(top: padding.top)
-									),
-									SliverGrid(
-										delegate: SliverChildBuilderDelegate(
-											(context, i) => Builder(
-												builder: (context) => ImageboardScope(
-													imageboardKey: list[i].imageboard.key,
-													child: GestureDetector(
-														child: Container(
-															decoration: BoxDecoration(
-																color: Colors.transparent,
-																borderRadius: const BorderRadius.all(Radius.circular(4)),
-																border: Border.all(color: selected(context, list[i]) ? ChanceTheme.primaryColorOf(context) : Colors.transparent, width: 2)
-															),
-															margin: const EdgeInsets.all(4),
-															child: Hero(
-																tag: TaggedAttachment(
-																	attachment: list[i].item.attachment,
-																	semanticParentIds: [-5, imageboardIds.putIfAbsent(list[i].imageboard.key, () => imageboardIds.length)]
-																),
-																child: SavedAttachmentThumbnail(
-																	file: list[i].item.file,
-																	fit: BoxFit.contain
-																),
-																flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
-																	return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
-																},
-																createRectTween: (startRect, endRect) {
-																	if (startRect != null && endRect != null) {
-																		if (list[i].item.attachment.type == AttachmentType.image) {
-																			// Need to deflate the original startRect because it has inbuilt layoutInsets
-																			// This SavedAttachmentThumbnail will always fill its size
-																			final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
-																			startRect = rootPadding.deflateRect(startRect);
-																		}
-																	}
-																	return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
-																}
-															)
-														),
-														onTap: () async {
-															if (context.read<MasterDetailHint?>()?.currentValue == null) {
-																// First use of gallery
-																await handleMutingBeforeShowingGallery();
-															}
-															setter(list[i]);
-														}
-													)
-												)
-											),
-											childCount: list.length
+								child: CustomScrollView(
+									controller: _savedAttachmentsController,
+									slivers: [
+										SliverPadding(
+											padding: EdgeInsets.only(top: padding.top)
 										),
-										gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-											crossAxisCount: 4
+										SliverGrid(
+											delegate: SliverChildBuilderDelegate(
+												(context, i) => Builder(
+													builder: (context) => ImageboardScope(
+														imageboardKey: list[i].imageboard.key,
+														child: GestureDetector(
+															child: Container(
+																decoration: BoxDecoration(
+																	color: Colors.transparent,
+																	borderRadius: const BorderRadius.all(Radius.circular(4)),
+																	border: Border.all(color: selected(context, list[i]) ? ChanceTheme.primaryColorOf(context) : Colors.transparent, width: 2)
+																),
+																margin: const EdgeInsets.all(4),
+																child: Hero(
+																	tag: TaggedAttachment(
+																		attachment: list[i].item.attachment,
+																		semanticParentIds: [-5, imageboardIds.putIfAbsent(list[i].imageboard.key, () => imageboardIds.length)]
+																	),
+																	child: SavedAttachmentThumbnail(
+																		file: list[i].item.file,
+																		fit: BoxFit.contain
+																	),
+																	flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+																		return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+																	},
+																	createRectTween: (startRect, endRect) {
+																		if (startRect != null && endRect != null) {
+																			if (list[i].item.attachment.type == AttachmentType.image) {
+																				// Need to deflate the original startRect because it has inbuilt layoutInsets
+																				// This SavedAttachmentThumbnail will always fill its size
+																				final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+																				startRect = rootPadding.deflateRect(startRect);
+																			}
+																		}
+																		return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+																	}
+																)
+															),
+															onTap: () async {
+																if (context.read<MasterDetailHint?>()?.currentValue == null) {
+																	// First use of gallery
+																	await handleMutingBeforeShowingGallery();
+																}
+																setter(list[i]);
+															}
+														)
+													)
+												),
+												childCount: list.length
+											),
+											gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+												crossAxisCount: 4
+											)
+										),
+										SliverPadding(
+											padding: EdgeInsets.only(bottom: padding.bottom)
 										)
-									),
-									SliverPadding(
-										padding: EdgeInsets.only(bottom: padding.bottom)
-									)
-								]
+									]
+								)
 							);
 						}
 					),
