@@ -105,5 +105,7 @@
 		<false/>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Face ID is used to secure access to Chance</string>
+		<key>UIFileSharingEnabled</key>
+		<true/>
 	</dict>
 </plist>
