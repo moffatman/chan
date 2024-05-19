@@ -739,11 +739,11 @@ class MetaFilter implements Filter {
 
 		for (final item in sorted) {
 			final result = parent.filter(item);
-			if (result != null && result.type.hideReplies) {
-				toxicRepliedToIds[item.id] = result;
-			}
-			else if (result != null && result.type.hideReplyChains) {
+			if (result != null && result.type.hideReplyChains) {
 				treeToxicRepliedToIds[item.id] = result;
+			}
+			else if (result != null && result.type.hideReplies) {
+				toxicRepliedToIds[item.id] = result;
 			}
 			if (item.repliedToIds.any(treeToxicRepliedToIds.containsKey)) {
 				final match = item.repliedToIds.tryMapOnce((id) => treeToxicRepliedToIds[id]);
