@@ -275,6 +275,9 @@ class SiteJsChan extends ImageboardSite {
 	String get siteType => 'jschan';
 
 	@override
+	bool get supportsPosting => false;
+
+	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) {
 		// TODO: implement submitPost
 		throw UnimplementedError();
