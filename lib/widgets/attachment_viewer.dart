@@ -625,6 +625,10 @@ class AttachmentViewerController extends ChangeNotifier {
 						if (isPrimary || !background) {
 							await (await _ensureController()).player.open(Media(VideoServer.instance.getUri(hash).toString()), play: false);
 						}
+						else {
+							// This is a preload or something, wait for the download to finish
+							await VideoServer.instance.getFutureFile(hash);
+						}
 					}
 				}
 				else {

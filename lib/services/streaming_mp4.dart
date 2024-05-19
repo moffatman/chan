@@ -278,6 +278,9 @@ class VideoServer {
 	// Because a lot of filesystems are case-insensitive, the odds of collision here
 	// are much higher. My estimate about 99x more likely.
 	File getFile(String digest) => File('${httpRoot.path}/${base64Url.encode(md5.convert(base64Url.decode(digest)).bytes)}');
+	Future<File>? getFutureFile(String digest) => _caches[digest]?.completer.future.then((_) {
+		return getFile(digest);
+	});
 
 	File optimisticallyGetFile(Uri uri) => getFile(_encodeDigest(uri));
 
