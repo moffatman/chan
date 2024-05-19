@@ -600,31 +600,40 @@ class ThreadFilter implements Filter {
 class MD5Filter implements Filter {
 	final Set<String> md5s;
 	final bool applyToThreads;
-	MD5Filter(this.md5s, this.applyToThreads);
+	final int depth; 
+	MD5Filter(this.md5s, this.applyToThreads, this.depth);
 	@override
 	FilterResult? filter(Filterable item) {
 		if (!applyToThreads && item.isThread) {
 			return null;
 		}
 		return md5s.contains(item.getFilterFieldText('md5')) ?
-			FilterResult(const FilterResultType(hide: true), 'Matches filtered image') : null;
+			FilterResult(
+				FilterResultType(
+					hide: true,
+					hideReplies: depth > 0,
+					hideReplyChains: depth > 1
+				),
+				'Matches filtered image')
+			: null;
 	}
 
 	@override
-	bool get supportsMetaFilter => false;
+	bool get supportsMetaFilter => depth > 0;
 
 	@override
-	String toString() => 'MD5Filter(md5s: $md5s, applyToThreads: $applyToThreads)';
+	String toString() => 'MD5Filter(md5s: $md5s, applyToThreads: $applyToThreads, depth: $depth)';
 
 	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is MD5Filter &&
 		setEquals(other.md5s, md5s) &&
-		other.applyToThreads == applyToThreads;
+		other.applyToThreads == applyToThreads &&
+		other.depth == depth;
 
 	@override
-	int get hashCode => Object.hash(md5s, applyToThreads);
+	int get hashCode => Object.hash(md5s, applyToThreads, depth);
 }
 
 class FilterGroup<T extends Filter> implements Filter {

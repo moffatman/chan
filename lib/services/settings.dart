@@ -1179,6 +1179,8 @@ class SavedSettings extends HiveObject {
 	bool showReplyCountInCatalog;
 	@HiveField(189)
 	bool watchThreadAutomaticallyWhenCreating;
+	@HiveField(190)
+	int imageMetaFilterDepth;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1370,6 +1372,7 @@ class SavedSettings extends HiveObject {
 		bool? attachmentsPageUsePageView,
 		bool? showReplyCountInCatalog,
 		bool? watchThreadAutomaticallyWhenCreating,
+		int? imageMetaFilterDepth,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1583,7 +1586,8 @@ class SavedSettings extends HiveObject {
 		showHiddenItemsFooter = showHiddenItemsFooter ?? true,
 		attachmentsPageUsePageView = attachmentsPageUsePageView ?? false,
 		showReplyCountInCatalog = showReplyCountInCatalog ?? true,
-		watchThreadAutomaticallyWhenCreating = watchThreadAutomaticallyWhenCreating ?? true {
+		watchThreadAutomaticallyWhenCreating = watchThreadAutomaticallyWhenCreating ?? true,
+		imageMetaFilterDepth = imageMetaFilterDepth ?? 0 {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2009,11 +2013,13 @@ class SettingWithFallback<T> extends ImmutableSetting<T> {
 
 class HookedSetting<T> extends ImmutableSetting<T> {
 	final ImmutableSetting<T> setting;
-	final Future<bool> Function(BuildContext context, T oldValue, T newValue) beforeChange;
+	final Future<bool> Function(BuildContext context, T oldValue, T newValue)? beforeChange;
+	final VoidCallback? afterChange;
 
 	const HookedSetting({
 		required this.setting,
-		required this.beforeChange
+		this.beforeChange,
+		this.afterChange
 	});
 
 	@override
@@ -2024,8 +2030,9 @@ class HookedSetting<T> extends ImmutableSetting<T> {
 
 	@override
 	Future<void> write(BuildContext context, T value) async {
-		if (await beforeChange(context, read(context), value) && context.mounted) {
+		if ((await beforeChange?.call(context, read(context), value) ?? true) && context.mounted) {
 			await setting.write(context, value);
+			afterChange?.call();
 		}
 	}
 
@@ -2766,6 +2773,9 @@ class Settings extends ChangeNotifier {
 	static const watchThreadAutomaticallyWhenCreatingSetting = SavedSetting(SavedSettingsFields.watchThreadAutomaticallyWhenCreating);
 	bool get watchThreadAutomaticallyWhenCreating => watchThreadAutomaticallyWhenCreatingSetting(this);
 
+	static const imageMetaFilterDepthSetting = SavedSetting(SavedSettingsFields.imageMetaFilterDepth);
+	int get imageMetaFilterDepth => imageMetaFilterDepthSetting(this);
+
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
 		_appResumeCallbacks.add(task);
@@ -2812,23 +2822,26 @@ class Settings extends ChangeNotifier {
 		return _settings.hiddenImageMD5s.contains(md5);
 	}
 
-	late Filter imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
+	late Filter imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads, imageMetaFilterDepth));
+	void didUpdateImageFilter() {
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads, imageMetaFilterDepth));
+		filterListenable.didUpdate();
+		notifyListeners();
+		_settings.save();
+	}
 	void hideByMD5(String md5) {
 		_settings.hiddenImageMD5s.add(md5);
-		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
-		filterListenable.didUpdate();
+		didUpdateImageFilter();
 	}
 
 	void unHideByMD5(String md5) {
 		_settings.hiddenImageMD5s.remove(md5);
-		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
-		filterListenable.didUpdate();
+		didUpdateImageFilter();
 	}
 
 	void unHideByMD5s(Iterable<String> md5s) {
 		_settings.hiddenImageMD5s.removeAll(md5s);
-		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
-		filterListenable.didUpdate();
+		didUpdateImageFilter();
 	}
 
 	void setHiddenImageMD5s(Iterable<String> md5s) {
@@ -2842,8 +2855,7 @@ class Settings extends ChangeNotifier {
 			}
 			return md5;
 		}));
-		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
-		filterListenable.didUpdate();
+		didUpdateImageFilter();
 	}
 
 	Future<void> didEdit() async {

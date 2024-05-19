@@ -4,12 +4,32 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/cupertino.dart';
 
+void _afterChange() {
+	Settings.instance.didUpdateImageFilter();
+}
+
 const imageFilterSettings = [
 	SwitchSettingWidget(
 		icon: CupertinoIcons.list_bullet_below_rectangle,
 		description: 'Filter threads by image MD5',
-		setting: Settings.applyImageFilterToThreadsSetting
-	)
+		setting: HookedSetting(
+			setting: Settings.applyImageFilterToThreadsSetting,
+			afterChange: _afterChange
+		)
+	),
+	SegmentedSettingWidget(
+		icon: CupertinoIcons.list_bullet_below_rectangle,
+		description: 'Hide replies to images',
+		setting: HookedSetting(
+			setting: Settings.imageMetaFilterDepthSetting,
+			afterChange: _afterChange
+		),
+		children: {
+			0: (null, 'None'),
+			1: (null, 'Direct Replies'),
+			2: (null, 'Full Chains')
+		}
+	),
 ];
 
 class SettingsImageFilterPage extends StatefulWidget {
