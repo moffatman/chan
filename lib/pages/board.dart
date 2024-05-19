@@ -1270,29 +1270,27 @@ class BoardPageState extends State<BoardPage> {
 											)
 										)
 									),
-									Builder(
-										builder: (context) => ConstrainedBox(
-											constraints: BoxConstraints(
-												maxHeight: MediaQuery.sizeOf(context).height - MediaQuery.paddingOf(context).top
-											),
-											child: RepaintBoundary(
-												child: ReplyBox(
-													key: _replyBoxKey,
-													board: board!.name,
-													initialDraft: widget.tab?.draft,
-													onDraftChanged: (draft) {
-														widget.tab?.mutate((tab) => tab.draft = draft);
-													},
-													onReplyPosted: (receipt) async {
-														if (imageboard?.site.supportsPushNotifications == true) {
-															await promptForPushNotificationsIfNeeded(context);
-														}
-														if (!mounted) return;
-														_listController.update();
-														_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
-													},
-													onVisibilityChanged: () => setState(() {}),
-												)
+									ConstrainedBox(
+										constraints: BoxConstraints(
+											maxHeight: MediaQuery.sizeOf(context).height / 2
+										),
+										child: RepaintBoundary(
+											child: ReplyBox(
+												key: _replyBoxKey,
+												board: board!.name,
+												initialDraft: widget.tab?.draft,
+												onDraftChanged: (draft) {
+													widget.tab?.mutate((tab) => tab.draft = draft);
+												},
+												onReplyPosted: (receipt) async {
+													if (imageboard?.site.supportsPushNotifications == true) {
+														await promptForPushNotificationsIfNeeded(context);
+													}
+													if (!mounted) return;
+													_listController.update();
+													_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
+												},
+												onVisibilityChanged: () => setState(() {}),
 											)
 										)
 									)

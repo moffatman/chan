@@ -1123,7 +1123,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		}
 	}
 
-	double get _maxReplyBoxHeight => (MediaQuery.sizeOf(context).height - MediaQuery.paddingOf(context).vertical) - (kMinInteractiveDimensionCupertino * 3);
+	double get _maxReplyBoxHeight => MediaQuery.sizeOf(context).height / 2;
 
 	Widget _buildAttachmentOptions(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
