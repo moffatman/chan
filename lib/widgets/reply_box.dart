@@ -2369,7 +2369,12 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
 											if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= -50)) {
 												// touch not above keyboard
-												settings.replyBoxHeightOffset = min(_maxReplyBoxHeight, max(-50, settings.replyBoxHeightOffset - event.delta.dy));
+												if (100 + settings.replyBoxHeightOffset > _maxReplyBoxHeight) {
+													settings.replyBoxHeightOffset = _maxReplyBoxHeight - 100;
+												}
+												else {
+													settings.replyBoxHeightOffset = min(_maxReplyBoxHeight, max(-50, settings.replyBoxHeightOffset - event.delta.dy));
+												}
 											}
 										});
 									},
