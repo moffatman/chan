@@ -228,6 +228,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 			timer.cancel();
 		}
 		else if (!popped) {
+			popped = true;
 			rootNavigator.pop();
 		}
 		Future.delayed(const Duration(seconds: 1), controller.dispose);
