@@ -289,7 +289,7 @@ class MediaConversion {
 	CancelableOperation<FFToolsOutput>? _session;
 	MediaScan? cachedScan;
 
-	static final pool = Pool(sqrt(Platform.numberOfProcessors).ceil());
+	static final pool = Pool(1);
 
 	static final _badVideoToolboxIosVersionPattern = RegExp(r'Version 15\.[01]');
 	static bool get _isVideoToolboxSupported => Platform.isIOS && !_badVideoToolboxIosVersionPattern.hasMatch(Platform.operatingSystemVersion);
