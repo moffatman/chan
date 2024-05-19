@@ -50,7 +50,8 @@ Future<File?> downloadToShareCache({
 	required Uri url
 }) async {
 	final client = context.read<ImageboardSite?>()?.client ?? Settings.instance.client;
-	final path = '${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}_${url.pathSegments.last}';
+	final filename = url.pathSegments.tryLast;
+	final path = '${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}_${filename ?? ''}';
 	return await modalLoad(context, 'Downloading...', (controller) async {
 		final alreadyCached = await getCachedImageFile(url.toString());
 		if (alreadyCached != null) {
@@ -59,7 +60,7 @@ Future<File?> downloadToShareCache({
 		final token = CancelToken();
 		controller.onCancel = token.cancel;
 		try {
-			await client.downloadUri(url, path, onReceiveProgress: (received, total) {
+			final response = await client.downloadUri(url, path, onReceiveProgress: (received, total) {
 				if (total > 0) {
 					controller.progress.value = ('${formatFilesize(received)} / ${formatFilesize(total)}', received / total);
 				}
@@ -67,6 +68,15 @@ Future<File?> downloadToShareCache({
 					controller.progress.value = ('', null);
 				}
 			}, cancelToken: token);
+			if (filename == null || !filename.contains('.')) {
+				// No clear filename with extension from URL
+				final ext = response.headers.value(Headers.contentTypeHeader)?.split('/').tryLast;
+				if (ext != null) {
+					// We can use MIME
+					return await File(path).rename('${path}thumb.$ext');
+				}
+				// IDK good luck lol
+			}
 			return File(path);
 		}
 		on DioError catch (e) {
