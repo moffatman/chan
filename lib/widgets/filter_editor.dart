@@ -749,6 +749,21 @@ class _FilterEditorState extends State<FilterEditor> {
 		else {
 			child = AdaptiveListSection(
 				children: [
+					if (filters.length > 10) AdaptiveListTile(
+						title: const Text('New filter'),
+						leading: const Icon(CupertinoIcons.plus),
+						backgroundColor: ChanceTheme.barColorOf(context),
+						backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+						onTap: () async {
+							final newFilter = await editFilter(null);
+							if (newFilter?.$2 != null) {
+								final old = settings.filterConfiguration;
+								// Add at the top
+								settings.filterConfiguration = '${newFilter!.$2!.toStringConfiguration()}\n$old';
+								regexController.text = settings.filterConfiguration;
+							}
+						}
+					),
 					...filters.entries.map((filter) {
 						final icons = [
 							if (filter.value.outputType == FilterResultType.empty) const Icon(CupertinoIcons.eye),
