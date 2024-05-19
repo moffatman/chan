@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
@@ -1153,12 +1152,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
 			child: Row(
 				children: [
-					Flexible(
-						flex: 1,
+					Expanded(
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
 							mainAxisAlignment: MainAxisAlignment.spaceBetween,
-							crossAxisAlignment: CrossAxisAlignment.start,
+							crossAxisAlignment: CrossAxisAlignment.stretch,
 							children: [
 								Row(
 									children: [
@@ -1179,121 +1177,105 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										const SizedBox(width: 8),
 										Text('.$attachmentExt'),
 										const SizedBox(width: 8),
-										FittedBox(
-											child: AdaptiveFilledButton(
-												padding: const EdgeInsets.all(4),
-												child: Text('MD5:\n${_attachmentScan?.$3.toString().substring(0, 6).toUpperCase()}', textAlign: TextAlign.center),
-												onPressed: () async {
-													final old = attachment!;
-													setState(() {
-														attachment = null;
-														_attachmentScan = null;
-														_showAttachmentOptions = false;
-													});
-													await setAttachment(old, forceRandomizeChecksum: true);
-													setState(() {
-														_showAttachmentOptions = true;
-													});
-												}
-											)
+										AdaptiveIconButton(
+											padding: EdgeInsets.zero,
+											minSize: 30,
+											icon: const Icon(CupertinoIcons.xmark),
+											onPressed: () {
+												setState(() {
+													attachment = null;
+													_attachmentScan = null;
+													_showAttachmentOptions = false;
+													_filenameController.clear();
+												});
+												_didUpdateDraft();
+											}
 										)
 									]
 								),
-								const SizedBox(height: 4),
-								Flexible(
-									child: Row(
-										crossAxisAlignment: CrossAxisAlignment.center,
-										children: [
-											AdaptiveIconButton(
-												padding: EdgeInsets.zero,
-												minSize: 0,
-												icon: Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Icon(settings.randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
-														const Text('Random')
-													]
-												),
-												onPressed: () {
-													setState(() {
-														Settings.randomizeFilenamesSetting.value = !settings.randomizeFilenames;
-													});
-												}
+								const SizedBox(height: 8),
+								Wrap(
+									alignment: WrapAlignment.end,
+									runAlignment: WrapAlignment.spaceBetween,
+									crossAxisAlignment: WrapCrossAlignment.center,
+									spacing: 8,
+									runSpacing: 8,
+									children: [
+										Text(
+											[
+												if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
+													if (_attachmentScan?.$1.codec != null) _attachmentScan!.$1.codec!.toUpperCase(),
+													if (_attachmentScan?.$1.hasAudio == true) 'with audio'
+													else 'no audio',
+													if (_attachmentScan?.$1.duration != null) formatDuration(_attachmentScan!.$1.duration!),
+													if (_attachmentScan?.$1.bitrate != null) '${(_attachmentScan!.$1.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+												],
+												if (_attachmentScan?.$1.width != null && _attachmentScan?.$1.height != null) '${_attachmentScan?.$1.width}x${_attachmentScan?.$1.height}',
+												if (_attachmentScan?.$2.size != null) formatFilesize(_attachmentScan?.$2.size ?? 0)
+											].join(', '),
+											style: const TextStyle(color: Colors.grey),
+											maxLines: null,
+											textAlign: TextAlign.right
+										),
+										AdaptiveIconButton(
+											padding: EdgeInsets.zero,
+											minSize: 0,
+											icon: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(settings.randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+													const Text('Random')
+												]
 											),
-											const SizedBox(width: 8),
-											if (board.spoilers == true) Padding(
-												padding: const EdgeInsets.only(right: 8),
-												child: AdaptiveIconButton(
-													padding: EdgeInsets.zero,
-													minSize: 0,
-													icon: Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
-															const Text('Spoiler')
-														]
+											onPressed: () {
+												setState(() {
+													Settings.randomizeFilenamesSetting.value = !settings.randomizeFilenames;
+												});
+											}
+										),
+										if (board.spoilers == true) AdaptiveIconButton(
+											padding: EdgeInsets.zero,
+											minSize: 0,
+											icon: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+													const Text('Spoiler')
+												]
+											),
+											onPressed: () {
+												setState(() {
+													spoiler = !spoiler;
+												});
+											}
+										),
+										AdaptiveThinButton(
+											padding: const EdgeInsets.all(4),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													const RotatedBox(
+														quarterTurns: 3,
+														child: Text('MD5', style: TextStyle(fontSize: 9))
 													),
-													onPressed: () {
-														setState(() {
-															spoiler = !spoiler;
-														});
-													}
-												)
+													const SizedBox(width: 2),
+													Text('${_attachmentScan?.$3.toString().substring(0, 6).toLowerCase()}', textAlign: TextAlign.center)
+												]
 											),
-											const SizedBox(width: 4),
-											Expanded(
-												child: LayoutBuilder(
-													builder: (context, constraints) {
-														final metadata = [
-															if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
-																if (_attachmentScan?.$1.codec != null) _attachmentScan!.$1.codec!.toUpperCase(),
-																if (_attachmentScan?.$1.hasAudio == true) 'with audio'
-																else 'no audio',
-																if (_attachmentScan?.$1.duration != null) formatDuration(_attachmentScan!.$1.duration!),
-																if (_attachmentScan?.$1.bitrate != null) '${(_attachmentScan!.$1.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
-															],
-															if (_attachmentScan?.$1.width != null && _attachmentScan?.$1.height != null) '${_attachmentScan?.$1.width}x${_attachmentScan?.$1.height}',
-															if (_attachmentScan?.$2.size != null) formatFilesize(_attachmentScan?.$2.size ?? 0)
-														].join(', ');
-														if (constraints.maxWidth * constraints.maxHeight < (70 * 70)) {
-															return Align(
-																alignment: Alignment.centerRight,
-																child: AdaptiveIconButton(
-																	padding: EdgeInsets.zero,
-																	minSize: 30,
-																	icon: const Icon(CupertinoIcons.info_circle),
-																	onPressed: () => alert(context, 'File metadata', metadata)
-																)
-															);
-														}
-														return AutoSizeText(
-															metadata,
-															style: const TextStyle(color: Colors.grey),
-															maxLines: null,
-															minFontSize: 10,
-															wrapWords: false,
-															textAlign: TextAlign.right
-														);
-													}
-												)
-											),
-											const SizedBox(width: 4),
-											AdaptiveIconButton(
-												padding: EdgeInsets.zero,
-												minSize: 30,
-												icon: const Icon(CupertinoIcons.xmark),
-												onPressed: () {
-													setState(() {
-														attachment = null;
-														_attachmentScan = null;
-														_showAttachmentOptions = false;
-														_filenameController.clear();
-													});
-													_didUpdateDraft();
-												}
-											)
-										]
-									)
+											onPressed: () async {
+												final old = attachment!;
+												setState(() {
+													attachment = null;
+													_attachmentScan = null;
+													_showAttachmentOptions = false;
+												});
+												await setAttachment(old, forceRandomizeChecksum: true);
+												setState(() {
+													_showAttachmentOptions = true;
+												});
+											}
+										)
+									]
 								)
 							]
 						)
