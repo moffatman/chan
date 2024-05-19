@@ -1641,7 +1641,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											direction: Axis.vertical,
 											spacing: 8,
 											runSpacing: 8,
-											alignment: WrapAlignment.start,
+											alignment: WrapAlignment.center,
 											runAlignment: WrapAlignment.center,
 											crossAxisAlignment: WrapCrossAlignment.center,
 											children: [
