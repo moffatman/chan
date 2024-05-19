@@ -1112,98 +1112,103 @@ class _SavedPageState extends State<SavedPage> {
 							);
 							child = ImageboardScope(
 								imageboardKey: selectedValue.imageboard.key,
-								child: GalleryPage(
-									initialAttachment: attachment,
-									attachments: _savedAttachments.map((l) {
-										final thisImageboardId = imageboardIds.putIfAbsent(l.imageboard.key, () => imageboardIds.length);
-										return TaggedAttachment(
-											attachment: l.item.attachment,
-											semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId]
-										);
-									}).toList(),
-									overrideSources: {
-										for (final l in _savedAttachments)
-											l.item.attachment: l.item.file.uri
-									},
-									onChange: (a) {
-										final originalL = _savedAttachments.tryFirstWhere((l) => l.item.attachment == a.attachment);
-										widget.masterDetailKey.currentState?.setValue(4, originalL, updateDetailPane: false);
-									},
-									allowScroll: true,
-									allowPop: poppedOut,
-									updateOverlays: false,
-									heroOtherEndIsBoxFitCover: false,
-									additionalContextMenuActionsBuilder: (attachment) => [
-										ContextMenuAction(
-											child: const Text('Find in thread'),
-											trailingIcon: CupertinoIcons.return_icon,
-											onPressed: () async {
-												try {
-													final threadId = attachment.attachment.threadId;
-													if (threadId == null) {
-														throw Exception('Attachment saved without thread ID');
-													}
-													final threadIdentifier = ThreadIdentifier(attachment.attachment.board, threadId);
-													final imageboardKey = imageboardIds.entries.tryFirstWhere((e) => e.value == attachment.semanticParentIds.last)?.key;
-													if (imageboardKey == null) {
-														throw Exception('Could not find corresponding site key');
-													}
-													final imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey);
-													if (imageboard == null) {
-														throw Exception('Could not find corresponding site');
-													}
-													final (thread, postId) = await modalLoad(
-														context,
-														'Finding...',
-														(controller) async {
-															bool attachmentMatches(Attachment a) {
-																if (a.md5.isNotEmpty && attachment.attachment.md5.isNotEmpty && a.md5 == attachment.attachment.md5) {
-																	return true;
-																}
-																return a.id == attachment.attachment.id;
-															}
-															final threadState = imageboard.persistence.getThreadStateIfExists(threadIdentifier);
-															Thread? thread = await threadState?.getThread();
-															if (thread == null) {
-																try {
-																	thread = await imageboard.site.getThread(threadIdentifier, priority: RequestPriority.interactive);
-																}
-																on ThreadNotFoundException {
-																	thread = await imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (t) async {
-																		if (!t.posts_.any((p) => p.attachments.any(attachmentMatches))) {
-																			throw Exception('Could not find attachment in thread');
-																		}
-																	});
-																}
-															}
-															final postId = thread.posts_.tryFirstWhere((p) => p.attachments.any(attachmentMatches))?.id;
-															return (thread, postId);
+								child: Builder(
+									builder: (innerContext) => GalleryPage(
+										initialAttachment: attachment,
+										attachments: _savedAttachments.map((l) {
+											final thisImageboardId = imageboardIds.putIfAbsent(l.imageboard.key, () => imageboardIds.length);
+											return TaggedAttachment(
+												attachment: l.item.attachment,
+												semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId]
+											);
+										}).toList(),
+										overrideSources: {
+											for (final l in _savedAttachments)
+												l.item.attachment: l.item.file.uri
+										},
+										onChange: (a) {
+											final originalL = _savedAttachments.tryFirstWhere((l) => l.item.attachment == a.attachment);
+											widget.masterDetailKey.currentState?.setValue(4, originalL, updateDetailPane: false);
+										},
+										allowScroll: true,
+										allowPop: poppedOut,
+										updateOverlays: false,
+										heroOtherEndIsBoxFitCover: false,
+										additionalContextMenuActionsBuilder: (attachment) => [
+											ContextMenuAction(
+												child: const Text('Find in thread'),
+												trailingIcon: CupertinoIcons.return_icon,
+												onPressed: () async {
+													try {
+														final threadId = attachment.attachment.threadId;
+														if (threadId == null) {
+															throw Exception('Attachment saved without thread ID');
 														}
-													);
-													if (!mounted) {
-														return;
-													}
-													Navigator.of(context).push(adaptivePageRoute(
-														builder: (ctx) => ImageboardScope(
-															imageboardKey: null,
-															imageboard: imageboard,
-															child: ThreadPage(
-																thread: thread.identifier,
-																initialPostId: postId,
-																initiallyUseArchive: thread.isArchived,
-																boardSemanticId: -1
+														final threadIdentifier = ThreadIdentifier(attachment.attachment.board, threadId);
+														final imageboardKey = imageboardIds.entries.tryFirstWhere((e) => e.value == attachment.semanticParentIds.last)?.key;
+														if (imageboardKey == null) {
+															throw Exception('Could not find corresponding site key');
+														}
+														final imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey);
+														if (imageboard == null) {
+															throw Exception('Could not find corresponding site');
+														}
+														final (thread, postId) = await modalLoad(
+															context,
+															'Finding...',
+															(controller) async {
+																bool attachmentMatches(Attachment a) {
+																	if (a.md5.isNotEmpty && attachment.attachment.md5.isNotEmpty && a.md5 == attachment.attachment.md5) {
+																		return true;
+																	}
+																	return a.id == attachment.attachment.id;
+																}
+																final threadState = imageboard.persistence.getThreadStateIfExists(threadIdentifier);
+																Thread? thread = await threadState?.getThread();
+																if (thread == null) {
+																	try {
+																		thread = await imageboard.site.getThread(threadIdentifier, priority: RequestPriority.interactive);
+																	}
+																	on ThreadNotFoundException {
+																		thread = await imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (t) async {
+																			if (!t.posts_.any((p) => p.attachments.any(attachmentMatches))) {
+																				throw Exception('Could not find attachment in thread');
+																			}
+																		});
+																	}
+																}
+																final postId = thread.posts_.tryFirstWhere((p) => p.attachments.any(attachmentMatches))?.id;
+																return (thread, postId);
+															}
+														);
+														if (!mounted) {
+															return;
+														}
+														if (poppedOut) {
+															Navigator.pop(innerContext);
+														}
+														Navigator.of(poppedOut ? context : innerContext).push(adaptivePageRoute(
+															builder: (ctx) => ImageboardScope(
+																imageboardKey: null,
+																imageboard: imageboard,
+																child: ThreadPage(
+																	thread: thread.identifier,
+																	initialPostId: postId,
+																	initiallyUseArchive: thread.isArchived,
+																	boardSemanticId: -1
+																)
 															)
-														)
-													));
-												}
-												catch (e) {
-													if (mounted) {
-														alertError(context, e.toStringDio());
+														));
+													}
+													catch (e) {
+														if (mounted) {
+															alertError(context, e.toStringDio());
+														}
 													}
 												}
-											}
-										)
-									],
+											)
+										],
+									)
 								)
 							);
 						}
