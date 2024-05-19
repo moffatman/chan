@@ -2253,6 +2253,19 @@ class SavedSettingsFields {
     fieldName: 'showReplyCountInCatalog',
     merger: PrimitiveMerger(),
   );
+  static bool getWatchThreadAutomaticallyWhenCreating(SavedSettings x) =>
+      x.watchThreadAutomaticallyWhenCreating;
+  static void setWatchThreadAutomaticallyWhenCreating(
+          SavedSettings x, bool v) =>
+      x.watchThreadAutomaticallyWhenCreating = v;
+  static const watchThreadAutomaticallyWhenCreating =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getWatchThreadAutomaticallyWhenCreating,
+    setter: setWatchThreadAutomaticallyWhenCreating,
+    fieldNumber: 189,
+    fieldName: 'watchThreadAutomaticallyWhenCreating',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2441,7 +2454,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     185: SavedSettingsFields.postingRegretDelaySeconds,
     186: SavedSettingsFields.showHiddenItemsFooter,
     187: SavedSettingsFields.attachmentsPageUsePageView,
-    188: SavedSettingsFields.showReplyCountInCatalog
+    188: SavedSettingsFields.showReplyCountInCatalog,
+    189: SavedSettingsFields.watchThreadAutomaticallyWhenCreating
   };
 
   @override
@@ -2644,13 +2658,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showHiddenItemsFooter: fields[186] as bool?,
       attachmentsPageUsePageView: fields[187] as bool?,
       showReplyCountInCatalog: fields[188] as bool?,
+      watchThreadAutomaticallyWhenCreating: fields[189] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(176)
+      ..writeByte(177)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3002,7 +3017,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(187)
       ..write(obj.attachmentsPageUsePageView)
       ..writeByte(188)
-      ..write(obj.showReplyCountInCatalog);
+      ..write(obj.showReplyCountInCatalog)
+      ..writeByte(189)
+      ..write(obj.watchThreadAutomaticallyWhenCreating);
   }
 
   @override

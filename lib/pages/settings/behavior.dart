@@ -417,6 +417,11 @@ final behaviorSettings = [
 		setting: Settings.backgroundThreadAutoUpdatePeriodSecondsSetting
 	),
 	const SwitchSettingWidget(
+		description: 'Auto-watch thread when creating',
+		icon: CupertinoIcons.bell,
+		setting: Settings.watchThreadAutomaticallyWhenCreatingSetting
+	),
+	const SwitchSettingWidget(
 		description: 'Auto-watch thread when replying',
 		icon: CupertinoIcons.bell,
 		setting: Settings.watchThreadAutomaticallyWhenReplyingSetting

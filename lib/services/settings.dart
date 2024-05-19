@@ -797,6 +797,10 @@ void _readHookSavedSettingsFields(Map<int, dynamic> fields) {
 		}
 		return hiddenImageMD5s;
 	});
+	fields.putIfAbsent(SavedSettingsFields.watchThreadAutomaticallyWhenCreating.fieldNumber, () {
+		// Default when-creating to same as old when-replying
+		return fields[SavedSettingsFields.watchThreadAutomaticallyWhenReplying.fieldNumber] ?? true;
+	});
 }
 
 @HiveType(typeId: 0, readHook: _readHookSavedSettingsFields)
@@ -1173,6 +1177,8 @@ class SavedSettings extends HiveObject {
 	bool attachmentsPageUsePageView;
 	@HiveField(188)
 	bool showReplyCountInCatalog;
+	@HiveField(189)
+	bool watchThreadAutomaticallyWhenCreating;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1363,6 +1369,7 @@ class SavedSettings extends HiveObject {
 		bool? showHiddenItemsFooter,
 		bool? attachmentsPageUsePageView,
 		bool? showReplyCountInCatalog,
+		bool? watchThreadAutomaticallyWhenCreating,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1575,7 +1582,8 @@ class SavedSettings extends HiveObject {
 		postingRegretDelaySeconds = postingRegretDelaySeconds ?? -10,
 		showHiddenItemsFooter = showHiddenItemsFooter ?? true,
 		attachmentsPageUsePageView = attachmentsPageUsePageView ?? false,
-		showReplyCountInCatalog = showReplyCountInCatalog ?? true {
+		showReplyCountInCatalog = showReplyCountInCatalog ?? true,
+		watchThreadAutomaticallyWhenCreating = watchThreadAutomaticallyWhenCreating ?? true {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2754,6 +2762,9 @@ class Settings extends ChangeNotifier {
 
 	static const showReplyCountInCatalogSetting = SavedSetting(SavedSettingsFields.showReplyCountInCatalog);
 	bool get showReplyCountInCatalog => showReplyCountInCatalogSetting(this);
+
+	static const watchThreadAutomaticallyWhenCreatingSetting = SavedSetting(SavedSettingsFields.watchThreadAutomaticallyWhenCreating);
+	bool get watchThreadAutomaticallyWhenCreating => watchThreadAutomaticallyWhenCreatingSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

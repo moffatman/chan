@@ -408,7 +408,10 @@ class Imageboard extends ChangeNotifier {
 		persistentState.receipts = [...persistentState.receipts, receipt];
 		persistentState.didUpdateYourPosts();
 		final settings = Settings.instance;
-		if (settings.watchThreadAutomaticallyWhenReplying) {
+		if (
+			(post.threadId == null && settings.watchThreadAutomaticallyWhenCreating) ||
+			(post.threadId != null && settings.watchThreadAutomaticallyWhenReplying)
+		) {
 			notifications.subscribeToThread(
 				thread: thread,
 				lastSeenId: receipt.id,
