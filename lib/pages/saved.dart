@@ -42,6 +42,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
+final _downloadedAttachments = <Attachment>{};
+
 class _PostThreadCombo {
 	final Imageboard imageboard;
 	final Post? post;
@@ -1118,6 +1120,8 @@ class _SavedPageState extends State<SavedPage> {
 								child: Builder(
 									builder: (innerContext) => GalleryPage(
 										initialAttachment: attachment,
+										isAttachmentAlreadyDownloaded: _downloadedAttachments.contains,
+										onAttachmentDownload: _downloadedAttachments.add,
 										attachments: _savedAttachments.map((l) {
 											final thisImageboardId = imageboardIds.putIfAbsent(l.imageboard.key, () => imageboardIds.length);
 											return TaggedAttachment(
