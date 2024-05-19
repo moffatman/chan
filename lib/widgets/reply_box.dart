@@ -1556,173 +1556,178 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								);
 							}
 						),
-						ConstrainedBox(
-							constraints: BoxConstraints(
-								maxHeight: min(_maxReplyBoxHeight, 100 + settings.replyBoxHeightOffset),
-							),
-							child: Stack(
-								alignment: Alignment.center,
-								children: [
-									AdaptiveTextField(
-										key: _textFieldKey,
-										enabled: !loading,
-										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-										smartDashesType: SmartDashesType.disabled,
-										smartQuotesType: SmartQuotesType.disabled,
-										controller: _textFieldController,
-										autofocus: widget.fullyExpanded,
-										contentInsertionConfiguration: ContentInsertionConfiguration(
-											onContentInserted: (content) async {
-												final data = content.data;
-												if (data == null) {
-													return;
+						Flexible(
+							child: ConstrainedBox(
+								constraints: BoxConstraints(
+									maxHeight: min(_maxReplyBoxHeight, 100 + settings.replyBoxHeightOffset),
+								),
+								child: Stack(
+									alignment: Alignment.center,
+									fit: StackFit.expand,
+									children: [
+										AdaptiveTextField(
+											key: _textFieldKey,
+											enabled: !loading,
+											enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+											smartDashesType: SmartDashesType.disabled,
+											smartQuotesType: SmartQuotesType.disabled,
+											controller: _textFieldController,
+											autofocus: widget.fullyExpanded,
+											contentInsertionConfiguration: ContentInsertionConfiguration(
+												onContentInserted: (content) async {
+													final data = content.data;
+													if (data == null) {
+														return;
+													}
+													if (data.isEmpty) {
+														return;
+													}
+													String filename = Uri.parse(content.uri).pathSegments.last;
+													if (!filename.contains('.')) {
+														filename += '.${content.mimeType.split('/').last}';
+													}
+													final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
+													await f.create(recursive: true);
+													await f.writeAsBytes(data, flush: true);
+													setAttachment(f);
 												}
-												if (data.isEmpty) {
-													return;
-												}
-												String filename = Uri.parse(content.uri).pathSegments.last;
-												if (!filename.contains('.')) {
-													filename += '.${content.mimeType.split('/').last}';
-												}
-												final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
-												await f.create(recursive: true);
-												await f.writeAsBytes(data, flush: true);
-												setAttachment(f);
-											}
-										),
-										spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
-										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
-											anchors: editableTextState.contextMenuAnchors,
-											buttonItems: [
-												...editableTextState.contextMenuButtonItems.map((item) {
-													if (item.type == ContextMenuButtonType.paste) {
-														return item.copyWith(
+											),
+											spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
+											contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
+												anchors: editableTextState.contextMenuAnchors,
+												buttonItems: [
+													...editableTextState.contextMenuButtonItems.map((item) {
+														if (item.type == ContextMenuButtonType.paste) {
+															return item.copyWith(
+																onPressed: () {
+																	item.onPressed?.call();
+																	_handleImagePaste(manual: false);
+																}
+															);
+														}
+														return item;
+													}),
+													ContextMenuButtonItem(
+														onPressed: _handleImagePaste,
+														label: 'Paste image'
+													),
+													if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
+														return ContextMenuButtonItem(
 															onPressed: () {
-																item.onPressed?.call();
-																_handleImagePaste(manual: false);
+																final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
+																editableTextState.userUpdateTextEditingValue(
+																	editableTextState.textEditingValue.replaced(
+																		editableTextState.textEditingValue.selection,
+																		snippet.wrap(selectedText)
+																	),
+																	SelectionChangedCause.toolbar
+																);
+															},
+															label: snippet.name
+														);
+													})
+												]
+											),
+											placeholder: 'Comment',
+											textAlignVertical: TextAlignVertical.top,
+											expands: true,
+											minLines: null,
+											maxLines: null,
+											focusNode: _textFocusNode,
+											textCapitalization: TextCapitalization.sentences,
+											keyboardAppearance: ChanceTheme.brightnessOf(context),
+										),
+										if (loading) Wrap(
+											direction: Axis.vertical,
+											spacing: 8,
+											runSpacing: 8,
+											alignment: WrapAlignment.start,
+											runAlignment: WrapAlignment.center,
+											crossAxisAlignment: WrapCrossAlignment.center,
+											children: [
+												AnimatedBuilder(
+													animation: Outbox.instance,
+													builder: (context, _) {
+														final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)] as OutboxQueue<PostReceipt>?;
+														if (queue == null) {
+															return const SizedBox.shrink();
+														}
+														return AnimatedBuilder(
+															animation: queue,
+															builder: (context, _) {
+																final (DateTime, VoidCallback) pair;
+																if (queue.captchaAllowedTime.isAfter(DateTime.now())) {
+																	pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now());
+																}
+																else if (queue.allowedTime.isAfter(DateTime.now())) {
+																	pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now());
+																}
+																else {
+																	return const SizedBox.shrink();
+																}
+																return AdaptiveThinButton(
+																	backgroundFilled: true,
+																	onPressed: pair.$2,
+																	padding: const EdgeInsets.all(8),
+																	child: TimedRebuilder(
+																		interval: const Duration(seconds: 1),
+																		function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
+																		builder: (context, delta) => Text(
+																			'Waiting for cooldown ($delta)',
+																			style: const TextStyle(
+																				fontFeatures: [FontFeature.tabularFigures()]
+																			)
+																		)
+																	)
+																);
 															}
 														);
 													}
-													return item;
-												}),
-												ContextMenuButtonItem(
-													onPressed: _handleImagePaste,
-													label: 'Paste image'
 												),
-												if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
-													return ContextMenuButtonItem(
-														onPressed: () {
-															final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
-															editableTextState.userUpdateTextEditingValue(
-																editableTextState.textEditingValue.replaced(
-																	editableTextState.textEditingValue.selection,
-																	snippet.wrap(selectedText)
-																),
-																SelectionChangedCause.toolbar
-															);
-														},
-														label: snippet.name
-													);
-												})
-											]
-										),
-										placeholder: 'Comment',
-										maxLines: null,
-										minLines: 100,
-										focusNode: _textFocusNode,
-										textCapitalization: TextCapitalization.sentences,
-										keyboardAppearance: ChanceTheme.brightnessOf(context),
-									),
-									if (loading) Wrap(
-										direction: Axis.vertical,
-										spacing: 8,
-										runSpacing: 8,
-										alignment: WrapAlignment.start,
-										runAlignment: WrapAlignment.center,
-										crossAxisAlignment: WrapCrossAlignment.center,
-										children: [
-											AnimatedBuilder(
-												animation: Outbox.instance,
-												builder: (context, _) {
-													final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)] as OutboxQueue<PostReceipt>?;
-													if (queue == null) {
+												if (postingPost != null) AnimatedBuilder(
+													animation: postingPost,
+													builder: (context, _) {
+														final state = postingPost.state;
+														if (state is QueueStateSubmitting<PostReceipt>) {
+															final wait = state.wait;
+															if (wait != null) {
+																return AdaptiveThinButton(
+																	backgroundFilled: true,
+																	onPressed: wait.skip,
+																	padding: const EdgeInsets.all(8),
+																	child: TimedRebuilder(
+																		interval: const Duration(seconds: 1),
+																		function: () => formatDuration(wait.until.difference(DateTime.now()).clampAboveZero),
+																		builder: (context, delta) => Text(
+																			'${state.message} ($delta)',
+																			style: const TextStyle(
+																				fontFeatures: [FontFeature.tabularFigures()]
+																			)
+																		)
+																	)
+																);
+															}
+														}
 														return const SizedBox.shrink();
 													}
-													return AnimatedBuilder(
-														animation: queue,
-														builder: (context, _) {
-															final (DateTime, VoidCallback) pair;
-															if (queue.captchaAllowedTime.isAfter(DateTime.now())) {
-																pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now());
-															}
-															else if (queue.allowedTime.isAfter(DateTime.now())) {
-																pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now());
-															}
-															else {
-																return const SizedBox.shrink();
-															}
-															return AdaptiveThinButton(
-																backgroundFilled: true,
-																onPressed: pair.$2,
-																padding: const EdgeInsets.all(8),
-																child: TimedRebuilder(
-																	interval: const Duration(seconds: 1),
-																	function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
-																	builder: (context, delta) => Text(
-																		'Waiting for cooldown ($delta)',
-																		style: const TextStyle(
-																			fontFeatures: [FontFeature.tabularFigures()]
-																		)
-																	)
-																)
-															);
-														}
-													);
-												}
-											),
-											if (postingPost != null) AnimatedBuilder(
-												animation: postingPost,
-												builder: (context, _) {
-													final state = postingPost.state;
-													if (state is QueueStateSubmitting<PostReceipt>) {
-														final wait = state.wait;
-														if (wait != null) {
-															return AdaptiveThinButton(
-																backgroundFilled: true,
-																onPressed: wait.skip,
-																padding: const EdgeInsets.all(8),
-																child: TimedRebuilder(
-																	interval: const Duration(seconds: 1),
-																	function: () => formatDuration(wait.until.difference(DateTime.now()).clampAboveZero),
-																	builder: (context, delta) => Text(
-																		'${state.message} ($delta)',
-																		style: const TextStyle(
-																			fontFeatures: [FontFeature.tabularFigures()]
-																		)
-																	)
-																)
-															);
-														}
-													}
-													return const SizedBox.shrink();
-												}
-											),
-											AdaptiveThinButton(
-												padding: const EdgeInsets.all(8),
-												onPressed: _postInBackground,
-												backgroundFilled: true,
-												child: const Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Icon(CupertinoIcons.tray_arrow_up, size: 16),
-														SizedBox(width: 8),
-														Text('Post in background')
-													]
+												),
+												AdaptiveThinButton(
+													padding: const EdgeInsets.all(8),
+													onPressed: _postInBackground,
+													backgroundFilled: true,
+													child: const Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															Icon(CupertinoIcons.tray_arrow_up, size: 16),
+															SizedBox(width: 8),
+															Text('Post in background')
+														]
+													)
 												)
-											)
-										]
-									)
-								]
+											]
+										)
+									]
+								)
 							)
 						)
 					]
@@ -2325,82 +2330,84 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							)
 						)
 					),
-					Expander(
-						expanded: show,
-						bottomSafe: !show,
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								GestureDetector(
-									behavior: HitTestBehavior.translucent,
-									supportedDevices: const {
-										PointerDeviceKind.mouse,
-										PointerDeviceKind.stylus,
-										PointerDeviceKind.invertedStylus,
-										PointerDeviceKind.touch,
-										PointerDeviceKind.unknown
-									},
-									onVerticalDragStart: (event) {
-										_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
-										_panStartDy = event.globalPosition.dy;
-									},
-									onVerticalDragUpdate: (event) {
-										final view = PlatformDispatcher.instance.views.first;
-										final r = view.devicePixelRatio;
-										setState(() {
-											_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
-											if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= -50)) {
-												// touch not above keyboard
-												if (100 + settings.replyBoxHeightOffset > _maxReplyBoxHeight) {
-													settings.replyBoxHeightOffset = _maxReplyBoxHeight - 100;
+					Flexible(
+						child: Expander(
+							expanded: show,
+							bottomSafe: !show,
+							child: Column(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									GestureDetector(
+										behavior: HitTestBehavior.translucent,
+										supportedDevices: const {
+											PointerDeviceKind.mouse,
+											PointerDeviceKind.stylus,
+											PointerDeviceKind.invertedStylus,
+											PointerDeviceKind.touch,
+											PointerDeviceKind.unknown
+										},
+										onVerticalDragStart: (event) {
+											_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
+											_panStartDy = event.globalPosition.dy;
+										},
+										onVerticalDragUpdate: (event) {
+											final view = PlatformDispatcher.instance.views.first;
+											final r = view.devicePixelRatio;
+											setState(() {
+												_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
+												if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= -50)) {
+													// touch not above keyboard
+													if (100 + settings.replyBoxHeightOffset > _maxReplyBoxHeight) {
+														settings.replyBoxHeightOffset = _maxReplyBoxHeight - 100;
+													}
+													else {
+														settings.replyBoxHeightOffset = min(_maxReplyBoxHeight, max(-50, settings.replyBoxHeightOffset - event.delta.dy));
+													}
 												}
-												else {
-													settings.replyBoxHeightOffset = min(_maxReplyBoxHeight, max(-50, settings.replyBoxHeightOffset - event.delta.dy));
-												}
-											}
-										});
-									},
-									onVerticalDragEnd: (event) {
-										if (_willHideOnPanEnd) {
-											Future.delayed(const Duration(milliseconds: 350), () {
-												settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
 											});
-											lightHapticFeedback();
-											hideReplyBox();
-											_willHideOnPanEnd = false;
-										}
-										else {
-											settings.finalizeReplyBoxHeightOffset();
-										}
-									},
-									child: Container(
-										decoration: BoxDecoration(
-											border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
-										),
-										height: 40,
-										child: _buildButtons(context),
-									)
-								),
-								Flexible(
-									child: Container(
-										color: ChanceTheme.backgroundColorOf(context),
-										child: Stack(
-											children: [
-												_buildTextField(context),
-												if (loading) Positioned.fill(
-													child: Container(
-														alignment: Alignment.bottomCenter,
-														child: LinearProgressIndicator(
-															valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-															backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
+										},
+										onVerticalDragEnd: (event) {
+											if (_willHideOnPanEnd) {
+												Future.delayed(const Duration(milliseconds: 350), () {
+													settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
+												});
+												lightHapticFeedback();
+												hideReplyBox();
+												_willHideOnPanEnd = false;
+											}
+											else {
+												settings.finalizeReplyBoxHeightOffset();
+											}
+										},
+										child: Container(
+											decoration: BoxDecoration(
+												border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
+											),
+											height: 40,
+											child: _buildButtons(context),
+										)
+									),
+									Flexible(
+										child: Container(
+											color: ChanceTheme.backgroundColorOf(context),
+											child: Stack(
+												children: [
+													_buildTextField(context),
+													if (loading) Positioned.fill(
+														child: Container(
+															alignment: Alignment.bottomCenter,
+															child: LinearProgressIndicator(
+																valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+																backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
+															)
 														)
 													)
-												)
-											]
+												]
+											)
 										)
 									)
-								)
-							]
+								]
+							)
 						)
 					)
 				]

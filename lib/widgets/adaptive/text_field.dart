@@ -12,6 +12,7 @@ class AdaptiveTextField extends StatefulWidget {
 	final bool enabled;
 	final bool enableIMEPersonalizedLearning;
 	final bool enableSuggestions;
+	final bool expands;
 	final FocusNode? focusNode;
 	final Brightness? keyboardAppearance;
 	final TextInputType? keyboardType;
@@ -29,6 +30,7 @@ class AdaptiveTextField extends StatefulWidget {
 	final Widget? suffix;
 	final OverlayVisibilityMode suffixMode;
 	final TextAlign textAlign;
+	final TextAlignVertical? textAlignVertical;
 	final TextCapitalization textCapitalization;
 
 	const AdaptiveTextField({
@@ -41,6 +43,7 @@ class AdaptiveTextField extends StatefulWidget {
 		this.enabled = true,
 		this.enableIMEPersonalizedLearning = true,
 		this.enableSuggestions = true,
+		this.expands = false,
 		this.focusNode,
 		this.keyboardAppearance,
 		this.keyboardType,
@@ -58,6 +61,7 @@ class AdaptiveTextField extends StatefulWidget {
 		this.suffix,
 		this.suffixMode = OverlayVisibilityMode.always,
 		this.textAlign = TextAlign.start,
+		this.textAlignVertical,
 		this.textCapitalization = TextCapitalization.none,
 		super.key
 	});
@@ -134,6 +138,7 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 				enabled: widget.enabled,
 				enableIMEPersonalizedLearning: widget.enableIMEPersonalizedLearning,
 				enableSuggestions: widget.enableSuggestions,
+				expands: widget.expands,
 				focusNode: widget.focusNode,
 				keyboardAppearance: widget.keyboardAppearance,
 				keyboardType: widget.keyboardType,
@@ -147,6 +152,7 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 				spellCheckConfiguration: widget.spellCheckConfiguration,
 				style: widget.style,
 				textAlign: widget.textAlign,
+				textAlignVertical: widget.textAlignVertical,
 				textCapitalization: widget.textCapitalization
 			);
 		}
@@ -175,6 +181,7 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 				enabled: widget.enabled,
 				enableIMEPersonalizedLearning: widget.enableIMEPersonalizedLearning,
 				enableSuggestions: widget.enableSuggestions,
+				expands: widget.expands,
 				focusNode: widget.focusNode,
 				keyboardAppearance: widget.keyboardAppearance,
 				keyboardType: widget.keyboardType,
@@ -195,6 +202,7 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 				suffix: widget.suffix,
 				suffixMode: widget.suffixMode,
 				textAlign: widget.textAlign,
+				textAlignVertical: widget.textAlignVertical,
 				textCapitalization: widget.textCapitalization
 			)
 		);

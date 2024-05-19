@@ -1828,31 +1828,38 @@ class ThreadPageState extends State<ThreadPage> {
 											)
 										)
 									),
-									RepaintBoundary(
-										child: ReplyBox(
-											key: _replyBoxKey,
-											board: widget.thread.board,
-											threadId: widget.thread.id,
-											isArchived: persistentState.thread?.isArchived ?? false,
-											initialDraft: persistentState.draft,
-											onDraftChanged: (draft) {
-												persistentState.draft = draft;
-												runWhenIdle(const Duration(seconds: 3), persistentState.save);
-											},
-											onReplyPosted: (receipt) async {
-												if (site.supportsPushNotifications) {
-													await promptForPushNotificationsIfNeeded(context);
-												}
-												if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
-													// If already at the bottom, pre-mark the created post as seen
-													persistentState.lastSeenPostId = receipt.id;
-													runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-												}
-												_listController.update();
-											},
-											onVisibilityChanged: () {
-												setState(() {});
-											}
+									Builder(
+										builder: (context) => ConstrainedBox(
+											constraints: BoxConstraints(
+												maxHeight: MediaQuery.sizeOf(context).height - MediaQuery.paddingOf(context).top
+											),
+											child: RepaintBoundary(
+												child: ReplyBox(
+													key: _replyBoxKey,
+													board: widget.thread.board,
+													threadId: widget.thread.id,
+													isArchived: persistentState.thread?.isArchived ?? false,
+													initialDraft: persistentState.draft,
+													onDraftChanged: (draft) {
+														persistentState.draft = draft;
+														runWhenIdle(const Duration(seconds: 3), persistentState.save);
+													},
+													onReplyPosted: (receipt) async {
+														if (site.supportsPushNotifications) {
+															await promptForPushNotificationsIfNeeded(context);
+														}
+														if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
+															// If already at the bottom, pre-mark the created post as seen
+															persistentState.lastSeenPostId = receipt.id;
+															runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+														}
+														_listController.update();
+													},
+													onVisibilityChanged: () {
+														setState(() {});
+													}
+												)
+											)
 										)
 									)
 								]
