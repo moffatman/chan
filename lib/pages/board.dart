@@ -1030,240 +1030,243 @@ class BoardPageState extends State<BoardPage> {
 							child: Column(
 								children: [
 									Flexible(
-										child: CallbackShortcuts(
-											bindings: {
-												LogicalKeySet(LogicalKeyboardKey.keyG): () {
-													if (_listController.state?.searchHasFocus ?? false) {
-														return;
+										child: TransformedMediaQuery(
+											transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
+											child: CallbackShortcuts(
+												bindings: {
+													LogicalKeySet(LogicalKeyboardKey.keyG): () {
+														if (_listController.state?.searchHasFocus ?? false) {
+															return;
+														}
+														_showGalleryFromNextImage();
 													}
-													_showGalleryFromNextImage();
-												}
-											},
-											child: site == null ? const Center(
-												child: ErrorMessageCard('No imageboard selected')
-											) : Stack(
-												fit: StackFit.expand,
-												children: [
-													RefreshableList<Thread>(
-														initialFilter: widget.initialSearch ?? widget.tab?.initialSearch,
-														onFilterChanged: (newFilter) {
-															widget.tab?.mutate((tab) => tab.initialSearch = newFilter);
-															bool newSearching = newFilter != null;
-															if (newSearching != _searching) {
-																setState(() {
-																	_searching = newSearching;
+												},
+												child: site == null ? const Center(
+													child: ErrorMessageCard('No imageboard selected')
+												) : Stack(
+													fit: StackFit.expand,
+													children: [
+														RefreshableList<Thread>(
+															initialFilter: widget.initialSearch ?? widget.tab?.initialSearch,
+															onFilterChanged: (newFilter) {
+																widget.tab?.mutate((tab) => tab.initialSearch = newFilter);
+																bool newSearching = newFilter != null;
+																if (newSearching != _searching) {
+																	setState(() {
+																		_searching = newSearching;
+																	});
+																}
+															},
+															filterableAdapter: (t) => t,
+															allowReordering: true,
+															onWantAutosave: (thread) async {
+																final persistence = context.read<Persistence>();
+																if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
+																	// Already saw this thread
+																	return;
+																}
+																final threadState = persistence.getThreadState(thread.identifier);
+																threadState.savedTime = DateTime.now();
+																threadState.thread = thread;
+																persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+																await threadState.save();
+																await persistence.didUpdateBrowserState();
+															},
+															onWantAutowatch: (thread, autoWatch) async {
+																final imageboard = context.read<Imageboard>();
+																await Future.microtask(() => {});
+																if (imageboard.persistence.browserState.autowatchedIds[thread.board]?.contains(thread.id) ?? false) {
+																	// Already saw this thread
+																	return;
+																}
+																final threadState = imageboard.persistence.getThreadState(thread.identifier);
+																threadState.thread = thread;
+																imageboard.notifications.subscribeToThread(
+																	thread: thread.identifier,
+																	lastSeenId: thread.posts_.last.id,
+																	localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
+																	pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
+																	push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
+																	youIds: threadState.youIds,
+																	foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
+																);
+																imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+																await imageboard.persistence.didUpdateBrowserState();
+															},
+															sortMethods: [
+																if (variant.sortingMethod == ThreadSortingMethod.replyCount)
+																	(a, b) => b.replyCount.compareTo(a.replyCount)
+																else if (variant.sortingMethod == ThreadSortingMethod.threadPostTime)
+																	(a, b) => b.id.compareTo(a.id)
+																else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
+																	(a, b) {
+																		_lastCatalogUpdateTime ??= DateTime.now();
+																		return -1 * ((b.replyCount + 1) / b.time.difference(_lastCatalogUpdateTime!).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(_lastCatalogUpdateTime!).inSeconds);
+																	}
+																else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
+																	(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
+																else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
+																	(a, b) => b.imageCount.compareTo(a.imageCount)
+																else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)
+																	(a, b) => a.compareTo(b)
+															],
+															reverseSort: variant.reverseAfterSorting,
+															minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
+															gridDelegate: useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
+																maxCrossAxisExtent: settings.catalogGridWidth,
+																childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+															) : null,
+															controller: _listController,
+															listUpdater: () => site.getCatalog(board!.name, variant: variant, priority: RequestPriority.interactive).then((list) async {
+																for (final thread in list) {
+																	await thread.preinit(catalog: true);
+																	await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
+																}
+																_lastCatalogUpdateTime = DateTime.now();
+																if (settings.hideOldStickiedThreads && board?.name != 'chance') {
+																	list = list.where((thread) {
+																		return !thread.isSticky || _lastCatalogUpdateTime!.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
+																	}).toList();
+																}
+																Future.delayed(const Duration(milliseconds: 100), () {
+																	if (!mounted) return;
+																	if (_loadCompleter?.isCompleted == false) {
+																		_loadCompleter?.complete();
+																	}
 																});
-															}
-														},
-														filterableAdapter: (t) => t,
-														allowReordering: true,
-														onWantAutosave: (thread) async {
-															final persistence = context.read<Persistence>();
-															if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
-																// Already saw this thread
-																return;
-															}
-															final threadState = persistence.getThreadState(thread.identifier);
-															threadState.savedTime = DateTime.now();
-															threadState.thread = thread;
-															persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
-															await threadState.save();
-															await persistence.didUpdateBrowserState();
-														},
-														onWantAutowatch: (thread, autoWatch) async {
-															final imageboard = context.read<Imageboard>();
-															await Future.microtask(() => {});
-															if (imageboard.persistence.browserState.autowatchedIds[thread.board]?.contains(thread.id) ?? false) {
-																// Already saw this thread
-																return;
-															}
-															final threadState = imageboard.persistence.getThreadState(thread.identifier);
-															threadState.thread = thread;
-															imageboard.notifications.subscribeToThread(
-																thread: thread.identifier,
-																lastSeenId: thread.posts_.last.id,
-																localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
-																pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
-																push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
-																youIds: threadState.youIds,
-																foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
-															);
-															imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.board, () => []).add(thread.id);
-															await imageboard.persistence.didUpdateBrowserState();
-														},
-														sortMethods: [
-															if (variant.sortingMethod == ThreadSortingMethod.replyCount)
-																(a, b) => b.replyCount.compareTo(a.replyCount)
-															else if (variant.sortingMethod == ThreadSortingMethod.threadPostTime)
-																(a, b) => b.id.compareTo(a.id)
-															else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
-																(a, b) {
-																	_lastCatalogUpdateTime ??= DateTime.now();
-																	return -1 * ((b.replyCount + 1) / b.time.difference(_lastCatalogUpdateTime!).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(_lastCatalogUpdateTime!).inSeconds);
+																return list;
+															}),
+															autoExtendDuringScroll: true,
+															listExtender: (after) => site.getMoreCatalog(board!.name, after, variant: variant, priority: RequestPriority.interactive).then((list) async {
+																for (final thread in list) {
+																	await thread.preinit(catalog: true);
+																	await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 																}
-															else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
-																(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
-															else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
-																(a, b) => b.imageCount.compareTo(a.imageCount)
-															else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)
-																(a, b) => a.compareTo(b)
-														],
-														reverseSort: variant.reverseAfterSorting,
-														minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
-														gridDelegate: useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
-															maxCrossAxisExtent: settings.catalogGridWidth,
-															childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
-														) : null,
-														controller: _listController,
-														listUpdater: () => site.getCatalog(board!.name, variant: variant, priority: RequestPriority.interactive).then((list) async {
-															for (final thread in list) {
-																await thread.preinit(catalog: true);
-																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
-															}
-															_lastCatalogUpdateTime = DateTime.now();
-															if (settings.hideOldStickiedThreads && board?.name != 'chance') {
-																list = list.where((thread) {
-																	return !thread.isSticky || _lastCatalogUpdateTime!.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
-																}).toList();
-															}
-															Future.delayed(const Duration(milliseconds: 100), () {
-																if (!mounted) return;
-																if (_loadCompleter?.isCompleted == false) {
-																	_loadCompleter?.complete();
+																return list;
+															}),
+															disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
+															id: '${site.name} /${board!.name}/${variant.dataId}',
+															itemBuilder: (context, thread) => itemBuilder(context, thread),
+															filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
+															filterHint: 'Search in board',
+															filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
+																name: supportsSearch.name,
+																handler: (s) {
+																	widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
 																}
-															});
-															return list;
-														}),
-														autoExtendDuringScroll: true,
-														listExtender: (after) => site.getMoreCatalog(board!.name, after, variant: variant, priority: RequestPriority.interactive).then((list) async {
-															for (final thread in list) {
-																await thread.preinit(catalog: true);
-																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
-															}
-															return list;
-														}),
-														disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
-														id: '${site.name} /${board!.name}/${variant.dataId}',
-														itemBuilder: (context, thread) => itemBuilder(context, thread),
-														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
-														filterHint: 'Search in board',
-														filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
-															name: supportsSearch.name,
-															handler: (s) {
-																widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
-															}
-														)
-													),
-													RepaintBoundary(
-														child: AnimatedBuilder(
-															animation: _listController.slowScrolls,
-															builder: (context, _) {
-																_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
-																final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
-																scrollToTop() => _listController.animateTo((post) => true, duration: scrollAnimationDuration);
-																scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration);
-																final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
-																return SafeArea(
-																	child: Align(
-																		alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
-																		child: Padding(
-																			padding: const EdgeInsets.all(16),
-																			child: Row(
-																				mainAxisSize: MainAxisSize.min,
-																				children: [
-																					if (settings.showGalleryGridButton && realImageCount > 1) ...[
-																						AdaptiveFilledButton(
-																							padding: const EdgeInsets.all(8),
-																							color: ChanceTheme.primaryColorWithBrightness80Of(context),
-																							onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
-																							child: Icon(CupertinoIcons.square_grid_2x2, size: 24, color: ChanceTheme.backgroundColorOf(context))
-																						),
-																						const SizedBox(width: 8),
-																					],
-																					GestureDetector(
-																						onLongPress: () {
-																							final position = _listController.scrollController?.tryPosition;
-																							if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
-																								scrollToTop();
-																							}
-																							else {
-																								scrollToBottom();
-																							}
-																							mediumHapticFeedback();
-																						},
-																						onPanStart: (details) {
-																							_skipNextIndicatorSwipe = eventTooCloseToEdge(details.globalPosition);
-																						},
-																						onPanEnd: (details) {
-																							if (_skipNextIndicatorSwipe) {
-																								return;
-																							}
-																							final position =_listController.scrollController?.tryPosition;
-																							if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
-																								mediumHapticFeedback();
-																								if (position != null && position.extentAfter > 0) {
-																									scrollToBottom();
-																								}
-																								else {
-																									// Not possible, do a "double buzz"
-																									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-																								}
-																							}
-																							else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
-																								mediumHapticFeedback();
-																								if (position != null && position.extentBefore > 0) {
+															)
+														),
+														RepaintBoundary(
+															child: AnimatedBuilder(
+																animation: _listController.slowScrolls,
+																builder: (context, _) {
+																	_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
+																	final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
+																	scrollToTop() => _listController.animateTo((post) => true, duration: scrollAnimationDuration);
+																	scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration);
+																	final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
+																	return SafeArea(
+																		child: Align(
+																			alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
+																			child: Padding(
+																				padding: const EdgeInsets.all(16),
+																				child: Row(
+																					mainAxisSize: MainAxisSize.min,
+																					children: [
+																						if (settings.showGalleryGridButton && realImageCount > 1) ...[
+																							AdaptiveFilledButton(
+																								padding: const EdgeInsets.all(8),
+																								color: ChanceTheme.primaryColorWithBrightness80Of(context),
+																								onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
+																								child: Icon(CupertinoIcons.square_grid_2x2, size: 24, color: ChanceTheme.backgroundColorOf(context))
+																							),
+																							const SizedBox(width: 8),
+																						],
+																						GestureDetector(
+																							onLongPress: () {
+																								final position = _listController.scrollController?.tryPosition;
+																								if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
 																									scrollToTop();
 																								}
 																								else {
-																									// Not possible, do a "double buzz"
-																									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+																									scrollToBottom();
 																								}
-																							}
-																						},
-																						child: AdaptiveFilledButton(
-																							onPressed: () async {
-																								lightHapticFeedback();
-																								if (_searching) {
-																									_listController.state?.closeSearch();
+																								mediumHapticFeedback();
+																							},
+																							onPanStart: (details) {
+																								_skipNextIndicatorSwipe = eventTooCloseToEdge(details.globalPosition);
+																							},
+																							onPanEnd: (details) {
+																								if (_skipNextIndicatorSwipe) {
+																									return;
 																								}
-																								else {
-																									await scrollToTop();
-																									_page = _listController.items.first.item.currentPage ?? 1;
+																								final position =_listController.scrollController?.tryPosition;
+																								if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
+																									mediumHapticFeedback();
+																									if (position != null && position.extentAfter > 0) {
+																										scrollToBottom();
+																									}
+																									else {
+																										// Not possible, do a "double buzz"
+																										Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+																									}
+																								}
+																								else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
+																									mediumHapticFeedback();
+																									if (position != null && position.extentBefore > 0) {
+																										scrollToTop();
+																									}
+																									else {
+																										// Not possible, do a "double buzz"
+																										Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+																									}
 																								}
 																							},
-																							color: ChanceTheme.primaryColorWithBrightness80Of(context),
-																							padding: const EdgeInsets.all(8),
-																							child: Row(
-																								mainAxisSize: MainAxisSize.min,
-																								children: _searching ? [
-																									Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
-																									const SizedBox(width: 8),
-																									Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
-																								] : [
-																									Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
-																									SizedBox(
-																										width: 25,
-																										child: Text(
-																											_page.toString(),
-																											textAlign: TextAlign.center,
-																											style: TextStyle(
-																												color: ChanceTheme.backgroundColorOf(context)
+																							child: AdaptiveFilledButton(
+																								onPressed: () async {
+																									lightHapticFeedback();
+																									if (_searching) {
+																										_listController.state?.closeSearch();
+																									}
+																									else {
+																										await scrollToTop();
+																										_page = _listController.items.first.item.currentPage ?? 1;
+																									}
+																								},
+																								color: ChanceTheme.primaryColorWithBrightness80Of(context),
+																								padding: const EdgeInsets.all(8),
+																								child: Row(
+																									mainAxisSize: MainAxisSize.min,
+																									children: _searching ? [
+																										Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
+																										const SizedBox(width: 8),
+																										Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
+																									] : [
+																										Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
+																										SizedBox(
+																											width: 25,
+																											child: Text(
+																												_page.toString(),
+																												textAlign: TextAlign.center,
+																												style: TextStyle(
+																													color: ChanceTheme.backgroundColorOf(context)
+																												)
 																											)
 																										)
-																									)
-																								]
+																									]
+																								)
 																							)
 																						)
-																					)
-																				]
+																					]
+																				)
 																			)
 																		)
-																	)
-																);
-															}
+																	);
+																}
+															)
 														)
-													)
-												]
+													]
+												)
 											)
 										)
 									),
