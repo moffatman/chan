@@ -9,6 +9,8 @@ import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/hacker_news.dart';
+import 'package:chan/sites/jschan.dart';
+import 'package:chan/sites/karachan.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
@@ -51,7 +53,11 @@ enum PostSpanFormat {
 	@HiveField(10)
 	xenforo,
 	@HiveField(11)
-	pageStub;
+	pageStub,
+	@HiveField(12)
+	karachan,
+	@HiveField(13)
+	jsChan;
 	bool get hasInlineAttachments => switch (this) {
 		xenforo => true,
 		_ => false
@@ -124,6 +130,10 @@ class Post implements Filterable {
 				return PostNodeSpan([
 					PostTextSpan('Page $id')
 				]);
+			case PostSpanFormat.karachan:
+				return SiteKarachan.makeSpan(board, threadId, text);
+			case PostSpanFormat.jsChan:
+				return SiteJsChan.makeSpan(board, threadId, text);
 		}
 	}
 	PostNodeSpan get span {

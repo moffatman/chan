@@ -501,6 +501,20 @@ class PostQuoteSpan extends PostSpan {
 	String toString() => 'PostQuoteSpan($child)';
 }
 
+class PostPinkQuoteSpan extends PostQuoteSpan {
+	const PostPinkQuoteSpan(super.child);
+
+	@override
+	InlineSpan build(context, zone, settings, theme, options) {
+		return child.build(context, zone, settings, theme, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(color: theme.quoteColor.shiftHue(-90))
+		));
+	}
+
+	@override
+	String toString() => 'PostPinkQuoteSpan($child)';
+}
+
 class PostQuoteLinkSpan extends PostSpan {
 	final String board;
 	final int? threadId;
@@ -1054,10 +1068,11 @@ class PostCodeSpan extends PostSpan {
 class PostSpoilerSpan extends PostSpan {
 	final PostSpan child;
 	final int id;
-	const PostSpoilerSpan(this.child, this.id);
+	final bool forceReveal;
+	const PostSpoilerSpan(this.child, this.id, {this.forceReveal = false});
 	@override
 	build(context, zone, settings, theme, options) {
-		final showSpoiler = options.imageShareMode || options.showRawSource || zone.shouldShowSpoiler(id);
+		final showSpoiler = options.imageShareMode || options.showRawSource || zone.shouldShowSpoiler(id) || forceReveal;
 		final toggleRecognizer = TapGestureRecognizer()..onTap = () {
 			zone.toggleShowingOfSpoiler(id);
 		};

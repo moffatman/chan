@@ -332,6 +332,10 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         return PostSpanFormat.xenforo;
       case 11:
         return PostSpanFormat.pageStub;
+      case 12:
+        return PostSpanFormat.karachan;
+      case 13:
+        return PostSpanFormat.jsChan;
       default:
         return PostSpanFormat.chan4;
     }
@@ -375,6 +379,12 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         break;
       case PostSpanFormat.pageStub:
         writer.writeByte(11);
+        break;
+      case PostSpanFormat.karachan:
+        writer.writeByte(12);
+        break;
+      case PostSpanFormat.jsChan:
+        writer.writeByte(13);
         break;
     }
   }

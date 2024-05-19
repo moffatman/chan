@@ -507,8 +507,8 @@ class SiteLainchan extends ImageboardSite {
 	@override
 	String get siteData => baseUrl;
 
-	static BoardThreadOrPostIdentifier? decodeGenericUrl(String baseUrl, String url) {
-		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/((res\/(\d+)\.html(#q(\d+))?.*)|(index\.html))?$');
+	static BoardThreadOrPostIdentifier? decodeGenericUrl(String baseUrl, String res, String url) {
+		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/((' + res + r'\/(\d+)\.html(#[qp](\d+))?.*)|(index\.html))?$');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
 			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(4) ?? ''), int.tryParse(match.group(6) ?? ''));
@@ -517,7 +517,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 	
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => decodeGenericUrl(baseUrl, url);
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => decodeGenericUrl(baseUrl, res, url);
 
 	@override
 	bool operator ==(Object other) =>

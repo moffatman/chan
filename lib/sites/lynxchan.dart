@@ -194,7 +194,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		return SiteLainchan.decodeGenericUrl(baseUrl, url);
+		return SiteLainchan.decodeGenericUrl(baseUrl, 'res', url);
 	}
 
 	@override

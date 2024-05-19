@@ -24,6 +24,8 @@ import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/hacker_news.dart';
+import 'package:chan/sites/jschan.dart';
+import 'package:chan/sites/karachan.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/lynxchan.dart';
@@ -1768,6 +1770,21 @@ ImageboardSite makeSite(dynamic data) {
 			faviconPath: data['faviconPath'],
 			postsPerPage: data['postsPerPage'],
 			platformUserAgents: platformUserAgents
+		);
+	}
+	else if (data['type'] == 'karachan') {
+		return SiteKarachan(
+			baseUrl: data['baseUrl'],
+			name: data['name'],
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
+		);
+	}
+	else if (data['type'] == 'jschan') {
+		return SiteJsChan(
+			baseUrl: data['baseUrl'],
+			name: data['name'],
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
+			faviconPath: data['faviconPath']
 		);
 	}
 	else {

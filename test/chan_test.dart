@@ -51,13 +51,13 @@ void main() {
 
   group('Lainchan RegExes', () {
     test('decodeUrl', () {
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/'), null);
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/'), BoardThreadOrPostIdentifier('board'));
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/0.json'), null);
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/res/1234.html'), BoardThreadOrPostIdentifier('board', 1234));
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/res/1234.json'), null);
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/res/1234.html#q1235'), BoardThreadOrPostIdentifier('board', 1234, 1235));
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/res/1234.html#q1235&also=yes'), BoardThreadOrPostIdentifier('board', 1234, 1235));
+      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/'), null);
+      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/'), BoardThreadOrPostIdentifier('board'));
+      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/0.json'), null);
+      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/res/1234.html'), BoardThreadOrPostIdentifier('board', 1234));
+      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/res/1234.json'), null);
+      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/res/1234.html#q1235'), BoardThreadOrPostIdentifier('board', 1234, 1235));
+      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/res/1234.html#q1235&also=yes'), BoardThreadOrPostIdentifier('board', 1234, 1235));
     });
   });
 

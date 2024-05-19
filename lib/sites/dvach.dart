@@ -260,7 +260,7 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => SiteLainchan.decodeGenericUrl(baseUrl, url);
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => SiteLainchan.decodeGenericUrl(baseUrl, 'res', url);
 
 	@override
 	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [
