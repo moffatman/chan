@@ -784,7 +784,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
-				_slideListenable.didUpdate();
+				Future.microtask(_slideListenable.didUpdate);
 				final factor = _dragPopFactor(offset, size);
 				if (!showChrome) {
 					_updateOverlays(factor > 1);
