@@ -260,7 +260,7 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 		);
 	}
 	on Captcha4ChanCustomChallengeCooldownException catch (first) {
-		if (!first.cloudflare) {
+		if (!first.cloudflare || !request.stickyCloudflare) {
 			rethrow;
 		}
 		// If we cleared cloudflare on challenge

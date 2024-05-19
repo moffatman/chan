@@ -553,14 +553,16 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
 	final Map<String, String> challengeHeaders;
 	final List<int> possibleLetterCounts;
+	final bool stickyCloudflare;
 
 	const Chan4CustomCaptchaRequest({
 		required this.challengeUrl,
 		required this.challengeHeaders,
-		required this.possibleLetterCounts
+		required this.possibleLetterCounts,
+		required this.stickyCloudflare
 	});
 	@override
-	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders, possibleLetterCounts: $possibleLetterCounts)';
+	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders, possibleLetterCounts: $possibleLetterCounts, stickyCloudflare: $stickyCloudflare)';
 
 	@override
 	bool get cloudSolveSupported => true;
@@ -571,10 +573,11 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 		other is Chan4CustomCaptchaRequest &&
 		other.challengeUrl == challengeUrl &&
 		mapEquals(other.challengeHeaders, challengeHeaders) &&
-		listEquals(other.possibleLetterCounts, possibleLetterCounts);
+		listEquals(other.possibleLetterCounts, possibleLetterCounts) &&
+		other.stickyCloudflare == stickyCloudflare;
 	
 	@override
-	int get hashCode => Object.hash(challengeUrl, challengeHeaders, possibleLetterCounts);
+	int get hashCode => Object.hash(challengeUrl, challengeHeaders, possibleLetterCounts, stickyCloudflare);
 }
 
 class SecurimageCaptchaRequest extends CaptchaRequest {
@@ -1687,6 +1690,7 @@ ImageboardSite makeSite(dynamic data) {
 			spamFilterCaptchaDelayGreen: Duration(milliseconds: data['spamFilterCaptchaDelayGreen'] ?? 1000),
 			spamFilterCaptchaDelayYellow: Duration(milliseconds: data['spamFilterCaptchaDelayYellow'] ?? 5000),
 			spamFilterCaptchaDelayRed: Duration(milliseconds: data['spamFilterCaptchaDelayRed'] ?? 12000),
+			stickyCloudflare: data['stickyCloudflare'] ?? false,
 			subjectCharacterLimit: data['subjectCharacterLimit'],
 			platformUserAgents: platformUserAgents,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},

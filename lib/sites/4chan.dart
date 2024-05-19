@@ -145,6 +145,7 @@ class Site4Chan extends ImageboardSite {
 	final Map<String, Map<String, String>> boardFlags;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
+	final bool stickyCloudflare;
 
 	@override
 	late final Site4ChanPassLoginSystem loginSystem = Site4ChanPassLoginSystem(this);
@@ -818,7 +819,8 @@ class Site4Chan extends ImageboardSite {
 			challengeHeaders: {
 				if (userAgent != null) 'user-agent': userAgent
 			},
-			possibleLetterCounts: possibleCaptchaLetterCounts
+			possibleLetterCounts: possibleCaptchaLetterCounts,
+			stickyCloudflare: stickyCloudflare
 		);
 	}
 
@@ -853,6 +855,9 @@ class Site4Chan extends ImageboardSite {
 					'referer': getWebUrlImpl(post.board, post.threadId),
 					'origin': 'https://$baseUrl',
 					...postingHeaders
+				},
+				extra: {
+					if (captchaSolution.cloudflare && stickyCloudflare) 'cloudflare': true
 				}
 			),
 			cancelToken: cancelToken
@@ -987,6 +992,9 @@ class Site4Chan extends ImageboardSite {
 				contentType: Headers.formUrlEncodedContentType,
 				headers: {
 					'referer': endpoint.toString()
+				},
+				extra: {
+					if (captchaSolution.cloudflare && stickyCloudflare) 'cloudflare': true
 				}
 			));
 			final responseDocument = parse(response.data);
@@ -1102,6 +1110,7 @@ class Site4Chan extends ImageboardSite {
 		required this.spamFilterCaptchaDelayGreen,
 		required this.spamFilterCaptchaDelayYellow,
 		required this.spamFilterCaptchaDelayRed,
+		required this.stickyCloudflare,
 	});
 
 
