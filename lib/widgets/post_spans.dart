@@ -69,6 +69,7 @@ class PostSpanRenderOptions {
 	final ValueChanged<Attachment>? onThumbnailTap;
 	final void Function(Object?, StackTrace?)? onThumbnailLoadError;
 	final bool revealSpoilerImages;
+	final bool showEmbeds;
 	const PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -91,7 +92,8 @@ class PostSpanRenderOptions {
 		this.hiddenWithinSpoiler = false,
 		this.onThumbnailTap,
 		this.onThumbnailLoadError,
-		this.revealSpoilerImages = false
+		this.revealSpoilerImages = false,
+		this.showEmbeds = true
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
@@ -114,7 +116,8 @@ class PostSpanRenderOptions {
 		bool? hiddenWithinSpoiler,
 		ValueChanged<Attachment>? onThumbnailTap,
 		void Function(Object?, StackTrace?)? onThumbnailLoadError,
-		bool? revealSpoilerImages
+		bool? revealSpoilerImages,
+		bool? showEmbeds
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer ?? this.recognizer,
 		overrideRecognizer: overrideRecognizer ?? this.overrideRecognizer,
@@ -137,7 +140,8 @@ class PostSpanRenderOptions {
 		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler,
 		onThumbnailTap: onThumbnailTap ?? this.onThumbnailTap,
 		onThumbnailLoadError: onThumbnailLoadError ?? this.onThumbnailLoadError,
-		revealSpoilerImages: revealSpoilerImages ?? this.revealSpoilerImages
+		revealSpoilerImages: revealSpoilerImages ?? this.revealSpoilerImages,
+		showEmbeds: showEmbeds ?? this.showEmbeds
 	);
 }
 
@@ -474,7 +478,8 @@ class PostQuoteSpan extends PostSpan {
 	@override
 	InlineSpan build(context, zone, settings, theme, options) {
 		return child.build(context, zone, settings, theme, options.copyWith(
-			baseTextStyle: options.baseTextStyle.copyWith(color: theme.quoteColor)
+			baseTextStyle: options.baseTextStyle.copyWith(color: theme.quoteColor),
+			showEmbeds: false
 		));
 	}
 
@@ -1133,7 +1138,7 @@ class PostLinkSpan extends PostSpan {
 			if (embedData != null) {
 				snapshot = AsyncSnapshot.withData(ConnectionState.done, embedData);
 			}
-			else {
+			else if (options.showEmbeds) {
 				final check = zone.getFutureForComputation(
 					id: 'embedcheck $url',
 					work: () => embedPossible(url)
@@ -1147,6 +1152,9 @@ class PostLinkSpan extends PostSpan {
 				else {
 					snapshot = null;
 				}
+			}
+			else {
+				snapshot = null;
 			}
 			if (snapshot != null) {
 				Widget buildEmbed({
