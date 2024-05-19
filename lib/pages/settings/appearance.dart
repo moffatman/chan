@@ -1065,6 +1065,10 @@ final appearanceSettings = [
 		),
 		settings: [
 			const SwitchSettingWidget(
+				description: 'Show reply count',
+				setting: Settings.showReplyCountInCatalogSetting
+			),
+			const SwitchSettingWidget(
 				description: 'Show image count',
 				setting: Settings.showImageCountInCatalogSetting
 			),

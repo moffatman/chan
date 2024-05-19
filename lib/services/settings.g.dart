@@ -2242,6 +2242,17 @@ class SavedSettingsFields {
     fieldName: 'attachmentsPageUsePageView',
     merger: PrimitiveMerger(),
   );
+  static bool getShowReplyCountInCatalog(SavedSettings x) =>
+      x.showReplyCountInCatalog;
+  static void setShowReplyCountInCatalog(SavedSettings x, bool v) =>
+      x.showReplyCountInCatalog = v;
+  static const showReplyCountInCatalog = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getShowReplyCountInCatalog,
+    setter: setShowReplyCountInCatalog,
+    fieldNumber: 188,
+    fieldName: 'showReplyCountInCatalog',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2429,7 +2440,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     184: SavedSettingsFields.dynamicIPKeepAlivePeriodSeconds,
     185: SavedSettingsFields.postingRegretDelaySeconds,
     186: SavedSettingsFields.showHiddenItemsFooter,
-    187: SavedSettingsFields.attachmentsPageUsePageView
+    187: SavedSettingsFields.attachmentsPageUsePageView,
+    188: SavedSettingsFields.showReplyCountInCatalog
   };
 
   @override
@@ -2631,13 +2643,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       postingRegretDelaySeconds: fields[185] as int?,
       showHiddenItemsFooter: fields[186] as bool?,
       attachmentsPageUsePageView: fields[187] as bool?,
+      showReplyCountInCatalog: fields[188] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(175)
+      ..writeByte(176)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -2987,7 +3000,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(186)
       ..write(obj.showHiddenItemsFooter)
       ..writeByte(187)
-      ..write(obj.attachmentsPageUsePageView);
+      ..write(obj.attachmentsPageUsePageView)
+      ..writeByte(188)
+      ..write(obj.showReplyCountInCatalog);
   }
 
   @override

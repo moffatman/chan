@@ -1171,6 +1171,8 @@ class SavedSettings extends HiveObject {
 	bool showHiddenItemsFooter;
 	@HiveField(187)
 	bool attachmentsPageUsePageView;
+	@HiveField(188)
+	bool showReplyCountInCatalog;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1360,6 +1362,7 @@ class SavedSettings extends HiveObject {
 		int? postingRegretDelaySeconds,
 		bool? showHiddenItemsFooter,
 		bool? attachmentsPageUsePageView,
+		bool? showReplyCountInCatalog,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1571,7 +1574,8 @@ class SavedSettings extends HiveObject {
 		dynamicIPKeepAlivePeriodSeconds = dynamicIPKeepAlivePeriodSeconds ?? -15,
 		postingRegretDelaySeconds = postingRegretDelaySeconds ?? -10,
 		showHiddenItemsFooter = showHiddenItemsFooter ?? true,
-		attachmentsPageUsePageView = attachmentsPageUsePageView ?? false {
+		attachmentsPageUsePageView = attachmentsPageUsePageView ?? false,
+		showReplyCountInCatalog = showReplyCountInCatalog ?? true {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2747,6 +2751,9 @@ class Settings extends ChangeNotifier {
 
 	static const attachmentsPageUsePageViewSetting = SavedSetting(SavedSettingsFields.attachmentsPageUsePageView);
 	bool get attachmentsPageUsePageView => attachmentsPageUsePageViewSetting(this);
+
+	static const showReplyCountInCatalogSetting = SavedSetting(SavedSettingsFields.showReplyCountInCatalog);
+	bool get showReplyCountInCatalog => showReplyCountInCatalogSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

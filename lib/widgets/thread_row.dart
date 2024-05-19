@@ -98,6 +98,85 @@ class ThreadCounters extends StatelessWidget {
 			imageCountColor = grey;
 			otherMetadataColor = grey;
 		}
+		final children = [
+			if (threadState?.youIds.contains(thread.id) ?? false) ...[
+				Text(
+					'(You)',
+					style: TextStyle(
+						fontWeight: FontWeight.w600,
+						color: theme.secondaryColor
+					)
+				),
+				const SizedBox(width: 4)
+			],
+			if (thread.isSticky) ... [
+				Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+				const SizedBox(width: 4),
+			],
+			if (latestThread.isArchived) ... [
+				Icon(CupertinoIcons.archivebox, color: grey, size: 18),
+				const SizedBox(width: 4),
+			],
+			if (latestThread.isDeleted) ... [
+				Icon(CupertinoIcons.trash, color: grey, size: 18),
+				const SizedBox(width: 4),
+			],
+			if (showPageNumber && latestThread.currentPage != null) ...[
+				Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
+				const SizedBox(width: 2),
+				Text('${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
+				const SizedBox(width: 6)
+			],
+			if (settings.showTimeInCatalogStats) ...[
+				if (settings.showClockIconInCatalog) ...[
+					Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
+					const SizedBox(width: 4),
+				],
+				Text(latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
+				const SizedBox(width: 4),
+			],
+			if (site.supportsThreadUpvotes) ...[
+				Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
+				const SizedBox(width: 2),
+				Text(latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
+				const SizedBox(width: 6),
+			],
+			if (settings.showReplyCountInCatalog) ...[
+				Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
+				const SizedBox(width: 4),
+				if (showReplyTimeInsteadOfReplyCount) Text(formatRelativeTime(thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
+				else if (countsUnreliable && latestThread == thread) const Text('—')
+				else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
+				if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
+				if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
+				const SizedBox(width: 2),
+			],
+			if (settings.showImageCountInCatalog && site.showImageCount) ...[
+				const SizedBox(width: 6),
+				Icon(Adaptive.icons.photo, size: 18, color: imageCountColor),
+				const SizedBox(width: 4),
+				if (latestImageCount > unseenImageCount) ...[
+					Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
+					if (unseenImageCount > 0) Text('+$unseenImageCount'),
+				]
+				else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
+				else Text('$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
+				const SizedBox(width: 2),
+			],
+			if (site.isPaged) ...[
+				const SizedBox(width: 6),
+				Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
+				const SizedBox(width: 4),
+				Text((-(switch (thread.posts_.tryLast?.isPageStub) {
+					true => thread.posts_.tryLast?.id,
+					false => thread.posts_.tryLast?.parentId,
+					null => null
+				} ?? -1)).toString(), style: TextStyle(color: otherMetadataColor))
+			]
+		];
+		if (children.isEmpty) {
+			return const SizedBox.shrink();
+		}
 		final row = FittedBox(
 			alignment: alignment,
 			fit: BoxFit.scaleDown,
@@ -106,78 +185,7 @@ class ThreadCounters extends StatelessWidget {
 				crossAxisAlignment: CrossAxisAlignment.center,
 				children: [
 					if (showChrome) const SizedBox(width: 4),
-					if (threadState?.youIds.contains(thread.id) ?? false) ...[
-						Text(
-							'(You)',
-							style: TextStyle(
-								fontWeight: FontWeight.w600,
-								color: theme.secondaryColor
-							)
-						),
-						const SizedBox(width: 4)
-					],
-					if (thread.isSticky) ... [
-						Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
-						const SizedBox(width: 4),
-					],
-					if (latestThread.isArchived) ... [
-						Icon(CupertinoIcons.archivebox, color: grey, size: 18),
-						const SizedBox(width: 4),
-					],
-					if (latestThread.isDeleted) ... [
-						Icon(CupertinoIcons.trash, color: grey, size: 18),
-						const SizedBox(width: 4),
-					],
-					if (showPageNumber && latestThread.currentPage != null) ...[
-						Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
-						const SizedBox(width: 2),
-						Text('${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
-						const SizedBox(width: 6)
-					],
-					if (settings.showTimeInCatalogStats) ...[
-						if (settings.showClockIconInCatalog) ...[
-							Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
-							const SizedBox(width: 4),
-						],
-						Text(latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
-						const SizedBox(width: 4),
-					],
-					if (site.supportsThreadUpvotes) ...[
-						Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
-						const SizedBox(width: 2),
-						Text(latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
-						const SizedBox(width: 6),
-					],
-					Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
-					const SizedBox(width: 4),
-					if (showReplyTimeInsteadOfReplyCount) Text(formatRelativeTime(thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
-					else if (countsUnreliable && latestThread == thread) const Text('—')
-					else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-					if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
-					if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
-					const SizedBox(width: 2),
-					if (settings.showImageCountInCatalog && site.showImageCount) ...[
-						const SizedBox(width: 6),
-						Icon(Adaptive.icons.photo, size: 18, color: imageCountColor),
-						const SizedBox(width: 4),
-						if (latestImageCount > unseenImageCount) ...[
-							Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-							if (unseenImageCount > 0) Text('+$unseenImageCount'),
-						]
-						else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
-						else Text('$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-						const SizedBox(width: 2),
-					],
-					if (site.isPaged) ...[
-						const SizedBox(width: 6),
-						Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
-						const SizedBox(width: 4),
-						Text((-(switch (thread.posts_.tryLast?.isPageStub) {
-							true => thread.posts_.tryLast?.id,
-							false => thread.posts_.tryLast?.parentId,
-							null => null
-						} ?? -1)).toString(), style: TextStyle(color: otherMetadataColor))
-					]
+					...children
 				]
 			)
 		);
