@@ -5,6 +5,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
@@ -209,7 +210,26 @@ class SiteKarachan extends ImageboardSite {
 					));
 				}
 				else {
-					attachmentDeleted = true;
+					final iframeUrl = f.querySelector('iframe')?.attributes['src'];
+					if (iframeUrl != null) {
+						attachments.add(Attachment(
+						type: AttachmentType.url,
+						board: board,
+						threadId: threadId,
+						id: iframeUrl,
+						ext: '',
+						width: null,
+						height: null,
+						sizeInBytes: null,
+						filename: '',
+						md5: '',
+						url: iframeUrl,
+						thumbnailUrl: generateThumbnailerForUrl(Uri.parse(iframeUrl)).toString()
+					));
+					}
+					else {
+						attachmentDeleted = true;
+					}
 				}
 			}
 			return Post(
