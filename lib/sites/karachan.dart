@@ -137,6 +137,9 @@ class SiteKarachan extends ImageboardSite {
 							}
 						}
 					}
+					else if (node.localName == 'div' && node.classes.contains('backlink')) {
+						// Junk, don't show
+					}
 					else {
 						yield* Site4Chan.parsePlaintext(node.outerHtml);
 					}
