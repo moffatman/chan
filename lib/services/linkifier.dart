@@ -78,9 +78,15 @@ class LooseUrlLinkifier extends Linkifier {
 
     for (final element in elements) {
       if (element is TextElement) {
-        final match =
-          (unescapeBackslashes ? _wikipediaUrlRegexWithBackslash : _wikipediaUrlRegex).firstMatch(element.text) ??
-          (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
+        final RegExpMatch? match;
+        if (element.text.contains('wikipedia.org')) {
+          match =
+            (unescapeBackslashes ? _wikipediaUrlRegexWithBackslash : _wikipediaUrlRegex).firstMatch(element.text) ??
+            (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
+        }
+        else {
+          match = (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
+        }
 
         if (match == null || (match.group(4)?.contains('..') ?? false) || !_validTlds.contains((match.group(4) ?? '').split('.').last.toLowerCase())) {
           list.add(element);
