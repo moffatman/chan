@@ -25,6 +25,15 @@ class SiteKarachan extends ImageboardSite {
 
 	static const _kCookie = 'regulamin=accepted';
 
+	@override
+	Map<String, String> getHeaders(Uri url) {
+		return super.getHeaders(url)..update(
+			'cookie',
+			(cookies) => '$cookies; $_kCookie',
+			ifAbsent: () => _kCookie
+		);
+	}
+
 	SiteKarachan({
 		required this.baseUrl,
 		required this.name,
