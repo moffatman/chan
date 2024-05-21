@@ -7,6 +7,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -180,35 +181,36 @@ List<AttachmentPickingSource> getAttachmentSources({
 			final savedAttachments = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values).toList();
 			savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 			return Navigator.of(context).push<String>(TransparentRoute(
-				builder: (context) => OverscrollModalPage(
-					child: Container(
-						width: double.infinity,
-						padding: const EdgeInsets.all(16),
-						color: context.read<SavedTheme>().backgroundColor,
-						child: GridView.builder(
-							gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-								maxCrossAxisExtent: 100,
-								mainAxisSpacing: 16,
-								crossAxisSpacing: 16,
-								childAspectRatio: 1
-							),
-							addAutomaticKeepAlives: false,
-							addRepaintBoundaries: false,
-							shrinkWrap: true,
-							physics: const NeverScrollableScrollPhysics(),
-							itemCount: savedAttachments.length,
-							itemBuilder: (context, i) {
-								final attachment = savedAttachments[i];
-								return GestureDetector(
-									onTap: () {
-										Navigator.of(context).pop(attachment.file.path);
-									},
-									child: ClipRRect(
-										borderRadius: BorderRadius.circular(8),
-										child: SavedAttachmentThumbnail(file: attachment.file, fit: BoxFit.cover)
-									)
-								);
-							}
+				builder: (context) => OverscrollModalPage.sliver(
+					sliver: DecoratedSliver(
+						decoration: BoxDecoration(
+							color: ChanceTheme.backgroundColorOf(context)
+						),
+						sliver: SliverPadding(
+							padding: const EdgeInsets.all(16),
+							sliver: SliverGrid.builder(
+								gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+									maxCrossAxisExtent: 100,
+									mainAxisSpacing: 16,
+									crossAxisSpacing: 16,
+									childAspectRatio: 1
+								),
+								addAutomaticKeepAlives: false,
+								addRepaintBoundaries: false,
+								itemCount: savedAttachments.length,
+								itemBuilder: (context, i) {
+									final attachment = savedAttachments[i];
+									return GestureDetector(
+										onTap: () {
+											Navigator.of(context).pop(attachment.file.path);
+										},
+										child: ClipRRect(
+											borderRadius: BorderRadius.circular(8),
+											child: SavedAttachmentThumbnail(file: attachment.file, fit: BoxFit.cover)
+										)
+									);
+								}
+							)
 						)
 					)
 				)
