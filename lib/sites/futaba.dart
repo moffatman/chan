@@ -147,7 +147,7 @@ class SiteFutaba extends ImageboardSite {
 	String get defaultUsername => '名無し';
 
 	@override
-	Future<void> deletePost(String board, int threadId, PostReceipt receipt) {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) {
 		throw UnimplementedError('2chan posting is not implemented');
 	}
 

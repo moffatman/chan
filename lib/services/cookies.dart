@@ -5,6 +5,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 
+const kDisableCookies = 'disableCookies';
+
 class SeparatedCookieManager extends Interceptor {
   final CookieJar wifiCookieJar;
 	final CookieJar cellularCookieJar;
@@ -24,11 +26,17 @@ class SeparatedCookieManager extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
 		try {
-			final cookies = await cookieJar.loadForRequest(options.uri);
-			final cookie = getCookies(cookies);
-			if (cookie.isNotEmpty) {
-				options.headers[HttpHeaders.cookieHeader] = cookie;
-			}
+      if (options.extra[kDisableCookies] == null) {
+        final cookies = await cookieJar.loadForRequest(options.uri);
+        final cookie = getCookies(cookies);
+        if (cookie.isNotEmpty) {
+          options.headers.update(
+            HttpHeaders.cookieHeader,
+            (cookies) => '$cookies; $cookie',
+            ifAbsent: () => cookie
+          );
+        }
+      }
 			handler.next(options);
 		}
 		catch (e, st) {
@@ -42,7 +50,9 @@ class SeparatedCookieManager extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) async {
 		try {
-			await _saveCookies(response);
+      if (response.requestOptions.extra[kDisableCookies] == null) {
+			  await _saveCookies(response);
+      }
 			handler.next(response);
 		}
 		catch (e, st) {
@@ -57,7 +67,9 @@ class SeparatedCookieManager extends Interceptor {
   void onError(DioError err, ErrorInterceptorHandler handler) async {
     if (err.response != null) {
 			try {
-      	await _saveCookies(err.response!);
+        if (err.requestOptions.extra[kDisableCookies] == null) {
+      	  await _saveCookies(err.response!);
+        }
 				handler.next(err);
 			}
 			catch(e, st) {

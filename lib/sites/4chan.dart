@@ -916,7 +916,8 @@ class Site4Chan extends ImageboardSite {
 			ImageboardAction.postReply => (Duration(seconds: b?.replyCooldown ?? 0), true),
 			ImageboardAction.postReplyWithImage => (Duration(seconds: b?.imageCooldown ?? 0), true),
 			ImageboardAction.postThread => (Duration(seconds: b?.threadCooldown ?? 0), true),
-			ImageboardAction.report => (reportCooldown, false)
+			ImageboardAction.report => (reportCooldown, false),
+			ImageboardAction.delete => (const Duration(seconds: 3), false)
 		};
 		if (isPassReduced &&
 		    loginSystem.isLoggedIn(cellular ? Persistence.cellularCookies : Persistence.wifiCookies)) {
@@ -926,9 +927,9 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
 		final response = await client.postUri(
-			Uri.https(sysUrl, '/$board/imgboard.php'),
+			Uri.https(sysUrl, '/${thread.board}/imgboard.php'),
 			data: FormData.fromMap({
 				receipt.id.toString(): 'delete',
 				'mode': 'usrdel',

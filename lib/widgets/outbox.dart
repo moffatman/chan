@@ -38,7 +38,8 @@ extension _LowercaseName on QueueEntry {
 				null => 'thread',
 				_ => 'post'
 			},
-			QueuedReport() => 'report'
+			QueuedReport() => 'report',
+			QueuedDeletion() => 'deletion'
 		};
 	}
 }
@@ -99,6 +100,11 @@ class QueueEntryWidget<T> extends StatelessWidget {
 			threadId: entry.method.post.threadId,
 			postId: entry.method.post.postId
 		)}');
+	}
+
+	Widget _buildQueuedDeletion(QueuedDeletion entry) {
+		// Lazy but this should never really be seen
+		return Text('Deletion of ${entry.imageboardKey}/${entry.thread.board}/${entry.thread.id}/${entry.receipt.id}');
 	}
 
 	@override
@@ -365,15 +371,16 @@ class QueueEntryWidget<T> extends StatelessWidget {
 												action?.call();
 											} : null,
 											child: switch (entry) {
-												QueuedPost() => DraftPostWidget(
+												QueuedPost p => DraftPostWidget(
 													imageboard: entry.imageboard,
-													post: (entry as QueuedPost).post,
+													post: p.post,
 													origin: switch (onGoToThread) {
 														null => DraftPostWidgetOrigin.inCurrentThread,
 														_ => DraftPostWidgetOrigin.elsewhere
 													}
 												),
-												QueuedReport() => _buildQueuedReport(entry as QueuedReport)
+												QueuedReport e => _buildQueuedReport(e),
+												QueuedDeletion e => _buildQueuedDeletion(e)
 											}
 										)
 									)
@@ -474,7 +481,8 @@ class OutboxModal extends StatelessWidget {
 															ImageboardAction.postReply => queue.value.list.length == 1 ? 'Reply' : 'Replies',
 															ImageboardAction.postReplyWithImage => queue.value.list.length == 1 ? 'Image' : 'Images',
 															ImageboardAction.postThread => queue.value.list.length == 1 ? 'Thread' : 'Threads',
-															ImageboardAction.report => queue.value.list.length == 1 ? 'Report' : 'Reports'
+															ImageboardAction.report => queue.value.list.length == 1 ? 'Report' : 'Reports',
+															ImageboardAction.delete => queue.value.list.length == 1 ? 'Deletion' : 'Deletions'
 														}),
 														const SizedBox(width: 16)
 													]

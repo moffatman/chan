@@ -2,10 +2,13 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:html/dom.dart' as dom;
@@ -136,10 +139,48 @@ class SiteJsChan extends ImageboardSite {
 		return SiteLainchan.decodeGenericUrl(baseUrl, 'thread', url);
 	}
 
+	Exception _makeException(Map data) {
+		return Exception('${data['title']}: ${[
+			data['error'] as String?,
+			...(data['errors'] as List? ?? []),
+			data['message'] as String?,
+			...(data['messages'] as List? ?? []),
+		].tryMap((m) => m?.toString()).join(', ')}');
+	}
+
 	@override
-	Future<void> deletePost(String board, int threadId, PostReceipt receipt) {
-		// TODO: implement deletePost
-		throw UnimplementedError();
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
+		final response = await client.postUri(
+			Uri.https(baseUrl, '/forms/board/${thread.board}/actions'),
+			data: {
+				'checkedposts': receipt.id.toString(),
+				'hide_name': '1',
+				'delete': '1',
+				'report_reason': '',
+				'postpassword': receipt.password,
+				if (captchaSolution is JsChanCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort()
+			},
+			options: Options(
+				headers: {
+					'accept': '*/*',
+					'referer': getWebUrlImpl(thread.board, thread.id),
+					if (captchaSolution is JsChanCaptchaSolution) 'cookie': 'captchaid=${captchaSolution.id}',
+					'x-using-xhr': true
+				},
+				extra: {
+					kPriority: RequestPriority.interactive
+				},
+				contentType: Headers.formUrlEncodedContentType,
+				validateStatus: (_) => true,
+				responseType: ResponseType.json
+			)
+		);
+		if (response.data is! Map) {
+			throw HTTPStatusException(response.statusCode ?? 0);
+		}
+		if (response.data['title'] != 'Success') {
+			throw _makeException(response.data);
+		}
 	}
 
 	@override
@@ -170,9 +211,12 @@ class SiteJsChan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		// TODO: implement getCaptchaRequest
-		throw UnimplementedError();
+		return JsChanCaptchaRequest(challengeUrl: Uri.https(baseUrl, '/captcha'));
 	}
+
+	@override
+	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread)
+		=> getCaptchaRequest(thread.board, thread.id);
 
 	Post _makePost(Map post) {
 		final threadId = post['thread'] ?? post['postId'] /* op */;
@@ -275,11 +319,57 @@ class SiteJsChan extends ImageboardSite {
 	String get siteType => 'jschan';
 
 	@override
-	bool get supportsPosting => false;
+	bool get supportsPosting => true;
 
 	@override
-	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) {
-		// TODO: implement submitPost
-		throw UnimplementedError();
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		final password = makeRandomBase64String(28);
+		final file = post.file;
+		final response = await client.postUri(
+			Uri.https(baseUrl, '/forms/board/${post.board}/post'),
+			data: FormData.fromMap({
+				'thread': post.threadId?.toString(),
+				'name': post.name ?? '',
+				'email': post.options ?? '',
+				if (post.subject != null) 'subject': post.subject,
+				'message': post.text,
+				'postpassword': password,
+				if (file != null) 'file': await MultipartFile.fromFile(
+					file,
+					filename: post.overrideFilename,
+					contentType: MediaScan.guessMimeTypeFromPath(file)
+				),
+				if (captchaSolution is JsChanCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort(),
+			}),
+			options: Options(
+				headers: {
+					'accept': '*/*',
+					'referer': getWebUrlImpl(post.board, post.threadId),
+					if (captchaSolution is JsChanCaptchaSolution) 'cookie': 'captchaid=${captchaSolution.id}',
+					'x-using-xhr': true
+				},
+				extra: {
+					kPriority: RequestPriority.interactive
+				},
+				responseType: ResponseType.json,
+				validateStatus: (_) => true
+			),
+			cancelToken: cancelToken
+		);
+		if (response.data is! Map) {
+			throw HTTPStatusException(response.statusCode ?? 0);
+		}
+		final postId = response.data['postId'] as int?;
+		if (postId != null) {
+			return PostReceipt(
+				id: postId,
+				password: password,
+				name: post.name ?? '',
+				options: post.options ?? '',
+				time: DateTime.now(),
+				post: post
+			);
+		}
+		throw _makeException(response.data);
 	}
 }

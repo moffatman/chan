@@ -450,11 +450,11 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/post.php'),
 			data: FormData.fromMap({
-				'board': board,
+				'board': thread.board,
 				'delete_${receipt.id}': 'on',
 				'delete': 'Delete',
 				'password': receipt.password

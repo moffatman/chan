@@ -483,6 +483,42 @@ class QueuedReport extends QueueEntry<void> {
 	Future<CaptchaRequest> _getCaptchaRequest() async => method.getCaptchaRequest();
 }
 
+class QueuedDeletion extends QueueEntry<void> {
+	@override
+	final ThreadIdentifier thread;
+	final PostReceipt receipt;
+	@override
+	bool _useLoginSystem;
+	@override
+	bool get useLoginSystem => _useLoginSystem;
+
+	QueuedDeletion({
+		required super.imageboardKey,
+		required this.thread,
+		required this.receipt,
+		required super.state
+	}) : _useLoginSystem = true;
+
+	@override
+	Future<void> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		await site.deletePost(thread, receipt, captchaSolution);
+	}
+
+	@override
+	String get _board => thread.board;
+
+	@override
+	ImageboardAction get _action => ImageboardAction.delete;
+
+	@override
+	bool get isArchived {
+		return imageboard.persistence.getThreadStateIfExists(thread)?.thread?.isArchived ?? false;
+	}
+
+	@override
+	Future<CaptchaRequest> _getCaptchaRequest() async => site.getDeleteCaptchaRequest(thread);
+}
+
 class OutboxQueue<T> extends ChangeNotifier {
 	final List<QueueEntry<T>> list = [];
 	void _sortList() {
@@ -687,6 +723,17 @@ class Outbox extends ChangeNotifier {
 			choice: choice,
 			state: QueueStateNeedsCaptcha(DateTime.now(), context),
 			useLoginSystem: useLoginSystem
+		);
+		Future.microtask(() => _process(entry));
+		return entry;
+	}
+
+	QueuedDeletion submitDeletion(BuildContext context, String imageboardKey, ThreadIdentifier thread, PostReceipt receipt) {
+		final entry = QueuedDeletion(
+			imageboardKey: imageboardKey,
+			thread: thread,
+			receipt: receipt,
+			state: QueueStateNeedsCaptcha(DateTime.now(), context)
 		);
 		Future.microtask(() => _process(entry));
 		return entry;

@@ -198,14 +198,14 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
 		final response = await client.postUri(Uri.https(baseUrl, '/contentActions.js', {
 			'json': '1'
 		}), data: {
 			'action': 'delete',
 			'password': receipt.password,
 			'confirmation': 'true',
-			'meta-$threadId-${receipt.id}': 'true'
+			'meta-${thread.id}-${receipt.id}': 'true'
 		});
 		if (response.data['status'] != 'ok') {
 			throw DeletionFailedException(response.data['data'] ?? response.data);

@@ -168,7 +168,8 @@ enum ImageboardAction {
 	postThread,
 	postReply,
 	postReplyWithImage,
-	report
+	report,
+	delete
 }
 
 @HiveType(typeId: 33)
@@ -625,6 +626,15 @@ class McCaptchaRequest extends CaptchaRequest {
 	String toString() => 'McCaptchaRequest(challengeUrl: $challengeUrl, question: $question)';
 }
 
+class JsChanCaptchaRequest extends CaptchaRequest {
+	final Uri challengeUrl;
+	const JsChanCaptchaRequest({
+		required this.challengeUrl
+	});
+	@override
+	String toString() => 'JsChanCaptchaRequest(challengeUrl: $challengeUrl)';
+}
+
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
 	final DateTime acquiredAt;
@@ -765,6 +775,28 @@ class McCaptchaSolution extends CaptchaSolution {
 	@override
 	String toString() => 'McCaptchaSolution(guid: $guid, x: $x, y: $y, answer: $answer)';
 }
+
+class JsChanCaptchaSolution extends CaptchaSolution {
+	final String id;
+	///  0  1  2  3
+	///  4  5  6  7
+	///  8  9 10 11
+	/// 12 13 14 15
+	final Set<int> selected;
+	final Duration lifetime;
+	@override
+	DateTime? get expiresAt => acquiredAt.add(lifetime);
+
+	JsChanCaptchaSolution({
+		required super.acquiredAt,
+		required this.id,
+		required this.selected,
+		required this.lifetime
+	});
+	@override
+	String toString() => 'JsChanCaptchaSolution(id: $id, selected: $selected, lifetime: $lifetime)';
+}
+
 class ImageboardArchiveSearchResult {
 	final Post? post;
 	final Thread? thread;
@@ -1271,9 +1303,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get baseUrl;
 	Uri get iconUrl;
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]);
+	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread) async => const NoCaptchaRequest();
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken);
 	Duration getActionCooldown(String board, ImageboardAction action, bool cellular) => const Duration(seconds: 3);
-	Future<void> deletePost(String board, int threadId, PostReceipt receipt);
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution);
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) async {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
@@ -1558,7 +1591,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	ImageboardAction getQueue(ImageboardAction action) => switch(action) {
 		ImageboardAction.postReply || ImageboardAction.postReplyWithImage => ImageboardAction.postReply,
 		ImageboardAction.postThread => ImageboardAction.postThread,
-		ImageboardAction.report => ImageboardAction.report
+		ImageboardAction.report => ImageboardAction.report,
+		ImageboardAction.delete => ImageboardAction.delete
 	};
 	int? get subjectCharacterLimit => null;
 	bool get hasEmailLinkCookieAuth => false;

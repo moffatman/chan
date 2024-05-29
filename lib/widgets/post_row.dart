@@ -1,4 +1,5 @@
 import 'package:chan/pages/selectable_post.dart';
+import 'package:chan/services/delete_post.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -921,12 +922,12 @@ class PostRow extends StatelessWidget {
 					child: const Text('Delete post'),
 					trailingIcon: CupertinoIcons.delete,
 					isDestructiveAction: true,
-					onPressed: () async {
-						await site.deletePost(latestPost.board, latestPost.threadId, receipt);
-						if (context.mounted) {
-							showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
-						}
-					}
+					onPressed: () => deletePost(
+						context: context,
+						imageboard: context.read<Imageboard>(),
+						thread: latestPost.threadIdentifier,
+						receipt: receipt
+					)
 				),
 				if (latestPost.attachments.isNotEmpty) ContextMenuAction(
 					child: Text('Copy ${latestPost.attachments.first.type.noun} link'),

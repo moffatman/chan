@@ -13,6 +13,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mutex/mutex.dart';
 import 'package:pool/pool.dart';
@@ -211,6 +212,29 @@ class MediaScan {
 		else {
 			return _scan(file, headers: headers);
 		}
+	}
+
+	static MediaType guessMimeTypeFromPath(String path) {
+		if (path.endsWith(".png")) {
+			return MediaType('image', 'png');
+		}
+		else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) {
+			return MediaType('image', 'jpeg');
+		}
+		else if (path.endsWith(".gif")) {
+			return MediaType('image', 'gif');
+		}
+		else if (path.endsWith(".mp4")) {
+			return MediaType('video', 'mp4');
+		}
+		else if (path.endsWith(".webm")) {
+			return MediaType('video', 'webm');
+		}
+		else if (path.endsWith(".mp3")) {
+			return MediaType('audio', 'mp3');
+		}
+		// No idea
+		return MediaType('application', 'x-octet-stream');
 	}
 
 	static Future<void> initializeStatic() async {
