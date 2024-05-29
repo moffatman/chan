@@ -22,6 +22,7 @@ sealed class QueueState<T> {
 	bool get isFinished => isIdle && !isSubmittable;
 	bool get _needsCaptcha => false;
 	DateTime? get _submissionTime => null;
+	void _dispose() {}
 }
 
 class QueueStateIdle<T> extends QueueState<T> {
@@ -54,6 +55,10 @@ class QueueStateWaitingWithCaptcha<T> extends QueueState<T> {
 	bool get isIdle => false;
 	@override
 	bool get isSubmittable => false;
+	@override
+	void _dispose() {
+		captchaSolution.dispose();
+	}
 }
 
 typedef WaitMetadata = ({DateTime until, VoidCallback skip});
@@ -85,6 +90,10 @@ class QueueStateFailed<T> extends QueueState<T> {
 	bool get isIdle => true;
 	@override
 	bool get isSubmittable => true;
+	@override
+	void _dispose() {
+		captchaSolution?.dispose();
+	}
 }
 
 class QueueStateDone<T> extends QueueState<T> {
@@ -144,6 +153,9 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	Duration get _regretDelay => Duration.zero;
 
 	void submit(BuildContext? context) async {
+		// Note -- if we are failed here. we might have a captcha.
+		// But just throw it away, it avoids tracking captcha problems.
+		_state._dispose();
 		_state = QueueStateNeedsCaptcha(DateTime.now(), context);
 		notifyListeners();
 		if (queue?.captchaAllowedTime.isAfter(DateTime.now()) == false) {
@@ -160,6 +172,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		if (state is QueueStateSubmitting<T>) {
 			state.cancelToken?.cancel();
 		}
+		_state._dispose();
 		_state = const QueueStateDeleted();
 		notifyListeners();
 		Future.microtask(Outbox.instance._process);
@@ -177,6 +190,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			state.cancelToken?.cancel();
 		}
 		print('$this::cancel()');
+		_state._dispose();
 		_state = const QueueStateIdle();
 		notifyListeners();
 		Future.microtask(Outbox.instance._process);
@@ -449,7 +463,6 @@ class QueuedReport extends QueueEntry<void> {
 	@override
 	Future<void> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		await method.onSubmit(choice, captchaSolution);
-		captchaSolution.dispose();
 	}
 
 	@override
