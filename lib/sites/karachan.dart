@@ -9,6 +9,7 @@ import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -102,6 +103,9 @@ class SiteKarachan extends ImageboardSite {
 							yield PostTextSpan(node.outerHtml);
 						}
 					}
+					else if (node.localName == 'a' && node.classes.contains('postlink') && node.attributes.containsKey('href')) {
+						yield PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull);
+					}
 					else if (node.localName == 'span' && node.classes.contains('quote')) {
 						yield PostQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
@@ -137,8 +141,18 @@ class SiteKarachan extends ImageboardSite {
 							}
 						}
 					}
+					else if (node.localName == 'img' && node.attributes.containsKey('src')) {
+						final src = node.attributes['src']!;
+						yield PostInlineImageSpan(src: src, width: 32, height: 32);
+					}
 					else if (node.localName == 'div' && node.classes.contains('backlink')) {
 						// Junk, don't show
+					}
+					else if (node.localName == 'span' && node.attributes.keys.trySingle == 'style') {
+						yield PostCssSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)), node.attributes['style'] ?? '');
+					}
+					else if (node.localName == 'style') {
+						// Ignore
 					}
 					else {
 						yield* Site4Chan.parsePlaintext(node.outerHtml);
@@ -186,6 +200,13 @@ class SiteKarachan extends ImageboardSite {
 		return const NoCaptchaRequest();
 	}
 
+	static final _relativeSrcPattern = RegExp(r' src="/');
+	String _fixRelativeUrls(String html) {
+		return html.replaceAllMapped(_relativeSrcPattern, (match) {
+			return ' src="https://$baseUrl/';
+		});
+	}
+
 	Thread _makeThread(String board, Uri uri, dom.Element element, {int? page}) {
 		final threadId = int.parse(element.id.substring(1)); // Like "t12345"
 		final posts = element.querySelectorAll('.post').map((e) {
@@ -193,11 +214,11 @@ class SiteKarachan extends ImageboardSite {
 			final attachments = <Attachment>[];
 			for (final f in e.querySelectorAll('.file')) {
 				final fileThumb = f.querySelector('a.fileThumb')!;
-				final relativeThumbSrc = fileThumb.querySelector('img')!.attributes['src']!;
+				final relativeThumbSrc = fileThumb.querySelector('img')?.attributes['src'];
 				final ext = uri.pathSegments.last.split('.').last;
-				final fileInfoText = f.querySelector('.fileText')!.text.trim();
-				final fileMatch = _fileInfoPattern.firstMatch(fileInfoText);
-				if (fileMatch != null) {
+				final fileInfoText = f.querySelector('.fileText')?.text.trim();
+				final fileMatch = _fileInfoPattern.firstMatch(fileInfoText ?? '');
+				if (relativeThumbSrc != null && fileMatch != null) {
 					attachments.add(Attachment(
 						type: switch (ext) {
 							'webm' => AttachmentType.webm,
@@ -248,7 +269,7 @@ class SiteKarachan extends ImageboardSite {
 				board: board,
 				threadId: threadId,
 				id: int.parse(e.id.substring(1)), // Like "p12345"
-				text: e.querySelector('.postMessage')!.innerHtml,
+				text: _fixRelativeUrls(e.querySelector('.postMessage')!.innerHtml),
 				name: e.querySelector('.postInfo .name')!.text,
 				time: DateTime.fromMillisecondsSinceEpoch(1000 * int.parse(e.querySelector('.postInfo .dateTime')!.attributes['data-raw']!)),
 				spanFormat: PostSpanFormat.karachan,

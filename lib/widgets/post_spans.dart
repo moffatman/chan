@@ -1398,6 +1398,7 @@ class PostInlineImageSpan extends PostSpan {
 				height: height.toDouble(),
 				child: ExtendedImage.network(
 					src,
+					headers: zone.imageboard.site.getHeaders(Uri.parse(src)),
 					cache: true,
 					enableLoadState: false
 				)
@@ -1714,6 +1715,72 @@ class PostUserLinkSpan extends PostSpan {
 
 	@override
 	Iterable<Attachment> get inlineAttachments => [];
+}
+
+class PostCssSpan extends PostSpan {
+	final PostSpan child;
+	final String css;
+
+	const PostCssSpan(this.child, this.css);
+
+	@override
+	build(context, zone, settings, theme, options) {
+		final unrecognizedParts = <String>[];
+		TextStyle style = options.baseTextStyle;
+		for (final part in css.split(';')) {
+			if (part.trim().isEmpty) {
+				continue;
+			}
+			final kv = part.split(':');
+			if (kv.length != 2) {
+				unrecognizedParts.add(part);
+				continue;
+			}
+			final key = kv[0].trim();
+			final value = kv[1].trim();
+			if (key == 'background-color' && value.startsWith('#')) {
+				style = style.copyWith(backgroundColor: colorToHex(value));
+			}
+			else if (key == 'color' && value.startsWith('#')) {
+				style = style.copyWith(color: colorToHex(value));
+			}
+			else if (key == 'font-weight' && value == 'bold') {
+				style = style.copyWith(fontWeight: FontWeight.bold);
+			}
+			else if (key == 'animation') {
+				// Ignore
+			}
+			else {
+				unrecognizedParts.add(part);
+			}
+		}
+
+		if (unrecognizedParts.isEmpty) {
+			return child.build(context, zone, settings, theme, options.copyWith(
+				baseTextStyle: style
+			));
+		}
+		else {
+			return TextSpan(
+				children: [
+					TextSpan(text: '<span style="${unrecognizedParts.join('; ')}">'),
+					child.build(context, zone, settings, theme, options.copyWith(
+						baseTextStyle: style
+					)),
+					const TextSpan(text: '</span>')
+				]
+			);
+		}
+	}
+
+	@override
+	String buildText({bool forQuoteComparison = false}) => '<span style="$css">${child.buildText(forQuoteComparison: forQuoteComparison)}</span>';
+
+	@override
+	bool get containsLink => child.containsLink;
+
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostSpanZone extends StatelessWidget {
