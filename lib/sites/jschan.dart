@@ -269,7 +269,7 @@ class SiteJsChan extends ImageboardSite {
 			id: op.threadId,
 			replyCount: thread['replyposts'],
 			imageCount: thread['replyfiles'],
-			title: thread['subject'],
+			title: (thread['subject'] as String?)?.nonEmptyOrNull,
 			isSticky: thread['sticky'] != 0,
 			time: op.time,
 			attachments: op.attachments_,
