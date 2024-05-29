@@ -828,7 +828,17 @@ class SiteReddit extends ImageboardSite {
 				data['link_flair_text'] == null ? null : ImageboardFlag.text((data['link_flair_text'] as String).unescapeHtml)
 			),
 			id: id,
-			suggestedVariant: (data['suggested_sort']?.isNotEmpty ?? false) ? _RedditApiName.toVariant(data['suggested_sort']) : null
+			suggestedVariant: (data['suggested_sort']?.isNotEmpty ?? false) ? _RedditApiName.toVariant(data['suggested_sort']) : null,
+			poll: switch (data['poll_data']) {
+				Map m => ImageboardPoll(
+					title: null,
+					rows: (m['options'] as List).cast<Map>().map((o) => ImageboardPollRow(
+						name: o['text'],
+						votes: o['vote_count'] ?? 0 // Just show the choices if the poll isn't done yet
+					)).toList(growable: false)
+				),
+				_ => null
+			}
 		);
 	}
 

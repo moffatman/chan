@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
@@ -16,7 +14,7 @@ class PollWidget extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final theme = context.watch<SavedTheme>();
-		final total = math.max(poll.rows.fold(0, (s, r) => s + r.votes), 1);
+		final total = poll.rows.fold(0, (s, r) => s + r.votes);
 		return Container(
 			padding: const EdgeInsets.all(16),
 			color: theme.backgroundColor,
@@ -24,7 +22,7 @@ class PollWidget extends StatelessWidget {
 				mainAxisSize: MainAxisSize.min,
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
-					Text(poll.title ?? 'Poll Results', style: const TextStyle(
+					Text(poll.title ?? (total > 0 ? 'Poll Results' : 'Poll Options'), style: const TextStyle(
 						fontSize: 30,
 						fontWeight: FontWeight.bold
 					)),
@@ -32,7 +30,7 @@ class PollWidget extends StatelessWidget {
 					for (int i = 0; i < poll.rows.length; i++) ...[
 						Text(poll.rows[i].name),
 						const SizedBox(height: 4),
-						Row(
+						if (total > 0) Row(
 							children: [
 								Flexible(
 									fit: FlexFit.tight,
