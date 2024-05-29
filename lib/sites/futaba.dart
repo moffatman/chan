@@ -6,7 +6,6 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
-import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'dart:io';
 
@@ -281,7 +280,7 @@ class SiteFutaba extends ImageboardSite {
 				filename: filename,
 				url: Uri.https(boardDomain(board), fileUrl).toString(),
 				thumbnailUrl: Uri.https(boardDomain(board), fileThumbnailUrl).toString(),
-				md5: makeRandomBase64String(32), // no md5 provided by fuutaba
+				md5: '', // no md5 provided by fuutaba
 				width: null,
 				height: null,
 				sizeInBytes: filesize
