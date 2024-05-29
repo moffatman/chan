@@ -827,7 +827,7 @@ class Site4Chan extends ImageboardSite {
 	
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		final password = makeRandomBase64String(66);
+		final password = makeRandomBase64String(88);
 		final file = post.file;
 		final flag = post.flag;
 		final response = await client.postUri(

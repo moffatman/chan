@@ -112,7 +112,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		final password = makeRandomBase64String(16).substring(0, 8);
+		final password = makeRandomBase64String(8);
 		String? fileSha256;
 		bool fileAlreadyUploaded = false;
 		final file = post.file;
