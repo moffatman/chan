@@ -191,6 +191,11 @@ class SiteJsChan extends ImageboardSite {
 		while (page <= maxPage) {
 			final response = await client.getUri(Uri.https(baseUrl, '/boards.json', {'page': page.toString()}), options: Options(
 				responseType: ResponseType.json,
+				headers: {
+					'accept': '*/*',
+					'cache-control': 'no-cache',
+					'pragma': 'no-cache'
+				},
 				extra: {
 					kPriority: priority
 				}
@@ -205,6 +210,8 @@ class SiteJsChan extends ImageboardSite {
 				maxImageSizeBytes: 16000000,
 				maxWebmSizeBytes: 16000000
 			)));
+			// The server has some bad caching, you will keep getting the same page if you don't wait
+			await Future.delayed(const Duration(seconds: 2));
 		}
 		return list;
 	}
