@@ -588,3 +588,7 @@ VoidCallback? bind1<In, Out>(Out Function(In)? f, In v) => switch (f) {
 	Out Function(In) func => () => func(v),
 	null => null
 };
+
+extension LooksForeign on String {
+	bool get looksForeign => codeUnits.any((i) => i >= 128);
+}

@@ -165,11 +165,46 @@ class ReportFailedException implements Exception {
 }
 
 enum ImageboardAction {
-	postThread,
-	postReply,
-	postReplyWithImage,
-	report,
-	delete
+	postThread(
+		verbSimplePresentLowercase: 'create thread',
+		nounSingularLowercase: 'thread',
+		nounSingularCapitalized: 'Thread',
+		nounPluralCapitalized: 'Threads'
+	),
+	postReply(
+		verbSimplePresentLowercase: 'reply',
+		nounSingularLowercase: 'reply',
+		nounSingularCapitalized: 'Reply',
+		nounPluralCapitalized: 'Replies'
+	),
+	postReplyWithImage(
+		verbSimplePresentLowercase: 'reply with image',
+		nounSingularLowercase: 'image',
+		nounSingularCapitalized: 'Image',
+		nounPluralCapitalized: 'Images'
+	),
+	report(
+		verbSimplePresentLowercase: 'report',
+		nounSingularLowercase: 'report',
+		nounSingularCapitalized: 'Report',
+		nounPluralCapitalized: 'Reports'
+	),
+	delete(
+		verbSimplePresentLowercase: 'delete',
+		nounSingularLowercase: 'deletion',
+		nounSingularCapitalized: 'Deletion',
+		nounPluralCapitalized: 'Deletions'
+	);
+	const ImageboardAction({
+		required this.verbSimplePresentLowercase,
+		required this.nounSingularLowercase,
+		required this.nounSingularCapitalized,
+		required this.nounPluralCapitalized
+	});
+	final String verbSimplePresentLowercase;
+	final String nounSingularLowercase;
+	final String nounSingularCapitalized;
+	final String nounPluralCapitalized;
 }
 
 @HiveType(typeId: 33)
@@ -550,6 +585,19 @@ class RecaptchaRequest extends CaptchaRequest {
 	String toString() => 'RecaptchaRequest(sourceUrl: $sourceUrl, key: $key)';
 }
 
+class Recaptcha3Request extends CaptchaRequest {
+	final String key;
+	final String sourceUrl;
+	final String? action;
+	const Recaptcha3Request({
+		required this.key,
+		required this.sourceUrl,
+		required this.action
+	});
+	@override
+	String toString() => 'Recaptcha3Request(sourceUrl: $sourceUrl, key: $key, action: $action)';
+}
+
 class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
 	final Map<String, String> challengeHeaders;
@@ -669,6 +717,18 @@ class RecaptchaSolution extends CaptchaSolution {
 	DateTime? get expiresAt => null;
 	@override
 	String toString() => 'RecaptchaSolution(response: $response)';
+}
+
+class Recaptcha3Solution extends CaptchaSolution {
+	final String response;
+	Recaptcha3Solution({
+		required this.response,
+		required super.acquiredAt
+	});
+	@override
+	DateTime? get expiresAt => acquiredAt.add(const Duration(seconds: 120));
+	@override
+	String toString() => 'Recaptcha3Solution(response: $response)';
 }
 
 class Chan4CustomCaptchaSolution extends CaptchaSolution {
@@ -1814,6 +1874,7 @@ ImageboardSite makeSite(dynamic data) {
 		return SiteKarachan(
 			baseUrl: data['baseUrl'],
 			name: data['name'],
+			captchaKey: data['captchaKey'] ?? '',
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
 		);
 	}

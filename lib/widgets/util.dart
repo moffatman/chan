@@ -14,6 +14,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thumbnailer.dart';
+import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -35,13 +36,17 @@ Future<void> alert(BuildContext context, String title, String message, {
 	Map<String, VoidCallback> actions = const {},
 	bool barrierDismissible = true
 }) async {
+	final looksForeign = title.looksForeign || message.looksForeign;
+	bool translating = false;
+	String? translatedTitle;
+	String? translatedMessage;
 	await showAdaptiveDialog(
 		context: context,
 		barrierDismissible: barrierDismissible,
-		builder: (context) {
-			return AdaptiveAlertDialog(
-				title: Text(title),
-				content: Text(message),
+		builder: (context) => StatefulBuilder(
+			builder: (context, setState) => AdaptiveAlertDialog(
+				title: Text(translatedTitle ?? title),
+				content: Text(translatedMessage ?? message),
 				actions: [
 					for (final action in actions.entries) AdaptiveDialogAction(
 						onPressed: () {
@@ -50,6 +55,41 @@ Future<void> alert(BuildContext context, String title, String message, {
 						},
 						child: Text(action.key)
 					),
+					if (looksForeign) AdaptiveDialogAction(
+						onPressed: translating ? null : () async {
+							if (translatedMessage != null) {
+								setState(() {
+									translatedTitle = null;
+									translatedMessage = null;
+								});
+								return;
+							}
+							setState(() {
+								translating = true;
+							});
+							try {
+								translatedTitle = await translateHtml(title, toLanguage: Settings.instance.translationTargetLanguage);
+								translatedMessage = await translateHtml(message, toLanguage: Settings.instance.translationTargetLanguage);
+							}
+							catch (e, st) {
+								Future.error(e, st); // crashlytics
+								if (context.mounted) {
+									showToast(
+										context: context,
+										icon: CupertinoIcons.exclamationmark_triangle,
+										message: 'Translation failed: ${e.toStringDio()}'
+									);
+								}
+							}
+							finally {
+								translating = false;
+								if (context.mounted) {
+									setState(() {});
+								}
+							}
+						},
+						child: translatedMessage != null ? const Text('Original') : const Text('Translate')
+					),
 					AdaptiveDialogAction(
 						child: const Text('OK'),
 						onPressed: () {
@@ -57,8 +97,8 @@ Future<void> alert(BuildContext context, String title, String message, {
 						}
 					)
 				]
-			);
-		}
+			)
+		)
 	);
 }
 

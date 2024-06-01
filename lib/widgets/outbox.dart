@@ -6,7 +6,6 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/theme.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
@@ -30,18 +29,11 @@ enum _OutboxModalPopType {
 
 typedef _OutboxModalPop = (QueueEntry entry, _OutboxModalPopType type);
 
-extension _LowercaseName on QueueEntry {
-	String get lowercaseName {
-		final self = this;
-		return switch (self) {
-			QueuedPost() => switch (self.post.threadId) {
-				null => 'thread',
-				_ => 'post'
-			},
-			QueuedReport() => 'report',
-			QueuedDeletion() => 'deletion'
-		};
-	}
+extension _CapitalizedName on MapEntry<QueueEntryActionKey, OutboxQueue> {
+	String get capitalizedName => switch (value.list.length) {
+		1 => key.$3.nounSingularCapitalized,
+		_ => key.$3.nounPluralCapitalized
+	};
 }
 
 class QueueEntryWidget<T> extends StatelessWidget {
@@ -158,7 +150,7 @@ class QueueEntryWidget<T> extends StatelessWidget {
 								entry.delete();
 								showUndoToast(
 									context: context,
-									message: 'Deleted queued ${entry.lowercaseName}',
+									message: 'Deleted queued ${entry.action.nounSingularLowercase}',
 									onUndo: entry.undelete
 								);
 							}
@@ -355,7 +347,7 @@ class QueueEntryWidget<T> extends StatelessWidget {
 																	entry.delete();
 																	showUndoToast(
 																		context: outerContext,
-																		message: 'Deleted queued ${entry.lowercaseName}',
+																		message: 'Deleted queued ${entry.action.nounSingularLowercase}',
 																		onUndo: entry.undelete
 																	);
 																}),
@@ -477,13 +469,7 @@ class OutboxModal extends StatelessWidget {
 															child: Text((ImageboardRegistry.instance.getImageboard(queue.key.$1)?.site.formatBoardName(queue.key.$2)).toString())
 														),
 														const SizedBox(width: 8),
-														Text(switch (queue.key.$3) {
-															ImageboardAction.postReply => queue.value.list.length == 1 ? 'Reply' : 'Replies',
-															ImageboardAction.postReplyWithImage => queue.value.list.length == 1 ? 'Image' : 'Images',
-															ImageboardAction.postThread => queue.value.list.length == 1 ? 'Thread' : 'Threads',
-															ImageboardAction.report => queue.value.list.length == 1 ? 'Report' : 'Reports',
-															ImageboardAction.delete => queue.value.list.length == 1 ? 'Deletion' : 'Deletions'
-														}),
+														Text(queue.capitalizedName),
 														const SizedBox(width: 16)
 													]
 												)

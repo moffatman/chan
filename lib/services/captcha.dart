@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/recaptchav3.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -71,6 +72,8 @@ Future<CaptchaSolution?> solveCaptcha({
 				request: request,
 				onCaptchaSolved: onCaptchaSolved
 			));
+		case Recaptcha3Request():
+			return await solveRecaptchaV3(request);
 		case Chan4CustomCaptchaRequest():
 			CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
 			Exception? initialCloudChallengeException;

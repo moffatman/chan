@@ -142,13 +142,13 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	}) : _state = state;
 
 	String get _board;
-	ImageboardAction get _action;
+	ImageboardAction get action;
 	Future<CaptchaRequest> _getCaptchaRequest();
 
-	QueueEntryActionKey get _key => (imageboardKey, _board, site.getQueue(_action));
+	QueueEntryActionKey get _key => (imageboardKey, _board, site.getQueue(action));
 	OutboxQueue<T>? get queue => Outbox.instance.queues[_key] as OutboxQueue<T>?;
 	DateTime? get allowedTime => queue?.allowedTime;
-	Duration get _cooldown => site.getActionCooldown(_board, _action, !Settings.instance.isConnectedToWifi);
+	Duration get _cooldown => site.getActionCooldown(_board, action, !Settings.instance.isConnectedToWifi);
 	ThreadIdentifier? get thread;
 	Duration get _regretDelay => Duration.zero;
 
@@ -367,7 +367,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					if (context != null && context.mounted) {
 						showToast(
 							context: context,
-							message: 'Need to wait ${formatDuration(e.tryAgainAt.difference(DateTime.now()))} to post',
+							message: 'Need to wait ${formatDuration(e.tryAgainAt.difference(DateTime.now()))} to ${action.verbSimplePresentLowercase}',
 							icon: CupertinoIcons.exclamationmark_shield
 						);
 					}
@@ -415,7 +415,7 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 	String get _board => post.board;
 
 	@override
-	ImageboardAction get _action => post.action;
+	ImageboardAction get action => post.action;
 
 	@override
 	ThreadIdentifier? get thread => post.thread;
@@ -469,7 +469,7 @@ class QueuedReport extends QueueEntry<void> {
 	String get _board => method.post.board;
 
 	@override
-	ImageboardAction get _action => ImageboardAction.report;
+	ImageboardAction get action => ImageboardAction.report;
 
 	@override
 	bool get isArchived {
@@ -508,7 +508,7 @@ class QueuedDeletion extends QueueEntry<void> {
 	String get _board => thread.board;
 
 	@override
-	ImageboardAction get _action => ImageboardAction.delete;
+	ImageboardAction get action => ImageboardAction.delete;
 
 	@override
 	bool get isArchived {

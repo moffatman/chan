@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
@@ -6,6 +7,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/thumbnailer.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
@@ -23,6 +25,7 @@ class SiteKarachan extends ImageboardSite {
 	final String name;
 	@override
 	final String defaultUsername;
+	final String captchaKey;
 
 	static const _kCookie = 'regulamin=accepted';
 
@@ -38,6 +41,7 @@ class SiteKarachan extends ImageboardSite {
 	SiteKarachan({
 		required this.baseUrl,
 		required this.name,
+		required this.captchaKey,
 		this.defaultUsername = 'Anonymous'
 	}) {
 		client.interceptors.add(InterceptorsWrapper(
@@ -172,9 +176,43 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) {
-		// TODO: implement deletePost
-		throw UnimplementedError();
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
+		final response = await client.postUri(
+			Uri.https(baseUrl, '/imgboard.php'),
+			data: FormData.fromMap({
+				'delete': 'Usuń',
+				'format': 'json',
+				'pwd': receipt.password,
+				'board': thread.board,
+				'reason': '',
+				'mode': 'usrform',
+				'del%${thread.board}%${receipt.id}': 'delete'
+			}),
+			options: Options(
+				headers: {
+					'accept': 'application/json, text/javascript, */*; q=0.01',
+					'referer': getWebUrlImpl(thread.board, thread.id),
+					'x-requested-with': 'XMLHttpRequest'
+				},
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			)
+		);
+		if (response.data is! String) {
+			throw Exception('Bad response: ${response.data}');
+		}
+		final data = jsonDecode(response.data);
+		if ((data['realDeleted'] ?? '[]') == '[]') {
+			// Didn't delete
+			final msg = parseFragment(data['msg']).text ?? 'unknown';
+			if (msg.toLowerCase().contains('poczekać')) {
+				// that means "wait" in polish. delay the deletion.
+				throw CooldownException(DateTime.now().add(const Duration(minutes: 2)));
+			}
+			throw Exception('${data['title']}: $msg');
+		}
 	}
 
 	@override
@@ -197,7 +235,11 @@ class SiteKarachan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		return const NoCaptchaRequest();
+		return Recaptcha3Request(
+			sourceUrl: getWebUrlImpl(board, threadId),
+			key: captchaKey,
+			action: 'add_post'
+		);
 	}
 
 	static final _relativeSrcPattern = RegExp(r' src="/');
@@ -366,22 +408,55 @@ class SiteKarachan extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	bool get supportsPosting => false;
+	bool get supportsPosting => true;
 
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		throw UnimplementedError();
-		/*final file = post.file;
-		final password = makeRandomBase64String(6); // todo: Verify this is 8 chars long
-		final response = await client.postUri(Uri.https(baseUrl, '/imgboard.php'), data: FormData.fromMap({
-			'board': post.board,
-			if (post.threadId != null) 'resto': post.threadId.toString(),
-			'email': post.options ?? '',
-			if (post.subject != null) 'sub': post.subject,
-			'com': post.text,
-			if (file != null) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename),
-			'pwd': password
-		}));*/
+		final file = post.file;
+		final password = makeRandomBase64String(8);
+		final response = await client.postUri(
+			Uri.https(baseUrl, '/imgboard.php'),
+			data: FormData.fromMap({
+				'mode': 'regist',
+				'email': post.options ?? '',
+				'sub': post.subject ?? '',
+				'board': post.board,
+				'resto': post.threadId?.toString() ?? '',
+				'com': post.text,
+				if (file != null) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename),
+				'embed': '',
+				'pwd': password,
+				'format': 'json',
+				if (captchaSolution is Recaptcha3Solution) 'captcha': captchaSolution.response
+			}),
+			options: Options(
+				headers: {
+					'accept': 'application/json, text/javascript, */*; q=0.01',
+					'referer': getWebUrlImpl(post.board, post.threadId),
+					'x-requested-with': 'XMLHttpRequest'
+				},
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			)
+		);
+		if (response.data is! String) {
+			throw Exception('Bad response: ${response.data}');
+		}
+		final data = jsonDecode(response.data);
+		final postid = data['postid'] as int?;
+		if (postid == null) {
+			throw Exception('${data['title']}: ${parseFragment(data['msg']).text}');
+		}
+		return PostReceipt(
+			id: postid,
+			password: password,
+			name: post.name ?? '',
+			options: post.options ?? '',
+			time: DateTime.now(),
+			post: post
+		);
 	}
 
 	static PostSpan _boldPreviewBuilder(String input) => PostBoldSpan(PostTextSpan(input));

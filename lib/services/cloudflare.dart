@@ -107,6 +107,10 @@ extension _TopLevelHost on Uri {
 	}
 }
 
+extension _WebViewRedirect on Uri {
+	bool get looksLikeWebViewRedirect => host.isEmpty && scheme != 'data';
+}
+
 /// Block any processing while Cloudflare is clearing, so that the new cookies
 /// can be injected by a later interceptor
 class CloudflareBlockingInterceptor extends Interceptor {
@@ -166,8 +170,33 @@ class CloudflareInterceptor extends Interceptor {
 
 	static final _bodyStartsWithOpeningCurlyBrace = RegExp(r'<body[^>]*>{');
 
+	static Future<_CloudflareResponse> Function(InAppWebViewController, Uri?) _buildHandler(Uri initialUrl) => (controller, uri) async {
+		if (uri?.looksLikeWebViewRedirect ?? false) {
+			final correctedUri = uri!.replace(
+				scheme: initialUrl.scheme,
+				host: initialUrl.host
+			);
+			return (content: null, uri: correctedUri);
+		}
+		final html = await controller.getHtml() ?? '';
+		if (html.contains('<pre')) {
+			// Raw JSON response, but web-view has put it within a <pre>
+			final document = parse(html);
+			return (content: document.querySelector('pre')!.text, uri: uri);
+		}
+		else if (_bodyStartsWithOpeningCurlyBrace.hasMatch(html) && html.contains('}</body>')) {
+			// Raw JSON response, but web-view has put it within a <body>
+			final document = parse(html);
+			return (content: document.body!.text, uri: uri);
+		}
+		else {
+			return (content: html, uri: uri);
+		}
+	};
+
 	static final _webViewLock = Mutex();
-	static Future<_CloudflareResponse> _useWebview({
+	static Future<T> _useWebview<T>({
+		required Future<T> Function(InAppWebViewController, Uri?) handler,
 		bool skipHeadless = false,
 		InAppWebViewInitialData? initialData,
 		URLRequest? initialUrlRequest,
@@ -183,7 +212,7 @@ class CloudflareInterceptor extends Interceptor {
 			clearSessionCache: true,
 			transparentBackground: true
 		);
-		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback, ValueChanged<Exception> errorCallback) => (controller, uri) async {
+		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<T> callback, ValueChanged<Exception> errorCallback) => (controller, uri) async {
 			await controller.evaluateJavascript(source: '''
 				var style = document.createElement('style');
 				style.innerHTML = "* {\\
@@ -199,32 +228,17 @@ class CloudflareInterceptor extends Interceptor {
 				document.body.bgColor = "${Settings.instance.theme.backgroundColor.toCssHex()}";
 				document.body.style.background = "${Settings.instance.theme.backgroundColor.toCssHex()}";
 			''');
-			if ((uri?.host.isEmpty ?? false) && uri?.scheme != 'data') {
-				final correctedUri = uri!.replace(
-					scheme: cookieUrl.scheme,
-					host: cookieUrl.host
-				);
-				await Persistence.saveCookiesFromWebView(correctedUri);
-				callback((content: null, uri: correctedUri));
-				return;
-			}
 			final title = await controller.getTitle() ?? '';
-			if (!_titleMatches(title)) {
+			if (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false)) {
 				await Persistence.saveCookiesFromWebView(uri!);
-				final html = await controller.getHtml() ?? '';
-				if (html.contains('<pre')) {
-					// Raw JSON response, but web-view has put it within a <pre>
-					final document = parse(html);
-					callback((content: document.querySelector('pre')!.text, uri: uri));
+				try {
+					callback(await handler(controller, uri));
 				}
-				else if (_bodyStartsWithOpeningCurlyBrace.hasMatch(html) && html.contains('}</body>')) {
-					// Raw JSON response, but web-view has put it within a <body>
-					final document = parse(html);
-					callback((content: document.body!.text, uri: uri));
+				on Exception catch (e, st) {
+					Future.error(e, st);
+					errorCallback(e);
 				}
-				else {
-					callback((content: html, uri: uri));
-				}
+				return;
 			}
 			final html = await controller.getHtml() ?? '';
 			if (_bodyMatchesBlock(html)) {
@@ -233,7 +247,7 @@ class CloudflareInterceptor extends Interceptor {
 		};
 		HeadlessInAppWebView? headlessWebView;
 		if (!skipHeadless) {
-			final headlessCompleter = Completer<_CloudflareResponse>();
+			final headlessCompleter = Completer<T>();
 			headlessWebView = HeadlessInAppWebView(
 				initialSettings: initialSettings,
 				initialUrlRequest: initialUrlRequest,
@@ -315,6 +329,7 @@ class CloudflareInterceptor extends Interceptor {
 					options.data = utf8.encode(Transformer.urlEncodeMap(options.data));
 				}
 				final data = await _useWebview(
+					handler: _buildHandler(options.uri),
 					cookieUrl: options.uri,
 					userAgent: options.headers['user-agent'] ?? Persistence.settings.userAgent,
 					initialUrlRequest: URLRequest(
@@ -365,6 +380,7 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			try {
 				final data = await _useWebview(
+					handler: _buildHandler(response.requestOptions.uri),
 					cookieUrl: response.requestOptions.uri,
 					userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
 					initialData: InAppWebViewInitialData(
@@ -421,6 +437,7 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			try {
 				final data = await _useWebview(
+					handler: _buildHandler(err.requestOptions.uri),
 					cookieUrl: err.requestOptions.uri,
 					userAgent: err.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
 					initialData: InAppWebViewInitialData(
@@ -452,3 +469,20 @@ class CloudflareInterceptor extends Interceptor {
 		handler.next(err);
 	}
 }
+
+Future<T> useCloudflareClearedWebview<T>({
+	required Future<T> Function(InAppWebViewController, Uri?) handler,
+	required Uri uri,
+	String? userAgent,
+	required RequestPriority priority
+}) => CloudflareInterceptor._useWebview(
+	handler: handler,
+	cookieUrl: uri,
+	userAgent: userAgent ?? Persistence.settings.userAgent,
+	initialUrlRequest: URLRequest(
+		url: WebUri.uri(uri),
+		method: 'GET',
+		body: null
+	),
+	priority: priority
+);
