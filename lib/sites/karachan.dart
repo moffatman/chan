@@ -257,10 +257,11 @@ class SiteKarachan extends ImageboardSite {
 			for (final f in e.querySelectorAll('.file')) {
 				final fileThumb = f.querySelector('a.fileThumb')!;
 				final relativeThumbSrc = fileThumb.querySelector('img')?.attributes['src'];
-				final ext = uri.pathSegments.last.split('.').last;
 				final fileInfoText = f.querySelector('.fileText')?.text.trim();
 				final fileMatch = _fileInfoPattern.firstMatch(fileInfoText ?? '');
 				if (relativeThumbSrc != null && fileMatch != null) {
+					final imageUri = uri.resolve(fileThumb.attributes['href']!);
+					final ext = imageUri.pathSegments.last.split('.').last;
 					attachments.add(Attachment(
 						type: switch (ext) {
 							'webm' => AttachmentType.webm,
@@ -280,7 +281,7 @@ class SiteKarachan extends ImageboardSite {
 						}).round(),
 						filename: fileMatch.group(5)!,
 						md5: '',
-						url: uri.resolve(fileThumb.attributes['href']!).toString(),
+						url: imageUri.toString(),
 						thumbnailUrl: uri.resolve(relativeThumbSrc).toString()
 					));
 				}
