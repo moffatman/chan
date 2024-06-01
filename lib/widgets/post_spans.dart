@@ -1747,7 +1747,10 @@ class PostCssSpan extends PostSpan {
 			else if (key == 'font-weight' && value == 'bold') {
 				style = style.copyWith(fontWeight: FontWeight.bold);
 			}
-			else if (key == 'animation') {
+			else if (key == 'font-family') {
+				style = style.copyWith(fontFamily: value);
+			}
+			else if (key == 'animation' || key == 'padding' || key == 'border-radius') {
 				// Ignore
 			}
 			else {
