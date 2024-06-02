@@ -117,7 +117,6 @@ Future<void> reportPost({
 					return;
 				}
 				QueueState<void>? lastState;
-				DateTime? lastWaitUntil;
 				void listener() {
 					if (!context.mounted) {
 						entry.removeListener(listener);
@@ -148,20 +147,6 @@ Future<void> reportPost({
 								canPopWithDraft: false
 							)
 						});
-					}
-					final waitUntil = entry.queue?.allowedTime;
-					if (waitUntil != lastWaitUntil) {
-						if (waitUntil != null) {
-							final delta = waitUntil.difference(DateTime.now());
-							if (delta > const Duration(seconds: 3)) {
-								showToast(
-									context: context,
-									icon: CupertinoIcons.clock,
-									message: 'Waiting ${formatDuration(delta)} to submit report'
-								);
-							}
-						}
-						lastWaitUntil = waitUntil;
 					}
 				}
 				entry.addListener(listener);
