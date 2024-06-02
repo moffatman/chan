@@ -700,9 +700,22 @@ extension Contrast on Color {
 }
 
 Color colorToHex(String hexString) {
+	hexString = hexString.replaceFirst('#', '');
 	final buffer = StringBuffer();
-	if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-	buffer.write(hexString.replaceFirst('#', ''));
+	if (hexString.length == 3) {
+		// Three-digit hex color means double all the letters
+		buffer.write('ff'); // Opacity
+		buffer.write(hexString[0]);
+		buffer.write(hexString[0]);
+		buffer.write(hexString[1]);
+		buffer.write(hexString[1]);
+		buffer.write(hexString[2]);
+		buffer.write(hexString[2]);
+	}
+	else {
+		if (hexString.length <= 6) buffer.write('ff');
+		buffer.write(hexString);
+	}
 	return Color(int.parse(buffer.toString(), radix: 16));
 }
 
