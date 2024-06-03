@@ -1648,7 +1648,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												AnimatedBuilder(
 													animation: Outbox.instance,
 													builder: (context, _) {
-														final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)] as OutboxQueue<PostReceipt>?;
+														final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)];
 														if (queue == null) {
 															return const SizedBox.shrink();
 														}
@@ -2079,11 +2079,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							child: AnimatedBuilder(
 								animation: Outbox.instance,
 								builder: (context, _) {
-									final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)] as OutboxQueue<PostReceipt>?;
+									final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)];
 									Widget build(BuildContext context) {
 										final ourCount = _submittingPosts.length + (_postingPost != null ? 1 : 0);
 										final activeCount = Outbox.instance.activeCount;
-										final othersCount = queue?.list.where((e) => !e.state.isIdle && (e as QueuedPost).post.thread != thread).length ?? 0;
+										final othersCount = queue?.list.where((e) => !e.state.isIdle && e.thread != thread).length ?? 0;
 										final DateTime time;
 										final now = DateTime.now();
 										if (queue != null && queue.captchaAllowedTime.isAfter(now)) {

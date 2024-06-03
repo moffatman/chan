@@ -146,7 +146,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	Future<CaptchaRequest> _getCaptchaRequest();
 
 	QueueEntryActionKey get _key => (imageboardKey, _board, site.getQueue(action));
-	OutboxQueue<T>? get queue => Outbox.instance.queues[_key] as OutboxQueue<T>?;
+	OutboxQueue? get queue => Outbox.instance.queues[_key];
 	DateTime? get allowedTime => queue?.allowedTime;
 	Duration get _cooldown => site.getActionCooldown(_board, action, !Settings.instance.isConnectedToWifi);
 	ThreadIdentifier? get thread;
@@ -519,8 +519,8 @@ class QueuedDeletion extends QueueEntry<void> {
 	Future<CaptchaRequest> _getCaptchaRequest() async => site.getDeleteCaptchaRequest(thread);
 }
 
-class OutboxQueue<T> extends ChangeNotifier {
-	final List<QueueEntry<T>> list = [];
+class OutboxQueue extends ChangeNotifier {
+	final List<QueueEntry> list = [];
 	void _sortList() {
 		mergeSort(list, compare: (a, b) {
 			final aIdle = a.state.isIdle;
@@ -631,7 +631,7 @@ class Outbox extends ChangeNotifier {
 	Future<void> _process<T>([QueueEntry<T>? newEntry]) => _lock.protect(() async {
 		print('Woken up!');
 		if (newEntry != null) {
-			final queue = queues.putIfAbsent(newEntry._key, () => OutboxQueue<T>()..addListener(_onOutboxQueueUpdate));
+			final queue = queues.putIfAbsent(newEntry._key, () => OutboxQueue()..addListener(_onOutboxQueueUpdate));
 			queue.list.add(newEntry);
 			if (queue.list.first.state.isIdle) {
 				// List was idle, set the cooldown based on new entry type

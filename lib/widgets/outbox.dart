@@ -36,8 +36,8 @@ extension _CapitalizedName on MapEntry<QueueEntryActionKey, OutboxQueue> {
 	};
 }
 
-class QueueEntryWidget<T> extends StatelessWidget {
-	final QueueEntry<T> entry;
+class QueueEntryWidget extends StatelessWidget {
+	final QueueEntry entry;
 	final bool replyBoxMode;
 	final VoidCallback? onMove;
 	final VoidCallback? onCopy;
@@ -109,7 +109,7 @@ class QueueEntryWidget<T> extends StatelessWidget {
 				final state = entry.state;
 				final WaitMetadata? wait;
 				final CancelToken? cancelToken;
-				if (state is QueueStateSubmitting<T>) {
+				if (state is QueueStateSubmitting) {
 					wait = state.wait;
 					cancelToken = state.cancelToken;
 				}
@@ -183,7 +183,7 @@ class QueueEntryWidget<T> extends StatelessWidget {
 											child: Row(
 												children: [
 													const SizedBox(width: 16),
-													if (state is QueueStateFailed<T>) AdaptiveIconButton(
+													if (state is QueueStateFailed) AdaptiveIconButton(
 														icon: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red),
 														onPressed: () => alertError(context, state.error.toStringDio())
 													),
@@ -194,18 +194,18 @@ class QueueEntryWidget<T> extends StatelessWidget {
 													Expanded(
 														child: Text(
 															switch (state) {
-																QueueStateSubmitting<T>() => state.message ?? 'Submitting',
-																QueueStateNeedsCaptcha<T>() => 'Waiting',
-																QueueStateWaitingWithCaptcha<T>() => 'Waiting with captcha',
-																QueueStateIdle<T>() => 'Draft',
-																QueueStateDeleted<T>() || QueueStateFailed<T>() || QueueStateDone<T>() => switch (entry.isArchived) {
+																QueueStateSubmitting() => state.message ?? 'Submitting',
+																QueueStateNeedsCaptcha() => 'Waiting',
+																QueueStateWaitingWithCaptcha() => 'Waiting with captcha',
+																QueueStateIdle() => 'Draft',
+																QueueStateDeleted() || QueueStateFailed() || QueueStateDone() => switch (entry.isArchived) {
 																	true => 'Thread archived',
 																	false => ''
 																}
 															},
 															style: TextStyle(
 																color: switch (state) {
-																	QueueStateSubmitting<T>() => ChanceTheme.primaryColorWithBrightness80Of(context),
+																	QueueStateSubmitting() => ChanceTheme.primaryColorWithBrightness80Of(context),
 																	_ => ChanceTheme.primaryColorWithBrightness50Of(context)
 																}
 															)
@@ -288,7 +288,7 @@ class QueueEntryWidget<T> extends StatelessWidget {
 															]
 														)
 													),
-													if (cancelToken != null || state is QueueStateNeedsCaptcha<T> || state is QueueStateWaitingWithCaptcha<T>) StatefulBuilder(
+													if (cancelToken != null || state is QueueStateNeedsCaptcha || state is QueueStateWaitingWithCaptcha) StatefulBuilder(
 														builder: (context, setState) => AdaptiveIconButton(
 															onPressed: cancelPressed ? null : () {
 																entry.cancel();
