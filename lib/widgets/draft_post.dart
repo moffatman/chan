@@ -92,7 +92,10 @@ class DraftPostWidget extends StatelessWidget {
 												children: [
 													if (post.text.isNotEmpty) const TextSpan(text: '\n'),
 													if (origin == DraftPostWidgetOrigin.inCurrentThread)
-														const TextSpan(text: 'In current thread')
+														if (post.threadId == null)
+															const TextSpan(text: 'In current catalog')
+														else
+															const TextSpan(text: 'In current thread')
 													else if (post.threadId == null)
 														TextSpan(text: 'New thread on ${imageboard.site.formatBoardName(post.board)}')
 													else ...[
