@@ -204,10 +204,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			return a.item.name.toLowerCase().indexOf(normalized) - b.item.name.toLowerCase().indexOf(normalized);
 		});
 		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return (b.item.name.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.name.contains(normalized) ? 1 : 0);
+			return (b.item.name.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.name.toLowerCase().contains(normalized) ? 1 : 0);
 		});
 		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return (b.item.title.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.title.contains(normalized) ? 1 : 0);
+			return (b.item.title.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.title.toLowerCase().contains(normalized) ? 1 : 0);
 		});
 		final imageboards = allImageboards.toList();
 		imageboards.remove(currentImageboard);
@@ -220,10 +220,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			else {
 				final favs = {
 					for (final pair in favsList.asMap().entries)
-						pair.value: pair.key
+						pair.value.imageboard.scope(pair.value.item.toLowerCase()): pair.key
 				};
 				mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-					return (favs[a.imageboard.scope(a.item.name)] ?? favs.length) - (favs[b.imageboard.scope(b.item.name)] ?? favs.length);
+					return (favs[a.imageboard.scope(a.item.name.toLowerCase())] ?? favs.length) - (favs[b.imageboard.scope(b.item.name.toLowerCase())] ?? favs.length);
 				});
 			}
 		}
@@ -254,7 +254,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			filteredBoards = filteredBoards.where((b) => favs.any((f) => f.imageboard == b.imageboard && f.item == b.item.name)).toList();
 		}
 		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return ((b.item.name.isEmpty ? b.item.title : b.item.name).toLowerCase().startsWith(normalized) ? 1 : 0) - ((a.item.name.isEmpty ? a.item.title : a.item.name).startsWith(normalized) ? 1 : 0);
+			return ((b.item.name.isEmpty ? b.item.title : b.item.name).toLowerCase().startsWith(normalized) ? 1 : 0) - ((a.item.name.isEmpty ? a.item.title : a.item.name).toLowerCase().startsWith(normalized) ? 1 : 0);
 		});
 		if (searchString.isNotEmpty && !settings.onlyShowFavouriteBoardsInSwitcher) {
 			if (currentImageboard.site.allowsArbitraryBoards) {
