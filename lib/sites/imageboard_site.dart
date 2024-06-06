@@ -1044,6 +1044,8 @@ class ImageboardSearchOptions {
 		setEquals(other.supportedPostTypeFilters, supportedPostTypeFilters);
 	@override
 	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, supportedPostTypeFilters);
+
+	bool get hasOptions => name || imageMD5 || supportedPostTypeFilters.length > 1 || date || subject || trip || isDeleted || withMedia;
 }
 
 class ImageboardSearchMetadata {

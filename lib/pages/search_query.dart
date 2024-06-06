@@ -1,5 +1,7 @@
+import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
@@ -9,9 +11,11 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/search_query_editor.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -46,11 +50,11 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	void _runQuery() async {
-		final siteToUse = result.data?.archive ?? context.read<ImageboardSite>();
 		final lastResult = result.data;
 		result = const AsyncSnapshot.waiting();
 		setState(() {});
 		try {
+			final siteToUse = result.data?.archive ?? ImageboardRegistry.instance.getImageboard(widget.query.imageboardKey)!.site;
 			final newResult = await siteToUse.search(widget.query, page: page ?? 1, lastResult: lastResult);
 			result = AsyncSnapshot.withData(ConnectionState.done, newResult);
 			page = result.data?.page;
@@ -167,90 +171,93 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			);
 		}
 		else if (!loading && result.hasData) {
-			return MaybeScrollbar(
-				child: ListView.separated(
-					itemCount: result.data!.posts.length + 2,
-					itemBuilder: (context, i) {
-						if (i == 0 || i == result.data!.posts.length + 1) {
-							return _buildPagination();
-						}
-						final row = result.data!.posts[i - 1];
-						if (row.post != null) {
-							return ChangeNotifierProvider<PostSpanZoneData>(
-								create: (context) => PostSpanRootZoneData(
-									imageboard: context.read<Imageboard>(),
-									thread: Thread(
-										board: row.post!.threadIdentifier.board,
-										id: row.post!.threadIdentifier.id,
-										isDeleted: false,
-										isArchived: false,
-										title: '',
-										isSticky: false,
-										replyCount: -1,
-										imageCount: -1,
-										time: DateTime.fromMicrosecondsSinceEpoch(0),
-										posts_: [],
-										attachments: []
+			return ImageboardScope(
+				imageboardKey: widget.query.imageboardKey,
+				child: MaybeScrollbar(
+					child: ListView.separated(
+						itemCount: result.data!.posts.length + 2,
+						itemBuilder: (context, i) {
+							if (i == 0 || i == result.data!.posts.length + 1) {
+								return _buildPagination();
+							}
+							final row = result.data!.posts[i - 1];
+							if (row.post != null) {
+								return ChangeNotifierProvider<PostSpanZoneData>(
+									create: (context) => PostSpanRootZoneData(
+										imageboard: context.read<Imageboard>(),
+										thread: Thread(
+											board: row.post!.threadIdentifier.board,
+											id: row.post!.threadIdentifier.id,
+											isDeleted: false,
+											isArchived: false,
+											title: '',
+											isSticky: false,
+											replyCount: -1,
+											imageCount: -1,
+											time: DateTime.fromMicrosecondsSinceEpoch(0),
+											posts_: [],
+											attachments: []
+										),
+										semanticRootIds: [-7],
+										style: PostSpanZoneStyle.linear
 									),
-									semanticRootIds: [-7],
-									style: PostSpanZoneStyle.linear
-								),
-								child: PostRow(
-									post: row.post!,
-									onThumbnailTap: (attachment) => showGallery(
-										context: context,
-										attachments: [attachment],
-										semanticParentIds: [-7],
-										heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-									),
-									showCrossThreadLabel: false,
-									showBoardName: true,
-									allowTappingLinks: false,
-									showPostNumber: false,
-									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
+									child: PostRow(
+										post: row.post!,
+										onThumbnailTap: (attachment) => showGallery(
+											context: context,
+											attachments: [attachment],
+											semanticParentIds: [-7],
+											heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+										),
+										showCrossThreadLabel: false,
+										showBoardName: true,
+										allowTappingLinks: false,
+										showPostNumber: false,
+										isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
+										onTap: () => setValue(SelectedSearchResult(
+											imageboard: context.read<Imageboard>(),
+											result: row,
+											threadSearch: null,
+											fromArchive: result.data!.archive.isArchive
+										)),
+										baseOptions: PostSpanRenderOptions(
+											highlightString: widget.query.query
+										),
+									)
+								);
+							}
+							else {
+								final matchingPostIndex = row.thread!.posts_.indexWhere((p) => p.span.buildText().toLowerCase().contains(widget.query.query.toLowerCase()));
+								return GestureDetector(
 									onTap: () => setValue(SelectedSearchResult(
 										imageboard: context.read<Imageboard>(),
 										result: row,
-										threadSearch: null,
+										// Only do a thread-search if we have a match in lastReplies and not OP
+										threadSearch: (matchingPostIndex > 0) ? widget.query.query : null,
 										fromArchive: result.data!.archive.isArchive
 									)),
-									baseOptions: PostSpanRenderOptions(
-										highlightString: widget.query.query
-									),
-								)
-							);
-						}
-						else {
-							final matchingPostIndex = row.thread!.posts_.indexWhere((p) => p.span.buildText().toLowerCase().contains(widget.query.query.toLowerCase()));
-							return GestureDetector(
-								onTap: () => setValue(SelectedSearchResult(
-									imageboard: context.read<Imageboard>(),
-									result: row,
-									// Only do a thread-search if we have a match in lastReplies and not OP
-									threadSearch: (matchingPostIndex > 0) ? widget.query.query : null,
-									fromArchive: result.data!.archive.isArchive
-								)),
-								child: ThreadRow(
-									thread: row.thread!,
-									onThumbnailTap: (attachment) => showGallery(
-										context: context,
-										attachments: [attachment],
-										semanticParentIds: [-7],
-										heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-									),
-									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
-									countsUnreliable: result.data!.countsUnreliable,
-									semanticParentIds: const [-7],
-									showBoardName: true,
-									showLastReplies: true,
-									baseOptions: PostSpanRenderOptions(
-										highlightString: widget.query.query.isEmpty ? null : widget.query.query
-									),
-								)
-							);
-						}
-					},
-					separatorBuilder: (context, i) => const ChanceDivider()
+									child: ThreadRow(
+										thread: row.thread!,
+										onThumbnailTap: (attachment) => showGallery(
+											context: context,
+											attachments: [attachment],
+											semanticParentIds: [-7],
+											heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+										),
+										isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
+										countsUnreliable: result.data!.countsUnreliable,
+										semanticParentIds: const [-7],
+										showBoardName: true,
+										showLastReplies: true,
+										baseOptions: PostSpanRenderOptions(
+											highlightString: widget.query.query.isEmpty ? null : widget.query.query
+										),
+									)
+								);
+							}
+						},
+						separatorBuilder: (context, i) => const ChanceDivider()
+					)
 				)
 			);
 		}
@@ -278,11 +285,91 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							const Text('Results:'),
+							const Text('Results | ', style: TextStyle(fontWeight: FontWeight.bold)),
 							...describeQuery(widget.query)
 						]
 					)
-				)
+				),
+				actions: [
+					AdaptiveIconButton(
+						icon: const Icon(CupertinoIcons.pencil),
+						onPressed: () async {
+							bool changed = false;
+							final controller = TextEditingController(text: widget.query.query);
+							await showAdaptiveModalPopup(
+								context: context,
+								builder: (context) => StatefulBuilder(
+									builder: (context, setState) => AdaptiveActionSheet(
+										message: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												const Text('Board'),
+												const SizedBox(height: 16),
+												AdaptiveFilledButton(
+													onPressed: () async {
+														final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+															builder: (ctx) => const BoardSwitcherPage()
+														));
+														if (newBoard != null) {
+															widget.query.imageboardKey = newBoard.imageboard.key;
+															widget.query.boards = [newBoard.item.name];
+															changed = true;
+															setState(() {});
+														}
+													},
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															ImageboardIcon(imageboardKey: widget.query.imageboardKey, boardName: widget.query.boards.tryFirst),
+															if (widget.query.boards.isNotEmpty) ...[
+																const SizedBox(width: 4),
+																Text(widget.query.boards.tryFirst ?? '<null>')
+															]
+														]
+													)
+												),
+												const SizedBox(height: 32),
+												CupertinoTextField(
+													placeholder: 'Query',
+													controller: controller,
+													onChanged: (v) {
+														widget.query.query = v;
+													},
+													onSubmitted: (v) {
+														widget.query.query = v;
+														changed = true;
+														Navigator.pop(context);
+													}
+												),
+												SearchQueryEditor(
+													query: widget.query,
+													onChanged: () {
+														changed = true;
+													},
+													onSubmitted: () {
+														changed = true;
+														Navigator.pop(context);
+													},
+													knownWidth: 300
+												)
+											]
+										),
+										actions: [
+											AdaptiveActionSheetAction(
+												onPressed: () => Navigator.pop(context),
+												child: const Text('Close')
+											)
+										]
+									)
+								)
+							);
+							controller.dispose();
+							if (changed && mounted) {
+								_runQuery();
+							}
+						}
+					)
+				]
 			),
 			body: _build(context, widget.selectedResult, widget.onResultSelected)
 		);
@@ -294,9 +381,7 @@ openSearch({
 	required ImageboardArchiveSearchQuery query
 }) {
 	Navigator.of(context).push(adaptivePageRoute(
-		builder: (context) => ImageboardScope(
-			imageboardKey: query.imageboardKey,
-			child: SearchQueryPage(
+		builder: (context) => SearchQueryPage(
 				query: query,
 				onResultSelected: (result) {
 					if (result != null) {
@@ -318,5 +403,5 @@ openSearch({
 				selectedResult: null
 			)
 		)
-	));
+	);
 }

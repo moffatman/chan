@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
@@ -8,7 +6,6 @@ import 'package:chan/pages/search_query.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -16,8 +13,8 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/search_query_editor.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -83,19 +80,12 @@ class SearchPageState extends State<SearchPage> {
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _valueInjector,
 				builder: (context, SelectedSearchResult? selectedResult, child) {
-					final child = SearchQueryPage(
+					return SearchQueryPage(
 						query: query,
 						selectedResult: _valueInjector.value,
 						onResultSelected: (result) {
 							masterDetailKey.currentState!.setValue(0, result);
 						}
-					);
-					if (query.imageboardKey == null) {
-						return child;
-					}
-					return ImageboardScope(
-						imageboardKey: query.imageboardKey!,
-						child: child
 					);
 				}
 			),
@@ -151,41 +141,6 @@ class SearchPageState extends State<SearchPage> {
 	}
 }
 
-enum _MediaFilter {
-	none,
-	onlyWithMedia,
-	onlyWithNoMedia,
-	withSpecificMedia
-}
-
-extension _ConvertToPublic on _MediaFilter {
-	MediaFilter? get value {
-		switch (this) {
-			case _MediaFilter.none:
-				return MediaFilter.none;
-			case _MediaFilter.onlyWithMedia:
-				return MediaFilter.onlyWithMedia;
-			case _MediaFilter.onlyWithNoMedia:
-				return MediaFilter.onlyWithNoMedia;
-			default:
-				return null;
-		}
-	}
-}
-
-extension _ConvertToPrivate on MediaFilter {
-	_MediaFilter? get value {
-		switch (this) {
-			case MediaFilter.none:
-				return _MediaFilter.none;
-			case MediaFilter.onlyWithMedia:
-				return _MediaFilter.onlyWithMedia;
-			case MediaFilter.onlyWithNoMedia:
-				return _MediaFilter.onlyWithNoMedia;
-		}
-	}
-}
-
 class SearchComposePage extends StatefulWidget {
 	final ValueChanged<ImageboardArchiveSearchQuery> onSearchComposed;
 	final ValueChanged<SelectedSearchResult> onManualResult;
@@ -208,9 +163,6 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	bool _showingPicker = false;
 	String? _lastImageboardKey;
 	String? _lastBoardName;
-	late final TextEditingController _subjectFieldController;
-	late final TextEditingController _nameFieldController;
-	late final TextEditingController _tripFieldController;
 
 	@override
 	void initState() {
@@ -235,9 +187,6 @@ class _SearchComposePageState extends State<SearchComposePage> {
 			}
 		});
 		Persistence.recentSearchesListenable.addListener(_onRecentSearchesUpdate);
-		_subjectFieldController = TextEditingController();
-		_nameFieldController = TextEditingController();
-		_tripFieldController = TextEditingController();
 	}
 
 	void _onRecentSearchesUpdate() {
@@ -403,9 +352,6 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																	onSuffixTap: () {
 																		_focusNode.unfocus();
 																		_controller.clear();
-																		_nameFieldController.clear();
-																		_subjectFieldController.clear();
-																		_tripFieldController.clear();
 																		_searchFocused = false;
 																		query = ImageboardArchiveSearchQuery(
 																			imageboardKey: query.imageboardKey,
@@ -558,175 +504,25 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				switchOutCurve: Curves.easeOut,
 				child: (_searchFocused &&
 				        query.imageboardKey != null &&
-								(options.name || options.imageMD5 || options.supportedPostTypeFilters.length > 1 || options.date || options.subject || options.trip || options.isDeleted || options.withMedia)
-								) ? ListView(
-					key: const ValueKey(true),
-					children: [
-						const SizedBox(height: 16),
-						if (options.supportedPostTypeFilters.length > 1) ...[
-							AdaptiveChoiceControl<PostTypeFilter>(
-								children: {
-									for (final type in options.supportedPostTypeFilters)
-										type: switch (type) {
-											PostTypeFilter.none => (null, 'All posts'),
-											PostTypeFilter.onlyOPs => (null, 'Threads'),
-											PostTypeFilter.onlyReplies => (null, 'Replies'),
-											PostTypeFilter.onlyStickies => (null, 'Stickies')
-										}
-								},
-								groupValue: query.postTypeFilter,
-								onValueChanged: (newValue) {
-									query.postTypeFilter = newValue;
-									setState(() {});
-								}
-							),
-							const SizedBox(height: 16),
-						],
-						if (options.withMedia || options.imageMD5) ...[
-							AdaptiveChoiceControl<_MediaFilter>(
-								children: {
-									_MediaFilter.none: (null, 'All posts'),
-									if (options.withMedia) _MediaFilter.onlyWithMedia: (null, 'With images'),
-									if (options.withMedia) _MediaFilter.onlyWithNoMedia: (null, 'Without images'),
-									if (options.imageMD5) _MediaFilter.withSpecificMedia: (null, 'With MD5')
-								},
-								groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
-								onValueChanged: (newValue) async {
-									if (newValue.value != null) {
-										query.md5 = null;
-										query.mediaFilter = newValue.value!;
-									}
-									else {
-										_showingPicker = true;
-										final file = await pickAttachment(context: context);
-										_showingPicker = false;
-										if (file != null) {
-											query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
-											query.mediaFilter = MediaFilter.none;
-										}
-									}
-									setState(() {});
-								}
-							),
-							const SizedBox(height: 16),
-						],
-						if (options.isDeleted) ...[
-							AdaptiveChoiceControl<PostDeletionStatusFilter>(
-								children: const {
-									PostDeletionStatusFilter.none: (null, 'All posts'),
-									PostDeletionStatusFilter.onlyDeleted: (null, 'Only deleted'),
-									PostDeletionStatusFilter.onlyNonDeleted: (null, 'Only non-deleted')
-								},
-								groupValue: query.deletionStatusFilter,
-								onValueChanged: (newValue) {
-									query.deletionStatusFilter = newValue;
-									setState(() {});
-								}
-							),
-							const SizedBox(height: 16),
-						],
-						if (options.date) ...[
-							Wrap(
-								runSpacing: 16,
-								alignment: WrapAlignment.center,
-								runAlignment: WrapAlignment.center,
-								children: [
-									Container(
-										padding: const EdgeInsets.symmetric(horizontal: 8),
-										child: AdaptiveThinButton(
-											filled: query.startDate != null,
-											child: Text(
-												(query.startDate != null) ? 'Posted after ${query.startDate!.toISO8601Date}' : 'Posted after...',
-												textAlign: TextAlign.center
-											),
-											onPressed: () async {
-												_showingPicker = true;
-												final newDate = await pickDate(
-													context: context,
-													initialDate: query.startDate
-												);
-												_showingPicker = false;
-												setState(() {
-													query.startDate = newDate;
-												});
-											}
-										)
-									),
-									Container(
-										padding: const EdgeInsets.symmetric(horizontal: 8),
-										child: AdaptiveThinButton(
-											filled: query.endDate != null,
-											child: Text(
-												(query.endDate != null) ? 'Posted before ${query.endDate!.toISO8601Date}' : 'Posted before...',
-												textAlign: TextAlign.center
-											),
-											onPressed: () async {
-												_showingPicker = true;
-												final newDate = await pickDate(
-													context: context,
-													initialDate: query.endDate
-												);
-												_showingPicker = false;
-												setState(() {
-													query.endDate = newDate;
-												});
-											}
-										)
-									)
-								]
-							),
-						],
-						if (options.name || options.subject || options.trip) Wrap(
-							alignment: WrapAlignment.center,
-							runAlignment: WrapAlignment.center,
-							children: [
-								for (final field in [
-									if (options.subject) (
-										name: 'Subject',
-										cb: (String s) => query.subject = s,
-										controller: _subjectFieldController
-									),
-									if (options.name) (
-										name: 'Name',
-										cb: (String s) => query.name = s,
-										controller: _nameFieldController
-									),
-									if (options.trip) (
-										name: 'Trip',
-										cb: (String s) => query.trip = s,
-										controller: _tripFieldController
-									)
-								]) Container(
-									width: 200,
-									padding: const EdgeInsets.all(16),
-									child: Column(
-										crossAxisAlignment: CrossAxisAlignment.start,
-										children: [
-											Text(field.name),
-											const SizedBox(height: 4),
-											AdaptiveTextField(
-												controller: field.controller,
-												onChanged: field.cb
-											)
-										]
-									)
-								)
-							]
-						),
-						if (options.imageMD5 && query.md5 != null) Container(
-							padding: const EdgeInsets.only(top: 16),
-							alignment: Alignment.center,
-							child: Text('MD5: ${query.md5}')
-						),
-						Container(
-							padding: const EdgeInsets.only(top: 16),
-							alignment: Alignment.center,
-							child: AdaptiveFilledButton(
-								onPressed: _submitQuery,
-								child: const Text('Search')
-							)
+								options.hasOptions
+								) ? Align(
+					alignment: Alignment.topCenter,
+					child: SingleChildScrollView(
+						key: const ValueKey(true),
+						child: SearchQueryEditor(
+							query: query,
+							onChanged: () {
+								setState(() {});
+							},
+							onPickerHide: () {
+								_showingPicker = false;
+							},
+							onPickerShow: () {
+								_showingPicker = true;
+							},
+							onSubmitted: _submitQuery,
 						)
-					]
+					)
 				) : ListView(
 					key: const ValueKey(false),
 					children: Persistence.recentSearches.entries.map((q) {
@@ -772,9 +568,6 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		Persistence.recentSearchesListenable.removeListener(_onRecentSearchesUpdate);
 		_controller.dispose();
 		_focusNode.dispose();
-		_subjectFieldController.dispose();
-		_nameFieldController.dispose();
-		_tripFieldController.dispose();
 	}
 }
 
