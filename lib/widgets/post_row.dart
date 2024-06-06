@@ -743,13 +743,39 @@ class PostRow extends StatelessWidget {
 					if (isYourPost) ContextMenuAction(
 							child: const Text('Unmark as You'),
 							trailingIcon: CupertinoIcons.person_badge_minus,
-							onPressed: () {
+							onPressed: () async {
 								for (final r in parentZoneThreadState.receipts) {
 									if (r.id == latestPost.id) {
 										r.markAsYou = false;
 									}
 								}
 								parentZoneThreadState.postsMarkedAsYou.remove(latestPost.id);
+								final posterId = post.posterId;
+								if (posterId != null) {
+									final toUnmark = <int>{};
+									for (final otherPost in parentZone.findThread(post.threadId)?.posts ?? <Post>[]) {
+										if (otherPost.id != post.id && otherPost.posterId == posterId && parentZoneThreadState.youIds.contains(otherPost.id)) {
+											toUnmark.add(otherPost.id);
+										}
+									}
+									if (toUnmark.isNotEmpty) {
+										final confirmed = await confirm(
+											context,
+											toUnmark.length == 1
+												? 'There is one other marked post in this thread with the same ID ($posterId). Unmark it as (You) too?'
+												: 'There are ${toUnmark.length} other marked posts in this thread with the same ID ($posterId). Unmark them as (You) too?',
+											actionName: 'Unmark'
+										);
+										if (confirmed) {
+											parentZoneThreadState.postsMarkedAsYou.removeWhere(toUnmark.contains);
+											for (final r in parentZoneThreadState.receipts) {
+												if (toUnmark.remove(r.id)) {
+													r.markAsYou = false;
+												}
+											}
+										}
+									}
+								}
 								parentZoneThreadState.didUpdateYourPosts();
 								parentZoneThreadState.save();
 							}
@@ -768,9 +794,38 @@ class PostRow extends StatelessWidget {
 							if (!markedReceipt) {
 								parentZoneThreadState.postsMarkedAsYou.add(latestPost.id);
 							}
+							final posterId = post.posterId;
+							if (posterId != null) {
+								final toMark = <int>{};
+								for (final otherPost in parentZone.findThread(post.threadId)?.posts ?? <Post>[]) {
+									if (otherPost.id != post.id && otherPost.posterId == posterId && !parentZoneThreadState.youIds.contains(otherPost.id)) {
+										toMark.add(otherPost.id);
+									}
+								}
+								if (toMark.isNotEmpty) {
+									final confirmed = await confirm(
+										context,
+										toMark.length == 1
+											? 'There is one other unmarked post in this thread with the same ID ($posterId). Mark it as (You) too?'
+											: 'There are ${toMark.length} other unmarked posts in this thread with the same ID ($posterId). Mark them as (You) too?',
+										actionName: 'Mark'
+									);
+									if (confirmed) {
+										for (final id in toMark) {
+											final existingReceipt = parentZoneThreadState.receipts.tryFirstWhere((r) => r.id == id);
+											if (existingReceipt != null) {
+												existingReceipt.markAsYou = true;
+											}
+											else {
+												parentZoneThreadState.postsMarkedAsYou.add(id);
+											}
+										}
+									}
+								}
+							}
 							parentZoneThreadState.didUpdateYourPosts();
 							if (settings.watchThreadAutomaticallyWhenReplying) {
-								if (site.supportsPushNotifications) {
+								if (site.supportsPushNotifications && context.mounted) {
 									await promptForPushNotificationsIfNeeded(context);
 								}
 								notifications.subscribeToThread(
