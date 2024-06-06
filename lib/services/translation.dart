@@ -9,6 +9,7 @@ const _translationApiRoot = 'https://api.chance.surf/translate';
 
 const translationSupportedTargetLanguages = {
 	'en': 'English',
+	'ar': 'Arabic',
 	'bg': 'Bulgarian',
 	'zh': 'Chinese',
 	'cs': 'Czech',
