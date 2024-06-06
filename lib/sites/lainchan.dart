@@ -6,6 +6,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -148,6 +149,30 @@ class SiteLainchan extends ImageboardSite {
 				for (final extraFile in (postData['extra_files'] as List<dynamic>).cast<Map<String, dynamic>>()) {
 					ret.add(makeAttachment(extraFile));
 				}
+			}
+		}
+		final embed = postData['embed'] as String?;
+		if (embed != null && embed.isNotEmpty) {
+			final elem = parseFragment(embed);
+			final href = elem.querySelector('a')?.attributes['href'];
+			if (href != null) {
+				ret.add(Attachment(
+					type: AttachmentType.url,
+					board: board,
+					id: href,
+					ext: '',
+					filename: '',
+					md5: '',
+					width: null,
+					height: null,
+					threadId: threadId,
+					sizeInBytes: null,
+					url: href,
+					thumbnailUrl: switch (elem.querySelector('img')?.attributes['src']) {
+						null => generateThumbnailerForUrl(Uri.parse(href)).toString(),
+						String t => Uri.parse(getWebUrlImpl(board, threadId)).resolve(t).toString()
+					}
+				));
 			}
 		}
 		return ret;
