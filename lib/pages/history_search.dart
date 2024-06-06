@@ -31,18 +31,25 @@ class HistorySearchResult {
 	@override toString() => 'HistorySearchResult(thread: $thread, post: $post)';
 }
 
+enum _FilterYourPostsOnly {
+	everything,
+	yourPosts,
+	notYourPosts,
+	repliesToYourPosts
+}
+
 
 class HistorySearchPage extends StatefulWidget {
 	final String query;
 	final ImageboardScoped<PostIdentifier>? selectedResult;
 	final ValueChanged<ImageboardScoped<PostIdentifier>?> onResultSelected;
-	final bool? initialYourPostsOnly;
+	final bool initialYourPostsOnly;
 
 	const HistorySearchPage({
 		required this.query,
 		required this.selectedResult,
 		required this.onResultSelected,
-		this.initialYourPostsOnly,
+		this.initialYourPostsOnly = false,
 		super.key
 	});
 
@@ -60,12 +67,14 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	bool? _filterHasAttachment;
 	bool? _filterContainsLink;
 	bool? _filterIsThread;
-	bool? _filterYourPostsOnly;
+	_FilterYourPostsOnly _filterYourPostsOnly = _FilterYourPostsOnly.everything;
 
 	@override
 	void initState() {
 		super.initState();
-		_filterYourPostsOnly = widget.initialYourPostsOnly;
+		if (widget.initialYourPostsOnly) {
+			_filterYourPostsOnly = _FilterYourPostsOnly.yourPosts;
+		}
 		_runQuery();
 	}
 
@@ -81,7 +90,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					(_filterBoard != null &&
 					(_filterBoard!.imageboard != threadState.imageboard ||
 						_filterBoard!.item.name != threadState.board)) ||
-					((_filterYourPostsOnly ?? false) && threadState.youIds.isEmpty)) {
+						switch (_filterYourPostsOnly) {
+							_FilterYourPostsOnly.everything || _FilterYourPostsOnly.notYourPosts => false,
+							_FilterYourPostsOnly.yourPosts || _FilterYourPostsOnly.repliesToYourPosts => threadState.youIds.isEmpty
+						}) {
 				numer++;
 				return;
 			}
@@ -107,7 +119,13 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					if (_filterDateEnd != null && _filterDateEnd!.isBefore(post.time)) {
 						continue;
 					}
-					if (_filterYourPostsOnly != null && _filterYourPostsOnly != threadState.youIds.contains(post.id)) {
+					if (_filterYourPostsOnly == _FilterYourPostsOnly.yourPosts || _filterYourPostsOnly == _FilterYourPostsOnly.notYourPosts) {
+						final isYou = threadState.youIds.contains(post.id);
+						if ((_filterYourPostsOnly == _FilterYourPostsOnly.yourPosts) != isYou) {
+							continue;
+						}
+					}
+					if (_filterYourPostsOnly == _FilterYourPostsOnly.repliesToYourPosts && !threadState.youIds.any(post.repliedToIds.contains)) {
 						continue;
 					}
 					if (post.id == thread.id) {
@@ -152,8 +170,12 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 										Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
 									]
 								),
-								if (_filterYourPostsOnly != null)
-									_filterYourPostsOnly! ? const Text('(You)') : const Text('Not (You)'),
+								if (_filterYourPostsOnly == _FilterYourPostsOnly.yourPosts)
+									const Text('(You)')
+								else if (_filterYourPostsOnly == _FilterYourPostsOnly.notYourPosts)
+									const Text('Not (You)')
+								else if (_filterYourPostsOnly == _FilterYourPostsOnly.repliesToYourPosts)
+									const Text('Replying to (You)'),
 								if (_filterDateStart != null && _filterDateEnd != null)
 									Text(_filterDateStart!.startOfDay == _filterDateEnd!.startOfDay ?
 										_filterDateStart!.toISO8601Date :
@@ -306,15 +328,16 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 														}
 													),
 													const SizedBox(height: 16),
-													AdaptiveSegmentedControl<NullSafeOptional>(
-														groupValue: _filterYourPostsOnly.value,
+													AdaptiveSegmentedControl<_FilterYourPostsOnly>(
+														groupValue: _filterYourPostsOnly,
 														children: const {
-															NullSafeOptional.false_: (null, 'Only others\' posts'),
-															NullSafeOptional.null_: (null, 'Any'),
-															NullSafeOptional.true_: (null, 'Only your posts')
+															_FilterYourPostsOnly.notYourPosts: (null, 'Only others\' posts'),
+															_FilterYourPostsOnly.everything: (null, 'Any'),
+															_FilterYourPostsOnly.yourPosts: (null, 'Only your posts'),
+															_FilterYourPostsOnly.repliesToYourPosts: (null, 'Only replies to your posts'),
 														},
 														onValueChanged: (v) {
-															_filterYourPostsOnly = v.value;
+															_filterYourPostsOnly = v;
 															setDialogState(() {});
 															anyChange = true;
 														}
