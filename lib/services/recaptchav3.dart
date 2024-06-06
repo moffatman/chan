@@ -3,6 +3,7 @@ import 'package:chan/sites/imageboard_site.dart';
 
 Future<Recaptcha3Solution> solveRecaptchaV3(Recaptcha3Request request) async {
 	final token = await useCloudflareClearedWebview(
+		toast: false,
 		uri: Uri.parse(request.sourceUrl),
 		priority: RequestPriority.interactive,
 		handler: (controller, url) async {

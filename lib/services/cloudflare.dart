@@ -202,7 +202,8 @@ class CloudflareInterceptor extends Interceptor {
 		URLRequest? initialUrlRequest,
 		required String userAgent,
 		required Uri cookieUrl,
-		required RequestPriority priority
+		required RequestPriority priority,
+		bool toast = true
 	}) => runEphemerallyLocked(cookieUrl.topLevelHost, () => _webViewLock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
 		await CookieManager.instance().deleteAllCookies();
@@ -255,11 +256,13 @@ class CloudflareInterceptor extends Interceptor {
 				onLoadStop: buildOnLoadStop(headlessCompleter.complete, headlessCompleter.completeError)
 			);
 			await headlessWebView.run();
-			showToast(
-				context: ImageboardRegistry.instance.context!,
-				message: 'Authorizing Cloudflare\n${cookieUrl.host}',
-				icon: CupertinoIcons.cloud
-			);
+			if (toast) {
+				showToast(
+					context: ImageboardRegistry.instance.context!,
+					message: 'Authorizing Cloudflare\n${cookieUrl.host}',
+					icon: CupertinoIcons.cloud
+				);
+			}
 			await Future.any([
 				headlessCompleter.future,
 				Future.delayed(const Duration(seconds: 5))
@@ -474,7 +477,8 @@ Future<T> useCloudflareClearedWebview<T>({
 	required Future<T> Function(InAppWebViewController, Uri?) handler,
 	required Uri uri,
 	String? userAgent,
-	required RequestPriority priority
+	required RequestPriority priority,
+	bool toast = true
 }) => CloudflareInterceptor._useWebview(
 	handler: handler,
 	cookieUrl: uri,
@@ -484,5 +488,6 @@ Future<T> useCloudflareClearedWebview<T>({
 		method: 'GET',
 		body: null
 	),
-	priority: priority
+	priority: priority,
+	toast: toast
 );
