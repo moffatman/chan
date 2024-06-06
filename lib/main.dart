@@ -461,7 +461,8 @@ class _ChanAppState extends State<ChanApp> {
 													scrollBehavior: scrollBehavior,
 													home: home,
 													localizationsDelegates: localizationsDelegates,
-													navigatorKey: _navigatorKey
+													navigatorKey: _navigatorKey,
+													navigatorObservers: [ScrollTrackerNavigatorObserver()]
 												) : Theme(
 													data: theme.materialThemeData,
 													child: CupertinoApp(
@@ -471,7 +472,8 @@ class _ChanAppState extends State<ChanApp> {
 														scrollBehavior: scrollBehavior,
 														home: home,
 														localizationsDelegates: localizationsDelegates,
-														navigatorKey: _navigatorKey
+														navigatorKey: _navigatorKey,
+														navigatorObservers: [ScrollTrackerNavigatorObserver()]
 													)
 												)
 											)
