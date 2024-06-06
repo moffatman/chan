@@ -1850,6 +1850,7 @@ ImageboardSite makeSite(dynamic data) {
 		return SiteLainchan2(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
+			basePath: data['basePath'] ?? '',
 			imageThumbnailExtension: data['imageThumbnailExtension'],
 			faviconPath: data['faviconPath'],
 			boardsPath: data['boardsPath'],

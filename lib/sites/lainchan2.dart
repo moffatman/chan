@@ -95,6 +95,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 
 	SiteLainchan2({
 		required super.baseUrl,
+		required super.basePath,
 		required super.name,
 		required this.formBypass,
 		required this.imageThumbnailExtension,
@@ -120,7 +121,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		if (imageThumbnailExtension != '') {
 			return broken;
 		}
-		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '$basePath/${thread.board}/res/${thread.id}.html'), options: Options(
 			extra: {
 				kPriority: priority
 			}
@@ -149,7 +150,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		if (imageThumbnailExtension != '') {
 			return broken;
 		}
-		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.html'), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '$basePath/$board/catalog.html'), options: Options(
 			extra: {
 				kPriority: priority
 			}
@@ -178,6 +179,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		identical(this, other) ||
 		(other is SiteLainchan2) &&
 		(other.baseUrl == baseUrl) &&
+		(other.basePath == basePath) &&
 		(other.name == name) &&
 		listEquals(other.archives, archives) &&
 		(other.faviconPath == faviconPath) &&
@@ -190,5 +192,5 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		listEquals(other.boards, boards);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, archives, faviconPath, defaultUsername, formBypass, imageThumbnailExtension, boardsPath, faviconPath, boards);
+	int get hashCode => Object.hash(baseUrl, basePath, name, archives, faviconPath, defaultUsername, formBypass, imageThumbnailExtension, boardsPath, faviconPath, boards);
 }

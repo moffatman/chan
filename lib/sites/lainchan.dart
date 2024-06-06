@@ -27,6 +27,7 @@ import 'package:string_similarity/string_similarity.dart';
 class SiteLainchan extends ImageboardSite {
 	@override
 	final String baseUrl;
+	final String basePath;
 	@override
 	final String name;
 	final int? maxUploadSizeBytes;
@@ -44,6 +45,7 @@ class SiteLainchan extends ImageboardSite {
 		super.platformUserAgents,
 		super.archives,
 		this.faviconPath = '/favicon.ico',
+		this.basePath = '',
 		this.defaultUsername = 'Anonymous'
 	});
 
@@ -101,10 +103,10 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@protected
-	Uri getAttachmentUrl(String board, String filename) => Uri.https(baseUrl, '/$board/src/$filename');
+	Uri getAttachmentUrl(String board, String filename) => Uri.https(baseUrl, '$basePath/$board/src/$filename');
 
 	@protected
-	Uri getThumbnailUrl(String board, String filename) => Uri.https(baseUrl, '/$board/thumb/$filename');
+	Uri getThumbnailUrl(String board, String filename) => Uri.https(baseUrl, '$basePath/$board/thumb/$filename');
 
 	@protected
 	String? get imageThumbnailExtension => '.png';
@@ -131,7 +133,7 @@ class SiteLainchan extends ImageboardSite {
 				ext: ext,
 				board: board,
 				url: getAttachmentUrl(board, '$id$ext').toString(),
-				thumbnailUrl: (type == AttachmentType.mp3 ? Uri.https(baseUrl, '/static/mp3.png') : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
+				thumbnailUrl: (type == AttachmentType.mp3 ? Uri.https(baseUrl, '$basePath/static/mp3.png') : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
 				md5: data['md5'] ?? '',
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
@@ -155,7 +157,7 @@ class SiteLainchan extends ImageboardSite {
 		if (data['country'] != null && data['country_name'] != null) {
 			return ImageboardFlag(
 				name: data['country_name'],
-				imageUrl: Uri.https(baseUrl, '/static/flags/${data['country'].toLowerCase()}.png').toString(),
+				imageUrl: Uri.https(baseUrl, '$basePath/static/flags/${data['country'].toLowerCase()}.png').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
@@ -165,7 +167,7 @@ class SiteLainchan extends ImageboardSite {
 
 	Future<ImageboardPoll?> _getPoll(ThreadIdentifier thread) async {
 		try {
-			final response = await client.postUri(Uri.https(baseUrl, '/poll.php'), data: {
+			final response = await client.postUri(Uri.https(baseUrl, '$basePath/poll.php'), data: {
 				'query_poll': '1',
 				'id': thread.id.toString(),
 				'board': thread.board
@@ -241,7 +243,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/$res/${thread.id}.json'), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.json'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: priority
@@ -272,7 +274,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '$basePath/$board/catalog.json'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: priority
@@ -313,7 +315,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/boards.json'), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '$basePath/boards.json'), options: Options(
 			responseType: ResponseType.json,
 			extra: {
 				kPriority: priority
@@ -376,7 +378,7 @@ class SiteLainchan extends ImageboardSite {
 			}
 		}
 		final response = await client.postUri(
-			Uri.https(baseUrl, '/post.php'),
+			Uri.https(baseUrl, '$basePath/post.php'),
 			data: FormData.fromMap(fields),
 			options: Options(
 				responseType: ResponseType.plain,
@@ -452,7 +454,7 @@ class SiteLainchan extends ImageboardSite {
 	@override
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
 		final response = await client.postUri(
-			Uri.https(baseUrl, '/post.php'),
+			Uri.https(baseUrl, '$basePath/post.php'),
 			data: FormData.fromMap({
 				'board': thread.board,
 				'delete_${receipt.id}': 'on',
@@ -478,11 +480,11 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
-		return WebReportMethod(Uri.https(baseUrl, '/report.php?post=delete_${post.postId}&board=${post.board}'));
+		return WebReportMethod(Uri.https(baseUrl, '$basePath/report.php?post=delete_${post.postId}&board=${post.board}'));
 	}
 
 	String _getWebUrl(String board, {int? threadId, int? postId, bool mod = false}) {
-		String threadUrl = 'https://$baseUrl/${mod ? 'mod.php?/' : ''}$board/';
+		String threadUrl = 'https://$baseUrl$basePath/${mod ? 'mod.php?/' : ''}$board/';
 		if (threadId != null) {
 			threadUrl += '$res/$threadId.html';
 			if (postId != null) {
@@ -524,6 +526,7 @@ class SiteLainchan extends ImageboardSite {
 		identical(this, other) ||
 		(other is SiteLainchan) &&
 		(other.baseUrl == baseUrl) &&
+		(other.basePath == basePath) &&
 		(other.name == name) &&
 		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
 		listEquals(other.archives, archives) &&
@@ -531,7 +534,7 @@ class SiteLainchan extends ImageboardSite {
 		(other.defaultUsername == defaultUsername);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, archives, faviconPath, defaultUsername);
+	int get hashCode => Object.hash(baseUrl, basePath, name, maxUploadSizeBytes, archives, faviconPath, defaultUsername);
 	
 	@override
 	Uri get iconUrl {
@@ -576,8 +579,8 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 			Persistence.currentCookies
 		];
 		for (final jar in jars) {
-			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
-			await jar.delete(Uri.https(parent.baseUrl, '/mod.php'), true);
+			await jar.delete(Uri.https(parent.baseUrl, '${parent.basePath}/'), true);
+			await jar.delete(Uri.https(parent.baseUrl, '${parent.basePath}/mod.php'), true);
 			loggedIn[jar] = false;
 		}
 		await CookieManager.instance().deleteCookies(
@@ -588,7 +591,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
     final response = await parent.client.postUri(
-			Uri.https(parent.baseUrl, '/mod.php'),
+			Uri.https(parent.baseUrl, '${parent.basePath}/mod.php'),
 			data: {
 				for (final field in fields.entries) field.key.formKey: field.value,
 				'login': 'Continue'
