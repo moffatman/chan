@@ -34,11 +34,10 @@ class QueueStateIdle<T> extends QueueState<T> {
 }
 
 class QueueStateNeedsCaptcha<T> extends QueueState<T> {
-	final DateTime submittedAt;
 	final BuildContext? context;
 	final VoidCallback? beforeModal;
 	final VoidCallback? afterModal;
-	const QueueStateNeedsCaptcha(this.submittedAt, this.context, {this.beforeModal, this.afterModal});
+	const QueueStateNeedsCaptcha(this.context, {this.beforeModal, this.afterModal});
 	@override
 	bool get isIdle => false;
 	@override
@@ -156,7 +155,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		// Note -- if we are failed here. we might have a captcha.
 		// But just throw it away, it avoids tracking captcha problems.
 		_state._dispose();
-		_state = QueueStateNeedsCaptcha(DateTime.now(), context);
+		_state = QueueStateNeedsCaptcha(context);
 		notifyListeners();
 		if (queue?.captchaAllowedTime.isAfter(DateTime.now()) == false) {
 			// Grab the new captcha right away
@@ -241,7 +240,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				);
 				final tryAgainAt = tryAgainAt0;
 				if (captcha != null) {
-					_state = QueueStateWaitingWithCaptcha(initialState.submittedAt, captcha);
+					_state = QueueStateWaitingWithCaptcha(DateTime.now(), captcha);
 				}
 				else if (tryAgainAt != null) {
 					queue?.captchaAllowedTime = tryAgainAt;
@@ -293,7 +292,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			final expiresAt = initialState.captchaSolution.expiresAt;
 			if (expiresAt != null && expiresAt.isBefore(deadline)) {
 				initialState.captchaSolution.dispose();
-				_state = initialNeedsCaptchaState ?? QueueStateNeedsCaptcha(initialState.submittedAt, null);
+				_state = initialNeedsCaptchaState ?? const QueueStateNeedsCaptcha(null);
 				notifyListeners();
 			}
 		}
@@ -721,7 +720,7 @@ class Outbox extends ChangeNotifier {
 			imageboardKey: imageboardKey,
 			method: method,
 			choice: choice,
-			state: QueueStateNeedsCaptcha(DateTime.now(), context),
+			state: QueueStateNeedsCaptcha(context),
 			useLoginSystem: useLoginSystem
 		);
 		Future.microtask(() => _process(entry));
@@ -733,7 +732,7 @@ class Outbox extends ChangeNotifier {
 			imageboardKey: imageboardKey,
 			thread: thread,
 			receipt: receipt,
-			state: QueueStateNeedsCaptcha(DateTime.now(), context)
+			state: QueueStateNeedsCaptcha(context)
 		);
 		Future.microtask(() => _process(entry));
 		return entry;

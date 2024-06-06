@@ -899,7 +899,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			);
 			return;
 		}
-		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(DateTime.now(), context,
+		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(context,
 			beforeModal: hideReplyBox,
 			afterModal: showReplyBox
 		));

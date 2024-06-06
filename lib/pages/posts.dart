@@ -271,7 +271,7 @@ class _PostsPageState extends State<PostsPage> {
 													),
 													ContextMenuAction(
 														onPressed: () {
-															Outbox.instance.submitPost(widget.zone.imageboard.key, post, QueueStateNeedsCaptcha(DateTime.now(), outerContext));
+															Outbox.instance.submitPost(widget.zone.imageboard.key, post, QueueStateNeedsCaptcha(outerContext));
 															showToast(
 																context: context,
 																icon: CupertinoIcons.paperplane,
