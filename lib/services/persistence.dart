@@ -172,7 +172,6 @@ class Persistence extends ChangeNotifier {
 	static const sharedThreadStatesBoxName = 'threadstates';
 	static const sharedBoardsBoxName = 'boards';
 	static const sharedThreadsBoxName = 'threads';
-	static const savedAttachmentThumbnailsDir = 'saved_attachments_thumbs';
 	static const savedAttachmentsDir = 'saved_attachments';
 	static const fontsDir = 'ttf';
 	static late final DateTime appLaunchTime;
@@ -457,7 +456,6 @@ class Persistence extends ChangeNotifier {
 			storage: FileStorage('${temporaryDirectory.path}/cellular')
 		);
 		await Directory('${documentsDirectory.path}/$savedAttachmentsDir').create(recursive: true);
-		await Directory('${documentsDirectory.path}/$savedAttachmentThumbnailsDir').create(recursive: true);
 		final settingsBox = await _openBoxWithBackup<SavedSettings>(settingsBoxName, compactionStrategy: (int entries, int deletedEntries) {
 			return deletedEntries > 5;
 		});
@@ -1003,14 +1001,6 @@ class Persistence extends ChangeNotifier {
 		);
 		savedAttachments[attachment.globalId] = newSavedAttachment;
 		fullResolutionFile.copy(newSavedAttachment.file.path);
-		getCachedImageFile(attachment.thumbnailUrl.toString()).then((file) {
-			if (file != null) {
-				file.copy(newSavedAttachment.thumbnailFile.path);
-			}
-			else {
-				print('Failed to find cached copy of ${attachment.thumbnailUrl.toString()}');
-			}
-		});
 		settings.save();
 		savedAttachmentsListenable.didUpdate();
 		if (savedAttachments.length == 1) {
@@ -1623,13 +1613,18 @@ class SavedAttachment {
 	}) : tags = tags ?? [];
 
 	Future<void> deleteFiles() async {
-		await thumbnailFile.delete();
-		await file.delete();
+		try {
+			await file.delete();
+		}
+		on PathNotFoundException {
+			// Ignore
+		}
 	}
 
-	File get thumbnailFile => File('${Persistence.documentsDirectory.path}/${Persistence.savedAttachmentThumbnailsDir}/${attachment.globalId}.jpg');
+	static final _badPathCharacters = RegExp(r'[/:]');
+
 	File get file {
-		final base = '${Persistence.documentsDirectory.path}/${Persistence.savedAttachmentsDir}/${attachment.globalId}';
+		final base = '${Persistence.documentsDirectory.path}/${Persistence.savedAttachmentsDir}/${attachment.globalId.replaceAll(_badPathCharacters, '_')}';
 		if (savedExt == null) {
 			// Not yet fixed
 			return File('$base${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');

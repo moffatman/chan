@@ -36,6 +36,7 @@ import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -94,9 +95,9 @@ class _SavedPageState extends State<SavedPage> {
 	final _savedPostsListKey = GlobalKey(debugLabel: '_SavedPageState._savedPostsListKey');
 	final _yourPostsListKey = GlobalKey(debugLabel: '_SavedPageState._yourPostsListKey');
 	final _savedAttachmentsAnimatedBuilderKey = GlobalKey(debugLabel: '_SavedPageState._savedAttachmentsAnimatedBuilderKey');
-	late final ScrollController _savedAttachmentsController;
+	late final RefreshableListController<ImageboardScoped<SavedAttachment>> _savedAttachmentsController;
 	late final EasyListenable _removeArchivedHack;
-	List<ImageboardScoped<SavedAttachment>> _savedAttachments = [];
+	late ValueNotifier<List<ImageboardScoped<SavedAttachment>>> _missingSavedAttachments;
 	/// for optimization and pagination of loading your posts
 	Map<(Imageboard, String), List<PostIdentifier>> _yourPostsLists = {};
 	List<_PostThreadCombo> _yourPostsMissingThreads = [];
@@ -109,9 +110,10 @@ class _SavedPageState extends State<SavedPage> {
 		_threadListController = RefreshableListController();
 		_postListController = RefreshableListController();
 		_yourPostsListController = RefreshableListController();
-		_savedAttachmentsController = ScrollController();
+		_savedAttachmentsController = RefreshableListController();
 		_removeArchivedHack = EasyListenable();
 		_yourPostsValueInjector = ValueNotifier(null);
+		_missingSavedAttachments = ValueNotifier([]);
 	}
 
 	@override
@@ -228,7 +230,7 @@ class _SavedPageState extends State<SavedPage> {
 		final persistencesAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList()), () => widget.isActive);
 		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => widget.isActive);
 		final savedPostNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => widget.isActive);
-		final savedAttachmentsNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => widget.isActive);
+		final savedAttachmentsNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => widget.isActive);
 		final imageboardIds = <String, int>{};
 		return MultiMasterDetailPage(
 			id: 'saved',
@@ -283,23 +285,26 @@ class _SavedPageState extends State<SavedPage> {
 									ThreadWatcherControls(
 										isActive: widget.isActive
 									),
-									MissingThreadsControls(
-										missingThreads: _watchedListController.items.expand((item) {
-											final state = item.item.imageboard.persistence.getThreadStateIfExists(item.item.item.threadIdentifier);
-											if (state?.thread == null) {
-												return [item.item.imageboard.scope(item.item.item.threadIdentifier)];
+									AnimatedBuilder(
+										animation: _watchedListController,
+										builder: (context, _) => MissingThreadsControls(
+											missingThreads: _watchedListController.items.expand((item) {
+												final state = item.item.imageboard.persistence.getThreadStateIfExists(item.item.item.threadIdentifier);
+												if (state?.thread == null) {
+													return [item.item.imageboard.scope(item.item.item.threadIdentifier)];
+												}
+												return const <ImageboardScoped<ThreadIdentifier>>[];
+											}).toList(),
+											afterFix: () {
+												_watchedListController.state?.forceRebuildId++;
+												_watchedListController.update();
+											},
+											onFixAbandonedForThreads: (threadsToDelete) async {
+												for (final thread in threadsToDelete) {
+													await thread.imageboard.notifications.unsubscribeFromThread(thread.item);
+												}
 											}
-											return const <ImageboardScoped<ThreadIdentifier>>[];
-										}).toList(),
-										afterFix: () {
-											_watchedListController.state?.forceRebuildId++;
-											_watchedListController.update();
-										},
-										onFixAbandonedForThreads: (threadsToDelete) async {
-											for (final thread in threadsToDelete) {
-												await thread.imageboard.notifications.unsubscribeFromThread(thread.item);
-											}
-										}
+										)
 									),
 									const ChanceDivider()
 								]
@@ -1026,83 +1031,90 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					useRootNavigator: true,
 					icon: Adaptive.icons.photo,
-					masterBuilder: (context, selected, setter) => AnimatedBuilder(
-						key: _savedAttachmentsAnimatedBuilderKey,
-						animation: savedAttachmentsNotifiersAnimation,
-						builder: (context, child) {
-							final list = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values.map(i.scope)).toList();
+					masterBuilder: (context, selected, setter) => RefreshableList<ImageboardScoped<SavedAttachment>>(
+						id: 'savedAttachments',
+						controller: _savedAttachmentsController,
+						listUpdater: () async {
+							final list = <ImageboardScoped<SavedAttachment>>[];
+							final missing = <ImageboardScoped<SavedAttachment>>[];
+							for (final imageboard in ImageboardRegistry.instance.imageboardsIncludingDev) {
+								for (final attachment in imageboard.persistence.savedAttachments.values) {
+									if (await attachment.file.exists()) {
+										list.add(imageboard.scope(attachment));
+									}
+									else {
+										missing.add(imageboard.scope(attachment));
+									}
+								}
+							}
 							list.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
-							_savedAttachments = list;
-							final padding = MediaQuery.paddingOf(context);
-							return MaybeScrollbar(
-								controller: _savedAttachmentsController,
-								child: CustomScrollView(
-									controller: _savedAttachmentsController,
-									slivers: [
-										SliverPadding(
-											padding: EdgeInsets.only(top: padding.top)
+							_missingSavedAttachments.value = missing;
+							return list;
+						},
+						header: ValueListenableBuilder(
+							valueListenable: _missingSavedAttachments,
+							key: _savedAttachmentsAnimatedBuilderKey,
+							builder: (context, missing, _) => MissingAttachmentsControls(
+								missingAttachments: missing,
+								afterFix: _savedAttachmentsController.blockAndUpdate,
+								onFixAbandonedForAttachments: (attachments) async {
+									for (final a in attachments) {
+										a.imageboard.persistence.deleteSavedAttachment(a.item.attachment);
+									}
+								}
+							)
+						),
+						gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+							crossAxisCount: 4
+						),
+						updateAnimation: savedAttachmentsNotifiersAnimation,
+						filterableAdapter: null,
+						itemBuilder: (context, item) => Builder(
+							builder: (context) => ImageboardScope(
+								imageboardKey: item.imageboard.key,
+								child: GestureDetector(
+									child: Container(
+										decoration: BoxDecoration(
+											color: Colors.transparent,
+											borderRadius: const BorderRadius.all(Radius.circular(4)),
+											border: Border.all(color: selected(context, item) ? ChanceTheme.primaryColorOf(context) : Colors.transparent, width: 2)
 										),
-										SliverGrid(
-											delegate: SliverChildBuilderDelegate(
-												(context, i) => Builder(
-													builder: (context) => ImageboardScope(
-														imageboardKey: list[i].imageboard.key,
-														child: GestureDetector(
-															child: Container(
-																decoration: BoxDecoration(
-																	color: Colors.transparent,
-																	borderRadius: const BorderRadius.all(Radius.circular(4)),
-																	border: Border.all(color: selected(context, list[i]) ? ChanceTheme.primaryColorOf(context) : Colors.transparent, width: 2)
-																),
-																margin: const EdgeInsets.all(4),
-																child: Hero(
-																	tag: TaggedAttachment(
-																		attachment: list[i].item.attachment,
-																		semanticParentIds: [-5, imageboardIds.putIfAbsent(list[i].imageboard.key, () => imageboardIds.length)]
-																	),
-																	child: SavedAttachmentThumbnail(
-																		file: list[i].item.file,
-																		fit: BoxFit.contain
-																	),
-																	flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
-																		return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
-																	},
-																	createRectTween: (startRect, endRect) {
-																		if (startRect != null && endRect != null) {
-																			if (list[i].item.attachment.type == AttachmentType.image) {
-																				// Need to deflate the original startRect because it has inbuilt layoutInsets
-																				// This SavedAttachmentThumbnail will always fill its size
-																				final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
-																				startRect = rootPadding.deflateRect(startRect);
-																			}
-																		}
-																		return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
-																	}
-																)
-															),
-															onTap: () async {
-																if (context.read<MasterDetailHint?>()?.currentValue == null) {
-																	// First use of gallery
-																	await handleMutingBeforeShowingGallery();
-																}
-																setter(list[i]);
-															}
-														)
-													)
-												),
-												childCount: list.length
+										margin: const EdgeInsets.all(4),
+										child: Hero(
+											tag: TaggedAttachment(
+												attachment: item.item.attachment,
+												semanticParentIds: [-5, imageboardIds.putIfAbsent(item.imageboard.key, () => imageboardIds.length)]
 											),
-											gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-												crossAxisCount: 4
-											)
-										),
-										SliverPadding(
-											padding: EdgeInsets.only(bottom: padding.bottom)
+											child: SavedAttachmentThumbnail(
+												file: item.item.file,
+												fit: BoxFit.contain
+											),
+											flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+												return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+											},
+											createRectTween: (startRect, endRect) {
+												if (startRect != null && endRect != null) {
+													if (item.item.attachment.type == AttachmentType.image) {
+														// Need to deflate the original startRect because it has inbuilt layoutInsets
+														// This SavedAttachmentThumbnail will always fill its size
+														final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+														startRect = rootPadding.deflateRect(startRect);
+													}
+												}
+												return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+											}
 										)
-									]
+									),
+									onTap: () async {
+										if (context.read<MasterDetailHint?>()?.currentValue == null) {
+											// First use of gallery
+											await handleMutingBeforeShowingGallery();
+										}
+										setter(item);
+									}
 								)
-							);
-						}
+							)
+						)
 					),
 					detailBuilder: (selectedValue, setter, poppedOut) {
 						Widget child;
@@ -1122,19 +1134,19 @@ class _SavedPageState extends State<SavedPage> {
 										initialAttachment: attachment,
 										isAttachmentAlreadyDownloaded: _downloadedAttachments.contains,
 										onAttachmentDownload: _downloadedAttachments.add,
-										attachments: _savedAttachments.map((l) {
-											final thisImageboardId = imageboardIds.putIfAbsent(l.imageboard.key, () => imageboardIds.length);
+										attachments: _savedAttachmentsController.items.map((l) {
+											final thisImageboardId = imageboardIds.putIfAbsent(l.item.imageboard.key, () => imageboardIds.length);
 											return TaggedAttachment(
-												attachment: l.item.attachment,
+												attachment: l.item.item.attachment,
 												semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId]
 											);
 										}).toList(),
 										overrideSources: {
-											for (final l in _savedAttachments)
-												l.item.attachment: l.item.file.uri
+											for (final l in _savedAttachmentsController.items)
+												l.item.item.attachment: l.item.item.file.uri
 										},
 										onChange: (a) {
-											final originalL = _savedAttachments.tryFirstWhere((l) => l.item.attachment == a.attachment);
+											final originalL = _savedAttachmentsController.items.tryFirstWhere((l) => l.item.item.attachment == a.attachment)?.item;
 											widget.masterDetailKey.currentState?.setValue(4, originalL, updateDetailPane: false);
 										},
 										allowScroll: true,
@@ -1238,6 +1250,7 @@ class _SavedPageState extends State<SavedPage> {
 		_savedAttachmentsController.dispose();
 		_removeArchivedHack.dispose();
 		_yourPostsValueInjector.dispose();
+		_missingSavedAttachments.dispose();
 	}
 }
 
@@ -1415,86 +1428,63 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	}
 }
 
-class MissingThreadsControls extends StatelessWidget {
-	final List<ImageboardScoped<ThreadIdentifier>> missingThreads;
+class _MissingControls<T extends Object> extends StatelessWidget {
+	final List<ImageboardScoped<T>> missing;
+	final String singularNoun;
+	final Future<bool> Function(ImageboardScoped<T>) fixer;
 	final VoidCallback afterFix;
-	final Future<void> Function(List<ImageboardScoped<ThreadIdentifier>>) onFixAbandonedForThreads;
+	final Future<void> Function(List<ImageboardScoped<T>>) onFixAbandoned;
 
-	const MissingThreadsControls({
-		required this.missingThreads,
+	const _MissingControls({
+		required this.missing,
+		required this.singularNoun,
+		required this.fixer,
 		required this.afterFix,
-		required this.onFixAbandonedForThreads,
-		super.key
+		required this.onFixAbandoned
 	});
 
 	@override
 	Widget build(BuildContext context) {
-		if (missingThreads.isEmpty) {
+		if (missing.isEmpty) {
 			return const SizedBox.shrink();
 		}
 		final errorColor = ChanceTheme.secondaryColorOf(context);
 		return CupertinoButton(
 			padding: const EdgeInsets.all(16),
 			onPressed: () {
-				modalLoad(context, 'Fetching ${describeCount(missingThreads.length, 'missing thread')}', (controller) async {
-					final threads = missingThreads.toList(); // In case it changes
-					final failedThreads = <ImageboardScoped<ThreadIdentifier>>[];
+				modalLoad(context, 'Fetching ${describeCount(missing.length, 'missing $singularNoun')}', (controller) async {
+					final list = missing.toList(); // In case it changes
+					list.shuffle();
+					if (list.length > 50) {
+						// Don't do too many at once
+						list.removeRange(50, list.length);
+					}
+					final failed = <ImageboardScoped<T>>[];
 					int i = 0;
-					for (final thread in threads) {
+					for (final item in list) {
 						if (controller.cancelled) {
 							break;
 						}
-						Thread? newThread;
-						try {
-							newThread = await thread.imageboard.site.getThread(thread.item, priority: RequestPriority.interactive);
+						if (!await fixer(item)) {
+							failed.add(item);
 						}
-						on ThreadNotFoundException {
-							try {
-								newThread = await thread.imageboard.site.getThreadFromArchive(thread.item, priority: RequestPriority.interactive);
-							}
-							catch (e) {
-								if (context.mounted) {
-									showToast(
-										context: context,
-										icon: CupertinoIcons.exclamationmark_triangle,
-										message: 'Failed to get ${thread.item} from archive: ${e.toStringDio()}'
-									);
-								}
-							}
-						}
-						catch (e) {
-							if (context.mounted) {
-								showToast(
-									context: context,
-									icon: CupertinoIcons.exclamationmark_triangle,
-									message: 'Failed to get ${thread.item}: ${e.toStringDio()}'
-								);
-							}
-						}
-						if (newThread != null) {
-							final state = thread.imageboard.persistence.getThreadState(thread.item);
-							state.thread = newThread;
-						}
-						else {
-							failedThreads.add(thread);
-						}
-						controller.progress.value = ('${i + 1} / ${threads.length}', (i + 1) / threads.length);
+						controller.progress.value = ('${i + 1} / ${list.length}', (i + 1) / list.length);
 						i++;
 					}
-					if (failedThreads.length == threads.length && context.mounted) {
+					if (failed.length == list.length && context.mounted) {
 						// Only failed threads. Ask to just delete them
 						final clearFailed = (await showAdaptiveDialog<bool>(
 							context: context,
 							barrierDismissible: true,
 							builder: (context) => AdaptiveAlertDialog(
-								title: Text('${describeCount(failedThreads.length, 'missing thread')} not found'),
-								content: Text('''Some threads could not be re-downloaded.
+								title: Text('${describeCount(failed.length, 'missing $singularNoun')} not found'),
+								content: Text('''Some ${singularNoun}s could not be re-downloaded.
 
 They were deleted from their original website, and no archives of them could be found.
 
 Would you like to forget about them?
 
-${failedThreads.map((t) => '${t.imageboard.site.name}: ${t.imageboard.site.formatBoardNameWithoutTrailingSlash(t.item.board)}/${t.item.id}').join('\n')}'''),
+${failed.map((t) => '${t.imageboard.site.name}: ${t.item}').join('\n')}'''),
 								actions: [
 									AdaptiveDialogAction(
 										isDestructiveAction: true,
@@ -1513,7 +1503,7 @@ ${failedThreads.map((t) => '${t.imageboard.site.name}: ${t.imageboard.site.forma
 							)
 						)) ?? false;
 						if (clearFailed) {
-							await onFixAbandonedForThreads(failedThreads);
+							await onFixAbandoned(failed);
 						}
 					}
 					afterFix();
@@ -1525,7 +1515,7 @@ ${failedThreads.map((t) => '${t.imageboard.site.name}: ${t.imageboard.site.forma
 					Icon(CupertinoIcons.exclamationmark_triangle, color: errorColor),
 					const SizedBox(width: 8),
 					Flexible(
-						child: Text(describeCount(missingThreads.length, 'missing thread'), style: TextStyle(
+						child: Text(describeCount(missing.length, 'missing $singularNoun'), style: TextStyle(
 							color: errorColor,
 							fontWeight: FontWeight.bold
 						))
@@ -1534,4 +1524,177 @@ ${failedThreads.map((t) => '${t.imageboard.site.name}: ${t.imageboard.site.forma
 			)
 		);
 	}
+}
+
+class MissingThreadsControls extends StatelessWidget {
+	final List<ImageboardScoped<ThreadIdentifier>> missingThreads;
+	final VoidCallback afterFix;
+	final Future<void> Function(List<ImageboardScoped<ThreadIdentifier>>) onFixAbandonedForThreads;
+
+	const MissingThreadsControls({
+		required this.missingThreads,
+		required this.afterFix,
+		required this.onFixAbandonedForThreads,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) => _MissingControls(
+		missing: missingThreads,
+		singularNoun: 'thread',
+		fixer: (thread) async {
+			try {
+				Thread? newThread;
+				try {
+					newThread = await thread.imageboard.site.getThread(thread.item, priority: RequestPriority.interactive);
+				}
+				on ThreadNotFoundException {
+					try {
+						newThread = await thread.imageboard.site.getThreadFromArchive(thread.item, priority: RequestPriority.interactive);
+					}
+					catch (e) {
+						if (context.mounted) {
+							showToast(
+								context: context,
+								icon: CupertinoIcons.exclamationmark_triangle,
+								message: 'Failed to get ${thread.item} from archive: ${e.toStringDio()}'
+							);
+						}
+					}
+				}
+				catch (e) {
+					if (context.mounted) {
+						showToast(
+							context: context,
+							icon: CupertinoIcons.exclamationmark_triangle,
+							message: 'Failed to get ${thread.item}: ${e.toStringDio()}'
+						);
+					}
+				}
+				if (newThread != null) {
+					final state = thread.imageboard.persistence.getThreadState(thread.item);
+					state.thread = newThread;
+					return true;
+				}
+			}
+			catch (e, st) {
+				Future.error(e, st);
+			}
+			return false;
+		},
+		afterFix: afterFix,
+		onFixAbandoned: onFixAbandonedForThreads,
+	);
+}
+
+class MissingAttachmentsControls extends StatelessWidget {
+	final List<ImageboardScoped<SavedAttachment>> missingAttachments;
+	final VoidCallback afterFix;
+	final Future<void> Function(List<ImageboardScoped<SavedAttachment>>) onFixAbandonedForAttachments;
+
+	const MissingAttachmentsControls({
+		required this.missingAttachments,
+		required this.afterFix,
+		required this.onFixAbandonedForAttachments,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) => _MissingControls(
+		missing: missingAttachments,
+		singularNoun: 'attachment',
+		fixer: (attachment) async {
+			try {
+				try {
+					// Try naive URL
+					await attachment.imageboard.site.client.download(attachment.item.attachment.url, attachment.item.file.path, options: Options(
+						headers: {
+							...attachment.imageboard.site.getHeaders(Uri.parse(attachment.item.attachment.url)),
+							if (attachment.item.attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+						}
+					));
+					return true;
+				}
+				catch (e, st) {
+					Future.error(e, st); // crashlytics
+				}
+				Attachment? find(Thread thread) {
+					final a = attachment.item.attachment;
+					final best = <Attachment>[];
+					int bestScore = -1;
+					for (final other in thread.posts.expand((p) => p.attachments)) {
+						int score = 0;
+						if (a.id.isNotEmpty && a.id == other.id) {
+							score += 5;
+						}
+						if (a.id.isNotEmpty && other.id.contains(a.id)) {
+							// Archive may have timestamp with further precision
+							score++;
+						}
+						if (a.filename.isNotEmpty && a.filename == other.filename) {
+							score++;
+						}
+						if (a.width != null && a.height != null && a.width == other.width && a.height == other.height) {
+							score++;
+						}
+						if (score > bestScore) {
+							bestScore = score;
+							best.clear();
+						}
+						if (score == bestScore) {
+							best.add(other);
+						}
+					}
+					return best.trySingle;
+				}
+				final threadId = attachment.item.attachment.threadId;
+				if (threadId != null) {
+					final threadIdentifier = ThreadIdentifier(attachment.item.attachment.board, threadId);
+					try {
+						// Get the archived thread
+						final archivedThread = await attachment.imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (thread) async {
+							final found = find(thread);
+							if (found == null) {
+								throw Exception('Attachment not found in ${thread.archiveName}');
+							}
+							if (found.url == attachment.item.attachment.url) {
+								throw Exception('Attachment not really archived on ${thread.archiveName}');
+							}
+							await attachment.imageboard.site.client.head(found.url, options: Options(
+								headers: {
+									...attachment.imageboard.site.getHeaders(Uri.parse(found.url)),
+									if (found.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+								}
+							));
+						});
+						final found = find(archivedThread);
+						if (found != null) {
+							await attachment.imageboard.site.client.download(found.url, attachment.item.file.path, options: Options(
+								headers: {
+									...attachment.imageboard.site.getHeaders(Uri.parse(found.url)),
+									if (found.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+								}
+							));
+							return true;
+						}
+					}
+					catch (e) {
+						if (context.mounted) {
+							showToast(
+								context: context,
+								icon: CupertinoIcons.exclamationmark_triangle,
+								message: 'Failed to get $threadIdentifier from archive: ${e.toStringDio()}'
+							);
+						}
+					}
+				}
+			}
+			catch (e, st) {
+				Future.error(e, st);
+			}
+			return false;
+		},
+		afterFix: afterFix,
+		onFixAbandoned: onFixAbandonedForAttachments,
+	);
 }

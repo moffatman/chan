@@ -79,7 +79,6 @@ Future<File> export({
 	}
 	for (final dirname in [
 		if (includeSavedAttachments) Persistence.savedAttachmentsDir,
-		if (includeSavedAttachments) Persistence.savedAttachmentThumbnailsDir,
 		Persistence.fontsDir
 	]) {
 		final dir = Directory('${Persistence.documentsDirectory.path}/$dirname');
@@ -514,10 +513,6 @@ Future<List<ImportLog>> import(File archive) async {
 		await importSubdir(
 			subdir: Persistence.savedAttachmentsDir,
 			type: 'Saved Attachments'
-		);
-		await importSubdir(
-			subdir: Persistence.savedAttachmentThumbnailsDir,
-			type: 'Saved Attachment Thumbnails'
 		);
 		await importSubdir(
 			subdir: Persistence.fontsDir,

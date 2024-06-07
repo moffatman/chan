@@ -178,7 +178,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 		name: 'Saved Attachments',
 		icon: Adaptive.icons.bookmark,
 		pick: (context) {
-			final savedAttachments = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values).toList();
+			final savedAttachments = ImageboardRegistry.instance.imageboardsIncludingDev.expand((i) => i.persistence.savedAttachments.values).toList();
 			savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 			return Navigator.of(context).push<String>(TransparentRoute(
 				builder: (context) => OverscrollModalPage.sliver(

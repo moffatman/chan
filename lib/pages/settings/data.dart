@@ -725,10 +725,8 @@ final dataSettings = [
 			final globalRect = Rect.fromPoints(ro.localToGlobal(localRect.topLeft), ro.localToGlobal(localRect.bottomRight));
 			final attachmentsSizeInBytes = await modalLoad(context, 'Scanning...', (_) async {
 				int total = 0;
-				for (final dir in [Persistence.savedAttachmentsDir, Persistence.savedAttachmentThumbnailsDir]) {
-					await for (final file in Directory('${Persistence.documentsDirectory.path}/$dir').list(recursive: true)) {
-						total += (await file.stat()).size;
-					}
+				await for (final file in Directory('${Persistence.documentsDirectory.path}/${Persistence.savedAttachmentsDir}').list(recursive: true)) {
+					total += (await file.stat()).size;
 				}
 				return total;
 			}, wait: const Duration(milliseconds: 100));

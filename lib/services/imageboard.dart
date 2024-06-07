@@ -469,6 +469,13 @@ class ImageboardRegistry extends ChangeNotifier {
 	int get count => _sites.length;
 	Iterable<Imageboard> get imageboardsIncludingUninitialized => _sites.values;
 	Iterable<Imageboard> get imageboards => _sites.values.where((s) => s.initialized);
+	Iterable<Imageboard> get imageboardsIncludingDev sync* {
+		yield* _sites.values.where((s) => s.initialized);
+		final dev_ = dev;
+		if (dev_ != null) {
+			yield dev_;
+		}
+	}
 	bool initialized = false;
 	BuildContext? context;
 	final _mutex = Mutex();
