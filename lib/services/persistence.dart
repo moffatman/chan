@@ -1631,6 +1631,9 @@ class SavedAttachment {
 		}
 		return File('$base$savedExt');
 	}
+
+	@override
+	String toString() => 'SavedAttachment($attachment)';
 }
 
 @HiveType(typeId: 19)
