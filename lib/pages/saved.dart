@@ -1056,7 +1056,7 @@ class _SavedPageState extends State<SavedPage> {
 							key: _savedAttachmentsAnimatedBuilderKey,
 							builder: (context, missing, _) => MissingAttachmentsControls(
 								missingAttachments: missing,
-								afterFix: _savedAttachmentsController.blockAndUpdate,
+								afterFix: _savedAttachmentsController.update,
 								onFixAbandonedForAttachments: (attachments) async {
 									for (final a in attachments) {
 										a.imageboard.persistence.deleteSavedAttachment(a.item.attachment);
