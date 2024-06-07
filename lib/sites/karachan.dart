@@ -31,11 +31,15 @@ class SiteKarachan extends ImageboardSite {
 
 	@override
 	Map<String, String> getHeaders(Uri url) {
-		return super.getHeaders(url)..update(
-			'cookie',
-			(cookies) => '$cookies; $_kCookie',
-			ifAbsent: () => _kCookie
-		);
+		final headers = super.getHeaders(url);
+		if (url.host == baseUrl) {
+			headers.update(
+				'cookie',
+				(cookies) => '$cookies; $_kCookie',
+				ifAbsent: () => _kCookie
+			);
+		}
+		return headers;
 	}
 
 	SiteKarachan({
