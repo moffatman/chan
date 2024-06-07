@@ -466,6 +466,9 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _toggleChrome() {
+		if (!mounted) {
+			return;
+		}
 		showChrome = !showChrome & widget.allowChrome;
 		_gridViewDesynced = false;
 		_thumbnailsDesynced = false;
