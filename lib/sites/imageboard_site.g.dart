@@ -128,8 +128,10 @@ class DraftPostFields {
     merger: PrimitiveMerger(),
   );
   static String? getFile(DraftPost x) => x.file;
-  static const file = ReadOnlyHiveFieldAdapter<DraftPost, String?>(
+  static void setFile(DraftPost x, String? v) => x.file = v;
+  static const file = HiveFieldAdapter<DraftPost, String?>(
     getter: getFile,
+    setter: setFile,
     fieldNumber: 6,
     fieldName: 'file',
     merger: PrimitiveMerger(),

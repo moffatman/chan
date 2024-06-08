@@ -1124,7 +1124,7 @@ class DraftPost {
 	@HiveField(5)
 	final String text;
 	@HiveField(6)
-	final String? file;
+	String? file;
 	@HiveField(7)
 	final bool? spoiler;
 	@HiveField(8)

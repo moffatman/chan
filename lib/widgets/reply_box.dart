@@ -195,10 +195,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_showAttachmentOptions = false;
 			_attachmentScan = null;
 			_filenameController.clear();
-			if (file != null) {
-				// TODO: Careful here. What if we keep trying the same junk file.
-				_tryUsingInitialFile(file);
-			}
+			_tryUsingInitialFile(draft);
 		}
 	}
 
@@ -372,7 +369,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
 			_showOptions = true;
 		}
-		_tryUsingInitialFile(widget.initialDraft?.file);
+		_tryUsingInitialFile(widget.initialDraft);
 		widget.onInitState?.call(this);
 		_focusTimer = Timer.periodic(const Duration(milliseconds: 200), (_) => _pollFocus());
 	}
@@ -402,13 +399,16 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	void _tryUsingInitialFile(String? path) async {
+	void _tryUsingInitialFile(DraftPost? draft) async {
+		final path = draft?.file;
 		if (path != null) {
 			final file = File(path);
 			if (await file.exists()) {
 				setAttachment(file);
 			}
 			else if (mounted) {
+				// Clear the bad file
+				draft?.file = null;
 				showToast(
 					context: context,
 					icon: Icons.broken_image,
