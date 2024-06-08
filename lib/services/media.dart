@@ -78,6 +78,8 @@ class MediaScan {
 	@HiveField(8, defaultValue: null, merger: MapEqualsMerger())
 	final Map? metadata;
 	static const kMetadataFieldRotation = '_rotation';
+	@HiveField(9, defaultValue: null)
+	final String? format;
 
 	MediaScan({
 		required this.hasAudio,
@@ -88,7 +90,8 @@ class MediaScan {
 		required this.codec,
 		required this.videoFramerate,
 		required this.sizeInBytes,
-		required this.metadata
+		required this.metadata,
+		required this.format
 	});
 
 	static final _ffprobeLock = Mutex();
@@ -157,7 +160,8 @@ class MediaScan {
 					codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
 					videoFramerate: videoFramerate,
 					sizeInBytes: int.tryParse(data['format']?['size'] ?? ''),
-					metadata: metadata
+					metadata: metadata,
+					format: (data['format'] as Map?)?['format_name']
 				);
 			});
 		}

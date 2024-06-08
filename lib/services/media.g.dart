@@ -71,6 +71,13 @@ class MediaScanFields {
     fieldName: 'metadata',
     merger: MapEqualsMerger(),
   );
+  static String? getFormat(MediaScan x) => x.format;
+  static const format = ReadOnlyHiveFieldAdapter<MediaScan, String?>(
+    getter: getFormat,
+    fieldNumber: 9,
+    fieldName: 'format',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class MediaScanAdapter extends TypeAdapter<MediaScan> {
@@ -91,7 +98,8 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
     5: MediaScanFields.codec,
     6: MediaScanFields.videoFramerate,
     7: MediaScanFields.sizeInBytes,
-    8: MediaScanFields.metadata
+    8: MediaScanFields.metadata,
+    9: MediaScanFields.format
   };
 
   @override
@@ -110,13 +118,14 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
       videoFramerate: fields[6] as double?,
       sizeInBytes: fields[7] as int?,
       metadata: (fields[8] as Map?)?.cast<dynamic, dynamic>(),
+      format: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, MediaScan obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.hasAudio)
       ..writeByte(1)
@@ -134,7 +143,9 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
       ..writeByte(7)
       ..write(obj.sizeInBytes)
       ..writeByte(8)
-      ..write(obj.metadata);
+      ..write(obj.metadata)
+      ..writeByte(9)
+      ..write(obj.format);
   }
 
   @override
