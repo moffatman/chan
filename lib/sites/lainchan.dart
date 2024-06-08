@@ -554,12 +554,13 @@ class SiteLainchan extends ImageboardSite {
 		(other.basePath == basePath) &&
 		(other.name == name) &&
 		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
 		listEquals(other.archives, archives) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, name, maxUploadSizeBytes, archives, faviconPath, defaultUsername);
+	int get hashCode => Object.hash(baseUrl, basePath, name, maxUploadSizeBytes, platformUserAgents, archives, faviconPath, defaultUsername);
 	
 	@override
 	Uri get iconUrl {

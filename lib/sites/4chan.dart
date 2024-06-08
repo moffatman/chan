@@ -1179,12 +1179,20 @@ class Site4Chan extends ImageboardSite {
 		(other.staticUrl == staticUrl) &&
 		listEquals(other.archives, archives) &&
 		mapEquals(other.captchaUserAgents, captchaUserAgents) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
 		(other.searchUrl == searchUrl) &&
 		listEquals(other.possibleCaptchaLetterCounts, possibleCaptchaLetterCounts) &&
-		mapEquals(other.postingHeaders, postingHeaders);
+		mapEquals(other.postingHeaders, postingHeaders) &&
+		(other.captchaTicketLifetime == captchaTicketLifetime) &&
+		(other.reportCooldown == reportCooldown) &&
+		(other.subjectCharacterLimit == subjectCharacterLimit) &&
+		(other.spamFilterCaptchaDelayGreen == spamFilterCaptchaDelayGreen) &&
+		(other.spamFilterCaptchaDelayYellow == spamFilterCaptchaDelayYellow) &&
+		(other.spamFilterCaptchaDelayRed == spamFilterCaptchaDelayRed) &&
+		(other.stickyCloudflare == stickyCloudflare);
 
 	@override
-	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives, captchaUserAgents, searchUrl, possibleCaptchaLetterCounts, postingHeaders);
+	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives, captchaUserAgents, platformUserAgents, searchUrl, possibleCaptchaLetterCounts, postingHeaders, captchaTicketLifetime, reportCooldown, subjectCharacterLimit, spamFilterCaptchaDelayGreen, spamFilterCaptchaDelayYellow, spamFilterCaptchaDelayRed, stickyCloudflare);
 	
 	@override
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');

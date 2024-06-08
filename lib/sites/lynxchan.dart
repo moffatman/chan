@@ -471,9 +471,10 @@ class SiteLynxchan extends ImageboardSite {
 		other.name == name &&
 		other.baseUrl == baseUrl &&
 		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		listEquals(other.archives, archives) &&
 		listEquals(other.boards, boards) &&
 		other.defaultUsername == defaultUsername;
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, platformUserAgents, boards, defaultUsername);
+	int get hashCode => Object.hash(name, baseUrl, platformUserAgents, archives, boards, defaultUsername);
 }

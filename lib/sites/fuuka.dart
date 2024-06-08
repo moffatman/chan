@@ -369,8 +369,9 @@ class FuukaArchive extends ImageboardSiteArchive {
 		(other is FuukaArchive) &&
 		(other.baseUrl == baseUrl) &&
 		(other.name == name) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
 		listEquals(other.boards, boards);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, boards);
+	int get hashCode => Object.hash(baseUrl, name, platformUserAgents, boards);
 }

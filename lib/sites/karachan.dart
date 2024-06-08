@@ -15,6 +15,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -46,7 +47,8 @@ class SiteKarachan extends ImageboardSite {
 		required this.baseUrl,
 		required this.name,
 		required this.captchaKey,
-		this.defaultUsername = 'Anonymous'
+		this.defaultUsername = 'Anonymous',
+		super.platformUserAgents
 	}) {
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
@@ -506,4 +508,17 @@ class SiteKarachan extends ImageboardSite {
 			end: '[/s]'
 		);
 	}
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is SiteKarachan &&
+		other.baseUrl == baseUrl &&
+		other.name == name &&
+		other.captchaKey == captchaKey &&
+		other.defaultUsername == defaultUsername &&
+		mapEquals(other.platformUserAgents, platformUserAgents);
+	
+	@override
+	int get hashCode => Object.hash(baseUrl, name, captchaKey, defaultUsername, platformUserAgents);
 }

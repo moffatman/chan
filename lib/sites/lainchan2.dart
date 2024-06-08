@@ -181,6 +181,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		(other.baseUrl == baseUrl) &&
 		(other.basePath == basePath) &&
 		(other.name == name) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
 		listEquals(other.archives, archives) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername) &&
@@ -192,5 +193,5 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		listEquals(other.boards, boards);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, name, archives, faviconPath, defaultUsername, formBypass, imageThumbnailExtension, boardsPath, faviconPath, boards);
+	int get hashCode => Object.hash(baseUrl, basePath, name, platformUserAgents, archives, faviconPath, defaultUsername, formBypass, imageThumbnailExtension, boardsPath, faviconPath, boards);
 }

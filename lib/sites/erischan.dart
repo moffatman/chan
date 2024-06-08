@@ -1,6 +1,7 @@
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:flutter/foundation.dart';
 
 class SiteErischan extends SiteFrenschan {
 	SiteErischan({
@@ -23,4 +24,16 @@ class SiteErischan extends SiteFrenschan {
 
 	@override
 	String get res => 'res';
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is SiteErischan &&
+		other.baseUrl == baseUrl &&
+		other.name == name &&
+		mapEquals(platformUserAgents, platformUserAgents) &&
+		listEquals(other.archives, archives);
+	
+	@override
+	int get hashCode => Object.hash(baseUrl, name, platformUserAgents, archives);
 }

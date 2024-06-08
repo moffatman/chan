@@ -282,8 +282,9 @@ class SiteDvach extends ImageboardSite {
 		(other is SiteDvach) &&
 		(other.name == name) &&
 		(other.baseUrl == baseUrl) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, archives);
+	int get hashCode => Object.hash(name, baseUrl, platformUserAgents, archives);
 }

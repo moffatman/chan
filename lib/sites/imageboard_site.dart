@@ -1878,7 +1878,8 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			name: data['name'],
 			captchaKey: data['captchaKey'] ?? '',
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else if (data['type'] == 'jschan') {
@@ -1886,7 +1887,8 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			name: data['name'],
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			faviconPath: data['faviconPath']
+			faviconPath: data['faviconPath'],
+			platformUserAgents: platformUserAgents
 		);
 	}
 	else {

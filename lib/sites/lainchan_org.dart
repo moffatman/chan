@@ -53,13 +53,15 @@ class SiteLainchanOrg extends SiteLainchan {
 		(other is SiteLainchanOrg) &&
 		(other.baseUrl == baseUrl) &&
 		(other.basePath == basePath) &&
+		(other.boardsPath == boardsPath) &&
 		(other.name == name) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
 		listEquals(other.archives, archives) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, name, archives, faviconPath, defaultUsername);
+	int get hashCode => Object.hash(baseUrl, basePath, boardsPath, name, platformUserAgents, archives, faviconPath, defaultUsername);
 
 	@override
 	bool get supportsPushNotifications => false;

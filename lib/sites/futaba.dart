@@ -376,8 +376,9 @@ class SiteFutaba extends ImageboardSite {
 		(other.baseUrl == baseUrl) &&
 		(other.name == name) &&
 		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, archives);
+	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, platformUserAgents, archives);
 }

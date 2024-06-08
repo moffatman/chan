@@ -12,6 +12,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -699,8 +700,10 @@ class SiteHackerNews extends ImageboardSite {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is SiteHackerNews) &&
-		(other.catalogThreadsPerPage == catalogThreadsPerPage);
+		(other.catalogThreadsPerPage == catalogThreadsPerPage) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => catalogThreadsPerPage.hashCode;
+	int get hashCode => Object.hash(catalogThreadsPerPage, platformUserAgents, archives);
 }

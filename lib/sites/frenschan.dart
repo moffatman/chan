@@ -77,10 +77,13 @@ class SiteFrenschan extends SiteSoyjak {
 		(other is SiteFrenschan) &&
 		(other.baseUrl == baseUrl) &&
 		(other.name == name) &&
+		(other.faviconPath == faviconPath) &&
+		(other.defaultUsername == defaultUsername) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, archives);
+	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, platformUserAgents, archives);
 
 	@override
 	String get res => 'res';

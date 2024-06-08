@@ -1427,8 +1427,10 @@ class SiteReddit extends ImageboardSite {
 	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
-		(other is SiteReddit);
+		(other is SiteReddit) &&
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => 0;
+	int get hashCode => Object.hash(platformUserAgents, archives);
 }

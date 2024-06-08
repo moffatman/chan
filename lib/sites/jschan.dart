@@ -11,6 +11,7 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -27,7 +28,8 @@ class SiteJsChan extends ImageboardSite {
 		required this.baseUrl,
 		required this.name,
 		this.defaultUsername = 'Anonymous',
-		required this.faviconPath
+		required this.faviconPath,
+		super.platformUserAgents
 	});
 
 	static final _quoteLinkHrefPattern = RegExp(r'/([^/]+)/thread/(\d+)\.html(?:#(\d+))?$');
@@ -379,4 +381,17 @@ class SiteJsChan extends ImageboardSite {
 		}
 		throw _makeException(response.data);
 	}
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is SiteJsChan &&
+		other.baseUrl == baseUrl &&
+		other.name == name &&
+		other.defaultUsername == defaultUsername &&
+		other.faviconPath == faviconPath &&
+		mapEquals(other.platformUserAgents, platformUserAgents);
+	
+	@override
+	int get hashCode => Object.hash(baseUrl, name, defaultUsername, faviconPath, platformUserAgents);
 }
