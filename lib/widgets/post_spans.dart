@@ -1,5 +1,6 @@
 import 'dart:isolate';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
@@ -1222,22 +1223,56 @@ class PostLinkSpan extends PostSpan {
 						if (snapshot.data?.title?.isNotEmpty ?? false) snapshot.data!.title!
 						else if (name == null || url.contains(name!)) url
 					];
+					Widget? tapChildChild = snapshot.data?.thumbnailWidget;
+					if (tapChildChild == null) {
+						ImageProvider image = ExtendedNetworkImageProvider(
+							snapshot.data!.thumbnailUrl!,
+							cache: true,
+						);
+						final FilterQuality filterQuality;
+						if (settings.thumbnailPixelation > 0) {
+							filterQuality = FilterQuality.none;
+							// Aim for consistent "pixel" size, adjust because this thumbnail is constant size
+							final numPixels = (settings.thumbnailPixelation * (75 / settings.thumbnailSize)).ceil();
+							image = ExtendedResizeImage(
+								image,
+								maxBytes: null,
+								width: numPixels,
+								height: numPixels
+							);
+						}
+						else {
+							filterQuality = FilterQuality.low;
+						}
+						tapChildChild = ExtendedImage(
+							image: image,
+							width: 75,
+							height: 75,
+							fit: BoxFit.cover,
+							filterQuality: filterQuality,
+							loadStateChanged: (loadstate) {
+								if (loadstate.extendedImageLoadState == LoadState.failed) {
+									return const Icon(CupertinoIcons.question);
+								}
+								return null;
+							}
+						);
+						if (settings.blurThumbnails) {
+							// No need for ClipRect, we will ClipRRect below
+							tapChildChild = ImageFiltered(
+								imageFilter: ui.ImageFilter.blur(
+									sigmaX: 7.0,
+									sigmaY: 7.0,
+									tileMode: TileMode.decal
+								),
+								child: tapChildChild
+							);
+						}
+					}
 					tapChild = buildEmbed(
 						left: ClipRRect(
 							borderRadius: const BorderRadius.all(Radius.circular(8)),
-							child: snapshot.data?.thumbnailWidget ?? ExtendedImage.network(
-								snapshot.data!.thumbnailUrl!,
-								cache: true,
-								width: 75,
-								height: 75,
-								fit: BoxFit.cover,
-								loadStateChanged: (loadstate) {
-									if (loadstate.extendedImageLoadState == LoadState.failed) {
-										return const Icon(CupertinoIcons.question);
-									}
-									return null;
-								}
-							)
+							child: tapChildChild
 						),
 						center: Flexible(
 							child: Column(
