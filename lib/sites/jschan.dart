@@ -8,6 +8,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
@@ -299,11 +300,7 @@ class SiteJsChan extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}.json'), options: Options(
-			extra: {
-				kPriority: priority
-			}
-		));
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}.json'), priority: priority);
 		return _makeThread(response.data);
 	}
 

@@ -12,6 +12,7 @@ import 'package:chan/services/util.dart';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
@@ -400,15 +401,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), options: Options(
-			validateStatus: (status) => status == 200 || status == 404,
-			extra: {
-				kPriority: priority
-			}
-		));
-		if (response.statusCode == 404) {
-			throw ThreadNotFoundException(thread);
-		}
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority);
 		final op = _makePost(thread.board, thread.id, thread.id, response.data);
 		final posts = [
 			op,

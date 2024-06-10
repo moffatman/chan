@@ -807,6 +807,10 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _switchToLive() async {
+		if (persistentState.thread?.isDeleted == true) {
+			persistentState.thread?.isDeleted = false;
+			persistentState.didMutateThread();
+		}
 		persistentState.useArchive = false;
 		await persistentState.save();
 		setState(() {});
@@ -961,6 +965,8 @@ class ThreadPageState extends State<ThreadPage> {
 			on ThreadNotFoundException {
 				if (site.archives.isEmpty) {
 					tmpPersistentState.thread?.isDeleted = true;
+					_listController.state?.forceRebuildId++;
+					setState(() {});
 				}
 				rethrow;
 			}

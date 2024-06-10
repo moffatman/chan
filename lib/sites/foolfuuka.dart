@@ -6,6 +6,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
@@ -337,24 +338,13 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (!(await getBoards(priority: priority)).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
-		final response = await client.getUri(
+		final response = await client.getThreadUri(
 			Uri.https(baseUrl, '/_/api/chan/thread', {
 				'board': thread.board,
 				'num': thread.id.toString()
 			}),
-			options: Options(
-				validateStatus: (x) => true,
-				extra: {
-					kPriority: priority
-				}
-			)
+			priority: priority
 		);
-		if (response.statusCode != 200) {
-			if (response.statusCode == 404) {
-				return Future.error(ThreadNotFoundException(thread));
-			}
-			return Future.error(HTTPStatusException(response.statusCode!));
-		}
 		final data = response.data;
 		if (data['error'] != null) {
 			throw Exception(data['error']);

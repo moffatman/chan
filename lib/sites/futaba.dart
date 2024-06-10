@@ -10,6 +10,7 @@ import 'package:chan/sites/4chan.dart';
 import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:charset_converter/charset_converter.dart';
@@ -326,12 +327,9 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.get(getWebUrlImpl(thread.board, thread.id), options: Options(
-			responseType: ResponseType.bytes,
-			extra: {
-				kPriority: priority
-			}
-		));
+		final response = await client.getThreadUri(Uri.parse(getWebUrlImpl(thread.board, thread.id)), options: Options(
+			responseType: ResponseType.bytes
+		), priority: priority);
 		final document = await parse(response.data);
 		return _makeThread(document.querySelector('.thre')!, thread.board);
 

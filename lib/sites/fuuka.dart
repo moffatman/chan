@@ -1,6 +1,7 @@
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
@@ -223,16 +224,12 @@ class FuukaArchive extends ImageboardSiteArchive {
 		if (!(await getBoards(priority: priority)).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
-		final response = await client.getUri(
+		final response = await client.getThreadUri(
 			Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}', {
 				'board': thread.board,
 				'num': thread.id.toString()
 			}),
-			options: Options(
-				extra: {
-					kPriority: priority
-				}
-			)
+			priority: priority
 		);
 		return _makeThread(parse(response.data).body!, thread.board, thread.id, priority: priority);
 	}

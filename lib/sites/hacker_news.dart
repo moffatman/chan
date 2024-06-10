@@ -9,6 +9,7 @@ import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/sites/4chan.dart';
 
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
@@ -263,11 +264,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	Future<_HNObject> _getAlgolia(int id, {required RequestPriority priority}) async {
-		final response = await client.get('https://hn.algolia.com/api/v1/items/$id', options: Options(
-			extra: {
-				kPriority: priority
-			}
-		));
+		final response = await client.getThreadUri(Uri.https('hn.algolia.com', '/api/v1/items/$id'), priority: priority);
 		return (await _makeHNObjectAlgolia(response.data))!;
 	}
 

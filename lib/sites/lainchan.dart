@@ -8,6 +8,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -268,17 +269,9 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.json'), options: Options(
-			validateStatus: (x) => true,
-			extra: {
-				kPriority: priority
-			}
-		));
-		if (response.statusCode == 404 || (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false)) {
-			throw ThreadNotFoundException(thread);
-		}
-		else if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode ?? 0);
+		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.json'), priority: priority);
+		if (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false) {
+			throw const ThreadNotFoundException();
 		}
 		final firstPost = response.data['posts'][0];
 		final hasPoll = _pollFormPattern.hasMatch(firstPost['com'] as String? ?? '');

@@ -11,6 +11,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
@@ -379,13 +380,9 @@ class SiteKarachan extends ImageboardSite {
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final uri = Uri.https(baseUrl,'/${thread.board}/res/${thread.id}.html');
-		final response = await client.getUri(
+		final response = await client.getThreadUri(
 			uri,
-			options: Options(
-				extra: {
-					kPriority: priority
-				}
-			)
+			priority: priority
 		);
 		final document = parse(response.data);
 		return _makeThread(thread.board, uri, document.querySelector('.thread')!);

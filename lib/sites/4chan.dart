@@ -633,9 +633,9 @@ class Site4Chan extends ImageboardSite {
 		}
 		else if (!(response.statusCode == 304 && headers != null)) {
 			if (response.statusCode == 404) {
-				return Future.error(ThreadNotFoundException(thread));
+				throw const ThreadNotFoundException();
 			}
-			return Future.error(HTTPStatusException(response.statusCode!));
+			throw HTTPStatusException(response.statusCode!);
 		}
 		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread, priority: priority);
 		return _threadCache['${thread.board}/${thread.id}']!.thread;

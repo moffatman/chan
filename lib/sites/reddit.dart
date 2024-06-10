@@ -13,6 +13,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
@@ -1173,13 +1174,9 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
-		}), options: Options(
-			extra: {
-				kPriority: priority
-			}
-		));
+		}), priority: priority);
 		final ret = await _makeThread(response.data[0]['data']['children'][0]['data']);
 		addChildren(int parentId, List<dynamic> childData, Post? parent) {
 			for (final childContainer in childData) {

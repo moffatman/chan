@@ -1,6 +1,7 @@
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/soyjak.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -25,11 +26,7 @@ class SiteFrenschan extends SiteSoyjak {
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final broken = await super.getThreadImpl(thread, priority: priority);
-		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'), options: Options(
-			extra: {
-				kPriority: priority
-			}
-		));
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'), priority: priority);
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.posts_.expand((p) => p.attachments)) {

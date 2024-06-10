@@ -67,10 +67,9 @@ class PostNotFoundException implements Exception {
 }
 
 class ThreadNotFoundException implements Exception {
-	ThreadIdentifier thread;
-	ThreadNotFoundException(this.thread);
+	const ThreadNotFoundException();
 	@override
-	String toString() => 'Thread not found: /${thread.board}/${thread.id}';
+	String toString() => 'Thread not found';
 }
 
 class BoardNotFoundException implements Exception {
