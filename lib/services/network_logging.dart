@@ -83,7 +83,7 @@ class LoggingInterceptor extends Interceptor {
 				if (resp.length > 1500) {
 					file.write(resp.substring(0, 750));
 					file.writeln('...');
-					file.write(resp.substring(resp.length - 750));
+					file.writeln(resp.substring(resp.length - 750));
 				}
 				else {
 					file.writeln(resp);
