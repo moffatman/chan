@@ -424,7 +424,7 @@ class ThreadWatcherController extends ChangeNotifier {
 	DateTime? lastUpdate;
 	Timer? nextUpdateTimer;
 	DateTime? nextUpdate;
-	bool get active => updatingNow || (nextUpdateTimer?.isActive ?? false);
+	bool get active => updatingNow || (nextUpdateTimer?.isActive ?? false) || _addedAppResumeCallback || _addedNetworkResumeCallback;
 	bool disposed = false;
 	final Set<ThreadWatcher> _watchers = {};
 	final Set<ThreadWatcher> _doghouse = {};
@@ -453,6 +453,7 @@ class ThreadWatcherController extends ChangeNotifier {
 				Settings.instance.addAppResumeCallback(update);
 			}
 			_addedAppResumeCallback = true;
+			notifyListeners();
 			return;
 		}
 		_addedAppResumeCallback = false;
@@ -462,6 +463,7 @@ class ThreadWatcherController extends ChangeNotifier {
 				Settings.instance.addNetworkResumeCallback(update);
 			}
 			_addedNetworkResumeCallback = true;
+			notifyListeners();
 			return;
 		}
 		_addedNetworkResumeCallback = false;

@@ -2782,13 +2782,7 @@ class Settings extends ChangeNotifier {
 	}
 	void _runAppResumeCallbacks() {
 		for (final task in _appResumeCallbacks) {
-			try {
-				task();
-			}
-			catch (e, st) {
-				// Ignore
-				Future.error(e, st);
-			}
+			Future.microtask(task);
 		}
 		_appResumeCallbacks.clear();
 	}
@@ -2798,13 +2792,7 @@ class Settings extends ChangeNotifier {
 	}
 	void _runNetworkResumeCallbacks() {
 		for (final task in _networkResumeCallbacks) {
-			try {
-				task();
-			}
-			catch (e, st) {
-				// Ignore
-				Future.error(e, st);
-			}
+			Future.microtask(task);
 		}
 		_networkResumeCallbacks.clear();
 	}
