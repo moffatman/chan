@@ -72,6 +72,7 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 										file: widget.file
 									),
 									errorBuilder: (context, e, st) {
+										Future.error(e, st); // crashlytics
 										return const Icon(CupertinoIcons.question_square);
 									},
 									fit: widget.fit
@@ -95,6 +96,7 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 					return Image(
 						image: ThumbnailImageProvider(file: widget.file),
 						errorBuilder: (context, e, st) {
+							Future.error(e, st); // crashlytics
 							return const Icon(CupertinoIcons.question_square);
 						},
 						fit: widget.fit
