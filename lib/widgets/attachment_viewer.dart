@@ -560,7 +560,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				_goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive);
 				_recordUrlTime(_goodImageSource!, attachment.type, DateTime.now().difference(startTime));
 				if (_goodImageSource?.scheme == 'file') {
-					_cachedFile = File(_goodImageSource!.path);
+					_cachedFile = File(_goodImageSource!.toFilePath());
 					attachment.sizeInBytes ??= _cachedFile!.statSync().size;
 				}
 				if (_isDisposed) return;
@@ -829,7 +829,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	File getFile() {
 		if (overrideSource?.isScheme('file') ?? false) {
-			return File(overrideSource!.path);
+			return File(overrideSource!.toFilePath());
 		}
 		else if (_cachedFile != null) {
 			return _cachedFile!;
