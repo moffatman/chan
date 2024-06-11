@@ -1,5 +1,7 @@
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:flutter/cupertino.dart';
@@ -33,11 +35,14 @@ class PopupAttachment extends StatelessWidget {
 			key: ValueKey(attachment),
 			popupBuilder: (controller, isWithinScalerBlurrer) => AnimatedBuilder(
 				animation: controller!,
-				builder: (context, child) => AttachmentViewer(
-					controller: controller,
-					semanticParentIds: const [-1, -1],
-					fill: isWithinScalerBlurrer,
-					heroOtherEndIsBoxFitCover: false
+				builder: (context, child) => ChanceTheme(
+					themeKey: Settings.darkThemeKeySetting.watch(context),
+					child: AttachmentViewer(
+						controller: controller,
+						semanticParentIds: const [-1, -1],
+						fill: isWithinScalerBlurrer,
+						heroOtherEndIsBoxFitCover: false
+					)
 				)
 			),
 			setup: () => _makeController(context),
