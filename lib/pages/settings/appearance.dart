@@ -188,7 +188,6 @@ int _estimateGridModeColumns(double maxWidth) {
 		// Catalog is in mater pane
 		screenWidth *= (Settings.instance.twoPaneSplit / twoPaneSplitDenominator);
 	}
-	print('screenWidth=$screenWidth, maxWidth=$maxWidth');
 	return (screenWidth / maxWidth).ceil();
 }
 
