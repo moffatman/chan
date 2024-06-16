@@ -1003,7 +1003,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									const Icon(CupertinoIcons.refresh),
 									const SizedBox(width: 16),
 									SizedBox(
-										width: 32,
+										width: MediaQuery.textScalerOf(context).scale(32),
 										child: seconds > 0 ? Text('$seconds') : const SizedBox.shrink()
 									)
 								]
@@ -1069,10 +1069,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				}
 			}
 			final theme = context.watch<SavedTheme>();
+			final scaleFactor = MediaQuery.textScalerOf(context).scale(17) / 17;
+			final maxWidth = 500 * scaleFactor;
 			return Center(
 				child: ConstrainedBox(
-					constraints: const BoxConstraints(
-						maxWidth: 500
+					constraints: BoxConstraints(
+						maxWidth: maxWidth
 					),
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
@@ -1155,7 +1157,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 													const Icon(CupertinoIcons.timer),
 													const SizedBox(width: 16),
 													SizedBox(
-														width: 60,
+														width: 60 * scaleFactor,
 														child: TimedRebuilder(
 															enabled: true,
 															interval: const Duration(seconds: 1),
@@ -1284,7 +1286,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									child: Opacity(
 										opacity: _greyOutPickers ? 0.5 : 1.0,
 										child: SizedBox(
-											height: 200,
+											height: 200 * scaleFactor,
 											child: LayoutBuilder(
 												builder: (context, constraints) => ReorderableListView(
 													scrollDirection: Axis.horizontal,
@@ -1325,8 +1327,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																index: i,
 																key: _getPickerStuffForWidgetIndex(i).wrapperKey,
 																child: SizedBox(
-																	height: 200,
-																	width: min(constraints.maxWidth, 500) / numLetters,
+																	height: 200 * scaleFactor,
+																	width: min(constraints.maxWidth, maxWidth) / numLetters,
 																	child: Stack(
 																		fit: StackFit.expand,
 																		children: [
@@ -1382,7 +1384,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																								)
 																							)
 																						),
-																						itemExtent: 50,
+																						itemExtent: 50 * scaleFactor,
 																						onSelectedItemChanged: null
 																					)
 																				)
@@ -1399,7 +1401,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																								curve: Curves.ease
 																							);
 																						},
-																						child:const SizedBox(height: 75)
+																						child: SizedBox(height: 75 * scaleFactor)
 																					),
 																					GestureDetector(
 																						behavior: HitTestBehavior.translucent,
@@ -1408,7 +1410,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																							_solutionNode.requestFocus();
 																							setState(() {});
 																						},
-																						child: const SizedBox(height: 50)
+																						child: SizedBox(height: 50 * scaleFactor)
 																					),
 																					GestureDetector(
 																						behavior: HitTestBehavior.translucent,
@@ -1419,7 +1421,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																								curve: Curves.ease
 																							);
 																						},
-																						child: const SizedBox(height: 75)
+																						child: SizedBox(height: 75 * scaleFactor)
 																					)
 																				]
 																			)
