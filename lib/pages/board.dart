@@ -35,6 +35,7 @@ import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/pull_tab.dart';
 import 'package:chan/widgets/shareable_posts.dart';
+import 'package:chan/widgets/sliver_staggered_grid.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
@@ -755,7 +756,7 @@ class BoardPageState extends State<BoardPage> {
 						)
 					)
 				],
-				maxHeight: settings.maxCatalogRowHeight,
+				maxHeight: useCatalogGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight,
 				child: GestureDetector(
 					child: ThreadRow(
 						contentFocus: useCatalogGrid,
@@ -1112,9 +1113,12 @@ class BoardPageState extends State<BoardPage> {
 															],
 															reverseSort: variant.reverseAfterSorting,
 															minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
-															gridDelegate: useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
+															gridDelegate: (useCatalogGrid && !settings.useStaggeredCatalogGrid) ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
 																maxCrossAxisExtent: settings.catalogGridWidth,
 																childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+															) : null,
+															staggeredGridDelegate: (useCatalogGrid && settings.useStaggeredCatalogGrid) ? SliverStaggeredGridDelegateWithMaxCrossAxisExtent(
+																maxCrossAxisExtent: settings.catalogGridWidth
 															) : null,
 															controller: _listController,
 															listUpdater: () => site.getCatalog(board!.name, variant: variant, priority: RequestPriority.interactive).then((list) async {

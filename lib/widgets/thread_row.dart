@@ -17,9 +17,11 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 import 'package:chan/models/thread.dart';
@@ -293,18 +295,19 @@ class ThreadRow extends StatelessWidget {
 			alignment: Alignment.centerRight,
 			forceShowInHistory: forceShowInHistory
 		);
+		final countersPlaceholderWidget = Visibility(
+			visible: false,
+			maintainState: true,
+			maintainAnimation: true,
+			maintainSize: true,
+			child: Padding(
+				padding: const EdgeInsets.only(top: 2),
+				child: approxWidth < 150 ? SizedBox(height: DefaultTextStyle.of(context).style.fontSize ?? 17, width: double.infinity) : makeCounters()
+			)
+		);
 		final countersPlaceholder = WidgetSpan(
 			alignment: PlaceholderAlignment.top,
-			child: Visibility(
-				visible: false,
-				maintainState: true,
-				maintainAnimation: true,
-				maintainSize: true,
-				child: Padding(
-					padding: const EdgeInsets.only(top: 2),
-					child: approxWidth < 150 ? SizedBox(height: DefaultTextStyle.of(context).style.fontSize ?? 17, width: double.infinity) : makeCounters()
-				)
-			)
+			child: countersPlaceholderWidget
 		);
 		final borderRadius = (contentFocus && settings.catalogGridModeCellBorderRadiusAndMargin) ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
 		final double subheaderFontSize = site.classicCatalogStyle ? 16 : 15;
@@ -521,58 +524,80 @@ class ThreadRow extends StatelessWidget {
 				)
 			)
 		];
-		List<Widget> buildContentFocused() {
+		Widget buildContentFocused() {
 			final attachment = latestThread.attachments.tryFirst;
-			Widget? att = attachment == null || !settings.showImages(context, thread.board) ? null : PopupAttachment(
-				attachment: attachment,
-				child: GestureDetector(
-					child: Stack(
-						fit: StackFit.expand,
-						children: [
-							AttachmentThumbnail(
-								fit: settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
-								attachment: attachment,
-								thread: latestThread.identifier,
-								onLoadError: onThumbnailLoadError,
-								mayObscure: true,
-								hero: TaggedAttachment(
-									attachment: attachment,
-									semanticParentIds: semanticParentIds
-								)
-							),
-							if (latestThread.attachments.length > 1 || attachment.icon != null) Positioned(
-								top: (settings.catalogGridModeAttachmentInBackground ^ settings.catalogGridModeTextAboveAttachment) ? 0 : null,
-								bottom: (settings.catalogGridModeAttachmentInBackground ^ settings.catalogGridModeTextAboveAttachment) ? null : 0,
-								left: settings.catalogGridModeAttachmentInBackground && settings.catalogGridModeTextAboveAttachment ? 0 : null,
-								right: settings.catalogGridModeAttachmentInBackground && settings.catalogGridModeTextAboveAttachment ? null : 0,
-								child: Container(
-									decoration: BoxDecoration(
-										borderRadius: settings.catalogGridModeAttachmentInBackground ?
-																		settings.catalogGridModeTextAboveAttachment ?
-																			const BorderRadius.only(topRight: Radius.circular(6)) :
-																			const BorderRadius.only(bottomLeft: Radius.circular(6))
-																		: const BorderRadius.only(topLeft: Radius.circular(6)),
-										color: backgroundColor,
-										border: Border.all(color: borderColor)
-									),
-									padding: const EdgeInsets.all(2),
-									child: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											if (attachment.icon != null) Icon(attachment.icon, size: 19),
-											if (latestThread.attachments.length > 1 && attachment.icon != null) const SizedBox(width: 4),
-											if (latestThread.attachments.length > 1) ...[
-												Text('${latestThread.attachments.length} '),
-												Icon(Adaptive.icons.photos, size: 19)
-											]
-										]
+			Widget? att = attachment == null || !settings.showImages(context, thread.board) ? null : Column(
+				crossAxisAlignment: CrossAxisAlignment.stretch,
+				mainAxisSize: MainAxisSize.min,
+				mainAxisAlignment: MainAxisAlignment.center,
+				children: [
+					Flexible(
+						fit: switch (settings.useStaggeredCatalogGrid) {
+							true => switch (settings.catalogGridModeCropThumbnails && settings.catalogGridModeAttachmentInBackground) {
+								true => FlexFit.tight, // fill background (this relies on the maxIntrinsicHeight trick in the renderobject below)
+								false => FlexFit.loose, // pick the proper ratio
+							},
+							false => switch (settings.catalogGridModeShowMoreImageIfLessText && !settings.catalogGridModeAttachmentInBackground) {
+								true => FlexFit.loose, // show at proper ratio
+								false => FlexFit.tight // expand above text
+							}
+						},
+						child: PopupAttachment(
+							attachment: attachment,
+							child: GestureDetector(
+								child: WidgetDecoration(
+									position: DecorationPosition.foreground,
+									decoration: (latestThread.attachments.length > 1 || attachment.icon != null) ? Align(
+										alignment: switch ((settings.catalogGridModeAttachmentInBackground, settings.catalogGridModeTextAboveAttachment)) {
+											(true, true) => Alignment.bottomLeft,
+											(true, false) => Alignment.topRight,
+											(false, true) => Alignment.topRight,
+											(false, false) => Alignment.bottomRight
+										},
+										child: Container(
+											decoration: BoxDecoration(
+												borderRadius: settings.catalogGridModeAttachmentInBackground ?
+																				settings.catalogGridModeTextAboveAttachment ?
+																					const BorderRadius.only(topRight: Radius.circular(6)) :
+																					const BorderRadius.only(bottomLeft: Radius.circular(6))
+																				: const BorderRadius.only(topLeft: Radius.circular(6)),
+												color: backgroundColor,
+												border: Border.all(color: borderColor)
+											),
+											padding: const EdgeInsets.all(2),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													if (attachment.icon != null) Icon(attachment.icon, size: 19),
+													if (latestThread.attachments.length > 1 && attachment.icon != null) const SizedBox(width: 4),
+													if (latestThread.attachments.length > 1) ...[
+														Text('${latestThread.attachments.length} '),
+														Icon(Adaptive.icons.photos, size: 19)
+													]
+												]
+											)
+										)
+									) : null,
+									child: AttachmentThumbnail(
+										fit: settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
+										attachment: attachment,
+										expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
+										height: settings.catalogGridHeight / 2,
+										thread: latestThread.identifier,
+										onLoadError: onThumbnailLoadError,
+										mayObscure: true,
+										hero: TaggedAttachment(
+											attachment: attachment,
+											semanticParentIds: semanticParentIds
+										)
 									)
-								)
+								),
+								onTap: () => onThumbnailTap?.call(attachment)
 							)
-						]
+						)
 					),
-					onTap: () => onThumbnailTap?.call(attachment)
-				)
+					if (!settings.catalogGridModeCropThumbnails && settings.catalogGridModeTextAboveAttachment && !settings.useFullWidthForCatalogCounters && !settings.catalogGridModeAttachmentInBackground) countersPlaceholderWidget
+				]
 			);
 			final txt = Padding(
 				padding: const EdgeInsets.all(8),
@@ -589,7 +614,7 @@ class ThreadRow extends StatelessWidget {
 								charactersPerLine: (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 							)),
 							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) countersPlaceholder,
-							if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText) TextSpan(text: '\n' * 25)
+							if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText && !settings.useStaggeredCatalogGrid) TextSpan(text: '\n' * 25)
 						];
 						return IgnorePointer(
 							child: Text.rich(
@@ -607,57 +632,53 @@ class ThreadRow extends StatelessWidget {
 				)
 			);
 			if (settings.catalogGridModeAttachmentInBackground) {
-				if (dimThisThread) {
+				if (dimThisThread && att != null) {
 					att = ColorFiltered(
 						colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.saturation),
 						child: att
 					);
 				}
-				return [
-					if (att != null) att,
-					Align(
-						alignment: settings.catalogGridModeTextAboveAttachment ? Alignment.topCenter : Alignment.bottomCenter,
-						child: ClipRect(
-							child: BackdropFilter(
-								filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-								child: Container(
-									color: backgroundColor.withOpacity(0.8),
-									width: double.infinity,
-									child: txt
-								)
-							)
+				final txt_ = ClipRect(
+					child: BackdropFilter(
+						filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+						child: Container(
+							color: backgroundColor.withOpacity(0.8),
+							width: double.infinity,
+							child: txt
 						)
 					)
-				];
+				);
+				if (att == null) {
+					return txt_;
+				}
+				return ConstrainedBox(
+					constraints: BoxConstraints(
+						minHeight: min(settings.catalogGridHeight / 2, settings.thumbnailSize * 2)
+					),
+					child: _ContentFocusedStack(
+						attachment: att,
+						text: txt_,
+						textAlignment: switch (settings.catalogGridModeTextAboveAttachment) {
+							true => Alignment.topCenter,
+							false => Alignment.bottomCenter
+						}
+					)
+				);
 			}
 			else {
 				final att_ = att;
 				if (att_ == null) {
-					return [txt];
+					return txt;
 				}
-				return [
-					CustomMultiChildLayout(
-						delegate: _ContentFocusedMultiChildLayoutDelegate(
-							textAboveAttachment: settings.catalogGridModeTextAboveAttachment
-						),
-						children: [
-							LayoutId(
-								id: _ContentFocusedMultiChildLayoutId.attachment,
-								child: att_
-							),
-							LayoutId(
-								id: _ContentFocusedMultiChildLayoutId.text,
-								child: txt
-							)
-						],
-					)
-				];
+				return _ContentFocusedMultiChildWidget(
+					textAboveAttachment: settings.catalogGridModeTextAboveAttachment,
+					attachmentSize: settings.catalogGridModeShowMoreImageIfLessText ? null : settings.catalogGridHeight / 2,
+					attachment: att_,
+					text: txt
+				);
 			}
 		}
-		Widget content = contentFocus ? Stack(
-			fit: StackFit.passthrough,
-			children: buildContentFocused()
-		) : Row(
+		Widget content = contentFocus ? buildContentFocused() : Row(
 			crossAxisAlignment: site.classicCatalogStyle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
 			mainAxisSize: MainAxisSize.max,
 			children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
@@ -674,7 +695,7 @@ class ThreadRow extends StatelessWidget {
 				if (settings.useFullWidthForCatalogCounters) Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						if (contentFocus) Expanded(
+						if (contentFocus && !settings.useStaggeredCatalogGrid) Expanded(
 							child: content
 						)
 						else Flexible(
@@ -764,33 +785,457 @@ enum _ContentFocusedMultiChildLayoutId {
 	text
 }
 
-class _ContentFocusedMultiChildLayoutDelegate extends MultiChildLayoutDelegate {
+class _ContentFocusedMultiChildWidget extends SlottedMultiChildRenderObjectWidget<_ContentFocusedMultiChildLayoutId, RenderBox> {
+	final Widget attachment;
+	final Widget text;
 	final bool textAboveAttachment;
-	_ContentFocusedMultiChildLayoutDelegate({
-		required this.textAboveAttachment
+	final double? attachmentSize;
+
+	const _ContentFocusedMultiChildWidget({
+		required this.attachment,
+		required this.text,
+		required this.textAboveAttachment,
+		required this.attachmentSize
 	});
 
 	@override
-	void performLayout(Size size) {
-		final textSize = layoutChild(_ContentFocusedMultiChildLayoutId.text, BoxConstraints(
-			minWidth: size.width,
-			maxWidth: size.width,
-			minHeight: 25,
-			maxHeight: size.height / 2
-		));
-		final attachmentHeight = size.height - textSize.height;
-		positionChild(_ContentFocusedMultiChildLayoutId.text, Offset(0, textAboveAttachment ? 0 : attachmentHeight));
-		layoutChild(_ContentFocusedMultiChildLayoutId.attachment, BoxConstraints(
-			minWidth: size.width,
-			maxWidth: size.width,
-			minHeight: attachmentHeight,
-			maxHeight: attachmentHeight
-		));
-		positionChild(_ContentFocusedMultiChildLayoutId.attachment, Offset(0, textAboveAttachment ? size.height - attachmentHeight : 0));
+	Widget? childForSlot(_ContentFocusedMultiChildLayoutId slot) {
+		return switch (slot) {
+			_ContentFocusedMultiChildLayoutId.attachment => attachment,
+			_ContentFocusedMultiChildLayoutId.text => text
+		};
 	}
 
 	@override
-	bool shouldRelayout(_ContentFocusedMultiChildLayoutDelegate oldDelegate) {
-		return textAboveAttachment != oldDelegate.textAboveAttachment;
+	_RenderContentFocusedMultiChildWidget createRenderObject(BuildContext context) {
+		return _RenderContentFocusedMultiChildWidget(
+			textAboveAttachment: textAboveAttachment,
+			attachmentSize: attachmentSize
+		);
+	}
+
+	@override
+	void updateRenderObject(BuildContext context, _RenderContentFocusedMultiChildWidget renderObject) {
+		renderObject
+			..textAboveAttachment = textAboveAttachment
+			..attachmentSize = attachmentSize;
+	}
+
+	@override
+	Iterable<_ContentFocusedMultiChildLayoutId> get slots => [_ContentFocusedMultiChildLayoutId.attachment, _ContentFocusedMultiChildLayoutId.text];
+}
+
+class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContainerRenderObjectMixin<_ContentFocusedMultiChildLayoutId, RenderBox> {
+	bool _textAboveAttachment;
+	set textAboveAttachment(bool v) {
+		if (v == _textAboveAttachment) {
+			return;
+		}
+		_textAboveAttachment = v;
+		markNeedsLayout();
+	}
+
+	double? _attachmentSize;
+	set attachmentSize(double? v) {
+		if (v == _attachmentSize) {
+			return;
+		}
+		_attachmentSize = v;
+		markNeedsLayout();
+	}
+
+	_RenderContentFocusedMultiChildWidget({
+		required bool textAboveAttachment,
+		required double? attachmentSize
+	}) : _textAboveAttachment = textAboveAttachment, _attachmentSize = attachmentSize;
+
+	RenderBox? get _attachment => childForSlot(_ContentFocusedMultiChildLayoutId.attachment);
+	RenderBox? get _text => childForSlot(_ContentFocusedMultiChildLayoutId.text);
+
+	@override
+	Iterable<RenderBox> get children {
+		// Hit test order (text first)
+		return [
+			if (_text != null) _text!,
+			if (_attachment != null) _attachment!
+		];
+	}
+
+	@override
+	void performLayout() {
+		final constraints = this.constraints;
+		final attachmentSize = _attachmentSize;
+		if (attachmentSize == null) {
+			// Let Attachment pick its own size first (within reason)
+			_attachment!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 50,
+				maxHeight: constraints.maxHeight - 80
+			), parentUsesSize: true);
+			_text!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: max(0, constraints.minHeight - _attachment!.size.height),
+				maxHeight: constraints.maxHeight - _attachment!.size.height
+			), parentUsesSize: true);
+		}
+		else {
+			// First find out attachment desired size
+			_attachment!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: attachmentSize
+			), parentUsesSize: true);
+			_text!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: min(constraints.minHeight, min(constraints.maxHeight, 0)),
+				maxHeight: max(0, constraints.maxHeight - _attachment!.size.height)
+			), parentUsesSize: true);
+			_attachment!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: (constraints.minHeight - _text!.size.height).clamp(0, double.infinity),
+				maxHeight: (constraints.maxHeight - _text!.size.height).clamp(0, double.infinity)
+			), parentUsesSize: true);
+		}
+		(_text!.parentData as BoxParentData).offset = Offset(0, _textAboveAttachment ? 0 : _attachment!.size.height);
+		(_attachment!.parentData as BoxParentData).offset = Offset(0, _textAboveAttachment ? _text!.size.height : 0);
+		size = Size(constraints.maxWidth, _text!.size.height + _attachment!.size.height);
+	}
+
+	@override
+	void paint(PaintingContext context, Offset offset) {
+		context.paintChild(_attachment!, offset + (_attachment!.parentData! as BoxParentData).offset);
+		context.paintChild(_text!, offset + (_text!.parentData! as BoxParentData).offset);
+	}
+
+	@override
+	bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+		for (final RenderBox child in children) {
+			final BoxParentData parentData = child.parentData! as BoxParentData;
+			final bool isHit = result.addWithPaintOffset(
+				offset: parentData.offset,
+				position: position,
+				hitTest: (BoxHitTestResult result, Offset transformed) {
+					assert(transformed == position - parentData.offset);
+					return child.hitTest(result, position: transformed);
+				}
+			);
+			if (isHit) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@override
+	double computeMinIntrinsicWidth(double height) {
+		return max(_text!.getMinIntrinsicWidth(height), _attachment!.getMinIntrinsicWidth(height));
+	}
+
+	@override
+	double computeMaxIntrinsicWidth(double height) {
+		return min(_text!.getMaxIntrinsicWidth(height), _attachment!.getMaxIntrinsicWidth(height));
+	}
+
+	@override
+	double computeMinIntrinsicHeight(double width) {
+		return _attachment!.getMinIntrinsicHeight(width) + _text!.getMinIntrinsicHeight(width);
+	}
+
+	@override
+	double computeMaxIntrinsicHeight(double width) {
+		return _attachment!.getMaxIntrinsicHeight(width) + _text!.getMaxIntrinsicHeight(width);
+	}
+
+	@override
+	Size computeDryLayout(BoxConstraints constraints) {
+		final constraints = this.constraints;
+		final attachmentSize = _attachmentSize;
+		Size attachment;
+		final Size text;
+		if (attachmentSize == null) {
+			// Let Attachment pick its own size first (within reason)
+			attachment = _attachment!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 50,
+				maxHeight: constraints.maxHeight - 80
+			));
+			text = _text!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: max(0, constraints.minHeight - attachment.height),
+				maxHeight: constraints.maxHeight - attachment.height
+			));
+		}
+		else {
+			// First find out attachment desired size
+			attachment = _attachment!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: attachmentSize
+			));
+			text = _text!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: min(constraints.minHeight, min(constraints.maxHeight, 0)),
+				maxHeight: max(0, constraints.maxHeight - attachment.height)
+			));
+			attachment = _attachment!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: (constraints.minHeight - text.height).clamp(0, double.infinity),
+				maxHeight: (constraints.maxHeight - text.height).clamp(0, double.infinity)
+			));
+		}
+		return Size(constraints.maxWidth, attachment.height + text.height);
+	}
+}
+
+
+class _ContentFocusedStack extends SlottedMultiChildRenderObjectWidget<_ContentFocusedMultiChildLayoutId, RenderBox> {
+	final Widget attachment;
+	final Widget text;
+	final Alignment textAlignment;
+
+	const _ContentFocusedStack({
+		required this.attachment,
+		required this.text,
+		required this.textAlignment,
+	});
+
+	@override
+	Widget? childForSlot(_ContentFocusedMultiChildLayoutId slot) {
+		return switch (slot) {
+			_ContentFocusedMultiChildLayoutId.attachment => attachment,
+			_ContentFocusedMultiChildLayoutId.text => text
+		};
+	}
+
+	@override
+	_RenderContentFocusedStack createRenderObject(BuildContext context) {
+		return _RenderContentFocusedStack(textAlignment: textAlignment);
+	}
+
+	@override
+	void updateRenderObject(BuildContext context, _RenderContentFocusedStack renderObject) {
+		renderObject.textAlignment = textAlignment;
+	}
+
+	@override
+	Iterable<_ContentFocusedMultiChildLayoutId> get slots => [_ContentFocusedMultiChildLayoutId.attachment, _ContentFocusedMultiChildLayoutId.text];
+}
+
+class _RenderContentFocusedStack extends RenderBox with SlottedContainerRenderObjectMixin<_ContentFocusedMultiChildLayoutId, RenderBox> {
+	Alignment _textAlignment;
+	set textAlignment(Alignment v) {
+		if (v == _textAlignment) {
+			return;
+		}
+		_textAlignment = v;
+		markNeedsLayout();
+	}
+
+	_RenderContentFocusedStack({
+		required Alignment textAlignment
+	}) : _textAlignment = textAlignment;
+
+	RenderBox? get _attachment => childForSlot(_ContentFocusedMultiChildLayoutId.attachment);
+	RenderBox? get _text => childForSlot(_ContentFocusedMultiChildLayoutId.text);
+
+	@override
+	Iterable<RenderBox> get children {
+		// Hit test order (text first)
+		return [
+			if (_text != null) _text!,
+			if (_attachment != null) _attachment!
+		];
+	}
+
+	@override
+	void performLayout() {
+		final constraints = this.constraints;
+		if (constraints.hasTightHeight) {
+			// Let Attachment pick its own size first (within reason)
+			_attachment!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: constraints.minHeight,
+				maxHeight: constraints.maxHeight
+			), parentUsesSize: true);
+			_text!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: _attachment!.size.height
+			), parentUsesSize: true);
+			size = _attachment!.size;
+		}
+		else if (constraints.minHeight > 0) {
+			_text!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: constraints.maxHeight
+			), parentUsesSize: true);
+			final intrinsicHeight = _attachment!.getMaxIntrinsicHeight(constraints.maxWidth);
+			if (intrinsicHeight > _text!.size.height) {
+				// Attachment bigger than text
+				if (intrinsicHeight < constraints.minHeight) {
+					// Force to at least min
+					_attachment!.layout(BoxConstraints(
+						minWidth: constraints.maxWidth,
+						maxWidth: constraints.maxWidth,
+						minHeight: constraints.minHeight,
+						maxHeight: constraints.minHeight
+					), parentUsesSize: true);
+				}
+				else {
+					// Show at intrinsic height
+					_attachment!.layout(BoxConstraints(
+						minWidth: constraints.maxWidth,
+						maxWidth: constraints.maxWidth,
+						minHeight: constraints.minHeight,
+						maxHeight: intrinsicHeight.clamp(constraints.minHeight, constraints.maxHeight)
+					), parentUsesSize: true);
+				}
+				size = _attachment!.size;
+			}
+			else {
+				// Just force attachment to text size
+				final height = max(_text!.size.height, constraints.minHeight);
+				_attachment!.layout(BoxConstraints(
+					minWidth: constraints.maxWidth,
+					maxWidth: constraints.maxWidth,
+					minHeight: height,
+					maxHeight: height
+				), parentUsesSize: true);
+				size = Size(constraints.maxWidth, height);
+			}
+		}
+		else {
+			_text!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: constraints.maxHeight
+			), parentUsesSize: true);
+			// Force attachment to same size as text
+			_attachment!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: max(constraints.minHeight, _text!.size.height),
+				maxHeight: constraints.maxHeight
+			), parentUsesSize: true);
+			size = _attachment!.size;
+		}
+		(_text!.parentData as BoxParentData).offset = _textAlignment.inscribe(_text!.size, Offset.zero & size).topLeft;
+		(_attachment!.parentData as BoxParentData).offset = Offset.zero;
+	}
+
+	@override
+	void paint(PaintingContext context, Offset offset) {
+		context.paintChild(_attachment!, offset + (_attachment!.parentData! as BoxParentData).offset);
+		context.paintChild(_text!, offset + (_text!.parentData! as BoxParentData).offset);
+	}
+
+	@override
+	bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+		for (final RenderBox child in children) {
+			final BoxParentData parentData = child.parentData! as BoxParentData;
+			final bool isHit = result.addWithPaintOffset(
+				offset: parentData.offset,
+				position: position,
+				hitTest: (BoxHitTestResult result, Offset transformed) {
+					assert(transformed == position - parentData.offset);
+					return child.hitTest(result, position: transformed);
+				}
+			);
+			if (isHit) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@override
+	double computeMinIntrinsicWidth(double height) {
+		return max(_text!.getMinIntrinsicWidth(height), _attachment!.getMinIntrinsicWidth(height));
+	}
+
+	@override
+	double computeMaxIntrinsicWidth(double height) {
+		return min(_text!.getMaxIntrinsicWidth(height), _attachment!.getMaxIntrinsicWidth(height));
+	}
+
+	@override
+	double computeMinIntrinsicHeight(double width) {
+		return max(_attachment!.getMinIntrinsicHeight(width), _text!.getMinIntrinsicHeight(width));
+	}
+
+	@override
+	double computeMaxIntrinsicHeight(double width) {
+		return min(_attachment!.getMaxIntrinsicHeight(width), _text!.getMaxIntrinsicHeight(width));
+	}
+
+	@override
+	Size computeDryLayout(BoxConstraints constraints) {
+		if (constraints.hasTightHeight) {
+			return constraints.biggest;
+		}
+		else if (constraints.minHeight > 0) {
+			final text = _text!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: constraints.maxHeight
+			));
+			final intrinsicHeight = _attachment!.getMaxIntrinsicHeight(constraints.maxWidth);
+			if (intrinsicHeight > text.height) {
+				// Attachment bigger than text
+				if (intrinsicHeight < constraints.minHeight) {
+					// Force to at least min
+					return _attachment!.getDryLayout(BoxConstraints(
+						minWidth: constraints.maxWidth,
+						maxWidth: constraints.maxWidth,
+						minHeight: constraints.minHeight,
+						maxHeight: constraints.minHeight
+					));
+				}
+				else {
+					// Show at intrinsic height
+					return _attachment!.getDryLayout(BoxConstraints(
+						minWidth: constraints.maxWidth,
+						maxWidth: constraints.maxWidth,
+						minHeight: constraints.minHeight,
+						maxHeight: intrinsicHeight.clamp(constraints.minHeight, constraints.maxHeight)
+					));
+				}
+			}
+			else {
+				// Just force attachment to text size
+				return Size(constraints.maxWidth, max(text.height, constraints.minHeight));
+			}
+		}
+		else {
+			final text = _text!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: constraints.maxHeight
+			));
+			// Force attachment to same size as text
+			return _attachment!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: max(constraints.minHeight, text.height),
+				maxHeight: constraints.maxHeight
+			));
+		}
 	}
 }

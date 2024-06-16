@@ -59,6 +59,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	/// Whether it is actually a thumbnail (preview) like in catalog/thread
 	final bool mayObscure;
 	final ({Color backgroundColor, Color borderColor, double? size})? showIconInCorner;
+	final bool expand;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -76,6 +77,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.site,
 		this.overrideFullQuality,
 		this.showIconInCorner,
+		this.expand = false,
 		required this.mayObscure,
 		Key? key
 	}) : super(key: key);
@@ -165,12 +167,12 @@ class AttachmentThumbnail extends StatelessWidget {
 			final primaryColor = ChanceTheme.primaryColorOf(context);
 			child = ExtendedImage(
 				image: image,
-				constraints: BoxConstraints(
+				constraints: expand ? null : BoxConstraints(
 					maxWidth: effectiveWidth,
 					maxHeight: effectiveHeight
 				),
 				width: effectiveWidth,
-				height: shrinkHeight ? null : effectiveHeight,
+				height: shrinkHeight || expand ? null : effectiveHeight,
 				color: const Color.fromRGBO(238, 242, 255, 1),
 				colorBlendMode: BlendMode.dstOver,
 				fit: fit,

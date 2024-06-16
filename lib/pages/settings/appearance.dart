@@ -970,9 +970,16 @@ final appearanceSettings = [
 		icon: CupertinoIcons.resize,
 		preview: PanelSettingWidget(
 			builder: (context) {
-				return Container(
-					width: Settings.catalogGridWidthSetting.watch(context),
-					height: Settings.catalogGridHeightSetting.watch(context),
+				final width = Settings.catalogGridWidthSetting.watch(context);
+				final height = Settings.catalogGridHeightSetting.watch(context);
+				final staggered = Settings.useStaggeredCatalogGridSetting.watch(context);
+				final child = Container(
+					constraints: BoxConstraints(
+						minWidth: width,
+						maxWidth: width,
+						minHeight: staggered ? 0 : height,
+						maxHeight: height
+					),
 					decoration: _threadAndPostRowDecorationOf(context),
 					child: ThreadRow(
 						contentFocus: true,
@@ -980,9 +987,39 @@ final appearanceSettings = [
 						thread: _makeFakeThread()
 					)
 				);
+				if (staggered) {
+					return Stack(
+						children: [
+							Container(
+								width: width,
+								height: height,
+								decoration: BoxDecoration(
+									border: Border.all(
+										color: ChanceTheme.primaryColorOf(context)
+									)
+								),
+								alignment: Alignment.bottomCenter,
+								child: const Row(
+									mainAxisAlignment: MainAxisAlignment.center,
+									children: [
+										Icon(CupertinoIcons.arrow_down_to_line),
+										Text(' Max height')
+									]
+								)
+							),
+							child
+						]
+					);
+				}
+				return child;
 			}
 		),
 		settings: [
+			const SwitchSettingWidget(
+				description: 'Staggered grid',
+				icon: CupertinoIcons.rectangle_3_offgrid,
+				setting: Settings.useStaggeredCatalogGridSetting
+			),
 			SliderSettingWidget(
 				description: 'Width',
 				keywords: ['columns', 'size'],
@@ -996,8 +1033,8 @@ final appearanceSettings = [
 				description: 'Height',
 				keywords: ['size'],
 				setting: Settings.catalogGridHeightSetting,
-				min: 100,
-				max: 600,
+				min: 150,
+				max: 1200,
 				step: 1,
 				textFormatter: (height) => '${height.round()} px'
 			),
@@ -1005,7 +1042,7 @@ final appearanceSettings = [
 				description: 'Maximum text lines',
 				min: 1,
 				step: 1,
-				max: 16,
+				max: 32,
 				formatter: (maxLines) => maxLines?.toString() ?? 'Unlimited',
 				setting: Settings.catalogGridModeTextLinesLimitSetting
 			),
@@ -1018,8 +1055,12 @@ final appearanceSettings = [
 				setting: Settings.catalogGridModeCellBorderRadiusAndMarginSetting
 			),
 			const SwitchSettingWidget(
-				description: 'Show more image if text is short',
-				setting: Settings.catalogGridModeShowMoreImageIfLessTextSetting,
+				description: 'Fixed text height',
+				setting: MappedSetting(
+					Settings.catalogGridModeShowMoreImageIfLessTextSetting,
+					FieldMappers.invert,
+					FieldMappers.invert
+				),
 				disabled: Settings.catalogGridModeAttachmentInBackgroundSetting
 			),
 			SteppableSettingWidget(
@@ -1031,7 +1072,7 @@ final appearanceSettings = [
 				setting: Settings.catalogGridModeTextScaleSetting
 			),
 			const SwitchSettingWidget(
-				description: 'Crop image to fit',
+				description: 'Crop image to fill',
 				setting: Settings.catalogGridModeCropThumbnailsSetting,
 			),
 			const SwitchSettingWidget(

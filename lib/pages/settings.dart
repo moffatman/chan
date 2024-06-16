@@ -7,6 +7,7 @@ import 'package:chan/pages/settings/behavior.dart';
 import 'package:chan/pages/settings/common.dart';
 import 'package:chan/pages/settings/data.dart';
 import 'package:chan/pages/settings/site.dart';
+import 'package:chan/pages/staggered_grid_debugging.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/pages/tree_debugging.dart';
 import 'package:chan/services/imageboard.dart';
@@ -82,6 +83,14 @@ class _SettingsPageState extends State<SettingsPage> {
 										));
 									},
 									child: const Text('Tree Debugging')
+								),
+								AdaptiveDialogAction(
+									onPressed: () {
+										Navigator.pop(context, adaptivePageRoute(
+											builder: (context) => const StaggeredGridDebuggingPage()
+										));
+									},
+									child: const Text('Staggered Grid Debugging')
 								),
 								AdaptiveDialogAction(
 									onPressed: () {

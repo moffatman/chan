@@ -1181,6 +1181,8 @@ class SavedSettings extends HiveObject {
 	bool watchThreadAutomaticallyWhenCreating;
 	@HiveField(190)
 	int imageMetaFilterDepth;
+	@HiveField(191)
+	bool useStaggeredCatalogGrid;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1373,6 +1375,7 @@ class SavedSettings extends HiveObject {
 		bool? showReplyCountInCatalog,
 		bool? watchThreadAutomaticallyWhenCreating,
 		int? imageMetaFilterDepth,
+		bool? useStaggeredCatalogGrid,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1587,7 +1590,8 @@ class SavedSettings extends HiveObject {
 		attachmentsPageUsePageView = attachmentsPageUsePageView ?? false,
 		showReplyCountInCatalog = showReplyCountInCatalog ?? true,
 		watchThreadAutomaticallyWhenCreating = watchThreadAutomaticallyWhenCreating ?? true,
-		imageMetaFilterDepth = imageMetaFilterDepth ?? 0 {
+		imageMetaFilterDepth = imageMetaFilterDepth ?? 0,
+		useStaggeredCatalogGrid = useStaggeredCatalogGrid ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2775,6 +2779,9 @@ class Settings extends ChangeNotifier {
 
 	static const imageMetaFilterDepthSetting = SavedSetting(SavedSettingsFields.imageMetaFilterDepth);
 	int get imageMetaFilterDepth => imageMetaFilterDepthSetting(this);
+
+	static const useStaggeredCatalogGridSetting = SavedSetting(SavedSettingsFields.useStaggeredCatalogGrid);
+	bool get useStaggeredCatalogGrid => useStaggeredCatalogGridSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

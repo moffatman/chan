@@ -10,6 +10,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/default_gesture_detector.dart';
+import 'package:chan/widgets/sliver_staggered_grid.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart' hide WeakMap;
@@ -988,6 +989,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final Widget? header;
 	final Widget? footer;
 	final SliverGridDelegate? gridDelegate;
+	final SliverStaggeredGridDelegate? staggeredGridDelegate;
 	final String? initialFilter;
 	final ValueChanged<String?>? onFilterChanged;
 	final bool allowReordering;
@@ -1025,6 +1027,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.disableUpdates = false,
 		this.disableBottomUpdates = false,
 		this.gridDelegate,
+		this.staggeredGridDelegate,
 		this.header,
 		this.footer,
 		this.initialFilter,
@@ -1547,6 +1550,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy) {
+		if (widget.staggeredGridDelegate != null) {
+			// It can't be done, layout breaks down
+			dummy = false;
+		}
 		if (dummy) {
 			_refreshableTreeItems._dummyCache[value._key] = _DummyStatus.now;
 		}
@@ -1562,8 +1569,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			final factor = 0.0001 * (identityHashCode(value) % 1000);
 			final child = Container(
 				margin: const EdgeInsets.all(16),
-				width: widget.gridDelegate == null ? double.infinity : null,
-				height: widget.gridDelegate == null ? 32 : null,
+				width: (widget.gridDelegate == null && widget.staggeredGridDelegate == null) ? double.infinity : null,
+				height: (widget.gridDelegate == null && widget.staggeredGridDelegate == null) ? (_kDummyHeight - 32) : null,
 				color: Settings.instance.theme.primaryColorWithBrightness(factor)
 			);
 			if (useTree && value.depth > 0) {
@@ -2654,7 +2661,28 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												)
 											),
 											if (values.isNotEmpty)
-												if (widget.gridDelegate != null) SliverGrid(
+												if (widget.staggeredGridDelegate != null) SliverStaggeredGrid(
+													key: PageStorageKey('staggered grid for ${widget.id}'),
+													gridDelegate: widget.staggeredGridDelegate!,
+													id: identityHashCode(originalList),
+													delegate: SliverDontRebuildChildBuilderDelegate(
+														(context, i) => Builder(
+															builder: (context) {
+																widget.controller?.registerItem(i, values[i], context);
+																final range = widget.controller?.useDummyItemsInRange;
+																return _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1);
+															}
+														),
+														list: values,
+														id: '$query${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
+														didFinishLayout: widget.controller?.didFinishLayout,
+														childCount: values.length,
+														addRepaintBoundaries: false,
+														addAutomaticKeepAlives: false,
+														fastHeightEstimate: _fastHeightEstimate
+													)
+												)
+												else if (widget.gridDelegate != null) SliverGrid(
 													key: PageStorageKey('grid for ${widget.id}'),
 													gridDelegate: widget.gridDelegate!,
 													delegate: SliverDontRebuildChildBuilderDelegate(
@@ -2763,8 +2791,41 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														)
 													),
 												),
-												if (_showFilteredValues) 
-													if (widget.gridDelegate != null) SliverGrid(
+												if (_showFilteredValues)
+													if (widget.staggeredGridDelegate != null) SliverStaggeredGrid(
+														key: PageStorageKey('filtered staggered grid for ${widget.id}'),
+														gridDelegate: widget.staggeredGridDelegate!,
+														delegate: SliverDontRebuildChildBuilderDelegate(
+															(context, i) => Stack(
+																children: [
+																	Provider.value(
+																		value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
+																		builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
+																	),
+																	Align(
+																		alignment: Alignment.topRight,
+																		child: Padding(
+																			padding: const EdgeInsets.only(top: 8, right: 8),
+																			child: AdaptiveFilledButton(
+																				padding: EdgeInsets.zero,
+																				child: const Icon(CupertinoIcons.question),
+																				onPressed: () {
+																					alert(context, 'Filter reason', filteredValues[i].filterReason ?? 'Unknown');
+																				}
+																			)
+																		)
+																	)
+																]
+															),
+															list: filteredValues,
+															id: '$forceRebuildId',
+															childCount: filteredValues.length,
+															addRepaintBoundaries: false,
+															addAutomaticKeepAlives: false,
+															fastHeightEstimate: _fastHeightEstimate
+														)
+													)
+													else if (widget.gridDelegate != null) SliverGrid(
 														key: PageStorageKey('filtered grid for ${widget.id}'),
 														gridDelegate: widget.gridDelegate!,
 														delegate: SliverDontRebuildChildBuilderDelegate(
@@ -3376,7 +3437,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}) async {
 		final startPixels = scrollController?.tryPosition?.pixels ?? 0;
 		final (int, int) proposedRange;
-		final rangeBonus = (state?.useTree == true || state?.widget.gridDelegate != null) ? 5 : 0;
+		final rangeBonus = (state?.useTree == true || state?.widget.gridDelegate != null || state?.widget.staggeredGridDelegate != null) ? 5 : 0;
 		if (targetIndex > firstVisibleIndex) {
 			// Scrolling forwards
 			proposedRange = (lastVisibleIndex + 1, targetIndex - 12 - rangeBonus);

@@ -2276,6 +2276,17 @@ class SavedSettingsFields {
     fieldName: 'imageMetaFilterDepth',
     merger: PrimitiveMerger(),
   );
+  static bool getUseStaggeredCatalogGrid(SavedSettings x) =>
+      x.useStaggeredCatalogGrid;
+  static void setUseStaggeredCatalogGrid(SavedSettings x, bool v) =>
+      x.useStaggeredCatalogGrid = v;
+  static const useStaggeredCatalogGrid = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getUseStaggeredCatalogGrid,
+    setter: setUseStaggeredCatalogGrid,
+    fieldNumber: 191,
+    fieldName: 'useStaggeredCatalogGrid',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2466,7 +2477,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     187: SavedSettingsFields.attachmentsPageUsePageView,
     188: SavedSettingsFields.showReplyCountInCatalog,
     189: SavedSettingsFields.watchThreadAutomaticallyWhenCreating,
-    190: SavedSettingsFields.imageMetaFilterDepth
+    190: SavedSettingsFields.imageMetaFilterDepth,
+    191: SavedSettingsFields.useStaggeredCatalogGrid
   };
 
   @override
@@ -2671,13 +2683,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showReplyCountInCatalog: fields[188] as bool?,
       watchThreadAutomaticallyWhenCreating: fields[189] as bool?,
       imageMetaFilterDepth: fields[190] as int?,
+      useStaggeredCatalogGrid: fields[191] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(178)
+      ..writeByte(179)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3033,7 +3046,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(189)
       ..write(obj.watchThreadAutomaticallyWhenCreating)
       ..writeByte(190)
-      ..write(obj.imageMetaFilterDepth);
+      ..write(obj.imageMetaFilterDepth)
+      ..writeByte(191)
+      ..write(obj.useStaggeredCatalogGrid);
   }
 
   @override
