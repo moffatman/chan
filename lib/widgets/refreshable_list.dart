@@ -340,7 +340,12 @@ class RefreshableListItem<T extends Object> {
 			 _state = state;
 
 	@override
-	String toString() => 'RefreshableListItem<$T>(item: $item, id: $id, representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}, representsUnloadedPages: $representsUnloadedPages, treeDescendantIds: $treeDescendantIds)';
+	String toString() => 'RefreshableListItem<$T>(${[
+		id.toString(),
+		if (representsStubChildren) 'representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}',
+		if (representsUnloadedPages.isNotEmpty) 'representsUnloadedPages: $representsUnloadedPages',
+		if (treeDescendantIds.isNotEmpty) 'treeDescendantIds: $treeDescendantIds)'
+	].join(', ')})';
 
 	@override
 	bool operator == (Object other) =>
