@@ -42,12 +42,15 @@ class FilterAlternative {
 	});
 }
 
+const _kDummyHeight = 120.0;
+
 class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegate {
 	final List<T>? list;
 	final Object? separatorSentinel;
 	final String? id;
 	final void Function(int, int)? _didFinishLayout;
 	final double? Function(T)? fastHeightEstimate;
+	final double? Function(T)? fastErrorEstimate;
 	final NullableIndexedWidgetBuilder? separatorBuilder;
 
 	const SliverDontRebuildChildBuilderDelegate(
@@ -64,6 +67,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
     super.semanticIndexOffset,
 		void Function(int, int)? didFinishLayout,
 		this.fastHeightEstimate,
+		this.fastErrorEstimate,
 		this.separatorBuilder
   }) : _didFinishLayout = didFinishLayout;
 
@@ -103,6 +107,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 					if (estimate != 0) {
 						remainingCount++;
 					}
+					knownOffset += fastErrorEstimate?.call(items[i]) ?? 0;
 				}
 			}
 			else {
@@ -111,6 +116,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 					if (estimate != 0) {
 						remainingCount++;
 					}
+					knownOffset += fastErrorEstimate?.call(items[i]) ?? 0;
 				}
 			}
 			knownCount = 0;
@@ -530,13 +536,19 @@ class _RefreshableTreeItemsCacheKey {
 	}
 }
 
+enum _DummyStatus {
+	// Null = never built as dummy
+	previously,
+	now
+}
+
 class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final List<List<int>> manuallyCollapsedItems;
 	final Map<int, int> defaultPrimarySubtreeParents = {};
 	final Map<int, int> primarySubtreeParents;
 	final Set<List<int>> loadingOmittedItems = {};
 	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = Map.identity();
-	final Map<_RefreshableTreeItemsCacheKey, bool> _dummyCache = Map.identity();
+	final Map<_RefreshableTreeItemsCacheKey, _DummyStatus> _dummyCache = Map.identity();
 	/// If the bool is false, we haven't laid out this item yet.
 	/// Don't show the indicator on the parent.
 	/// That's because its child might end up being shown.
@@ -1522,15 +1534,20 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (item.representsUnloadedPages.isNotEmpty) {
 			return 50;
 		}
-		if (_refreshableTreeItems._dummyCache[item._key] ?? false) {
+		if (_refreshableTreeItems._dummyCache[item._key] == _DummyStatus.now) {
 			// Match to dummy builder
-			return 64;
+			return _kDummyHeight;
 		}
 		return null;
 	}
 
 	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy) {
-		_refreshableTreeItems._dummyCache[value._key] = dummy;
+		if (dummy) {
+			_refreshableTreeItems._dummyCache[value._key] = _DummyStatus.now;
+		}
+		else if (_refreshableTreeItems._dummyCache[value._key] == _DummyStatus.now) {
+			_refreshableTreeItems._dummyCache[value._key] = _DummyStatus.previously;
+		}
 		if (dummy) {
 			// Terrible hack
 			if (_refreshableTreeItems.isItemHidden(value).isHidden) {
@@ -2695,6 +2712,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															return null;
 														},
 														fastHeightEstimate: _fastHeightEstimate,
+														fastErrorEstimate: (item) {
+															final tt = widget.controller?._items.tryFirstWhere((i) => identical(i.item, item));
+															if (_refreshableTreeItems._dummyCache[tt?.item._key] == _DummyStatus.previously) {
+																// Item was previously dummy. so its contribution to scrollOffset is not correct
+																return (tt?.cachedHeight ?? _kDummyHeight) - _kDummyHeight;
+															}
+															// No error
+															return null;
+														},
 														didFinishLayout: (startIndex, endIndex) {
 															widget.controller?.didFinishLayout.call((startIndex / 2).ceil(), (endIndex / 2).floor());
 														},
@@ -3131,6 +3157,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				for (final item in _items.skip(index + 1)) {
 					item.cachedOffset = null;
 				}
+			}
+			if (index == 0) {
+				// Reset the dummy cache. Scroll offset is now guaranteed to be correct.
+				state?._refreshableTreeItems._dummyCache.clear();
 			}
 			item.cachedOffset = newOffset;
 			final keys = _itemCacheCallbacks.keys.toList();
