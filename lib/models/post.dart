@@ -250,7 +250,7 @@ class Post implements Filterable {
 	@override
 	bool get hasFile => attachments.isNotEmpty;
 	@override
-	bool get isThread => false;
+	bool get isThread => id == threadId;
 	List<int>? _repliedToIds;
 	@override
 	List<int> get repliedToIds {
