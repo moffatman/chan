@@ -903,7 +903,7 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 		}
 		(_text!.parentData as BoxParentData).offset = Offset(0, _textAboveAttachment ? 0 : _attachment!.size.height);
 		(_attachment!.parentData as BoxParentData).offset = Offset(0, _textAboveAttachment ? _text!.size.height : 0);
-		size = Size(constraints.maxWidth, _text!.size.height + _attachment!.size.height);
+		size = Size(constraints.maxWidth, min(constraints.maxHeight, _text!.size.height + _attachment!.size.height));
 	}
 
 	@override
