@@ -409,13 +409,21 @@ class OutboxModal extends StatelessWidget {
 		return AnimatedBuilder(
 			animation: Outbox.instance,
 			builder: (context, _) {
-				final queues = Outbox.instance.queues.entries.where((q) => q.value.list.any((e) => !e.state.isFinished)).toList();
+				final list = <(MapEntry<QueueEntryActionKey, OutboxQueue>?, QueueEntry?)>[
+					(null, null), // header
+					for (final queue in Outbox.instance.queues.entries.where((q) => q.value.list.any((e) => !e.state.isFinished))) ...[
+						(queue, null),
+						...queue.value.list.where((entry) => !entry.state.isFinished).map((entry) => (queue, entry))
+					]
+				];
 				return OverscrollModalPage.sliver(
 					sliver: SliverList(
 						delegate: SliverChildBuilderDelegate(
 							(context, i) {
-								if (i == 0) {
+								final (queue, entry) = list[i];
+								if (queue == null) {
 									return Builder(
+										key: ObjectKey(list[i]),
 										builder: (context) => Container(
 											padding: const EdgeInsets.all(16),
 											decoration: BoxDecoration(
@@ -437,7 +445,7 @@ class OutboxModal extends StatelessWidget {
 															)
 														]
 													),
-													if (queues.isEmpty) const Center(
+													if (list.length == 1) const Center(
 														child: Padding(
 															padding: EdgeInsets.all(16),
 															child: Text('Nothing queued')
@@ -448,56 +456,51 @@ class OutboxModal extends StatelessWidget {
 										)
 									);
 								}
-								final queue = queues[i - 1];
-								return Column(
-									key: ObjectKey(queue),
-									mainAxisSize: MainAxisSize.min,
-									crossAxisAlignment: CrossAxisAlignment.stretch,
-									children: [
-										Builder(
-											builder: (context) => Container(
-												padding: const EdgeInsets.all(8),
-												color: ChanceTheme.barColorOf(context),
-												child: Row(
-													children: [
-														const SizedBox(width: 16),
-														ImageboardIcon(
-															imageboardKey: queue.key.$1,
-														),
-														const SizedBox(width: 8),
-														Expanded(
-															child: Text((ImageboardRegistry.instance.getImageboard(queue.key.$1)?.site.formatBoardName(queue.key.$2)).toString())
-														),
-														const SizedBox(width: 8),
-														Text(queue.capitalizedName),
-														const SizedBox(width: 16)
-													]
-												)
+								if (entry == null) {
+									return Builder(
+										key: ObjectKey(list[i]),
+										builder: (context) => Container(
+											padding: const EdgeInsets.all(8),
+											color: ChanceTheme.barColorOf(context),
+											child: Row(
+												children: [
+													const SizedBox(width: 16),
+													ImageboardIcon(
+														imageboardKey: queue.key.$1,
+													),
+													const SizedBox(width: 8),
+													Expanded(
+														child: Text((ImageboardRegistry.instance.getImageboard(queue.key.$1)?.site.formatBoardName(queue.key.$2)).toString())
+													),
+													const SizedBox(width: 8),
+													Text(queue.capitalizedName),
+													const SizedBox(width: 16)
+												]
 											)
-										),
-										...queue.value.list.where((entry) => !entry.state.isFinished).map((entry) => QueueEntryWidget(
-											key: ObjectKey(entry),
-											entry: entry,
-											replyBoxMode: false,
-											onGoToThread: (imageboardKey == entry.imageboardKey && parentThread == entry.thread) ? null : () {
-												Navigator.pop(context, (entry, _OutboxModalPopType.goToThread));
-											},
-											onMove: entry is QueuedPost && canPopWithDraft ? () {
-												Navigator.pop(context, (entry, _OutboxModalPopType.move));
-											} : null,
-											onCopy: entry is QueuedPost && canPopWithDraft ? () {
-												Navigator.pop(context, (entry, _OutboxModalPopType.copy));
-											} : null
-										))
-									]
+										)
+									);
+								}
+								return QueueEntryWidget(
+									key: ObjectKey(list[i]),
+									entry: entry,
+									replyBoxMode: false,
+									onGoToThread: (imageboardKey == entry.imageboardKey && parentThread == entry.thread) ? null : () {
+										Navigator.pop(context, (entry, _OutboxModalPopType.goToThread));
+									},
+									onMove: entry is QueuedPost && canPopWithDraft ? () {
+										Navigator.pop(context, (entry, _OutboxModalPopType.move));
+									} : null,
+									onCopy: entry is QueuedPost && canPopWithDraft ? () {
+										Navigator.pop(context, (entry, _OutboxModalPopType.copy));
+									} : null
 								);
 							},
-							childCount: queues.length + 1,
+							childCount: list.length,
 							findChildIndexCallback: (key) {
 								if (key is ObjectKey) {
 									final obj = key.value;
-									if (obj is MapEntry<QueueEntryActionKey, OutboxQueue>) {
-										final idx = queues.indexWhere((q) => q.key == obj.key);
+									if (obj is (MapEntry<QueueEntryActionKey, OutboxQueue>?, QueueEntry?)) {
+										final idx = list.indexOf(obj);
 										if (idx >= 0) {
 											return idx;
 										}
