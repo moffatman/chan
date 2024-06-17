@@ -1,14 +1,17 @@
+import 'dart:async';
+
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_thin_button.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class AdaptiveFilledButton extends StatelessWidget {
+class AdaptiveFilledButton<T> extends StatelessWidget {
 	final Widget child;
-	final VoidCallback? onPressed;
+	final FutureOr<T> Function()? onPressed;
 	final EdgeInsets? padding;
 	final BorderRadius? borderRadius;
 	final double? minSize;
@@ -30,6 +33,17 @@ class AdaptiveFilledButton extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final onPressed = this.onPressed == null ? null : () async {
+			try {
+				await this.onPressed?.call();
+			}
+			catch (e, st) {
+				Future.error(e, st);
+				if (context.mounted) {
+					alertError(context, e.toStringDio());
+				}
+			}
+		};
 		if (ChanceTheme.materialOf(context)) {
 			return FilledButton(
 				onPressed: onPressed,
@@ -70,9 +84,9 @@ class AdaptiveFilledButton extends StatelessWidget {
 	}
 }
 
-class AdaptiveThinButton extends StatelessWidget {
+class AdaptiveThinButton<T> extends StatelessWidget {
 	final Widget child;
-	final VoidCallback? onPressed;
+	final FutureOr<T> Function()? onPressed;
 	final EdgeInsets padding;
 	final bool filled;
 	final bool backgroundFilled;
@@ -90,6 +104,17 @@ class AdaptiveThinButton extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final onPressed = this.onPressed == null ? null : () async {
+			try {
+				await this.onPressed?.call();
+			}
+			catch (e, st) {
+				Future.error(e, st);
+				if (context.mounted) {
+					alertError(context, e.toStringDio());
+				}
+			}
+		};
 		if (ChanceTheme.materialOf(context)) {
 			final theme = context.watch<SavedTheme>();
 			return OutlinedButton(
@@ -139,9 +164,9 @@ extension _AsSquare on double? {
 	}
 }
 
-class AdaptiveIconButton extends StatelessWidget {
+class AdaptiveIconButton<T> extends StatelessWidget {
 	final Widget icon;
-	final VoidCallback? onPressed;
+	final FutureOr<T> Function()? onPressed;
 	final double minSize;
 	final EdgeInsets padding;
 	final bool dimWhenDisabled;
@@ -157,6 +182,17 @@ class AdaptiveIconButton extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final onPressed = this.onPressed == null ? null : () async {
+			try {
+				await this.onPressed?.call();
+			}
+			catch (e, st) {
+				Future.error(e, st);
+				if (context.mounted) {
+					alertError(context, e.toStringDio());
+				}
+			}
+		};
 		if (ChanceTheme.materialOf(context)) {
 			return IconButton(
 				padding: padding,
@@ -183,9 +219,9 @@ class AdaptiveIconButton extends StatelessWidget {
 	}
 }
 
-class AdaptiveButton extends StatelessWidget {
+class AdaptiveButton<T> extends StatelessWidget {
 	final Widget child;
-	final VoidCallback? onPressed;
+	final FutureOr<T> Function()? onPressed;
 	final EdgeInsets? padding;
 
 	const AdaptiveButton({
@@ -197,6 +233,17 @@ class AdaptiveButton extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final onPressed = this.onPressed == null ? null : () async {
+			try {
+				await this.onPressed?.call();
+			}
+			catch (e, st) {
+				Future.error(e, st);
+				if (context.mounted) {
+					alertError(context, e.toStringDio());
+				}
+			}
+		};
 		if (ChanceTheme.materialOf(context)) {
 			return TextButton(
 				onPressed: onPressed,
