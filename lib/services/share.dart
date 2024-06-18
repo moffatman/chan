@@ -16,6 +16,7 @@ Future<void> shareOne({
 	required Rect? sharePositionOrigin,
 	Map<String, VoidCallback> additionalOptions = const {}
 }) async {
+	sharePositionOrigin ??= const Rect.fromLTWH(0, 0, 1, 1);
 	lightHapticFeedback();
 	if (type == 'file') {
 		try {
