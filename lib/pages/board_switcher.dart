@@ -37,6 +37,15 @@ extension _Nullify on ImageboardScoped<ImageboardBoard> {
 	);
 }
 
+extension _IndexOfOrInfinity on String {
+	int indexOfOrInfinity(String other) {
+		return switch (indexOf(other)) {
+			-1 => 1 << 50,
+			int idx => idx
+		};
+	}
+}
+
 class BoardSwitcherPage extends StatefulWidget {
 	final bool Function(Imageboard imageboard)? filterImageboards;
 	final String? initialImageboardKey;
@@ -98,7 +107,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				}
 			}
 		}
-		boards.sort((a, b) => a.item.name.compareTo(b.item.name));
+		boards.sort((a, b) => a.item.name.toLowerCase().compareTo(b.item.name.toLowerCase()));
 	}
 
 	@override
@@ -195,20 +204,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				 board.item.title.toLowerCase().contains(normalized) ||
 				 board.imageboard.site.name.toLowerCase().contains(normalized));
 		}).toList();
-		if (searchString.isNotEmpty) {
+		if (normalized.isNotEmpty) {
 			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-				return a.item.name.length - b.item.name.length;
+				return (b.item.title.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.title.toLowerCase().contains(normalized) ? 1 : 0);
+			});
+			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
+				return (a.item.name.toLowerCase().indexOfOrInfinity(normalized) + a.item.name.length) - (b.item.name.toLowerCase().indexOfOrInfinity(normalized) + b.item.name.length);
 			});
 		}
-		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return a.item.name.toLowerCase().indexOf(normalized) - b.item.name.toLowerCase().indexOf(normalized);
-		});
-		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return (b.item.name.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.name.toLowerCase().contains(normalized) ? 1 : 0);
-		});
-		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return (b.item.title.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.title.toLowerCase().contains(normalized) ? 1 : 0);
-		});
 		final imageboards = allImageboards.toList();
 		imageboards.remove(currentImageboard);
 		imageboards.insert(0, currentImageboard);
