@@ -241,7 +241,7 @@ class AttachmentThumbnail extends StatelessWidget {
 							height: effectiveHeight,
 							color: barColor,
 							child: Center(
-								child: Icon((loadstate.extendedImageLoadState == LoadState.failed && url.isNotEmpty ? CupertinoIcons.exclamationmark_triangle_fill : (attachment.icon ?? Adaptive.icons.photo)), size: max(24, 0.5 * min(effectiveWidth, effectiveHeight)))
+								child: Icon((loadstate.extendedImageLoadState == LoadState.failed && url.isNotEmpty ? CupertinoIcons.exclamationmark_triangle_fill : (attachment.icon ?? Adaptive.icons.photo)), size: (0.5 * min(effectiveWidth, effectiveHeight)).clamp(24, 100))
 							)
 						);
 					}
