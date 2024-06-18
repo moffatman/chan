@@ -675,11 +675,13 @@ class McCaptchaRequest extends CaptchaRequest {
 
 class JsChanCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
+	final String type;
 	const JsChanCaptchaRequest({
-		required this.challengeUrl
+		required this.challengeUrl,
+		required this.type
 	});
 	@override
-	String toString() => 'JsChanCaptchaRequest(challengeUrl: $challengeUrl)';
+	String toString() => 'JsChanCaptchaRequest(challengeUrl: $challengeUrl, type: $type)';
 }
 
 abstract class CaptchaSolution {
@@ -835,8 +837,15 @@ class McCaptchaSolution extends CaptchaSolution {
 	String toString() => 'McCaptchaSolution(guid: $guid, x: $x, y: $y, answer: $answer)';
 }
 
-class JsChanCaptchaSolution extends CaptchaSolution {
+abstract class JsChanCaptchaSolution extends CaptchaSolution {
 	final String id;
+	JsChanCaptchaSolution({
+		required this.id,
+		required super.acquiredAt
+	});
+}
+
+class JsChanGridCaptchaSolution extends JsChanCaptchaSolution {
 	///  0  1  2  3
 	///  4  5  6  7
 	///  8  9 10 11
@@ -846,15 +855,32 @@ class JsChanCaptchaSolution extends CaptchaSolution {
 	@override
 	DateTime? get expiresAt => acquiredAt.add(lifetime);
 
-	JsChanCaptchaSolution({
+	JsChanGridCaptchaSolution({
 		required super.acquiredAt,
-		required this.id,
+		required super.id,
 		required this.selected,
 		required this.lifetime
 	});
 	@override
-	String toString() => 'JsChanCaptchaSolution(id: $id, selected: $selected, lifetime: $lifetime)';
+	String toString() => 'JsChanGridCaptchaSolution(id: $id, selected: $selected, lifetime: $lifetime)';
 }
+
+class JsChanTextCaptchaSolution extends JsChanCaptchaSolution {
+	final String text;
+	final Duration lifetime;
+	@override
+	DateTime? get expiresAt => acquiredAt.add(lifetime);
+
+	JsChanTextCaptchaSolution({
+		required super.acquiredAt,
+		required super.id,
+		required this.text,
+		required this.lifetime
+	});
+	@override
+	String toString() => 'JsChanTextCaptchaSolution(id: $id, text: $text, lifetime: $lifetime)';
+}
+
 
 class ImageboardArchiveSearchResult {
 	final Post? post;
@@ -1887,6 +1913,8 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
 			faviconPath: data['faviconPath'],
+			postingCaptcha: data['postingCaptcha'] ?? 'grid',
+			deletingCaptcha: data['deletingCaptcha'] ?? 'grid',
 			platformUserAgents: platformUserAgents
 		);
 	}

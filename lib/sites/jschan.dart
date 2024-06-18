@@ -24,13 +24,17 @@ class SiteJsChan extends ImageboardSite {
 	@override
 	final String defaultUsername;
 	final String faviconPath;
+	final String postingCaptcha;
+	final String deletingCaptcha;
 
 	SiteJsChan({
 		required this.baseUrl,
 		required this.name,
 		this.defaultUsername = 'Anonymous',
 		required this.faviconPath,
-		super.platformUserAgents
+		super.platformUserAgents,
+		required this.postingCaptcha,
+		required this.deletingCaptcha
 	});
 
 	static final _quoteLinkHrefPattern = RegExp(r'/([^/]+)/thread/(\d+)\.html(?:#(\d+))?$');
@@ -161,14 +165,14 @@ class SiteJsChan extends ImageboardSite {
 				'delete': '1',
 				'report_reason': '',
 				'postpassword': receipt.password,
-				if (captchaSolution is JsChanCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort()
+				if (captchaSolution is JsChanGridCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort()
+				else if (captchaSolution is JsChanTextCaptchaSolution) 'captcha': captchaSolution.text
 			},
 			options: Options(
 				headers: {
 					'accept': '*/*',
 					'referer': getWebUrlImpl(thread.board, thread.id),
-					if (captchaSolution is JsChanCaptchaSolution) 'cookie': 'captchaid=${captchaSolution.id}',
-					'x-using-xhr': true
+					if (captchaSolution is JsChanCaptchaSolution) 'cookie': 'captchaid=${captchaSolution.id}'
 				},
 				extra: {
 					kPriority: RequestPriority.interactive
@@ -178,11 +182,23 @@ class SiteJsChan extends ImageboardSite {
 				responseType: ResponseType.json
 			)
 		);
-		if (response.data is! Map) {
+		String? title;
+		if (response.data is Map) {
+			title = response.data['title'];
+		}
+		else if (response.data is String) {
+			title = parse(response.data).querySelector('title')?.text;
+		}
+		if (title == null) {
+			print(response.data);
 			throw HTTPStatusException(response.statusCode ?? 0);
 		}
-		if (response.data['title'] != 'Success') {
-			throw _makeException(response.data);
+		if (title != 'Success') {
+			if (response.data is Map) {
+				throw _makeException(response.data);
+			}
+			// HTML <title>
+			throw DeletionFailedException(title);
 		}
 	}
 
@@ -219,14 +235,16 @@ class SiteJsChan extends ImageboardSite {
 		return list;
 	}
 
-	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		return JsChanCaptchaRequest(challengeUrl: Uri.https(baseUrl, '/captcha'));
-	}
+	CaptchaRequest _getCaptcha(String type) => switch (type) {
+		'none' => const NoCaptchaRequest(),
+		String other => JsChanCaptchaRequest(challengeUrl: Uri.https(baseUrl, '/captcha'), type: other)
+	};
 
 	@override
-	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread)
-		=> getCaptchaRequest(thread.board, thread.id);
+	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async => _getCaptcha(postingCaptcha);
+
+	@override
+	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread) async => _getCaptcha(deletingCaptcha);
 
 	Post _makePost(Map post) {
 		final threadId = post['thread'] ?? post['postId'] /* op */;
@@ -345,7 +363,8 @@ class SiteJsChan extends ImageboardSite {
 					filename: post.overrideFilename,
 					contentType: MediaScan.guessMimeTypeFromPath(file)
 				),
-				if (captchaSolution is JsChanCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort(),
+				if (captchaSolution is JsChanGridCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort()
+				else if (captchaSolution is JsChanTextCaptchaSolution) 'captcha': captchaSolution.text
 			}),
 			options: Options(
 				headers: {
@@ -387,8 +406,10 @@ class SiteJsChan extends ImageboardSite {
 		other.name == name &&
 		other.defaultUsername == defaultUsername &&
 		other.faviconPath == faviconPath &&
-		mapEquals(other.platformUserAgents, platformUserAgents);
+		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		postingCaptcha == other.postingCaptcha &&
+		deletingCaptcha == other.deletingCaptcha;
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, defaultUsername, faviconPath, platformUserAgents);
+	int get hashCode => Object.hash(baseUrl, name, defaultUsername, faviconPath, platformUserAgents, postingCaptcha, deletingCaptcha);
 }

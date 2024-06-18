@@ -52,11 +52,15 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 	String? errorMessage;
 	CaptchaJsChanChallenge? challenge;
 	final selected = <int>{};
+	late final TextEditingController controller;
+	late final FocusNode _solutionNode;
 
 	@override
 	void initState() {
 		super.initState();
 		_tryRequestChallenge();
+		controller = TextEditingController();
+		_solutionNode = FocusNode();
 	}
 
 	Future<CaptchaJsChanChallenge> _requestChallenge() async {
@@ -90,6 +94,9 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 			});
 			challenge = await _requestChallenge();
 			setState(() {});
+			if (widget.request.type == 'text') {
+				_solutionNode.requestFocus();
+			}
 		}
 		catch(e, st) {
 			print(e);
@@ -100,13 +107,34 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 		}
 	}
 
-	void _solve() {
-		widget.onCaptchaSolved(JsChanCaptchaSolution(
+	void _solveText() {
+		widget.onCaptchaSolved(JsChanTextCaptchaSolution(
+			id: challenge!.id,
+			text: controller.text,
+			lifetime: challenge!.lifetime,
+			acquiredAt: challenge!.acquiredAt
+		));
+	}
+
+	void _solveGrid() {
+		widget.onCaptchaSolved(JsChanGridCaptchaSolution(
 			id: challenge!.id,
 			selected: selected.toSet(),
 			lifetime: challenge!.lifetime,
 			acquiredAt: challenge!.acquiredAt
 		));
+	}
+
+	void _solve() {
+		if (widget.request.type == 'text') {
+			_solveText();
+		}
+		else if (widget.request.type == 'grid') {
+			_solveGrid();
+		}
+		else {
+			throw ArgumentError('Unrecognized captcha type', widget.request.type);
+		}
 	}
 
 	Widget _build(BuildContext context) {
@@ -127,58 +155,92 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 			return Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					const Text('Select the solid/filled icons'),
-					const SizedBox(height: 16),
-					Flexible(
-						child: ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxWidth: 500
-							),
-							child: Row(
-								children: [
-									Flexible(
-										flex: 1,
-										fit: FlexFit.tight,
-										child: Image.memory(
-											challenge!.imageBytes,
-											width: 150,
-											height: 150
-										)
-									),
-									Flexible(
-										flex: 1,
-										fit: FlexFit.loose,
-										child: Center(
-											child: SizedBox(
+					if (widget.request.type == 'grid') ...[
+						const Text('Select the solid/filled icons'),
+						const SizedBox(height: 16),
+						Flexible(
+							child: ConstrainedBox(
+								constraints: const BoxConstraints(
+									maxWidth: 500
+								),
+								child: Row(
+									children: [
+										Flexible(
+											flex: 1,
+											fit: FlexFit.tight,
+											child: Image.memory(
+												challenge!.imageBytes,
 												width: 150,
-												height: 150,
-												child: GridView.builder(
-													shrinkWrap: true,
-													gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-														crossAxisCount: 4,
-														childAspectRatio: 1
-													),
-													itemCount: 16,
-													itemBuilder: (context, i) => Checkbox.adaptive(
-														value: selected.contains(i),
-														onChanged: (v) {
-															if (v ?? false) {
-																selected.add(i);
-															}
-															else {
-																selected.remove(i);
-															}
-															setState(() {});
-														},
+												height: 150
+											)
+										),
+										Flexible(
+											flex: 1,
+											fit: FlexFit.loose,
+											child: Center(
+												child: SizedBox(
+													width: 150,
+													height: 150,
+													child: GridView.builder(
+														shrinkWrap: true,
+														gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+															crossAxisCount: 4,
+															childAspectRatio: 1
+														),
+														itemCount: 16,
+														itemBuilder: (context, i) => Checkbox.adaptive(
+															value: selected.contains(i),
+															onChanged: (v) {
+																if (v ?? false) {
+																	selected.add(i);
+																}
+																else {
+																	selected.remove(i);
+																}
+																setState(() {});
+															},
+														)
 													)
 												)
 											)
 										)
+									]
+								)
+							)
+						),
+					]
+					else if (widget.request.type == 'text') ...[
+						const Text('Enter the text in the image below'),
+						const SizedBox(height: 16),
+						Flexible(
+							child: ConstrainedBox(
+								constraints: const BoxConstraints(
+									maxWidth: 500
+								),
+								child: FractionallySizedBox(
+									widthFactor: 0.5,
+									child: Image.memory(
+										challenge!.imageBytes,
+										width: 150,
+										height: 150
 									)
-								]
+								)
+							)
+						),
+						const SizedBox(height: 16),
+						SizedBox(
+							width: 150,
+							child: AdaptiveTextField(
+								focusNode: _solutionNode,
+								enableIMEPersonalizedLearning: false,
+								autocorrect: false,
+								controller: controller,
+								placeholder: 'Captcha text',
+								onSubmitted: (_) => _solveText()
 							)
 						)
-					),
+					]
+					else Text('Unrecognized captcha type: ${widget.request.type}'),
 					const SizedBox(height: 16),
 					ConstrainedBox(
 						constraints: const BoxConstraints(
@@ -246,5 +308,12 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 				child: _build(context)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		controller.dispose();
+		_solutionNode.dispose();
 	}
 }
