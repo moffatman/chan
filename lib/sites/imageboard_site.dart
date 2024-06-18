@@ -17,6 +17,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
+import 'package:chan/sites/8kun.dart';
 import 'package:chan/sites/dvach.dart';
 import 'package:chan/sites/erischan.dart';
 import 'package:chan/sites/foolfuuka.dart';
@@ -1876,6 +1877,31 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			basePath: data['basePath'] ?? '',
+			imageThumbnailExtension: data['imageThumbnailExtension'],
+			faviconPath: data['faviconPath'],
+			boardsPath: data['boardsPath'],
+			defaultUsername: data['defaultUsername'],
+			platformUserAgents: platformUserAgents,
+			boards: boards,
+			formBypass: {
+				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
+					entry.key as String: (entry.value as Map).cast<String, String>()
+			}
+		);
+	}
+	else if (data['type'] == '8kun') {
+		final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
+			title: b['title'],
+			name: b['name'],
+			isWorksafe: b['isWorksafe'],
+			webmAudioAllowed: true
+		)).toList();
+		return Site8Kun(
+			name: data['name'],
+			baseUrl: data['baseUrl'],
+			basePath: data['basePath'] ?? '',
+			sysUrl: data['sysUrl'],
+			imageUrl: data['imageUrl'],
 			imageThumbnailExtension: data['imageThumbnailExtension'],
 			faviconPath: data['faviconPath'],
 			boardsPath: data['boardsPath'],

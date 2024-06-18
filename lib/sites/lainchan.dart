@@ -29,6 +29,7 @@ import 'package:string_similarity/string_similarity.dart';
 class SiteLainchan extends ImageboardSite {
 	@override
 	final String baseUrl;
+	String get sysUrl => baseUrl;
 	final String basePath;
 	@override
 	final String name;
@@ -65,43 +66,62 @@ class SiteLainchan extends ImageboardSite {
 	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+)(?:\.html)?#(\d+)');
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
-		final body = parseFragment(data.replaceAll('<wbr>', ''));
-		final List<PostSpan> elements = [];
-		for (final node in body.nodes) {
-			if (node is dom.Element) {
-				if (node.localName == 'br') {
-					elements.add(const PostLineBreakSpan());
-				}
-				else if (node.localName == 'a' && node.attributes['href'] != null) {
-					final match = _quoteLinkPattern.firstMatch(node.attributes['href']!);
-					if (match != null) {
-						elements.add(PostQuoteLinkSpan(
-							board: match.group(1)!,
-							threadId: int.parse(match.group(2)!),
-							postId: int.parse(match.group(3)!)
-						));
+		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAll('<em>//</em>', '//'));
+		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
+			for (final node in nodes) {
+				if (node is dom.Element) {
+					if (node.localName == 'br') {
+						yield const PostLineBreakSpan();
+					}
+					else if (node.localName == 'a' && node.attributes['href'] != null) {
+						final match = _quoteLinkPattern.firstMatch(node.attributes['href']!);
+						if (match != null) {
+							yield PostQuoteLinkSpan(
+								board: match.group(1)!,
+								threadId: int.parse(match.group(2)!),
+								postId: int.parse(match.group(3)!)
+							);
+						}
+						else {
+							yield PostLinkSpan(node.attributes['href']!);
+						}
+					}
+					else if (node.localName == 'strong') {
+						yield PostBoldSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
+					else if (node.localName == 'em') {
+						yield PostItalicSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
+					else if (node.localName == 'u') {
+						yield PostUnderlinedSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
+					else if (node.localName == 'span') {
+						if (node.classes.contains('quote') || node.classes.contains('unkfunc')) {
+							yield PostQuoteSpan(makeSpan(board, threadId, node.innerHtml));
+						}
+						else {
+							yield PostTextSpan(node.text);
+						}
+					}
+					else if (node.localName == 'p') {
+						if (node.classes.contains('quote')) {
+							yield PostQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+						}
+						else {
+							yield* visit(node.nodes);
+						}
+						yield const PostLineBreakSpan();
 					}
 					else {
-						elements.add(PostLinkSpan(node.attributes['href']!));
-					}
-				}
-				else if (node.localName == 'span') {
-					if (node.classes.contains('quote') || node.classes.contains('unkfunc')) {
-						elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
-					}
-					else {
-						elements.add(PostTextSpan(node.text));
+						yield PostTextSpan(node.outerHtml);
 					}
 				}
 				else {
-					elements.addAll(parsePlaintext(node.text));
+					yield* parsePlaintext(node.text ?? '');
 				}
 			}
-			else {
-				elements.addAll(parsePlaintext(node.text ?? ''));
-			}
 		}
-		return PostNodeSpan(elements.toList(growable: false));
+		return PostNodeSpan(visit(body.nodes).toList(growable: false));
 	}
 
 	@protected
@@ -109,6 +129,9 @@ class SiteLainchan extends ImageboardSite {
 
 	@protected
 	Uri getThumbnailUrl(String board, String filename) => Uri.https(baseUrl, '$basePath/$board/thumb/$filename');
+
+	@protected
+	String getAttachmentId(int postId, String imageId) => imageId;
 
 	@protected
 	String? get imageThumbnailExtension => '.png';
@@ -128,8 +151,11 @@ class SiteLainchan extends ImageboardSite {
 			else if (ext == '.mp3') {
 				type = AttachmentType.mp3;
 			}
+			else if (ext == '.pdf') {
+				type = AttachmentType.pdf;
+			}
 			return Attachment(
-				id: id,
+				id: getAttachmentId(postData['no'], id),
 				type: type,
 				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
@@ -193,7 +219,7 @@ class SiteLainchan extends ImageboardSite {
 
 	Future<ImageboardPoll?> _getPoll(ThreadIdentifier thread) async {
 		try {
-			final response = await client.postUri(Uri.https(baseUrl, '$basePath/poll.php'), data: {
+			final response = await client.postUri(Uri.https(sysUrl, '$basePath/poll.php'), data: {
 				'query_poll': '1',
 				'id': thread.id.toString(),
 				'board': thread.board
@@ -349,6 +375,11 @@ class SiteLainchan extends ImageboardSite {
 		)).toList();
 	}
 
+	@protected
+	void updatePostingFields(Map<String, dynamic> fields) {
+		// Hook for subclasses
+	}
+
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
@@ -395,8 +426,9 @@ class SiteLainchan extends ImageboardSite {
 				fields['captcha_text'] = captchaSolution.answer;
 			}
 		}
+		updatePostingFields(fields);
 		final response = await client.postUri(
-			Uri.https(baseUrl, '$basePath/post.php'),
+			Uri.https(sysUrl, '$basePath/post.php'),
 			data: FormData.fromMap(fields),
 			options: Options(
 				responseType: ResponseType.plain,
@@ -407,9 +439,6 @@ class SiteLainchan extends ImageboardSite {
 			),
 			cancelToken: cancelToken
 		);
-		if ((response.statusCode ?? 0) >= 400) {
-			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'HTTP Error ${response.statusCode}');
-		}
 		if (response.isRedirect ?? false) {
 			final digitMatches = RegExp(r'\d+').allMatches(response.redirects.last.location.toString());
 			if (digitMatches.isNotEmpty) {
@@ -423,6 +452,9 @@ class SiteLainchan extends ImageboardSite {
 					ip: captchaSolution.ip
 				);
 			}
+		}
+		if ((response.statusCode ?? 0) >= 400) {
+			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'HTTP Error ${response.statusCode}');
 		}
 		final doc = parse(response.data);
 		final ban = doc.querySelector('.ban');
@@ -472,7 +504,7 @@ class SiteLainchan extends ImageboardSite {
 	@override
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
 		final response = await client.postUri(
-			Uri.https(baseUrl, '$basePath/post.php'),
+			Uri.https(sysUrl, '$basePath/post.php'),
 			data: FormData.fromMap({
 				'board': thread.board,
 				'delete_${receipt.id}': 'on',
@@ -498,7 +530,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
-		return WebReportMethod(Uri.https(baseUrl, '$basePath/report.php?post=delete_${post.postId}&board=${post.board}'));
+		return WebReportMethod(Uri.https(sysUrl, '$basePath/report.php?post=delete_${post.postId}&board=${post.board}'));
 	}
 
 	String _getWebUrl(String board, {int? threadId, int? postId, bool mod = false}) {
@@ -598,8 +630,8 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 			Persistence.currentCookies
 		];
 		for (final jar in jars) {
-			await jar.delete(Uri.https(parent.baseUrl, '${parent.basePath}/'), true);
-			await jar.delete(Uri.https(parent.baseUrl, '${parent.basePath}/mod.php'), true);
+			await jar.delete(Uri.https(parent.sysUrl, '${parent.basePath}/'), true);
+			await jar.delete(Uri.https(parent.sysUrl, '${parent.basePath}/mod.php'), true);
 			loggedIn[jar] = false;
 		}
 		await CookieManager.instance().deleteCookies(
@@ -610,7 +642,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
     final response = await parent.client.postUri(
-			Uri.https(parent.baseUrl, '${parent.basePath}/mod.php'),
+			Uri.https(parent.sysUrl, '${parent.basePath}/mod.php'),
 			data: {
 				for (final field in fields.entries) field.key.formKey: field.value,
 				'login': 'Continue'
