@@ -73,7 +73,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 											final ts = persistence.getThreadStateIfExists(thread);
 											notifications.subscribeToThread(
 												thread: thread,
-												lastSeenId: ts?.lastSeenPostId ?? thread.id,
+												lastSeenId: ts?.lastSeenPostId ?? ts?.thread?.posts_.last.id ?? thread.id,
 												localYousOnly: v == _ThreadWatchingStatus.yousOnly,
 												pushYousOnly: true,
 												youIds: ts?.youIds ?? [],
@@ -115,7 +115,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 												final ts = persistence.getThreadStateIfExists(thread);
 												notifications.subscribeToThread(
 													thread: thread,
-													lastSeenId: ts?.lastSeenPostId ?? thread.id,
+													lastSeenId: ts?.lastSeenPostId ?? ts?.thread?.posts_.last.id ?? thread.id,
 													localYousOnly: v == _ThreadWatchingStatus.yousOnly,
 													pushYousOnly: v == _ThreadWatchingStatus.yousOnly,
 													youIds: ts?.youIds ?? [],
@@ -157,7 +157,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 												final ts = persistence.getThreadStateIfExists(thread);
 												notifications.subscribeToThread(
 													thread: thread,
-													lastSeenId: ts?.lastSeenPostId ?? thread.id,
+													lastSeenId: ts?.lastSeenPostId ?? ts?.thread?.posts_.last.id ?? thread.id,
 													localYousOnly: true,
 													pushYousOnly: true,
 													youIds: ts?.youIds ?? [],
