@@ -1678,7 +1678,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											textCapitalization: TextCapitalization.sentences,
 											keyboardAppearance: ChanceTheme.brightnessOf(context),
 										),
-										if (loading) Wrap(
+										if (postingPost != null) Wrap(
 											direction: Axis.vertical,
 											spacing: 8,
 											runSpacing: 8,
@@ -1696,60 +1696,45 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														return AnimatedBuilder(
 															animation: queue,
 															builder: (context, _) {
-																final (DateTime, VoidCallback) pair;
-																if (queue.captchaAllowedTime.isAfter(DateTime.now())) {
-																	pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now());
-																}
-																else if (queue.allowedTime.isAfter(DateTime.now())) {
-																	pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now());
-																}
-																else {
-																	return const SizedBox.shrink();
-																}
-																return AdaptiveThinButton(
-																	backgroundFilled: true,
-																	onPressed: pair.$2,
-																	padding: const EdgeInsets.all(8),
-																	child: TimedRebuilder(
-																		interval: const Duration(seconds: 1),
-																		function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
-																		builder: (context, delta) => Text(
-																			'Waiting for cooldown ($delta)',
-																			style: const TextStyle(
-																				fontFeatures: [FontFeature.tabularFigures()]
+																return AnimatedBuilder(
+																	animation: postingPost,
+																	builder: (context, _) {
+																		(DateTime, VoidCallback, String)? pair;
+																		final state = postingPost.state;
+																		if (state is QueueStateNeedsCaptcha<PostReceipt> && queue.captchaAllowedTime.isAfter(DateTime.now())) {
+																			pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now(), 'Waiting for captcha');
+																		}
+																		else if (state is QueueStateWaitingWithCaptcha<PostReceipt> && queue.allowedTime.isAfter(DateTime.now())) {
+																			pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now(), 'Waiting for cooldown');
+																		}
+																		else if (state is QueueStateSubmitting<PostReceipt>) {
+																			final wait = state.wait;
+																			if (wait != null) {
+																				pair = (wait.until, wait.skip, state.message ?? 'Waiting');
+																			}
+																		}
+																		if (pair == null) {
+																			return const SizedBox.shrink();
+																		}
+																		return AdaptiveThinButton(
+																			backgroundFilled: true,
+																			onPressed: pair.$2,
+																			padding: const EdgeInsets.all(8),
+																			child: TimedRebuilder(
+																				interval: const Duration(seconds: 1),
+																				function: () => formatDuration(pair?.$1.difference(DateTime.now()).clampAboveZero ?? Duration.zero),
+																				builder: (context, delta) => Text(
+																					'${pair?.$3} ($delta)',
+																					style: const TextStyle(
+																						fontFeatures: [FontFeature.tabularFigures()]
+																					)
+																				)
 																			)
-																		)
-																	)
+																		);
+																	}
 																);
 															}
 														);
-													}
-												),
-												if (postingPost != null) AnimatedBuilder(
-													animation: postingPost,
-													builder: (context, _) {
-														final state = postingPost.state;
-														if (state is QueueStateSubmitting<PostReceipt>) {
-															final wait = state.wait;
-															if (wait != null) {
-																return AdaptiveThinButton(
-																	backgroundFilled: true,
-																	onPressed: wait.skip,
-																	padding: const EdgeInsets.all(8),
-																	child: TimedRebuilder(
-																		interval: const Duration(seconds: 1),
-																		function: () => formatDuration(wait.until.difference(DateTime.now()).clampAboveZero),
-																		builder: (context, delta) => Text(
-																			'${state.message} ($delta)',
-																			style: const TextStyle(
-																				fontFeatures: [FontFeature.tabularFigures()]
-																			)
-																		)
-																	)
-																);
-															}
-														}
-														return const SizedBox.shrink();
 													}
 												),
 												AdaptiveThinButton(
