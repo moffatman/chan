@@ -7,6 +7,7 @@ import 'package:chan/pages/settings/behavior.dart';
 import 'package:chan/pages/settings/common.dart';
 import 'package:chan/pages/settings/data.dart';
 import 'package:chan/pages/settings/site.dart';
+import 'package:chan/services/luck.dart';
 import 'package:chan/pages/staggered_grid_debugging.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/pages/tree_debugging.dart';
@@ -65,6 +66,7 @@ class _SettingsPageState extends State<SettingsPage> {
 	Iterable<Widget> _buildNormal(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
 		final settings = context.watch<Settings>();
+		final skill = calculateLuck();
 		return [
 			GestureDetector(
 				onDoubleTap: () async {
@@ -239,15 +241,24 @@ class _SettingsPageState extends State<SettingsPage> {
 			),
 			const SizedBox(height: 24),
 			...topLevelSettings.map((s) => s.build()),
-			Center(
-				child: AdaptiveButton(
-					child: const Text('Licenses'),
-					onPressed: () {
-						Navigator.of(context).push(adaptivePageRoute(
-							builder: (context) => const LicensesPage()
-						));
-					}
-				)
+			Wrap(
+				alignment: WrapAlignment.center,
+				spacing: 8,
+				runSpacing: 8,
+				children: [
+					if (skill != null) AdaptiveButton(
+						child: Text('Luck: ${(skill * 100).toStringAsFixed(0)}%'),
+						onPressed: () => showLuckPopup(context: context)
+					),
+					AdaptiveButton(
+						child: const Text('Licenses'),
+						onPressed: () {
+							Navigator.of(context).push(adaptivePageRoute(
+								builder: (context) => const LicensesPage()
+							));
+						}
+					)
+				]
 			),
 			const SizedBox(height: 8),
 			Center(
