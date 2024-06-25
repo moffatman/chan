@@ -1593,7 +1593,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: Column(
 						mainAxisAlignment: MainAxisAlignment.center,
 						children: [
-							Flexible(child: icon),
+							if (axis == Axis.horizontal) Flexible(child: icon)
+							else icon,
 							if (label != null) ...[
 								const SizedBox(height: 4),
 								ConstrainedBox(
