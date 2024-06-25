@@ -46,6 +46,7 @@ class PostsPage extends StatefulWidget {
 	final int? postIdForBackground;
 	final List<int> postsIdsToShow;
 	final ValueChanged<Post>? onTap;
+	final ValueChanged<Attachment>? onThumbnailTap;
 	final int? isRepliesForPostId;
 	final bool clearStack;
 	final Widget? header;
@@ -55,6 +56,7 @@ class PostsPage extends StatefulWidget {
 		this.postIdForBackground,
 		required this.zone,
 		this.onTap,
+		this.onThumbnailTap,
 		this.isRepliesForPostId,
 		this.clearStack = false,
 		this.header,
@@ -320,10 +322,11 @@ class _PostsPageState extends State<PostsPage> {
 										}
 									) : const Text('Missing post')) : PostRow(
 										post: reply.post!,
+										propagateOnThumbnailTap: true,
 										onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
 										onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
 																	? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
-										onThumbnailTap: (attachment) {
+										onThumbnailTap: widget.onThumbnailTap ?? (attachment) {
 											final threadState = widget.zone.imageboard.persistence.getThreadStateIfExists(reply.post!.threadIdentifier);
 											showGallery(
 												context: context,

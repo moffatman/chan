@@ -6,6 +6,8 @@ import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/post.dart';
+import 'package:chan/pages/posts.dart';
 import 'package:chan/services/audio.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
@@ -20,6 +22,9 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/post_row.dart';
+import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
@@ -97,6 +102,8 @@ class GalleryPage extends StatefulWidget {
 	final Map<Attachment, int> replyCounts;
 	final Map<Attachment, Uri> initialGoodSources;
 	final Map<Attachment, Uri> overrideSources;
+	final PostSpanZoneData? zone;
+	final ReplyBoxZone? replyBoxZone;
 	final bool Function(Attachment)? isAttachmentAlreadyDownloaded;
 	final ValueChanged<Attachment>? onAttachmentDownload;
 	final TaggedAttachment? initialAttachment;
@@ -118,6 +125,8 @@ class GalleryPage extends StatefulWidget {
 		this.replyCounts = const {},
 		this.overrideSources = const {},
 		this.initialGoodSources = const {},
+		this.zone,
+		this.replyBoxZone,
 		this.isAttachmentAlreadyDownloaded,
 		this.onAttachmentDownload,
 		required this.initialAttachment,
@@ -784,6 +793,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
 		final layoutInsets = MediaQuery.paddingOf(context);
+		final zone = widget.zone;
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
@@ -1057,6 +1067,73 @@ class _GalleryPageState extends State<GalleryPage> {
 													mainAxisSize: MainAxisSize.min,
 													crossAxisAlignment: CrossAxisAlignment.end,
 													children: [
+														if (zone != null && showChrome) AdaptiveIconButton(
+															padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+															onPressed: () {
+																final post = zone.findThread(currentAttachment.attachment.threadId ?? 0)?.posts_.tryFirstWhere((p) => p.attachments.contains(currentAttachment.attachment));
+																final imageboard = context.read<Imageboard>();
+																final navigator = Navigator.of(context);
+																// Hack to pop until here
+																Route? currentRoute;
+																navigator.popUntil((r) {
+																	currentRoute = r;
+																	return true;
+																});
+																void onThumbnailTap(Attachment attachment) {
+																	navigator.popUntil((r) => r == currentRoute);
+																	final index = widget.attachments.indexWhere((a) => a.attachment == attachment);
+																	if (index == -1) {
+																		showToast(
+																			context: context,
+																			message: 'Attachment not found!',
+																			icon: CupertinoIcons.exclamationmark_square
+																		);
+																		return;
+																	}
+																	_animateToPage(index);
+																}
+																final onNeedScrollToPost = zone.onNeedScrollToPost == null ? null : (Post post) {
+																	navigator.popUntil((r) => r == currentRoute);
+																	navigator.pop(); // Pop the gallery too
+																	zone.onNeedScrollToPost?.call(post);
+																};
+																final replyBoxZone = widget.replyBoxZone;
+																final child = ImageboardScope(
+																	imageboardKey: null,
+																	imageboard: imageboard,
+																	child: PostsPage(
+																		zone: zone.childZoneFor(null, onNeedScrollToPost: onNeedScrollToPost),
+																		header: PostRow(
+																			post: post!,
+																			isSelected: post.replyCount > 0,
+																			onThumbnailTap: onThumbnailTap,
+																			propagateOnThumbnailTap: true,
+																			onDoubleTap: bind1(onNeedScrollToPost, post)
+																		),
+																		postsIdsToShow: post.replyIds,
+																		onThumbnailTap: onThumbnailTap
+																	)
+																);
+																navigator.push(TransparentRoute(
+																	builder: (context) => replyBoxZone == null ? child : Provider.value(
+																		value: ReplyBoxZone(
+																			onTapPostId: (int threadId, int id) {
+																				navigator.popUntil((r) => r == currentRoute);
+																				navigator.pop(); // Pop the gallery too
+																				replyBoxZone.onTapPostId(threadId, id);
+																			},
+																			onQuoteText: (String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
+																				navigator.popUntil((r) => r == currentRoute);
+																				navigator.pop(); // Pop the gallery too
+																				replyBoxZone.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink);
+																			}
+																		),
+																		child: child
+																	)
+																));
+															},
+															icon: const Icon(CupertinoIcons.reply)
+														),
 														ValueListenableBuilder<bool>(
 															valueListenable: settings.muteAudio,
 															builder: (context, muted, _) => AnimatedBuilder(
@@ -1237,6 +1314,8 @@ Future<Attachment?> showGalleryPretagged({
 	Map<Attachment, Uri> overrideSources = const {},
 	Map<Attachment, Uri> initialGoodSources = const {},
 	Map<Attachment, int> replyCounts = const {},
+	PostSpanZoneData? zone,
+	ReplyBoxZone? replyBoxZone,
 	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
 	ValueChanged<Attachment>? onAttachmentDownload,
 	TaggedAttachment? initialAttachment,
@@ -1263,6 +1342,8 @@ Future<Attachment?> showGalleryPretagged({
 				replyCounts: replyCounts,
 				overrideSources: overrideSources,
 				initialGoodSources: initialGoodSources,
+				zone: zone,
+				replyBoxZone: replyBoxZone,
 				isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
 				onAttachmentDownload: onAttachmentDownload,
 				initialAttachment: initialAttachment,
@@ -1294,6 +1375,8 @@ Future<Attachment?> showGallery({
 	Map<Attachment, Uri> overrideSources = const {},
 	Map<Attachment, Uri> initialGoodSources = const {},
 	Map<Attachment, int> replyCounts = const {},
+	PostSpanZoneData? zone,
+	ReplyBoxZone? replyBoxZone,
 	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
 	ValueChanged<Attachment>? onAttachmentDownload,
 	required Iterable<int> semanticParentIds,
@@ -1316,6 +1399,8 @@ Future<Attachment?> showGallery({
 	overrideSources: overrideSources,
 	initialGoodSources: initialGoodSources,
 	replyCounts: replyCounts,
+	zone: zone,
+	replyBoxZone: replyBoxZone,
 	isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
 	onAttachmentDownload: onAttachmentDownload,
 	initialAttachment: initialAttachment == null ? null : TaggedAttachment(

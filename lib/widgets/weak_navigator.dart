@@ -5,6 +5,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
@@ -35,11 +36,18 @@ class WeakNavigator extends StatefulWidget {
     }
     else {
       final imageboard = context.read<Imageboard?>();
+      final replyBoxZone = context.read<ReplyBoxZone?>();
       return Navigator.of(context).push(TransparentRoute(
         builder: (context) => imageboard == null ? widget : ImageboardScope(
           imageboardKey: null,
           imageboard: imageboard,
-          child: widget
+          child: MultiProvider(
+            providers: [
+              Provider<void>.value(value: null), // Dummy, at least one provider is required
+              if (replyBoxZone != null) Provider<ReplyBoxZone>.value(value: replyBoxZone)
+            ],
+            child: widget
+          )
         )
       ));
     }

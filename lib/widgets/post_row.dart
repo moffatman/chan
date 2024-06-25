@@ -156,6 +156,7 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 class PostRow extends StatelessWidget {
 	final Post post;
 	final ValueChanged<Attachment>? onThumbnailTap;
+	final bool propagateOnThumbnailTap;
 	final VoidCallback? onTap;
 	final VoidCallback? onDoubleTap;
 	final VoidCallback? onRequestArchive;
@@ -182,6 +183,7 @@ class PostRow extends StatelessWidget {
 		this.onTap,
 		this.onDoubleTap,
 		this.onThumbnailTap,
+		this.propagateOnThumbnailTap = false,
 		this.onThumbnailLoadError,
 		this.onRequestArchive,
 		this.showCrossThreadLabel = true,
@@ -357,6 +359,7 @@ class PostRow extends StatelessWidget {
 											showCrossThreadLabel: showCrossThreadLabel,
 											shrinkWrap: shrinkWrap,
 											onThumbnailTap: onThumbnailTap,
+											propagateOnThumbnailTap: propagateOnThumbnailTap,
 											onThumbnailLoadError: onThumbnailLoadError,
 											revealSpoilerImages: revealSpoilerImages,
 											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
@@ -503,6 +506,7 @@ class PostRow extends StatelessWidget {
 																	context: context,
 																	zone: ctx.watch<PostSpanZoneData>(),
 																	showPostNumber: showPostNumber,
+																	propagatedOnThumbnailTap: baseOptions?.propagateOnThumbnailTap == true ? onThumbnailTap : null,
 																	interactive: allowTappingLinks
 																),
 																if (mouseSettings.supportMouse) ...[

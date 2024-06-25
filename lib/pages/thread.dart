@@ -737,6 +737,8 @@ class ThreadPageState extends State<ThreadPage> {
 					for (final attachment in post.attachments)
 						attachment: post.replyIds.length
 			},
+			zone: zone,
+			replyBoxZone: _replyBoxZone,
 			isAttachmentAlreadyDownloaded: persistentState.isAttachmentDownloaded,
 			onAttachmentDownload: persistentState.didDownloadAttachment,
 			initiallyShowChrome: initiallyShowChrome,
@@ -1129,6 +1131,27 @@ class ThreadPageState extends State<ThreadPage> {
 		);
 	}
 
+	ReplyBoxZone get _replyBoxZone => ReplyBoxZone(
+		onTapPostId: (int threadId, int id) {
+			if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+				_popOutReplyBox((state) => state.onTapPostId(threadId, id));
+			}
+			else {
+				_replyBoxKey.currentState?.onTapPostId(threadId, id);
+			}
+			setState(() {});
+		},
+		onQuoteText: (String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
+			if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+				_popOutReplyBox((state) => state.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink));
+			}
+			else {
+				_replyBoxKey.currentState?.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink);
+			}
+			setState(() {});
+		}
+	);
+
 	@override
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
@@ -1198,28 +1221,7 @@ class ThreadPageState extends State<ThreadPage> {
 					filter: persistentState.threadFilter,
 					child: MultiProvider(
 						providers: [
-							Provider.value(
-								value: ReplyBoxZone(
-									onTapPostId: (int threadId, int id) {
-										if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-											_popOutReplyBox((state) => state.onTapPostId(threadId, id));
-										}
-										else {
-											_replyBoxKey.currentState?.onTapPostId(threadId, id);
-										}
-										setState(() {});
-									},
-									onQuoteText: (String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
-										if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-											_popOutReplyBox((state) => state.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink));
-										}
-										else {
-											_replyBoxKey.currentState?.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink);
-										}
-										setState(() {});
-									}
-								)
-							),
+							Provider.value(value: _replyBoxZone),
 							ChangeNotifierProvider<PostSpanZoneData>.value(value: zone)
 						],
 						child: AdaptiveScaffold(

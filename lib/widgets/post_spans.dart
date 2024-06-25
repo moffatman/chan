@@ -68,6 +68,7 @@ class PostSpanRenderOptions {
 	final bool ensureTrailingNewline;
 	final bool hiddenWithinSpoiler;
 	final ValueChanged<Attachment>? onThumbnailTap;
+	final bool propagateOnThumbnailTap;
 	final void Function(Object?, StackTrace?)? onThumbnailLoadError;
 	final bool revealSpoilerImages;
 	final bool showEmbeds;
@@ -92,6 +93,7 @@ class PostSpanRenderOptions {
 		this.ensureTrailingNewline = false,
 		this.hiddenWithinSpoiler = false,
 		this.onThumbnailTap,
+		this.propagateOnThumbnailTap = false,
 		this.onThumbnailLoadError,
 		this.revealSpoilerImages = false,
 		this.showEmbeds = true
@@ -116,6 +118,7 @@ class PostSpanRenderOptions {
 		bool? ensureTrailingNewline,
 		bool? hiddenWithinSpoiler,
 		ValueChanged<Attachment>? onThumbnailTap,
+		bool? propagateOnThumbnailTap,
 		void Function(Object?, StackTrace?)? onThumbnailLoadError,
 		bool? revealSpoilerImages,
 		bool? showEmbeds
@@ -140,6 +143,7 @@ class PostSpanRenderOptions {
 		ensureTrailingNewline: ensureTrailingNewline ?? this.ensureTrailingNewline,
 		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler,
 		onThumbnailTap: onThumbnailTap ?? this.onThumbnailTap,
+		propagateOnThumbnailTap: propagateOnThumbnailTap ?? this.propagateOnThumbnailTap,
 		onThumbnailLoadError: onThumbnailLoadError ?? this.onThumbnailLoadError,
 		revealSpoilerImages: revealSpoilerImages ?? this.revealSpoilerImages,
 		showEmbeds: showEmbeds ?? this.showEmbeds
@@ -670,6 +674,7 @@ class PostQuoteLinkSpan extends PostSpan {
 						zone: zone.childZoneFor(postId),
 						postsIdsToShow: [postId],
 						postIdForBackground: zone.stackIds.last,
+						onThumbnailTap: options.propagateOnThumbnailTap ? options.onThumbnailTap : null,
 						clearStack: zone.stackIds.contains(postId)
 					));
 					//await Future.delayed(const Duration(seconds: 1));
@@ -1733,6 +1738,7 @@ class PostUserLinkSpan extends PostSpan {
 				WeakNavigator.push(context, PostsPage(
 					postsIdsToShow: postIdsToShow,
 					zone: zone,
+					onThumbnailTap: options.propagateOnThumbnailTap ? options.onThumbnailTap : null,
 					clearStack: true,
 					header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(zone.board).options.name || zone.imageboard.site.supportsSearch(null).options.name) ? UserInfoPanel(
 						username: username,
@@ -1851,7 +1857,7 @@ enum PostSpanZoneStyle {
 }
 
 abstract class PostSpanZoneData extends ChangeNotifier {
-	final Map<(int, PostSpanZoneStyle?, int?), PostSpanZoneData> _children = {};
+	final Map<(int?, PostSpanZoneStyle?, int?, ValueChanged<Post>?), PostSpanZoneData> _children = {};
 	String get board;
 	int get primaryThreadId;
 	ThreadIdentifier get primaryThread => ThreadIdentifier(board, primaryThreadId);
@@ -1927,22 +1933,27 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		return _futures[id] as AsyncSnapshot<T>;
 	}
 
-	PostSpanZoneData childZoneFor(int postId, {PostSpanZoneStyle? style, int? fakeHoistedRootId}) {
+	PostSpanZoneData childZoneFor(int? postId, {
+		PostSpanZoneStyle? style,
+		int? fakeHoistedRootId,
+		ValueChanged<Post>? onNeedScrollToPost
+	}) {
 		// Assuming that when a new childZone is requested, there will be some old one to cleanup
 		for (final child in _children.values) {
 			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 			child._conditionalLineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 		}
-		final key = (postId, style, fakeHoistedRootId);
+		final key = (postId, style, fakeHoistedRootId, onNeedScrollToPost);
 		final existingZone = _children[key];
 		if (existingZone != null) {
 			return existingZone;
 		}
-		final newZone = PostSpanChildZoneData(
+		final newZone = _PostSpanChildZoneData(
 			parent: this,
 			postId: postId,
 			style: style,
-			fakeHoistedRootId: fakeHoistedRootId
+			fakeHoistedRootId: fakeHoistedRootId,
+			onNeedScrollToPost: onNeedScrollToPost
 		);
 		_children[key] = newZone;
 		return newZone;
@@ -2046,18 +2057,20 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	PostSpanZoneData get _root;
 }
 
-class PostSpanChildZoneData extends PostSpanZoneData {
-	final int postId;
+class _PostSpanChildZoneData extends PostSpanZoneData {
+	final int? postId;
 	final PostSpanZoneData parent;
 	final PostSpanZoneStyle? _style;
 	final int? fakeHoistedRootId;
+	final ValueChanged<Post>? _onNeedScrollToPost;
 
-	PostSpanChildZoneData({
+	_PostSpanChildZoneData({
 		required this.parent,
 		required this.postId,
 		PostSpanZoneStyle? style,
+		ValueChanged<Post>? onNeedScrollToPost,
 		this.fakeHoistedRootId
-	}) : _style = style;
+	}) : _style = style, _onNeedScrollToPost = onNeedScrollToPost;
 
 	@override
 	String get board => parent.board;
@@ -2075,7 +2088,7 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	Post? findPost(int postId) => parent.findPost(postId);
 
 	@override
-	ValueChanged<Post>? get onNeedScrollToPost => parent.onNeedScrollToPost;
+	ValueChanged<Post>? get onNeedScrollToPost => _onNeedScrollToPost ?? parent.onNeedScrollToPost;
 
 	@override
 	bool Function(int)? get isPostOnscreen => parent.isPostOnscreen;
@@ -2092,10 +2105,13 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 			return [
 				fakeHoistedRootId!,
 				...parent.stackIds,
-				postId
+				if (postId != null) postId!
 			];
 		}
-		return parent.stackIds.followedBy([postId]);
+		if (postId == null) {
+			return parent.stackIds;
+		}
+		return parent.stackIds.followedBy([postId!]);
 	}
 
 	@override
@@ -2502,7 +2518,8 @@ TextSpan buildPostInfoRow({
 	required BuildContext context,
 	required PostSpanZoneData zone,
 	bool interactive = true,
-	bool showPostNumber = true
+	bool showPostNumber = true,
+	ValueChanged<Attachment>? propagatedOnThumbnailTap
 }) {
 	final thread = zone.findThread(post.threadId);
 	final (postIdNonRepeatingSegment, postIdRepeatingSegment) = splitPostId(post.id, site);
@@ -2568,6 +2585,7 @@ TextSpan buildPostInfoRow({
 							WeakNavigator.push(context, PostsPage(
 								postsIdsToShow: postIdsToShow,
 								zone: zone,
+								onThumbnailTap: propagatedOnThumbnailTap,
 								clearStack: true,
 								header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(post.board).options.name || zone.imageboard.site.supportsSearch(null).options.name) ? UserInfoPanel(
 									username: post.name,
@@ -2602,6 +2620,7 @@ TextSpan buildPostInfoRow({
 						else {
 							WeakNavigator.push(context, PostsPage(
 								postsIdsToShow: postIdsToShow,
+								onThumbnailTap: propagatedOnThumbnailTap,
 								zone: zone
 							));
 						}
