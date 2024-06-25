@@ -418,7 +418,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		_shouldShowPosition.value = true;
 		await Future.delayed(const Duration(seconds: 1));
 		if (mounted && currentIndex == index) {
-			//_shouldShowPosition.value = false;
+			_shouldShowPosition.value = false;
 		}
 	}
 
@@ -1058,11 +1058,15 @@ class _GalleryPageState extends State<GalleryPage> {
 										),
 										Align(
 											alignment: Alignment.bottomRight,
-											child: Padding(
-												padding: showChrome ? EdgeInsets.only(
-													bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0) - 16,
-													right: 8
-												) : layoutInsets + const EdgeInsets.only(right: 8),
+											child: AnimatedBuilder(
+												animation: _currentAttachmentChanged,
+												builder: (context, child) => Padding(
+													padding: showChrome ? EdgeInsets.only(
+														bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0) - 16,
+														right: 8
+													) : layoutInsets + const EdgeInsets.only(right: 8),
+													child: child
+												),
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
 													crossAxisAlignment: CrossAxisAlignment.end,
@@ -1198,30 +1202,30 @@ class _GalleryPageState extends State<GalleryPage> {
 											)
 										),
 										AnimatedBuilder(
-											animation: _shouldShowPosition,
-											child: Align(
+											animation: Listenable.merge([_shouldShowPosition, _currentAttachmentChanged]),
+											builder: (context, _) => Align(
 												alignment: Alignment.bottomLeft,
-												child: Container(
-													margin: showChrome ? EdgeInsets.only(
-														bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
-														left: 16
-													) : const EdgeInsets.all(16),
-													padding: const EdgeInsets.all(8),
-													decoration: const BoxDecoration(
-														borderRadius: BorderRadius.all(Radius.circular(8)),
-														color: Colors.black54
-													),
-													child: AnimatedBuilder(
-														animation: _currentAttachmentChanged,
-														builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
-															color: settings.darkTheme.primaryColor
-														))
+												child: AnimatedOpacity(
+													duration: const Duration(milliseconds: 300),
+													opacity: _shouldShowPosition.value && (showChrome || settings.showOverlaysInGallery) ? 1 : 0,
+													child: Container(
+														margin: showChrome ? EdgeInsets.only(
+															bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
+															left: 16
+														) : const EdgeInsets.all(16),
+														padding: const EdgeInsets.all(8),
+														decoration: const BoxDecoration(
+															borderRadius: BorderRadius.all(Radius.circular(8)),
+															color: Colors.black54
+														),
+														child: AnimatedBuilder(
+															animation: _currentAttachmentChanged,
+															builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
+																color: settings.darkTheme.primaryColor
+															))
+														)
 													)
 												)
-											),
-											builder: (context, child) => AnimatedSwitcher(
-												duration: const Duration(milliseconds: 300),
-												child: _shouldShowPosition.value && (showChrome || settings.showOverlaysInGallery) ? child : const SizedBox.shrink()
 											)
 										),
 										Visibility(
