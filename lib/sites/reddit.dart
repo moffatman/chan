@@ -177,6 +177,46 @@ extension _RedditApiId on ImageboardArchiveSearchResult {
 	}
 }
 
+// Accept #Header without space
+class _LooseHeaderSyntax extends markdown.BlockSyntax {
+	static final headerPattern = RegExp(r'^ {0,3}(#{1,6})(?:[^ \x09\x0b\x0c].*?)?(?:\s(#*)\s*)?$');
+  @override
+  RegExp get pattern => headerPattern;
+
+  const _LooseHeaderSyntax();
+
+  @override
+  markdown.Node parse(markdown.BlockParser parser) {
+    final match = pattern.firstMatch(parser.current.content)!;
+    final matchedText = match[0]!;
+    final openMarker = match[1]!;
+    final closeMarker = match[2];
+    final level = openMarker.length;
+    final openMarkerStart = matchedText.indexOf(openMarker);
+    final openMarkerEnd = openMarkerStart + level;
+
+    String? content;
+    if (closeMarker == null) {
+      content = parser.current.content.substring(openMarkerEnd);
+    } else {
+      final closeMarkerStart = matchedText.lastIndexOf(closeMarker);
+      content = parser.current.content.substring(
+        openMarkerEnd,
+        closeMarkerStart,
+      );
+    }
+    content = content.trim();
+
+    // https://spec.commonmark.org/0.30/#example-79
+    if (closeMarker == null && RegExp(r'^#+$').hasMatch(content)) {
+      content = null;
+    }
+
+    parser.advance();
+    return markdown.Element('h$level', [if (content != null) markdown.UnparsedContent(content)]);
+  }
+}
+
 const _loginFieldRedGifsTokenKey = '_rgt';
 
 class SiteReddit extends ImageboardSite {
@@ -305,7 +345,8 @@ class SiteReddit extends ImageboardSite {
 				inlineSyntaxes: _inlineSyntaxes,
 				blockSyntaxes: const [
 					markdown.TableSyntax(),
-					markdown.BlockquoteSyntax()
+					markdown.BlockquoteSyntax(),
+					_LooseHeaderSyntax()
 				]
 			).trim().replaceAll('<br />', '')
 		);
