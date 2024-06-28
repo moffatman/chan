@@ -732,24 +732,24 @@ class SiteReddit extends ImageboardSite {
 					}
 				}
 			}
+			else if (data['secure_media']?['reddit_video'] != null) {
+				attachments.add(Attachment(
+					type: AttachmentType.mp4,
+					board: data['subreddit'],
+					threadId: id,
+					id: data['name'],
+					ext: '.mp4',
+					filename: 'video.mp4',
+					url: unescape.convert(data['secure_media']['reddit_video']['hls_url']),
+					thumbnailUrl: unescape.convert(data['preview']?['images']?[0]?['resolutions']?[0]?['url'] ?? ''),
+					md5: '',
+					width: data['secure_media']['reddit_video']['width'],
+					height: data['secure_media']['reddit_video']['height'],
+					sizeInBytes: null
+				));
+			}
 			else if (data['preview'] != null) {
-				if (data['secure_media']?['reddit_video'] != null) {
-					attachments.add(Attachment(
-						type: AttachmentType.mp4,
-						board: data['subreddit'],
-						threadId: id,
-						id: data['name'],
-						ext: '.mp4',
-						filename: 'video.mp4',
-						url: unescape.convert(data['secure_media']['reddit_video']['hls_url']),
-						thumbnailUrl: unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']),
-						md5: '',
-						width: data['secure_media']['reddit_video']['width'],
-						height: data['secure_media']['reddit_video']['height'],
-						sizeInBytes: null
-					));
-				}
-				else if (data['preview']?['reddit_video_preview']?['hls_url'] != null) {
+				if (data['preview']?['reddit_video_preview']?['hls_url'] != null) {
 					attachments.add(Attachment(
 						type: AttachmentType.mp4,
 						board: data['subreddit'],
