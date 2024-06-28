@@ -1055,7 +1055,7 @@ final appearanceSettings = [
 				setting: Settings.catalogGridModeCellBorderRadiusAndMarginSetting
 			),
 			const SwitchSettingWidget(
-				description: 'Fixed text height',
+				description: 'Fixed thumbnail height',
 				setting: MappedSetting(
 					Settings.catalogGridModeShowMoreImageIfLessTextSetting,
 					FieldMappers.invert,
