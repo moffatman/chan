@@ -51,7 +51,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 	final String? id;
 	final void Function(int, int)? _didFinishLayout;
 	final double? Function(T)? fastHeightEstimate;
-	final double? Function(T)? fastErrorEstimate;
+	final double? Function(int)? fastErrorEstimate;
 	final NullableIndexedWidgetBuilder? separatorBuilder;
 
 	const SliverDontRebuildChildBuilderDelegate(
@@ -108,7 +108,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 					if (estimate != 0) {
 						remainingCount++;
 					}
-					knownOffset += fastErrorEstimate?.call(items[i]) ?? 0;
+					knownOffset += fastErrorEstimate?.call(i) ?? 0;
 				}
 			}
 			else {
@@ -117,7 +117,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 					if (estimate != 0) {
 						remainingCount++;
 					}
-					knownOffset += fastErrorEstimate?.call(items[i]) ?? 0;
+					knownOffset += fastErrorEstimate?.call(i) ?? 0;
 				}
 			}
 			knownCount = 0;
@@ -2745,11 +2745,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															return null;
 														},
 														fastHeightEstimate: _fastHeightEstimate,
-														fastErrorEstimate: (item) {
-															final tt = widget.controller?._items.tryFirstWhere((i) => identical(i.item, item));
-															if (_refreshableTreeItems._dummyCache[tt?.item._key] == _DummyStatus.previously) {
+														fastErrorEstimate: (i) {
+															if (
 																// Item was previously dummy. so its contribution to scrollOffset is not correct
-																return (tt?.cachedHeight ?? _kDummyHeight) - _kDummyHeight;
+																_refreshableTreeItems._dummyCache[values[i]._key] == _DummyStatus.previously &&
+																// We are not in a weird inter-insertion-frame situation
+																widget.controller?._items[i].item == values[i]
+															) {
+																return (widget.controller?._items[i].cachedHeight ?? _kDummyHeight) - _kDummyHeight;
 															}
 															// No error
 															return null;
