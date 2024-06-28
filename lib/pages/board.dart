@@ -511,6 +511,7 @@ class BoardPageState extends State<BoardPage> {
 		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.name] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
+			final isYou = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.youIds.contains(thread.id) ?? false);
 			final watch = context.select<Persistence, ThreadWatch?>((p) => p.getThreadStateIfExists(thread.identifier)?.threadWatch);
 			final isThreadHidden = context.select<Persistence, bool?>((p) => p.browserState.getThreadHiding(thread.identifier));
 			final isImageHidden = context.select<Settings, bool>((p) => p.areMD5sHidden(thread.md5s));
@@ -580,6 +581,54 @@ class BoardPageState extends State<BoardPage> {
 									setState(() {});
 								}
 							);
+						}
+					),
+					if (isYou) ContextMenuAction(
+						child: const Text('Unmark as You'),
+						trailingIcon: CupertinoIcons.person_badge_minus,
+						onPressed: () async {
+							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
+							for (final r in threadState.receipts) {
+								if (r.id == thread.id) {
+									r.markAsYou = false;
+								}
+							}
+							threadState.postsMarkedAsYou.remove(thread.id);
+							threadState.didUpdateYourPosts();
+							threadState.save();
+						}
+					)
+					else ContextMenuAction(
+						child: const Text('Mark as You'),
+						trailingIcon: CupertinoIcons.person_badge_plus,
+						onPressed: () async {
+							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
+							bool markedReceipt = false;
+							for (final r in threadState.receipts) {
+								if (r.id == thread.id) {
+									r.markAsYou = true;
+									markedReceipt = true;
+								}
+							}
+							if (!markedReceipt) {
+								threadState.postsMarkedAsYou.add(thread.id);
+							}
+							threadState.didUpdateYourPosts();
+							if (settings.watchThreadAutomaticallyWhenReplying) {
+								if ((site?.supportsPushNotifications ?? false) && context.mounted) {
+									await promptForPushNotificationsIfNeeded(context);
+								}
+								imageboard?.notifications.subscribeToThread(
+									thread: thread.identifier,
+									lastSeenId: thread.posts.tryLast?.id ?? thread.id,
+									localYousOnly: (threadState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
+									pushYousOnly: (threadState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
+									foregroundMuted: (threadState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
+									push: (threadState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
+									youIds: threadState.freshYouIds()
+								);
+							}
+							threadState.save();
 						}
 					),
 					if (watch != null) ContextMenuAction(
