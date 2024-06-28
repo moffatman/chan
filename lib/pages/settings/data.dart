@@ -495,26 +495,24 @@ final dataSettings = [
 			setting: Settings.askForAuthenticationOnLaunchSetting
 		)
 	),
-	if (Platform.isAndroid) ...[
-		ImmutableButtonSettingWidget(
-			description: 'Media save directory',
-			icon: CupertinoIcons.floppy_disk,
-			setting: Settings.androidGallerySavePathSetting,
-			builder: (androidGallerySavePath) => Text(androidGallerySavePath == null ? 'Set' : 'Change'),
-			onPressed: (context, currentPath, setPath) async {
-				setPath(await pickDirectory());
-			}
-		),
-		const SegmentedSettingWidget(
-			description: 'Media saving filenames',
-			icon: CupertinoIcons.doc_text,
-			setting: Settings.downloadUsingServerSideFilenamesSetting,
-			children: {
-				false: (null, 'User-submitted'),
-				true: (null, 'Server-side')
-			}
-		)
-	],
+	if (Platform.isAndroid) ImmutableButtonSettingWidget(
+		description: 'Media save directory',
+		icon: CupertinoIcons.floppy_disk,
+		setting: Settings.androidGallerySavePathSetting,
+		builder: (androidGallerySavePath) => Text(androidGallerySavePath == null ? 'Set' : 'Change'),
+		onPressed: (context, currentPath, setPath) async {
+			setPath(await pickDirectory());
+		}
+	),
+	const SegmentedSettingWidget(
+		description: 'Media saving filenames',
+		icon: CupertinoIcons.doc_text,
+		setting: Settings.downloadUsingServerSideFilenamesSetting,
+		children: {
+			false: (null, 'User-submitted'),
+			true: (null, 'Server-side')
+		}
+	),
 	SegmentedSettingWidget(
 		description: 'Media saving folder structure',
 		icon: CupertinoIcons.folder,
