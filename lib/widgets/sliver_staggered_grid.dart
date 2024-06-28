@@ -46,7 +46,13 @@ class SliverStaggeredGrid extends SliverMultiBoxAdaptorWidget {
 			// Idk
 			return double.infinity;
 		}
-		final averageExtent = trailingScrollOffset / lastIndex;
+		final double averageExtent;
+		if (lastIndex > 0) {
+			averageExtent = trailingScrollOffset / lastIndex;
+		}
+		else {
+			averageExtent = 120; // idk
+		}
 		return trailingScrollOffset + averageExtent * (totalCount - lastIndex);
 	}
 }
@@ -207,6 +213,9 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 		List<double?> startScrollOffset = List.filled(layout.crossAxisCount, null);
 		List<double> endScrollOffset = List.filled(layout.crossAxisCount, 0);
 
+		if (index == 0) {
+			_columns[index] = 0;
+		}
 		final initialColumn = _columns[index];
 		if (initialColumn != null) {
 			startScrollOffset[initialColumn] = childScrollOffset(child)!;
