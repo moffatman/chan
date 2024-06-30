@@ -779,5 +779,14 @@ class MediaConversion {
 		}
 	}
 
-	void cancel() => _session?.cancel();
+	Future<void> cancel() async {
+		await _session?.cancel();
+		try {
+			// Delete partially converted file
+			await getDestination().delete();
+		}
+		on PathNotFoundException {
+			// Fine, it must not have started
+		}
+	}
 }
