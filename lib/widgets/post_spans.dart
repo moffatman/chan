@@ -2450,7 +2450,8 @@ int _calculatePostNumber(ImageboardSite site, Thread thread, Post post) {
 	final postsPerPage = site.postsPerPage;
 	if (postsPerPage == null) {
 		// "Simple" algorithm
-		return thread.replyCount - ((thread.posts.length - 1) - (thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1));
+		// thread.replyCount may undercount in case of deleted posts
+		return math.max(thread.posts.length - 1, thread.replyCount) - ((thread.posts.length - 1) - (thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1));
 	}
 	final parentPage = post.parentId;
 	if (parentPage == null) {
