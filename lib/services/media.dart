@@ -183,8 +183,15 @@ class MediaScan {
 		});
 	}
 
+	static String _makeKey(String path) {
+		if (path.length <= 255) {
+			return path;
+		}
+		return base64.encode(md5.convert(utf8.encode(path)).bytes);
+	}
+
 	static MediaScan? peekCachedFileScan(String path) {
-		final result = _fileScans[path];
+		final result = _fileScans[_makeKey(path)];
 		if (result == null) {
 			return null;
 		}
@@ -208,8 +215,9 @@ class MediaScan {
 				runWhenIdle(const Duration(seconds: 1), _closeBox);
 				final mediaScanBox = _mediaScanBox ??= await Hive.openLazyBox<MediaScan>('mediaScans');
 				final scan = await _scan(file);
-				_fileScans[file.path] = scan;
-				await mediaScanBox.put(file.path, scan);
+				final key = _makeKey(file.path);
+				_fileScans[key] = scan;
+				await mediaScanBox.put(key, scan);
 				return scan;
 			});
 		}
