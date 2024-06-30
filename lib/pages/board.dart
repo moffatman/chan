@@ -807,6 +807,29 @@ class BoardPageState extends State<BoardPage> {
 				],
 				maxHeight: useCatalogGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight,
 				child: GestureDetector(
+					onDoubleTap: settings.doubleTapToHideThreads ? () {
+						if (persistence == null) {
+							return;
+						}
+						final hiding = persistence.browserState.getThreadHiding(thread.identifier);
+						// Don't use null (cleared flag) because can never really be sure
+						// So to unhide use force-show
+						// Probably the user won't hide manually, then apply a new filter that would also apply.
+						persistence.browserState.setThreadHiding(thread.identifier, !(hiding ?? isHidden));
+						persistence.didUpdateBrowserState();
+						setState(() {});
+						if (context.mounted) {
+							showUndoToast(
+								context: context,
+								message: 'Thread ${isHidden ? 'unhidden': 'hidden'}',
+								onUndo: () {
+									persistence.browserState.setThreadHiding(thread.identifier, hiding);
+									persistence.didUpdateBrowserState();
+									setState(() {});
+								}
+							);
+						}
+					} : null,
 					child: ThreadRow(
 						contentFocus: useCatalogGrid,
 						showLastReplies: !useCatalogGrid && settings.showLastRepliesInCatalog,

@@ -1152,6 +1152,35 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	);
 
+	VoidCallback? _makeOnDoubleTap(int postId) {
+		if (!Settings.instance.doubleTapToHidePosts) {
+			return null;
+		}
+		return () {
+			final hiding = persistentState.getPostHiding(postId);
+			persistentState.setPostHiding(postId, switch (hiding) {
+				PostHidingState.hidden || PostHidingState.treeHidden => PostHidingState.shown,
+				PostHidingState.shown || PostHidingState.none => PostHidingState.hidden
+			});
+			persistentState.save();
+			setState(() {});
+			if (context.mounted) {
+				showUndoToast(
+					context: context,
+					message: 'Post ${switch (hiding) {
+						PostHidingState.hidden || PostHidingState.treeHidden => 'unhidden',
+						PostHidingState.shown || PostHidingState.none => 'hidden'
+					}}',
+					onUndo: () {
+						persistentState.setPostHiding(postId, hiding);
+						persistentState.save();
+						setState(() {});
+					}
+				);
+			}
+		};
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
@@ -1626,6 +1655,7 @@ class ThreadPageState extends State<ThreadPage> {
 																					},
 																					onRequestArchive: () => _replacePostFromArchive(post),
 																					highlight: newPostIds.contains(post.id),
+																					onDoubleTap: _makeOnDoubleTap(post.id)
 																				)
 																			);
 																		},
@@ -1648,7 +1678,8 @@ class ThreadPageState extends State<ThreadPage> {
 																				baseOptions: PostSpanRenderOptions(
 																					highlightString: filterText
 																				),
-																				highlight: newPostIds.contains(post.id)
+																				highlight: newPostIds.contains(post.id),
+																				onDoubleTap: _makeOnDoubleTap(post.id)
 																			);
 																		},
 																		collapsedItemBuilder: ({

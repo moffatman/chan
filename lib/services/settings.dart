@@ -1183,6 +1183,10 @@ class SavedSettings extends HiveObject {
 	int imageMetaFilterDepth;
 	@HiveField(191)
 	bool useStaggeredCatalogGrid;
+	@HiveField(192)
+	bool doubleTapToHidePosts;
+	@HiveField(193)
+	bool doubleTapToHideThreads;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1376,6 +1380,8 @@ class SavedSettings extends HiveObject {
 		bool? watchThreadAutomaticallyWhenCreating,
 		int? imageMetaFilterDepth,
 		bool? useStaggeredCatalogGrid,
+		bool? doubleTapToHidePosts,
+		bool? doubleTapToHideThreads,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1591,7 +1597,9 @@ class SavedSettings extends HiveObject {
 		showReplyCountInCatalog = showReplyCountInCatalog ?? true,
 		watchThreadAutomaticallyWhenCreating = watchThreadAutomaticallyWhenCreating ?? true,
 		imageMetaFilterDepth = imageMetaFilterDepth ?? 0,
-		useStaggeredCatalogGrid = useStaggeredCatalogGrid ?? false {
+		useStaggeredCatalogGrid = useStaggeredCatalogGrid ?? false,
+		doubleTapToHidePosts = doubleTapToHidePosts ?? false,
+		doubleTapToHideThreads = doubleTapToHideThreads ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2782,6 +2790,12 @@ class Settings extends ChangeNotifier {
 
 	static const useStaggeredCatalogGridSetting = SavedSetting(SavedSettingsFields.useStaggeredCatalogGrid);
 	bool get useStaggeredCatalogGrid => useStaggeredCatalogGridSetting(this);
+
+	static const doubleTapToHidePostsSetting = SavedSetting(SavedSettingsFields.doubleTapToHidePosts);
+	bool get doubleTapToHidePosts => doubleTapToHidePostsSetting(this);
+
+	static const doubleTapToHideThreadsSetting = SavedSetting(SavedSettingsFields.doubleTapToHideThreads);
+	bool get doubleTapToHideThreads => doubleTapToHideThreadsSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

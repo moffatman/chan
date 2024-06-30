@@ -2133,7 +2133,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 
-			_lastTreeOrder = (
+			final newOrder = _lastTreeOrder = (
 				treeRootIndexLookup: {
 					for (int i = 0; i < treeRoots.length; i++)
 						treeRoots[i].id: i
@@ -2143,6 +2143,34 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						v.children[i].id: i
 				}))
 			);
+			if (lastTreeOrder != null) {
+				// The cause of treeOrder is to avoid position change on update due to
+				// upvotes difference or something.
+				// In case of add/remove, we want to preserve position to make
+				// filtering/unfiltering look better, instead of always having the
+				// unfiltered item go to the bottom.
+				void mergeTreeOrders({required Map<int, int> current, required Map<int, int> old}) {
+					if (old.isEmpty) {
+						return;
+					}
+					final oldCurrentLength = current.length;
+					current.addAll(old);
+					final offset = current.length - oldCurrentLength;
+					for (final key in current.keys) {
+						if (!old.containsKey(key)) {
+							// This is a new item, fix the index due to newly inserted items
+							current[key] = current[key]! + offset;
+						}
+					}
+				}
+				mergeTreeOrders(current: newOrder.treeRootIndexLookup, old: lastTreeOrder.treeRootIndexLookup);
+				for (final order in newOrder.treeChildrenIndexLookup.entries) {
+					final old = lastTreeOrder.treeChildrenIndexLookup[order.key];
+					if (old != null) {
+						mergeTreeOrders(current: order.value, old: old);
+					}
+				}
+			}
 		}
 
 		final out = <RefreshableListItem<T>>[];

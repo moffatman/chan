@@ -355,6 +355,16 @@ final behaviorSettings = [
 		}
 	),
 	const SwitchSettingWidget(
+		description: 'Double-tap threads to hide',
+		icon: CupertinoIcons.eye_slash,
+		setting: Settings.doubleTapToHideThreadsSetting
+	),
+	const SwitchSettingWidget(
+		description: 'Double-tap posts to hide',
+		icon: CupertinoIcons.eye_slash,
+		setting: Settings.doubleTapToHidePostsSetting
+	),
+	const SwitchSettingWidget(
 		description: 'Double-tap scrolls to replies in thread',
 		icon: CupertinoIcons.hand_point_right,
 		setting: Settings.doubleTapScrollToRepliesSetting

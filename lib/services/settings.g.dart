@@ -2287,6 +2287,28 @@ class SavedSettingsFields {
     fieldName: 'useStaggeredCatalogGrid',
     merger: PrimitiveMerger(),
   );
+  static bool getDoubleTapToHidePosts(SavedSettings x) =>
+      x.doubleTapToHidePosts;
+  static void setDoubleTapToHidePosts(SavedSettings x, bool v) =>
+      x.doubleTapToHidePosts = v;
+  static const doubleTapToHidePosts = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getDoubleTapToHidePosts,
+    setter: setDoubleTapToHidePosts,
+    fieldNumber: 192,
+    fieldName: 'doubleTapToHidePosts',
+    merger: PrimitiveMerger(),
+  );
+  static bool getDoubleTapToHideThreads(SavedSettings x) =>
+      x.doubleTapToHideThreads;
+  static void setDoubleTapToHideThreads(SavedSettings x, bool v) =>
+      x.doubleTapToHideThreads = v;
+  static const doubleTapToHideThreads = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getDoubleTapToHideThreads,
+    setter: setDoubleTapToHideThreads,
+    fieldNumber: 193,
+    fieldName: 'doubleTapToHideThreads',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2478,7 +2500,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     188: SavedSettingsFields.showReplyCountInCatalog,
     189: SavedSettingsFields.watchThreadAutomaticallyWhenCreating,
     190: SavedSettingsFields.imageMetaFilterDepth,
-    191: SavedSettingsFields.useStaggeredCatalogGrid
+    191: SavedSettingsFields.useStaggeredCatalogGrid,
+    192: SavedSettingsFields.doubleTapToHidePosts,
+    193: SavedSettingsFields.doubleTapToHideThreads
   };
 
   @override
@@ -2684,13 +2708,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       watchThreadAutomaticallyWhenCreating: fields[189] as bool?,
       imageMetaFilterDepth: fields[190] as int?,
       useStaggeredCatalogGrid: fields[191] as bool?,
+      doubleTapToHidePosts: fields[192] as bool?,
+      doubleTapToHideThreads: fields[193] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(179)
+      ..writeByte(181)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3048,7 +3074,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(190)
       ..write(obj.imageMetaFilterDepth)
       ..writeByte(191)
-      ..write(obj.useStaggeredCatalogGrid);
+      ..write(obj.useStaggeredCatalogGrid)
+      ..writeByte(192)
+      ..write(obj.doubleTapToHidePosts)
+      ..writeByte(193)
+      ..write(obj.doubleTapToHideThreads);
   }
 
   @override
