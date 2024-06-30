@@ -2857,8 +2857,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															id: '$forceRebuildId',
 															childCount: filteredValues.length,
 															addRepaintBoundaries: false,
-															addAutomaticKeepAlives: false,
-															fastHeightEstimate: _fastHeightEstimate
+															addAutomaticKeepAlives: false
 														)
 													)
 													else SliverList(
@@ -2899,8 +2898,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															id: '$forceRebuildId',
 															childCount: filteredValues.length * 2,
 															addRepaintBoundaries: false,
-															addAutomaticKeepAlives: false,
-															fastHeightEstimate: _fastHeightEstimate
+															addAutomaticKeepAlives: false
 														)
 													)
 											],
