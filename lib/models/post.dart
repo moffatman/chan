@@ -286,10 +286,11 @@ class Post implements Filterable {
 		other.isDeleted == isDeleted &&
 		listEquals(other.attachments_, attachments_) &&
 		other.name == name &&
-		other.hasOmittedReplies == hasOmittedReplies;
+		other.hasOmittedReplies == hasOmittedReplies &&
+		other.flag != flag;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, isDeleted, attachments, name, hasOmittedReplies);
+	int get hashCode => Object.hash(board, id, upvotes, isDeleted, attachments, name, hasOmittedReplies, flag);
 }
 
 class PostIdentifier {

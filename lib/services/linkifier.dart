@@ -63,7 +63,15 @@ final _escapeSymbolPattern = RegExp(r'''\\([!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~
 
 class LooseUrlLinkifier extends Linkifier {
   final bool unescapeBackslashes;
-  const LooseUrlLinkifier({this.unescapeBackslashes = false});
+  /// Skip "$link" (avoid HTML attribute values)
+  /// Skip >$link</a> (avoid double-linking)
+  /// Skip [$link]( (avoid double-linking)
+  /// Skip ]($link) (avoid double-linking)
+  final bool redditSafeMode;
+  const LooseUrlLinkifier({
+    this.unescapeBackslashes = false,
+    this.redditSafeMode = false
+  });
 
   String _handleBackslashes(String str) {
     if (!unescapeBackslashes) {
@@ -88,7 +96,36 @@ class LooseUrlLinkifier extends Linkifier {
           match = (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
         }
 
-        if (match == null || (match.group(4)?.contains('..') ?? false) || !_validTlds.contains((match.group(4) ?? '').split('.').last.toLowerCase())) {
+        if (match == null
+            || (match.group(4)?.contains('..') ?? false)
+            || !_validTlds.contains((match.group(4) ?? '').split('.').last.toLowerCase())
+            || redditSafeMode && (
+                // "$link"
+                (
+                  (match.group(1)?.endsWith('"') ?? false)
+                  && match.end < element.text.length
+                  && element.text[match.end] == '"'
+                )
+                // >$link</a>
+                || (
+                  (match.group(1)?.endsWith('>') ?? false)
+                  && match.end < (element.text.length - 3)
+                  && element.text.substring(match.end, match.end + 4) == '</a>'
+                )
+                // [$link](
+                || (
+                  (match.group(1)?.endsWith('[') ?? false)
+                  && match.end < (element.text.length - 1)
+                  && element.text.substring(match.end, match.end + 2) == ']('
+                )
+                // ]($link)
+                || (
+                  (match.group(1)?.endsWith('](') ?? false)
+                  && match.end < element.text.length
+                  && element.text[match.end] == ')'
+                )
+              )
+        ) {
           list.add(element);
         } else {
           final text = element.text.replaceFirst(match.group(0)!, '');

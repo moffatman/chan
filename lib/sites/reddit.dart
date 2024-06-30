@@ -334,8 +334,7 @@ class SiteReddit extends ImageboardSite {
 		text = unescape.convert(text);
 		final body = parseFragment(
 			markdown.markdownToHtml(
-				// Lazy... but this means at least one link is already done properly
-				text.contains('](') ? text : const LooseUrlLinkifier(unescapeBackslashes: true).parse(
+				const LooseUrlLinkifier(unescapeBackslashes: true, redditSafeMode: true).parse(
 					[TextElement(text)],
 					const LinkifyOptions()
 				).map((e) => switch(e) {
@@ -468,6 +467,13 @@ class SiteReddit extends ImageboardSite {
 							// Give up
 							yield PostTextSpan(node.outerHtml);
 						}
+					}
+					else if (node.localName == 'img' && node.attributes.containsKey('src')) {
+						yield PostInlineImageSpan(
+								src: node.attributes['src']!,
+								width: int.tryParse(node.attributes['height'] ?? '') ?? 16,
+								height: int.tryParse(node.attributes['width'] ?? '') ?? 16
+							);
 					}
 					else if (node.attributes.values.every((v) => v.isEmpty)) {
 						// Some joker made up their own span
@@ -846,7 +852,7 @@ class SiteReddit extends ImageboardSite {
 		final asPost = Post(
 			board: data['subreddit'],
 			name: data['author'],
-			flag: _makeFlag(data['author_flair_richtext']),
+			flag: _makeFlag(data['author_flair_richtext'], data),
 			time: DateTime.fromMillisecondsSinceEpoch(data['created'].toInt() * 1000),
 			threadId: id,
 			id: id,
@@ -866,7 +872,7 @@ class SiteReddit extends ImageboardSite {
 			attachments: asPost.attachments_,
 			replyCount: data['num_comments'],
 			imageCount: 0,
-			flair: _makeFlag(data['link_flair_richtext']) ?? (
+			flair: _makeFlag(data['link_flair_richtext'], data) ?? (
 				data['link_flair_text'] == null ? null : ImageboardFlag.text((data['link_flair_text'] as String).unescapeHtml)
 			),
 			id: id,
@@ -1148,13 +1154,28 @@ class SiteReddit extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	Flag? _makeFlag(List<dynamic>? data) {
+	Flag? _makeFlag(List<dynamic>? data, Map<String, dynamic> parentData) {
 		if (data == null || data.isEmpty) {
 			return null;
 		}
 		final parts = <ImageboardFlag>[];
 		for (final part in data) {
 			if (part['e'] == 'text') {
+				final emoteMatch = _emotePattern.firstMatch(part['t'] ?? '');
+				if (emoteMatch != null) {
+					final emote = parentData['media_metadata']?[emoteMatch.group(1)];
+					// Tbh this usually doesn't work because Reddit only returns emote
+					// metadata that was also used in the text. But best effort...
+					if (emote is Map) {
+						parts.add(ImageboardFlag(
+							name: '',
+							imageUrl: emote['u'],
+							imageWidth: (emote['x'] as int? ?? 16).toDouble(),
+							imageHeight: (emote['y'] as int? ?? 16).toDouble()
+						));
+						continue;
+					}
+				}
 				final text = (part['t'] as String?)?.trim().unescapeHtml;
 				if (text != null && !parts.any((t) => t.name == text)) {
 					parts.add(ImageboardFlag.text(text));
@@ -1174,6 +1195,8 @@ class SiteReddit extends ImageboardSite {
 		return ImageboardMultiFlag(parts: parts);
 	}
 
+	static final _emotePattern = RegExp(r'!\[img\]\((emote|[^)]+)\)');
+
 	Post _makePost(Map<String, dynamic> child, {int? parentId, required ThreadIdentifier thread}) {
 		final id = fromRedditId(child['id']);
 		final List<(String, String)> inlineImageUrls = [];
@@ -1183,12 +1206,18 @@ class SiteReddit extends ImageboardSite {
 				match.group(0)!
 			));
 			return '';
+		}).replaceAllMapped(_emotePattern, (match) {
+			final metadata = child['media_metadata']?[match.group(1)];
+			if (metadata == null) {
+				return match.group(0)!;
+			}
+			return '<img src="${metadata['s']['u']}" width="${metadata['s']['x']}" height="${metadata['s']['y']}">';
 		});
 		return Post(
 			board: thread.board,
 			text: text,
 			name: child['author'],
-			flag: _makeFlag(child['author_flair_richtext']),
+			flag: _makeFlag(child['author_flair_richtext'], child),
 			time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
 			threadId: thread.id,
 			id: id,
