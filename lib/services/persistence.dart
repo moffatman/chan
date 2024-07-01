@@ -630,6 +630,16 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 		}
+		final oldSavedThumbnailsDir = Directory('${documentsDirectory.path}/saved_attachments_thumbs');
+		if ((await oldSavedThumbnailsDir.stat()).type == FileSystemEntityType.directory) {
+			// No longer needed, thumbnails handled via MediaConversion from full file
+			try {
+				await oldSavedThumbnailsDir.delete(recursive: true);
+			}
+			catch (e, st) {
+				Future.error(e, st); // crashlytics
+			}
+		}
 		if (Platform.isIOS) {
 			// FlutterEXIFRotation left various discarded JPEGs in the documentsDirectory
 			await for (final child in documentsDirectory.list().handleError(
