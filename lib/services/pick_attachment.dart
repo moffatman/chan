@@ -31,6 +31,27 @@ final supportedFileExtensions = [
 	'.mp4', '.mov', '.m4v', '.mkv', '.mpeg', '.avi', '.3gp', '.m2ts'
 ];
 
+final _timestampedFilePattern = RegExp(r'^(.*)-\d{10,}(\.[^.]+)$');
+
+Future<String?> _stripFileTimestamp(String? path) async {
+	if (!Platform.isIOS) {
+		// Seems to only affect iOS
+		return path;
+	}
+	if (path == null) {
+		return null;
+	}
+	final match = _timestampedFilePattern.firstMatch(path);
+	if (match == null) {
+		// No timestamp
+		return path;
+	}
+	// Assuming ownership of file
+	final dest = '${match.group(1)}${match.group(2)}';
+	await File(path).rename(dest);
+	return dest;
+}
+
 Future<String?> _copyFileToSafeLocation(String? path) async {
 	if (path == null) {
 		return null;
@@ -111,12 +132,12 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final gallery = AttachmentPickingSource(
 		name: 'Image Gallery',
 		icon: Adaptive.icons.photo,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.image).then((x) => _copyFileToSafeLocation(x?.files.single.path))
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.image).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
 	);
 	final videoGallery = AttachmentPickingSource(
 		name: 'Video Gallery',
 		icon: CupertinoIcons.play_rectangle,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.video).then((x) => _copyFileToSafeLocation(x?.files.single.path))
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.video).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
 	);
 	final picker = ImagePicker();
 	final camera = AttachmentPickingSource(
