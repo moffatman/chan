@@ -965,6 +965,37 @@ class RefreshableListFilterReason {
 	int get hashCode => reason.hashCode;
 }
 
+enum RefreshableListUpdateSource {
+	top,
+	bottom,
+	timer,
+	animation,
+	other;
+	bool get manual => switch (this) {
+		RefreshableListUpdateSource.top || RefreshableListUpdateSource.bottom => true,
+		_ => false
+	};
+}
+
+class RefreshableListUpdateOptions {
+	final RefreshableListUpdateSource source;
+	const RefreshableListUpdateOptions({
+		required this.source
+	});
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is RefreshableListUpdateOptions &&
+		other.source == source;
+	
+	@override
+	int get hashCode => source.hashCode;
+
+	@override
+	String toString() => 'RefreshableListUpdateOptions(source: $source)';
+}
+
 class RefreshableList<T extends Object> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
 	final Widget Function({
@@ -976,7 +1007,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		required List<ParentAndChildIdentifier>? stubChildIds
 	})? collapsedItemBuilder;
 	final List<T>? initialList;
-	final Future<List<T>?> Function() listUpdater;
+	final Future<List<T>?> Function(RefreshableListUpdateOptions options) listUpdater;
 	final Future<List<T>> Function(T after)? listExtender;
 	final String id;
 	final RefreshableListController<T>? controller;
@@ -1340,7 +1371,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	void _onUpdateAnimation() {
 		if (DateTime.now().difference(lastUpdateTime ?? DateTime(2000)) > const Duration(seconds: 1)) {
-			update();
+			update(options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.animation));
 		}
 		else {
 			_trailingUpdateAnimationTimer?.cancel();
@@ -1391,10 +1422,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return;
 		}
 		_addedNetworkResumeCallback = false;
-		await update();
+		await update(options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.timer));
 	}
 
 	Future<void> update({
+		RefreshableListUpdateOptions options = const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.other),
 		bool hapticFeedback = false,
 		bool extend = false,
 		bool mergeTrees = false,
@@ -1450,7 +1482,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			else {
-				newList = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
+				newList = (await Future.wait([widget.listUpdater(options), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
 			}
 			if (!mounted) return;
 			if (updatingWithId != widget.id) {
@@ -1528,11 +1560,21 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> _updateWithHapticFeedback() async {
-		await update(hapticFeedback: true, extend: false, mergeTrees: true);
+		await update(
+			options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.top),
+			hapticFeedback: true,
+			extend: false,
+			mergeTrees: true
+		);
 	}
 
 	Future<void> _updateOrExtendWithHapticFeedback() async {
-		await update(hapticFeedback: true, extend: true, mergeTrees: true);
+		await update(
+			options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.bottom),
+			hapticFeedback: true,
+			extend: true,
+			mergeTrees: true
+		);
 	}
 
 	double? _fastHeightEstimate(RefreshableListItem<T> item) {

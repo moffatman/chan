@@ -51,7 +51,7 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 							controller: controller,
 							itemBuilder: (context, item) => ExpensiveWidget(id: item.id),
 							initialList: list,
-							listUpdater: () async {
+							listUpdater: (options) async {
 								Future.delayed(const Duration(milliseconds: 400)).then((_) {
 									setState(() {
 										showBox = false;

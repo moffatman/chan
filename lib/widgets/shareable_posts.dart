@@ -122,7 +122,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 				child: RefreshableList<Post>(
 					shrinkWrap: true,
 					disableUpdates: true,
-					listUpdater: () => throw UnimplementedError(),
+					listUpdater: (_) => throw UnimplementedError(),
 					initialList: zone.findThread(zone.primaryThreadId)!.posts,
 					id: 'shareable',
 					filterableAdapter: (p) => p,

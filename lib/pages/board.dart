@@ -1193,7 +1193,7 @@ class BoardPageState extends State<BoardPage> {
 																maxCrossAxisExtent: settings.catalogGridWidth
 															) : null,
 															controller: _listController,
-															listUpdater: () => site.getCatalog(board!.name, variant: variant, priority: RequestPriority.interactive).then((list) async {
+															listUpdater: (options) => site.getCatalog(board!.name, variant: variant, priority: RequestPriority.interactive).then((list) async {
 																for (final thread in list) {
 																	await thread.preinit(catalog: true);
 																	await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();

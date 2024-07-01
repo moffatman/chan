@@ -387,7 +387,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				)
 			) : MaybeScrollbar(
 				child: RefreshableList<ImageboardScoped<HistorySearchResult>>(
-					listUpdater: () => throw UnimplementedError(),
+					listUpdater: (_) => throw UnimplementedError(),
 					id: 'historysearch[${widget.selectedResult}]',
 					filterableAdapter: (i) => i.item.post ?? i.item.thread,
 					initialList: results,

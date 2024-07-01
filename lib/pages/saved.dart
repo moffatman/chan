@@ -311,7 +311,7 @@ class _SavedPageState extends State<SavedPage> {
 							),
 							filterableAdapter: null,
 							controller: _watchedListController,
-							listUpdater: () async {
+							listUpdater: (options) async {
 								final list = await thread_actions.loadWatches();
 								_watchedListController.waitForItemBuild(0).then((_) => _removeArchivedHack.didUpdate());
 								return list;
@@ -568,9 +568,30 @@ class _SavedPageState extends State<SavedPage> {
 							),
 							filterableAdapter: (t) => t,
 							controller: _threadListController,
-							listUpdater: () async {
+							listUpdater: (options) async {
 								final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
-								await Future.wait(states.map((s) => s.ensureThreadLoaded()));
+								if (options.source.manual) {
+									// Refresh threads from network
+									for (final state in states) {
+										if (state.useArchive) {
+											continue;
+										}
+										await state.ensureThreadLoaded();
+										if (state.thread?.isArchived ?? false) {
+											continue;
+										}
+										try {
+											await state.imageboard?.threadWatcher.updateThread(state.identifier);
+										}
+										catch (e, st) {
+											Future.error(e, st); // crashlytics it
+										}
+									}
+								}
+								else {
+									// Just load from disk
+									await Future.wait(states.map((s) => s.ensureThreadLoaded()));
+								}
 								return states;
 							},
 							minUpdateDuration: Duration.zero,
@@ -703,7 +724,7 @@ class _SavedPageState extends State<SavedPage> {
 							),
 							filterableAdapter: (t) => t.post ?? EmptyFilterable(t.threadState.id),
 							controller: _yourPostsListController,
-							listUpdater: () async {
+							listUpdater: (options) async {
 								_yourPostsLists = {};
 								_yourPostsMissingThreads = [];
 								for (final state in Persistence.sharedThreadStateBox.values) {
@@ -877,7 +898,7 @@ class _SavedPageState extends State<SavedPage> {
 							),
 							filterableAdapter: (t) => t.item.post,
 							controller: _postListController,
-							listUpdater: () async {
+							listUpdater: (options) async {
 								final savedPosts = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedPosts.values.map(i.scope)).toList();
 								await Future.wait(savedPosts.map((s) async {
 									await s.imageboard.persistence.getThreadStateIfExists(s.item.post.threadIdentifier)?.ensureThreadLoaded();
@@ -1034,7 +1055,7 @@ class _SavedPageState extends State<SavedPage> {
 					masterBuilder: (context, selected, setter) => RefreshableList<ImageboardScoped<SavedAttachment>>(
 						id: 'savedAttachments',
 						controller: _savedAttachmentsController,
-						listUpdater: () async {
+						listUpdater: (options) async {
 							final list = <ImageboardScoped<SavedAttachment>>[];
 							final missing = <ImageboardScoped<SavedAttachment>>[];
 							for (final imageboard in ImageboardRegistry.instance.imageboardsIncludingDev) {

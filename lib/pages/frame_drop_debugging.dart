@@ -33,7 +33,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 				childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
 			) : null,
 			filterableAdapter: (t) => t,
-			listUpdater: () async {
+			listUpdater: (options) async {
 				final thread = await widget.site.getThread(ThreadIdentifier('g', 85712241), priority: RequestPriority.interactive);
 				return List.generate(150, (i) => thread);
 			},

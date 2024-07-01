@@ -1624,7 +1624,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				}
 																			)
 																		},
-																		listUpdater: () async {
+																		listUpdater: (options) async {
 																			return (await _getUpdatedThread()).posts;
 																		},
 																		controller: _listController,

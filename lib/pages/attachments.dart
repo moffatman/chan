@@ -188,7 +188,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 							filterableAdapter: null,
 							id: '${widget.attachments.length} attachments',
 							controller: _controller,
-							listUpdater: () => throw UnimplementedError(),
+							listUpdater: (_) => throw UnimplementedError(),
 							disableUpdates: true,
 							initialList: widget.attachments,
 							gridDelegate: SliverStaggeredGridDelegate(

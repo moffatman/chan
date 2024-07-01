@@ -232,7 +232,7 @@ class HistoryPageState extends State<HistoryPage> {
 								),
 								controller: _listController,
 								updateAnimation: threadStateBoxesAnimation,
-								listUpdater: () async {
+								listUpdater: (options) async {
 									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && s.showInHistory).toList();
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
 									return _load(0);

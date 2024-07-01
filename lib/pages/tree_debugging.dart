@@ -121,7 +121,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				)
 			),
 			disableUpdates: true,
-			listUpdater: () async => throw UnimplementedError(),
+			listUpdater: (_) async => throw UnimplementedError(),
 			id: 'treeDebugging',
 			initialList: items.toList(),
 			filterableAdapter: null,
