@@ -1018,6 +1018,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool disableUpdates;
 	final bool disableBottomUpdates;
 	final Widget? header;
+	final Widget? aboveFooter;
 	final Widget? footer;
 	final SliverGridDelegate? gridDelegate;
 	final SliverStaggeredGridDelegate? staggeredGridDelegate;
@@ -1060,6 +1061,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.gridDelegate,
 		this.staggeredGridDelegate,
 		this.header,
+		this.aboveFooter,
 		this.footer,
 		this.initialFilter,
 		this.onFilterChanged,
@@ -2971,6 +2973,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															addAutomaticKeepAlives: false
 														)
 													)
+											],
+											if (widget.aboveFooter != null) ...[
+												SliverToBoxAdapter(
+													child: widget.aboveFooter
+												)
 											],
 											if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
 												top: false,

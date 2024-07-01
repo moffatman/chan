@@ -285,6 +285,13 @@ class _SavedPageState extends State<SavedPage> {
 									ThreadWatcherControls(
 										isActive: widget.isActive
 									),
+									const ChanceDivider()
+								]
+							),
+							aboveFooter: Column(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									const ChanceDivider(),
 									AnimatedBuilder(
 										animation: _watchedListController,
 										builder: (context, _) => MissingThreadsControls(
@@ -305,9 +312,8 @@ class _SavedPageState extends State<SavedPage> {
 												}
 											}
 										)
-									),
-									const ChanceDivider()
-								]
+									)
+								],
 							),
 							filterableAdapter: null,
 							controller: _watchedListController,
@@ -546,7 +552,7 @@ class _SavedPageState extends State<SavedPage> {
 						final settings = context.watch<Settings>();
 						final sortMethod = getSavedThreadsSortMethod();
 						return RefreshableList<PersistentThreadState>(
-							header: AnimatedBuilder(
+							aboveFooter: AnimatedBuilder(
 								animation: _threadListController,
 								builder: (context, _) => MissingThreadsControls(
 									missingThreads: _threadListController.items.expand((item) {
@@ -702,7 +708,7 @@ class _SavedPageState extends State<SavedPage> {
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
 						return RefreshableList<_PostThreadCombo>(
-							header: AnimatedBuilder(
+							aboveFooter: AnimatedBuilder(
 								animation: _yourPostsListController,
 								builder: (context, _) => MissingThreadsControls(
 									missingThreads: _yourPostsListController.items.expand((item) {
@@ -872,7 +878,7 @@ class _SavedPageState extends State<SavedPage> {
 					icon: CupertinoIcons.reply,
 					masterBuilder: (context, selected, setter) {
 						return RefreshableList<ImageboardScoped<SavedPost>>(
-							header: AnimatedBuilder(
+							aboveFooter: AnimatedBuilder(
 								animation: _postListController,
 								builder: (context, _) => MissingThreadsControls(
 									missingThreads: _postListController.items.expand((item) {
@@ -1072,7 +1078,7 @@ class _SavedPageState extends State<SavedPage> {
 							_missingSavedAttachments.value = missing;
 							return list;
 						},
-						header: ValueListenableBuilder(
+						aboveFooter: ValueListenableBuilder(
 							valueListenable: _missingSavedAttachments,
 							key: _savedAttachmentsAnimatedBuilderKey,
 							builder: (context, missing, _) => MissingAttachmentsControls(
