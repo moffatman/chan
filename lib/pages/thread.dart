@@ -2538,7 +2538,37 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												widget.persistentState.save();
 											}))
 										],
-										[('Update', const Icon(CupertinoIcons.refresh, size: 19), widget.listController.update)],
+										[
+											('Mark as read', const Icon(CupertinoIcons.xmark_circle, size: 19), _whiteCountAbove <= 0 && _whiteCountBelow <= 0 ? null : () async {
+												final threadState = widget.persistentState;
+												final unseenPostIds = threadState.unseenPostIds.data.toSet();
+												final newPostIds = widget.newPostIds.toSet();
+												final lastSeenPostId = threadState.lastSeenPostId;
+												widget.newPostIds.clear();
+												threadState.unseenPostIds.data.clear();
+												threadState.lastSeenPostId = threadState.thread?.posts_.fold<int>(0, (m, p) => max(m, p.id));
+												threadState.didUpdate();
+												setState(() {});
+												_onSlowScroll();
+												await threadState.save();
+												if (context.mounted) {
+													showUndoToast(
+														context: context,
+														message: 'Marked as read',
+														onUndo: () async {
+															widget.newPostIds.addAll(newPostIds);
+															threadState.unseenPostIds.data.addAll(unseenPostIds);
+															threadState.lastSeenPostId = lastSeenPostId;
+															threadState.didUpdate();
+															setState(() {});
+															_onSlowScroll();
+															await threadState.save();
+														}
+													);
+												}
+											}),
+											('Update', const Icon(CupertinoIcons.refresh, size: 19), widget.listController.update)
+										],
 										[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), scrollToTop)],
 										[
 											('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
