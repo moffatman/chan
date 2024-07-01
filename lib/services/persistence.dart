@@ -630,6 +630,26 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 		}
+		if (Platform.isIOS) {
+			// FlutterEXIFRotation left various discarded JPEGs in the documentsDirectory
+			await for (final child in documentsDirectory.list().handleError(
+				(e) => print('Ignoring list error $e'),
+				test: (e) => e is FileSystemException
+			)) {
+				if (!child.path.endsWith('.jpg') && !child.path.endsWith('.jpeg')) {
+					continue;
+				}
+				final stat = await child.stat();
+				if (stat.type == FileSystemEntityType.file) {
+					try {
+						await child.delete();
+					}
+					on FileSystemException catch (e) {
+						print('Failed to delete junk JPEG ${child.path}: $e');
+					}
+				}
+			}
+		}
 		if (deletedCount > 0) {
 			print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
 		}

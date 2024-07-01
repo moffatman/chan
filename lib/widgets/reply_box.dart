@@ -66,6 +66,23 @@ extension _ClampAboveZero on Duration {
 	}
 }
 
+
+/// Some pickers (iOS) put the file in a Chance-owned path that wouldn't be
+/// automatically cleaned up. Move it out of there.
+Future<File> _moveFileOutOfDocumentsDir(File file) async {
+	final parentResolved = await file.parent.resolveSymbolicLinks();
+	final docsResolved = await Persistence.documentsDirectory.resolveSymbolicLinks();
+	if (parentResolved == docsResolved) {
+		// The file is an immediate child of docs dir. This is because of bad picker behaviour
+		// Move it to temp path
+		final parent = Directory('${Persistence.temporaryDirectory.path}/inboxcache/${DateTime.now().millisecondsSinceEpoch}');
+		await parent.create(recursive: true);
+		final destPath = '${parent.path}/${file.path.split('/').last}';
+		return await file.rename(destPath);
+	}
+	return file;
+}
+
 class ReplyBoxZone {
 	final void Function(int threadId, int id) onTapPostId;
 
@@ -684,6 +701,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			String ext = file.uri.pathSegments.last.split('.').last.toLowerCase();
 			if (ext == 'jpg' || ext == 'jpeg' || ext == 'heic') {
 				file = await FlutterExifRotation.rotateImage(path: file.path);
+				file = await _moveFileOutOfDocumentsDir(file);
 			}
 			if (ext == 'heic') {
 				final heicPath = await HeicToJpg.convert(file.path);
