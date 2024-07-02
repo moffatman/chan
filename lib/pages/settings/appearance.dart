@@ -182,7 +182,7 @@ BoxDecoration? _threadAndPostRowDecorationOf(BuildContext context) {
 }
 
 int _estimateGridModeColumns(double maxWidth) {
-	double screenWidth = PlatformDispatcher.instance.views.first.physicalSize.width * PlatformDispatcher.instance.views.first.devicePixelRatio;
+	double screenWidth = PlatformDispatcher.instance.views.first.physicalSize.width / PlatformDispatcher.instance.views.first.devicePixelRatio;
 	screenWidth /= Settings.instance.interfaceScale;
 	if (screenWidth > Settings.instance.twoPaneBreakpoint) {
 		// Catalog is in mater pane
