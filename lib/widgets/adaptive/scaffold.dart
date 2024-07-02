@@ -40,7 +40,12 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 	Widget build(BuildContext context) {
 		final leadings = <Widget>[];
 		if (ModalRoute.of(context)?.canPop ?? false) {
-			leadings.add(const BackButton());
+			leadings.add(GestureDetector(
+				onLongPress: () {
+					Settings.instance.runQuickAction(context);
+				},
+				child: const BackButton()
+			));
 		}
 		else if (onDrawerButtonPressed != null) {
 			leadings.add(GestureDetector(
@@ -96,6 +101,48 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 	Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
 
+// Copied from 'package:flutter/src/cupertino/nav_bar.dart'
+class _CupertinoBackChevron extends StatelessWidget {
+  const _CupertinoBackChevron();
+
+  @override
+  Widget build(BuildContext context) {
+    final TextDirection textDirection = Directionality.of(context);
+    final TextStyle textStyle = DefaultTextStyle.of(context).style;
+
+    // Replicate the Icon logic here to get a tightly sized icon and add
+    // custom non-square padding.
+    Widget iconWidget = Padding(
+      padding: const EdgeInsetsDirectional.only(start: 0, end: 2),
+      child: Text.rich(
+        TextSpan(
+          text: String.fromCharCode(CupertinoIcons.back.codePoint),
+          style: TextStyle(
+            inherit: false,
+            color: textStyle.color,
+            fontSize: 30.0,
+            fontFamily: CupertinoIcons.back.fontFamily,
+            package: CupertinoIcons.back.fontPackage,
+          ),
+        ),
+      ),
+    );
+    switch (textDirection) {
+      case TextDirection.rtl:
+        iconWidget = Transform(
+          transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+          alignment: Alignment.center,
+          transformHitTests: false,
+          child: iconWidget,
+        );
+      case TextDirection.ltr:
+        break;
+    }
+
+    return iconWidget;
+  }
+}
+
 class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPreferredSizeWidget {
 	final bool transitionBetweenRoutes;
 	final Widget? leading;
@@ -126,6 +173,7 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 	@override
 	Widget build(BuildContext context) {
 		final child = CupertinoNavigationBar(
+			automaticallyImplyLeading: false,
 			transitionBetweenRoutes: transitionBetweenRoutes,
 			leading: leading,
 			middle: middle,
@@ -250,7 +298,8 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 		}
 		final parentDrawer = context.watch<_CupertinoDrawer?>();
 		final leadings = <Widget>[];
-		if (!(ModalRoute.of(context)?.canPop ?? false) &&
+		final canPop = ModalRoute.of(context)?.canPop;
+		if (canPop != true &&
 		    parentDrawer != null &&
 				context.read<MasterDetailHint?>()?.location.isDetail != true) {
 			// Only if at root route
@@ -263,6 +312,19 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 					minSize: 0,
 					padding: EdgeInsets.zero,
 					child: const Icon(Icons.menu)
+				)
+			));
+		}
+		else if (canPop == true) {
+			leadings.add(GestureDetector(
+				onLongPress: () {
+					Settings.instance.runQuickAction(context);
+				},
+				child: CupertinoButton(
+					onPressed: () => Navigator.pop(context),
+					minSize: 0,
+					padding: EdgeInsets.zero,
+					child: const _CupertinoBackChevron()
 				)
 			));
 		}

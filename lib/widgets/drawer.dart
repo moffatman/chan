@@ -471,18 +471,21 @@ class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMix
 										builder: (context, _) {
 											final unseenCount = ImageboardRegistry.instance.dev?.threadWatcher.unseenCount.value ?? 0;
 											final unseenYouCount = ImageboardRegistry.instance.dev?.threadWatcher.unseenYouCount.value ?? 0;
-											return AdaptiveFilledButton(
-												color: tabs.mainTabIndex == 4 ? selectedButtonColor : unselectedButtonColor,
-												padding: const EdgeInsets.all(8),
-												onPressed: () {
-													lightHapticFeedback();
-													tabs.mainTabIndex = 4;
-													_afterUse();
-												},
-												child: StationaryNotifyingIcon(
-													primary: unseenYouCount,
-													secondary: unseenCount,
-													icon: Icon(Icons.settings, color: tabs.mainTabIndex == 4 ? backgroundColor : primaryColor)
+											return GestureDetector(
+												onLongPress: () => Settings.instance.runQuickAction(context),
+												child: AdaptiveFilledButton(
+													color: tabs.mainTabIndex == 4 ? selectedButtonColor : unselectedButtonColor,
+													padding: const EdgeInsets.all(8),
+													onPressed: () {
+														lightHapticFeedback();
+														tabs.mainTabIndex = 4;
+														_afterUse();
+													},
+													child: StationaryNotifyingIcon(
+														primary: unseenYouCount,
+														secondary: unseenCount,
+														icon: Icon(Icons.settings, color: tabs.mainTabIndex == 4 ? backgroundColor : primaryColor)
+													)
 												)
 											);
 										}
