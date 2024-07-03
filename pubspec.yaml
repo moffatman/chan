@@ -227,3 +227,7 @@ dependency_overrides:
       url: https://github.com/moffatman/hive.git
       ref: master
       path: hive_generator
+  html:
+    git:
+      url: https://github.com/moffatman/html.git
+      ref: main

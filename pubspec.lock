@@ -246,10 +246,10 @@ packages:
     dependency: transitive
     description:
       name: csslib
-      sha256: b36c7f7e24c0bdf1bf9a3da461c837d1de64b9f8beb190c9011d8c72a3dfd745
+      sha256: "706b5707578e0c1b4b7550f64078f0a0f19dec3f50a178ffae7006b0a9ca58fb"
       url: "https://pub.dev"
     source: hosted
-    version: "0.17.2"
+    version: "1.0.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -679,11 +679,12 @@ packages:
   html:
     dependency: "direct main"
     description:
-      name: html
-      sha256: "79d498e6d6761925a34ee5ea8fa6dfef38607781d2fa91e37523474282af55cb"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.15.2"
+      path: "."
+      ref: main
+      resolved-ref: f5cb1f538a504d8154a7b997ef813e75bae8ac24
+      url: "https://github.com/moffatman/html.git"
+    source: git
+    version: "0.15.5-wip"
   html_unescape:
     dependency: "direct main"
     description:
