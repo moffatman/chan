@@ -42,7 +42,10 @@ double? calculateLuck() {
 }
 
 Future<void> showLuckPopup({required BuildContext context}) async {
-	final bins = _calculate().$2;
+	final sorted = _calculate().$2.entries.toList();
+	sorted.sort((a, b) {
+		return a.key.compareTo(b.key);
+	});
 
 	await showAdaptiveDialog(
 		context: context,
@@ -56,13 +59,13 @@ Future<void> showLuckPopup({required BuildContext context}) async {
 						1: IntrinsicColumnWidth()
 					},
 					children: [
-						if (bins.isEmpty) const TableRow(
+						if (sorted.isEmpty) const TableRow(
 							children: [
 								TableCell(child: Text('Posts')),
 								TableCell(child: Text('0'))
 							]
 						)
-						else for (final bin in bins.entries) TableRow(
+						else for (final bin in sorted) TableRow(
 							children: [
 								TableCell(
 									child: Text(switch (bin.key) {
