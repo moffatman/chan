@@ -1,25 +1,25 @@
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r'^(.*?)((https?:\/\/)?(?:www\.)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=,!;\u007F-\uFFFF]|(?:\(\d+\)))*)',
+  r'^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b(?:[-a-zA-Z0-9@:%_\+.~#?&/=,!;\u007F-\uFFFF]|(?:\(\d+\)))*)',
   caseSensitive: false,
   dotAll: true,
 );
 
 final _looseUrlRegexWithBackslash = RegExp(
-  r'^(.*?)((https?:\/\/)?(?:www\.)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=,!;\\\u007F-\uFFFF]|(?:\(\d+\)))*)',
+  r'^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b(?:[-a-zA-Z0-9@:%_\+.~#?&/=,!;\\\u007F-\uFFFF]|(?:\(\d+\)))*)',
   caseSensitive: false,
   dotAll: true,
 );
 
 final _wikipediaUrlRegex = RegExp(
-  r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&//=\u007F-\uFFFF]*\([^\)\n]+\))',
+  r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&/=\u007F-\uFFFF]*\([^\)\n]+\))',
   caseSensitive: false,
   dotAll: true,
 );
 
 final _wikipediaUrlRegexWithBackslash = RegExp(
-  r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&//=\\\u007F-\uFFFF]*\([^\)\n]+\))',
+  r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&/=\\\u007F-\uFFFF]*\([^\)\n]+\))',
   caseSensitive: false,
   dotAll: true,
 );
