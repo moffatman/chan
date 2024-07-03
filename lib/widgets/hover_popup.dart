@@ -148,6 +148,9 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	}
 
 	void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
+		if (!context.mounted) {
+			return;
+		}
 		final setting = Settings.instance.imagePeeking;
 		final size = MediaQuery.sizeOf(context);
 		final shortestSide = min(size.shortestSide, 400);
