@@ -144,7 +144,7 @@ class Post implements Filterable {
 		if (_span != null) {
 			return;
 		}
-		if (text.length > 500) {
+		if (text.length > 2000) {
 			_span = await _makeSpanPool.withResource(() => compute<Post, PostNodeSpan>((p) => p._makeSpan(), this));
 		}
 		else {
