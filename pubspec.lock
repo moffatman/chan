@@ -681,7 +681,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: f5cb1f538a504d8154a7b997ef813e75bae8ac24
+      resolved-ref: "3ee0eaafe1e33cd653790d3a1dbd2d8bedc8827c"
       url: "https://github.com/moffatman/html.git"
     source: git
     version: "0.15.5-wip"
