@@ -3353,7 +3353,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		state = list;
 		_useTree = list.useTree;
 	}
-	void focusSearch() {
+	void focusSearch() async {
+		await animateToIndex(0);
 		state?._focusSearch();
 	}
 	void unfocusSearch() {
