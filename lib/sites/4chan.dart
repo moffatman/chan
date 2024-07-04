@@ -383,6 +383,9 @@ class Site4Chan extends ImageboardSite {
 						}
 					}
 				}
+				else if (node.localName == 'a' && node.attributes.containsKey('href')) {
+					elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
+				}
 				else if (node.localName == 'span') {
 					if (node.classes.contains('deadlink')) {
 						final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
