@@ -1684,6 +1684,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	};
 	int? get subjectCharacterLimit => null;
 	bool get hasEmailLinkCookieAuth => false;
+	bool get hasExpiringThreads => true;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
 }

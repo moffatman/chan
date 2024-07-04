@@ -323,7 +323,8 @@ class SiteHackerNews extends ImageboardSite {
 			isSticky: false,
 			time: op.time,
 			attachments: op.attachments_,
-			replyCount: d['descendants'] ?? 0
+			replyCount: d['descendants'] ?? 0,
+			isArchived: DateTime.now().difference(op.time) > const Duration(days: 14)
 		);
 	}
 
@@ -515,7 +516,8 @@ class SiteHackerNews extends ImageboardSite {
 			title: item.title,
 			isSticky: false,
 			time: item.time,
-			attachments: posts.first.attachments_
+			attachments: posts.first.attachments_,
+			isArchived: DateTime.now().difference(item.time) > const Duration(days: 14)
 		);
 	}
 
@@ -650,7 +652,8 @@ class SiteHackerNews extends ImageboardSite {
 					title: hit['title'],
 					isSticky: false,
 					time: op.time,
-					attachments: op.attachments_
+					attachments: op.attachments_,
+					isArchived: DateTime.now().difference(op.time) > const Duration(days: 14)
 				));
 			}).toList()
 		);

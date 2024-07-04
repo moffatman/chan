@@ -927,6 +927,9 @@ class SiteXenforo extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
+	bool get hasExpiringThreads => false;
+
+	@override
 	bool operator == (Object other) =>
 		identical(other, this) ||
 		other is SiteXenforo &&

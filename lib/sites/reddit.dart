@@ -1490,6 +1490,9 @@ class SiteReddit extends ImageboardSite {
 	set defaultCatalogVariant(CatalogVariant value) => Settings.redditCatalogVariantSetting.set(Settings.instance, value);
 
 	@override
+	bool get hasExpiringThreads => false;
+
+	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is SiteReddit) &&

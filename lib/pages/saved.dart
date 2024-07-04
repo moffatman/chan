@@ -576,7 +576,7 @@ class _SavedPageState extends State<SavedPage> {
 							controller: _threadListController,
 							listUpdater: (options) async {
 								final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
-								if (options.source.manual) {
+								if (options.source == RefreshableListUpdateSource.top) {
 									// Refresh threads from network
 									for (final state in states) {
 										if (state.useArchive) {
@@ -585,6 +585,20 @@ class _SavedPageState extends State<SavedPage> {
 										await state.ensureThreadLoaded();
 										if (state.thread?.isArchived ?? false) {
 											continue;
+										}
+										if (state.imageboard?.site.hasExpiringThreads == false && state.thread != null) {
+											// Threads don't go to archived on their own.
+											// So make a judgement call whether it's reasonable to refresh
+											final latestPostTime = state.thread!.posts_.fold<DateTime>(DateTime(2000), (min, post) {
+												if (post.time.isAfter(min)) {
+													return post.time;
+												}
+												return min;
+											});
+											if (DateTime.now().difference(latestPostTime) > const Duration(days: 7)) {
+												// A week without updates, don't bother
+												continue;
+											}
 										}
 										try {
 											await state.imageboard?.threadWatcher.updateThread(state.identifier);
