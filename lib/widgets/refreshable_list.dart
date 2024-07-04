@@ -3449,7 +3449,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			return 0;
 		}
 		final heightedItems = _items.tryMap((i) => i.cachedHeight);
-		if (heightedItems.isEmpty) {
+		if (heightedItems.length < 2) {
+			// If we only have one heighted item. It must be a super long OP which probably
+			// isn't representative anyway.
 			return null;
 		}
 		final averageItemHeight = heightedItems.fold<double>(0, (a, b) => a + b) / heightedItems.length;
@@ -3578,12 +3580,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				scrollController!.position.jumpTo(scrollController!.position.maxScrollExtent);
 			}
 			final completer = Completer<void>();
-			double estimate = switch (_estimateOffset(targetIndex)) {
+			final originalEstimate = _estimateOffset(targetIndex);
+			double estimate = switch (originalEstimate) {
 				double e => e - topOffset,
-				null =>
-					// This is a dumb estimate. But it won't ever get stuck.
-					scrollController!.position.extentBefore > scrollController!.position.extentAfter ?
-						0 : scrollController!.position.maxScrollExtent
+				null => scrollController!.position.maxScrollExtent * (targetIndex / max(1, _items.length - 1))
 			};
 			if (_items.last.cachedOffset != null) {
 				// prevent overscroll
