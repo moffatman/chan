@@ -58,7 +58,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		else if (data['troll_country_name'] != null && data['troll_country_name'].isNotEmpty) {
 			return ImageboardFlag(
 				name: data['troll_country_name'],
-				imageUrl: Uri.https(staticUrl, '/image/country/troll/${data['troll_country_code'].toLowerCase()}.gif').toString(),
+				imageUrl: Uri.https(staticUrl, '/image/flags/${data['board']?['shortname']}/${data['troll_country_code'].toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
