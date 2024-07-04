@@ -494,6 +494,12 @@ class _SavedPageState extends State<SavedPage> {
 																	replyCounts: {
 																		for (final item in attachments.entries) item.key: item.value.thread!.replyCount
 																	},
+																	threads: (
+																		threads: {
+																			for (final item in attachments.entries) item.key: item.value.imageboard!.scope(item.value.thread!)
+																		},
+																		onThreadSelected: (t) => setter(_watchedListController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.threadIdentifier == t.item.identifier).item)
+																	),
 																	initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
 																	onChange: (attachment) {
 																		final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
@@ -684,6 +690,14 @@ class _SavedPageState extends State<SavedPage> {
 																	for (final attachment in state.item.thread!.attachments)
 																		attachment: state.item.thread!.replyCount
 															},
+															threads: (
+																threads: {
+																	for (final state in _threadListController.items)
+																		for (final attachment in state.item.thread!.attachments)
+																			attachment: state.item.imageboard!.scope(state.item.thread!)
+																},
+																onThreadSelected: (t) => threadSetter(t.imageboard.scope(t.item.identifier))
+															),
 															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 															onChange: (attachment) {
 																_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);

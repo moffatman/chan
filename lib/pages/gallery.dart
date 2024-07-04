@@ -7,6 +7,8 @@ import 'dart:ui';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
+import 'package:chan/models/thread.dart';
+import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/services/audio.dart';
 import 'package:chan/services/imageboard.dart';
@@ -26,6 +28,7 @@ import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
@@ -97,12 +100,18 @@ class _PaddedRectClipper extends CustomClipper<Rect> {
 	bool shouldReclip(_PaddedRectClipper oldClipper) => padding != oldClipper.padding;
 }
 
+typedef AttachmentThreads = ({
+	Map<Attachment, ImageboardScoped<Thread>> threads,
+	ValueChanged<ImageboardScoped<Thread>> onThreadSelected
+});
+
 class GalleryPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
 	final Map<Attachment, int> replyCounts;
 	final Map<Attachment, Uri> initialGoodSources;
 	final Map<Attachment, Uri> overrideSources;
 	final PostSpanZoneData? zone;
+	final AttachmentThreads? threads;
 	final ReplyBoxZone? replyBoxZone;
 	final bool Function(Attachment)? isAttachmentAlreadyDownloaded;
 	final ValueChanged<Attachment>? onAttachmentDownload;
@@ -126,6 +135,7 @@ class GalleryPage extends StatefulWidget {
 		this.overrideSources = const {},
 		this.initialGoodSources = const {},
 		this.zone,
+		this.threads,
 		this.replyBoxZone,
 		this.isAttachmentAlreadyDownloaded,
 		this.onAttachmentDownload,
@@ -790,6 +800,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		final settings = context.watch<Settings>();
 		final layoutInsets = MediaQuery.paddingOf(context);
 		final zone = widget.zone;
+		final threads = widget.threads;
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
@@ -1070,7 +1081,7 @@ class _GalleryPageState extends State<GalleryPage> {
 														if (zone != null && showChrome) AdaptiveIconButton(
 															padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
 															onPressed: () {
-																final post = zone.findThread(currentAttachment.attachment.threadId ?? 0)?.posts_.tryFirstWhere((p) => p.attachments.contains(currentAttachment.attachment));
+																final post = zone.findThread(currentAttachment.attachment.threadId ?? zone.primaryThreadId)?.posts_.tryFirstWhere((p) => p.attachments.contains(currentAttachment.attachment));
 																final imageboard = context.read<Imageboard>();
 																final navigator = Navigator.of(context);
 																// Hack to pop until here
@@ -1131,6 +1142,34 @@ class _GalleryPageState extends State<GalleryPage> {
 																		child: child
 																	)
 																));
+															},
+															icon: const Icon(CupertinoIcons.reply)
+														),
+														if (threads != null && showChrome) AdaptiveIconButton(
+															padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+															onPressed: () async {
+																final thread = threads.threads[currentAttachment.attachment]!;
+																final pop = await Navigator.of(context).push<bool>(TransparentRoute(
+																	builder: (context) => ImageboardScope(
+																		imageboardKey: null,
+																		imageboard: thread.imageboard,
+																		child: OverscrollModalPage(
+																			child: CupertinoButton(
+																				padding: EdgeInsets.zero,
+																				onPressed: () => Navigator.pop(context, true),
+																				child: ThreadRow(
+																					isSelected: false,
+																					thread: thread.item
+																				)
+																			)
+																		)
+																	)
+																));
+																if ((pop ?? false) && context.mounted) {
+																	Navigator.pop(context);
+																	await Future.delayed(settings.showAnimations ? const Duration(milliseconds: 200) : Duration.zero);
+																	threads.onThreadSelected(thread);
+																}
 															},
 															icon: const Icon(CupertinoIcons.reply)
 														),
@@ -1351,6 +1390,7 @@ Future<Attachment?> showGalleryPretagged({
 	Map<Attachment, Uri> initialGoodSources = const {},
 	Map<Attachment, int> replyCounts = const {},
 	PostSpanZoneData? zone,
+	AttachmentThreads? threads,
 	ReplyBoxZone? replyBoxZone,
 	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
 	ValueChanged<Attachment>? onAttachmentDownload,
@@ -1379,6 +1419,7 @@ Future<Attachment?> showGalleryPretagged({
 				overrideSources: overrideSources,
 				initialGoodSources: initialGoodSources,
 				zone: zone,
+				threads: threads,
 				replyBoxZone: replyBoxZone,
 				isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
 				onAttachmentDownload: onAttachmentDownload,
@@ -1412,6 +1453,7 @@ Future<Attachment?> showGallery({
 	Map<Attachment, Uri> initialGoodSources = const {},
 	Map<Attachment, int> replyCounts = const {},
 	PostSpanZoneData? zone,
+	AttachmentThreads? threads,
 	ReplyBoxZone? replyBoxZone,
 	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
 	ValueChanged<Attachment>? onAttachmentDownload,
@@ -1436,6 +1478,7 @@ Future<Attachment?> showGallery({
 	initialGoodSources: initialGoodSources,
 	replyCounts: replyCounts,
 	zone: zone,
+	threads: threads,
 	replyBoxZone: replyBoxZone,
 	isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
 	onAttachmentDownload: onAttachmentDownload,

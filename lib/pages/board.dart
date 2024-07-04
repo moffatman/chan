@@ -469,6 +469,7 @@ class BoardPageState extends State<BoardPage> {
 			final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.item.attachments.isNotEmpty, orElse: () {
 				return _listController.items.firstWhere((t) => t.item.attachments.isNotEmpty);
 			});
+			final imageboard = context.read<Imageboard>();
 			final attachments = _listController.items.expand((_) => _.item.attachments).toList();
 			showGallery(
 				context: context,
@@ -478,6 +479,14 @@ class BoardPageState extends State<BoardPage> {
 						for (final attachment in thread.item.attachments)
 							attachment: thread.item.replyCount
 				},
+				threads: (
+					threads: {
+						for (final thread in _listController.items)
+							for (final attachment in thread.item.attachments)
+								attachment: imageboard.scope(thread.item)
+					},
+					onThreadSelected: (t) => _onThreadSelected(t.item.identifier)
+				),
 				initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.item.attachments.any((a2) => a2.id == a.id)),
 				onChange: (attachment) {
 					if (_listController.state?.searching ?? false) {
@@ -851,6 +860,14 @@ class BoardPageState extends State<BoardPage> {
 										for (final attachment in thread.item.attachments)
 											attachment: thread.item.replyCount
 								},
+								threads: (
+									threads: {
+										for (final thread in _listController.items)
+											for (final attachment in thread.item.attachments)
+												attachment: imageboard!.scope(thread.item)
+									},
+									onThreadSelected: (t) => _onThreadSelected(t.item.identifier)
+								),
 								initialAttachment: initialAttachmentInList ?? initialAttachment,
 								onChange: (attachment) {
 									if (_listController.state?.searching ?? false) {
