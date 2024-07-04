@@ -63,10 +63,13 @@ class SiteXenforo extends ImageboardSite {
 							yield PostTextSpan(node.outerHtml);
 							continue;
 						}
-						final src =
+						String src =
 							img.attributes['src']?.nonEmptyOrNull ??
 							img.attributes['data-url']?.nonEmptyOrNull ??
 							img.attributes['data-src']?.nonEmptyOrNull ?? '';
+						if (!src.startsWith('http://') && !src.startsWith('https://')) {
+							src = 'https://$src';
+						}
 						final alt = img.attributes['alt']!;
 						attachments.add(Attachment(
 							type: AttachmentType.image,
@@ -526,6 +529,16 @@ class SiteXenforo extends ImageboardSite {
 		});
 	}
 
+	String _fixRelativeUrl(String url) {
+		if (url.startsWith('//')) {
+			return 'https:$url';
+		}
+		if (url.startsWith('/')) {
+			return 'https://$baseUrl$url';
+		}
+		return url;
+	}
+
 	List<Post> _getPostsFromThreadPage(String board, int threadId, dom.Document document) {
 		final pageNavPages = document.querySelector('.pageNav-main')?.querySelectorAll('.pageNav-page') ?? [];
 		final currentPageNumber = int.tryParse(pageNavPages.tryFirstWhere((e) => e.classes.contains('pageNav-page--current'))?.text ?? '') ?? 1;
@@ -557,20 +570,27 @@ class SiteXenforo extends ImageboardSite {
 					},
 				time: _parseTime(e.querySelector('.message-attribution-main time')!),
 				spanFormat: PostSpanFormat.xenforo,
-				attachments_: e.querySelectorAll('.message-attachments .file-preview img').map((img) => Attachment(
-					board: board,
-					threadId: threadId,
-					type: AttachmentType.image,
-					id: img.attributes['src']!,
-					ext: '.${img.attributes['src']!.split('.').last}',
-					filename: img.attributes['alt'] ?? img.attributes['src']!.split('/').last,
-					url: img.attributes['src']!,
-					thumbnailUrl: generateThumbnailerForUrl(Uri.parse(img.attributes['src']!)).toString(),
-					md5: '',
-					width: int.tryParse(img.attributes['width'] ?? ''),
-					height: int.tryParse(img.attributes['height'] ?? ''),
-					sizeInBytes: null
-				)).toList(growable: false)
+				attachments_: e.querySelectorAll('.message-attachments .file-preview img').map((img) {
+					final url = _fixRelativeUrl(img.attributes['src']!);
+					final parentHref = switch (img.parent?.attributes['href']) {
+						String href => _fixRelativeUrl(href),
+						null => null
+					};
+					return Attachment(
+						board: board,
+						threadId: threadId,
+						type: AttachmentType.image,
+						id: img.attributes['src']!,
+						ext: '.${img.attributes['src']!.split('.').last}',
+						filename: img.attributes['alt'] ?? img.attributes['src']!.split('/').last,
+						url: parentHref ?? url,
+						thumbnailUrl: generateThumbnailerForUrl(Uri.parse(url)).toString(),
+						md5: '',
+						width: int.tryParse(img.attributes['width'] ?? ''),
+						height: int.tryParse(img.attributes['height'] ?? ''),
+						sizeInBytes: null
+					);
+				}).toList(growable: false)
 			);
 		});
 		return pagesBefore.followedBy(realPosts).followedBy(pagesAfter).toList();
