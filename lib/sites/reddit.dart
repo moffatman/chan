@@ -350,7 +350,7 @@ class SiteReddit extends ImageboardSite {
 			).trim().replaceAll('<br />', '')
 		);
 		int spoilerSpanId = 0;
-		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
+		Iterable<PostSpan> visit(Iterable<dom.Node> nodes, {int listDepth = 0}) sync* {
 			bool addLinebreakBefore = false;
 			for (final node in nodes) {
 				if (addLinebreakBefore) {
@@ -392,18 +392,16 @@ class SiteReddit extends ImageboardSite {
 									yield const PostLineBreakSpan();
 									addLinebreakBefore = false;
 								}
+								if (listDepth > 0) {
+									yield PostTextSpan('\n${'    ' * listDepth}');
+								}
 								if (node.localName == 'ol') {
 									yield PostTextSpan('$i. ');
 								}
 								else {
 									yield const PostTextSpan('• ');
 								}
-								if (li.children.isNotEmpty) {
-									yield* visit(li.children);
-								}
-								else {
-									yield* visit(li.nodes);
-								}
+								yield* visit(li.nodes, listDepth: listDepth + 1);
 								addLinebreakBefore = true;
 								i++;
 							}
