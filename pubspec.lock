@@ -818,6 +818,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
+  isolate_pool_2:
+    dependency: "direct main"
+    description:
+      name: isolate_pool_2
+      sha256: b08476060e01c6fe803971918ae84981fe576a5a30ca7b0e679433f921c60466
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.7"
   js:
     dependency: transitive
     description:

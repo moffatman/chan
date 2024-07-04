@@ -17,7 +17,8 @@ import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/xenforo.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
-import 'package:pool/pool.dart';
+import 'package:isolate_pool_2/isolate_pool_2.dart';
+import 'package:mutex/mutex.dart';
 
 import '../widgets/post_spans.dart';
 
@@ -26,7 +27,28 @@ import 'attachment.dart';
 part 'post.g.dart';
 
 // Avoid creating too many small threads
-final _makeSpanPool = Pool(kDebugMode ? 1 : (Platform.numberOfProcessors / 2).ceil());
+final _makeSpanPool = IsolatePool((Platform.numberOfProcessors / 2).floor().clamp(1, 4));
+bool _makeSpanPoolStarted = false;
+final _makeSpanPoolLock = Mutex();
+Future<IsolatePool> _getMakeSpanPool() async {
+	return _makeSpanPoolLock.protect(() async {
+		if (!_makeSpanPoolStarted) {
+			await _makeSpanPool.start();
+			_makeSpanPoolStarted = true;
+		}
+		return _makeSpanPool;
+	});
+}
+
+class _MakeSpanJob extends PooledJob<PostNodeSpan> {
+	final Post post;
+	_MakeSpanJob(this.post);
+
+	@override
+	Future<PostNodeSpan> job() async {
+		return post._makeSpan();
+	}
+}
 
 @HiveType(typeId: 13)
 enum PostSpanFormat {
@@ -144,8 +166,8 @@ class Post implements Filterable {
 		if (_span != null) {
 			return;
 		}
-		if (text.length > 2000) {
-			_span = await _makeSpanPool.withResource(() => compute<Post, PostNodeSpan>((p) => p._makeSpan(), this));
+		if (text.length > 500) {
+			_span = await (await _getMakeSpanPool()).scheduleJob(_MakeSpanJob(this));
 		}
 		else {
 			_span = _makeSpan();

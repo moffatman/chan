@@ -92,6 +92,7 @@ dependencies:
   screenshot: ^2.1.0
   ffi: ^2.0.2
   archive: ^3.4.10
+  isolate_pool_2: ^1.0.7
 
 dev_dependencies:
   hive_generator: ^2.0.0
