@@ -509,18 +509,20 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					alignment: Alignment.topCenter,
 					child: SingleChildScrollView(
 						key: const ValueKey(true),
-						child: SearchQueryEditor(
-							query: query,
-							onChanged: () {
-								setState(() {});
-							},
-							onPickerHide: () {
-								_showingPicker = false;
-							},
-							onPickerShow: () {
-								_showingPicker = true;
-							},
-							onSubmitted: _submitQuery,
+						child: SafeArea(
+							child: SearchQueryEditor(
+								query: query,
+								onChanged: () {
+									setState(() {});
+								},
+								onPickerHide: () {
+									_showingPicker = false;
+								},
+								onPickerShow: () {
+									_showingPicker = true;
+								},
+								onSubmitted: _submitQuery,
+							)
 						)
 					)
 				) : ListView(
