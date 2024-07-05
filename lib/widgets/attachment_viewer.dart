@@ -866,12 +866,16 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	String _downloadFilename(bool convertForCompatibility) {
-		final String filename;
+		String filename;
 		if (Settings.instance.downloadUsingServerSideFilenames) {
 			filename = attachment.id.split('/').last;
 		}
 		else {
 			filename = attachment.filename;
+		}
+		if (filename.startsWith('.')) {
+			// Not able to save hidden files
+			filename = ' $filename';
 		}
 		return filename.replaceFirst(RegExp(r'\.[^.]+$'), '') + _downloadExt(convertForCompatibility);
 	}
