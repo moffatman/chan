@@ -49,6 +49,7 @@ Future<void> showLuckPopup({required BuildContext context}) async {
 
 	await showAdaptiveDialog(
 		context: context,
+		barrierDismissible: true,
 		builder: (context) => AdaptiveAlertDialog(
 			title: const Text('Luck'),
 			content: Padding(
