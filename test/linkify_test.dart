@@ -1,3 +1,4 @@
+import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:test/test.dart';
@@ -47,6 +48,12 @@ void main() {
 			final r = SiteReddit.makeSpan('', 0, 'https://en.wikipedia.org/wiki/NLRB_v._Jones_%26_Laughlin_Steel_Corp');
 			final link = r.children.single as PostLinkSpan;
 			expect(link.url, 'https://en.wikipedia.org/wiki/NLRB_v._Jones_&_Laughlin_Steel_Corp');
+		});
+
+		test('wikipedia url with single quote', () {
+			final r = Site4Chan.makeSpan('', 0, 'https://en.wikipedia.org/wiki/Bachelor\'s_Day_(tradition)');
+			final link = r.children.single as PostLinkSpan;
+			expect(link.url, 'https://en.wikipedia.org/wiki/Bachelor\'s_Day_(tradition)');
 		});
 	});
 }

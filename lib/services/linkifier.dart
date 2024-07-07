@@ -13,13 +13,13 @@ final _looseUrlRegexWithBackslash = RegExp(
 );
 
 final _wikipediaUrlRegex = RegExp(
-  r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&/=\u007F-\uFFFF]*\([^\)\n]+\))',
+  r"^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-'a-zA-Z0-9@:%_\+.~#?&/=\u007F-\uFFFF]*\([^\)\n]+\))",
   caseSensitive: false,
   dotAll: true,
 );
 
 final _wikipediaUrlRegexWithBackslash = RegExp(
-  r'^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&/=\\\u007F-\uFFFF]*\([^\)\n]+\))',
+  r"^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-'a-zA-Z0-9@:%_\+.~#?&/=\\\u007F-\uFFFF]*\([^\)\n]+\))",
   caseSensitive: false,
   dotAll: true,
 );
