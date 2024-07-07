@@ -322,7 +322,7 @@ class _PostsPageState extends State<PostsPage> {
 										}
 									) : const Text('Missing post')) : PostRow(
 										post: reply.post!,
-										propagateOnThumbnailTap: true,
+										propagateOnThumbnailTap: widget.onThumbnailTap != null,
 										onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
 										onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
 																	? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
