@@ -122,7 +122,6 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 				}
 			}
 		);
-		urlFocusNode.requestFocus();
 	}
 
 	void _onUrlFocusChange() {
@@ -185,6 +184,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 		return AdaptiveScaffold(
 			bar: AdaptiveBar(
 				title: AdaptiveSearchTextField(
+					autofocus: true,
 					focusNode: urlFocusNode,
 					controller: urlController,
 					enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
