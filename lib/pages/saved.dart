@@ -316,6 +316,7 @@ class _SavedPageState extends State<SavedPage> {
 								],
 							),
 							filterableAdapter: null,
+							useFiltersFromContext: false,
 							controller: _watchedListController,
 							listUpdater: (options) async {
 								final list = await thread_actions.loadWatches();
@@ -578,6 +579,7 @@ class _SavedPageState extends State<SavedPage> {
 									}
 								)
 							),
+							useFiltersFromContext: false,
 							filterableAdapter: (t) => t,
 							controller: _threadListController,
 							listUpdater: (options) async {
@@ -756,6 +758,7 @@ class _SavedPageState extends State<SavedPage> {
 									}
 								)
 							),
+							useFiltersFromContext: false,
 							filterableAdapter: (t) => t.post ?? EmptyFilterable(t.threadState.id),
 							controller: _yourPostsListController,
 							listUpdater: (options) async {
@@ -930,6 +933,7 @@ class _SavedPageState extends State<SavedPage> {
 									},
 								)
 							),
+							useFiltersFromContext: false,
 							filterableAdapter: (t) => t.item.post,
 							controller: _postListController,
 							listUpdater: (options) async {
@@ -1123,6 +1127,7 @@ class _SavedPageState extends State<SavedPage> {
 							crossAxisCount: 4
 						),
 						updateAnimation: savedAttachmentsNotifiersAnimation,
+						useFiltersFromContext: false,
 						filterableAdapter: null,
 						itemBuilder: (context, item) => Builder(
 							builder: (context) => ImageboardScope(

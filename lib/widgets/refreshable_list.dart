@@ -1044,6 +1044,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final double minCacheExtent;
 	final bool shrinkWrap;
 	final bool autoExtendDuringScroll;
+	final bool useFiltersFromContext;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -1086,6 +1087,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.minCacheExtent = 0,
 		this.shrinkWrap = false,
 		this.autoExtendDuringScroll = false,
+		this.useFiltersFromContext = true,
 		Key? key
 	}) : super(key: key);
 
@@ -2411,7 +2413,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					if (query.isNotEmpty && !_matchesSearchFilter(item_, query)) {
 						continue;
 					}
-					final result = filterableAdapter != null ? filter.filter(item_) : null;
+					final result = widget.useFiltersFromContext && filterableAdapter != null ? filter.filter(item_) : null;
 					if (result != null) {
 						bool pinned = false;
 						if (result.type.pinToTop && widget.allowReordering) {

@@ -224,6 +224,7 @@ class HistoryPageState extends State<HistoryPage> {
 								]
 							),
 							body: RefreshableList<PersistentThreadState>(
+								useFiltersFromContext: false,
 								filterableAdapter: (t) => t,
 								filterAlternative: FilterAlternative(
 									name: 'full history',
