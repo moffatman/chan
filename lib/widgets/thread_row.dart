@@ -538,7 +538,10 @@ class ThreadRow extends StatelessWidget {
 								false => FlexFit.loose, // pick the proper ratio
 							},
 							false => switch (settings.catalogGridModeShowMoreImageIfLessText && !settings.catalogGridModeAttachmentInBackground) {
-								true => FlexFit.loose, // show at proper ratio
+								true => switch (settings.catalogGridModeCropThumbnails) {
+									true => FlexFit.tight, // fill
+									false => FlexFit.loose, // show at proper ratio
+								},
 								false => FlexFit.tight // expand above text
 							}
 						},
@@ -582,7 +585,7 @@ class ThreadRow extends StatelessWidget {
 										fit: settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
 										attachment: attachment,
 										expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
-										height: settings.catalogGridHeight / 2,
+										height: settings.useStaggeredCatalogGrid ? settings.catalogGridHeight / 2 : null,
 										thread: latestThread.identifier,
 										onLoadError: onThumbnailLoadError,
 										mayObscure: true,
@@ -672,7 +675,13 @@ class ThreadRow extends StatelessWidget {
 				}
 				return _ContentFocusedMultiChildWidget(
 					textAboveAttachment: settings.catalogGridModeTextAboveAttachment,
-					attachmentSize: settings.catalogGridModeShowMoreImageIfLessText ? null : settings.catalogGridHeight / 2,
+					attachmentSizing: switch (settings.catalogGridModeShowMoreImageIfLessText) {
+						true => switch (settings.catalogGridModeCropThumbnails) {
+							true => _ContentFocusedMultiChildWidgetAttachmentSizing.atLeastHalf,
+							false => _ContentFocusedMultiChildWidgetAttachmentSizing.upToHalf
+						},
+						false => _ContentFocusedMultiChildWidgetAttachmentSizing.fixed
+					},
 					attachment: att_,
 					text: txt
 				);
@@ -785,17 +794,23 @@ enum _ContentFocusedMultiChildLayoutId {
 	text
 }
 
+enum _ContentFocusedMultiChildWidgetAttachmentSizing {
+	fixed,
+	upToHalf,
+	atLeastHalf
+}
+
 class _ContentFocusedMultiChildWidget extends SlottedMultiChildRenderObjectWidget<_ContentFocusedMultiChildLayoutId, RenderBox> {
 	final Widget attachment;
 	final Widget text;
 	final bool textAboveAttachment;
-	final double? attachmentSize;
+	final _ContentFocusedMultiChildWidgetAttachmentSizing attachmentSizing;
 
 	const _ContentFocusedMultiChildWidget({
 		required this.attachment,
 		required this.text,
 		required this.textAboveAttachment,
-		required this.attachmentSize
+		required this.attachmentSizing
 	});
 
 	@override
@@ -810,7 +825,7 @@ class _ContentFocusedMultiChildWidget extends SlottedMultiChildRenderObjectWidge
 	_RenderContentFocusedMultiChildWidget createRenderObject(BuildContext context) {
 		return _RenderContentFocusedMultiChildWidget(
 			textAboveAttachment: textAboveAttachment,
-			attachmentSize: attachmentSize
+			attachmentSizing: attachmentSizing
 		);
 	}
 
@@ -818,7 +833,7 @@ class _ContentFocusedMultiChildWidget extends SlottedMultiChildRenderObjectWidge
 	void updateRenderObject(BuildContext context, _RenderContentFocusedMultiChildWidget renderObject) {
 		renderObject
 			..textAboveAttachment = textAboveAttachment
-			..attachmentSize = attachmentSize;
+			..attachmentSizing = attachmentSizing;
 	}
 
 	@override
@@ -835,19 +850,19 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 		markNeedsLayout();
 	}
 
-	double? _attachmentSize;
-	set attachmentSize(double? v) {
-		if (v == _attachmentSize) {
+	_ContentFocusedMultiChildWidgetAttachmentSizing _attachmentSizing;
+	set attachmentSizing(_ContentFocusedMultiChildWidgetAttachmentSizing v) {
+		if (v == _attachmentSizing) {
 			return;
 		}
-		_attachmentSize = v;
+		_attachmentSizing = v;
 		markNeedsLayout();
 	}
 
 	_RenderContentFocusedMultiChildWidget({
 		required bool textAboveAttachment,
-		required double? attachmentSize
-	}) : _textAboveAttachment = textAboveAttachment, _attachmentSize = attachmentSize;
+		required _ContentFocusedMultiChildWidgetAttachmentSizing attachmentSizing
+	}) : _textAboveAttachment = textAboveAttachment, _attachmentSizing = attachmentSizing;
 
 	RenderBox? get _attachment => childForSlot(_ContentFocusedMultiChildLayoutId.attachment);
 	RenderBox? get _text => childForSlot(_ContentFocusedMultiChildLayoutId.text);
@@ -864,9 +879,8 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 	@override
 	void performLayout() {
 		final constraints = this.constraints;
-		final attachmentSize = _attachmentSize;
-		if (attachmentSize == null) {
-			// Let Attachment pick its own size first (within reason)
+		if (_attachmentSizing == _ContentFocusedMultiChildWidgetAttachmentSizing.upToHalf) {
+			// Let Attachment pick its own size first (within reason, without forcing)
 			_attachment!.layout(BoxConstraints(
 				minWidth: constraints.maxWidth,
 				maxWidth: constraints.maxWidth,
@@ -880,13 +894,29 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 				maxHeight: constraints.maxHeight - _attachment!.size.height
 			), parentUsesSize: true);
 		}
-		else {
+		else if (_attachmentSizing == _ContentFocusedMultiChildWidgetAttachmentSizing.atLeastHalf) {
+			// First give text up to half the space
+			_text!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: constraints.maxHeight / 2
+			), parentUsesSize: true);
+			// Then give attachment the rest
+			_attachment!.layout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: max(0, constraints.minHeight - _text!.size.height),
+				maxHeight: constraints.maxHeight - _text!.size.height
+			), parentUsesSize: true);
+		}
+		else if (_attachmentSizing == _ContentFocusedMultiChildWidgetAttachmentSizing.fixed) {
 			// First find out attachment desired size
 			_attachment!.layout(BoxConstraints(
 				minWidth: constraints.maxWidth,
 				maxWidth: constraints.maxWidth,
 				minHeight: 0,
-				maxHeight: attachmentSize
+				maxHeight: constraints.maxHeight / 2
 			), parentUsesSize: true);
 			_text!.layout(BoxConstraints(
 				minWidth: constraints.maxWidth,
@@ -903,7 +933,7 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 		}
 		(_text!.parentData as BoxParentData).offset = Offset(0, _textAboveAttachment ? 0 : _attachment!.size.height);
 		(_attachment!.parentData as BoxParentData).offset = Offset(0, _textAboveAttachment ? _text!.size.height : 0);
-		size = Size(constraints.maxWidth, min(constraints.maxHeight, _text!.size.height + _attachment!.size.height));
+		size = Size(constraints.maxWidth, constraints.hasTightHeight ? constraints.maxHeight : min(constraints.maxHeight, _text!.size.height + _attachment!.size.height));
 	}
 
 	@override
@@ -954,10 +984,9 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 	@override
 	Size computeDryLayout(BoxConstraints constraints) {
 		final constraints = this.constraints;
-		final attachmentSize = _attachmentSize;
 		Size attachment;
 		final Size text;
-		if (attachmentSize == null) {
+		if (_attachmentSizing == _ContentFocusedMultiChildWidgetAttachmentSizing.upToHalf) {
 			// Let Attachment pick its own size first (within reason)
 			attachment = _attachment!.getDryLayout(BoxConstraints(
 				minWidth: constraints.maxWidth,
@@ -972,13 +1001,28 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 				maxHeight: constraints.maxHeight - attachment.height
 			));
 		}
-		else {
+		else if (_attachmentSizing == _ContentFocusedMultiChildWidgetAttachmentSizing.atLeastHalf) {
+			text = _text!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: 0,
+				maxHeight: constraints.maxHeight / 2
+			));
+			// Then give attachment the rest
+			attachment = _attachment!.getDryLayout(BoxConstraints(
+				minWidth: constraints.maxWidth,
+				maxWidth: constraints.maxWidth,
+				minHeight: max(0, constraints.minHeight - text.height),
+				maxHeight: constraints.maxHeight - text.height
+			));
+		}
+		else if (_attachmentSizing == _ContentFocusedMultiChildWidgetAttachmentSizing.fixed) {
 			// First find out attachment desired size
 			attachment = _attachment!.getDryLayout(BoxConstraints(
 				minWidth: constraints.maxWidth,
 				maxWidth: constraints.maxWidth,
 				minHeight: 0,
-				maxHeight: attachmentSize
+				maxHeight: max(constraints.minHeight, constraints.maxHeight / 2)
 			));
 			text = _text!.getDryLayout(BoxConstraints(
 				minWidth: constraints.maxWidth,
@@ -992,6 +1036,9 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 				minHeight: (constraints.minHeight - text.height).clamp(0, double.infinity),
 				maxHeight: (constraints.maxHeight - text.height).clamp(0, double.infinity)
 			));
+		}
+		else {
+			throw Exception('this should never happen');
 		}
 		return Size(constraints.maxWidth, attachment.height + text.height);
 	}
