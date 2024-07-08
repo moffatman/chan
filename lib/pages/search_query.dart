@@ -345,6 +345,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 													query: widget.query,
 													onChanged: () {
 														changed = true;
+														setState(() {});
 													},
 													onSubmitted: () {
 														changed = true;
