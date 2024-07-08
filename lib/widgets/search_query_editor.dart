@@ -140,10 +140,46 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 							}
 							else {
 								widget.onPickerShow?.call();
-								final file = await pickAttachment(context: context);
+								final controller = TextEditingController(text: query.md5);
+								final md5Str = await showAdaptiveModalPopup<String>(
+									context: context,
+									builder: (context) => AdaptiveAlertDialog(
+										title: const Text('Search by MD5'),
+										content: AdaptiveTextField(
+											controller: controller,
+											placeholder: 'MD5',
+											maxLines: 5,
+											onSubmitted: (s) => Navigator.pop(context, s)
+										),
+										actions: [
+											AdaptiveDialogAction(
+												isDefaultAction: true,
+												child: const Text('OK'),
+												onPressed: () => Navigator.pop(context, controller.text)
+											),
+											AdaptiveDialogAction(	
+												child: const Text('Pick file'),
+												onPressed: () async {
+													final file = await pickAttachment(context: context);
+													if (file != null && context.mounted) {
+														controller.text = base64Encode((await md5.bind(file.openRead()).first).bytes);
+													}
+												}
+											),
+											AdaptiveDialogAction(
+												child: const Text('Cancel'),
+												onPressed: () => Navigator.pop(context)
+											)
+										]
+									)
+								);
+								controller.dispose();
 								widget.onPickerHide?.call();
-								if (file != null) {
-									query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
+								if (md5Str == null) {
+									// Cancelled
+								}
+								else {
+									query.md5 = md5Str.nonEmptyOrNull;
 									query.mediaFilter = MediaFilter.none;
 								}
 							}
