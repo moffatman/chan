@@ -308,12 +308,12 @@ class PostRow extends StatelessWidget {
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
-						postsIdsToShow: replyIds,
-						postIdForBackground: latestPost.id,
-						zone: parentZone.childZoneFor(latestPost.id),
-						isRepliesForPostId: latestPost.id,
-					)
-				);
+					postsIdsToShow: replyIds,
+					postIdForBackground: latestPost.id,
+					zone: parentZone.childZoneFor(latestPost.id),
+					isRepliesForPostId: latestPost.id,
+					onThumbnailTap: propagateOnThumbnailTap ? onThumbnailTap : null,
+				));
 			}
 		}
 		final content = PostSpanZone(
@@ -1015,7 +1015,8 @@ class PostRow extends StatelessWidget {
 					postsIdsToShow: replyIds,
 					postIdForBackground: latestPost.id,
 					zone: parentZone.childZoneFor(latestPost.id),
-					isRepliesForPostId: latestPost.id
+					isRepliesForPostId: latestPost.id,
+					onThumbnailTap: propagateOnThumbnailTap ? onThumbnailTap : null
 				),
 				cancelable: settings.cancellableRepliesSlideGesture,
 				builder: innerChild
