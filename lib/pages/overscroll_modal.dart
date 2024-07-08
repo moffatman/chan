@@ -193,6 +193,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 						onPointerDown: _onPointerDown,
 						onPointerPanZoomStart: _onPointerDown,
 						onPointerMove: (event) {
+							if (!context.mounted) {
+								return;
+							}
 							final downData = _pointersDown[event.pointer];
 							if (downData?.$2 == true) {
 								if ((event.position - downData!.$1).distance > kTouchSlop) {
