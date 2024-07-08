@@ -51,13 +51,13 @@ void _readHookAttachmentFields(Map<int, dynamic> fields) {
 			return url.toString();
 		}
 		return url;
-	});
+	}, ifAbsent: () => '');
 	fields.update(AttachmentFields.thumbnailUrl.fieldNumber, (url) {
 		if (url is Uri) {
 			return url.toString();
 		}
 		return url;
-	});
+	}, ifAbsent: () => '');
 	fields.putIfAbsent(AttachmentFields.id.fieldNumber, () {
 		// This attachment was written a very long time ago
 		// fields[1] is probably "int deprecatedId"

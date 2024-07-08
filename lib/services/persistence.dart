@@ -1688,7 +1688,7 @@ void _readHookPersistentBrowserTabFields(Map<int, dynamic> fields) {
 			return board.name;
 		}
 		return board;
-	});
+	}, ifAbsent: () => null);
 }
 
 @HiveType(typeId: 21, readHook: _readHookPersistentBrowserTabFields)

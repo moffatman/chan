@@ -796,7 +796,7 @@ void _readHookSavedSettingsFields(Map<int, dynamic> fields) {
 			return hiddenImageMD5s.toSet();
 		}
 		return hiddenImageMD5s;
-	});
+	}, ifAbsent: () => <String>{});
 	fields.putIfAbsent(SavedSettingsFields.watchThreadAutomaticallyWhenCreating.fieldNumber, () {
 		// Default when-creating to same as old when-replying
 		return fields[SavedSettingsFields.watchThreadAutomaticallyWhenReplying.fieldNumber] ?? true;
