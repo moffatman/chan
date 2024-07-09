@@ -296,8 +296,9 @@ final siteSettings = [
 									context: context,
 									builder: (context) => AdaptiveAlertDialog(
 										title: const Text('Add new site'),
-										actions: [
-											for (final site in sites.entries) AdaptiveDialogAction(
+										content: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: sites.entries.expand((site) => [const ChanceDivider(), AdaptiveButton(
 												onPressed: () => Navigator.pop(context, site.key),
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
@@ -311,7 +312,9 @@ final siteSettings = [
 														)
 													]
 												)
-											),
+											)]).skip(1).toList()
+										),
+										actions: [
 											AdaptiveDialogAction(
 												child: const Text('Cancel'),
 												onPressed: () => Navigator.pop(context)
