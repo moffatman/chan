@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/material.dart';
@@ -32,13 +30,8 @@ double? calculateLuck() {
 	if (total == 0) {
 		return null;
 	}
-	bins.remove(1);
-	double totalScore = 0;
-	for (final bin in bins.entries) {
-		final exp = total * 9 * math.pow(0.1, bin.key);
-		totalScore += Normal.cdf(bin.value, mean: exp, variance: 0.5 * math.sqrt(exp));
-	}
-	return totalScore / bins.length;
+	const p = 0.9; // Odds of singles
+	return 1 - Normal.cdf(bins[1] ?? 0, mean: p * total, variance: total * (p * (1 - p)));
 }
 
 Future<void> showLuckPopup({required BuildContext context}) async {
