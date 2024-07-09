@@ -47,10 +47,9 @@ class _LicensesPageState extends State<LicensesPage> {
 			id: 'licenses',
 			masterBuilder: (context, selectedValue, valueSetter) => AdaptiveScaffold(
 				bar: AdaptiveBar(
-					leadings: [CupertinoButton(
-						padding: EdgeInsets.zero,
-						minSize: 0,
-						child: const Icon(CupertinoIcons.chevron_back, size: 30),
+					leadings: [AdaptiveBarAction(
+						title: 'Back',
+						icon: const Icon(CupertinoIcons.chevron_back, size: 30),
 						onPressed: () => Navigator.pop(rootContext)
 					)],
 					title: const Text('Licenses')

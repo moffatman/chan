@@ -1,7 +1,9 @@
 import 'package:chan/main.dart';
 import 'package:chan/pages/master_detail.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,8 +11,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+class AdaptiveBarAction {
+	final Widget icon;
+	final String title;
+	final VoidCallback? onPressed;
+
+	const AdaptiveBarAction({
+		required this.icon,
+		required this.title,
+		required this.onPressed
+	});
+}
+
 class AdaptiveBar {
-	final List<Widget>? leadings;
+	final List<AdaptiveBarAction>? leadings;
 	final Widget? title;
 	final List<Widget>? actions;
 	final Color? backgroundColor;
@@ -23,6 +37,57 @@ class AdaptiveBar {
 		this.backgroundColor,
 		this.brightness
 	});
+}
+
+/// Insert buttons for each [bar.leadings]
+/// But if the screen is thin and there is more than one button, use a submenu.
+void _handleLeadings({
+	required BuildContext context,
+	required List<Widget> leadings,
+	required AdaptiveBar bar
+}) {
+	if (bar.leadings != null) {
+		if (bar.leadings!.length > 1 && estimateWidth(context) < 270) {
+			leadings.add(AdaptiveIconButton(
+				onPressed: () => showAdaptiveModalPopup(
+					useRootNavigator: false,
+					context: context,
+					builder: (context) => AdaptiveActionSheet(
+						actions: bar.leadings!.map((l) => AdaptiveActionSheetAction(
+							onPressed: l.onPressed == null ? null : () {
+								Navigator.pop(context);
+								l.onPressed!();
+							},
+							child: Row(
+								children: [
+									SizedBox(
+										width: 40,
+										child: Center(
+											child: l.icon
+										)
+									),
+									Expanded(
+										child: Text(l.title)
+									)
+								]
+							)
+						)).toList(),
+						cancelButton: AdaptiveActionSheetAction(
+							onPressed: () => Navigator.pop(context),
+							child: const Text('Cancel')
+						)
+					)
+				),
+				icon: const Icon(Icons.more_vert)
+			));
+		}
+		else {
+			leadings.addAll(bar.leadings!.map((l) => AdaptiveIconButton(
+				icon: l.icon,
+				onPressed: l.onPressed
+			)));
+		}
+	}
 }
 
 class _AppBarWithBackButtonPriority extends StatelessWidget implements PreferredSizeWidget {
@@ -57,9 +122,7 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 				)
 			));
 		}
-		if (bar.leadings != null) {
-			leadings.addAll(bar.leadings!);
-		}
+		_handleLeadings(context: context, leadings: leadings, bar: bar);
 		final child = AppBar(
 			leadingWidth: leadings.length > 1 ? leadings.length * 48 : null,
 			leading: leadings.isEmpty ? null : Row(
@@ -328,8 +391,8 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 				)
 			));
 		}
-		if (bar_?.leadings != null) {
-			leadings.addAll(bar_!.leadings!);
+		if (bar_ != null) {
+			_handleLeadings(context: context, leadings: leadings, bar: bar_);
 		}
 		final child = CupertinoPageScaffold(
 			resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,

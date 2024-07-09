@@ -935,8 +935,9 @@ class BoardPageState extends State<BoardPage> {
 					)
 				),
 				leadings: [
-					if (board != null) AdaptiveIconButton(
+					if (board != null) AdaptiveBarAction(
 						icon: const Icon(CupertinoIcons.settings),
+						title: 'Board Settings',
 						onPressed: () {
 							Navigator.of(context).push(TransparentRoute(
 								builder: (context) => BoardSettingsPage(
@@ -946,7 +947,8 @@ class BoardPageState extends State<BoardPage> {
 							));
 						}
 					),
-					AdaptiveIconButton(
+					AdaptiveBarAction(
+						title: 'Sort...',
 						icon: (variant.icon != null && !variant.temporary && variant != _defaultGlobalVariant) ? FittedBox(
 							fit: BoxFit.contain,
 							child: SizedBox(

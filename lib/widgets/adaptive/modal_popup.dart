@@ -81,7 +81,7 @@ class AdaptiveActionSheet extends StatelessWidget {
 
 class AdaptiveActionSheetAction extends StatelessWidget {
 	final Widget child;
-	final VoidCallback onPressed;
+	final VoidCallback? onPressed;
 	final bool isDefaultAction;
 	final bool isDestructiveAction;
 	final bool isSelected;
@@ -107,8 +107,8 @@ class AdaptiveActionSheetAction extends StatelessWidget {
 				trailing: trailing
 			);
 		}
-		return CupertinoActionSheetAction(
-			onPressed: onPressed,
+		final button = CupertinoActionSheetAction(
+			onPressed: onPressed ?? () {},
 			isDefaultAction: isDefaultAction,
 			isDestructiveAction: isDestructiveAction,
 			child: Builder(
@@ -126,6 +126,15 @@ class AdaptiveActionSheetAction extends StatelessWidget {
 						if (trailing != null) trailing!
 					]
 				)
+			)
+		);
+		if (onPressed != null) {
+			return button;
+		}
+		return Opacity(
+			opacity: 0.5,
+			child: IgnorePointer(
+				child: button
 			)
 		);
 	}
