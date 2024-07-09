@@ -842,7 +842,9 @@ class BoardPageState extends State<BoardPage> {
 						}
 					} : null,
 					child: ThreadRow(
-						contentFocus: useCatalogGrid,
+						style: useCatalogGrid ?
+							(settings.useStaggeredCatalogGrid ? ThreadRowStyle.staggeredGrid : ThreadRowStyle.grid)
+							: ThreadRowStyle.row,
 						showLastReplies: !useCatalogGrid && settings.showLastRepliesInCatalog,
 						thread: thread,
 						isSelected: isSelected,

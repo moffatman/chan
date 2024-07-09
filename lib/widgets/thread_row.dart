@@ -213,13 +213,20 @@ class ThreadCounters extends StatelessWidget {
 	}
 }
 
+enum ThreadRowStyle {
+	row,
+	grid,
+	staggeredGrid;
+	bool get isGrid => this != row;
+}
+
 class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
 	final Function(Object?, StackTrace?)? onThumbnailLoadError;
 	final ValueChanged<Attachment>? onThumbnailTap;
 	final Iterable<int> semanticParentIds;
-	final bool contentFocus;
+	final ThreadRowStyle style;
 	final bool showSiteIcon;
 	final bool showBoardName;
 	final bool countsUnreliable;
@@ -234,7 +241,7 @@ class ThreadRow extends StatelessWidget {
 		required this.isSelected,
 		this.onThumbnailLoadError,
 		this.onThumbnailTap,
-		this.contentFocus = false,
+		this.style = ThreadRowStyle.row,
 		this.showSiteIcon = false,
 		this.showBoardName = false,
 		this.countsUnreliable = false,
@@ -282,10 +289,10 @@ class ThreadRow extends StatelessWidget {
 		final watch = threadState?.threadWatch;
 		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0) && (forceShowInHistory ?? threadState.showInHistory);
 		final approxScreenWidth = estimateWidth(context);
-		final columns = contentFocus ? (approxScreenWidth / settings.catalogGridWidth).floor() : 1;
+		final columns = style.isGrid ? (approxScreenWidth / settings.catalogGridWidth).floor() : 1;
 		final approxWidth = approxScreenWidth / columns;
 		final inContextMenuHack = context.watch<ContextMenuHint?>() != null;
-		final approxHeight = (contentFocus ? settings.catalogGridHeight : settings.maxCatalogRowHeight) * (inContextMenuHack ? 5 : 1);
+		final approxHeight = (style.isGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight) * (inContextMenuHack ? 5 : 1);
 		Widget makeCounters() => ThreadCounters(
 			countsUnreliable: countsUnreliable,
 			imageboard: imageboard,
@@ -309,7 +316,7 @@ class ThreadRow extends StatelessWidget {
 			alignment: PlaceholderAlignment.top,
 			child: countersPlaceholderWidget
 		);
-		final borderRadius = (contentFocus && settings.catalogGridModeCellBorderRadiusAndMargin) ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
+		final borderRadius = (style.isGrid && settings.catalogGridModeCellBorderRadiusAndMargin) ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
 		final double subheaderFontSize = site.classicCatalogStyle ? 16 : 15;
 		final spaceSpan = site.classicCatalogStyle ? const TextSpan(text: ' ') : const TextSpan(text: ' ', style: TextStyle(fontSize: 15));
 		final headerRow = [
@@ -532,7 +539,7 @@ class ThreadRow extends StatelessWidget {
 				mainAxisAlignment: MainAxisAlignment.center,
 				children: [
 					Flexible(
-						fit: switch (settings.useStaggeredCatalogGrid) {
+						fit: switch (style == ThreadRowStyle.staggeredGrid) {
 							true => switch (settings.catalogGridModeCropThumbnails && settings.catalogGridModeAttachmentInBackground) {
 								true => FlexFit.tight, // fill background (this relies on the maxIntrinsicHeight trick in the renderobject below)
 								false => FlexFit.loose, // pick the proper ratio
@@ -585,7 +592,7 @@ class ThreadRow extends StatelessWidget {
 										fit: settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
 										attachment: attachment,
 										expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
-										height: settings.useStaggeredCatalogGrid ? settings.catalogGridHeight / 2 : null,
+										height: style == ThreadRowStyle.staggeredGrid ? settings.catalogGridHeight / 2 : null,
 										thread: latestThread.identifier,
 										onLoadError: onThumbnailLoadError,
 										mayObscure: true,
@@ -617,7 +624,7 @@ class ThreadRow extends StatelessWidget {
 								charactersPerLine: (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 							)),
 							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) countersPlaceholder,
-							if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText && !settings.useStaggeredCatalogGrid) TextSpan(text: '\n' * 25)
+							if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText && style == ThreadRowStyle.grid) TextSpan(text: '\n' * 25)
 						];
 						return IgnorePointer(
 							child: Text.rich(
@@ -687,7 +694,7 @@ class ThreadRow extends StatelessWidget {
 				);
 			}
 		}
-		Widget content = contentFocus ? buildContentFocused() : Row(
+		Widget content = style.isGrid ? buildContentFocused() : Row(
 			crossAxisAlignment: site.classicCatalogStyle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
 			mainAxisSize: MainAxisSize.max,
 			children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
@@ -704,7 +711,7 @@ class ThreadRow extends StatelessWidget {
 				if (settings.useFullWidthForCatalogCounters) Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						if (contentFocus && !settings.useStaggeredCatalogGrid) Expanded(
+						if (style == ThreadRowStyle.grid) Expanded(
 							child: content
 						)
 						else Flexible(
@@ -749,16 +756,16 @@ class ThreadRow extends StatelessWidget {
 		final container = Container(
 			decoration: BoxDecoration(
 				color: (settings.materialStyle && Material.maybeOf(context)?.color == theme.backgroundColor) ? opacityBasedBackgroundColor : backgroundColor,
-				border: contentFocus ? Border.all(color: borderColor) : null,
+				border: style.isGrid ? Border.all(color: borderColor) : null,
 				borderRadius: borderRadius
 			),
-			margin: (contentFocus && settings.catalogGridModeCellBorderRadiusAndMargin) ? const EdgeInsets.all(4) : null,
+			margin: (style.isGrid && settings.catalogGridModeCellBorderRadiusAndMargin) ? const EdgeInsets.all(4) : null,
 			child: borderRadius != BorderRadius.zero ? ClipRRect(
 				borderRadius: borderRadius,
 				child: child
 			) : child
 		);
-		return contentFocus ? TransformedMediaQuery(
+		return style.isGrid ? TransformedMediaQuery(
 			transformation: (context, mq) => mq.copyWith(
 				textScaler: ChainedLinearTextScaler(
 					parent: mq.textScaler,

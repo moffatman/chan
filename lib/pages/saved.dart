@@ -473,7 +473,7 @@ class _SavedPageState extends State<SavedPage> {
 														return ThreadRow(
 															thread: threadState!.thread!,
 															isSelected: isSelected,
-															contentFocus: settings.useCatalogGrid,
+															style: settings.useCatalogGrid ? ThreadRowStyle.grid : ThreadRowStyle.row,
 															showBoardName: true,
 															showSiteIcon: true,
 															showPageNumber: true,
@@ -674,7 +674,7 @@ class _SavedPageState extends State<SavedPage> {
 												builder: (context) => state.thread == null ? const SizedBox.shrink() : ThreadRow(
 													thread: state.thread!,
 													isSelected: isSelected,
-													contentFocus: settings.useCatalogGrid,
+													style: settings.useCatalogGrid ? ThreadRowStyle.grid : ThreadRowStyle.row,
 													showBoardName: true,
 													showSiteIcon: true,
 													forceShowInHistory: true,

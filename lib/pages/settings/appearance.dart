@@ -135,21 +135,21 @@ Thread _makeFakeThread() {
 	);
 }
 
-Widget _buildFakeThreadRow({bool contentFocus = true}) => Builder(
+Widget _buildFakeThreadRow(ThreadRowStyle style) => Builder(
 	builder: (context) {
 		final theme = context.read<SavedTheme>();
 		return HeroMode(
 			enabled: false,
 			child: Container(
-				decoration: contentFocus ? const BoxDecoration() : BoxDecoration(
+				decoration: style.isGrid ? const BoxDecoration() : BoxDecoration(
 					border: Border(
 						top: BorderSide(color: theme.primaryColorWithBrightness(20)),
 						bottom: BorderSide(color: theme.primaryColorWithBrightness(20))
 					)
 				),
-				padding: contentFocus ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 1),
+				padding: style.isGrid ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 1),
 				child: ThreadRow(
-					contentFocus: contentFocus,
+					style: style,
 					isSelected: false,
 					thread: _makeFakeThread()
 				)
@@ -942,7 +942,7 @@ final appearanceSettings = [
 					)
 				),
 				child: ThreadRow(
-					contentFocus: false,
+					style: ThreadRowStyle.row,
 					isSelected: false,
 					thread: _makeFakeThread(),
 					showLastReplies: Settings.showLastRepliesInCatalogSetting.watch(context)
@@ -982,7 +982,7 @@ final appearanceSettings = [
 					),
 					decoration: _threadAndPostRowDecorationOf(context),
 					child: ThreadRow(
-						contentFocus: true,
+						style: staggered ? ThreadRowStyle.staggeredGrid : ThreadRowStyle.grid,
 						isSelected: false,
 						thread: _makeFakeThread()
 					)
@@ -1091,14 +1091,14 @@ final appearanceSettings = [
 					Container(
 						height: 100,
 						decoration: _threadAndPostRowDecorationOf(context),
-						child: _buildFakeThreadRow(contentFocus: false)
+						child: _buildFakeThreadRow(ThreadRowStyle.row)
 					),
 					const SizedBox(height: 16),
 					Container(
 						width: Settings.catalogGridWidthSetting.watch(context),
 						height: Settings.catalogGridHeightSetting.watch(context),
 						decoration: _threadAndPostRowDecorationOf(context),
-						child: _buildFakeThreadRow()
+						child: _buildFakeThreadRow(ThreadRowStyle.grid)
 					)
 				]
 			)

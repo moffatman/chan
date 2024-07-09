@@ -85,7 +85,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 					maxHeight: 125,
 					child:  GestureDetector(
 						child: ThreadRow(
-							contentFocus: settings.useCatalogGrid,
+							style: settings.useCatalogGrid ? ThreadRowStyle.grid : ThreadRowStyle.row,
 							thread: thread,
 							isSelected: false,
 							semanticParentIds: const [-99],
