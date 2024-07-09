@@ -2668,8 +2668,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 											],
 											if (!widget.shrinkWrap && sortedList.isNotEmpty && widget.filterableAdapter != null) SliverToBoxAdapter(
 												child: Container(
-													height: kMinInteractiveDimensionCupertino * max(1, Settings.textScaleSetting.watch(context)),
-													padding: const EdgeInsets.all(4),
+													height: (kMinInteractiveDimensionCupertino + 16) * max(1, Settings.textScaleSetting.watch(context)),
+													padding: const EdgeInsets.only(
+														top: 16,
+														left: 16,
+														right: 16,
+														bottom: 8
+													),
 													child: Row(
 														mainAxisSize: MainAxisSize.min,
 														children: [
