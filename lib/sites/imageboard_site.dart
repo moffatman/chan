@@ -1441,6 +1441,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		final completer = Completer<Thread>();
 		() async {
 			await Future.wait(archives.map((archive) async {
+				if (persistence?.browserState.disabledArchiveNames.contains(archive.name) ?? false) {
+					return null;
+				}
 				try {
 					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
 					if (completer.isCompleted) return null;
