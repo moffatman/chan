@@ -448,7 +448,7 @@ class SavedTheme {
 			cardColor: barColor,
 			backgroundColor: backgroundColor
 		).copyWith(
-			onBackground: primaryColor
+			onSurface: primaryColor
 		);
 		final textTheme = (brightness == Brightness.dark ? Typography.whiteMountainView : Typography.blackMountainView).apply(
 			bodyColor: primaryColor,
@@ -475,7 +475,7 @@ class SavedTheme {
 			),
 			outlinedButtonTheme: OutlinedButtonThemeData(
 				style: ButtonStyle(
-					side: MaterialStateProperty.all(BorderSide(color: primaryColor))
+					side: WidgetStateProperty.all(BorderSide(color: primaryColor))
 				)
 			),
 			listTileTheme: ListTileThemeData(
@@ -485,26 +485,26 @@ class SavedTheme {
 			),
 			segmentedButtonTheme: SegmentedButtonThemeData(
 				style: ButtonStyle(
-					backgroundColor: MaterialStateProperty.resolveWith((s) {
-						if (s.contains(MaterialState.selected)) {
+					backgroundColor: WidgetStateProperty.resolveWith((s) {
+						if (s.contains(WidgetState.selected)) {
 							return primaryColor;
 						}
 						return null;
 					}),
-					foregroundColor: MaterialStateProperty.resolveWith((s) {
-						if (s.contains(MaterialState.selected)) {
+					foregroundColor: WidgetStateProperty.resolveWith((s) {
+						if (s.contains(WidgetState.selected)) {
 							return backgroundColor;
 						}
 						return null;
 					}),
-					shape: MaterialStateProperty.all(RoundedRectangleBorder(
+					shape: WidgetStateProperty.all(RoundedRectangleBorder(
 						borderRadius: BorderRadius.circular(4),
 						side: BorderSide(
 							color: primaryColor
 						)
 					)),
-					side: MaterialStateProperty.resolveWith((s) {
-						if (s.contains(MaterialState.disabled)) {
+					side: WidgetStateProperty.resolveWith((s) {
+						if (s.contains(WidgetState.disabled)) {
 							return null;
 						}
 						return BorderSide(color: primaryColor);
@@ -513,12 +513,12 @@ class SavedTheme {
 			),
 			iconButtonTheme: IconButtonThemeData(
 				style: ButtonStyle(
-					iconColor: MaterialStateProperty.all(primaryColor)
+					iconColor: WidgetStateProperty.all(primaryColor)
 				)
 			),
 			switchTheme: SwitchThemeData(
-				thumbColor: MaterialStateProperty.resolveWith((states) {
-					if (states.contains(MaterialState.hovered) || states.contains(MaterialState.pressed)) {
+				thumbColor: WidgetStateProperty.resolveWith((states) {
+					if (states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed)) {
 						return primaryColorWithBrightness(0.1);
 					}
 					return null;
@@ -527,7 +527,8 @@ class SavedTheme {
 			sliderTheme: const SliderThemeData(
 				allowedInteraction: SliderInteraction.slideThumb
 			),
-			cupertinoOverrideTheme: cupertinoThemeData
+			cupertinoOverrideTheme: cupertinoThemeData,
+			scaffoldBackgroundColor: backgroundColor
 		);
 	}
 

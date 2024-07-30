@@ -113,8 +113,10 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 		return route.navigator!.userGestureInProgress;
 	}
 
+	@override
 	bool get popGestureInProgress => isPopGestureInProgress(this);
 
+	@override
 	bool get popGestureEnabled => _isPopGestureEnabled(this);
 
 	static bool _isPopGestureEnabled<T>(PageRoute<T> route) {

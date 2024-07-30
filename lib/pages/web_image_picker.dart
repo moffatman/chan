@@ -380,7 +380,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 								],
 							),
 						),
-						ButtonBar(
+						OverflowBar(
 							alignment: MainAxisAlignment.center,
 							children: <Widget>[
 								ElevatedButton(

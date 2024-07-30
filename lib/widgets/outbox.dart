@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:chan/main.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';

@@ -237,6 +237,7 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 	Widget build(BuildContext context) {
 		final child = CupertinoNavigationBar(
 			automaticallyImplyLeading: false,
+			automaticBackgroundVisibility: false,
 			transitionBetweenRoutes: transitionBetweenRoutes,
 			leading: leading,
 			middle: middle,
@@ -400,15 +401,25 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 			navigationBar: bar_ == null ? null : _CupertinoNavigationBar(
 				autoHideOnScroll: autoHideBars,
 				transitionBetweenRoutes: false,
-				leading: leadings.isEmpty ? null : Row(
-					mainAxisSize: MainAxisSize.min,
-					children: leadings
+				leading: leadings.isEmpty ? null : IconTheme.merge(
+          data: const IconThemeData(
+            size: 24,
+          ),
+          child: Row(
+						mainAxisSize: MainAxisSize.min,
+						children: leadings
+					)
 				),
 				middle: bar_.title,
 				backgroundColor: bar_.backgroundColor,
-				trailing: bar_.actions == null ? null : Row(
-					mainAxisSize: MainAxisSize.min,
-					children: bar_.actions!
+				trailing: bar_.actions == null ? null : IconTheme.merge(
+          data: const IconThemeData(
+            size: 24,
+          ),
+          child: Row(
+						mainAxisSize: MainAxisSize.min,
+						children: bar_.actions!
+					)
 				),
 				brightness: bar_.brightness ?? ChanceTheme.brightnessOf(context)
 			),

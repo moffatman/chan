@@ -96,7 +96,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 	Widget build(BuildContext context) {
 		return PopScope(
 			canPop: !_canGoBack,
-			onPopInvoked: (didPop) {
+			onPopInvokedWithResult: (didPop, result) {
 				if (!didPop) {
 					_controller?.goBack();
 				}

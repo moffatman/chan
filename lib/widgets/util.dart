@@ -1938,12 +1938,12 @@ class ChanceDivider extends StatelessWidget {
 
 class DescendantNavigatorPopScope extends StatelessWidget {
 	final bool Function() canPop;
-	final ValueChanged<bool>? onPopInvoked;
+	final void Function(bool, dynamic)? onPopInvokedWithResult;
 	final Widget child;
 
 	const DescendantNavigatorPopScope({
 		required this.canPop,
-		this.onPopInvoked,
+		this.onPopInvokedWithResult,
 		required this.child,
 		super.key
 	});
@@ -1958,8 +1958,8 @@ class DescendantNavigatorPopScope extends StatelessWidget {
 				},
 				child: PopScope(
 					canPop: canPop(),
-					onPopInvoked: (didPop) {
-						onPopInvoked?.call(didPop);
+					onPopInvokedWithResult: (didPop, result) {
+						onPopInvokedWithResult?.call(didPop, result);
 					},
 					child: child
 				)

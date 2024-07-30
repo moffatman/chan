@@ -111,9 +111,9 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   Widget build(BuildContext context) {
     return PopScope(
       canPop: stack.isEmpty,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          pop();
+          pop(result);
         }
       },
       child: ClipRect(

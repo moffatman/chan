@@ -2581,7 +2581,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			final dividerColor = theme.primaryColorWithBrightness(0.2);
 			return PopScope(
 				canPop: !_searchTapped,
-				onPopInvoked: (didPop) {
+				onPopInvokedWithResult: (didPop, result) {
 					if (!didPop) {
 						closeSearch();
 					}

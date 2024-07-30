@@ -48,23 +48,23 @@ class AdaptiveFilledButton<T> extends StatelessWidget {
 			return FilledButton(
 				onPressed: onPressed,
 				style: ButtonStyle(
-					padding: padding == null ? null : MaterialStatePropertyAll(padding),
-					backgroundColor: (color == null && disabledColor == null) ? null : MaterialStateProperty.resolveWith((states) {
-						if (states.contains(MaterialState.disabled)) {
+					padding: padding == null ? null : WidgetStatePropertyAll(padding),
+					backgroundColor: (color == null && disabledColor == null) ? null : WidgetStateProperty.resolveWith((states) {
+						if (states.contains(WidgetState.disabled)) {
 							return disabledColor;
 						}
-						if (states.contains(MaterialState.pressed)) {
+						if (states.contains(WidgetState.pressed)) {
 							return color?.towardsGrey(0.2);
 						}
-						if (states.contains(MaterialState.hovered)) {
+						if (states.contains(WidgetState.hovered)) {
 							return color?.towardsGrey(0.4);
 						}
 						return color;
 					}),
 					alignment: alignment,
-					minimumSize: MaterialStateProperty.all(minSize.asSquare),
+					minimumSize: WidgetStateProperty.all(minSize.asSquare),
 					tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-					shape: MaterialStateProperty.all(RoundedRectangleBorder(
+					shape: WidgetStateProperty.all(RoundedRectangleBorder(
 						borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(4.0))
 					))
 				),
@@ -120,22 +120,22 @@ class AdaptiveThinButton<T> extends StatelessWidget {
 			return OutlinedButton(
 				onPressed: onPressed,
 				style: ButtonStyle(
-					padding: MaterialStateProperty.all(padding),
-					foregroundColor: filled ? MaterialStateProperty.all(theme.backgroundColor) : null,
-					side: MaterialStateProperty.all(BorderSide(color: color ?? theme.primaryColor)),
-					backgroundColor: filled ? MaterialStateProperty.resolveWith((s) {
-						if (s.contains(MaterialState.pressed)) {
+					padding: WidgetStateProperty.all(padding),
+					foregroundColor: filled ? WidgetStateProperty.all(theme.backgroundColor) : null,
+					side: WidgetStateProperty.all(BorderSide(color: color ?? theme.primaryColor)),
+					backgroundColor: filled ? WidgetStateProperty.resolveWith((s) {
+						if (s.contains(WidgetState.pressed)) {
 							return theme.primaryColorWithBrightness(0.6);
 						}
-						if (s.contains(MaterialState.hovered)) {
+						if (s.contains(WidgetState.hovered)) {
 							return theme.primaryColorWithBrightness(0.8);
 						}
 						return theme.primaryColor;
-					}) : (backgroundFilled ? MaterialStateProperty.resolveWith((s) {
-						if (s.contains(MaterialState.pressed)) {
+					}) : (backgroundFilled ? WidgetStateProperty.resolveWith((s) {
+						if (s.contains(WidgetState.pressed)) {
 							return theme.primaryColorWithBrightness(0.3);
 						}
-						if (s.contains(MaterialState.hovered)) {
+						if (s.contains(WidgetState.hovered)) {
 							return theme.primaryColorWithBrightness(0.1);
 						}
 						return theme.backgroundColor;
@@ -197,7 +197,7 @@ class AdaptiveIconButton<T> extends StatelessWidget {
 			return IconButton(
 				padding: padding,
 				style: ButtonStyle(
-					minimumSize: MaterialStateProperty.all(minSize.asSquare),
+					minimumSize: WidgetStateProperty.all(minSize.asSquare),
 					tapTargetSize: MaterialTapTargetSize.shrinkWrap
 				),
 				onPressed: onPressed,
@@ -248,8 +248,8 @@ class AdaptiveButton<T> extends StatelessWidget {
 			return TextButton(
 				onPressed: onPressed,
 				style: ButtonStyle(
-					padding: MaterialStateProperty.all(padding),
-					shape: MaterialStateProperty.all(RoundedRectangleBorder(
+					padding: WidgetStateProperty.all(padding),
+					shape: WidgetStateProperty.all(RoundedRectangleBorder(
 						borderRadius: BorderRadius.circular(4)
 					))
 				),

@@ -1968,7 +1968,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				},
 				child: DescendantNavigatorPopScope(
 					canPop: () => false, // confirmExit always blocks
-					onPopInvoked: (didPop) {
+					onPopInvokedWithResult: (didPop, result) {
 						if (didPop) {
 							return;
 						}
@@ -2068,7 +2068,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				},
 				child: DescendantNavigatorPopScope(
 					canPop: () => false, // confirmExit always blocks
-					onPopInvoked: (didPop) {
+					onPopInvokedWithResult: (didPop, result) {
 						if (didPop) {
 							return;
 						}

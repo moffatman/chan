@@ -1238,7 +1238,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final variant = persistentState.variant ?? persistentState.thread?.suggestedVariant;
 		return PopScope(
 			canPop: !(_replyBoxKey.currentState?.show ?? false),
-			onPopInvoked: (didPop) async {
+			onPopInvokedWithResult: (didPop, result) async {
 				if (!didPop) {
 					_replyBoxKey.currentState?.hideReplyBox();
 					setState(() {});

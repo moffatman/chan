@@ -20,7 +20,7 @@ class AdaptiveSwitch extends StatelessWidget {
 				value: value,
 				onChanged: onChanged,
 				inactiveThumbColor: ChanceTheme.primaryColorOf(context),
-				trackOutlineColor: MaterialStatePropertyAll(ChanceTheme.primaryColorOf(context))
+				trackOutlineColor: WidgetStatePropertyAll(ChanceTheme.primaryColorOf(context))
 			);
 		}
 		return CupertinoSwitch(

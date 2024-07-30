@@ -4,7 +4,7 @@ import Flutter
 import Foundation
 import Vision
 
-@UIApplicationMain
+@main
 @objc class AppDelegate: FlutterAppDelegate {
   var appleChannel: FlutterMethodChannel?
   override func application(

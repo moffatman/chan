@@ -1117,7 +1117,7 @@ class BoardPageState extends State<BoardPage> {
 						filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.name)),
 						child: PopScope(
 							canPop: !(_replyBoxKey.currentState?.show ?? false),
-							onPopInvoked: (didPop) {
+							onPopInvokedWithResult: (didPop, result) {
 								if (!didPop) {
 									_replyBoxKey.currentState?.hideReplyBox();
 									setState(() {});
