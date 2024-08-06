@@ -2705,6 +2705,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															),
 															if (_searchTapped) CupertinoButton(
 																padding: const EdgeInsets.only(left: 8),
+																minSize: 0,
 																onPressed: closeSearch,
 																child: const Text('Cancel')
 															)
