@@ -5,6 +5,8 @@ import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/web_image_picker.dart';
+import 'package:chan/services/bad_certificate.dart';
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
@@ -2963,6 +2965,8 @@ class Settings extends ChangeNotifier {
 				handler.next(options);
 			}
 		));
+		client.interceptors.add(CloudflareInterceptor());
+		client.httpClientAdapter = BadCertificateHttpClientAdapter();
 		muteAudio.value = _settings.muteAudio;
 		_tryToSetupFilter();
 		JsonCache.instance.embedRegexes.addListener(_onEmbedRegexesUpdate);

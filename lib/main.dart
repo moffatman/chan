@@ -18,6 +18,7 @@ import 'package:chan/pages/saved.dart';
 import 'package:chan/pages/tabs.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/installed_fonts.dart';
@@ -86,6 +87,7 @@ void main() async {
 			imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 			imageHttpClient.idleTimeout = const Duration(seconds: 10);
 			imageHttpClient.maxConnectionsPerHost = 10;
+			imageHttpClient.badCertificateCallback = badCertificateCallback;
 			if (Platform.isAndroid || Platform.isIOS) {
 				await Firebase.initializeApp(
 					options: DefaultFirebaseOptions.currentPlatform

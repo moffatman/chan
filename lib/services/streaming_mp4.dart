@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/util.dart';
@@ -88,7 +89,7 @@ extension _Normalize on _RawRange {
 }
 
 class VideoServer {
-	final _client = HttpClient();
+	final _client = (HttpClient()..badCertificateCallback = badCertificateCallback);
 	static VideoServer? _server;
 	final Directory webmRoot;
 	final Directory httpRoot;
@@ -404,7 +405,7 @@ class VideoServer {
 			}
 		}
 		// Now GET the file for real
-		HttpClient? interruptibleClient = interruptible ? HttpClient() : null;
+		HttpClient? interruptibleClient = interruptible ? (HttpClient()..badCertificateCallback = badCertificateCallback) : null;
 		final client = interruptibleClient ?? _client;
 		final httpRequest = await client.getUrl(uri);
 		for (final header in headers.entries) {

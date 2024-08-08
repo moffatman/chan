@@ -9,6 +9,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/imageboard.dart';
@@ -1297,6 +1298,7 @@ abstract class ImageboardSiteArchive {
 		));
 		client.interceptors.add(CloudflareInterceptor());
 		client.interceptors.add(LoggingInterceptor.instance);
+		client.httpClientAdapter = BadCertificateHttpClientAdapter();
 	}
 	String get name;
 	Future<Post> getPost(String board, int id, {required RequestPriority priority});
