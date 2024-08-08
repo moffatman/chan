@@ -1522,17 +1522,19 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 		}
-		if (widget.controller?.scrollController?.positions.length == 1 && widget.controller?.scrollController?.position.isScrollingNotifier.value == true) {
+		final isScrollingNotifier = widget.controller?.scrollController?.tryPosition?.isScrollingNotifier;
+		if (isScrollingNotifier?.value == true) {
 			final completer = Completer<void>();
 			void listener() {
-				if (widget.controller?.scrollController?.position.isScrollingNotifier.value == false) {
+				if (isScrollingNotifier?.value == false) {
 					completer.complete();
+					isScrollingNotifier?.removeListener(listener);
 				}
 			}
-			widget.controller!.scrollController!.position.isScrollingNotifier.addListener(listener);
+			isScrollingNotifier?.addListener(listener);
 			await Future.any([completer.future, Future.delayed(const Duration(seconds: 3))]);
 			if (!mounted) return;
-			widget.controller?.scrollController?.position.isScrollingNotifier.removeListener(listener);
+			isScrollingNotifier?.removeListener(listener);
 			if (updatingWithId != widget.id) {
 				if (updatingNow.value == updatingWithId) {
 					updatingNow.value = null;
