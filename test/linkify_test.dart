@@ -37,6 +37,13 @@ void main() {
 			expect(link.name, 'example1.com');
 		});
 
+		test('markdown link with parentheses', () {
+			final r = SiteReddit.makeSpan('', 0, '[example1.com/asdf(2)](https://www2.example.com/asdf(2))');
+			final link = r.children.single as PostLinkSpan;
+			expect(link.url, 'https://www2.example.com/asdf(2)');
+			expect(link.name, 'example1.com/asdf(2)');
+		});
+
 		test('escapes in description', () {
 			final r = SiteReddit.makeSpan('', 0, '[https://www.foreignaffairs.com/united-states/sources-american-power-biden-jake-sullivan?check\\_logged\\_in=1&utm\\_medium=promo\\_email&utm\\_source=lo\\_flows&utm\\_campaign=registered\\_user\\_welcome&utm\\_term=email\\_1&utm\\_content=20240225](https://www.foreignaffairs.com/united-states/sources-american-power-biden-jake-sullivan?check_logged_in=1&utm_medium=promo_email&utm_source=lo_flows&utm_campaign=registered_user_welcome&utm_term=email_1&utm_content=20240225)');
 			final link = r.children.single as PostLinkSpan;
@@ -54,6 +61,12 @@ void main() {
 			final r = Site4Chan.makeSpan('', 0, 'https://en.wikipedia.org/wiki/Bachelor\'s_Day_(tradition)');
 			final link = r.children.single as PostLinkSpan;
 			expect(link.url, 'https://en.wikipedia.org/wiki/Bachelor\'s_Day_(tradition)');
+		});
+
+		test('brackets in link', () {
+			final r = Site4Chan.makeSpan('', 0, 'https://datausa.io/profile/geo/miami-fl/#:~:text=The%205%20largest%20ethnic%20groups,(Hispanic)%20(6.18%25)');
+			final link = r.children.single as PostLinkSpan;
+			expect(link.url, 'https://datausa.io/profile/geo/miami-fl/#:~:text=The%205%20largest%20ethnic%20groups,(Hispanic)%20(6.18%25)');
 		});
 	});
 }

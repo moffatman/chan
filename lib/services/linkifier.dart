@@ -1,25 +1,13 @@
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r'^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b(?:[-a-zA-Z0-9@:%_\+.~#?&/=,!;\u007F-\uFFFF]|(?:\(\d+\)))*)',
+  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\u007F-\uFFFF]*)",
   caseSensitive: false,
   dotAll: true,
 );
 
 final _looseUrlRegexWithBackslash = RegExp(
-  r'^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b(?:[-a-zA-Z0-9@:%_\+.~#?&/=,!;\\\u007F-\uFFFF]|(?:\(\d+\)))*)',
-  caseSensitive: false,
-  dotAll: true,
-);
-
-final _wikipediaUrlRegex = RegExp(
-  r"^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-'a-zA-Z0-9@:%_\+.~#?&/=\u007F-\uFFFF]*\([^\)\n]+\))",
-  caseSensitive: false,
-  dotAll: true,
-);
-
-final _wikipediaUrlRegexWithBackslash = RegExp(
-  r"^(.*?)((https?:\/\/)?((?:[^\.\n]{1,15}\.)*?wikipedia\.org)\/[-'a-zA-Z0-9@:%_\+.~#?&/=\\\u007F-\uFFFF]*\([^\)\n]+\))",
+  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\\\u007F-\uFFFF]*)",
   caseSensitive: false,
   dotAll: true,
 );
@@ -86,15 +74,7 @@ class LooseUrlLinkifier extends Linkifier {
 
     for (final element in elements) {
       if (element is TextElement) {
-        final RegExpMatch? match;
-        if (element.text.contains('wikipedia.org')) {
-          match =
-            (unescapeBackslashes ? _wikipediaUrlRegexWithBackslash : _wikipediaUrlRegex).firstMatch(element.text) ??
-            (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
-        }
-        else {
-          match = (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
-        }
+        final match = (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
 
         if (match == null
             || (match.group(4)?.contains('..') ?? false)
