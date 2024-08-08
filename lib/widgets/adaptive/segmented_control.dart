@@ -55,25 +55,28 @@ class AdaptiveSegmentedControl<T extends Object> extends StatelessWidget {
 				)
 			);
 		}
-		return CupertinoSegmentedControl<T>(
-			children: {
-				for (final child in children.entries)
-					child.key: Padding(
-						padding: const EdgeInsets.all(8),
-						child: Wrap(
-							alignment: WrapAlignment.center,
-							crossAxisAlignment: WrapCrossAlignment.center,
-							spacing: 8,
-							children: [
-								if (child.value.$1 != null) Icon(child.value.$1),
-								Text(child.value.$2, textAlign: TextAlign.center)
-							]
-						)
-					)
-			},
+		return Container(
 			padding: padding,
-			onValueChanged: onValueChanged,
-			groupValue: groupValue
+			alignment: Alignment.center,
+			child: CupertinoSlidingSegmentedControl<T>(
+				children: {
+					for (final child in children.entries)
+						child.key: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Wrap(
+								alignment: WrapAlignment.center,
+								crossAxisAlignment: WrapCrossAlignment.center,
+								spacing: 8,
+								children: [
+									if (child.value.$1 != null) Icon(child.value.$1),
+									Text(child.value.$2, textAlign: TextAlign.center)
+								]
+							)
+						)
+				},
+				onValueChanged: (v) => onValueChanged(v!),
+				groupValue: groupValue
+			)
 		);
 	}
 }
