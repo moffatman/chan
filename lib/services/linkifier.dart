@@ -13,7 +13,7 @@ final _looseUrlRegexWithBackslash = RegExp(
 );
 
 final _protocolIdentifierRegex = RegExp(
-  r'^(https?:\/\/)',
+  r'^https?:\/\/',
   caseSensitive: false,
 );
 
@@ -108,7 +108,7 @@ class LooseUrlLinkifier extends Linkifier {
         ) {
           list.add(element);
         } else {
-          final text = element.text.replaceFirst(match.group(0)!, '');
+          final text = element.text.substring(0, match.start) + element.text.substring(match.end);
 
           if (match.group(1)?.isNotEmpty == true) {
             list.add(TextElement(match.group(1)!));
