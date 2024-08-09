@@ -506,6 +506,9 @@ class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Tick
   }
 
   void _onLongPress() {
+    if (!mounted) {
+      return;
+    }
     _glowController.reverse();
     setState(() {
       _childHidden = true;
