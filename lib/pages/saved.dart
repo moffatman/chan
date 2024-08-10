@@ -912,13 +912,11 @@ class _SavedPageState extends State<SavedPage> {
 							aboveFooter: AnimatedBuilder(
 								animation: _postListController,
 								builder: (context, _) => MissingThreadsControls(
-									missingThreads: _postListController.items.expand((item) {
-										final threadState = item.item.imageboard.persistence.getThreadStateIfExists(item.item.item.post.threadIdentifier);
-										if (threadState == null) {
-											return [item.item.imageboard.scope(item.item.item.post.threadIdentifier)];
-										}
-										return const <ImageboardScoped<ThreadIdentifier>>[];
-									}).toList(),
+									missingThreads: {
+										for (final item in _postListController.items)
+											if (!Persistence.isThreadCached(item.item.imageboard.key, item.item.item.post.board, item.item.item.post.threadId))
+												item.item.imageboard.scope(item.item.item.post.threadIdentifier)
+									}.toList(),
 									afterFix: () {
 										_postListController.state?.forceRebuildId++;
 										_postListController.update();
