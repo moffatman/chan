@@ -124,7 +124,6 @@ class QueueEntryWidget extends StatelessWidget {
 				final onGoToThread = this.onGoToThread;
 				final canPress = onMove != null || onCopy != null || onGoToThread != null;
 				return ContextMenu(
-					useLayoutBuilder: false,
 					actions: [
 						if (onCopy != null) ContextMenuAction(
 							trailingIcon: CupertinoIcons.doc_on_doc,

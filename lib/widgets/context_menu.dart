@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -47,9 +48,6 @@ class ContextMenu extends StatefulWidget {
 	final double? maxHeight;
 	final Widget Function(BuildContext, Widget?)? previewBuilder;
 	final Color? backgroundColor;
-	/// Use LayoutBuilder if your child is going to be close to the max width
-	/// of the screen to avoid text relayout visual jank
-	final bool useLayoutBuilder;
 	final Rect Function(Rect)? trimStartRect;
 
 	const ContextMenu({
@@ -58,7 +56,6 @@ class ContextMenu extends StatefulWidget {
 		this.maxHeight,
 		this.previewBuilder,
 		this.backgroundColor,
-		this.useLayoutBuilder = true,
 		this.trimStartRect,
 		Key? key
 	}) : super(key: key);
@@ -70,6 +67,7 @@ class ContextMenu extends StatefulWidget {
 class _ContextMenuState extends State<ContextMenu> {
 	OverlayEntry? _overlayEntry;
 	Offset? lastTap;
+	final _cupertinoKey = GlobalKey(debugLabel: '_ContextMenuState._cupertinoKey');
 
 	void _onLongPress() async {
 		final l = ((lastTap?.dx ?? 0) / Persistence.settings.interfaceScale) + 5;
@@ -169,47 +167,29 @@ class _ContextMenuState extends State<ContextMenu> {
 			],
 			child: IgnorePointer(child: widget.previewBuilder?.call(context, null) ?? child)
 		);
-		if (!widget.useLayoutBuilder) {
-			return CupertinoContextMenu2(
-				actions: actions,
-				previewBuilder: (context, animation, child) => previewBuilder(context),
-				trimStartRect: widget.trimStartRect,
-				child: child
-			);
-		}
-		return LayoutBuilder(
-			builder: (context, originalConstraints) => CupertinoContextMenu2(
-				actions: actions,
-				previewBuilder: (context, animation, child) => LayoutBuilder(
-					builder: (context, newConstraints) {
-						const x = 75;
-						return FittedBox(
-							child: AnimatedBuilder(
-								animation: animation,
-								builder: (context, _) => TweenAnimationBuilder(
-									tween: Tween<double>(
-										begin: originalConstraints.maxHeight,
-										end: newConstraints.maxHeight
-									),
-									curve: Curves.ease,
-									duration: const Duration(milliseconds: 300),
-									builder: (context, double maxHeight, _) => ConstrainedBox(
-										constraints: BoxConstraints(
-											minWidth: 0,
-											maxWidth: min(max(originalConstraints.maxWidth, newConstraints.maxWidth - x), newConstraints.maxWidth + x),
-											minHeight: 0,
-											maxHeight: maxHeight.isNaN ? double.infinity : maxHeight
-										),
-										child: previewBuilder(context)
-									)
-								)
-							)
-						);
+		return CupertinoContextMenu2(
+			key: _cupertinoKey,
+			actions: actions,
+			previewBuilder: (context, animation, child) {
+				final ctx = _cupertinoKey.currentContext;
+				double? width;
+				if ((ctx?.mounted ?? false)) {
+					try {
+						width = (ctx?.findRenderObject() as RenderBox?)?.size.width;
 					}
-				),
-				trimStartRect: widget.trimStartRect,
-				child: child
-			)
+					on Exception {
+						// Ignore, probably _lifecycleState wrong
+					}
+				}
+				return FixedWidthLayoutBox(
+					width: width ?? estimateWidth(context),
+					child: Builder(
+						builder: previewBuilder
+					)
+				);
+			},
+			trimStartRect: widget.trimStartRect,
+			child: child
 		);
 	}
 

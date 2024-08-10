@@ -1140,6 +1140,100 @@ class ClippingBox extends StatelessWidget {
 	}
 }
 
+class RenderFixedWidthLayoutBox extends RenderProxyBox {
+	RenderFixedWidthLayoutBox({
+		required double width,
+		required double threshold
+	}) : _width = width, _threshold = threshold;
+
+	double _width;
+	set width(double newValue) {
+		if (newValue == _width) {
+			return;
+		}
+		_width = newValue;
+		markNeedsLayout();
+	}
+
+	double _threshold;
+	set threshold(double newValue) {
+		if (newValue == _threshold) {
+			return;
+		}
+		_threshold = newValue;
+		markNeedsLayout();
+	}
+
+  @override
+  void performLayout() {
+    if (child != null) {
+			final double width;
+			if (constraints.maxWidth.isFinite) {
+				if (constraints.maxWidth > (_width + _threshold)) {
+					width = constraints.maxWidth - _threshold;
+				}
+				else {
+					width = _width;
+				}
+			}
+			else {
+				width = _width;
+			}
+			final double widthScale = constraints.maxWidth / width;
+      child!.layout(constraints.copyWith(
+				minHeight: 0,
+				maxHeight: constraints.maxHeight / widthScale,
+				maxWidth: width,
+				minWidth: width
+			), parentUsesSize: true);
+      size = constraints.constrain(child!.size);
+    } else {
+      size = computeSizeForNoChild(constraints);
+    }
+  }
+
+	@override
+  void paint(PaintingContext context, Offset offset) {
+    if (child != null) {
+			final scale = size.width / child!.size.width;
+			layer = context.pushTransform(
+				needsCompositing,
+				offset,
+				Matrix4.identity()..scale(scale, scale, 1.0),
+				(context, offset) => context.paintChild(child!, offset),
+				oldLayer: layer is TransformLayer ? layer as TransformLayer? : null
+			);
+    }
+  }
+}
+
+class FixedWidthLayoutBox extends SingleChildRenderObjectWidget {
+	/// Fixed width
+	final double width;
+	/// Allow growth of width when available width exceeds beyond width+threshold
+	final double threshold;
+
+	const FixedWidthLayoutBox({
+		required this.width,
+		this.threshold = 75,
+		required super.child,
+		super.key
+	});
+
+
+	@override
+	RenderFixedWidthLayoutBox createRenderObject(BuildContext context) {
+		return RenderFixedWidthLayoutBox(width: width, threshold: 75);
+	}
+
+	@override
+	void updateRenderObject(BuildContext context, RenderFixedWidthLayoutBox renderObject) {
+		renderObject
+			..width = width
+			..threshold = threshold;
+	}
+}
+
 Future<void> editStringList({
 	required BuildContext context,
 	required List<String> list,

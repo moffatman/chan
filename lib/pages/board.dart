@@ -529,8 +529,6 @@ class BoardPageState extends State<BoardPage> {
 			final isThreadHiddenByIdOrMD5s = isThreadHidden ?? isImageHidden;
 			final isHidden = isThreadHiddenByIdOrMD5s || listFilterReason != null;
 			return ContextMenu(
-				// This makes sense for >1 column
-				useLayoutBuilder: !useCatalogGrid,
 				actions: [
 					if (openInNewTabZone != null) ...[
 						ContextMenuAction(
