@@ -15,6 +15,7 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/url_regexes.dart';
 import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -2178,10 +2179,14 @@ class Settings extends ChangeNotifier {
 		didEdit();
 	}
 
-	List<RegExp> embedRegexes = [];
+	UrlRegexes _embedRegexes = UrlRegexes([]);
+	UrlRegexes get embedRegexes => _embedRegexes;
 	void _onEmbedRegexesUpdate() {
 		try {
-			embedRegexes = JsonCache.instance.embedRegexes.value?.map((x) => RegExp(x)).toList() ?? embedRegexes;
+			final list = JsonCache.instance.embedRegexes.value;
+			if (list != null) {
+				_embedRegexes = UrlRegexes(list);
+			}
 		}
 		catch (e) {
 			print('Error updating embed regexes: $e');

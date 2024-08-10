@@ -10,21 +10,11 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
 
 final _youtubeShortsRegex = RegExp(r'youtube.com\/shorts\/([^?]+)');
-
-class _EmbedParam {
-	final List<RegExp> regexes;
-	final String url;
-	const _EmbedParam({
-		required this.regexes,
-		required this.url
-	});
-}
 
 Future<bool> embedPossible(String url) async {
 	final embedRegexes = Settings.instance.embedRegexes;
@@ -47,17 +37,7 @@ Future<bool> embedPossible(String url) async {
 	if (await ImageboardRegistry.instance.decodeUrl(url) != null) {
 		return true;
 	}
-	if (kDebugMode) {
-		return embedRegexes.any((regex) => regex.hasMatch(url));
-	}
-	else {
-		return await compute<_EmbedParam, bool>((param) {
-			return param.regexes.any((regex) => regex.hasMatch(param.url));
-		}, _EmbedParam(
-			regexes: embedRegexes,
-			url: url
-		));
-	}
+	return embedRegexes.matches(url);
 }
 
 Future<String?>? findEmbedUrl(String text) async {
