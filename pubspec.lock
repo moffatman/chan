@@ -25,6 +25,38 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.13.0"
+  app_links:
+    dependency: "direct main"
+    description:
+      name: app_links
+      sha256: "4acba851087b25136e8f6e32a53bd4536eb3bec69947ddb66e7b9a5792ceb0c7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.2.0"
+  app_links_linux:
+    dependency: transitive
+    description:
+      name: app_links_linux
+      sha256: f5f7173a78609f3dfd4c2ff2c95bd559ab43c80a87dc6a095921d96c05688c81
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.3"
+  app_links_platform_interface:
+    dependency: transitive
+    description:
+      name: app_links_platform_interface
+      sha256: "05f5379577c513b534a29ddea68176a4d4802c46180ee8e2e966257158772a3f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
+  app_links_web:
+    dependency: transitive
+    description:
+      name: app_links_web
+      sha256: af060ed76183f9e2b87510a9480e56a5352b6c249778d07bd2c95fc35632a555
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
   archive:
     dependency: "direct main"
     description:
@@ -140,11 +172,12 @@ packages:
   charset_converter:
     dependency: "direct main"
     description:
-      name: charset_converter
-      sha256: e4827b2d623ab75c2b6767d69e03485ea5bc894db6f6bdcb2ffeda58446bbe26
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.1"
+      path: "."
+      ref: master
+      resolved-ref: a09281e6373e84debcc9d427a7cce2194f2de733
+      url: "https://github.com/moffatman/charset_converter.git"
+    source: git
+    version: "2.2.0"
   checked_yaml:
     dependency: transitive
     description:
@@ -230,10 +263,10 @@ packages:
     dependency: transitive
     description:
       name: cross_file
-      sha256: "55d7b444feb71301ef6b8838dbc1ae02e63dd48c8773f3810ff53bb1e2945b32"
+      sha256: "7caf6a750a0c04effbb52a676dce9a4a592e10ad35c34d6d2d0e4811160d5670"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.4+1"
+    version: "0.3.4+2"
   crypto:
     dependency: "direct main"
     description:
@@ -475,8 +508,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
-      resolved-ref: a0968617ee6c040b7805f1e5534b1692c810a940
+      ref: master
+      resolved-ref: abf15593b2e5d4a124b2e3b5f97c6a7cd618c1f3
       url: "https://github.com/moffatman/flutter_exif_rotation"
     source: git
     version: "0.5.1"
@@ -625,13 +658,21 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  gtk:
+    dependency: transitive
+    description:
+      name: gtk
+      sha256: e8ce9ca4b1df106e4d72dad201d345ea1a036cc12c360f1a7d5a758f78ffa42c
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   heic_to_jpg:
     dependency: "direct main"
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "62d586e740373749cc3a164974d2e269ca7ea0dc"
-      url: "https://github.com/a7med-3laa/flutter_heic_to_jpg.git"
+      resolved-ref: "854763e90e873c95076eeb30712ccedccd822151"
+      url: "https://github.com/moffatman/flutter_heic_to_jpg.git"
     source: git
     version: "0.2.0"
   highlight:
@@ -1044,10 +1085,11 @@ packages:
   native_drag_n_drop:
     dependency: "direct main"
     description:
-      name: native_drag_n_drop
-      sha256: "8c6cdfbac97064d49fa2a842e4b67522d3c343dff1055979e3fef6ea5a58c7eb"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: main
+      resolved-ref: "2409372660393eaf9adf22618fa8af7781541a2b"
+      url: "https://github.com/moffatman/FlutterNativeDragAndDrop"
+    source: git
     version: "0.0.5"
   nested:
     dependency: transitive
@@ -1252,12 +1294,11 @@ packages:
   receive_sharing_intent:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: abedc3d6d5b80df396e9c300fd1a052cbab08827
-      url: "https://github.com/AyushmanG26/receive_sharing_intent.git"
-    source: git
-    version: "1.4.5"
+      name: receive_sharing_intent
+      sha256: f127989f8662ea15e193bd1e10605e5a0ab6bb92dffd51f3ce002feb0ce24c93
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.8.0"
   safe_local_storage:
     dependency: transitive
     description:
@@ -1322,30 +1363,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  share_extend:
-    dependency: "direct main"
-    description:
-      name: share_extend
-      sha256: "98c26f04abae42b0d2080102a42a2653a867a4bec862be1e921cb0cf7cc00916"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.0"
   share_plus:
     dependency: "direct main"
     description:
       name: share_plus
-      sha256: "6cec740fa0943a826951223e76218df002804adb588235a8910dc3d6b0654e11"
+      sha256: "38658034f9f3c29f3b37ab0068db15caea9df2dd70d83e99300991a0d756c2a6"
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.0"
+    version: "10.0.1"
   share_plus_platform_interface:
     dependency: transitive
     description:
       name: share_plus_platform_interface
-      sha256: "357412af4178d8e11d14f41723f80f12caea54cf0d5cd29af9dcdab85d58aea7"
+      sha256: "6ababf341050edff57da8b6990f11f4e99eaba837865e2e6defe16d039619db5"
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0"
+    version: "5.0.0"
   shared_preferences:
     dependency: transitive
     description:
@@ -1591,30 +1624,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.1"
-  uni_links:
-    dependency: "direct main"
-    description:
-      name: uni_links
-      sha256: "051098acfc9e26a9fde03b487bef5d3d228ca8f67693480c6f33fd4fbb8e2b6e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.1"
-  uni_links_platform_interface:
-    dependency: transitive
-    description:
-      name: uni_links_platform_interface
-      sha256: "929cf1a71b59e3b7c2d8a2605a9cf7e0b125b13bc858e55083d88c62722d4507"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
-  uni_links_web:
-    dependency: transitive
-    description:
-      name: uni_links_web
-      sha256: "7539db908e25f67de2438e33cc1020b30ab94e66720b5677ba6763b25f6394df"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0"
   unifiedpush:
     dependency: "direct main"
     description:
@@ -1691,10 +1700,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_linux
-      sha256: "207f4ddda99b95b4d4868320a352d374b0b7e05eefad95a4a26f57da413443f5"
+      sha256: e2b9622b4007f97f504cd64c0128309dfb978ae66adbe944125ed9e1750f06af
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.5"
+    version: "3.2.0"
   url_launcher_macos:
     dependency: transitive
     description:
@@ -1707,26 +1716,26 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_platform_interface
-      sha256: "6c9ca697a5ae218ce56cece69d46128169a58aa8653c1b01d26fcd4aad8c4370"
+      sha256: "552f8a1e663569be95a8190206a38187b531910283c3e982193e4f2733f01029"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.2"
+    version: "2.3.2"
   url_launcher_web:
     dependency: transitive
     description:
       name: url_launcher_web
-      sha256: "81fe91b6c4f84f222d186a9d23c73157dc4c8e1c71489c4d08be1ad3b228f1aa"
+      sha256: "772638d3b34c779ede05ba3d38af34657a05ac55b06279ea6edd409e323dca8e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.16"
+    version: "2.3.3"
   url_launcher_windows:
     dependency: transitive
     description:
       name: url_launcher_windows
-      sha256: "254708f17f7c20a9c8c471f67d86d76d4a3f9c1591aad1e15292008aceb82771"
+      sha256: "49c10f879746271804767cb45551ec5592cdab00ee105c06dddde1a98f73b185"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.6"
+    version: "3.1.2"
   uuid:
     dependency: "direct main"
     description:

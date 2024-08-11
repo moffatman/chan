@@ -32,8 +32,7 @@ dependencies:
   provider: ^6.0.0
   extended_image: ^6.0.1
   html_unescape: ^2.0.0
-  share_plus: ^7.1.0
-  share_extend: "^2.0.0"
+  share_plus: ^10.0.1
   extended_image_library: ^3.3.0
   flutter_inappwebview: ^6.0.0-beta.24+1
   home_indicator: ^2.0.0
@@ -54,20 +53,22 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   photo_manager: ^3.1.1
   flutter_tex: ^4.0.3+4
-  uni_links: ^0.5.1
+  app_links: ^6.2.0
   crypto: ^3.0.1
   fluttertoast: ^8.2.1
   test: ^1.20.1
   flutter_exif_rotation:
     git:
       url: https://github.com/moffatman/flutter_exif_rotation
+      ref: master
   normal: ^0.6.0
   pool: ^1.5.0
   connectivity_plus: ^4.0.2
-  receive_sharing_intent:
-    git: 
-        url: https://github.com/krabbenprgr/receive_sharing_intent
-  native_drag_n_drop: ^0.0.5
+  receive_sharing_intent: ^1.8.0
+  native_drag_n_drop:
+    git:
+      url: https://github.com/moffatman/FlutterNativeDragAndDrop
+      ref: main
   mime: ^1.0.2
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0
@@ -83,7 +84,7 @@ dependencies:
   flutter:
     sdk: flutter
   firebase_crashlytics: ^3.0.3
-  charset_converter: ^2.1.0
+  charset_converter: ^2.2.0
   markdown: ^7.2.1
   string_similarity: ^2.0.0
   weak_map: ^2.1.0
@@ -155,10 +156,7 @@ dependency_overrides:
       ref: feat/monochrome-icons-support
   heic_to_jpg:
     git:
-      url: https://github.com/a7med-3laa/flutter_heic_to_jpg.git
-  receive_sharing_intent:
-    git:
-      url: https://github.com/AyushmanG26/receive_sharing_intent.git
+      url: https://github.com/moffatman/flutter_heic_to_jpg.git
   extended_image:
     git:
       url: https://github.com/moffatman/extended_image.git
@@ -231,3 +229,7 @@ dependency_overrides:
     git:
       url: https://github.com/moffatman/html.git
       ref: main
+  charset_converter:
+    git:
+      url: https://github.com/moffatman/charset_converter.git
+      ref: master

@@ -4,7 +4,6 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:share_extend/share_extend.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -19,21 +18,11 @@ Future<void> shareOne({
 	sharePositionOrigin ??= const Rect.fromLTWH(0, 0, 1, 1);
 	lightHapticFeedback();
 	if (type == 'file') {
-		try {
-			await ShareExtend.share(
-				text,
-				type,
-				subject: subject ?? '',
-				sharePositionOrigin: sharePositionOrigin
-			);
-		}
-		on MissingPluginException {
-			await Share.shareXFiles(
-				[XFile(text)],
-				subject: subject,
-				sharePositionOrigin: sharePositionOrigin
-			);
-		}
+		await Share.shareXFiles(
+			[XFile(text)],
+			subject: subject,
+			sharePositionOrigin: sharePositionOrigin
+		);
 	}
 	else {
 		final rootContext = context;

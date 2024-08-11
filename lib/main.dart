@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:app_links/app_links.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/firebase_options.dart';
 import 'package:chan/models/post.dart';
@@ -66,7 +67,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
-import 'package:uni_links/uni_links.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 final fakeLinkStream = StreamController<String?>.broadcast();
@@ -953,7 +953,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late StreamSubscription<String?> _linkSubscription;
 	late StreamSubscription<String?> _fakeLinkSubscription;
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
-	late StreamSubscription<String> _sharedTextSubscription;
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
 	bool _hideTabPopupAutomatically = false;
@@ -1275,6 +1274,25 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		showTabPopup = newShowTabPopup;
 	}
 
+	void _consumeSharedMediaFiles(List<SharedMediaFile> list) {
+		final files = list.tryMap((f) {
+			if (f.type == SharedMediaType.file ||
+				  f.type == SharedMediaType.image ||
+				  f.type == SharedMediaType.video) {
+				return f.path;
+			}
+		}).toList();
+		if (files.isNotEmpty) {
+			_consumeFiles(files);
+		}
+		list.tryMap((f) {
+			if (f.type == SharedMediaType.text ||
+			    f.type == SharedMediaType.url) {
+				return f.path;
+			}
+		}).forEach(_consumeLink);
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -1283,14 +1301,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 		_tabs.addListener(_tabsListener);
 		if (!_initialConsume) {
-			getInitialLink().then(_consumeLink);
-			ReceiveSharingIntent.getInitialText().then(_consumeLink);
-			ReceiveSharingIntent.getInitialMedia().then((f) => _consumeFiles(f.map((x) => x.path).toList()));
+			AppLinks().getInitialLinkString().then(_consumeLink);
+			ReceiveSharingIntent.instance.getInitialMedia().then(_consumeSharedMediaFiles);
 		}
-		_linkSubscription = linkStream.listen(_consumeLink);
+		_linkSubscription = AppLinks().stringLinkStream.listen(_consumeLink);
 		_fakeLinkSubscription = fakeLinkStream.stream.listen(_consumeLink);
-		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen((f) => _consumeFiles(f.map((x) => x.path).toList()));
-		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
+		_sharedFilesSubscription = ReceiveSharingIntent.instance.getMediaStream().listen(_consumeSharedMediaFiles);
 		_initialConsume = true;
 		_setAdditionalSafeAreaInsets();
 		ScrollTracker.instance.slowScrollDirection.addListener(_onSlowScrollDirectionChange);
@@ -2348,7 +2364,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_linkSubscription.cancel();
 		_fakeLinkSubscription.cancel();
 		_sharedFilesSubscription.cancel();
-		_sharedTextSubscription.cancel();
 		_devNotificationsSubscription?.subscription.cancel();
 		ScrollTracker.instance.slowScrollDirection.removeListener(_onSlowScrollDirectionChange);
 		for (final subscription in _notificationsSubscriptions.values) {
