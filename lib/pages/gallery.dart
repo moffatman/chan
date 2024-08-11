@@ -1133,10 +1133,10 @@ class _GalleryPageState extends State<GalleryPage> {
 																				navigator.pop(); // Pop the gallery too
 																				replyBoxZone.onTapPostId(threadId, id);
 																			},
-																			onQuoteText: (String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
+																			onQuoteText: (String text, {required PostIdentifier? backlink}) {
 																				navigator.popUntil((r) => r == currentRoute);
 																				navigator.pop(); // Pop the gallery too
-																				replyBoxZone.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId, includeBacklink: includeBacklink);
+																				replyBoxZone.onQuoteText(text, backlink: backlink);
 																			}
 																		),
 																		child: child

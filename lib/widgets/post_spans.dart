@@ -656,13 +656,13 @@ class PostQuoteLinkSpan extends PostSpan {
 		if (linkedPost != null && Filter.of(context).filter(linkedPost)?.type.hide == true && !options.imageShareMode) {
 			text += ' (Hidden)';
 		}
-		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
+		final bool expandedImmediatelyAbove = zone.shouldExpandPost(this) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
 		final stackCount = zone.stackIds.countOf(postId);
 		final enableInteraction = switch(zone.style) {
 			PostSpanZoneStyle.tree => stackCount <= 1,
 			_ => !expandedImmediatelyAbove ||
-			     zone.shouldExpandPost(postId) // Always allow re-collapsing
+			     zone.shouldExpandPost(this) // Always allow re-collapsing
 		};
 		final enableUnconditionalInteraction = switch(zone.style) {
 			PostSpanZoneStyle.tree => stackCount == 0,
@@ -684,8 +684,8 @@ class PostQuoteLinkSpan extends PostSpan {
 						zone.highlightQuoteLinkId = null;
 					}
 				}
-				else if (zone.shouldExpandPost(postId) || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.expandInline || zone.onNeedScrollToPost == null) {
-					zone.toggleExpansionOfPost(postId);
+				else if (zone.shouldExpandPost(this) || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.expandInline || zone.onNeedScrollToPost == null) {
+					zone.toggleExpansionOfPost(this);
 				}
 				else {
 					zone.onNeedScrollToPost!(zone.findPost(postId)!);
@@ -731,7 +731,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				_ => stackCount == 0
 			};
 			if (thisPostInThread == null ||
-			    zone.shouldExpandPost(postId) == true ||
+			    zone.shouldExpandPost(this) == true ||
 					!enableInteraction ||
 					options.showRawSource) {
 				return (span.$1, span.$2);
@@ -822,7 +822,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			return TextSpan(
 				children: [
 					span,
-					WidgetSpan(child: ExpandingPost(id: postId))
+					WidgetSpan(child: ExpandingPost(link: this))
 				]
 			);
 		}
@@ -842,6 +842,27 @@ class PostQuoteLinkSpan extends PostSpan {
 
 	@override
 	Iterable<Attachment> get inlineAttachments => [];
+
+	@override
+	bool operator == (Object other) {
+		if (identical(this, other)) {
+			return true;
+		}
+		// This is on purpose so that generic (constructed in makeSpan) links are compared for identity,
+		// but dynamic (constructed for replyIds) are compared by properties
+		if (key == null) {
+			return false;
+		}
+		return
+			other is PostQuoteLinkSpan &&
+			other.board == board &&
+			other.threadId == threadId &&
+			other.postId == postId &&
+			other.key == key;
+	}
+
+	@override
+	int get hashCode => Object.hash(board, threadId, postId, key);
 }
 
 class PostQuoteLinkWithContextSpan extends PostSpan {
@@ -1872,14 +1893,24 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	List<Comparator<Post>> get postSortingMethods;
 	PostSpanZoneStyle get style;
 
-	final Map<int, bool> _shouldExpandPost = {};
-	bool shouldExpandPost(int id) {
-		return _shouldExpandPost[id] ?? false;
+	final Map<PostQuoteLinkSpan, BuildContext> _expandedPostContexts = {};
+	Iterable<MapEntry<PostQuoteLinkSpan, BuildContext>> get expandedPostContexts sync* {
+		// Yielding children first on purpose. Deepest match should win.
+		for (final child in _children.values) {
+			yield* child.expandedPostContexts;
+		}
+		yield* _expandedPostContexts.entries;
 	}
-	void toggleExpansionOfPost(int id) {
-		_shouldExpandPost[id] = !shouldExpandPost(id);
-		if (!_shouldExpandPost[id]!) {
-			_children[id]?.unExpandAllPosts();
+
+	final Map<PostQuoteLinkSpan, bool> _shouldExpandPost = {};
+	bool shouldExpandPost(PostQuoteLinkSpan link) {
+		return _shouldExpandPost[link] ?? false;
+	}
+	void toggleExpansionOfPost(PostQuoteLinkSpan link) {
+		_shouldExpandPost[link] = !shouldExpandPost(link);
+		if (!_shouldExpandPost[link]!) {
+			_expandedPostContexts.remove(link);
+			_children[link]?.unExpandAllPosts();
 		}
 		notifyListeners();
 	}
@@ -2034,6 +2065,8 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		for (final zone in _children.values) {
 			zone.dispose();	
 		}
+		_lineTapCallbacks.clear();
+		_expandedPostContexts.clear();
 		super.dispose();
 		disposed = true;
 	}
@@ -2055,6 +2088,9 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	}
 
 	PostSpanZoneData get _root;
+
+	@override
+	String toString() => '$runtimeType(stackIds: $stackIds)';
 }
 
 class _PostSpanChildZoneData extends PostSpanZoneData {
@@ -2117,6 +2153,7 @@ class _PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	void unExpandAllPosts() {
 		_shouldExpandPost.updateAll((key, value) => false);
+		_expandedPostContexts.clear();
 		for (final child in _children.values) {
 			child.unExpandAllPosts();
 		}
@@ -2349,20 +2386,20 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 }
 
 class ExpandingPost extends StatelessWidget {
-	final int id;
+	final PostQuoteLinkSpan link;
 	const ExpandingPost({
-		required this.id,
+		required this.link,
 		Key? key
 	}) : super(key: key);
 	
 	@override
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData>();
-		final post = zone.findPost(id) ?? zone.postFromArchive(zone.board,id);
-		return zone.shouldExpandPost(id) ? TransformedMediaQuery(
+		final post = zone.findPost(link.postId) ?? zone.postFromArchive(zone.board, link.postId);
+		return zone.shouldExpandPost(link) ? TransformedMediaQuery(
 			transformation: (context, mq) => mq.copyWith(textScaler: TextScaler.noScaling),
 			child: (post == null) ? Center(
-				child: Text('Could not find /${zone.board}/$id')
+				child: Text('Could not find /${zone.board}/${link.postId}')
 			) : Row(
 				children: [
 					Flexible(
@@ -2373,18 +2410,23 @@ class ExpandingPost extends StatelessWidget {
 									border: Border.all(color: ChanceTheme.primaryColorOf(context))
 								),
 								position: DecorationPosition.foreground,
-								child: PostRow(
-									post: post,
-									onThumbnailTap: (attachment) {
-										showGallery(
-											context: context,
-											attachments: [attachment],
-											semanticParentIds: zone.stackIds,
-											heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+								child: Builder(
+									builder: (context) {
+										zone._expandedPostContexts[link] = context;
+										return PostRow(
+											post: post,
+											onThumbnailTap: (attachment) {
+												showGallery(
+													context: context,
+													attachments: [attachment],
+													semanticParentIds: zone.stackIds,
+													heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+												);
+											},
+											shrinkWrap: true,
+											expandedInline: true
 										);
-									},
-									shrinkWrap: true,
-									expandedInline: true
+									}
 								)
 							)
 						)

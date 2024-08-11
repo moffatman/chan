@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 
 const _kLongPressToPopAllTime = Duration(milliseconds: 500);
 
+T _identity<T>(T x) => x;
+
 class OverscrollModalPage extends StatefulWidget {
 	final Widget? child;
 	final Widget? sliver;
@@ -20,6 +22,7 @@ class OverscrollModalPage extends StatefulWidget {
 	final bool allowScroll;
 	final bool reverse;
 	final ValueChanged<AxisDirection>? onPop;
+	final Widget Function(Widget child) selectionAreaBuilder;
 
 	const OverscrollModalPage({
 		required this.child,
@@ -29,6 +32,7 @@ class OverscrollModalPage extends StatefulWidget {
 		this.allowScroll = true,
 		this.reverse = false,
 		this.onPop,
+		this.selectionAreaBuilder = _identity,
 		super.key
 	}) : sliver = null;
 
@@ -40,6 +44,7 @@ class OverscrollModalPage extends StatefulWidget {
 		this.allowScroll = true,
 		this.reverse = false,
 		this.onPop,
+		this.selectionAreaBuilder = _identity,
 		super.key
 	}) : child = null;
 
@@ -230,7 +235,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 										padding: MediaQuery.viewInsetsOf(context),
 										child: TransformedMediaQuery(
 											transformation: (context, mq) => mq.copyWith(viewInsets: EdgeInsets.zero),
-											child: MaybeScrollbar(
+											child: widget.selectionAreaBuilder(MaybeScrollbar(
 												controller: _controller,
 												child: CustomScrollView(
 													reverse: widget.reverse,
@@ -258,7 +263,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 															)
 														)
 													]
-												)
+												))
 											)
 										)
 									)

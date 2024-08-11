@@ -260,6 +260,7 @@ class PostRow extends StatelessWidget {
 		// These use attachments_ on purpose to avoid pulling out inlines
 		final List<Attachment> largeAttachments = largeImageWidth == null ? [] : latestPost.attachments_;
 		final List<Attachment> smallAttachments = largeImageWidth == null ? latestPost.attachments_ : [];
+		final withinSelectable = SelectionContainer.maybeOf(context) != null;
 		if (isYourPost && showYourPostBorder) {
 			border = Border(
 				left: BorderSide(color: theme.secondaryColor, width: 10)
@@ -375,9 +376,8 @@ class PostRow extends StatelessWidget {
 														child: overrideReplyCount!
 													)
 												)
-											) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : TextSpan(
-												text: List.filled(replyIds.length.toString().length + 4, '1').join(),
-												style: const TextStyle(color: Colors.transparent)
+											) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
+												child: SizedBox(width: (4 + replyIds.length.toString().length) * 8)
 											))
 										)
 									),
@@ -486,49 +486,81 @@ class PostRow extends StatelessWidget {
 									crossAxisAlignment: CrossAxisAlignment.start,
 									children: [
 										const SizedBox(height: 8),
-										Padding(
-											padding: const EdgeInsets.only(left: 8, right: 8),
-											child: PostSpanZone(
-												postId: latestPost.id,
-												style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
-												builder: (ctx) => Consumer<MouseSettings>(
-													builder: (context, mouseSettings, child) => Text.rich(
-														TextSpan(
-															children: [
-																buildPostInfoRow(
-																	post: latestPost,
-																	isYourPost: isYourPost,
-																	showSiteIcon: showSiteIcon,
-																	showBoardName: showBoardName,
-																	settings: settings,
-																	theme: theme,
-																	site: site,
-																	context: context,
-																	zone: ctx.watch<PostSpanZoneData>(),
-																	showPostNumber: showPostNumber,
-																	propagatedOnThumbnailTap: baseOptions?.propagateOnThumbnailTap == true ? onThumbnailTap : null,
-																	interactive: allowTappingLinks
-																),
-																if (mouseSettings.supportMouse) ...[
-																	...replyIds.map((id) =>  PostQuoteLinkSpan(
-																		board: latestPost.board,
-																		threadId: latestPost.threadId,
-																		postId: id,
-																		key: ValueKey('replyId $id')
-																	).build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-																		showCrossThreadLabel: showCrossThreadLabel,
-																		addExpandingPosts: false,
-																		shrinkWrap: shrinkWrap
-																	))),
-																	...replyIds.map((id) => WidgetSpan(
-																		child: ExpandingPost(id: id),
-																	))
-																].expand((span) => [span, const TextSpan(text: ' ')])
-															]
+										Row(
+											children: [
+												Expanded(
+													child: Padding(
+														padding: const EdgeInsets.only(left: 8, right: 8),
+														child: PostSpanZone(
+															postId: latestPost.id,
+															style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
+															builder: (ctx) => Consumer<MouseSettings>(
+																builder: (context, mouseSettings, child) => Text.rich(
+																	TextSpan(
+																		children: [
+																			buildPostInfoRow(
+																				post: latestPost,
+																				isYourPost: isYourPost,
+																				showSiteIcon: showSiteIcon,
+																				showBoardName: showBoardName,
+																				settings: settings,
+																				theme: theme,
+																				site: site,
+																				context: context,
+																				zone: ctx.watch<PostSpanZoneData>(),
+																				showPostNumber: showPostNumber,
+																				propagatedOnThumbnailTap: baseOptions?.propagateOnThumbnailTap == true ? onThumbnailTap : null,
+																				interactive: allowTappingLinks
+																			),
+																			if (mouseSettings.supportMouse) ...replyIds.map((id) => PostQuoteLinkSpan(
+																				board: latestPost.board,
+																				threadId: latestPost.threadId,
+																				postId: id,
+																				key: ValueKey('replyId $id')
+																			)).expand((link) => [
+																				link.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+																					showCrossThreadLabel: showCrossThreadLabel,
+																					addExpandingPosts: false,
+																					shrinkWrap: shrinkWrap
+																				)),
+																				WidgetSpan(
+																					child: ExpandingPost(link: link),
+																				),
+																				const TextSpan(text: ' ')
+																			])
+																		]
+																	)
+																)
+															)
 														)
 													)
+												),
+												Builder(
+													builder: (context) {
+														final zone = context.watch<ContextMenuHint?>();
+														if (zone == null || zone.mode == ContextMenuHintMode.longPressEnabled) {
+															return const SizedBox.shrink();
+														}
+														return Padding(
+															padding: const EdgeInsets.only(right: 12),
+															child: AdaptiveIconButton(
+																icon: const Icon(CupertinoIcons.ellipsis),
+																minSize: 0,
+																padding: const EdgeInsets.symmetric(horizontal: 4),
+																onPressed: zone.mode == ContextMenuHintMode.longPressDisabled ? () {
+																	final box = context.findRenderObject() as RenderBox;
+																	zone.open(
+																		from: Rect.fromPoints(
+																			box.localToGlobal(box.paintBounds.topLeft),
+																			box.localToGlobal(box.paintBounds.bottomRight)
+																		)
+																	);
+																} : null
+															)
+														);
+													}
 												)
-											)
+											]
 										),
 										if (largeAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) ...largeAttachments.map((a) => Align(
 											child: Padding(
@@ -607,11 +639,13 @@ class PostRow extends StatelessWidget {
 											width: double.infinity,
 											child: Padding(
 												padding: const EdgeInsets.only(left: 16, bottom: 16),
-												child: Text(
-													describeCount(replyIds.length, 'reply', plural: 'replies'),
-													style: TextStyle(
-														fontSize: 17 + (7 * slideFactor.clamp(0, 1)),
-														color: theme.primaryColor.withOpacity(0.7)
+												child: SelectionContainer.disabled(
+													child: Text(
+														describeCount(replyIds.length, 'reply', plural: 'replies'),
+														style: TextStyle(
+															fontSize: 17 + (7 * slideFactor.clamp(0, 1)),
+															color: theme.primaryColor.withOpacity(0.7)
+														)
 													)
 												)
 											)
@@ -638,11 +672,13 @@ class PostRow extends StatelessWidget {
 														size: 14
 													),
 													const SizedBox(width: 4),
-													Text(
-														replyIds.length.toString(),
-														style: TextStyle(
-															color: theme.secondaryColor,
-															fontWeight: FontWeight.bold
+													SelectionContainer.disabled(
+														child: Text(
+															replyIds.length.toString(),
+															style: TextStyle(
+																color: theme.secondaryColor,
+																fontWeight: FontWeight.bold
+															)
 														)
 													)
 												]
@@ -686,6 +722,7 @@ class PostRow extends StatelessWidget {
 		}
 		return ContextMenu(
 			backgroundColor: theme.backgroundColor,
+			enableLongPress: !withinSelectable,
 			actions: [
 				if (site.supportsPosting && context.read<ReplyBoxZone?>() != null) ContextMenuAction(
 					child: const Text('Reply'),
@@ -699,7 +736,7 @@ class PostRow extends StatelessWidget {
 						WeakNavigator.push(context, SelectablePostPage(
 							post: latestPost,
 							zone: parentZone,
-							onQuoteText: (String text, {required bool includeBacklink}) => context.read<ReplyBoxZone>().onQuoteText(text, fromId: latestPost.id, fromThreadId: latestPost.threadId, includeBacklink: includeBacklink)
+							onQuoteText: (String text, {required bool includeBacklink}) => context.read<ReplyBoxZone>().onQuoteText(text, backlink: includeBacklink ? latestPost.identifier : null)
 						));
 					}
 				),

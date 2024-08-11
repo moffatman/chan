@@ -243,6 +243,7 @@ class CupertinoContextMenu2 extends StatefulWidget {
     required this.child,
     this.previewBuilder,
     this.trimStartRect,
+    this.enableLongPress = true,
   });
 
   /// The widget that can be "opened" with the [CupertinoContextMenu].
@@ -334,11 +335,13 @@ class CupertinoContextMenu2 extends StatefulWidget {
   /// It's intentionally not passed through to use on the destination rect.
   final Rect Function(Rect)? trimStartRect;
 
+  final bool enableLongPress;
+
   @override
-  State<CupertinoContextMenu2> createState() => _CupertinoContextMenuState2();
+  State<CupertinoContextMenu2> createState() => CupertinoContextMenuState2();
 }
 
-class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with TickerProviderStateMixin {
+class CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with TickerProviderStateMixin {
   final GlobalKey _childGlobalKey = GlobalKey(debugLabel: '_CupertinoContextMenuState2._childGlobalKey');
   bool _childHidden = false;
   // Animated thi child while it's being long-pressed
@@ -369,7 +372,7 @@ class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Tick
     recognizer = LongPressGestureRecognizer(duration: kLongPressTimeout ~/ 2)
       ..onLongPressDown = _onLongPressDown
       ..onLongPressUp = _onLongPressUp
-      ..onLongPress = _onLongPress
+      ..onLongPress = onLongPress
       ..onLongPressMoveUpdate = _onLongPressMoveUpdate
       ..onLongPressCancel = _onLongPressCancel;
   }
@@ -505,7 +508,7 @@ class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Tick
     _tracker.addPosition(DateTime.now().difference(_trackingStartTime), details.offsetFromOrigin);
   }
 
-  void _onLongPress() {
+  void onLongPress({bool fast = false}) {
     if (!mounted) {
       return;
     }
@@ -532,13 +535,17 @@ class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Tick
       },
     );
     Overlay.of(context, rootOverlay: true, debugRequiredFor: widget).insert(_lastOverlayEntry!);
-    _openController.forward();
+    _openController.forward(from: fast ? 1 : null);
   }
 
   @override
   Widget build(BuildContext context) {
     return Listener(
-      onPointerDown: recognizer.addPointer,
+      onPointerDown: (event) {
+        if (widget.enableLongPress) {
+          recognizer.addPointer(event);
+        }
+      },
       child: TickerMode(
         enabled: !_childHidden,
         child: Visibility.maintain(

@@ -2641,15 +2641,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							_lastPointerUpTime = DateTime.now();
 							_pointerDownCount--;
 						},
-						child: GestureDetector(
-							onTapUp: (e) {
+						child: Listener(
+							onPointerUp: (e) {
 								if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {
 									widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
 								}
 								widget.controller?.cancelCurrentAnimation();
 								final footerBox = _footerKey.currentContext?.findRenderObject() as RenderBox?;
 								final footerTop = footerBox?.localToGlobal(footerBox.paintBounds.topLeft).dy ?? double.infinity;
-								if (e.globalPosition.dy > footerTop) {
+								if (e.position.dy > footerTop) {
 									_updateOrExtendWithHapticFeedback();
 								}
 							},
@@ -3777,6 +3777,24 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				yield item.item;
 			}
 		}
+	}
+	({RefreshableListItem<T> item, BuildContext context, double startOffset})? findItemAtOffset(double offset) {
+		for (final item in _items) {
+			final cachedOffset = item.cachedOffset;
+			final cachedHeight = item.cachedHeight;
+			final context = item.context;
+			if (cachedOffset == null || cachedHeight == null || context == null) {
+				continue;
+			}
+			if (cachedOffset > offset) {
+				// No hope finding it
+				break;
+			}
+			if (offset >= cachedOffset && offset <= (cachedOffset + cachedHeight)) {
+				return (item: item.item, context: context, startOffset: cachedOffset);
+			}
+		}
+		return null;
 	}
 	bool _isOnscreen(_BuiltRefreshableListItem<RefreshableListItem<T>> i) {
 		return (i.cachedHeight != null) &&

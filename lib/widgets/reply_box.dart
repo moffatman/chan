@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
@@ -86,7 +87,7 @@ Future<File> _moveFileOutOfDocumentsDir(File file) async {
 class ReplyBoxZone {
 	final void Function(int threadId, int id) onTapPostId;
 
-	final void Function(String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) onQuoteText;
+	final void Function(String text, {required PostIdentifier? backlink}) onQuoteText;
 
 	const ReplyBoxZone({
 		required this.onTapPostId,
@@ -491,9 +492,9 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	void onQuoteText(String text, {required int fromId, required int fromThreadId, required bool includeBacklink}) {
+	void onQuoteText(String text, {required PostIdentifier? backlink}) {
 		if (context.read<ImageboardSite?>()?.supportsPosting ?? false) {
-			if (fromThreadId != widget.threadId) {
+			if (backlink != null && backlink.thread != thread) {
 				showToast(
 					context: context,
 					message: 'Cross-thread reply!',
@@ -501,8 +502,13 @@ class ReplyBoxState extends State<ReplyBox> {
 				);
 			}
 			showReplyBox();
-			if (includeBacklink) {
-				_insertText('>>$fromId');
+			if (backlink != null) {
+				if (backlink.board != widget.board) {
+					_insertText('>>>/${backlink.board}/${backlink.postId}');
+				}
+				else {
+					_insertText('>>${backlink.postId}');
+				}
 			}
 			_insertText('>${text.replaceAll('\n', '\n>')}');
 		}

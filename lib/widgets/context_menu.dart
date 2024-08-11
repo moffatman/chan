@@ -34,12 +34,25 @@ class ContextMenuAction {
 	});
 }
 
+enum ContextMenuHintMode {
+	longPressEnabled,
+	longPressDisabled,
+	withinPreview
+}
+
 class ContextMenuHint {
-	const ContextMenuHint();
+	final _ContextMenuState _state;
+	final ContextMenuHintMode mode;
+	ContextMenuHint._(this._state, this.mode);
+	void open({Rect? from}) => _state.show(from: from);
 	@override
-	bool operator == (Object other) => other is ContextMenuHint;
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is ContextMenuHint &&
+		other._state == _state &&
+		other.mode == mode;
 	@override
-	int get hashCode => 0;
+	int get hashCode => Object.hash(_state, mode);
 }
 
 class ContextMenu extends StatefulWidget {
@@ -49,6 +62,7 @@ class ContextMenu extends StatefulWidget {
 	final Widget Function(BuildContext, Widget?)? previewBuilder;
 	final Color? backgroundColor;
 	final Rect Function(Rect)? trimStartRect;
+	final bool enableLongPress;
 
 	const ContextMenu({
 		required this.actions,
@@ -57,6 +71,7 @@ class ContextMenu extends StatefulWidget {
 		this.previewBuilder,
 		this.backgroundColor,
 		this.trimStartRect,
+		this.enableLongPress = true,
 		Key? key
 	}) : super(key: key);
 
@@ -67,9 +82,9 @@ class ContextMenu extends StatefulWidget {
 class _ContextMenuState extends State<ContextMenu> {
 	OverlayEntry? _overlayEntry;
 	Offset? lastTap;
-	final _cupertinoKey = GlobalKey(debugLabel: '_ContextMenuState._cupertinoKey');
+	final _cupertinoKey = GlobalKey<CupertinoContextMenuState2>(debugLabel: '_ContextMenuState._cupertinoKey');
 
-	void _onLongPress() async {
+	void _onLongPress({Rect? from}) async {
 		final l = ((lastTap?.dx ?? 0) / Persistence.settings.interfaceScale) + 5;
 		final t = ((lastTap?.dy ?? 0) / Persistence.settings.interfaceScale) + 5;
 		final s = context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size;
@@ -92,7 +107,10 @@ class _ContextMenuState extends State<ContextMenu> {
 			)).toList(),
 			context: context,
 			constraints: const BoxConstraints(maxHeight: 500),
-			position: RelativeRect.fromLTRB(l, t, s.width - l, s.height - t)
+			position: switch (from) {
+				Rect rect => RelativeRect.fromRect(rect, Offset.zero & s),
+				null => RelativeRect.fromLTRB(l, t, s.width - l, s.height - t)
+			}
 		);
 		action?.onPressed();
 	}
@@ -112,10 +130,10 @@ class _ContextMenuState extends State<ContextMenu> {
 				child: widget.child
 			)
 		) : GestureDetector(
-			onLongPressStart: (d) {
+			onLongPressStart: widget.enableLongPress ? (d) {
 				lastTap = d.globalPosition;
 				_onLongPress();
-			},
+			} : null,
 			child: widget.child
 		);
 	}
@@ -157,7 +175,8 @@ class _ContextMenuState extends State<ContextMenu> {
 		);
 		Widget previewBuilder(BuildContext context) => MultiProvider(
 			providers: [
-				Provider<ContextMenuHint>.value(value: const ContextMenuHint()), // Dummy, at least one provider is required
+				// At least one provider is required
+				Provider<ContextMenuHint>.value(value: ContextMenuHint._(this, ContextMenuHintMode.withinPreview)),
 				if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
 				if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
 				if (site != null) Provider<ImageboardSite>.value(value: site),
@@ -188,9 +207,19 @@ class _ContextMenuState extends State<ContextMenu> {
 					)
 				);
 			},
+			enableLongPress: widget.enableLongPress,
 			trimStartRect: widget.trimStartRect,
 			child: child
 		);
+	}
+
+	void show({Rect? from}) {
+		if (Settings.instance.materialStyle) {
+			_onLongPress(from: from);
+		}
+		else {
+			_cupertinoKey.currentState!.onLongPress(fast: true);
+		}
 	}
 
 	@override
@@ -262,7 +291,10 @@ class _ContextMenuState extends State<ContextMenu> {
 				);
 				Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
 			},
-			child: ChanceTheme.materialOf(context) ? _buildMaterial() : _buildCupertino()
+			child: Provider.value(
+				value: ContextMenuHint._(this, widget.enableLongPress ? ContextMenuHintMode.longPressEnabled : ContextMenuHintMode.longPressDisabled),
+				child: ChanceTheme.materialOf(context) ? _buildMaterial() : _buildCupertino()
+			)
 		);
 		if (widget.maxHeight != null) {
 			return ConstrainedBox(
