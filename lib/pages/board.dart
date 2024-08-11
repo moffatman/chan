@@ -518,7 +518,7 @@ class BoardPageState extends State<BoardPage> {
 		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant) ?? CatalogVariant.unsorted;
 		final openInNewTabZone = context.read<OpenInNewTabZone?>();
 		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.name] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
-		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
+		Widget itemBuilder(BuildContext context, Thread thread, {RegExp? highlightPattern}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isYou = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.youIds.contains(thread.id) ?? false);
 			final watch = context.select<Persistence, ThreadWatch?>((p) => p.getThreadStateIfExists(thread.identifier)?.threadWatch);
@@ -882,7 +882,7 @@ class BoardPageState extends State<BoardPage> {
 							);
 						},
 						baseOptions: PostSpanRenderOptions(
-							highlightString: highlightString
+							highlightPattern: highlightPattern
 						)
 					),
 					onTap: () => _onThreadSelected(thread.identifier)
@@ -1244,7 +1244,7 @@ class BoardPageState extends State<BoardPage> {
 															disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
 															id: '${site.name} /${board!.name}/${variant.dataId}',
 															itemBuilder: (context, thread) => itemBuilder(context, thread),
-															filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
+															filteredItemBuilder: (context, thread, resetPage, filterPattern) => itemBuilder(context, thread, highlightPattern: filterPattern),
 															filterHint: 'Search in board',
 															filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
 																name: supportsSearch.name,

@@ -61,7 +61,7 @@ class PostSpanRenderOptions {
 	final bool shrinkWrap;
 	final int maxLines;
 	final int charactersPerLine;
-	final String? highlightString;
+	final RegExp? highlightPattern;
 	final InlineSpan? postInject;
 	final bool imageShareMode;
 	final bool revealYourPosts;
@@ -86,7 +86,7 @@ class PostSpanRenderOptions {
 		this.shrinkWrap = false,
 		this.maxLines = 999999,
 		this.charactersPerLine = 999999,
-		this.highlightString,
+		this.highlightPattern,
 		this.postInject,
 		this.imageShareMode = false,
 		this.revealYourPosts = true,
@@ -134,7 +134,7 @@ class PostSpanRenderOptions {
 		onExit: onExit ?? this.onExit,
 		ownLine: ownLine ?? this.ownLine,
 		shrinkWrap: shrinkWrap ?? this.shrinkWrap,
-		highlightString: highlightString,
+		highlightPattern: highlightPattern,
 		maxLines: maxLines ?? this.maxLines,
 		charactersPerLine: charactersPerLine ?? this.charactersPerLine,
 		postInject: removePostInject ? null : (postInject ?? this.postInject),
@@ -380,33 +380,35 @@ class PostTextSpan extends PostSpan {
 	final String text;
 	const PostTextSpan(this.text);
 
-	static final _escapePattern = RegExp(r'[.*+?^${}()|[\]\\]');
-
 	@override
 	InlineSpan build(context, zone, settings, theme, options) {
 		final children = <TextSpan>[];
 		final str = settings.filterProfanity(text);
-		if (options.highlightString != null) {
-			final escapedHighlight = options.highlightString!.replaceAllMapped(_escapePattern, (m) => '\\${m.group(0)}');
-			final nonHighlightedParts = str.split(RegExp(escapedHighlight, caseSensitive: false));
-			int pos = 0;
-			for (int i = 0; i < nonHighlightedParts.length; i++) {
-				pos += nonHighlightedParts[i].length;
-				children.add(TextSpan(
-					text: nonHighlightedParts[i],
-					recognizer: options.recognizer
-				));
-				if ((i + 1) < nonHighlightedParts.length) {
+		final highlightPattern = options.highlightPattern;
+		if (highlightPattern != null) {
+			int lastEnd = 0;
+			for (final match in highlightPattern.allMatches(str)) {
+				if (match.start != lastEnd) {
 					children.add(TextSpan(
-						text: str.substring(pos, pos + options.highlightString!.length),
-						style: const TextStyle(
-							color: Colors.black,
-							backgroundColor: Colors.yellow
-						),
+						text: str.substring(lastEnd, match.start),
 						recognizer: options.recognizer
 					));
-					pos += options.highlightString!.length;
 				}
+				children.add(TextSpan(
+					text: match.group(0)!,
+					style: const TextStyle(
+						color: Colors.black,
+						backgroundColor: Colors.yellow
+					),
+					recognizer: options.recognizer
+				));
+				lastEnd = match.end;
+			}
+			if (lastEnd < str.length) {
+				children.add(TextSpan(
+					text: str.substring(lastEnd),
+					recognizer: options.recognizer
+				));
 			}
 		}
 		else {

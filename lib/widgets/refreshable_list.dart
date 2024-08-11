@@ -1012,7 +1012,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final String id;
 	final RefreshableListController<T>? controller;
 	final String? filterHint;
-	final Widget Function(BuildContext context, T value, VoidCallback resetPage, String filter)? filteredItemBuilder;
+	final Widget Function(BuildContext context, T value, VoidCallback resetPage, RegExp filterPattern)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final bool disableUpdates;
@@ -1180,6 +1180,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			widget.updateAnimation?.addListener(_onUpdateAnimation);
 		}
 		if (oldWidget.id != widget.id) {
+			_searchStrings.clear();
 			_internedHashKeys.clear();
 			autoUpdateTimer?.cancel();
 			autoUpdateTimer = null;
@@ -1597,7 +1598,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return null;
 	}
 
-	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy) {
+	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy, RegExp? filterPattern) {
 		if (widget.staggeredGridDelegate != null) {
 			// It can't be done, layout breaks down
 			dummy = false;
@@ -1650,9 +1651,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (widget.treeAdapter != null && (useTree || value.representsStubChildren || value.representsUnloadedPages.isNotEmpty) && !isHidden.isHidden) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
-		if (_searchTapped && _searchController.text.isNotEmpty && widget.filteredItemBuilder != null) {
+		if (filterPattern != null && widget.filteredItemBuilder != null) {
 			child = value.representsStubChildren ? const SizedBox.shrink() : Builder(
-				builder: (context) => widget.filteredItemBuilder!(context, value.item, closeSearch, _searchController.text)
+				builder: (context) => widget.filteredItemBuilder!(context, value.item, closeSearch, filterPattern)
 			);
 		}
 		else {
@@ -2390,10 +2391,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return (tree: out, automaticallyCollapsed: automaticallyCollapsed, automaticallyTopLevelCollapsed: automaticallyTopLevelCollapsed);
 	}
 
-	bool _matchesSearchFilter(Filterable item, String query) {
-		return (_searchStrings[item] ??= '${item.id} ${defaultPatternFields.map((field) {
-			return item.getFilterFieldText(field) ?? '';
-		}).join(' ').toLowerCase()}').contains(query);
+	bool _matchesSearchFilter(Filterable item, RegExp query) {
+		return (_searchStrings[item] ??= [
+			item.id.toString(),
+			...defaultPatternFields.map((field) {
+				return item.getFilterFieldText(field) ?? '';
+			})
+		].join(' ')).contains(query);
 	}
 
 	@override
@@ -2401,7 +2405,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.maybeOf(context));
 		widget.controller?.topOffset = MediaQuery.paddingOf(context).top;
 		widget.controller?.bottomOffset = MediaQuery.paddingOf(context).bottom;
-		final query = _searchController.text.toLowerCase();
+		final RegExp? queryPattern;
+		if (_searchController.text.isNotEmpty) {
+			queryPattern = RegExp(RegExp.escape(_searchController.text), caseSensitive: false);
+		}
+		else {
+			queryPattern = null;
+		}
 		final sortedList = this.sortedList;
 		if (sortedList != null) {
 			final filterableAdapter = widget.filterableAdapter;
@@ -2412,7 +2422,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			for (final item in sortedList) {
 				final item_ = filterableAdapter?.call(item);
 				if (item_ != null) {
-					if (query.isNotEmpty && !_matchesSearchFilter(item_, query)) {
+					if (queryPattern != null && !_matchesSearchFilter(item_, queryPattern)) {
 						continue;
 					}
 					final result = widget.useFiltersFromContext && filterableAdapter != null ? filter.filter(item_) : null;
@@ -2729,7 +2739,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														padding: const EdgeInsets.all(16),
 														onPressed: () {
 															_searchFocusNode.unfocus();
-															widget.filterAlternative!.handler(query);
+															widget.filterAlternative!.handler(_searchController.text);
 														},
 														child: Row(
 															children: [
@@ -2751,11 +2761,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															builder: (context) {
 																widget.controller?.registerItem(i, values[i], context);
 																final range = widget.controller?.useDummyItemsInRange;
-																return _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1);
+																return _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1, queryPattern);
 															}
 														),
 														list: values,
-														id: '$query${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
 														didFinishLayout: widget.controller?.didFinishLayout,
 														childCount: values.length,
 														addRepaintBoundaries: false,
@@ -2771,11 +2781,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															builder: (context) {
 																widget.controller?.registerItem(i, values[i], context);
 																final range = widget.controller?.useDummyItemsInRange;
-																return _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1);
+																return _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1, queryPattern);
 															}
 														),
 														list: values,
-														id: '$query${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
 														didFinishLayout: widget.controller?.didFinishLayout,
 														childCount: values.length,
 														addRepaintBoundaries: false,
@@ -2792,7 +2802,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																builder: (context) {
 																	widget.controller?.registerItem(childIndex, values[childIndex], context);
 																	final range = widget.controller?.useDummyItemsInRange;
-																	return _itemBuilder(context, values[childIndex], range != null && childIndex < range.$2 && childIndex > range.$1);
+																	return _itemBuilder(context, values[childIndex], range != null && childIndex < range.$2 && childIndex > range.$1, queryPattern);
 																}
 															);
 														},
@@ -2808,7 +2818,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														},
 														separatorSentinel: dividerColor,
 														list: values,
-														id: '$query${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
 														childCount: values.length * 2,
 														findChildIndexCallback: (key) {
 															if (key is ValueKey<RefreshableListItem<T>>) {
@@ -2884,7 +2894,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																children: [
 																	Provider.value(
 																		value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
-																		builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
+																		builder: (context, _) => _itemBuilder(context, filteredValues[i], false, queryPattern)
 																	),
 																	Align(
 																		alignment: Alignment.topRight,
@@ -2917,7 +2927,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																children: [
 																	Provider.value(
 																		value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
-																		builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
+																		builder: (context, _) => _itemBuilder(context, filteredValues[i], false, queryPattern)
 																	),
 																	Align(
 																		alignment: Alignment.topRight,
@@ -2963,7 +2973,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																			padding: const EdgeInsets.all(8),
 																			child: Provider.value(
 																				value: RefreshableListFilterReason(filteredValues[childIndex].filterReason ?? 'Unknown'),
-																				builder: (context, _) => _itemBuilder(context, filteredValues[childIndex], false)
+																				builder: (context, _) => _itemBuilder(context, filteredValues[childIndex], false, queryPattern)
 																			)
 																		)
 																	]

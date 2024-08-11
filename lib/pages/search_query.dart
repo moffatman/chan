@@ -171,6 +171,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			);
 		}
 		else if (!loading && result.hasData) {
+			final queryPattern = RegExp(RegExp.escape(widget.query.query), caseSensitive: false);
 			return ImageboardScope(
 				imageboardKey: widget.query.imageboardKey,
 				child: MaybeScrollbar(
@@ -221,7 +222,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 											fromArchive: result.data!.archive.isArchive
 										)),
 										baseOptions: PostSpanRenderOptions(
-											highlightString: widget.query.query
+											highlightPattern: widget.query.query.isEmpty ? null : queryPattern
 										),
 									)
 								);
@@ -250,7 +251,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										showBoardName: true,
 										showLastReplies: true,
 										baseOptions: PostSpanRenderOptions(
-											highlightString: widget.query.query.isEmpty ? null : widget.query.query
+											highlightPattern: widget.query.query.isEmpty ? null : queryPattern
 										),
 									)
 								);

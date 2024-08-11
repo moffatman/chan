@@ -150,6 +150,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final queryPattern = RegExp(RegExp.escape(widget.query), caseSensitive: false);
 		return AdaptiveScaffold(
 			bar: AdaptiveBar(
 				title: FittedBox(
@@ -422,7 +423,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											widget.onResultSelected(row.imageboard.scope(row.item.identifier));
 										},
 										baseOptions: PostSpanRenderOptions(
-											highlightString: widget.query
+											highlightPattern: widget.query.isEmpty ? null : queryPattern
 										),
 									)
 								)
@@ -451,7 +452,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											showBoardName: true,
 											showSiteIcon: ImageboardRegistry.instance.count > 1,
 											baseOptions: PostSpanRenderOptions(
-												highlightString: widget.query.isEmpty ? null : widget.query
+												highlightPattern: widget.query.isEmpty ? null : queryPattern
 											),
 										)
 									)

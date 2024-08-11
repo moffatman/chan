@@ -1659,7 +1659,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				)
 																			);
 																		},
-																		filteredItemBuilder: (context, post, resetPage, filterText) {
+																		filteredItemBuilder: (context, post, resetPage, filterPattern) {
 																			return PostRow(
 																				post: post,
 																				onThumbnailTap: (attachment) {
@@ -1676,7 +1676,7 @@ class ThreadPageState extends State<ThreadPage> {
 																					await _glowPost(post.id);
 																				},
 																				baseOptions: PostSpanRenderOptions(
-																					highlightString: filterText
+																					highlightPattern: filterPattern
 																				),
 																				highlight: newPostIds.contains(post.id),
 																				onDoubleTap: _makeOnDoubleTap(post.id)
