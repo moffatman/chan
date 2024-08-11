@@ -7,13 +7,11 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
-import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 class SelectablePostPage extends StatelessWidget {
 	final PostSpanZoneData zone;
@@ -84,21 +82,6 @@ class SelectablePostPage extends StatelessWidget {
 												)
 											],
 											...editableTextState.contextMenuButtonItems,
-											ContextMenuButtonItem(
-												onPressed: () {
-													Share.share(
-														editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text),
-														sharePositionOrigin: null
-													);
-												},
-												label: 'Share'
-											),
-											ContextMenuButtonItem(
-												onPressed: () => openBrowser(context, Uri.https('google.com', '/search', {
-													'q': editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text)
-												})),
-												label: 'Google'
-											),
 											ContextMenuButtonItem(
 												onPressed: () {
 													final text = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
