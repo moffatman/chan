@@ -457,7 +457,7 @@ class SavedTheme {
 			bodyColor: primaryColor,
 			displayColor: primaryColor,
 			decorationColor: primaryColor,
-			fontFamily: Persistence.settings.textStyle.fontFamily ?? (platformIsMaterial ? 'Roboto' : '.SF Pro Text')
+			fontFamily: Persistence.settings.textStyle.fontFamily ?? (platformIsMaterial ? 'Roboto' : 'CupertinoSystemText')
 		);
 		return ThemeData.from(
 			colorScheme: colorScheme,
@@ -1665,8 +1665,10 @@ class SavedSettings extends HiveObject {
 
 	TextStyle get textStyle {
 		if (fontFamily == null) {
-			return const TextStyle(
-				fontFamily: '.SF Pro Text'
+			return platformIsMaterial ? const TextStyle(
+				fontFamily: 'Roboto'
+			) :const TextStyle(
+				fontFamily: 'CupertinoSystemText'
 			);
 		}
 		String name = fontFamily!;
