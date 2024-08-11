@@ -544,7 +544,19 @@ class PostRow extends StatelessWidget {
 														return Padding(
 															padding: const EdgeInsets.only(right: 12),
 															child: AdaptiveIconButton(
-																icon: const Icon(CupertinoIcons.ellipsis),
+																icon: SelectionContainer.disabled(
+																	child: Text.rich(
+																		TextSpan(
+																			text: String.fromCharCode(CupertinoIcons.ellipsis.codePoint),
+																			style: TextStyle(
+																				fontSize: 24.0,
+																				fontFamily: CupertinoIcons.ellipsis.fontFamily,
+																				package: CupertinoIcons.ellipsis.fontPackage,
+																				height: 0.7
+																			),
+																		),
+																	),
+																),
 																minSize: 0,
 																padding: const EdgeInsets.symmetric(horizontal: 4),
 																onPressed: zone.mode == ContextMenuHintMode.longPressDisabled ? () {
