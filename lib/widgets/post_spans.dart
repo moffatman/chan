@@ -780,28 +780,26 @@ class PostQuoteLinkSpan extends PostSpan {
 					)
 				);
 				return (WidgetSpan(
-					child: IntrinsicHeight(
-						child: Builder(
-							builder: (context) {
-								if (span.$3) {
-									zone.registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
-								}
-								else if (zone.style == PostSpanZoneStyle.tree) {
-									zone.registerConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, () {
-										return zone.isPostOnscreen?.call(postId) != true;
-									}, span.$2.onTap ?? () {});
-								}
-								return TweenAnimationBuilder(
-									tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
-									duration: zone.highlightQuoteLinkId != postId ? const Duration(milliseconds: 750) : const Duration(milliseconds: 250),
-									curve: Curves.ease,
-									builder: (context, c, child) => c == Colors.transparent ? popup : ColorFiltered(
-										colorFilter: ColorFilter.mode(c ?? Colors.transparent, BlendMode.srcATop),
-										child: popup
-									)
-								);
+					child: Builder(
+						builder: (context) {
+							if (span.$3) {
+								zone.registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
 							}
-						)
+							else if (zone.style == PostSpanZoneStyle.tree) {
+								zone.registerConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, () {
+									return zone.isPostOnscreen?.call(postId) != true;
+								}, span.$2.onTap ?? () {});
+							}
+							return TweenAnimationBuilder(
+								tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
+								duration: zone.highlightQuoteLinkId != postId ? const Duration(milliseconds: 750) : const Duration(milliseconds: 250),
+								curve: Curves.ease,
+								builder: (context, c, child) => c == Colors.transparent ? popup : ColorFiltered(
+									colorFilter: ColorFilter.mode(c ?? Colors.transparent, BlendMode.srcATop),
+									child: popup
+								)
+							);
+						}
 					)
 				), span.$2);
 			}
