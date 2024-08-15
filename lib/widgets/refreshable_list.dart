@@ -2439,7 +2439,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							pinned = true;
 							pinnedValues.add(RefreshableListItem(
 								item: item,
-								id: widget.treeAdapter?.getId(item) ?? 0,
+								id: item_.id,
 								highlighted: result.type.highlight,
 								pinned: true,
 								state: this
@@ -2455,7 +2455,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (result.type.hide) {
 							filteredValues.add(RefreshableListItem(
 								item: item,
-								id: widget.treeAdapter?.getId(item) ?? 0,
+								id: item_.id,
 								filterReason: result.reason,
 								state: this
 							));
@@ -2463,7 +2463,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						else if (!pinned) {
 							values.add(RefreshableListItem(
 								item: item,
-								id: widget.treeAdapter?.getId(item) ?? 0,
+								id: item_.id,
 								highlighted: result.type.highlight,
 								filterCollapsed: result.type.collapse,
 								state: this
@@ -2474,7 +2474,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 				values.add(RefreshableListItem(
 					item: item,
-					id: widget.treeAdapter?.getId(item) ?? 0,
+					id: item_?.id ?? widget.treeAdapter?.getId(item) ?? 0,
 					state: this
 				));
 			}
@@ -2831,6 +2831,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														childCount: values.length * 2,
 														findChildIndexCallback: (key) {
 															if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
+																if (key.value.thisId == 0) {
+																	// Items not really keyed
+																	return null;
+																}
 																final idx = values.indexWhere(
 																	(other) => identical(key.value, other._key) || key.value == other._key
 																) * 2;
@@ -2839,6 +2843,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																}
 															}
 															else if (key is ValueKey<_DividerKey>) {
+																if (key.value.key.thisId == 0) {
+																	// Items not really keyed
+																	return null;
+																}
 																final idx = values.indexWhere(
 																	(other) => identical(key.value.key, other._key) || key.value.key == other._key
 																) * 2;
