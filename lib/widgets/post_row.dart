@@ -1,9 +1,9 @@
-import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/delete_post.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/report_post.dart';
 import 'package:chan/services/reverse_image_search.dart';
@@ -732,24 +732,28 @@ class PostRow extends StatelessWidget {
 				)
 			);
 		}
+		final replyBoxZone = context.watch<ReplyBoxZone?>();
 		return ContextMenu(
 			backgroundColor: theme.backgroundColor,
 			enableLongPress: !withinSelectable,
+			contextMenuBuilderBuilder: replyBoxZone == null ? null : (getSelection) => makePostContextMenuBuilder(
+				zone: parentZone,
+				replyBoxZone: replyBoxZone,
+				context: context,
+				post: latestPost,
+				getSelection: getSelection
+			),
 			actions: [
-				if (site.supportsPosting && context.read<ReplyBoxZone?>() != null) ContextMenuAction(
+				if (site.supportsPosting && replyBoxZone != null) ContextMenuAction(
 					child: const Text('Reply'),
 					trailingIcon: CupertinoIcons.reply,
-					onPressed: () => context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id)
+					onPressed: () => replyBoxZone.onTapPostId(post.threadId, post.id)
 				),
 				ContextMenuAction(
-					child: const Text('Select text'),
-					trailingIcon: CupertinoIcons.selection_pin_in_out,
+					child: const Text('Quotelink all'),
+					trailingIcon: CupertinoIcons.reply_all,
 					onPressed: () {
-						WeakNavigator.push(context, SelectablePostPage(
-							post: latestPost,
-							zone: parentZone,
-							onQuoteText: (String text, {required bool includeBacklink}) => context.read<ReplyBoxZone>().onQuoteText(text, backlink: includeBacklink ? latestPost.identifier : null)
-						));
+						replyBoxZone?.onQuoteText(latestPost.span.buildText(), backlink: latestPost.identifier);
 					}
 				),
 				ContextMenuAction(
@@ -1057,7 +1061,23 @@ class PostRow extends StatelessWidget {
 						}
 					}
 				),
-				if (latestPost.attachments.any((a) => a.type.isImageSearchable)) ...buildImageSearchActions(context, () => whichAttachment(context, latestPost.attachments.where((a) => a.type.isImageSearchable).toList()))
+				if (latestPost.attachments.any((a) => a.type.isImageSearchable)) ContextMenuAction(
+					child: const Text('Search image'),
+					trailingIcon: Icons.image_search,
+					onPressed: () async {
+						final actions = buildImageSearchActions(context, () => whichAttachment(context, latestPost.attachments.where((a) => a.type.isImageSearchable).toList()));
+						await showAdaptiveDialog(
+							context: context,
+							builder: (context) => AdaptiveActionSheet(
+								actions: actions.toActionSheetActions(context),
+								cancelButton: AdaptiveActionSheetAction(
+									onPressed: () => Navigator.pop(context),
+									child: const Text('Cancel')
+								)
+							)
+						);
+					}
+				)
 			],
 			child: (replyIds.isNotEmpty) ? SliderBuilder(
 				popup: PostsPage(

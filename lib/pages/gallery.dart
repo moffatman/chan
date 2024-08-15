@@ -875,23 +875,7 @@ class _GalleryPageState extends State<GalleryPage> {
 														await showAdaptiveModalPopup(
 															context: context,
 															builder: (context) => AdaptiveActionSheet(
-																actions: actions.map((action) => AdaptiveActionSheetAction(
-																	onPressed: () async {
-																		Navigator.of(context).pop();
-																		try {
-																			await action.onPressed();
-																		}
-																		catch (e) {
-																			if (context.mounted) {
-																				alertError(context, e.toStringDio());
-																			}
-																		}
-																	},
-																	key: action.key,
-																	isDestructiveAction: action.isDestructiveAction,
-																	trailing: Icon(action.trailingIcon),
-																	child: action.child
-																)).toList(),
+																actions: actions.toActionSheetActions(context),
 																cancelButton: AdaptiveActionSheetAction(
 																	child: const Text('Cancel'),
 																	onPressed: () => Navigator.of(context, rootNavigator: true).pop()

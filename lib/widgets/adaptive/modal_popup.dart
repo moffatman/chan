@@ -1,5 +1,7 @@
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/util.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -138,4 +140,24 @@ class AdaptiveActionSheetAction extends StatelessWidget {
 			)
 		);
 	}
+}
+
+extension ToActionSheetActions on List<ContextMenuAction> {
+	List<AdaptiveActionSheetAction> toActionSheetActions(BuildContext context) => map((action) => AdaptiveActionSheetAction(
+		onPressed: () async {
+			Navigator.of(context).pop();
+			try {
+				await action.onPressed();
+			}
+			catch (e) {
+				if (context.mounted) {
+					alertError(context, e.toStringDio());
+				}
+			}
+		},
+		key: action.key,
+		isDestructiveAction: action.isDestructiveAction,
+		trailing: Icon(action.trailingIcon),
+		child: action.child
+	)).toList(growable: false);
 }
