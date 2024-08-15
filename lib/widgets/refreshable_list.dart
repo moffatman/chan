@@ -341,11 +341,22 @@ class RefreshableListItem<T extends Object> {
 			 _state = state;
 
 	@override
-	String toString() => 'RefreshableListItem<$T>(${[
+	String toString({bool long = false}) => 'RefreshableListItem<$T>(${[
 		id.toString(),
 		if (representsStubChildren) 'representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}',
 		if (representsUnloadedPages.isNotEmpty) 'representsUnloadedPages: $representsUnloadedPages',
-		if (treeDescendantIds.isNotEmpty) 'treeDescendantIds: $treeDescendantIds)'
+		if (treeDescendantIds.isNotEmpty) 'treeDescendantIds: $treeDescendantIds)',
+		if (long) ...[
+			'item: $item',
+			if (representsUnloadedPages.isNotEmpty) 'representsUnloadedPages: $representsUnloadedPages',
+			if (highlighted) 'highlighted',
+			if (pinned) 'pinned',
+			if (filterCollapsed) 'filterCollapsed',
+			if (filterReason != null) 'filterReason: $filterReason',
+			if (parentIds.isNotEmpty) 'parentIds: $parentIds',
+			if (treeDescendantIds.isNotEmpty) 'treeDescendantIds: $treeDescendantIds',
+			if (_depth != null) '_depth: $_depth'
+		]
 	].join(', ')})';
 
 	@override
@@ -866,18 +877,18 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	}
 }
 
-class _DividerKey<T extends Object> {
-	final RefreshableListItem<T> item;
-	const _DividerKey(this.item);
+class _DividerKey {
+	final _RefreshableTreeItemsCacheKey key;
+	const _DividerKey(this.key);
 
 	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is _DividerKey &&
-		other.item == item;
+		other.key == key;
 	
 	@override
-	int get hashCode => item.hashCode;
+	int get hashCode => key.hashCode;
 }
 
 class _Divider<T extends Object> extends StatelessWidget {
@@ -1837,7 +1848,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 				else {
 					child = AnimatedCrossFade(
-						key: ValueKey(value),
+						key: ValueKey(value._key),
 						duration: _treeAnimationDuration,
 						sizeCurve: Curves.ease,
 						firstCurve: Curves.ease,
@@ -1949,10 +1960,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				child: child
 			);
 		}
-		child = KeyedSubtree(
-			key: ValueKey(value),
-			child: child
-		);
 		return child;
 	}
 
@@ -2758,6 +2765,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													id: identityHashCode(originalList),
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, i) => Builder(
+															key: ValueKey(values[i]._key),
 															builder: (context) {
 																widget.controller?.registerItem(i, values[i], context);
 																final range = widget.controller?.useDummyItemsInRange;
@@ -2778,6 +2786,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													gridDelegate: widget.gridDelegate!,
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, i) => Builder(
+															key: ValueKey(values[i]._key),
 															builder: (context) {
 																widget.controller?.registerItem(i, values[i], context);
 																final range = widget.controller?.useDummyItemsInRange;
@@ -2798,7 +2807,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, childIndex) {
 															return Builder(
-																key: ValueKey(values[childIndex]),
+																key: ValueKey(values[childIndex]._key),
 																builder: (context) {
 																	widget.controller?.registerItem(childIndex, values[childIndex], context);
 																	final range = widget.controller?.useDummyItemsInRange;
@@ -2809,7 +2818,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														separatorBuilder: (context, childIndex) {
 															final range = widget.controller?.useDummyItemsInRange;
 															return _Divider(
-																key: ValueKey(_DividerKey(values[childIndex])),
+																key: ValueKey(_DividerKey(values[childIndex]._key)),
 																dummy: range != null && childIndex < range.$2 && childIndex > range.$1,
 																itemBefore: values[childIndex],
 																itemAfter: (childIndex < values.length - 1) ? values[childIndex + 1] : null,
@@ -2821,14 +2830,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
 														childCount: values.length * 2,
 														findChildIndexCallback: (key) {
-															if (key is ValueKey<RefreshableListItem<T>>) {
-																final idx = values.indexOf(key.value) * 2;
+															if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
+																final idx = values.indexWhere(
+																	(other) => identical(key.value, other._key) || key.value == other._key
+																) * 2;
 																if (idx >= 0) {
 																	return idx;
 																}
 															}
-															else if (key is ValueKey<_DividerKey<T>>) {
-																final idx = values.indexOf(key.value.item) * 2;
+															else if (key is ValueKey<_DividerKey>) {
+																final idx = values.indexWhere(
+																	(other) => identical(key.value.key, other._key) || key.value.key == other._key
+																) * 2;
 																if (idx >= 0) {
 																	return idx + 1;
 																}
@@ -2891,6 +2904,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														gridDelegate: widget.staggeredGridDelegate!,
 														delegate: SliverDontRebuildChildBuilderDelegate(
 															(context, i) => Stack(
+																key: ValueKey(filteredValues[i]._key),
 																children: [
 																	Provider.value(
 																		value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
@@ -2924,6 +2938,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														gridDelegate: widget.gridDelegate!,
 														delegate: SliverDontRebuildChildBuilderDelegate(
 															(context, i) => Stack(
+																key: ValueKey(filteredValues[i]._key),
 																children: [
 																	Provider.value(
 																		value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
@@ -2956,6 +2971,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														delegate: SliverDontRebuildChildBuilderDelegate(
 															(context, childIndex) {
 																return Column(
+																	key: ValueKey(filteredValues[childIndex]._key),
 																	mainAxisSize: MainAxisSize.min,
 																	crossAxisAlignment: CrossAxisAlignment.stretch,
 																	children: [
