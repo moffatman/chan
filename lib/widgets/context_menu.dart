@@ -199,6 +199,9 @@ class _ContextMenuState extends State<ContextMenu> {
 					on Exception {
 						// Ignore, probably _lifecycleState wrong
 					}
+					on AssertionError {
+						// Ignore, probably _lifecycleState wrong
+					}
 				}
 				return FixedWidthLayoutBox(
 					width: width ?? estimateWidth(context),
