@@ -76,7 +76,7 @@ class _TabListTile extends StatelessWidget {
 				]
 			),
 			onTap: onTap,
-			title: Text(data.longTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+			title: Text(data.longTitle, maxLines: 2, overflow: TextOverflow.ellipsis),
 			subtitle: (currentImageboard == null || data.threadState == null || currentThread == null) ? null : Padding(
 				padding: const EdgeInsets.only(top: 2),
 				child: ThreadCounters(
