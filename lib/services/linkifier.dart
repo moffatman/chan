@@ -101,8 +101,7 @@ class LooseUrlLinkifier extends Linkifier {
                 // ]($link)
                 || (
                   (match.group(1)?.endsWith('](') ?? false)
-                  && match.end < element.text.length
-                  && element.text[match.end] == ')'
+                  && element.text[match.end - 1] == ')'
                 )
               )
         ) {

@@ -44,6 +44,13 @@ void main() {
 			expect(link.name, 'example1.com/asdf(2)');
 		});
 
+		test('markdown link 2', () {
+			final r = SiteReddit.makeSpan('', 0, '[second reddit post](https://www.reddit.com/r/toronto/s/tNWH3wwQsU)');
+			final link = r.children.single as PostLinkSpan;
+			expect(link.url, 'https://www.reddit.com/r/toronto/s/tNWH3wwQsU');
+			expect(link.name, 'second reddit post');
+		});
+
 		test('escapes in description', () {
 			final r = SiteReddit.makeSpan('', 0, '[https://www.foreignaffairs.com/united-states/sources-american-power-biden-jake-sullivan?check\\_logged\\_in=1&utm\\_medium=promo\\_email&utm\\_source=lo\\_flows&utm\\_campaign=registered\\_user\\_welcome&utm\\_term=email\\_1&utm\\_content=20240225](https://www.foreignaffairs.com/united-states/sources-american-power-biden-jake-sullivan?check_logged_in=1&utm_medium=promo_email&utm_source=lo_flows&utm_campaign=registered_user_welcome&utm_term=email_1&utm_content=20240225)');
 			final link = r.children.single as PostLinkSpan;
