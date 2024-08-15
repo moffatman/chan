@@ -49,7 +49,7 @@ class CupertinoContextMenuAction2 extends StatefulWidget {
 
 class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2> {
   static const Color _kBackgroundColor = CupertinoDynamicColor.withBrightness(
-    color: Color(0xFFEEEEEE),
+    color: Color(0xFFF1F1F1),
     darkColor: Color(0xFF212122),
   );
   static const Color _kBackgroundColorPressed = CupertinoDynamicColor.withBrightness(
@@ -58,7 +58,7 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
   );
   static const TextStyle _kActionSheetActionStyle = TextStyle(
     inherit: false,
-    fontSize: 18.0,
+    fontSize: 16.0,
     fontWeight: FontWeight.w400,
     color: CupertinoColors.black,
     textBaseline: TextBaseline.alphabetic,
@@ -120,9 +120,11 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
                 ? CupertinoDynamicColor.resolve(_kBackgroundColorPressed, context)
                 : CupertinoDynamicColor.resolve(_kBackgroundColor, context),
             ),
-            padding: const EdgeInsets.symmetric(
-              vertical: 12.0,
-              horizontal: 10.0,
+            padding: const EdgeInsets.only(
+              top: 8,
+              bottom: 8,
+              left: 15.5,
+              right: 17.5,
             ),
             child: DefaultTextStyle(
               style: _textStyle,
@@ -136,7 +138,7 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
                     Icon(
                       widget.trailingIcon,
                       color: _textStyle.color,
-                      size: 22,
+                      size: 21.0,
                     ),
                 ],
               ),
@@ -1364,31 +1366,40 @@ class _ContextMenuRouteStaticState extends State<_ContextMenuRouteStatic> with T
 
     return SafeArea(
       bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.all(_kPadding),
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: GestureDetector(
+      child: Stack(
+        children: [
+          GestureDetector(
             behavior: HitTestBehavior.translucent,
             onPanEnd: _onPanEnd,
             onPanStart: _onPanStart,
             onPanUpdate: _onPanUpdate,
-            child: AnimatedBuilder(
-              animation: _moveController,
-              builder: _buildAnimation,
-              child: widget.orientation == Orientation.portrait
-                ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: children,
-                )
-                : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: children,
-                ),
+            child: const SizedBox.expand()
+          ),
+          Padding(
+            padding: const EdgeInsets.only(
+              top: _kPadding,
+              left: _kPadding,
+              right: _kPadding,
+            ),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: AnimatedBuilder(
+                animation: _moveController,
+                builder: _buildAnimation,
+                child: widget.orientation == Orientation.portrait
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: children,
+                  )
+                  : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: children,
+                  ),
+              ),
             ),
           ),
-        ),
-      ),
+        ]
+      )
     );
   }
 }
@@ -1428,7 +1439,7 @@ class _ContextMenuSheet extends StatelessWidget {
                         border: Border(
                           top: BorderSide(
                             color: CupertinoDynamicColor.resolve(_borderColor, context),
-                            width: 0.5,
+                            width: 0.4,
                           )
                         ),
                       ),
@@ -1438,7 +1449,7 @@ class _ContextMenuSheet extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: MediaQuery.paddingOf(context).bottom),
+            SizedBox(height: MediaQuery.paddingOf(context).bottom + _ContextMenuRouteStaticState._kPadding),
           ],
         ),
       ),
