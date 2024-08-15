@@ -6,7 +6,6 @@ import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -16,13 +15,11 @@ import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
-import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/pages/overscroll_modal.dart';
@@ -74,7 +71,6 @@ class _PostsPageState extends State<PostsPage> {
 	int _forceRebuildId = 0;
 	final List<_PostsPageItem> replies = [];
 	Map<Post, BuildContext> postContexts = {};
-	SelectedContent? _lastSelection;
 
 	@override
 	void initState() {
@@ -192,49 +188,6 @@ class _PostsPageState extends State<PostsPage> {
 						isRepliesForPostThreadState?.postIdsToStartRepliesAtBottom.data.remove(isRepliesForPostId);
 					}
 				},
-				selectionAreaBuilder: (child) => Builder(
-					builder: (context) => SelectionArea(
-						onSelectionChanged: (selection) => _lastSelection = selection,
-						contextMenuBuilder: makePostContextMenuBuilder(
-							context: context,
-							zone: subzone,
-							replyBoxZone: context.watch<ReplyBoxZone>(),
-							getSelection: () => _lastSelection,
-							findPost: (globalY1, globalY2) {
-								for (final pair in postContexts.entries) {
-									if (!pair.value.mounted) {
-										continue;
-									}
-									final box = pair.value.findRenderObject() as RenderBox?;
-									if (box == null) {
-										continue;
-									}
-									final localToScrollable = box.getTransformTo(Scrollable.of(pair.value).context.findRenderObject());
-									final scrollableToLocal = Matrix4.copy(localToScrollable)..invert();
-									final size = box.size;
-									final localY1 = MatrixUtils.transformPoint(scrollableToLocal, Offset(0, globalY1)).dy;
-									final localY2 = MatrixUtils.transformPoint(scrollableToLocal, Offset(0, globalY2)).dy;
-									final containsPrimary = 0 <= localY1 && localY1 <= size.height;
-									final containsSecondary = 0 <= localY2 && localY2 <= size.height;
-									if (containsPrimary && containsSecondary) {
-										return (
-											post: pair.key,
-											startOffset: MatrixUtils.transformPoint(localToScrollable, Offset.zero).dy,
-											context: pair.value,
-											parentIds: []
-										);
-									}
-									else if (containsPrimary || containsSecondary) {
-										// It must span multiple posts. No point searching any further.
-										return null;
-									}
-								}
-								return null;
-							}
-						),
-						child: child
-					)
-				),
 				sliver: SliverList(
 					delegate: SliverDontRebuildChildBuilderDelegate(
 						addRepaintBoundaries: false,

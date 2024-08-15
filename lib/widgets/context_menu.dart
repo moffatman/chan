@@ -17,6 +17,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 class ContextMenuAction {
@@ -63,6 +64,7 @@ class ContextMenu extends StatefulWidget {
 	final Color? backgroundColor;
 	final Rect Function(Rect)? trimStartRect;
 	final bool enableLongPress;
+	final SelectableRegionContextMenuBuilder Function(SelectedContent? Function())? contextMenuBuilderBuilder;
 
 	const ContextMenu({
 		required this.actions,
@@ -72,6 +74,7 @@ class ContextMenu extends StatefulWidget {
 		this.backgroundColor,
 		this.trimStartRect,
 		this.enableLongPress = true,
+		this.contextMenuBuilderBuilder,
 		Key? key
 	}) : super(key: key);
 
@@ -83,6 +86,7 @@ class _ContextMenuState extends State<ContextMenu> {
 	OverlayEntry? _overlayEntry;
 	Offset? lastTap;
 	final _cupertinoKey = GlobalKey<CupertinoContextMenuState2>(debugLabel: '_ContextMenuState._cupertinoKey');
+	SelectedContent? _lastSelection;
 
 	void _onLongPress({Rect? from}) async {
 		final l = ((lastTap?.dx ?? 0) / Persistence.settings.interfaceScale) + 5;
@@ -176,7 +180,7 @@ class _ContextMenuState extends State<ContextMenu> {
 		Widget previewBuilder(BuildContext context) => MultiProvider(
 			providers: [
 				// At least one provider is required
-				Provider<ContextMenuHint>.value(value: ContextMenuHint._(this, ContextMenuHintMode.withinPreview)),
+				Provider<ContextMenuHint>.value(value: ContextMenuHint._(this, widget.enableLongPress ? ContextMenuHintMode.longPressEnabled : ContextMenuHintMode.withinPreview)),
 				if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
 				if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
 				if (site != null) Provider<ImageboardSite>.value(value: site),
@@ -203,10 +207,17 @@ class _ContextMenuState extends State<ContextMenu> {
 						// Ignore, probably _lifecycleState wrong
 					}
 				}
+				final child = Builder(
+					builder: previewBuilder
+				);
 				return FixedWidthLayoutBox(
 					width: width ?? estimateWidth(context),
-					child: Builder(
-						builder: previewBuilder
+					child: widget.contextMenuBuilderBuilder == null ? child : SelectionArea(
+						contextMenuBuilder: widget.contextMenuBuilderBuilder?.call(() => _lastSelection),
+						onSelectionChanged: (selection) => _lastSelection = selection,
+						child: SingleChildScrollView(
+							child: child
+						)
 					)
 				);
 			},

@@ -1192,18 +1192,43 @@ class RenderFixedWidthLayoutBox extends RenderProxyBox {
     }
   }
 
+	Matrix4 get _effectiveTransform {
+		final scale = size.width / child!.size.width;
+		return Matrix4.identity()..scale(scale, scale, 1.0);
+	}
+
 	@override
   void paint(PaintingContext context, Offset offset) {
     if (child != null) {
-			final scale = size.width / child!.size.width;
 			layer = context.pushTransform(
 				needsCompositing,
 				offset,
-				Matrix4.identity()..scale(scale, scale, 1.0),
+				_effectiveTransform,
 				(context, offset) => context.paintChild(child!, offset),
 				oldLayer: layer is TransformLayer ? layer as TransformLayer? : null
 			);
     }
+  }
+
+	@override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    return hitTestChildren(result, position: position);
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return result.addWithPaintTransform(
+      transform: _effectiveTransform,
+      position: position,
+      hitTest: (BoxHitTestResult result, Offset position) {
+        return super.hitTestChildren(result, position: position);
+      },
+    );
+  }
+
+  @override
+  void applyPaintTransform(RenderBox child, Matrix4 transform) {
+    transform.multiply(_effectiveTransform);
   }
 }
 

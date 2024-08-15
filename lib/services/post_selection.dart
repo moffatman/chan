@@ -12,60 +12,19 @@ SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 	required PostSpanZoneData zone,
 	required ReplyBoxZone replyBoxZone,
 	required BuildContext context,
-	required ({Post post, List<int> parentIds, BuildContext context, double startOffset})? Function(double globalY1, double globalY2) findPost,
+	required Post post,
 	required SelectedContent? Function() getSelection
 }) {
 	return (contextMenuContext, selectableRegionState) {
-		final listItem = findPost(selectableRegionState.contextMenuAnchors.primaryAnchor.dy, switch (selectableRegionState.contextMenuAnchors.secondaryAnchor?.dy) {
-			// Subtract 1 pixel as for some reason it goes a little below
-			double y => y - 1,
-			// Fallback to primary anchor
-			null => selectableRegionState.contextMenuAnchors.primaryAnchor.dy
-		});
-		Post? post = listItem?.post;
-		if (listItem != null) {
-			final primaryAnchorInListItem = selectableRegionState.contextMenuAnchors.primaryAnchor - Offset(0, listItem.startOffset);
-			final secondaryAnchorInListItem = switch (selectableRegionState.contextMenuAnchors.secondaryAnchor) {
-				Offset anchor => anchor - Offset(0, listItem.startOffset + 1),
-				null => primaryAnchorInListItem
-			};
-			PostSpanZoneData childZone = zone;
-			for (final id in listItem.parentIds) {
-				childZone = childZone.childZoneFor(id, style: zone.style);
-			}
-			for (final pair in childZone.expandedPostContexts) {
-				final box = pair.value.findRenderObject() as RenderBox?;
-				if (box == null) {
-					continue;
-				}
-				final transform = box.getTransformTo(listItem.context.findRenderObject())..invert();
-				final primaryAnchorLocal = MatrixUtils.transformPoint(transform, primaryAnchorInListItem);
-				final secondaryAnchorLocal = MatrixUtils.transformPoint(transform, secondaryAnchorInListItem);
-				final size = box.size;
-				// Only compare dy. dx selection points can be bugged. And ExpandingPost is always full row.
-				final containsPrimary = 0 <= primaryAnchorLocal.dy && primaryAnchorLocal.dy <= size.height;
-				final containsSecondary = 0 <= secondaryAnchorLocal.dy && secondaryAnchorLocal.dy <= size.height;
-				if (containsPrimary && containsSecondary) {
-					// Selection contained within ExpandingPost
-					post = zone.findPost(pair.key.postId);
-					break;
-				}
-				else if (containsPrimary || containsSecondary) {
-					// Selection partially contained within ExpandingPost
-					post = null;
-					break;
-				}
-				// No intersection
-			}
-		}
 		return AdaptiveTextSelectionToolbar.buttonItems(
 			anchors: selectableRegionState.contextMenuAnchors,
 			buttonItems: [
-				if (zone.imageboard.site.supportsPosting && zone.primaryThreadState?.thread?.isArchived == false) ...[
-					if (post != null) ContextMenuButtonItem(
+				if (zone.imageboard.site.supportsPosting) ...[
+					ContextMenuButtonItem(
 						onPressed: () {
-							replyBoxZone.onQuoteText(getSelection()?.plainText ?? '', backlink: post?.identifier);
+							replyBoxZone.onQuoteText(getSelection()?.plainText ?? '', backlink: post.identifier);
 							selectableRegionState.hideToolbar();
+							Navigator.of(contextMenuContext, rootNavigator: true).pop();
 						},
 						label: 'Quotelink'
 					),
@@ -73,6 +32,7 @@ SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 						onPressed: () {
 							replyBoxZone.onQuoteText(getSelection()?.plainText ?? '', backlink: null);
 							selectableRegionState.hideToolbar();
+							Navigator.of(contextMenuContext, rootNavigator: true).pop();
 						},
 						label: 'Quote'
 					)
@@ -84,7 +44,7 @@ SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 						final future = translateHtml(text, toLanguage: Settings.instance.translationTargetLanguage);
 						selectableRegionState.hideToolbar();
 						showAdaptiveDialog(
-							context: context,
+							context: contextMenuContext,
 							barrierDismissible: true,
 							builder: (context) => AdaptiveAlertDialog(
 								title: const Text('Translation'),
