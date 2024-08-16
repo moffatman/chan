@@ -61,7 +61,7 @@ class SiteLainchanOrg extends SiteLainchan {
 		(other.defaultUsername == defaultUsername);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, boardsPath, name, platformUserAgents, archives, faviconPath, defaultUsername);
+	int get hashCode => Object.hash(baseUrl, basePath, boardsPath, name, Object.hashAll(platformUserAgents.values), Object.hashAll(archives), faviconPath, defaultUsername);
 
 	@override
 	bool get supportsPushNotifications => false;

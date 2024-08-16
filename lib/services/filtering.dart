@@ -545,7 +545,7 @@ class IDFilter implements Filter {
 		listEquals(other.showIds, showIds);
 
 	@override
-	int get hashCode => Object.hash(hideIds, showIds);
+	int get hashCode => Object.hash(Object.hashAll(hideIds), Object.hashAll(showIds));
 }
 
 class ThreadFilter implements Filter {
@@ -594,7 +594,7 @@ class ThreadFilter implements Filter {
 		listEquals(other.posterIds, posterIds);
 
 	@override
-	int get hashCode => Object.hash(hideIds, showIds, repliedToIds, posterIds);
+	int get hashCode => Object.hash(Object.hashAll(hideIds), Object.hashAll(showIds), Object.hashAll(repliedToIds), Object.hashAll(posterIds));
 }
 
 class MD5Filter implements Filter {
@@ -633,7 +633,7 @@ class MD5Filter implements Filter {
 		other.depth == depth;
 
 	@override
-	int get hashCode => Object.hash(md5s, applyToThreads, depth);
+	int get hashCode => Object.hash(Object.hashAllUnordered(md5s), applyToThreads, depth);
 }
 
 class FilterGroup<T extends Filter> implements Filter {
@@ -663,7 +663,7 @@ class FilterGroup<T extends Filter> implements Filter {
 		listEquals(other.filters, filters);
 
 	@override
-	int get hashCode => filters.hashCode;
+	int get hashCode => Object.hashAll(filters);
 }
 
 class DummyFilter implements Filter {

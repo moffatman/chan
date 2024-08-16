@@ -941,5 +941,5 @@ class SiteXenforo extends ImageboardSite {
 		mapEquals(other.platformUserAgents, platformUserAgents);
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, basePath, faviconPath, postsPerPage, platformUserAgents);
+	int get hashCode => Object.hash(name, baseUrl, basePath, faviconPath, postsPerPage, Object.hashAll(platformUserAgents.values));
 }

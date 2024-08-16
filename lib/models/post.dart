@@ -312,7 +312,7 @@ class Post implements Filterable {
 		other.flag != flag;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, isDeleted, attachments, name, hasOmittedReplies, flag);
+	int get hashCode => Object.hash(board, id, upvotes, isDeleted, Object.hashAll(attachments_), name, hasOmittedReplies, flag);
 }
 
 class PostIdentifier {

@@ -370,5 +370,5 @@ class FuukaArchive extends ImageboardSiteArchive {
 		listEquals(other.boards, boards);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, platformUserAgents, boards);
+	int get hashCode => Object.hash(baseUrl, name, Object.hashAll(platformUserAgents.values), Object.hashAll(boards ?? []));
 }

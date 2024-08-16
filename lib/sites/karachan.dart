@@ -517,5 +517,5 @@ class SiteKarachan extends ImageboardSite {
 		mapEquals(other.platformUserAgents, platformUserAgents);
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, captchaKey, defaultUsername, platformUserAgents);
+	int get hashCode => Object.hash(baseUrl, name, captchaKey, defaultUsername, Object.hashAll(platformUserAgents.values));
 }

@@ -299,10 +299,15 @@ class _TreeNode<T extends Object> {
 	bool operator == (Object o) =>
 		identical(this, o) ||
 		(o is _TreeNode<T>) &&
-		(o.item == item);
+		(o.item == item) &&
+		(o.id == id) &&
+		(o.hasOmittedReplies == hasOmittedReplies) &&
+		listEquals(o.children, children) &&
+		listEquals(o.stubChildIds, stubChildIds) &&
+		listEquals(o.parents, parents);
 
 	@override
-	int get hashCode => item.hashCode;
+	int get hashCode => Object.hash(item, id, hasOmittedReplies, Object.hashAll(children), Object.hashAll(stubChildIds), Object.hashAll(parents));
 }
 
 class RefreshableListItem<T extends Object> {
@@ -519,7 +524,7 @@ class _RefreshableTreeItemsCacheKey {
 		other.representsStubChildren == representsStubChildren;
 	
 	@override
-	int get hashCode => Object.hash(thisId, parentIds, representsStubChildren);
+	int get hashCode => Object.hash(thisId, Object.hashAll(parentIds), representsStubChildren);
 
 	@override
 	String toString() => '_RefreshableTreeItemsCacheKey(thisId: $thisId, parentIds: $parentIds, representsStubChildren: $representsStubChildren)';
@@ -2836,7 +2841,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																	return null;
 																}
 																final idx = values.indexWhere(
-																	(other) => identical(key.value, other._key) || key.value == other._key
+																	(other) => identical(key.value, other._key)
 																) * 2;
 																if (idx >= 0) {
 																	return idx;
@@ -2848,7 +2853,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																	return null;
 																}
 																final idx = values.indexWhere(
-																	(other) => identical(key.value.key, other._key) || key.value.key == other._key
+																	(other) => identical(key.value.key, other._key)
 																) * 2;
 																if (idx >= 0) {
 																	return idx + 1;

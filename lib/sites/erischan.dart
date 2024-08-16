@@ -35,5 +35,5 @@ class SiteErischan extends SiteFrenschan {
 		listEquals(other.archives, archives);
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, platformUserAgents, archives);
+	int get hashCode => Object.hash(baseUrl, name, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
 }

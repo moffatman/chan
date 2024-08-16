@@ -333,7 +333,7 @@ class ThreadIdentifier {
 		other.board == board &&
 		other.id == id;
 	@override
-	int get hashCode => board.hashCode * 31 + id.hashCode;
+	int get hashCode => Object.hash(board, id);
 }
 
 class BoardThreadOrPostIdentifier {

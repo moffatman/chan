@@ -627,7 +627,7 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 		other.stickyCloudflare == stickyCloudflare;
 	
 	@override
-	int get hashCode => Object.hash(challengeUrl, challengeHeaders, possibleLetterCounts, stickyCloudflare);
+	int get hashCode => Object.hash(challengeUrl, Object.hashAll(challengeHeaders.values), Object.hashAll(possibleLetterCounts), stickyCloudflare);
 }
 
 class SecurimageCaptchaRequest extends CaptchaRequest {
@@ -1070,7 +1070,7 @@ class ImageboardSearchOptions {
 		other.withMedia == withMedia &&
 		setEquals(other.supportedPostTypeFilters, supportedPostTypeFilters);
 	@override
-	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, supportedPostTypeFilters);
+	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, Object.hashAllUnordered(supportedPostTypeFilters));
 
 	bool get hasOptions => name || imageMD5 || supportedPostTypeFilters.length > 1 || date || subject || trip || isDeleted || withMedia;
 }
@@ -1272,7 +1272,7 @@ class ImageboardPoll {
 		listEquals(other.rows, rows);
 	
 	@override
-	int get hashCode => Object.hash(title, rows);
+	int get hashCode => Object.hash(title, Object.hashAll(rows));
 }
 
 abstract class ImageboardSiteArchive {

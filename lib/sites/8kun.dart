@@ -118,5 +118,5 @@ class Site8Kun extends SiteLainchan2 {
 		listEquals(other.boards, boards);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, sysUrl, imageUrl, name, platformUserAgents, archives, faviconPath, defaultUsername, formBypass, imageThumbnailExtension, boardsPath, faviconPath, boards);
+	int get hashCode => Object.hash(baseUrl, basePath, sysUrl, imageUrl, name, Object.hashAll(platformUserAgents.values), Object.hashAll(archives), faviconPath, defaultUsername, Object.hashAll(formBypass.keys), imageThumbnailExtension, boardsPath, faviconPath, Object.hashAll(boards ?? []));
 }

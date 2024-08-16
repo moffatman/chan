@@ -80,7 +80,7 @@ class SiteFrenschan extends SiteSoyjak {
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, platformUserAgents, archives);
+	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
 
 	@override
 	String get res => 'res';

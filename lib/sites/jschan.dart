@@ -411,5 +411,5 @@ class SiteJsChan extends ImageboardSite {
 		deletingCaptcha == other.deletingCaptcha;
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, defaultUsername, faviconPath, platformUserAgents, postingCaptcha, deletingCaptcha);
+	int get hashCode => Object.hash(baseUrl, name, defaultUsername, faviconPath, Object.hashAll(platformUserAgents.values), postingCaptcha, deletingCaptcha);
 }

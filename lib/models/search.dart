@@ -112,5 +112,5 @@ class ImageboardArchiveSearchQuery {
 																	 && (other.subject == subject);
 
 	@override
-	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, boards, md5, deletionStatusFilter, imageboardKey, name, trip, subject);
+	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, Object.hashAll(boards), md5, deletionStatusFilter, imageboardKey, name, trip, subject);
 }

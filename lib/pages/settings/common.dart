@@ -173,7 +173,7 @@ class _IndentedGroup extends SettingWidget {
 		listEquals(other.settings, settings);
 	
 	@override
-	int get hashCode => settings.hashCode;
+	int get hashCode => Object.hashAll(settings);
 }
 
 class CustomMutableSettingWidget<T> extends SettingWidget {
@@ -436,7 +436,7 @@ class SegmentedSettingWidget<T extends Object> extends StandardImmutableSettingW
 		mapEquals(other.children, children);
 	
 	@override
-	int get hashCode => Object.hash(icon, iconBuilder, description, setting, helpText, helpTextBuilder, disabled, subsetting, children);
+	int get hashCode => Object.hash(icon, iconBuilder, description, setting, helpText, helpTextBuilder, disabled, subsetting, Object.hashAll(children.keys), Object.hashAll(children.values));
 }
 
 class SteppableSettingWidget<T extends num> extends StandardImmutableSettingWidget<T> {
@@ -1107,7 +1107,7 @@ class ImageboardScopedSettingGroup extends SettingWidget {
 		listEquals(other.settings, settings);
 	
 	@override
-	int get hashCode => Object.hash(title, settings);
+	int get hashCode => Object.hash(title, Object.hashAll(settings));
 }
 
 class SettingHiding extends SettingWidget {

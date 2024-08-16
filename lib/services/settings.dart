@@ -221,7 +221,7 @@ class ContentSettings {
 		setEquals(other.siteKeys, siteKeys);
 
 	@override
-	int get hashCode => Object.hash(images, nsfwBoards, nsfwImages, nsfwText, siteKeys);
+	int get hashCode => Object.hash(images, nsfwBoards, nsfwImages, nsfwText, Object.hashAllUnordered(siteKeys));
 }
 
 class ColorFields {

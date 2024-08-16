@@ -72,5 +72,5 @@ class ImageboardMultiFlag implements Flag {
 		listEquals(other.parts, parts);
 	
 	@override
-	int get hashCode => parts.hashCode;
+	int get hashCode => Object.hashAll(parts);
 }

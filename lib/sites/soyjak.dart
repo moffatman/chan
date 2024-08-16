@@ -49,7 +49,7 @@ class SiteSoyjak extends SiteLainchanOrg {
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, captchaQuestion, boardsWithCaptcha, faviconPath, defaultUsername, platformUserAgents, archives);
+	int get hashCode => Object.hash(baseUrl, name, captchaQuestion, Object.hashAll(boardsWithCaptcha ?? []), faviconPath, defaultUsername, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
 
 	@override
 	String get res => 'thread';

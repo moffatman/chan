@@ -21,7 +21,7 @@ class CompressedTag implements CompressedNode {
 		(other.localName == localName) &&
 		mapEquals(other.attributes, attributes);
 	@override
-	int get hashCode => Object.hash(localName, attributes);
+	int get hashCode => Object.hash(localName, Object.hashAll(attributes.values));
 	@override
 	String toString() => 'CompressedTag(<$localName${attributes.isNotEmpty ? ' ' : ''}${attributes.entries.map((a) => '${a.key}="${a.value}"').join(' ')}>)';
 }

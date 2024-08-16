@@ -528,5 +528,5 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		(other.hasAttachmentRateLimit == hasAttachmentRateLimit);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, staticUrl, useRandomUseragent, platformUserAgents, boards, hasAttachmentRateLimit);
+	int get hashCode => Object.hash(name, baseUrl, staticUrl, useRandomUseragent, Object.hashAll(platformUserAgents.values), Object.hashAll(boards ?? []), hasAttachmentRateLimit);
 }

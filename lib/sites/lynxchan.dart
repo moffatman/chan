@@ -469,5 +469,5 @@ class SiteLynxchan extends ImageboardSite {
 		other.defaultUsername == defaultUsername;
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, platformUserAgents, archives, boards, defaultUsername);
+	int get hashCode => Object.hash(name, baseUrl, Object.hashAll(platformUserAgents.values), Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername);
 }

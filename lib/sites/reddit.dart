@@ -1500,5 +1500,5 @@ class SiteReddit extends ImageboardSite {
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(platformUserAgents, archives);
+	int get hashCode => Object.hash(Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
 }

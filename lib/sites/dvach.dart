@@ -283,5 +283,5 @@ class SiteDvach extends ImageboardSite {
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, platformUserAgents, archives);
+	int get hashCode => Object.hash(name, baseUrl, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
 }
