@@ -321,40 +321,39 @@ class _PostsPageState extends State<PostsPage> {
 												)
 											);
 										}
-									) : const Text('Missing post')) : Builder(
-										builder: (context) {
-											postContexts[reply.post!] = context;
-											return PostRow(
-												post: reply.post!,
-												propagateOnThumbnailTap: widget.onThumbnailTap != null,
-												onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
-												onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
-																			? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
-												onThumbnailTap: widget.onThumbnailTap ?? (attachment) {
-													final threadState = widget.zone.imageboard.persistence.getThreadStateIfExists(reply.post!.threadIdentifier);
-													showGallery(
-														context: context,
-														attachments: attachments,
-														replyCounts: {
-															for (final reply in replies)
-																for (final attachment in reply.post!.attachments)
-																	attachment: reply.post!.replyIds.length
-														},
-														isAttachmentAlreadyDownloaded: threadState?.isAttachmentDownloaded,
-														onAttachmentDownload: threadState?.didDownloadAttachment,
-														initialAttachment: attachment,
-														semanticParentIds: subzone.stackIds,
-														onChange: (attachment) {
-															final match = postContexts.entries.tryFirstWhere((p) => p.key.attachments.contains(attachment));
-															if (match != null) {
-																Scrollable.ensureVisible(match.value, alignment: 0.5, duration: const Duration(milliseconds: 200));
-															}
-														},
-														heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-													);
-												}
-											);
-										}
+									) : const Text('Missing post')) : BuildContextMapRegistrant(
+										value: reply.post!,
+										map: postContexts,
+										child: PostRow(
+											post: reply.post!,
+											propagateOnThumbnailTap: widget.onThumbnailTap != null,
+											onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
+											onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
+																		? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
+											onThumbnailTap: widget.onThumbnailTap ?? (attachment) {
+												final threadState = widget.zone.imageboard.persistence.getThreadStateIfExists(reply.post!.threadIdentifier);
+												showGallery(
+													context: context,
+													attachments: attachments,
+													replyCounts: {
+														for (final reply in replies)
+															for (final attachment in reply.post!.attachments)
+																attachment: reply.post!.replyIds.length
+													},
+													isAttachmentAlreadyDownloaded: threadState?.isAttachmentDownloaded,
+													onAttachmentDownload: threadState?.didDownloadAttachment,
+													initialAttachment: attachment,
+													semanticParentIds: subzone.stackIds,
+													onChange: (attachment) {
+														final match = postContexts.entries.tryFirstWhere((p) => p.key.attachments.contains(attachment));
+														if (match != null) {
+															Scrollable.ensureVisible(match.value, alignment: 0.5, duration: const Duration(milliseconds: 200));
+														}
+													},
+													heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+												);
+											}
+										)
 									)
 								)
 							);

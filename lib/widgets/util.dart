@@ -2086,3 +2086,64 @@ class DescendantNavigatorPopScope extends StatelessWidget {
 		);
 	}
 }
+
+class BuildContextMapRegistrant<T> extends StatelessWidget {
+	final Map<T, BuildContext> map;
+	final T value;
+	final Widget child;
+
+	const BuildContextMapRegistrant({
+		required this.map,
+		required this.value,
+		required this.child,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return BuildContextRegistrant(
+			onRegister: (context) {
+				if (context != null) {
+					map[value] = context;
+				}
+				else {
+					map.remove(value);
+				}
+			},
+			child: child
+		);
+	}
+}
+
+class BuildContextRegistrant extends StatefulWidget {
+	final ValueChanged<BuildContext?> onRegister;
+	final Widget child;
+
+	const BuildContextRegistrant({
+		required this.onRegister,
+		required this.child,
+		super.key
+	});
+
+	@override
+	createState() => _BuildContextRegistrantState();
+}
+
+class _BuildContextRegistrantState extends State<BuildContextRegistrant> {
+	@override
+	void initState() {
+		super.initState();
+		widget.onRegister(context);
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return widget.child;
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		widget.onRegister(null);
+	}
+}

@@ -782,8 +782,8 @@ class PostQuoteLinkSpan extends PostSpan {
 					)
 				);
 				return (WidgetSpan(
-					child: Builder(
-						builder: (context) {
+					child: BuildContextRegistrant(
+						onRegister: (context) {
 							if (span.$3) {
 								zone.registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
 							}
@@ -792,16 +792,16 @@ class PostQuoteLinkSpan extends PostSpan {
 									return zone.isPostOnscreen?.call(postId) != true;
 								}, span.$2.onTap ?? () {});
 							}
-							return TweenAnimationBuilder(
-								tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
-								duration: zone.highlightQuoteLinkId != postId ? const Duration(milliseconds: 750) : const Duration(milliseconds: 250),
-								curve: Curves.ease,
-								builder: (context, c, child) => c == Colors.transparent ? popup : ColorFiltered(
-									colorFilter: ColorFilter.mode(c ?? Colors.transparent, BlendMode.srcATop),
-									child: popup
-								)
-							);
-						}
+						},
+						child: TweenAnimationBuilder(
+							tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
+							duration: zone.highlightQuoteLinkId != postId ? const Duration(milliseconds: 750) : const Duration(milliseconds: 250),
+							curve: Curves.ease,
+							builder: (context, c, child) => c == Colors.transparent ? popup : ColorFiltered(
+								colorFilter: ColorFilter.mode(c ?? Colors.transparent, BlendMode.srcATop),
+								child: popup
+							)
+						)
 					)
 				), span.$2);
 			}
@@ -2000,12 +2000,22 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	}
 
 	final Map<String, (BuildContext, VoidCallback)> _lineTapCallbacks = {};
-	void registerLineTapTarget(String id, BuildContext context, VoidCallback callback) {
-		_lineTapCallbacks[id] = (context, callback);
+	void registerLineTapTarget(String id, BuildContext? context, VoidCallback callback) {
+		if (context == null) {
+			_lineTapCallbacks.remove(id);
+		}
+		else {
+			_lineTapCallbacks[id] = (context, callback);
+		}
 	}
 	final Map<String, (BuildContext, bool Function(), VoidCallback)> _conditionalLineTapCallbacks = {};
-	void registerConditionalLineTapTarget(String id, BuildContext context, bool Function() condition, VoidCallback callback) {
-		_conditionalLineTapCallbacks[id] = (context, condition, callback);
+	void registerConditionalLineTapTarget(String id, BuildContext? context, bool Function() condition, VoidCallback callback) {
+		if (context == null) {
+			_conditionalLineTapCallbacks.remove(id);
+		}
+		else {
+			_conditionalLineTapCallbacks[id] = (context, condition, callback);
+		}
 	}
 
 	bool _onTap(Offset position, bool runCallback) {
@@ -2410,23 +2420,22 @@ class ExpandingPost extends StatelessWidget {
 									border: Border.all(color: ChanceTheme.primaryColorOf(context))
 								),
 								position: DecorationPosition.foreground,
-								child: Builder(
-									builder: (context) {
-										zone._expandedPostContexts[link] = context;
-										return PostRow(
-											post: post,
-											onThumbnailTap: (attachment) {
-												showGallery(
-													context: context,
-													attachments: [attachment],
-													semanticParentIds: zone.stackIds,
-													heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-												);
-											},
-											shrinkWrap: true,
-											expandedInline: true
-										);
-									}
+								child: BuildContextMapRegistrant(
+									value: link,
+									map: zone._expandedPostContexts,
+									child: PostRow(
+										post: post,
+										onThumbnailTap: (attachment) {
+											showGallery(
+												context: context,
+												attachments: [attachment],
+												semanticParentIds: zone.stackIds,
+												heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+											);
+										},
+										shrinkWrap: true,
+										expandedInline: true
+									)
 								)
 							)
 						)
