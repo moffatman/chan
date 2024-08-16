@@ -3799,9 +3799,19 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		if (!scrollControllerPositionLooksGood) {
 			return;
 		}
+		final dummyRange = useDummyItemsInRange;
 		final top = scrollController!.position.pixels;
 		final bottom = top + scrollController!.position.viewportDimension;
-		for (final item in _items) {
+		for (int i = 0; i < items.length; i++) {
+			if (dummyRange != null && i < dummyRange.$2 && i > dummyRange.$1) {
+				// Dummy, not really visible
+				continue;
+			}
+			final item = _items[i];
+			if (isItemHidden(item.item).isHidden) {
+				// Not visible
+				continue;
+			}
 			final height = item.cachedHeight;
 			final offset = item.cachedOffset;
 			if (height != null && offset != null) {
