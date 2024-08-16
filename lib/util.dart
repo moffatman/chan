@@ -265,27 +265,25 @@ class FilteringListenable extends ChangeNotifier {
   }
 }
 
-class CombiningValueListenable<T> extends ChangeNotifier implements ValueListenable<T> {
+class CombiningValueListenable<T> implements ValueListenable<T> {
 	final List<ValueListenable<T>> children;
 	final T Function(Iterable<T>) combine;
 	CombiningValueListenable({
 		required this.children,
 		required this.combine
-	}) {
+	});
+
+	@override
+	void addListener(VoidCallback listener) {
 		for (final child in children) {
-			child.addListener(_listen);
+			child.addListener(listener);
 		}
 	}
 
-	void _listen() {
-		notifyListeners();
-	}
-
 	@override
-	void dispose() {
-		super.dispose();
+	void removeListener(VoidCallback listener) {
 		for (final child in children) {
-			child.removeListener(_listen);
+			child.removeListener(listener);
 		}
 	}
 
@@ -293,31 +291,26 @@ class CombiningValueListenable<T> extends ChangeNotifier implements ValueListena
 	T get value => combine(children.map((c) => c.value));
 }
 
-class MappingValueListenable<B extends Listenable, T> extends ChangeNotifier implements ValueListenable<T> {
+class MappingValueListenable<B extends Listenable, T> implements ValueListenable<T> {
 	final B parent;
 	final T Function(B) mapper;
-	late T _value;
 	MappingValueListenable({
 		required this.parent,
 		required this.mapper
-	}) {
-		_value = mapper(parent);
-		parent.addListener(_listen);
-	}
+	});
 
-	void _listen() {
-		_value = mapper(parent);
-		notifyListeners();
+	@override
+	void addListener(VoidCallback listener) {
+		parent.addListener(listener);
 	}
 
 	@override
-	void dispose() {
-		super.dispose();
-		parent.removeListener(_listen);
+	void removeListener(VoidCallback listener) {
+		parent.removeListener(listener);
 	}
 
 	@override
-	T get value => _value;
+	T get value => mapper(parent);
 }
 
 final Map<Function, ({Timer timer, Completer<void> completer})> _functionIdleTimers = {};
