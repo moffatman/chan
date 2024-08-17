@@ -1186,7 +1186,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final site = context.watch<ImageboardSite>();
 		final theme = context.watch<SavedTheme>();
 		String title = site.formatBoardName(widget.thread.board);
-		final threadTitle = persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title;
+		final threadTitle = (persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title)?.nonEmptyOrNull;
 		if (threadTitle != null) {
 			title += ' - ${Settings.instance.filterProfanity(threadTitle)}';
 		}

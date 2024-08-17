@@ -2602,7 +2602,7 @@ TextSpan buildPostInfoRow({
 			),
 			const TextSpan(text: ' '),
 		],
-		if (thisPostIsOP && thread?.title != null) TextSpan(
+		if (thisPostIsOP && (thread?.title?.isNotEmpty ?? false)) TextSpan(
 			text: '${thread?.title}\n',
 			style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
 		),
