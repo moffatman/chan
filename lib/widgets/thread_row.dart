@@ -588,17 +588,22 @@ class ThreadRow extends StatelessWidget {
 											)
 										)
 									) : null,
-									child: AttachmentThumbnail(
-										fit: settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
-										attachment: attachment,
-										expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
-										height: style == ThreadRowStyle.staggeredGrid ? settings.catalogGridHeight / 2 : null,
-										thread: latestThread.identifier,
-										onLoadError: onThumbnailLoadError,
-										mayObscure: true,
-										hero: TaggedAttachment(
+									child: ConstrainedBox(
+										constraints: BoxConstraints(
+											maxHeight: settings.useStaggeredCatalogGrid && attachment.type == AttachmentType.url ? settings.thumbnailSize : double.infinity
+										),
+										child: AttachmentThumbnail(
+											fit: attachment.type == AttachmentType.url || settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
 											attachment: attachment,
-											semanticParentIds: semanticParentIds
+											expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
+											height: style == ThreadRowStyle.staggeredGrid ? settings.catalogGridHeight / 2 : null,
+											thread: latestThread.identifier,
+											onLoadError: onThumbnailLoadError,
+											mayObscure: true,
+											hero: TaggedAttachment(
+												attachment: attachment,
+												semanticParentIds: semanticParentIds
+											)
 										)
 									)
 								),

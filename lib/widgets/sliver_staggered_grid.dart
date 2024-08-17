@@ -9,14 +9,14 @@ class SliverStaggeredGrid extends SliverMultiBoxAdaptorWidget {
 		super.key,
 		required super.delegate,
 		required this.gridDelegate,
-		this.id = 0
+		this.id
 	});
 
 	/// The delegate that controls the size and position of the children.
 	final SliverStaggeredGridDelegate gridDelegate;
 
 	/// Some way to reset the layout (columns)
-	final int id;
+	final Object? id;
 
 	@override
   SliverMultiBoxAdaptorElement createElement() => SliverMultiBoxAdaptorElement(this, replaceMovedChildren: true);
@@ -60,7 +60,7 @@ class SliverStaggeredGrid extends SliverMultiBoxAdaptorWidget {
 class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 	RenderSliverStaggeredGrid({
 		required super.childManager,
-		int id = 0,
+		Object? id,
 		required SliverStaggeredGridDelegate gridDelegate,
 	}) : _gridDelegate = gridDelegate, _id = id, super();
 
@@ -88,8 +88,8 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 	}
 
 	/// A way to refresh the column layout
-	int _id;
-	set id(int value) {
+	Object? _id;
+	set id(Object? value) {
 		if (_id == value) {
 			return;
 		}
@@ -101,7 +101,9 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 	@override
 	double childCrossAxisPosition(RenderBox child) {
 		final SliverGridParentData childParentData = child.parentData! as SliverGridParentData;
-		return childParentData.crossAxisOffset!;
+		// I don't really understand why this is needed. For some reason the first child
+		// is missing its crossAxisOffset when filtering (reordering?)
+		return childParentData.crossAxisOffset ?? 0;
 	}
 
 	@override

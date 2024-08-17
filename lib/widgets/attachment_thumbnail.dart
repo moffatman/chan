@@ -10,6 +10,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
@@ -215,12 +216,28 @@ class AttachmentThumbnail extends StatelessWidget {
 				filterQuality: filterQuality,
 				loadStateChanged: (loadstate) {
 					if (loadstate.extendedImageLoadState == LoadState.loading) {
-						return Container(
-							width: effectiveWidth,
-							height: effectiveHeight,
-							color: barColor,
-							child: const Center(
-								child: CircularProgressIndicator.adaptive()
+						return ConstrainedBox(
+							constraints: BoxConstraints(
+								maxWidth: expand ? double.infinity : effectiveWidth,
+								maxHeight: expand ? double.infinity : effectiveHeight
+							),
+							child: WidgetDecoration(
+								position: DecorationPosition.foreground,
+								decoration: const Center(
+									child: CircularProgressIndicator.adaptive()
+								),
+								child: FittedBox(
+									fit: fit,
+									child: SizedBox(
+										width: (attachment.width ?? effectiveWidth).toDouble(),
+										height: (attachment.height ?? effectiveHeight).toDouble(),
+										child: DecoratedBox(
+											decoration: BoxDecoration(
+												color: barColor
+											)
+										)
+									)
+								)
 							)
 						);
 					}

@@ -2767,7 +2767,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												if (widget.staggeredGridDelegate != null) SliverStaggeredGrid(
 													key: PageStorageKey('staggered grid for ${widget.id}'),
 													gridDelegate: widget.staggeredGridDelegate!,
-													id: identityHashCode(originalList),
+													id: widget.id,
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, i) {
 															final range = widget.controller?.useDummyItemsInRange;
@@ -2958,7 +2958,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																]
 															),
 															list: filteredValues,
-															id: '$forceRebuildId',
+															id: widget.id,
 															childCount: filteredValues.length,
 															addRepaintBoundaries: false,
 															addAutomaticKeepAlives: false,
