@@ -2578,7 +2578,11 @@ TextSpan buildPostInfoRow({
 	final op = site.isPaged ? thread?.posts_.tryFirstWhere((p) => !p.isPageStub) : thread?.posts_.tryFirst;
 	// During catalog-peek the post == op equality won't hold. Just use simple check.
 	final thisPostIsOP = site.isPaged ? post == op : post.id == post.threadId;
-	final thisPostIsPostedByOP = site.supportsUserInfo && post.name == op?.name;
+	final thisPostIsPostedByOP = site.supportsUserInfo && post.name == op?.name || switch (thread?.posts_.tryFirst?.posterId) {
+		String posterId => posterId == post.posterId,
+		// This thread doesn't use posterId
+		null => false
+	};
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
 	const lineBreak = TextSpan(text: '\n');
 	final children = [
