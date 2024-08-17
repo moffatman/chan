@@ -779,8 +779,8 @@ class SiteReddit extends ImageboardSite {
 						ext: url.$2.ext,
 						filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
 						url: url.$2.url,
-						width: null,
-						height: null,
+						width: data['preview']['images'][0]['source']?['width'],
+						height: data['preview']['images'][0]['source']?['height'],
 						md5: '',
 						sizeInBytes: null,
 						thumbnailUrl: url.$2.thumbnailUrl ?? (data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : '')
