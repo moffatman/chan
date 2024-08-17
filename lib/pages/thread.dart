@@ -2187,7 +2187,9 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 
 	Future<void> _pollForOnSlowScroll() async {
 		_waitForRebuildTimer?.cancel();
+		_waitForRebuildTimer = null;
 		if (!await _onSlowScroll()) {
+			_waitForRebuildTimer?.cancel();
 			_waitForRebuildTimer = Timer.periodic(const Duration(milliseconds: 20), (t) async {
 				if (!mounted || (await _onSlowScroll())) {
 					t.cancel();
