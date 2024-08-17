@@ -783,15 +783,19 @@ class PostQuoteLinkSpan extends PostSpan {
 				);
 				return (WidgetSpan(
 					child: BuildContextRegistrant(
-						onRegister: (context) {
+						onInitState: (context) {
 							if (span.$3) {
-								zone.registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
+								zone._registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
 							}
 							else if (zone.style == PostSpanZoneStyle.tree) {
-								zone.registerConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, () {
+								zone._registerConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, () {
 									return zone.isPostOnscreen?.call(postId) != true;
 								}, span.$2.onTap ?? () {});
 							}
+						},
+						onDispose: (context) {
+							zone._unregisterLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context);
+							zone._unregisterConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context);
 						},
 						child: TweenAnimationBuilder(
 							tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
@@ -2000,21 +2004,21 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	}
 
 	final Map<String, (BuildContext, VoidCallback)> _lineTapCallbacks = {};
-	void registerLineTapTarget(String id, BuildContext? context, VoidCallback callback) {
-		if (context == null) {
+	void _registerLineTapTarget(String id, BuildContext context, VoidCallback callback) {
+		_lineTapCallbacks[id] = (context, callback);
+	}
+	void _unregisterLineTapTarget(String id, BuildContext context) {
+		if (_lineTapCallbacks[id]?.$1 == context) {
 			_lineTapCallbacks.remove(id);
-		}
-		else {
-			_lineTapCallbacks[id] = (context, callback);
 		}
 	}
 	final Map<String, (BuildContext, bool Function(), VoidCallback)> _conditionalLineTapCallbacks = {};
-	void registerConditionalLineTapTarget(String id, BuildContext? context, bool Function() condition, VoidCallback callback) {
-		if (context == null) {
+	void _registerConditionalLineTapTarget(String id, BuildContext context, bool Function() condition, VoidCallback callback) {
+		_conditionalLineTapCallbacks[id] = (context, condition, callback);
+	}
+	void _unregisterConditionalLineTapTarget(String id, BuildContext? context) {
+		if (_conditionalLineTapCallbacks[id]?.$1 == context) {
 			_conditionalLineTapCallbacks.remove(id);
-		}
-		else {
-			_conditionalLineTapCallbacks[id] = (context, condition, callback);
 		}
 	}
 

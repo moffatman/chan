@@ -2102,12 +2102,13 @@ class BuildContextMapRegistrant<T> extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return BuildContextRegistrant(
-			onRegister: (context) {
-				if (context != null) {
-					map[value] = context;
-				}
-				else {
-					map.remove(value);
+			onInitState: (context) {
+				map[value] = context;
+			},
+			onDispose: (context) {
+				// Make sure we don't overwrite a new context from another widget
+				if (map[value] == context) {
+					map.remove(context);
 				}
 			},
 			child: child
@@ -2116,11 +2117,13 @@ class BuildContextMapRegistrant<T> extends StatelessWidget {
 }
 
 class BuildContextRegistrant extends StatefulWidget {
-	final ValueChanged<BuildContext?> onRegister;
+	final ValueChanged<BuildContext> onInitState;
+	final ValueChanged<BuildContext> onDispose;
 	final Widget child;
 
 	const BuildContextRegistrant({
-		required this.onRegister,
+		required this.onInitState,
+		required this.onDispose,
 		required this.child,
 		super.key
 	});
@@ -2133,7 +2136,7 @@ class _BuildContextRegistrantState extends State<BuildContextRegistrant> {
 	@override
 	void initState() {
 		super.initState();
-		widget.onRegister(context);
+		widget.onInitState(context);
 	}
 
 	@override
@@ -2144,6 +2147,6 @@ class _BuildContextRegistrantState extends State<BuildContextRegistrant> {
 	@override
 	void dispose() {
 		super.dispose();
-		widget.onRegister(null);
+		widget.onDispose(context);
 	}
 }

@@ -2773,8 +2773,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[i]._key),
-																onRegister: (context) {
+																onInitState: (context) {
 																	widget.controller?._registerItem(i, values[i], context);
+																},
+																onDispose: (context) {
+																	widget.controller?._unregisterItem(i, context);
 																},
 																child: Builder(
 																	builder: (context) => _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1, queryPattern)
@@ -2798,8 +2801,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[i]._key),
-																onRegister: (context) {
+																onInitState: (context) {
 																	widget.controller?._registerItem(i, values[i], context);
+																},
+																onDispose: (context) {
+																	widget.controller?._unregisterItem(i, context);
 																},
 																child: Builder(
 																	builder: (context) => _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1, queryPattern)
@@ -2822,8 +2828,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[childIndex]._key),
-																onRegister: (context) {
+																onInitState: (context) {
 																	widget.controller?._registerItem(childIndex, values[childIndex], context);
+																},
+																onDispose: (context) {
+																	widget.controller?._unregisterItem(childIndex, context);
 																},
 																child: Builder(
 																	builder: (context) => _itemBuilder(context, values[childIndex], range != null && childIndex < range.$2 && childIndex > range.$1, queryPattern)
@@ -3493,10 +3502,15 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			notifyListeners();
 		});
 	}
-	void _registerItem(int index, RefreshableListItem<T> item, BuildContext? context) {
+	void _registerItem(int index, RefreshableListItem<T> item, BuildContext context) {
 		if (index < _items.length) {
 			_items[index].item = item;
 			_items[index].context = context;
+		}
+	}
+	void _unregisterItem(int index, BuildContext context) {
+		if (index < _items.length && _items[index].context == context) {
+			_items[index].context = null;
 		}
 	}
 	double _getOffset(RenderObject object) {
