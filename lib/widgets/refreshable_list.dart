@@ -3344,6 +3344,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	final Map<int, RefreshableListItem<T>> _newInsertIndices = {};
 	bool _autoExtendEnabled = true;
 	bool _isDisposed = false;
+	(int, int)? _lastLaidOutRange;
 	RefreshableListController() {
 		slowScrolls.addListener(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
@@ -3767,7 +3768,21 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				// Search field will mean that the _items.lastIndexWhere search will return -1
 				return 0;
 			}
-			return _items.lastIndexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && (i.cachedOffset! <= (scrollController!.position.pixels + topOffset)));
+			final threshold = scrollController!.position.pixels + topOffset;
+			test(_BuiltRefreshableListItem<RefreshableListItem<T>> i) =>
+				(i.cachedHeight != null) &&
+				(i.cachedOffset != null) &&
+				(i.cachedOffset! <= threshold);
+			final range = _lastLaidOutRange;
+			if (range != null && range.$2 < _items.length) {
+				for (int i = range.$2; i >= range.$1; i--) {
+					if (test(_items[i])) {
+						return i;
+					}
+				}
+				return -1;
+			}
+			return _items.lastIndexWhere(test);
 		}
 		return -1;
 	}
@@ -3787,10 +3802,21 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	T? get middleVisibleItem {
 		if (scrollControllerPositionLooksGood) {
-			int index = _items.indexWhere((i) =>
+			final threshold = scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2);
+			test(_BuiltRefreshableListItem<RefreshableListItem<T>> i) =>
 				(i.cachedHeight != null) &&
 				(i.cachedOffset != null) &&
-				((i.cachedOffset! + i.cachedHeight!) > (scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2))));
+				((i.cachedOffset! + i.cachedHeight!) > threshold);
+			final range = _lastLaidOutRange;
+			if (range != null && range.$2 < _items.length) {
+				for (int i = range.$1; i <= range.$2; i++) {
+					if (test(_items[i])) {
+						return _items[i].item.item;
+					}
+				}
+				return null;
+			}
+			int index = _items.indexWhere(test);
 			if (index != -1) {
 				return _items[index].item.item;
 			}
@@ -3804,7 +3830,21 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					_items.first.cachedHeight! > (scrollController!.position.pixels + scrollController!.position.viewportDimension)) {
 				return 0;
 			}
-			return _items.lastIndexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset));
+			final threshold = scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset;
+			test(_BuiltRefreshableListItem<RefreshableListItem<T>> i) =>
+				(i.cachedHeight != null) &&
+				(i.cachedOffset != null) &&
+				i.cachedOffset! < threshold;
+			final range = _lastLaidOutRange;
+			if (range != null && range.$2 < _items.length) {
+				for (int i = range.$2; i >= range.$1; i--) {
+					if (test(_items[i])) {
+						return i;
+					}
+				}
+				return -1;
+			}
+			return _items.lastIndexWhere(test);
 		}
 		return -1;
 	}
@@ -3819,7 +3859,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		final dummyRange = useDummyItemsInRange;
 		final top = scrollController!.position.pixels;
 		final bottom = top + scrollController!.position.viewportDimension;
-		for (int i = 0; i < items.length; i++) {
+		final range = _lastLaidOutRange ?? (0, items.length - 1);
+		for (int i = range.$1; i <= range.$2; i++) {
 			if (dummyRange != null && i < dummyRange.$2 && i > dummyRange.$1) {
 				// Dummy, not really visible
 				continue;
@@ -3878,6 +3919,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		return false;
 	}
 	Future<void> blockAndUpdate() async {
+		_lastLaidOutRange = null;
 		state?.originalList = null;
 		state?.sortedList = null;
 		state?._lastTreeOrder = null;
@@ -3915,9 +3957,11 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 
 	void didFinishLayout(int startIndex, int endIndex) {
 		if (endIndex >= _items.length) {
+			_lastLaidOutRange = null;
 			// Out of sync
 			return;
 		}
+		_lastLaidOutRange = (startIndex, endIndex);
 		if (state?.searching == false) {
 			for (int i = startIndex; i <= endIndex; i++) {
 				_tryCachingItem(i, _items[i]);
