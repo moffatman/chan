@@ -315,12 +315,17 @@ class SiteKarachan extends ImageboardSite {
 					}
 				}
 			}
+			String? posterId = e.querySelector('.postInfo .posteruid')?.text;
+			if (posterId != null && posterId.startsWith('(ID:') && posterId.endsWith(')')) {
+				posterId = posterId.substring(4, posterId.length - 1).trim();
+			}
 			return Post(
 				board: board,
 				threadId: threadId,
 				id: int.parse(e.id.substring(1)), // Like "p12345"
 				text: _fixRelativeUrls(e.querySelector('.postMessage')!.innerHtml),
 				name: e.querySelector('.postInfo .name')!.text,
+				posterId: posterId,
 				time: DateTime.fromMillisecondsSinceEpoch(1000 * int.parse(e.querySelector('.postInfo .dateTime')!.attributes['data-raw']!)),
 				spanFormat: PostSpanFormat.karachan,
 				attachmentDeleted: attachmentDeleted,
