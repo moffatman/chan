@@ -3187,6 +3187,9 @@ class RefreshableListFooter extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final theme = context.watch<SavedTheme>();
+		final primaryColorWithBrightness10 = theme.primaryColorWithBrightness(0.1);
+		final primaryColorWithBrightness50 = theme.primaryColorWithBrightness(0.5);
 		return GestureDetector(
 			behavior: HitTestBehavior.opaque,
 			onTap: updatingNow ? null : updater,
@@ -3245,8 +3248,8 @@ class RefreshableListFooter extends StatelessWidget {
 																			builder: (context, value) {
 																				return LinearProgressIndicator(
 																					value: value,
-																					color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
-																					backgroundColor: ChanceTheme.primaryColorWithBrightness10Of(context),
+																					color: theme.primaryColor.withOpacity(0.5),
+																					backgroundColor: primaryColorWithBrightness10,
 																					minHeight: 8
 																				);
 																			}
@@ -3254,7 +3257,7 @@ class RefreshableListFooter extends StatelessWidget {
 																		LinearProgressIndicator(
 																			value: (updatingNow) ? null : (pointerDownNow() ? smoothedValue : 0),
 																			backgroundColor: Colors.transparent,
-																			color: ChanceTheme.primaryColorOf(context),
+																			color: theme.primaryColor,
 																			minHeight: 8
 																		)
 																	]
@@ -3275,7 +3278,7 @@ class RefreshableListFooter extends StatelessWidget {
 															builder: (context, relativeTime) {
 																return GreedySizeCachingBox(
 																	child: Text('Next update $relativeTime', style: TextStyle(
-																		color: ChanceTheme.primaryColorWithBrightness50Of(context)
+																		color: primaryColorWithBrightness50
 																	))
 																);
 															}
