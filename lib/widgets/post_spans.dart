@@ -980,6 +980,16 @@ class PostCodeSpan extends PostSpan {
 
 	@override
 	build(context, zone, settings, theme, options) {
+		if (text.isEmpty) {
+			// New troll strategy with empty [code][/code]
+			// Make it look like something instead of zero-width
+			return const TextSpan(
+				text: ' ',
+				style: TextStyle(
+					backgroundColor: Colors.black
+				)
+			);
+		}
 		final lineCount = _newlinePattern.allMatches(text).length + 1;
 		final result = zone.getFutureForComputation(
 			id: 'languagedetect ${identityHashCode(text)} ${text.substring(0, (text.length - 1).clamp(0, 10))}',
