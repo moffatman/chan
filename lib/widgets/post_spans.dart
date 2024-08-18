@@ -982,7 +982,7 @@ class PostCodeSpan extends PostSpan {
 	build(context, zone, settings, theme, options) {
 		final lineCount = _newlinePattern.allMatches(text).length + 1;
 		final result = zone.getFutureForComputation(
-			id: 'languagedetect ${identityHashCode(text)} ${text.substring(0, math.min(10, text.length - 1))}',
+			id: 'languagedetect ${identityHashCode(text)} ${text.substring(0, (text.length - 1).clamp(0, 10))}',
 			work: () async {
 				if (lineCount == 1 || lineCount < 10 && _startsWithCapitalLetterPattern.hasMatch(text)) {
 					// Probably just plaintext
