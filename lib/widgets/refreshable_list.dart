@@ -2773,7 +2773,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[i]._key),
-																onInitState: (context) {
+																onBuild: (context) {
 																	widget.controller?._registerItem(i, values[i], context);
 																},
 																onDispose: (context) {
@@ -2801,7 +2801,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[i]._key),
-																onInitState: (context) {
+																onBuild: (context) {
 																	widget.controller?._registerItem(i, values[i], context);
 																},
 																onDispose: (context) {
@@ -2828,7 +2828,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[childIndex]._key),
-																onInitState: (context) {
+																onBuild: (context) {
 																	widget.controller?._registerItem(childIndex, values[childIndex], context);
 																},
 																onDispose: (context) {
@@ -3361,8 +3361,12 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			item.cachedHeight = null;
 		}
 	}
-	Future<void> _tryCachingItem(int index, _BuiltRefreshableListItem<RefreshableListItem<T>> item) async {
+	Future<void> _tryCachingItem(int index) async {
 		await SchedulerBinding.instance.endOfFrame;
+		if (index >= _items.length) {
+			return;
+		}
+		final item = _items[index];
 		if (item.hasGoodState) {
 			// ignore: use_build_context_synchronously
 			final RenderObject object = item.context!.findRenderObject()!;
@@ -3676,7 +3680,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				end: estimate
 			);
 			if ((estimate - scrollController!.position.pixels < 50)) {
-				await _tryCachingItem(targetIndex, _items[targetIndex]);
+				await _tryCachingItem(targetIndex);
 			}
 			final delay = Duration(milliseconds: max(50, (duration * ((estimate - scrollController!.position.pixels) / (startPixels - estimate)).abs()).inMilliseconds));
 			scrollController!.animateTo(
@@ -3964,7 +3968,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		_lastLaidOutRange = (startIndex, endIndex);
 		if (state?.searching == false) {
 			for (int i = startIndex; i <= endIndex; i++) {
-				_tryCachingItem(i, _items[i]);
+				_tryCachingItem(i);
 			}
 			_newInsertIndices.removeWhere((i, item) {
 				if (i < startIndex || i >= endIndex) {

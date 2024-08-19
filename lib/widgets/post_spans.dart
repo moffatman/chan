@@ -783,7 +783,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				);
 				return (WidgetSpan(
 					child: BuildContextRegistrant(
-						onInitState: (context) {
+						onBuild: (context) {
 							if (span.$3) {
 								zone._registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
 							}
