@@ -1012,6 +1012,12 @@ class RefreshableListUpdateOptions {
 	String toString() => 'RefreshableListUpdateOptions(source: $source)';
 }
 
+typedef _Tree<T extends Object> = ({
+	List<RefreshableListItem<T>> tree,
+	List<List<int>> automaticallyCollapsed,
+	Set<int> automaticallyTopLevelCollapsed
+});
+
 class RefreshableList<T extends Object> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
 	final Widget Function({
@@ -1996,10 +2002,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	({
-		List<RefreshableListItem<T>> tree,
-		List<List<int>> automaticallyCollapsed,
-		Set<int> automaticallyTopLevelCollapsed
-	}) _reassembleAsTree(List<RefreshableListItem<T>> linear) {
+		List<RefreshableListItem<T>> linear,
+		int? treeSplitId,
+		_Tree<T> tree,
+		bool initiallyCollapseSecondLevelReplies,
+		bool repliesToOPAreTopLevel,
+		bool newRepliesAreLinear
+	})? _lastTree;
+	_Tree<T> _reassembleAsTree(List<RefreshableListItem<T>> linear) {
 		// In case the list is not in sequential order by id
 		final orphans = <int, List<_TreeNode<RefreshableListItem<T>>>>{};
 		final orphanStubs = <int, List<int>>{};
@@ -2013,6 +2023,36 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (adapter == null) {
 			print('Tried to reassemble a tree of $T with a null adapter');
 			return (tree: linear, automaticallyCollapsed: [], automaticallyTopLevelCollapsed: {});
+		}
+
+		final lastTree = _lastTree;
+		if (lastTree != null &&
+		    _treeSplitId == lastTree.treeSplitId &&
+				linear.length == lastTree.linear.length &&
+				adapter.initiallyCollapseSecondLevelReplies == lastTree.initiallyCollapseSecondLevelReplies &&
+				adapter.repliesToOPAreTopLevel == lastTree.repliesToOPAreTopLevel &&
+				adapter.newRepliesAreLinear == lastTree.newRepliesAreLinear) {
+			bool matching = true;
+			for (int i = 0; i < linear.length; i++) {
+				if (!identical(linear[i]._key, lastTree.linear[i]._key)) {
+					matching = false;
+					break;
+				}
+				if (linear[i].filterCollapsed != lastTree.linear[i].filterCollapsed) {
+					// Change in filters
+					matching = false;
+					break;
+				}
+				if (adapter.getHasOmittedReplies(linear[i].item) != adapter.getHasOmittedReplies(lastTree.linear[i].item)) {
+					// New omitted replies exist
+					matching = false;
+					break;
+				}
+			}
+			if (matching) {
+				print('trees are same');
+				return lastTree.tree;
+			}
 		}
 
 		final firstTreeBuild = _treeSplitId == null;
@@ -2400,7 +2440,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			_refreshableTreeItems.revealNewInsert(item, quiet: true, stubOnly: item.representsStubChildren);
 		}
-		return (tree: out, automaticallyCollapsed: automaticallyCollapsed, automaticallyTopLevelCollapsed: automaticallyTopLevelCollapsed);
+		final tree = (tree: out, automaticallyCollapsed: automaticallyCollapsed, automaticallyTopLevelCollapsed: automaticallyTopLevelCollapsed);
+		_lastTree = (
+			linear: linear.toList(growable: false),
+			treeSplitId: _treeSplitId,
+			tree: tree,
+			initiallyCollapseSecondLevelReplies: adapter.initiallyCollapseSecondLevelReplies,
+			repliesToOPAreTopLevel: adapter.repliesToOPAreTopLevel,
+			newRepliesAreLinear: adapter.newRepliesAreLinear
+		);
+		return tree;
 	}
 
 	bool _matchesSearchFilter(Filterable item, RegExp query) {
