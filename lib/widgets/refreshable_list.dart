@@ -2050,7 +2050,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			if (matching) {
-				print('trees are same');
 				return lastTree.tree;
 			}
 		}
