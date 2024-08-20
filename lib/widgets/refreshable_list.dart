@@ -2048,6 +2048,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					matching = false;
 					break;
 				}
+				if (adapter.getIsStub(linear[i].item) != adapter.getIsStub(lastTree.linear[i].item)) {
+					// Loaded exactly this stub
+					matching = false;
+					break;
+				}
 			}
 			if (matching) {
 				return lastTree.tree;
