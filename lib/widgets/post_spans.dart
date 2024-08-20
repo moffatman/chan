@@ -2033,6 +2033,13 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	}
 
 	bool _onTap(Offset position, bool runCallback) {
+		(double, bool Function(), VoidCallback)? closest;
+		bool yes() => true;
+		void checkClosest(double deltaY, bool Function() condition, VoidCallback f) {
+			if (closest == null || closest!.$1 > deltaY) {
+				closest = (deltaY, condition, f);
+			}
+		}
 		for (final pair in _lineTapCallbacks.values) {
 			final RenderBox? box;
 			try {
@@ -2044,6 +2051,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 			if (box != null) {
 				final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
 				if (y0 > position.dy) {
+					checkClosest(y0 - position.dy, yes, pair.$2);
 					continue;
 				}
 				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
@@ -2052,6 +2060,9 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 						pair.$2();
 					}
 					return true;
+				}
+				else {
+					checkClosest(position.dy - y1, yes, pair.$2);
 				}
 			}
 		}
@@ -2066,6 +2077,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 			if (box != null) {
 				final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
 				if (y0 > position.dy) {
+					checkClosest(y0 - position.dy, pair.$2, pair.$2);
 					continue;
 				}
 				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
@@ -2075,6 +2087,19 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 					}
 					return true;
 				}
+				else {
+					checkClosest(position.dy - y1, pair.$2, pair.$3);
+				}
+			}
+		}
+		final finalClosest = closest;
+		if (finalClosest != null && finalClosest.$1 <= 10) {
+			// Less than 10px slop
+			if (finalClosest.$2()) {
+				if (runCallback) {
+					finalClosest.$3();
+				}
+				return true;
 			}
 		}
 		return false;
