@@ -100,6 +100,7 @@ class VideoServer {
 	final bool bufferOutput;
 	final int port;
 	final int insignificantByteThreshold;
+	final _lock = Mutex();
 
 	static void initializeStatic(Directory webmRoot, Directory httpRoot, {
 		bool bufferOutput = true,
@@ -581,7 +582,7 @@ class VideoServer {
 		return Uri.http('${InternetAddress.loopbackIPv4.address}:$port', '/digest/$digest/$_kRootUriName${(extensionParts?.isEmpty ?? true) ? '' : '.${extensionParts?.last}'}');
 	}
 
-	Future<void> ensureRunning() async {
+	Future<void> ensureRunning() => _lock.protect(() async {
 		if (_httpServer == null) {
 			_httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
 			_httpServer!.listen(_handleRequest, cancelOnError: false, onDone: () {
@@ -591,9 +592,9 @@ class VideoServer {
 				}
 			});
 		}
-	}
+	});
 
-	Future<void> restartIfRunning() async {
+	Future<void> restartIfRunning() => _lock.protect(() async {
 		if (_httpServer != null) {
 			await () async {
 				await _httpServer?.close();
@@ -601,7 +602,7 @@ class VideoServer {
 				await _httpServer?.close(force: true);
 			});
 		}
-	}
+	});
 
 	void dispose() {
 		_stopped = true;
