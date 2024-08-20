@@ -13,6 +13,7 @@ import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/attachments.dart';
 import 'package:chan/pages/thread_watch_controls.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/attachment_cache.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -178,6 +179,7 @@ class ThreadPageState extends State<ThreadPage> {
 	late final EasyListenable _glowingPostsAnimation;
 	int? _glowingPostId;
 	final _scrollLock = Mutex();
+	late final StreamSubscription<Attachment> _cacheSubscription;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -403,7 +405,6 @@ class ThreadPageState extends State<ThreadPage> {
 
 	void _onSlowScroll() {
 		final lastItem = _listController.lastVisibleItem;
-		_updateCached(onscreenOnly: true);
 		if (persistentState.thread != null && !blocked && lastItem != null && _foreground) {
 			final newLastSeen = lastItem.id;
 			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
@@ -434,15 +435,17 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
+	Future<void> _checkAttachmentCache(Attachment attachment) async {
+		if (_cached[attachment] == _AttachmentCachingStatus.cached) return;
+		_cached[attachment] = switch (await (await AttachmentCache.optimisticallyFindFile(attachment))?.exists()) {
+			true => _AttachmentCachingStatus.cached,
+			null || false => _cached[attachment] ?? _AttachmentCachingStatus.uncached
+		};
+	}
+
 	Future<void> _updateCached({required bool onscreenOnly}) async {
 		final attachments = (onscreenOnly ? _listController.visibleItems : _listController.items).expand((p) => p.item.attachments).toSet();
-		await Future.wait(attachments.map((attachment) async {
-			if (_cached[attachment] == _AttachmentCachingStatus.cached) return;
-			_cached[attachment] = switch (await (await optimisticallyFindCachedFile(attachment))?.exists()) {
-				true => _AttachmentCachingStatus.cached,
-				null || false => _cached[attachment] ?? _AttachmentCachingStatus.uncached
-			};
-		}));
+		await Future.wait(attachments.map(_checkAttachmentCache));
 	}
 
 	Future<void> _cacheAttachments({required bool automatic}) async {
@@ -502,6 +505,12 @@ class ThreadPageState extends State<ThreadPage> {
 				message: 'Skipped caching ${describeCount(count, 'file')} (${persistentState.thread?.archiveName ?? 'archive'} has rate limits)',
 				icon: CupertinoIcons.exclamationmark_circle
 			);
+		}
+	}
+
+	void _onAttachmentCache(Attachment attachment) {
+		if (persistentState.thread?.posts_.any((p) => p.attachments.contains(attachment)) ?? false) {
+			_checkAttachmentCache(attachment);
 		}
 	}
 
@@ -607,6 +616,7 @@ class ThreadPageState extends State<ThreadPage> {
 		else {
 			_listController.waitForItemBuild(0).then((_) => _updateCached(onscreenOnly: false));
 		}
+		_cacheSubscription = AttachmentCache.stream.listen(_onAttachmentCache);
 		newPostIds.addAll(persistentState.unseenPostIds.data);
 		if (persistentState.disableUpdates) {
 			_checkForNewGeneral();
@@ -1922,6 +1932,7 @@ class ThreadPageState extends State<ThreadPage> {
 		zone.dispose();
 		_cachingQueue.clear();
 		_glowingPostsAnimation.dispose();
+		_cacheSubscription.cancel();
 	}
 }
 

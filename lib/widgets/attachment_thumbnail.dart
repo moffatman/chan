@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/attachment_cache.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
@@ -263,6 +264,10 @@ class AttachmentThumbnail extends StatelessWidget {
 						);
 					}
 					else if (loadstate.extendedImageLoadState == LoadState.completed) {
+						if (url == attachment.url) {
+							// Thie a is a full-quality thumbnail
+							AttachmentCache.onCached(attachment);
+						}
 						attachment.width ??= loadstate.extendedImageInfo?.image.width;
 						attachment.height ??= loadstate.extendedImageInfo?.image.height;
 					}

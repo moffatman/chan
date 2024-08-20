@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:async/async.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/attachment_cache.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
@@ -146,29 +147,6 @@ extension on GallerySavePathOrganizing {
 	};
 }
 
-Future<File?> optimisticallyFindCachedFile(Attachment attachment) async {
-	if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.url) {
-		// Not cacheable
-		return null;
-	}
-	if (attachment.type == AttachmentType.image) {
-		return await getCachedImageFile(attachment.url);
-	}
-	if (attachment.type == AttachmentType.webm) {
-		final conversion = MediaConversion.toMp4(Uri.parse(attachment.url));
-		final file = conversion.getDestination();
-		if (await file.exists()) {
-			return file;
-		}
-		// Fall through in case WEBM is directly playing
-	}
-	final file = VideoServer.instance.optimisticallyGetFile(Uri.parse(attachment.url));
-	if (await file.exists()) {
-		return file;
-	}
-	return null;
-}
-
 extension _AspectRatio on PlayerState {
 	double? get aspectRatio {
 		if (width == null || height == null) {
@@ -292,11 +270,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (attachment.type == AttachmentType.image && attachment.soundSource == null) {
 			getCachedImageFile(attachment.url.toString()).then((file) {
 				if (file != null && _cachedFile == null && !_isDisposed) {
-					_cachedFile = file;
-					attachment.sizeInBytes ??= file.statSync().size;
 					_goodImageSource = Uri.parse(attachment.url);
 					_isFullResolution = true;
-					notifyListeners();
+					_onCacheCompleted(file);
 				}
 			});
 		}
@@ -394,7 +370,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
-		final alreadyCached = await optimisticallyFindCachedFile(attachment);
+		final alreadyCached = await AttachmentCache.optimisticallyFindFile(attachment);
 		if (alreadyCached != null) {
 			return alreadyCached.uri;
 		}
@@ -489,7 +465,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			final file = await getCachedImageFile(goodImageSource.toString());
 			if (file != null && _cachedFile?.path != file.path) {
-				onCacheCompleted(file);
+				_onCacheCompleted(file);
 			}
 			return;
 		}
@@ -560,8 +536,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				_goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive);
 				_recordUrlTime(_goodImageSource!, attachment.type, DateTime.now().difference(startTime));
 				if (_goodImageSource?.scheme == 'file') {
-					_cachedFile = File(_goodImageSource!.toFilePath());
-					attachment.sizeInBytes ??= _cachedFile!.statSync().size;
+					_onCacheCompleted(File(_goodImageSource!.toFilePath()));
 				}
 				if (_isDisposed) return;
 				notifyListeners();
@@ -573,8 +548,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					).getNetworkImageData();
 					final file = await getCachedImageFile(goodImageSource.toString());
 					if (file != null && _cachedFile?.path != file.path) {
-						_cachedFile = file;
-						attachment.sizeInBytes ??= file.statSync().size;
+						_onCacheCompleted(file);
 					}
 				}
 			}
@@ -602,14 +576,14 @@ class AttachmentViewerController extends ChangeNotifier {
 						if (isPrimary || !background) {
 							await (await _ensureController()).player.open(Media(file.path), play: false);
 						}
-						onCacheCompleted(file);
+						_onCacheCompleted(file, notify: false);
 					}
 					else {
 						final progressNotifier = ValueNotifier<double?>(null);
 						final hash = await VideoServer.instance.startCachingDownload(
 							uri: url,
 							headers: getHeaders(url),
-							onCached: onCacheCompleted,
+							onCached: _onCacheCompleted,
 							onProgressChanged: (currentBytes, totalBytes) {
 								progressNotifier.value = currentBytes / totalBytes;
 							},
@@ -643,8 +617,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						if (isPrimary || !background) {
 							await (await _ensureController()).player.open(Media(result.mp4File.path), play: false);
 						}
-						_cachedFile = result.mp4File;
-						attachment.sizeInBytes ??= result.mp4File.statSync().size;
+						_onCacheCompleted(result.mp4File, notify: false);
 					}
 					else if (result is StreamingMP4ConversionStream) {
 						if (isPrimary || !background) {
@@ -656,7 +629,7 @@ class AttachmentViewerController extends ChangeNotifier {
 								return;
 							}
 							_videoLoadingProgress = ValueNotifier(null);
-							onCacheCompleted(mp4File);
+							_onCacheCompleted(mp4File);
 							notifyListeners();
 						});
 						if (!isPrimary && background) {
@@ -678,7 +651,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							return;
 						}
 						_videoLoadingProgress = ValueNotifier(null);
-						onCacheCompleted(mp4File);
+						_onCacheCompleted(mp4File);
 						notifyListeners();
 					}
 				}
@@ -761,12 +734,15 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> preloadFullAttachment() => _loadFullAttachment(true);
 
-	void onCacheCompleted(File file) {
+	void _onCacheCompleted(File file, {bool notify = true}) {
 		_cachedFile = file;
 		attachment.sizeInBytes ??= file.statSync().size;
+		AttachmentCache.onCached(attachment);
 		if (_isDisposed) return;
 		_scheduleHidingOfLoadingProgress();
-		notifyListeners();
+		if (notify) {
+			notifyListeners();
+		}
 	}
 
 	void tryArchives() {
@@ -1292,7 +1268,7 @@ class AttachmentViewer extends StatelessWidget {
 							if ((source != Uri.parse(attachment.thumbnailUrl)) && loadingValue == 1) {
 								getCachedImageFile(source.toString()).then((file) {
 									if (file != null) {
-										controller.onCacheCompleted(file);
+										controller._onCacheCompleted(file);
 									}
 								});
 							}
@@ -1301,7 +1277,7 @@ class AttachmentViewer extends StatelessWidget {
 							// If the displayed image looks like the full image, we can check cache
 							getCachedImageFile(source.toString()).then((file) {
 								if (file != null) {
-									controller.onCacheCompleted(file);
+									controller._onCacheCompleted(file);
 								}
 							});
 						}
