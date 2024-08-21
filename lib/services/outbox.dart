@@ -151,7 +151,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	ThreadIdentifier? get thread;
 	Duration get _regretDelay => Duration.zero;
 
-	void submit(BuildContext? context) async {
+	Future<void> submit(BuildContext? context) async {
 		// Note -- if we are failed here. we might have a captcha.
 		// But just throw it away, it avoids tracking captcha problems.
 		_state._dispose();
