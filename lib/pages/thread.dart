@@ -159,7 +159,7 @@ class ThreadPageState extends State<ThreadPage> {
 	late final RefreshableListController<Post> _listController;
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
-	late Listenable _threadStateListenable;
+	Listenable? _threadStateListenable;
 	int lastSavedPostsLength = 0;
 	int lastHiddenMD5sLength = 0;
 	_PersistentThreadStateSnapshot _lastPersistentThreadStateSnapshot = _PersistentThreadStateSnapshot.empty();
@@ -591,8 +591,11 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 		);
 		Future.delayed(const Duration(milliseconds: 50), () {
-			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
-			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
+			if (mounted) {
+				_threadStateListenable?.removeListener(_onThreadStateListenableUpdate);
+				(_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread))
+					.addListener(_onThreadStateListenableUpdate);
+			}
 		});
 		_listController.slowScrolls.addListener(_onSlowScroll);
 		context.read<PersistentBrowserTab?>()?.threadPageState = this;
@@ -631,9 +634,9 @@ class ThreadPageState extends State<ThreadPage> {
 			_cached.clear();
 			_cachingQueue.clear();
 			_passedFirstLoad = false;
-			_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
-			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
-			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
+			_threadStateListenable?.removeListener(_onThreadStateListenableUpdate);
+			(_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread))
+				.addListener(_onThreadStateListenableUpdate);
 			_suggestedNewGeneral = null;
 			_rejectedNewGeneralSuggestion = null;
 			_weakNavigatorKey.currentState!.popAllExceptFirst();
@@ -1921,7 +1924,7 @@ class ThreadPageState extends State<ThreadPage> {
 	@override
 	void dispose() {
 		super.dispose();
-		_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
+		_threadStateListenable?.removeListener(_onThreadStateListenableUpdate);
 		_listController.dispose();
 		if (_parentTab?.threadPageState == this) {
 			_parentTab?.threadPageState = null;
