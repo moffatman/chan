@@ -59,7 +59,9 @@ SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 										if (error != null) {
 											return Text('Error: ${error.toStringDio()}');
 										}
-										return const CircularProgressIndicator.adaptive();
+										return const Center(
+											child: CircularProgressIndicator.adaptive()
+										);
 									}
 								),
 								actions: [
