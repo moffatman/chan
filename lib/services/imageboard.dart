@@ -199,7 +199,26 @@ class Imageboard extends ChangeNotifier {
 		final forcedCheckFuture = () async {
 			await Future.delayed(const Duration(seconds: 12));
 			if (!postShowedUpCompleter.isCompleted) {
-				await threadWatcher.updateThread(threadIdentifier);
+				while (!postShowedUpCompleter.isCompleted) {
+					try {
+						await threadWatcher.updateThread(threadIdentifier);
+						break;
+					}
+					catch (e, st) {
+						Future.error(e, st); // crashlytics
+						// Try again after some time
+						await Future.delayed(switch (e) {
+							dio.DioError() => switch (e.error) {
+								// Flaky network connection (TCP reset / timeout)
+								HttpException || SocketException => const Duration(seconds: 1),
+								// Something higher level -- bad status code?
+								_ => const Duration(seconds: 15)
+							},
+							// Something else -- internal?
+							_ => const Duration(seconds: 25)
+						});
+					}
+				}
 				// Give listener() some time to always finish first
 				await Future.delayed(const Duration(seconds: 1));
 			}
