@@ -5,6 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
 
+final lineSeparatorPattern = RegExp(r'\r?\n');
+
 extension SafeWhere<T> on Iterable<T> {
 	T? tryFirstWhere(bool Function(T v) f) {
 		for (final v in this) {

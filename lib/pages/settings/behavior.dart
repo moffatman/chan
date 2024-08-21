@@ -54,7 +54,7 @@ final behaviorSettings = [
 		)),
 		builder: (filterConfiguration) {
 			int filterCount = 0;
-			for (final line in filterConfiguration.split('\n').asMap().entries) {
+			for (final line in filterConfiguration.split(lineSeparatorPattern).asMap().entries) {
 				if (line.value.isEmpty) {
 					continue;
 				}

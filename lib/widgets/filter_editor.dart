@@ -115,7 +115,7 @@ class _FilterEditorState extends State<FilterEditor> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
 		final filters = <int, CustomFilter>{};
-		for (final line in settings.filterConfiguration.split('\n').asMap().entries) {
+		for (final line in settings.filterConfiguration.split(lineSeparatorPattern).asMap().entries) {
 			if (line.value.isEmpty) {
 				continue;
 			}
@@ -837,7 +837,7 @@ class _FilterEditorState extends State<FilterEditor> {
 									value: !filter.value.disabled,
 									onChanged: (value) {
 										filter.value.disabled = !filter.value.disabled;
-										final lines = settings.filterConfiguration.split('\n');
+										final lines = settings.filterConfiguration.split(lineSeparatorPattern);
 										lines[filter.key] = filter.value.toStringConfiguration();
 										settings.filterConfiguration = lines.join('\n');
 										regexController.text = settings.filterConfiguration;
@@ -847,7 +847,7 @@ class _FilterEditorState extends State<FilterEditor> {
 							onTap: () async {
 								final newFilter = await editFilter(filter.value);
 								if (newFilter != null) {
-									final lines = settings.filterConfiguration.split('\n');
+									final lines = settings.filterConfiguration.split(lineSeparatorPattern);
 									if (newFilter.$1) {
 										final removed = lines.removeAt(filter.key);
 										if (context.mounted) {

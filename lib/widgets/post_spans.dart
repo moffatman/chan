@@ -975,7 +975,6 @@ class PostCodeSpan extends PostSpan {
 
 	const PostCodeSpan(this.text);
 
-	static final _newlinePattern = RegExp(r'\n');
 	static final _startsWithCapitalLetterPattern = RegExp(r'^[A-Z]');
 
 	@override
@@ -990,7 +989,7 @@ class PostCodeSpan extends PostSpan {
 				)
 			);
 		}
-		final lineCount = _newlinePattern.allMatches(text).length + 1;
+		final lineCount = lineSeparatorPattern.allMatches(text).length + 1;
 		final result = zone.getFutureForComputation(
 			id: 'languagedetect ${identityHashCode(text)} ${text.substring(0, (text.length - 1).clamp(0, 10))}',
 			work: () async {

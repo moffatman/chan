@@ -695,8 +695,7 @@ final _configurationLinePattern = RegExp(r'^#?([^\/]*)\/(.*)\/([is]*)(;([^;]+))?
 
 FilterGroup<CustomFilter> makeFilter(String configuration) {
 	final filters = <CustomFilter>[];
-	for (final pair in configuration.split('\n').indexed) {
-		final (i, line) = pair;
+	for (final (i, line) in configuration.split(lineSeparatorPattern).indexed) {
 		if (line.isEmpty) {
 			continue;
 		}

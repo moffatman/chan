@@ -1,6 +1,7 @@
 import 'package:chan/pages/settings/common.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -72,7 +73,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 									controller: controller,
 									enableIMEPersonalizedLearning: false,
 									onChanged: (s) {
-										Settings.instance.setHiddenImageMD5s(s.split('\n').where((x) => x.isNotEmpty));
+										Settings.instance.setHiddenImageMD5s(s.split(lineSeparatorPattern).where((x) => x.isNotEmpty));
 									},
 									maxLines: null
 								)
