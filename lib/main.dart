@@ -613,7 +613,9 @@ class ChanTabs extends ChangeNotifier {
 
 	void _onSomeNavigatorNavigated() {
 		// Recalculate shouldEnableWideDrawerGesture
-		Future.microtask(notifyListeners);
+		if (Settings.instance.androidDrawer) {
+			Future.microtask(notifyListeners);
+		}
 	}
 
 	Future<void> _didModifyPersistentTabData() async {
