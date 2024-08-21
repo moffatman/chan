@@ -315,6 +315,9 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onPlayerError(String error) {
+		if (_isDisposed) {
+			return;
+		}
 		_playerErrorStream.add(error);
 	}
 
