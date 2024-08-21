@@ -1962,7 +1962,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}
 		}
 		final dev = devImageboard;
-		if (dev != null && _devNotificationsSubscription?.notifications != dev.notifications) {
+		if (dev != null && dev.initialized && _devNotificationsSubscription?.notifications != dev.notifications) {
 			_devNotificationsSubscription?.subscription.cancel();
 			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.stream.listen((target) {
 				_onDevNotificationTapped(target.boardThreadOrPostId);
