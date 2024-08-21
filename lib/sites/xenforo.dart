@@ -138,7 +138,7 @@ class SiteXenforo extends ImageboardSite {
 								else {
 									yield const PostTextSpan('• ');
 								}
-								yield* visit(li.nodes, listDepth: listDepth + 1);
+								yield* visit(li.nodes.trim(), listDepth: listDepth + 1);
 								addLinebreakBefore = true;
 								i++;
 							}
