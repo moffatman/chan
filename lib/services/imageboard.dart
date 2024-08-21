@@ -506,7 +506,6 @@ class ImageboardRegistry extends ChangeNotifier {
 			try {
 				final siteKeysToRemove = _sites.keys.toList();
 				final initializations = <Future<void>>[];
-				final microtasks = <Future<void> Function()>[];
 				final yourSites = sites.entries.where((e) => keys.contains(e.key));
 				if (yourSites.isEmpty) {
 					throw Exception('No site data available for $keys');
@@ -523,33 +522,8 @@ class ImageboardRegistry extends ChangeNotifier {
 						key: entry.key
 					);
 					initializations.add(_sites[entry.key]!.initialize());
-					// Only try to reauth on wifi
-					microtasks.add(() async {
-						if (!_sites[entry.key]!.initialized) {
-							return;
-						}
-						final site = _sites[entry.key]!.site;
-						final savedFields = site.loginSystem?.getSavedLoginFields();
-						if (savedFields != null && Settings.instance.isConnectedToWifi) {
-							try {
-								await site.loginSystem!.login(savedFields);
-								print('Auto-logged-in to ${site.loginSystem?.name}');
-							}
-							catch (e) {
-								if (context.mounted) {
-									showToast(
-										context: context,
-										icon: CupertinoIcons.exclamationmark_triangle,
-										message: 'Failed to log in to ${site.loginSystem?.name}'
-									);
-								}
-								print('Problem auto-logging-in to ${site.loginSystem?.name}: $e');
-							}
-						}
-					});
 				}
 				await Future.wait(initializations);
-				microtasks.forEach(Future.microtask);
 				final initialTabsLength = Persistence.tabs.length;
 				final initialTab = Persistence.tabs[Persistence.currentTabIndex];
 				final initialTabIndex = Persistence.currentTabIndex;
