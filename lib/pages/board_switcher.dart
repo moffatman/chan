@@ -93,7 +93,23 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			boards = currentImageboard.persistence.boards.map(currentImageboard.scope).toList();
 		}
 		else {
-			boards = allImageboards.expand((i) => i.persistence.boards.map(i.scope)).toList();
+			boards = [];
+			for (final entry in Persistence.sharedBoardsBox.mapEntries) {
+				if (entry.key is! String) {
+					continue;
+				}
+				final key = entry.key as String;
+				final slashIndex = key.indexOf('/');
+				if (slashIndex == -1) {
+					continue;
+				}
+				final imageboardKey = key.substring(0, slashIndex);
+				final imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey);
+				if (imageboard == null) {
+					continue;
+				}
+				boards.add(imageboard.scope(entry.value));
+			}
 			if (widget.allowPickingWholeSites) {
 				for (final imageboard in allImageboards) {
 					if (imageboard.site.supportsMultipleBoards) {
@@ -107,7 +123,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				}
 			}
 		}
-		boards.sort((a, b) => a.item.name.toLowerCase().compareTo(b.item.name.toLowerCase()));
 	}
 
 	@override

@@ -1009,7 +1009,12 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
-	Iterable<ImageboardBoard> get boards => sharedBoardsBox.keys.where((k) => (k as String).startsWith('$imageboardKey/')).map((k) => sharedBoardsBox.get(k)!);
+	Iterable<ImageboardBoard> get boards => sharedBoardsBox.keys.where((k) {
+		final str = (k as String);
+		return str.length > (imageboardKey.length + 2)
+			&& str[imageboardKey.length] == '/'
+			&& str.startsWith(imageboardKey);
+	}).map((k) => sharedBoardsBox.get(k)!);
 
 	Future<void> setBoard(String boardName, ImageboardBoard board) async{
 		await sharedBoardsBox.put('$imageboardKey/$boardName', board);
