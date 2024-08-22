@@ -497,21 +497,30 @@ class SiteReddit extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
+	static final _shareLinkPattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.(?:(?:com\/r\/[^\/\n]+\/s\/[^\/\n?]+)|(?:app\.link\/[^\/\n]+))');
+	static final _linkPattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.com\/r\/([^\/\n]+)(\/comments\/([^\/\n]+)(\/[^\/\n]+\/([^?\/\n]+))?)?');
+	static final _redditProtocolPattern = RegExp(r'reddit:\/\/([^ ]+)');
+
 	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		final sharePattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.com\/r\/([^\/\n]+)\/s\/([^\/\n?]+)');
-		if (sharePattern.hasMatch(url)) {
-			final response = await client.head(url);
+		if (_shareLinkPattern.hasMatch(url)) {
+			final response = await client.get(url);
 			String? redirected = response.redirects.tryLast?.location.toString();
-			if (redirected != null && !sharePattern.hasMatch(redirected)) {
+			if (redirected != null && !_shareLinkPattern.hasMatch(redirected)) {
 				if (redirected.startsWith('/')) {
 					redirected = 'https://$baseUrl$redirected';
 				}
 				return await decodeUrl(redirected);
 			}
+			if (response.data is String) {
+				// Look for "reddit:///r/subreddit/..." in the JavaScript redirect page
+				final redditProtocolMatch = _redditProtocolPattern.firstMatch(response.data);
+				if (redditProtocolMatch != null) {
+					return await decodeUrl('https://$baseUrl${redditProtocolMatch.group(1)}');
+				}
+			}
 		}
-		final pattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.com\/r\/([^\/\n]+)(\/comments\/([^\/\n]+)(\/[^\/\n]+\/([^?\/\n]+))?)?');
-		final match = pattern.firstMatch(url);
+		final match = _linkPattern.firstMatch(url);
 		if (match != null) {
 			int? threadId;
 			int? postId;

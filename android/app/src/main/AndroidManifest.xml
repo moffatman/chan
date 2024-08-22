@@ -70,6 +70,7 @@
                <!-- reddit -->
                <data android:scheme="https" android:host="reddit.com"/>
                <data android:scheme="https" android:host="*.reddit.com"/>
+               <data android:scheme="https" android:host="reddit.app.link"/>
                <!-- soyjak -->
                <data android:scheme="https" android:host="soyjak.party"/>
                <!-- voidchan -->
