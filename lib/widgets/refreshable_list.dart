@@ -3760,6 +3760,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
 			throw Exception('Scrolling timed out');
 		}
+		if (_isDisposed) {
+			return;
+		}
 		double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset;
 		final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset - bottomOffset;
 		if (targetIndex == _items.length - 1) {
