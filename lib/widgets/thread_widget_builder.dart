@@ -78,7 +78,10 @@ class ThreadWidgetBuilder extends StatelessWidget {
 								mayObscure: true,
 								width: 30,
 								height: 30,
-								site: imageboard?.site
+								site: imageboard?.site,
+								onLoadError: (e, st) {
+									imageboard?.threadWatcher.fixBrokenThread(threadState!.identifier);
+								},
 							)
 						);
 					}
