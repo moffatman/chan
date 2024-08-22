@@ -783,7 +783,7 @@ class SiteReddit extends ImageboardSite {
 						height: data['preview']['images'][0]['source']?['height'],
 						md5: '',
 						sizeInBytes: null,
-						thumbnailUrl: url.$2.thumbnailUrl ?? (data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : '')
+						thumbnailUrl: url.$2.thumbnailUrl ?? (data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString())
 					)));
 				}
 			}
