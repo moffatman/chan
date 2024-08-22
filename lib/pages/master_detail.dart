@@ -123,7 +123,7 @@ class MultiMasterPane<T> {
 	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
 	ValueNotifier<T?> currentValue;
 	final ValueChanged<T?>? onValueChanged;
-	DateTime? _lastAutomatedPop;
+	int _automatedPopStack = 0;
 	final bool useRootNavigator;
 
 	MultiMasterPane({
@@ -155,7 +155,8 @@ class MultiMasterPane<T> {
 	}
 
 	void onPushReturn(dynamic value) {
-		if (_lastAutomatedPop == null || DateTime.now().difference(_lastAutomatedPop!) > const Duration(milliseconds: 300)) {
+		if (_automatedPopStack-- <= 0) {
+			_automatedPopStack = 0;
 			// it was a user-initiated pop
 			currentValue.value = null;
 			callOnValueChanged(null);
@@ -300,7 +301,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			masterKey.currentState?.popUntil((route) {
 				continuePopping = route.settings != dontAutoPopSettings;
 				if (continuePopping) {
-					panes[selectedPane]._lastAutomatedPop = DateTime.now();
+					panes[selectedPane]._automatedPopStack++;
 					masterKey.currentState?.pop();
 				}
 				return true;
@@ -462,7 +463,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			else {
 				_popMasterValueRoutes();
 				while (detailKey.currentState?.canPop() ?? false) {
-					pane._lastAutomatedPop = DateTime.now();
+					pane._automatedPopStack++;
 					detailKey.currentState?.pop();
 				}
 			}
