@@ -168,6 +168,17 @@ class DraftPostFields {
     fieldName: 'useLoginSystem',
     merger: PrimitiveMerger(),
   );
+  static bool getOverrideRandomizeFilenames(DraftPost x) =>
+      x.overrideRandomizeFilenames;
+  static void setOverrideRandomizeFilenames(DraftPost x, bool v) =>
+      x.overrideRandomizeFilenames = v;
+  static const overrideRandomizeFilenames = HiveFieldAdapter<DraftPost, bool>(
+    getter: getOverrideRandomizeFilenames,
+    setter: setOverrideRandomizeFilenames,
+    fieldNumber: 11,
+    fieldName: 'overrideRandomizeFilenames',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class DraftPostAdapter extends TypeAdapter<DraftPost> {
@@ -190,7 +201,8 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
     7: DraftPostFields.spoiler,
     8: DraftPostFields.overrideFilenameWithoutExtension,
     9: DraftPostFields.flag,
-    10: DraftPostFields.useLoginSystem
+    10: DraftPostFields.useLoginSystem,
+    11: DraftPostFields.overrideRandomizeFilenames
   };
 
   @override
@@ -211,13 +223,15 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
       overrideFilenameWithoutExtension: fields[8] as String?,
       flag: fields[9] as ImageboardBoardFlag?,
       useLoginSystem: fields[10] as bool?,
+      overrideRandomizeFilenames:
+          fields[11] == null ? false : fields[11] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, DraftPost obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.board)
       ..writeByte(1)
@@ -239,7 +253,9 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
       ..writeByte(9)
       ..write(obj.flag)
       ..writeByte(10)
-      ..write(obj.useLoginSystem);
+      ..write(obj.useLoginSystem)
+      ..writeByte(11)
+      ..write(obj.overrideRandomizeFilenames);
   }
 
   @override

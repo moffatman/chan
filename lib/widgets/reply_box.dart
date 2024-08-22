@@ -160,6 +160,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	final Map<ImageboardSnippet, TextEditingController> _snippetControllers = {};
 	final List<QueuedPost> _submittingPosts = [];
 	bool _showSubmittingPosts = false;
+	bool _overrideRandomizeFilenames = false;
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
 		int threadId => ThreadIdentifier(widget.board, threadId),
@@ -196,6 +197,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				false => true,
 				null || true => false
 			};
+			_overrideRandomizeFilenames = draft.overrideRandomizeFilenames;
 		}
 		else {
 			_textFieldController.clear();
@@ -203,6 +205,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_subjectFieldController.clear();
 			_nameFieldController.text = defaultName;
 			// Don't clear disableLoginSystem
+			_overrideRandomizeFilenames = false;
 		}
 		final file = draft?.file;
 		if (file == attachment?.path) {
@@ -345,6 +348,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		file: attachment?.path,
 		spoiler: spoiler,
 		overrideFilenameWithoutExtension: _filenameController.text,
+		overrideRandomizeFilenames: _overrideRandomizeFilenames,
 		flag: flag,
 		useLoginSystem: switch (_disableLoginSystem) {
 			true => false,
@@ -371,6 +375,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (widget.initialDraft?.useLoginSystem == false) {
 			_disableLoginSystem = true;
 		}
+		_overrideRandomizeFilenames = widget.initialDraft?.overrideRandomizeFilenames ?? false;
 		_textFocusNode = FocusNode();
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
@@ -1226,17 +1231,27 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								Row(
 									children: [
 										Flexible(
-											child: AdaptiveTextField(
-												enabled: !settings.randomizeFilenames && !loading,
-												controller: _filenameController,
-												placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
-												maxLines: 1,
-												textCapitalization: TextCapitalization.none,
-												autocorrect: false,
-												enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-												smartDashesType: SmartDashesType.disabled,
-												smartQuotesType: SmartQuotesType.disabled,
-												keyboardAppearance: ChanceTheme.brightnessOf(context)
+											child: Opacity(
+												opacity: settings.randomizeFilenames && !_overrideRandomizeFilenames ? 0.5 : 1.0,
+												child: AdaptiveTextField(
+													enabled: !loading,
+													controller: _filenameController,
+													onTap: () {
+														if (settings.randomizeFilenames && !_overrideRandomizeFilenames) {
+															setState(() {
+																_overrideRandomizeFilenames = true;
+															});
+														}
+													},
+													placeholder: attachment == null ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+													maxLines: 1,
+													textCapitalization: TextCapitalization.none,
+													autocorrect: false,
+													enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+													smartDashesType: SmartDashesType.disabled,
+													smartQuotesType: SmartQuotesType.disabled,
+													keyboardAppearance: ChanceTheme.brightnessOf(context)
+												)
 											)
 										),
 										const SizedBox(width: 8),
@@ -1288,14 +1303,27 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											icon: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
-													Icon(settings.randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+													Icon(
+														settings.randomizeFilenames ?
+															(_overrideRandomizeFilenames ?
+																CupertinoIcons.minus_square :
+																CupertinoIcons.checkmark_square
+															) : CupertinoIcons.square
+													),
 													const Text('Random')
 												]
 											),
 											onPressed: () {
-												setState(() {
-													Settings.randomizeFilenamesSetting.value = !settings.randomizeFilenames;
-												});
+												if (_overrideRandomizeFilenames) {
+													setState(() {
+														_overrideRandomizeFilenames = false;
+													});
+												}
+												else {
+													setState(() {
+														Settings.randomizeFilenamesSetting.value = !settings.randomizeFilenames;
+													});
+												}
 											}
 										),
 										if (board.spoilers == true) AdaptiveIconButton(
@@ -2084,6 +2112,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			(draft.file?.isNotEmpty ?? false) ||
 			draft.flag != null ||
 			(draft.overrideFilenameWithoutExtension?.isNotEmpty ?? false) ||
+			draft.overrideRandomizeFilenames ||
 			(draft.subject?.isNotEmpty ?? false) ||
 			draft.text.isNotEmpty;
 	}

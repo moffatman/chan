@@ -1160,6 +1160,8 @@ class DraftPost {
 	final ImageboardBoardFlag? flag;
 	@HiveField(10)
 	bool? useLoginSystem;
+	@HiveField(11, defaultValue: false)
+	bool overrideRandomizeFilenames;
 
 	DraftPost({
 		required this.board,
@@ -1172,7 +1174,8 @@ class DraftPost {
 		this.spoiler,
 		this.overrideFilenameWithoutExtension,
 		this.flag,
-		required this.useLoginSystem
+		required this.useLoginSystem,
+		this.overrideRandomizeFilenames = false
 	});
 
 	ImageboardAction get action =>
@@ -1191,7 +1194,7 @@ class DraftPost {
 		if ((override?.isEmpty ?? true) || file == null) {
 			return null;
 		}
-		if (Settings.instance.randomizeFilenames) {
+		if (Settings.instance.randomizeFilenames && !overrideRandomizeFilenames) {
 			return '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.$fileExt';
 		}
 		return '$override.$fileExt';
@@ -1210,13 +1213,14 @@ class DraftPost {
 		other.spoiler == spoiler &&
 		other.overrideFilenameWithoutExtension == overrideFilenameWithoutExtension &&
 		other.flag == flag &&
-		other.useLoginSystem == useLoginSystem;
+		other.useLoginSystem == useLoginSystem &&
+		other.overrideRandomizeFilenames == overrideRandomizeFilenames;
 	
 	@override
-	int get hashCode => Object.hash(board, threadId, name, options, subject, file, spoiler, overrideFilenameWithoutExtension, flag, useLoginSystem);
+	int get hashCode => Object.hash(board, threadId, name, options, subject, file, spoiler, overrideFilenameWithoutExtension, flag, useLoginSystem, overrideRandomizeFilenames);
 
 	@override
-	String toString() => 'DraftPost(board: $board, threadId: $threadId, name: $name, options: $options, subject: $subject, file: $file, spoiler: $spoiler, overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension, flag: $flag, useLoginSystem: $useLoginSystem)';
+	String toString() => 'DraftPost(board: $board, threadId: $threadId, name: $name, options: $options, subject: $subject, file: $file, spoiler: $spoiler, overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension, flag: $flag, useLoginSystem: $useLoginSystem, overrideRandomizeFilenames: $overrideRandomizeFilenames)';
 }
 
 @HiveType(typeId: 48)
