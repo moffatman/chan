@@ -530,6 +530,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		return AnimatedBuilder(
 			animation: _currentAttachmentChanged,
 			builder: (context, child) {
+				final maxCrossAxisExtent = Settings.thumbnailSizeSetting.watch(context) * 1.5;
 				final insideBackdropFilter = Container(
 					color: Colors.black38,
 					child: Column(
@@ -631,7 +632,7 @@ class _GalleryPageState extends State<GalleryPage> {
 									scrollDirection: Axis.horizontal,
 									controller: _gridViewScrollController,
 									gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-										maxCrossAxisExtent: Settings.thumbnailSizeSetting.watch(context) * 1.5
+										maxCrossAxisExtent: maxCrossAxisExtent
 									),
 									itemBuilder: (context, index) {
 										if (index == widget.attachments.length) {
@@ -673,6 +674,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													color: attachment == currentAttachment ? theme.primaryColor : null
 												),
 												child: Stack(
+													fit: StackFit.expand,
 													children: [
 														ClipRRect(
 															borderRadius: BorderRadius.circular(8),
@@ -680,8 +682,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																gaplessPlayback: true,
 																attachment: attachment.attachment,
 																hero: null,
-																width: 9999,
-																height: 9999,
+																width: maxCrossAxisExtent,
+																height: maxCrossAxisExtent,
 																fit: BoxFit.cover,
 																mayObscure: true
 															) : SavedAttachmentThumbnail(
