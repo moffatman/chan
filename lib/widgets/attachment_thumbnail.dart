@@ -11,7 +11,6 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
-import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
@@ -163,7 +162,6 @@ class AttachmentThumbnail extends StatelessWidget {
 		else {
 			filterQuality = FilterQuality.low;
 		}
-		final barColor = ChanceTheme.barColorOf(context);
 		Widget child;
 		if (settings.loadThumbnails) {
 			final primaryColor = ChanceTheme.primaryColorOf(context);
@@ -217,29 +215,12 @@ class AttachmentThumbnail extends StatelessWidget {
 				filterQuality: filterQuality,
 				loadStateChanged: (loadstate) {
 					if (loadstate.extendedImageLoadState == LoadState.loading) {
-						return ConstrainedBox(
-							constraints: BoxConstraints(
-								maxWidth: expand ? double.infinity : effectiveWidth,
-								maxHeight: expand ? double.infinity : effectiveHeight
-							),
-							child: WidgetDecoration(
-								position: DecorationPosition.foreground,
-								decoration: const Center(
-									child: CircularProgressIndicator.adaptive()
-								),
-								child: FittedBox(
-									fit: fit,
-									child: SizedBox(
-										width: (attachment.width ?? effectiveWidth).toDouble(),
-										height: (attachment.height ?? effectiveHeight).toDouble(),
-										child: DecoratedBox(
-											decoration: BoxDecoration(
-												color: barColor
-											)
-										)
-									)
-								)
-							)
+						return _AttachmentThumbnailPlaceholder(
+							effectiveWidth: effectiveWidth,
+							effectiveHeight: effectiveHeight,
+							attachment: attachment,
+							fit: fit,
+							child: const CircularProgressIndicator.adaptive()
 						);
 					}
 					else if (
@@ -254,13 +235,13 @@ class AttachmentThumbnail extends StatelessWidget {
 						if (loadstate.extendedImageLoadState == LoadState.failed) {
 							onLoadError?.call(loadstate.lastException, loadstate.lastStack);
 						}
-						return Container(
-							width: effectiveWidth,
-							height: effectiveHeight,
-							color: barColor,
-							child: Center(
-								child: Icon((loadstate.extendedImageLoadState == LoadState.failed && url.isNotEmpty ? CupertinoIcons.exclamationmark_triangle_fill : (attachment.icon ?? Adaptive.icons.photo)), size: (0.5 * min(effectiveWidth, effectiveHeight)).clamp(24, 100))
-							)
+						return _AttachmentThumbnailPlaceholder(
+							child: null,
+							icon: loadstate.extendedImageLoadState == LoadState.failed && url.isNotEmpty ? CupertinoIcons.exclamationmark_triangle_fill : (attachment.icon ?? Adaptive.icons.photo),
+							effectiveWidth: effectiveWidth,
+							effectiveHeight: effectiveHeight,
+							attachment: attachment,
+							fit: fit
 						);
 					}
 					else if (loadstate.extendedImageLoadState == LoadState.completed) {
@@ -288,16 +269,13 @@ class AttachmentThumbnail extends StatelessWidget {
 			}
 		}
 		else {
-			child = Container(
-				width: effectiveWidth,
-				height: effectiveHeight,
-				color: barColor,
-				child: Center(
-					child: Icon(
-						attachment.icon ?? Adaptive.icons.photo,
-						size: max(24, 0.5 * min(effectiveWidth, effectiveHeight))
-					)
-				)
+			child = _AttachmentThumbnailPlaceholder(
+				child: null,
+				icon: attachment.icon ?? Adaptive.icons.photo,
+				effectiveWidth: effectiveWidth,
+				effectiveHeight: effectiveHeight,
+				attachment: attachment,
+				fit: fit
 			);
 		}
 		return (hero != null) ? Hero(
@@ -324,5 +302,127 @@ class AttachmentThumbnail extends StatelessWidget {
 				return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 			}
 		) : child;
+	}
+}
+
+class _AttachmentThumbnailPlaceholder extends StatelessWidget {
+	final Widget? child;
+	final IconData? icon;
+	final Attachment attachment;
+	final double effectiveWidth;
+	final double effectiveHeight;
+	final BoxFit fit;
+
+	const _AttachmentThumbnailPlaceholder({
+		required this.child,
+		this.icon,
+		required this.attachment,
+		required this.effectiveWidth,
+		required this.effectiveHeight,
+		required this.fit
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		final theme = context.watch<SavedTheme>();
+		return CustomSingleChildLayout(
+			delegate: _AttachmentThumbnailPlaceholderLayoutDelegate(
+				attachment: attachment,
+				effectiveWidth: effectiveWidth,
+				effectiveHeight: effectiveHeight,
+				fit: fit
+			),
+			child: DecoratedBox(
+				decoration: BoxDecoration(
+					color: theme.barColor
+				),
+				child: Center(
+					child: switch (icon) {
+						IconData icon => CustomPaint(
+							painter: _AttachmentThumbnailPlaceholderIconCustomPainter(
+								icon: icon,
+								color: theme.primaryColor
+							),
+							child: const SizedBox.expand()
+						),
+						null => child
+					}
+				)
+			)
+		);
+	}
+}
+
+class _AttachmentThumbnailPlaceholderLayoutDelegate extends SingleChildLayoutDelegate {
+	final BoxFit fit;
+	final double effectiveWidth;
+	final double effectiveHeight;
+	final Attachment attachment;
+
+	_AttachmentThumbnailPlaceholderLayoutDelegate({
+		required this.fit,
+		required this.effectiveWidth,
+		required this.effectiveHeight,
+		required this.attachment
+	});
+
+	Size _getChildSize(BoxConstraints constraints) {
+		return applyBoxFit(fit, Size(attachment.width?.toDouble() ?? effectiveWidth, attachment.height?.toDouble() ?? effectiveHeight), constraints.biggest).destination;
+	}
+
+	@override
+	Size getSize(BoxConstraints constraints) {
+		return _getChildSize(constraints);
+	}
+
+	@override
+	BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+		return BoxConstraints.tight(_getChildSize(constraints));
+	}
+
+	@override
+	Offset getPositionForChild(Size size, Size childSize) {
+		return Alignment.center.inscribe(childSize, Offset.zero & size).topLeft;
+	}
+
+	@override
+	bool shouldRelayout(_AttachmentThumbnailPlaceholderLayoutDelegate oldDelegate) {
+		return
+			oldDelegate.fit != fit ||
+			oldDelegate.effectiveWidth != effectiveWidth ||
+			oldDelegate.effectiveHeight != effectiveHeight ||
+			oldDelegate.attachment != attachment;
+	}
+}
+
+class _AttachmentThumbnailPlaceholderIconCustomPainter extends CustomPainter {
+	final IconData icon;
+	final Color color;
+
+	_AttachmentThumbnailPlaceholderIconCustomPainter({
+		required this.icon,
+		required this.color
+	});
+
+	@override
+	void paint(Canvas canvas, Size size) {
+		final fontSize = (0.5 * size.shortestSide).clamp(24.0, 100.0);
+		TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+		textPainter.text = TextSpan(
+			text: String.fromCharCode(icon.codePoint),
+			style: TextStyle(
+				fontSize: fontSize,
+				fontFamily: icon.fontFamily,
+				color: color,
+				package: icon.fontPackage
+			)
+		);
+		textPainter.layout();
+		textPainter.paint(canvas, Alignment.center.inscribe(textPainter.size, Offset.zero & size).topLeft);
+	}
+
+	@override
+	bool shouldRepaint(_AttachmentThumbnailPlaceholderIconCustomPainter oldDelegate) {
+		return oldDelegate.icon != icon;
 	}
 }
