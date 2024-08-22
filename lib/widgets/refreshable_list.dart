@@ -2810,7 +2810,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															children: [
 																const Icon(CupertinoIcons.search),
 																const SizedBox(width: 8),
-																Text('Search ${widget.filterAlternative?.name}')
+																Expanded(
+																	child: Text(
+																		'Search ${widget.filterAlternative?.name}',
+																		textAlign: TextAlign.left
+																	)
+																)
 															]
 														)
 													)
