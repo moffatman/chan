@@ -544,6 +544,22 @@ class Persistence extends ChangeNotifier {
 			settings.appliedMigrations.add('sf');
 			await settings.save();
 		}
+		if (!settings.appliedMigrations.contains('bB')) {
+			// bB = board capitalization. They were stored with mixed caps before
+			for (final pair in sharedBoardsBox.toMap().entries) {
+				// This kind of mangles the greek letter boards on lainchan.
+				// But I guess they wouldn't reuse the same letter.
+				final lowerCase = pair.key.toString().toLowerCase();
+				if (pair.key != lowerCase) {
+					// Need to migrate it
+					await sharedBoardsBox.delete(pair.key);
+					await sharedBoardsBox.put(lowerCase, pair.value);
+				}
+			}
+			await sharedBoardsBox.flush();
+			settings.appliedMigrations.add('bB');
+			await settings.save();
+		}
 	}
 
 	static void ensureSane() {
@@ -838,7 +854,7 @@ class Persistence extends ChangeNotifier {
 		if (settings.deprecatedBoardsBySite.containsKey(imageboardKey)) {
 			print('Migrating to shared boards box');
 			for (final board in settings.deprecatedBoardsBySite[imageboardKey]!.values) {
-				sharedBoardsBox.put('$imageboardKey/${board.name}', board);
+				sharedBoardsBox.put('$imageboardKey/${board.name.toLowerCase()}', board);
 			}
 			settings.deprecatedBoardsBySite.remove(imageboardKey);
 		}
@@ -990,7 +1006,7 @@ class Persistence extends ChangeNotifier {
 		return newState;
 	}
 
-	ImageboardBoard? maybeGetBoard(String boardName) => sharedBoardsBox.get('$imageboardKey/$boardName');
+	ImageboardBoard? maybeGetBoard(String boardName) => sharedBoardsBox.get('$imageboardKey/${boardName.toLowerCase()}');
 
 	ImageboardBoard getBoard(String boardName) {
 		final board = maybeGetBoard(boardName);
@@ -1017,7 +1033,7 @@ class Persistence extends ChangeNotifier {
 	}).map((k) => sharedBoardsBox.get(k)!);
 
 	Future<void> setBoard(String boardName, ImageboardBoard board) async{
-		await sharedBoardsBox.put('$imageboardKey/$boardName', board);
+		await sharedBoardsBox.put('$imageboardKey/${boardName.toLowerCase()}', board);
 	}
 
 	Future<void> removeBoard(String boardName) async{
@@ -1093,7 +1109,7 @@ class Persistence extends ChangeNotifier {
 			}
 		}
 		for (final newBoard in newBoards) {
-			final key = '$imageboardKey/${newBoard.name}';
+			final key = '$imageboardKey/${newBoard.name.toLowerCase()}';
 			if (sharedBoardsBox.get(key)?.additionalDataTime == null) {
 				sharedBoardsBox.put(key, newBoard);
 			}
