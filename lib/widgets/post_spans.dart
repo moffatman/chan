@@ -349,7 +349,7 @@ class PostAttachmentsSpan extends PostSpan {
 									width: 250,
 									height: 250,
 									mayObscure: true,
-									showIconInCorner: (
+									cornerIcon: AttachmentThumbnailCornerIcon(
 										backgroundColor: theme.backgroundColor,
 										borderColor: theme.primaryColorWithBrightness(0.2),
 										size: null

@@ -1239,24 +1239,27 @@ class AttachmentViewer extends StatelessWidget {
 				enableLoadState: true,
 				handleLoadingProgress: true,
 				layoutInsets: inContextMenu ? EdgeInsets.zero : layoutInsets,
-				afterPaintImage: (canvas, rect, image, paint) {
-					final transform = Matrix4.identity();
-					transform.setFromTranslationRotationScale(Vector3(rect.left, rect.top, 0), Quaternion.identity(), Vector3(rect.width / image.width, rect.height / image.height, 0));
-					for (final block in controller.textBlocks) {
-						// Assume the text is always one line
-						final transformedRect = MatrixUtils.transformRect(transform, block.rect);
-						double fontSize = 14;
-						final builder1 = ui.ParagraphBuilder(ui.ParagraphStyle())..pushStyle(ui.TextStyle(fontSize: fontSize))..addText(block.text)..pop();
-						final paragraph1 = builder1.build();
-						paragraph1.layout(const ui.ParagraphConstraints(width: double.infinity));
-						fontSize *= min(transformedRect.width / paragraph1.maxIntrinsicWidth, transformedRect.height / paragraph1.height);
-						final builder2 = ui.ParagraphBuilder(ui.ParagraphStyle())..pushStyle(ui.TextStyle(fontSize: fontSize, color: Colors.black))..addText(block.text)..pop();
-						final paragraph2 = builder2.build();
-						paragraph2.layout(const ui.ParagraphConstraints(width: double.infinity));
-						canvas.drawRect(transformedRect, Paint()..color = Colors.white.withOpacity(1));
-						canvas.drawParagraph(paragraph2, transformedRect.topLeft + Offset(0, max(0, (paragraph2.height - transformedRect.height) / 2)));
+				afterPaintImage: (
+					key: controller.textBlocks.toString(),
+					fn: (canvas, rect, image, paint) {
+						final transform = Matrix4.identity();
+						transform.setFromTranslationRotationScale(Vector3(rect.left, rect.top, 0), Quaternion.identity(), Vector3(rect.width / image.width, rect.height / image.height, 0));
+						for (final block in controller.textBlocks) {
+							// Assume the text is always one line
+							final transformedRect = MatrixUtils.transformRect(transform, block.rect);
+							double fontSize = 14;
+							final builder1 = ui.ParagraphBuilder(ui.ParagraphStyle())..pushStyle(ui.TextStyle(fontSize: fontSize))..addText(block.text)..pop();
+							final paragraph1 = builder1.build();
+							paragraph1.layout(const ui.ParagraphConstraints(width: double.infinity));
+							fontSize *= min(transformedRect.width / paragraph1.maxIntrinsicWidth, transformedRect.height / paragraph1.height);
+							final builder2 = ui.ParagraphBuilder(ui.ParagraphStyle())..pushStyle(ui.TextStyle(fontSize: fontSize, color: Colors.black))..addText(block.text)..pop();
+							final paragraph2 = builder2.build();
+							paragraph2.layout(const ui.ParagraphConstraints(width: double.infinity));
+							canvas.drawRect(transformedRect, Paint()..color = Colors.white.withOpacity(1));
+							canvas.drawParagraph(paragraph2, transformedRect.topLeft + Offset(0, max(0, (paragraph2.height - transformedRect.height) / 2)));
+						}
 					}
-				},
+				),
 				rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
 				loadStateChanged: (loadstate) {
 					// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback

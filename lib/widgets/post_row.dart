@@ -429,7 +429,7 @@ class PostRow extends StatelessWidget {
 												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 												shrinkHeight: !settings.squareThumbnails,
 												mayObscure: true,
-												showIconInCorner: (
+												cornerIcon: AttachmentThumbnailCornerIcon(
 													backgroundColor: theme.backgroundColor,
 													borderColor: theme.primaryColorWithBrightness(0.2),
 													size: null
@@ -595,7 +595,7 @@ class PostRow extends StatelessWidget {
 															attachment: a,
 															semanticParentIds: parentZone.stackIds
 														),
-														showIconInCorner: (
+														cornerIcon: AttachmentThumbnailCornerIcon(
 															backgroundColor: theme.backgroundColor,
 															borderColor: theme.primaryColorWithBrightness(0.2),
 															size: (largeImageWidth ?? 300) / 10

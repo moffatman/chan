@@ -17,7 +17,6 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
@@ -435,7 +434,7 @@ class ThreadRow extends StatelessWidget {
 										),
 										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 										shrinkHeight: !settings.squareThumbnails,
-										showIconInCorner: (
+										cornerIcon: AttachmentThumbnailCornerIcon(
 											backgroundColor: backgroundColor,
 											borderColor: borderColor,
 											size: null
@@ -555,55 +554,48 @@ class ThreadRow extends StatelessWidget {
 						child: PopupAttachment(
 							attachment: attachment,
 							child: GestureDetector(
-								child: WidgetDecoration(
-									position: DecorationPosition.foreground,
-									decoration: (latestThread.attachments.length > 1 || attachment.icon != null) ? Align(
-										alignment: switch ((settings.catalogGridModeAttachmentInBackground, settings.catalogGridModeTextAboveAttachment)) {
-											(true, true) => Alignment.bottomLeft,
-											(true, false) => Alignment.topRight,
-											(false, true) => Alignment.topRight,
-											(false, false) => Alignment.bottomRight
-										},
-										child: Container(
-											decoration: BoxDecoration(
-												borderRadius: settings.catalogGridModeAttachmentInBackground ?
-																				settings.catalogGridModeTextAboveAttachment ?
-																					const BorderRadius.only(topRight: Radius.circular(6)) :
-																					const BorderRadius.only(bottomLeft: Radius.circular(6))
-																				: const BorderRadius.only(topLeft: Radius.circular(6)),
-												color: backgroundColor,
-												border: Border.all(color: borderColor)
-											),
-											padding: const EdgeInsets.all(2),
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
+								child: ConstrainedBox(
+									constraints: BoxConstraints(
+										maxHeight: settings.useStaggeredCatalogGrid && attachment.type == AttachmentType.url ? settings.thumbnailSize : double.infinity
+									),
+									child: AttachmentThumbnail(
+										fit: attachment.type == AttachmentType.url || settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
+										attachment: attachment,
+										expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
+										height: style == ThreadRowStyle.staggeredGrid ? settings.catalogGridHeight / 2 : null,
+										thread: latestThread.identifier,
+										onLoadError: onThumbnailLoadError,
+										mayObscure: true,
+										cornerIcon: AttachmentThumbnailCornerIcon(
+											backgroundColor: backgroundColor,
+											borderColor: borderColor,
+											size: 19,
+											alignment: switch ((settings.catalogGridModeAttachmentInBackground, settings.catalogGridModeTextAboveAttachment)) {
+												(true, true) => Alignment.bottomLeft,
+												(true, false) => Alignment.topRight,
+												(false, true) => Alignment.topRight,
+												(false, false) => Alignment.bottomRight
+											},
+											appendText: latestThread.attachments.length > 1 ? TextSpan(
 												children: [
-													if (attachment.icon != null) Icon(attachment.icon, size: 19),
-													if (latestThread.attachments.length > 1 && attachment.icon != null) const SizedBox(width: 4),
-													if (latestThread.attachments.length > 1) ...[
-														Text('${latestThread.attachments.length} '),
-														Icon(Adaptive.icons.photos, size: 19)
-													]
+													TextSpan(text: '${latestThread.attachments.length} '),
+													TextSpan(
+														text: String.fromCharCode(Adaptive.icons.photos.codePoint),
+														style: TextStyle(
+															fontSize: 16,
+															height: kTextHeightNone,
+															fontFamily: Adaptive.icons.photos.fontFamily,
+															color: theme.primaryColor,
+															package: Adaptive.icons.photos.fontPackage
+														)
+													),
+													const TextSpan(text: ' ')
 												]
-											)
-										)
-									) : null,
-									child: ConstrainedBox(
-										constraints: BoxConstraints(
-											maxHeight: settings.useStaggeredCatalogGrid && attachment.type == AttachmentType.url ? settings.thumbnailSize : double.infinity
+											) : null
 										),
-										child: AttachmentThumbnail(
-											fit: attachment.type == AttachmentType.url || settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
+										hero: TaggedAttachment(
 											attachment: attachment,
-											expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
-											height: style == ThreadRowStyle.staggeredGrid ? settings.catalogGridHeight / 2 : null,
-											thread: latestThread.identifier,
-											onLoadError: onThumbnailLoadError,
-											mayObscure: true,
-											hero: TaggedAttachment(
-												attachment: attachment,
-												semanticParentIds: semanticParentIds
-											)
+											semanticParentIds: semanticParentIds
 										)
 									)
 								),

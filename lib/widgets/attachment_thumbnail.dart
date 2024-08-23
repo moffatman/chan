@@ -42,6 +42,83 @@ class TaggedAttachment {
 	String toString() => 'AttachmentSemanticLocation($_tag)';
 }
 
+class AttachmentThumbnailCornerIcon {
+	final Color backgroundColor;
+	final Color borderColor;
+	final double? size;
+	final TextSpan? appendText;
+	final Alignment alignment;
+
+	const AttachmentThumbnailCornerIcon({
+		required this.backgroundColor,
+		required this.borderColor,
+		this.size,
+		this.appendText,
+		this.alignment = Alignment.bottomRight
+	});
+}
+
+typedef _AfterPaintKey = (Attachment, AttachmentThumbnailCornerIcon);
+typedef _AfterPaint = void Function(Canvas canvas, Rect rect);
+typedef _KeyedAfterPaint = ({_AfterPaintKey key, _AfterPaint afterPaint});
+
+_KeyedAfterPaint? _makeKeyedAfterPaint({
+	required Attachment attachment,
+	required AttachmentThumbnailCornerIcon? cornerIcon,
+	required IconData? alreadyShowingBigIcon,
+	required Color primaryColor
+}) {
+	if (cornerIcon == null || ((attachment.icon == null || attachment.icon == alreadyShowingBigIcon) && cornerIcon.appendText == null)) {
+		return null;
+	}
+	return (
+		key: (attachment, cornerIcon),
+		afterPaint: (canvas, rect) {
+			final icon = attachment.icon;
+			final appendText = cornerIcon.appendText;
+			if ((icon == null || icon == alreadyShowingBigIcon) && appendText == null) {
+				// Nothing to draw
+				return;
+			}
+			final fontSize = cornerIcon.size ?? 16;
+			TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+			textPainter.text = TextSpan(
+				children: [
+					if (icon != null && icon != alreadyShowingBigIcon) TextSpan(
+						text: String.fromCharCode(icon.codePoint),
+						style: TextStyle(
+							fontSize: fontSize,
+							fontFamily: icon.fontFamily,
+							color: primaryColor,
+							package: icon.fontPackage
+						)
+					),
+					if (icon != null && appendText != null) const TextSpan(text: ' '),
+					if (appendText != null) appendText
+				]
+			);
+			textPainter.layout();
+			final badgeSize = EdgeInsets.all(fontSize / 4).inflateSize(textPainter.size);
+			final badgeRect = cornerIcon.alignment.inscribe(badgeSize, rect);
+			final rrect = RRect.fromRectAndCorners(
+				badgeRect,
+				topLeft: cornerIcon.alignment == Alignment.bottomRight ? Radius.circular(fontSize * 0.375) : Radius.zero,
+				topRight: cornerIcon.alignment == Alignment.bottomLeft ? Radius.circular(fontSize * 0.375) : Radius.zero,
+				bottomLeft: cornerIcon.alignment == Alignment.topRight ? Radius.circular(fontSize * 0.375) : Radius.zero,
+				bottomRight: cornerIcon.alignment == Alignment.topLeft ? Radius.circular(fontSize * 0.375) : Radius.zero
+			);
+			canvas.drawRRect(rrect, Paint()
+				..color = cornerIcon.backgroundColor
+				..style = PaintingStyle.fill);
+			canvas.drawRRect(rrect, Paint()
+				..strokeWidth = 1
+				..color = cornerIcon.borderColor
+				..style = PaintingStyle.stroke);
+			textPainter.paint(canvas, Alignment.center.inscribe(textPainter.size, badgeRect).topLeft + const Offset(1, 1));
+		}
+	);
+}
+
 class AttachmentThumbnail extends StatelessWidget {
 	final ThreadIdentifier? thread;
 	final Attachment attachment;
@@ -59,7 +136,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final bool? overrideFullQuality;
 	/// Whether it is actually a thumbnail (preview) like in catalog/thread
 	final bool mayObscure;
-	final ({Color backgroundColor, Color borderColor, double? size})? showIconInCorner;
+	final AttachmentThumbnailCornerIcon? cornerIcon;
 	final bool expand;
 
 	const AttachmentThumbnail({
@@ -77,7 +154,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.shrinkHeight = false,
 		this.site,
 		this.overrideFullQuality,
-		this.showIconInCorner,
+		this.cornerIcon,
 		this.expand = false,
 		required this.mayObscure,
 		Key? key
@@ -162,9 +239,13 @@ class AttachmentThumbnail extends StatelessWidget {
 		else {
 			filterQuality = FilterQuality.low;
 		}
+		final primaryColor = ChanceTheme.primaryColorOf(context);
+		final cornerIcon = this.cornerIcon;
+		_KeyedAfterPaint? makeAfterPaint({IconData? alreadyShowingBigIcon}) =>
+			_makeKeyedAfterPaint(attachment: attachment, cornerIcon: cornerIcon, alreadyShowingBigIcon: alreadyShowingBigIcon, primaryColor: primaryColor);
 		Widget child;
 		if (settings.loadThumbnails) {
-			final primaryColor = ChanceTheme.primaryColorOf(context);
+			final afterPaint = makeAfterPaint();
 			child = ExtendedImage(
 				image: image,
 				constraints: expand ? null : BoxConstraints(
@@ -180,38 +261,12 @@ class AttachmentThumbnail extends StatelessWidget {
 				key: gaplessPlayback ? null : ValueKey(url),
 				gaplessPlayback: true,
 				rotate90DegreesClockwise: rotate90DegreesClockwise,
-				afterPaintImage: showIconInCorner == null || attachment.icon == null ? null : (canvas, rect, image, paint) {
-					final icon = attachment.icon;
-					if (icon == null) {
-						return;
+				afterPaintImage: afterPaint == null ? null : (
+					key: afterPaint.key,
+					fn: (canvas, rect, image, paint) {
+						afterPaint.afterPaint(canvas, rect);
 					}
-					final fontSize = showIconInCorner?.size ?? 16;
-					TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-					textPainter.text = TextSpan(
-						text: String.fromCharCode(icon.codePoint),
-						style: TextStyle(
-							fontSize: fontSize,
-							fontFamily: icon.fontFamily,
-							color: primaryColor,
-							package: icon.fontPackage
-						)
-					);
-					textPainter.layout();
-					final badgeSize = EdgeInsets.all(fontSize / 8).inflateSize(Size.square(textPainter.size.longestSide));
-					final badgeRect = (rect.bottomRight - (Offset.zero & badgeSize).bottomRight) & badgeSize;
-					final rrect = RRect.fromRectAndCorners(
-						badgeRect,
-						topLeft: Radius.circular(fontSize * 0.375)
-					);
-					canvas.drawRRect(rrect, Paint()
-						..color = showIconInCorner!.backgroundColor
-						..style = PaintingStyle.fill);
-					canvas.drawRRect(rrect, Paint()
-						..strokeWidth = 1
-						..color = showIconInCorner!.borderColor
-						..style = PaintingStyle.stroke);
-					textPainter.paint(canvas, Alignment.center.inscribe(textPainter.size, badgeRect).topLeft + const Offset(1, 1));
-				},
+				),
 				filterQuality: filterQuality,
 				loadStateChanged: (loadstate) {
 					if (loadstate.extendedImageLoadState == LoadState.loading) {
@@ -220,6 +275,7 @@ class AttachmentThumbnail extends StatelessWidget {
 							effectiveHeight: effectiveHeight,
 							attachment: attachment,
 							fit: fit,
+							afterPaint: makeAfterPaint(),
 							child: const CircularProgressIndicator.adaptive()
 						);
 					}
@@ -235,12 +291,14 @@ class AttachmentThumbnail extends StatelessWidget {
 						if (loadstate.extendedImageLoadState == LoadState.failed) {
 							onLoadError?.call(loadstate.lastException, loadstate.lastStack);
 						}
+						final icon = loadstate.extendedImageLoadState == LoadState.failed && url.isNotEmpty ? CupertinoIcons.exclamationmark_triangle_fill : (attachment.icon ?? Adaptive.icons.photo);
 						return _AttachmentThumbnailPlaceholder(
 							child: null,
-							icon: loadstate.extendedImageLoadState == LoadState.failed && url.isNotEmpty ? CupertinoIcons.exclamationmark_triangle_fill : (attachment.icon ?? Adaptive.icons.photo),
+							icon: icon,
 							effectiveWidth: effectiveWidth,
 							effectiveHeight: effectiveHeight,
 							attachment: attachment,
+							afterPaint: makeAfterPaint(alreadyShowingBigIcon: icon),
 							fit: fit
 						);
 					}
@@ -269,12 +327,14 @@ class AttachmentThumbnail extends StatelessWidget {
 			}
 		}
 		else {
+			final icon = attachment.icon ?? Adaptive.icons.photo;
 			child = _AttachmentThumbnailPlaceholder(
 				child: null,
-				icon: attachment.icon ?? Adaptive.icons.photo,
+				icon: icon,
 				effectiveWidth: effectiveWidth,
 				effectiveHeight: effectiveHeight,
 				attachment: attachment,
+				afterPaint: makeAfterPaint(alreadyShowingBigIcon: icon),
 				fit: fit
 			);
 		}
@@ -312,6 +372,7 @@ class _AttachmentThumbnailPlaceholder extends StatelessWidget {
 	final double effectiveWidth;
 	final double effectiveHeight;
 	final BoxFit fit;
+	final _KeyedAfterPaint? afterPaint;
 
 	const _AttachmentThumbnailPlaceholder({
 		required this.child,
@@ -319,7 +380,8 @@ class _AttachmentThumbnailPlaceholder extends StatelessWidget {
 		required this.attachment,
 		required this.effectiveWidth,
 		required this.effectiveHeight,
-		required this.fit
+		required this.fit,
+		required this.afterPaint
 	});
 
 	@override
@@ -332,21 +394,24 @@ class _AttachmentThumbnailPlaceholder extends StatelessWidget {
 				effectiveHeight: effectiveHeight,
 				fit: fit
 			),
-			child: DecoratedBox(
-				decoration: BoxDecoration(
-					color: theme.barColor
-				),
-				child: Center(
-					child: switch (icon) {
-						IconData icon => CustomPaint(
-							painter: _AttachmentThumbnailPlaceholderIconCustomPainter(
-								icon: icon,
-								color: theme.primaryColor
+			child: CustomPaint(
+				foregroundPainter: _AttachmentThumbnailPlaceholderAfterPaintCustomPainter(afterPaint),
+				child: DecoratedBox(
+					decoration: BoxDecoration(
+						color: theme.barColor
+					),
+					child: Center(
+						child: switch (icon) {
+							IconData icon => CustomPaint(
+								painter: _AttachmentThumbnailPlaceholderIconCustomPainter(
+									icon: icon,
+									color: theme.primaryColor
+								),
+								child: const SizedBox.expand()
 							),
-							child: const SizedBox.expand()
-						),
-						null => child
-					}
+							null => child
+						}
+					)
 				)
 			)
 		);
@@ -359,7 +424,7 @@ class _AttachmentThumbnailPlaceholderLayoutDelegate extends SingleChildLayoutDel
 	final double effectiveHeight;
 	final Attachment attachment;
 
-	_AttachmentThumbnailPlaceholderLayoutDelegate({
+	const _AttachmentThumbnailPlaceholderLayoutDelegate({
 		required this.fit,
 		required this.effectiveWidth,
 		required this.effectiveHeight,
@@ -399,7 +464,7 @@ class _AttachmentThumbnailPlaceholderIconCustomPainter extends CustomPainter {
 	final IconData icon;
 	final Color color;
 
-	_AttachmentThumbnailPlaceholderIconCustomPainter({
+	const _AttachmentThumbnailPlaceholderIconCustomPainter({
 		required this.icon,
 		required this.color
 	});
@@ -424,5 +489,21 @@ class _AttachmentThumbnailPlaceholderIconCustomPainter extends CustomPainter {
 	@override
 	bool shouldRepaint(_AttachmentThumbnailPlaceholderIconCustomPainter oldDelegate) {
 		return oldDelegate.icon != icon;
+	}
+}
+
+class _AttachmentThumbnailPlaceholderAfterPaintCustomPainter extends CustomPainter {
+	final _KeyedAfterPaint? afterPaint;
+
+	const _AttachmentThumbnailPlaceholderAfterPaintCustomPainter(this.afterPaint);
+
+	@override
+	bool shouldRepaint(_AttachmentThumbnailPlaceholderAfterPaintCustomPainter oldDelegate) {
+		return oldDelegate.afterPaint?.key != afterPaint?.key;
+	}
+	
+	@override
+	void paint(Canvas canvas, Size size) {
+		afterPaint?.afterPaint.call(canvas, Offset.zero & size);
 	}
 }
