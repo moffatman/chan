@@ -376,7 +376,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@protected
-	void updatePostingFields(Map<String, dynamic> fields) {
+	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields) async {
 		// Hook for subclasses
 	}
 
@@ -426,7 +426,7 @@ class SiteLainchan extends ImageboardSite {
 				fields['captcha_text'] = captchaSolution.answer;
 			}
 		}
-		updatePostingFields(fields);
+		await updatePostingFields(post, fields);
 		final response = await client.postUri(
 			Uri.https(sysUrl, '$basePath/post.php'),
 			data: FormData.fromMap(fields),

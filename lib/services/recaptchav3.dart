@@ -1,21 +1,11 @@
-import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/javascript_challenge.dart';
 import 'package:chan/sites/imageboard_site.dart';
 
 Future<Recaptcha3Solution> solveRecaptchaV3(Recaptcha3Request request) async {
-	final token = await useCloudflareClearedWebview(
-		toast: false,
-		uri: Uri.parse(request.sourceUrl),
-		priority: RequestPriority.interactive,
-		handler: (controller, url) async {
-			final result = await controller.callAsyncJavaScript(functionBody: 'return grecaptcha.execute("${request.key}"${request.action == null ? '' : ', {action: "${request.action}"}'})');
-			final v = result?.value;
-			if (v is String) {
-				return v;
-			}
-			else {
-				throw Exception('JS Error: ${result?.error}');
-			}
-		}
+	final token = await solveJavascriptChallenge(
+		url: Uri.parse(request.sourceUrl),
+		javascript: 'grecaptcha.execute("${request.key}"${request.action == null ? '' : ', {action: "${request.action}"}'})',
+		priority: RequestPriority.interactive
 	);
 	return Recaptcha3Solution(
 		response: token,

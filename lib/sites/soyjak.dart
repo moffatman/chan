@@ -1,3 +1,4 @@
+import 'package:chan/services/javascript_challenge.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:flutter/foundation.dart';
@@ -33,6 +34,18 @@ class SiteSoyjak extends SiteLainchanOrg {
 			);
 		}
 		return const NoCaptchaRequest();
+	}
+
+	@override
+	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields) async {
+		fields['integrity-v2'] = await solveJavascriptChallenge(
+			url: Uri.parse(getWebUrl(
+				board: post.board,
+				threadId: post.threadId
+			)),
+			javascript: 'Module.ccall("x", "string")',
+			priority: RequestPriority.interactive
+		);
 	}
 
 	@override

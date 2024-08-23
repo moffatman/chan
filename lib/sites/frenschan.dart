@@ -69,6 +69,11 @@ class SiteFrenschan extends SiteSoyjak {
 	}
 
 	@override
+	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields) async {
+		// Override the soyjak JS challenge handler
+	}
+
+	@override
 	bool operator ==(Object other) =>
 		identical(this, other) ||
 		(other is SiteFrenschan) &&

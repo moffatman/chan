@@ -87,7 +87,7 @@ class Site8Kun extends SiteLainchan2 {
 	}
 
 	@override
-	void updatePostingFields(Map<String, dynamic> fields) {
+	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields) async {
 		fields['domain_name_post'] = baseUrl;
 		fields['tor'] = 'null';
 	}
