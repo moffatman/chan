@@ -691,17 +691,14 @@ class ThreadRow extends StatelessWidget {
 				);
 			}
 		}
-		Widget content = style.isGrid ? buildContentFocused() : Row(
-			crossAxisAlignment: site.classicCatalogStyle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-			mainAxisSize: MainAxisSize.max,
-			children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
+		final content = Opacity(
+			opacity: dimThisThread ? 0.5 : 1.0,
+			child: style.isGrid ? buildContentFocused() : Row(
+				crossAxisAlignment: site.classicCatalogStyle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+				mainAxisSize: MainAxisSize.max,
+				children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
+			)
 		);
-		if (dimThisThread) {
-			content = Opacity(
-				opacity: 0.5,
-				child: content
-			);
-		}
 		Widget child = Stack(
 			fit: StackFit.passthrough,
 			children: [
