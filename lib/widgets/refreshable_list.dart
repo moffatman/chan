@@ -2194,7 +2194,26 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 		}
 
-		linear.where((item) => item.id <= treeSplitId).forEach(visitLinear);
+		final Iterable<RefreshableListItem<T>> oldItems;
+		final lastTreeOrder = _lastTreeOrder;
+		if (lastTreeOrder != null) {
+			// We need to sort the old roots first. or else we could have wrong order
+			// with newRepliesAreLinear. The optimization to add newest children in tree mode.
+			// This maybe is't perfect, there could be reordered final children with
+			// same final root in both trees. But it's an edge case.
+			oldItems = linear.where((item) => item.id <= treeSplitId).toList(growable: false);
+			const infiniteIndex = 1 << 50;
+			mergeSort(linear, compare: (a, b) {
+				final idxA = lastTreeOrder.treeRootIndexLookup[a.id] ?? infiniteIndex;
+				final idxB = lastTreeOrder.treeRootIndexLookup[b.id] ?? infiniteIndex;
+				return idxA.compareTo(idxB);
+			});
+		}
+		else {
+			oldItems = linear.where((item) => item.id <= treeSplitId);
+		}
+
+		oldItems.forEach(visitLinear);
 		linear.where((item) => item.id > treeSplitId).forEach(visitLinear);
 
 		final treeRoots = <_TreeNode<RefreshableListItem<T>>>[];
