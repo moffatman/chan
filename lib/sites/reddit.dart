@@ -872,7 +872,7 @@ class SiteReddit extends ImageboardSite {
 		_updateTimeEstimateData(asPost.id, asPost.time);
 		return Thread(
 			board: data['subreddit'],
-			title: unescape.convert(data['title']),
+			title: unescape.convert(data['title']).trim(),
 			isSticky: data['stickied'],
 			time: asPost.time,
 			posts_: [asPost],
