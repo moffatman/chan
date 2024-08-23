@@ -1254,28 +1254,29 @@ class BoardPageState extends State<BoardPage> {
 															)
 														),
 														RepaintBoundary(
-															child: AnimatedBuilder(
-																animation: _listController.slowScrolls,
-																builder: (context, _) {
-																	_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
-																	final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
-																	scrollToTop() => _listController.animateTo((post) => true, duration: scrollAnimationDuration);
-																	scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration);
-																	final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
-																	return SafeArea(
-																		child: Align(
-																			alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
-																			child: Padding(
-																				padding: const EdgeInsets.all(16),
-																				child: Row(
+															child: SafeArea(
+																child: Align(
+																	alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
+																	child: Padding(
+																		padding: const EdgeInsets.all(16),
+																		child: AnimatedBuilder(
+																			animation: _listController,
+																			builder: (context, _) {
+																				final theme = context.watch<SavedTheme>();
+																				final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
+																				scrollAnimationDuration() => Settings.instance.showAnimations ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
+																				scrollToTop() => _listController.animateTo((post) => true, duration: scrollAnimationDuration());
+																				scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration());
+																				final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
+																				return Row(
 																					mainAxisSize: MainAxisSize.min,
 																					children: [
 																						if (settings.showGalleryGridButton && realImageCount > 1) ...[
 																							AdaptiveFilledButton(
 																								padding: const EdgeInsets.all(8),
-																								color: ChanceTheme.primaryColorWithBrightness80Of(context),
+																								color: primaryColorWithBrightness80,
 																								onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
-																								child: Icon(CupertinoIcons.square_grid_2x2, size: 24, color: ChanceTheme.backgroundColorOf(context))
+																								child: Icon(CupertinoIcons.square_grid_2x2, size: 24, color: theme.backgroundColor)
 																							),
 																							const SizedBox(width: 8),
 																						],
@@ -1330,24 +1331,30 @@ class BoardPageState extends State<BoardPage> {
 																										_page = _listController.items.first.item.currentPage ?? 1;
 																									}
 																								},
-																								color: ChanceTheme.primaryColorWithBrightness80Of(context),
+																								color: primaryColorWithBrightness80,
 																								padding: const EdgeInsets.all(8),
 																								child: Row(
 																									mainAxisSize: MainAxisSize.min,
 																									children: _searching ? [
-																										Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
+																										Icon(CupertinoIcons.search, color: theme.backgroundColor),
 																										const SizedBox(width: 8),
-																										Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
+																										Icon(CupertinoIcons.xmark, color: theme.backgroundColor)
 																									] : [
-																										Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
+																										Icon(CupertinoIcons.doc, color: theme.backgroundColor),
 																										SizedBox(
 																											width: 25,
-																											child: Text(
-																												_page.toString(),
-																												textAlign: TextAlign.center,
-																												style: TextStyle(
-																													color: ChanceTheme.backgroundColorOf(context)
-																												)
+																											child: AnimatedBuilder(
+																												animation: _listController.slowScrolls,
+																												builder: (context, _) {
+																													_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
+																													return Text(
+																														_page.toString(),
+																														textAlign: TextAlign.center,
+																														style: TextStyle(
+																															color: theme.backgroundColor
+																														)
+																													);
+																												}
 																											)
 																										)
 																									]
@@ -1355,11 +1362,11 @@ class BoardPageState extends State<BoardPage> {
 																							)
 																						)
 																					]
-																				)
-																			)
+																				);
+																			}
 																		)
-																	);
-																}
+																	)
+																)
 															)
 														)
 													]
