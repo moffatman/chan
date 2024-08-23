@@ -75,42 +75,52 @@ final zeroValueNotifier = ValueNotifier(0);
 bool _promptedAboutCrashlytics = false;
 bool developerMode = false;
 
+Future<void> innerMain() async {
+	try {
+		await initializeRLimit();
+		WidgetsFlutterBinding.ensureInitialized();
+		await initializeIsDevelopmentBuild();
+		await initializeIsOnMac();
+		await initializeHandoff();
+		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
+		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
+		imageHttpClient.idleTimeout = const Duration(seconds: 10);
+		imageHttpClient.maxConnectionsPerHost = 10;
+		imageHttpClient.badCertificateCallback = badCertificateCallback;
+		if (Platform.isAndroid || Platform.isIOS) {
+			await Firebase.initializeApp(
+				options: DefaultFirebaseOptions.currentPlatform
+			);
+			FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+		}
+		await Persistence.initializeStatic();
+		VideoServer.initializeStatic(Persistence.webmCacheDirectory, Persistence.httpCacheDirectory);
+		await Notifications.initializeStatic();
+		await updateDynamicColors();
+		await initializeFonts();
+		MediaKit.ensureInitialized();
+		await JsonCache.instance.initialize();
+		await MediaScan.initializeStatic();
+		if (kDebugMode) {
+			await resetAdditionalSafeAreaInsets();
+		}
+		runApp(const ChanApp());
+	}
+	catch (e, st) {
+		runApp(ChanFailedApp(e, st));
+	}
+}
+
 void main() async {
-	runZonedGuarded<Future<void>>(() async {
-		try {
-			await initializeRLimit();
-			WidgetsFlutterBinding.ensureInitialized();
-			await initializeIsDevelopmentBuild();
-			await initializeIsOnMac();
-			await initializeHandoff();
-			final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
-			imageHttpClient.connectionTimeout = const Duration(seconds: 10);
-			imageHttpClient.idleTimeout = const Duration(seconds: 10);
-			imageHttpClient.maxConnectionsPerHost = 10;
-			imageHttpClient.badCertificateCallback = badCertificateCallback;
-			if (Platform.isAndroid || Platform.isIOS) {
-				await Firebase.initializeApp(
-					options: DefaultFirebaseOptions.currentPlatform
-				);
-				FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-			}
-			await Persistence.initializeStatic();
-			VideoServer.initializeStatic(Persistence.webmCacheDirectory, Persistence.httpCacheDirectory);
-			await Notifications.initializeStatic();
-			await updateDynamicColors();
-			await initializeFonts();
-			MediaKit.ensureInitialized();
-			await JsonCache.instance.initialize();
-			await MediaScan.initializeStatic();
-			if (kDebugMode) {
-				await resetAdditionalSafeAreaInsets();
-			}
-			runApp(const ChanApp());
-		}
-		catch (e, st) {
-			runApp(ChanFailedApp(e, st));
-		}
-	}, (error, stack) => FirebaseCrashlytics.instance.recordError(error, stack, fatal: true));
+	if (Platform.isAndroid || Platform.isIOS) {
+		runZonedGuarded<Future<void>>(
+			innerMain,
+			(error, stack) => FirebaseCrashlytics.instance.recordError(error, stack, fatal: true)
+		);
+	}
+	else {
+		await innerMain();
+	}
 }
 
 class ChanFailedApp extends StatelessWidget {
