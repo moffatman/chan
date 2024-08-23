@@ -291,7 +291,8 @@ class CloudflareInterceptor extends Interceptor {
 						onLoadStop: buildOnLoadStop(Navigator.of(context).pop, Navigator.of(context).pop),
 					)
 				)
-			)
+			),
+			useFullWidthGestures: false
 		));
 		headlessWebView?.dispose();
 		if (ret == null) {

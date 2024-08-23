@@ -167,6 +167,7 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 		BuildContext context,
 		Animation<double> animation,
 		Animation<double> secondaryAnimation,
+		bool useFullWidthGestures,
 		Widget child,
 	) {
 		final bool linearTransition = isPopGestureInProgress(route);
@@ -185,6 +186,7 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 				child: _CupertinoBackGestureDetector<T>(
 					enabledCallback: () => _isPopGestureEnabled<T>(route),
 					onStartPopGesture: () => _startPopGesture<T>(route),
+					useFullWidthGestures: useFullWidthGestures,
 					child: child,
 				),
 			);
@@ -193,13 +195,14 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 
 	@override
 	Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-		return buildPageTransitions<T>(this, context, animation, secondaryAnimation, child);
+		return buildPageTransitions<T>(this, context, animation, secondaryAnimation, (this as FullWidthCupertinoPageRoute).useFullWidthGestures, child);
 	}
 }
 
 class FullWidthCupertinoPageRoute<T> extends PageRoute<T> with CupertinoRouteTransitionMixin<T> {
 	final bool? showAnimations;
 	final bool? showAnimationsForward;
+	final bool useFullWidthGestures;
 	FullWidthCupertinoPageRoute({
 		required this.builder,
 		this.title,
@@ -207,6 +210,7 @@ class FullWidthCupertinoPageRoute<T> extends PageRoute<T> with CupertinoRouteTra
 		this.maintainState = true,
 		this.showAnimations,
 		this.showAnimationsForward,
+		this.useFullWidthGestures = true,
 		bool fullscreenDialog = false,
 	}) : super(settings: settings, fullscreenDialog: fullscreenDialog) {
 		assert(opaque);
@@ -388,6 +392,7 @@ class _CupertinoBackGestureDetector<T> extends StatefulWidget {
 		required this.enabledCallback,
 		required this.onStartPopGesture,
 		required this.child,
+		required this.useFullWidthGestures,
 	}) : super(key: key);
 
 	final Widget child;
@@ -395,6 +400,8 @@ class _CupertinoBackGestureDetector<T> extends StatefulWidget {
 	final ValueGetter<bool> enabledCallback;
 
 	final ValueGetter<_CupertinoBackGestureController<T>> onStartPopGesture;
+
+	final bool useFullWidthGestures;
 
 	@override
 	_CupertinoBackGestureDetectorState<T> createState() => _CupertinoBackGestureDetectorState<T>();
@@ -409,7 +416,7 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 	void initState() {
 		super.initState();
 		// This value was estimated from some iOS behaviours
-		_recognizer = WeakHorizontalDragGestureRecognizer(weakness: 2.5, sign: 1, debugOwner: this)
+		_recognizer = WeakHorizontalDragGestureRecognizer(weakness: 2.5, sign: 1, debugOwner: this, supportedDevices: {...PointerDeviceKind.values})
 		..onStart = _handleDragStart
 		..onUpdate = _handleDragUpdate
 		..onEnd = _handleDragEnd
@@ -478,7 +485,12 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 				widget.child,
 				PositionedDirectional(
 					start: 0.0,
-					width: MediaQuery.sizeOf(context).width,
+					width: widget.useFullWidthGestures ?
+						MediaQuery.sizeOf(context).width :
+						max(20, switch (Directionality.of(context)) {
+							TextDirection.rtl => MediaQuery.paddingOf(context).right,
+							TextDirection.ltr => MediaQuery.paddingOf(context).left,
+						}),
 					top: 0.0,
 					bottom: 0.0,
 					child: Listener(

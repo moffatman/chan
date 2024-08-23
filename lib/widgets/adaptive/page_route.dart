@@ -27,7 +27,8 @@ PageRoute<T> adaptivePageRoute<T>({
 	required WidgetBuilder builder,
 	RouteSettings? settings,
 	bool? showAnimations,
-	bool? showAnimationsForward
+	bool? showAnimationsForward,
+	bool useFullWidthGestures = true
 }) {
 	if (Settings.instance.materialRoutes) {
 		return _MaterialPageRoute<T>(
@@ -41,6 +42,7 @@ PageRoute<T> adaptivePageRoute<T>({
 		builder: builder,
 		settings: settings,
 		showAnimations: showAnimations,
-		showAnimationsForward: showAnimationsForward
+		showAnimationsForward: showAnimationsForward,
+		useFullWidthGestures: useFullWidthGestures
 	);
 }
