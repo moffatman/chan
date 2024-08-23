@@ -214,21 +214,18 @@ class CloudflareInterceptor extends Interceptor {
 			transparentBackground: true
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<T> callback, ValueChanged<Exception> errorCallback) => (controller, uri) async {
-			await controller.evaluateJavascript(source: '''
-				var style = document.createElement('style');
-				style.innerHTML = "* {\\
-					color: ${Settings.instance.theme.primaryColor.toCssHex()} !important;\\
-				}\\
-				div {\\
-					background: ${Settings.instance.theme.backgroundColor.toCssHex()};\\
-				}\\
-				html, p, h1, h2, h3, h4, h5 {\\
-					background: ${Settings.instance.theme.backgroundColor.toCssHex()} !important;\\
-				}";
-				document.head.appendChild(style);
-				document.body.bgColor = "${Settings.instance.theme.backgroundColor.toCssHex()}";
-				document.body.style.background = "${Settings.instance.theme.backgroundColor.toCssHex()}";
-			''');
+			if (Settings.instance.theme.brightness == Brightness.dark) {
+				await controller.evaluateJavascript(source: '''
+					var style = document.createElement('style');
+					style.innerHTML = "html {\\
+						filter: invert(1) hue-rotate(180deg) contrast(0.8);\\
+					}\\
+					img, video, picture, canvas, iframe, embed {\\
+						filter: invert(1) hue-rotate(180deg);\\
+					}";
+					document.head.appendChild(style);
+				''');
+			}
 			final title = await controller.getTitle() ?? '';
 			if (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false)) {
 				await Persistence.saveCookiesFromWebView(uri!);
