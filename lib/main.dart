@@ -955,7 +955,7 @@ class ChanTabs extends ChangeNotifier {
 class _ChanHomePageState extends State<ChanHomePage> {
 	late final ChanTabs _tabs;
 	final _keys = <int, GlobalKey>{};
-	bool _showTabPopup = false;
+	late final ValueNotifier<bool> _showTabPopup;
 	({Notifications notifications, StreamSubscription<PostIdentifier> subscription})? _devNotificationsSubscription;
 	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
 	final devTab = PersistentBrowserTab();
@@ -971,12 +971,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
 	final _drawerScaffoldKey = GlobalKey<AdaptiveScaffoldState>(debugLabel: '_ChanHomePageState._drawerScaffoldKey');
 
-	bool get showTabPopup => _showTabPopup;
-	set showTabPopup(bool setting) {
-		_showTabPopup = setting;
-		_setAdditionalSafeAreaInsets();
-	}
-
 	void _onSlowScrollDirectionChange() async {
 		if (!Settings.instance.tabMenuHidesWhenScrollingDown) {
 			return;
@@ -986,17 +980,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		await SchedulerBinding.instance.endOfFrame;
 		_setAdditionalSafeAreaInsets();
-		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && showTabPopup) {
-			setState(() {
-				showTabPopup = false;
-				_hideTabPopupAutomatically = true;
-			});
+		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && _showTabPopup.value) {
+			_hideTabPopupAutomatically = true;
+			_showTabPopup.value = false;
 		}
 		else if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.up && _hideTabPopupAutomatically) {
-			setState(() {
-				showTabPopup = true;
-				_hideTabPopupAutomatically = false;
-			});
+			_hideTabPopupAutomatically = false;
+			_showTabPopup.value = true;
 		}
 	}
 
@@ -1278,12 +1268,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Future<void> _setAdditionalSafeAreaInsets() async {
 		await setAdditionalSafeAreaInsets('main', EdgeInsets.only(
-			bottom: 60 + 44 + (showTabPopup ? 80 : 0)
+			bottom: 60 + 44 + (_showTabPopup.value ? 80 : 0)
 		) * Settings.instance.interfaceScale);
 	}
 
 	void _onShouldShowTabPopup(bool newShowTabPopup) {
-		showTabPopup = newShowTabPopup;
+		_showTabPopup.value = newShowTabPopup;
 	}
 
 	void _consumeSharedMediaFiles(List<SharedMediaFile> list) {
@@ -1319,6 +1309,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_linkSubscription = AppLinks().stringLinkStream.listen(_consumeLink);
 		_fakeLinkSubscription = fakeLinkStream.stream.listen(_consumeLink);
 		_sharedFilesSubscription = ReceiveSharingIntent.instance.getMediaStream().listen(_consumeSharedMediaFiles);
+		_showTabPopup = ValueNotifier(false)
+			..addListener(_setAdditionalSafeAreaInsets);
 		_initialConsume = true;
 		_setAdditionalSafeAreaInsets();
 		ScrollTracker.instance.slowScrollDirection.addListener(_onSlowScrollDirectionChange);
@@ -1736,9 +1728,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								else {
 									_tabs.browseTabIndex = -1 * index;
 									if (Persistence.settings.closeTabSwitcherAfterUse) {
-										setState(() {
-											showTabPopup = false;
-										});
+										_showTabPopup.value = false;
 									}
 								}
 							}
@@ -2172,22 +2162,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									return;
 								}
 								mediumHapticFeedback();
-								if (showTabPopup) {
+								if (_showTabPopup.value) {
 									_popUpDrawer();
 									return;
 								}
-								setState(() {
-									showTabPopup = true;
-								});
+								_showTabPopup.value = true;
 							},
 							onDownSwipe: () {
-								if (!showTabPopup || _tabs.mainTabIndex != 0) {
+								if (!_showTabPopup.value || _tabs.mainTabIndex != 0) {
 									return;
 								}
 								mediumHapticFeedback();
-								setState(() {
-									showTabPopup = false;
-								});
+								_showTabPopup.value = false;
 							},
 							onLeftSwipe: () {
 								mediumHapticFeedback();
@@ -2223,9 +2209,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							onTap: (index) {
 								lightHapticFeedback();
 								if (index == _tabs._lastIndex && index == 0) {
-									setState(() {
-										showTabPopup = !showTabPopup;
-									});
+									_showTabPopup.value = !_showTabPopup.value;
 								}
 								else if (index == _tabs._lastIndex) {
 									if (index == 4) {
@@ -2262,23 +2246,30 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												}
 											)
 										),
-										if (index == 0) Expander(
-											bottomSafe: true,
-											expanded: showTabPopup,
-											duration: const Duration(milliseconds: 200),
-											curve: Curves.ease,
-											child: const SizedBox(height: 80)
+										if (index == 0) ValueListenableBuilder(
+											valueListenable: _showTabPopup,
+											builder: (context, showTabPopup, _) => Expander(
+												bottomSafe: true,
+												expanded: showTabPopup,
+												duration: const Duration(milliseconds: 200),
+												curve: Curves.ease,
+												child: const SizedBox(height: 80)
+											)
 										)
 									]
 								),
 								if (index == 0) Column(
 									mainAxisAlignment: MainAxisAlignment.end,
 									children: [
-										Expander(
-											bottomSafe: false,
-											expanded: showTabPopup,
-											duration: const Duration(milliseconds: 200),
-											curve: Curves.ease,
+										ValueListenableBuilder(
+											valueListenable: _showTabPopup,
+											builder: (context, showTabPopup, child) => Expander(
+												bottomSafe: false,
+												expanded: showTabPopup,
+												duration: const Duration(milliseconds: 200),
+												curve: Curves.ease,
+												child: child!
+											),
 											child: RawGestureDetector(
 												behavior: HitTestBehavior.translucent,
 												gestures: {
@@ -2286,11 +2277,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 														() => WeakVerticalDragGestureRecognizer(weakness: 1, sign: 1),
 														(recognizer) {
 															recognizer.onEnd = (details) {
-																if (details.velocity.pixelsPerSecond.dy > 0 && showTabPopup) {
+																if (details.velocity.pixelsPerSecond.dy > 0 && _showTabPopup.value) {
 																	mediumHapticFeedback();
-																	setState(() {
-																		showTabPopup = false;
-																	});
+																	_showTabPopup.value = false;
 																}
 															};
 														}
