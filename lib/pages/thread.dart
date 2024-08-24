@@ -520,7 +520,10 @@ class ThreadPageState extends State<ThreadPage> {
 		_glowingPostsAnimation = EasyListenable();
 		_listController = RefreshableListController();
 		persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
-		persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
+		_lastPersistentThreadStateSnapshot = _PersistentThreadStateSnapshot.of(persistentState);
+		if (persistentState.thread == null) {
+			persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
+		}
 		persistentState.useArchive |= widget.initiallyUseArchive;
 		persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] ?? false;
 		persistentState.save();
