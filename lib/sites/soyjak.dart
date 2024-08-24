@@ -1,9 +1,9 @@
 import 'package:chan/services/javascript_challenge.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/sites/lainchan_org.dart';
+import 'package:chan/sites/lainchan2.dart';
 import 'package:flutter/foundation.dart';
 
-class SiteSoyjak extends SiteLainchanOrg {
+class SiteSoyjak extends SiteLainchan2 {
 	final String? captchaQuestion;
 	final List<String>? boardsWithCaptcha;
 
@@ -13,13 +13,14 @@ class SiteSoyjak extends SiteLainchanOrg {
 		this.captchaQuestion,
 		this.boardsWithCaptcha,
 		super.platformUserAgents,
-		super.archives,
-		super.faviconPath = '/static/favicon.png',
-		super.defaultUsername = 'Chud'
-	});
-
-	@override
-	String? get imageThumbnailExtension => null;
+	}) : super(
+		basePath: '',
+		formBypass: {},
+		imageThumbnailExtension: '',
+		faviconPath: '/static/favicon.png',
+		defaultUsername: 'Chud',
+		res: 'thread'
+	);
 
 	@override
 	String get siteType => 'soyjak';
@@ -63,7 +64,4 @@ class SiteSoyjak extends SiteLainchanOrg {
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, captchaQuestion, Object.hashAll(boardsWithCaptcha ?? []), faviconPath, defaultUsername, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
-
-	@override
-	String get res => 'thread';
 }

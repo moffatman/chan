@@ -93,6 +93,8 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	final List<ImageboardBoard>? boards;
 	final Map<String, Map<String, String>> formBypass;
 	final formLock = Mutex();
+	@override
+	final String res;
 
 	SiteLainchan2({
 		required super.baseUrl,
@@ -105,7 +107,8 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		super.faviconPath,
 		super.boardsPath,
 		this.boards,
-		super.defaultUsername
+		super.defaultUsername,
+		this.res = 'res'
 	}) {
 		client.interceptors.insert(1, FormBypassBlockingInterceptor(this));
 		client.interceptors.add(FormBypassInterceptor(this));
@@ -122,7 +125,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		if (imageThumbnailExtension != '') {
 			return broken;
 		}
-		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/res/${thread.id}.html'), priority: priority);
+		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.html'), priority: priority);
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.posts_.expand((p) => p.attachments)) {

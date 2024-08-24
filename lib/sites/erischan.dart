@@ -1,16 +1,18 @@
 import 'package:chan/services/util.dart';
-import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/sites/lainchan2.dart';
 import 'package:flutter/foundation.dart';
 
-class SiteErischan extends SiteFrenschan {
+class SiteErischan extends SiteLainchan2 {
 	SiteErischan({
 		required super.baseUrl,
 		required super.name,
 		super.platformUserAgents,
-		super.archives
 	}) : super(
-		defaultUsername: ''
+		basePath: '',
+		defaultUsername: '',
+		formBypass: {},
+		imageThumbnailExtension: ''
 	);
 
 	@override
@@ -21,9 +23,6 @@ class SiteErischan extends SiteFrenschan {
 			})
 		);
 	}
-
-	@override
-	String get res => 'res';
 
 	@override
 	bool operator == (Object other) =>
