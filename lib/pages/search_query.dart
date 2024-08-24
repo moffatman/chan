@@ -214,7 +214,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										showBoardName: true,
 										allowTappingLinks: false,
 										showPostNumber: false,
-										isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
+										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
 										onTap: () => setValue(SelectedSearchResult(
 											imageboard: context.read<Imageboard>(),
 											result: row,
@@ -245,7 +245,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 											semanticParentIds: [-7],
 											heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 										),
-										isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
+										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
 										countsUnreliable: result.data!.countsUnreliable,
 										semanticParentIds: const [-7],
 										showBoardName: true,

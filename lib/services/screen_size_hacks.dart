@@ -13,9 +13,9 @@ extension _ReadMediaQuery on BuildContext {
 }
 
 double estimateWidth(BuildContext context, {bool listen = true}) {
-	final masterDetailHint = Provider.of<MasterDetailHint?>(context, listen: listen);
+	final masterDetailHint = Provider.of<MasterDetailLocation?>(context, listen: listen);
 	final size = listen ? MediaQuery.sizeOf(context) : context.mediaQuery.size;
-	return switch (masterDetailHint?.location) {
+	return switch (masterDetailHint) {
 		MasterDetailLocation.onePaneMaster
 			|| MasterDetailLocation.twoPaneVerticalMaster
 			|| MasterDetailLocation.twoPaneVerticalDetail

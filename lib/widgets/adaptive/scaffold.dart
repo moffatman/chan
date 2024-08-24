@@ -341,7 +341,7 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 			if (parentScaffold?.hasDrawer ?? false) {
 				onDrawerButtonPressed = parentScaffold?.openDrawer;
 			}
-			if (context.read<MasterDetailHint?>()?.location.isDetail ?? false) {
+			if (context.watch<MasterDetailLocation?>()?.isDetail ?? false) {
 				// Only show drawer on master
 				onDrawerButtonPressed = null;
 			}
@@ -365,7 +365,7 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 		final canPop = ModalRoute.of(context)?.canPop;
 		if (canPop != true &&
 		    parentDrawer != null &&
-				context.read<MasterDetailHint?>()?.location.isDetail != true) {
+				context.watch<MasterDetailLocation?>()?.isDetail != true) {
 			// Only if at root route
 			leadings.add(GestureDetector(
 				onLongPress: () {

@@ -599,7 +599,7 @@ class ThreadPageState extends State<ThreadPage> {
 		});
 		_listController.slowScrolls.addListener(_onSlowScroll);
 		context.read<PersistentBrowserTab?>()?.threadPageState = this;
-		if (!(context.read<MasterDetailHint?>()?.twoPane ?? false) &&
+		if (!(context.read<MasterDetailLocation?>()?.twoPane ?? false) &&
 		    persistentState.lastSeenPostId != null &&
 				(persistentState.thread?.posts_.length ?? 0) > 20) {
 			// Likely to lag if building/scrolling done during page transition animation
@@ -1144,25 +1144,29 @@ class ThreadPageState extends State<ThreadPage> {
 		);
 	}
 
-	ReplyBoxZone get _replyBoxZone => ReplyBoxZone(
-		onTapPostId: (int threadId, int id) {
-			if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-				_popOutReplyBox((state) => state.onTapPostId(threadId, id));
-			}
-			else {
-				_replyBoxKey.currentState?.onTapPostId(threadId, id);
-			}
-			setState(() {});
-		},
-		onQuoteText: (String text, {required PostIdentifier? backlink}) {
-			if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-				_popOutReplyBox((state) => state.onQuoteText(text, backlink: backlink));
-			}
-			else {
-				_replyBoxKey.currentState?.onQuoteText(text, backlink: backlink);
-			}
-			setState(() {});
+	void _onTapPostId(int threadId, int id) {
+		if ((context.read<MasterDetailLocation?>()?.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+			_popOutReplyBox((state) => state.onTapPostId(threadId, id));
 		}
+		else {
+			_replyBoxKey.currentState?.onTapPostId(threadId, id);
+		}
+		setState(() {});
+	}
+
+	void _onQuoteText(String text, {required PostIdentifier? backlink}) {
+		if ((context.read<MasterDetailLocation?>()?.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+			_popOutReplyBox((state) => state.onQuoteText(text, backlink: backlink));
+		}
+		else {
+			_replyBoxKey.currentState?.onQuoteText(text, backlink: backlink);
+		}
+		setState(() {});
+	}
+
+	late final _replyBoxZone = ReplyBoxZone(
+		onTapPostId: _onTapPostId,
+		onQuoteText: _onQuoteText
 	);
 
 	VoidCallback? _makeOnDoubleTap(int postId) {
@@ -1483,7 +1487,7 @@ class ThreadPageState extends State<ThreadPage> {
 											opacity: (persistentState.thread?.isArchived ?? false) ? 0.5 : 1,
 											child: AdaptiveIconButton(
 												onPressed: () {
-													if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+													if ((context.read<MasterDetailLocation?>()?.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
 														_popOutReplyBox(null);
 													}
 													else {

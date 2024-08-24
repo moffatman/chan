@@ -189,9 +189,8 @@ class BoardPageState extends State<BoardPage> {
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 	Completer<void>? _loadCompleter;
 	CatalogVariant? _variant;
-	ThreadIdentifier? _lastSelectedThread;
 	final _boardsPullTabKey = GlobalKey(debugLabel: '_BoardPageState._boardsPullTabKey');
-	final _threadPullTabKey = GlobalKey(debugLabel: '_BoardPageState._threadPullTabKey');
+	final _threadPullTabHandlerKey = GlobalKey<_BoardPageThreadPullTabHandlerState>(debugLabel: '_BoardPageState._threadPullTabHandlerKey');
 	int _page = 1;
 	DateTime? _lastCatalogUpdateTime;
 	bool _searching = false;
@@ -211,6 +210,7 @@ class BoardPageState extends State<BoardPage> {
 		}
 		ThreadIdentifier? selectedThread;
 		final hint = context.read<MasterDetailHint?>();
+		final location = context.read<MasterDetailLocation?>();
 		dynamic possibleThread = hint?.currentValue;
 		if (possibleThread is ThreadIdentifier) {
 			selectedThread = possibleThread;
@@ -219,8 +219,7 @@ class BoardPageState extends State<BoardPage> {
 			selectedThread = possibleThread.item;
 		}
 		if (selectedThread != null) {
-			_lastSelectedThread = selectedThread;
-			if (hint?.twoPane ?? false) {
+			if (location?.twoPane ?? false) {
 				_loadCompleter = Completer<void>()
 					..future.then((_) async {
 						try {
@@ -232,10 +231,6 @@ class BoardPageState extends State<BoardPage> {
 						_loadCompleter = null;
 					});
 			}
-		}
-		if (context.findAncestorStateOfType<NavigatorState>()?.canPop() == false) {
-			final tab = context.read<PersistentBrowserTab?>();
-			_lastSelectedThread ??= tab?.threadForPullTab ?? tab?.thread;
 		}
 		_searching = (widget.initialSearch ?? widget.tab?.initialSearch)?.isNotEmpty ?? false;
 	}
@@ -252,9 +247,6 @@ class BoardPageState extends State<BoardPage> {
 	}
 	
 	void swapBoard(ImageboardScoped<ImageboardBoard> newBoard) {
-		if (context.read<Imageboard?>()?.key != newBoard.imageboard.key) {
-			_lastSelectedThread = null;
-		}
 		_page = 1;
 		widget.onBoardChanged?.call(newBoard);
 		setState(() {
@@ -271,9 +263,8 @@ class BoardPageState extends State<BoardPage> {
 	}
 
 	void _onThreadSelected(ThreadIdentifier identifier) {
-		_lastSelectedThread = identifier;
+		_threadPullTabHandlerKey.currentState?.onThreadSelected(identifier);
 		_listController.unfocusSearch();
-		setState(() {});
 		if (widget.onThreadSelected != null) {
 			widget.onThreadSelected!(identifier);
 		}
@@ -503,13 +494,6 @@ class BoardPageState extends State<BoardPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final selectedThread = context.watch<MasterDetailHint?>()?.currentValue;
-		if (selectedThread is ThreadIdentifier) {
-			_lastSelectedThread = selectedThread;
-		}
-		else if (selectedThread is ImageboardScoped<ThreadIdentifier>) {
-			_lastSelectedThread = selectedThread.item;
-		}
 		final imageboard = context.watch<Imageboard?>();
 		final site = context.watch<ImageboardSite?>();
 		final settings = context.watch<Settings>();
@@ -1027,7 +1011,7 @@ class BoardPageState extends State<BoardPage> {
 						// Is root board on desktop
 						(mouseSettings.supportMouse && !Navigator.of(context).canPop()) ||
 						// Space is generally available
-						!(context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false)
+						!(context.watch<MasterDetailLocation?>()?.isVeryConstrained ?? false)
 					) AdaptiveIconButton(
 						icon: const Icon(CupertinoIcons.refresh),
 						onPressed: () {
@@ -1048,7 +1032,7 @@ class BoardPageState extends State<BoardPage> {
 						icon: AdaptiveIconButton(
 							icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
 							onPressed: () {
-								if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+								if ((context.read<MasterDetailLocation?>()?.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
 									showAdaptiveModalPopup(
 										context: context,
 										builder: (ctx) => ImageboardScope(
@@ -1104,13 +1088,9 @@ class BoardPageState extends State<BoardPage> {
 							if (widget.allowChangingBoard) 'Pick one': _selectBoard
 						}
 					)
-				) : PullTab(
-					key: _threadPullTabKey,
-					tab: (context.read<MasterDetailHint?>()?.currentValue != null || _lastSelectedThread == null) ? null : PullTabTab(
-						child: Text('Re-open /${_lastSelectedThread!.board}/${_lastSelectedThread!.id}'),
-						onActivation: () => _onThreadSelected(_lastSelectedThread!)
-					),
-					position: PullTabPosition.left,
+				) : _BoardPageThreadPullTabHandler(
+					key: _threadPullTabHandlerKey,
+					onPull: _onThreadSelected,
 					child: FilterZone(
 						filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.name)),
 						child: PopScope(
@@ -1411,5 +1391,71 @@ class BoardPageState extends State<BoardPage> {
 	void dispose() {
 		super.dispose();
 		_listController.dispose();
+	}
+}
+
+// Separate Widget to optimize rebuild
+class _BoardPageThreadPullTabHandler extends StatefulWidget {
+	final Widget child;
+	final ValueChanged<ThreadIdentifier> onPull;
+
+	const _BoardPageThreadPullTabHandler({
+		required this.child,
+		required this.onPull,
+		super.key
+	});
+
+	@override
+	createState() => _BoardPageThreadPullTabHandlerState();
+}
+
+class _BoardPageThreadPullTabHandlerState extends State<_BoardPageThreadPullTabHandler> {
+	(Imageboard?, ThreadIdentifier)? _lastSelectedThread;
+
+	void onThreadSelected(ThreadIdentifier thread) {
+		_lastSelectedThread = (_lastSelectedThread?.$1, thread);
+		setState(() {});
+	}
+
+	@override
+	void initState() {
+		super.initState();
+		final imageboard = context.read<Imageboard?>();
+		final hint = context.read<MasterDetailHint?>();
+		dynamic possibleThread = hint?.currentValue;
+		if (possibleThread is ThreadIdentifier) {
+			_lastSelectedThread = (imageboard, possibleThread);
+		}
+		else if (possibleThread is ImageboardScoped<ThreadIdentifier>) {
+			_lastSelectedThread = (imageboard, possibleThread.item);
+		}
+		if (context.findAncestorStateOfType<NavigatorState>()?.canPop() == false) {
+			final tab = context.read<PersistentBrowserTab?>();
+			final threadFromTab = tab?.threadForPullTab ?? tab?.thread;
+			if (threadFromTab != null) {
+				_lastSelectedThread ??= (imageboard, threadFromTab);
+			}
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		final hint = context.watch<MasterDetailHint?>();
+		final imageboard = context.watch<Imageboard?>();
+		dynamic possibleThread = hint?.currentValue;
+		if (possibleThread is ThreadIdentifier) {
+			_lastSelectedThread = (imageboard, possibleThread);
+		}
+		else if (possibleThread is ImageboardScoped<ThreadIdentifier>) {
+			_lastSelectedThread = (imageboard, possibleThread.item);
+		}
+		return PullTab(
+			tab: (hint?.currentValue != null || _lastSelectedThread == null || _lastSelectedThread?.$1 != imageboard) ? null : PullTabTab(
+				child: Text('Re-open /${_lastSelectedThread!.$2.board}/${_lastSelectedThread!.$2.id}'),
+				onActivation: () => widget.onPull(_lastSelectedThread!.$2)
+			),
+			position: PullTabPosition.left,
+			child: widget.child
+		);
 	}
 }

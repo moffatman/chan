@@ -417,7 +417,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 										showBoardName: true,
 										showSiteIcon: ImageboardRegistry.instance.count > 1,
 										allowTappingLinks: false,
-										isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
+										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
 										onTap: () {
 											row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
 											widget.onResultSelected(row.imageboard.scope(row.item.identifier));
@@ -448,7 +448,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 												semanticParentIds: [-11],
 												heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 											),
-											isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
+											isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
 											showBoardName: true,
 											showSiteIcon: ImageboardRegistry.instance.count > 1,
 											baseOptions: PostSpanRenderOptions(

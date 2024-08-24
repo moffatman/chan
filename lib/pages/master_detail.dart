@@ -36,12 +36,10 @@ enum MasterDetailLocation {
 }
 
 class MasterDetailHint {
-	final MasterDetailLocation location;
 	final GlobalKey<PrimaryScrollControllerInjectingNavigatorState> primaryInterceptorKey;
 	final dynamic currentValue;
 
 	const MasterDetailHint({
-		required this.location,
 		required this.primaryInterceptorKey,
 		required this.currentValue
 	});
@@ -50,14 +48,11 @@ class MasterDetailHint {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is MasterDetailHint &&
-		other.location == location &&
 		other.primaryInterceptorKey == primaryInterceptorKey &&
 		other.currentValue == currentValue;
 	
 	@override
-	int get hashCode => Object.hash(location, primaryInterceptorKey, currentValue);
-
-	bool get twoPane => location.twoPane;
+	int get hashCode => Object.hash(primaryInterceptorKey, currentValue);
 }
 
 const dontAutoPopSettings = RouteSettings(
@@ -470,78 +465,64 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		}
 		lastOnePane = onePane;
 		context.watch<WillPopZone?>()?.maybePop = _maybePop;
-		return onePane ? Provider.value(
+		return Provider.value(
 			value: MasterDetailHint(
-				location: MasterDetailLocation.onePaneMaster,
 				primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
 				currentValue: panes[_tabController.index].currentValue.value
 			),
-			child: masterNavigator
-		) : (horizontalSplit ? Row(
-			children: [
-				Flexible(
-					flex: settings.twoPaneSplit,
-					child: PrimaryScrollController.none(
-						child: Provider.value(
-							value: MasterDetailHint(
-								location: MasterDetailLocation.twoPaneHorizontalMaster,
-								primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-								currentValue: panes[_tabController.index].currentValue.value,
-							),
-							child: masterNavigator
+			child: onePane ? Provider.value(
+				value: MasterDetailLocation.onePaneMaster,
+				child: masterNavigator
+			) : (horizontalSplit ? Row(
+				children: [
+					Flexible(
+						flex: settings.twoPaneSplit,
+						child: PrimaryScrollController.none(
+							child: Provider.value(
+								value: MasterDetailLocation.twoPaneHorizontalMaster,
+								child: masterNavigator
+							)
 						)
-					)
-				),
-				VerticalDivider(
-					width: 0,
-					color: ChanceTheme.primaryColorWithBrightness20Of(context)
-				),
-				Flexible(
-					flex: twoPaneSplitDenominator - settings.twoPaneSplit,
-					child: Provider.value(
-						value: MasterDetailHint(
-							location: MasterDetailLocation.twoPaneHorizontalDetail,
-							primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-							currentValue: panes[_tabController.index].currentValue.value,
-						),
-						child: detailNavigator
-					)
-				)
-			]
-		) : Column(
-			children: [
-				SizedBox(
-					height: settings.verticalTwoPaneMinimumPaneSize.abs(),
-					child: PrimaryScrollController.none(
+					),
+					VerticalDivider(
+						width: 0,
+						color: ChanceTheme.primaryColorWithBrightness20Of(context)
+					),
+					Flexible(
+						flex: twoPaneSplitDenominator - settings.twoPaneSplit,
 						child: Provider.value(
-							value: MasterDetailHint(
-								location: MasterDetailLocation.twoPaneVerticalMaster,
-								primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-								currentValue: panes[_tabController.index].currentValue.value,
-							),
-							child: masterNavigator
-						)
-					)
-				),
-				Divider(
-					height: 0,
-					color: ChanceTheme.primaryColorWithBrightness20Of(context)
-				),
-				Expanded(
-					child: TransformedMediaQuery(
-						transformation: (context, data) => data.removePadding(removeTop: true),
-						child: Provider.value(
-							value: MasterDetailHint(
-								location: MasterDetailLocation.twoPaneVerticalDetail,
-								primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-								currentValue: panes[_tabController.index].currentValue.value,
-							),
+							value: MasterDetailLocation.twoPaneHorizontalDetail,
 							child: detailNavigator
 						)
 					)
-				)
-			]
-		));
+				]
+			) : Column(
+				children: [
+					SizedBox(
+						height: settings.verticalTwoPaneMinimumPaneSize.abs(),
+						child: PrimaryScrollController.none(
+							child: Provider.value(
+								value: MasterDetailLocation.twoPaneVerticalMaster,
+								child: masterNavigator
+							)
+						)
+					),
+					Divider(
+						height: 0,
+						color: ChanceTheme.primaryColorWithBrightness20Of(context)
+					),
+					Expanded(
+						child: TransformedMediaQuery(
+							transformation: (context, data) => data.removePadding(removeTop: true),
+							child: Provider.value(
+								value: MasterDetailLocation.twoPaneVerticalDetail,
+								child: detailNavigator
+							)
+						)
+					)
+				]
+			))
+		);
 	}
 
 	@override

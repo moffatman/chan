@@ -87,7 +87,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 							const SizedBox(height: 16),
 							AdaptiveChoiceControl(
 								groupValue: widget.imageboard.persistence.browserState.useCatalogGridPerBoard[widget.board.name].value,
-								knownWidth: (context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false) ? 0 : MediaQuery.sizeOf(context).width,
+								knownWidth: (context.watch<MasterDetailLocation?>()?.isVeryConstrained ?? false) ? 0 : MediaQuery.sizeOf(context).width,
 								children: {
 									NullSafeOptional.false_: (CupertinoIcons.rectangle_grid_1x2, 'Rows'),
 									NullSafeOptional.null_: (null, 'Default (${(widget.imageboard.persistence.browserState.useCatalogGrid ?? settings.useCatalogGrid) ? 'Grid' : 'Rows'})'),
@@ -112,7 +112,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 							const SizedBox(height: 16),
 							AdaptiveChoiceControl(
 								groupValue: NullWrapper(widget.imageboard.persistence.browserState.postSortingMethodPerBoard[widget.board.name]),
-								knownWidth: (context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false) ? 0 : MediaQuery.sizeOf(context).width,
+								knownWidth: (context.watch<MasterDetailLocation?>()?.isVeryConstrained ?? false) ? 0 : MediaQuery.sizeOf(context).width,
 								children: {
 									const NullWrapper<PostSortingMethod>(null): (null, 'Default (${(widget.imageboard.persistence.browserState.postSortingMethod ?? PostSortingMethod.none).displayName})'),
 									for (final method in PostSortingMethod.values)
