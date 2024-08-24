@@ -695,7 +695,6 @@ class ThreadPageState extends State<ThreadPage> {
 	void didChangeDependencies() {
 		super.didChangeDependencies();
 		_checkForeground();
-		_parentTab = context.watch<PersistentBrowserTab?>();
 		setHandoffUrl(_foreground ? context.read<ImageboardSite>().getWebUrl(
 			board: widget.thread.board,
 			threadId: widget.thread.id,
@@ -1203,6 +1202,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		_parentTab = context.select<PersistentBrowserTab?, PersistentBrowserTab?>((t) => t);
 		final site = context.watch<ImageboardSite>();
 		final theme = context.watch<SavedTheme>();
 		String title = site.formatBoardName(widget.thread.board);
