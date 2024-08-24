@@ -1871,12 +1871,10 @@ class ThreadPageState extends State<ThreadPage> {
 																			)
 																		)
 																	),
-																	if (blocked) Builder(
-																		builder: (context) => Container(
-																			color: theme.backgroundColor,
-																			child: const Center(
-																				child: CircularProgressIndicator.adaptive()
-																			)
+																	if (blocked) Container(
+																		color: theme.backgroundColor.withOpacity(0.5), // TODO: Revert
+																		child: const Center(
+																			child: CircularProgressIndicator.adaptive()
 																		)
 																	)
 																]
