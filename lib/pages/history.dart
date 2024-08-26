@@ -22,10 +22,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 class HistoryPage extends StatefulWidget {
-	final bool isActive;
-
 	const HistoryPage({
-		required this.isActive,
 		Key? key
 	}) : super(key: key);
 
@@ -90,7 +87,8 @@ class HistoryPageState extends State<HistoryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => widget.isActive);
+		final mode = TickerMode.of(context);
+		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => mode);
 		return MultiMasterDetailPage(
 			showChrome: false,
 			id: 'history',

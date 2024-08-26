@@ -29,6 +29,7 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/rlimit.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/storage.dart';
@@ -47,7 +48,7 @@ import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/tab_menu.dart';
-import 'package:chan/widgets/tab_switching_view.dart';
+import 'package:chan/widgets/switching_view.dart';
 import 'package:chan/widgets/thread_widget_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
@@ -570,10 +571,19 @@ void clearOverlayNotifications(Notifications notifications, Watch watch) {
 
 class OpenInNewTabZone {
 	final void Function(String, ThreadIdentifier, {bool incognito, bool activate}) onWantOpenThreadInNewTab;
+	@override
+	final int hashCode;
 
 	const OpenInNewTabZone({
-		required this.onWantOpenThreadInNewTab
+		required this.onWantOpenThreadInNewTab,
+		required this.hashCode
 	});
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is OpenInNewTabZone &&
+		other.hashCode == hashCode;
 }
 
 class ChanHomePage extends StatefulWidget {
@@ -949,6 +959,18 @@ class ChanTabs extends ChangeNotifier {
 				ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
 			duration: duration
 		);
+	}
+
+	Future<void> searchArchives(String imageboardKey, String board, String query) async {
+		mainTabIndex = 3;
+		for (int i = 0; i < 200 && _searchPageKey.currentState == null; i++) {
+			await Future.delayed(const Duration(milliseconds: 50));
+		}
+		_searchPageKey.currentState?.onSearchComposed(ImageboardArchiveSearchQuery(
+			imageboardKey: imageboardKey,
+			boards: [board],
+			query: query
+		));
 	}
 }
 
@@ -1417,71 +1439,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return false;
 	}
 
-	Widget _buildTab(BuildContext context, int index, bool active) {
+	Widget _buildTab(int index) {
 		Widget child;
 		if (index <= 0) {
-			child = AnimatedBuilder(
-				animation: _tabs.activeBrowserTab,
-				builder: (context, _) => TabSwitchingView(
-					currentTabIndex: _tabs.activeBrowserTab.value,
-					tabCount: Persistence.tabs.length,
-					tabBuilder: (context, i) {
-						final tabObject = Persistence.tabs[i];
-						return AnimatedBuilder(
-							animation: tabObject,
-							builder: (context, _) {
-								final tab = ImageboardTab(
-									tab: tabObject,
-									key: tabObject.tabKey,
-									onWantArchiveSearch: (imageboardKey, board, query) async {
-										_tabs.mainTabIndex = 3;
-										for (int i = 0; i < 200 && _tabs._searchPageKey.currentState == null; i++) {
-											await Future.delayed(const Duration(milliseconds: 50));
-										}
-										_tabs._searchPageKey.currentState?.onSearchComposed(ImageboardArchiveSearchQuery(
-											imageboardKey: imageboardKey,
-											boards: [board],
-											query: query
-										));
-									},
-									id: -1 * (i + 20)
-								);
-								return MultiProvider(
-									providers: [
-										ChangeNotifierProvider.value(value: tabObject),
-										Provider.value(
-											value: OpenInNewTabZone(
-												onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) {
-													_tabs.addNewTab(
-														withImageboardKey: imageboardKey,
-														atPosition: Persistence.tabs.indexOf(tabObject) + 1,
-														withBoard: thread.board,
-														withThreadId: thread.id,
-														activate: activate,
-														incognito: incognito
-													);
-												}
-											)
-										)
-									],
-									child: ValueListenableBuilder(
-										valueListenable: _tabs.activeBrowserTab,
-										builder: (context, int activeIndex, child) {
-											return i == activeIndex ? child! : PrimaryScrollController.none(
-												child: child!
-											);
-										},
-										child: tabObject.imageboardKey == null ? tab : ImageboardScope(
-											imageboardKey: tabObject.imageboardKey!,
-											overridePersistence: tabObject.incognitoPersistence,
-											loaderOffset: _androidDrawer ? Offset.zero : (isScreenWide ? const Offset(-42.5, 0) : const Offset(0, 25)),
-											child: tab
-										)
-									),
-								);
-							}
-						);
-					}
+			child = ValueListenableBuilder(
+				valueListenable: _tabs.activeBrowserTab,
+				builder: (context, activeBrowserTab, _) => SwitchingView(
+					currentIndex: activeBrowserTab,
+					items: Persistence.tabs,
+					builder: (tabObject) => ImageboardTab(
+						key: tabObject.tabKey,
+						tab: tabObject
+					)
 				)
 			);
 		}
@@ -1493,6 +1462,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					),
 					Provider.value(
 						value: OpenInNewTabZone(
+							hashCode: 0,
 							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
 								withImageboardKey: imageboardKey,
 								withBoard: thread.board,
@@ -1504,7 +1474,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					)
 				],
 				child: SavedPage(
-					isActive: active,
 					masterDetailKey: _tabs._savedMasterDetailKey
 				)
 			);
@@ -1512,6 +1481,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else if (index == 2) {
 			child = Provider.value(
 				value: OpenInNewTabZone(
+					hashCode: 0,
 					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
@@ -1521,7 +1491,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					)
 				),
 				child: HistoryPage(
-					isActive: active,
 					key: _tabs._historyPageKey
 				)
 			);
@@ -1529,6 +1498,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else if (index == 3) {
 			child = Provider.value(
 				value: OpenInNewTabZone(
+					hashCode: 0,
 					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
@@ -1564,6 +1534,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					},
 					child: Provider.value(
 						value: OpenInNewTabZone(
+							hashCode: 0,
 							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
 								withImageboardKey: imageboardKey,
 								withBoard: thread.board,
@@ -1592,14 +1563,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 			}
 		}
-		child = Provider.value(
+		return Provider.value(
 			value: _willPopZones.putIfAbsent(index, () => WillPopZone()),
 			child: KeyedSubtree(
 				key: _keys.putIfAbsent(index, () => GlobalKey(debugLabel: '_keys[$index]')),
 				child: child
 			)
 		);
-		return active ? child : PrimaryScrollController.none(child: child);
 	}
 
 	Widget _buildTabletIcon(int index, Widget icon, String? label, {
@@ -1913,9 +1883,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	bool get isScreenWide => (MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);
-
-	bool get _androidDrawer => Settings.instance.androidDrawer;
 	bool get androidDrawer => Settings.androidDrawerSetting.watch(context);
 
 	Rect? get hingeBounds => MediaQuery.displayFeaturesOf(context).tryFirstWhere((f) => f.type == DisplayFeatureType.hinge && f.bounds.left > 0 /* Only when hinge is vertical */)?.bounds;
@@ -1971,7 +1938,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}));
 		}
 		final filterError = context.select<Settings, String?>((s) => s.filterError);
-		Widget child = (androidDrawer || isScreenWide) ? NotificationListener2<ScrollNotification, ScrollMetricsNotification>(
+		Widget child = (androidDrawer || isScreenWide(context)) ? NotificationListener2<ScrollNotification, ScrollMetricsNotification>(
 			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(
 				actions: {
@@ -2058,10 +2025,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									Expanded(
 										child: AnimatedBuilder(
 											animation: _tabs._tabController,
-											builder: (context, _) => TabSwitchingView(
-												currentTabIndex: _tabs.mainTabIndex,
-												tabCount: 5,
-												tabBuilder: (context, i) => _buildTab(context, i, i == _tabs.mainTabIndex)
+											builder: (context, _) => SwitchingView(
+												currentIndex: _tabs.mainTabIndex,
+												items: const [0, 1, 2, 3, 4],
+												builder: (i) => _buildTab(i)
 											)
 										)
 									)
@@ -2233,10 +2200,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 													ScrollTrackerNavigatorObserver()
 												],
 												builder: (context) {
-													final child = AnimatedBuilder(
-														animation: _tabs._tabController,
-														builder: (context, child) => _buildTab(context, index, _tabs.mainTabIndex == index)
-													);
+													final child = _buildTab(index);
 													if (Settings.materialStyleSetting.watch(context)) {
 														return Material(
 															child: child
@@ -2311,7 +2275,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			)
 		);
 		child = NotificationsOverlay(
-			onePane: !isScreenWide,
+			onePane: !isScreenWide(context),
 			key: notificationsOverlayKey,
 			imageboards: [
 				...ImageboardRegistry.instance.imageboards,

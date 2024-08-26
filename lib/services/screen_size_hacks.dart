@@ -50,3 +50,7 @@ double estimateDetailWidth(BuildContext context, {bool listen = true}) {
 	}
 	return size.width;
 }
+
+/// Whether tab bar would be on side rather than bottom
+bool isScreenWide(context) =>
+	(MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);

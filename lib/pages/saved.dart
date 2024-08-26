@@ -70,11 +70,9 @@ class _PostThreadCombo {
 }
 
 class SavedPage extends StatefulWidget {
-	final bool isActive;
 	final GlobalKey<MultiMasterDetailPageState> masterDetailKey;
 
 	const SavedPage({
-		required this.isActive,
 		required this.masterDetailKey,
 		Key? key
 	}) : super(key: key);
@@ -114,18 +112,6 @@ class _SavedPageState extends State<SavedPage> {
 		_removeArchivedHack = EasyListenable();
 		_yourPostsValueInjector = ValueNotifier(null);
 		_missingSavedAttachments = ValueNotifier([]);
-	}
-
-	@override
-	void didUpdateWidget(SavedPage oldWidget) {
-		super.didUpdateWidget(oldWidget);
-		if (widget.isActive && !oldWidget.isActive) {
-			_watchedListController.update();
-			_threadListController.update();
-			_postListController.update();
-			_yourPostsListController.update();
-			_removeArchivedHack.didUpdate();
-		}
 	}
 
 	Future<(_PostThreadCombo, bool)?> _takeYourPost() async {
@@ -227,11 +213,14 @@ class _SavedPageState extends State<SavedPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final persistencesAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList()), () => widget.isActive);
-		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => widget.isActive);
-		final savedPostNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => widget.isActive);
-		final savedAttachmentsNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => widget.isActive);
+		final isActive = TickerMode.of(context);
+		final persistencesAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList()), () => isActive);
+		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => isActive);
+		final savedPostNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => isActive);
+		final savedAttachmentsNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => isActive);
 		final imageboardIds = <String, int>{};
+		// TODO: Think about this. it's a hack. does it cause bad performance?
+		Future.microtask(_removeArchivedHack.didUpdate);
 		return MultiMasterDetailPage(
 			id: 'saved',
 			key: widget.masterDetailKey,
@@ -283,7 +272,7 @@ class _SavedPageState extends State<SavedPage> {
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									ThreadWatcherControls(
-										isActive: widget.isActive
+										isActive: isActive
 									),
 									const ChanceDivider()
 								]
