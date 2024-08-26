@@ -1542,8 +1542,8 @@ class AttachmentViewer extends StatelessWidget {
 										padding: videoThumbnailMicroPadding ? const EdgeInsets.all(1) : EdgeInsets.zero,
 										child: AttachmentThumbnail(
 											attachment: attachment,
-											width: attachment.width?.toDouble() ?? double.infinity,
-											height: attachment.height?.toDouble() ?? double.infinity,
+											width: attachment.width?.toDouble(),
+											height: attachment.height?.toDouble(),
 											rotate90DegreesClockwise: rotate90DegreesClockwise,
 											gaplessPlayback: true,
 											revealSpoilers: true,
