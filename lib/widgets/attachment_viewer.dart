@@ -661,15 +661,34 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (_isDisposed) return;
 				final controller = _videoPlayerController;
 				if (controller != null) {
-					final firstFrameFuture = controller.waitUntilFirstFrameRendered;
+					final waitForPlaying = Completer<bool>();
+					final firstFrameFuture = controller.waitUntilFirstFrameRendered
+						..then((_) async {
+							if (await waitForPlaying.future) {
+								// Wait until it actually starts
+								await controller.player.stream.position.first;
+							}
+							_recordUrlTime(url, attachment.type, DateTime.now().difference(startTime));
+							_scheduleHidingOfLoadingProgress();
+						});
 					_hideVideoPlayerController = false;
-					if (_isDisposed) return;
+					if (_isDisposed) {
+						waitForPlaying.complete(false);
+						return;
+					}
 					if (settings.muteAudio.value) {
 						await controller.player.setVolume(0);
-						if (_isDisposed) return;
+						if (_isDisposed) {
+							waitForPlaying.complete(false);
+							return;
+						}
 					}
 					await controller.player.setPlaylistMode(PlaylistMode.single);
-					if (_isDisposed) return;
+					if (_isDisposed) {
+						waitForPlaying.complete(false);
+						return;
+					}
+					waitForPlaying.complete(isPrimary);
 					if (isPrimary) {
 						if (Platform.isAndroid) {
 							// Seems to be necessary to prevent brief freeze near beginning of video
@@ -711,9 +730,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						await controller.player.play();
 					}
 					if (_isDisposed) return;
-					_scheduleHidingOfLoadingProgress();
 				}
-				_recordUrlTime(url, attachment.type, DateTime.now().difference(startTime));
 				notifyListeners();
 			}
 		}
