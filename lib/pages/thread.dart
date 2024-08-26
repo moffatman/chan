@@ -233,7 +233,9 @@ class ThreadPageState extends State<ThreadPage> {
 		return null;
 	}
 
-	Future<void> _ensurePostLoaded(int postId) async {
+	/// Returns whether a load was needed
+	Future<bool> _ensurePostLoaded(int postId) async {
+		bool loadedSomething = false;
 		Post? post = persistentState.thread?.posts_.tryFirstWhere((p) => p.id == postId);
 		final usesStubs = persistentState.thread?.posts_.any((p) => p.isStub) ?? false;
 		if (usesStubs) {
@@ -243,6 +245,7 @@ class ThreadPageState extends State<ThreadPage> {
 					childId: postId
 				)])).tryFirstWhere((p) => p.id == postId);
 				_listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+				loadedSomething = true;
 			}
 			if (post == null) {
 				throw Exception('Could not get post');
@@ -260,11 +263,12 @@ class ThreadPageState extends State<ThreadPage> {
 					throw Exception('No parent for post');
 				}
 				else {
-					await _ensurePostLoaded(post.parentId!);
+					loadedSomething |= await _ensurePostLoaded(post.parentId!);
 				}
 			}
 		}
 		else if (post == null) {
+			loadedSomething = true;
 			if (context.read<ImageboardSite>().isPaged) {
 				// This will find the page and load the post
 				await _updateWithStubItems([ParentAndChildIdentifier(
@@ -278,6 +282,7 @@ class ThreadPageState extends State<ThreadPage> {
 				await _listController.update();
 			}
 		}
+		return loadedSomething;
 	}
 
 	Future<void> _glowPost(int postId, {Duration duration = const Duration(seconds: 2)}) async {
@@ -343,9 +348,11 @@ class ThreadPageState extends State<ThreadPage> {
 				blocked = shouldBlock;
 			});
 			try {
-				await _ensurePostLoaded(scrollTo.$1);
-				setState(() {});
-				await WidgetsBinding.instance.endOfFrame;
+				if (await _ensurePostLoaded(scrollTo.$1)) {
+					// Need to rebuild with new post
+					setState(() {});
+					await WidgetsBinding.instance.endOfFrame;
+				}
 				target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
 				if (target != null && _listController.isOnscreen(target)) {
 					setState(() {
