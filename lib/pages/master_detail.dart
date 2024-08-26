@@ -304,6 +304,11 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		}
 	}
 
+	void _onPushReturn<T>(MultiMasterPane<T> pane, dynamic v) {
+		pane.onPushReturn(v);
+		setState(() {});
+	}
+
 	void _onNewValue<T> (MultiMasterPane<T> pane, {bool? showAnimationsForward, bool updateDetailPane = true}) {
 		if (!updateDetailPane) {
 			return;
@@ -314,7 +319,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 				(pane.useRootNavigator ? Navigator.of(context, rootNavigator: true) : masterKey.currentState!).push(pane.buildDetailRoute(
 					() => _onNewValue(pane, showAnimationsForward: false),
 					showAnimationsForward: showAnimationsForward
-				)).then(pane.onPushReturn);
+				)).then((v) => _onPushReturn(pane, v));
 			}
 		}
 		else {
@@ -453,7 +458,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 				masterKey.currentState!.push(pane.buildDetailRoute(
 					() => _onNewValue(pane, showAnimationsForward: false),
 					showAnimationsForward: false
-				)).then(pane.onPushReturn);
+				)).then((v) => _onPushReturn(pane, v));
 			}
 			else {
 				_popMasterValueRoutes();
