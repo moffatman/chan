@@ -1028,7 +1028,6 @@ class ThreadPageState extends State<ThreadPage> {
 					if (lastItem != null) {
 						tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, lastItem.id);
 						tmpPersistentState.save();
-						setState(() {});
 					}
 					else {
 						print('Failed to find last visible post after an update in $tmpPersistentState');
