@@ -1878,7 +1878,7 @@ class ThreadPageState extends State<ThreadPage> {
 																		)
 																	),
 																	if (blocked) Container(
-																		color: theme.backgroundColor.withOpacity(0.5), // TODO: Revert
+																		color: theme.backgroundColor,
 																		child: const Center(
 																			child: CircularProgressIndicator.adaptive()
 																		)
