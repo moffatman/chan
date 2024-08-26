@@ -2122,13 +2122,15 @@ class Settings extends ChangeNotifier {
 		return _connectivity;
 	}
 	set connectivity(ConnectivityResult? newConnectivity) {
-		if (_connectivity == ConnectivityResult.none) {
-			// Network coming up
-			ImageboardRegistry.instance.retryFailedBoardSetup();
-			_runNetworkResumeCallbacks();
+		if (_connectivity != newConnectivity) {
+			if (_connectivity == ConnectivityResult.none) {
+				// Network coming up
+				ImageboardRegistry.instance.retryFailedBoardSetup();
+				_runNetworkResumeCallbacks();
+			}
+			_connectivity = newConnectivity;
+			notifyListeners();
 		}
-		_connectivity = newConnectivity;
-		notifyListeners();
 	}
 	bool get isNetworkDown => _connectivity == ConnectivityResult.none;
 	bool get isConnectedToWifi => switch (_connectivity) {
