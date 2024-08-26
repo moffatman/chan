@@ -1182,8 +1182,19 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_sortList();
 		}
 		if (!widget.disableUpdates) {
-			update();
-			resetTimer();
+			if ((widget.initialList?.length ?? 0) < 2) {
+				update();
+				resetTimer();
+			}
+			else {
+				Future.delayed(const Duration(seconds: 1), () {
+					if (!mounted || widget.disableUpdates) {
+						return;
+					}
+					update();
+					resetTimer();
+				});
+			}
 		}
 		_refreshableTreeItems = _RefreshableTreeItems<T>(
 			manuallyCollapsedItems: widget.initialCollapsedItems?.toList() ?? [],
