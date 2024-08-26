@@ -1545,25 +1545,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 		}
-		final isScrollingNotifier = widget.controller?.scrollController?.tryPosition?.isScrollingNotifier;
-		if (isScrollingNotifier?.value == true) {
-			final completer = Completer<void>();
-			void listener() {
-				if (isScrollingNotifier?.value == false) {
-					completer.complete();
-					isScrollingNotifier?.removeListener(listener);
-				}
+		await widget.controller?.scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
+		if (updatingWithId != widget.id) {
+			if (updatingNow.value == updatingWithId) {
+				updatingNow.value = null;
 			}
-			isScrollingNotifier?.addListener(listener);
-			await Future.any([completer.future, Future.delayed(const Duration(seconds: 3))]);
-			if (!mounted) return;
-			isScrollingNotifier?.removeListener(listener);
-			if (updatingWithId != widget.id) {
-				if (updatingNow.value == updatingWithId) {
-					updatingNow.value = null;
-				}
-				return;
-			}
+			return;
 		}
 		if (!mounted) return;
 		updatingNow.value = null;
@@ -3837,8 +3824,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					end: finalDestination
 				)
 			);
-			await SchedulerBinding.instance.endOfFrame;
 		}
+		await SchedulerBinding.instance.endOfFrame;
+		await scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
 	}
 	void cancelCurrentAnimation() {
 		currentTargetIndex = null;

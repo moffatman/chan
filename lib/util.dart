@@ -478,6 +478,22 @@ extension WaitUntil<T> on ValueListenable<T> {
 			}
 		}
 		addListener(closure);
+		closure();
+		return completer.future;
+	}
+}
+
+extension WaitUntilValue<T> on ValueNotifier<T> {
+	Future<void> waitUntilValue(T expectedValue) {
+		final completer = Completer<void>();
+		void closure() {
+			if (value == expectedValue) {
+				completer.complete();
+				removeListener(closure);
+			}
+		}
+		addListener(closure);
+		closure();
 		return completer.future;
 	}
 }
