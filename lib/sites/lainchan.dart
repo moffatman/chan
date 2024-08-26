@@ -148,7 +148,7 @@ class SiteLainchan extends ImageboardSite {
 			else if (ext == '.mp4') {
 				type = AttachmentType.mp4;
 			}
-			else if (ext == '.mp3') {
+			else if (ext == '.mp3' || ext == '.wav') {
 				type = AttachmentType.mp3;
 			}
 			else if (ext == '.pdf') {
@@ -161,7 +161,10 @@ class SiteLainchan extends ImageboardSite {
 				ext: ext,
 				board: board,
 				url: getAttachmentUrl(board, '$id$ext').toString(),
-				thumbnailUrl: (type == AttachmentType.mp3 ? Uri.https(baseUrl, '$basePath/static/mp3.png') : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
+				thumbnailUrl: switch (postData['thumb'] as String?) {
+					'file' || null => (type == AttachmentType.mp3 ? '' : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
+					String thumb => 'https://$baseUrl/$basePath/$board/thumb/$thumb',
+				},
 				md5: data['md5'] ?? '',
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],

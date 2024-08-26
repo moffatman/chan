@@ -16,7 +16,7 @@ class SiteSoyjak extends SiteLainchan2 {
 	}) : super(
 		basePath: '',
 		formBypass: {},
-		imageThumbnailExtension: '',
+		imageThumbnailExtension: null,
 		faviconPath: '/static/favicon.png',
 		defaultUsername: 'Chud',
 		res: 'thread'
