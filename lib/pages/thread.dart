@@ -155,7 +155,7 @@ class ThreadPageState extends State<ThreadPage> {
 	final _replyBoxKey = GlobalKey<ReplyBoxState>(debugLabel: '_ThreadPageState._replyBoxKey');
 	final _listKey = GlobalKey<RefreshableListState>(debugLabel: '_ThreadPageState._listKey');
 
-	bool _buildRefreshableList = false;
+	bool _useAllDummies = false;
 	late final RefreshableListController<Post> _listController;
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
@@ -355,6 +355,23 @@ class ThreadPageState extends State<ThreadPage> {
 				}
 				target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
 				if (target != null && _listController.isOnscreen(target)) {
+					if (_useAllDummies) {
+						//await Future.delayed(const Duration(milliseconds: 500));
+						// Need to realign after popping in proper items
+						setState(() {
+							_useAllDummies = false;
+						});
+						await _listController.animateTo(
+							(post) => post.id == scrollTo!.$1,
+							// Lazy hack. but it works somehow to get to the unloadedPage stub
+							orElseLast: scrollTo.$1.isNegative
+								? (post) => post.id.isNegative && post.id > scrollTo!.$1
+								: (post) => post.id <= scrollTo!.$1,
+							alignment: scrollTo.$2,
+							duration: const Duration(milliseconds: 200)
+						);
+						await WidgetsBinding.instance.endOfFrame;
+					}
 					setState(() {
 						blocked = false;
 					});
@@ -369,9 +386,26 @@ class ThreadPageState extends State<ThreadPage> {
 						? (post) => post.id.isNegative && post.id > scrollTo!.$1
 						: (post) => post.id <= scrollTo!.$1,
 					alignment: scrollTo.$2,
-					duration: const Duration(milliseconds: 1)
+					duration: const Duration(milliseconds: 200)
 				);
 				await WidgetsBinding.instance.endOfFrame;
+				if (_useAllDummies) {
+					//await Future.delayed(const Duration(milliseconds: 500));
+					// Need to realign after popping in proper items
+					setState(() {
+						_useAllDummies = false;
+					});
+					await _listController.animateTo(
+						(post) => post.id == scrollTo!.$1,
+						// Lazy hack. but it works somehow to get to the unloadedPage stub
+						orElseLast: scrollTo.$1.isNegative
+							? (post) => post.id.isNegative && post.id > scrollTo!.$1
+							: (post) => post.id <= scrollTo!.$1,
+						alignment: scrollTo.$2,
+						duration: const Duration(milliseconds: 200)
+					);
+					await WidgetsBinding.instance.endOfFrame;
+				}
 				final remainingPx = (_listController.scrollController?.position.extentAfter ?? 9999) -
 					((_listController.state?.updatingNow.value != null) ? 64 : 0);
 				if (remainingPx < 32) {
@@ -612,14 +646,10 @@ class ThreadPageState extends State<ThreadPage> {
 		if (!(context.read<MasterDetailLocation?>()?.twoPane ?? false) &&
 		    persistentState.lastSeenPostId != null &&
 				(persistentState.thread?.posts_.length ?? 0) > 20) {
-			// Likely to lag if building/scrolling done during page transition animation
-			Future.delayed(const Duration(milliseconds: 450), () => setState(() {
-				_buildRefreshableList = true;
-			}));
+			_useAllDummies = true;
 			_scrollIfWarranted(const Duration(milliseconds: 500));
 		}
 		else {
-			_buildRefreshableList = true;
 			_scrollIfWarranted();
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
@@ -1539,7 +1569,7 @@ class ThreadPageState extends State<ThreadPage> {
 															child: Stack(
 																fit: StackFit.expand,
 																children: [
-																	if (_buildRefreshableList) RefreshableList<Post>(
+																	RefreshableList<Post>(
 																		filterableAdapter: (t) => t,
 																		initialFilter: widget.initialSearch,
 																		onFilterChanged: (filter) {
@@ -1558,6 +1588,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 																		},
 																		useTree: useTree,
+																		useAllDummies: _useAllDummies,
 																		initialCollapsedItems: persistentState.collapsedItems,
 																		initialPrimarySubtreeParents: persistentState.primarySubtreeParents,
 																		onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {

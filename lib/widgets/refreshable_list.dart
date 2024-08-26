@@ -1067,6 +1067,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool shrinkWrap;
 	final bool autoExtendDuringScroll;
 	final bool useFiltersFromContext;
+	final bool useAllDummies;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -1110,6 +1111,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.shrinkWrap = false,
 		this.autoExtendDuringScroll = false,
 		this.useFiltersFromContext = true,
+		this.useAllDummies = false,
 		Key? key
 	}) : super(key: key);
 
@@ -1280,6 +1282,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (nextUpdateTime?.isAfter(DateTime.now().add(widget.autoUpdateDuration ?? Duration.zero)) ?? true) {
 				// next update is scheduled too late or is scheduled at all if we now have auto-update off
 				resetTimer();
+			}
+		}
+		if (!widget.useAllDummies && oldWidget.useAllDummies) {
+			for (final item in widget.controller?._items ?? []) {
+				item.cachedOffset = null;
+				item.cachedHeight = null;
 			}
 		}
 	}
@@ -1616,6 +1624,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return _kDummyHeight;
 		}
 		return null;
+	}
+
+	bool _useDummyFor(int itemIndex) {
+		if (widget.useAllDummies) {
+			return true;
+		}
+		final range = widget.controller?.useDummyItemsInRange;
+		return range != null && itemIndex < range.$2 && itemIndex > range.$1;
 	}
 
 	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy, RegExp? filterPattern) {
@@ -2845,7 +2861,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													id: widget.id,
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, i) {
-															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[i]._key),
 																onBuild: (context) {
@@ -2855,12 +2870,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																	widget.controller?._unregisterItem(i, context);
 																},
 																child: Builder(
-																	builder: (context) => _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1, queryPattern)
+																	builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i), queryPattern)
 																)
 															);
 														},
 														list: values,
-														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
 														didFinishLayout: widget.controller?.didFinishLayout,
 														childCount: values.length,
 														addRepaintBoundaries: false,
@@ -2873,7 +2888,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													gridDelegate: widget.gridDelegate!,
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, i) {
-															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[i]._key),
 																onBuild: (context) {
@@ -2883,12 +2897,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																	widget.controller?._unregisterItem(i, context);
 																},
 																child: Builder(
-																	builder: (context) => _itemBuilder(context, values[i], range != null && i < range.$2 && i > range.$1, queryPattern)
+																	builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i), queryPattern)
 																)
 															);
 														},
 														list: values,
-														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
 														didFinishLayout: widget.controller?.didFinishLayout,
 														childCount: values.length,
 														addRepaintBoundaries: false,
@@ -2900,7 +2914,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													key: _sliverListKey,
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, childIndex) {
-															final range = widget.controller?.useDummyItemsInRange;
 															return BuildContextRegistrant(
 																key: ValueKey(values[childIndex]._key),
 																onBuild: (context) {
@@ -2910,15 +2923,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																	widget.controller?._unregisterItem(childIndex, context);
 																},
 																child: Builder(
-																	builder: (context) => _itemBuilder(context, values[childIndex], range != null && childIndex < range.$2 && childIndex > range.$1, queryPattern)
+																	builder: (context) => _itemBuilder(context, values[childIndex], _useDummyFor(childIndex), queryPattern)
 																)
 															);
 														},
 														separatorBuilder: (context, childIndex) {
-															final range = widget.controller?.useDummyItemsInRange;
 															return _Divider(
 																key: ValueKey(_DividerKey(values[childIndex]._key)),
-																dummy: range != null && childIndex < range.$2 && childIndex > range.$1,
+																dummy: _useDummyFor(childIndex),
 																itemBefore: values[childIndex],
 																itemAfter: (childIndex < values.length - 1) ? values[childIndex + 1] : null,
 																color: dividerColor
@@ -2926,7 +2938,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														},
 														separatorSentinel: dividerColor,
 														list: values,
-														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
 														childCount: values.length * 2,
 														findChildIndexCallback: (key) {
 															if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
