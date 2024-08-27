@@ -66,7 +66,6 @@ class ImageboardTab extends StatelessWidget {
 					tab.didUpdate();
 				},
 				masterBuilder: (context, selectedThread, threadSetter) {
-					print('Rebuild tab $tab masterBuilder');
 					final boardName = tab.board;
 					return BoardPage(
 						key: tab.boardKey,

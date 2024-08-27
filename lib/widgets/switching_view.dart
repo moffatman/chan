@@ -98,7 +98,6 @@ class _SwitchingViewState<T> extends State<SwitchingView<T>> {
         final item = widget.items[index];
         final bool active = index == widget.currentIndex;
         final build = shouldBuild[item] = active || (shouldBuild[item] ?? false);
-        print('build $item= $build');
         final child = build ? widgets.putIfAbsent(item, () => widget.builder(item)) : const SizedBox.shrink();
         return HeroMode(
           key: ValueKey(widget.items[index]),
