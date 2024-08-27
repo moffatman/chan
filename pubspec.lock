@@ -533,8 +533,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
-      resolved-ref: df37b18d555c37e2ca0952699370699fef7b8e60
+      ref: master
+      resolved-ref: aff2379ac96f4b023daca4fc20b81c093adf7385
       url: "https://github.com/moffatman/flutter_inappwebview.git"
     source: git
     version: "6.0.0-beta.25"

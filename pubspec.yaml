@@ -195,6 +195,7 @@ dependency_overrides:
   flutter_inappwebview:
     git:
       url: https://github.com/moffatman/flutter_inappwebview.git
+      ref: master
   media_kit:
     git:
       url: https://github.com/moffatman/media-kit.git
