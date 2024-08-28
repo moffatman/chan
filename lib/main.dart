@@ -20,6 +20,7 @@ import 'package:chan/pages/tabs.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/bad_certificate.dart';
+import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/installed_fonts.dart';
@@ -105,6 +106,7 @@ Future<void> innerMain() async {
 		if (kDebugMode) {
 			await resetAdditionalSafeAreaInsets();
 		}
+		await initializeDefaultUserAgent();
 		runApp(const ChanApp());
 	}
 	catch (e, st) {

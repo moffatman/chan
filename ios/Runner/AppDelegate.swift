@@ -3,6 +3,7 @@ import AVFAudio
 import Flutter
 import Foundation
 import Vision
+import WebKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -213,6 +214,16 @@ import Vision
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "areHeadphonesPluggedIn") {
         result(AVAudioSession.sharedInstance().currentRoute.outputs.contains(where: {$0.portType == .headphones || $0.portType == .bluetoothLE || $0.portType == .bluetoothA2DP || $0.portType == .bluetoothHFP}))
+      }
+      else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    let userAgentChannel = FlutterMethodChannel(name: "com.moffatman.chan/userAgent", binaryMessenger: controller.binaryMessenger)
+    userAgentChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if (call.method == "getDefaultUserAgent") {
+        result(WKWebView().value(forKey: "userAgent"))
       }
       else {
         result(FlutterMethodNotImplemented)

@@ -12,6 +12,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
+import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
@@ -1283,7 +1284,7 @@ abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
 	final Map<String, DateTime> _lastCatalogCacheTime = {};
-	String get userAgent => platformUserAgents[Platform.operatingSystem] ?? Persistence.settings.userAgent;
+	String get userAgent => defaultUserAgent ?? platformUserAgents[Platform.operatingSystem] ?? Persistence.settings.userAgent;
 	final Map<String, String> platformUserAgents;
 	ImageboardSiteArchive({
 		this.platformUserAgents = const {}

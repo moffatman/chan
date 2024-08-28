@@ -15,6 +15,7 @@ import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.webkit.MimeTypeMap;
 import android.util.Log;
+import android.webkit.WebSettings;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument;
@@ -43,6 +44,7 @@ public class MainActivity extends FlutterFragmentActivity {
     private static final String CLIPBOARD_CHANNEL = "com.moffatman.chan/clipboard";
 
     private static final String AUDIO_CHANNEL = "com.moffatman.chan/audio";
+    private static final String USER_AGENT_CHANNEL = "com.moffatman.chan/userAgent";
     private MethodChannel.Result folderResult;
 
     private MethodChannel.Result saveFileAsResult;
@@ -313,6 +315,20 @@ public class MainActivity extends FlutterFragmentActivity {
                                 }
                                 return false;
                             }));
+                        } else {
+                            result.notImplemented();
+                        }
+                    }
+                    catch (Exception e) {
+                        result.error("JAVA_EXCEPTION", e.getMessage(), null);
+                    }
+                }
+        );
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), USER_AGENT_CHANNEL).setMethodCallHandler(
+                (call, result) -> {
+                    try {
+                        if (call.method.equals("getDefaultUserAgent")) {
+                            result.success(WebSettings.getDefaultUserAgent(getApplicationContext()));
                         } else {
                             result.notImplemented();
                         }
