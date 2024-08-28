@@ -198,7 +198,7 @@ class MultiMasterDetailPage extends StatefulWidget {
 	createState() => MultiMasterDetailPageState();
 }
 
-class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with TickerProviderStateMixin {
+class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with SingleTickerProviderStateMixin {
 	late TabController _tabController;
 	late GlobalKey<NavigatorState> masterKey;
 	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _masterInterceptorKey;

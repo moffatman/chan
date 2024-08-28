@@ -2029,7 +2029,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	createState() => _ThreadPositionIndicatorState();
 }
 
-class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with TickerProviderStateMixin {
+class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with SingleTickerProviderStateMixin {
 	List<Post>? _filteredPosts;
 	List<RefreshableListItem<Post>>? _filteredItems;
 	List<int> _youIds = [];

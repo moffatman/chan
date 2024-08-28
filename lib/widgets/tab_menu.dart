@@ -39,7 +39,7 @@ class _TabMenuOverlay extends StatefulWidget {
 	createState() => _TabMenuOverlayState();
 }
 
-class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderStateMixin {
+class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProviderStateMixin {
 	Size? lastSize;
 	late final AnimationController _animationController;
 	late final Animation<double> _animation;

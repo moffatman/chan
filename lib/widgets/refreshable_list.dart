@@ -1119,7 +1119,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	createState() => RefreshableListState<T>();
 }
 
-class RefreshableListState<T extends Object> extends State<RefreshableList<T>> with TickerProviderStateMixin {
+class RefreshableListState<T extends Object> extends State<RefreshableList<T>> with SingleTickerProviderStateMixin {
 	List<T>? originalList;
 	List<T>? sortedList;
 	late final ValueNotifier<Object?> error;

@@ -614,7 +614,7 @@ class _DecoyChild extends StatefulWidget {
   _DecoyChildState createState() => _DecoyChildState();
 }
 
-class _DecoyChildState extends State<_DecoyChild> with TickerProviderStateMixin {
+class _DecoyChildState extends State<_DecoyChild> {
   // See https://github.com/flutter/flutter/issues/43211.
   static const Color _lightModeMaskColor = Color(0xFF888888);
   static const Color _masklessColor = Color(0xFFFFFFFF);

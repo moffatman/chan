@@ -311,7 +311,7 @@ class ChanceDrawer extends StatefulWidget {
 	createState() => _ChanceDrawerState();
 }
 
-class _ChanceDrawerState extends State<ChanceDrawer> with TickerProviderStateMixin {
+class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderStateMixin {
 	late final TabController _tabController;
 
 	@override

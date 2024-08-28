@@ -778,7 +778,7 @@ class Expander extends StatefulWidget {
 	createState() => _ExpanderState();
 }
 
-class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
+class _ExpanderState extends State<Expander> with SingleTickerProviderStateMixin {
 	late final AnimationController animation;
 
 	@override
