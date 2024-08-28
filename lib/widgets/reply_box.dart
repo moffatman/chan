@@ -139,7 +139,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _showOptions = false;
 	bool get showOptions => _showOptions && !loading;
 	bool _showAttachmentOptions = false;
-	bool get showAttachmentOptions => _showAttachmentOptions && !loading;
+	bool get showAttachmentOptions => _showAttachmentOptions && !loading && attachment != null;
 	bool _show = false;
 	bool get show => widget.fullyExpanded || (_show && !_willHideOnPanEnd);
 	String? _lastFoundUrl;
@@ -1362,7 +1362,16 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													_attachmentScan = null;
 													_showAttachmentOptions = false;
 												});
-												await setAttachment(old, forceRandomizeChecksum: true);
+												try {
+													await setAttachment(old, forceRandomizeChecksum: true);
+												}
+												catch (e, st) {
+													Future.error(e, st); // crashlytics
+													if (context.mounted) {
+														alertError(context, e.toStringDio());
+													}
+													await setAttachment(old);
+												}
 												setState(() {
 													_showAttachmentOptions = true;
 												});
