@@ -324,24 +324,24 @@ class Persistence extends ChangeNotifier {
 	}
 
 	static bool isThreadCached(String imageboardKey, String board, int id) {
-		return sharedThreadsBox.containsKey('$imageboardKey/$board/$id');
+		return sharedThreadsBox.containsKey('$imageboardKey/${board.toLowerCase()}/$id');
 	}
 
 	static Future<Thread?> getCachedThread(String imageboardKey, String board, int id) async {
-		return await sharedThreadsBox.get('$imageboardKey/$board/$id');
+		return await sharedThreadsBox.get('$imageboardKey/${board.toLowerCase()}/$id');
 	}
 
 	static Future<void> setCachedThread(String imageboardKey, String board, int id, Thread? thread) async {
 		if (thread != null) {
-			await sharedThreadsBox.put('$imageboardKey/$board/$id', thread);
+			await sharedThreadsBox.put('$imageboardKey/${board.toLowerCase()}/$id', thread);
 		}
 		else {
-			await sharedThreadsBox.delete('$imageboardKey/$board/$id');
+			await sharedThreadsBox.delete('$imageboardKey/${board.toLowerCase()}/$id');
 		}
 	}
 
 	Listenable listenForThreadChanges(ThreadIdentifier thread) {
-		return sharedThreadsBox.listenable(keys: ['$imageboardKey/${thread.board}/${thread.id}']);
+		return sharedThreadsBox.listenable(keys: ['$imageboardKey/${thread.board.toLowerCase()}/${thread.id}']);
 	}
 
 	static Future<void> ensureTemporaryDirectoriesExist() async {
@@ -545,6 +545,7 @@ class Persistence extends ChangeNotifier {
 			await settings.save();
 		}
 		if (!settings.appliedMigrations.contains('bB')) {
+			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
 			// bB = board capitalization. They were stored with mixed caps before
 			for (final pair in sharedBoardsBox.toMap().entries) {
 				// This kind of mangles the greek letter boards on lainchan.
@@ -557,6 +558,25 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 			await sharedBoardsBox.flush();
+			for (final pair in sharedThreadStateBox.toMap().entries) {
+				final lowerCase = pair.key.toString().toLowerCase();
+				if (pair.key != lowerCase) {
+					await sharedThreadStateBox.delete(pair.key);
+					await sharedThreadStateBox.put(lowerCase, pair.value);
+				}
+			}
+			await sharedThreadStateBox.flush();
+			for (final key in sharedThreadsBox.keys.toList(growable: false)) {
+				final lowerCase = key.toString().toLowerCase();
+				if (key != lowerCase) {
+					final val = await sharedThreadsBox.get(key);
+					if (val != null) {
+						await sharedThreadsBox.delete(key);
+						await sharedThreadsBox.put(key, val);
+					}
+				}
+			}
+			await sharedThreadsBox.flush();
 			settings.appliedMigrations.add('bB');
 			await settings.save();
 		}
@@ -684,8 +704,8 @@ class Persistence extends ChangeNotifier {
 
 	Future<void> _cleanupThreads(Duration olderThan) async {
 		final deadline = DateTime.now().subtract(olderThan);
-		final toPreserve = savedPosts.values.map((v) => '$imageboardKey/${v.post.board}/${v.post.threadId}').toSet();
-		toPreserve.addAll(browserState.threadWatches.keys.map((v) => '$imageboardKey/${v.board}/${v.id}'));
+		final toPreserve = savedPosts.values.map((v) => '$imageboardKey/${v.post.board.toLowerCase()}/${v.post.threadId}').toSet();
+		toPreserve.addAll(browserState.threadWatches.keys.map((v) => '$imageboardKey/${v.board.toLowerCase()}/${v.id}'));
 		final toDelete = sharedThreadStateBox.keys.where((key) {
 			if (!(key as String).startsWith('$imageboardKey/')) {
 				// Not this Persistence
@@ -1037,7 +1057,7 @@ class Persistence extends ChangeNotifier {
 	}
 
 	Future<void> removeBoard(String boardName) async{
-		await sharedBoardsBox.delete('$imageboardKey/$boardName');
+		await sharedBoardsBox.delete('$imageboardKey/${boardName.toLowerCase()}');
 	}
 
 	SavedAttachment? getSavedAttachment(Attachment attachment) {
@@ -1091,7 +1111,7 @@ class Persistence extends ChangeNotifier {
 		savedPostsListenable.didUpdate();
 	}
 
-	static String getThreadStateBoxKey(String imageboardKey, ThreadIdentifier thread) => '$imageboardKey/${thread.board}/${thread.id}';
+	static String getThreadStateBoxKey(String imageboardKey, ThreadIdentifier thread) => '$imageboardKey/${thread.board.toLowerCase()}/${thread.id}';
 
 	Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
 		return sharedThreadStateBox.listenable(keys: [getThreadStateBoxKey(imageboardKey, thread)]);
@@ -1481,7 +1501,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}).fold<int>(0, (a, b) => a + b);
 
 	@override
-	String toString() => 'PersistentThreadState(key: $imageboardKey/$board/$id, lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive, showInHistory: $showInHistory)';
+	String toString() => 'PersistentThreadState(key: $boxKey, lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive, showInHistory: $showInHistory)';
 
 	@override
 	@HiveField(19, defaultValue: '')
@@ -1602,7 +1622,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	
 	ThreadWatch? get threadWatch => imageboard?.notifications.getThreadWatch(identifier);
 
-	String get boxKey => '$imageboardKey/$board/$id';
+	String get boxKey => '$imageboardKey/${board.toLowerCase()}/$id';
 
 	PostSortingMethod get effectivePostSortingMethod =>
 		postSortingMethod ??
