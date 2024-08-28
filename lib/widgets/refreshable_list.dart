@@ -1588,6 +1588,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			});
 		}
+		else if (mounted && newList == null && mergeTrees) {
+			// Just merge trees
+			if (hapticFeedback) {
+				mediumHapticFeedback();
+			}
+			setState(() {});
+		}
 	}
 
 	void acceptNewList(List<T> list) {

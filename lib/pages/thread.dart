@@ -1580,7 +1580,10 @@ class ThreadPageState extends State<ThreadPage> {
 																		key: _listKey,
 																		sortMethods: zone.postSortingMethods,
 																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																		disableUpdates: persistentState.disableUpdates,
+																		disableUpdates: persistentState.disableUpdates && !(newPostIds.isNotEmpty || switch ((persistentState.treeSplitId, persistentState.thread?.posts_)) {
+																			(int treeSplitId, List<Post> posts) => treeSplitId < posts.fold(0, (m, p) => max(m, p.id)),
+																			_ => false
+																		}),
 																		autoUpdateDuration: autoUpdateDuration,
 																		initialList: persistentState.thread?.posts ?? (site.isPaged ? null : site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1)),
 																		initialTreeSplitId: persistentState.treeSplitId,
@@ -1683,6 +1686,16 @@ class ThreadPageState extends State<ThreadPage> {
 																			)
 																		},
 																		listUpdater: (options) async {
+																			if (persistentState.disableUpdates) {
+																				if (options.source.manual) {
+																					await Future.delayed(const Duration(milliseconds: 650));
+																					// This is just to clear highlighted posts / resort tree on archived threads
+																					newPostIds.clear();
+																					_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
+																					Future.microtask(() => setState(() {}));
+																				}
+																				return null;
+																			}
 																			return (await _getUpdatedThread()).posts;
 																		},
 																		controller: _listController,
