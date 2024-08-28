@@ -26,174 +26,186 @@ import 'package:provider/provider.dart';
 
 import 'package:chan/models/thread.dart';
 
-class ThreadCounters extends StatelessWidget {
-	final Imageboard imageboard;
-	final Thread thread;
-	final PersistentThreadState? threadState;
-	final bool showPageNumber;
-	final bool countsUnreliable;
-	final bool showChrome;
-	final Alignment alignment;
-	final bool showUnseenColors;
-	final bool showUnseenCounters;
-	final bool? forceShowInHistory;
-
-	const ThreadCounters({
-		required this.imageboard,
-		required this.thread,
-		required this.threadState,
-		this.showPageNumber = false,
-		required this.countsUnreliable,
-		this.showChrome = true,
-		required this.alignment,
-		this.showUnseenColors = true,
-		this.showUnseenCounters = true,
-		this.forceShowInHistory,
-		super.key
-	});
-
-	@override
-	Widget build(BuildContext context) {
-		final site = imageboard.site;
-		final settings = context.watch<Settings>();
-		final theme = context.watch<SavedTheme>();
-		final latestThread = threadState?.thread ?? thread;
-		final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), latestThread.posts_.length - 1);
-		final int latestImageCount = (thread.isSticky && latestReplyCount == 1000) ? latestThread.imageCount : max(thread.imageCount, latestThread.imageCount);
-		int unseenReplyCount = 0;
-		int unseenYouCount = 0;
-		int unseenImageCount = 0;
-		final grey = theme.primaryColorWithBrightness(0.6);
-		Color? replyCountColor;
-		Color? imageCountColor;
-		Color? otherMetadataColor;
-		final threadSeen = threadState?.lastSeenPostId != null && (forceShowInHistory ?? (threadState?.showInHistory ?? false));
-		bool showReplyTimeInsteadOfReplyCount = false;
-		if (site.isPaged) {
-			showReplyTimeInsteadOfReplyCount = thread.posts_.tryFirst?.time != thread.posts_.tryLast?.time;
-			final catalogLastTime = thread.posts_.tryLast?.time;
-			final threadLastTime = threadState?.thread?.posts_.tryLast?.time;
-			if (catalogLastTime != null &&
-			    threadLastTime != null &&
-					!catalogLastTime.isAfter(threadLastTime)) {
-				// No new posts
-				replyCountColor = grey;
-				otherMetadataColor = grey;
-				imageCountColor = grey;
-			}
-		}
-		else if (threadSeen && showUnseenCounters) {
-			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
-				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
-			}
-			else {
-				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + ((latestReplyCount + 1) - latestThread.posts_.length);
-			}
-			unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
-			unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.expand((x) => x.attachments).length ?? 0));
-			replyCountColor = unseenReplyCount <= 0 ? grey : null;
-			imageCountColor = unseenImageCount <= 0 ? grey : null;
-			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
-		}
-		else if (!showUnseenColors) {
+TextSpan buildThreadCounters({
+	required Settings settings,
+	required Imageboard imageboard,
+	required SavedTheme theme,
+	required PersistentThreadState? threadState,
+	required Thread thread,
+	bool showPageNumber = false,
+	required bool countsUnreliable,
+	bool showUnseenColors = true,
+	bool showUnseenCounters = true,
+	bool? forceShowInHistory,
+	required bool showChrome
+}) {
+	final site = imageboard.site;
+	final latestThread = threadState?.thread ?? thread;
+	final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), latestThread.posts_.length - 1);
+	final int latestImageCount = (thread.isSticky && latestReplyCount == 1000) ? latestThread.imageCount : max(thread.imageCount, latestThread.imageCount);
+	int unseenReplyCount = 0;
+	int unseenYouCount = 0;
+	int unseenImageCount = 0;
+	final grey = theme.primaryColorWithBrightness(0.6);
+	Color? replyCountColor;
+	Color? imageCountColor;
+	Color? otherMetadataColor;
+	final threadSeen = threadState?.lastSeenPostId != null && (forceShowInHistory ?? (threadState?.showInHistory ?? false));
+	bool showReplyTimeInsteadOfReplyCount = false;
+	if (site.isPaged) {
+		showReplyTimeInsteadOfReplyCount = thread.posts_.tryFirst?.time != thread.posts_.tryLast?.time;
+		final catalogLastTime = thread.posts_.tryLast?.time;
+		final threadLastTime = threadState?.thread?.posts_.tryLast?.time;
+		if (catalogLastTime != null &&
+				threadLastTime != null &&
+				!catalogLastTime.isAfter(threadLastTime)) {
+			// No new posts
 			replyCountColor = grey;
-			imageCountColor = grey;
 			otherMetadataColor = grey;
+			imageCountColor = grey;
 		}
-		final children = [
+	}
+	else if (threadSeen && showUnseenCounters) {
+		if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
+			unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
+		}
+		else {
+			unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + ((latestReplyCount + 1) - latestThread.posts_.length);
+		}
+		unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
+		unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.expand((x) => x.attachments).length ?? 0));
+		replyCountColor = unseenReplyCount <= 0 ? grey : null;
+		imageCountColor = unseenImageCount <= 0 ? grey : null;
+		otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
+	}
+	else if (!showUnseenColors) {
+		replyCountColor = grey;
+		imageCountColor = grey;
+		otherMetadataColor = grey;
+	}
+	const empty = TextSpan(text: '');
+	const space = TextSpan(text: ' ');
+	const space2 = TextSpan(text: '  ');
+	final leadingSpace = showChrome ? space : empty;
+	final trailingSpace = showChrome ? space : space2;
+	return TextSpan(
+		children: [
 			if (threadState?.youIds.contains(thread.id) ?? false) ...[
-				Text(
-					'(You)',
+				leadingSpace,
+				TextSpan(
+					text: '(You)',
 					style: TextStyle(
 						fontWeight: FontWeight.w600,
 						color: theme.secondaryColor
 					)
 				),
-				const SizedBox(width: 4)
+				trailingSpace
 			],
 			if (thread.isSticky) ... [
-				Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
-				const SizedBox(width: 4),
+				leadingSpace,
+				IconSpan(icon: CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+				trailingSpace
 			],
 			if (latestThread.isArchived) ... [
-				Icon(CupertinoIcons.archivebox, color: grey, size: 18),
-				const SizedBox(width: 4),
+				leadingSpace,
+				IconSpan(icon: CupertinoIcons.archivebox, color: grey, size: 18),
+				trailingSpace
 			],
 			if (latestThread.isDeleted) ... [
-				Icon(CupertinoIcons.trash, color: grey, size: 18),
-				const SizedBox(width: 4),
+				leadingSpace,
+				IconSpan(icon: CupertinoIcons.trash, color: grey, size: 18),
+				trailingSpace
 			],
 			if (showPageNumber && latestThread.currentPage != null) ...[
-				Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
-				const SizedBox(width: 2),
-				Text('${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
-				const SizedBox(width: 6)
+				leadingSpace,
+				IconSpan(icon: CupertinoIcons.doc, size: 18, color: otherMetadataColor),
+				space,
+				TextSpan(text: '${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
+				trailingSpace
 			],
 			if (settings.showTimeInCatalogStats) ...[
+				leadingSpace,
 				if (settings.showClockIconInCatalog) ...[
-					Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
-					const SizedBox(width: 4),
+					IconSpan(icon: CupertinoIcons.clock, color: otherMetadataColor, size: 18),
+					space
 				],
-				Text(latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
-				const SizedBox(width: 4),
+				TextSpan(text: latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
+				trailingSpace
 			],
 			if (site.supportsThreadUpvotes) ...[
-				Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
-				const SizedBox(width: 2),
-				Text(latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
-				const SizedBox(width: 6),
+				leadingSpace,
+				IconSpan(icon: CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
+				space,
+				TextSpan(text: latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
+				trailingSpace
 			],
 			if (settings.showReplyCountInCatalog) ...[
-				Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
-				const SizedBox(width: 4),
-				if (showReplyTimeInsteadOfReplyCount) Text(formatRelativeTime(thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
-				else if (countsUnreliable && latestThread == thread) const Text('—')
-				else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-				if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
-				if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
-				const SizedBox(width: 2),
+				leadingSpace,
+				IconSpan(icon: CupertinoIcons.reply, size: 18, color: replyCountColor),
+				space,
+				if (showReplyTimeInsteadOfReplyCount) TextSpan(text: formatRelativeTime(thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
+				else if (countsUnreliable && latestThread == thread) const TextSpan(text: '—')
+				else TextSpan(text: (latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
+				if (unseenReplyCount > 0) TextSpan(text: '+$unseenReplyCount'),
+				if (unseenYouCount > 0) TextSpan(text: ' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
+				trailingSpace
 			],
 			if (settings.showImageCountInCatalog && site.showImageCount) ...[
-				const SizedBox(width: 6),
-				Icon(Adaptive.icons.photo, size: 18, color: imageCountColor),
-				const SizedBox(width: 4),
+				leadingSpace,
+				const TextSpan(text: '\u2009'), // To provide even appearance as photos icon is wide
+				IconSpan(icon: Adaptive.icons.photo, size: 18, color: imageCountColor),
+				space,
 				if (latestImageCount > unseenImageCount) ...[
-					Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-					if (unseenImageCount > 0) Text('+$unseenImageCount'),
+					TextSpan(text: (latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
+					if (unseenImageCount > 0) TextSpan(text: '+$unseenImageCount'),
 				]
-				else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
-				else Text('$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-				const SizedBox(width: 2),
+				else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const TextSpan(text: '—')
+				else TextSpan(text: '$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
+				trailingSpace
 			],
 			if (site.isPaged) ...[
-				const SizedBox(width: 6),
-				Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
-				const SizedBox(width: 4),
-				Text((-(switch (thread.posts_.tryLast?.isPageStub) {
+				leadingSpace,
+				IconSpan(icon: CupertinoIcons.doc, size: 18, color: otherMetadataColor),
+				space,
+				TextSpan(text: (-(switch (thread.posts_.tryLast?.isPageStub) {
 					true => thread.posts_.tryLast?.id,
 					false => thread.posts_.tryLast?.parentId,
 					null => null
-				} ?? -1)).toString(), style: TextStyle(color: otherMetadataColor))
+				} ?? -1)).toString(), style: TextStyle(color: otherMetadataColor)),
+				trailingSpace
 			]
-		];
-		if (children.isEmpty) {
+		]
+	);
+}
+
+class _ThreadCounters extends StatelessWidget {
+	final TextSpan counters;
+	final bool useFittedBox;
+	final bool showChrome;
+	final Alignment alignment;
+
+	const _ThreadCounters({
+		required this.counters,
+		required this.useFittedBox,
+		required this.showChrome,
+		required this.alignment,
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		if (counters.children?.isEmpty ?? false) {
 			return const SizedBox.shrink();
 		}
-		final row = FittedBox(
+		final row = useFittedBox ? FittedBox(
 			alignment: alignment,
 			fit: BoxFit.scaleDown,
-			child: Row(
-				mainAxisSize: MainAxisSize.min,
-				crossAxisAlignment: CrossAxisAlignment.center,
-				children: [
-					if (showChrome) const SizedBox(width: 4),
-					...children
-				]
-			)
-		);
+			child: Text.rich(counters)
+		) : Text.rich(counters, maxLines: 1, overflow: TextOverflow.ellipsis);
 		if (!showChrome) {
 			return row;
 		}
+		final settings = context.watch<Settings>();
+		final theme = context.watch<SavedTheme>();
 		return Container(
 			decoration: BoxDecoration(
 				borderRadius: settings.useFullWidthForCatalogCounters ? null : (settings.imagesOnRight ? const BorderRadius.only(topRight: Radius.circular(8)) : const BorderRadius.only(topLeft: Radius.circular(8))),
@@ -288,29 +300,23 @@ class ThreadRow extends StatelessWidget {
 		}
 		final watch = threadState?.threadWatch;
 		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0) && (forceShowInHistory ?? threadState.showInHistory);
-		final approxScreenWidth = estimateWidth(context);
-		final columns = style.isGrid ? (approxScreenWidth / settings.catalogGridWidth).floor() : 1;
-		final approxWidth = approxScreenWidth / columns;
+		final approxWidth = style.isGrid ? settings.catalogGridWidth : estimateWidth(context);
 		final inContextMenuHack = context.watch<ContextMenuHint?>() != null;
 		final approxHeight = (style.isGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight) * (inContextMenuHack ? 5 : 1);
-		Widget makeCounters() => ThreadCounters(
+		final countersSpan = buildThreadCounters(
+			settings: settings,
+			theme: theme,
 			countsUnreliable: countsUnreliable,
 			imageboard: imageboard,
 			thread: thread,
 			threadState: threadState,
 			showPageNumber: showPageNumber,
-			alignment: Alignment.centerRight,
-			forceShowInHistory: forceShowInHistory
+			forceShowInHistory: forceShowInHistory,
+			showChrome: true
 		);
-		final countersPlaceholderWidget = Visibility(
-			visible: false,
-			maintainState: true,
-			maintainAnimation: true,
-			maintainSize: true,
-			child: Padding(
-				padding: const EdgeInsets.only(top: 2),
-				child: approxWidth < 150 ? SizedBox(height: DefaultTextStyle.of(context).style.fontSize ?? 17, width: double.infinity) : makeCounters()
-			)
+		final countersPlaceholderWidget = SizedBox(
+			height: 0,
+			width: MediaQuery.textScalerOf(context).scale(9) * countersSpan.toPlainText().length
 		);
 		final countersPlaceholder = WidgetSpan(
 			alignment: PlaceholderAlignment.top,
@@ -712,7 +718,12 @@ class ThreadRow extends StatelessWidget {
 						else Flexible(
 							child: content
 						),
-						makeCounters()
+						_ThreadCounters(
+							counters: countersSpan,
+							useFittedBox: true,
+							showChrome: true,
+							alignment: Alignment.centerRight,
+						)
 					]
 				)
 				else ...[
@@ -720,7 +731,12 @@ class ThreadRow extends StatelessWidget {
 					Positioned.fill(
 						child: Align(
 							alignment: settings.imagesOnRight ? Alignment.bottomLeft : Alignment.bottomRight,
-							child: makeCounters()
+							child: _ThreadCounters(
+								counters: countersSpan,
+								useFittedBox: true,
+								showChrome: true,
+								alignment: Alignment.centerRight,
+							)
 						)
 					)
 				],

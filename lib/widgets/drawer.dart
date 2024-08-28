@@ -33,8 +33,11 @@ class _TabListTile extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final settings = context.watch<Settings>();
+		final theme = context.watch<SavedTheme>();
 		final currentImageboard = data.imageboard;
 		final currentThread = data.threadState?.thread;
+		final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
 		return ListTile(
 			selected: selected,
 			leading: SizedBox(
@@ -55,7 +58,7 @@ class _TabListTile extends StatelessWidget {
 				)
 			),
 			leadingAndTrailingTextStyle: TextStyle(
-				color: ChanceTheme.primaryColorWithBrightness80Of(context),
+				color: primaryColorWithBrightness80,
 				fontSize: 15
 			),
 			trailing: Row(
@@ -64,13 +67,13 @@ class _TabListTile extends StatelessWidget {
 					if (data.unseenYouCount > 0) Text(
 						'${data.unseenYouCount}',
 						style: TextStyle(
-							color: ChanceTheme.secondaryColorOf(context)
+							color: theme.secondaryColor
 						)
 					),
 					if (data.unseenCount > 0 && !(data.threadState?.threadWatch?.localYousOnly ?? false)) Text(
 						'${data.unseenCount}',
 						style: TextStyle(
-							color: data.isArchived ? ChanceTheme.primaryColorWithBrightness60Of(context) : null
+							color: data.isArchived ? theme.primaryColorWithBrightness(0.6) : null
 						)
 					)
 				]
@@ -79,20 +82,21 @@ class _TabListTile extends StatelessWidget {
 			title: Text(data.longTitle, maxLines: 2, overflow: TextOverflow.ellipsis),
 			subtitle: (currentImageboard == null || data.threadState == null || currentThread == null) ? null : Padding(
 				padding: const EdgeInsets.only(top: 2),
-				child: ThreadCounters(
+				child: Text.rich(buildThreadCounters(
+					settings: settings,
+					theme: theme,
 					imageboard: currentImageboard,
 					thread: currentThread,
 					threadState: data.threadState,
 					showPageNumber: true,
 					countsUnreliable: false,
-					showChrome: false,
-					alignment: Alignment.centerLeft,
 					showUnseenColors: false,
-					showUnseenCounters: (data.threadState?.threadWatch?.localYousOnly ?? false)
-				)
+					showUnseenCounters: (data.threadState?.threadWatch?.localYousOnly ?? false),
+					showChrome: false
+				))
 			),
 			subtitleTextStyle: TextStyle(
-				color: ChanceTheme.primaryColorWithBrightness80Of(context),
+				color: primaryColorWithBrightness80,
 				fontSize: 15
 			)
 		);

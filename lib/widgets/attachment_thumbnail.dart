@@ -11,6 +11,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
@@ -84,14 +85,10 @@ _KeyedAfterPaint? _makeKeyedAfterPaint({
 			TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
 			textPainter.text = TextSpan(
 				children: [
-					if (icon != null && icon != alreadyShowingBigIcon) TextSpan(
-						text: String.fromCharCode(icon.codePoint),
-						style: TextStyle(
-							fontSize: fontSize,
-							fontFamily: icon.fontFamily,
-							color: primaryColor,
-							package: icon.fontPackage
-						)
+					if (icon != null && icon != alreadyShowingBigIcon) IconSpan(
+						icon: icon,
+						size: fontSize,
+						color: primaryColor
 					),
 					if (icon != null && appendText != null) const TextSpan(text: ' '),
 					if (appendText != null) appendText
@@ -473,14 +470,10 @@ class _AttachmentThumbnailPlaceholderIconCustomPainter extends CustomPainter {
 	void paint(Canvas canvas, Size size) {
 		final fontSize = (0.5 * size.shortestSide).clamp(24.0, 100.0);
 		TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-		textPainter.text = TextSpan(
-			text: String.fromCharCode(icon.codePoint),
-			style: TextStyle(
-				fontSize: fontSize,
-				fontFamily: icon.fontFamily,
-				color: color,
-				package: icon.fontPackage
-			)
+		textPainter.text = IconSpan(
+			icon: icon,
+			size: fontSize,
+			color: color
 		);
 		textPainter.layout();
 		textPainter.paint(canvas, Alignment.center.inscribe(textPainter.size, Offset.zero & size).topLeft);

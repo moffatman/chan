@@ -2145,3 +2145,20 @@ class _BuildContextRegistrantState extends State<BuildContextRegistrant> {
 		widget.onDispose(context);
 	}
 }
+
+class IconSpan extends TextSpan {
+	IconSpan({
+		required IconData icon,
+		double? size,
+		Color? color
+	}) : super(
+		text: String.fromCharCode(icon.codePoint),
+		style: TextStyle(
+			fontSize: size,
+			fontFamily: icon.fontFamily,
+			color: color,
+			package: icon.fontPackage,
+			height: 1.0
+		)
+	);
+}
