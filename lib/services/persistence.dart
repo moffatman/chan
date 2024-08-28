@@ -1417,7 +1417,15 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		// This is to do preinit before setting _thread (which will generate metafilter)
 		thread = await Persistence.getCachedThread(imageboardKey, board, id);
 		if (preinit) {
-			await thread?.preinit(catalog: catalog);
+			try {
+				await thread?.preinit(catalog: catalog);
+			}
+			catch (e, st) {
+				// The thread is corrupt or something
+				Future.error(e, st); // crashlytics
+				await Persistence.setCachedThread(imageboardKey, board, id, null);
+				thread = null;
+			}
 		}
 		_thread = thread ?? _thread;
 	}
