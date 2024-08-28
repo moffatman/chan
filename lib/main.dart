@@ -2317,6 +2317,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			value: _tabs,
 			child: child
 		);
+		// The whole NavigationNotification system seems a bit broken right now.
+		// I think multiple parallel Navigators are overwriting each other
+		// Just override it here
+		child = NotificationListener(
+			onNotification: (notification) {
+				const NavigationNotification nextNotification = NavigationNotification(
+					canHandlePop: true
+				);
+				nextNotification.dispatch(context);
+				return true;
+			},
+			child: child
+		);
 		return child;
 	}
 
