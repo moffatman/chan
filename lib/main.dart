@@ -359,11 +359,21 @@ class _ChanAppState extends State<ChanApp> {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.equal): () {
 					if (Settings.instance.interfaceScale < 2.0) {
 						Settings.interfaceScaleSetting.value += 0.05;
+						showToast(
+							context: ImageboardRegistry.instance.context!,
+							icon: CupertinoIcons.zoom_in,
+							message: 'Zoom: ${(Settings.instance.interfaceScale * 100).round()}%'
+						);
 					}
 				},
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.minus): () {
 					if (Settings.instance.interfaceScale > 0.5) {
 						Settings.interfaceScaleSetting.value -= 0.05;
+						showToast(
+							context: ImageboardRegistry.instance.context!,
+							icon: CupertinoIcons.zoom_out,
+							message: 'Zoom: ${(Settings.instance.interfaceScale * 100).round()}%'
+						);
 					}
 				}
 			},
