@@ -3836,7 +3836,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset;
 		}
 		else {
-			maxScrollExtent = scrollController!.position.maxScrollExtent;
+			maxScrollExtent = scrollController!.position.maxScrollExtent - (state?.updatingNow.value != null ? 64 : 0);
 		}
 		double finalDestination = finalDestinationUnclamped.clamp(0, maxScrollExtent);
 		if (scrollController!.position.pixels != finalDestination) {

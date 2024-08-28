@@ -395,6 +395,7 @@ class ThreadPageState extends State<ThreadPage> {
 					setState(() {
 						_useAllDummies = false;
 					});
+					await WidgetsBinding.instance.endOfFrame;
 					await _listController.animateTo(
 						(post) => post.id == scrollTo!.$1,
 						// Lazy hack. but it works somehow to get to the unloadedPage stub
@@ -402,7 +403,7 @@ class ThreadPageState extends State<ThreadPage> {
 							? (post) => post.id.isNegative && post.id > scrollTo!.$1
 							: (post) => post.id <= scrollTo!.$1,
 						alignment: scrollTo.$2,
-						duration: const Duration(milliseconds: 200)
+						duration: const Duration(milliseconds: 1)
 					);
 					await WidgetsBinding.instance.endOfFrame;
 				}
