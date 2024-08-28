@@ -9,7 +9,6 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -71,7 +70,7 @@ class HistoryPageState extends State<HistoryPage> {
 		}
 		final futures = <Future<void>>[];
 		final out = <PersistentThreadState>[];
-		for (int i = startIndex; i < states.length && futures.length < _historyPageSize; i++) {
+		for (int i = startIndex; i < states.length && out.length < _historyPageSize; i++) {
 			final p = states[i];
 			if (p.thread?.posts_.last.isInitialized ?? false) {
 				out.add(p);
@@ -87,8 +86,6 @@ class HistoryPageState extends State<HistoryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final mode = TickerMode.of(context);
-		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => mode);
 		return MultiMasterDetailPage(
 			showChrome: false,
 			id: 'history',
@@ -230,7 +227,9 @@ class HistoryPageState extends State<HistoryPage> {
 									handler: _onFullHistorySearch
 								),
 								controller: _listController,
-								updateAnimation: threadStateBoxesAnimation,
+								autoExtendDuringScroll: true,
+								updateAnimation: Persistence.sharedThreadStateBox.listenable(),
+								disableUpdates: !TickerMode.of(context),
 								listUpdater: (options) async {
 									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && s.showInHistory).toList();
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));

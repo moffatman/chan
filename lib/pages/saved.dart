@@ -100,6 +100,7 @@ class _SavedPageState extends State<SavedPage> {
 	Map<(Imageboard, String), List<PostIdentifier>> _yourPostsLists = {};
 	List<_PostThreadCombo> _yourPostsMissingThreads = [];
 	late final ValueNotifier<_PostThreadCombo?> _yourPostsValueInjector;
+	bool _lastTickerMode = true;
 
 	@override
 	void initState() {
@@ -213,14 +214,14 @@ class _SavedPageState extends State<SavedPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final isActive = TickerMode.of(context);
-		final persistencesAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList()), () => isActive);
-		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => isActive);
-		final savedPostNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => isActive);
-		final savedAttachmentsNotifiersAnimation = FilteringListenable(Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList()), () => isActive);
+		final tickerMode = TickerMode.of(context);
+		if (!_lastTickerMode && tickerMode) {
+			Future.microtask(_removeArchivedHack.didUpdate);
+		}
+		_lastTickerMode = tickerMode;
+		final threadStateBoxesAnimation = Persistence.sharedThreadStateBox.listenable();
+		final savedAttachmentsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList());
 		final imageboardIds = <String, int>{};
-		// TODO: Think about this. it's a hack. does it cause bad performance?
-		Future.microtask(_removeArchivedHack.didUpdate);
 		return MultiMasterDetailPage(
 			id: 'saved',
 			key: widget.masterDetailKey,
@@ -268,13 +269,11 @@ class _SavedPageState extends State<SavedPage> {
 					masterBuilder: (context, selected, setter) {
 						final settings = context.watch<Settings>();
 						return RefreshableList<ImageboardScoped<ThreadWatch>>(
-							header: Column(
+							header: const Column(
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									ThreadWatcherControls(
-										isActive: isActive
-									),
-									const ChanceDivider()
+									ThreadWatcherControls(),
+									ChanceDivider()
 								]
 							),
 							aboveFooter: Column(
@@ -313,7 +312,9 @@ class _SavedPageState extends State<SavedPage> {
 								return list;
 							},
 							minUpdateDuration: Duration.zero,
-							updateAnimation: persistencesAnimation,
+							autoExtendDuringScroll: true,
+							updateAnimation: Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList()),
+							disableUpdates: !TickerMode.of(context),
 							key: _watchedThreadsListKey,
 							id: 'watched',
 							minCacheExtent: settings.useCatalogGrid ? settings.catalogGridHeight : 0,
@@ -324,29 +325,31 @@ class _SavedPageState extends State<SavedPage> {
 							canTapFooter: false,
 							footer: Padding(
 								padding: const EdgeInsets.all(16),
-								child: AnimatedBuilder(
-									animation: Listenable.merge([
-										_removeArchivedHack,
-										threadStateBoxesAnimation,
-									]),
-									builder: (context, _) => Wrap(
-										spacing: 16,
-										runSpacing: 16,
-										alignment: WrapAlignment.spaceEvenly,
-										runAlignment: WrapAlignment.center,
-										children: thread_actions.getWatchedThreadsActions(context, onMutate: _removeArchivedHack.didUpdate).map((a) => CupertinoButton(
-											onPressed: a.onPressed,
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													Icon(a.icon),
-													const SizedBox(width: 8),
-													Flexible(
-														child: Text(a.title, textAlign: TextAlign.center)
-													)
-												]
-											)
-										)).toList()
+								child: Builder(
+									builder: (context) => AnimatedBuilder(
+										animation: TickerMode.of(context) ? Listenable.merge([
+											_removeArchivedHack,
+											threadStateBoxesAnimation,
+										]) : const AlwaysStoppedAnimation(null),
+										builder: (context, _) => Wrap(
+											spacing: 16,
+											runSpacing: 16,
+											alignment: WrapAlignment.spaceEvenly,
+											runAlignment: WrapAlignment.center,
+											children: thread_actions.getWatchedThreadsActions(context, onMutate: _removeArchivedHack.didUpdate).map((a) => CupertinoButton(
+												onPressed: a.onPressed,
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(a.icon),
+														const SizedBox(width: 8),
+														Flexible(
+															child: Text(a.title, textAlign: TextAlign.center)
+														)
+													]
+												)
+											)).toList()
+										)
 									)
 								)
 							),
@@ -615,7 +618,9 @@ class _SavedPageState extends State<SavedPage> {
 							id: 'savedThreads',
 							sortMethods: [sortMethod],
 							key: _savedThreadsListKey,
+							autoExtendDuringScroll: true,
 							updateAnimation: threadStateBoxesAnimation,
+							disableUpdates: !TickerMode.of(context),
 							minCacheExtent: settings.useCatalogGrid ? settings.catalogGridHeight : 0,
 							gridDelegate: settings.useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
 								maxCrossAxisExtent: settings.catalogGridWidth,
@@ -812,7 +817,9 @@ class _SavedPageState extends State<SavedPage> {
 								suggestWhenFilterEmpty: true,
 								handler: _onYourPostsHistorySearch
 							),
+							autoExtendDuringScroll: true,
 							updateAnimation: threadStateBoxesAnimation,
+							disableUpdates: !TickerMode.of(context),
 							minUpdateDuration: Duration.zero,
 							sortMethods: [(a, b) => (b.post?.time ?? b.threadState.lastOpenedTime).compareTo(a.post?.time ?? a.threadState.lastOpenedTime)],
 							itemBuilder: (context, item) => (item.threadState.thread == null || item.post == null) ? const SizedBox.shrink() : ImageboardScope(
@@ -932,7 +939,9 @@ class _SavedPageState extends State<SavedPage> {
 							},
 							id: 'savedPosts',
 							key: _savedPostsListKey,
-							updateAnimation: savedPostNotifiersAnimation,
+							autoExtendDuringScroll: true,
+							updateAnimation: Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()),
+							disableUpdates: !TickerMode.of(context),
 							minUpdateDuration: Duration.zero,
 							sortMethods: [getSavedPostsSortMethod()],
 							itemBuilder: (context, savedPost) {
@@ -1006,71 +1015,73 @@ class _SavedPageState extends State<SavedPage> {
 					navigationBar: AdaptiveBar(
 						title: const Text('Saved Attachments'),
 						actions: [
-							AnimatedBuilder(
-								animation: savedAttachmentsNotifiersAnimation,
-								builder: (context, _) => CupertinoButton(
-									padding: EdgeInsets.zero,
-									onPressed: ImageboardRegistry.instance.imageboards.any((i) => i.persistence.savedAttachments.isNotEmpty) ?
-											() async {
-												final toDelete = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values.map(i.scope)).toList();
-												final ok = await showAdaptiveDialog<bool>(
-													context: context,
-													barrierDismissible: true,
-													builder: (context) => AdaptiveAlertDialog(
-														title: const Text('Are you sure?'),
-														content: Text('All ${describeCount(toDelete.length, 'saved attachment')} will be removed.'),
-														actions: [
-															AdaptiveDialogAction(
-																isDestructiveAction: true,
-																onPressed: () => Navigator.pop(context, true),
-																child: const Text('Delete all')
-															),
-															AdaptiveDialogAction(
-																onPressed: () => Navigator.pop(context),
-																child: const Text('Cancel')
-															)
-														]
-													)
-												);
-												if (!mounted || ok != true) {
-													return;
-												}
-												final imageboards = toDelete.map((i) => i.imageboard).toSet();
-												for (final item in toDelete) {
-													item.imageboard.persistence.savedAttachments.remove(item.item.attachment.globalId);
-												}
-												for (final imageboard in imageboards) {
-													imageboard.persistence.savedAttachmentsListenable.didUpdate();
-													attachmentSourceNotifier.didUpdate();
-												}
-												Persistence.settings.save();
-												bool actuallyDelete = true;
-												showUndoToast(
-													context: context,
-													message: 'Deleted ${describeCount(toDelete.length, 'attachment')}',
-													onUndo: () {
-														actuallyDelete = false;
-														// Restore all the objects
-														for (final item in toDelete) {
-															item.imageboard.persistence.savedAttachments[item.item.attachment.globalId] = item.item;
-														}
-														for (final imageboard in imageboards) {
-															imageboard.persistence.savedAttachmentsListenable.didUpdate();
-															attachmentSourceNotifier.didUpdate();
-														}
-														Persistence.settings.save();
+							Builder(
+								builder: (context) => AnimatedBuilder(
+									animation: TickerMode.of(context) ? savedAttachmentsNotifiersAnimation : const AlwaysStoppedAnimation(null),
+									builder: (context, _) => CupertinoButton(
+										padding: EdgeInsets.zero,
+										onPressed: ImageboardRegistry.instance.imageboards.any((i) => i.persistence.savedAttachments.isNotEmpty) ?
+												() async {
+													final toDelete = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values.map(i.scope)).toList();
+													final ok = await showAdaptiveDialog<bool>(
+														context: context,
+														barrierDismissible: true,
+														builder: (context) => AdaptiveAlertDialog(
+															title: const Text('Are you sure?'),
+															content: Text('All ${describeCount(toDelete.length, 'saved attachment')} will be removed.'),
+															actions: [
+																AdaptiveDialogAction(
+																	isDestructiveAction: true,
+																	onPressed: () => Navigator.pop(context, true),
+																	child: const Text('Delete all')
+																),
+																AdaptiveDialogAction(
+																	onPressed: () => Navigator.pop(context),
+																	child: const Text('Cancel')
+																)
+															]
+														)
+													);
+													if (!mounted || ok != true) {
+														return;
 													}
-												);
-												Future.delayed(const Duration(seconds: 10), () async {
-													if (actuallyDelete) {
-														// Objects are really gone, delete the saved files
-														for (final item in toDelete) {
-															await item.item.deleteFiles();
-														}
+													final imageboards = toDelete.map((i) => i.imageboard).toSet();
+													for (final item in toDelete) {
+														item.imageboard.persistence.savedAttachments.remove(item.item.attachment.globalId);
 													}
-												});
-											} : null,
-									child: const Icon(CupertinoIcons.delete)
+													for (final imageboard in imageboards) {
+														imageboard.persistence.savedAttachmentsListenable.didUpdate();
+														attachmentSourceNotifier.didUpdate();
+													}
+													Persistence.settings.save();
+													bool actuallyDelete = true;
+													showUndoToast(
+														context: context,
+														message: 'Deleted ${describeCount(toDelete.length, 'attachment')}',
+														onUndo: () {
+															actuallyDelete = false;
+															// Restore all the objects
+															for (final item in toDelete) {
+																item.imageboard.persistence.savedAttachments[item.item.attachment.globalId] = item.item;
+															}
+															for (final imageboard in imageboards) {
+																imageboard.persistence.savedAttachmentsListenable.didUpdate();
+																attachmentSourceNotifier.didUpdate();
+															}
+															Persistence.settings.save();
+														}
+													);
+													Future.delayed(const Duration(seconds: 10), () async {
+														if (actuallyDelete) {
+															// Objects are really gone, delete the saved files
+															for (final item in toDelete) {
+																await item.item.deleteFiles();
+															}
+														}
+													});
+												} : null,
+										child: const Icon(CupertinoIcons.delete)
+									)
 								)
 							)
 						]
@@ -1113,7 +1124,9 @@ class _SavedPageState extends State<SavedPage> {
 						gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
 							crossAxisCount: 4
 						),
+						autoExtendDuringScroll: true,
 						updateAnimation: savedAttachmentsNotifiersAnimation,
+						disableUpdates: !TickerMode.of(context),
 						useFiltersFromContext: false,
 						filterableAdapter: null,
 						itemBuilder: (context, item) => Builder(
@@ -1302,10 +1315,8 @@ class _SavedPageState extends State<SavedPage> {
 }
 
 class ThreadWatcherControls extends StatefulWidget {
-	final bool isActive;
 	const ThreadWatcherControls({
-		Key? key,
-		required this.isActive
+		Key? key
 	}) : super(key: key);
 
 	@override
@@ -1351,7 +1362,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 												if (w.nextUpdate != null && w.lastUpdate != null) ClipRRect(
 													borderRadius: const BorderRadius.all(Radius.circular(8)),
 													child: TimedRebuilder(
-														enabled: widget.isActive,
+														enabled: TickerMode.of(context),
 														interval: const Duration(seconds: 1),
 														function: () {
 															final now = DateTime.now();

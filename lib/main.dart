@@ -2168,11 +2168,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
 								}
 							},
-							beforeCopiedOnTap: (index) async {
-								if (index == 2) {
-									await _tabs._historyPageKey.currentState?.updateList();
-								}
-							},
+							beforeCopiedOnTap: (index) async {},
 							onTap: (index) {
 								lightHapticFeedback();
 								if (index == _tabs._lastIndex && index == 0) {

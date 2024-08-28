@@ -1416,6 +1416,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	void _onUpdateAnimation() {
+		if (widget.disableUpdates) {
+			return;
+		}
 		if (DateTime.now().difference(lastUpdateTime ?? DateTime(2000)) > const Duration(seconds: 1)) {
 			update(options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.animation));
 		}
