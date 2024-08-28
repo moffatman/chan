@@ -317,9 +317,7 @@ class PostRow extends StatelessWidget {
 				));
 			}
 		}
-		final content = PostSpanZone(
-			postId: latestPost.id,
-			style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
+		final content = Builder(
 			builder: (ctx) => Padding(
 				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 				child: IgnorePointer(
@@ -491,45 +489,41 @@ class PostRow extends StatelessWidget {
 												Expanded(
 													child: Padding(
 														padding: const EdgeInsets.only(left: 8, right: 8),
-														child: PostSpanZone(
-															postId: latestPost.id,
-															style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
-															builder: (ctx) => Consumer<MouseSettings>(
-																builder: (context, mouseSettings, child) => Text.rich(
-																	TextSpan(
-																		children: [
-																			buildPostInfoRow(
-																				post: latestPost,
-																				isYourPost: isYourPost,
-																				showSiteIcon: showSiteIcon,
-																				showBoardName: showBoardName,
-																				settings: settings,
-																				theme: theme,
-																				site: site,
-																				context: context,
-																				zone: ctx.watch<PostSpanZoneData>(),
-																				showPostNumber: showPostNumber,
-																				propagatedOnThumbnailTap: baseOptions?.propagateOnThumbnailTap == true ? onThumbnailTap : null,
-																				interactive: allowTappingLinks
+														child: Consumer<MouseSettings>(
+															builder: (ctx, mouseSettings, child) => Text.rich(
+																TextSpan(
+																	children: [
+																		buildPostInfoRow(
+																			post: latestPost,
+																			isYourPost: isYourPost,
+																			showSiteIcon: showSiteIcon,
+																			showBoardName: showBoardName,
+																			settings: settings,
+																			theme: theme,
+																			site: site,
+																			context: context,
+																			zone: ctx.watch<PostSpanZoneData>(),
+																			showPostNumber: showPostNumber,
+																			propagatedOnThumbnailTap: baseOptions?.propagateOnThumbnailTap == true ? onThumbnailTap : null,
+																			interactive: allowTappingLinks
+																		),
+																		if (mouseSettings.supportMouse) ...replyIds.map((id) => PostQuoteLinkSpan(
+																			board: latestPost.board,
+																			threadId: latestPost.threadId,
+																			postId: id,
+																			key: ValueKey('replyId $id')
+																		)).expand((link) => [
+																			link.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+																				showCrossThreadLabel: showCrossThreadLabel,
+																				addExpandingPosts: false,
+																				shrinkWrap: shrinkWrap
+																			)),
+																			WidgetSpan(
+																				child: ExpandingPost(link: link),
 																			),
-																			if (mouseSettings.supportMouse) ...replyIds.map((id) => PostQuoteLinkSpan(
-																				board: latestPost.board,
-																				threadId: latestPost.threadId,
-																				postId: id,
-																				key: ValueKey('replyId $id')
-																			)).expand((link) => [
-																				link.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-																					showCrossThreadLabel: showCrossThreadLabel,
-																					addExpandingPosts: false,
-																					shrinkWrap: shrinkWrap
-																				)),
-																				WidgetSpan(
-																					child: ExpandingPost(link: link),
-																				),
-																				const TextSpan(text: ' ')
-																			])
-																		]
-																	)
+																			const TextSpan(text: ' ')
+																		])
+																	]
 																)
 															)
 														)
@@ -1079,17 +1073,21 @@ class PostRow extends StatelessWidget {
 					}
 				)
 			],
-			child: (replyIds.isNotEmpty) ? SliderBuilder(
-				popup: PostsPage(
-					postsIdsToShow: replyIds,
-					postIdForBackground: latestPost.id,
-					zone: parentZone.childZoneFor(latestPost.id),
-					isRepliesForPostId: latestPost.id,
-					onThumbnailTap: propagateOnThumbnailTap ? onThumbnailTap : null
-				),
-				cancelable: settings.cancellableRepliesSlideGesture,
-				builder: innerChild
-			) : innerChild(context, 0.0)
+			child: PostSpanZone(
+				postId: latestPost.id,
+				style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
+				child: (replyIds.isNotEmpty) ? SliderBuilder(
+					popup: PostsPage(
+						postsIdsToShow: replyIds,
+						postIdForBackground: latestPost.id,
+						zone: parentZone.childZoneFor(latestPost.id),
+						isRepliesForPostId: latestPost.id,
+						onThumbnailTap: propagateOnThumbnailTap ? onThumbnailTap : null
+					),
+					cancelable: settings.cancellableRepliesSlideGesture,
+					builder: innerChild
+				) : innerChild(context, 0.0)
+			)
 		);
 	}
 }

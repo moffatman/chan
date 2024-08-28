@@ -292,7 +292,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 			final List<Post> children = style.childDepth > 0 ? post.replyIds.tryMap(zone.findPost).toList() : [];
 			final primaryPost = PostSpanZone(
 				postId: parents.tryLast?.$1.id ?? -1,
-				builder: (context) => PostRow(
+				child: PostRow(
 					post: post,
 					revealSpoilerImages: true,
 					highlight: parents.isNotEmpty || children.isNotEmpty,
@@ -321,7 +321,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 							padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 							child: PostSpanZone(
 								postId: parent.$2,
-								builder: (context) => PostRow(
+								child: PostRow(
 									post: parent.$1,
 									revealSpoilerImages: true,
 									shrinkWrap: true,
@@ -338,7 +338,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 							padding: EdgeInsets.only(left: 16 + (style.width / 10), right: 16, top: 8, bottom: 8),
 							child: PostSpanZone(
 								postId: primaryPostId,
-								builder: (contxt) => PostRow(
+								child: PostRow(
 									post: child,
 									revealSpoilerImages: true,
 									shrinkWrap: true,

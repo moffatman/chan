@@ -1863,12 +1863,12 @@ class PostCssSpan extends PostSpan {
 
 class PostSpanZone extends StatelessWidget {
 	final int postId;
-	final WidgetBuilder builder;
+	final Widget child;
 	final PostSpanZoneStyle? style;
 
 	const PostSpanZone({
 		required this.postId,
-		required this.builder,
+		required this.child,
 		this.style,
 		Key? key
 	}) : super(key: key);
@@ -1877,9 +1877,7 @@ class PostSpanZone extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return ChangeNotifierProvider<PostSpanZoneData>.value(
 			value: context.read<PostSpanZoneData>().childZoneFor(postId, style: style),
-			child: Builder(
-				builder: builder
-			)
+			child: child
 		);
 	}
 }
@@ -1982,25 +1980,14 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		int? fakeHoistedRootId,
 		ValueChanged<Post>? onNeedScrollToPost
 	}) {
-		// Assuming that when a new childZone is requested, there will be some old one to cleanup
-		for (final child in _children.values) {
-			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
-			child._conditionalLineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
-		}
 		final key = (postId, style, fakeHoistedRootId, onNeedScrollToPost);
-		final existingZone = _children[key];
-		if (existingZone != null) {
-			return existingZone;
-		}
-		final newZone = _PostSpanChildZoneData(
+		return _children[key] ??= _PostSpanChildZoneData(
 			parent: this,
 			postId: postId,
 			style: style,
 			fakeHoistedRootId: fakeHoistedRootId,
 			onNeedScrollToPost: onNeedScrollToPost
 		);
-		_children[key] = newZone;
-		return newZone;
 	}
 
 	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {PostSpanZoneStyle? style, bool clearStack = false});
