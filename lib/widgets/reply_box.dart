@@ -996,6 +996,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		_filenameController.clear();
 		attachment = null;
 		_attachmentScan = null;
+		_overrideRandomizeFilenames = false;
 		_didUpdateDraft();
 	}
 
