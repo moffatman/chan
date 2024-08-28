@@ -10,6 +10,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -415,7 +416,7 @@ class ThreadRow extends StatelessWidget {
 						mainAxisSize: MainAxisSize.min,
 						children: latestThread.attachments.map((attachment) => PopupAttachment(
 							attachment: attachment,
-							child: CupertinoButton(
+							child: CupertinoInkwell(
 								padding: EdgeInsets.zero,
 								minSize: 0,
 								child: ConstrainedBox(

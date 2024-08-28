@@ -10,6 +10,7 @@ import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -407,7 +408,7 @@ class PostRow extends StatelessWidget {
 							children: [
 								...smallAttachments.map((attachment) => PopupAttachment(
 									attachment: attachment,
-									child: CupertinoButton(
+									child: CupertinoInkwell(
 										padding: EdgeInsets.zero,
 										minSize: 0,
 										onPressed: bind1(onThumbnailTap, attachment),
@@ -445,7 +446,7 @@ class PostRow extends StatelessWidget {
 					child: SizedBox(
 						width: 75,
 						height: 75,
-						child: CupertinoButton(
+						child: CupertinoInkwell(
 							onPressed: onRequestArchive,
 							child: const Icon(CupertinoIcons.xmark_square, size: 36)
 						)
@@ -571,7 +572,7 @@ class PostRow extends StatelessWidget {
 										if (largeAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) ...largeAttachments.map((a) => Align(
 											child: Padding(
 												padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
-												child: CupertinoButton(
+												child: CupertinoInkwell(
 													padding: EdgeInsets.zero,
 													minSize: 0,
 													onPressed: bind1(onThumbnailTap, a),
@@ -662,7 +663,7 @@ class PostRow extends StatelessWidget {
 							else if (!settings.cloverStyleRepliesButton && replyIds.isNotEmpty) Positioned.fill(
 								child: Align(
 									alignment: Alignment.bottomRight,
-									child: CupertinoButton(
+									child: CupertinoInkwell(
 										alignment: Alignment.bottomRight,
 										padding: const EdgeInsets.only(bottom: 16, right: 16),
 										onPressed: openReplies,

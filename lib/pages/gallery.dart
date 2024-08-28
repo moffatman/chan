@@ -23,6 +23,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -551,7 +552,8 @@ class _GalleryPageState extends State<GalleryPage> {
 											final attachment = widget.attachments[index];
 											final icon = attachment.attachment.icon;
 											final isNormalAttachment = widget.overrideSources[attachment.attachment]?.scheme != 'file';
-											return AdaptiveIconButton(
+											return CupertinoInkwell(
+												padding: EdgeInsets.zero,
 												minSize: 0,
 												onPressed: () {
 													if (_scrollSheetController.size > 0.5) {
@@ -559,7 +561,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													}
 													_animateToPage(index);
 												},
-												icon: SizedBox(
+												child: SizedBox(
 													width: _thumbnailSize + 8,
 													height: _thumbnailSize + 8,
 													child: Center(
@@ -660,13 +662,14 @@ class _GalleryPageState extends State<GalleryPage> {
 										final attachment = widget.attachments[index];
 										final icon = attachment.attachment.icon;
 										final isNormalAttachment = widget.overrideSources[attachment.attachment]?.scheme != 'file';
-										return AdaptiveIconButton(
+										return CupertinoInkwell(
+											padding: EdgeInsets.zero,
 											minSize: 0,
 											onPressed: () {
 												_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
 												Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
 											},
-											icon: Container(
+											child: Container(
 												padding: const EdgeInsets.all(4),
 												margin: const EdgeInsets.all(2),
 												decoration: BoxDecoration(
