@@ -258,6 +258,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Singl
 				newIndex = max(0, panes.length - 1);
 			}
 			_tabController.removeListener(_onPaneChanged);
+			_tabController.dispose();
 			_tabController = TabController(
 				initialIndex: newIndex,
 				length: panes.length,
