@@ -777,6 +777,7 @@ final appearanceSettings = [
 				builder: (context) => const Text('Edit'),
 				setting: Settings.postDisplayFieldOrderSetting,
 				onPressed: (context, fieldOrder, setFieldOrder) async {
+					final list = fieldOrder.toList();
 					final settings = Settings.instance;
 					await showAdaptiveDialog(
 						barrierDismissible: true,
@@ -794,7 +795,7 @@ final appearanceSettings = [
 									width: 100,
 									height: 350,
 									child: ReorderableListView(
-										children: fieldOrder.asMap().entries.map((pair) {
+										children: list.asMap().entries.map((pair) {
 											final bool disabled;
 											switch (pair.value) {
 												case PostDisplayField.name:
@@ -856,10 +857,10 @@ final appearanceSettings = [
 											if (oldIndex < newIndex) {
 												newIndex -= 1;
 											}
-											final list = fieldOrder.toList();
 											final item = list.removeAt(oldIndex);
 											list.insert(newIndex, item);
-											setFieldOrder(list);
+											setFieldOrder(list.toList());
+											setDialogState(() {});
 										}
 									)
 								)
