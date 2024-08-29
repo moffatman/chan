@@ -10,8 +10,8 @@ class SiteLainchanOrg extends SiteLainchan {
 	SiteLainchanOrg({
 		required super.baseUrl,
 		required super.name,
-		super.platformUserAgents,
-		super.archives,
+		required super.overrideUserAgent,
+		required super.archives,
 		super.faviconPath,
 		super.defaultUsername,
 		super.basePath,
@@ -55,13 +55,13 @@ class SiteLainchanOrg extends SiteLainchan {
 		(other.basePath == basePath) &&
 		(other.boardsPath == boardsPath) &&
 		(other.name == name) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, boardsPath, name, Object.hashAll(platformUserAgents.values), Object.hashAll(archives), faviconPath, defaultUsername);
+	int get hashCode => Object.hash(baseUrl, basePath, boardsPath, name, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername);
 
 	@override
 	bool get supportsPushNotifications => false;

@@ -7,6 +7,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
@@ -1009,7 +1010,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(102, merger: _LaunchCountMerger())
 	int launchCount;
 	@HiveField(103)
-	String userAgent;
+	String? userAgent;
 	@HiveField(104)
 	int captcha4ChanCustomNumLetters;
 	@HiveField(105)
@@ -1295,7 +1296,7 @@ class SavedSettings extends HiveObject {
 		CatalogVariant? hackerNewsCatalogVariant,
 		bool? hideDefaultNamesInCatalog,
 		int? launchCount,
-		String? userAgent,
+		this.userAgent,
 		int? captcha4ChanCustomNumLetters,
 		bool? tabMenuHidesWhenScrollingDown,
 		bool? doubleTapScrollToReplies,
@@ -1519,7 +1520,6 @@ class SavedSettings extends HiveObject {
 		hackerNewsCatalogVariant = hackerNewsCatalogVariant ?? CatalogVariant.hackerNewsTop,
 		hideDefaultNamesInCatalog = hideDefaultNamesInCatalog ?? false,
 		launchCount = launchCount ?? 0,
-		userAgent = userAgent ?? getAppropriateUserAgents().first,
 		captcha4ChanCustomNumLetters = captcha4ChanCustomNumLetters ?? 6,
 		tabMenuHidesWhenScrollingDown = tabMenuHidesWhenScrollingDown ?? true,
 		doubleTapScrollToReplies = doubleTapScrollToReplies ?? true,
@@ -1621,11 +1621,9 @@ class SavedSettings extends HiveObject {
 			}
 			this.appliedMigrations.add('catalogVariant');
 		}
-		if (!this.appliedMigrations.contains('uar')) {
-			// uar means userAgentReset
-			if (Platform.isAndroid && !getAppropriateUserAgents().contains(this.userAgent) && this.contentSettings.siteKeys.contains('4chan')) {
-				this.userAgent = getAppropriateUserAgents().first;
-			}
+		if (!this.appliedMigrations.contains('uar2')) {
+			// uar means userAgentReset2 (start to use defaultUserAgent)
+			userAgent = null;
 			this.appliedMigrations.add('uar');
 		}
 		if (!this.postDisplayFieldOrder.contains(PostDisplayField.ipNumber)) {
@@ -1634,9 +1632,9 @@ class SavedSettings extends HiveObject {
 		if (!this.postDisplayFieldOrder.contains(PostDisplayField.postNumber)) {
 			this.postDisplayFieldOrder.insert(0, PostDisplayField.postNumber);
 		}
-		if (getInappropriateUserAgents().contains(this.userAgent) && !getAppropriateUserAgents().contains(this.userAgent)) {
+		if (getInappropriateUserAgents().contains(userAgent) && !getAppropriateUserAgents().contains(this.userAgent)) {
 			// To handle user-agents breaking with OS updates
-			this.userAgent = getAppropriateUserAgents().first;
+			userAgent = null;
 		}
 		if (!this.appliedMigrations.contains('uif')) {
 			// uif means unifiedImageFilter
@@ -2507,7 +2505,7 @@ class Settings extends ChangeNotifier {
 	int get launchCount => _settings.launchCount;
 
 	static const userAgentSetting = SavedSetting(SavedSettingsFields.userAgent);
-	String get userAgent => userAgentSetting(this);
+	String get userAgent => userAgentSetting(this) ?? defaultUserAgent ?? getAppropriateUserAgents().first;
 
 	static const captcha4ChanCustomNumLettersSetting = SavedSetting(SavedSettingsFields.captcha4ChanCustomNumLetters);
 	int get captcha4ChanCustomNumLetters => captcha4ChanCustomNumLettersSetting(this);

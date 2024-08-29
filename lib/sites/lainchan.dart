@@ -45,8 +45,8 @@ class SiteLainchan extends ImageboardSite {
 		required this.baseUrl,
 		required this.name,
 		this.maxUploadSizeBytes,
-		super.platformUserAgents,
-		super.archives,
+		required super.overrideUserAgent,
+		required super.archives,
 		this.faviconPath = '/favicon.ico',
 		this.basePath = '',
 		this.defaultUsername = 'Anonymous'
@@ -582,13 +582,13 @@ class SiteLainchan extends ImageboardSite {
 		(other.basePath == basePath) &&
 		(other.name == name) &&
 		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, name, maxUploadSizeBytes, Object.hashAll(platformUserAgents.values), Object.hashAll(archives), faviconPath, defaultUsername);
+	int get hashCode => Object.hash(baseUrl, basePath, name, maxUploadSizeBytes, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername);
 	
 	@override
 	Uri get iconUrl {

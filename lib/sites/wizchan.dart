@@ -5,8 +5,8 @@ class SiteWizchan extends SiteLainchanOrg {
 	SiteWizchan({
 		required super.baseUrl,
 		required super.name,
-		super.platformUserAgents,
-		super.archives,
+		required super.overrideUserAgent,
+		required super.archives,
 		super.faviconPath,
 		super.defaultUsername = 'Anonymage'
 	});
@@ -25,9 +25,9 @@ class SiteWizchan extends SiteLainchanOrg {
 		(other.name == name) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
+	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, overrideUserAgent, Object.hashAll(archives));
 }

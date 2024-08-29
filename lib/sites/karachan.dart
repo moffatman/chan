@@ -49,7 +49,8 @@ class SiteKarachan extends ImageboardSite {
 		required this.name,
 		required this.captchaKey,
 		this.defaultUsername = 'Anonymous',
-		super.platformUserAgents
+		required super.overrideUserAgent,
+		required super.archives
 	}) {
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
@@ -512,6 +513,9 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
+	bool get hasEmailLinkCookieAuth => true;
+
+	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is SiteKarachan &&
@@ -519,8 +523,9 @@ class SiteKarachan extends ImageboardSite {
 		other.name == name &&
 		other.captchaKey == captchaKey &&
 		other.defaultUsername == defaultUsername &&
-		mapEquals(other.platformUserAgents, platformUserAgents);
+		other.overrideUserAgent == overrideUserAgent &&
+		listEquals(other.archives, archives);
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, captchaKey, defaultUsername, Object.hashAll(platformUserAgents.values));
+	int get hashCode => Object.hash(baseUrl, name, captchaKey, defaultUsername, overrideUserAgent);
 }

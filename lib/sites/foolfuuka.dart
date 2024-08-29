@@ -497,7 +497,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		this.useRandomUseragent = false,
 		this.hasAttachmentRateLimit = false,
 		this.boards,
-		super.platformUserAgents
+		required super.overrideUserAgent
 	}) : super() {
 		client.interceptors.add(HTTP429BackoffInterceptor(
 			client: client
@@ -523,10 +523,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		(other.baseUrl == baseUrl) &&
 		(other.staticUrl == staticUrl) &&
 		(other.useRandomUseragent == useRandomUseragent) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.boards, boards) &&
 		(other.hasAttachmentRateLimit == hasAttachmentRateLimit);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, staticUrl, useRandomUseragent, Object.hashAll(platformUserAgents.values), Object.hashAll(boards ?? []), hasAttachmentRateLimit);
+	int get hashCode => Object.hash(name, baseUrl, staticUrl, useRandomUseragent, overrideUserAgent, Object.hashAll(boards ?? []), hasAttachmentRateLimit);
 }

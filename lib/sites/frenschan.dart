@@ -6,7 +6,8 @@ class SiteFrenschan extends SiteLainchan2 {
 	SiteFrenschan({
 		required super.baseUrl,
 		required super.name,
-		super.platformUserAgents,
+		required super.overrideUserAgent,
+		required super.archives
 	}) : super(
 		basePath: '',
 		faviconPath: '/favicon.ico',
@@ -33,11 +34,11 @@ class SiteFrenschan extends SiteLainchan2 {
 		(other.name == name) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
+	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, overrideUserAgent, Object.hashAll(archives));
 
 	@override
 	String get res => 'res';

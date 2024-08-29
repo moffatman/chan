@@ -72,8 +72,8 @@ class SiteFutaba extends ImageboardSite {
 		required this.baseUrl,
 		required this.name,
 		required this.maxUploadSizeBytes,
-		super.platformUserAgents,
-		super.archives
+		required super.overrideUserAgent,
+		required super.archives
 	});
 
 	String boardDomain(String board) => persistence?.maybeGetBoard(board)?.subdomain ?? baseUrl;
@@ -374,9 +374,9 @@ class SiteFutaba extends ImageboardSite {
 		(other.baseUrl == baseUrl) &&
 		(other.name == name) &&
 		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
+	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, overrideUserAgent, Object.hashAll(archives));
 }

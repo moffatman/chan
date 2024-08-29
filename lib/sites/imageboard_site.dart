@@ -12,7 +12,6 @@ import 'package:chan/models/search.dart';
 import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
-import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
@@ -1284,10 +1283,10 @@ abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
 	final Map<String, DateTime> _lastCatalogCacheTime = {};
-	String get userAgent => defaultUserAgent ?? platformUserAgents[Platform.operatingSystem] ?? Persistence.settings.userAgent;
-	final Map<String, String> platformUserAgents;
+	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
+	final String? overrideUserAgent;
 	ImageboardSiteArchive({
-		this.platformUserAgents = const {}
+		required this.overrideUserAgent
 	}) {
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(SeparatedCookieManager(
@@ -1367,8 +1366,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Map<String, Map<String, String>> _memoizedCellularHeaders = {};
 	final List<ImageboardSiteArchive> archives;
 	ImageboardSite({
-		this.archives = const [],
-		super.platformUserAgents
+		required this.archives,
+		required super.overrideUserAgent
 	});
 	Future<void> _ensureCookiesMemoizedForUrl(Uri url) async {
 		_memoizedWifiHeaders.putIfAbsent(url.host, () => {
@@ -1730,21 +1729,57 @@ abstract class ImageboardSiteLoginSystem {
 	}
 }
 
+ImageboardSiteArchive makeArchive(dynamic archive) {
+	final overrideUserAgent = archive['overrideUserAgent'] as String?;
+	final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
+		title: b['title'],
+		name: b['name'],
+		isWorksafe: b['isWorksafe'],
+		webmAudioAllowed: false
+	)).toList();
+	if (archive['type'] == 'foolfuuka') {
+		return FoolFuukaArchive(
+			name: archive['name'],
+			baseUrl: archive['baseUrl'],
+			staticUrl: archive['staticUrl'],
+			boards: boards,
+			useRandomUseragent: archive['useRandomUseragent'] ?? false,
+			hasAttachmentRateLimit: archive['hasAttachmentRateLimit'] ?? false,
+			overrideUserAgent: overrideUserAgent
+		);
+	}
+	else if (archive['type'] == 'fuuka') {
+		return FuukaArchive(
+			name: archive['name'],
+			baseUrl: archive['baseUrl'],
+			boards: boards,
+			overrideUserAgent: overrideUserAgent
+		);
+	}
+	else {
+		// Maybe it's another full site API?
+		return makeSite(archive);
+	}
+}
+
 ImageboardSite makeSite(dynamic data) {
-	final platformUserAgents = (data['platformUserAgents'] as Map?)?.cast<String, String>() ?? const {};
+	final overrideUserAgent = data['overrideUserAgent'] as String?;
+	final archives = (data['archives'] as List? ?? []).map<ImageboardSiteArchive>(makeArchive).toList(growable: false);
 	if (data['type'] == 'lainchan') {
 		return SiteLainchan(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			maxUploadSizeBytes: data['maxUploadSizeBytes'],
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'soyjak') {
 		return SiteSoyjak(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			platformUserAgents: platformUserAgents,
+			overrideUserAgent: overrideUserAgent,
+			archives: archives,
 			boardsWithCaptcha: (data['boardsWithCaptcha'] as List?)?.cast<String>(),
 			captchaQuestion: data['captchaQuestion']
 		);
@@ -1753,14 +1788,16 @@ ImageboardSite makeSite(dynamic data) {
 		return SiteFrenschan(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'wizchan') {
 		return SiteWizchan(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'lainchan_org') {
@@ -1769,14 +1806,16 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			faviconPath: data['faviconPath'] ?? '/favicon.ico',
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'dvach') {
 		return SiteDvach(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'futaba') {
@@ -1784,24 +1823,28 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			maxUploadSizeBytes: data['maxUploadSizeBytes'],
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'reddit') {
 		return SiteReddit(
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'hackernews') {
 		return SiteHackerNews(
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'erischan') {
 		return SiteErischan(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == '4chan') {
@@ -1825,41 +1868,10 @@ ImageboardSite makeSite(dynamic data) {
 			spamFilterCaptchaDelayRed: Duration(milliseconds: data['spamFilterCaptchaDelayRed'] ?? 12000),
 			stickyCloudflare: data['stickyCloudflare'] ?? false,
 			subjectCharacterLimit: data['subjectCharacterLimit'],
-			platformUserAgents: platformUserAgents,
+			overrideUserAgent: overrideUserAgent,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
 			searchUrl: data['searchUrl'] ?? '',
-			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
-				final archivePlatformUserAgents = (archive['platformUserAgents'] as Map?)?.cast<String, String>() ?? const {};
-				final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
-					title: b['title'],
-					name: b['name'],
-					isWorksafe: b['isWorksafe'],
-					webmAudioAllowed: false
-				)).toList();
-				if (archive['type'] == 'foolfuuka') {
-					return FoolFuukaArchive(
-						name: archive['name'],
-						baseUrl: archive['baseUrl'],
-						staticUrl: archive['staticUrl'],
-						boards: boards,
-						useRandomUseragent: archive['useRandomUseragent'] ?? false,
-						hasAttachmentRateLimit: archive['hasAttachmentRateLimit'] ?? false,
-						platformUserAgents: archivePlatformUserAgents
-					);
-				}
-				else if (archive['type'] == 'fuuka') {
-					return FuukaArchive(
-						name: archive['name'],
-						baseUrl: archive['baseUrl'],
-						boards: boards,
-						platformUserAgents: archivePlatformUserAgents
-					);
-				}
-				else {
-					print(archive);
-					throw UnknownArchiveTypeException(data['type']);
-				}
-			}).toList()
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'lynxchan') {
@@ -1873,7 +1885,8 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			boards: boards,
-			platformUserAgents: platformUserAgents,
+			overrideUserAgent: overrideUserAgent,
+			archives: archives,
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
 		);
 	}
@@ -1892,7 +1905,8 @@ ImageboardSite makeSite(dynamic data) {
 			faviconPath: data['faviconPath'],
 			boardsPath: data['boardsPath'],
 			defaultUsername: data['defaultUsername'],
-			platformUserAgents: platformUserAgents,
+			overrideUserAgent: overrideUserAgent,
+			archives: archives,
 			boards: boards,
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
@@ -1917,7 +1931,8 @@ ImageboardSite makeSite(dynamic data) {
 			faviconPath: data['faviconPath'],
 			boardsPath: data['boardsPath'],
 			defaultUsername: data['defaultUsername'],
-			platformUserAgents: platformUserAgents,
+			overrideUserAgent: overrideUserAgent,
+			archives: archives,
 			boards: boards,
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
@@ -1932,7 +1947,8 @@ ImageboardSite makeSite(dynamic data) {
 			basePath: data['basePath'],
 			faviconPath: data['faviconPath'],
 			postsPerPage: data['postsPerPage'],
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'karachan') {
@@ -1941,7 +1957,8 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			captchaKey: data['captchaKey'] ?? '',
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else if (data['type'] == 'jschan') {
@@ -1952,7 +1969,8 @@ ImageboardSite makeSite(dynamic data) {
 			faviconPath: data['faviconPath'],
 			postingCaptcha: data['postingCaptcha'] ?? 'grid',
 			deletingCaptcha: data['deletingCaptcha'] ?? 'grid',
-			platformUserAgents: platformUserAgents
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
 		);
 	}
 	else {

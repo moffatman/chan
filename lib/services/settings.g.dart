@@ -1278,9 +1278,9 @@ class SavedSettingsFields {
     fieldName: 'launchCount',
     merger: _LaunchCountMerger(),
   );
-  static String getUserAgent(SavedSettings x) => x.userAgent;
-  static void setUserAgent(SavedSettings x, String v) => x.userAgent = v;
-  static const userAgent = HiveFieldAdapter<SavedSettings, String>(
+  static String? getUserAgent(SavedSettings x) => x.userAgent;
+  static void setUserAgent(SavedSettings x, String? v) => x.userAgent = v;
+  static const userAgent = HiveFieldAdapter<SavedSettings, String?>(
     getter: getUserAgent,
     setter: setUserAgent,
     fieldNumber: 103,

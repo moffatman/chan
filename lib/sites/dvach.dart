@@ -30,8 +30,8 @@ class SiteDvach extends ImageboardSite {
 	SiteDvach({
 		required this.baseUrl,
 		required this.name,
-		super.platformUserAgents,
-		super.archives
+		required super.overrideUserAgent,
+		required super.archives
 	});
 
 	@override
@@ -279,9 +279,9 @@ class SiteDvach extends ImageboardSite {
 		(other is SiteDvach) &&
 		(other.name == name) &&
 		(other.baseUrl == baseUrl) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
+	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives));
 }

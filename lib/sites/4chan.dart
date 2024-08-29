@@ -1101,8 +1101,8 @@ class Site4Chan extends ImageboardSite {
 		required this.imageUrl,
 		required this.name,
 		required this.captchaKey,
-		super.platformUserAgents,
-		super.archives,
+		required super.overrideUserAgent,
+		required super.archives,
 		required this.captchaUserAgents,
 		required this.searchUrl,
 		required this.boardFlags,
@@ -1182,7 +1182,7 @@ class Site4Chan extends ImageboardSite {
 		(other.staticUrl == staticUrl) &&
 		listEquals(other.archives, archives) &&
 		mapEquals(other.captchaUserAgents, captchaUserAgents) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		(other.searchUrl == searchUrl) &&
 		listEquals(other.possibleCaptchaLetterCounts, possibleCaptchaLetterCounts) &&
 		mapEquals(other.postingHeaders, postingHeaders) &&
@@ -1195,7 +1195,7 @@ class Site4Chan extends ImageboardSite {
 		(other.stickyCloudflare == stickyCloudflare);
 
 	@override
-	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, Object.hashAll(archives), Object.hashAll(captchaUserAgents.values), Object.hashAll(platformUserAgents.values), searchUrl, Object.hashAll(possibleCaptchaLetterCounts), Object.hashAll(postingHeaders.values), captchaTicketLifetime, reportCooldown, subjectCharacterLimit, spamFilterCaptchaDelayGreen, spamFilterCaptchaDelayYellow, spamFilterCaptchaDelayRed, stickyCloudflare);
+	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, Object.hashAll(archives), Object.hashAll(captchaUserAgents.values), overrideUserAgent, searchUrl, Object.hashAll(possibleCaptchaLetterCounts), Object.hashAll(postingHeaders.values), captchaTicketLifetime, reportCooldown, subjectCharacterLimit, spamFilterCaptchaDelayGreen, spamFilterCaptchaDelayYellow, spamFilterCaptchaDelayRed, stickyCloudflare);
 	
 	@override
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');

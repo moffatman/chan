@@ -36,7 +36,8 @@ class SiteXenforo extends ImageboardSite {
 		required this.basePath,
 		required this.faviconPath,
 		required this.postsPerPage,
-		super.platformUserAgents
+		required super.overrideUserAgent,
+		required super.archives
 	});
 
 	static final _trimNewlinePattern = RegExp(r'\n*(.*)\n*');
@@ -938,8 +939,9 @@ class SiteXenforo extends ImageboardSite {
 		other.basePath == basePath &&
 		other.faviconPath == faviconPath &&
 		other.postsPerPage == postsPerPage &&
-		mapEquals(other.platformUserAgents, platformUserAgents);
+		other.overrideUserAgent == overrideUserAgent &&
+		listEquals(other.archives, archives);
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, basePath, faviconPath, postsPerPage, Object.hashAll(platformUserAgents.values));
+	int get hashCode => Object.hash(name, baseUrl, basePath, faviconPath, postsPerPage, overrideUserAgent);
 }

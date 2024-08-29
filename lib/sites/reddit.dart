@@ -247,8 +247,8 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	SiteReddit({
-		super.platformUserAgents,
-		super.archives
+		required super.overrideUserAgent,
+		required super.archives
 	});
 	@override
 	String get baseUrl => 'reddit.com';
@@ -1505,9 +1505,9 @@ class SiteReddit extends ImageboardSite {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is SiteReddit) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
+	int get hashCode => Object.hash(overrideUserAgent, Object.hashAll(archives));
 }

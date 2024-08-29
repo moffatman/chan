@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/pages/settings/common.dart';
+import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/import_export.dart';
 import 'package:chan/services/network_logging.dart';
@@ -623,57 +624,76 @@ final dataSettings = [
 		description: 'User-Agent',
 		icon: CupertinoIcons.globe,
 		setting: Settings.userAgentSetting,
-		builder: (userAgent) => const Text('Edit'),
+		builder: (userAgent) => userAgent != null ? const Text('Edit*') : const Text('Set'),
 		onPressed: (context, userAgent, setUserAgent) async {
 			final controller = TextEditingController(text: userAgent);
-			final newUserAgent = await showAdaptiveDialog<String>(
+			final save = await showAdaptiveDialog<bool>(
 				context: context,
 				barrierDismissible: true,
-				builder: (context) => AdaptiveAlertDialog(
-					title: const Text('Edit User-Agent'),
-					content: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							const SizedBox(height: 10),
-							if (ImageboardRegistry.instance.getImageboard('4chan') != null) ...[
-								const Text('This user-agent might be overridden for 4chan captcha requests to work with the Cloudflare check.'),
-								const SizedBox(height: 10)
-							],
-							AdaptiveTextField(
-								autofocus: true,
-								controller: controller,
-								smartDashesType: SmartDashesType.disabled,
-								smartQuotesType: SmartQuotesType.disabled,
-								minLines: 5,
-								maxLines: 5,
-								onSubmitted: (s) => Navigator.pop(context, s)
+				builder: (context) => StatefulBuilder(
+					builder: (context, setDialogState) => AdaptiveAlertDialog(
+						title: const Text('Edit User-Agent'),
+						content: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								const SizedBox(height: 10),
+								Visibility.maintain(
+									visible: (userAgent?.isEmpty ?? true),
+									child: const Text('You are currently using your system\'s default User-Agent (recommended)')
+								),
+								const SizedBox(height: 10),
+								AdaptiveTextField(
+									autofocus: true,
+									controller: controller,
+									smartDashesType: SmartDashesType.disabled,
+									smartQuotesType: SmartQuotesType.disabled,
+									minLines: 6,
+									maxLines: 6,
+									placeholder: defaultUserAgent,
+									onChanged: (s) {
+										userAgent = s;
+										setDialogState(() {});
+									},
+									onSubmitted: (s) {
+										userAgent = s;
+										Navigator.pop(context, true);
+									}
+								)
+							]
+						),
+						actions: [
+							AdaptiveDialogAction(
+								child: const Text('Reset to Default'),
+								onPressed: () {
+									userAgent = null;
+									Navigator.pop(context, true);
+								}
+							),
+							AdaptiveDialogAction(
+								child: const Text('Random'),
+								onPressed: () {
+									final userAgents = getAppropriateUserAgents();
+									final idx = userAgents.indexOf(controller.text) + 1;
+									userAgent = controller.text = userAgents[idx % userAgents.length];
+									setDialogState(() {});
+								}
+							),
+							AdaptiveDialogAction(
+								isDefaultAction: true,
+								child: const Text('Save'),
+								onPressed: () => Navigator.pop(context, true)
+							),
+							AdaptiveDialogAction(
+								child: const Text('Cancel'),
+								onPressed: () => Navigator.pop(context, false)
 							)
 						]
-					),
-					actions: [
-						AdaptiveDialogAction(
-							child: const Text('Random'),
-							onPressed: () {
-								final userAgents = getAppropriateUserAgents();
-								final idx = userAgents.indexOf(controller.text) + 1;
-								controller.text = userAgents[idx % userAgents.length];
-							}
-						),
-						AdaptiveDialogAction(
-							isDefaultAction: true,
-							child: const Text('Save'),
-							onPressed: () => Navigator.pop(context, controller.text.isEmpty ? null : controller.text)
-						),
-						AdaptiveDialogAction(
-							child: const Text('Cancel'),
-							onPressed: () => Navigator.pop(context)
-						)
-					]
+					)
 				)
 			);
 			controller.dispose();
-			if (newUserAgent != null) {
-				setUserAgent(newUserAgent);
+			if (save == true) {
+				setUserAgent(userAgent?.nonEmptyOrNull);
 			}
 		}
 	),

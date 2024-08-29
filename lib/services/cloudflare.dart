@@ -480,7 +480,7 @@ Future<T> useCloudflareClearedWebview<T>({
 }) => CloudflareInterceptor._useWebview(
 	handler: handler,
 	cookieUrl: uri,
-	userAgent: userAgent ?? Persistence.settings.userAgent,
+	userAgent: userAgent ?? Settings.instance.userAgent,
 	initialUrlRequest: URLRequest(
 		url: WebUri.uri(uri),
 		method: 'GET',

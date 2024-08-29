@@ -32,7 +32,8 @@ class SiteJsChan extends ImageboardSite {
 		required this.name,
 		this.defaultUsername = 'Anonymous',
 		required this.faviconPath,
-		super.platformUserAgents,
+		required super.overrideUserAgent,
+		required super.archives,
 		required this.postingCaptcha,
 		required this.deletingCaptcha
 	});
@@ -406,10 +407,11 @@ class SiteJsChan extends ImageboardSite {
 		other.name == name &&
 		other.defaultUsername == defaultUsername &&
 		other.faviconPath == faviconPath &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
+		listEquals(other.archives, archives) &&
 		postingCaptcha == other.postingCaptcha &&
 		deletingCaptcha == other.deletingCaptcha;
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, defaultUsername, faviconPath, Object.hashAll(platformUserAgents.values), postingCaptcha, deletingCaptcha);
+	int get hashCode => Object.hash(baseUrl, name, defaultUsername, faviconPath, overrideUserAgent, postingCaptcha, deletingCaptcha);
 }

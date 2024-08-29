@@ -98,8 +98,8 @@ class SiteHackerNews extends ImageboardSite {
 	final int catalogThreadsPerPage;
 	SiteHackerNews({
 		this.catalogThreadsPerPage = 30,
-		super.platformUserAgents,
-		super.archives
+		required super.overrideUserAgent,
+		required super.archives
 	});
 	@override
 	String get baseUrl => 'news.ycombinator.com';
@@ -701,9 +701,9 @@ class SiteHackerNews extends ImageboardSite {
 		identical(this, other) ||
 		(other is SiteHackerNews) &&
 		(other.catalogThreadsPerPage == catalogThreadsPerPage) &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(catalogThreadsPerPage, Object.hashAll(platformUserAgents.values), Object.hashAll(archives));
+	int get hashCode => Object.hash(catalogThreadsPerPage, overrideUserAgent, Object.hashAll(archives));
 }

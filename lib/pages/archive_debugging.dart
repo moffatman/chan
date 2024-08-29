@@ -14,7 +14,10 @@ import 'package:provider/provider.dart';
 
 class WrappedArchive extends ImageboardSite {
 	final ImageboardSiteArchive archive;
-	WrappedArchive(this.archive) : super();
+	WrappedArchive(this.archive) : super(
+    archives: const [],
+    overrideUserAgent: archive.overrideUserAgent
+  );
 
   @override
   List<ImageboardSiteArchive> get archives => [];

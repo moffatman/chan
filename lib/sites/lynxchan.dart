@@ -87,8 +87,8 @@ class SiteLynxchan extends ImageboardSite {
 		required this.baseUrl,
 		required this.boards,
 		required this.defaultUsername,
-		super.platformUserAgents,
-		super.archives
+		required super.overrideUserAgent,
+		required super.archives
 	});
 
 	ImageboardFlag? _makeFlag(Map<String, dynamic> data) {
@@ -463,11 +463,11 @@ class SiteLynxchan extends ImageboardSite {
 		other is SiteLynxchan &&
 		other.name == name &&
 		other.baseUrl == baseUrl &&
-		mapEquals(other.platformUserAgents, platformUserAgents) &&
+		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
 		listEquals(other.boards, boards) &&
 		other.defaultUsername == defaultUsername;
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, Object.hashAll(platformUserAgents.values), Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername);
+	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername);
 }
