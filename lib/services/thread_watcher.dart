@@ -118,6 +118,7 @@ class ThreadWatcher extends ChangeNotifier {
 	StreamSubscription<BoxEvent>? _boxSubscription;
 	final fixBrokenLock = Mutex();
 	final Set<ThreadIdentifier> fixedThreads = {};
+	final Set<ThreadIdentifier> brokenThreads = {};
 	final List<String> watchForStickyOnBoards;
 	final Map<String, List<Thread>> _lastCatalogs = {};
 	final List<ThreadIdentifier> _unseenStickyThreads = [];
@@ -396,10 +397,20 @@ class ThreadWatcher extends ChangeNotifier {
 				// fixed while we were waiting
 				return;
 			}
+			if (brokenThreads.contains(thread)) {
+				// already failed
+				return;
+			}
 			final state = persistence.getThreadStateIfExists(thread);
 			if (state != null) {
-				if (await _updateThread(state)) {
-					fixedThreads.add(thread);
+				try {
+					if (await _updateThread(state)) {
+						fixedThreads.add(thread);
+					}
+				}
+				catch (e, st) {
+					Future.error(e, st);
+					brokenThreads.add(thread);
 				}
 			}
 		});
