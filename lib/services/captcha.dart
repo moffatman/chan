@@ -51,7 +51,7 @@ Future<CaptchaSolution?> solveCaptcha({
 	VoidCallback? afterModal,
 	bool? forceHeadless
 }) async {
-	Future<CaptchaSolution?> pushModal(Widget Function(ValueChanged<CaptchaSolution> onCaptchaSolved) builder) async {
+	Future<CaptchaSolution?> pushModal(Widget Function(ValueChanged<CaptchaSolution?> onCaptchaSolved) builder) async {
 		if (context == null) {
 			throw const HeadlessSolveNotPossibleException();
 		}

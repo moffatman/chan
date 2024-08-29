@@ -465,7 +465,7 @@ class _ModifiedBouncingScrollPhysics extends BouncingScrollPhysics {
 class Captcha4ChanCustom extends StatefulWidget {
 	final ImageboardSite site;
 	final Chan4CustomCaptchaRequest request;
-	final ValueChanged<Chan4CustomCaptchaSolution> onCaptchaSolved;
+	final ValueChanged<Chan4CustomCaptchaSolution?> onCaptchaSolved;
 	final CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
 	final Exception? initialCloudChallengeException;
 	final ValueChanged<DateTime>? onTryAgainAt;
@@ -792,7 +792,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		catch(e, st) {
 			if (e is Captcha4ChanCustomChallengeCooldownException) {
-				widget.onTryAgainAt?.call(e.tryAgainAt);
+				final onTryAgainAt = widget.onTryAgainAt;
+				if (onTryAgainAt != null) {
+					onTryAgainAt.call(e.tryAgainAt);
+					if (mounted) {
+						// No need to keep the popup open
+						widget.onCaptchaSolved(null);
+					}
+				}
 				tryAgainAt = e.tryAgainAt;
 			}
 			print(e);
