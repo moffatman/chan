@@ -293,6 +293,32 @@ class CombiningValueListenable<T> implements ValueListenable<T> {
 	T get value => combine(children.map((c) => c.value));
 }
 
+class Combining2ValueListenable<X, Y, T> implements ValueListenable<T> {
+	final ValueListenable<X> child1;
+	final ValueListenable<Y> child2;
+	final T Function(X, Y) combine;
+	Combining2ValueListenable({
+		required this.child1,
+		required this.child2,
+		required this.combine
+	});
+
+	@override
+	void addListener(VoidCallback listener) {
+		child1.addListener(listener);
+		child2.addListener(listener);
+	}
+
+	@override
+	void removeListener(VoidCallback listener) {
+		child1.removeListener(listener);
+		child2.removeListener(listener);
+	}
+
+	@override
+	T get value => combine(child1.value, child2.value);
+}
+
 class MappingValueListenable<B extends Listenable, T> implements ValueListenable<T> {
 	final B parent;
 	final T Function(B) mapper;
@@ -313,6 +339,19 @@ class MappingValueListenable<B extends Listenable, T> implements ValueListenable
 
 	@override
 	T get value => mapper(parent);
+}
+
+class StoppedValueListenable<T> implements ValueListenable<T> {
+	@override
+	final T value;
+
+	const StoppedValueListenable(this.value);
+	
+	@override
+	void addListener(VoidCallback listener) { }
+
+	@override
+	void removeListener(VoidCallback listener) { }	
 }
 
 final Map<Function, ({Timer timer, Completer<void> completer})> _functionIdleTimers = {};

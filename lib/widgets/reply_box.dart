@@ -45,19 +45,6 @@ import 'package:linkify/linkify.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 
-class _StoppedValueListenable<T> implements ValueListenable<T> {
-	@override
-	final T value;
-
-	const _StoppedValueListenable(this.value);
-	
-	@override
-	void addListener(VoidCallback listener) { }
-
-	@override
-	void removeListener(VoidCallback listener) { }	
-}
-
 extension _ClampAboveZero on Duration {
 	Duration get clampAboveZero {
 		if (isNegative) {
@@ -1985,7 +1972,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											child: ClipRRect(
 												borderRadius: BorderRadius.circular(4),
 												child: ValueListenableBuilder<double?>(
-													valueListenable: _attachmentProgress!.$2?.progress ?? const _StoppedValueListenable(null),
+													valueListenable: _attachmentProgress!.$2?.progress ?? const StoppedValueListenable(null),
 													builder: (context, value, _) => LinearProgressIndicator(
 														value: value,
 														minHeight: 20,

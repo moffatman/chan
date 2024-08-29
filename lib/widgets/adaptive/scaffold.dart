@@ -1,9 +1,12 @@
 import 'package:chan/main.dart';
 import 'package:chan/pages/master_detail.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -90,6 +93,53 @@ void _handleLeadings({
 	}
 }
 
+class _NotifyingDrawerButtonWrapper extends StatelessWidget {
+	final Widget child;
+
+	const _NotifyingDrawerButtonWrapper({
+		required this.child
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		if (!Settings.androidDrawerSetting.watch(context)) {
+			// Bottom/side bar will show the counters
+			return child;
+		}
+		final tabs = context.watch<ChanTabs>();
+		int combine(savedCount, devCount) {
+			if (tabs.mainTabIndex == 4) {
+				// Already in Settings
+				return savedCount;
+			}
+			else if (tabs.mainTabIndex == 1) {
+				// Already in Saved
+				return devCount;
+			}
+			return savedCount + devCount;
+		}
+		return NotifyingIcon(
+			primaryCount: Combining2ValueListenable(
+				child1: CombiningValueListenable<int>(
+					children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
+					combine: (list) => list.fold(0, (a, b) => a + b)
+				),
+				child2: ImageboardRegistry.instance.dev?.threadWatcher.unseenYouCount ?? const StoppedValueListenable(0),
+				combine: combine
+			),
+			secondaryCount: Combining2ValueListenable(
+				child1: CombiningValueListenable<int>(
+					children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
+					combine: (list) => list.fold(0, (a, b) => a + b)
+				),
+				child2: ImageboardRegistry.instance.dev?.threadWatcher.unseenCount ?? const StoppedValueListenable(0),
+				combine: combine
+			),
+			icon: child
+		);
+	}
+}
+
 class _AppBarWithBackButtonPriority extends StatelessWidget implements PreferredSizeWidget {
 	final AdaptiveBar bar;
 	final VoidCallback? onDrawerButtonPressed;
@@ -109,7 +159,9 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 				onLongPress: () {
 					Settings.instance.runQuickAction(context);
 				},
-				child: const BackButton()
+				child: const _NotifyingDrawerButtonWrapper(
+					child: BackButton()
+				)
 			));
 		}
 		else if (onDrawerButtonPressed != null) {
@@ -117,8 +169,10 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 				onLongPress: () {
 					Settings.instance.runQuickAction(context);
 				},
-				child: DrawerButton(
-					onPressed: onDrawerButtonPressed
+				child: _NotifyingDrawerButtonWrapper(
+					child: DrawerButton(
+						onPressed: onDrawerButtonPressed
+					)
 				)
 			));
 		}
@@ -371,11 +425,13 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 				onLongPress: () {
 					Settings.instance.runQuickAction(context);
 				},
-				child: CupertinoButton(
-					onPressed: () => parentDrawer.key.currentState?.open(),
-					minSize: 0,
-					padding: EdgeInsets.zero,
-					child: const Icon(Icons.menu)
+				child: _NotifyingDrawerButtonWrapper(
+					child: CupertinoButton(
+						onPressed: () => parentDrawer.key.currentState?.open(),
+						minSize: 0,
+						padding: EdgeInsets.zero,
+						child: const Icon(Icons.menu)
+					)
 				)
 			));
 		}
@@ -384,11 +440,13 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 				onLongPress: () {
 					Settings.instance.runQuickAction(context);
 				},
-				child: CupertinoButton(
-					onPressed: () => Navigator.pop(context),
-					minSize: 0,
-					padding: EdgeInsets.zero,
-					child: const _CupertinoBackChevron()
+				child: _NotifyingDrawerButtonWrapper(
+					child: CupertinoButton(
+						onPressed: () => Navigator.pop(context),
+						minSize: 0,
+						padding: EdgeInsets.zero,
+						child: const _CupertinoBackChevron()
+					)
 				)
 			));
 		}

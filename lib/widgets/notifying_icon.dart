@@ -84,7 +84,9 @@ class StationaryNotifyingIcon extends StatelessWidget {
 				if (primary > 0 || secondary > 0) Positioned(
 					right: -10,
 					top: -10 + topOffset,
-					child: child
+					child: IgnorePointer(
+						child: child
+					)
 				)
 			]
 		);
