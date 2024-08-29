@@ -123,7 +123,7 @@ class UrlRegexes {
 		}
 		final lastDot = host.lastIndexOf('.');
 		if (lastDot != -1) {
-			final secondLastDot = host.lastIndexOf('.', lastDot);
+			final secondLastDot = host.lastIndexOf('.', lastDot - 1);
 			if (secondLastDot != -1) {
 				final hostBase = host.substring(secondLastDot + 1);
 				final wildcard = _wildcardHosts[hostBase];
