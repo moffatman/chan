@@ -382,6 +382,20 @@ class SegmentedSettingWidget<T extends Object> extends StandardImmutableSettingW
 		super.injectButton,
 		super.confirm
 	});
+	
+	@override
+	Iterable<SettingWidget> search(String query) sync* {
+		if (description.toLowerCase().contains(query)) {
+			yield this;
+			return;
+		}
+		for (final child in children.values) {
+			if (child.$2.toLowerCase().contains(query)) {
+				yield this;
+				return;
+			}
+		}
+	}
 
 	@override
 	Widget buildImpl(BuildContext context) {
