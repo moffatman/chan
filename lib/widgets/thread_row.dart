@@ -314,9 +314,10 @@ class ThreadRow extends StatelessWidget {
 			forceShowInHistory: forceShowInHistory,
 			showChrome: true
 		);
+		final textScaler = MediaQuery.textScalerOf(context);
 		final countersPlaceholderWidget = SizedBox(
-			height: 0,
-			width: MediaQuery.textScalerOf(context).scale(9) * countersSpan.toPlainText().length
+			height: textScaler.scale(20) + 5 + 5,
+			width: textScaler.scale(7.5) * countersSpan.toPlainText().length
 		);
 		final countersPlaceholder = WidgetSpan(
 			alignment: PlaceholderAlignment.top,
