@@ -8,6 +8,7 @@ import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -86,7 +87,7 @@ class ImageboardTab extends StatelessWidget {
 								tab.didUpdate();
 							}
 						},
-						onWantArchiveSearch: context.watch<ChanTabs>().searchArchives,
+						onWantArchiveSearch: context.watchIdentity<ChanTabs>().searchArchives,
 						semanticId: id
 					);
 				},

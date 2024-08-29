@@ -603,3 +603,5 @@ VoidCallback? bind1<In, Out>(Out Function(In)? f, In v) => switch (f) {
 extension LooksForeign on String {
 	bool get looksForeign => codeUnits.any((i) => i >= 128);
 }
+
+T identity<T>(x) => x;

@@ -2162,3 +2162,7 @@ class IconSpan extends TextSpan {
 		)
 	);
 }
+
+extension WatchIdentity on BuildContext {
+	T watchIdentity<T>() => select<T, T>(identity);
+}

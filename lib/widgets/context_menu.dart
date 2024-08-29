@@ -143,12 +143,12 @@ class _ContextMenuState extends State<ContextMenu> {
 	}
 
 	Widget _buildCupertino() {
-		// Using select to only rebuild when object changes, not on its updates
-		final zone = context.select<PostSpanZoneData?, PostSpanZoneData?>((z) => z);
-		final imageboard = context.select<Imageboard?, Imageboard?>((i) => i);
+		// Only rebuild when object changes identity
+		final zone = context.watchIdentity<PostSpanZoneData?>();
+		final imageboard = context.watchIdentity<Imageboard?>();
 		final site = context.watch<ImageboardSite?>();
-		final persistence = context.select<Persistence?, Persistence?>((p) => p);
-		final threadWatcher = context.select<ThreadWatcher?, ThreadWatcher?>((w) => w);
+		final persistence = context.watchIdentity<Persistence?>();
+		final threadWatcher = context.watchIdentity<ThreadWatcher?>();
 		final notifications = context.watch<Notifications?>();
 		// Need to be null-safe here. Because we could be building within export-image environment
 		final navigator = Navigator.maybeOf(context, rootNavigator: true);

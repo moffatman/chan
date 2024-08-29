@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/sliver_center.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
@@ -10,8 +11,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 const _kLongPressToPopAllTime = Duration(milliseconds: 500);
-
-T _identity<T>(T x) => x;
 
 class OverscrollModalPage extends StatefulWidget {
 	final Widget? child;
@@ -32,7 +31,7 @@ class OverscrollModalPage extends StatefulWidget {
 		this.allowScroll = true,
 		this.reverse = false,
 		this.onPop,
-		this.selectionAreaBuilder = _identity,
+		this.selectionAreaBuilder = identity,
 		super.key
 	}) : sliver = null;
 
@@ -44,7 +43,7 @@ class OverscrollModalPage extends StatefulWidget {
 		this.allowScroll = true,
 		this.reverse = false,
 		this.onPop,
-		this.selectionAreaBuilder = _identity,
+		this.selectionAreaBuilder = identity,
 		super.key
 	}) : child = null;
 

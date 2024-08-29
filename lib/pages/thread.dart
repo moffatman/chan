@@ -1239,7 +1239,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		_parentTab = context.select<PersistentBrowserTab?, PersistentBrowserTab?>((t) => t);
+		_parentTab = context.watchIdentity<PersistentBrowserTab?>();
 		final site = context.watch<ImageboardSite>();
 		final theme = context.watch<SavedTheme>();
 		String title = site.formatBoardName(widget.thread.board);
