@@ -264,7 +264,7 @@ class Thread extends HiveObject implements Filterable {
 
 	@override
 	String toString() {
-		return 'Thread /$board/$id';
+		return 'Thread /$board/$id [${posts_.length}]';
 	}
 
 	@override
