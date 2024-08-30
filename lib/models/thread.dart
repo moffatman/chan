@@ -173,20 +173,10 @@ class Thread extends HiveObject implements Filterable {
 					posts_.insert(indexToReplace, newChild);
 				}
 				else {
-					postToReplace.ipNumber ??= newChild.ipNumber;
-					for (final attachment in postToReplace.attachments_) {
-						final otherAttachment = newChild.attachments_.tryFirstWhere((a) => a.id == attachment.id);
-						attachment.sizeInBytes ??= otherAttachment?.sizeInBytes;
-						attachment.width ??= otherAttachment?.width;
-						attachment.height ??= otherAttachment?.height;
-					}
-					if (postToReplace.attachmentDeleted && !newChild.attachmentDeleted) {
-						postToReplace.attachments_ = newChild.attachments_;
-						postToReplace.attachmentDeleted = false;
-						if (postToReplace.id == id && attachmentDeleted) {
-							attachments = newChild.attachments_;
-							attachmentDeleted = false;
-						}
+					postToReplace.migrateFrom(newChild);
+					if (postToReplace.id == id && attachmentDeleted && !newChild.attachmentDeleted) {
+						attachments = newChild.attachments_;
+						attachmentDeleted = false;
 					}
 				}
 			}

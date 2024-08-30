@@ -15,6 +15,7 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/xenforo.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
@@ -284,6 +285,23 @@ class Post implements Filterable {
 	}
 	@override
 	Iterable<String> get md5s => attachments.map((a) => a.md5);
+
+	void migrateFrom(Post previous) {
+		ipNumber ??= previous.ipNumber;
+		for (final attachment in attachments_) {
+			final otherAttachment = previous.attachments_.tryFirstWhere((a) => a.id == attachment.id);
+			attachment.sizeInBytes ??= otherAttachment?.sizeInBytes;
+			attachment.width ??= otherAttachment?.width;
+			attachment.height ??= otherAttachment?.height;
+		}
+		if (attachmentDeleted && !previous.attachmentDeleted) {
+			attachments_ = previous.attachments_;
+			attachmentDeleted = false;
+		}
+		if (text == previous.text) {
+			_span ??= previous._span;
+		}
+	}
 
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
 	PostIdentifier get identifier => PostIdentifier(board, threadId, id);
