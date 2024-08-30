@@ -1941,7 +1941,7 @@ class ThreadPageState extends State<ThreadPage> {
 											)
 										)
 									),
-									ConstrainedBox(
+									if (site.supportsPosting) ConstrainedBox(
 										constraints: BoxConstraints(
 											maxHeight: MediaQuery.sizeOf(context).height / 2
 										),
