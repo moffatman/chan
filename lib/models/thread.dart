@@ -122,7 +122,10 @@ class Thread extends HiveObject implements Filterable {
 	}
 
 	Future<void> preinit({bool catalog = false}) async {
-		if (posts_.last.isInitialized) {
+		// mergePosts can leave the last post untouched.
+		// But many other posts may have been updated (upvote count).
+		// Decent solution - just check OP
+		if (posts_.last.isInitialized && posts_.first.isInitialized) {
 			return;
 		}
 		if (catalog) {
