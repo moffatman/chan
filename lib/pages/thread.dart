@@ -179,9 +179,10 @@ class ThreadPageState extends State<ThreadPage> {
 	late final EasyListenable _glowingPostsAnimation;
 	int? _glowingPostId;
 	final _scrollLock = Mutex();
+	final _threadStateListenableUpdateMutex = Mutex();
 	late final StreamSubscription<Attachment> _cacheSubscription;
 
-	void _onThreadStateListenableUpdate() {
+	Future<void> _onThreadStateListenableUpdate() => _threadStateListenableUpdateMutex.protect(() async {
 		final persistence = context.read<Persistence>();
 		final savedPostsLength = persistentState.thread?.posts.where((p) => persistence.getSavedPost(p) != null).length ?? 0;
 		final hiddenMD5sLength = Persistence.settings.hiddenImageMD5s.length;
@@ -190,6 +191,7 @@ class ThreadPageState extends State<ThreadPage> {
 				savedPostsLength != lastSavedPostsLength ||
 				hiddenMD5sLength != lastHiddenMD5sLength) {
 			_listController.state?.forceRebuildId++;
+			await persistentState.thread?.preinit();
 			setState(() {});
 		}
 		if (persistentState.thread != _lastPersistentThreadStateSnapshot.thread) {
@@ -223,7 +225,10 @@ class ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread != null) {
 			zone.addThread(persistentState.thread!);
 		}
-	}
+		if (_postUpdateCallbacks.isNotEmpty) {
+			Future.microtask(_runPostUpdateCallbacks);
+		}
+	});
 
 	bool get useTree => persistentState.useTree ?? context.read<Persistence>().browserState.useTree ?? context.read<ImageboardSite>().useTree;
 	String? get archiveName {
