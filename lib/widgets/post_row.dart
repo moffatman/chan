@@ -1037,23 +1037,28 @@ class PostRow extends StatelessWidget {
 					)
 				),
 				if (latestPost.attachments.isNotEmpty) ContextMenuAction(
-					child: Text('Copy ${latestPost.attachments.first.type.noun} link'),
+					child: Text('Share ${latestPost.attachments.first.type.noun} link'),
 					trailingIcon: CupertinoIcons.link,
 					onPressed: () async {
 						final which = await whichAttachment(context, latestPost.attachments);
-						if (which == null) {
+						if (which == null || !context.mounted) {
 							return;
 						}
-						Clipboard.setData(ClipboardData(
-							text: which.url
-						));
-						if (context.mounted) {
-							showToast(
-								context: context,
-								message: 'Copied "${which.url}" to clipboard',
-								icon: CupertinoIcons.doc_on_clipboard
-							);
+						final Rect? sharePositionOrigin;
+						if (rootContext.mounted) {
+							final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+							final size = rootContext.findRenderObject()?.semanticBounds.size;
+							sharePositionOrigin = (offset != null && size != null) ? offset & size : null;
 						}
+						else {
+							sharePositionOrigin = null;
+						}
+						shareOne(
+							context: context,
+							text: which.url,
+							type: "text",
+							sharePositionOrigin: sharePositionOrigin
+						);
 					}
 				),
 				if (latestPost.attachments.any((a) => a.type.isImageSearchable)) ContextMenuAction(
