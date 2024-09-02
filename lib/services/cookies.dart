@@ -89,7 +89,7 @@ class SeparatedCookieManager extends Interceptor {
     if (cookies != null) {
       await cookieJar.saveFromResponse(
         response.requestOptions.uri,
-        cookies.map((str) => _MyCookie.fromSetCookieValue(str)).toList(),
+        cookies.map((str) => MyCookie.fromSetCookieValue(str)).toList(),
       );
     }
   }
@@ -100,7 +100,7 @@ class SeparatedCookieManager extends Interceptor {
 }
 
 // Copied from http_headers.dart
-class _MyCookie implements Cookie {
+class MyCookie implements Cookie {
   String _name;
   String _value;
 	@override
@@ -117,7 +117,7 @@ class _MyCookie implements Cookie {
   @override
   SameSite? sameSite;
 
-  _MyCookie(String name, String value)
+  MyCookie(String name, String value)
       : _name = _validateName(name),
         _value = _validateValue(value),
         httpOnly = true;
@@ -148,7 +148,7 @@ class _MyCookie implements Cookie {
     _value = newValue;
   }
 
-  _MyCookie.fromSetCookieValue(String value)
+  MyCookie.fromSetCookieValue(String value)
       : _name = "",
         _value = "" {
     // Parse the 'set-cookie' header value.

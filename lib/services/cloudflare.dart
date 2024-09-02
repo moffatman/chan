@@ -111,6 +111,13 @@ extension _WebViewRedirect on Uri {
 	bool get looksLikeWebViewRedirect => host.isEmpty && scheme != 'data';
 }
 
+extension _FillInBlanks on Uri {
+	Uri fillInFrom(Uri otherUri) => replace(
+		scheme: scheme.nonEmptyOrNull ?? otherUri.scheme,
+		host: host.nonEmptyOrNull ?? otherUri.host
+	);
+}
+
 /// Block any processing while Cloudflare is clearing, so that the new cookies
 /// can be injected by a later interceptor
 class CloudflareBlockingInterceptor extends Interceptor {
@@ -147,6 +154,9 @@ class CloudflareInterceptor extends Interceptor {
 		if ((response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false) &&
 				response.data is String &&
 				response.data.contains('<title>McChallenge</title>')) {
+			return true;
+		}
+		if (ImageboardRegistry.instance.isRedirectGateway(response.redirects.tryLast?.location)) {
 			return true;
 		}
 		return false;
@@ -227,7 +237,7 @@ class CloudflareInterceptor extends Interceptor {
 				''');
 			}
 			final title = await controller.getTitle() ?? '';
-			if (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false)) {
+			if (!ImageboardRegistry.instance.isRedirectGateway(uri) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
 				await Persistence.saveCookiesFromWebView(uri!);
 				try {
 					callback(await handler(controller, uri));
@@ -380,21 +390,42 @@ class CloudflareInterceptor extends Interceptor {
 				return;
 			}
 			try {
-				final data = await _useWebview(
-					handler: _buildHandler(response.requestOptions.uri),
-					cookieUrl: response.requestOptions.uri,
-					userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
-					initialData: InAppWebViewInitialData(
-						data: response.data is String ? response.data : switch (response.requestOptions.responseType) {
-							ResponseType.bytes => utf8.decode(response.data),
-							ResponseType.json => jsonEncode(response.data),
-							ResponseType.plain => response.data,
-							ResponseType.stream => await utf8.decodeStream((response.data as ResponseBody).stream)
-						},
-						baseUrl: WebUri.uri(response.realUri)
-					),
-					priority: response.requestOptions.priority
-				);
+				final _CloudflareResponse data;
+				if (ImageboardRegistry.instance.isRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri))) {
+					// Start the request again
+					// We need to ensure cookies are preserved in all navigation sequences
+					data = await _useWebview(
+						handler: _buildHandler(response.requestOptions.uri),
+						cookieUrl: response.requestOptions.uri,
+						userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
+						initialUrlRequest: URLRequest(
+							url: WebUri.uri(response.requestOptions.uri),
+							method: response.requestOptions.method,
+							headers: {
+								for (final h in response.requestOptions.headers.entries) h.key: h.value.toString()
+							},
+							body: response.requestOptions.data == null ? null : Uint8List.fromList(response.requestOptions.data)
+						),
+						priority: response.requestOptions.priority
+					);
+				 }
+				 else {
+					data = await _useWebview(
+						handler: _buildHandler(response.requestOptions.uri),
+						cookieUrl: response.requestOptions.uri,
+						userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
+						initialData: InAppWebViewInitialData(
+							data: response.data is String ? response.data : switch (response.requestOptions.responseType) {
+								ResponseType.bytes => utf8.decode(response.data),
+								ResponseType.json => jsonEncode(response.data),
+								ResponseType.plain => response.data,
+								ResponseType.stream => await utf8.decodeStream((response.data as ResponseBody).stream)
+							},
+							baseUrl: WebUri.uri(response.realUri.fillInFrom(response.requestOptions.uri))
+						),
+						priority: response.requestOptions.priority
+					);
+				}
 				final newResponse = data.response(response.requestOptions);
 				if (newResponse != null) {
 					handler.next(newResponse);
@@ -448,7 +479,7 @@ class CloudflareInterceptor extends Interceptor {
 							ResponseType.plain => err.response!.data,
 							ResponseType.stream => await utf8.decodeStream((err.response!.data as ResponseBody).stream)
 						},
-						baseUrl: WebUri.uri(err.response!.realUri)
+						baseUrl: WebUri.uri(err.response!.realUri.fillInFrom(err.requestOptions.uri))
 					),
 					priority: err.requestOptions.priority
 				);

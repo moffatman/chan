@@ -18,6 +18,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
+import 'package:chan/sites/8chan.dart';
 import 'package:chan/sites/8kun.dart';
 import 'package:chan/sites/dvach.dart';
 import 'package:chan/sites/erischan.dart';
@@ -1696,6 +1697,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get hasExpiringThreads => true;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
+	bool isRedirectGateway(Uri uri) => false;
 }
 
 abstract class ImageboardSiteLoginSystem {
@@ -1765,6 +1767,12 @@ ImageboardSiteArchive makeArchive(dynamic archive) {
 ImageboardSite makeSite(dynamic data) {
 	final overrideUserAgent = data['overrideUserAgent'] as String?;
 	final archives = (data['archives'] as List? ?? []).map<ImageboardSiteArchive>(makeArchive).toList(growable: false);
+	final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
+		title: b['title'],
+		name: b['name'],
+		isWorksafe: b['isWorksafe'],
+		webmAudioAllowed: true
+	)).toList();
 	if (data['type'] == 'lainchan') {
 		return SiteLainchan(
 			name: data['name'],
@@ -1875,12 +1883,6 @@ ImageboardSite makeSite(dynamic data) {
 		);
 	}
 	else if (data['type'] == 'lynxchan') {
-		final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
-			title: b['title'],
-			name: b['name'],
-			isWorksafe: b['isWorksafe'],
-			webmAudioAllowed: true
-		)).toList();
 		return SiteLynxchan(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
@@ -1890,13 +1892,17 @@ ImageboardSite makeSite(dynamic data) {
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
 		);
 	}
+	else if (data['type'] == '8chan') {
+		return Site8Chan(
+			name: data['name'],
+			baseUrl: data['baseUrl'],
+			boards: boards,
+			overrideUserAgent: overrideUserAgent,
+			archives: archives,
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
+		);
+	}
 	else if (data['type'] == 'lainchan2') {
-		final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
-			title: b['title'],
-			name: b['name'],
-			isWorksafe: b['isWorksafe'],
-			webmAudioAllowed: true
-		)).toList();
 		return SiteLainchan2(
 			name: data['name'],
 			baseUrl: data['baseUrl'],
@@ -1915,12 +1921,6 @@ ImageboardSite makeSite(dynamic data) {
 		);
 	}
 	else if (data['type'] == '8kun') {
-		final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
-			title: b['title'],
-			name: b['name'],
-			isWorksafe: b['isWorksafe'],
-			webmAudioAllowed: true
-		)).toList();
 		return Site8Kun(
 			name: data['name'],
 			baseUrl: data['baseUrl'],

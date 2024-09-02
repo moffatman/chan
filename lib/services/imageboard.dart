@@ -646,6 +646,13 @@ class ImageboardRegistry extends ChangeNotifier {
 			Future.error(e, st);
 		}
 	}
+
+	bool isRedirectGateway(Uri? uri) {
+		if (uri == null) {
+			return false;
+		}
+		return imageboards.any((i) => i.site.isRedirectGateway(uri));
+	}
 }
 
 class ImageboardScoped<T> {

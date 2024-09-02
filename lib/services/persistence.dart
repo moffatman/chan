@@ -13,6 +13,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/pages/web_image_picker.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/incognito.dart';
@@ -1201,7 +1202,7 @@ class Persistence extends ChangeNotifier {
 	static Future<void> saveCookiesFromWebView(Uri uri) async {
 		final cookies = await webview.CookieManager.instance().getCookies(url: webview.WebUri.uri(uri));
 		await currentCookies.saveFromResponse(uri, cookies.map((cookie) {
-			final newCookie = Cookie(cookie.name, cookie.value);
+			final newCookie = MyCookie(cookie.name, cookie.value);
 			newCookie.domain = cookie.domain;
 			if (cookie.expiresDate != null) {
 				newCookie.expires = DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!);

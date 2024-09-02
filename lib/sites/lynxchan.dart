@@ -230,7 +230,8 @@ class SiteLynxchan extends ImageboardSite {
 		final document = parse(response.data);
 		final list = <ImageboardBoard>[];
 		final linkPattern = RegExp(r'^\/([^/]+)\/ - (.*)$');
-		for (final col1 in document.querySelectorAll('#divBoards .boardsCell>span:first-child')) {
+		for (final cell in document.querySelectorAll('#divBoards .boardsCell')) {
+			final col1 = cell.querySelector('span')!;
 			final match = linkPattern.firstMatch(col1.querySelector('.linkBoard')?.text ?? '');
 			if (match == null) {
 				continue;

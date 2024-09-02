@@ -11,6 +11,7 @@ import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:html/parser.dart';
 
 class CaptchaLynxchan extends StatefulWidget {
 	final LynxchanCaptchaRequest request;
@@ -82,10 +83,24 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		final String id;
 		final String imagePath;
 		if (idResponse.data is String) {
-			id = (idResponse.headers['set-cookie']?.tryMapOnce((cookie) {
+			final fromCookie = idResponse.headers['set-cookie']?.tryMapOnce((cookie) {
 				return RegExp(r'captchaid=([^;]+)').firstMatch(cookie)?.group(1);
-			})!)!;
-			imagePath = '/captcha.js?captchaId=${id.substring(0, 24)}';
+			});
+			if (fromCookie != null) {
+				id = fromCookie;
+				imagePath = '/captcha.js?captchaId=${id.substring(0, 24)}';
+			}
+			else {
+				// 8chan has a <html> with <img>
+				final doc = parse(idResponse.data);
+				final src = doc.querySelector('img')?.attributes['src'];
+				if (src == null) {
+					throw CaptchaLynxchanException('Captcha response has changed');
+				}
+				final uri = Uri.parse(src);
+				id = uri.pathSegments.last;
+				imagePath = uri.path;
+			}
 		}
 		else {
 			if (idResponse.data['error'] != null) {
