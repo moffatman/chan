@@ -1192,6 +1192,8 @@ class SavedSettings extends HiveObject {
 	bool doubleTapToHidePosts;
 	@HiveField(193)
 	bool doubleTapToHideThreads;
+	@HiveField(194)
+	bool cloverStyleCatalogCounters;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1387,6 +1389,7 @@ class SavedSettings extends HiveObject {
 		bool? useStaggeredCatalogGrid,
 		bool? doubleTapToHidePosts,
 		bool? doubleTapToHideThreads,
+		bool? cloverStyleCatalogCounters,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1603,7 +1606,8 @@ class SavedSettings extends HiveObject {
 		imageMetaFilterDepth = imageMetaFilterDepth ?? 0,
 		useStaggeredCatalogGrid = useStaggeredCatalogGrid ?? false,
 		doubleTapToHidePosts = doubleTapToHidePosts ?? false,
-		doubleTapToHideThreads = doubleTapToHideThreads ?? false {
+		doubleTapToHideThreads = doubleTapToHideThreads ?? false,
+		cloverStyleCatalogCounters = cloverStyleCatalogCounters ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2806,6 +2810,9 @@ class Settings extends ChangeNotifier {
 
 	static const doubleTapToHideThreadsSetting = SavedSetting(SavedSettingsFields.doubleTapToHideThreads);
 	bool get doubleTapToHideThreads => doubleTapToHideThreadsSetting(this);
+
+	static const cloverStyleCatalogCountersSetting = SavedSetting(SavedSettingsFields.cloverStyleCatalogCounters);
+	bool get cloverStyleCatalogCounters => cloverStyleCatalogCountersSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

@@ -83,88 +83,90 @@ TextSpan buildThreadCounters({
 		imageCountColor = grey;
 		otherMetadataColor = grey;
 	}
-	const empty = TextSpan(text: '');
 	const space = TextSpan(text: ' ');
-	const space2 = TextSpan(text: '  ');
-	final leadingSpace = showChrome ? space : empty;
-	final trailingSpace = showChrome ? space : space2;
-	return TextSpan(
-		children: [
-			if (threadState?.youIds.contains(thread.id) ?? false) ...[
-				leadingSpace,
-				TextSpan(
-					text: '(You)',
-					style: TextStyle(
-						fontWeight: FontWeight.w600,
-						color: theme.secondaryColor
-					)
-				),
-				trailingSpace
-			],
-			if (thread.isSticky) ... [
-				leadingSpace,
-				IconSpan(icon: CupertinoIcons.pin, color: otherMetadataColor, size: 18),
-				trailingSpace
-			],
-			if (latestThread.isArchived) ... [
-				leadingSpace,
-				IconSpan(icon: CupertinoIcons.archivebox, color: grey, size: 18),
-				trailingSpace
-			],
-			if (latestThread.isDeleted) ... [
-				leadingSpace,
-				IconSpan(icon: CupertinoIcons.trash, color: grey, size: 18),
-				trailingSpace
-			],
-			if (showPageNumber && latestThread.currentPage != null) ...[
-				leadingSpace,
-				IconSpan(icon: CupertinoIcons.doc, size: 18, color: otherMetadataColor),
-				space,
+	final parts = <TextSpan>[
+		if (threadState?.youIds.contains(thread.id) ?? false) TextSpan(
+			text: '(You)',
+			style: TextStyle(
+				fontWeight: FontWeight.w600,
+				color: theme.secondaryColor
+			)
+		),
+		if (thread.isSticky) IconSpan(icon: CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+		if (latestThread.isArchived) IconSpan(icon: CupertinoIcons.archivebox, color: grey, size: 18),
+		if (latestThread.isDeleted) IconSpan(icon: CupertinoIcons.trash, color: grey, size: 18),
+		if (showPageNumber && latestThread.currentPage != null) TextSpan(
+			children: [
+				if (!settings.cloverStyleCatalogCounters) ...[
+					IconSpan(icon: CupertinoIcons.doc, size: 18, color: otherMetadataColor),
+					space,
+				]
+				else const TextSpan(text: 'p'),
 				TextSpan(text: '${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
-				trailingSpace
-			],
-			if (settings.showTimeInCatalogStats) ...[
-				leadingSpace,
+			]
+		),
+		if (settings.showTimeInCatalogStats) TextSpan(
+			children: [
 				if (settings.showClockIconInCatalog) ...[
 					IconSpan(icon: CupertinoIcons.clock, color: otherMetadataColor, size: 18),
 					space
 				],
 				TextSpan(text: latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
-				trailingSpace
-			],
-			if (site.supportsThreadUpvotes) ...[
-				leadingSpace,
+			]
+		),
+		if (site.supportsThreadUpvotes) TextSpan(
+			children: [
 				IconSpan(icon: CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
 				space,
 				TextSpan(text: latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
-				trailingSpace
-			],
-			if (settings.showReplyCountInCatalog) ...[
-				leadingSpace,
-				IconSpan(icon: CupertinoIcons.reply, size: 18, color: replyCountColor),
-				space,
+			]
+		),
+		if (settings.showReplyCountInCatalog) TextSpan(
+			children: [
+				if (!settings.cloverStyleCatalogCounters) ...[
+					IconSpan(icon: CupertinoIcons.reply, size: 18, color: replyCountColor),
+					space,
+				],
 				if (showReplyTimeInsteadOfReplyCount) TextSpan(text: formatRelativeTime(thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
 				else if (countsUnreliable && latestThread == thread) const TextSpan(text: '—')
 				else TextSpan(text: (latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 				if (unseenReplyCount > 0) TextSpan(text: '+$unseenReplyCount'),
 				if (unseenYouCount > 0) TextSpan(text: ' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
-				trailingSpace
-			],
-			if (settings.showImageCountInCatalog && site.showImageCount) ...[
-				leadingSpace,
-				const TextSpan(text: '\u2009'), // To provide even appearance as photos icon is wide
-				IconSpan(icon: Adaptive.icons.photo, size: 18, color: imageCountColor),
-				space,
+				if (settings.cloverStyleCatalogCounters)
+					if (settings.useFullWidthForCatalogCounters)
+						if (latestImageCount == 1)
+							TextSpan(text: ' reply', style: TextStyle(color: imageCountColor))
+						else
+							TextSpan(text: ' replies', style: TextStyle(color: imageCountColor))
+					else
+						TextSpan(text: 'R', style: TextStyle(color: replyCountColor)),
+			]
+		),
+		if (settings.showImageCountInCatalog && site.showImageCount) TextSpan(
+			children: [
+				if (!settings.cloverStyleCatalogCounters) ...[
+					const TextSpan(text: '\u2009'), // To provide even appearance as photos icon is wide
+					IconSpan(icon: Adaptive.icons.photo, size: 18, color: imageCountColor),
+					space,
+				],
 				if (latestImageCount > unseenImageCount) ...[
 					TextSpan(text: (latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 					if (unseenImageCount > 0) TextSpan(text: '+$unseenImageCount'),
 				]
 				else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const TextSpan(text: '—')
 				else TextSpan(text: '$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-				trailingSpace
-			],
-			if (site.isPaged) ...[
-				leadingSpace,
+				if (settings.cloverStyleCatalogCounters)
+					if (settings.useFullWidthForCatalogCounters)
+						if (latestImageCount == 1)
+							TextSpan(text: ' image', style: TextStyle(color: imageCountColor))
+						else
+							TextSpan(text: ' images', style: TextStyle(color: imageCountColor))
+					else
+						TextSpan(text: 'I', style: TextStyle(color: imageCountColor))
+			]
+		),
+		if (site.isPaged) TextSpan(
+			children: [
 				IconSpan(icon: CupertinoIcons.doc, size: 18, color: otherMetadataColor),
 				space,
 				TextSpan(text: (-(switch (thread.posts_.tryLast?.isPageStub) {
@@ -172,10 +174,20 @@ TextSpan buildThreadCounters({
 					false => thread.posts_.tryLast?.parentId,
 					null => null
 				} ?? -1)).toString(), style: TextStyle(color: otherMetadataColor)),
-				trailingSpace
 			]
-		]
-	);
+		)
+	];
+	final between = settings.cloverStyleCatalogCounters ? TextSpan(text: ', ', style: TextStyle(color: otherMetadataColor)) : const TextSpan(text: '  ');
+	// Lazy way of inserting between each member
+	for (int i = parts.length - 1; i > 0; i--) {
+		parts.insert(i, between);
+	}
+	if (showChrome) {
+		// Padding
+		parts.insert(0, space);
+		parts.add(space);
+	}
+	return TextSpan(children: parts);
 }
 
 class _ThreadCounters extends StatelessWidget {
@@ -723,7 +735,7 @@ class ThreadRow extends StatelessWidget {
 							counters: countersSpan,
 							useFittedBox: true,
 							showChrome: true,
-							alignment: Alignment.centerRight,
+							alignment: settings.cloverStyleCatalogCounters ? Alignment.centerLeft : Alignment.centerRight,
 						)
 					]
 				)
@@ -736,7 +748,7 @@ class ThreadRow extends StatelessWidget {
 								counters: countersSpan,
 								useFittedBox: true,
 								showChrome: true,
-								alignment: Alignment.centerRight,
+								alignment: settings.cloverStyleCatalogCounters ? Alignment.centerLeft : Alignment.centerRight,
 							)
 						)
 					)

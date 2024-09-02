@@ -2309,6 +2309,18 @@ class SavedSettingsFields {
     fieldName: 'doubleTapToHideThreads',
     merger: PrimitiveMerger(),
   );
+  static bool getCloverStyleCatalogCounters(SavedSettings x) =>
+      x.cloverStyleCatalogCounters;
+  static void setCloverStyleCatalogCounters(SavedSettings x, bool v) =>
+      x.cloverStyleCatalogCounters = v;
+  static const cloverStyleCatalogCounters =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getCloverStyleCatalogCounters,
+    setter: setCloverStyleCatalogCounters,
+    fieldNumber: 194,
+    fieldName: 'cloverStyleCatalogCounters',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2502,7 +2514,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     190: SavedSettingsFields.imageMetaFilterDepth,
     191: SavedSettingsFields.useStaggeredCatalogGrid,
     192: SavedSettingsFields.doubleTapToHidePosts,
-    193: SavedSettingsFields.doubleTapToHideThreads
+    193: SavedSettingsFields.doubleTapToHideThreads,
+    194: SavedSettingsFields.cloverStyleCatalogCounters
   };
 
   @override
@@ -2710,13 +2723,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       useStaggeredCatalogGrid: fields[191] as bool?,
       doubleTapToHidePosts: fields[192] as bool?,
       doubleTapToHideThreads: fields[193] as bool?,
+      cloverStyleCatalogCounters: fields[194] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(181)
+      ..writeByte(182)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3078,7 +3092,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(192)
       ..write(obj.doubleTapToHidePosts)
       ..writeByte(193)
-      ..write(obj.doubleTapToHideThreads);
+      ..write(obj.doubleTapToHideThreads)
+      ..writeByte(194)
+      ..write(obj.cloverStyleCatalogCounters);
   }
 
   @override

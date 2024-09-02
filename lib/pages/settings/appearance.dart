@@ -925,11 +925,6 @@ final appearanceSettings = [
 			)
 		) : const SizedBox.shrink()
 	),
-	const SwitchSettingWidget(
-		description: 'Show counters in their own row',
-		subsetting: true,
-		setting: Settings.useFullWidthForCatalogCountersSetting,
-	),
 	PopupSubpageSettingWidget(
 		description: 'Edit catalog row item layout',
 		icon: CupertinoIcons.resize_v,
@@ -1144,6 +1139,14 @@ final appearanceSettings = [
 			const SwitchSettingWidget(
 				description: 'Show country name',
 				setting: Settings.showCountryNameInCatalogHeaderSetting
+			),
+			const SwitchSettingWidget(
+				description: 'Clover-style counter formatting',
+				setting: Settings.cloverStyleCatalogCountersSetting,
+			),
+			const SwitchSettingWidget(
+				description: 'Show counters in their own row',
+				setting: Settings.useFullWidthForCatalogCountersSetting,
 			)
 		]
 	),
