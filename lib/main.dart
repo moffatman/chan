@@ -1688,8 +1688,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}
 				return RawGestureDetector(
 					gestures: {
-						WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
+						if (axis == Axis.horizontal) WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
 							() => WeakVerticalDragGestureRecognizer(weakness: 2, sign: -1),
+							(recognizer) {
+								recognizer.onEnd = (details) {
+									lightHapticFeedback();
+									showThisTabMenu();
+								};
+							}
+						),
+						if (axis == Axis.vertical) WeakHorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakHorizontalDragGestureRecognizer>(
+							() => WeakHorizontalDragGestureRecognizer(weakness: 2, sign: 1),
 							(recognizer) {
 								recognizer.onEnd = (details) {
 									lightHapticFeedback();
@@ -1736,9 +1745,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return Builder(
 			builder: (context) {
 				return GestureDetector(
-					onVerticalDragEnd: (details) {
+					onVerticalDragEnd: axis == Axis.vertical ? null : (details) {
 						final velocity = details.primaryVelocity ?? 0;
 						if (velocity < 0) {
+							_tabs.showNewTabPopup(
+								context: context,
+								direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+								titles: Axis.vertical,
+							);
+						}
+					},
+					onHorizontalDragEnd: axis == Axis.horizontal ? null : (details) {
+						final velocity = details.primaryVelocity ?? 0;
+						if (velocity > 0) {
 							_tabs.showNewTabPopup(
 								context: context,
 								direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
