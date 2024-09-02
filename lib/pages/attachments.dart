@@ -12,6 +12,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -199,138 +200,143 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 								}).toList(),
 								maxCrossAxisExtent: maxCrossAxisExtent
 							),
-							itemBuilder: (context, attachment) => Stack(
-								alignment: Alignment.center,
-								children: [
-									Positioned.fill(
-										child: DecoratedBox(
-											decoration: BoxDecoration(
-												color: HSVColor.fromAHSV(1, attachment.attachment.id.hashCode.toDouble() % 360, 0.5, 0.2).toColor()
-											)
-										)
-									),
-									CupertinoButton(
-										padding: EdgeInsets.zero,
-										onPressed: () async {
-											final lastPrimary = _lastPrimaryController;
-											lastPrimary?.isPrimary = false;
-											final goodSource = _getController(attachment).goodImageSource;
-											if (attachment.attachment.type == AttachmentType.image && goodSource != null) {
-												// Ensure full-resolution copy is loaded into the image cache
-												final stream = ExtendedNetworkImageProvider(
-													goodSource.toString(),
-													cache: true,
-													headers: _getController(attachment).getHeaders(goodSource)
-												).resolve(ImageConfiguration.empty);
-												final completer = Completer<void>();
-												ImageStreamListener? listener;
-												stream.addListener(listener = ImageStreamListener((image, synchronousCall) {
-													completer.complete();
-													final toRemove = listener;
-													if (toRemove != null) {
-														stream.removeListener(toRemove);
-													}
-												}, onError: (e, st) {
-													completer.completeError(e, st);
-													final toRemove = listener;
-													if (toRemove != null) {
-														stream.removeListener(toRemove);
-													}
-												}));
-												await completer.future;
-											}
-											if (!mounted) {
-												return;
-											}
-											await showGalleryPretagged(
-												context: context,
-												attachments: widget.attachments,
-												initialGoodSources: {
-													for (final controller in _controllers.values)
-														if (controller.goodImageSource != null)
-															controller.attachment: controller.goodImageSource!
-												},
-												initialAttachment: attachment,
-												isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
-												onAttachmentDownload: widget.threadState?.didDownloadAttachment,
-												useHeroDestinationWidget: true,
-												heroOtherEndIsBoxFitCover: true,
-												additionalContextMenuActionsBuilder: (attachment) => [
-													ContextMenuAction(
-														trailingIcon: CupertinoIcons.return_icon,
-														onPressed: () {
-															Navigator.of(context, rootNavigator: true).pop();
-															Navigator.pop(context, attachment);
-														},
-														child: const Text('Scroll to post')
-													)
-												]
-											);
-											lastPrimary?.isPrimary = true;
-											Future.microtask(() => _getController(attachment).loadFullAttachment());
-										},
-										child: Hero(
-											tag: attachment,
-											createRectTween: (startRect, endRect) {
-												if (startRect != null && endRect != null) {
-													if (attachment.attachment.type == AttachmentType.image) {
-														// Need to deflate the original startRect because it has inbuilt layoutInsets
-														// This AttachmentViewer doesn't know about them.
-														final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
-														startRect = rootPadding.deflateRect(startRect);
-													}
-													if (attachment.attachment.width != null && attachment.attachment.height != null) {
-														// This is AttachmentViewer -> AttachmentThumbnail (cover)
-														// Need to shrink the startRect, so it only contains the image
-														final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.attachment.width!.toDouble(), attachment.attachment.height!.toDouble()), startRect.size).destination;
-														startRect = Alignment.center.inscribe(fittedStartSize, startRect);
-													}
+							itemBuilder: (context, attachment) => GestureDetector(
+								onDoubleTap: () {
+									Navigator.pop(context, attachment);
+								},
+								child: CupertinoInkwell(
+									padding: EdgeInsets.zero,
+									onPressed: () async {
+										final lastPrimary = _lastPrimaryController;
+										lastPrimary?.isPrimary = false;
+										final goodSource = _getController(attachment).goodImageSource;
+										if (attachment.attachment.type == AttachmentType.image && goodSource != null) {
+											// Ensure full-resolution copy is loaded into the image cache
+											final stream = ExtendedNetworkImageProvider(
+												goodSource.toString(),
+												cache: true,
+												headers: _getController(attachment).getHeaders(goodSource)
+											).resolve(ImageConfiguration.empty);
+											final completer = Completer<void>();
+											ImageStreamListener? listener;
+											stream.addListener(listener = ImageStreamListener((image, synchronousCall) {
+												completer.complete();
+												final toRemove = listener;
+												if (toRemove != null) {
+													stream.removeListener(toRemove);
 												}
-												return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+											}, onError: (e, st) {
+												completer.completeError(e, st);
+												final toRemove = listener;
+												if (toRemove != null) {
+													stream.removeListener(toRemove);
+												}
+											}));
+											await completer.future;
+										}
+										if (!context.mounted) {
+											return;
+										}
+										await showGalleryPretagged(
+											context: context,
+											attachments: widget.attachments,
+											initialGoodSources: {
+												for (final controller in _controllers.values)
+													if (controller.goodImageSource != null)
+														controller.attachment: controller.goodImageSource!
 											},
-											child: AnimatedBuilder(
+											initialAttachment: attachment,
+											isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
+											onAttachmentDownload: widget.threadState?.didDownloadAttachment,
+											useHeroDestinationWidget: true,
+											heroOtherEndIsBoxFitCover: true,
+											additionalContextMenuActionsBuilder: (attachment) => [
+												ContextMenuAction(
+													trailingIcon: CupertinoIcons.return_icon,
+													onPressed: () {
+														Navigator.of(context, rootNavigator: true).pop();
+														Navigator.pop(context, attachment);
+													},
+													child: const Text('Scroll to post')
+												)
+											]
+										);
+										lastPrimary?.isPrimary = true;
+										Future.microtask(() => _getController(attachment).loadFullAttachment());
+									},
+									child: Stack(
+										alignment: Alignment.center,
+										children: [
+											Positioned.fill(
+												child: DecoratedBox(
+													decoration: BoxDecoration(
+														color: HSVColor.fromAHSV(1, attachment.attachment.id.hashCode.toDouble() % 360, 0.5, 0.2).toColor()
+													)
+												)
+											),
+											Hero(
+												tag: attachment,
+												createRectTween: (startRect, endRect) {
+													if (startRect != null && endRect != null) {
+														if (attachment.attachment.type == AttachmentType.image) {
+															// Need to deflate the original startRect because it has inbuilt layoutInsets
+															// This AttachmentViewer doesn't know about them.
+															final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+															startRect = rootPadding.deflateRect(startRect);
+														}
+														if (attachment.attachment.width != null && attachment.attachment.height != null) {
+															// This is AttachmentViewer -> AttachmentThumbnail (cover)
+															// Need to shrink the startRect, so it only contains the image
+															final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.attachment.width!.toDouble(), attachment.attachment.height!.toDouble()), startRect.size).destination;
+															startRect = Alignment.center.inscribe(fittedStartSize, startRect);
+														}
+													}
+													return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+												},
+												child: AnimatedBuilder(
+													animation: _getController(attachment),
+													builder: (context, child) => SizedBox.expand(
+														child: AttachmentViewer(
+															controller: _getController(attachment),
+															allowGestures: false,
+															semanticParentIds: const [-101],
+															useHeroDestinationWidget: true,
+															heroOtherEndIsBoxFitCover: true,
+															videoThumbnailMicroPadding: false,
+															onlyRenderVideoWhenPrimary: true,
+															fit: BoxFit.cover,
+															maxWidth: PlatformDispatcher.instance.views.first.physicalSize.width * PlatformDispatcher.instance.views.first.devicePixelRatio, // no zoom
+															additionalContextMenuActions: [
+																ContextMenuAction(
+																	trailingIcon: CupertinoIcons.return_icon,
+																	onPressed: () {
+																		Navigator.pop(context, attachment);
+																	},
+																	child: const Text('Scroll to post')
+																)
+															]
+														)
+													)
+												)
+											),
+											AnimatedBuilder(
 												animation: _getController(attachment),
-												builder: (context, child) => SizedBox.expand(
-													child: AttachmentViewer(
-														controller: _getController(attachment),
-														allowGestures: false,
-														semanticParentIds: const [-101],
-														useHeroDestinationWidget: true,
-														heroOtherEndIsBoxFitCover: true,
-														videoThumbnailMicroPadding: false,
-														onlyRenderVideoWhenPrimary: true,
-														fit: BoxFit.cover,
-														maxWidth: PlatformDispatcher.instance.views.first.physicalSize.width * PlatformDispatcher.instance.views.first.devicePixelRatio, // no zoom
-														additionalContextMenuActions: [
-															ContextMenuAction(
-																trailingIcon: CupertinoIcons.return_icon,
-																onPressed: () {
-																	Navigator.pop(context, attachment);
-																},
-																child: const Text('Scroll to post')
-															)
-														]
+												builder: (context, child) => Visibility(
+													visible: (attachment.attachment.type.isVideo && !_getController(attachment).isPrimary),
+													child: CupertinoButton(
+														onPressed: () {
+															_lastPrimaryController?.isPrimary = false;
+															Future.microtask(() => _getController(attachment).loadFullAttachment());
+															_lastPrimary = attachment;
+															_lastPrimaryController?.isPrimary = true;
+														},
+														child: const Icon(CupertinoIcons.play_fill, size: 50)
 													)
 												)
 											)
-										)
-									),
-									AnimatedBuilder(
-										animation: _getController(attachment),
-										builder: (context, child) => Visibility(
-											visible: (attachment.attachment.type.isVideo && !_getController(attachment).isPrimary),
-											child: CupertinoButton(
-												onPressed: () {
-													_lastPrimaryController?.isPrimary = false;
-													Future.microtask(() => _getController(attachment).loadFullAttachment());
-													_lastPrimary = attachment;
-													_lastPrimaryController?.isPrimary = true;
-												},
-												child: const Icon(CupertinoIcons.play_fill, size: 50)
-											)
-										)
+										]
 									)
-								]
+								)
 							)
 						)
 					)
