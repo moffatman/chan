@@ -190,7 +190,7 @@ class SiteXenforo extends ImageboardSite {
 					else if (node.localName == 'sup') {
 						yield PostSuperscriptSpan(PostNodeSpan(visit(node.nodes).toList()));
 					}
-					else if (node.localName == 'strikethrough') {
+					else if (node.localName == 'strikethrough' || node.localName == 's') {
 						yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList()));
 					}
 					else if (node.localName == 'blockquote') {
