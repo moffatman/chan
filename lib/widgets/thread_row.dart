@@ -658,6 +658,16 @@ class ThreadRow extends StatelessWidget {
 					}
 				)
 			);
+			if (headerRow.isEmpty && latestThread.posts_.first.text.isEmpty) {
+				// Avoid too big blank space when there is no text
+				return Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						att ?? const SizedBox.shrink(),
+						if (!settings.useFullWidthForCatalogCounters) countersPlaceholderWidget
+					]
+				);
+			}
 			if (settings.catalogGridModeAttachmentInBackground) {
 				if (dimThisThread && att != null) {
 					att = ColorFiltered(
