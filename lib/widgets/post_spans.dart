@@ -2107,6 +2107,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	}
 
 	AsyncSnapshot<Post>? translatedPost(int postId);
+	AsyncSnapshot<String>? translatedTitle(int threadId);
 	Future<void> translatePost(Post post);
 	void clearTranslatedPosts([int? postId]);
 
@@ -2206,6 +2207,8 @@ class _PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	AsyncSnapshot<Post>? translatedPost(int postId) => parent.translatedPost(postId);
 	@override
+	AsyncSnapshot<String>? translatedTitle(int threadId) => parent.translatedTitle(threadId);
+	@override
 	Future<void> translatePost(Post post) async {
 		try {
 			final x = parent.translatePost(post);
@@ -2256,6 +2259,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<(String, int), Post> _postsFromArchive = {};
 	final Map<(String, int), String> _postFromArchiveErrors = {};
 	final Iterable<int> semanticRootIds;
+	final Map<int, AsyncSnapshot<String>> _translatedTitleSnapshots = {};
 	final Map<int, AsyncSnapshot<Post>> _translatedPostSnapshots = {};
 	@override
 	List<Comparator<Post>> postSortingMethods;
@@ -2304,6 +2308,9 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 					for (final p in threadState.translatedPosts.values)
 						p.id: AsyncSnapshot.withData(ConnectionState.done, p)
 				});
+				if (threadState.translatedTitle case String title) {
+					_translatedTitleSnapshots[thread.id] ??= AsyncSnapshot.withData(ConnectionState.done, title);
+				}
 			}
 		}
 		_threads[thread.id] = thread;
@@ -2358,8 +2365,14 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	AsyncSnapshot<Post>? translatedPost(int postId) => _translatedPostSnapshots[postId];
 	@override
+	AsyncSnapshot<String>? translatedTitle(int threadId) => _translatedTitleSnapshots[threadId];
+	@override
 	Future<void> translatePost(Post post) async {
 		_translatedPostSnapshots[post.id] = const AsyncSnapshot.waiting();
+		final title = findThread(post.threadId)?.title?.nonEmptyOrNull;
+		if (post.id == post.threadId && title != null) {
+			_translatedPostSnapshots[post.threadId] = const AsyncSnapshot.waiting();
+		}
 		notifyListeners();
 		final threadState = imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		try {
@@ -2383,6 +2396,13 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			);
 			_translatedPostSnapshots[post.id] = AsyncSnapshot.withData(ConnectionState.done, translatedPost);
 			threadState?.translatedPosts[post.id] = translatedPost;
+			if (post.id == post.threadId) {
+				if (title != null) {
+					final translatedTitle = await translateHtml(title, toLanguage: Settings.instance.translationTargetLanguage);
+					_translatedTitleSnapshots[post.threadId] = AsyncSnapshot.withData(ConnectionState.done, translatedTitle);
+					threadState?.translatedTitle = translatedTitle;
+				}
+			}
 			threadState?.save();
 		}
 		catch (e, st) {
@@ -2398,9 +2418,11 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	void clearTranslatedPosts([int? postId]) {
 		if (postId == null) {
 			_translatedPostSnapshots.clear();
+			_translatedTitleSnapshots.clear();
 		}
 		else {
 			_translatedPostSnapshots.remove(postId);
+			_translatedTitleSnapshots.remove(postId);
 		}
 		notifyListeners();
 	}
@@ -2632,7 +2654,7 @@ TextSpan buildPostInfoRow({
 			const TextSpan(text: ' '),
 		],
 		if (thisPostIsOP && (thread?.title?.isNotEmpty ?? false)) TextSpan(
-			text: '${thread?.title}\n',
+			text: '${(zone.translatedTitle(post.threadId)?.data ?? thread?.title)}\n',
 			style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
 		),
 		for (final field in settings.postDisplayFieldOrder)

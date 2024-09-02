@@ -392,6 +392,18 @@ class PersistentThreadStateFields {
     fieldName: 'draft',
     merger: NullableMerger(AdaptedMerger(DraftPostAdapter.kTypeId)),
   );
+  static String? getTranslatedTitle(PersistentThreadState x) =>
+      x.translatedTitle;
+  static void setTranslatedTitle(PersistentThreadState x, String? v) =>
+      x.translatedTitle = v;
+  static const translatedTitle =
+      HiveFieldAdapter<PersistentThreadState, String?>(
+    getter: getTranslatedTitle,
+    setter: setTranslatedTitle,
+    fieldNumber: 32,
+    fieldName: 'translatedTitle',
+    merger: PrimitiveMerger(),
+  );
   static String getBoard(PersistentThreadState x) => x.board;
   static void setBoard(PersistentThreadState x, String v) => x.board = v;
   static const board = HiveFieldAdapter<PersistentThreadState, String>(
@@ -452,6 +464,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
     29: PersistentThreadStateFields.deprecatedReplyOptions,
     30: PersistentThreadStateFields.treeSplitId,
     31: PersistentThreadStateFields.draft,
+    32: PersistentThreadStateFields.translatedTitle,
     19: PersistentThreadStateFields.board,
     20: PersistentThreadStateFields.id
   };
@@ -505,13 +518,14 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..overrideShowPostIds =
           fields[28] == null ? [] : (fields[28] as List).cast<int>()
       ..deprecatedReplyOptions = fields[29] as String?
-      ..treeSplitId = fields[30] as int?;
+      ..treeSplitId = fields[30] as int?
+      ..translatedTitle = fields[32] as String?;
   }
 
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(31)
+      ..writeByte(32)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -570,6 +584,8 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..write(obj.treeSplitId)
       ..writeByte(31)
       ..write(obj.draft)
+      ..writeByte(32)
+      ..write(obj.translatedTitle)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)

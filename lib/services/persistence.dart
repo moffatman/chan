@@ -1372,6 +1372,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	int? treeSplitId;
 	@HiveField(31)
 	DraftPost? draft;
+	@HiveField(32)
+	String? translatedTitle;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
