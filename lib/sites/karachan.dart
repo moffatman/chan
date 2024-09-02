@@ -513,9 +513,6 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	bool get hasEmailLinkCookieAuth => true;
-
-	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is SiteKarachan &&
