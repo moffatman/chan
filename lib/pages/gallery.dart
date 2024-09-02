@@ -471,12 +471,22 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 		await modalLoad(context, 'Bulk Download', (controller) async {
 			int downloaded = 0;
+			final failed = <Attachment, String>{};
 			for (final attachment in toDownload) {
-				if (controller.cancelled) return;
-				await _getController(attachment).preloadFullAttachment();
-				await _getController(attachment).download(dir: dir);
-				downloaded++;
-				controller.progress.value = ('$downloaded / ${toDownload.length}', downloaded / toDownload.length);
+				if (controller.cancelled) return failed;
+				try {
+					await _getController(attachment).preloadFullAttachment();
+					await _getController(attachment).download(dir: dir);
+					downloaded++;
+				}
+				catch (e, st) {
+					Future.error(e, st);
+					failed[attachment.attachment] = e.toStringDio();
+				}
+				controller.progress.value = ('$downloaded${failed.isEmpty ? '' : ' (${describeCount(failed.length, 'error')})'} / ${toDownload.length}', (downloaded + failed.length) / toDownload.length);
+			}
+			if (failed.isNotEmpty) {
+				throw Exception('Some attachments failed: $failed');
 			}
 		}, cancellable: true);
 	}
