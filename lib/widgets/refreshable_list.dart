@@ -2768,6 +2768,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 								final footerBox = _footerKey.currentContext?.findRenderObject() as RenderBox?;
 								final footerTop = footerBox?.localToGlobal(footerBox.paintBounds.topLeft).dy ?? double.infinity;
 								if (e.position.dy > footerTop) {
+									_footerShakeAnimation.forward(from: 0);
 									_updateOrExtendWithHapticFeedback();
 								}
 							},
