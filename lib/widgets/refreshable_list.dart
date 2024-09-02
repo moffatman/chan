@@ -1577,6 +1577,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (!mounted) return;
 		updatingNow.value = null;
 		if (mounted && (newList != null || originalList == null || error.value != null)) {
+			try {
+				if (mounted) {
+					await ModalRoute.of(context)?.popped.timeout(Duration.zero);
+					// Route is popping, just quit
+					return;
+				}
+			}
+			on TimeoutException {
+				// No popping
+			}
 			if (hapticFeedback) {
 				mediumHapticFeedback();
 			}
