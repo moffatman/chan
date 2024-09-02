@@ -468,7 +468,7 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			final firstIndex = _indicatorKey.currentState?.furthestSeenIndexTop;
 			final lastIndex = _indicatorKey.currentState?.furthestSeenIndexBottom;
-			if (firstIndex != null && lastIndex != null) {
+			if (firstIndex != null && lastIndex != null && firstIndex <= lastIndex) {
 				final items = _listController.items.toList();
 				final firstIndexClamped = firstIndex.clamp(0, items.length - 1);
 				final seenIds = items.sublist(firstIndexClamped, lastIndex.clamp(firstIndexClamped, items.length - 1) + 1).where((p) => !_listController.isItemHidden(p).isHidden).map((p) => p.item.id);
