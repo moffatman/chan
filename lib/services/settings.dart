@@ -1646,7 +1646,7 @@ class SavedSettings extends HiveObject {
 		if (!this.postDisplayFieldOrder.contains(PostDisplayField.postNumber)) {
 			this.postDisplayFieldOrder.insert(0, PostDisplayField.postNumber);
 		}
-		if (getInappropriateUserAgents().contains(userAgent) && !getAppropriateUserAgents().contains(this.userAgent)) {
+		if (getInappropriateUserAgents().contains(userAgent) && !getAppropriateUserAgents().contains(userAgent)) {
 			// To handle user-agents breaking with OS updates
 			userAgent = null;
 		}
