@@ -1447,7 +1447,7 @@ Future<void> editStringMap({
 														smartDashesType: SmartDashesType.disabled,
 														smartQuotesType: SmartQuotesType.disabled,
 														controller: keyController,
-														onSubmitted: (s) => Navigator.pop(context, s)
+														onSubmitted: (_) => Navigator.pop(context, true)
 													),
 													const SizedBox(height: 16),
 													Text(valueName),
@@ -1457,7 +1457,7 @@ Future<void> editStringMap({
 														smartDashesType: SmartDashesType.disabled,
 														smartQuotesType: SmartQuotesType.disabled,
 														controller: valueController,
-														onSubmitted: (s) => Navigator.pop(context, s)
+														onSubmitted: (_) => Navigator.pop(context, true)
 													),
 												]
 											),
