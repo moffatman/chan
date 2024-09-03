@@ -1143,32 +1143,32 @@ class PersistentBrowserStateFields {
     fieldName: 'deprecatedTabs',
     merger: PersistentBrowserTab.listMerger,
   );
-  static Map<String, List<int>> getHiddenIds(PersistentBrowserState x) =>
+  static Map<BoardKey, List<int>> getHiddenIds(PersistentBrowserState x) =>
       x.hiddenIds;
-  static const hiddenIds =
-      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<String, List<int>>>(
+  static const hiddenIds = ReadOnlyHiveFieldAdapter<PersistentBrowserState,
+      Map<BoardKey, List<int>>>(
     getter: getHiddenIds,
     fieldNumber: 2,
     fieldName: 'hiddenIds',
-    merger: MapMerger<String, List<int>>(SetLikePrimitiveListMerger()),
+    merger: MapMerger<BoardKey, List<int>>(SetLikePrimitiveListMerger()),
   );
-  static List<String> getFavouriteBoards(PersistentBrowserState x) =>
+  static List<BoardKey> getFavouriteBoards(PersistentBrowserState x) =>
       x.favouriteBoards;
   static const favouriteBoards =
-      ReadOnlyHiveFieldAdapter<PersistentBrowserState, List<String>>(
+      ReadOnlyHiveFieldAdapter<PersistentBrowserState, List<BoardKey>>(
     getter: getFavouriteBoards,
     fieldNumber: 3,
     fieldName: 'favouriteBoards',
-    merger: OrderedSetLikePrimitiveListMerger<String>(),
+    merger: OrderedSetLikePrimitiveListMerger<BoardKey>(),
   );
-  static Map<String, List<int>> getAutosavedIds(PersistentBrowserState x) =>
+  static Map<BoardKey, List<int>> getAutosavedIds(PersistentBrowserState x) =>
       x.autosavedIds;
-  static const autosavedIds =
-      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<String, List<int>>>(
+  static const autosavedIds = ReadOnlyHiveFieldAdapter<PersistentBrowserState,
+      Map<BoardKey, List<int>>>(
     getter: getAutosavedIds,
     fieldNumber: 5,
     fieldName: 'autosavedIds',
-    merger: MapMerger<String, List<int>>(SetLikePrimitiveListMerger()),
+    merger: MapMerger<BoardKey, List<int>>(SetLikePrimitiveListMerger()),
   );
   static Map<String, String> getLoginFields(PersistentBrowserState x) =>
       x.loginFields;
@@ -1229,20 +1229,20 @@ class PersistentBrowserStateFields {
     fieldName: 'useTree',
     merger: PrimitiveMerger(),
   );
-  static Map<String, CatalogVariant> getCatalogVariants(
+  static Map<BoardKey, CatalogVariant> getCatalogVariants(
           PersistentBrowserState x) =>
       x.catalogVariants;
   static const catalogVariants = ReadOnlyHiveFieldAdapter<
-      PersistentBrowserState, Map<String, CatalogVariant>>(
+      PersistentBrowserState, Map<BoardKey, CatalogVariant>>(
     getter: getCatalogVariants,
     fieldNumber: 17,
     fieldName: 'catalogVariants',
     merger: MapMerger(PrimitiveMerger()),
   );
-  static Map<String, String> getPostingNames(PersistentBrowserState x) =>
+  static Map<BoardKey, String> getPostingNames(PersistentBrowserState x) =>
       x.postingNames;
   static const postingNames =
-      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<String, String>>(
+      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<BoardKey, String>>(
     getter: getPostingNames,
     fieldNumber: 18,
     fieldName: 'postingNames',
@@ -1285,11 +1285,11 @@ class PersistentBrowserStateFields {
     fieldName: 'useCatalogGrid',
     merger: PrimitiveMerger(),
   );
-  static Map<String, bool> getUseCatalogGridPerBoard(
+  static Map<BoardKey, bool> getUseCatalogGridPerBoard(
           PersistentBrowserState x) =>
       x.useCatalogGridPerBoard;
   static const useCatalogGridPerBoard =
-      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<String, bool>>(
+      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<BoardKey, bool>>(
     getter: getUseCatalogGridPerBoard,
     fieldNumber: 22,
     fieldName: 'useCatalogGridPerBoard',
@@ -1322,14 +1322,15 @@ class PersistentBrowserStateFields {
     fieldName: 'treeModeRepliesToOPAreTopLevel',
     merger: PrimitiveMerger(),
   );
-  static Map<String, List<int>> getOverrideShowIds(PersistentBrowserState x) =>
+  static Map<BoardKey, List<int>> getOverrideShowIds(
+          PersistentBrowserState x) =>
       x.overrideShowIds;
-  static const overrideShowIds =
-      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<String, List<int>>>(
+  static const overrideShowIds = ReadOnlyHiveFieldAdapter<
+      PersistentBrowserState, Map<BoardKey, List<int>>>(
     getter: getOverrideShowIds,
     fieldNumber: 25,
     fieldName: 'overrideShowIds',
-    merger: MapMerger<String, List<int>>(SetLikePrimitiveListMerger()),
+    merger: MapMerger<BoardKey, List<int>>(SetLikePrimitiveListMerger()),
   );
   static bool getTreeModeNewRepliesAreLinear(PersistentBrowserState x) =>
       x.treeModeNewRepliesAreLinear;
@@ -1344,14 +1345,14 @@ class PersistentBrowserStateFields {
     fieldName: 'treeModeNewRepliesAreLinear',
     merger: PrimitiveMerger(),
   );
-  static Map<String, List<int>> getAutowatchedIds(PersistentBrowserState x) =>
+  static Map<BoardKey, List<int>> getAutowatchedIds(PersistentBrowserState x) =>
       x.autowatchedIds;
-  static const autowatchedIds =
-      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<String, List<int>>>(
+  static const autowatchedIds = ReadOnlyHiveFieldAdapter<PersistentBrowserState,
+      Map<BoardKey, List<int>>>(
     getter: getAutowatchedIds,
     fieldNumber: 27,
     fieldName: 'autowatchedIds',
-    merger: MapMerger<String, List<int>>(SetLikePrimitiveListMerger()),
+    merger: MapMerger<BoardKey, List<int>>(SetLikePrimitiveListMerger()),
   );
   static List<DraftPost> getOutbox(PersistentBrowserState x) => x.outbox;
   static const outbox =
@@ -1383,21 +1384,21 @@ class PersistentBrowserStateFields {
     fieldName: 'postSortingMethod',
     merger: PrimitiveMerger(),
   );
-  static Map<String, PostSortingMethod> getPostSortingMethodPerBoard(
+  static Map<BoardKey, PostSortingMethod> getPostSortingMethodPerBoard(
           PersistentBrowserState x) =>
       x.postSortingMethodPerBoard;
   static const postSortingMethodPerBoard = ReadOnlyHiveFieldAdapter<
-      PersistentBrowserState, Map<String, PostSortingMethod>>(
+      PersistentBrowserState, Map<BoardKey, PostSortingMethod>>(
     getter: getPostSortingMethodPerBoard,
     fieldNumber: 31,
     fieldName: 'postSortingMethodPerBoard',
     merger: MapMerger(PrimitiveMerger()),
   );
-  static Map<String, String> getDownloadSubfoldersPerBoard(
+  static Map<BoardKey, String> getDownloadSubfoldersPerBoard(
           PersistentBrowserState x) =>
       x.downloadSubfoldersPerBoard;
   static const downloadSubfoldersPerBoard =
-      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<String, String>>(
+      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<BoardKey, String>>(
     getter: getDownloadSubfoldersPerBoard,
     fieldNumber: 32,
     fieldName: 'downloadSubfoldersPerBoard',
@@ -1457,17 +1458,17 @@ class PersistentBrowserStateAdapter
       hiddenIds: fields[2] == null
           ? {}
           : (fields[2] as Map).map((dynamic k, dynamic v) =>
-              MapEntry(k as String, (v as List).cast<int>())),
+              MapEntry(k as BoardKey, (v as List).cast<int>())),
       favouriteBoards:
-          fields[3] == null ? [] : (fields[3] as List).cast<String>(),
+          fields[3] == null ? [] : (fields[3] as List).cast<BoardKey>(),
       autosavedIds: fields[5] == null
           ? {}
           : (fields[5] as Map).map((dynamic k, dynamic v) =>
-              MapEntry(k as String, (v as List).cast<int>())),
+              MapEntry(k as BoardKey, (v as List).cast<int>())),
       autowatchedIds: fields[27] == null
           ? {}
           : (fields[27] as Map).map((dynamic k, dynamic v) =>
-              MapEntry(k as String, (v as List).cast<int>())),
+              MapEntry(k as BoardKey, (v as List).cast<int>())),
       deprecatedHiddenImageMD5s:
           fields[6] == null ? {} : (fields[6] as Set).cast<String>(),
       loginFields:
@@ -1488,9 +1489,10 @@ class PersistentBrowserStateAdapter
           fields[14] == null ? {} : (fields[14] as Map).cast<String, bool>(),
       catalogVariants: fields[17] == null
           ? {}
-          : (fields[17] as Map).cast<String, CatalogVariant>(),
-      postingNames:
-          fields[18] == null ? {} : (fields[18] as Map).cast<String, String>(),
+          : (fields[17] as Map).cast<BoardKey, CatalogVariant>(),
+      postingNames: fields[18] == null
+          ? {}
+          : (fields[18] as Map).cast<BoardKey, String>(),
       useTree: fields[16] as bool?,
       treeModeInitiallyCollapseSecondLevelReplies:
           fields[19] == null ? false : fields[19] as bool,
@@ -1500,11 +1502,11 @@ class PersistentBrowserStateAdapter
           fields[24] == null ? true : fields[24] as bool,
       useCatalogGrid: fields[21] as bool?,
       useCatalogGridPerBoard:
-          fields[22] == null ? {} : (fields[22] as Map).cast<String, bool>(),
+          fields[22] == null ? {} : (fields[22] as Map).cast<BoardKey, bool>(),
       overrideShowIds: fields[25] == null
           ? {}
           : (fields[25] as Map).map((dynamic k, dynamic v) =>
-              MapEntry(k as String, (v as List).cast<int>())),
+              MapEntry(k as BoardKey, (v as List).cast<int>())),
       treeModeNewRepliesAreLinear:
           fields[26] == null ? true : fields[26] as bool,
       outbox: fields[28] == null ? [] : (fields[28] as List).cast<DraftPost>(),
@@ -1513,9 +1515,10 @@ class PersistentBrowserStateAdapter
       postSortingMethod: fields[30] as PostSortingMethod?,
       postSortingMethodPerBoard: fields[31] == null
           ? {}
-          : (fields[31] as Map).cast<String, PostSortingMethod>(),
-      downloadSubfoldersPerBoard:
-          fields[32] == null ? {} : (fields[32] as Map).cast<String, String>(),
+          : (fields[31] as Map).cast<BoardKey, PostSortingMethod>(),
+      downloadSubfoldersPerBoard: fields[32] == null
+          ? {}
+          : (fields[32] as Map).cast<BoardKey, String>(),
     );
   }
 

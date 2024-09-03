@@ -48,7 +48,7 @@ String _toString(dynamic x) => x?.toString() ?? 'null';
 
 Future<void> editSiteBoardMap<T, S>({
 	required BuildContext context,
-	required FieldReader<PersistentBrowserState, Map<String, T>> field,
+	required FieldReader<PersistentBrowserState, Map<BoardKey, T>> field,
 	required MapValueEditor<T, S> editor,
 	required String name,
 	String Function(T) formatter = _toString,
@@ -60,7 +60,7 @@ Future<void> editSiteBoardMap<T, S>({
 		context: context,
 		builder: (context) => StatefulBuilder(
 			builder: (context, setDialogState) {
-				final entries = ImageboardRegistry.instance.imageboards.expand<(Imageboard, MapEntry<String, T>?)>((imageboard) sync* {
+				final entries = ImageboardRegistry.instance.imageboards.expand<(Imageboard, MapEntry<BoardKey, T>?)>((imageboard) sync* {
 					final map = field.getter(imageboard.persistence.browserState);
 					if (map.isEmpty) {
 						return;
@@ -70,7 +70,7 @@ Future<void> editSiteBoardMap<T, S>({
 						yield (imageboard, pair);
 					}
 				}).toList();
-				Future<T?> edit(Imageboard imageboard, String board, T? initialValue) async {
+				Future<T?> edit(Imageboard imageboard, BoardKey board, T? initialValue) async {
 					final controller = editor.init(initialValue);
 					final change = await showAdaptiveDialog<bool>(
 						context: context,
@@ -81,7 +81,7 @@ Future<void> editSiteBoardMap<T, S>({
 								crossAxisAlignment: CrossAxisAlignment.start,
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									Text('${imageboard.site.name} - ${imageboard.site.formatBoardName(board)}'),
+									Text('${imageboard.site.name} - ${imageboard.site.formatBoardName(board.s)}'),
 									const SizedBox(height: 16),
 									Text(name),
 									editor.build(controller, (_) => Navigator.pop(context, true))
@@ -144,7 +144,7 @@ Future<void> editSiteBoardMap<T, S>({
 											child: Row(
 												children: [
 													Expanded(
-														child: Text('${entries[i].$1.site.formatBoardName(entry.key)}\n${formatter(entry.value)}', style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
+														child: Text('${entries[i].$1.site.formatBoardName(entry.key.s)}\n${formatter(entry.value)}', style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
 													),
 													CupertinoButton(
 														child: const Icon(CupertinoIcons.delete),
@@ -171,9 +171,9 @@ Future<void> editSiteBoardMap<T, S>({
 								if (board == null) {
 									return;
 								}
-								final value = await edit(board.imageboard, board.item.name, null);
+								final value = await edit(board.imageboard, board.item.boardKey, null);
 								if (value != null) {
-									field.getter(board.imageboard.persistence.browserState)[board.item.name] = value;
+									field.getter(board.imageboard.persistence.browserState)[board.item.boardKey] = value;
 									setDialogState(() {});
 								}
 							}

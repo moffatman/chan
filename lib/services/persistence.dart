@@ -578,8 +578,39 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 			await sharedThreadsBox.flush();
+			for (final browserState in settings.browserStateBySite.values) {
+				_fixBoardKeyList(browserState.favouriteBoards);
+				_fixBoardKeyMap(browserState.hiddenIds);
+				_fixBoardKeyMap(browserState.autosavedIds);
+				_fixBoardKeyMap(browserState.catalogVariants);
+				_fixBoardKeyMap(browserState.postingNames);
+				_fixBoardKeyMap(browserState.useCatalogGridPerBoard);
+				_fixBoardKeyMap(browserState.overrideShowIds);
+				_fixBoardKeyMap(browserState.autowatchedIds);
+				_fixBoardKeyMap(browserState.postSortingMethodPerBoard);
+				_fixBoardKeyMap(browserState.downloadSubfoldersPerBoard);
+			}
 			settings.appliedMigrations.add('bB');
 			await settings.save();
+		}
+	}
+
+	/// These are not really safely lowercase when read from disk. rewrite them.
+	static void _fixBoardKeyList<T>(List<BoardKey> list) {
+		for (int i = 0; i < list.length; i++) {
+			final lowerCase = list[i].s.toLowerCase();
+			if (list[i].s != lowerCase) {
+				list[i] = BoardKey(lowerCase);
+			}
+		}
+	}
+	static void _fixBoardKeyMap<T>(Map<BoardKey, T> map) {
+		for (final pair in map.entries.toList(growable: false)) {
+			final lowerCase = pair.key.s.toLowerCase();
+			if (pair.key.s != lowerCase) {
+				map.remove(pair.key);
+				map[BoardKey(lowerCase)] = pair.value;
+			}
 		}
 	}
 
@@ -1126,7 +1157,7 @@ class Persistence extends ChangeNotifier {
 				continue;
 			}
 			final v = sharedBoardsBox.get(k)!;
-			if ((v.additionalDataTime == null || v.additionalDataTime!.isBefore(deadline)) && !browserState.favouriteBoards.contains(v.name)) {
+			if ((v.additionalDataTime == null || v.additionalDataTime!.isBefore(deadline)) && !browserState.favouriteBoards.contains(v.boardKey)) {
 				sharedBoardsBox.delete(k);
 			}
 		}
@@ -1866,16 +1897,16 @@ void _readHookPersistentBrowserStateFields(Map<int, dynamic> fields) {
 class PersistentBrowserState {
 	@HiveField(0, merger: PersistentBrowserTab.listMerger)
 	List<PersistentBrowserTab> deprecatedTabs;
-	@HiveField(2, defaultValue: <String, List<int>>{}, merger: MapMerger<String, List<int>>(
+	@HiveField(2, defaultValue: <String, List<int>>{}, merger: MapMerger<BoardKey, List<int>>(
 		SetLikePrimitiveListMerger()
 	))
-	final Map<String, List<int>> hiddenIds;
-	@HiveField(3, defaultValue: <String>[], merger: OrderedSetLikePrimitiveListMerger<String>())
-	final List<String> favouriteBoards;
-	@HiveField(5, defaultValue: <String, List<int>>{}, merger: MapMerger<String, List<int>>(
+	final Map<BoardKey, List<int>> hiddenIds;
+	@HiveField(3, defaultValue: <String>[], merger: OrderedSetLikePrimitiveListMerger<BoardKey>())
+	final List<BoardKey> favouriteBoards;
+	@HiveField(5, defaultValue: <String, List<int>>{}, merger: MapMerger<BoardKey, List<int>>(
 		SetLikePrimitiveListMerger()
 	))
-	final Map<String, List<int>> autosavedIds;
+	final Map<BoardKey, List<int>> autosavedIds;
 	@HiveField(6, defaultValue: <String>{}, isDeprecated: true)
 	final Set<String> deprecatedHiddenImageMD5s;
 	@HiveField(7, defaultValue: <String, String>{})
@@ -1898,9 +1929,9 @@ class PersistentBrowserState {
 	@HiveField(16)
 	bool? useTree;
 	@HiveField(17, defaultValue: <String, CatalogVariant>{})
-	final Map<String, CatalogVariant> catalogVariants;
+	final Map<BoardKey, CatalogVariant> catalogVariants;
 	@HiveField(18, defaultValue: <String, String>{})
-	final Map<String, String> postingNames;
+	final Map<BoardKey, String> postingNames;
 	@HiveField(19, defaultValue: false)
 	bool treeModeInitiallyCollapseSecondLevelReplies;
 	@HiveField(20, defaultValue: false)
@@ -1908,21 +1939,21 @@ class PersistentBrowserState {
 	@HiveField(21)
 	bool? useCatalogGrid;
 	@HiveField(22, defaultValue: <String, bool>{})
-	final Map<String, bool> useCatalogGridPerBoard;
+	final Map<BoardKey, bool> useCatalogGridPerBoard;
 	@HiveField(23, defaultValue: <ThreadIdentifier, ThreadWatch>{})
 	Map<ThreadIdentifier, ThreadWatch> threadWatches;
 	@HiveField(24, defaultValue: true)
 	bool treeModeRepliesToOPAreTopLevel;
-	@HiveField(25, defaultValue: <String, List<int>>{}, merger: MapMerger<String, List<int>>(
+	@HiveField(25, defaultValue: <String, List<int>>{}, merger: MapMerger<BoardKey, List<int>>(
 		SetLikePrimitiveListMerger()
 	))
-	final Map<String, List<int>> overrideShowIds;
+	final Map<BoardKey, List<int>> overrideShowIds;
 	@HiveField(26, defaultValue: true)
 	bool treeModeNewRepliesAreLinear;
-	@HiveField(27, defaultValue: <String, List<int>>{}, merger: MapMerger<String, List<int>>(
+	@HiveField(27, defaultValue: <String, List<int>>{}, merger: MapMerger<BoardKey, List<int>>(
 		SetLikePrimitiveListMerger()
 	))
-	final Map<String, List<int>> autowatchedIds;
+	final Map<BoardKey, List<int>> autowatchedIds;
 	@HiveField(28, defaultValue: [], merger: OrderedSetLikePrimitiveListMerger())
 	final List<DraftPost> outbox;
 	@HiveField(29, defaultValue: <String>{}, merger: PrimitiveSetMerger())
@@ -1930,9 +1961,9 @@ class PersistentBrowserState {
 	@HiveField(30)
 	PostSortingMethod? postSortingMethod;
 	@HiveField(31, defaultValue: {})
-	final Map<String, PostSortingMethod> postSortingMethodPerBoard;
+	final Map<BoardKey, PostSortingMethod> postSortingMethodPerBoard;
 	@HiveField(32, defaultValue: {})
-	final Map<String, String> downloadSubfoldersPerBoard;
+	final Map<BoardKey, String> downloadSubfoldersPerBoard;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1966,8 +1997,8 @@ class PersistentBrowserState {
 		required this.downloadSubfoldersPerBoard
 	}) : notificationsId = notificationsId ?? (const Uuid()).v4();
 
-	final Map<String, Filter> _catalogFilters = {};
-	Filter getCatalogFilter(String board) {
+	final Map<BoardKey, Filter> _catalogFilters = {};
+	Filter getCatalogFilter(BoardKey board) {
 		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(
 			hideIds: hiddenIds[board] ?? [],
 			showIds: overrideShowIds[board] ?? []
@@ -1984,14 +2015,14 @@ class PersistentBrowserState {
 	void setThreadHiding(ThreadIdentifier thread, bool? hiding) {
 		switch (hiding) {
 			case true:
-				final map = hiddenIds.putIfAbsent(thread.board, () => []);
+				final map = hiddenIds.putIfAbsent(thread.boardKey, () => []);
 				if (!map.contains(thread.id)) {
 					map.add(thread.id);
 				}
 				overrideShowIds[thread.board]?.remove(thread.id);
 				break;
 			case false:
-				final map = overrideShowIds.putIfAbsent(thread.board, () => []);
+				final map = overrideShowIds.putIfAbsent(thread.boardKey, () => []);
 				if (!map.contains(thread.id)) {
 					map.add(thread.id);
 				}

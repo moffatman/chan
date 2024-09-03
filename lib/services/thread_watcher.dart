@@ -358,7 +358,7 @@ class ThreadWatcher extends ChangeNotifier {
 							final threadState = persistence.getThreadState(thread.identifier);
 							threadState.savedTime = DateTime.now();
 							threadState.thread = thread;
-							persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+							persistence.browserState.autosavedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
 							await threadState.save();
 							savedAnyThread = true;
 						}
@@ -378,7 +378,7 @@ class ThreadWatcher extends ChangeNotifier {
 								youIds: threadState.youIds,
 								foregroundMuted: defaultThreadWatch?.foregroundMuted ?? false
 							);
-							persistence.browserState.autowatchedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+							persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
 							savedAnyThread = true;
 						}
 					}

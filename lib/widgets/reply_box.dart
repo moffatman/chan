@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
@@ -83,7 +84,7 @@ class ReplyBoxZone {
 }
 
 class ReplyBox extends StatefulWidget {
-	final String board;
+	final BoardKey board;
 	final int? threadId;
 	final ValueChanged<PostReceipt> onReplyPosted;
 	final DraftPost? initialDraft;
@@ -150,7 +151,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _overrideRandomizeFilenames = false;
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
-		int threadId => ThreadIdentifier(widget.board, threadId),
+		int threadId => ThreadIdentifier(widget.board.s, threadId),
 		null => null
 	};
 
@@ -166,7 +167,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	set draft(DraftPost? draft) {
 		if (draft != null) {
 			String text = draft.text;
-			if (draft.board != widget.board) {
+			if (ImageboardBoard.getKey(draft.board) != widget.board) {
 				// Adjust quotelinks to match cross-board paste
 				text = text.replaceAllMapped(_quotelinkPattern, (match) {
 					return '>>>/${draft.board}/${match.group(1)}';
@@ -326,7 +327,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	DraftPost _makeDraft() => DraftPost(
-		board: widget.board,
+		board: widget.board.s,
 		threadId: widget.threadId,
 		subject: _subjectFieldController.text,
 		name: null, // It will be stored in postingNames[board]
@@ -367,7 +368,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(_didUpdateDraft);
-		context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
+		context.read<ImageboardSite>().getBoardFlags(widget.board.s).then((flags) {
 			if (!mounted) return;
 			setState(() {
 				_flags = flags;
@@ -401,7 +402,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			draft = widget.initialDraft;
 		}
 		if (oldWidget.board != widget.board) {
-			context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
+			context.read<ImageboardSite>().getBoardFlags(widget.board.s).then((flags) {
 				setState(() {
 					_flags = flags;
 				});
@@ -495,7 +496,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 			showReplyBox();
 			if (backlink != null) {
-				if (backlink.board != widget.board) {
+				if (ImageboardBoard.getKey(backlink.board) != widget.board) {
 					_insertText('>>>/${backlink.board}/${backlink.postId}');
 				}
 				else {
@@ -516,7 +517,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				_showOptions = true;
 			}
 		}
-		for (final draft in Outbox.instance.queuedPostsFor(context.read<Imageboard>().key, widget.board, widget.threadId)) {
+		for (final draft in Outbox.instance.queuedPostsFor(context.read<Imageboard>().key, widget.board.s, widget.threadId)) {
 			if (!_submittingPosts.contains(draft) && draft != _postingPost) {
 				// This is some message restored from persistence.outbox (previous app launch)
 				_submittingPosts.add(draft);
@@ -654,7 +655,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			_attachmentProgress = ('Processing', null);
 		});
 		try {
-			final board = context.read<Persistence>().getBoard(widget.board);
+			final board = context.read<Persistence>().getBoard(widget.board.s);
 			if (!file.uri.pathSegments.last.contains('.')) {
 				// No extension
 				final scan = await MediaScan.scan(file.uri);
@@ -1184,7 +1185,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	double get _maxReplyBoxHeight => MediaQuery.sizeOf(context).height / 2;
 
 	Widget _buildAttachmentOptions(BuildContext context) {
-		final board = context.read<Persistence>().getBoard(widget.board);
+		final board = context.read<Persistence>().getBoard(widget.board.s);
 		final settings = context.watch<Settings>();
 		final fakeAttachment = Attachment(
 			ext: '.$attachmentExt',
@@ -1546,10 +1547,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	Widget _buildTextField(BuildContext context) {
-		final board = context.read<Persistence>().getBoard(widget.board);
+		final board = context.read<Persistence>().getBoard(widget.board.s);
 		final site = context.watch<ImageboardSite>();
 		final subjectCharacterLimit = site.subjectCharacterLimit;
-		final snippets = site.getBoardSnippets(widget.board);
+		final snippets = site.getBoardSnippets(widget.board.s);
 		const infiniteLimit = 1 << 50;
 		final settings = context.watch<Settings>();
 		final postingPost = _postingPost;
@@ -1829,7 +1830,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.end,
 			children: [
-				for (final snippet in context.read<ImageboardSite>().getBoardSnippets(widget.board)) AdaptiveIconButton(
+				for (final snippet in context.read<ImageboardSite>().getBoardSnippets(widget.board.s)) AdaptiveIconButton(
 					onPressed: () async {
 						final initialSelection = _textFieldController.selection;
 						// This only works because all the ImageboardSnippets are const
@@ -2192,7 +2193,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													final selected = await showOutboxModalForThread(
 														context: context,
 														imageboardKey: context.read<Imageboard?>()?.key,
-														board: widget.board,
+														board: widget.board.s,
 														threadId: widget.threadId,
 														canPopWithDraft: true
 													);
@@ -2234,7 +2235,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 															Text(
 																[
 																	describeCount(activeCount - ourCount, 'reply in outbox', plural: 'replies in outbox'),
-																	if (othersCount > 0) '($othersCount queued on ${context.watch<ImageboardSite>().formatBoardName(widget.board)})'
+																	if (othersCount > 0) '($othersCount queued on ${context.watch<ImageboardSite>().formatBoardName(widget.board.s)})'
 																].join(' ')
 															)
 														]
@@ -2499,7 +2500,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			if (_optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
 				// A few things we have to save
 				widget.onDraftChanged(DraftPost(
-					board: widget.board,
+					board: widget.board.s,
 					threadId: widget.threadId,
 					name: null,
 					options: _optionsFieldController.text,

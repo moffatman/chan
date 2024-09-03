@@ -1,7 +1,12 @@
+import 'package:chan/models/intern.dart';
 import 'package:hive/hive.dart';
 import 'package:chan/services/persistence.dart';
 
 part 'board.g.dart';
+
+extension type BoardKey(String s) {
+	
+}
 
 @HiveType(typeId: 16, isOptimized: true)
 class ImageboardBoard extends HiveObject {
@@ -43,9 +48,10 @@ class ImageboardBoard extends HiveObject {
 	final Uri? icon;
 	@HiveField(18, isOptimized: true)
 	int? captchaMode;
+	final BoardKey boardKey;
 
 	ImageboardBoard({
-		required this.name,
+		required String name,
 		required this.title,
 		required this.isWorksafe,
 		required this.webmAudioAllowed,
@@ -64,7 +70,7 @@ class ImageboardBoard extends HiveObject {
 		this.subdomain,
 		this.icon,
 		this.captchaMode
-	});
+	}) : name = intern(name), boardKey = getKey(name);
 
 	@override
 	String toString() => '/$name/';
@@ -95,4 +101,9 @@ class ImageboardBoard extends HiveObject {
 
 	@override
 	int get hashCode => Object.hash(name, title, isWorksafe, webmAudioAllowed, maxImageSizeBytes, maxWebmSizeBytes, maxWebmDurationSeconds, maxCommentCharacters, threadCommentLimit, threadImageLimit, pageCount, threadCooldown, replyCooldown, imageCooldown, spoilers, additionalDataTime, subdomain, icon, captchaMode);
+
+	static final _keys = Map<String, BoardKey>.identity();
+	static BoardKey getKey(String board) {
+		return _keys[intern(board)] ??= BoardKey(intern(board.toLowerCase()));
+	}
 }

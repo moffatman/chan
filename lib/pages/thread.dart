@@ -1155,7 +1155,7 @@ class ThreadPageState extends State<ThreadPage> {
 						child: Container(
 							color: theme.backgroundColor,
 							child: ReplyBox(
-								board: widget.thread.board,
+								board: widget.thread.boardKey,
 								threadId: widget.thread.id,
 								onInitState: onInitState,
 								isArchived: persistentState.thread?.isArchived ?? false,
@@ -1948,7 +1948,7 @@ class ThreadPageState extends State<ThreadPage> {
 										child: RepaintBoundary(
 											child: ReplyBox(
 												key: _replyBoxKey,
-												board: widget.thread.board,
+												board: widget.thread.boardKey,
 												threadId: widget.thread.id,
 												isArchived: persistentState.thread?.isArchived ?? false,
 												initialDraft: persistentState.draft,

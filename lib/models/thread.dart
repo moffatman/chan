@@ -1,3 +1,4 @@
+import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/intern.dart';
 import 'package:chan/models/post.dart';
@@ -47,6 +48,7 @@ class Thread extends HiveObject implements Filterable {
 	@override
 	@HiveField(6)
 	final String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	@HiveField(8)
 	final String? title;
 	@HiveField(9)
@@ -312,6 +314,7 @@ class Thread extends HiveObject implements Filterable {
 class ThreadIdentifier {
 	@HiveField(0)
 	final String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	@HiveField(1)
 	final int id;
 	ThreadIdentifier(String board, this.id) : board = intern(board);
@@ -331,6 +334,7 @@ class ThreadIdentifier {
 
 class BoardThreadOrPostIdentifier {
 	final String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	final int? threadId;
 	final int? postId;
 	BoardThreadOrPostIdentifier(String board, [this.threadId, this.postId]) : board = intern(board);

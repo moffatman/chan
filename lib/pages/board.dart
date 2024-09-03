@@ -988,7 +988,7 @@ class BoardPageState extends State<BoardPage> {
 									site?.defaultCatalogVariant = choice.$1!;
 									break;
 								case _ThreadSortingMethodScope.board:
-									persistence?.browserState.catalogVariants[board!.name] = choice.$1!;
+									persistence?.browserState.catalogVariants[board!.boardKey] = choice.$1!;
 									persistence?.didUpdateBrowserState();
 									break;
 								case _ThreadSortingMethodScope.tab:
@@ -1044,7 +1044,7 @@ class BoardPageState extends State<BoardPage> {
 													color: ChanceTheme.backgroundColorOf(ctx),
 													child: ReplyBox(
 														fullyExpanded: true,
-														board: board!.name,
+														board: board!.boardKey,
 														initialDraft: widget.tab?.draft,
 														onDraftChanged: (draft) {
 															widget.tab?.mutate((tab) => tab.draft = draft);
@@ -1092,7 +1092,7 @@ class BoardPageState extends State<BoardPage> {
 					key: _threadPullTabHandlerKey,
 					onPull: _onThreadSelected,
 					child: FilterZone(
-						filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.name)),
+						filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.boardKey)),
 						child: PopScope(
 							canPop: !(_replyBoxKey.currentState?.show ?? false),
 							onPopInvokedWithResult: (didPop, result) {
@@ -1142,7 +1142,7 @@ class BoardPageState extends State<BoardPage> {
 																final threadState = persistence.getThreadState(thread.identifier);
 																threadState.savedTime = DateTime.now();
 																threadState.thread ??= thread;
-																persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+																persistence.browserState.autosavedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
 																await threadState.save();
 																await persistence.didUpdateBrowserState();
 															},
@@ -1164,7 +1164,7 @@ class BoardPageState extends State<BoardPage> {
 																	youIds: threadState.youIds,
 																	foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
 																);
-																imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+																imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
 																await imageboard.persistence.didUpdateBrowserState();
 															},
 															sortMethods: [
@@ -1361,7 +1361,7 @@ class BoardPageState extends State<BoardPage> {
 										child: RepaintBoundary(
 											child: ReplyBox(
 												key: _replyBoxKey,
-												board: board!.name,
+												board: board!.boardKey,
 												initialDraft: widget.tab?.draft,
 												onDraftChanged: (draft) {
 													widget.tab?.mutate((tab) => tab.draft = draft);

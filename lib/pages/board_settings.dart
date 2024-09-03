@@ -96,7 +96,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 								onValueChanged: (v) {
 									final newValue = v.value;
 									if (newValue != null) {
-										widget.imageboard.persistence.browserState.useCatalogGridPerBoard[widget.board.name] = newValue;
+										widget.imageboard.persistence.browserState.useCatalogGridPerBoard[widget.board.boardKey] = newValue;
 									}
 									else {
 										widget.imageboard.persistence.browserState.useCatalogGridPerBoard.remove(widget.board.name);
@@ -121,7 +121,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 								onValueChanged: (v) {
 									final newValue = v.value;
 									if (newValue != null) {
-										widget.imageboard.persistence.browserState.postSortingMethodPerBoard[widget.board.name] = newValue;
+										widget.imageboard.persistence.browserState.postSortingMethodPerBoard[widget.board.boardKey] = newValue;
 									}
 									else {
 										widget.imageboard.persistence.browserState.postSortingMethodPerBoard.remove(widget.board.name);

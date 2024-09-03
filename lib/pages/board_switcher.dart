@@ -233,15 +233,15 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (searchString.isEmpty) {
 			final favsList = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
 			if (widget.currentlyPickingFavourites) {
-				filteredBoards.removeWhere((b) => favsList.any((f) => f.imageboard == b.imageboard && f.item == b.item.name));
+				filteredBoards.removeWhere((b) => favsList.any((f) => f.imageboard == b.imageboard && f.item == b.item.boardKey));
 			}
 			else {
 				final favs = {
 					for (final pair in favsList.asMap().entries)
-						pair.value.imageboard.scope(pair.value.item.toLowerCase()): pair.key
+						pair.value.imageboard.scope(pair.value.item): pair.key
 				};
 				mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-					return (favs[a.imageboard.scope(a.item.name.toLowerCase())] ?? favs.length) - (favs[b.imageboard.scope(b.item.name.toLowerCase())] ?? favs.length);
+					return (favs[a.imageboard.scope(a.item.boardKey)] ?? favs.length) - (favs[b.imageboard.scope(b.item.boardKey)] ?? favs.length);
 				});
 			}
 		}
@@ -269,7 +269,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 		if (settings.onlyShowFavouriteBoardsInSwitcher) {
 			final favs = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
-			filteredBoards = filteredBoards.where((b) => favs.any((f) => f.imageboard == b.imageboard && f.item == b.item.name)).toList();
+			filteredBoards = filteredBoards.where((b) => favs.any((f) => f.imageboard == b.imageboard && f.item == b.item.boardKey)).toList();
 		}
 		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
 			return ((b.item.name.isEmpty ? b.item.title : b.item.name).toLowerCase().startsWith(normalized) ? 1 : 0) - ((a.item.name.isEmpty ? a.item.title : a.item.name).toLowerCase().startsWith(normalized) ? 1 : 0);
@@ -487,7 +487,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																							children: [
 																								Expanded(
 																									child: AutoSizeText(
-																										currentImageboard.site.formatBoardName(currentImageboard.persistence.browserState.favouriteBoards[i]),
+																										currentImageboard.site.formatBoardName(currentImageboard.persistence.browserState.favouriteBoards[i].s),
 																										style: const TextStyle(fontSize: 20),
 																										maxLines: 1
 																									),
@@ -517,8 +517,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																						child: const BoardSwitcherPage(currentlyPickingFavourites: true)
 																					)
 																				));
-																				if (board != null && !currentImageboard.persistence.browserState.favouriteBoards.contains(board.item.name)) {
-																					currentImageboard.persistence.browserState.favouriteBoards.add(board.item.name);
+																				if (board != null && !currentImageboard.persistence.browserState.favouriteBoards.contains(board.item.boardKey)) {
+																					currentImageboard.persistence.browserState.favouriteBoards.add(board.item.boardKey);
 																					setDialogState(() {});
 																				}
 																			}
@@ -633,11 +633,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										return ContextMenu(
 											backgroundColor: Colors.transparent,
 											actions: [
-												if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.name)) ContextMenuAction(
+												if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ContextMenuAction(
 													child: const Text('Unfavourite'),
 													trailingIcon: CupertinoIcons.star,
 													onPressed: () {
-														currentImageboard.persistence.browserState.favouriteBoards.remove(board.name);
+														currentImageboard.persistence.browserState.favouriteBoards.remove(board.boardKey);
 														setState(() {});
 													}
 												)
@@ -645,7 +645,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													child: const Text('Favourite'),
 													trailingIcon: CupertinoIcons.star_fill,
 													onPressed: () {
-														currentImageboard.persistence.browserState.favouriteBoards.add(board.name);
+														currentImageboard.persistence.browserState.favouriteBoards.add(board.boardKey);
 														setState(() {});
 													}
 												),
@@ -722,7 +722,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	const SizedBox(width: 16)
 																]
 															),
-															if (imageboard.persistence.browserState.favouriteBoards.contains(board.name)) const Align(
+															if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) const Align(
 																alignment: Alignment.topRight,
 																child: Padding(
 																	padding: EdgeInsets.only(top: 4, right: 4),
@@ -806,11 +806,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										return ContextMenu(
 											backgroundColor: Colors.transparent,
 											actions: [
-												if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.name)) ContextMenuAction(
+												if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ContextMenuAction(
 													child: const Text('Unfavourite'),
 													trailingIcon: CupertinoIcons.star,
 													onPressed: () {
-														currentImageboard.persistence.browserState.favouriteBoards.remove(board.name);
+														currentImageboard.persistence.browserState.favouriteBoards.remove(board.boardKey);
 														setState(() {});
 													}
 												)
@@ -818,7 +818,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													child: const Text('Favourite'),
 													trailingIcon: CupertinoIcons.star_fill,
 													onPressed: () {
-														currentImageboard.persistence.browserState.favouriteBoards.add(board.name);
+														currentImageboard.persistence.browserState.favouriteBoards.add(board.boardKey);
 														setState(() {});
 													}
 												),
@@ -852,7 +852,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	)
 																)
 															),
-															if (imageboard.persistence.browserState.favouriteBoards.contains(board.name)) const Align(
+															if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) const Align(
 																alignment: Alignment.topRight,
 																child: Padding(
 																	padding: EdgeInsets.only(top: 2, right: 2),

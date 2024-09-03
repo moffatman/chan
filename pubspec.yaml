@@ -14,7 +14,7 @@ description: A new Flutter project.
 version: 1.2.5+86 # Remember to update version.dart
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.3.0 <4.0.0"
 
 publish_to: none
 dependencies:
@@ -229,3 +229,5 @@ dependency_overrides:
     git:
       url: https://github.com/moffatman/charset_converter.git
       ref: master
+  analyzer: ^6.7.0
+  dart_style: ^2.3.6

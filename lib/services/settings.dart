@@ -1630,7 +1630,7 @@ class SavedSettings extends HiveObject {
 			this.catalogVariant = CatalogVariantMetadata.migrate(this.deprecatedCatalogSortingMethod, this.deprecatedReverseCatalogSorting);
 			for (final browserState in this.browserStateBySite.values) {
 				for (final board in browserState.deprecatedBoardSortingMethods.keys) {
-					browserState.catalogVariants[board] = CatalogVariantMetadata.migrate(browserState.deprecatedBoardSortingMethods[board], browserState.deprecatedBoardReverseSortings[board]);
+					browserState.catalogVariants[ImageboardBoard.getKey(board)] = CatalogVariantMetadata.migrate(browserState.deprecatedBoardSortingMethods[board], browserState.deprecatedBoardReverseSortings[board]);
 				}
 			}
 			this.appliedMigrations.add('catalogVariant');
