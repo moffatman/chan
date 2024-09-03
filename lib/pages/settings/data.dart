@@ -62,7 +62,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		catch (e, st) {
 			Future.error(e, st); // Report to Crashlytics
 			if (context.mounted) {
-				alertError(context, e.toStringDio());
+				alertError(context, e, st);
 			}
 		}
 		await _readFilesystemInfo();
@@ -752,7 +752,7 @@ final dataSettings = [
 			catch (e, st) {
 				Future.error(e, st);
 				if (context.mounted) {
-					alertError(context, e.toString());
+					alertError(context, e, st);
 				}
 			}
 		}
@@ -830,7 +830,7 @@ final dataSettings = [
 			catch (e, st) {
 				Future.error(e, st);
 				if (context.mounted) {
-					alertError(context, e.toString());
+					alertError(context, e, st);
 				}
 			}
 		}
@@ -885,7 +885,7 @@ final dataSettings = [
 			catch (e, st) {
 				Future.error(e, st);
 				if (context.mounted) {
-					alertError(context, e.toString());
+					alertError(context, e, st);
 				}
 			}
 		}

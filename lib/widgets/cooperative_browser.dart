@@ -220,7 +220,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 												onPressed: () {
 													final url = _url ?? widget.initialUrlRequest?.url;
 													if (url == null) {
-														alertError(context, 'No URL');
+														alertError(context, 'No URL', null);
 													}
 													else {
 														_controller?.loadUrl(urlRequest: URLRequest(
@@ -238,7 +238,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 												onPressed: () {
 													final url = _url ?? widget.initialUrlRequest?.url;
 													if (url == null) {
-														alertError(context, 'No URL');
+														alertError(context, 'No URL', null);
 													}
 													else {
 														openBrowser(context, url);
@@ -252,7 +252,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 													onPressed: () {
 														final url = _url ?? widget.initialUrlRequest?.url;
 														if (url == null) {
-															alertError(context, 'No URL');
+															alertError(context, 'No URL', null);
 														}
 														else {
 															shareOne(

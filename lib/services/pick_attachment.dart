@@ -310,9 +310,9 @@ Future<File?> pickAttachment({
 														Navigator.of(context).pop<File>(File(path));
 													}
 												}
-												catch (e) {
+												catch (e, st) {
 													if (context.mounted) {
-														alertError(context, e.toStringDio());
+														alertError(context, e, st);
 													}
 													loadingPick = false;
 													setPickerDialogState(() {});

@@ -6,7 +6,6 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/outbox.dart';
@@ -138,7 +137,7 @@ Future<void> reportPost({
 						);
 					}
 					else if (state is QueueStateFailed<void>) {
-						alertError(context, 'Report failed\n${state.error.toStringDio()}', actions: {
+						alertError(context, state.error, state.stackTrace, actions: {
 							'More info': () => showOutboxModalForThread(
 								context: context,
 								imageboardKey: context.read<Imageboard?>()?.key,
@@ -158,7 +157,7 @@ Future<void> reportPost({
 			Future.error(e, st); // Report to crashlytics
 		}
 		if (context.mounted) {
-			alertError(context, e.toStringDio());
+			alertError(context, e, st);
 		}
 	}
 }

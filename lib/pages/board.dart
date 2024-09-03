@@ -235,7 +235,7 @@ class BoardPageState extends State<BoardPage> {
 		_searching = (widget.initialSearch ?? widget.tab?.initialSearch)?.isNotEmpty ?? false;
 	}
 
-	void _selectBoard() async {
+	Future<void> _selectBoard() async {
 		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 			builder: (ctx) => BoardSwitcherPage(
 				initialImageboardKey: context.read<Imageboard?>()?.key
@@ -780,7 +780,7 @@ class BoardPageState extends State<BoardPage> {
 										catch (e, st) {
 											Future.error(e, st); // Report to crashlytics
 											if (context.mounted) {
-												alertError(context, e.toStringDio());
+												alertError(context, e, st);
 											}
 										}
 									}
@@ -1014,9 +1014,7 @@ class BoardPageState extends State<BoardPage> {
 						!(context.watch<MasterDetailLocation?>()?.isVeryConstrained ?? false)
 					) AdaptiveIconButton(
 						icon: const Icon(CupertinoIcons.refresh),
-						onPressed: () {
-							_listController.blockAndUpdate();
-						}
+						onPressed: _listController.blockAndUpdate
 					),
 					if (imageboard?.site.supportsPosting ?? false) NotifyingIcon(
 						sideBySide: true,

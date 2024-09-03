@@ -711,7 +711,7 @@ class PostRow extends StatelessWidget {
 												children: [
 													if (translatedPostSnapshot != null) const Icon(Icons.translate),
 													if (translatedPostSnapshot?.hasError ?? false) GestureDetector(
-														onTap: () => alertError(context, translatedPostSnapshot?.error?.toStringDio() ?? 'Unknown'),
+														onTap: () => alertError(context, translatedPostSnapshot?.error?.toStringDio() ?? 'Unknown', translatedPostSnapshot?.stackTrace),
 														child: const Icon(CupertinoIcons.exclamationmark_triangle)
 													)
 													else if (translatedPostSnapshot?.hasData == false) const CircularProgressIndicator.adaptive(),
@@ -989,7 +989,7 @@ class PostRow extends StatelessWidget {
 							catch (e, st) {
 								Future.error(e, st); // Report to crashlytics
 								if (context.mounted) {
-									alertError(context, e.toStringDio());
+									alertError(context, e, st);
 								}
 							}
 						}
@@ -1009,9 +1009,9 @@ class PostRow extends StatelessWidget {
 						try {
 							await parentZone.translatePost(post);
 						}
-						catch (e) {
+						catch (e, st) {
 							if (context.mounted) {
-								alertError(context, e.toStringDio());
+								alertError(context, e, st);
 							}
 						}
 					}

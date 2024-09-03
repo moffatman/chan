@@ -1483,9 +1483,9 @@ class AttachmentViewer extends StatelessWidget {
 							try {
 								await modalLoad(context, 'Translating...', (c) => controller.translate().timeout(const Duration(seconds: 10)));
 							}
-							catch (e) {
+							catch (e, st) {
 								if (context.mounted) {
-									alertError(context, e.toStringDio());
+									alertError(context, e, st);
 								}
 							}
 						},

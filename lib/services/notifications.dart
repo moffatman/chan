@@ -134,8 +134,8 @@ Future<void> updateNotificationsBadgeCount() async {
 const _notificationSettingsApiRoot = 'https://push.chance.surf';
 
 class Notifications {
-	static String? staticError;
-	String? error;
+	static (Object, StackTrace)? staticError;
+	(Object, StackTrace)? error;
 	static final Map<String, Notifications> _children = {};
 	final tapStream = StreamController<PostIdentifier>.broadcast();
 	final foregroundStream = StreamController<PushNotification>.broadcast();
@@ -378,7 +378,7 @@ class Notifications {
 		catch (e, st) {
 			print('Error initializing notifications: $e');
 			print(st);
-			staticError = e.toStringDio();
+			staticError = (e, st);
 		}
 	}
 
@@ -484,9 +484,9 @@ class Notifications {
 			}
 			error = null;
 		}
-		catch (e) {
+		catch (e, st) {
 			print('Error initializing notifications: $e');
-			error = e.toStringDio();
+			error = (e, st);
 		}
 	}
 

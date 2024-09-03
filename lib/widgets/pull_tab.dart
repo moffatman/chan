@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/gestures.dart';
@@ -101,8 +100,8 @@ class _PullTabState extends State<PullTab> {
 			try {
 				widget.tab?.onActivation();
 			}
-			catch (e) {
-				alertError(context, e.toStringDio());
+			catch (e, st) {
+				alertError(context, e, st);
 			}
 		}
 		setState(() {

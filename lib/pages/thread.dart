@@ -1508,7 +1508,7 @@ class ThreadPageState extends State<ThreadPage> {
 															catch (e, st) {
 																Future.error(e, st); // Report to crashlytics
 																if (context.mounted) {
-																	alertError(context, e.toStringDio());
+																	alertError(context, e, st);
 																}
 															}
 														}
@@ -1683,10 +1683,10 @@ class ThreadPageState extends State<ThreadPage> {
 																		remedies: {
 																			if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => AdaptiveFilledButton(
 																				child: const Text('Try archive'),
-																				onPressed: () {
+																				onPressed: () async {
 																					persistentState.useArchive = true;
-																					persistentState.save();
-																					updater();
+																					await persistentState.save();
+																					await updater();
 																				}
 																			)
 																		},
@@ -2904,7 +2904,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												color: Colors.red,
 												padding: const EdgeInsets.all(8),
 												minSize: 0,
-												onPressed: () => alertError(context, 'Tree too complex!\nLarge reply chains mean this thread can not be shown in tree mode.'),
+												onPressed: () => alertError(context, 'Tree too complex!\nLarge reply chains mean this thread can not be shown in tree mode.', null),
 												child: Icon(CupertinoIcons.exclamationmark, color: theme.backgroundColor, size: 19)
 											),
 											const SizedBox(width: 8)

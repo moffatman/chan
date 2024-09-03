@@ -2682,7 +2682,7 @@ TextSpan buildPostInfoRow({
 					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
 						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
-							alertError(context, 'Could not find any posts with name "${site.formatUsername(post.name)}". This is likely a problem with Chance...');
+							alertError(context, 'Could not find any posts with name "${site.formatUsername(post.name)}". This is likely a problem with Chance...', null);
 						}
 						else {
 							WeakNavigator.push(context, PostsPage(
@@ -2718,7 +2718,7 @@ TextSpan buildPostInfoRow({
 					onPressed: interactive ? () {
 						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
-							alertError(context, 'Could not find any posts with ID "${post.posterId}". This is likely a problem with Chance...');
+							alertError(context, 'Could not find any posts with ID "${post.posterId}". This is likely a problem with Chance...', null);
 						}
 						else {
 							WeakNavigator.push(context, PostsPage(

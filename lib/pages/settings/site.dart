@@ -90,7 +90,7 @@ final siteSettings = [
 									final url = Uri.tryParse(linkStr);
 									if (url == null) {
 										if (context.mounted) {
-											alertError(context, 'Invalid URL');
+											alertError(context, 'Invalid URL', null);
 										}
 										return;
 									}
@@ -266,7 +266,7 @@ final siteSettings = [
 									catch (e, st) {
 										Future.error(e, st); // crashlytics
 										if (context.mounted) {
-											alertError(context, e.toStringDio());
+											alertError(context, e, st);
 										}
 									}
 								}

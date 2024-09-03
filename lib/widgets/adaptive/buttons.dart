@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_thin_button.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -40,7 +39,7 @@ class AdaptiveFilledButton<T> extends StatelessWidget {
 			catch (e, st) {
 				Future.error(e, st);
 				if (context.mounted) {
-					alertError(context, e.toStringDio());
+					alertError(context, e, st);
 				}
 			}
 		};
@@ -111,7 +110,7 @@ class AdaptiveThinButton<T> extends StatelessWidget {
 			catch (e, st) {
 				Future.error(e, st);
 				if (context.mounted) {
-					alertError(context, e.toStringDio());
+					alertError(context, e, st);
 				}
 			}
 		};
@@ -189,7 +188,7 @@ class AdaptiveIconButton<T> extends StatelessWidget {
 			catch (e, st) {
 				Future.error(e, st);
 				if (context.mounted) {
-					alertError(context, e.toStringDio());
+					alertError(context, e, st);
 				}
 			}
 		};
@@ -240,7 +239,7 @@ class AdaptiveButton<T> extends StatelessWidget {
 			catch (e, st) {
 				Future.error(e, st);
 				if (context.mounted) {
-					alertError(context, e.toStringDio());
+					alertError(context, e, st);
 				}
 			}
 		};

@@ -182,7 +182,7 @@ class QueueEntryWidget extends StatelessWidget {
 													const SizedBox(width: 16),
 													if (state is QueueStateFailed) AdaptiveIconButton(
 														icon: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red),
-														onPressed: () => alertError(context, state.error.toStringDio())
+														onPressed: () => alertError(context, state.error, state.stackTrace)
 													),
 													if (entry.isArchived) Padding(
 														padding: const EdgeInsets.all(8),

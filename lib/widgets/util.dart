@@ -17,6 +17,7 @@ import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
+import 'package:chan/version.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -26,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -102,10 +104,27 @@ Future<void> alert(BuildContext context, String title, String message, {
 	);
 }
 
-Future<void> alertError(BuildContext context, String error, {
+Future<void> alertError(BuildContext context, Object error, StackTrace? stackTrace, {
 	Map<String, VoidCallback> actions = const {},
 	bool barrierDismissible = false
-}) => alert(context, 'Error', error, actions: actions, barrierDismissible: barrierDismissible);
+}) => alert(context, 'Error', error.toStringDio(), actions: {
+	...actions,
+	if (stackTrace != null) 'Report bug': () {
+		FlutterEmailSender.send(Email(
+			subject: 'Chance Bug Report',
+			recipients: ['callum@moffatman.com'],
+			body: '''<p>Hi Callum,</p>
+							<p>Chance v$kChanceVersion is giving me a problem:</p>
+							<p>[insert your problem here]</p>
+							<p>Error: <pre>$error</pre></p>
+							<p>
+							Stack Trace:
+							<pre>$stackTrace</pre>
+							</p>
+							'''
+		));
+	}
+}, barrierDismissible: barrierDismissible);
 
 void showToast({
 	required BuildContext context,

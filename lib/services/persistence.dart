@@ -203,7 +203,7 @@ class Persistence extends ChangeNotifier {
 				}
 				box = await Hive.openBox<T>(boxName, compactionStrategy: compactionStrategy);
 				Future.delayed(const Duration(seconds: 5), () {
-					alertError(ImageboardRegistry.instance.context!, 'Database corruption\nDatabase was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)');
+					alertError(ImageboardRegistry.instance.context!, 'Database corruption\nDatabase was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)', null);
 				});
 			}
 			else {
@@ -258,7 +258,7 @@ class Persistence extends ChangeNotifier {
 					else {
 						message += 'Database was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)';
 					}
-					alertError(ImageboardRegistry.instance.context!, message);
+					alertError(ImageboardRegistry.instance.context!, message, null);
 				});
 			}
 			else {

@@ -327,9 +327,9 @@ final appearanceSettings = [
 								try {
 									Navigator.pop(context, await getInstalledFontFamilies());
 								}
-								catch (e) {
+								catch (e, st) {
 									if (context.mounted) {
-										alertError(context, e.toStringDio());
+										alertError(context, e, st);
 									}
 								}
 							}
@@ -357,7 +357,7 @@ final appearanceSettings = [
 								catch (e, st) {
 									Future.error(e, st);
 									if (context.mounted) {
-										alertError(context, e.toStringDio());
+										alertError(context, e, st);
 									}
 								}
 							}
@@ -385,7 +385,7 @@ final appearanceSettings = [
 					catch (e, st) {
 						Future.error(e, st);
 						if (context.mounted) {
-							alertError(context, e.toStringDio());
+							alertError(context, e, st);
 						}
 					}
 				}
@@ -433,7 +433,7 @@ final appearanceSettings = [
 					catch (e, st) {
 						Future.error(e, st);
 						if (context.mounted) {
-							alertError(context, e.toStringDio());
+							alertError(context, e, st);
 						}
 					}
 				}
@@ -537,7 +537,7 @@ final appearanceSettings = [
 										),
 										onPressed: () async {
 											if (theme.locked) {
-												alertError(context, 'This theme is locked. Make a copy of it if you want to change its colours.');
+												alertError(context, 'This theme is locked. Make a copy of it if you want to change its colours.', null);
 												return;
 											}
 											Color c = color.$2;

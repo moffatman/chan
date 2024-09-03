@@ -1279,9 +1279,9 @@ class _SavedPageState extends State<SavedPage> {
 															)
 														));
 													}
-													catch (e) {
+													catch (e, st) {
 														if (mounted) {
-															alertError(context, e.toStringDio());
+															alertError(context, e, st);
 														}
 													}
 												}
@@ -1328,16 +1328,10 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
 		final w = ImageboardRegistry.threadWatcherController;
-		String notificationsError = '';
-		if (Notifications.staticError != null) {
-			notificationsError = 'Notification setup error:\n${Notifications.staticError!}';
-		}
+		(Object, StackTrace)? notificationsError = Notifications.staticError;
 		for (final i in ImageboardRegistry.instance.imageboards) {
 			if (i.notifications.error != null) {
-				if (notificationsError.isNotEmpty) {
-					notificationsError += '\n\n';
-				}
-				notificationsError += '${i.key} notifications error:\n${i.notifications.error}';
+				notificationsError ??= i.notifications.error;
 			}
 		}
 		return AnimatedSize(
@@ -1405,9 +1399,9 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 								const SizedBox(width: 16),
 								const AutoSizeText('Push Notifications'),
 								const Spacer(),
-								if (notificationsError.isNotEmpty) CupertinoButton(
+								if (notificationsError != null) CupertinoButton(
 									onPressed: () {
-										alertError(context, notificationsError);
+										alertError(context, notificationsError!.$1, notificationsError.$2);
 									},
 									child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)
 								),
@@ -1459,9 +1453,9 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 												await Notifications.tryUnifiedPushDistributor(newDistributor);
 											}
 										}
-										catch (e) {
-											if (mounted) {
-												alertError(context, e.toStringDio());
+										catch (e, st) {
+											if (context.mounted) {
+												alertError(context, e, st);
 											}
 											Notifications.registerUnifiedPush();
 										}

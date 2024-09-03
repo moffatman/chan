@@ -10,7 +10,6 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/default_gesture_detector.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -164,7 +163,7 @@ class _ContextMenuState extends State<ContextMenu> {
 					print(e);
 					print(st);
 					if (context.mounted) {
-						alertError(context, e.toStringDio());
+						alertError(context, e, st);
 					}
 				}
 			},
@@ -277,9 +276,9 @@ class _ContextMenuState extends State<ContextMenu> {
 															try {
 																await action.onPressed();
 															}
-															catch (e) {
+															catch (e, st) {
 																if (context.mounted) {
-																	alertError(context, e.toStringDio());
+																	alertError(context, e, st);
 																}
 															}
 														},

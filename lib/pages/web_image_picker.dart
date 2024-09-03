@@ -6,7 +6,6 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -243,7 +242,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														final settings = await webViewController?.getSettings();
 														if (settings == null) {
 															if (context.mounted) {
-																alertError(context, 'Failed to change WebView settings');
+																alertError(context, 'Failed to change WebView settings', null);
 															}
 															return;
 														}
@@ -483,7 +482,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														catch (e, st) {
 															Future.error(e, st); // crashlytics
 															if (mounted) {
-																alertError(context, e.toStringDio());
+																alertError(context, e, st);
 															}
 														}
 													},

@@ -429,7 +429,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 	}
 
-	void _downloadAll({bool saveAs = false}) async {
+	Future<void> _downloadAll({bool saveAs = false}) async {
 		final List<TaggedAttachment> toDownload;
 		final String? dir;
 		if (saveAs) {
@@ -937,10 +937,10 @@ class _GalleryPageState extends State<GalleryPage> {
 												),
 												AdaptiveIconButton(
 													key: _shareButtonKey,
-													onPressed: currentController.canShare ? () {
+													onPressed: currentController.canShare ? () async {
 														final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 														final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-														currentController.share((offset != null && size != null) ? offset & size : null);
+														await currentController.share((offset != null && size != null) ? offset & size : null);
 													} : null,
 													icon: Icon(Adaptive.icons.share)
 												)

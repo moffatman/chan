@@ -204,7 +204,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 								catch (e, st) {
 									Future.error(e, st);
 									if (context.mounted) {
-										alertError(context, e.toStringDio());
+										alertError(context, e, st);
 									}
 								}
 							}

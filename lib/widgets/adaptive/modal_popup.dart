@@ -1,6 +1,5 @@
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/theme.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -149,9 +148,9 @@ extension ToActionSheetActions on List<ContextMenuAction> {
 			try {
 				await action.onPressed();
 			}
-			catch (e) {
+			catch (e, st) {
 				if (context.mounted) {
-					alertError(context, e.toStringDio());
+					alertError(context, e, st);
 				}
 			}
 		},

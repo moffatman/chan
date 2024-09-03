@@ -1036,7 +1036,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final String? filterHint;
 	final Widget Function(BuildContext context, T value, VoidCallback resetPage, RegExp filterPattern)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
-	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
+	final Map<Type, Widget Function(BuildContext, Future<void> Function())> remedies;
 	final bool disableUpdates;
 	final bool disableBottomUpdates;
 	final Widget? header;
@@ -1386,9 +1386,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_sortList();
 			setState(() { });
 		}
-		catch (e) {
-			if (context.mounted) {
-				alertError(context, e.toStringDio());
+		catch (e, st) {
+			if (mounted) {
+				alertError(context, e, st);
 			}
 		}
 		finally {
@@ -1405,9 +1405,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_sortList();
 			setState(() { });
 		}
-		catch (e) {
-			if (context.mounted) {
-				alertError(context, e.toStringDio());
+		catch (e, st) {
+			if (mounted) {
+				alertError(context, e, st);
 			}
 		}
 		finally {
@@ -1503,9 +1503,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				try {
 					newList = await widget.treeAdapter!.updateWithStubItems(originalList!, lastItem.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(lastItem.id)] : lastItem.representsKnownStubChildren);
 				}
-				catch (e) {
-					if (context.mounted) {
-						alertError(context, e.toStringDio());
+				catch (e, st) {
+					if (mounted) {
+						alertError(context, e, st);
 					}
 				}
 				finally {

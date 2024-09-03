@@ -429,7 +429,7 @@ class _ChanAppState extends State<ChanApp> {
 													child: ImageboardRegistry.instance.setupError != null ? Builder(
 														builder: (context) => ErrorMessageCard(ImageboardRegistry.instance.setupError!, remedies: {
 															if (ImageboardRegistry.instance.setupStackTrace != null) 'More details': () {
-																alertError(context, ImageboardRegistry.instance.setupStackTrace!);
+																alertError(context, ImageboardRegistry.instance.setupError!, ImageboardRegistry.instance.setupStackTrace!);
 															},
 															'Try editing sites': () async {
 																final list = Settings.instance.settings.contentSettings.siteKeys.toList();
@@ -1146,9 +1146,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						)
 					);
 				}
-				catch (e) {
+				catch (e, st) {
 					if (mounted) {
-						alertError(context, 'Error adding theme: $e');
+						alertError(context, e, st);
 					}
 				}
 			}
@@ -1183,14 +1183,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						keepTabPopupOpen: true
 					);
 				}
-				catch (e) {
+				catch (e, st) {
 					if (mounted) {
-						alertError(context, 'Error adding site: $e');
+						alertError(context, e, st);
 					}
 				}
 			}
 			else if (link != 'chance://') {
-				alertError(context, 'Unrecognized link\n$link');
+				alertError(context, 'Unrecognized link\n$link', null);
 			}
 		}
 		else if (link.toLowerCase().startsWith('sharemedia-com.moffatman.chan://')) {

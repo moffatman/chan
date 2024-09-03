@@ -486,9 +486,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 											});
 											widget.onManualResult(result);
 										}
-										catch (e) {
+										catch (e, st) {
 											if (context.mounted) {
-												alertError(context, e.toStringDio());
+												alertError(context, e, st);
 											}
 										}
 									}

@@ -284,6 +284,7 @@ class Imageboard extends ChangeNotifier {
 				easyButton: ('More info', () => alertError(
 					ImageboardRegistry.instance.context!,
 					'Your ${submittedPost.threadId == null ? 'thread' : 'post'} seems to have been blocked by ${site.name}\'s anti-spam firewall.\nIt has been restored as a draft for you to try again.',
+					null,
 					barrierDismissible: true
 				)),
 				hapticFeedback: false
@@ -384,7 +385,7 @@ class Imageboard extends ChangeNotifier {
 					);
 				}
 				else if (e is WebAuthenticationRequiredException) {
-					alertError(ImageboardRegistry.instance.context!, 'Web authentication required\n\nMaking a post via the website is required to whitelist your IP for posting via Chance.', actions: {
+					alertError(ImageboardRegistry.instance.context!, 'Web authentication required\n\nMaking a post via the website is required to whitelist your IP for posting via Chance.', null, actions: {
 						'Go to web': () => shareOne(
 							context: ImageboardRegistry.instance.context!,
 							text: post.site.getWebUrl(
@@ -401,7 +402,7 @@ class Imageboard extends ChangeNotifier {
 						// Captcha didn't work. For now, let's disable the auto captcha solver
 						Outbox.instance.headlessSolveFailed = true;
 					}
-					alertError(ImageboardRegistry.instance.context!, e.toStringDio());
+					alertError(ImageboardRegistry.instance.context!, e, state.stackTrace);
 				}
 			}
 		}
@@ -483,7 +484,7 @@ class ImageboardRegistry extends ChangeNotifier {
 	ImageboardRegistry._();
 	
 	String? setupError;
-	String? setupStackTrace;
+	StackTrace? setupStackTrace;
 	final Map<String, Imageboard> _sites = {};
 	int get count => _sites.length;
 	Iterable<Imageboard> get imageboardsIncludingUninitialized => _sites.values;
@@ -569,7 +570,7 @@ class ImageboardRegistry extends ChangeNotifier {
 			}
 			catch (e, st) {
 				setupError = 'Fatal setup error\n${e.toStringDio()}';
-				setupStackTrace = st.toStringDio();
+				setupStackTrace = st;
 				print(e);
 				print(st);
 			}

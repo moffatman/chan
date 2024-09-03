@@ -6,7 +6,6 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -38,7 +37,7 @@ Future<void> deletePost({
 				showToast(context: context, message: 'Deleted post /${thread.board}/${receipt.id}', icon: CupertinoIcons.delete);
 			}
 			else if (state is QueueStateFailed<void>) {
-				alertError(context, 'Deletion failed\n${state.error.toStringDio()}', actions: {
+				alertError(context, state.error, state.stackTrace, actions: {
 					'More info': () => showOutboxModalForThread(
 						context: context,
 						imageboardKey: context.read<Imageboard?>()?.key,
@@ -56,7 +55,7 @@ Future<void> deletePost({
 			Future.error(e, st); // Report to crashlytics
 		}
 		if (context.mounted) {
-			alertError(context, e.toStringDio());
+			alertError(context, e, st);
 		}
 	}
 }

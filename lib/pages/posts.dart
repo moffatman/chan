@@ -96,9 +96,9 @@ class _PostsPageState extends State<PostsPage> {
 			await widget.zone.onNeedUpdateWithStubItems?.call(reply.stubIds!);
 			_setReplies();
 		}
-		catch (e) {
+		catch (e, st) {
 			if (mounted) {
-				alertError(context, e.toStringDio());
+				alertError(context, e, st);
 			}
 		}
 		reply.loading = false;

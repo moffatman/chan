@@ -1311,9 +1311,9 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 				});
 				widget.loginSystem.parent.persistence?.didUpdateBrowserState();
 			}
-			catch (e) {
+			catch (e, st) {
 				if (!mounted) return;
-				alertError(context, e.toStringDio());
+				alertError(context, e, st);
 			}
 			await _updateStatus();
 		}
@@ -1343,9 +1343,9 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 										await widget.loginSystem.logout(true);
 										await widget.loginSystem.clearSavedLoginFields();
 									}
-									catch (e) {
+									catch (e, st) {
 										if (context.mounted) {
-											await alertError(context, e.toStringDio());
+											await alertError(context, e, st);
 										}
 									}
 									await _updateStatus();
@@ -1361,9 +1361,9 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 							try {
 								await _login();
 							}
-							catch (e) {
+							catch (e, st) {
 								if (context.mounted) {
-									await alertError(context, e.toStringDio());
+									await alertError(context, e, st);
 								}
 							}
 						}
