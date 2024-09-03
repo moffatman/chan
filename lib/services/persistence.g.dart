@@ -1393,6 +1393,16 @@ class PersistentBrowserStateFields {
     fieldName: 'postSortingMethodPerBoard',
     merger: MapMerger(PrimitiveMerger()),
   );
+  static Map<String, String> getDownloadSubfoldersPerBoard(
+          PersistentBrowserState x) =>
+      x.downloadSubfoldersPerBoard;
+  static const downloadSubfoldersPerBoard =
+      ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<String, String>>(
+    getter: getDownloadSubfoldersPerBoard,
+    fieldNumber: 32,
+    fieldName: 'downloadSubfoldersPerBoard',
+    merger: MapMerger(PrimitiveMerger()),
+  );
 }
 
 class PersistentBrowserStateAdapter
@@ -1431,7 +1441,8 @@ class PersistentBrowserStateAdapter
     28: PersistentBrowserStateFields.outbox,
     29: PersistentBrowserStateFields.disabledArchiveNames,
     30: PersistentBrowserStateFields.postSortingMethod,
-    31: PersistentBrowserStateFields.postSortingMethodPerBoard
+    31: PersistentBrowserStateFields.postSortingMethodPerBoard,
+    32: PersistentBrowserStateFields.downloadSubfoldersPerBoard
   };
 
   @override
@@ -1503,13 +1514,15 @@ class PersistentBrowserStateAdapter
       postSortingMethodPerBoard: fields[31] == null
           ? {}
           : (fields[31] as Map).cast<String, PostSortingMethod>(),
+      downloadSubfoldersPerBoard:
+          fields[32] == null ? {} : (fields[32] as Map).cast<String, String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -1557,7 +1570,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(30)
       ..write(obj.postSortingMethod)
       ..writeByte(31)
-      ..write(obj.postSortingMethodPerBoard);
+      ..write(obj.postSortingMethodPerBoard)
+      ..writeByte(32)
+      ..write(obj.downloadSubfoldersPerBoard);
   }
 
   @override

@@ -118,6 +118,10 @@ final List<AttachmentViewerController> _videoControllers = [];
 extension on GallerySavePathOrganizing {
 	List<String> subfoldersFor(AttachmentViewerController controller) {
 		final attachment = controller.attachment;
+		final override = controller.imageboard.persistence.browserState.downloadSubfoldersPerBoard[attachment.board];
+		if (override != null) {
+			return override.split('/');
+		}
 		switch (this) {
 			case GallerySavePathOrganizing.noFolder:
 			case GallerySavePathOrganizing.noSubfolders:
@@ -138,13 +142,39 @@ extension on GallerySavePathOrganizing {
 					return ['${attachment.board} - ${attachment.threadId}'];
 				}
 				return ['${attachment.board} - ${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
+			case GallerySavePathOrganizing.siteSubfolders:
+				return [controller.imageboard.site.name];
+			case GallerySavePathOrganizing.siteAndBoardSubfolders:
+				return [controller.imageboard.site.name, attachment.board];
+			case GallerySavePathOrganizing.siteBoardAndThreadSubfolders:
+			return [controller.imageboard.site.name, attachment.board, attachment.threadId.toString()];
+			case GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders:
+				final title = controller.thread?.title;
+				if (title == null) {
+					return [attachment.board, attachment.threadId.toString()];
+				}
+				return [controller.imageboard.site.name, attachment.board, '${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
+			case GallerySavePathOrganizing.siteAndThreadNameSubfolders:
+				final title = controller.thread?.title;
+				if (title == null) {
+					return ['${attachment.board} - ${attachment.threadId}'];
+				}
+				return [controller.imageboard.site.name, '${attachment.board} - ${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
 		}
 	}
-	String? albumNameFor(Attachment attachment) => switch (this) {
-		GallerySavePathOrganizing.noFolder => null,
-		GallerySavePathOrganizing.noSubfolders => _kDeviceGalleryAlbumName,
-		_ => '$_kDeviceGalleryAlbumName - /${attachment.board}/'
-	};
+	String? albumNameFor(AttachmentViewerController controller) {
+		final override = controller.imageboard.persistence.browserState.downloadSubfoldersPerBoard[controller.attachment.board];
+		if (override != null) {
+			return override;
+		}
+		return switch (this) {
+			GallerySavePathOrganizing.noFolder => null,
+			GallerySavePathOrganizing.noSubfolders => _kDeviceGalleryAlbumName,
+			GallerySavePathOrganizing.siteSubfolders => '$_kDeviceGalleryAlbumName - ${controller.imageboard.site.name}',
+			GallerySavePathOrganizing.siteAndBoardSubfolders => '$_kDeviceGalleryAlbumName - ${controller.imageboard.site.name} - ${controller.imageboard.site.formatBoardName(controller.attachment.board)}',
+			GallerySavePathOrganizing.boardSubfolders || _ => '$_kDeviceGalleryAlbumName - ${controller.imageboard.site.formatBoardName(controller.attachment.board)}'
+		};
+	}
 }
 
 extension _AspectRatio on PlayerState {
@@ -952,7 +982,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (Platform.isIOS) {
 			final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
 			AssetPathEntity? album;
-			final albumName = settings.gallerySavePathOrganizing.albumNameFor(attachment);
+			final albumName = settings.gallerySavePathOrganizing.albumNameFor(this);
 			if (albumName != null) {
 				album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
 				album ??= await PhotoManager.editor.darwin.createAlbum(albumName);

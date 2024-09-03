@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:chan/pages/settings/common.dart';
 import 'package:chan/services/default_user_agent.dart';
+import 'package:chan/services/edit_site_board_map.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/import_export.dart';
 import 'package:chan/services/network_logging.dart';
@@ -526,7 +527,29 @@ final dataSettings = [
 				GallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders'),
 				GallerySavePathOrganizing.boardAndThreadNameSubfolders: (null, 'Per-board and per-thread (with name) subfolders'),
 				GallerySavePathOrganizing.threadNameSubfolders: (null, 'Per-thread (with name) subfolders')
+			},
+			GallerySavePathOrganizing.siteSubfolders: (null, Platform.isIOS ? 'Per-site albums' : 'Per-site subfolders'),
+			GallerySavePathOrganizing.siteAndBoardSubfolders: (null, Platform.isIOS ? 'Per-site+board albums' : 'Per-site and per-board subfolders'),
+			if (Platform.isAndroid) ...{
+				GallerySavePathOrganizing.siteBoardAndThreadSubfolders: (null, 'Per-site, per-board, and per-thread subfolders'),
+				GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders: (null, 'Per-site, per-board, and per-thread (with name) subfolders'),
+				GallerySavePathOrganizing.siteAndThreadNameSubfolders: (null, 'Per-site and per-thread (with name) subfolders')
 			}
+		},
+		injectButton: (context, _, __) {
+			return AdaptiveFilledButton(
+				padding: const EdgeInsets.all(8),
+				onPressed: () async {
+					await editSiteBoardMap(
+						context: context,
+						field: PersistentBrowserStateFields.downloadSubfoldersPerBoard,
+						editor: const TextMapValueEditor(),
+						name: Platform.isIOS ? 'Album' : 'Subfolder',
+						title: Platform.isIOS ? 'Per-board albums' : 'Per-board subfolders'
+					);
+				},
+				child: const Text('Per-board...')
+			);
 		}
 	),
 	const SwitchSettingWidget(

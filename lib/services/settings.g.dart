@@ -3555,6 +3555,16 @@ class GallerySavePathOrganizingAdapter
         return GallerySavePathOrganizing.noFolder;
       case 5:
         return GallerySavePathOrganizing.threadNameSubfolders;
+      case 6:
+        return GallerySavePathOrganizing.siteSubfolders;
+      case 7:
+        return GallerySavePathOrganizing.siteAndBoardSubfolders;
+      case 8:
+        return GallerySavePathOrganizing.siteBoardAndThreadSubfolders;
+      case 9:
+        return GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders;
+      case 10:
+        return GallerySavePathOrganizing.siteAndThreadNameSubfolders;
       default:
         return GallerySavePathOrganizing.noSubfolders;
     }
@@ -3580,6 +3590,21 @@ class GallerySavePathOrganizingAdapter
         break;
       case GallerySavePathOrganizing.threadNameSubfolders:
         writer.writeByte(5);
+        break;
+      case GallerySavePathOrganizing.siteSubfolders:
+        writer.writeByte(6);
+        break;
+      case GallerySavePathOrganizing.siteAndBoardSubfolders:
+        writer.writeByte(7);
+        break;
+      case GallerySavePathOrganizing.siteBoardAndThreadSubfolders:
+        writer.writeByte(8);
+        break;
+      case GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders:
+        writer.writeByte(9);
+        break;
+      case GallerySavePathOrganizing.siteAndThreadNameSubfolders:
+        writer.writeByte(10);
         break;
     }
   }

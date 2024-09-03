@@ -850,7 +850,8 @@ class Persistence extends ChangeNotifier {
 			overrideShowIds: {},
 			outbox: [],
 			disabledArchiveNames: {},
-			postSortingMethodPerBoard: {}
+			postSortingMethodPerBoard: {},
+			downloadSubfoldersPerBoard: {}
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey) != null) {
 			print('Migrating tabs');
@@ -1930,6 +1931,8 @@ class PersistentBrowserState {
 	PostSortingMethod? postSortingMethod;
 	@HiveField(31, defaultValue: {})
 	final Map<String, PostSortingMethod> postSortingMethodPerBoard;
+	@HiveField(32, defaultValue: {})
+	final Map<String, String> downloadSubfoldersPerBoard;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1959,7 +1962,8 @@ class PersistentBrowserState {
 		required this.outbox,
 		required this.disabledArchiveNames,
 		this.postSortingMethod,
-		required this.postSortingMethodPerBoard
+		required this.postSortingMethodPerBoard,
+		required this.downloadSubfoldersPerBoard
 	}) : notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
