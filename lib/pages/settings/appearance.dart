@@ -325,7 +325,10 @@ final appearanceSettings = [
 							child: const Text('System Fonts'),
 							onPressed: () async {
 								try {
-									Navigator.pop(context, await getInstalledFontFamilies());
+									final fonts = await getInstalledFontFamilies();
+									if (context.mounted) {
+										Navigator.pop(context, fonts);
+									}
 								}
 								catch (e, st) {
 									if (context.mounted) {

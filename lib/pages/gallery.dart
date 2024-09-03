@@ -912,7 +912,7 @@ class _GalleryPageState extends State<GalleryPage> {
 															final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));
 															if (!download) return;
 															final filename = await currentController.download(force: true);
-															if (!mounted || filename == null) return;
+															if (!context.mounted || filename == null) return;
 															showToast(context: context, message: 'Downloaded $filename', icon: CupertinoIcons.cloud_download);
 														} : null,
 														icon: currentController.isDownloaded ? const Icon(CupertinoIcons.cloud_download_fill) : const Icon(CupertinoIcons.cloud_download)

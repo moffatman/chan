@@ -108,7 +108,7 @@ class _SettingsPageState extends State<SettingsPage> {
 							]
 						)
 					);
-					if (mounted && route != null) {
+					if (context.mounted && route != null) {
 						Navigator.push(context, route);
 					}
 				},

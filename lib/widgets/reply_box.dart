@@ -608,7 +608,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		try {
 			bool toastedStart = false;
 			Future.delayed(const Duration(milliseconds: 500), () {
-				if (_attachmentProgress != null) {
+				if (_attachmentProgress != null && mounted) {
 					showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: Adaptive.icons.photo);
 					toastedStart = true;
 				}
@@ -2034,7 +2034,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												}
 												catch (e, st) {
 													Future.error(e, st);
-													if (mounted) {
+													if (context.mounted) {
 														alertError(context, e, st);
 													}
 													_attachmentProgress = null;
@@ -2370,7 +2370,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												final replaced = original.replaceFirst(proposed.$1, '');
 												if (replaced.length != _textFieldController.text.length) {
 													_textFieldController.text = replaced;
-													if (mounted) {
+													if (context.mounted) {
 														showToast(
 															context: context,
 															icon: CupertinoIcons.link,

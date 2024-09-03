@@ -364,7 +364,7 @@ class BoardPageState extends State<BoardPage> {
 							others: v.variants.skip(1).toList(),
 							currentVariant: currentVariant
 						);
-						if (innerChoice != null && mounted) {
+						if (innerChoice != null && context.mounted) {
 							Navigator.pop(context, innerChoice);
 						}
 					}
@@ -431,7 +431,7 @@ class BoardPageState extends State<BoardPage> {
 												others: [],
 												currentVariant: currentVariant
 											);
-											if (innerChoice != null && mounted) {
+											if (innerChoice != null && context.mounted) {
 												Navigator.pop(context, innerChoice);
 											}
 										}
@@ -448,7 +448,7 @@ class BoardPageState extends State<BoardPage> {
 						)
 					)
 				);
-				if (choice != null && mounted) {
+				if (choice != null && context.mounted) {
 					Navigator.pop(context, choice);
 				}
 			}
@@ -1051,7 +1051,7 @@ class BoardPageState extends State<BoardPage> {
 															if (imageboard.site.supportsPushNotifications) {
 																await promptForPushNotificationsIfNeeded(ctx);
 															}
-															if (!mounted) return;
+															if (!ctx.mounted) return;
 															final newThread = ThreadIdentifier(board!.name, receipt.id);
 															_listController.update();
 															_onThreadSelected(newThread);

@@ -408,7 +408,7 @@ class RefreshableListItem<T extends Object> {
 
 	int get depth {
 		if (_depth != null) {
-			return _depth!;
+			return _depth;
 		}
 		final offset = (
 			(

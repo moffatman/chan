@@ -184,7 +184,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 		name: 'Clipboard',
 		icon: CupertinoIcons.doc_on_clipboard,
 		pick: (context) => getClipboardImageAsFile().then((x) {
-			if (x == null) {
+			if (x == null && context.mounted) {
 				showToast(
 					context: context,
 					message: 'No image in clipboard',

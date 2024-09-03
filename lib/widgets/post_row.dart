@@ -31,7 +31,6 @@ import 'package:flutter/material.dart';
 
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/util.dart';

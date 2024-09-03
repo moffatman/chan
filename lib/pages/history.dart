@@ -184,7 +184,7 @@ class HistoryPageState extends State<HistoryPage> {
 													}
 													await state.delete();
 												}
-												if (mounted) {
+												if (context.mounted) {
 													showUndoToast(
 														context: context,
 														message: 'Deleted ${describeCount(toDelete.length, 'thread')}',

@@ -264,7 +264,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 									controller.cancel();
 									setDialogState(() {});
 									Future.delayed(const Duration(milliseconds: 750), () {
-										if (!popped) {
+										if (!popped && context.mounted) {
 											popped = true;
 											Navigator.pop(context);
 										}

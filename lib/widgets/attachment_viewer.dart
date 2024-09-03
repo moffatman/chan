@@ -955,9 +955,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		else {
 			convertForCompatibility = false;
 		}
+		final path = (await _moveToShareCache(convertForCompatibility: convertForCompatibility)).path;
+		if (!context.mounted) return;
 		await shareOne(
 			context: context,
-			text: (await _moveToShareCache(convertForCompatibility: convertForCompatibility)).path,
+			text: path,
 			subject: _downloadFilename(convertForCompatibility),
 			type: "file",
 			sharePositionOrigin: sharePosition

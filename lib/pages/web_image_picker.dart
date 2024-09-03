@@ -455,10 +455,13 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																return;
 															}
 															final file = await getCachedImageFile(image['src']);
-															if (!mounted) return;
+															if (!context.mounted) return;
 															if (file != null) {
 																// Avoid second download
-																Navigator.pop(context, await file.readAsBytes());
+																final bytes = await file.readAsBytes();
+																if (context.mounted) {
+																	Navigator.pop(context, bytes);
+																}
 																return;
 															}
 															final response = await modalLoad(context, 'Downloading...', (controller) async {
@@ -476,7 +479,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																	responseType: ResponseType.bytes
 																), cancelToken: token);
 															}, cancellable: true);
-															if (!mounted) return;
+															if (!context.mounted) return;
 															Navigator.of(context).pop(response.data);
 														}
 														catch (e, st) {
@@ -504,7 +507,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										final fullImages = results.where((r) => r['visible1'] && (noVisible2 || r['visible2']) && r['width'] * r['height'] >= 10201).toList();
 										final thumbnails = results.where((r) => r['visible1'] && (noVisible2 || r['visible2']) && r['width'] * r['height'] < 10201).toList();
 										final offscreen = results.where((r) => !(r['visible1'] && (noVisible2 || r['visible2']))).toList();
-										if (!mounted) return;
+										if (!context.mounted) return;
 										final pickedBytes = await Navigator.of(context).push<Uint8List>(TransparentRoute(
 											builder: (context) => OverscrollModalPage(
 												child: Container(
@@ -537,7 +540,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																				)
 																			)
 																		));
-																		if (selectedImage != null && mounted) {
+																		if (selectedImage != null && context.mounted) {
 																			Navigator.of(context).pop(selectedImage);
 																		}
 																	}
@@ -564,7 +567,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																				)
 																			)
 																		));
-																		if (selectedThumbnail != null && mounted) {
+																		if (selectedThumbnail != null && context.mounted) {
 																			Navigator.of(context).pop(selectedThumbnail);
 																		}
 																	}
@@ -584,7 +587,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												final f = File('${Persistence.temporaryDirectory.path}/webpickercache/${DateTime.now().millisecondsSinceEpoch}.$ext');
 												await f.create(recursive: true);
 												await f.writeAsBytes(pickedBytes, flush: true);
-												if (mounted) {
+												if (context.mounted) {
 													Navigator.of(context).pop(f);
 												}
 											}

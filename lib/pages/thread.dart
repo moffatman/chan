@@ -1170,7 +1170,7 @@ class ThreadPageState extends State<ThreadPage> {
 									if (imageboard.site.supportsPushNotifications) {
 										await promptForPushNotificationsIfNeeded(context);
 									}
-									if (!mounted) return;
+									if (!ctx.mounted) return;
 									if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
 										// If already at the bottom, pre-mark the created post as seen
 										persistentState.lastSeenPostId = receipt.id;

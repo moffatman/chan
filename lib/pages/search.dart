@@ -448,7 +448,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										)
 									);
 									idController.dispose();
-									if (mounted && target != null) {
+									if (context.mounted && target != null) {
 										try {
 											final result = await modalLoad(context, 'Finding post...', (controller) async {
 												try {

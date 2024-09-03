@@ -61,7 +61,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		}
 		catch (e, st) {
 			Future.error(e, st); // Report to Crashlytics
-			if (context.mounted) {
+			if (mounted) {
 				alertError(context, e, st);
 			}
 		}

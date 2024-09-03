@@ -308,7 +308,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			// In case it is found by typeahead or something
 			await item.imageboard.persistence.setBoard(item.item.name, item.item);
 		}
-		if (context.mounted) {
+		if (mounted) {
 			Navigator.pop(context, item);
 		}
 	}

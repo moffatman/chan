@@ -1042,7 +1042,7 @@ class _SavedPageState extends State<SavedPage> {
 															]
 														)
 													);
-													if (!mounted || ok != true) {
+													if (!context.mounted || ok != true) {
 														return;
 													}
 													final imageboards = toDelete.map((i) => i.imageboard).toSet();
@@ -1410,7 +1410,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 										try {
 											final currentDistributor = await UnifiedPush.getDistributor();
 											final distributors = await UnifiedPush.getDistributors();
-											if (!mounted) return;
+											if (!context.mounted) return;
 											final newDistributor = await showAdaptiveDialog<String>(
 												context: context,
 												barrierDismissible: true,

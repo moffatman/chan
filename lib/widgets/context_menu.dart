@@ -162,7 +162,7 @@ class _ContextMenuState extends State<ContextMenu> {
 				catch (e, st) {
 					print(e);
 					print(st);
-					if (context.mounted) {
+					if (mounted) {
 						alertError(context, e, st);
 					}
 				}
