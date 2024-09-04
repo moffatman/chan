@@ -90,7 +90,9 @@ Future<void> alert(BuildContext context, String title, String message, {
 								}
 							}
 						},
-						child: translatedMessage != null ? const Text('Original') : const Text('Translate')
+						child:
+							translating ? const CircularProgressIndicator.adaptive() :
+								(translatedMessage != null ? const Text('Original') : const Text('Translate'))
 					),
 					AdaptiveDialogAction(
 						child: const Text('OK'),
