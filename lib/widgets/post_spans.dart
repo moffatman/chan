@@ -2221,7 +2221,7 @@ class PostLinkSpan extends PostTerminalSpan {
 							)
 						);
 					}
-					final onTap = options.ignorePointer ? null : () {
+					onTap() {
 						final isSelfLink =
 								(imageboardTarget?.$1 == zone.imageboard.key) &&
 								(imageboardTarget?.$2.threadIdentifier == post.threadIdentifier) &&
@@ -2248,17 +2248,20 @@ class PostLinkSpan extends PostTerminalSpan {
 						else {
 							openBrowser(context, cleanedUri!, useChanceIfPossible: !isSelfLink);
 						}
-					};
+					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
-						child: GestureDetector(
-							onLongPress: onLongPress,
-							// To win against CupertinoContextMenu2
-							longPressDuration: kLongPressTimeout ~/ 2,
-							child: CupertinoButton(
-								padding: EdgeInsets.zero,
-								onPressed: onTap,
-								child: tapChild
+						child: IgnorePointer(
+							ignoring: options.ignorePointer,
+							child: GestureDetector(
+								onLongPress: onLongPress,
+								// To win against CupertinoContextMenu2
+								longPressDuration: kLongPressTimeout ~/ 2,
+								child: CupertinoButton(
+									padding: EdgeInsets.zero,
+									onPressed: onTap,
+									child: tapChild
+								)
 							)
 						)
 					);
