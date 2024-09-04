@@ -1269,7 +1269,8 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 			context: context,
 			builder: (context) => AdaptiveAlertDialog(
 				title: Text('${widget.loginSystem.name} Login'),
-				content: ListBody(
+				content: Column(
+					mainAxisSize: MainAxisSize.min,
 					children: [
 						const SizedBox(height: 8),
 						for (final field in fields.keys) ...[
