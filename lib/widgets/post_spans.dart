@@ -1504,24 +1504,27 @@ class PostLinkSpan extends PostTerminalSpan {
 							)
 						);
 					}
-					final onTap = options.ignorePointer ? null : () {
+					onTap() {
 						if (imageboardTarget != null) {
 							openImageboardTarget(context, imageboardTarget);
 						}
 						else {
 							openBrowser(context, cleanedUri!);
 						}
-					};
+					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
-						child: GestureDetector(
-							onLongPress: onLongPress,
-							// To win against CupertinoContextMenu2
-							longPressDuration: kLongPressTimeout ~/ 2,
-							child: CupertinoButton(
-								padding: EdgeInsets.zero,
-								onPressed: onTap,
-								child: tapChild
+						child: IgnorePointer(
+							ignoring: options.ignorePointer,
+							child: GestureDetector(
+								onLongPress: onLongPress,
+								// To win against CupertinoContextMenu2
+								longPressDuration: kLongPressTimeout ~/ 2,
+								child: CupertinoButton(
+									padding: EdgeInsets.zero,
+									onPressed: onTap,
+									child: tapChild
+								)
 							)
 						)
 					);
