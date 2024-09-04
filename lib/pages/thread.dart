@@ -1712,8 +1712,8 @@ class ThreadPageState extends State<ThreadPage> {
 																						tween: Tween(begin: 0, end: _glowingPostId == post.id ? 0.2 : 0),
 																						duration: const Duration(milliseconds: 350),
 																						child: child,
-																						builder: (context, factor, child) => factor == 0 ? child! : ColorFiltered(
-																							colorFilter: ui.ColorFilter.mode(
+																						builder: (context, factor, child) => NullableColorFiltered(
+																							colorFilter: factor == 0 ? null : ui.ColorFilter.mode(
 																								theme.secondaryColor.withOpacity(factor),
 																								BlendMode.srcOver
 																							),

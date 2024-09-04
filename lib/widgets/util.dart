@@ -2187,3 +2187,60 @@ class IconSpan extends TextSpan {
 extension WatchIdentity on BuildContext {
 	T watchIdentity<T>() => select<T, T>(identity);
 }
+
+class NullableColorFiltered extends SingleChildRenderObjectWidget {
+  /// Creates a widget that applies a [ColorFilter] to its child.
+  const NullableColorFiltered({required this.colorFilter, super.child, super.key});
+
+  /// The color filter to apply to the child of this widget.
+  final ColorFilter? colorFilter;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => NullableColorFilterRenderObject(colorFilter);
+
+  @override
+  void updateRenderObject(BuildContext context, NullableColorFilterRenderObject renderObject) {
+    renderObject.colorFilter = colorFilter;
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<ColorFilter>('colorFilter', colorFilter));
+  }
+}
+
+class NullableColorFilterRenderObject extends RenderProxyBox {
+  NullableColorFilterRenderObject(this._colorFilter);
+
+  ColorFilter? get colorFilter => _colorFilter;
+  ColorFilter? _colorFilter;
+  set colorFilter(ColorFilter? value) {
+    if (value != _colorFilter) {
+			final had = _colorFilter != null;
+      _colorFilter = value;
+      markNeedsPaint();
+			if (had != (value != null)) {
+				markNeedsCompositingBitsUpdate();
+			}
+    }
+  }
+
+  @override
+  bool get alwaysNeedsCompositing => child != null && colorFilter != null;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+		if (colorFilter != null) {
+    	layer = context.pushColorFilter(offset, colorFilter!, super.paint, oldLayer: layer as ColorFilterLayer?);
+			assert(() {
+				layer!.debugCreator = debugCreator;
+				return true;
+			}());
+		}
+		else {
+			layer = null;
+			super.paint(context, offset);
+		}
+  }
+}
