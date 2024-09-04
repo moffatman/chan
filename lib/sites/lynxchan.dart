@@ -29,6 +29,8 @@ class SiteLynxchan extends ImageboardSite {
 	@override
 	final String defaultUsername;
 	final List<ImageboardBoard>? boards;
+	@override
+	final bool hasLinkCookieAuth;
 
 	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?res\/(\d+).html#(\d+)');
 
@@ -88,7 +90,8 @@ class SiteLynxchan extends ImageboardSite {
 		required this.boards,
 		required this.defaultUsername,
 		required super.overrideUserAgent,
-		required super.archives
+		required super.archives,
+		required this.hasLinkCookieAuth
 	});
 
 	ImageboardFlag? _makeFlag(Map<String, dynamic> data) {
@@ -467,8 +470,9 @@ class SiteLynxchan extends ImageboardSite {
 		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
 		listEquals(other.boards, boards) &&
-		other.defaultUsername == defaultUsername;
+		other.defaultUsername == defaultUsername &&
+		other.hasLinkCookieAuth == hasLinkCookieAuth;
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername);
+	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername, hasLinkCookieAuth);
 }

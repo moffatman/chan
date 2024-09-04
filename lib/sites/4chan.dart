@@ -1425,7 +1425,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	bool get hasEmailLinkCookieAuth => true;
+	bool get hasLinkCookieAuth => true;
 }
 
 class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {

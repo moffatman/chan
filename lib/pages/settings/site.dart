@@ -68,7 +68,7 @@ final siteSettings = [
 									)
 								)
 							),
-							if (imageboard.site.hasEmailLinkCookieAuth) AdaptiveIconButton(
+							if (imageboard.site.hasLinkCookieAuth) AdaptiveIconButton(
 								icon: const Icon(CupertinoIcons.link),
 								onPressed: () async {
 									final controller = TextEditingController();

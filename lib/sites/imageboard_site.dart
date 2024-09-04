@@ -1714,7 +1714,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		ImageboardAction.delete => ImageboardAction.delete
 	};
 	int? get subjectCharacterLimit => null;
-	bool get hasEmailLinkCookieAuth => false;
+	bool get hasLinkCookieAuth => false;
 	bool get hasExpiringThreads => true;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
@@ -1910,7 +1910,8 @@ ImageboardSite makeSite(dynamic data) {
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
+			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false
 		);
 	}
 	else if (data['type'] == '8chan') {
@@ -1920,7 +1921,8 @@ ImageboardSite makeSite(dynamic data) {
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
+			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false
 		);
 	}
 	else if (data['type'] == 'lainchan2') {
