@@ -8,8 +8,11 @@ import 'package:chan/models/post.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/util.dart';
+import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 
@@ -178,26 +181,16 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/api/captcha/settings/$board'), options: Options(
-			responseType: ResponseType.json
-		));
-		if (response.data['result'] == 0) {
-			throw DvachException(response.data['error']['code'], response.data['error']['message']);
-		}
-		if (response.data['enabled'] == 0) {
+		if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 			return const NoCaptchaRequest();
 		}
-		for (final type in response.data['types']) {
-			if (type['id'] == '2chcaptcha') {
-				return DvachCaptchaRequest(challengeLifetime: Duration(seconds: type['expires']));
-			}
-		}
-		throw DvachException(0, 'No supported captcha (unsupported: ${response.data['types'].map((t) => t['id']).toList()})');
+		return const DvachEmojiCaptchaRequest(challengeLifetime: Duration(seconds: 300));
 	}
 
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final file = post.file;
+		final passcodeAuth = (await Persistence.currentCookies.loadForRequest(Uri.https(baseUrl))).tryFirstWhere((c) => c.name == 'passcode_auth')?.value;
 		final Map<String, dynamic> fields = {
 			'task': 'post',
 			'board': post.board,
@@ -207,9 +200,14 @@ class SiteDvach extends ImageboardSite {
 				'captcha_type': '2chcaptcha',
 				'2chcaptcha_id': captchaSolution.id,
 				'2chcaptcha_value': captchaSolution.response
+			}
+			else if (captchaSolution is DvachEmojiCaptchaSolution) ...{
+				'captcha_type': 'emoji_captcha',
+				'emoji_captcha_id': captchaSolution.id
 			},
+			if (passcodeAuth != null) 'usercode': passcodeAuth,
 			'comment': post.text,
-			if (file != null) 'formimages[]': await MultipartFile.fromFile(file, filename: post.overrideFilename),
+			if (file != null) 'file[]': await MultipartFile.fromFile(file, filename: post.overrideFilename),
 			if (post.threadId != null) 'thread': post.threadId.toString()
 		};
 		final response = await client.postUri(
@@ -224,7 +222,6 @@ class SiteDvach extends ImageboardSite {
 			),
 			cancelToken: cancelToken
 		);
-		print(response.statusCode);
 		if (response.data['error'] != null) {
 			throw DvachException(response.data['error']['code'], response.data['error']['message']);
 		}
@@ -284,4 +281,79 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives));
+
+	@override
+	late final SiteDvachPasscodeLoginSystem loginSystem = SiteDvachPasscodeLoginSystem(this);
+}
+
+class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
+	@override
+	final SiteDvach parent;
+
+	SiteDvachPasscodeLoginSystem(this.parent);
+
+  @override
+  List<ImageboardSiteLoginField> getLoginFields() {
+    return const [
+			ImageboardSiteLoginField(
+				displayName: 'Passcode',
+				formKey: 'passcode',
+				autofillHints: [AutofillHints.password]
+			)
+		];
+  }
+
+  @override
+  Future<void> logout(bool fromBothWifiAndCellular) async {
+		if (!fromBothWifiAndCellular && loggedIn[Persistence.currentCookies] == false) {
+			// No need to clear
+			return;
+		}
+		// loggedIn may be null here. Logout is still appropriate because we could be logged in from previous session.
+		final jars = fromBothWifiAndCellular ? [
+			Persistence.wifiCookies,
+			Persistence.cellularCookies
+		] : [
+			Persistence.currentCookies
+		];
+		await parent.client.postUri(Uri.https(parent.baseUrl, '/user/passlogout'));
+		for (final jar in jars) {
+			final toSave = (await jar.loadForRequest(Uri.https(parent.baseUrl, '/'))).where((cookie) {
+				return cookie.name == 'cf_clearance';
+			}).toList();
+			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
+			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
+			await jar.saveFromResponse(Uri.https(parent.baseUrl, '/'), toSave);
+			await CookieManager.instance().deleteCookies(
+				url: WebUri(parent.baseUrl)
+			);
+			loggedIn[jar] = false;
+		}
+  }
+
+  @override
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+		final response = await parent.client.postUri(
+			Uri.https(parent.baseUrl, '/user/passlogin'),
+			data: FormData.fromMap({
+				for (final field in fields.entries) field.key.formKey: field.value
+			}),
+			options: Options(
+				validateStatus: (_) => true,
+				followRedirects: false // This makes sure cookie is remembered
+			)
+		);
+		
+		if ((response.statusCode ?? 400) >= 400) {
+			final document = parse(response.data);
+			final message = document.querySelector('.msg__title')?.text;
+			loggedIn[Persistence.currentCookies] = false;
+			await logout(false);
+			throw ImageboardSiteLoginException(message ?? 'Unknown error');
+		}
+		loggedIn[Persistence.currentCookies] = true;
+  }
+
+  @override
+  String get name => 'Passcode';
 }

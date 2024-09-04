@@ -12,6 +12,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/captcha_dvach.dart';
+import 'package:chan/widgets/captcha_dvach_emoji.dart';
 import 'package:chan/widgets/captcha_jschan.dart';
 import 'package:chan/widgets/captcha_lynxchan.dart';
 import 'package:chan/widgets/captcha_mccaptcha.dart';
@@ -137,6 +138,12 @@ Future<CaptchaSolution?> solveCaptcha({
 			));
 		case DvachCaptchaRequest():
 			return pushModal((onCaptchaSolved) => CaptchaDvach(
+				request: request,
+				onCaptchaSolved: onCaptchaSolved,
+				site: site
+			));
+		case DvachEmojiCaptchaRequest():
+			return pushModal((onCaptchaSolved) => CaptchaDvachEmoji(
 				request: request,
 				onCaptchaSolved: onCaptchaSolved,
 				site: site

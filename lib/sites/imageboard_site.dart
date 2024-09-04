@@ -647,6 +647,13 @@ class DvachCaptchaRequest extends CaptchaRequest {
 	});
 }
 
+class DvachEmojiCaptchaRequest extends CaptchaRequest {
+	final Duration challengeLifetime;
+	const DvachEmojiCaptchaRequest({
+		required this.challengeLifetime
+	});
+}
+
 class LynxchanCaptchaRequest extends CaptchaRequest {
 	final String board;
 	const LynxchanCaptchaRequest({
@@ -792,6 +799,20 @@ class DvachCaptchaSolution extends CaptchaSolution {
 	});
 	@override
 	String toString() => 'DvachCaptchaSolution(id: $id, response: $response)';
+}
+
+class DvachEmojiCaptchaSolution extends CaptchaSolution {
+	final String id;
+	final Duration lifetime;
+	@override
+	DateTime? get expiresAt => acquiredAt.add(lifetime);
+	DvachEmojiCaptchaSolution({
+		required this.id,
+		required super.acquiredAt,
+		required this.lifetime
+	});
+	@override
+	String toString() => 'DvachEmojiCaptchaSolution(id: $id)';
 }
 
 class LynxchanCaptchaSolution extends CaptchaSolution {
