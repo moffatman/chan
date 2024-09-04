@@ -1387,15 +1387,18 @@ class PostLinkSpan extends PostSpan {
 							)
 						);
 					}
-					final onTap = options.ignorePointer ? null : () {
+					onTap() {
 						openBrowser(context, cleanedUri!);
-					};
+					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
-						child: CupertinoButton(
-							padding: EdgeInsets.zero,
-							onPressed: onTap,
-							child: tapChild
+						child: IgnorePointer(
+							ignoring: options.ignorePointer,
+							child: CupertinoButton(
+								padding: EdgeInsets.zero,
+								onPressed: onTap,
+								child: tapChild
+							)
 						)
 					);
 				}
