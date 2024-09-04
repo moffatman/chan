@@ -4,6 +4,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
@@ -432,13 +433,35 @@ class OutboxModal extends StatelessWidget {
 											child: Column(
 												mainAxisSize: MainAxisSize.min,
 												children: [
-													const Row(
+													Row(
 														children: [
-															SizedBox(width: 16),
-															Icon(CupertinoIcons.tray_arrow_up),
-															SizedBox(width: 8),
-															Expanded(
+															const SizedBox(width: 16),
+															const Icon(CupertinoIcons.tray_arrow_up),
+															const SizedBox(width: 8),
+															const Expanded(
 																child: Text('Outbox')
+															),
+															AdaptiveIconButton(
+																icon: const Icon(CupertinoIcons.trash),
+																onPressed: list.length < 2 ? null : () async {
+																	final toDelete = list.tryMap((e) => e.$2);
+																	final ok = await confirm(context, 'Delete all ${describeCount(toDelete.length, 'draft')} on all boards?', actionName: 'Delete all');
+																	if (!ok || !context.mounted) {
+																		return;
+																	}
+																	for (final entry in toDelete) {
+																		entry.delete();
+																	}
+																	showUndoToast(
+																		context: context,
+																		message: 'Deleted ${describeCount(toDelete.length, 'draft')}',
+																		onUndo: () {
+																			for (final entry in toDelete) {
+																				entry.undelete();
+																			}
+																		}
+																	);
+																}
 															)
 														]
 													),
@@ -454,6 +477,7 @@ class OutboxModal extends StatelessWidget {
 									);
 								}
 								if (entry == null) {
+									final boardName = (ImageboardRegistry.instance.getImageboard(queue.key.$1)?.site.formatBoardName(queue.key.$2)).toString();
 									return Builder(
 										key: ObjectKey(list[i]),
 										builder: (context) => Container(
@@ -467,11 +491,36 @@ class OutboxModal extends StatelessWidget {
 													),
 													const SizedBox(width: 8),
 													Expanded(
-														child: Text((ImageboardRegistry.instance.getImageboard(queue.key.$1)?.site.formatBoardName(queue.key.$2)).toString())
+														child: Text(boardName)
 													),
 													const SizedBox(width: 8),
 													Text(queue.capitalizedName),
-													const SizedBox(width: 16)
+													const SizedBox(width: 16),
+													AdaptiveIconButton(
+														padding: EdgeInsets.zero,
+														minSize: 0,
+														icon: const Icon(CupertinoIcons.trash),
+														onPressed: list.length < 2 ? null : () async {
+															final toDelete = list.where((e) => e.$1?.value == queue.value).tryMap((e) => e.$2);
+															final ok = await confirm(context, 'Delete all ${describeCount(toDelete.length, 'draft')} on $boardName?', actionName: 'Delete all');
+															if (!ok || !context.mounted) {
+																return;
+															}
+															for (final entry in toDelete) {
+																entry.delete();
+															}
+															showUndoToast(
+																context: context,
+																message: 'Deleted ${describeCount(toDelete.length, 'draft')}',
+																onUndo: () {
+																	for (final entry in toDelete) {
+																		entry.undelete();
+																	}
+																}
+															);
+														}
+													),
+													const SizedBox(width: 18)
 												]
 											)
 										)
