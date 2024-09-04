@@ -1020,7 +1020,7 @@ class PostRow extends StatelessWidget {
 					trailingIcon: CupertinoIcons.exclamationmark_octagon,
 					onPressed: () => reportPost(
 						context: context,
-						site: context.read<ImageboardSite>(),
+						site: site,
 						post: latestPost.identifier
 					)
 				),
