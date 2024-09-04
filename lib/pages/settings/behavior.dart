@@ -90,40 +90,6 @@ final behaviorSettings = [
 			return Text('${describeCount(hiddenImageMD5s.length, 'image')}...');
 		}
 	),
-	ImageboardScopedSettingWidget(
-		description: null,
-		builder: (imageboard) => MutableButtonSettingWidget(
-			description: imageboard.site.loginSystem?.name ?? 'No login system',
-			setting: MutableSavedSetting(
-				ChainedFieldReader(
-					ChainedFieldReader(
-						SavedSettingsFields.browserStateBySite,
-						MapFieldWriter<String, PersistentBrowserState>(key: imageboard.key)
-					),
-					PersistentBrowserStateFields.loginFields
-				)
-			),
-			onPressed: (context, fields, didChange) => showAdaptiveDialog(
-				context: context,
-				barrierDismissible: true,
-				builder: (context) => AdaptiveAlertDialog(
-					content: SettingsLoginPanel(
-						loginSystem: imageboard.site.loginSystem!
-					),
-					actions: [
-						AdaptiveDialogAction(
-							onPressed: () => Navigator.pop(context),
-							child: const Text('Close')
-						)
-					]
-				)
-			),
-			builder: (fields) => AnimatedBuilder(
-				animation: imageboard.persistence,
-				builder: (context, _) => Text(fields.isEmpty ? 'Logged out' : 'Logged in')
-			)
-		)
-	),
 	const SegmentedSettingWidget<AutoloadAttachmentsSetting>(
 		icon: CupertinoIcons.question_square,
 		description: 'Load thumbnails',

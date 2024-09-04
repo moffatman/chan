@@ -46,6 +46,28 @@ final siteSettings = [
 							Expanded(
 								child: Text(imageboard.site.name)
 							),
+							if (imageboard.site.loginSystem != null) AnimatedBuilder(
+								animation: imageboard.persistence,
+								builder: (context, _) => AdaptiveIconButton(
+									icon: imageboard.persistence.browserState.loginFields.isNotEmpty
+										? const Text('Logged in') : const Text('Log in'),
+									onPressed: () => showAdaptiveDialog(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											content: SettingsLoginPanel(
+												loginSystem: imageboard.site.loginSystem!
+											),
+											actions: [
+												AdaptiveDialogAction(
+													onPressed: () => Navigator.pop(context),
+													child: const Text('Close')
+												)
+											]
+										)
+									)
+								)
+							),
 							if (imageboard.site.hasEmailLinkCookieAuth) AdaptiveIconButton(
 								icon: const Icon(CupertinoIcons.link),
 								onPressed: () async {
