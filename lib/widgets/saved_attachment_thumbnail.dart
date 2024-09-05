@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:chan/services/media.dart';
 import 'package:chan/widgets/thumbnail_image_provider.dart';
+import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -62,33 +63,30 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 					}
 				}
 				if ((ext == 'webm' || ext == 'mp4' || ext == 'mov') && constraints.maxWidth > 50 && constraints.maxHeight > 50) {
-					return IntrinsicWidth(
-						child: Stack(
-							alignment: Alignment.center,
-							fit: StackFit.passthrough,
-							children: [
-								Image(
-									image: ThumbnailImageProvider(
-										file: widget.file
+					return Center(
+						child: WidgetDecoration(
+							position: DecorationPosition.foreground,
+							decoration: label != null ? Align(
+								alignment: Alignment.bottomRight,
+								child: Container(
+									decoration: const BoxDecoration(
+										borderRadius: BorderRadius.only(topLeft: Radius.circular(4)),
+										color: Colors.black54
 									),
-									errorBuilder: (context, e, st) {
-										Future.error(e, st); // crashlytics
-										return const Icon(CupertinoIcons.question_square);
-									},
-									fit: widget.fit
-								),
-								if (label != null) Align(
-									alignment: Alignment.bottomRight,
-									child: Container(
-										decoration: const BoxDecoration(
-											borderRadius: BorderRadius.only(topLeft: Radius.circular(4)),
-											color: Colors.black54
-										),
-										padding: const EdgeInsets.only(left: 4, top: 4, right: 2, bottom: 2),
-										child: label
-									)
+									padding: const EdgeInsets.only(left: 4, top: 4, right: 2, bottom: 2),
+									child: label
 								)
-							]
+							) : null,
+							child: Image(
+								image: ThumbnailImageProvider(
+									file: widget.file
+								),
+								errorBuilder: (context, e, st) {
+									Future.error(e, st); // crashlytics
+									return const Icon(CupertinoIcons.question_square);
+								},
+								fit: widget.fit
+							)
 						)
 					);
 				}
