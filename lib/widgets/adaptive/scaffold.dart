@@ -106,13 +106,13 @@ class _NotifyingDrawerButtonWrapper extends StatelessWidget {
 			// Bottom/side bar will show the counters
 			return child;
 		}
-		final tabs = context.watch<ChanTabs>();
+		final tabs = context.watch<ChanTabs?>();
 		int combine(savedCount, devCount) {
-			if (tabs.mainTabIndex == 4) {
+			if (tabs?.mainTabIndex == 4) {
 				// Already in Settings
 				return savedCount;
 			}
-			else if (tabs.mainTabIndex == 1) {
+			else if (tabs?.mainTabIndex == 1) {
 				// Already in Saved
 				return devCount;
 			}
