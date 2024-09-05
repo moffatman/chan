@@ -644,3 +644,50 @@ extension LooksForeign on String {
 }
 
 T identity<T>(x) => x;
+
+class SelectListenable<T extends Listenable, X> extends ChangeNotifier {
+  SelectListenable(this._child, this._map) {
+		_child.addListener(_listen);
+	}
+
+  final T _child;
+	final X Function(T) _map;
+	X? _lastValue;
+
+	void _listen() {
+		final value = _map(_child);
+		if (value != _lastValue) {
+			_lastValue = value;
+			notifyListeners();
+		}
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_child.removeListener(_listen);
+	}
+
+  @override
+  String toString() {
+    return 'SelectListenable(child: $_child)';
+  }
+}
+
+class OwnedChangeNotifierSubscription {
+	final VoidCallback _callback;
+	final ChangeNotifier _changeNotifier;
+	OwnedChangeNotifierSubscription._(this._changeNotifier, this._callback) {
+		_changeNotifier.addListener(_callback);
+	}
+	void dispose() {
+		_changeNotifier.removeListener(_callback);
+		_changeNotifier.dispose();
+	}
+}
+
+extension SubscribeOwned on ChangeNotifier {
+	OwnedChangeNotifierSubscription subscribeOwned(VoidCallback callback) {
+		return OwnedChangeNotifierSubscription._(this, callback);
+	}
+}

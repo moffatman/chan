@@ -372,8 +372,14 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 		}
 	}
 
-	double _calculateWideDrawerEdgeDragWidth(BuildContext context) {
-		final factor = Settings.openBoardSwitcherSlideGestureSetting.watch(context) ? 0.5 : 1;
+	double? _calculateDrawerEdgeDragWidth(BuildContext context) {
+		if (widget.drawer == null) {
+			return null;
+		}
+		final factor = context.select<ChanTabs?, double?>((t) => t?.drawerEdgeGestureWidthFactor);
+		if (factor == null) {
+			return null;
+		}
 		final twoPaneBreakpoint = Settings.twoPaneBreakpointSetting.watch(context);
 		final size = MediaQuery.sizeOf(context);
 		if (size.width < twoPaneBreakpoint) {
@@ -402,7 +408,7 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 			return Scaffold(
 				key: _materialScaffoldKey,
 				drawer: widget.drawer,
-				drawerEdgeDragWidth: (widget.drawer != null && context.select<ChanTabs?, bool>((t) => t?.shouldEnableWideDrawerGesture ?? false)) ? _calculateWideDrawerEdgeDragWidth(context) : null,
+				drawerEdgeDragWidth: _calculateDrawerEdgeDragWidth(context),
 				extendBodyBehindAppBar: autoHideBars || (bar_?.backgroundColor?.opacity ?? 1) < 1,
 				resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
 				backgroundColor: widget.backgroundColor,
@@ -493,7 +499,7 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 				children: [
 					child,
 					DrawerController(
-						edgeDragWidth: context.select<ChanTabs?, bool>((t) => t?.shouldEnableWideDrawerGesture ?? false) ? _calculateWideDrawerEdgeDragWidth(context) : null,
+						edgeDragWidth: _calculateDrawerEdgeDragWidth(context),
 						drawerCallback: (isOpen) {
 							_isCupertinoDrawerOpen = isOpen;
 						},

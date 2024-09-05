@@ -624,6 +624,7 @@ class ChanTabs extends ChangeNotifier {
 	final _searchPageKey = GlobalKey<SearchPageState>();
 	final _historyPageKey = GlobalKey<HistoryPageState>();
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
+	late final OwnedChangeNotifierSubscription _settingsSubscription;
 
 	ChanTabs({
 		required this.onShouldShowTabPopup
@@ -633,6 +634,10 @@ class ChanTabs extends ChangeNotifier {
 		for (final tab in Persistence.tabs) {
 			tab.addListener(_onTabUpdate);
 		}
+		_settingsSubscription = SelectListenable(Settings.instance, (s) => (
+			s.alwaysUseWideDrawerGesture,
+			s.openBoardSwitcherSlideGesture,
+		)).subscribeOwned(notifyListeners);
 	}
 
 	void _onGlobalTabMutatorUpdate() {
@@ -672,16 +677,22 @@ class ChanTabs extends ChangeNotifier {
 		_didModifyPersistentTabData();
 	}
 
-	bool get shouldEnableWideDrawerGesture {
+	double? get drawerEdgeGestureWidthFactor {
 		if (_tabNavigatorKeys[mainTabIndex]?.currentState?.canPop() ?? false) {
 			// Something covering the current navigator
-			return false;
+			return null;
 		}
+		bool canPop = true; // assume something covering the screen
 		if (mainTabIndex == 0) {
 			final tab = Persistence.tabs[Persistence.currentTabIndex];
 			final masterNavigatorState = tab.masterDetailKey.currentState?.masterKey.currentState;
 			if (masterNavigatorState != null) {
-				return !masterNavigatorState.canPop();
+				if (masterNavigatorState.canPop()) {
+					return Settings.instance.alwaysUseWideDrawerGesture ? 0.5 : null;
+				}
+				else {
+					return Settings.instance.openBoardSwitcherSlideGesture ? 0.5 : 1.0;
+				}
 			}
 		}
 		else if (mainTabIndex == 1) {
@@ -689,33 +700,43 @@ class ChanTabs extends ChangeNotifier {
 			if (state != null) {
 				if (state.selectedPane != 0) {
 					// Priority is swiping left to previous pane
-					return false;
+					return null;
 				}
 				final masterNavigatorState = state.masterKey.currentState;
 				if (masterNavigatorState != null) {
-					return !masterNavigatorState.canPop();
+					canPop = masterNavigatorState.canPop();
 				}
 			}
 		}
 		else if (mainTabIndex == 2) {
 			final masterNavigatorState = _historyPageKey.currentState?.masterDetailKey.currentState?.masterKey.currentState;
 			if (masterNavigatorState != null) {
-				return !masterNavigatorState.canPop();
+				canPop = masterNavigatorState.canPop();
 			}
 		}
 		else if (mainTabIndex == 3) {
 			final masterNavigatorState = _searchPageKey.currentState?.masterDetailKey.currentState?.masterKey.currentState;
 			if (masterNavigatorState != null) {
-				return !masterNavigatorState.canPop();
+				canPop = masterNavigatorState.canPop();
 			}
 		}
 		else if (mainTabIndex == 4) {
 			final state = _settingsNavigatorKey.currentState;
 			if (state != null) {
-				return !state.canPop();
+				canPop = state.canPop();
 			}
 		}
-		return true;
+		if (!canPop) {
+			// nothing to swipe back to
+			return 1.0;
+		}
+		else if (Settings.instance.alwaysUseWideDrawerGesture) {
+			return 0.5;
+		}
+		else {
+			// swipe pop gesture exists + no explicit setting to coexist
+			return null;
+		}
 	}
 
 	@override
@@ -728,6 +749,7 @@ class ChanTabs extends ChangeNotifier {
 		for (final tab in Persistence.tabs) {
 			tab.removeListener(_onTabUpdate);
 		}
+		_settingsSubscription.dispose();
 	}
 
 	PersistentBrowserTab addNewTab({

@@ -263,16 +263,29 @@ final appearanceSettings = [
 		},
 		setting: Settings.androidDrawerSetting
 	),
-	SwitchSettingWidget(
-		disabled: MappedSetting(
+	SettingHiding(
+		hidden: MappedMutableSetting(
 			Settings.androidDrawerSetting,
-			FieldMappers.invert,
 			FieldMappers.invert
 		),
-		description: 'Drawer permanently visible',
-		icon: CupertinoIcons.sidebar_left,
-		helpText: 'The drawer will always be on the left side if there is enough space. On devices with a hinge, the drawer will size itself to fill the left screen.',
-		setting: Settings.persistentDrawerSetting
+		setting: const SwitchSettingWidget(
+			description: 'Drawer permanently visible',
+			icon: CupertinoIcons.sidebar_left,
+			helpText: 'The drawer will always be on the left side if there is enough space. On devices with a hinge, the drawer will size itself to fill the left screen.',
+			setting: Settings.persistentDrawerSetting
+		)
+	),
+	SettingHiding(
+		hidden: MappedMutableSetting(
+			Settings.androidDrawerSetting,
+			FieldMappers.invert
+		),
+		setting: const SwitchSettingWidget(
+			description: 'Wide drawer open gesture',
+			icon: CupertinoIcons.sidebar_left,
+			helpText: 'The drawer can be opened by swiping right from anywhere on the left half of the screen, even when a thread is open.',
+			setting: Settings.alwaysUseWideDrawerGestureSetting
+		)
 	),
 	const SegmentedSettingWidget(
 		description: 'Page Style',

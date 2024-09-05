@@ -2321,6 +2321,18 @@ class SavedSettingsFields {
     fieldName: 'cloverStyleCatalogCounters',
     merger: PrimitiveMerger(),
   );
+  static bool getAlwaysUseWideDrawerGesture(SavedSettings x) =>
+      x.alwaysUseWideDrawerGesture;
+  static void setAlwaysUseWideDrawerGesture(SavedSettings x, bool v) =>
+      x.alwaysUseWideDrawerGesture = v;
+  static const alwaysUseWideDrawerGesture =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getAlwaysUseWideDrawerGesture,
+    setter: setAlwaysUseWideDrawerGesture,
+    fieldNumber: 195,
+    fieldName: 'alwaysUseWideDrawerGesture',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2515,7 +2527,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     191: SavedSettingsFields.useStaggeredCatalogGrid,
     192: SavedSettingsFields.doubleTapToHidePosts,
     193: SavedSettingsFields.doubleTapToHideThreads,
-    194: SavedSettingsFields.cloverStyleCatalogCounters
+    194: SavedSettingsFields.cloverStyleCatalogCounters,
+    195: SavedSettingsFields.alwaysUseWideDrawerGesture
   };
 
   @override
@@ -2724,13 +2737,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       doubleTapToHidePosts: fields[192] as bool?,
       doubleTapToHideThreads: fields[193] as bool?,
       cloverStyleCatalogCounters: fields[194] as bool?,
+      alwaysUseWideDrawerGesture: fields[195] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(182)
+      ..writeByte(183)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3094,7 +3108,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(193)
       ..write(obj.doubleTapToHideThreads)
       ..writeByte(194)
-      ..write(obj.cloverStyleCatalogCounters);
+      ..write(obj.cloverStyleCatalogCounters)
+      ..writeByte(195)
+      ..write(obj.alwaysUseWideDrawerGesture);
   }
 
   @override
