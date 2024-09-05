@@ -16,8 +16,11 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
+import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/sorting.dart';
+import 'package:chan/services/storage.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_collection_actions.dart' as thread_actions;
 import 'package:chan/services/thread_watcher.dart';
@@ -28,6 +31,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -1130,50 +1134,120 @@ class _SavedPageState extends State<SavedPage> {
 						useFiltersFromContext: false,
 						filterableAdapter: null,
 						itemBuilder: (context, item) => Builder(
-							builder: (context) => ImageboardScope(
-								imageboardKey: item.imageboard.key,
-								child: GestureDetector(
-									child: Container(
-										decoration: BoxDecoration(
-											color: Colors.transparent,
-											borderRadius: const BorderRadius.all(Radius.circular(4)),
-											border: Border.all(color: selected(context, item) ? ChanceTheme.primaryColorOf(context) : Colors.transparent, width: 2)
-										),
-										margin: const EdgeInsets.all(4),
-										child: Hero(
-											tag: TaggedAttachment(
-												attachment: item.item.attachment,
-												semanticParentIds: [-5, imageboardIds.putIfAbsent(item.imageboard.key, () => imageboardIds.length)]
-											),
-											child: SavedAttachmentThumbnail(
-												file: item.item.file,
-												fit: BoxFit.contain
-											),
-											flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
-												return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
-											},
-											createRectTween: (startRect, endRect) {
-												if (startRect != null && endRect != null) {
-													if (item.item.attachment.type == AttachmentType.image) {
-														// Need to deflate the original startRect because it has inbuilt layoutInsets
-														// This SavedAttachmentThumbnail will always fill its size
-														final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
-														startRect = rootPadding.deflateRect(startRect);
+							builder: (context) {
+								makeController() => AttachmentViewerController(
+									attachment: item.item.attachment,
+									context: context,
+									imageboard: item.imageboard,
+									isDownloaded: _downloadedAttachments.contains(item.item.attachment),
+									overrideSource: item.item.file.uri
+								);
+								return ImageboardScope(
+									imageboardKey: item.imageboard.key,
+									child: CupertinoInkwell(
+										padding: EdgeInsets.zero,
+										child: ContextMenu(
+											actions: [
+												ContextMenuAction(
+													trailingIcon: CupertinoIcons.cloud_download,
+													onPressed: () async {
+														final controller = makeController();
+														final download = !controller.isDownloaded || (await confirm(context, 'Redownload?'));
+														if (!download) return;
+														final filename = await controller.download(force: true);
+														if (filename != null && context.mounted) {
+															showToast(context: context, message: 'Downloaded $filename', icon: CupertinoIcons.cloud_download);
+														}
+														controller.dispose();
+													},
+													child: const Text('Download')
+												),
+												if (isSaveFileAsSupported) ContextMenuAction(
+													trailingIcon: Icons.folder,
+													onPressed: () async {
+														final controller = makeController();
+														final filename = await controller.download(force: true, saveAs: true);
+														if (filename != null && context.mounted) {
+															showToast(context: context, message: 'Downloaded $filename', icon: Icons.folder);
+														}
+														controller.dispose();
+													},
+													child: const Text('Download to...')
+												),
+												ContextMenuAction(
+													trailingIcon: Adaptive.icons.share,
+													onPressed: () async {
+														final controller = makeController();
+														await controller.share(null);
+														controller.dispose();
+													},
+													child: const Text('Share')
+												),
+												ContextMenuAction(
+													child: const Text('Share link'),
+													trailingIcon: CupertinoIcons.link,
+													onPressed: () async {
+														final controller = makeController();
+														final text = controller.goodImageSource?.toString() ?? controller.attachment.url;
+														shareOne(
+															context: context,
+															text: text,
+															type: "text",
+															sharePositionOrigin: null
+														);
+														controller.dispose();
 													}
-												}
-												return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+												),
+												...buildImageSearchActions(context, () async => item.item.attachment).map((a) => ContextMenuAction(
+													isDestructiveAction: a.isDestructiveAction,
+													onPressed: a.onPressed,
+													trailingIcon: a.trailingIcon,
+													child: a.child,
+												))
+											],
+											child: Container(
+												decoration: BoxDecoration(
+													color: Colors.transparent,
+													borderRadius: const BorderRadius.all(Radius.circular(4)),
+													border: Border.all(color: selected(context, item) ? ChanceTheme.primaryColorOf(context) : Colors.transparent, width: 2)
+												),
+												margin: const EdgeInsets.all(4),
+												child: Hero(
+													tag: TaggedAttachment(
+														attachment: item.item.attachment,
+														semanticParentIds: [-5, imageboardIds.putIfAbsent(item.imageboard.key, () => imageboardIds.length)]
+													),
+													child: SavedAttachmentThumbnail(
+														file: item.item.file,
+														fit: BoxFit.contain
+													),
+													flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+														return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+													},
+													createRectTween: (startRect, endRect) {
+														if (startRect != null && endRect != null) {
+															if (item.item.attachment.type == AttachmentType.image) {
+																// Need to deflate the original startRect because it has inbuilt layoutInsets
+																// This SavedAttachmentThumbnail will always fill its size
+																final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+																startRect = rootPadding.deflateRect(startRect);
+															}
+														}
+														return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+													}
+												)
+											)
+										),
+										onPressed: () async {
+											if (context.read<MasterDetailHint?>()?.currentValue == null) {
+												// First use of gallery
+												await handleMutingBeforeShowingGallery();
 											}
-										)
-									),
-									onTap: () async {
-										if (context.read<MasterDetailHint?>()?.currentValue == null) {
-											// First use of gallery
-											await handleMutingBeforeShowingGallery();
+											setter(item);
 										}
-										setter(item);
-									}
-								)
-							)
+									)
+								);
+							}
 						)
 					),
 					detailBuilder: (selectedValue, setter, poppedOut) {
