@@ -254,6 +254,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	final gestureKey = GlobalKey<ExtendedImageGestureState>(debugLabel: 'AttachmentViewerController.gestureKey');
 	/// A key to use with CupertinoContextMenu share button
 	final contextMenuShareButtonKey = GlobalKey(debugLabel: 'AttachmentViewerController.contextMenuShareButtonKey');
+	/// A key to use with CupertinoContextMenu share button
+	final contextMenuShareLinkButtonKey = GlobalKey(debugLabel: 'AttachmentViewerController.contextMenuShareLinkButtonKey');
 	/// Whether archive checking is possible for this attachment
 	bool get canCheckArchives => site.archives.isNotEmpty;
 	/// Whether archive checking for this attachment is enabled
@@ -1465,17 +1467,18 @@ class AttachmentViewer extends StatelessWidget {
 						child: const Text('Share')
 					),
 					ContextMenuAction(
-						child: const Text('Copy link'),
+						key: controller.contextMenuShareLinkButtonKey,
+						child: const Text('Share link'),
 						trailingIcon: CupertinoIcons.link,
 						onPressed: () async {
 							final text = controller.goodImageSource?.toString() ?? controller.attachment.url;
-							Clipboard.setData(ClipboardData(
-								text: text
-							));
-							showToast(
+							final offset = (controller.contextMenuShareLinkButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+							final size = controller.contextMenuShareLinkButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+							shareOne(
 								context: context,
-								message: 'Copied "$text" to clipboard',
-								icon: CupertinoIcons.doc_on_clipboard
+								text: text,
+								type: "text",
+								sharePositionOrigin: (offset != null && size != null) ? offset & size : null
 							);
 						}
 					),
