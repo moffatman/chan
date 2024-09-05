@@ -584,7 +584,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				final imageboardKey = context.read<Imageboard>().key;
 				if (newTabZone != null && ImageboardRegistry.instance.getImageboard(imageboardKey) != null) {
 					// Checking ImageboardRegistry to rule-out dev board
-					newTabZone.onWantOpenThreadInNewTab(imageboardKey, ThreadIdentifier(board, actualThreadId));
+					newTabZone.onWantOpenThreadInNewTab(imageboardKey, ThreadIdentifier(board, actualThreadId), initialPostId: postId);
 					return;
 				}
 			}

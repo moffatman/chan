@@ -31,12 +31,13 @@ class ImageboardTab extends StatelessWidget {
 						Provider.value(
 							value: OpenInNewTabZone(
 								hashCode: identityHashCode(tab),
-								onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) {
+								onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) {
 									context.read<ChanTabs>().addNewTab(
 										withImageboardKey: imageboardKey,
 										atPosition: Persistence.tabs.indexOf(tab) + 1,
 										withBoard: thread.board,
 										withThreadId: thread.id,
+										withInitialPostId: initialPostId,
 										activate: activate,
 										incognito: incognito
 									);

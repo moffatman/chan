@@ -582,7 +582,7 @@ void clearOverlayNotifications(Notifications notifications, Watch watch) {
 }
 
 class OpenInNewTabZone {
-	final void Function(String, ThreadIdentifier, {bool incognito, bool activate}) onWantOpenThreadInNewTab;
+	final void Function(String, ThreadIdentifier, {bool incognito, bool activate, int? initialPostId}) onWantOpenThreadInNewTab;
 	@override
 	final int hashCode;
 
@@ -1475,10 +1475,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					Provider.value(
 						value: OpenInNewTabZone(
 							hashCode: 0,
-							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
+							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) => _tabs.addNewTab(
 								withImageboardKey: imageboardKey,
 								withBoard: thread.board,
 								withThreadId: thread.id,
+								withInitialPostId: initialPostId,
 								activate: activate,
 								incognito: incognito
 							)
@@ -1494,10 +1495,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child = Provider.value(
 				value: OpenInNewTabZone(
 					hashCode: 0,
-					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
+					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) => _tabs.addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
 						withThreadId: thread.id,
+						withInitialPostId: initialPostId,
 						activate: activate,
 						incognito: incognito
 					)
@@ -1511,10 +1513,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child = Provider.value(
 				value: OpenInNewTabZone(
 					hashCode: 0,
-					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
+					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) => _tabs.addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
 						withThreadId: thread.id,
+						withInitialPostId: initialPostId,
 						activate: activate,
 						incognito: incognito
 					)
@@ -1547,10 +1550,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: Provider.value(
 						value: OpenInNewTabZone(
 							hashCode: 0,
-							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _tabs.addNewTab(
+							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) => _tabs.addNewTab(
 								withImageboardKey: imageboardKey,
 								withBoard: thread.board,
 								withThreadId: thread.id,
+								withInitialPostId: initialPostId,
 								activate: activate,
 								incognito: incognito
 							)
