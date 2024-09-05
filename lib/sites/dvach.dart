@@ -218,6 +218,9 @@ class SiteDvach extends ImageboardSite {
 				validateStatus: (x) => true,
 				headers: {
 					'Referer': getWebUrlImpl(post.board, post.threadId)
+				},
+				extra: {
+					kPriority: RequestPriority.interactive
 				}
 			),
 			cancelToken: cancelToken

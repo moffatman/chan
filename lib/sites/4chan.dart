@@ -860,7 +860,8 @@ class Site4Chan extends ImageboardSite {
 					...postingHeaders
 				},
 				extra: {
-					if (captchaSolution.cloudflare && stickyCloudflare) 'cloudflare': true
+					if (captchaSolution.cloudflare && stickyCloudflare) 'cloudflare': true,
+					kPriority: RequestPriority.interactive
 				}
 			),
 			cancelToken: cancelToken
@@ -937,7 +938,12 @@ class Site4Chan extends ImageboardSite {
 				receipt.id.toString(): 'delete',
 				'mode': 'usrdel',
 				'pwd': receipt.password
-			})
+			}),
+			options: Options(
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			)
 		);
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);

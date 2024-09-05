@@ -28,7 +28,11 @@ class Site8Chan extends SiteLynxchan {
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		await client.postUri(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
 			if (captchaSolution is LynxchanCaptchaSolution) 'captcha': captchaSolution.answer
-		});
+		}, options: Options(
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
+		));
 		return await super.submitPost(post, captchaSolution, cancelToken);
 	}
 

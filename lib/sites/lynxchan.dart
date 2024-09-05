@@ -161,7 +161,10 @@ class SiteLynxchan extends ImageboardSite {
 				if (!fileAlreadyUploaded) 'files': await MultipartFile.fromFile(file, filename: post.overrideFilename)
 			}
 		}), options: Options(
-			validateStatus: (x) => true
+			validateStatus: (x) => true,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
 		), cancelToken: cancelToken);
 		if (response.data is String) {
 			final document = parse(response.data);
@@ -210,7 +213,11 @@ class SiteLynxchan extends ImageboardSite {
 			'password': receipt.password,
 			'confirmation': 'true',
 			'meta-${thread.id}-${receipt.id}': 'true'
-		});
+		}, options: Options(
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
+		));
 		if (response.data['status'] != 'ok') {
 			throw DeletionFailedException(response.data['data'] ?? response.data);
 		}
