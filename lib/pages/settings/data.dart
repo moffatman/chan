@@ -522,13 +522,13 @@ final dataSettings = [
 		children: {
 			if (Platform.isIOS) GallerySavePathOrganizing.noFolder: (null, "No album"),
 			GallerySavePathOrganizing.noSubfolders: (null, Platform.isIOS ? '"Chance" album' : 'No subfolders'),
+			GallerySavePathOrganizing.siteSubfolders: (null, Platform.isIOS ? 'Per-site albums' : 'Per-site subfolders'),
 			GallerySavePathOrganizing.boardSubfolders: (null, Platform.isIOS ? 'Per-board albums' : 'Per-board subfolders'),
 			if (Platform.isAndroid) ...{
 				GallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders'),
 				GallerySavePathOrganizing.boardAndThreadNameSubfolders: (null, 'Per-board and per-thread (with name) subfolders'),
 				GallerySavePathOrganizing.threadNameSubfolders: (null, 'Per-thread (with name) subfolders')
 			},
-			GallerySavePathOrganizing.siteSubfolders: (null, Platform.isIOS ? 'Per-site albums' : 'Per-site subfolders'),
 			GallerySavePathOrganizing.siteAndBoardSubfolders: (null, Platform.isIOS ? 'Per-site+board albums' : 'Per-site and per-board subfolders'),
 			if (Platform.isAndroid) ...{
 				GallerySavePathOrganizing.siteBoardAndThreadSubfolders: (null, 'Per-site, per-board, and per-thread subfolders'),
