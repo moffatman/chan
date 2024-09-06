@@ -984,10 +984,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		String filename;
 		bool successful = false;
 		if (Platform.isIOS) {
-			final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
 			AssetPathEntity? album;
 			final albumName = settings.gallerySavePathOrganizing.albumNameFor(this);
 			if (albumName != null) {
+				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
 				album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
 				album ??= await PhotoManager.editor.darwin.createAlbum(albumName);
 			}
