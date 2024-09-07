@@ -530,7 +530,12 @@ class SiteLainchan extends ImageboardSite {
 		);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 500) {
-				throw DeletionFailedException(parse(response.data).querySelector('h2')?.text ?? 'Unknown error');
+				final error = parse(response.data).querySelector('h2')?.text ?? 'Unknown error';
+				final match = RegExp(r'another (\d+) second').firstMatch(error);
+				if (match != null) {
+					throw CooldownException(DateTime.now().add(Duration(seconds: int.parse(match.group(1)!))));
+				}
+				throw DeletionFailedException(error);
 			}
 			throw HTTPStatusException(response.statusCode!);
 		}

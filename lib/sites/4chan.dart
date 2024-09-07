@@ -952,6 +952,10 @@ class Site4Chan extends ImageboardSite {
 		final document = parse(response.data);
 		final errSpan = document.querySelector('#errmsg');
 		if (errSpan != null) {
+			if (errSpan.text.contains('You must wait longer')) {
+				// Best guess
+				throw CooldownException(DateTime.now().add(const Duration(minutes: 1)));
+			}
 			throw DeletionFailedException(errSpan.text);
 		}
 	}
