@@ -58,17 +58,19 @@ class EmbedData {
 	final String? author;
 	final String? thumbnailUrl;
 	final Widget? thumbnailWidget;
+	final ImageboardScoped<BoardThreadOrPostIdentifier>? imageboardTarget;
 
 	const EmbedData({
 		required this.title,
 		required this.provider,
 		required this.author,
 		required this.thumbnailUrl,
-		this.thumbnailWidget
+		this.thumbnailWidget,
+		this.imageboardTarget
 	});
 
 	@override
-	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl, thumbnailWidget: $thumbnailWidget)';
+	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl, thumbnailWidget: $thumbnailWidget, imageboardTarget: $imageboardTarget)';
 }
 
 final _twitterPattern = RegExp(r'(?:x|twitter)\.com/[^/]+/status/(\d+)');
@@ -167,7 +169,7 @@ Future<EmbedData?> loadEmbedData(String url) async {
 		}
 		final target = await ImageboardRegistry.instance.decodeUrl(url);
 		if (target != null && target.$2.threadId != null) {
-			Thread? thread;
+			Thread? thread = await target.$1.persistence.getThreadStateIfExists(target.$2.threadIdentifier!)?.getThread();
 			try {
 				if (!target.$3) {
 					thread = await target.$1.site.getThread(target.$2.threadIdentifier!, priority: RequestPriority.cosmetic);
@@ -183,7 +185,8 @@ Future<EmbedData?> loadEmbedData(String url) async {
 					title: thread.title,
 					provider: target.$1.site.name,
 					author: target.$1.site.formatUsername(post.name),
-					thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl
+					thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
+					imageboardTarget: target.$1.scope(target.$2)
 				);
 			}
 			String title = thread.title ?? thread.posts_.first.span.buildText();
@@ -195,7 +198,8 @@ Future<EmbedData?> loadEmbedData(String url) async {
 				title: 'Reply to "$title"',
 				provider: '${target.$1.site.name} (${target.$1.site.formatBoardName(thread.board)})',
 				author: target.$1.site.formatUsername(post.name),
-				thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl
+				thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
+				imageboardTarget: target.$1.scope(target.$2)
 			);
 		}
 		final youtubeShortsMatch = _youtubeShortsRegex.firstMatch(url);

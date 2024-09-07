@@ -1197,6 +1197,19 @@ class PostLinkSpan extends PostSpan {
 				snapshot = null;
 			}
 			if (snapshot != null) {
+				final imageboardTarget = snapshot.data?.imageboardTarget;
+				if (imageboardTarget != null && imageboardTarget.imageboard.key == zone.imageboard.key) {
+					final thread = imageboardTarget.item.threadIdentifier;
+					if (thread != null) {
+						return PostQuoteLinkSpan(
+							board: imageboardTarget.item.board,
+							threadId: thread.id,
+							postId: imageboardTarget.item.postId ?? thread.id,
+							key: ObjectKey(this)
+						).build(context, zone, settings, theme, options);
+					}
+					return PostBoardLinkSpan(imageboardTarget.item.board).build(context, zone, settings, theme, options);
+				}
 				Widget buildEmbed({
 					required Widget left,
 					required Widget center,
