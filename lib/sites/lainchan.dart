@@ -138,11 +138,14 @@ class SiteLainchan extends ImageboardSite {
 
 	List<Attachment> _makeAttachments(String board, int threadId, dynamic postData) {
 		final ret = <Attachment>[];
-		Attachment makeAttachment(dynamic data) {
+		Attachment? makeAttachment(dynamic data) {
 			final id = data['tim'];
 			final String ext = data['ext'];
 			AttachmentType type = AttachmentType.image;
-			if (ext == '.webm') {
+			if (ext == 'deleted') {
+				return null;
+			}
+			else if (ext == '.webm') {
 				type = AttachmentType.webm;
 			}
 			else if (ext == '.mp4') {
@@ -174,10 +177,10 @@ class SiteLainchan extends ImageboardSite {
 			);
 		}
 		if ((postData['tim'] as String?)?.isNotEmpty ?? false) {
-			ret.add(makeAttachment(postData));
+			ret.maybeAdd(makeAttachment(postData));
 			if (postData['extra_files'] != null) {
 				for (final extraFile in (postData['extra_files'] as List<dynamic>).cast<Map<String, dynamic>>()) {
-					ret.add(makeAttachment(extraFile));
+					ret.maybeAdd(makeAttachment(extraFile));
 				}
 			}
 		}

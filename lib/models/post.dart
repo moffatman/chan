@@ -294,10 +294,6 @@ class Post implements Filterable {
 			attachment.width ??= otherAttachment?.width;
 			attachment.height ??= otherAttachment?.height;
 		}
-		if (attachmentDeleted && !previous.attachmentDeleted) {
-			attachments_ = previous.attachments_;
-			attachmentDeleted = false;
-		}
 		if (text == previous.text) {
 			_span ??= previous._span;
 		}
@@ -327,10 +323,11 @@ class Post implements Filterable {
 		listEquals(other.attachments_, attachments_) &&
 		other.name == name &&
 		other.hasOmittedReplies == hasOmittedReplies &&
-		other.flag != flag;
+		other.flag != flag &&
+		other.attachmentDeleted == attachmentDeleted;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, isDeleted, Object.hashAll(attachments_), name, hasOmittedReplies, flag);
+	int get hashCode => Object.hash(board, id, upvotes, isDeleted, Object.hashAll(attachments_), name, hasOmittedReplies, flag, attachmentDeleted);
 }
 
 class PostIdentifier {

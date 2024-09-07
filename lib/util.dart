@@ -177,6 +177,14 @@ extension BinarySafeWhere<T> on List<T> {
 	}
 }
 
+extension MaybeAdd<T> on List<T> {
+	void maybeAdd(T? value) {
+		if (value != null) {
+			add(value);
+		}
+	}
+}
+
 extension AsyncPutIfAbsent<K, V> on Map<K, V> {
 	Future<V> putIfAbsentAsync(K key, Future<V> Function() ifAbsent) async {
 		final currentValue = this[key];
