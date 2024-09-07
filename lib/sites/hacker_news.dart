@@ -396,12 +396,6 @@ class SiteHackerNews extends ImageboardSite {
 	String get defaultUsername => '';
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) {
-		// TODO: implement deletePost
-		throw UnimplementedError();
-	}
-
-	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		return [ImageboardBoard(
 			name: '',

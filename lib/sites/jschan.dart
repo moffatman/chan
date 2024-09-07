@@ -157,13 +157,14 @@ class SiteJsChan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/forms/board/${thread.board}/actions'),
 			data: {
 				'checkedposts': receipt.id.toString(),
 				'hide_name': '1',
-				'delete': '1',
+				if (imageOnly) 'unlink_file': '1'
+				else 'delete': '1',
 				'report_reason': '',
 				'postpassword': receipt.password,
 				if (captchaSolution is JsChanGridCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort()

@@ -931,13 +931,14 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(sysUrl, '/${thread.board}/imgboard.php'),
 			data: FormData.fromMap({
 				receipt.id.toString(): 'delete',
 				'mode': 'usrdel',
-				'pwd': receipt.password
+				'pwd': receipt.password,
+				if (imageOnly) 'onlyimgdel': 'on'
 			}),
 			options: Options(
 				extra: {

@@ -490,17 +490,19 @@ class QueuedDeletion extends QueueEntry<void> {
 	bool _useLoginSystem;
 	@override
 	bool get useLoginSystem => _useLoginSystem;
+	final bool imageOnly;
 
 	QueuedDeletion({
 		required super.imageboardKey,
 		required this.thread,
 		required this.receipt,
-		required super.state
+		required super.state,
+		required this.imageOnly
 	}) : _useLoginSystem = true;
 
 	@override
 	Future<void> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		await site.deletePost(thread, receipt, captchaSolution);
+		await site.deletePost(thread, receipt, captchaSolution, imageOnly: imageOnly);
 	}
 
 	@override
@@ -727,12 +729,13 @@ class Outbox extends ChangeNotifier {
 		return entry;
 	}
 
-	QueuedDeletion submitDeletion(BuildContext context, String imageboardKey, ThreadIdentifier thread, PostReceipt receipt) {
+	QueuedDeletion submitDeletion(BuildContext context, String imageboardKey, ThreadIdentifier thread, PostReceipt receipt, {required bool imageOnly}) {
 		final entry = QueuedDeletion(
 			imageboardKey: imageboardKey,
 			thread: thread,
 			receipt: receipt,
-			state: QueueStateNeedsCaptcha(context)
+			state: QueueStateNeedsCaptcha(context),
+			imageOnly: imageOnly
 		);
 		Future.microtask(() => _process(entry));
 		return entry;

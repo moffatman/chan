@@ -205,14 +205,15 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
 		final response = await client.postUri(Uri.https(baseUrl, '/contentActions.js', {
 			'json': '1'
 		}), data: {
 			'action': 'delete',
 			'password': receipt.password,
 			'confirmation': 'true',
-			'meta-${thread.id}-${receipt.id}': 'true'
+			'meta-${thread.id}-${receipt.id}': 'true',
+			if (imageOnly) 'deleteUploads': 'true'
 		}, options: Options(
 			extra: {
 				kPriority: RequestPriority.interactive

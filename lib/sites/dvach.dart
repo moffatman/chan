@@ -240,11 +240,6 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
-		throw UnimplementedError();
-	}
-
-	@override
 	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
 		String threadUrl = Uri.https(baseUrl, '/$board/').toString();
 		if (threadId != null) {

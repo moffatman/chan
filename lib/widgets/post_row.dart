@@ -1024,17 +1024,32 @@ class PostRow extends StatelessWidget {
 						post: latestPost.identifier
 					)
 				),
-				if (receipt != null) ContextMenuAction(
-					child: const Text('Delete post'),
-					trailingIcon: CupertinoIcons.delete,
-					isDestructiveAction: true,
-					onPressed: () => deletePost(
-						context: context,
-						imageboard: context.read<Imageboard>(),
-						thread: latestPost.threadIdentifier,
-						receipt: receipt
+				if (receipt != null) ...[
+					if (!latestPost.attachmentDeleted && latestPost.attachments.isNotEmpty) ContextMenuAction(
+						child: Text('Delete ${latestPost.attachments.tryFirst?.type.noun}${latestPost.attachments.length > 1 ? 's' : ''}'),
+						trailingIcon: CupertinoIcons.delete,
+						isDestructiveAction: true,
+						onPressed: () => deletePost(
+							context: context,
+							imageboard: context.read<Imageboard>(),
+							thread: latestPost.threadIdentifier,
+							receipt: receipt,
+							imageOnly: true
+						)
+					),
+					ContextMenuAction(
+						child: const Text('Delete post'),
+						trailingIcon: CupertinoIcons.delete,
+						isDestructiveAction: true,
+						onPressed: () => deletePost(
+							context: context,
+							imageboard: context.read<Imageboard>(),
+							thread: latestPost.threadIdentifier,
+							receipt: receipt,
+							imageOnly: false
+						)
 					)
-				),
+				],
 				if (latestPost.attachments.isNotEmpty) ContextMenuAction(
 					child: Text('Share ${latestPost.attachments.first.type.noun} link'),
 					trailingIcon: CupertinoIcons.link,

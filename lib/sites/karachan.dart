@@ -184,7 +184,7 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/imgboard.php'),
 			data: FormData.fromMap({
@@ -194,7 +194,8 @@ class SiteKarachan extends ImageboardSite {
 				'board': thread.board,
 				'reason': '',
 				'mode': 'usrform',
-				'del%${thread.board}%${receipt.id}': 'delete'
+				'del%${thread.board}%${receipt.id}': 'delete',
+				if (imageOnly) 'onlyimgdel': 'on'
 			}),
 			options: Options(
 				headers: {

@@ -1422,7 +1422,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread) async => const NoCaptchaRequest();
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken);
 	Duration getActionCooldown(String board, ImageboardAction action, bool cellular) => const Duration(seconds: 3);
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution);
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
+		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');
+	}
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) async {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {

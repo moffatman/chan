@@ -31,11 +31,6 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) {
-    throw UnimplementedError();
-  }
-
-  @override
   Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) {
     return archive.getBoards(priority: priority);
   }

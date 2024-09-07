@@ -918,12 +918,6 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) {
-		// TODO: implement deletePost
-		throw UnimplementedError();
-	}
-
-	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/subreddits/popular.json'), options: Options(
 			extra: {

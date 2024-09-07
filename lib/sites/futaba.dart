@@ -148,11 +148,6 @@ class SiteFutaba extends ImageboardSite {
 	String get defaultUsername => '名無し';
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) {
-		throw UnimplementedError('2chan posting is not implemented');
-	}
-
-	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/index2.html'), options: Options(
 			responseType: ResponseType.bytes,

@@ -511,14 +511,15 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(sysUrl, '$basePath/post.php'),
 			data: FormData.fromMap({
 				'board': thread.board,
 				'delete_${receipt.id}': 'on',
 				'delete': 'Delete',
-				'password': receipt.password
+				'password': receipt.password,
+				if (imageOnly) 'file': 'on'
 			}),
 			options: Options(
 				validateStatus: (x) => true,
