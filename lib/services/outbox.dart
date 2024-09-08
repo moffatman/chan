@@ -238,6 +238,10 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						false => true // Must use headless solver
 					}
 				);
+				if (_state is QueueStateIdle<T>) {
+					// Cancelled in the meantime
+					return;
+				}
 				final tryAgainAt = tryAgainAt0;
 				if (captcha != null) {
 					_state = QueueStateWaitingWithCaptcha(DateTime.now(), captcha);
@@ -280,14 +284,17 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			catch (e, st) {
 				print(e);
 				print(st);
-				_state = QueueStateFailed(e, st);
+				if (_state is! QueueStateIdle<T>) {
+					// not cancelled
+					_state = QueueStateFailed(e, st);
+				}
 			}
 			notifyListeners();
 		}
 		else {
 			initialNeedsCaptchaState = null;
 		}
-		if (initialState is QueueStateWaitingWithCaptcha<T>) {
+		if (initialState is QueueStateWaitingWithCaptcha<T> && _state is! QueueStateIdle<T>) {
 			final deadline = DateTime.now().add(const Duration(seconds: 5));
 			final expiresAt = initialState.captchaSolution.expiresAt;
 			if (expiresAt != null && expiresAt.isBefore(deadline)) {
