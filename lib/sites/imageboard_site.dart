@@ -1302,7 +1302,11 @@ class ImageboardPoll {
 }
 
 abstract class ImageboardSiteArchive {
-	final Dio client = Dio();
+	final Dio client = Dio(BaseOptions(
+		/// Avoid hanging for 2 minutes+ with default value
+		/// 15 seconds should be well long enough for initial TCP handshake
+		connectTimeout: 15000
+	));
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
 	final Map<String, DateTime> _lastCatalogCacheTime = {};
 	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
