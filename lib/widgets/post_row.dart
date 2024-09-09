@@ -1,3 +1,4 @@
+import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/delete_post.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
@@ -251,6 +252,7 @@ class PostRow extends StatelessWidget {
 		final parentZone = context.watch<PostSpanZoneData>();
 		final translatedPostSnapshot = parentZone.translatedPost(post.id);
 		final settings = context.watch<Settings>();
+		final mouseSettings = context.watch<MouseSettings>();
 		final theme = context.watch<SavedTheme>();
 		final parentZoneThreadState = parentZone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		final receipt = parentZoneThreadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
@@ -748,6 +750,17 @@ class PostRow extends StatelessWidget {
 					trailingIcon: CupertinoIcons.reply_all,
 					onPressed: () {
 						replyBoxZone?.onQuoteText(latestPost.span.buildText(), backlink: latestPost.identifier);
+					}
+				),
+				if (settings.materialStyle || mouseSettings.supportMouse) ContextMenuAction(
+					child: const Text('Select text'),
+					trailingIcon: CupertinoIcons.selection_pin_in_out,
+					onPressed: () {
+						WeakNavigator.push(context, SelectablePostPage(
+							post: latestPost,
+							zone: parentZone,
+							onQuoteText: (String text, {required bool includeBacklink}) => context.read<ReplyBoxZone>().onQuoteText(text, backlink: includeBacklink ? latestPost.identifier : null)
+						));
 					}
 				),
 				ContextMenuAction(
