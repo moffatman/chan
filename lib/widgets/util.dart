@@ -115,6 +115,7 @@ Future<void> alertError(BuildContext context, Object error, StackTrace? stackTra
 		FlutterEmailSender.send(Email(
 			subject: 'Chance Bug Report',
 			recipients: ['callum@moffatman.com'],
+			isHTML: true,
 			body: '''<p>Hi Callum,</p>
 							<p>Chance v$kChanceVersion is giving me a problem:</p>
 							<p>[insert your problem here]</p>
