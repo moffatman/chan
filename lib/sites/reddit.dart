@@ -429,7 +429,7 @@ class SiteReddit extends ImageboardSite {
 							yield PostSpoilerSpan(PostNodeSpan(Site4Chan.parsePlaintext(text.substring(1, text.length - 2))), spoilerSpanId++);
 						}
 						else {
-							yield PostQuoteSpan(PostNodeSpan(node.children.isNotEmpty ? visit(node.children).toList() : visit(node.nodes).toList()));
+							yield PostQuoteSpan(PostNodeSpan(visit(node.nodes.trim()).toList()));
 						}
 					}
 					else if (node.localName == 'pre') {
