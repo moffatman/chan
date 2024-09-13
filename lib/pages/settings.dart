@@ -102,6 +102,21 @@ class _SettingsPageState extends State<SettingsPage> {
 									child: const Text('Toggle FPS Graph')
 								),
 								AdaptiveDialogAction(
+									onPressed: () async {
+										await editStringList(
+											context: context,
+											list: Settings.instance.settings.appliedMigrations,
+											name: 'migration',
+											title: 'Applied Migrations'
+										);
+										await Settings.instance.didEdit();
+										if (context.mounted) {
+											Navigator.pop(context);
+										}
+									},
+									child: const Text('Applied Migrations')
+								),
+								AdaptiveDialogAction(
 									onPressed: () => Navigator.pop(context),
 									child: const Text('Close')
 								)
