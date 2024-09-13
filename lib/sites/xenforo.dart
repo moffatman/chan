@@ -20,6 +20,15 @@ import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 
+extension _NonEmptyOrNullOrDataUri on String {
+	String? get nonEmptyOrNullOrDataUri {
+		if (isEmpty || startsWith('data:image/')) {
+			return null;
+		}
+		return this;
+	}
+}
+
 class SiteXenforo extends ImageboardSite {
 	@override
   final String baseUrl;
@@ -65,9 +74,14 @@ class SiteXenforo extends ImageboardSite {
 							continue;
 						}
 						String src =
-							img.attributes['src']?.nonEmptyOrNull ??
-							img.attributes['data-url']?.nonEmptyOrNull ??
-							img.attributes['data-src']?.nonEmptyOrNull ?? '';
+							img.attributes['src']?.nonEmptyOrNullOrDataUri ??
+							img.attributes['data-url']?.nonEmptyOrNullOrDataUri ??
+							img.attributes['data-src']?.nonEmptyOrNullOrDataUri ?? '';
+						if (src.isEmpty) {
+							// Something is wrong
+							yield PostTextSpan(node.outerHtml);
+							continue;
+						} 
 						if (!src.startsWith('http://') && !src.startsWith('https://')) {
 							src = 'https://$src';
 						}
