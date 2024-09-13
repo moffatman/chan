@@ -1642,7 +1642,7 @@ class SavedSettings extends HiveObject {
 		if (!this.appliedMigrations.contains('uar2')) {
 			// uar means userAgentReset2 (start to use defaultUserAgent)
 			userAgent = null;
-			this.appliedMigrations.add('uar');
+			this.appliedMigrations.add('uar2');
 		}
 		if (!this.postDisplayFieldOrder.contains(PostDisplayField.ipNumber)) {
 			this.postDisplayFieldOrder.insert(0, PostDisplayField.ipNumber);
