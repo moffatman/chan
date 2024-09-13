@@ -370,9 +370,12 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														Text('Back to browser')
 													]
 												),
-												onPressed: () => setState(() {
-													showSearchHistory = false;
-												})
+												onPressed: () {
+													urlFocusNode.unfocus();
+													setState(() {
+														showSearchHistory = false;
+													});
+												}
 											)
 										)
 									)
