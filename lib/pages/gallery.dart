@@ -33,6 +33,7 @@ import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -1139,7 +1140,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																			}
 																		),
 																		child: child
-																	)
+																	),
+																	settings: weakSettings
 																));
 															},
 															icon: const Icon(CupertinoIcons.reply)

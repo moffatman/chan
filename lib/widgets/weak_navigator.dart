@@ -11,6 +11,10 @@ import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
+const weakSettings = RouteSettings(
+  name: 'weak'
+);
+
 class WeakNavigator extends StatefulWidget {
   final Widget child;
   final Curve curve;
@@ -48,7 +52,8 @@ class WeakNavigator extends StatefulWidget {
             ],
             child: widget
           )
-        )
+        ),
+        settings: weakSettings
       ));
     }
   }
@@ -74,7 +79,8 @@ class WeakNavigator extends StatefulWidget {
           imageboardKey: null,
           imageboard: imageboard,
           child: widget
-        )
+        ),
+        settings: weakSettings
       ));
     }
     return Navigator.of(context).pop;

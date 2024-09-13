@@ -136,7 +136,12 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 				}
 			}
 			else {
-				Navigator.of(context).pop();
+				if (Settings.instance.overscrollModalTapPopsAll || DateTime.now().difference(downData.$3) > _kLongPressToPopAllTime) {
+					Navigator.of(context).popUntil((r) => r.settings != weakSettings);
+				}
+				else {
+					Navigator.of(context).pop();
+				}
 			}
 		}
 	}
