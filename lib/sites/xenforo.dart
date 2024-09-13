@@ -334,7 +334,7 @@ class SiteXenforo extends ImageboardSite {
 
 	late final _relativeBoardPattern  = RegExp(basePath + r'/forums/([^/]+)');
 	late final _boardPattern  = RegExp(r'^https?://' + RegExp.escape(baseUrl) + _relativeBoardPattern.pattern);
-	late final _threadPattern = RegExp(r'^https?://' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/(page-(\d+))?');
+	late final _threadPattern = RegExp(r'^https?://' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/(?:page-(\d+))?(?:#post-(\d+))?');
 	late final _postPattern = RegExp(r'^https?://' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/post-(\d+)');
 
 	/// Board is a weak concept in Xenforo. Sometimes we need to find it.
@@ -383,14 +383,15 @@ class SiteXenforo extends ImageboardSite {
 		final threadMatch = _threadPattern.firstMatch(url);
 		if (threadMatch != null) {
 			final threadId = int.parse(threadMatch.group(2)!);
-			final pageNumber = switch (int.tryParse(threadMatch.group(4) ?? '')) {
+			final postNumber = int.tryParse(threadMatch.group(4) ?? '');
+			final pageNumber = switch (int.tryParse(threadMatch.group(3) ?? '')) {
 				// Pages have negative IDs
 				int p => -p,
 				null => null
 			};
 			final board = await _lookupBoard(threadId);
 			if (board != null) {
-				return BoardThreadOrPostIdentifier(board, threadId, pageNumber);
+				return BoardThreadOrPostIdentifier(board, threadId, postNumber ?? pageNumber);
 			}
 		}
 		final postMatch = _postPattern.firstMatch(url);
