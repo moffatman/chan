@@ -58,6 +58,7 @@ class SiteXenforo extends ImageboardSite {
 	static PostNodeSpan makeSpan(String board, int threadId, int postId, String text) {
 		final body = parseFragment(text);
 		List<Attachment> attachments = [];
+		int spoilerSpanId = 0;
 		Iterable<PostSpan> visit(Iterable<dom.Node> nodes, {int listDepth = 0}) sync* {
 			bool addLinebreakBefore = false;
 			for (final node in nodes) {
@@ -275,6 +276,15 @@ class SiteXenforo extends ImageboardSite {
 					}
 					else if (node.localName == 'div' && node.children.tryFirst?.localName == 'a') {
 						yield PostLinkSpan(node.children.first.attributes['href'] ?? '', name: node.text.trim());
+					}
+					else if (node.localName == 'div' && node.classes.contains('bbCodeSpoiler')) {
+						final spoilerContent = node.querySelector('.bbCodeBlock-content');
+						if (spoilerContent == null) {
+							// Something went wrong
+							yield PostTextSpan(node.outerHtml);
+							continue;
+						}
+						yield PostSpoilerSpan(PostNodeSpan(visit(spoilerContent.nodes).toList()), spoilerSpanId++);
 					}
 					else if (node.localName == 'div') {
 						yield PostNodeSpan(visit(node.nodes).toList());
