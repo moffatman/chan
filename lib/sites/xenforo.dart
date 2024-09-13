@@ -193,6 +193,9 @@ class SiteXenforo extends ImageboardSite {
 					else if (node.localName == 'strikethrough' || node.localName == 's') {
 						yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList()));
 					}
+					else if (node.localName == 'u') {
+						yield PostUnderlinedSpan(PostNodeSpan(visit(node.nodes).toList()));
+					}
 					else if (node.localName == 'blockquote') {
 						final quoteContent = node.querySelector('.bbCodeBlock-expandContent');
 						if (quoteContent != null) {
