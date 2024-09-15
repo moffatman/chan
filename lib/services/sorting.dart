@@ -100,6 +100,16 @@ Comparator<PersistentThreadState> getSavedThreadsSortMethod() {
 	};
 }
 
+Comparator<(PersistentThreadState, Thread)> getSavedThreadsSortMethodTuple() {
+	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
+	return switch (Persistence.settings.savedThreadsSortingMethod) {
+		ThreadSortingMethod.alphabeticByTitle => (a, b) => a.$2.compareTo(b.$2),
+		ThreadSortingMethod.lastPostTime => (a, b) => b.$2.posts.last.time.compareTo(a.$2.posts.last.time),
+		ThreadSortingMethod.threadPostTime => (a, b) => b.$2.time.compareTo(a.$2.time),
+		ThreadSortingMethod.savedTime || _ => (a, b) => (b.$1.savedTime ?? noDate).compareTo(a.$1.savedTime ?? noDate)
+	};
+}
+
 Future<void> selectSavedThreadsSortMethod(BuildContext context) => showAdaptiveModalPopup(
 	context: context,
 	useRootNavigator: true,
@@ -135,5 +145,13 @@ Comparator<ImageboardScoped<SavedPost>> getSavedPostsSortMethod() {
 						return (tb?.time ?? b.item.post.time).compareTo(ta?.time ?? a.item.post.time);
 					},
 		ThreadSortingMethod.savedTime || _ => (a, b) => b.item.savedTime.compareTo(a.item.savedTime)
+	};
+}
+
+Comparator<ImageboardScoped<(SavedPost, Thread)>> getSavedPostsSortMethodTuple() {
+	return switch (Persistence.settings.savedThreadsSortingMethod) {
+		ThreadSortingMethod.lastPostTime => (a, b) => b.item.$1.post.time.compareTo(a.item.$1.post.time),
+		ThreadSortingMethod.threadPostTime => (a, b) => b.item.$2.time.compareTo(b.item.$2.time),
+		ThreadSortingMethod.savedTime || _ => (a, b) => b.item.$1.savedTime.compareTo(a.item.$1.savedTime)
 	};
 }

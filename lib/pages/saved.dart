@@ -11,7 +11,6 @@ import 'package:chan/pages/history_search.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
-import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
@@ -37,6 +36,7 @@ import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:chan/widgets/sliver_staggered_grid.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
@@ -51,12 +51,12 @@ final _downloadedAttachments = <Attachment>{};
 
 class _PostThreadCombo {
 	final Imageboard imageboard;
-	final Post? post;
-	final PersistentThreadState threadState;
+	final Post post;
+	final Thread thread;
 	_PostThreadCombo({
 		required this.imageboard,
 		required this.post,
-		required this.threadState
+		required this.thread
 	});
 
 	@override
@@ -64,13 +64,13 @@ class _PostThreadCombo {
 		identical(this, o) ||
 		(o is _PostThreadCombo) &&
 		(o.imageboard == imageboard) &&
-		(o.post?.id == post?.id) &&
-		(o.threadState.identifier == threadState.identifier);
+		(o.post.id == post.id) &&
+		(o.thread.identifier == thread.identifier);
 	@override
-	int get hashCode => Object.hash(imageboard, post, threadState);
+	int get hashCode => Object.hash(imageboard, post, thread.identifier);
 
 	@override
-	String toString() => '_PostThreadCombo($imageboard, $threadState, $post)';
+	String toString() => '_PostThreadCombo($imageboard, $thread, $post)';
 }
 
 class SavedPage extends StatefulWidget {
@@ -88,9 +88,9 @@ class SavedPage extends StatefulWidget {
 const _yourPostsChunkSize = 25;
 
 class _SavedPageState extends State<SavedPage> {
-	late final RefreshableListController<ImageboardScoped<ThreadWatch>> _watchedListController;
-	late final RefreshableListController<PersistentThreadState> _threadListController;
-	late final RefreshableListController<ImageboardScoped<SavedPost>> _postListController;
+	late final RefreshableListController<ImageboardScoped<(ThreadWatch, Thread)>> _watchedListController;
+	late final RefreshableListController<(PersistentThreadState, Thread)> _threadListController;
+	late final RefreshableListController<ImageboardScoped<(SavedPost, Thread)>> _postListController;
 	late final RefreshableListController<_PostThreadCombo> _yourPostsListController;
 	final _watchedThreadsListKey = GlobalKey(debugLabel: '_SavedPageState._watchedThreadsListKey');
 	final _savedThreadsListKey = GlobalKey(debugLabel: '_SavedPageState._savedThreadsListKey');
@@ -99,10 +99,13 @@ class _SavedPageState extends State<SavedPage> {
 	final _savedAttachmentsAnimatedBuilderKey = GlobalKey(debugLabel: '_SavedPageState._savedAttachmentsAnimatedBuilderKey');
 	late final RefreshableListController<ImageboardScoped<SavedAttachment>> _savedAttachmentsController;
 	late final EasyListenable _removeArchivedHack;
-	late ValueNotifier<List<ImageboardScoped<SavedAttachment>>> _missingSavedAttachments;
+	late final ValueNotifier<List<ImageboardScoped<ThreadIdentifier>>> _missingWatchedThreads;
+	late final ValueNotifier<List<ImageboardScoped<ThreadIdentifier>>> _missingSavedThreads;
+	late final ValueNotifier<List<ImageboardScoped<ThreadIdentifier>>> _missingSavedPostsThreads;
+	late final ValueNotifier<List<ImageboardScoped<ThreadIdentifier>>> _missingYourPostsThreads;
+	late final ValueNotifier<List<ImageboardScoped<SavedAttachment>>> _missingSavedAttachments;
 	/// for optimization and pagination of loading your posts
 	Map<(Imageboard, String), List<PostIdentifier>> _yourPostsLists = {};
-	List<_PostThreadCombo> _yourPostsMissingThreads = [];
 	late final ValueNotifier<_PostThreadCombo?> _yourPostsValueInjector;
 	bool _lastTickerMode = true;
 
@@ -116,28 +119,28 @@ class _SavedPageState extends State<SavedPage> {
 		_savedAttachmentsController = RefreshableListController();
 		_removeArchivedHack = EasyListenable();
 		_yourPostsValueInjector = ValueNotifier(null);
+		_missingWatchedThreads = ValueNotifier([]);
+		_missingSavedThreads = ValueNotifier([]);
+		_missingSavedPostsThreads = ValueNotifier([]);
+		_missingYourPostsThreads = ValueNotifier([]);
 		_missingSavedAttachments = ValueNotifier([]);
 	}
 
-	Future<(_PostThreadCombo, bool)?> _takeYourPost() async {
-		final heads = <(Imageboard, PostIdentifier, DateTime)>[];
-		bool cost = false;
+	Future<_PostThreadCombo?> _takeYourPost() async {
+		final heads = <_PostThreadCombo>[];
 		for (final entry in _yourPostsLists.entries) {
 			if (entry.value.isEmpty) {
 				continue;
 			}
 			final last = entry.value.last;
-			final state = entry.key.$1.persistence.getThreadState(last.thread);
-			final receiptTime = state.receipts.tryFirstWhere((r) => r.id == last.postId)?.time;
-			if (receiptTime != null) {
-				// Easiest situation - date is recorded on receipt
-				heads.add((entry.key.$1, last, receiptTime));
+			final state = entry.key.$1.persistence.getThreadStateIfExists(last.thread);
+			if (state == null) {
+				// Something weird...
 				continue;
 			}
-			cost |= state.thread?.posts_.last.isInitialized != true;
-			await state.ensureThreadLoaded();
-			final thread = state.thread;
+			final thread = await state.getThread();
 			if (thread == null) {
+				// Something missing. but we don't have to handle it here
 				continue;
 			}
 			final post = thread.posts_.tryFirstWhere((p) => p.id == last.postId);
@@ -145,11 +148,15 @@ class _SavedPageState extends State<SavedPage> {
 				// Weird situation... just skip it
 				continue;
 			}
-			heads.add((entry.key.$1, last, post.time));
+			heads.add(_PostThreadCombo(
+				imageboard: entry.key.$1,
+				thread: thread,
+				post: post
+			));
 		}
-		(Imageboard, PostIdentifier, DateTime)? latestHead;
+		_PostThreadCombo? latestHead;
 		for (final head in heads) {
-			if (latestHead == null || head.$3.isAfter(latestHead.$3)) {
+			if (latestHead == null || head.post.time.isAfter(latestHead.post.time)) {
 				latestHead = head;
 			}
 		}
@@ -158,17 +165,12 @@ class _SavedPageState extends State<SavedPage> {
 			// No more entries
 			return null;
 		}
-		final threadState = ret.$1.persistence.getThreadState(ret.$2.thread);
-		final l = _yourPostsLists[(ret.$1, ret.$2.board)];
+		final l = _yourPostsLists[(ret.imageboard, ret.post.board)];
 		if (l != null && l.isNotEmpty) {
 			// This should always be non-null and non-empty. But just avoid crash.
 			l.removeLast();
 		}
-		return (_PostThreadCombo(
-			imageboard: ret.$1,
-			post: threadState.thread?.posts.tryFirstWhere((p) => p.id == ret.$2.postId),
-			threadState: threadState
-		), cost);
+		return ret;
 	}
 
 	Widget _placeholder(String message) {
@@ -184,7 +186,7 @@ class _SavedPageState extends State<SavedPage> {
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _yourPostsValueInjector,
 				builder: (context, _PostThreadCombo? selectedResult, child) {
-					final post = selectedResult?.post?.identifier;
+					final post = selectedResult?.post.identifier;
 					return HistorySearchPage(
 						query: query,
 						initialYourPostsOnly: true,
@@ -194,18 +196,17 @@ class _SavedPageState extends State<SavedPage> {
 								widget.masterDetailKey.currentState!.setValue(2, null);
 								return;
 							}
-							final threadState = result.imageboard.persistence.getThreadStateIfExists(result.item.thread);
-							if (threadState == null) {
+							final thread = await result.imageboard.persistence.getThreadStateIfExists(result.item.thread)?.getThread();
+							if (thread == null) {
 								return;
 							}
-							await threadState.ensureThreadLoaded();
-							final post = threadState.thread?.posts.tryFirstWhere((p) => p.id == result.item.postId);
+							final post = thread.posts.tryFirstWhere((p) => p.id == result.item.postId);
 							if (post == null) {
 								return;
 							}
 							widget.masterDetailKey.currentState!.setValue(2, _PostThreadCombo(
 								imageboard: result.imageboard,
-								threadState: threadState,
+								thread: thread,
 								post: post
 							));
 						}
@@ -272,7 +273,7 @@ class _SavedPageState extends State<SavedPage> {
 					icon: CupertinoIcons.bell_fill,
 					masterBuilder: (context, selected, setter) {
 						final settings = context.watch<Settings>();
-						return RefreshableList<ImageboardScoped<ThreadWatch>>(
+						return RefreshableList<ImageboardScoped<(ThreadWatch, Thread)>>(
 							header: const Column(
 								mainAxisSize: MainAxisSize.min,
 								children: [
@@ -284,16 +285,10 @@ class _SavedPageState extends State<SavedPage> {
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									const ChanceDivider(),
-									AnimatedBuilder(
-										animation: _watchedListController,
-										builder: (context, _) => MissingThreadsControls(
-											missingThreads: _watchedListController.items.expand((item) {
-												final state = item.item.imageboard.persistence.getThreadStateIfExists(item.item.item.threadIdentifier);
-												if (state?.thread == null) {
-													return [item.item.imageboard.scope(item.item.item.threadIdentifier)];
-												}
-												return const <ImageboardScoped<ThreadIdentifier>>[];
-											}).toList(),
+									ValueListenableBuilder(
+										valueListenable: _missingWatchedThreads,
+										builder: (context, list, _) => MissingThreadsControls(
+											missingThreads: list,
 											afterFix: () {
 												_watchedListController.state?.forceRebuildId++;
 												_watchedListController.update();
@@ -307,13 +302,25 @@ class _SavedPageState extends State<SavedPage> {
 									)
 								],
 							),
-							filterableAdapter: null,
+							filterableAdapter: (t) => t.item.$2,
 							useFiltersFromContext: false,
 							controller: _watchedListController,
 							listUpdater: (options) async {
 								final list = await thread_actions.loadWatches();
+								final out = <ImageboardScoped<(ThreadWatch, Thread)>>[];
+								final missing = <ImageboardScoped<ThreadIdentifier>>[];
+								for (final item in list) {
+									final thread = item.imageboard.persistence.getThreadStateIfExists(item.item.threadIdentifier)?.thread;
+									if (thread == null) {
+										missing.add(item.imageboard.scope(item.item.threadIdentifier));
+									}
+									else {
+										out.add(item.imageboard.scope((item.item, thread)));
+									}
+								}
+								_missingWatchedThreads.value = missing;
 								_watchedListController.waitForItemBuild(0).then((_) => _removeArchivedHack.didUpdate());
-								return list;
+								return out;
 							},
 							minUpdateDuration: Duration.zero,
 							autoExtendDuringScroll: true,
@@ -325,6 +332,9 @@ class _SavedPageState extends State<SavedPage> {
 							gridDelegate: settings.useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
 								maxCrossAxisExtent: settings.catalogGridWidth,
 								childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+							) : null,
+							staggeredGridDelegate: (settings.useCatalogGrid && settings.useStaggeredCatalogGrid) ? SliverStaggeredGridDelegateWithMaxCrossAxisExtent(
+								maxCrossAxisExtent: settings.catalogGridWidth
 							) : null,
 							canTapFooter: false,
 							footer: Padding(
@@ -358,31 +368,31 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							itemBuilder: (itemContext, watch) {
-								final isSelected = selected(itemContext, watch);
+								final isSelected = selected(itemContext, watch.imageboard.scope(watch.item.$1));
 								final openInNewTabZone = context.read<OpenInNewTabZone?>();
 								return ImageboardScope(
 									imageboardKey: watch.imageboard.key,
 									child: ContextMenu(
-										maxHeight: 125,
+										maxHeight: settings.useCatalogGrid ? settings.catalogGridHeight : 125,
 										actions: [
 											if (openInNewTabZone != null) ContextMenuAction(
 												child: const Text('Open in new tab'),
 												trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
 												onPressed: () {
-													openInNewTabZone.onWantOpenThreadInNewTab(watch.imageboard.key, watch.item.threadIdentifier);
+													openInNewTabZone.onWantOpenThreadInNewTab(watch.imageboard.key, watch.item.$1.threadIdentifier);
 												}
 											),
 											ContextMenuAction(
 												child: const Text('Unwatch'),
 												onPressed: () async {
-													await watch.imageboard.notifications.removeWatch(watch.item);
+													await watch.imageboard.notifications.removeWatch(watch.item.$1);
 													_watchedListController.update();
 													if (context.mounted) {
 														showUndoToast(
 															context: context,
 															message: 'Unwatched',
 															onUndo: () async {
-																await watch.imageboard.notifications.insertWatch(watch.item);
+																await watch.imageboard.notifications.insertWatch(watch.item.$1);
 																_watchedListController.update();
 															}
 														);
@@ -394,7 +404,7 @@ class _SavedPageState extends State<SavedPage> {
 											ContextMenuAction(
 												child: const Text('Mark as read'),
 												onPressed: () async {
-													final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
+													final threadState = watch.imageboard.persistence.getThreadState(watch.item.$1.threadIdentifier);
 													final unseenPostIds = threadState.unseenPostIds.data.toSet();
 													final lastSeenPostId = threadState.lastSeenPostId;
 													threadState.unseenPostIds.data.clear();
@@ -416,11 +426,11 @@ class _SavedPageState extends State<SavedPage> {
 												},
 												trailingIcon: CupertinoIcons.xmark_circle,
 											),
-											if (watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.savedTime != null) ContextMenuAction(
+											if (watch.imageboard.persistence.getThreadStateIfExists(watch.item.$1.threadIdentifier)?.savedTime != null) ContextMenuAction(
 												child: const Text('Un-save thread'),
 												trailingIcon: Adaptive.icons.bookmarkFilled,
 												onPressed: () {
-													final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
+													final threadState = watch.imageboard.persistence.getThreadState(watch.item.$1.threadIdentifier);
 													final savedTime = threadState.savedTime;
 													threadState.savedTime = null;
 													threadState.save();
@@ -440,7 +450,7 @@ class _SavedPageState extends State<SavedPage> {
 												child: const Text('Save thread'),
 												trailingIcon: Adaptive.icons.bookmark,
 												onPressed: () {
-													final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
+													final threadState = watch.imageboard.persistence.getThreadState(watch.item.$1.threadIdentifier);
 													threadState.savedTime = DateTime.now();
 													threadState.save();
 													_threadListController.update();
@@ -459,58 +469,58 @@ class _SavedPageState extends State<SavedPage> {
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
 											child: AnimatedBuilder(
-												animation: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.threadIdentifier),
+												animation: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.$1.threadIdentifier),
 												builder: (context, child) {
-													final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
-													if (threadState?.thread == null) {
-														return const SizedBox.shrink();
-													}
-													else {
-														return ThreadRow(
-															thread: threadState!.thread!,
-															isSelected: isSelected,
-															style: settings.useCatalogGrid ? ThreadRowStyle.grid : ThreadRowStyle.row,
-															showBoardName: true,
-															showSiteIcon: true,
-															showPageNumber: true,
-															forceShowInHistory: true,
-															dimReadThreads: watch.item.zombie,
-															onThumbnailLoadError: (error, stackTrace) {
-																watch.imageboard.threadWatcher.fixBrokenThread(watch.item.threadIdentifier);
-															},
-															semanticParentIds: const [-4],
-															onThumbnailTap: (initialAttachment) {
-																final attachments = {
-																	for (final w in _watchedListController.items)
-																		for (final attachment in w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																			attachment: w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.threadIdentifier)!
-																	};
-																showGallery(
-																	context: context,
-																	attachments: attachments.keys.toList(),
-																	replyCounts: {
-																		for (final item in attachments.entries) item.key: item.value.thread!.replyCount
+													final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.$1.threadIdentifier);
+													return ThreadRow(
+														thread: threadState!.thread ?? watch.item.$2,
+														isSelected: isSelected,
+														style: settings.useCatalogGrid ?
+															(settings.useStaggeredCatalogGrid ? ThreadRowStyle.staggeredGrid : ThreadRowStyle.grid)
+															: ThreadRowStyle.row,
+														showBoardName: true,
+														showSiteIcon: true,
+														showPageNumber: true,
+														forceShowInHistory: true,
+														dimReadThreads: watch.item.$1.zombie,
+														onThumbnailLoadError: (error, stackTrace) {
+															watch.imageboard.threadWatcher.fixBrokenThread(watch.item.$1.threadIdentifier);
+														},
+														semanticParentIds: const [-4],
+														onThumbnailTap: (initialAttachment) {
+															final attachments = {
+																for (final w in _watchedListController.items)
+																	for (final attachment in w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
+																		attachment: w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)!
+																};
+															showGallery(
+																context: context,
+																attachments: attachments.keys.toList(),
+																replyCounts: {
+																	for (final item in attachments.entries) item.key: item.value.thread!.replyCount
+																},
+																threads: (
+																	threads: {
+																		for (final item in attachments.entries) item.key: item.value.imageboard!.scope(item.value.thread!)
 																	},
-																	threads: (
-																		threads: {
-																			for (final item in attachments.entries) item.key: item.value.imageboard!.scope(item.value.thread!)
-																		},
-																		onThreadSelected: (t) => setter(_watchedListController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.threadIdentifier == t.item.identifier).item)
-																	),
-																	initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
-																	onChange: (attachment) {
-																		final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
-																		_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
-																	},
-																	semanticParentIds: [-4],
-																	heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
-																);
-															}
-														);
-													}
+																	onThreadSelected: (t) {
+																		final x = _watchedListController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.$1.threadIdentifier == t.item.identifier).item;
+																		setter(x.imageboard.scope(x.item.$1));
+																	}
+																),
+																initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
+																onChange: (attachment) {
+																	final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
+																	_watchedListController.animateTo((p) => p.item.$1.threadIdentifier == threadId);
+																},
+																semanticParentIds: [-4],
+																heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
+															);
+														}
+													);
 												}
 											),
-											onTap: () => setter(watch)
+											onTap: () => setter(watch.imageboard.scope(watch.item.$1))
 										)
 									)
 								);
@@ -553,17 +563,12 @@ class _SavedPageState extends State<SavedPage> {
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
 						final settings = context.watch<Settings>();
-						final sortMethod = getSavedThreadsSortMethod();
-						return RefreshableList<PersistentThreadState>(
-							aboveFooter: AnimatedBuilder(
-								animation: _threadListController,
-								builder: (context, _) => MissingThreadsControls(
-									missingThreads: _threadListController.items.expand((item) {
-										if (item.item.imageboard != null && item.item.thread == null) {
-											return [item.item.imageboard!.scope(item.item.identifier)];
-										}
-										return const <ImageboardScoped<ThreadIdentifier>>[];
-									}).toList(),
+						final sortMethod = getSavedThreadsSortMethodTuple();
+						return RefreshableList<(PersistentThreadState, Thread)>(
+							aboveFooter: ValueListenableBuilder(
+								valueListenable: _missingSavedThreads,
+								builder: (context, list, _) => MissingThreadsControls(
+									missingThreads: list,
 									afterFix: () {
 										_threadListController.state?.forceRebuildId++;
 										_threadListController.update();
@@ -576,7 +581,7 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
-							filterableAdapter: (t) => t,
+							filterableAdapter: (t) => t.$2,
 							controller: _threadListController,
 							listUpdater: (options) async {
 								final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
@@ -586,14 +591,14 @@ class _SavedPageState extends State<SavedPage> {
 										if (state.useArchive) {
 											continue;
 										}
-										await state.ensureThreadLoaded();
+										final thread = await state.getThread();
 										if (state.thread?.isArchived ?? false) {
 											continue;
 										}
-										if (state.imageboard?.site.hasExpiringThreads == false && state.thread != null) {
+										if (state.imageboard?.site.hasExpiringThreads == false && thread != null) {
 											// Threads don't go to archived on their own.
 											// So make a judgement call whether it's reasonable to refresh
-											final latestPostTime = state.thread!.posts_.fold<DateTime>(DateTime(2000), (min, post) {
+											final latestPostTime = thread.posts_.fold<DateTime>(DateTime(2000), (min, post) {
 												if (post.time.isAfter(min)) {
 													return post.time;
 												}
@@ -612,11 +617,19 @@ class _SavedPageState extends State<SavedPage> {
 										}
 									}
 								}
-								else {
-									// Just load from disk
-									await Future.wait(states.map((s) => s.ensureThreadLoaded()));
+								final out = <(PersistentThreadState, Thread)>[];
+								final missing = <ImageboardScoped<ThreadIdentifier>>[];
+								final batch = await Future.wait(states.map((s) async => (s, await s.getThread())));
+								for (final (state, thread) in batch) {
+									if (thread != null) {
+										out.add((state, thread));
+									}
+									else {
+										missing.maybeAdd(state.imageboard?.scope(state.identifier));
+									}
 								}
-								return states;
+								_missingSavedThreads.value = missing;
+								return out;
 							},
 							minUpdateDuration: Duration.zero,
 							id: 'savedThreads',
@@ -630,13 +643,17 @@ class _SavedPageState extends State<SavedPage> {
 								maxCrossAxisExtent: settings.catalogGridWidth,
 								childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
 							) : null,
-							itemBuilder: (itemContext, state) {
+							staggeredGridDelegate: (settings.useCatalogGrid && settings.useStaggeredCatalogGrid) ? SliverStaggeredGridDelegateWithMaxCrossAxisExtent(
+								maxCrossAxisExtent: settings.catalogGridWidth
+							) : null,
+							itemBuilder: (itemContext, pair) {
+								final state = pair.$1;
 								final isSelected = selectedThread(itemContext, state.imageboard!.scope(state.identifier));
 								final openInNewTabZone = context.read<OpenInNewTabZone?>();
 								return ImageboardScope(
 									imageboardKey: state.imageboardKey,
 									child: ContextMenu(
-										maxHeight: 125,
+										maxHeight: settings.useCatalogGrid ? settings.catalogGridHeight : 125,
 										actions: [
 											if (openInNewTabZone != null) ContextMenuAction(
 												child: const Text('Open in new tab'),
@@ -669,10 +686,12 @@ class _SavedPageState extends State<SavedPage> {
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
 											child: Builder(
-												builder: (context) => state.thread == null ? const SizedBox.shrink() : ThreadRow(
-													thread: state.thread!,
+												builder: (context) => ThreadRow(
+													thread: state.thread ?? pair.$2,
 													isSelected: isSelected,
-													style: settings.useCatalogGrid ? ThreadRowStyle.grid : ThreadRowStyle.row,
+													style: settings.useCatalogGrid ?
+														(settings.useStaggeredCatalogGrid ? ThreadRowStyle.staggeredGrid : ThreadRowStyle.grid)
+														: ThreadRowStyle.row,
 													showBoardName: true,
 													showSiteIcon: true,
 													forceShowInHistory: true,
@@ -681,26 +700,26 @@ class _SavedPageState extends State<SavedPage> {
 													},
 													semanticParentIds: const [-12],
 													onThumbnailTap: (initialAttachment) {
-														final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
+														final attachments = _threadListController.items.expand((_) => _.item.$2.attachments).toList();
 														showGallery(
 															context: context,
 															attachments: attachments,
 															replyCounts: {
 																for (final state in _threadListController.items)
-																	for (final attachment in state.item.thread!.attachments)
-																		attachment: state.item.thread!.replyCount
+																	for (final attachment in state.item.$2.attachments)
+																		attachment: state.item.$2.replyCount
 															},
 															threads: (
 																threads: {
 																	for (final state in _threadListController.items)
-																		for (final attachment in state.item.thread!.attachments)
-																			attachment: state.item.imageboard!.scope(state.item.thread!)
+																		for (final attachment in state.item.$2.attachments)
+																			attachment: state.item.$1.imageboard!.scope(state.item.$2)
 																},
 																onThreadSelected: (t) => threadSetter(t.imageboard.scope(t.item.identifier))
 															),
 															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 															onChange: (attachment) {
-																_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+																_threadListController.animateTo((p) => p.$2.attachments.any((a) => a.id == attachment.id));
 															},
 															semanticParentIds: [-12],
 															heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
@@ -736,15 +755,10 @@ class _SavedPageState extends State<SavedPage> {
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
 						return RefreshableList<_PostThreadCombo>(
-							aboveFooter: AnimatedBuilder(
-								animation: _yourPostsListController,
-								builder: (context, _) => MissingThreadsControls(
-									missingThreads: _yourPostsListController.items.expand((item) {
-										if (item.item.threadState.thread == null) {
-											return [item.item.imageboard.scope(item.item.threadState.identifier)];
-										}
-										return const <ImageboardScoped<ThreadIdentifier>>[];
-									}).toList(),
+							aboveFooter: ValueListenableBuilder(
+								valueListenable: _missingYourPostsThreads,
+								builder: (context, list, _) => MissingThreadsControls(
+									missingThreads: list,
 									afterFix: () {
 										_yourPostsListController.state?.forceRebuildId++;
 										_yourPostsListController.update();
@@ -757,22 +771,18 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
-							filterableAdapter: (t) => t.post ?? EmptyFilterable(t.threadState.id),
+							filterableAdapter: (t) => t.post,
 							controller: _yourPostsListController,
 							listUpdater: (options) async {
 								_yourPostsLists = {};
-								_yourPostsMissingThreads = [];
+								final missing = <ImageboardScoped<ThreadIdentifier>>[];
 								for (final state in Persistence.sharedThreadStateBox.values) {
 									final imageboard = state.imageboard;
 									if (imageboard == null || state.youIds.isEmpty) {
 										continue;
 									}
 									if (!state.isThreadCached) {
-										_yourPostsMissingThreads.add(_PostThreadCombo(
-											imageboard: imageboard,
-											threadState: state,
-											post: null
-										));
+										missing.add(imageboard.scope(state.identifier));
 										continue;
 									}
 									final l = _yourPostsLists.putIfAbsent((imageboard, state.board), () => []);
@@ -784,18 +794,15 @@ class _SavedPageState extends State<SavedPage> {
 									list.sort((a, b) => a.postId.compareTo(b.postId));
 								}
 								// First chunk should include all with missing threads
-								final ret = _yourPostsMissingThreads.toList();
+								final ret = <_PostThreadCombo>[];
 								for (int i = 0; i < _yourPostsChunkSize; i++) {
 									final p = await _takeYourPost();
 									if (p == null) {
 										break;
 									}
-									ret.add(p.$1);
-									if (!p.$2) {
-										// Don't count this one, it was free
-										i--;
-									}
+									ret.add(p);
 								}
+								_missingYourPostsThreads.value = missing;
 								return ret;
 							},
 							listExtender: (_) async {
@@ -805,11 +812,7 @@ class _SavedPageState extends State<SavedPage> {
 									if (p == null) {
 										break;
 									}
-									ret.add(p.$1);
-									if (!p.$2) {
-										// Don't count this one, it was free
-										i--;
-									}
+									ret.add(p);
 								}
 								return ret;
 							},
@@ -825,40 +828,40 @@ class _SavedPageState extends State<SavedPage> {
 							updateAnimation: threadStateBoxesAnimation,
 							disableUpdates: !TickerMode.of(context),
 							minUpdateDuration: Duration.zero,
-							sortMethods: [(a, b) => (b.post?.time ?? b.threadState.lastOpenedTime).compareTo(a.post?.time ?? a.threadState.lastOpenedTime)],
-							itemBuilder: (context, item) => (item.threadState.thread == null || item.post == null) ? const SizedBox.shrink() : ImageboardScope(
+							sortMethods: [(a, b) => b.post.time.compareTo(a.post.time)],
+							itemBuilder: (context, item) => ImageboardScope(
 								imageboardKey: item.imageboard.key,
 								child: ChangeNotifierProvider<PostSpanZoneData>(
 									create: (context) => PostSpanRootZoneData(
 										imageboard: item.imageboard,
-										thread: item.threadState.thread!,
+										thread: item.thread,
 										semanticRootIds: [-8],
 										style: PostSpanZoneStyle.linear
 									),
 									child: Builder(
 										builder: (context) => PostRow(
-											post: item.post!,
+											post: item.post,
 											isSelected: selected(context, item),
 											onTap: () => setter(item),
 											showBoardName: true,
 											showSiteIcon: true,
 											showYourPostBorder: false,
 											onThumbnailLoadError: (e, st) async {
-												await item.imageboard.threadWatcher.fixBrokenThread(item.threadState.identifier);
+												await item.imageboard.threadWatcher.fixBrokenThread(item.thread.identifier);
 											},
 											onThumbnailTap: (initialAttachment) {
-												final attachments = _yourPostsListController.items.expand((_) => _.item.post?.attachments ?? <Attachment>[]).toList();
+												final attachments = _yourPostsListController.items.expand((_) => _.item.post.attachments).toList();
 												showGallery(
 													context: context,
 													attachments: attachments,
 													replyCounts: {
 														for (final state in _yourPostsListController.items)
-															for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.post?.threadIdentifier)?.thread?.attachments ?? [])
-																attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.post?.threadIdentifier)?.thread?.replyCount ?? 0
+															for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.attachments ?? [])
+																attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.replyCount ?? 0
 													},
 													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 													onChange: (attachment) {
-														_yourPostsListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.post?.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+														_yourPostsListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 													},
 													semanticParentIds: [-8],
 													heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
@@ -878,8 +881,8 @@ class _SavedPageState extends State<SavedPage> {
 							widget: selected == null ? _placeholder('Select a post') : ImageboardScope(
 								imageboardKey: selected.imageboard.key,
 								child: ThreadPage(
-									thread: selected.threadState.identifier,
-									initialPostId: selected.post?.id,
+									thread: selected.thread.identifier,
+									initialPostId: selected.post.id,
 									boardSemanticId: -8
 								)
 							),
@@ -908,15 +911,11 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: CupertinoIcons.reply,
 					masterBuilder: (context, selected, setter) {
-						return RefreshableList<ImageboardScoped<SavedPost>>(
-							aboveFooter: AnimatedBuilder(
-								animation: _postListController,
-								builder: (context, _) => MissingThreadsControls(
-									missingThreads: {
-										for (final item in _postListController.items)
-											if (!Persistence.isThreadCached(item.item.imageboard.key, item.item.item.post.board, item.item.item.post.threadId))
-												item.item.imageboard.scope(item.item.item.post.threadIdentifier)
-									}.toList(),
+						return RefreshableList<ImageboardScoped<(SavedPost, Thread)>>(
+							aboveFooter: ValueListenableBuilder(
+								valueListenable: _missingSavedPostsThreads,
+								builder: (context, list, _) => MissingThreadsControls(
+									missingThreads: list,
 									afterFix: () {
 										_postListController.state?.forceRebuildId++;
 										_postListController.update();
@@ -932,14 +931,25 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
-							filterableAdapter: (t) => t.item.post,
+							filterableAdapter: (t) => t.item.$1.post,
 							controller: _postListController,
 							listUpdater: (options) async {
 								final savedPosts = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedPosts.values.map(i.scope)).toList();
-								await Future.wait(savedPosts.map((s) async {
-									await s.imageboard.persistence.getThreadStateIfExists(s.item.post.threadIdentifier)?.ensureThreadLoaded();
+								final pairs = await Future.wait(savedPosts.map((s) async {
+									return (s, await s.imageboard.persistence.getThreadStateIfExists(s.item.post.threadIdentifier)?.getThread());
 								}));
-								return savedPosts;
+								final out = <ImageboardScoped<(SavedPost, Thread)>>[];
+								final missing = <ImageboardScoped<ThreadIdentifier>>[];
+								for (final (p, t) in pairs) {
+									if (t != null) {
+										out.add(p.imageboard.scope((p.item, t)));
+									}
+									else {
+										missing.add(p.imageboard.scope(p.item.post.threadIdentifier));
+									}
+								}
+								_missingSavedPostsThreads.value = missing;
+								return out;
 							},
 							id: 'savedPosts',
 							key: _savedPostsListKey,
@@ -947,49 +957,46 @@ class _SavedPageState extends State<SavedPage> {
 							updateAnimation: Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()),
 							disableUpdates: !TickerMode.of(context),
 							minUpdateDuration: Duration.zero,
-							sortMethods: [getSavedPostsSortMethod()],
+							sortMethods: [getSavedPostsSortMethodTuple()],
 							itemBuilder: (context, savedPost) {
-								final threadState = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.post.threadIdentifier);
-								if (threadState?.thread == null) {
-									return const SizedBox.shrink();
-								}
+								final threadState = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.$1.post.threadIdentifier);
 								return ImageboardScope(
 									imageboardKey: savedPost.imageboard.key,
 									child: ChangeNotifierProvider<PostSpanZoneData>(
 										create: (context) => PostSpanRootZoneData(
 											imageboard: savedPost.imageboard,
-											thread: threadState!.thread!,
+											thread: threadState?.thread ?? savedPost.item.$2,
 											semanticRootIds: [-2],
 											style: PostSpanZoneStyle.linear
 										),
 										child: Builder(
 											builder: (context) => PostRow(
-												post: savedPost.item.post,
-												isSelected: selected(context, savedPost),
-												onTap: () => setter(savedPost),
+												post: savedPost.item.$1.post,
+												isSelected: selected(context, savedPost.imageboard.scope(savedPost.item.$1)),
+												onTap: () => setter(savedPost.imageboard.scope(savedPost.item.$1)),
 												showBoardName: true,
 												showSiteIcon: true,
 												onThumbnailLoadError: (e, st) async {
-													final firstThread = threadState?.thread;
-													await savedPost.imageboard.threadWatcher.fixBrokenThread(savedPost.item.post.threadIdentifier);
+													final firstThread = threadState?.thread ?? savedPost.item.$2;
+													await savedPost.imageboard.threadWatcher.fixBrokenThread(savedPost.item.$1.post.threadIdentifier);
 													if (firstThread != threadState!.thread || threadState.thread?.archiveName != null) {
-														savedPost.item.post = threadState.thread!.posts.firstWhere((p) => p.id == savedPost.item.post.id);
+														savedPost.item.$1.post = threadState.thread!.posts.firstWhere((p) => p.id == savedPost.item.$1.post.id);
 														savedPost.imageboard.persistence.didUpdateSavedPost();
 													}
 												},
 												onThumbnailTap: (initialAttachment) {
-													final attachments = _postListController.items.expand((_) => _.item.item.post.attachments).toList();
+													final attachments = _postListController.items.expand((_) => _.item.item.$1.post.attachments).toList();
 													showGallery(
 														context: context,
 														attachments: attachments,
 														replyCounts: {
 															for (final state in _postListController.items)
-																for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.post.threadIdentifier)?.thread?.attachments ?? [])
-																	attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.post.threadIdentifier)?.thread?.replyCount ?? 0
+																for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.$1.post.threadIdentifier)?.thread?.attachments ?? [])
+																	attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.$1.post.threadIdentifier)?.thread?.replyCount ?? 0
 														},
 														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 														onChange: (attachment) {
-															_postListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.item.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+															_postListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.item.$1.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 														},
 														semanticParentIds: [-2],
 														heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
@@ -1384,6 +1391,10 @@ class _SavedPageState extends State<SavedPage> {
 		_savedAttachmentsController.dispose();
 		_removeArchivedHack.dispose();
 		_yourPostsValueInjector.dispose();
+		_missingWatchedThreads.dispose();
+		_missingSavedThreads.dispose();
+		_missingSavedPostsThreads.dispose();
+		_missingYourPostsThreads.dispose();
 		_missingSavedAttachments.dispose();
 	}
 }
