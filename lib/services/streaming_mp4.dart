@@ -584,29 +584,34 @@ class VideoServer {
 
 	Future<void> ensureRunning() => _lock.protect(() async {
 		if (_httpServer == null) {
-			_httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
-			_httpServer!.listen(_handleRequest, cancelOnError: false, onDone: () {
-				_httpServer = null;
-				if (!_stopped) {
-					ensureRunning();
+			final h = _httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+			h.listen(_handleRequest, cancelOnError: false, onDone: () => _lock.protect(() async {
+				if (h == _httpServer) {
+					_httpServer = null;
+					if (!_stopped) {
+						Future.microtask(ensureRunning);
+					}
 				}
-			});
+			}));
 		}
 	});
 
 	Future<void> restartIfRunning() => _lock.protect(() async {
-		if (_httpServer != null) {
-			await () async {
-				await _httpServer?.close();
-			}().timeout(const Duration(seconds: 1), onTimeout: () async {
-				await _httpServer?.close(force: true);
-			});
+		final h = _httpServer;
+		if (h != null) {
+			try {
+				await h.close().timeout(const Duration(seconds: 1));
+			}
+			on TimeoutException {
+				await h.close(force: true);
+			}
 		}
 	});
 
 	void dispose() {
 		_stopped = true;
 		_httpServer?.close();
+		_httpServer = null;
 	}
 }
 
