@@ -55,7 +55,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		setState(() {});
 		try {
 			final siteToUse = result.data?.archive ?? ImageboardRegistry.instance.getImageboard(widget.query.imageboardKey)!.site;
-			final newResult = await siteToUse.search(widget.query, page: page ?? 1, lastResult: lastResult);
+			final newResult = await siteToUse.search(widget.query, page: page ?? 1, lastResult: lastResult, priority: RequestPriority.interactive);
 			result = AsyncSnapshot.withData(ConnectionState.done, newResult);
 			page = result.data?.page;
 			if (mounted) setState(() {});

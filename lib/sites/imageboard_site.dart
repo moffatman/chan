@@ -139,10 +139,10 @@ class DeletionFailedException implements Exception {
 }
 
 class ImageboardArchiveException implements Exception {
-	Map<String, String> archiveErrors;
+	Map<ImageboardSiteArchive, Object> archiveErrors;
 	ImageboardArchiveException(this.archiveErrors);
 	@override
-	String toString() => archiveErrors.entries.map((e) => '${e.key}: ${e.value}').join('\n');
+	String toString() => archiveErrors.entries.map((e) => '${e.key.name}: ${e.value.toStringDio()}').join('\n');
 }
 
 class UnknownSiteTypeException implements Exception {
@@ -1367,7 +1367,7 @@ abstract class ImageboardSiteArchive {
 	}
 	Thread? getThreadFromCatalogCache(ThreadIdentifier identifier) => _catalogCache[identifier];
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority});
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority});
 	@protected
 	String getWebUrlImpl(String board, [int? threadId, int? postId]);
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
@@ -1430,33 +1430,49 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');
 	}
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) async {
-		final Map<String, String> errorMessages = {};
+		final Map<ImageboardSiteArchive, Object> errors = {};
 		for (final archive in archives) {
 			if (persistence?.browserState.disabledArchiveNames.contains(archive.name) ?? false) {
 				continue;
 			}
 			try {
-				final post = await archive.getPost(board, id, priority: priority);
+				final post = await archive.getPost(board, id, priority: RequestPriority.cosmetic);
 				await Future.wait(post.attachments.map(_ensureCookiesMemoizedForAttachment));
 				return post;
 			}
-			catch(e, st) {
+			catch(e) {
 				if (e is! BoardNotFoundException) {
-					errorMessages[archive.name] = e.toStringDio();
-					print(e);
-					print(st);
+					errors[archive] = e;
 				}
 			}
 		}
-		if (errorMessages.isNotEmpty) {
-			throw ImageboardArchiveException(errorMessages);
+		if (priority != RequestPriority.cosmetic) {
+			// Try again, allowing cloudflare clearance
+			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
+				// No need to check disabledArchiveNames, they can't fail to begin with
+				if (error.value is CloudflareHandlerNotAllowedException) {
+					try {
+						final post = await error.key.getPost(board, id, priority: priority);
+						await Future.wait(post.attachments.map(_ensureCookiesMemoizedForAttachment));
+						return post;
+					}
+					catch (e) {
+						if (e is! BoardNotFoundException) {
+							errors[error.key] = e;
+						}
+					}
+				}
+			}
+		}
+		if (errors.isNotEmpty) {
+			throw ImageboardArchiveException(errors);
 		}
 		else {
 			throw BoardNotArchivedException(board);
 		}
 	}
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority}) async {
-		final Map<String, String> errorMessages = {};
+		final Map<ImageboardSiteArchive, Object> errors = {};
 		Thread? fallback;
 		final validator = customValidator ?? (Thread thread) async {
 			final opAttachment = thread.attachments.tryFirst ?? thread.posts_.tryFirst?.attachments.tryFirst;
@@ -1479,7 +1495,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					return null;
 				}
 				try {
-					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
+					final thread_ = await archive.getThread(thread, priority: RequestPriority.cosmetic).timeout(const Duration(seconds: 15));
 					if (completer.isCompleted) return null;
 					await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
 					thread_.archiveName = archive.name;
@@ -1506,18 +1522,44 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					if (e is! BoardNotFoundException) {
 						print('Error getting $thread from ${archive.name}: ${e.toStringDio()}');
 						print(st);
-						errorMessages[archive.name] = e.toStringDio();
+						errors[archive] = e;
 					}
 				}
 			}));
 			if (completer.isCompleted) {
 				// Do nothing, the thread was already returned
+				return null;
 			}
-			else if (fallback != null) {
+			if (priority != RequestPriority.cosmetic) {
+				// Try again, allowing cloudflare clearance
+				for (final error in errors.entries.toList(growable: false)) { // concurrent modification
+					if (error is CloudflareHandlerNotAllowedException) {
+						final thread_ = await error.key.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
+						await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
+						thread_.archiveName = error.key.name;
+						fallback = thread_;
+						try {
+							await validator(thread_);
+						}
+						catch (e) {
+							if (
+								(e is AttachmentNotArchivedException || e is AttachmentNotFoundException) &&
+								identical(fallback, thread_)
+							) {
+								fallback = null;
+							}
+							rethrow;
+						}
+						completer.complete(thread_);
+						return;
+					}
+				}
+			}
+			if (fallback != null) {
 				completer.complete(fallback);
 			}
-			else if (errorMessages.isNotEmpty) {
-				completer.completeError(ImageboardArchiveException(errorMessages));
+			else if (errors.isNotEmpty) {
+				completer.completeError(ImageboardArchiveException(errors));
 			}
 			else {
 				completer.completeError(BoardNotArchivedException(thread.board));
@@ -1527,27 +1569,46 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) => searchArchives(query, page: page, lastResult: lastResult);
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) => searchArchives(query, page: page, lastResult: lastResult, priority: priority);
 
-	Future<ImageboardArchiveSearchResultPage> searchArchives(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
-		String s = '';
+	Future<ImageboardArchiveSearchResultPage> searchArchives(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
+		final errors = <ImageboardSiteArchive, Object>{};
 		for (final archive in archives) {
 			if (persistence?.browserState.disabledArchiveNames.contains(archive.name) ?? false) {
 				continue;
 			}
 			try {
-				return await archive.search(query, page: page, lastResult: lastResult);
+				return await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic);
 			}
 			catch (e, st) {
 				if (e is! BoardNotFoundException) {
 					print('Error from ${archive.name}');
 					print(e.toStringDio());
 					print(st);
-					s += '\n${archive.name}: ${e.toStringDio()}';
+					errors[archive] = e;
 				}
 			}
 		}
-		throw Exception('Search failed - exhausted all archives$s');
+		if (priority != RequestPriority.cosmetic) {
+			// Try again, allowing cloudflare clearance
+			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
+				// No need to check disabledArchiveNames, they can't fail to begin with
+				if (error.value is CloudflareHandlerNotAllowedException) {
+					try {
+						return await error.key.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic);
+					}
+					catch (e, st) {
+						if (e is! BoardNotFoundException) {
+							print('Error2 from ${error.key.name}');
+							print(e.toStringDio());
+							print(st);
+							errors[error.key] = e;
+						}
+					}
+				}
+			}
+		}
+		throw Exception('Search failed - exhausted all archives\n${errors.entries.map((e) => '${e.key.name}: ${e.value.toStringDio()}').join('\n')}');
 	}
 	Uri? getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) => null;
 	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {

@@ -402,28 +402,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return boards!;
 	}
 
-	Future<ImageboardArchiveSearchResult> _makeResult(dynamic data) async {
-		if (data['op'] == '1') {
-			return ImageboardArchiveSearchResult.thread(
-				await _makeThread(ThreadIdentifier(
-					data['board']['shortname'],
-					int.parse(data['num'])
-				), {
-					data['num']: {
-						'op': data
-					}
-				}, priority: RequestPriority.interactive)
-			);
-		}
-		else {
-			return ImageboardArchiveSearchResult.post(
-				await _makePost(data, resolveIds: false, priority: RequestPriority.interactive)
-			);
-		}
-	}
-
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
 		final knownBoards = await getBoards(priority: RequestPriority.interactive);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
@@ -448,7 +428,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			options: Options(
 				validateStatus: (x) => true,
 				extra: {
-					kPriority: RequestPriority.interactive
+					kPriority: priority
 				}
 			)
 		);
@@ -460,7 +440,25 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			throw FoolFuukaException(data['error']);
 		}
 		return ImageboardArchiveSearchResultPage(
-			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map(_makeResult))).toList(),
+			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map((dynamic data) async {
+				if (data['op'] == '1') {
+					return ImageboardArchiveSearchResult.thread(
+						await _makeThread(ThreadIdentifier(
+							data['board']['shortname'],
+							int.parse(data['num'])
+						), {
+							data['num']: {
+								'op': data
+							}
+						}, priority: priority)
+					);
+				}
+				else {
+					return ImageboardArchiveSearchResult.post(
+						await _makePost(data, resolveIds: false, priority: priority)
+					);
+				}
+			}))).toList(),
 			page: page,
 			maxPage: (data['meta']['total_found'] / 25).ceil(),
 			countsUnreliable: true,

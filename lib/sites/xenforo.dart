@@ -749,7 +749,7 @@ class SiteXenforo extends ImageboardSite {
 	static final _searchLinkPattern = RegExp(r'/threads/[^/]*\.(\d+)(?:/post-(\d+))?');
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
 		final commonFields = {
 			if (query.name != null) 'c[users]': query.name,
 			if (query.postTypeFilter == PostTypeFilter.onlyOPs) 'c[title_only]': '1',

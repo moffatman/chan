@@ -1278,9 +1278,9 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
 		if (query.boards.isNotEmpty) {
-			return searchArchives(query, page: page, lastResult: lastResult);
+			return searchArchives(query, page: page, lastResult: lastResult, priority: priority);
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
 		final response = await client.getUri(Uri.https(searchUrl, '/', {
@@ -1291,7 +1291,7 @@ class Site4Chan extends ImageboardSite {
 				if (userAgent != null) 'user-agent': userAgent
 			},
 			extra: {
-				kPriority: RequestPriority.interactive
+				kPriority: priority
 			}
 		));
 		final document = parse(response.data);

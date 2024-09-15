@@ -1308,7 +1308,7 @@ class SiteReddit extends ImageboardSite {
 	String get name => 'Reddit';
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
 		final Response response;
 		if (query.name != null) {
 			response = await client.getUri(Uri.https(baseUrl, '/user/${query.name}.json', {
@@ -1319,7 +1319,7 @@ class SiteReddit extends ImageboardSite {
 						'before': lastResult.posts.first.redditApiId
 			}), options: Options(
 				extra: {
-					kPriority: RequestPriority.interactive
+					kPriority: priority
 				}
 			));
 		}
@@ -1336,7 +1336,7 @@ class SiteReddit extends ImageboardSite {
 						'before': lastResult.posts.first.redditApiId
 			}), options: Options(
 				extra: {
-					kPriority: RequestPriority.interactive
+					kPriority: priority
 				}
 			));
 		}

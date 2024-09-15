@@ -82,8 +82,8 @@ class WrappedArchive extends ImageboardSite {
   bool get hasPagedCatalog => archive.hasPagedCatalog;
 
   @override
-  Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) {
-    return archive.search(query, page: page, lastResult: lastResult);
+  Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) {
+    return archive.search(query, page: page, lastResult: lastResult, priority: priority);
   }
 
   @override

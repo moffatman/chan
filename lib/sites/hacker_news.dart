@@ -596,14 +596,14 @@ class SiteHackerNews extends ImageboardSite {
 	];
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
 		final response = await client.get('https://hn.algolia.com/api/v1/search', queryParameters: {
 			'query': query.query,
 			'page': page - 1,
 			if (query.name != null) 'tags': 'author_${query.name}'
 		}, options: Options(
 			extra: {
-				kPriority: RequestPriority.interactive
+				kPriority: priority
 			}
 		));
 		return ImageboardArchiveSearchResultPage(

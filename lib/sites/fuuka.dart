@@ -273,11 +273,11 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
 		if (query.postTypeFilter == PostTypeFilter.onlyStickies) {
 			throw UnsupportedError('"Only stickies" filtering not supported in Fuuka search');
 		}
-		final knownBoards = await getBoards(priority: RequestPriority.interactive);
+		final knownBoards = await getBoards(priority: priority);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);
@@ -299,7 +299,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		}), options: Options(
 			responseType: ResponseType.plain,
 			extra: {
-				kPriority: RequestPriority.interactive
+				kPriority: priority
 			}
 		));
 		if (response.statusCode != 200) {
@@ -308,7 +308,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		final document = parse(response.data);
 		return ImageboardArchiveSearchResultPage(
 			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map((e) async {
-				final p = await _makePost(e, priority: RequestPriority.interactive);
+				final p = await _makePost(e, priority: priority);
 				if (p.id == p.threadId) {
 					return ImageboardArchiveSearchResult.thread(Thread(
 						board: p.board,
