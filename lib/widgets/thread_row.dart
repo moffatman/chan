@@ -925,7 +925,7 @@ class _RenderContentFocusedMultiChildWidget extends RenderBox with SlottedContai
 			_attachment!.layout(BoxConstraints(
 				minWidth: constraints.maxWidth,
 				maxWidth: constraints.maxWidth,
-				minHeight: 50,
+				minHeight: min(50, constraints.maxHeight - 80),
 				maxHeight: constraints.maxHeight - 80
 			), parentUsesSize: true);
 			_text!.layout(BoxConstraints(
