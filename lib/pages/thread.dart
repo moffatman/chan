@@ -872,8 +872,9 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _switchToLive() async {
-		if (persistentState.thread?.isDeleted == true) {
+		if (persistentState.thread?.isDeleted == true || persistentState.thread?.isArchived == true) {
 			persistentState.thread?.isDeleted = false;
+			persistentState.thread?.isArchived = false;
 			persistentState.didMutateThread();
 		}
 		persistentState.useArchive = false;
