@@ -77,9 +77,9 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 	void initState() {
 		super.initState();
 		_lastQuery = widget.query;
-		_subjectFieldController = TextEditingController();
-		_nameFieldController = TextEditingController();
-		_tripFieldController = TextEditingController();
+		_subjectFieldController = TextEditingController(text: widget.query.subject);
+		_nameFieldController = TextEditingController(text: widget.query.name);
+		_tripFieldController = TextEditingController(text: widget.query.trip);
 	}
 
 	@override
@@ -90,6 +90,7 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 			_subjectFieldController.text = widget.query.subject ?? '';
 			_nameFieldController.text = widget.query.name ?? '';
 			_tripFieldController.text = widget.query.trip ?? '';
+			_lastQuery = widget.query;
 		}
 	}
 
