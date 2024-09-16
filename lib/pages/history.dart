@@ -32,7 +32,7 @@ class HistoryPage extends StatefulWidget {
 const _historyPageSize = 35;
 
 class HistoryPageState extends State<HistoryPage> {
-	final masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
+	final masterDetailKey = GlobalKey<MultiMasterDetailPage1State<ImageboardScoped<PostIdentifier>>>();
 	late final RefreshableListController<PersistentThreadState> _listController;
 	late final ValueNotifier<ImageboardScoped<PostIdentifier>?> _valueInjector;
 	List<PersistentThreadState> states = [];
@@ -53,7 +53,7 @@ class HistoryPageState extends State<HistoryPage> {
 						query: query,
 						selectedResult: _valueInjector.value,
 						onResultSelected: (result) {
-							masterDetailKey.currentState!.setValue(0, result);
+							masterDetailKey.currentState!.setValue(result);
 						}
 					);
 				}
@@ -86,11 +86,11 @@ class HistoryPageState extends State<HistoryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return MultiMasterDetailPage(
+		return MultiMasterDetailPage1(
 			showChrome: false,
 			id: 'history',
 			key: masterDetailKey,
-			paneCreator: () => [
+			paneCreator: () =>
 				MultiMasterPane<ImageboardScoped<PostIdentifier>>(
 					masterBuilder: (context, selectedThread, threadSetter) {
 						final settings = context.watch<Settings>();
@@ -363,7 +363,6 @@ class HistoryPageState extends State<HistoryPage> {
 						);
 					}
 				)
-			]
 		);
 	}
 

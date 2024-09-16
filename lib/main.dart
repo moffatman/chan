@@ -618,7 +618,7 @@ class ChanTabs extends ChangeNotifier {
 	final _tabController = CupertinoTabController();
 	final _tabListController = ScrollController();
 	int _lastIndex = 0;
-	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
+	final _savedMasterDetailKey = GlobalKey<SavedPageMasterDetailPanesState>();
 	final _tabButtonKeys = <int, GlobalKey>{};
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _searchPageKey = GlobalKey<SearchPageState>();
@@ -957,20 +957,20 @@ class ChanTabs extends ChangeNotifier {
 			tab.board = newThread.item.board;
 			tab.boardKey.currentState?.swapBoard(newThread.imageboard.scope(newThread.imageboard.persistence.getBoard(newThread.item.board)));
 		}
-		tab.masterDetailKey.currentState?.setValue(0, newThread?.item, showAnimationsForward: showAnimationsForward);
+		tab.masterDetailKey.currentState?.setValue(newThread?.item, showAnimationsForward: showAnimationsForward);
 		tab.didUpdate();
 		runWhenIdle(const Duration(seconds: 1), Persistence.saveTabs);
 	}
 	
 
 	ImageboardScoped<ThreadWatch>? get selectedWatchedThread {
-		return _savedMasterDetailKey.currentState?.getValue<ImageboardScoped<ThreadWatch>>(0);
+		return _savedMasterDetailKey.currentState?.getValue1();
 	}
 	set selectedWatchedThread(ImageboardScoped<ThreadWatch>? newWatchedThread) {
-		_savedMasterDetailKey.currentState?.setValue(0, newWatchedThread);
+		_savedMasterDetailKey.currentState?.setValue1(newWatchedThread);
 	}
 	set selectedWatchedThreadWithoutAnimation(ImageboardScoped<ThreadWatch>? newWatchedThread) {
-		_savedMasterDetailKey.currentState?.setValue(0, newWatchedThread, showAnimationsForward: false);
+		_savedMasterDetailKey.currentState?.setValue1(newWatchedThread, showAnimationsForward: false);
 	}
 
 	Future<void> openSavedTab() async {
@@ -1298,7 +1298,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					if (notification.postId != null) {
 						_savedFakeTab.initialPostId[notification.threadIdentifier!] = notification.postId!;
 					}
-					_tabs._savedMasterDetailKey.currentState?.setValue(0, imageboard.scope(watch));
+					_tabs._savedMasterDetailKey.currentState?.setValue1(imageboard.scope(watch));
 				}
 			}
 		}
@@ -1448,7 +1448,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						for (int i = 0; i < 200 && catalogTab.masterDetailKey.currentState == null; i++) {
 							await Future.delayed(const Duration(milliseconds: 50));
 						}
-						catalogTab.masterDetailKey.currentState?.setValue(0, ThreadIdentifier(board, threadId));
+						catalogTab.masterDetailKey.currentState?.setValue(ThreadIdentifier(board, threadId));
 					}();
 					catalogTab.didUpdate();
 				}

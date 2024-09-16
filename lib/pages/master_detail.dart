@@ -82,7 +82,7 @@ class MasterDetailPage<T> extends StatelessWidget {
 	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
 	final T? initialValue;
 	final ValueChanged<T?>? onValueChanged;
-	final Key? multiMasterDetailPageKey;
+	final GlobalKey<MultiMasterDetailPage1State>? multiMasterDetailPageKey;
 	const MasterDetailPage({
 		required this.id,
 		required this.masterBuilder,
@@ -94,18 +94,16 @@ class MasterDetailPage<T> extends StatelessWidget {
 	}) : super(key: key);
 	@override
 	Widget build(BuildContext context) {
-		return MultiMasterDetailPage(
+		return MultiMasterDetailPage1(
 			showChrome: false,
 			id: id,
 			key: multiMasterDetailPageKey,
-			paneCreator: () => [
-				MultiMasterPane<T>(
-					masterBuilder: masterBuilder,
-					detailBuilder: detailBuilder,
-					initialValue: initialValue,
-					onValueChanged: onValueChanged
-				)
-			]
+			paneCreator: () => MultiMasterPane<T>(
+				masterBuilder: masterBuilder,
+				detailBuilder: detailBuilder,
+				initialValue: initialValue,
+				onValueChanged: onValueChanged
+			)
 		);
 	}
 }
@@ -182,23 +180,54 @@ class MultiMasterPane<T> {
 	}
 }
 
-class MultiMasterDetailPage extends StatefulWidget {
+abstract class _MultiMasterDetailPage extends StatefulWidget {
 	final Object? id;
-	final List<MultiMasterPane> Function() paneCreator;
 	final bool showChrome;
 
-	const MultiMasterDetailPage({
-		required this.paneCreator,
-		this.id,
-		this.showChrome = true,
-		Key? key
-	}) : super(key: key);
-
-	@override
-	createState() => MultiMasterDetailPageState();
+	const _MultiMasterDetailPage({
+		required this.id,
+		required this.showChrome,
+		super.key
+	});
 }
 
-class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with SingleTickerProviderStateMixin {
+class MultiMasterDetailPage1<T> extends _MultiMasterDetailPage {
+	final MultiMasterPane<T> Function() paneCreator;
+
+	const MultiMasterDetailPage1({
+		required this.paneCreator,
+		super.id,
+		super.showChrome = true,
+		super.key
+	});
+
+	@override
+	createState() => MultiMasterDetailPage1State<T>();
+}
+
+class MultiMasterDetailPage5<T1, T2, T3, T4, T5> extends _MultiMasterDetailPage {
+	final MultiMasterPane<T1> Function() paneCreator1;
+	final MultiMasterPane<T2> Function() paneCreator2;
+	final MultiMasterPane<T3> Function() paneCreator3;
+	final MultiMasterPane<T4> Function() paneCreator4;
+	final MultiMasterPane<T5> Function() paneCreator5;
+
+	const MultiMasterDetailPage5({
+		required this.paneCreator1,
+		required this.paneCreator2,
+		required this.paneCreator3,
+		required this.paneCreator4,
+		required this.paneCreator5,
+		super.id,
+		super.showChrome = true,
+		super.key
+	});
+
+	@override
+	createState() => MultiMasterDetailPage5State<T1, T2, T3, T4, T5>();
+}
+
+abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> extends State<S> with SingleTickerProviderStateMixin {
 	late TabController _tabController;
 	late GlobalKey<NavigatorState> masterKey;
 	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _masterInterceptorKey;
@@ -212,6 +241,9 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Singl
  	bool? lastOnePane;
 	late bool onePane;
 	late final EasyListenable _rebuild;
+
+	/// To override
+	List<MultiMasterPane> paneCreator();
 
 	void _onPaneChanged() {
 		setState(() {});
@@ -237,7 +269,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Singl
 	void initState() {
 		super.initState();
 		_rebuild = EasyListenable();
-		panes = widget.paneCreator();
+		panes = paneCreator();
 		_tabController = TabController(length: panes.length, vsync: this);
 		_tabController.addListener(_onPaneChanged);
 		_initGlobalKeys();
@@ -249,11 +281,11 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Singl
 	}
 
 	@override
-	void didUpdateWidget(MultiMasterDetailPage oldWidget) {
+	void didUpdateWidget(S oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (oldWidget.id != widget.id) {
 			int newIndex = _tabController.index;
-			panes = widget.paneCreator();
+			panes = paneCreator();
 			if (_tabController.index >= panes.length) {
 				newIndex = max(0, panes.length - 1);
 			}
@@ -269,7 +301,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Singl
 		}
 	}
 
-	void setValue(int index, dynamic value, {bool updateDetailPane = true, bool showAnimationsForward = true}) {
+	void _setValue(int index, dynamic value, {bool updateDetailPane = true, bool showAnimationsForward = true}) {
 		if (panes[index].currentValue.value == value) {
 			return;
 		}
@@ -278,7 +310,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Singl
 		_onNewValue(panes[index], updateDetailPane: updateDetailPane, showAnimationsForward: showAnimationsForward);
 	}
 
-	T? getValue<T>(int index) {
+	T? _getValue<T>(int index) {
 		dynamic value = panes[index].currentValue.value;
 		if (value is T) {
 			return value;
@@ -540,4 +572,28 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Singl
 		}
 		_rebuild.dispose();
 	}
+}
+
+class MultiMasterDetailPage1State<T> extends _MultiMasterDetailPageState<MultiMasterDetailPage1<T>> {
+	@override
+	List<MultiMasterPane> paneCreator() => [widget.paneCreator()];
+
+	T? getValue() => _getValue(0);
+	void setValue(T? value, {bool updateDetailPane = true, bool showAnimationsForward = true}) => _setValue(0, value, updateDetailPane: updateDetailPane, showAnimationsForward: showAnimationsForward);
+}
+
+class MultiMasterDetailPage5State<T1, T2, T3, T4, T5> extends _MultiMasterDetailPageState<MultiMasterDetailPage5<T1, T2, T3, T4, T5>> {
+	@override
+	List<MultiMasterPane> paneCreator() => [widget.paneCreator1(), widget.paneCreator2(), widget.paneCreator3(), widget.paneCreator4(), widget.paneCreator5()];
+
+	T1? getValue1() => _getValue(0);
+	void setValue1(T1? value, {bool updateDetailPane = true, bool showAnimationsForward = true}) => _setValue(0, value, updateDetailPane: updateDetailPane, showAnimationsForward: showAnimationsForward);
+	T2? getValue2() => _getValue(1);
+	void setValue2(T2? value, {bool updateDetailPane = true, bool showAnimationsForward = true}) => _setValue(1, value, updateDetailPane: updateDetailPane, showAnimationsForward: showAnimationsForward);
+	T3? getValue3() => _getValue(2);
+	void setValue3(T3? value, {bool updateDetailPane = true, bool showAnimationsForward = true}) => _setValue(2, value, updateDetailPane: updateDetailPane, showAnimationsForward: showAnimationsForward);
+	T4? getValue4() => _getValue(3);
+	void setValue4(T4? value, {bool updateDetailPane = true, bool showAnimationsForward = true}) => _setValue(3, value, updateDetailPane: updateDetailPane, showAnimationsForward: showAnimationsForward);
+	T5? getValue5() => _getValue(4);
+	void setValue5(T5? value, {bool updateDetailPane = true, bool showAnimationsForward = true}) => _setValue(4, value, updateDetailPane: updateDetailPane, showAnimationsForward: showAnimationsForward);
 }

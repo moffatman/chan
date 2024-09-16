@@ -49,32 +49,34 @@ import 'package:unifiedpush/unifiedpush.dart';
 
 final _downloadedAttachments = <Attachment>{};
 
-class _PostThreadCombo {
+class PostThreadCombo {
 	final Imageboard imageboard;
 	final Post post;
 	final Thread thread;
-	_PostThreadCombo({
+	PostThreadCombo({
 		required this.imageboard,
 		required this.post,
 		required this.thread
 	});
 
 	@override
-	bool operator == (Object o) =>
-		identical(this, o) ||
-		(o is _PostThreadCombo) &&
-		(o.imageboard == imageboard) &&
-		(o.post.id == post.id) &&
-		(o.thread.identifier == thread.identifier);
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is PostThreadCombo) &&
+		(other.imageboard == imageboard) &&
+		(other.post.id == post.id) &&
+		(other.thread.identifier == thread.identifier);
 	@override
 	int get hashCode => Object.hash(imageboard, post, thread.identifier);
 
 	@override
-	String toString() => '_PostThreadCombo($imageboard, $thread, $post)';
+	String toString() => 'PostThreadCombo($imageboard, $thread, $post)';
 }
 
+typedef SavedPageMasterDetailPanesState = MultiMasterDetailPage5State<ImageboardScoped<ThreadWatch>, ImageboardScoped<(ThreadIdentifier, int?)>, PostThreadCombo, ImageboardScoped<SavedPost>, ImageboardScoped<SavedAttachment>>;
+
 class SavedPage extends StatefulWidget {
-	final GlobalKey<MultiMasterDetailPageState> masterDetailKey;
+	final GlobalKey<SavedPageMasterDetailPanesState> masterDetailKey;
 
 	const SavedPage({
 		required this.masterDetailKey,
@@ -91,7 +93,7 @@ class _SavedPageState extends State<SavedPage> {
 	late final RefreshableListController<ImageboardScoped<(ThreadWatch, Thread)>> _watchedListController;
 	late final RefreshableListController<(PersistentThreadState, Thread)> _threadListController;
 	late final RefreshableListController<ImageboardScoped<(SavedPost, Thread)>> _postListController;
-	late final RefreshableListController<_PostThreadCombo> _yourPostsListController;
+	late final RefreshableListController<PostThreadCombo> _yourPostsListController;
 	final _watchedThreadsListKey = GlobalKey(debugLabel: '_SavedPageState._watchedThreadsListKey');
 	final _savedThreadsListKey = GlobalKey(debugLabel: '_SavedPageState._savedThreadsListKey');
 	final _savedPostsListKey = GlobalKey(debugLabel: '_SavedPageState._savedPostsListKey');
@@ -107,7 +109,7 @@ class _SavedPageState extends State<SavedPage> {
 	/// for optimization and pagination of loading your posts
 	Map<(Imageboard, String), List<PostIdentifier>> _yourPostsLists = {};
 	late final ValueNotifier<ImageboardScoped<(ThreadIdentifier, int?)>?> _savedThreadsValueInjector;
-	late final ValueNotifier<_PostThreadCombo?> _yourPostsValueInjector;
+	late final ValueNotifier<PostThreadCombo?> _yourPostsValueInjector;
 	bool _lastTickerMode = true;
 
 	@override
@@ -128,8 +130,8 @@ class _SavedPageState extends State<SavedPage> {
 		_missingSavedAttachments = ValueNotifier([]);
 	}
 
-	Future<_PostThreadCombo?> _takeYourPost() async {
-		final heads = <_PostThreadCombo>[];
+	Future<PostThreadCombo?> _takeYourPost() async {
+		final heads = <PostThreadCombo>[];
 		for (final entry in _yourPostsLists.entries) {
 			if (entry.value.isEmpty) {
 				continue;
@@ -150,13 +152,13 @@ class _SavedPageState extends State<SavedPage> {
 				// Weird situation... just skip it
 				continue;
 			}
-			heads.add(_PostThreadCombo(
+			heads.add(PostThreadCombo(
 				imageboard: entry.key.$1,
 				thread: thread,
 				post: post
 			));
 		}
-		_PostThreadCombo? latestHead;
+		PostThreadCombo? latestHead;
 		for (final head in heads) {
 			if (latestHead == null || head.post.time.isAfter(latestHead.post.time)) {
 				latestHead = head;
@@ -198,7 +200,7 @@ class _SavedPageState extends State<SavedPage> {
 						selectedResult: asPost,
 						onResultSelected: (result) async {
 							if (result == null) {
-								widget.masterDetailKey.currentState!.setValue(2, null);
+								widget.masterDetailKey.currentState!.setValue3(null);
 								return;
 							}
 							final thread = await result.imageboard.persistence.getThreadStateIfExists(result.item.thread)?.getThread();
@@ -209,7 +211,7 @@ class _SavedPageState extends State<SavedPage> {
 							if (post == null) {
 								return;
 							}
-							widget.masterDetailKey.currentState!.setValue(1, result.imageboard.scope((result.item.thread, result.item.postId)));
+							widget.masterDetailKey.currentState!.setValue2(result.imageboard.scope((result.item.thread, result.item.postId)));
 						}
 					);
 				}
@@ -222,7 +224,7 @@ class _SavedPageState extends State<SavedPage> {
 		widget.masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _yourPostsValueInjector,
-				builder: (context, _PostThreadCombo? selectedResult, child) {
+				builder: (context, PostThreadCombo? selectedResult, child) {
 					final post = selectedResult?.post.identifier;
 					return HistorySearchPage(
 						query: query,
@@ -230,7 +232,7 @@ class _SavedPageState extends State<SavedPage> {
 						selectedResult: post == null ? null : selectedResult?.imageboard.scope(post),
 						onResultSelected: (result) async {
 							if (result == null) {
-								widget.masterDetailKey.currentState!.setValue(2, null);
+								widget.masterDetailKey.currentState!.setValue3(null);
 								return;
 							}
 							final thread = await result.imageboard.persistence.getThreadStateIfExists(result.item.thread)?.getThread();
@@ -241,7 +243,7 @@ class _SavedPageState extends State<SavedPage> {
 							if (post == null) {
 								return;
 							}
-							widget.masterDetailKey.currentState!.setValue(2, _PostThreadCombo(
+							widget.masterDetailKey.currentState!.setValue3(PostThreadCombo(
 								imageboard: result.imageboard,
 								thread: thread,
 								post: post
@@ -264,10 +266,10 @@ class _SavedPageState extends State<SavedPage> {
 		final threadStateBoxesAnimation = Persistence.sharedThreadStateBox.listenable();
 		final savedAttachmentsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList());
 		final imageboardIds = <String, int>{};
-		return MultiMasterDetailPage(
+		return MultiMasterDetailPage5(
 			id: 'saved',
 			key: widget.masterDetailKey,
-			paneCreator: () => [
+			paneCreator1: () =>
 				MultiMasterPane<ImageboardScoped<ThreadWatch>>(
 					navigationBar: AdaptiveBar(
 						title: const Text('Watched Threads'),
@@ -578,6 +580,7 @@ class _SavedPageState extends State<SavedPage> {
 						);
 					}
 				),
+			paneCreator2: () =>
 				MultiMasterPane<ImageboardScoped<(ThreadIdentifier, int?)>>(
 					navigationBar: AdaptiveBar(
 						title: const Text('Saved Threads'),
@@ -794,13 +797,14 @@ class _SavedPageState extends State<SavedPage> {
 						);
 					}
 				),
-				MultiMasterPane<_PostThreadCombo>(
+			paneCreator3: () =>
+				MultiMasterPane<PostThreadCombo>(
 					navigationBar: const AdaptiveBar(
 						title: Text('Your Posts')
 					),
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
-						return RefreshableList<_PostThreadCombo>(
+						return RefreshableList<PostThreadCombo>(
 							aboveFooter: ValueListenableBuilder(
 								valueListenable: _missingYourPostsThreads,
 								builder: (context, list, _) => MissingThreadsControls(
@@ -840,7 +844,7 @@ class _SavedPageState extends State<SavedPage> {
 									list.sort((a, b) => a.postId.compareTo(b.postId));
 								}
 								// First chunk should include all with missing threads
-								final ret = <_PostThreadCombo>[];
+								final ret = <PostThreadCombo>[];
 								for (int i = 0; i < _yourPostsChunkSize; i++) {
 									final p = await _takeYourPost();
 									if (p == null) {
@@ -852,7 +856,7 @@ class _SavedPageState extends State<SavedPage> {
 								return ret;
 							},
 							listExtender: (_) async {
-								final ret = <_PostThreadCombo>[];
+								final ret = <PostThreadCombo>[];
 								for (int i = 0; i < _yourPostsChunkSize; i++) {
 									final p = await _takeYourPost();
 									if (p == null) {
@@ -936,6 +940,7 @@ class _SavedPageState extends State<SavedPage> {
 						);
 					}
 				),
+			paneCreator4: () =>
 				MultiMasterPane<ImageboardScoped<SavedPost>>(
 					navigationBar: AdaptiveBar(
 						title: const Text('Saved Posts'),
@@ -1068,6 +1073,7 @@ class _SavedPageState extends State<SavedPage> {
 						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
 					)
 				),
+			paneCreator5: () =>
 				MultiMasterPane<ImageboardScoped<SavedAttachment>>(
 					navigationBar: AdaptiveBar(
 						title: const Text('Saved Attachments'),
@@ -1334,7 +1340,7 @@ class _SavedPageState extends State<SavedPage> {
 										},
 										onChange: (a) {
 											final originalL = _savedAttachmentsController.items.tryFirstWhere((l) => l.item.item.attachment == a.attachment)?.item;
-											widget.masterDetailKey.currentState?.setValue(4, originalL, updateDetailPane: false);
+											widget.masterDetailKey.currentState?.setValue5(originalL, updateDetailPane: false);
 										},
 										allowScroll: true,
 										allowPop: poppedOut,
@@ -1424,7 +1430,6 @@ class _SavedPageState extends State<SavedPage> {
 						);
 					}
 				)
-			]
 		);
 	}
 

@@ -64,7 +64,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class SearchPageState extends State<SearchPage> {
-	final masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
+	final masterDetailKey = GlobalKey<MultiMasterDetailPage1State<SelectedSearchResult>>();
 	late final ValueNotifier<SelectedSearchResult?> _valueInjector;
 
 	@override
@@ -84,7 +84,7 @@ class SearchPageState extends State<SearchPage> {
 						query: query,
 						selectedResult: _valueInjector.value,
 						onResultSelected: (result) {
-							masterDetailKey.currentState!.setValue(0, result);
+							masterDetailKey.currentState!.setValue(result);
 						}
 					);
 				}
@@ -95,11 +95,11 @@ class SearchPageState extends State<SearchPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return MultiMasterDetailPage(
+		return MultiMasterDetailPage1(
 			id: 'search',
 			key: masterDetailKey,
 			showChrome: false,
-			paneCreator: () => [
+			paneCreator: () =>
 				MultiMasterPane<SelectedSearchResult>(
 					masterBuilder: (context, currentValue, setValue) {
 						final v = context.watch<MasterDetailHint>().currentValue;
@@ -130,7 +130,6 @@ class SearchPageState extends State<SearchPage> {
 						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
 					)
 				)
-			]
 		);
 	}
 
