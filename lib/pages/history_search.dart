@@ -31,6 +31,12 @@ class HistorySearchResult {
 	@override toString() => 'HistorySearchResult(thread: $thread, post: $post)';
 }
 
+enum _FilterSavedThreadsOnly {
+	everything,
+	savedThreads,
+	notSavedThreads
+}
+
 enum _FilterYourPostsOnly {
 	everything,
 	yourPosts,
@@ -43,12 +49,14 @@ class HistorySearchPage extends StatefulWidget {
 	final String query;
 	final ImageboardScoped<PostIdentifier>? selectedResult;
 	final ValueChanged<ImageboardScoped<PostIdentifier>?> onResultSelected;
+	final bool initialSavedThreadsOnly;
 	final bool initialYourPostsOnly;
 
 	const HistorySearchPage({
 		required this.query,
 		required this.selectedResult,
 		required this.onResultSelected,
+		this.initialSavedThreadsOnly = false,
 		this.initialYourPostsOnly = false,
 		super.key
 	});
@@ -67,11 +75,15 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	bool? _filterHasAttachment;
 	bool? _filterContainsLink;
 	bool? _filterIsThread;
+	_FilterSavedThreadsOnly _filterSavedThreadsOnly = _FilterSavedThreadsOnly.everything;
 	_FilterYourPostsOnly _filterYourPostsOnly = _FilterYourPostsOnly.everything;
 
 	@override
 	void initState() {
 		super.initState();
+		if (widget.initialSavedThreadsOnly) {
+			_filterSavedThreadsOnly = _FilterSavedThreadsOnly.savedThreads;
+		}
 		if (widget.initialYourPostsOnly) {
 			_filterYourPostsOnly = _FilterYourPostsOnly.yourPosts;
 		}
@@ -90,6 +102,11 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					(_filterBoard != null &&
 					(_filterBoard!.imageboard != threadState.imageboard ||
 						_filterBoard!.item.name != threadState.board)) ||
+						switch (_filterSavedThreadsOnly) {
+							_FilterSavedThreadsOnly.everything => false,
+							_FilterSavedThreadsOnly.savedThreads => threadState.savedTime == null,
+							_FilterSavedThreadsOnly.notSavedThreads => threadState.savedTime != null
+						} ||
 						switch (_filterYourPostsOnly) {
 							_FilterYourPostsOnly.everything || _FilterYourPostsOnly.notYourPosts => false,
 							_FilterYourPostsOnly.yourPosts || _FilterYourPostsOnly.repliesToYourPosts => threadState.youIds.isEmpty
@@ -101,6 +118,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 			final query = RegExp(RegExp.escape(widget.query), caseSensitive: false);
 			if (thread != null) {
 				for (final post in thread.posts) {
+					if (post.isStub || post.isPageStub) {
+						continue;
+					}
 					if (widget.query.isNotEmpty && !post.span.buildText().contains(query)) {
 						continue;
 					}
@@ -171,6 +191,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 										Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
 									]
 								),
+								if (_filterSavedThreadsOnly == _FilterSavedThreadsOnly.savedThreads)
+									const Text('Saved Thread')
+								else if (_filterSavedThreadsOnly == _FilterSavedThreadsOnly.notSavedThreads)
+									const Text('Unsaved Thread'),
 								if (_filterYourPostsOnly == _FilterYourPostsOnly.yourPosts)
 									const Text('(You)')
 								else if (_filterYourPostsOnly == _FilterYourPostsOnly.notYourPosts)
@@ -324,6 +348,20 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 														},
 														onValueChanged: (v) {
 															_filterContainsLink = v.value;
+															setDialogState(() {});
+															anyChange = true;
+														}
+													),
+													const SizedBox(height: 16),
+													AdaptiveSegmentedControl<_FilterSavedThreadsOnly>(
+														groupValue: _filterSavedThreadsOnly,
+														children: const {
+															_FilterSavedThreadsOnly.notSavedThreads: (null, 'Only unsaved threads'),
+															_FilterSavedThreadsOnly.everything: (null, 'Any'),
+															_FilterSavedThreadsOnly.savedThreads: (null, 'Only saved threads'),
+														},
+														onValueChanged: (v) {
+															_filterSavedThreadsOnly = v;
 															setDialogState(() {});
 															anyChange = true;
 														}

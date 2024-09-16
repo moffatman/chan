@@ -106,6 +106,7 @@ class _SavedPageState extends State<SavedPage> {
 	late final ValueNotifier<List<ImageboardScoped<SavedAttachment>>> _missingSavedAttachments;
 	/// for optimization and pagination of loading your posts
 	Map<(Imageboard, String), List<PostIdentifier>> _yourPostsLists = {};
+	late final ValueNotifier<ImageboardScoped<(ThreadIdentifier, int?)>?> _savedThreadsValueInjector;
 	late final ValueNotifier<_PostThreadCombo?> _yourPostsValueInjector;
 	bool _lastTickerMode = true;
 
@@ -118,6 +119,7 @@ class _SavedPageState extends State<SavedPage> {
 		_yourPostsListController = RefreshableListController();
 		_savedAttachmentsController = RefreshableListController();
 		_removeArchivedHack = EasyListenable();
+		_savedThreadsValueInjector = ValueNotifier(null);
 		_yourPostsValueInjector = ValueNotifier(null);
 		_missingWatchedThreads = ValueNotifier([]);
 		_missingSavedThreads = ValueNotifier([]);
@@ -179,6 +181,41 @@ class _SavedPageState extends State<SavedPage> {
 				child: Text(message)
 			)
 		);
+	}
+
+	void _onSavedThreadsHistorySearch(String query) {
+		widget.masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
+			builder: (context) => ValueListenableBuilder(
+				valueListenable: _savedThreadsValueInjector,
+				builder: (context, ImageboardScoped<(ThreadIdentifier, int?)>? selectedResult, child) {
+					final asPost = switch (selectedResult) {
+						null => null,
+						ImageboardScoped<(ThreadIdentifier, int?)> t => t.imageboard.scope(PostIdentifier(t.item.$1.board, t.item.$1.id, t.item.$2 ?? t.item.$1.id))
+					};
+					return HistorySearchPage(
+						query: query,
+						initialSavedThreadsOnly: true,
+						selectedResult: asPost,
+						onResultSelected: (result) async {
+							if (result == null) {
+								widget.masterDetailKey.currentState!.setValue(2, null);
+								return;
+							}
+							final thread = await result.imageboard.persistence.getThreadStateIfExists(result.item.thread)?.getThread();
+							if (thread == null) {
+								return;
+							}
+							final post = thread.posts.tryFirstWhere((p) => p.id == result.item.postId);
+							if (post == null) {
+								return;
+							}
+							widget.masterDetailKey.currentState!.setValue(1, result.imageboard.scope((result.item.thread, result.item.postId)));
+						}
+					);
+				}
+			),
+			settings: dontAutoPopSettings
+		));
 	}
 
 	void _onYourPostsHistorySearch(String query) {
@@ -541,7 +578,7 @@ class _SavedPageState extends State<SavedPage> {
 						);
 					}
 				),
-				MultiMasterPane<ImageboardScoped<ThreadIdentifier>>(
+				MultiMasterPane<ImageboardScoped<(ThreadIdentifier, int?)>>(
 					navigationBar: AdaptiveBar(
 						title: const Text('Saved Threads'),
 						actions: [
@@ -648,7 +685,7 @@ class _SavedPageState extends State<SavedPage> {
 							) : null,
 							itemBuilder: (itemContext, pair) {
 								final state = pair.$1;
-								final isSelected = selectedThread(itemContext, state.imageboard!.scope(state.identifier));
+								final isSelected = selectedThread(itemContext, state.imageboard!.scope((state.identifier, null)));
 								final openInNewTabZone = context.read<OpenInNewTabZone?>();
 								return ImageboardScope(
 									imageboardKey: state.imageboardKey,
@@ -715,7 +752,7 @@ class _SavedPageState extends State<SavedPage> {
 																		for (final attachment in state.item.$2.attachments)
 																			attachment: state.item.$1.imageboard!.scope(state.item.$2)
 																},
-																onThreadSelected: (t) => threadSetter(t.imageboard.scope(t.item.identifier))
+																onThreadSelected: (t) => threadSetter(t.imageboard.scope((t.item.identifier, null)))
 															),
 															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 															onChange: (attachment) {
@@ -727,20 +764,29 @@ class _SavedPageState extends State<SavedPage> {
 													}
 												)
 											),
-											onTap: () => threadSetter(state.imageboard!.scope(state.identifier))
+											onTap: () => threadSetter(state.imageboard!.scope((state.identifier, null)))
 										)
 									)
 								);
 							},
-							filterHint: 'Search saved threads'
+							filterHint: 'Search saved threads',
+							filterAlternative: FilterAlternative(
+								name: 'full history',
+								suggestWhenFilterEmpty: true,
+								handler: _onSavedThreadsHistorySearch
+							),
 						);
 					},
 					detailBuilder: (selectedThread, setter, poppedOut) {
+						WidgetsBinding.instance.addPostFrameCallback((_){
+							_savedThreadsValueInjector.value = selectedThread;
+						});
 						return BuiltDetailPane(
 							widget: selectedThread != null ? ImageboardScope(
 								imageboardKey: selectedThread.imageboard.key,
 								child: ThreadPage(
-									thread: selectedThread.item,
+									thread: selectedThread.item.$1,
+									initialPostId: selectedThread.item.$2,
 									boardSemanticId: -12
 								)
 							) : _placeholder('Select a thread'),
@@ -1390,6 +1436,7 @@ class _SavedPageState extends State<SavedPage> {
 		_postListController.dispose();
 		_savedAttachmentsController.dispose();
 		_removeArchivedHack.dispose();
+		_savedThreadsValueInjector.dispose();
 		_yourPostsValueInjector.dispose();
 		_missingWatchedThreads.dispose();
 		_missingSavedThreads.dispose();
