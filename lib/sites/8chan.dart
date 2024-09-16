@@ -37,8 +37,11 @@ class Site8Chan extends SiteLynxchan {
 	}
 
 	@override
-	bool isRedirectGateway(Uri uri) {
-		return (uri.host == baseUrl || uri.host == '') && uri.path == '/.static/pages/disclaimer.html';
+	String? getRedirectGatewayName(Uri uri, String? title) {
+		if ((uri.host == baseUrl || uri.host == '') && uri.path == '/.static/pages/disclaimer.html') {
+			return '8chan';
+		}
+		return null;
 	}
 
 	@override

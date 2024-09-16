@@ -1,4 +1,5 @@
 
+import 'package:chan/services/dark_mode_browser.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
@@ -69,12 +70,18 @@ class _CookieBrowserState extends State<CookieBrowser> {
 		}
 		return SafeArea(
 			child: InAppWebView(
-				initialUrlRequest: URLRequest(
-					url: WebUri.uri(widget.initialUrl)
+				initialSettings: InAppWebViewSettings(
+					transparentBackground: true
 				),
-				onLoadStop: (controller, webUrl) {
+				initialUrlRequest: URLRequest(
+					url: WebUri.uri(widget.initialUrl),
+					mainDocumentURL: WebUri.uri(widget.initialUrl),
+					method: 'GET'
+				),
+				onLoadStop: (controller, webUrl) async {
+					await maybeApplyDarkModeBrowserJS(controller);
 					if (webUrl != null && webUrl.isValidUri) {
-						Persistence.saveCookiesFromWebView(webUrl.uriValue);
+						await Persistence.saveCookiesFromWebView(webUrl.uriValue);
 					}
 				},
 			)

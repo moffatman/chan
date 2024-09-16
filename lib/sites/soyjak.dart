@@ -1,6 +1,8 @@
 import 'package:chan/services/javascript_challenge.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan2.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 class SiteSoyjak extends SiteLainchan2 {
@@ -39,6 +41,19 @@ class SiteSoyjak extends SiteLainchan2 {
 	}
 
 	@override
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		try {
+			return await super.submitPost(post, captchaSolution, cancelToken);
+		}
+		on HTTPStatusException catch (e) {
+			if (e.code == 405) {
+				throw WebGatewayException(this, authPage);
+			}
+			rethrow;
+		}
+	}
+
+	@override
 	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields) async {
 		fields['integrity-v2'] = await solveJavascriptChallenge(
 			url: Uri.parse(getWebUrl(
@@ -46,8 +61,21 @@ class SiteSoyjak extends SiteLainchan2 {
 				threadId: post.threadId
 			)),
 			javascript: 'Module.ccall("x", "string")',
-			priority: RequestPriority.interactive
+			waitJavascript: 'Object.keys(wasmExports).length > 0',
+			priority: RequestPriority.interactive,
+			name: 'McChallenge'
 		);
+	}
+
+	@override
+	Uri get authPage => Uri.https(baseUrl, '/challenge-check.html');
+
+	@override
+	String? getRedirectGatewayName(Uri uri, String? title) {
+		if (title == 'McChallenge') {
+			return 'McChallenge';
+		}
+		return null;
 	}
 
 	@override

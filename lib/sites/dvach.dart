@@ -302,12 +302,7 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> logout(bool fromBothWifiAndCellular) async {
-		if (!fromBothWifiAndCellular && loggedIn[Persistence.currentCookies] == false) {
-			// No need to clear
-			return;
-		}
-		// loggedIn may be null here. Logout is still appropriate because we could be logged in from previous session.
+  Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
 		final jars = fromBothWifiAndCellular ? [
 			Persistence.wifiCookies,
 			Persistence.cellularCookies
@@ -322,11 +317,11 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
 			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
 			await jar.saveFromResponse(Uri.https(parent.baseUrl, '/'), toSave);
-			await CookieManager.instance().deleteCookies(
-				url: WebUri(parent.baseUrl)
-			);
 			loggedIn[jar] = false;
 		}
+		await CookieManager.instance().deleteCookies(
+			url: WebUri(parent.baseUrl)
+		);
   }
 
   @override

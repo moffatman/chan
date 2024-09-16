@@ -123,6 +123,27 @@ class WebAuthenticationRequiredException implements Exception {
 	String toString() => 'Web authentication required';
 }
 
+class WebGatewayException extends ExtendedException {
+	final ImageboardSite site;
+	final Uri url;
+	const WebGatewayException(this.site, this.url);
+	@override
+	bool get isReportable => false;
+	@override
+	get remedies => {
+		'Login': (context) async {
+			await site.client.getUri(url, options: Options(
+				extra: {
+					'cloudflare': true,
+					kPriority: RequestPriority.interactive
+				}
+			));
+		}
+	};
+	@override
+	String toString() => 'Web login required: $url';
+}
+
 class BannedException implements Exception {
 	String reason;
 	Uri? url;
@@ -1782,10 +1803,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	};
 	int? get subjectCharacterLimit => null;
 	bool get hasLinkCookieAuth => false;
+	Uri? get authPage => null;
 	bool get hasExpiringThreads => true;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
-	bool isRedirectGateway(Uri uri) => false;
+	String? getRedirectGatewayName(Uri uri, String? title) => null;
 }
 
 abstract class ImageboardSiteLoginSystem {
@@ -1813,7 +1835,14 @@ abstract class ImageboardSiteLoginSystem {
 		parent.persistence?.browserState.loginFields.clear();
 		await parent.persistence?.didUpdateBrowserState();
 	}
-	Future<void> logout(bool fromBothWifiAndCellular);
+	Future<void> logoutImpl(bool fromBothWifiAndCellular);
+	Future<void> logout(bool fromBothWifiAndCellular) async {
+		if (!fromBothWifiAndCellular && !(loggedIn[Persistence.currentCookies] ?? getSavedLoginFields() != null)) {
+			// No-op
+			return;
+		}
+		await logoutImpl(fromBothWifiAndCellular);
+	}
 	bool isLoggedIn(PersistCookieJar jar) {
 		return loggedIn.putIfAbsent(jar, () => false);
 	}

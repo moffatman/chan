@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -70,4 +71,10 @@ Future<void> copyUngzipped(String inputPath, String outputPath) async {
 
 extension UnescapeHtml on String {
 	String get unescapeHtml => unescape.convert(this);
+}
+
+abstract class ExtendedException implements Exception {
+	const ExtendedException();
+	Map<String, FutureOr<void> Function(BuildContext)> get remedies => const {};
+	bool get isReportable;
 }

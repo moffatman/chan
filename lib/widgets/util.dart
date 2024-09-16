@@ -35,13 +35,14 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 Future<void> alert(BuildContext context, String title, String message, {
-	Map<String, VoidCallback> actions = const {},
+	Map<String, FutureOr<void> Function()> actions = const {},
 	bool barrierDismissible = true
 }) async {
 	final looksForeign = title.looksForeign || message.looksForeign;
 	bool translating = false;
 	String? translatedTitle;
 	String? translatedMessage;
+	final outerContext = context;
 	await showAdaptiveDialog(
 		context: context,
 		barrierDismissible: barrierDismissible,
@@ -51,9 +52,19 @@ Future<void> alert(BuildContext context, String title, String message, {
 				content: Text(translatedMessage ?? message),
 				actions: [
 					for (final action in actions.entries) AdaptiveDialogAction(
-						onPressed: () {
+						onPressed: () async {
 							Navigator.of(context).pop();
-							action.value();
+							try {
+								await action.value();
+							}
+							catch (e, st) {
+								if (outerContext.mounted) {
+									alertError(outerContext, e, st);
+								}
+								else {
+									Future.error(e, st); // crashlytics
+								}
+							}
 						},
 						child: Text(action.key)
 					),
@@ -107,11 +118,14 @@ Future<void> alert(BuildContext context, String title, String message, {
 }
 
 Future<void> alertError(BuildContext context, Object error, StackTrace? stackTrace, {
-	Map<String, VoidCallback> actions = const {},
+	Map<String, FutureOr<void> Function()> actions = const {},
 	bool barrierDismissible = false
 }) => alert(context, 'Error', error.toStringDio(), actions: {
 	...actions,
-	if (stackTrace != null) 'Report bug': () {
+	if (error is ExtendedException)
+		for (final remedy in error.remedies.entries)
+			remedy.key: () => remedy.value(context),
+	if (stackTrace != null && !(error is ExtendedException && !error.isReportable)) 'Report bug': () {
 		FlutterEmailSender.send(Email(
 			subject: 'Chance Bug Report',
 			recipients: ['callum@moffatman.com'],

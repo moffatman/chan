@@ -68,6 +68,13 @@ final siteSettings = [
 									)
 								)
 							),
+							if (imageboard.site.authPage case Uri url) AdaptiveIconButton(
+								icon: const Icon(CupertinoIcons.globe),
+								onPressed: () => openCookieBrowser(
+									context,
+									url,
+								)
+							),
 							if (imageboard.site.hasLinkCookieAuth) AdaptiveIconButton(
 								icon: const Icon(CupertinoIcons.link),
 								onPressed: () async {

@@ -1463,12 +1463,7 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> logout(bool fromBothWifiAndCellular) async {
-		if (!fromBothWifiAndCellular && loggedIn[Persistence.currentCookies] == false) {
-			// No need to clear
-			return;
-		}
-		// loggedIn may be null here. Logout is still appropriate because we could be logged in from previous session.
+  Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
 		final jars = fromBothWifiAndCellular ? [
 			Persistence.wifiCookies,
 			Persistence.cellularCookies

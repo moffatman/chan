@@ -5,10 +5,19 @@ import 'package:chan/sites/imageboard_site.dart';
 Future<String> solveJavascriptChallenge({
 	required Uri url,
 	required String javascript,
-	required RequestPriority priority
+	/// Will be called for a while until true
+	String waitJavascript = 'true',
+	required RequestPriority priority,
+	required String name
 }) async {
 	return await useCloudflareClearedWebview(
 		handler: (controller, url) async {
+			for (int i = 0; i < 20; i++) {
+				if (((await controller.callAsyncJavaScript(functionBody: 'return $waitJavascript'))?.value) == true) {
+					break;
+				}
+				await Future.delayed(const Duration(milliseconds: 500));
+			}
 			final result = await controller.callAsyncJavaScript(functionBody: 'return $javascript');
 			final v = result?.value;
 			if (v is String) {
@@ -19,6 +28,7 @@ Future<String> solveJavascriptChallenge({
 			}
 		},
 		uri: url,
-		priority: priority
+		priority: priority,
+		gatewayName: name
 	);
 }

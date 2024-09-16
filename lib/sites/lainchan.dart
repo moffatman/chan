@@ -463,7 +463,13 @@ class SiteLainchan extends ImageboardSite {
 			}
 		}
 		if ((response.statusCode ?? 0) >= 400) {
-			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'HTTP Error ${response.statusCode}');
+			final message = parse(response.data).querySelector('h2')?.text;
+			if (message != null) {
+				throw PostFailedException(message);
+			}
+			else {
+				throw HTTPStatusException(response.statusCode ?? 0);
+			}
 		}
 		final doc = parse(response.data);
 		final ban = doc.querySelector('.ban');
@@ -640,7 +646,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> logout(bool fromBothWifiAndCellular) async {
+  Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
 		final jars = fromBothWifiAndCellular ? [
 			Persistence.wifiCookies,
 			Persistence.cellularCookies
@@ -653,7 +659,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 			loggedIn[jar] = false;
 		}
 		await CookieManager.instance().deleteCookies(
-			url: WebUri(parent.baseUrl)
+			url: WebUri(parent.sysUrl)
 		);
   }
 

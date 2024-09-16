@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:chan/services/dark_mode_browser.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -22,6 +24,15 @@ extension CloudflareWanted on RequestOptions {
 extension CloudflareHandled on Response {
 	bool get cloudflare => extra['cloudflare'] == true;
 }
+extension HtmlTitle on Response {
+	String? get htmlTitle {
+		if ((headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false) &&
+				data is String) {
+			return parse(data).querySelector('title')?.text;
+		}
+		return null;
+	}
+}
 
 extension _Cloudflare on RequestPriority {
 	bool get shouldPopupCloudflare => switch(this) {
@@ -32,10 +43,19 @@ extension _Cloudflare on RequestPriority {
 
 final _initialAllowNonInteractiveWebvieWhen = (timePasses: DateTime(2000), hostPasses: '');
 var _allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
+void _resetAllowNonInteractiveWebview(BuildContext context) {
+	_allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
+}
 
-class CloudflareHandlerRateLimitException implements Exception {
+class CloudflareHandlerRateLimitException extends ExtendedException {
 	final String message;
 	const CloudflareHandlerRateLimitException(this.message);
+	@override
+	bool get isReportable => false;
+	@override
+	Map<String, FutureOr<void> Function(BuildContext)> get remedies => const {
+		'Reset timer': _resetAllowNonInteractiveWebview
+	};
 	@override
 	String toString() => message;
 }
@@ -46,10 +66,13 @@ class CloudflareHandlerNotAllowedException implements Exception {
 	String toString() => 'Cloudflare handling disabled for this request';
 }
 
-class CloudflareHandlerInterruptedException implements Exception {
-	const CloudflareHandlerInterruptedException();
+class CloudflareHandlerInterruptedException extends ExtendedException {
+	final String gatewayName;
+	const CloudflareHandlerInterruptedException(this.gatewayName);
 	@override
-	String toString() => 'Cloudflare challenge handler interrupted';
+	bool get isReportable => false;
+	@override
+	String toString() => '$gatewayName challenge handler interrupted';
 }
 
 class CloudflareHandlerBlockedException implements Exception {
@@ -140,9 +163,7 @@ class CloudflareInterceptor extends Interceptor {
 		].any((snippet) => title.contains(snippet)) || [
 			'…',
 			'...'
-		].any((ending) => title.endsWith(ending)) || [
-			'McChallenge'
-		].any((str) => title == str);
+		].any((ending) => title.endsWith(ending));
 	}
 
 	static bool _responseMatches(Response response) {
@@ -151,12 +172,7 @@ class CloudflareInterceptor extends Interceptor {
 			final title = document.querySelector('title')?.text ?? '';
 			return _titleMatches(title);
 		}
-		if ((response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false) &&
-				response.data is String &&
-				response.data.contains('<title>McChallenge</title>')) {
-			return true;
-		}
-		if (ImageboardRegistry.instance.isRedirectGateway(response.redirects.tryLast?.location)) {
+		if (ImageboardRegistry.instance.isRedirectGateway(response.redirects.tryLast?.location, response.htmlTitle)) {
 			return true;
 		}
 		return false;
@@ -204,6 +220,8 @@ class CloudflareInterceptor extends Interceptor {
 		}
 	};
 
+	static const _kDefaultGatewayName = 'Cloudflare';
+
 	static final _webViewLock = Mutex();
 	static Future<T> _useWebview<T>({
 		required Future<T> Function(InAppWebViewController, Uri?) handler,
@@ -213,10 +231,27 @@ class CloudflareInterceptor extends Interceptor {
 		required String userAgent,
 		required Uri cookieUrl,
 		required RequestPriority priority,
-		bool toast = true
+		bool toast = true,
+		String gatewayName = _kDefaultGatewayName
 	}) => runEphemerallyLocked(cookieUrl.topLevelHost, () => _webViewLock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
-		await CookieManager.instance().deleteAllCookies();
+		final manager = CookieManager.instance();
+		await manager.deleteAllCookies();
+		final cookies = await Persistence.currentCookies.loadForRequest(cookieUrl);
+		for (final cookie in cookies) {
+			await manager.setCookie(
+				url: WebUri.uri(cookieUrl),
+				domain: cookie.domain,
+				name: cookie.name,
+				value: cookie.value,
+				path: cookie.path ?? '/',
+				expiresDate: cookie.expires?.millisecondsSinceEpoch,
+				maxAge: cookie.maxAge,
+				isHttpOnly: cookie.httpOnly,
+				isSecure: cookie.secure,
+				sameSite: HTTPCookieSameSitePolicy.fromValue(cookie.sameSite?.name)
+			);
+		}
 		final initialSettings = InAppWebViewSettings(
 			userAgent: userAgent,
 			clearCache: true,
@@ -224,20 +259,9 @@ class CloudflareInterceptor extends Interceptor {
 			transparentBackground: true
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<T> callback, ValueChanged<Exception> errorCallback) => (controller, uri) async {
-			if (Settings.instance.theme.brightness == Brightness.dark) {
-				await controller.evaluateJavascript(source: '''
-					var style = document.createElement('style');
-					style.innerHTML = "html {\\
-						filter: invert(1) hue-rotate(180deg) contrast(0.8);\\
-					}\\
-					img, video, picture, canvas, iframe, embed {\\
-						filter: invert(1) hue-rotate(180deg);\\
-					}";
-					document.head.appendChild(style);
-				''');
-			}
+			await maybeApplyDarkModeBrowserJS(controller);
 			final title = await controller.getTitle() ?? '';
-			if (!ImageboardRegistry.instance.isRedirectGateway(uri) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
+			if (!ImageboardRegistry.instance.isRedirectGateway(uri, title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
 				await Persistence.saveCookiesFromWebView(uri!);
 				try {
 					callback(await handler(controller, uri));
@@ -266,7 +290,7 @@ class CloudflareInterceptor extends Interceptor {
 			if (toast) {
 				showToast(
 					context: ImageboardRegistry.instance.context!,
-					message: 'Authorizing Cloudflare\n${cookieUrl.host}',
+					message: 'Authorizing $gatewayName\n${cookieUrl.host}',
 					icon: CupertinoIcons.cloud
 				);
 			}
@@ -285,8 +309,8 @@ class CloudflareInterceptor extends Interceptor {
 		}
 		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push(adaptivePageRoute(
 			builder: (context) => AdaptiveScaffold(
-				bar: const AdaptiveBar(
-					title: Text('Cloudflare Login')
+				bar: AdaptiveBar(
+					title: Text('$gatewayName Login')
 				),
 				disableAutoBarHiding: true,
 				body: SafeArea(
@@ -299,7 +323,7 @@ class CloudflareInterceptor extends Interceptor {
 					)
 				)
 			),
-			useFullWidthGestures: false
+			useFullWidthGestures: gatewayName == _kDefaultGatewayName // Normal cloudflare should be OK
 		));
 		headlessWebView?.dispose();
 		if (ret == null) {
@@ -308,7 +332,7 @@ class CloudflareInterceptor extends Interceptor {
 				timePasses: DateTime.now().add(const Duration(minutes: 15)),
 				hostPasses: cookieUrl.host
 			);
-			throw const CloudflareHandlerInterruptedException();
+			throw CloudflareHandlerInterruptedException(gatewayName);
 		}
 		else if (ret is Exception) {
 			throw ret;
@@ -345,6 +369,7 @@ class CloudflareInterceptor extends Interceptor {
 					userAgent: options.headers['user-agent'] ?? Persistence.settings.userAgent,
 					initialUrlRequest: URLRequest(
 						url: WebUri.uri(options.uri),
+						mainDocumentURL: WebUri.uri(options.uri),
 						method: options.method,
 						headers: {
 							for (final h in options.headers.entries) h.key: h.value
@@ -391,7 +416,8 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			try {
 				final _CloudflareResponse data;
-				if (ImageboardRegistry.instance.isRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri))) {
+				final gatewayName = ImageboardRegistry.instance.getRedirectGatewayName(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri), response.htmlTitle);
+				if (gatewayName != null) {
 					// Start the request again
 					// We need to ensure cookies are preserved in all navigation sequences
 					data = await _useWebview(
@@ -400,13 +426,15 @@ class CloudflareInterceptor extends Interceptor {
 						userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
 						initialUrlRequest: URLRequest(
 							url: WebUri.uri(response.requestOptions.uri),
+							mainDocumentURL: WebUri.uri(response.requestOptions.uri),
 							method: response.requestOptions.method,
 							headers: {
 								for (final h in response.requestOptions.headers.entries) h.key: h.value.toString()
 							},
 							body: response.requestOptions.data == null ? null : Uint8List.fromList(response.requestOptions.data)
 						),
-						priority: response.requestOptions.priority
+						priority: response.requestOptions.priority,
+						gatewayName: gatewayName
 					);
 				 }
 				 else {
@@ -507,16 +535,19 @@ Future<T> useCloudflareClearedWebview<T>({
 	required Uri uri,
 	String? userAgent,
 	required RequestPriority priority,
-	bool toast = true
+	bool toast = true,
+	required String gatewayName
 }) => CloudflareInterceptor._useWebview(
 	handler: handler,
 	cookieUrl: uri,
 	userAgent: userAgent ?? Settings.instance.userAgent,
 	initialUrlRequest: URLRequest(
 		url: WebUri.uri(uri),
+		mainDocumentURL: WebUri.uri(uri),
 		method: 'GET',
 		body: null
 	),
 	priority: priority,
-	toast: toast
+	toast: toast,
+	gatewayName: gatewayName
 );
