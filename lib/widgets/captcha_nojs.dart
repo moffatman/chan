@@ -168,7 +168,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 					..._headers
 				},
 				extra: {
-					if (widget.request.cloudflare) 'cloudflare': true,
+					if (widget.request.cloudflare) kCloudflare: true,
 					kPriority: RequestPriority.interactive
 				},
 				responseType: ResponseType.plain
@@ -220,7 +220,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 					..._headers
 				},
 				extra: {
-					if (widget.request.cloudflare) 'cloudflare': true
+					if (widget.request.cloudflare) kCloudflare: true
 				}
 			)
 		);

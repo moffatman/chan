@@ -860,7 +860,7 @@ class Site4Chan extends ImageboardSite {
 					...postingHeaders
 				},
 				extra: {
-					if (captchaSolution.cloudflare && stickyCloudflare) 'cloudflare': true,
+					if (captchaSolution.cloudflare && stickyCloudflare) kCloudflare: true,
 					kPriority: RequestPriority.interactive
 				}
 			),
@@ -1009,7 +1009,7 @@ class Site4Chan extends ImageboardSite {
 					'referer': endpoint.toString()
 				},
 				extra: {
-					if (captchaSolution.cloudflare && stickyCloudflare) 'cloudflare': true
+					if (captchaSolution.cloudflare && stickyCloudflare) kCloudflare: true
 				}
 			));
 			final responseDocument = parse(response.data);

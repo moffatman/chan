@@ -134,7 +134,7 @@ class WebGatewayException extends ExtendedException {
 		'Login': (context) async {
 			await site.client.getUri(url, options: Options(
 				extra: {
-					'cloudflare': true,
+					kCloudflare: true,
 					kPriority: RequestPriority.interactive
 				}
 			));

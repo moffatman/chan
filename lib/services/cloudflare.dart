@@ -17,12 +17,14 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart';
 import 'package:mutex/mutex.dart';
 
+const kCloudflare = 'cloudflare';
+
 extension CloudflareWanted on RequestOptions {
-	bool get cloudflare => extra['cloudflare'] == true;
+	bool get cloudflare => extra[kCloudflare] == true;
 	RequestPriority get priority => (extra[kPriority] as RequestPriority?) ?? RequestPriority.functional;
 }
 extension CloudflareHandled on Response {
-	bool get cloudflare => extra['cloudflare'] == true;
+	bool get cloudflare => extra[kCloudflare] == true;
 }
 extension HtmlTitle on Response {
 	String? get htmlTitle {
@@ -107,7 +109,7 @@ extension on _CloudflareResponse {
 			],
 			statusCode: content == null ? 302 : 200,
 			extra: {
-				'cloudflare': true
+				kCloudflare: true
 			}
 		);
 	}
