@@ -417,7 +417,7 @@ class Persistence extends ChangeNotifier {
 	static Future<void> initializeStatic() async {
 		appLaunchTime = DateTime.now();
 		initializeHive();
-		temporaryDirectory = await getTemporaryDirectory();
+		temporaryDirectory = (await getTemporaryDirectory()).absolute;
 		webmCacheDirectory = Directory('${temporaryDirectory.path}/webmcache');
 		httpCacheDirectory = Directory('${temporaryDirectory.path}/httpcache');
 		shareCacheDirectory = Directory('${temporaryDirectory.path}/sharecache');
@@ -453,9 +453,11 @@ class Persistence extends ChangeNotifier {
 		wifiCookies = PersistCookieJar(
 			storage: FileStorage(temporaryDirectory.path)
 		);
+		await wifiCookies.forceInit();
 		cellularCookies = PersistCookieJar(
 			storage: FileStorage('${temporaryDirectory.path}/cellular')
 		);
+		await cellularCookies.forceInit();
 		await Directory('${documentsDirectory.path}/$savedAttachmentsDir').create(recursive: true);
 		final settingsBox = await _openBoxWithBackup<SavedSettings>(settingsBoxName, compactionStrategy: (int entries, int deletedEntries) {
 			return deletedEntries > 5;
@@ -647,6 +649,15 @@ class Persistence extends ChangeNotifier {
 			// The temporary directory is shared between applications, it's not safe to clear it. 
 			return;
 		}
+		final ignorePaths = <String>[];
+		if (Persistence.wifiCookies.storage case FileStorage storage) {
+			// ignore: invalid_use_of_visible_for_testing_member
+			ignorePaths.add(storage.currentDirectory);
+		}
+		if (Persistence.cellularCookies.storage case FileStorage storage) {
+			// ignore: invalid_use_of_visible_for_testing_member
+			ignorePaths.add(storage.currentDirectory);
+		}
 		DateTime? deadline;
 		if (olderThan != null) {
 			deadline = DateTime.now().subtract(olderThan);
@@ -660,7 +671,7 @@ class Persistence extends ChangeNotifier {
 			final stat = await child.stat();
 			if (stat.type == FileSystemEntityType.file) {
 				// Probably something from file_pickers
-				if (deadline == null || stat.accessed.compareTo(deadline) < 0) {
+				if ((deadline == null || stat.accessed.compareTo(deadline) < 0) && !ignorePaths.any(child.path.startsWith)) {
 					deletedSize += stat.size;
 					deletedCount++;
 					try {
@@ -687,7 +698,7 @@ class Persistence extends ChangeNotifier {
 					// Race condition - deleted already?
 					continue;
 				}
-				if (deadline == null || stat.accessed.isBefore(deadline)) {
+				if ((deadline == null || stat.accessed.isBefore(deadline)) && !ignorePaths.any(child.path.startsWith)) {
 					deletedCount++;
 					try {
 						await dir.delete();
