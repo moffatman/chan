@@ -1205,8 +1205,9 @@ class RenderFixedWidthLayoutBox extends RenderProxyBox {
     if (child != null) {
 			final double width;
 			if (constraints.maxWidth.isFinite) {
-				if (constraints.maxWidth > (_width + _threshold)) {
-					width = constraints.maxWidth - _threshold;
+				final threshold = _width * _threshold;
+				if (constraints.maxWidth > (_width + threshold)) {
+					width = constraints.maxWidth - threshold;
 				}
 				else {
 					width = _width;
@@ -1222,7 +1223,8 @@ class RenderFixedWidthLayoutBox extends RenderProxyBox {
 				maxWidth: width,
 				minWidth: width
 			), parentUsesSize: true);
-      size = constraints.constrain(child!.size);
+			// Constrain basically just does tiny floating point rounding here
+      size = constraints.constrain(child!.size * widthScale);
     } else {
       size = computeSizeForNoChild(constraints);
     }
@@ -1271,12 +1273,12 @@ class RenderFixedWidthLayoutBox extends RenderProxyBox {
 class FixedWidthLayoutBox extends SingleChildRenderObjectWidget {
 	/// Fixed width
 	final double width;
-	/// Allow growth of width when available width exceeds beyond width+threshold
+	/// Allow growth of width when available width exceeds beyond relative factor
 	final double threshold;
 
 	const FixedWidthLayoutBox({
 		required this.width,
-		this.threshold = 75,
+		this.threshold = 0.1,
 		required super.child,
 		super.key
 	});
@@ -1284,7 +1286,7 @@ class FixedWidthLayoutBox extends SingleChildRenderObjectWidget {
 
 	@override
 	RenderFixedWidthLayoutBox createRenderObject(BuildContext context) {
-		return RenderFixedWidthLayoutBox(width: width, threshold: 75);
+		return RenderFixedWidthLayoutBox(width: width, threshold: threshold);
 	}
 
 	@override
