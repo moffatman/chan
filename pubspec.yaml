@@ -88,7 +88,7 @@ dependencies:
   mime: ^1.0.2
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0
-  firebase_core: ^3.3.0
+  firebase_core: ^3.5.0
   unifiedpush: ^4.0.0
   flutter_apns_only: ^1.6.0
   flutter_local_notifications: ^17.2.1+2
@@ -99,7 +99,7 @@ dependencies:
   dynamic_color: ^1.5.2
   flutter:
     sdk: flutter
-  firebase_crashlytics: ^4.0.4
+  firebase_crashlytics: ^4.1.2
   charset_converter: ^2.2.0
   markdown: ^7.2.1
   string_similarity: ^2.0.0
