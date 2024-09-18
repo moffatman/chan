@@ -119,6 +119,7 @@ class _NotifyingDrawerButtonWrapper extends StatelessWidget {
 			return savedCount + devCount;
 		}
 		return NotifyingIcon(
+			sideBySide: true,
 			primaryCount: Combining2ValueListenable(
 				child1: CombiningValueListenable<int>(
 					children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),

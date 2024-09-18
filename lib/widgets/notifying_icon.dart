@@ -22,7 +22,54 @@ class StationaryNotifyingIcon extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		const r = Radius.circular(10);
-		final child = Row(
+		final child = sideBySide ? Column(
+			mainAxisAlignment: MainAxisAlignment.center,
+			children: [
+				if (primary > 0) Container(
+					decoration: BoxDecoration(
+						color: ChanceTheme.secondaryColorOf(context),
+						borderRadius: const BorderRadius.all(r)
+					),
+					constraints: const BoxConstraints(
+						minWidth: 20
+					),
+					height: 20,
+					alignment: Alignment.center,
+					padding: const EdgeInsets.all(2),
+					child: AutoSizeText(
+						primary.toString(),
+						maxLines: 1,
+						minFontSize: 0,
+						textAlign: TextAlign.center,
+						style: TextStyle(
+							color: (ChanceTheme.secondaryColorOf(context).computeLuminance() > 0.5) ? Colors.black : Colors.white
+						)
+					)
+				),
+				if (primary > 0 && secondary > 0) const SizedBox(height: 2),
+				if (secondary > 0) Container(
+					decoration: BoxDecoration(
+						color: ChanceTheme.primaryColorOf(context),
+						borderRadius: const BorderRadius.all(r)
+					),
+					constraints: const BoxConstraints(
+						minWidth: 20
+					),
+					height: 20,
+					alignment: Alignment.center,
+					padding: const EdgeInsets.all(2),
+					child: AutoSizeText(
+						secondary.toString(),
+						maxLines: 1,
+						minFontSize: 0,
+						textAlign: TextAlign.center,
+						style: TextStyle(
+							color: ChanceTheme.backgroundColorOf(context)
+						)
+					)
+				)
+			]
+		) : Row(
 			children: [
 				if (primary > 0) Container(
 					decoration: BoxDecoration(
@@ -73,6 +120,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 				mainAxisSize: MainAxisSize.min,
 				children: [
 					icon,
+					const SizedBox(width: 2),
 					child
 				]
 			);
