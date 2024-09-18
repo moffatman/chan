@@ -184,7 +184,12 @@ class DrawerList<T extends Object> {
 				));
 				return onClose == null ? tile : Dismissible(
 					key: ValueKey((item, _undoId)),
-					direction: DismissDirection.startToEnd,
+					direction: switch (menuAxisDirection) {
+						// Can swipe in either direction
+						AxisDirection.up || AxisDirection.down => DismissDirection.horizontal,
+						AxisDirection.right => DismissDirection.startToEnd,
+						AxisDirection.left => DismissDirection.endToStart
+					},
 					onDismissed: (direction) {
 						final data = onClose(i);
 						if (data.onUndo != null) {
