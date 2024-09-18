@@ -675,6 +675,7 @@ class ChanTabs extends ChangeNotifier {
 		Persistence.currentTabIndex = index;
 		notifyListeners();
 		_didModifyPersistentTabData();
+		Future.microtask(_animateTabList);
 	}
 
 	double? get drawerEdgeGestureWidthFactor {
