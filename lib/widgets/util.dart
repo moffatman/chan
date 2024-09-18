@@ -2282,3 +2282,61 @@ class CommonTextStyles {
 		fontFeatures: [FontFeature.tabularFigures()]
 	);
 }
+
+class DebouncedBuilder<T> extends StatefulWidget {
+	final T value;
+	final Duration period;
+	final Widget Function(T) builder;
+	const DebouncedBuilder({
+		required this.value,
+		required this.period,
+		required this.builder,
+		super.key
+	});
+	
+	@override
+	createState() => _DebouncedBuilderState<T>();
+}
+
+class _DebouncedBuilderState<T> extends State<DebouncedBuilder<T>> {
+	late Timer _timer;
+	late T _value;
+	/// The first value shouldn't be initially shown, it might be very short-lived
+	bool _show = false;
+
+	@override
+	void initState() {
+		super.initState();
+		_timer = Timer(widget.period, _onTimerFire);
+		_value = widget.value;
+	}
+
+	void _onTimerFire() {
+		_value = widget.value;
+		_show = true;
+		setState(() {});
+	}
+
+	@override
+	void didUpdateWidget(DebouncedBuilder<T> oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.value != oldWidget.value) {
+			_timer.cancel();
+			_timer = Timer(widget.period, _onTimerFire);
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return Visibility.maintain(
+			visible: _show,
+			child: widget.builder(_value)
+		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_timer.cancel();
+	}
+}

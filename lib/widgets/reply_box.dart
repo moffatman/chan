@@ -1764,7 +1764,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																			}
 																		}
 																		if (pair == null) {
-																			return const SizedBox.shrink();
+																			return DebouncedBuilder(
+																				value: postingPost.statusText,
+																				period: const Duration(milliseconds: 100),
+																				builder: (s) => Text(s, style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5)))
+																			);
 																		}
 																		return AdaptiveThinButton(
 																			backgroundFilled: true,

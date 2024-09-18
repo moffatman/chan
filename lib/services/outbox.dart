@@ -22,6 +22,8 @@ sealed class QueueState<T> {
 	bool get isFinished => isIdle && !isSubmittable;
 	bool get _needsCaptcha => false;
 	DateTime? get _submissionTime => null;
+	String get idleName;
+	String get activeName => idleName;
 	void _dispose() {}
 }
 
@@ -31,6 +33,8 @@ class QueueStateIdle<T> extends QueueState<T> {
 	bool get isIdle => true;
 	@override
 	bool get isSubmittable => true;
+	@override
+	String get idleName => 'Idle';
 }
 
 class QueueStateNeedsCaptcha<T> extends QueueState<T> {
@@ -44,6 +48,10 @@ class QueueStateNeedsCaptcha<T> extends QueueState<T> {
 	bool get isSubmittable => false;
 	@override
 	bool get _needsCaptcha => true;
+	@override
+	String get idleName => 'Needs captcha';
+	@override
+	String get activeName => 'Getting captcha';
 }
 
 class QueueStateWaitingWithCaptcha<T> extends QueueState<T> {
@@ -58,6 +66,8 @@ class QueueStateWaitingWithCaptcha<T> extends QueueState<T> {
 	void _dispose() {
 		captchaSolution.dispose();
 	}
+	@override
+	String get idleName => 'Waiting to submit';
 }
 
 typedef WaitMetadata = ({DateTime until, VoidCallback skip});
@@ -78,6 +88,8 @@ class QueueStateSubmitting<T> extends QueueState<T> {
 	bool get isSubmittable => false;
 	@override
 	String toString() => 'QueueStateSubmitting(message: $message, wait: $wait, cancelToken: $cancelToken)';
+	@override
+	String get idleName => 'Submitting';
 }
 
 class QueueStateFailed<T> extends QueueState<T> {
@@ -93,6 +105,8 @@ class QueueStateFailed<T> extends QueueState<T> {
 	void _dispose() {
 		captchaSolution?.dispose();
 	}
+	@override
+	String get idleName => 'Failed';
 }
 
 class QueueStateDone<T> extends QueueState<T> {
@@ -106,6 +120,8 @@ class QueueStateDone<T> extends QueueState<T> {
 	bool get isSubmittable => false;
 	@override
 	DateTime? get _submissionTime => time;
+	@override
+	String get idleName => 'Done';
 }
 
 class QueueStateDeleted<T> extends QueueState<T> {
@@ -114,10 +130,14 @@ class QueueStateDeleted<T> extends QueueState<T> {
 	bool get isIdle => true;
 	@override
 	bool get isSubmittable => false;
+	@override
+	String get idleName => 'Deleted';
 }
 
 sealed class QueueEntry<T> extends ChangeNotifier {
 	final _lock = Mutex();
+	bool get isActivelyProcessing => _lock.isLocked;
+	String get statusText => isActivelyProcessing ? '${state.activeName}...' : state.idleName;
 	final String imageboardKey;
 	Imageboard get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey)!;
 	ImageboardSite get site => imageboard.site;
