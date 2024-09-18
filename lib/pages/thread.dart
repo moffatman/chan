@@ -1555,8 +1555,8 @@ class ThreadPageState extends State<ThreadPage> {
 									)
 								]
 							),
-							body: _ThreadReplyLayout(
-								thread: TransformedMediaQuery(
+							body: ReplyBoxLayout(
+								body: TransformedMediaQuery(
 									transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
 									child: Shortcuts(
 										shortcuts: {
@@ -3081,69 +3081,5 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		WidgetsBinding.instance.addPostFrameCallback((_) {
 			_scheduleAdditionalSafeAreaInsetsHide();
 		});
-	}
-}
-
-enum _ThreadPageLayoutId {
-	thread,
-	replyBox
-}
-
-class _ThreadReplyLayoutDelegate extends MultiChildLayoutDelegate {
-	final double topPadding;
-
-	_ThreadReplyLayoutDelegate({
-		required this.topPadding
-	});
-
-	@override
-	void performLayout(Size size) {
-		final replyBoxSize = layoutChild(_ThreadPageLayoutId.replyBox, BoxConstraints(
-			minWidth: size.width,
-			maxWidth: size.width,
-			maxHeight: size.height - topPadding
-		));
-		final threadHeight = size.height - replyBoxSize.height;
-		positionChild(_ThreadPageLayoutId.replyBox, Offset(0, threadHeight));
-		layoutChild(_ThreadPageLayoutId.thread, BoxConstraints.tightFor(
-			width: size.width,
-			height: threadHeight
-		));
-		// Thread is already at 0,0 (default)
-	}
-
-	@override
-	bool shouldRelayout(_ThreadReplyLayoutDelegate oldDelegate) {
-		return topPadding != oldDelegate.topPadding;
-	}
-}
-
-class _ThreadReplyLayout extends StatelessWidget {
-	final Widget thread;
-	final Widget replyBox;
-
-	const _ThreadReplyLayout({
-		required this.thread,
-		required this.replyBox
-	});
-
-	@override
-	Widget build(BuildContext context) {
-		final padding = MediaQuery.paddingOf(context);
-		return CustomMultiChildLayout(
-			delegate: _ThreadReplyLayoutDelegate(
-				topPadding: padding.top + 80 // Don't let thread get so small
-			),
-			children: [
-				LayoutId(
-					id: _ThreadPageLayoutId.thread,
-					child: thread
-				),
-				LayoutId(
-					id: _ThreadPageLayoutId.replyBox,
-					child: replyBox
-				)
-			]
-		);
 	}
 }

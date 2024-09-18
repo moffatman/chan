@@ -2567,3 +2567,68 @@ class ReplyBoxTextEditingController extends TextEditingController {
 		}
 	}
 }
+
+enum _ReplyBoxLayoutId {
+	body,
+	replyBox
+}
+
+class _ReplyBoxLayoutDelegate extends MultiChildLayoutDelegate {
+	final double topPadding;
+
+	_ReplyBoxLayoutDelegate({
+		required this.topPadding
+	});
+
+	@override
+	void performLayout(Size size) {
+		final replyBoxSize = layoutChild(_ReplyBoxLayoutId.replyBox, BoxConstraints(
+			minWidth: size.width,
+			maxWidth: size.width,
+			maxHeight: size.height - topPadding
+		));
+		final threadHeight = size.height - replyBoxSize.height;
+		positionChild(_ReplyBoxLayoutId.replyBox, Offset(0, threadHeight));
+		layoutChild(_ReplyBoxLayoutId.body, BoxConstraints.tightFor(
+			width: size.width,
+			height: threadHeight
+		));
+		// Body is already at 0,0 (default)
+	}
+
+	@override
+	bool shouldRelayout(_ReplyBoxLayoutDelegate oldDelegate) {
+		return topPadding != oldDelegate.topPadding;
+	}
+}
+
+class ReplyBoxLayout extends StatelessWidget {
+	final Widget body;
+	final Widget replyBox;
+
+	const ReplyBoxLayout({
+		required this.body,
+		required this.replyBox,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		final padding = MediaQuery.paddingOf(context);
+		return CustomMultiChildLayout(
+			delegate: _ReplyBoxLayoutDelegate(
+				topPadding: padding.top + 80 // Don't let thread get so small
+			),
+			children: [
+				LayoutId(
+					id: _ReplyBoxLayoutId.body,
+					child: body
+				),
+				LayoutId(
+					id: _ReplyBoxLayoutId.replyBox,
+					child: replyBox
+				)
+			]
+		);
+	}
+}

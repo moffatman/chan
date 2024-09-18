@@ -1100,282 +1100,273 @@ class BoardPageState extends State<BoardPage> {
 									setState(() {});
 								}
 							},
-							child: Column(
-								children: [
-									Flexible(
-										child: TransformedMediaQuery(
-											transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
-											child: CallbackShortcuts(
-												bindings: {
-													ConditionalShortcut(
-														parent: LogicalKeySet(LogicalKeyboardKey.keyG),
-														condition: () => !(_listController.state?.searchHasFocus ?? false)
-													): _showGalleryFromNextImage
-												},
-												child: site == null ? const Center(
-													child: ErrorMessageCard('No imageboard selected')
-												) : Stack(
-													fit: StackFit.expand,
-													children: [
-														RefreshableList<Thread>(
-															initialFilter: widget.initialSearch ?? widget.tab?.initialSearch,
-															onFilterChanged: (newFilter) {
-																widget.tab?.mutate((tab) => tab.initialSearch = newFilter);
-																bool newSearching = newFilter != null;
-																if (newSearching != _searching) {
-																	setState(() {
-																		_searching = newSearching;
-																	});
-																}
-															},
-															filterableAdapter: (t) => t,
-															allowReordering: true,
-															onWantAutosave: (thread) async {
-																final persistence = context.read<Persistence>();
-																if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
-																	// Already saw this thread
-																	return;
-																}
-																final threadState = persistence.getThreadState(thread.identifier);
-																threadState.savedTime = DateTime.now();
-																threadState.thread ??= thread;
-																persistence.browserState.autosavedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
-																await threadState.save();
-																await persistence.didUpdateBrowserState();
-															},
-															onWantAutowatch: (thread, autoWatch) async {
-																final imageboard = context.read<Imageboard>();
-																await Future.microtask(() => {});
-																if (imageboard.persistence.browserState.autowatchedIds[thread.board]?.contains(thread.id) ?? false) {
-																	// Already saw this thread
-																	return;
-																}
-																final threadState = imageboard.persistence.getThreadState(thread.identifier);
-																threadState.thread ??= thread;
-																imageboard.notifications.subscribeToThread(
-																	thread: thread.identifier,
-																	lastSeenId: thread.posts_.last.id,
-																	localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
-																	pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
-																	push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
-																	youIds: threadState.youIds,
-																	foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
-																);
-																imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
-																await imageboard.persistence.didUpdateBrowserState();
-															},
-															sortMethods: [
-																if (variant.sortingMethod == ThreadSortingMethod.replyCount)
-																	(a, b) => b.replyCount.compareTo(a.replyCount)
-																else if (variant.sortingMethod == ThreadSortingMethod.threadPostTime)
-																	(a, b) => b.id.compareTo(a.id)
-																else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
-																	(a, b) {
-																		_lastCatalogUpdateTime ??= DateTime.now();
-																		return -1 * ((b.replyCount + 1) / b.time.difference(_lastCatalogUpdateTime!).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(_lastCatalogUpdateTime!).inSeconds);
-																	}
-																else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
-																	(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
-																else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
-																	(a, b) => b.imageCount.compareTo(a.imageCount)
-																else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)
-																	(a, b) => a.compareTo(b)
-															],
-															reverseSort: variant.reverseAfterSorting,
-															minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
-															gridDelegate: (useCatalogGrid && !settings.useStaggeredCatalogGrid) ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
-																maxCrossAxisExtent: settings.catalogGridWidth,
-																childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
-															) : null,
-															staggeredGridDelegate: (useCatalogGrid && settings.useStaggeredCatalogGrid) ? SliverStaggeredGridDelegateWithMaxCrossAxisExtent(
-																maxCrossAxisExtent: settings.catalogGridWidth
-															) : null,
-															controller: _listController,
-															listUpdater: (options) => site.getCatalog(board!.name, variant: variant, priority: RequestPriority.interactive).then((list) async {
-																for (final thread in list) {
-																	await thread.preinit(catalog: true);
-																	await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
-																}
-																_lastCatalogUpdateTime = DateTime.now();
-																if (settings.hideOldStickiedThreads && board?.name != 'chance') {
-																	list = list.where((thread) {
-																		return !thread.isSticky || _lastCatalogUpdateTime!.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
-																	}).toList();
-																}
-																Future.delayed(const Duration(milliseconds: 100), () {
-																	if (!mounted) return;
-																	if (_loadCompleter?.isCompleted == false) {
-																		_loadCompleter?.complete();
-																	}
-																});
-																return list;
-															}),
-															autoExtendDuringScroll: true,
-															listExtender: (after) => site.getMoreCatalog(board!.name, after, variant: variant, priority: RequestPriority.interactive).then((list) async {
-																for (final thread in list) {
-																	await thread.preinit(catalog: true);
-																	await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
-																}
-																return list;
-															}),
-															disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
-															id: '${site.name} /${board!.name}/${variant.dataId}',
-															itemBuilder: (context, thread) => itemBuilder(context, thread),
-															filteredItemBuilder: (context, thread, resetPage, filterPattern) => itemBuilder(context, thread, highlightPattern: filterPattern),
-															filterHint: 'Search in board',
-															filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
-																name: supportsSearch.name,
-																handler: (s) {
-																	widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
-																}
-															)
-														),
-														RepaintBoundary(
-															child: SafeArea(
-																child: Align(
-																	alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
-																	child: Padding(
-																		padding: const EdgeInsets.all(16),
-																		child: AnimatedBuilder(
-																			animation: _listController,
-																			builder: (context, _) {
-																				final theme = context.watch<SavedTheme>();
-																				final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
-																				scrollAnimationDuration() => Settings.instance.showAnimations ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
-																				scrollToTop() => _listController.animateTo((post) => true, duration: scrollAnimationDuration());
-																				scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration());
-																				final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
-																				return Row(
-																					mainAxisSize: MainAxisSize.min,
-																					children: [
-																						if (settings.showGalleryGridButton && realImageCount > 1) ...[
-																							AdaptiveFilledButton(
-																								padding: const EdgeInsets.all(8),
-																								color: primaryColorWithBrightness80,
-																								onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
-																								child: Icon(CupertinoIcons.square_grid_2x2, size: 24, color: theme.backgroundColor)
-																							),
-																							const SizedBox(width: 8),
-																						],
-																						GestureDetector(
-																							onLongPress: () {
-																								final position = _listController.scrollController?.tryPosition;
-																								if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
-																									scrollToTop();
-																								}
-																								else {
-																									scrollToBottom();
-																								}
-																								mediumHapticFeedback();
-																							},
-																							onPanStart: (details) {
-																								_skipNextIndicatorSwipe = eventTooCloseToEdge(details.globalPosition);
-																							},
-																							onPanEnd: (details) {
-																								if (_skipNextIndicatorSwipe) {
-																									return;
-																								}
-																								final position =_listController.scrollController?.tryPosition;
-																								if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
-																									mediumHapticFeedback();
-																									if (position != null && position.extentAfter > 0) {
-																										scrollToBottom();
-																									}
-																									else {
-																										// Not possible, do a "double buzz"
-																										Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-																									}
-																								}
-																								else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
-																									mediumHapticFeedback();
-																									if (position != null && position.extentBefore > 0) {
-																										scrollToTop();
-																									}
-																									else {
-																										// Not possible, do a "double buzz"
-																										Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-																									}
-																								}
-																							},
-																							child: AdaptiveFilledButton(
-																								onPressed: () async {
-																									lightHapticFeedback();
-																									if (_searching) {
-																										_listController.state?.closeSearch();
-																									}
-																									else {
-																										await scrollToTop();
-																										_page = _listController.items.first.item.currentPage ?? 1;
-																									}
-																								},
-																								color: primaryColorWithBrightness80,
-																								padding: const EdgeInsets.all(8),
-																								child: Row(
-																									mainAxisSize: MainAxisSize.min,
-																									children: _searching ? [
-																										Icon(CupertinoIcons.search, color: theme.backgroundColor),
-																										const SizedBox(width: 8),
-																										Icon(CupertinoIcons.xmark, color: theme.backgroundColor)
-																									] : [
-																										Icon(CupertinoIcons.doc, color: theme.backgroundColor),
-																										SizedBox(
-																											width: 25,
-																											child: AnimatedBuilder(
-																												animation: _listController.slowScrolls,
-																												builder: (context, _) {
-																													_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
-																													return Text(
-																														_page.toString(),
-																														textAlign: TextAlign.center,
-																														style: TextStyle(
-																															color: theme.backgroundColor
-																														)
-																													);
-																												}
-																											)
-																										)
-																									]
+							child: ReplyBoxLayout(
+								body: TransformedMediaQuery(
+									transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
+									child: CallbackShortcuts(
+										bindings: {
+											ConditionalShortcut(
+												parent: LogicalKeySet(LogicalKeyboardKey.keyG),
+												condition: () => !(_listController.state?.searchHasFocus ?? false)
+											): _showGalleryFromNextImage
+										},
+										child: site == null ? const Center(
+											child: ErrorMessageCard('No imageboard selected')
+										) : Stack(
+											fit: StackFit.expand,
+											children: [
+												RefreshableList<Thread>(
+													initialFilter: widget.initialSearch ?? widget.tab?.initialSearch,
+													onFilterChanged: (newFilter) {
+														widget.tab?.mutate((tab) => tab.initialSearch = newFilter);
+														bool newSearching = newFilter != null;
+														if (newSearching != _searching) {
+															setState(() {
+																_searching = newSearching;
+															});
+														}
+													},
+													filterableAdapter: (t) => t,
+													allowReordering: true,
+													onWantAutosave: (thread) async {
+														final persistence = context.read<Persistence>();
+														if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
+															// Already saw this thread
+															return;
+														}
+														final threadState = persistence.getThreadState(thread.identifier);
+														threadState.savedTime = DateTime.now();
+														threadState.thread ??= thread;
+														persistence.browserState.autosavedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
+														await threadState.save();
+														await persistence.didUpdateBrowserState();
+													},
+													onWantAutowatch: (thread, autoWatch) async {
+														final imageboard = context.read<Imageboard>();
+														await Future.microtask(() => {});
+														if (imageboard.persistence.browserState.autowatchedIds[thread.board]?.contains(thread.id) ?? false) {
+															// Already saw this thread
+															return;
+														}
+														final threadState = imageboard.persistence.getThreadState(thread.identifier);
+														threadState.thread ??= thread;
+														imageboard.notifications.subscribeToThread(
+															thread: thread.identifier,
+															lastSeenId: thread.posts_.last.id,
+															localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
+															pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
+															push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
+															youIds: threadState.youIds,
+															foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
+														);
+														imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
+														await imageboard.persistence.didUpdateBrowserState();
+													},
+													sortMethods: [
+														if (variant.sortingMethod == ThreadSortingMethod.replyCount)
+															(a, b) => b.replyCount.compareTo(a.replyCount)
+														else if (variant.sortingMethod == ThreadSortingMethod.threadPostTime)
+															(a, b) => b.id.compareTo(a.id)
+														else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
+															(a, b) {
+																_lastCatalogUpdateTime ??= DateTime.now();
+																return -1 * ((b.replyCount + 1) / b.time.difference(_lastCatalogUpdateTime!).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(_lastCatalogUpdateTime!).inSeconds);
+															}
+														else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
+															(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
+														else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
+															(a, b) => b.imageCount.compareTo(a.imageCount)
+														else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)
+															(a, b) => a.compareTo(b)
+													],
+													reverseSort: variant.reverseAfterSorting,
+													minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
+													gridDelegate: (useCatalogGrid && !settings.useStaggeredCatalogGrid) ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
+														maxCrossAxisExtent: settings.catalogGridWidth,
+														childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+													) : null,
+													staggeredGridDelegate: (useCatalogGrid && settings.useStaggeredCatalogGrid) ? SliverStaggeredGridDelegateWithMaxCrossAxisExtent(
+														maxCrossAxisExtent: settings.catalogGridWidth
+													) : null,
+													controller: _listController,
+													listUpdater: (options) => site.getCatalog(board!.name, variant: variant, priority: RequestPriority.interactive).then((list) async {
+														for (final thread in list) {
+															await thread.preinit(catalog: true);
+															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
+														}
+														_lastCatalogUpdateTime = DateTime.now();
+														if (settings.hideOldStickiedThreads && board?.name != 'chance') {
+															list = list.where((thread) {
+																return !thread.isSticky || _lastCatalogUpdateTime!.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
+															}).toList();
+														}
+														Future.delayed(const Duration(milliseconds: 100), () {
+															if (!mounted) return;
+															if (_loadCompleter?.isCompleted == false) {
+																_loadCompleter?.complete();
+															}
+														});
+														return list;
+													}),
+													autoExtendDuringScroll: true,
+													listExtender: (after) => site.getMoreCatalog(board!.name, after, variant: variant, priority: RequestPriority.interactive).then((list) async {
+														for (final thread in list) {
+															await thread.preinit(catalog: true);
+															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
+														}
+														return list;
+													}),
+													disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
+													id: '${site.name} /${board!.name}/${variant.dataId}',
+													itemBuilder: (context, thread) => itemBuilder(context, thread),
+													filteredItemBuilder: (context, thread, resetPage, filterPattern) => itemBuilder(context, thread, highlightPattern: filterPattern),
+													filterHint: 'Search in board',
+													filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
+														name: supportsSearch.name,
+														handler: (s) {
+															widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
+														}
+													)
+												),
+												RepaintBoundary(
+													child: SafeArea(
+														child: Align(
+															alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
+															child: Padding(
+																padding: const EdgeInsets.all(16),
+																child: AnimatedBuilder(
+																	animation: _listController,
+																	builder: (context, _) {
+																		final theme = context.watch<SavedTheme>();
+																		final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
+																		scrollAnimationDuration() => Settings.instance.showAnimations ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
+																		scrollToTop() => _listController.animateTo((post) => true, duration: scrollAnimationDuration());
+																		scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration());
+																		final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
+																		return Row(
+																			mainAxisSize: MainAxisSize.min,
+																			children: [
+																				if (settings.showGalleryGridButton && realImageCount > 1) ...[
+																					AdaptiveFilledButton(
+																						padding: const EdgeInsets.all(8),
+																						color: primaryColorWithBrightness80,
+																						onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
+																						child: Icon(CupertinoIcons.square_grid_2x2, size: 24, color: theme.backgroundColor)
+																					),
+																					const SizedBox(width: 8),
+																				],
+																				GestureDetector(
+																					onLongPress: () {
+																						final position = _listController.scrollController?.tryPosition;
+																						if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
+																							scrollToTop();
+																						}
+																						else {
+																							scrollToBottom();
+																						}
+																						mediumHapticFeedback();
+																					},
+																					onPanStart: (details) {
+																						_skipNextIndicatorSwipe = eventTooCloseToEdge(details.globalPosition);
+																					},
+																					onPanEnd: (details) {
+																						if (_skipNextIndicatorSwipe) {
+																							return;
+																						}
+																						final position =_listController.scrollController?.tryPosition;
+																						if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
+																							mediumHapticFeedback();
+																							if (position != null && position.extentAfter > 0) {
+																								scrollToBottom();
+																							}
+																							else {
+																								// Not possible, do a "double buzz"
+																								Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+																							}
+																						}
+																						else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
+																							mediumHapticFeedback();
+																							if (position != null && position.extentBefore > 0) {
+																								scrollToTop();
+																							}
+																							else {
+																								// Not possible, do a "double buzz"
+																								Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+																							}
+																						}
+																					},
+																					child: AdaptiveFilledButton(
+																						onPressed: () async {
+																							lightHapticFeedback();
+																							if (_searching) {
+																								_listController.state?.closeSearch();
+																							}
+																							else {
+																								await scrollToTop();
+																								_page = _listController.items.first.item.currentPage ?? 1;
+																							}
+																						},
+																						color: primaryColorWithBrightness80,
+																						padding: const EdgeInsets.all(8),
+																						child: Row(
+																							mainAxisSize: MainAxisSize.min,
+																							children: _searching ? [
+																								Icon(CupertinoIcons.search, color: theme.backgroundColor),
+																								const SizedBox(width: 8),
+																								Icon(CupertinoIcons.xmark, color: theme.backgroundColor)
+																							] : [
+																								Icon(CupertinoIcons.doc, color: theme.backgroundColor),
+																								SizedBox(
+																									width: 25,
+																									child: AnimatedBuilder(
+																										animation: _listController.slowScrolls,
+																										builder: (context, _) {
+																											_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
+																											return Text(
+																												_page.toString(),
+																												textAlign: TextAlign.center,
+																												style: TextStyle(
+																													color: theme.backgroundColor
+																												)
+																											);
+																										}
+																									)
 																								)
-																							)
+																							]
 																						)
-																					]
-																				);
-																			}
-																		)
-																	)
+																					)
+																				)
+																			]
+																		);
+																	}
 																)
 															)
 														)
-													]
+													)
 												)
-											)
-										)
-									),
-									ConstrainedBox(
-										constraints: BoxConstraints(
-											maxHeight: MediaQuery.sizeOf(context).height / 2
-										),
-										child: RepaintBoundary(
-											child: ReplyBox(
-												key: _replyBoxKey,
-												board: board!.boardKey,
-												initialDraft: widget.tab?.draft,
-												onDraftChanged: (draft) {
-													widget.tab?.mutate((tab) => tab.draft = draft);
-												},
-												onReplyPosted: (receipt) async {
-													if (imageboard?.site.supportsPushNotifications == true) {
-														await promptForPushNotificationsIfNeeded(context);
-													}
-													if (!mounted) return;
-													_listController.update();
-													_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
-												},
-												onVisibilityChanged: () => setState(() {}),
-											)
+											]
 										)
 									)
-								]
+								),
+								replyBox: RepaintBoundary(
+									child: ReplyBox(
+										key: _replyBoxKey,
+										board: board!.boardKey,
+										initialDraft: widget.tab?.draft,
+										onDraftChanged: (draft) {
+											widget.tab?.mutate((tab) => tab.draft = draft);
+										},
+										onReplyPosted: (receipt) async {
+											if (imageboard?.site.supportsPushNotifications == true) {
+												await promptForPushNotificationsIfNeeded(context);
+											}
+											if (!mounted) return;
+											_listController.update();
+											_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
+										},
+										onVisibilityChanged: () => setState(() {}),
+									)
+								)
 							)
 						)
 					)
