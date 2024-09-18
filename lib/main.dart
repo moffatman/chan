@@ -1815,7 +1815,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										const Icon(CupertinoIcons.add),
 										if (!hideLabel) ...[
 											const SizedBox(height: 4),
-											const Text("New", style: TextStyle(fontSize: 15))
+											const Text(" New ", style: TextStyle(fontSize: 15))
 										]
 									]
 								)
