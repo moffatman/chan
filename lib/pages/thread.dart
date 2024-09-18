@@ -1135,7 +1135,11 @@ class ThreadPageState extends State<ThreadPage> {
 			throw Exception('Thread changed');
 		}
 		final oldIds = thread.posts_.map((p) => p.id).toSet();
-		persistentState.unseenPostIds.data.addAll(newChildren.map((p) => p.id).where((id) => !oldIds.contains(id) && !persistentState.youIds.contains(id)));
+		for (final p in newChildren) {
+			if (!p.isPageStub && !oldIds.contains(p.id) && !persistentState.youIds.contains(p.id)) {
+				persistentState.unseenPostIds.data.add(p.id);
+			}
+		}
 		thread.mergePosts(null, newChildren, site);
 		if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
 			// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
@@ -2134,6 +2138,9 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			// TODO: Determine if this needs to be / can be memoized
 			for (int i = 0; i < items.length - 1; i++) {
 				if (widget.listController.isItemHidden(items[i]).isDuplicate) {
+					continue;
+				}
+				if (items[i].item.isPageStub) {
 					continue;
 				}
 				if (i > furthestSeenIndexBottom) {
