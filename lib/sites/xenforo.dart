@@ -262,6 +262,25 @@ class SiteXenforo extends ImageboardSite {
 					else if (node.localName == 'div' && node.classes.contains('bbMediaWrapper') && node.attributes['data-media-site-id'] == 'youtube') {
 						yield PostLinkSpan('https://www.youtube.com/watch?v=${node.attributes['data-media-key']}');
 					}
+					else if (node.localName == 'div' && node.classes.contains('bbMediaWrapper') && node.querySelector('video source')?.attributes['src'] != null) {
+						final video = node.querySelector('video')!;
+						final src = node.querySelector('source')!.attributes['src']!;
+						attachments.add(Attachment(
+							type: AttachmentType.mp4,
+							board: board,
+							threadId: threadId,
+							id: src,
+							ext: '.${src.split('.').last}',
+							filename: src.split('/').last,
+							url: src,
+							thumbnailUrl: generateThumbnailerForUrl(Uri.parse(src)).toString(),
+							md5: '',
+							width: int.tryParse(video.attributes['width'] ?? ''),
+							height: int.tryParse(video.attributes['height'] ?? ''),
+							inlineWithinPostId: postId, // to avoid duplicate Heros when quoted
+							sizeInBytes: null
+						));
+					}
 					else if (node.localName == 'div' && node.classes.contains('bbCodeBlock--unfurl') && node.attributes.containsKey('data-url')) {
 						final url = node.attributes['data-url']!;
 						final imageSrc = node.querySelector('.contentRow-figure img')?.attributes['src'];
