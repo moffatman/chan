@@ -1639,6 +1639,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												preLabelInjection,
 												const SizedBox(width: 4)
 											],
+											const Text('', style: TextStyle(fontSize: 15)),
 											Flexible(
 												child: AutoSizeText(
 													label,
