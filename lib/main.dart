@@ -1366,7 +1366,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_fakeLinkSubscription = fakeLinkStream.stream.listen(_consumeLink);
 		_sharedFilesSubscription = ReceiveSharingIntent.instance.getMediaStream().listen(_consumeSharedMediaFiles);
 		_showTabPopup = ValueNotifier(false)
-			..addListener(_setAdditionalSafeAreaInsets);
+			..addListener(_setAdditionalSafeAreaInsets)
+			..addListener(() {
+				if (_showTabPopup.value) {
+					Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
+				}
+			});
 		_initialConsume = true;
 		_setAdditionalSafeAreaInsets();
 		ScrollTracker.instance.slowScrollDirection.addListener(_onSlowScrollDirectionChange);
