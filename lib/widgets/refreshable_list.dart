@@ -3715,7 +3715,14 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			// Scrolling backwards
 			proposedRange = (targetIndex + 7 + rangeBonus, firstVisibleIndex - 3);
 		}
-		if ((proposedRange.$2 - proposedRange.$1) > 20) {
+		// If the range is already mostly collapsed, don't use dummies
+		int cost = 0;
+		for (int i = proposedRange.$1; i < proposedRange.$2; i++) {
+			if (!isItemHidden(_items[i].item).isHidden) {
+				cost++;
+			}
+		}
+		if (cost > 20) {
 			useDummyItemsInRange = proposedRange;
 			for (final item in _items) {
 				item.cachedOffset = null;
