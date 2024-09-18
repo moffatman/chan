@@ -1,7 +1,10 @@
+import 'dart:async';
+
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
-class CupertinoInkwell extends StatefulWidget {
+class CupertinoInkwell<T> extends StatefulWidget {
   /// Creates an iOS-style button.
   const CupertinoInkwell({
     super.key,
@@ -15,7 +18,7 @@ class CupertinoInkwell extends StatefulWidget {
 
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final VoidCallback? onPressed;
+  final FutureOr<T> Function()? onPressed;
   final double? minSize;
   final double? pressedOpacity;
   final AlignmentGeometry alignment;
@@ -113,6 +116,17 @@ class _CupertinoInkwellState extends State<CupertinoInkwell> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    final onPressed = widget.onPressed == null ? null : () async {
+			try {
+				await widget.onPressed?.call();
+			}
+			catch (e, st) {
+				Future.error(e, st);
+				if (context.mounted) {
+					alertError(context, e, st);
+				}
+			}
+		};
     final bool enabled = widget.enabled;
 
     return MouseRegion(
@@ -122,7 +136,7 @@ class _CupertinoInkwellState extends State<CupertinoInkwell> with SingleTickerPr
 				onTapDown: enabled ? _handleTapDown : null,
 				onTapUp: enabled ? _handleTapUp : null,
 				onTapCancel: enabled ? _handleTapCancel : null,
-				onTap: widget.onPressed,
+				onTap: onPressed,
 				child: Semantics(
 					button: true,
 					child: ConstrainedBox(
