@@ -1706,7 +1706,8 @@ ${failed.map((t) => '${t.imageboard.site.name}: ${t.item}').join('\n')}'''),
 					Flexible(
 						child: Text(describeCount(missing.length, 'missing $singularNoun'), style: TextStyle(
 							color: errorColor,
-							fontWeight: FontWeight.bold
+							fontWeight: FontWeight.bold,
+							fontVariations: CommonFontVariations.bold
 						))
 					)
 				]

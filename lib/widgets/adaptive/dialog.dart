@@ -1,5 +1,6 @@
 import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/material.dart';
 
 class AdaptiveDialogAction extends StatelessWidget {
@@ -24,6 +25,7 @@ class AdaptiveDialogAction extends StatelessWidget {
 				child: DefaultTextStyle.merge(
 					style: TextStyle(
 						fontWeight: isDefaultAction ? FontWeight.bold : null,
+						fontVariations: isDefaultAction ? CommonFontVariations.bold : null,
 						color: isDestructiveAction ? Colors.red : null
 					),
 					child: child

@@ -704,9 +704,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																					maxLines: 1,
 																					textAlign: TextAlign.left,
 																					overflow: TextOverflow.ellipsis,
-																					style: TextStyle(
-																						fontWeight: isSelected ? FontWeight.bold : null
-																					)
+																					style: isSelected ? CommonTextStyles.bold : null
 																				),
 																				if (board.name.isNotEmpty) AutoSizeText(
 																					board.title,
@@ -768,9 +766,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																		maxLines: 1,
 																		textAlign: TextAlign.left,
 																		overflow: TextOverflow.ellipsis,
-																		style: TextStyle(
-																			fontWeight: isSelected ? FontWeight.bold : null
-																		)
+																		style: isSelected ? CommonTextStyles.bold : null
 																	)
 																),
 																const SizedBox(width: 16)
@@ -871,10 +867,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				textAlign: TextAlign.center,
 																				maxLines: 1,
 																				minFontSize: 0,
-																				style: TextStyle(
-																					fontSize: 24,
-																					fontWeight: isSelected ? FontWeight.bold : null
-																				)
+																				style: isSelected ? CommonTextStyles.bold : null
 																			)
 																		)
 																	),
@@ -929,10 +922,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																child: AutoSizeText(
 																	'Search ${imageboard.site.name}',
 																	textAlign: TextAlign.center,
-																	style: TextStyle(
-																		fontSize: 24,
-																		fontWeight: isSelected ? FontWeight.bold : null
-																	)
+																	style: isSelected ? CommonTextStyles.bold : null
 																)
 															)
 														]

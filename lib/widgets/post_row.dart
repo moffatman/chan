@@ -685,7 +685,8 @@ class PostRow extends StatelessWidget {
 															replyIds.length.toString(),
 															style: TextStyle(
 																color: theme.secondaryColor,
-																fontWeight: FontWeight.bold
+																fontWeight: FontWeight.bold,
+																fontVariations: CommonFontVariations.bold
 															)
 														)
 													)

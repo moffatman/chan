@@ -10,6 +10,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -74,7 +75,8 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 										'${widget.imageboard.site.formatBoardName(widget.board.name)} Settings',
 										style: const TextStyle(
 											fontSize: 18,
-											fontWeight: FontWeight.bold
+											fontWeight: FontWeight.bold,
+											fontVariations: CommonFontVariations.bold
 										)
 									)
 								]

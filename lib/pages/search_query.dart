@@ -286,7 +286,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							const Text('Results | ', style: TextStyle(fontWeight: FontWeight.bold)),
+							const Text('Results | ', style: CommonTextStyles.bold),
 							...describeQuery(widget.query)
 						]
 					)

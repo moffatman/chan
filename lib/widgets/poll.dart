@@ -1,5 +1,6 @@
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -24,7 +25,8 @@ class PollWidget extends StatelessWidget {
 				children: [
 					Text(poll.title ?? (total > 0 ? 'Poll Results' : 'Poll Options'), style: const TextStyle(
 						fontSize: 30,
-						fontWeight: FontWeight.bold
+						fontWeight: FontWeight.bold,
+						fontVariations: CommonFontVariations.bold
 					)),
 					const SizedBox(height: 16),
 					for (int i = 0; i < poll.rows.length; i++) ...[
@@ -48,7 +50,8 @@ class PollWidget extends StatelessWidget {
 								),
 								Text('  ${poll.rows[i].votes}', style: TextStyle(
 									color: theme.primaryColor,
-									fontWeight: FontWeight.bold
+									fontWeight: FontWeight.bold,
+									fontVariations: CommonFontVariations.bold
 								)),
 								Flexible(
 									fit: FlexFit.tight,

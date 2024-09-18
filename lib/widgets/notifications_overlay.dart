@@ -11,6 +11,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -250,9 +251,7 @@ class NotificationContent extends StatelessWidget {
 					child: Text.rich(
 						TextSpan(
 							children: [
-								TextSpan(text: '$title       ', style: const TextStyle(
-									fontWeight: FontWeight.bold
-								)),
+								TextSpan(text: '$title       ', style: CommonTextStyles.bold),
 								if (post != null) ...[
 									const TextSpan(text: '\n'),
 									post.span.build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions(

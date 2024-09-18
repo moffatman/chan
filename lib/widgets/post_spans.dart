@@ -1543,7 +1543,7 @@ class PostBoldSpan extends PostSpan {
 	@override
 	build(context, zone, settings, theme, options) {
 		return child.build(context, zone, settings, theme, options.copyWith(
-			baseTextStyle: options.baseTextStyle.copyWith(fontWeight: FontWeight.bold)
+			baseTextStyle: options.baseTextStyle.copyWith(fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold)
 		));
 	}
 	@override
@@ -1833,7 +1833,7 @@ class PostCssSpan extends PostSpan {
 				style = style.copyWith(color: colorToHex(value));
 			}
 			else if (key == 'font-weight' && value == 'bold') {
-				style = style.copyWith(fontWeight: FontWeight.bold);
+				style = style.copyWith(fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold);
 			}
 			else if (key == 'font-family') {
 				style = style.copyWith(fontFamily: value);
@@ -2651,7 +2651,8 @@ TextSpan buildPostInfoRow({
 				text: '[Deleted] ',
 				style: TextStyle(
 					color: theme.secondaryColor,
-					fontWeight: FontWeight.w600
+					fontWeight: FontWeight.w600,
+					fontVariations: CommonFontVariations.w600
 				)
 			),
 		],
@@ -2668,7 +2669,7 @@ TextSpan buildPostInfoRow({
 		],
 		if (thisPostIsOP && (thread?.title?.isNotEmpty ?? false)) TextSpan(
 			text: '${(zone.translatedTitle(post.threadId)?.data ?? thread?.title)}\n',
-			style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
+			style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.titleColor, fontSize: 17)
 		),
 		for (final field in settings.postDisplayFieldOrder)
 			if (thread != null && showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
@@ -2684,14 +2685,15 @@ TextSpan buildPostInfoRow({
 					text: '${post.ipNumber} ',
 					style: TextStyle(
 						color: theme.secondaryColor,
-						fontWeight: FontWeight.w600
+						fontWeight: FontWeight.w600,
+						fontVariations: CommonFontVariations.w600
 					)
 				)
 			]
 			else if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
 					text: settings.filterProfanity(site.formatUsername(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (thisPostIsPostedByOP ? ' (OP)' : ''),
-					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? theme.secondaryColor : (thisPostIsPostedByOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
+					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: isYourPost ? theme.secondaryColor : (thisPostIsPostedByOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
 					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
 						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
@@ -2713,7 +2715,7 @@ TextSpan buildPostInfoRow({
 				)
 				else if (isYourPost) TextSpan(
 					text: '(You)',
-					style: TextStyle(fontWeight: FontWeight.w600, color: theme.secondaryColor)
+					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.secondaryColor)
 				),
 				if (settings.showTripOnPosts && post.trip != null) TextSpan(
 					text: '${settings.filterProfanity(post.trip!)} ',
@@ -2722,7 +2724,7 @@ TextSpan buildPostInfoRow({
 				else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
 				if (post.capcode != null) TextSpan(
 					text: '## ${post.capcode} ',
-					style: TextStyle(fontWeight: FontWeight.w600, color: theme.quoteColor.shiftHue(200).shiftSaturation(-0.3))
+					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.quoteColor.shiftHue(200).shiftSaturation(-0.3))
 				)
 			]
 			else if (field == PostDisplayField.posterId && post.posterId != null) ...[
@@ -2862,7 +2864,7 @@ TextSpan buildDraftInfoRow({
 	final children = [
 		if (post.threadId == null && (post.subject?.isNotEmpty ?? false)) TextSpan(
 			text: '${post.subject}\n',
-			style: TextStyle(fontWeight: FontWeight.w600, color: theme.titleColor, fontSize: 17)
+			style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.titleColor, fontSize: 17)
 		),
 		for (final field in settings.postDisplayFieldOrder)
 			if (field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && imageboard.site.explicitIds) TextSpan(
@@ -2878,18 +2880,19 @@ TextSpan buildDraftInfoRow({
 					text: '${uniqueIPCount + 1} ',
 					style: TextStyle(
 						color: theme.secondaryColor,
-						fontWeight: FontWeight.w600
+						fontWeight: FontWeight.w600,
+						fontVariations: CommonFontVariations.w600
 					)
 				)
 			]
 			else if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && name == imageboard.site.defaultUsername)) TextSpan(
 					text: '${settings.filterProfanity(name)} (You)${isOP ? ' (OP)' : ''}',
-					style: TextStyle(fontWeight: FontWeight.w600, color: theme.secondaryColor)
+					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.secondaryColor)
 				)
 				else TextSpan(
 					text: '(You)',
-					style: TextStyle(fontWeight: FontWeight.w600, color: theme.secondaryColor)
+					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.secondaryColor)
 				),
 				const TextSpan(text: ' ')
 			]

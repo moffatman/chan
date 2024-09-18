@@ -8,6 +8,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -166,7 +167,8 @@ class _ShareablePostsState extends State<ShareablePosts> {
 												' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
 												style: TextStyle(
 													color: theme.secondaryColor,
-													fontWeight: FontWeight.bold
+													fontWeight: FontWeight.bold,
+													fontVariations: CommonFontVariations.bold
 												)
 											)
 										]

@@ -77,7 +77,8 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 									Expanded(
 										child: Text(site.formatUsername(widget.username), style: const TextStyle(
 											fontSize: 20,
-											fontWeight: FontWeight.w600
+											fontWeight: FontWeight.w600,
+											fontVariations: CommonFontVariations.w600
 										))
 									),
 									Builder(

@@ -1,4 +1,5 @@
 import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -193,6 +194,7 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 				placeholder: widget.placeholder,
 				placeholderStyle: widget.placeholderStyle ?? TextStyle(
 					fontWeight: FontWeight.w400,
+					fontVariations: CommonFontVariations.w400,
 					color: placeholderColor,
 				),
 				smartDashesType: widget.smartDashesType,

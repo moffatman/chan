@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:chan/services/persistence.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show GestureRecognizer, LongPressDownDetails, LongPressGestureRecognizer, PointerDeviceKind, VelocityTracker, kLongPressTimeout, kMinFlingVelocity;
@@ -60,6 +61,7 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
     inherit: false,
     fontSize: 16.0,
     fontWeight: FontWeight.w400,
+    fontVariations: CommonFontVariations.w400,
     color: CupertinoColors.black,
     textBaseline: TextBaseline.alphabetic,
   );
@@ -89,6 +91,7 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
     if (widget.isDefaultAction) {
       return _kActionSheetActionStyle.copyWith(
         fontWeight: FontWeight.w600,
+        fontVariations: CommonFontVariations.w600
       ).merge(Persistence.settings.textStyle);
     }
     if (widget.isDestructiveAction) {

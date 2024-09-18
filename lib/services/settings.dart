@@ -399,6 +399,7 @@ class SavedTheme {
 				fontSize: 17.0,
 				letterSpacing: -0.41,
 				fontWeight: PlatformDispatcher.instance.accessibilityFeatures.boldText ? FontWeight.w500 : null,
+				fontVariations: PlatformDispatcher.instance.accessibilityFeatures.boldText ? CommonFontVariations.w500 : null,
 				color: primaryColor
 			),
 			actionTextStyle: Persistence.settings.textStyle.copyWith(
@@ -412,6 +413,7 @@ class SavedTheme {
 				fontSize: 17.0,
 				letterSpacing: -0.41,
 				fontWeight: FontWeight.w600,
+				fontVariations: CommonFontVariations.w600,
 				color: primaryColor,
 				decoration: TextDecoration.none,
 			),
@@ -419,6 +421,7 @@ class SavedTheme {
 				inherit: false,
 				fontSize: 34.0,
 				fontWeight: FontWeight.w700,
+				fontVariations: CommonFontVariations.bold,
 				letterSpacing: 0.41,
 				color: primaryColor,
 			),
@@ -426,6 +429,7 @@ class SavedTheme {
 				inherit: false,
 				fontSize: 10.0,
 				fontWeight: FontWeight.w500,
+				fontVariations: CommonFontVariations.w500,
 				letterSpacing: -0.24,
 				color: CupertinoColors.inactiveGray,
 			),

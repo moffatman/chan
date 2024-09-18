@@ -159,7 +159,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool collapse = filter.outputType.collapse;
 			bool hideReplies = filter.outputType.hideReplies;
 			bool hideReplyChains = filter.outputType.hideReplyChains;
-			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
+			const labelStyle = CommonTextStyles.bold;
 			return showAdaptiveModalPopup<(bool, CustomFilter?)>(
 				context: context,
 				builder: (context) => StatefulBuilder(

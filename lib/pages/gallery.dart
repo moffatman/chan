@@ -625,7 +625,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																			style: const TextStyle(
 																				color: Colors.white70,
 																				fontSize: 14,
-																				fontWeight: FontWeight.bold
+																				fontWeight: FontWeight.bold,
+																				fontVariations: CommonFontVariations.bold
 																			)
 																		)
 																	)
@@ -732,7 +733,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																	style: const TextStyle(
 																		color: Colors.white70,
 																		fontSize: 38,
-																		fontWeight: FontWeight.bold
+																		fontWeight: FontWeight.bold,
+																		fontVariations: CommonFontVariations.bold
 																	)
 																)
 															)

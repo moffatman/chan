@@ -223,7 +223,7 @@ final siteSettings = [
 													TextSpan(
 														children: [
 															const TextSpan(text: 'Go to your site of choice and make a post containing the text "'),
-															TextSpan(text: text, style: const TextStyle(fontWeight: FontWeight.bold)),
+															TextSpan(text: text, style: CommonTextStyles.bold),
 															const TextSpan(text: '". Then paste the URL to your post below.')
 														]
 													)

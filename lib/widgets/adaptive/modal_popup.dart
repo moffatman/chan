@@ -118,7 +118,8 @@ class AdaptiveActionSheetAction extends StatelessWidget {
 						Expanded(
 							child: DefaultTextStyle.merge(
 								style: Persistence.settings.textStyle.copyWith(
-									fontWeight: isSelected ? FontWeight.bold : null
+									fontWeight: isSelected ? FontWeight.bold : null,
+									fontVariations: isSelected ? CommonFontVariations.bold : null
 								),
 								textAlign: TextAlign.center,
 								child: child

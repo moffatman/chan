@@ -415,7 +415,8 @@ class BoardPageState extends State<BoardPage> {
 									Expanded(
 										child: Text(subvariant.name, style: TextStyle(
 											fontSize: 20,
-											fontWeight: subvariant == currentVariant ? FontWeight.bold : null
+											fontWeight: subvariant == currentVariant ? FontWeight.bold : null,
+											fontVariations: subvariant == currentVariant ? CommonFontVariations.bold : null
 										))
 									),
 									AdaptiveIconButton(
@@ -885,7 +886,7 @@ class BoardPageState extends State<BoardPage> {
 					onPressed: widget.allowChangingBoard ? _selectBoard : null,
 					dimWhenDisabled: false,
 					icon: DefaultTextStyle.merge(
-						style: const TextStyle(fontWeight: FontWeight.w600),
+						style: CommonTextStyles.w600,
 						child: Wrap(
 							alignment: WrapAlignment.center,
 							crossAxisAlignment: WrapCrossAlignment.center,

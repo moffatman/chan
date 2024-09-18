@@ -6,6 +6,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive/modal_popup.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
@@ -20,9 +21,7 @@ Future<void> selectWatchedThreadsSortMethod(BuildContext context, {VoidCallback?
 			ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
 			ThreadSortingMethod.threadPostTime: 'Latest thread'
 		}.entries.map((entry) => AdaptiveActionSheetAction(
-			child: Text(entry.value, style: TextStyle(
-				fontWeight: entry.key == Persistence.settings.watchedThreadsSortingMethod ? FontWeight.bold : null
-			)),
+			child: Text(entry.value, style: entry.key == Persistence.settings.watchedThreadsSortingMethod ? CommonTextStyles.bold: null),
 			onPressed: () {
 				Settings.watchedThreadsSortingMethodSetting.value = entry.key;
 				Navigator.of(context, rootNavigator: true).pop();
@@ -121,9 +120,7 @@ Future<void> selectSavedThreadsSortMethod(BuildContext context) => showAdaptiveM
 			ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
 			ThreadSortingMethod.threadPostTime: 'Latest thread'
 		}.entries.map((entry) => AdaptiveActionSheetAction(
-			child: Text(entry.value, style: TextStyle(
-				fontWeight: entry.key == Persistence.settings.savedThreadsSortingMethod ? FontWeight.bold : null
-			)),
+			child: Text(entry.value, style: entry.key == Persistence.settings.savedThreadsSortingMethod ? CommonTextStyles.bold : null),
 			onPressed: () {
 				Settings.savedThreadsSortingMethodSetting.value = entry.key;
 				Navigator.of(context, rootNavigator: true).pop();

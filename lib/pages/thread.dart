@@ -1451,9 +1451,7 @@ class ThreadPageState extends State<ThreadPage> {
 																	child: Text(
 																		variant.name,
 																		textAlign: TextAlign.left,
-																		style: TextStyle(
-																			fontWeight: variant == (persistentState.variant ?? persistentState.thread?.suggestedVariant ?? site.threadVariants.first) ? FontWeight.bold : null
-																		)
+																		style: variant == (persistentState.variant ?? persistentState.thread?.suggestedVariant ?? site.threadVariants.first) ? CommonTextStyles.bold : null
 																	)
 																)
 															]
@@ -1778,7 +1776,8 @@ class ThreadPageState extends State<ThreadPage> {
 																			if (peekContentHeight != null && value != null) {
 																				final style = TextStyle(
 																					color: theme.secondaryColor,
-																					fontWeight: FontWeight.bold
+																					fontWeight: FontWeight.bold,
+																					fontVariations: CommonFontVariations.bold
 																				);
 																				final post = Builder(
 																					builder: (context) => PostRow(

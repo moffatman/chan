@@ -152,7 +152,8 @@ Future<String?> selectThemeKey({
 															AutoSizeText(themes[i].key, style: TextStyle(
 																fontSize: 18,
 																color: themes[i].value.primaryColor,
-																fontWeight: themes[i].key == currentKey ? FontWeight.bold : null
+																fontWeight: themes[i].key == currentKey ? FontWeight.bold : null,
+																fontVariations: themes[i].key == currentKey ? CommonFontVariations.bold : null
 															))
 														]
 													)

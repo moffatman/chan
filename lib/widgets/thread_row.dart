@@ -89,6 +89,7 @@ TextSpan buildThreadCounters({
 			text: '(You)',
 			style: TextStyle(
 				fontWeight: FontWeight.w600,
+				fontVariations: CommonFontVariations.w600,
 				color: theme.secondaryColor
 			)
 		),
@@ -344,6 +345,7 @@ class ThreadRow extends StatelessWidget {
 					text: settings.filterProfanity(site.formatUsername(latestThread.posts_.first.name)),
 					style: TextStyle(
 						fontWeight: FontWeight.w600,
+						fontVariations: CommonFontVariations.w600,
 						fontSize: subheaderFontSize
 					)
 				),
@@ -395,7 +397,7 @@ class ThreadRow extends StatelessWidget {
 		];
 		if (latestThread.title?.isNotEmpty == true) {
 			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, imageboard: imageboard, style: PostSpanZoneStyle.linear), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: theme.titleColor) : null
+				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold, color: theme.titleColor) : null
 			));
 			if (site.classicCatalogStyle) {
 				if (headerRow.any((t) => t is TextSpan && (t.toPlainText(includePlaceholders: false, includeSemanticsLabels: false).trim().isNotEmpty))) {
@@ -524,7 +526,7 @@ class ThreadRow extends StatelessWidget {
 															mainAxisSize: MainAxisSize.min,
 															crossAxisAlignment: CrossAxisAlignment.start,
 															children: [
-																Text('>>', style: TextStyle(color: theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
+																Text('>>', style: TextStyle(color: theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold)),
 																const SizedBox(width: 4),
 																Flexible(
 																	child: PostRow(

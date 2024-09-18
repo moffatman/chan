@@ -2261,3 +2261,23 @@ class NullableColorFilterRenderObject extends RenderProxyBox {
 		}
   }
 }
+
+class CommonFontVariations {
+	CommonFontVariations._();
+	static const w400 = [FontVariation.weight(400)];
+	static const w500 = [FontVariation.weight(500)];
+	static const w600 = [FontVariation.weight(600)];
+	static const bold = [FontVariation.weight(700)];
+}
+
+class CommonTextStyles {
+	CommonTextStyles._();
+	static const w600 = TextStyle(
+		fontWeight: FontWeight.w600,
+		fontVariations: CommonFontVariations.w600
+	);
+	static const bold = TextStyle(
+		fontWeight: FontWeight.bold,
+		fontVariations: CommonFontVariations.bold
+	);
+}
