@@ -357,9 +357,9 @@ class SiteXenforo extends ImageboardSite {
 	}
 
 	late final _relativeBoardPattern  = RegExp(basePath + r'/forums/([^/]+)');
-	late final _boardPattern  = RegExp(r'^https?://' + RegExp.escape(baseUrl) + _relativeBoardPattern.pattern);
-	late final _threadPattern = RegExp(r'^https?://' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/(?:page-(\d+))?(?:#post-(\d+))?');
-	late final _postPattern = RegExp(r'^https?://' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/post-(\d+)');
+	late final _boardPattern  = RegExp(r'^https?://(?:[^.]+\.)*' + RegExp.escape(baseUrl) + _relativeBoardPattern.pattern);
+	late final _threadPattern = RegExp(r'^https?://(?:[^.]+\.)*' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/(?:page-(\d+))?(?:#post-(\d+))?');
+	late final _postPattern = RegExp(r'^https?://(?:[^.]+\.)*' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/post-(\d+)');
 
 	/// Board is a weak concept in Xenforo. Sometimes we need to find it.
 	Future<String?> _lookupBoard(int threadId) async {
