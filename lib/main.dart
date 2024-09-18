@@ -1714,19 +1714,27 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}
 				return RawGestureDetector(
 					gestures: {
-						if (axis == Axis.horizontal) WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
+						if (index <= 0 && axis == Axis.horizontal) WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
 							() => WeakVerticalDragGestureRecognizer(weakness: 2, sign: -1),
 							(recognizer) {
 								recognizer.onEnd = (details) {
+									if ((details.primaryVelocity ?? 0) >= 0) {
+										// Not an up swipe
+										return;
+									}
 									lightHapticFeedback();
 									showThisTabMenu();
 								};
 							}
 						),
-						if (axis == Axis.vertical) WeakHorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakHorizontalDragGestureRecognizer>(
+						if (index <= 0 && axis == Axis.vertical) WeakHorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakHorizontalDragGestureRecognizer>(
 							() => WeakHorizontalDragGestureRecognizer(weakness: 2, sign: 1),
 							(recognizer) {
 								recognizer.onEnd = (details) {
+									if ((details.primaryVelocity ?? 0) <= 0) {
+										// Not a left swipe
+										return;
+									}
 									lightHapticFeedback();
 									showThisTabMenu();
 								};
