@@ -106,6 +106,12 @@
                 <action android:name="org.unifiedpush.android.distributor.UNREGISTER"/>
             </intent-filter>
         </receiver>
+        <!-- for android N and below -->
+        <receiver android:name="dev.fluttercommunity.plus.connectivity.ConnectivityBroadcastReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+        </receiver>
     </application>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
