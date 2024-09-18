@@ -41,7 +41,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 	@override
 	void initState() {
 		super.initState();
-		_readFilesystemInfo();
+		Future.microtask(_readFilesystemInfo);
 	}
 
 	Future<void> _readFilesystemInfo() async {
