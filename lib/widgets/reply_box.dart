@@ -1770,15 +1770,22 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																			backgroundFilled: true,
 																			onPressed: pair.$2,
 																			padding: const EdgeInsets.all(8),
-																			child: TimedRebuilder(
-																				interval: const Duration(seconds: 1),
-																				function: () => formatDuration(pair?.$1.difference(DateTime.now()).clampAboveZero ?? Duration.zero),
-																				builder: (context, delta) => Text(
-																					'${pair?.$3} ($delta)',
-																					style: const TextStyle(
-																						fontFeatures: [FontFeature.tabularFigures()]
+																			child: Row(
+																				mainAxisSize: MainAxisSize.min,
+																				children: [
+																					Text('${pair.$3} '),
+																					GreedySizeCachingBox(
+																						alignment: Alignment.centerRight,
+																						child: TimedRebuilder(
+																							interval: const Duration(seconds: 1),
+																							function: () => formatDuration(pair?.$1.difference(DateTime.now()).clampAboveZero ?? Duration.zero),
+																							builder: (context, delta) => Text(
+																								'($delta)',
+																								style: CommonTextStyles.tabularFigures
+																							)
+																						)
 																					)
-																				)
+																				]
 																			)
 																		);
 																	}
@@ -2221,9 +2228,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																	children: [
 																		const Icon(CupertinoIcons.clock, size: 18),
 																		const SizedBox(width: 8),
-																		Text(str, style: const TextStyle(
-																			fontFeatures: [FontFeature.tabularFigures()]
-																		))
+																		Text(str, style: CommonTextStyles.tabularFigures)
 																	]
 																);
 															}

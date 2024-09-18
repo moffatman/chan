@@ -1009,9 +1009,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								children: [
 									const Icon(CupertinoIcons.refresh),
 									const SizedBox(width: 16),
-									SizedBox(
-										width: MediaQuery.textScalerOf(context).scale(32),
-										child: seconds > 0 ? Text('$seconds') : const SizedBox.shrink()
+									GreedySizeCachingBox(
+										alignment: Alignment.centerRight,
+										child: seconds > 0 ? Text('$seconds', style: CommonTextStyles.tabularFigures) : const SizedBox.shrink()
 									)
 								]
 							)
@@ -1163,8 +1163,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												children: [
 													const Icon(CupertinoIcons.timer),
 													const SizedBox(width: 16),
-													SizedBox(
-														width: 60 * scaleFactor,
+													GreedySizeCachingBox(
+														alignment: Alignment.centerRight,
 														child: TimedRebuilder(
 															enabled: true,
 															interval: const Duration(seconds: 1),
@@ -1173,7 +1173,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 															},
 															builder: (context, seconds) {
 																return Text(
-																	seconds > 0 ? '$seconds' : 'Expired'
+																	seconds > 0 ? '$seconds' : 'Expired',
+																	style: CommonTextStyles.tabularFigures
 																);
 															}
 														)

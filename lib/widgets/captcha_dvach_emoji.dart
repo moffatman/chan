@@ -234,8 +234,8 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 													children: [
 														const Icon(CupertinoIcons.timer),
 														const SizedBox(width: 16),
-														SizedBox(
-															width: 60,
+														GreedySizeCachingBox(
+															alignment: Alignment.centerRight,
 															child: TimedRebuilder(
 																enabled: true,
 																interval: const Duration(seconds: 1),
@@ -244,7 +244,8 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 																},
 																builder: (context, seconds) {
 																	return Text(
-																		seconds > 0 ? '$seconds' : 'Expired'
+																		seconds > 0 ? '$seconds' : 'Expired',
+																		style: CommonTextStyles.tabularFigures
 																	);
 																}
 															)

@@ -496,7 +496,7 @@ class SteppableSettingWidget<T extends num> extends StandardImmutableSettingWidg
 					},
 					icon: const Icon(CupertinoIcons.minus)
 				),
-				Text(formatter(value), style: const TextStyle(fontFeatures: [ui.FontFeature.tabularFigures()])),
+				Text(formatter(value), style: CommonTextStyles.tabularFigures),
 				AdaptiveIconButton(
 					padding: EdgeInsets.zero,
 					onPressed: value >= max ? null : () {
@@ -577,7 +577,7 @@ class NullableSteppableSettingWidget<T extends num> extends StandardImmutableSet
 					},
 					icon: const Icon(CupertinoIcons.minus)
 				),
-				Text(formatter(value), style: const TextStyle(fontFeatures: [ui.FontFeature.tabularFigures()])),
+				Text(formatter(value), style: CommonTextStyles.tabularFigures),
 				AdaptiveIconButton(
 					padding: EdgeInsets.zero,
 					onPressed: (value ?? (max) - 1) >= max ? null : () {

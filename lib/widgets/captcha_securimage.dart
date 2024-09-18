@@ -7,6 +7,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -156,8 +157,8 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 									children: [
 										const Icon(CupertinoIcons.timer),
 										const SizedBox(width: 16),
-										SizedBox(
-											width: 60,
+										GreedySizeCachingBox(
+											alignment: Alignment.centerRight,
 											child: TimedRebuilder(
 												enabled: true,
 												interval: const Duration(seconds: 1),
@@ -166,7 +167,8 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 												},
 												builder: (context, seconds) {
 													return Text(
-														seconds > 0 ? '$seconds' : 'Expired'
+														seconds > 0 ? '$seconds' : 'Expired',
+														style: CommonTextStyles.tabularFigures
 													);
 												}
 											)

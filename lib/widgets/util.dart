@@ -267,9 +267,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 										LinearProgressIndicator(value: value.$2),
 										if (value.$1.isNotEmpty) Padding(
 											padding: const EdgeInsets.only(top: 8),
-											child: Text(value.$1, style: const TextStyle(
-												fontFeatures: [ui.FontFeature.tabularFigures()]
-											))
+											child: Text(value.$1, style: CommonTextStyles.tabularFigures)
 										)
 									]
 								)
@@ -2279,5 +2277,8 @@ class CommonTextStyles {
 	static const bold = TextStyle(
 		fontWeight: FontWeight.bold,
 		fontVariations: CommonFontVariations.bold
+	);
+	static const tabularFigures = TextStyle(
+		fontFeatures: [FontFeature.tabularFigures()]
 	);
 }
