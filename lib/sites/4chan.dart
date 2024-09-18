@@ -1464,23 +1464,20 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
-		final jars = fromBothWifiAndCellular ? [
-			Persistence.wifiCookies,
-			Persistence.cellularCookies
-		] : [
-			Persistence.currentCookies
-		];
-		for (final jar in jars) {
-			final toSave = (await jar.loadForRequest(Uri.https(parent.sysUrl, '/'))).where((cookie) {
-				return cookie.name == 'cf_clearance';
-			}).toList();
-			await jar.delete(Uri.https(parent.sysUrl, '/'), true);
-			await jar.delete(Uri.https(parent.sysUrl, '/'), true);
-			await jar.saveFromResponse(Uri.https(parent.sysUrl, '/'), toSave);
-			await CookieManager.instance().deleteCookies(
-				url: WebUri(parent.sysUrl)
-			);
-			loggedIn[jar] = false;
+		await parent.client.postUri(
+			Uri.https(parent.sysUrl, '/auth'),
+			data: FormData.fromMap({
+				'logout': '1'
+			})
+		);
+		loggedIn[Persistence.currentCookies] = false;
+		await CookieManager.instance().deleteCookies(
+			url: WebUri(parent.sysUrl)
+		);
+		if (fromBothWifiAndCellular) {
+			// No way to log out from non active connection. got to clear the cookies.
+			await Persistence.nonCurrentCookies.deletePreservingCloudflare(Uri.https(parent.sysUrl, '/'), true);
+			loggedIn[Persistence.nonCurrentCookies] = false;
 		}
   }
 

@@ -303,25 +303,15 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
-		final jars = fromBothWifiAndCellular ? [
-			Persistence.wifiCookies,
-			Persistence.cellularCookies
-		] : [
-			Persistence.currentCookies
-		];
 		await parent.client.postUri(Uri.https(parent.baseUrl, '/user/passlogout'));
-		for (final jar in jars) {
-			final toSave = (await jar.loadForRequest(Uri.https(parent.baseUrl, '/'))).where((cookie) {
-				return cookie.name == 'cf_clearance';
-			}).toList();
-			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
-			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
-			await jar.saveFromResponse(Uri.https(parent.baseUrl, '/'), toSave);
-			loggedIn[jar] = false;
-		}
+		loggedIn[Persistence.currentCookies] = false;
 		await CookieManager.instance().deleteCookies(
 			url: WebUri(parent.baseUrl)
 		);
+		if (fromBothWifiAndCellular) {
+			await Persistence.nonCurrentCookies.deletePreservingCloudflare(Uri.https(parent.baseUrl, '/'), true);
+			loggedIn[Persistence.nonCurrentCookies] = false;
+		}
   }
 
   @override

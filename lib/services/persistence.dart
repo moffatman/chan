@@ -166,6 +166,12 @@ class Persistence extends ChangeNotifier {
 		}
 		return cellularCookies;
 	}
+	static PersistCookieJar get nonCurrentCookies {
+		if (Settings.instance.isConnectedToWifi) {
+			return cellularCookies;
+		}
+		return wifiCookies;
+	}
 	static final globalTabMutator = ValueNotifier(0);
 	static final recentSearchesListenable = EasyListenable();
 	static const settingsBoxName = 'settings';
@@ -2189,5 +2195,15 @@ extension PseudoCookies on PersistCookieJar {
 		toSave.removeWhere((c) => c.name == key);
 		await this.delete(_pseudoCookieUri);
 		await saveFromResponse(_pseudoCookieUri, toSave);
+	}
+}
+
+extension PreserveCloudflareClearance on PersistCookieJar {
+	Future<void> deletePreservingCloudflare(Uri uri, [bool withDomainSharedCookie = false]) async {
+		final toSave = (await loadForRequest(uri)).where((cookie) {
+			return cookie.name == 'cf_clearance';
+		}).toList();
+		await this.delete(uri, withDomainSharedCookie);
+		await saveFromResponse(uri, toSave);
 	}
 }

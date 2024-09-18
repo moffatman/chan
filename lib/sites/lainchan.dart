@@ -647,20 +647,34 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
-		final jars = fromBothWifiAndCellular ? [
-			Persistence.wifiCookies,
-			Persistence.cellularCookies
-		] : [
-			Persistence.currentCookies
-		];
-		for (final jar in jars) {
-			await jar.delete(Uri.https(parent.sysUrl, '${parent.basePath}/'), true);
-			await jar.delete(Uri.https(parent.sysUrl, '${parent.basePath}/mod.php'), true);
-			loggedIn[jar] = false;
+		final sysUrl = Uri.https(parent.sysUrl, '${parent.basePath}/');
+		final modUrl = Uri.https(parent.sysUrl, '${parent.basePath}/mod.php');
+		final response = await parent.client.getUri(modUrl);
+		final document = parse(response.data);
+		if (document.querySelector('title')?.text != 'Login') {
+			// Actually logged in
+			final logoutLink = document.querySelectorAll('a').tryFirstWhere((e) => e.text.toLowerCase() == 'logout')?.attributes['href'];
+			if (logoutLink == null) {
+				return;
+			}
+			await parent.client.getUri(modUrl.resolve(logoutLink), options: Options(
+				followRedirects: false, // dio loses the cookies in the first 303 response
+				validateStatus: (status) => (status ?? 0) < 400
+			));
 		}
+		loggedIn[Persistence.currentCookies] = false;
 		await CookieManager.instance().deleteCookies(
-			url: WebUri(parent.sysUrl)
+			url: WebUri.uri(sysUrl)
 		);
+		await CookieManager.instance().deleteCookies(
+			url: WebUri.uri(modUrl)
+		);
+		if (fromBothWifiAndCellular) {
+			// No way to log out from non active connection. got to clear the cookies.
+			await Persistence.nonCurrentCookies.deletePreservingCloudflare(sysUrl, true);
+			await Persistence.nonCurrentCookies.deletePreservingCloudflare(modUrl, true);
+			loggedIn[Persistence.nonCurrentCookies] = false;
+		}
   }
 
   @override
