@@ -452,6 +452,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 	void _onSlowScroll() {
 		final lastItem = _listController.lastVisibleItem;
+		_checkForeground();
 		if (persistentState.thread != null && !blocked && lastItem != null && _foreground) {
 			final newLastSeen = lastItem.id;
 			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
