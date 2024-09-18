@@ -2340,3 +2340,27 @@ class _DebouncedBuilderState<T> extends State<DebouncedBuilder<T>> {
 		_timer.cancel();
 	}
 }
+
+class ConditionalShortcut implements ShortcutActivator {
+	final ShortcutActivator parent;
+	final bool Function() condition;
+
+	ConditionalShortcut({
+		required this.parent,
+		required this.condition
+	});
+
+	@override
+	bool accepts(KeyEvent event, HardwareKeyboard state) {
+		if (condition() && parent.accepts(event, state)) {
+			return true;
+		}
+		return false;
+	}
+
+	@override
+	String debugDescribeKeys() => parent.debugDescribeKeys();
+
+	@override
+	Iterable<LogicalKeyboardKey>? get triggers => parent.triggers;
+}

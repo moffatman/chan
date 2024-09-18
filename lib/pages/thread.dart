@@ -1563,15 +1563,15 @@ class ThreadPageState extends State<ThreadPage> {
 											transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
 											child: Shortcuts(
 												shortcuts: {
-													LogicalKeySet(LogicalKeyboardKey.keyG): const OpenGalleryIntent()
+													ConditionalShortcut(
+														parent: LogicalKeySet(LogicalKeyboardKey.keyG),
+														condition: () => !(_listController.state?.searchHasFocus ?? false)
+													): const OpenGalleryIntent()
 												},
 												child: Actions(
 													actions: {
 														OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
 															onInvoke: (i) {
-																if (_listController.state?.searchHasFocus ?? false) {
-																	return;
-																}
 																_showGalleryFromNextImage();
 																return null;
 															}

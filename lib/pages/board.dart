@@ -1107,12 +1107,10 @@ class BoardPageState extends State<BoardPage> {
 											transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
 											child: CallbackShortcuts(
 												bindings: {
-													LogicalKeySet(LogicalKeyboardKey.keyG): () {
-														if (_listController.state?.searchHasFocus ?? false) {
-															return;
-														}
-														_showGalleryFromNextImage();
-													}
+													ConditionalShortcut(
+														parent: LogicalKeySet(LogicalKeyboardKey.keyG),
+														condition: () => !(_listController.state?.searchHasFocus ?? false)
+													): _showGalleryFromNextImage
 												},
 												child: site == null ? const Center(
 													child: ErrorMessageCard('No imageboard selected')
