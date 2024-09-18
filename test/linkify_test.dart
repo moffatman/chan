@@ -44,6 +44,13 @@ void main() {
 			expect(link.name, 'example1.com/asdf(2)');
 		});
 
+		test('markdown link with parentheses 2', () {
+			final r = SiteReddit.makeSpan('', 0, '[On The Beaten Trail (reddit.com)](https://www.reddit.com/r/DesirePath/)');
+			final link = r.children.single as PostLinkSpan;
+			expect(link.url, 'https://www.reddit.com/r/DesirePath/');
+			expect(link.name, 'On The Beaten Trail (reddit.com)');
+		});
+
 		test('markdown link 2', () {
 			final r = SiteReddit.makeSpan('', 0, '[second reddit post](https://www.reddit.com/r/toronto/s/tNWH3wwQsU)');
 			final link = r.children.single as PostLinkSpan;

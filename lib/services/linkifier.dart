@@ -94,7 +94,7 @@ class LooseUrlLinkifier extends Linkifier {
                 )
                 // [$link](
                 || (
-                  (match.group(1)?.endsWith('[') ?? false)
+                  (match.group(1)?.contains('[') ?? false)
                   && match.end < (element.text.length - 1)
                   && element.text.substring(match.end, match.end + 2) == ']('
                 )
