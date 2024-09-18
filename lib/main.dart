@@ -1969,7 +1969,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final hideTabletLayoutLabels = MediaQuery.sizeOf(context).height < 600;
 		if (!ImageboardRegistry.instance.initialized || _authenticationStatus == _AuthenticationStatus.inProgress) {
 			return const ChanSplashPage();
 		}
@@ -2010,7 +2009,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}));
 		}
 		final filterError = context.select<Settings, String?>((s) => s.filterError);
-		Widget child = (androidDrawer || isScreenWide(context)) ? NotificationListener2<ScrollNotification, ScrollMetricsNotification>(
+		final androidDrawer = this.androidDrawer;
+		final persistentDrawer = this.persistentDrawer;
+		final wideScreen = isScreenWide(context);
+		Widget child = (androidDrawer || wideScreen) ? NotificationListener2<ScrollNotification, ScrollMetricsNotification>(
 			onNotification: ScrollTracker.instance.onNotification,
 			child: Actions(
 				actions: {
@@ -2036,75 +2038,95 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: AdaptiveScaffold(
 						key: _drawerScaffoldKey,
 						drawer: (androidDrawer && !persistentDrawer) ? const ChanceDrawer(persistent: false) : null,
-						body: SafeArea(
-							top: false,
-							bottom: false,
-							child: Row(
-								children: [
-									if (!androidDrawer || persistentDrawer) Container(
-										color: ChanceTheme.barColorOf(context),
-										width: persistentDrawer ? persistentDrawerWidth : 85,
-										child: persistentDrawer ? const ChanceDrawer(
-											persistent: true
-										) : Column(
-											children: [
-												SizedBox(height: MediaQuery.paddingOf(context).top),
-												Expanded(
-													child: AnimatedBuilder(
-														animation: _tabs.activeBrowserTab,
-														builder: (context, _) => _buildTabList(Axis.vertical)
+						resizeToAvoidBottomInset: !wideScreen,
+						body: TransformedMediaQuery(
+							transformation: (context, mq) => wideScreen ? mq.copyWith(
+								padding: EdgeInsets.only(
+									right: max(mq.viewPadding.right, mq.viewInsets.right),
+									top: max(mq.viewPadding.top, mq.viewInsets.top),
+									left: max(mq.viewPadding.left, mq.viewInsets.left),
+									bottom: max(mq.viewPadding.bottom, mq.viewInsets.bottom),
+								),
+								viewPadding: mq.viewPadding + mq.viewInsets,
+								viewInsets: EdgeInsets.zero
+							) : mq,
+							child: Builder(
+								builder: (context) => SafeArea(
+									top: false,
+									bottom: false,
+									child: Row(
+										children: [
+											if (!androidDrawer || persistentDrawer) Container(
+												color: ChanceTheme.barColorOf(context),
+												width: persistentDrawer ? persistentDrawerWidth : 85,
+												child: persistentDrawer ? const ChanceDrawer(
+													persistent: true
+												) : Builder(
+													builder: (context) {
+														final hideTabletLayoutLabels = (MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).vertical) < 600;
+														return Column(
+															children: [
+																SizedBox(height: MediaQuery.paddingOf(context).top),
+																Expanded(
+																	child: AnimatedBuilder(
+																		animation: _tabs.activeBrowserTab,
+																		builder: (context, _) => _buildTabList(Axis.vertical)
+																	)
+																),
+																_buildNewTabIcon(
+																	axis: Axis.vertical,
+																	hideLabel: hideTabletLayoutLabels
+																),
+																_buildTabletIcon(1, NotifyingIcon(
+																		icon: Icon(Adaptive.icons.bookmark),
+																		primaryCount: CombiningValueListenable<int>(
+																			children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
+																			combine: (list) => list.fold(0, (a, b) => a + b)
+																		),
+																		secondaryCount: CombiningValueListenable<int>(
+																			children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
+																			combine: (list) => list.fold(0, (a, b) => a + b)
+																		)
+																	), hideTabletLayoutLabels ? null : 'Saved',
+																),
+																GestureDetector(
+																	onLongPress: _toggleHistory,
+																	child: _buildTabletIcon(2, Settings.recordThreadsInHistorySetting.watch(context) ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
+																),
+																_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
+																GestureDetector(
+																	onLongPress: () => Settings.instance.runQuickAction(context),
+																	child: _buildTabletIcon(4, NotifyingIcon(
+																			icon: Icon(CupertinoIcons.settings, color: filterError != null ? Colors.red : null),
+																			primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
+																			secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
+																		), hideTabletLayoutLabels ? null : 'Settings'
+																	)
+																),
+																SizedBox(height: MediaQuery.paddingOf(context).bottom)
+															]
+														);
+													}
+												)
+											),
+											if (persistentDrawer) VerticalDivider(
+												width: 0,
+												thickness: 0,
+												color: ChanceTheme.primaryColorWithBrightness20Of(context)
+											),
+											Expanded(
+												child: AnimatedBuilder(
+													animation: _tabs._tabController,
+													builder: (context, _) => SwitchingView(
+														currentIndex: _tabs.mainTabIndex,
+														items: const [0, 1, 2, 3, 4],
+														builder: (i) => _buildTab(i)
 													)
-												),
-												_buildNewTabIcon(
-													axis: Axis.vertical,
-													hideLabel: hideTabletLayoutLabels
-												),
-												_buildTabletIcon(1, NotifyingIcon(
-														icon: Icon(Adaptive.icons.bookmark),
-														primaryCount: CombiningValueListenable<int>(
-															children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
-															combine: (list) => list.fold(0, (a, b) => a + b)
-														),
-														secondaryCount: CombiningValueListenable<int>(
-															children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
-															combine: (list) => list.fold(0, (a, b) => a + b)
-														)
-													), hideTabletLayoutLabels ? null : 'Saved',
-												),
-												GestureDetector(
-													onLongPress: _toggleHistory,
-													child: _buildTabletIcon(2, Settings.recordThreadsInHistorySetting.watch(context) ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
-												),
-												_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
-												GestureDetector(
-													onLongPress: () => Settings.instance.runQuickAction(context),
-													child: _buildTabletIcon(4, NotifyingIcon(
-															icon: Icon(CupertinoIcons.settings, color: filterError != null ? Colors.red : null),
-															primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
-															secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
-														), hideTabletLayoutLabels ? null : 'Settings'
-													)
-												),
-												SizedBox(height: MediaQuery.paddingOf(context).bottom)
-											]
-										)
-									),
-									if (persistentDrawer) VerticalDivider(
-										width: 0,
-										thickness: 0,
-										color: ChanceTheme.primaryColorWithBrightness20Of(context)
-									),
-									Expanded(
-										child: AnimatedBuilder(
-											animation: _tabs._tabController,
-											builder: (context, _) => SwitchingView(
-												currentIndex: _tabs.mainTabIndex,
-												items: const [0, 1, 2, 3, 4],
-												builder: (i) => _buildTab(i)
+												)
 											)
-										)
+										]
 									)
-								]
+								)
 							)
 						)
 					)
@@ -2343,7 +2365,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			)
 		);
 		child = NotificationsOverlay(
-			onePane: !isScreenWide(context),
+			onePane: !wideScreen,
 			key: notificationsOverlayKey,
 			imageboards: [
 				...ImageboardRegistry.instance.imageboards,
