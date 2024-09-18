@@ -1576,17 +1576,17 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		if (!mounted) return;
 		updatingNow.value = null;
-		if (mounted && (newList != null || originalList == null || error.value != null)) {
-			try {
-				if (mounted) {
-					await ModalRoute.of(context)?.popped.timeout(Duration.zero);
-					// Route is popping, just quit
-					return;
-				}
+		try {
+			if (mounted) {
+				await ModalRoute.of(context)?.popped.timeout(Duration.zero);
+				// Route is popping, just quit
+				return;
 			}
-			on TimeoutException {
-				// No popping
-			}
+		}
+		on TimeoutException {
+			// No popping
+		}
+		if (mounted && (newList != null || error.value != null)) {
 			if (hapticFeedback) {
 				mediumHapticFeedback();
 			}
@@ -1598,12 +1598,17 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			});
 		}
-		else if (mounted && newList == null && mergeTrees) {
+		else if (mounted && newList == null && originalList != null && mergeTrees) {
 			// Just merge trees
 			if (hapticFeedback) {
 				mediumHapticFeedback();
 			}
 			setState(() {});
+		}
+		else {
+			setState(() {
+				error.value = Exception('listUpdater returned null');
+			});
 		}
 	}
 

@@ -1698,7 +1698,7 @@ class ThreadPageState extends State<ThreadPage> {
 																	)
 																},
 																listUpdater: (options) async {
-																	if (persistentState.disableUpdates) {
+																	if (persistentState.disableUpdates && (persistentState.useArchive == (persistentState.thread?.archiveName != null))) {
 																		if (options.source.manual) {
 																			await Future.delayed(const Duration(milliseconds: 650));
 																			// This is just to clear highlighted posts / resort tree on archived threads
