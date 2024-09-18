@@ -596,6 +596,7 @@ class ThreadPageState extends State<ThreadPage> {
 						_ensurePostLoaded(post.id)
 					]);
 					setState(() {});
+					_listController.state?.closeSearch();
 					await WidgetsBinding.instance.endOfFrame;
 					await _listController.animateTo((val) => val.id == post.id);
 					await _glowPost(post.id);
