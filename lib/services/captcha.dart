@@ -76,17 +76,30 @@ Future<CaptchaSolution?> solveCaptcha({
 		case Recaptcha3Request():
 			return await solveRecaptchaV3(request);
 		case Chan4CustomCaptchaRequest():
+			final priority = switch (forceHeadless) {
+				true => RequestPriority.cosmetic,
+				null || false => RequestPriority.interactive
+			};
 			CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
-			Exception? initialCloudChallengeException;
-			if ((settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver ?? false) && (forceHeadless ?? true)) {
+			Captcha4ChanCustomChallenge? initialChallenge;
+			Exception? initialChallengeException;
+			try {
+				// Grab the challenge without popping up, to process initial cooldown without interruption
+				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority);
+			}
+			on Exception catch (e) {
+				if (context == null || e is CooldownException) {
+					rethrow;
+				}
+				initialChallengeException = e;
+			}
+			if (initialChallengeException == null && (settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver ?? false) && (forceHeadless ?? true)) {
 				try {
 					final cloudSolution = await headlessSolveCaptcha4ChanCustom(
 						request: request,
 						site: site,
-						priority: switch (forceHeadless) {
-							true => RequestPriority.cosmetic,
-							null || false => RequestPriority.interactive
-						}
+						priority: priority,
+						challenge: initialChallenge
 					);
 					if (cloudSolution.confident) {
 						cloudSolution.challenge.dispose();
@@ -101,11 +114,11 @@ Future<CaptchaSolution?> solveCaptcha({
 						rethrow;
 					}
 					else if (e is Captcha4ChanCustomChallengeException) {
-						initialCloudChallengeException = e;
+						initialChallengeException = e;
 					}
 					else if (e is dio.DioError && e.error is CloudflareHandlerInterruptedException) {
 						// Avoid two cloudflare popups
-						initialCloudChallengeException = e.error;
+						initialChallengeException = e.error;
 					}
 					else {
 						Future.error(e, st); // Report to crashlytics
@@ -126,7 +139,8 @@ Future<CaptchaSolution?> solveCaptcha({
 				site: site,
 				request: request,
 				initialCloudGuess: initialCloudGuess,
-				initialCloudChallengeException: initialCloudChallengeException,
+				initialChallenge: initialChallenge,
+				initialChallengeException: initialChallengeException,
 				onCaptchaSolved: onCaptchaSolved,
 				onTryAgainAt: onTryAgainAt
 			));

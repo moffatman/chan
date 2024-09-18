@@ -24,7 +24,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:provider/provider.dart';
 
-Captcha4ChanCustomChallenge? _challenge;
+final _reusableChallenges = <Captcha4ChanCustomChallenge>[];
+void _storeChallengeForReuse(Captcha4ChanCustomChallenge? challenge) {
+	if (challenge == null) {
+		return;
+	}
+	_reusableChallenges.add(challenge);
+	Future.delayed(challenge.expiresAt.difference(DateTime.now()) + const Duration(seconds: 1), _cleanupChallenges);
+}
+void _cleanupChallenges() {
+	final now = DateTime.now();
+	_reusableChallenges.removeWhere((c) {
+		if (c.expiresAt.isBefore(now)) {
+			c.dispose();
+			return true;
+		}
+		return false;
+	});
+}
 
 bool _isFalsy(Object obj) {
 	return {false, 0, '', null}.contains(obj);
@@ -68,6 +85,11 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	required Chan4CustomCaptchaRequest request,
 	RequestPriority priority = RequestPriority.interactive
 }) async {
+	final reusable = _reusableChallenges.tryFirstWhere((c) => c.isReusableFor(request, const Duration(seconds: 15)));
+	if (reusable != null) {
+		_reusableChallenges.remove(reusable);
+		return reusable;
+	}
 	final Response challengeResponse = await site.client.getUri(request.challengeUrl.replace(
 		queryParameters: {
 			...request.challengeUrl.queryParameters,
@@ -244,16 +266,15 @@ Future<_CloudGuess> _cloudGuess({
 Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 	required ImageboardSite site,
 	required Chan4CustomCaptchaRequest request,
-	required RequestPriority priority
+	required RequestPriority priority,
+	Captcha4ChanCustomChallenge? challenge
 }) async {
-	if (_challenge?.isReusableFor(request, const Duration(seconds: 10)) == false) {
-		_challenge?.dispose();
-		_challenge = null;
+	if (challenge?.isReusableFor(request, const Duration(seconds: 15)) == false) {
+		challenge?.dispose();
+		challenge = null;
 	}
-
-	Captcha4ChanCustomChallenge challenge;
 	try {
-		challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
+		challenge ??= await requestCaptcha4ChanCustomChallenge(
 			site: site,
 			request: request,
 			priority: priority
@@ -269,7 +290,7 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 		// KeepAlive (for the T-Mobile IPv4 CGNAT issue)
 		await Future.delayed(const Duration(seconds: 1));
 		try {
-			challenge = _challenge ??= await requestCaptcha4ChanCustomChallenge(
+			challenge = await requestCaptcha4ChanCustomChallenge(
 				site: site,
 				request: request,
 				priority: RequestPriority.cosmetic
@@ -279,12 +300,9 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 			if (second.error is! CloudflareHandlerNotAllowedException) {
 				rethrow;
 			}
-			print('Retry after cloudflare still got cloudflare!');
 			throw first;
 		}
 	}
-
-	print('final $challenge');
 
 	final Chan4CustomCaptchaSolution solution;
 	final bool confident;
@@ -467,7 +485,8 @@ class Captcha4ChanCustom extends StatefulWidget {
 	final Chan4CustomCaptchaRequest request;
 	final ValueChanged<Chan4CustomCaptchaSolution?> onCaptchaSolved;
 	final CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
-	final Exception? initialCloudChallengeException;
+	final Captcha4ChanCustomChallenge? initialChallenge;
+	final Exception? initialChallengeException;
 	final ValueChanged<DateTime>? onTryAgainAt;
 
 	const Captcha4ChanCustom({
@@ -475,7 +494,8 @@ class Captcha4ChanCustom extends StatefulWidget {
 		required this.request,
 		required this.onCaptchaSolved,
 		this.initialCloudGuess,
-		this.initialCloudChallengeException,
+		this.initialChallenge,
+		this.initialChallengeException,
 		this.onTryAgainAt,
 		Key? key
 	}) : super(key: key);
@@ -516,7 +536,7 @@ class Captcha4ChanCustomChallenge {
 	});
 
 	bool isReusableFor(Chan4CustomCaptchaRequest request, Duration validityPeriod) {
-		return !_isDisposed && this.request == request && expiresAt.isBefore(DateTime.now().add(validityPeriod));
+		return !_isDisposed && this.request == request && expiresAt.isAfter(DateTime.now().add(validityPeriod));
 	}
 
 	@override
@@ -526,9 +546,6 @@ class Captcha4ChanCustomChallenge {
 		_isDisposed = true;
 		foregroundImage?.dispose();
 		backgroundImage?.dispose();
-		if (this == _challenge) {
-			_challenge = null;
-		}
 	}
 }
 
@@ -576,10 +593,7 @@ typedef _PickerStuff = ({GlobalKey key, UniqueKey wrapperKey, FixedExtentScrollC
 class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	String? errorMessage;
 	DateTime? tryAgainAt;
-	Captcha4ChanCustomChallenge? get challenge => _challenge;
-	set challenge(Captcha4ChanCustomChallenge? c) {
-		_challenge = c;
-	}
+	Captcha4ChanCustomChallenge? challenge;
 	int backgroundSlide = 0;
 	late final FocusNode _solutionNode;
 	late final TextEditingController _solutionController;
@@ -942,6 +956,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	@override
 	void initState() {
 		super.initState();
+		challenge = widget.initialChallenge;
 		if (challenge?.isReusableFor(widget.request, const Duration(seconds: 15)) == false) {
 			challenge?.dispose();
 			challenge = null;
@@ -958,7 +973,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_greyOutPickers = false;
 		}
 		final guess = widget.initialCloudGuess;
-		final exception = widget.initialCloudChallengeException;
+		final exception = widget.initialChallengeException;
 		if (exception != null) {
 			if (exception is Captcha4ChanCustomChallengeException) {
 				errorMessage = exception.message;
@@ -1512,5 +1527,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			stuff.controller.dispose();
 		}
 		_guessInProgress?.cancel();
+		_storeChallengeForReuse(challenge);
 	}
 }
