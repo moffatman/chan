@@ -1128,10 +1128,14 @@ class ThreadPageState extends State<ThreadPage> {
 		if (widget.thread != thread.identifier) {
 			throw Exception('Thread changed');
 		}
-		final oldIds = thread.posts_.map((p) => p.id).toSet();
+		final oldIds = {
+			for (final post in thread.posts_)
+				post.id: post.isStub
+		};
 		for (final p in newChildren) {
-			if (!p.isPageStub && !oldIds.contains(p.id) && !persistentState.youIds.contains(p.id)) {
+			if (!p.isPageStub && oldIds[p.id] != p.isStub && !persistentState.youIds.contains(p.id)) {
 				persistentState.unseenPostIds.data.add(p.id);
+				newPostIds.add(p.id);
 			}
 		}
 		thread.mergePosts(null, newChildren, site);
