@@ -615,8 +615,8 @@ class PostQuoteLinkSpan extends PostSpan {
   (TextSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		final boardPrefix = board == zone.board ? '' : '${zone.imageboard.site.formatBoardNameWithoutTrailingSlash(board)}/';
 		String text = '>>$boardPrefix$postId';
-		if (zone.postFromArchiveError(board, postId) != null) {
-			text += ' (Error: ${zone.postFromArchiveError(board, postId)})';
+		if (zone.postFromArchiveError(board, postId)?.$1 case Object error) {
+			text += ' (Error: ${error.toStringDio()})';
 		}
 		else if (zone.isLoadingPostFromArchive(board, postId)) {
 			text += ' (Loading...)';
@@ -709,7 +709,10 @@ class PostQuoteLinkSpan extends PostSpan {
 		int? actualThreadId = threadId;
 		if (threadId == null) {
 			// Dead links do not know their thread
-			final thisPostLoaded = zone.postFromArchive(board, postId);
+			Post? thisPostLoaded = zone.crossThreadPostFromArchive(board, postId);
+			if (board == zone.board) {
+				thisPostLoaded ??= zone.findPost(postId);
+			}
 			if (thisPostLoaded != null) {
 				actualThreadId = thisPostLoaded.threadId;
 			}
@@ -1939,10 +1942,10 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		notifyListeners();
 	}
 	void unExpandAllPosts() => throw UnimplementedError();
-	bool isLoadingPostFromArchive(String board, int id) => false;
-	Future<void> loadPostFromArchive(String board, int id) => throw UnimplementedError();
-	Post? postFromArchive(String board, int id) => null;
-	String? postFromArchiveError(String board, int id) => null;
+	bool isLoadingPostFromArchive(String board, int id);
+	Future<void> loadPostFromArchive(String board, int id);
+	Post? crossThreadPostFromArchive(String board, int id);
+	(Object, StackTrace)? postFromArchiveError(String board, int id);
 	final Map<int, bool> _shouldShowSpoiler = {};
 	bool shouldShowSpoiler(int id) {
 		return _shouldShowSpoiler[id] ?? Persistence.settings.alwaysShowSpoilers;
@@ -2214,9 +2217,9 @@ class _PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	Future<void> loadPostFromArchive(String board, int id) => parent.loadPostFromArchive(board, id);
 	@override
-	Post? postFromArchive(String board, int id) => parent.postFromArchive(board, id);
+	Post? crossThreadPostFromArchive(String board, int id) => parent.crossThreadPostFromArchive(board, id);
 	@override
-	String? postFromArchiveError(String board, int id) => parent.postFromArchiveError(board, id);
+	(Object, StackTrace)? postFromArchiveError(String board, int id) => parent.postFromArchiveError(board, id);
 	@override
 	AsyncSnapshot<Post>? translatedPost(int postId) => parent.translatedPost(postId);
 	@override
@@ -2255,9 +2258,9 @@ class _PostSpanChildZoneData extends PostSpanZoneData {
 
 class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
-	String board;
+	final String board;
 	@override
-	int primaryThreadId;
+	final int primaryThreadId;
 	@override
 	final Imageboard imageboard;
 	@override
@@ -2269,8 +2272,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	Future<void> Function(List<ParentAndChildIdentifier>)? onNeedUpdateWithStubItems;
 	final Map<(String, int), bool> _isLoadingPostFromArchive = {};
-	final Map<(String, int), Post> _postsFromArchive = {};
-	final Map<(String, int), String> _postFromArchiveErrors = {};
+	final Map<(String, int), Post> _crossThreadPostsFromArchive = {};
+	final Map<(String, int), (Object, StackTrace)> _postFromArchiveErrors = {};
 	final Iterable<int> semanticRootIds;
 	final Map<int, AsyncSnapshot<String>> _translatedTitleSnapshots = {};
 	final Map<int, AsyncSnapshot<Post>> _translatedPostSnapshots = {};
@@ -2280,11 +2283,13 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	PostSpanZoneStyle style;
 	final Map<int, Thread> _threads = {};
 	final Map<int, Post> _postLookupTable = {};
+	final Future<void> Function(Post)? onPostLoadedFromArchive;
 
 	PostSpanRootZoneData({
 		required Thread thread,
 		required this.imageboard,
 		this.onNeedScrollToPost,
+		this.onPostLoadedFromArchive,
 		this.isPostOnscreen,
 		this.glowOtherPost,
 		this.onNeedUpdateWithStubItems,
@@ -2300,6 +2305,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		required List<Thread> threads,
 		required this.imageboard,
 		this.onNeedScrollToPost,
+		this.onPostLoadedFromArchive,
 		this.isPostOnscreen,
 		this.glowOtherPost,
 		this.onNeedUpdateWithStubItems,
@@ -2345,20 +2351,24 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	Future<void> loadPostFromArchive(String board, int id) async {
 		lightHapticFeedback();
 		try {
-			_postFromArchiveErrors.remove(id);
+			_postFromArchiveErrors.remove((board, id));
 			_isLoadingPostFromArchive[(board, id)] = true;
-			notifyListeners();
-			final newPost = _postsFromArchive[(board, id)] = await imageboard.site.getPostFromArchive(board, id, priority: RequestPriority.interactive);
-			if (board == this.board) {
-				_postsFromArchive[(board, id)]!.replyIds = findThread(newPost.threadId)?.posts.where((p) => p.repliedToIds.contains(id)).map((p) => p.id).toList() ?? [];
+			notifyAllListeners();
+			final newPost = await imageboard.site.getPostFromArchive(board, id, priority: RequestPriority.interactive);
+			final cb = onPostLoadedFromArchive;
+			if (board == this.board && newPost.threadId == primaryThreadId && cb != null) {
+				await cb(newPost);
 			}
-			notifyListeners();
+			else {
+				_crossThreadPostsFromArchive[(board, id)] = newPost;
+				if (board == this.board) {
+					newPost.replyIds = findThread(newPost.threadId)?.posts.where((p) => p.repliedToIds.contains(id)).map((p) => p.id).toList() ?? [];
+				}
+			}
+			notifyAllListeners();
 		}
 		catch (e, st) {
-			print('Error getting post from archive');
-			print(e);
-			print(st);
-			_postFromArchiveErrors[(board, id)] = e.toStringDio();
+			_postFromArchiveErrors[(board, id)] = (e, st);
 		}
 		lightHapticFeedback();
 		_isLoadingPostFromArchive[(board, id)] = false;
@@ -2366,12 +2376,12 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	}
 
 	@override
-	Post? postFromArchive(String board, int id) {
-		return _postsFromArchive[(board, id)];
+	Post? crossThreadPostFromArchive(String board, int id) {
+		return _crossThreadPostsFromArchive[(board, id)];
 	}
 
 	@override
-	String? postFromArchiveError(String board, int id) {
+	(Object, StackTrace)? postFromArchiveError(String board, int id) {
 		return _postFromArchiveErrors[(board, id)];
 	}
 
@@ -2465,7 +2475,7 @@ class ExpandingPost extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData>();
-		final post = zone.findPost(link.postId) ?? zone.postFromArchive(zone.board, link.postId);
+		final post = zone.findPost(link.postId) ?? zone.crossThreadPostFromArchive(zone.board, link.postId);
 		return zone.shouldExpandPost(link) ? TransformedMediaQuery(
 			transformation: (context, mq) => mq.copyWith(textScaler: TextScaler.noScaling),
 			child: (post == null) ? Center(
@@ -2646,6 +2656,20 @@ TextSpan buildPostInfoRow({
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
 	const lineBreak = TextSpan(text: '\n');
 	final children = [
+		if (post.archiveName != null) ...[
+			WidgetSpan(
+				child: Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.75), size: 15),
+				alignment: PlaceholderAlignment.middle
+			),
+			TextSpan(
+				text: '${post.archiveName} ',
+				style: TextStyle(
+					color: theme.primaryColor.withOpacity(0.75),
+					fontWeight: FontWeight.w600,
+					fontVariations: CommonFontVariations.w600
+				)
+			)
+		],
 		if (post.isDeleted) ...[
 			TextSpan(
 				text: '[Deleted] ',

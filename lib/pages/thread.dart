@@ -616,6 +616,7 @@ class ThreadPageState extends State<ThreadPage> {
 					));
 				}
 			},
+			onPostLoadedFromArchive: _onPostLoadedFromArchive,
 			isPostOnscreen: (id) {
 				if (_weakNavigatorKey.currentState?.stack.isNotEmpty ?? false) {
 					// No posts visible, something is covering them
@@ -705,6 +706,7 @@ class ThreadPageState extends State<ThreadPage> {
 				],
 				imageboard: imageboard,
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
+				onPostLoadedFromArchive: oldZone.onPostLoadedFromArchive,
 				isPostOnscreen: oldZone.isPostOnscreen,
 				glowOtherPost: oldZone.glowOtherPost,
 				onNeedUpdateWithStubItems: oldZone.onNeedUpdateWithStubItems,
@@ -853,23 +855,14 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<void> _replacePostFromArchive(Post post) async {
-		try {
-			final tmpPersistentState = persistentState;
-			final site = context.read<ImageboardSite>();
-			final asArchived = await site.getPostFromArchive(post.board, post.id, priority: RequestPriority.interactive);
-			tmpPersistentState.thread?.mergePosts(null, [asArchived], site);
-			await tmpPersistentState.save();
+	Future<void> _onPostLoadedFromArchive(Post asArchived) async {
+		final thread = persistentState.thread;
+		if (persistentState.identifier == asArchived.threadIdentifier && thread != null) {
+			thread.mergePosts(null, [asArchived], context.read<ImageboardSite>());
+			zone.addThread(thread);
+			await persistentState.didMutateThread();
+			_listController.state?.acceptNewList(thread.posts);
 			setState(() {});
-		}
-		catch (e) {
-			if (mounted) {
-				showToast(
-					context: context,
-					message: e.toStringDio(),
-					icon: CupertinoIcons.exclamationmark_triangle
-				);
-			}
 		}
 	}
 
@@ -1736,7 +1729,6 @@ class ThreadPageState extends State<ThreadPage> {
 																					semanticParentIds: context.read<PostSpanZoneData>().stackIds
 																				));
 																			},
-																			onRequestArchive: () => _replacePostFromArchive(post),
 																			highlight: newPostIds.contains(post.id),
 																			onDoubleTap: _makeOnDoubleTap(post.id)
 																		)
@@ -1751,7 +1743,6 @@ class ThreadPageState extends State<ThreadPage> {
 																				semanticParentIds: context.read<PostSpanZoneData>().stackIds
 																			));
 																		},
-																		onRequestArchive: () => _replacePostFromArchive(post),
 																		onTap: () async {
 																			resetPage();
 																			await Future.delayed(const Duration(milliseconds: 250));
@@ -1792,7 +1783,6 @@ class ThreadPageState extends State<ThreadPage> {
 																						semanticParentIds: context.read<PostSpanZoneData>().stackIds
 																					));
 																				},
-																				onRequestArchive: () => _replacePostFromArchive(value),
 																				overrideReplyCount: Row(
 																					mainAxisSize: MainAxisSize.min,
 																					children: [
@@ -2901,6 +2891,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										],
 										if (!widget.blocked && widget.persistentState.useArchive) ...[
 											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.5)),
+											if (widget.persistentState.thread?.archiveName case String archiveName)
+												Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withOpacity(0.5))),
 											const SizedBox(width: 8)
 										],
 										if (!widget.blocked && (widget.listController.state?.treeBuildingFailed ?? false)) ...[

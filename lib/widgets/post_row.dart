@@ -160,7 +160,6 @@ class PostRow extends StatelessWidget {
 	final bool propagateOnThumbnailTap;
 	final VoidCallback? onTap;
 	final VoidCallback? onDoubleTap;
-	final VoidCallback? onRequestArchive;
 	final bool showCrossThreadLabel;
 	final bool allowTappingLinks;
 	final bool shrinkWrap;
@@ -186,7 +185,6 @@ class PostRow extends StatelessWidget {
 		this.onThumbnailTap,
 		this.propagateOnThumbnailTap = false,
 		this.onThumbnailLoadError,
-		this.onRequestArchive,
 		this.showCrossThreadLabel = true,
 		this.allowTappingLinks = true,
 		this.shrinkWrap = false,
@@ -447,10 +445,21 @@ class PostRow extends StatelessWidget {
 					child: SizedBox(
 						width: 75,
 						height: 75,
-						child: CupertinoInkwell(
-							onPressed: onRequestArchive,
-							child: const Icon(CupertinoIcons.xmark_square, size: 36)
-						)
+						child:
+							parentZone.isLoadingPostFromArchive(post.board, post.id) ?
+								const CircularProgressIndicator.adaptive() :
+								switch (parentZone.postFromArchiveError(post.board, post.id)) {
+									(Object error, StackTrace stackTrace) => CupertinoInkwell(
+										onPressed: () => alertError(context, error, stackTrace, actions: {
+											'Retry': () => parentZone.loadPostFromArchive(post.board, post.id)
+										}),
+										child: const Icon(CupertinoIcons.exclamationmark_triangle, size: 36)
+									),
+									null => CupertinoInkwell(
+										onPressed: () => parentZone.loadPostFromArchive(post.board, post.id),
+										child: const Icon(CupertinoIcons.xmark_square, size: 36)
+									)
+								}
 					)
 				),
 				if (shrinkWrap) Flexible(
@@ -972,7 +981,7 @@ class PostRow extends StatelessWidget {
 								board: latestPost.board,
 								threadId: latestPost.threadId,
 								postId: latestPost.id,
-								archiveName: parentZoneThreadState?.thread?.archiveName
+								archiveName: latestPost.archiveName ?? parentZoneThreadState?.thread?.archiveName
 							),
 							type: "text",
 							sharePositionOrigin: sharePositionOrigin

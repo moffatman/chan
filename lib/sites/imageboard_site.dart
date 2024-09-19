@@ -1458,6 +1458,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			}
 			try {
 				final post = await archive.getPost(board, id, priority: RequestPriority.cosmetic);
+				post.archiveName = archive.name;
 				await Future.wait(post.attachments.map(_ensureCookiesMemoizedForAttachment));
 				return post;
 			}
@@ -1474,6 +1475,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				if (error.value is CloudflareHandlerNotAllowedException) {
 					try {
 						final post = await error.key.getPost(board, id, priority: priority);
+						post.archiveName = error.key.name;
 						await Future.wait(post.attachments.map(_ensureCookiesMemoizedForAttachment));
 						return post;
 					}

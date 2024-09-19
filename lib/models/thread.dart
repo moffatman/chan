@@ -173,9 +173,10 @@ class Thread extends HiveObject implements Filterable {
 			final indexToReplace = postIdToListIndex[newChild.id];
 			if (indexToReplace != null) {
 				final postToReplace = posts_[indexToReplace];
-				if (postToReplace.isStub) {
+				if (postToReplace.isStub || newChild.archiveName != null) {
 					posts_.removeAt(indexToReplace);
 					posts_.insert(indexToReplace, newChild);
+					newChild.replyIds = postToReplace.replyIds;
 				}
 				else {
 					postToReplace.migrateFrom(newChild);
@@ -194,30 +195,19 @@ class Thread extends HiveObject implements Filterable {
 					return listIndex;
 				});
 				postIdToListIndex[newChild.id] = newIndex;
-				if (site.isPaged) {
-					// For paged sites, we can load in parents after children
-					for (final post in posts_) {
-						if (post.repliedToIds.contains(newChild.id)) {
-							newChild.maybeAddReplyId(post.id);
-						}
-					}
-					// We can also load multi-parent children
-					for (final repliedToId in newChild.repliedToIds) {
-						final parentIndex = postIdToListIndex[repliedToId];
-						if (parentIndex != null) {
-							final parent = posts_[parentIndex];
-							parent.maybeAddReplyId(newChild.id);
-						}
+				// other posts may be children of new post
+				for (final post in posts_) {
+					if (post.parentId == newChild.id || post.repliedToIds.contains(newChild.id)) {
+						newChild.maybeAddReplyId(post.id);
 					}
 				}
-				else {
-					// This only handles single-parent case but no real imageboards have omitted replies
-						final parentIndex = postIdToListIndex[newChild.parentId];
-						if (parentIndex != null) {
-							final parent = posts_[parentIndex];
-							parent.maybeAddReplyId(newChild.id);
-							parent.hasOmittedReplies = false;
-						}
+				// new post may be a child of other posts
+				for (final repliedToId in [newChild.parentId, newChild.repliedToIds]) {
+					final parentIndex = postIdToListIndex[repliedToId];
+					if (parentIndex != null) {
+						final parent = posts_[parentIndex];
+						parent.maybeAddReplyId(newChild.id);
+					}
 				}
 			}
 		}

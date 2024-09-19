@@ -311,7 +311,7 @@ class _TreeNode<T extends Object> {
 }
 
 class RefreshableListItem<T extends Object> {
-	final T item;
+	T item;
 	final bool representsUnknownStubChildren;
 	final List<ParentAndChildIdentifier> representsKnownStubChildren;
 	final List<int> representsUnloadedPages;
@@ -2072,6 +2072,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				adapter.repliesToOPAreTopLevel == lastTree.repliesToOPAreTopLevel &&
 				adapter.newRepliesAreLinear == lastTree.newRepliesAreLinear) {
 			bool matching = true;
+			bool patchedAnyItems = false;
 			for (int i = 0; i < linear.length; i++) {
 				if (!identical(linear[i]._key, lastTree.linear[i]._key)) {
 					matching = false;
@@ -2092,8 +2093,22 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					matching = false;
 					break;
 				}
+				if (linear[i].item != lastTree.linear[i].item) {
+					patchedAnyItems = true;
+					// Just value changed, not tree structure
+					for (final item in lastTree.tree.tree) {
+						if (item.id == linear[i].id) {
+							item.item = linear[i].item;
+						}
+					}
+					lastTree.linear[i].item = linear[i].item;
+				}
 			}
 			if (matching) {
+				if (patchedAnyItems) {
+					// Because we mutated RefreshableListItem, it may not rebuild on its own
+					forceRebuildId++;
+				}
 				return lastTree.tree;
 			}
 		}

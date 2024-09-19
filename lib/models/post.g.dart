@@ -170,6 +170,15 @@ class PostFields {
     fieldName: 'ipNumber',
     merger: PrimitiveMerger(),
   );
+  static String? getArchiveName(Post x) => x.archiveName;
+  static void setArchiveName(Post x, String? v) => x.archiveName = v;
+  static const archiveName = HiveFieldAdapter<Post, String?>(
+    getter: getArchiveName,
+    setter: setArchiveName,
+    fieldNumber: 23,
+    fieldName: 'archiveName',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class PostAdapter extends TypeAdapter<Post> {
@@ -201,7 +210,8 @@ class PostAdapter extends TypeAdapter<Post> {
     18: PostFields.parentId,
     20: PostFields.hasOmittedReplies,
     21: PostFields.isDeleted,
-    22: PostFields.ipNumber
+    22: PostFields.ipNumber,
+    23: PostFields.archiveName
   };
 
   @override
@@ -246,7 +256,7 @@ class PostAdapter extends TypeAdapter<Post> {
       hasOmittedReplies: fields[20] == null ? false : fields[20] as bool,
       isDeleted: fields[21] == null ? false : fields[21] as bool,
       ipNumber: fields[22] as int?,
-    );
+    )..archiveName = fields[23] as String?;
   }
 
   @override
@@ -273,6 +283,7 @@ class PostAdapter extends TypeAdapter<Post> {
       if (obj.hasOmittedReplies) 20: obj.hasOmittedReplies,
       if (obj.isDeleted) 21: obj.isDeleted,
       if (obj.ipNumber != null) 22: obj.ipNumber,
+      if (obj.archiveName != null) 23: obj.archiveName,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

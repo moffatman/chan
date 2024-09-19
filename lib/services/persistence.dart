@@ -1508,12 +1508,12 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		}
 	}
 
-	void didMutateThread() {
-		Persistence.setCachedThread(imageboardKey, board, id, _thread);
+	Future<void> didMutateThread() async {
+		await Persistence.setCachedThread(imageboardKey, board, id, _thread);
 		metaFilter = _makeMetaFilter();
 		_youIds = null;
 		_invalidate();
-		save(); // Inform listeners
+		await save(); // Inform listeners
 	}
 
 	void didUpdateYourPosts() {

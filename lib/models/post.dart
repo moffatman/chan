@@ -211,6 +211,8 @@ class Post implements Filterable {
 	bool isDeleted;
 	@HiveField(22, isOptimized: true)
 	int? ipNumber;
+	@HiveField(23, isOptimized: true)
+	String? archiveName;
 
 	Post({
 		required String board,
@@ -324,10 +326,11 @@ class Post implements Filterable {
 		other.name == name &&
 		other.hasOmittedReplies == hasOmittedReplies &&
 		other.flag != flag &&
-		other.attachmentDeleted == attachmentDeleted;
+		other.attachmentDeleted == attachmentDeleted &&
+		other.archiveName == archiveName;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, isDeleted, Object.hashAll(attachments_), name, hasOmittedReplies, flag, attachmentDeleted);
+	int get hashCode => Object.hash(board, id, upvotes, isDeleted, Object.hashAll(attachments_), name, hasOmittedReplies, flag, attachmentDeleted, archiveName);
 }
 
 class PostIdentifier {
