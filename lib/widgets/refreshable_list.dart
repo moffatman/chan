@@ -1605,7 +1605,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			setState(() {});
 		}
-		else {
+		else if (originalList == null) {
+			// returning null means just use the old list. but here we don't have an old list...
 			setState(() {
 				error.value = Exception('listUpdater returned null');
 			});
