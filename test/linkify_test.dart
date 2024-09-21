@@ -78,7 +78,7 @@ void main() {
 		test('markdown-like syntax in link', () {
 			final r = SiteReddit.makeSpan('', 0, 'https://en.wikipedia.org/wiki/NLRB_v._Jones_%26_Laughlin_Steel_Corp');
 			final link = r.children.single as PostLinkSpan;
-			expect(link.url, 'https://en.wikipedia.org/wiki/NLRB_v._Jones_&_Laughlin_Steel_Corp');
+			expect(link.url, 'https://en.wikipedia.org/wiki/NLRB_v._Jones_%26_Laughlin_Steel_Corp');
 		});
 
 		test('wikipedia url with single quote', () {
@@ -91,6 +91,13 @@ void main() {
 			final r = Site4Chan.makeSpan('', 0, 'https://datausa.io/profile/geo/miami-fl/#:~:text=The%205%20largest%20ethnic%20groups,(Hispanic)%20(6.18%25)');
 			final link = r.children.single as PostLinkSpan;
 			expect(link.url, 'https://datausa.io/profile/geo/miami-fl/#:~:text=The%205%20largest%20ethnic%20groups,(Hispanic)%20(6.18%25)');
+		});
+
+		test('Reddit complex markdownification', () {
+			final r = SiteReddit.makeSpan('', 0, 'https://www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:\\~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
+			final link = r.children.single as PostLinkSpan;
+			expect(link.url, 'https://www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
+			expect(link.name, 'www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
 		});
 	});
 }

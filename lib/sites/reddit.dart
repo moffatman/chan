@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/search.dart';
@@ -338,7 +340,7 @@ class SiteReddit extends ImageboardSite {
 					[TextElement(text)],
 					const LinkifyOptions()
 				).map((e) => switch(e) {
-					UrlElement() => '[${e.text}](${e.url})',
+					UrlElement() => '<a href="${const HtmlEscape(HtmlEscapeMode.attribute).convert(e.url)}">${const HtmlEscape(HtmlEscapeMode.element).convert(e.text)}</a>',
 					_ => e.text
 				}).join(''),
 				inlineSyntaxes: _inlineSyntaxes,
@@ -373,7 +375,7 @@ class SiteReddit extends ImageboardSite {
 					else if (node.localName == 'a') {
 						final href = node.attributes['href'];
 						if (href != null) {
-							yield PostLinkSpan(Uri.encodeFull(href), name: node.text);
+							yield PostLinkSpan(href, name: node.text);
 						}
 						else {
 							// Some edge case
