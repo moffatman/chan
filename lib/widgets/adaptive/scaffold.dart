@@ -231,7 +231,7 @@ class _CupertinoBackChevron extends StatelessWidget {
     // Replicate the Icon logic here to get a tightly sized icon and add
     // custom non-square padding.
     Widget iconWidget = Padding(
-      padding: const EdgeInsetsDirectional.only(start: 0, end: 2),
+      padding: const EdgeInsetsDirectional.only(start: 4, end: 6),
       child: Text.rich(
         TextSpan(
           text: String.fromCharCode(CupertinoIcons.back.codePoint),
