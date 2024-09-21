@@ -56,7 +56,7 @@ extension _UseTree on Imageboard {
 	);
 }
 
-Thread _makeFakeThread() {
+Thread _makeFakeThread({bool long = false}) {
 	final flag = ImageboardFlag(
 		name: 'Canada',
 		imageUrl: 'https://boards.chance.surf/ca.gif',
@@ -90,7 +90,9 @@ Thread _makeFakeThread() {
 		posts_: [
 			Post(
 				board: 'tv',
-				text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+				text: long
+								? 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
+								: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
 				name: 'Anonymous',
 				trip: '!asdf',
 				time: DateTime.now().subtract(const Duration(minutes: 5)),
@@ -938,19 +940,43 @@ final appearanceSettings = [
 		description: 'Edit catalog row item layout',
 		icon: CupertinoIcons.resize_v,
 		preview: PanelSettingWidget(
-			builder: (context) => Container(
+			builder: (context) => SizedBox(
 				height: Settings.maxCatalogRowHeightSetting.watch(context),
-				foregroundDecoration: BoxDecoration(
-					border: Border(
-						top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)),
-						bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)),
-					)
-				),
-				child: ThreadRow(
-					style: ThreadRowStyle.row,
-					isSelected: false,
-					thread: _makeFakeThread(),
-					showLastReplies: Settings.showLastRepliesInCatalogSetting.watch(context)
+				child: Stack(
+					children: [
+						Positioned.fill(
+							child: Container(
+								decoration: BoxDecoration(
+									border: Border.all(
+										color: ChanceTheme.primaryColorOf(context)
+									)
+								),
+								alignment: Alignment.bottomCenter,
+								child: const Row(
+									mainAxisAlignment: MainAxisAlignment.center,
+									children: [
+										Icon(CupertinoIcons.arrow_down_to_line),
+										Text(' Max height')
+									]
+								)
+							)
+						),
+						DecoratedBox(
+							position: DecorationPosition.foreground,
+							decoration: BoxDecoration(
+								border: Border(
+									top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)),
+									bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)),
+								)
+							),
+							child: ThreadRow(
+								style: ThreadRowStyle.row,
+								isSelected: false,
+								thread: _makeFakeThread(long: true),
+								showLastReplies: Settings.showLastRepliesInCatalogSetting.watch(context)
+							)
+						)
+					]
 				)
 			)
 		),
@@ -960,7 +986,7 @@ final appearanceSettings = [
 				setting: Settings.showLastRepliesInCatalogSetting
 			),
 			SliderSettingWidget(
-				description: 'Height',
+				description: 'Max height',
 				keywords: ['size'],
 				setting: Settings.maxCatalogRowHeightSetting,
 				min: 100,
