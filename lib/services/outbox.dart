@@ -5,6 +5,7 @@ import 'package:chan/services/captcha.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
@@ -289,7 +290,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				// Don't change state, just try again at that time
 			}
 			on HeadlessSolveNotPossibleException {
-				final context = initialState.context ?? ImageboardRegistry.instance.context;
+				final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
 				if (context != null && context.mounted) {
 					showToast(
 						context: context,

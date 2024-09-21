@@ -26,6 +26,7 @@ Future<void> reportPost({
 			(_) => site.getPostReportMethod(post),
 			wait: const Duration(milliseconds: 100)
 		);
+		final outerContext = context;
 		if (!context.mounted) {
 			return;
 		}
@@ -100,7 +101,7 @@ Future<void> reportPost({
 								AdaptiveDialogAction(
 									isDefaultAction: true,
 									onPressed: choice == null ? null : () async {
-										Navigator.pop(context, Outbox.instance.submitReport(context, site.imageboard!.key, method, choice!, useLoginSystem));
+										Navigator.pop(context, Outbox.instance.submitReport(outerContext, site.imageboard!.key, method, choice!, useLoginSystem));
 									},
 									child: const Text('Submit')
 								),

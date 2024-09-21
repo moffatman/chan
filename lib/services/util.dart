@@ -78,3 +78,12 @@ abstract class ExtendedException implements Exception {
 	Map<String, FutureOr<void> Function(BuildContext)> get remedies => const {};
 	bool get isReportable;
 }
+
+extension IfMounted on BuildContext {
+	BuildContext? get ifMounted {
+		if (mounted) {
+			return this;
+		}
+		return null;
+	}
+}
