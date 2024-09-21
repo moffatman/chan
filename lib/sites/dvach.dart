@@ -282,6 +282,9 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	late final SiteDvachPasscodeLoginSystem loginSystem = SiteDvachPasscodeLoginSystem(this);
+
+	@override
+	bool get supportsPushNotifications => true;
 }
 
 class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
