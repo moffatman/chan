@@ -77,7 +77,10 @@ class ThreadWatchControlsPage extends StatelessWidget {
 												localYousOnly: v == _ThreadWatchingStatus.yousOnly,
 												pushYousOnly: true,
 												youIds: ts?.youIds ?? [],
-												push: false
+												push: false,
+												notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnSecondLastPage ?? false,
+												notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
+												notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
 											);
 										}
 										else {
@@ -119,7 +122,10 @@ class ThreadWatchControlsPage extends StatelessWidget {
 													localYousOnly: v == _ThreadWatchingStatus.yousOnly,
 													pushYousOnly: v == _ThreadWatchingStatus.yousOnly,
 													youIds: ts?.youIds ?? [],
-													push: true
+													push: true,
+													notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnSecondLastPage ?? false,
+													notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
+													notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
 												);
 											}
 											else {
@@ -143,38 +149,140 @@ class ThreadWatchControlsPage extends StatelessWidget {
 									)
 								),
 								const SizedBox(height: 16),
-								const Text('In-App Notifications'),
-								Padding(
-									padding: const EdgeInsets.all(16),
-									child: AdaptiveSegmentedControl<bool>(
-										children: const {
-											false: (null, 'Off'),
-											true: (null, 'On')
-										},
-										groupValue: !(watch?.foregroundMuted ?? true) && (watch?.push ?? false),
-										onValueChanged: (v) {
-											if (watch == null && v) {
-												final ts = persistence.getThreadStateIfExists(thread);
-												notifications.subscribeToThread(
-													thread: thread,
-													lastSeenId: ts?.lastSeenPostId ?? ts?.thread?.posts_.last.id ?? thread.id,
-													localYousOnly: true,
-													pushYousOnly: true,
-													youIds: ts?.youIds ?? [],
-													push: true
-												);
-											}
-											else if (watch != null) {
-												if (v) {
-													watch.push = true;
-													notifications.foregroundUnmuteThread(watch.threadIdentifier);
+								Row(
+									children: [
+										const Expanded(
+											child: Text('Alert when on second-last page')
+										),
+										const SizedBox(width: 8),
+										AdaptiveSwitch(
+											value: (watch?.notifyOnSecondLastPage ?? false) && (watch?.push ?? false),
+											onChanged: (v) {
+												if (watch == null) {
+													final ts = persistence.getThreadStateIfExists(thread);
+													notifications.subscribeToThread(
+														thread: thread,
+														lastSeenId: ts?.lastSeenPostId ?? ts?.thread?.posts_.last.id ?? thread.id,
+														localYousOnly: true,
+														pushYousOnly: true,
+														youIds: ts?.youIds ?? [],
+														push: true,
+														notifyOnSecondLastPage: v,
+														notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
+														notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
+													);
 												}
 												else {
-													notifications.foregroundMuteThread(watch.threadIdentifier);
+													watch.push |= v;
+													watch.notifyOnSecondLastPage = v;
+													notifications.didUpdateWatch(watch);
 												}
 											}
-										}
-									)
+										)
+									]
+								),
+								const SizedBox(height: 16),
+								Row(
+									children: [
+										const Expanded(
+											child: Text('Alert when on last page')
+										),
+										const SizedBox(width: 8),
+										AdaptiveSwitch(
+											value: (watch?.notifyOnLastPage ?? false) && (watch?.push ?? false),
+											onChanged: (v) {
+												if (watch == null) {
+													final ts = persistence.getThreadStateIfExists(thread);
+													notifications.subscribeToThread(
+														thread: thread,
+														lastSeenId: ts?.lastSeenPostId ?? ts?.thread?.posts_.last.id ?? thread.id,
+														localYousOnly: true,
+														pushYousOnly: true,
+														youIds: ts?.youIds ?? [],
+														push: true,
+														notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnSecondLastPage ?? false,
+														notifyOnLastPage: v,
+														notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
+													);
+												}
+												else {
+													watch.push |= v;
+													watch.notifyOnLastPage = v;
+													notifications.didUpdateWatch(watch);
+												}
+											}
+										)
+									]
+								),
+								const SizedBox(height: 16),
+								Row(
+									children: [
+										const Expanded(
+											child: Text('Alert when thread dies')
+										),
+										const SizedBox(width: 8),
+										AdaptiveSwitch(
+											value: (watch?.notifyOnDead ?? false) && (watch?.push ?? false),
+											onChanged: (v) {
+												if (watch == null) {
+													final ts = persistence.getThreadStateIfExists(thread);
+													notifications.subscribeToThread(
+														thread: thread,
+														lastSeenId: ts?.lastSeenPostId ?? ts?.thread?.posts_.last.id ?? thread.id,
+														localYousOnly: true,
+														pushYousOnly: true,
+														youIds: ts?.youIds ?? [],
+														push: true,
+														notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnDead ?? false,
+														notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
+														notifyOnDead: v
+													);
+												}
+												else {
+													watch.push |= v;
+													watch.notifyOnDead = v;
+													notifications.didUpdateWatch(watch);
+												}
+											}
+										)
+									]
+								),
+								const SizedBox(height: 16),
+								Row(
+									children: [
+										const Expanded(
+											child: Text('In-App Notifications')
+										),
+										const SizedBox(width: 8),
+										AdaptiveSwitch(
+											value: !(watch?.foregroundMuted ?? true) && (watch?.push ?? false),
+											onChanged: (v) {
+												if (watch == null && v) {
+													final ts = persistence.getThreadStateIfExists(thread);
+													notifications.subscribeToThread(
+														thread: thread,
+														lastSeenId: ts?.lastSeenPostId ?? ts?.thread?.posts_.last.id ?? thread.id,
+														localYousOnly: true,
+														pushYousOnly: true,
+														youIds: ts?.youIds ?? [],
+														push: true,
+														notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnSecondLastPage ?? false,
+														notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
+														notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
+													);
+												}
+												else if (watch != null) {
+													if (v) {
+														watch.push = true;
+														notifications.foregroundUnmuteThread(watch.threadIdentifier);
+													}
+													else {
+														notifications.foregroundMuteThread(watch.threadIdentifier);
+													}
+												}
+											}
+										)
+									]
 								),
 								const SizedBox(height: 16),
 								Row(
@@ -195,6 +303,9 @@ class ThreadWatchControlsPage extends StatelessWidget {
 													pushYousOnly: watch.pushYousOnly,
 													foregroundMuted: watch.foregroundMuted,
 													push: watch.push,
+													notifyOnSecondLastPage: watch.notifyOnSecondLastPage,
+													notifyOnLastPage: watch.notifyOnLastPage,
+													notifyOnDead: watch.notifyOnDead,
 													watchTime: DateTime.now()
 												);
 											} : null,

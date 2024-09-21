@@ -7,7 +7,6 @@ import 'dart:ui';
 import 'package:app_links/app_links.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/firebase_options.dart';
-import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
@@ -1013,12 +1012,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late final ChanTabs _tabs;
 	final _keys = <int, GlobalKey>{};
 	late final ValueNotifier<bool> _showTabPopup;
-	({Notifications notifications, StreamSubscription<PostIdentifier> subscription})? _devNotificationsSubscription;
+	({Notifications notifications, StreamSubscription<ThreadOrPostIdentifier> subscription})? _devNotificationsSubscription;
 	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
 	final devTab = PersistentBrowserTab();
 	final _willPopZones = <int, WillPopZone>{};
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
-	final Map<String, ({Notifications notifications, StreamSubscription<PostIdentifier> subscription})> _notificationsSubscriptions = {};
+	final Map<String, ({Notifications notifications, StreamSubscription<ThreadOrPostIdentifier> subscription})> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
 	late StreamSubscription<String?> _fakeLinkSubscription;
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
@@ -1997,7 +1996,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			if (_notificationsSubscriptions[board.key]?.notifications != board.notifications) {
 				_notificationsSubscriptions[board.key]?.subscription.cancel();
 				_notificationsSubscriptions[board.key] = (notifications: board.notifications, subscription: board.notifications.tapStream.stream.listen((target) {
-					_onNotificationTapped(board, target.boardThreadOrPostId);
+					_onNotificationTapped(board, target.boardThreadOrPostIdentifier);
 				}));
 			}
 		}
@@ -2005,7 +2004,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (dev != null && dev.initialized && _devNotificationsSubscription?.notifications != dev.notifications) {
 			_devNotificationsSubscription?.subscription.cancel();
 			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.stream.listen((target) {
-				_onDevNotificationTapped(target.boardThreadOrPostId);
+				_onDevNotificationTapped(target.boardThreadOrPostIdentifier);
 			}));
 		}
 		final filterError = context.select<Settings, String?>((s) => s.filterError);

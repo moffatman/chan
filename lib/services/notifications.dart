@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/main.dart';
-import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/network_logging.dart';
@@ -22,17 +21,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
-abstract class PushNotification {
-	final PostIdentifier target;
+sealed class PushNotification {
+	final ThreadOrPostIdentifier target;
 	const PushNotification({
 		required this.target
 	});
-	bool get isThread => target.threadId == target.postId;
 }
 
 class ThreadWatchNotification extends PushNotification {
 	const ThreadWatchNotification({
 		required super.target
+	});
+}
+
+class ThreadWatchPageNotification extends PushNotification {
+	final int page;
+	const ThreadWatchPageNotification({
+		required super.target,
+		required this.page
 	});
 }
 
@@ -132,12 +138,13 @@ Future<void> updateNotificationsBadgeCount() async {
 }
 
 const _notificationSettingsApiRoot = 'https://push.chance.surf';
+//const _notificationSettingsApiRoot = 'http://localhost:3001';
 
 class Notifications {
 	static (Object, StackTrace)? staticError;
 	(Object, StackTrace)? error;
 	static final Map<String, Notifications> _children = {};
-	final tapStream = StreamController<PostIdentifier>.broadcast();
+	final tapStream = StreamController<ThreadOrPostIdentifier>.broadcast();
 	final foregroundStream = StreamController<PushNotification>.broadcast();
 	final Persistence persistence;
 	ThreadWatcher? localWatcher;
@@ -181,23 +188,25 @@ class Notifications {
 				print('Opened via message with unknown userId: $data');
 				return;
 			}
-			PushNotification notification;
+			final PushNotification notification;
+			final target = ThreadOrPostIdentifier(data['board']!, int.parse(data['threadId']!), int.tryParse(data['postId'] ?? ''));
 			if (data['type'] == 'thread') {
-				notification = ThreadWatchNotification(
-					target: PostIdentifier(data['board']!, int.parse(data['threadId']!), int.parse(data['postId']!))
-				);
+				final page = int.tryParse(data['page'] ?? '');
+				if (page != null) {
+					notification = ThreadWatchPageNotification(target: target, page: page);
+				}
+				else {
+					notification = ThreadWatchNotification(target: target);
+				}
 			}
 			else if (data['type'] == 'board') {
-				notification = BoardWatchNotification(
-					target: PostIdentifier(data['board']!, int.parse(data['threadId']!), int.parse(data['postId']!)),
-					filter: data['filter']!
-				);
+				notification = BoardWatchNotification(target: target, filter: data['filter']!);
 			}
 			else {
 				throw Exception('Unknown notification type ${data['type']}');
 			}
-			await child.localWatcher?.updateThread(notification.target.thread);
-			if (child.getThreadWatch(notification.target.thread)?.foregroundMuted != true) {
+			await child.localWatcher?.updateThread(target.thread);
+			if (child.getThreadWatch(target.thread)?.foregroundMuted != true) {
 				child.foregroundStream.add(notification);
 			}
 		}
@@ -215,11 +224,11 @@ class Notifications {
 			_unrecognizedByUserId.update(data['userId']!, (list) => list..add(data), ifAbsent: () => [data]);
 			return;
 		}
-		if (data['type'] == 'thread' || data['type'] == 'board') {
-			child.tapStream.add(PostIdentifier(
+		if (data['type'] == 'thread' || data['type'] == 'threadPage' || data['type'] == 'board') {
+			child.tapStream.add(ThreadOrPostIdentifier(
 				data['board']!,
 				int.parse(data['threadId']!),
-				int.parse(data['postId']!)
+				int.tryParse(data['postId'] ?? '')
 			));
 		}
 	}
@@ -240,6 +249,10 @@ class Notifications {
 		_reinitializeChildren();
 	}
 
+	static String _makeNotificationThreadId(Map<String, String> map) {
+		return '${map['userId']}/${map['board']}/${map['threadId']}';
+	}
+
 	@pragma('vm:entry-point')
 	static Future<void> onUnifiedPushMessage(Uint8List message, String instance) async {
 		final data = json.decode(utf8.decode(message));
@@ -251,11 +264,12 @@ class Notifications {
 				int.parse(data['data']['postId']),
 				data['title'],
 				data['body'],
-				const NotificationDetails(
+				NotificationDetails(
 					android: AndroidNotificationDetails(
 						'up', 'Unified Push',
 						importance: Importance.high,
-						priority: Priority.high
+						priority: Priority.high,
+						groupKey: _makeNotificationThreadId(data['data'])
 					)
 				),
 				payload: json.encode(data['data'])
@@ -519,12 +533,18 @@ class Notifications {
 		required bool push,
 		required List<int> youIds,
 		bool foregroundMuted = false,
-		bool zombie = false
+		bool zombie = false,
+		required bool notifyOnSecondLastPage,
+		required bool notifyOnLastPage,
+		required bool notifyOnDead
 	}) async {
 		final existingWatch = threadWatches[thread];
 		if (existingWatch != null) {
 			existingWatch.youIds = youIds;
 			existingWatch.lastSeenId = lastSeenId;
+			existingWatch.notifyOnSecondLastPage = notifyOnSecondLastPage;
+			existingWatch.notifyOnLastPage = notifyOnLastPage;
+			existingWatch.notifyOnDead = notifyOnDead;
 			didUpdateWatch(existingWatch);
 		}
 		else {
@@ -538,7 +558,10 @@ class Notifications {
 				push: push,
 				foregroundMuted: foregroundMuted,
 				zombie: zombie,
-				watchTime: DateTime.now()
+				watchTime: DateTime.now(),
+				notifyOnSecondLastPage: notifyOnSecondLastPage,
+				notifyOnLastPage: notifyOnLastPage,
+				notifyOnDead: notifyOnDead
 			));
 		}
 	}
@@ -609,9 +632,42 @@ class Notifications {
 		persistence.didUpdateBrowserState();
 	}
 
-	void zombifyThreadWatch(ThreadWatch watch) {
+	Future<void> zombifyThreadWatch(ThreadWatch watch, bool deleted) async {
 		if (Persistence.settings.usePushNotifications == true && watch.push) {
-			_delete(watch);
+			final deletedFromServer = await _delete(watch);
+			if (deletedFromServer && watch.notifyOnDead) {
+				// We found out the thread was dead first, so show our own notification
+				final payload = <String, String>{
+					'userId': id,
+					'board': watch.board,
+					'threadId': watch.threadId.toString(),
+					'page': deleted ? '-1' : '0',
+					'type': 'thread'
+				};
+				if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+					// Show it in foreground
+					_onMessage(payload);
+				}
+				else {
+					FlutterLocalNotificationsPlugin().show(
+						Object.hash(id, watch.board, watch.threadId),
+						'Watched thread /${watch.board}/${watch.threadId} was ${deleted ? 'deleted' : 'archived'}',
+						'',
+						NotificationDetails(
+							android: AndroidNotificationDetails(
+								'up', 'Unified Push',
+								importance: Importance.high,
+								priority: Priority.high,
+								groupKey: _makeNotificationThreadId(payload)
+							),
+							iOS: DarwinNotificationDetails(
+								threadIdentifier: _makeNotificationThreadId(payload)
+							)
+						),
+						payload: json.encode(payload)
+					);
+				}
+			}
 		}
 		watch.zombie = true;
 		localWatcher?.onWatchUpdated(watch);
@@ -675,11 +731,15 @@ class Notifications {
 		);
 	}
 
-	Future<void> _delete(Watch watch) async {
-		await _client.delete(
+	Future<bool> _delete(Watch watch) async {
+		final response = await _client.delete(
 			'$_notificationSettingsApiRoot/user/$id/watch',
-			data: jsonEncode(watch.toMap())
+			data: jsonEncode(watch.toMap()),
+			options: Options(
+				responseType: ResponseType.json
+			)
 		);
+		return response.data['existed'] as bool? ?? false;
 	}
 
 	void dispose() {

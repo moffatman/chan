@@ -439,7 +439,10 @@ class Imageboard extends ChangeNotifier {
 				pushYousOnly: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? post.threadId != null,
 				foregroundMuted: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
 				push: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-				youIds: persistentState.freshYouIds()
+				youIds: persistentState.freshYouIds(),
+				notifyOnSecondLastPage: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnSecondLastPage ?? false,
+				notifyOnLastPage: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnLastPage ?? true,
+				notifyOnDead: (persistentState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnDead ?? false
 			);
 		}
 		if (settings.saveThreadAutomaticallyWhenReplying) {

@@ -901,7 +901,10 @@ class ThreadPageState extends State<ThreadPage> {
 				pushYousOnly: defaultThreadWatch.pushYousOnly,
 				youIds: persistentState.youIds,
 				push: defaultThreadWatch.push,
-				foregroundMuted: defaultThreadWatch.foregroundMuted
+				foregroundMuted: defaultThreadWatch.foregroundMuted,
+				notifyOnSecondLastPage: defaultThreadWatch.notifyOnSecondLastPage,
+				notifyOnLastPage: defaultThreadWatch.notifyOnLastPage,
+				notifyOnDead: defaultThreadWatch.notifyOnDead
 			);
 		}
 		else {

@@ -909,7 +909,10 @@ class PostRow extends StatelessWidget {
 									pushYousOnly: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
 									foregroundMuted: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
 									push: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-									youIds: parentZoneThreadState.freshYouIds()
+									youIds: parentZoneThreadState.freshYouIds(),
+									notifyOnSecondLastPage: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnSecondLastPage ?? false,
+									notifyOnLastPage: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnLastPage ?? true,
+									notifyOnDead: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnDead ?? false
 								);
 							}
 							parentZoneThreadState.save();

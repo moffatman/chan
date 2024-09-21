@@ -356,5 +356,6 @@ class PostIdentifier {
 	int get hashCode => Object.hash(board, threadId, postId);
 
 	ThreadIdentifier get thread => ThreadIdentifier(board, threadId);
+	ThreadOrPostIdentifier get threadOrPostId => ThreadOrPostIdentifier(board, threadId, postId);
 	BoardThreadOrPostIdentifier get boardThreadOrPostId => BoardThreadOrPostIdentifier(board, threadId, postId);
 }

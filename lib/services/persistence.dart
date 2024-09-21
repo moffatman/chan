@@ -970,7 +970,10 @@ class Persistence extends ChangeNotifier {
 						localYousOnly: true,
 						pushYousOnly: true,
 						lastSeenId: threadState.thread?.posts.last.id ?? threadState.id,
-						watchTime: DateTime.now()
+						watchTime: DateTime.now(),
+						notifyOnSecondLastPage: false,
+						notifyOnLastPage: true,
+						notifyOnDead: false
 					);
 				}
 			}

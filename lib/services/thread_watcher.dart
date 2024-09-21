@@ -55,6 +55,12 @@ class ThreadWatch extends Watch {
 	bool foregroundMuted;
 	@HiveField(9)
 	DateTime? watchTime;
+	@HiveField(10, defaultValue: false)
+	bool notifyOnSecondLastPage;
+	@HiveField(11, defaultValue: true)
+	bool notifyOnLastPage;
+	@HiveField(12, defaultValue: false)
+	bool notifyOnDead;
 	ThreadWatch({
 		required this.board,
 		required this.threadId,
@@ -65,7 +71,10 @@ class ThreadWatch extends Watch {
 		bool? pushYousOnly,
 		this.push = true,
 		this.foregroundMuted = false,
-		required this.watchTime
+		required this.watchTime,
+		required this.notifyOnSecondLastPage,
+		required this.notifyOnLastPage,
+		required this.notifyOnDead
 	}) : pushYousOnly = pushYousOnly ?? localYousOnly;
 	@override
 	String get type => 'thread';
@@ -75,7 +84,10 @@ class ThreadWatch extends Watch {
 		'board': board,
 		'threadId': threadId.toString(),
 		'yousOnly': pushYousOnly,
-		'youIds': youIds
+		'youIds': youIds,
+		'notifyOnSecondLastPage': notifyOnSecondLastPage,
+		'notifyOnLastPage': notifyOnLastPage,
+		'notifyOnDead': notifyOnDead
 	};
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
 
@@ -83,7 +95,10 @@ class ThreadWatch extends Watch {
 		return other.push == push &&
 		       other.foregroundMuted == foregroundMuted &&
 					 other.localYousOnly == localYousOnly &&
-					 other.pushYousOnly == pushYousOnly;
+					 other.pushYousOnly == pushYousOnly &&
+					 other.notifyOnSecondLastPage == notifyOnSecondLastPage &&
+					 other.notifyOnLastPage == notifyOnLastPage &&
+					 other.notifyOnDead == notifyOnDead;
 	}
 }
 
@@ -227,7 +242,7 @@ class ThreadWatcher extends ChangeNotifier {
 					}
 					_updateCounts();
 					if (newThreadState.thread!.isArchived && !watch.zombie) {
-						notifications.zombifyThreadWatch(watch);
+						await notifications.zombifyThreadWatch(watch, false);
 					}
 					if (!listEquals(watch.youIds, newThreadState.youIds)) {
 						watch.youIds = newThreadState.youIds;
@@ -255,7 +270,7 @@ class ThreadWatcher extends ChangeNotifier {
 			// Ensure that the thread has been loaded at least once to avoid deleting upon creation due to a race condition
 			if (watch != null && threadState.thread != null) {
 				print('Zombifying watch for ${threadState.identifier} since it is in 404 state');
-				notifications.zombifyThreadWatch(watch);
+				await notifications.zombifyThreadWatch(watch, true);
 			}
 			if (site.archives.isEmpty) {
 				await threadState.ensureThreadLoaded();
@@ -376,7 +391,10 @@ class ThreadWatcher extends ChangeNotifier {
 								pushYousOnly: defaultThreadWatch?.pushYousOnly ?? false,
 								push: autoWatch.push ?? defaultThreadWatch?.push ?? true,
 								youIds: threadState.youIds,
-								foregroundMuted: defaultThreadWatch?.foregroundMuted ?? false
+								foregroundMuted: defaultThreadWatch?.foregroundMuted ?? false,
+								notifyOnSecondLastPage: defaultThreadWatch?.notifyOnSecondLastPage ?? false,
+								notifyOnLastPage: defaultThreadWatch?.notifyOnLastPage ?? true,
+								notifyOnDead: defaultThreadWatch?.notifyOnDead ?? false
 							);
 							persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
 							savedAnyThread = true;

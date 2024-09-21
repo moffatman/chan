@@ -320,6 +320,34 @@ class ThreadIdentifier {
 		other.id == id;
 	@override
 	int get hashCode => Object.hash(board, id);
+	ThreadOrPostIdentifier get threadOrPostIdentifier => ThreadOrPostIdentifier.thread(this);
+	BoardThreadOrPostIdentifier get boardThreadOrPostIdentifier => BoardThreadOrPostIdentifier(board, id);
+}
+
+class ThreadOrPostIdentifier {
+	final String board;
+	final int threadId;
+	final int? postId;
+	ThreadOrPostIdentifier(this.board, this.threadId, [this.postId]);
+	ThreadOrPostIdentifier.thread(ThreadIdentifier thread, [this.postId]) : board = thread.board, threadId = thread.id;
+
+	@override
+	String toString() => 'ThreadOrPostIdentifier: /$board/$threadId/$postId';
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is ThreadOrPostIdentifier &&
+		other.board == board &&
+		other.threadId == threadId &&
+		other.postId == postId;
+	@override
+	int get hashCode => Object.hash(board, threadId, postId);
+
+	bool get isThread => postId == null || postId == threadId;
+	ThreadIdentifier get thread => ThreadIdentifier(board, threadId);
+	BoardThreadOrPostIdentifier get boardThreadOrPostIdentifier => BoardThreadOrPostIdentifier(board, threadId, postId);
+	PostIdentifier get postOrOp => PostIdentifier(board, threadId, postId ?? threadId);
 }
 
 class BoardThreadOrPostIdentifier {

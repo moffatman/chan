@@ -619,7 +619,10 @@ class BoardPageState extends State<BoardPage> {
 									pushYousOnly: (threadState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
 									foregroundMuted: (threadState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,
 									push: (threadState.threadWatch ?? settings.defaultThreadWatch)?.push ?? true,
-									youIds: threadState.freshYouIds()
+									youIds: threadState.freshYouIds(),
+									notifyOnSecondLastPage: (threadState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnSecondLastPage ?? false,
+									notifyOnLastPage: (threadState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnLastPage ?? true,
+									notifyOnDead: (threadState.threadWatch ?? settings.defaultThreadWatch)?.notifyOnDead ?? false
 								);
 							}
 							threadState.save();
@@ -664,7 +667,10 @@ class BoardPageState extends State<BoardPage> {
 								pushYousOnly: true,
 								// So if you do a subsequent reply, notifications still work as expected
 								push: true,
-								youIds: threadState.youIds
+								youIds: threadState.youIds,
+								notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnSecondLastPage ?? false,
+								notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
+								notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
 							);
 							setState(() {});
 							if (context.mounted) {
@@ -1157,7 +1163,10 @@ class BoardPageState extends State<BoardPage> {
 															pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
 															push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
 															youIds: threadState.youIds,
-															foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false
+															foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
+															notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnSecondLastPage ?? false,
+															notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
+															notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
 														);
 														imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
 														await imageboard.persistence.didUpdateBrowserState();

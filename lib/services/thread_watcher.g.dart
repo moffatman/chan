@@ -94,6 +94,36 @@ class ThreadWatchFields {
     fieldName: 'watchTime',
     merger: PrimitiveMerger(),
   );
+  static bool getNotifyOnSecondLastPage(ThreadWatch x) =>
+      x.notifyOnSecondLastPage;
+  static void setNotifyOnSecondLastPage(ThreadWatch x, bool v) =>
+      x.notifyOnSecondLastPage = v;
+  static const notifyOnSecondLastPage = HiveFieldAdapter<ThreadWatch, bool>(
+    getter: getNotifyOnSecondLastPage,
+    setter: setNotifyOnSecondLastPage,
+    fieldNumber: 10,
+    fieldName: 'notifyOnSecondLastPage',
+    merger: PrimitiveMerger(),
+  );
+  static bool getNotifyOnLastPage(ThreadWatch x) => x.notifyOnLastPage;
+  static void setNotifyOnLastPage(ThreadWatch x, bool v) =>
+      x.notifyOnLastPage = v;
+  static const notifyOnLastPage = HiveFieldAdapter<ThreadWatch, bool>(
+    getter: getNotifyOnLastPage,
+    setter: setNotifyOnLastPage,
+    fieldNumber: 11,
+    fieldName: 'notifyOnLastPage',
+    merger: PrimitiveMerger(),
+  );
+  static bool getNotifyOnDead(ThreadWatch x) => x.notifyOnDead;
+  static void setNotifyOnDead(ThreadWatch x, bool v) => x.notifyOnDead = v;
+  static const notifyOnDead = HiveFieldAdapter<ThreadWatch, bool>(
+    getter: getNotifyOnDead,
+    setter: setNotifyOnDead,
+    fieldNumber: 12,
+    fieldName: 'notifyOnDead',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
@@ -116,7 +146,10 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
     6: ThreadWatchFields.pushYousOnly,
     7: ThreadWatchFields.push,
     8: ThreadWatchFields.foregroundMuted,
-    9: ThreadWatchFields.watchTime
+    9: ThreadWatchFields.watchTime,
+    10: ThreadWatchFields.notifyOnSecondLastPage,
+    11: ThreadWatchFields.notifyOnLastPage,
+    12: ThreadWatchFields.notifyOnDead
   };
 
   @override
@@ -136,13 +169,16 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
       push: fields[7] == null ? true : fields[7] as bool,
       foregroundMuted: fields[8] == null ? false : fields[8] as bool,
       watchTime: fields[9] as DateTime?,
+      notifyOnSecondLastPage: fields[10] == null ? false : fields[10] as bool,
+      notifyOnLastPage: fields[11] == null ? true : fields[11] as bool,
+      notifyOnDead: fields[12] == null ? false : fields[12] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, ThreadWatch obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.board)
       ..writeByte(1)
@@ -162,7 +198,13 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
       ..writeByte(8)
       ..write(obj.foregroundMuted)
       ..writeByte(9)
-      ..write(obj.watchTime);
+      ..write(obj.watchTime)
+      ..writeByte(10)
+      ..write(obj.notifyOnSecondLastPage)
+      ..writeByte(11)
+      ..write(obj.notifyOnLastPage)
+      ..writeByte(12)
+      ..write(obj.notifyOnDead);
   }
 
   @override

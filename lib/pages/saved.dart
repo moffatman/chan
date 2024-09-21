@@ -73,7 +73,7 @@ class PostThreadCombo {
 	String toString() => 'PostThreadCombo($imageboard, $thread, $post)';
 }
 
-typedef SavedPageMasterDetailPanesState = MultiMasterDetailPage5State<ImageboardScoped<ThreadWatch>, ImageboardScoped<(ThreadIdentifier, int?)>, PostThreadCombo, ImageboardScoped<SavedPost>, ImageboardScoped<SavedAttachment>>;
+typedef SavedPageMasterDetailPanesState = MultiMasterDetailPage5State<ImageboardScoped<ThreadWatch>, ImageboardScoped<ThreadOrPostIdentifier>, PostThreadCombo, ImageboardScoped<SavedPost>, ImageboardScoped<SavedAttachment>>;
 
 class SavedPage extends StatefulWidget {
 	final GlobalKey<SavedPageMasterDetailPanesState> masterDetailKey;
@@ -108,7 +108,7 @@ class _SavedPageState extends State<SavedPage> {
 	late final ValueNotifier<List<ImageboardScoped<SavedAttachment>>> _missingSavedAttachments;
 	/// for optimization and pagination of loading your posts
 	Map<(Imageboard, String), List<PostIdentifier>> _yourPostsLists = {};
-	late final ValueNotifier<ImageboardScoped<(ThreadIdentifier, int?)>?> _savedThreadsValueInjector;
+	late final ValueNotifier<ImageboardScoped<ThreadOrPostIdentifier>?> _savedThreadsValueInjector;
 	late final ValueNotifier<PostThreadCombo?> _yourPostsValueInjector;
 	bool _lastTickerMode = true;
 
@@ -189,10 +189,10 @@ class _SavedPageState extends State<SavedPage> {
 		widget.masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _savedThreadsValueInjector,
-				builder: (context, ImageboardScoped<(ThreadIdentifier, int?)>? selectedResult, child) {
+				builder: (context, ImageboardScoped<ThreadOrPostIdentifier>? selectedResult, child) {
 					final asPost = switch (selectedResult) {
 						null => null,
-						ImageboardScoped<(ThreadIdentifier, int?)> t => t.imageboard.scope(PostIdentifier(t.item.$1.board, t.item.$1.id, t.item.$2 ?? t.item.$1.id))
+						ImageboardScoped<ThreadOrPostIdentifier> t => t.imageboard.scope(t.item.postOrOp)
 					};
 					return HistorySearchPage(
 						query: query,
@@ -211,7 +211,7 @@ class _SavedPageState extends State<SavedPage> {
 							if (post == null) {
 								return;
 							}
-							widget.masterDetailKey.currentState!.setValue2(result.imageboard.scope((result.item.thread, result.item.postId)));
+							widget.masterDetailKey.currentState!.setValue2(result.imageboard.scope(ThreadOrPostIdentifier.thread(result.item.thread, result.item.postId)));
 						}
 					);
 				}
@@ -581,7 +581,7 @@ class _SavedPageState extends State<SavedPage> {
 					}
 				),
 			paneCreator2: () =>
-				MultiMasterPane<ImageboardScoped<(ThreadIdentifier, int?)>>(
+				MultiMasterPane<ImageboardScoped<ThreadOrPostIdentifier>>(
 					navigationBar: AdaptiveBar(
 						title: const Text('Saved Threads'),
 						actions: [
@@ -688,7 +688,7 @@ class _SavedPageState extends State<SavedPage> {
 							) : null,
 							itemBuilder: (itemContext, pair) {
 								final state = pair.$1;
-								final isSelected = selectedThread(itemContext, state.imageboard!.scope((state.identifier, null)));
+								final isSelected = selectedThread(itemContext, state.imageboard!.scope(ThreadOrPostIdentifier.thread(state.identifier)));
 								final openInNewTabZone = context.read<OpenInNewTabZone?>();
 								return ImageboardScope(
 									imageboardKey: state.imageboardKey,
@@ -755,7 +755,7 @@ class _SavedPageState extends State<SavedPage> {
 																		for (final attachment in state.item.$2.attachments)
 																			attachment: state.item.$1.imageboard!.scope(state.item.$2)
 																},
-																onThreadSelected: (t) => threadSetter(t.imageboard.scope((t.item.identifier, null)))
+																onThreadSelected: (t) => threadSetter(t.imageboard.scope(t.item.identifier.threadOrPostIdentifier))
 															),
 															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 															onChange: (attachment) {
@@ -767,7 +767,7 @@ class _SavedPageState extends State<SavedPage> {
 													}
 												)
 											),
-											onTap: () => threadSetter(state.imageboard!.scope((state.identifier, null)))
+											onTap: () => threadSetter(state.imageboard!.scope(state.identifier.threadOrPostIdentifier))
 										)
 									)
 								);
@@ -788,8 +788,8 @@ class _SavedPageState extends State<SavedPage> {
 							widget: selectedThread != null ? ImageboardScope(
 								imageboardKey: selectedThread.imageboard.key,
 								child: ThreadPage(
-									thread: selectedThread.item.$1,
-									initialPostId: selectedThread.item.$2,
+									thread: selectedThread.item.thread,
+									initialPostId: selectedThread.item.postId,
 									boardSemanticId: -12
 								)
 							) : _placeholder('Select a thread'),

@@ -5,12 +5,14 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +62,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		if (shown.isEmpty) {
 			return;
 		}
-		final n = shown.first;
+		final n = widget.onePane ? shown.last : shown.first;
 		if (n.autoCloseAnimation!.isAnimating) {
 			return;
 		}
@@ -106,7 +108,10 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		}
 		notification.closed = true;
 		setState(() {});
-		await Future.delayed(const Duration(seconds: 1));
+		if (!widget.onePane) {
+			// Allow time to collapse, shifting later notifications up
+			await Future.delayed(const Duration(seconds: 1));
+		}
 		notification.autoCloseAnimation?.dispose();
 		notification.autoCloseAnimation = null;
 		shown.remove(notification);
@@ -155,15 +160,16 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		return Stack(
 			children: [
 				widget.child,
-				if (widget.onePane) ...shown.reversed.map((notification) => Align(
+				if (widget.onePane) ...shown.indexed.map((notification) => Align(
 					alignment: Alignment.topCenter,
 					child: Padding(
-						padding: EdgeInsets.only(top: 44 + MediaQuery.paddingOf(context).top),
-						child: TopNotification(
-							notification: notification,
-							onTap: () => _notificationTapped(notification),
-							onTapClose: () => closeNotification(notification),
-							onTapMute: () => muteNotification(notification)
+						padding: EdgeInsets.only(top: 44 + MediaQuery.paddingOf(context).top + (24 * notification.$1)),
+						child: CornerNotification(
+							notification: notification.$2,
+							onTap: () => _notificationTapped(notification.$2),
+							onTapClose: () => closeNotification(notification.$2),
+							onTapMute: () => muteNotification(notification.$2),
+							maxWidth: double.infinity
 						)
 					)
 				))
@@ -178,7 +184,8 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 								notification: notification,
 								onTap: () => _notificationTapped(notification),
 								onTapClose: () => closeNotification(notification),
-								onTapMute: () => muteNotification(notification)
+								onTapMute: () => muteNotification(notification),
+								maxWidth: 300
 							))
 						]
 					)
@@ -198,16 +205,17 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 
 class NotificationContent extends StatelessWidget {
 	final PushNotification notification;
-	final BoxConstraints constraints;
+	final double topRightCornerInsetWidth;
 
 	const NotificationContent({
 		required this.notification,
-		required this.constraints,
+		this.topRightCornerInsetWidth = 0,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
+		final notification = this.notification;
 		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.target.thread);
 		final thread = threadState?.thread;
 		Post? post;
@@ -216,9 +224,16 @@ class NotificationContent extends StatelessWidget {
 		if (threadState != null) {
 			isYou = threadState.youIds.contains(notification.target.postId);
 		}
-		String title;
+		final String title;
 		if (notification is BoardWatchNotification) {
-			title = 'New ${notification.isThread ? 'thread' : 'post'} matching "${(notification as BoardWatchNotification).filter}" on /${notification.target.board}/';
+			title = 'New ${notification.target.isThread ? 'thread' : 'post'} matching "${notification.filter}" on /${notification.target.board}/';
+		}
+		else if (notification is ThreadWatchPageNotification) {
+			title = switch (notification.page) {
+				> 0 => 'Thread /${notification.target.board}/${notification.target.threadId} reached page ${notification.page}',
+				0 => 'Thread /${notification.target.board}/${notification.target.threadId} was archived',
+				_ => 'Thread /${notification.target.board}/${notification.target.threadId} was deleted'
+			};
 		}
 		else if (post == null) {
 			title = 'New post in /${notification.target.board}/${notification.target.threadId}';
@@ -226,44 +241,79 @@ class NotificationContent extends StatelessWidget {
 		else {
 			title = 'New ${isYou ? 'reply' : 'post'} in /${notification.target.board}/${notification.target.threadId}';
 		}
-		return IgnorePointer(
-			child: ChangeNotifierProvider<PostSpanZoneData>(
-				create: (context) => PostSpanRootZoneData(
-					imageboard: context.read<Imageboard>(),
-					thread: thread ?? Thread(
-						board: notification.target.board,
-						id: notification.target.threadId,
-						isDeleted: false,
-						isArchived: false,
-						title: '',
-						isSticky: false,
-						replyCount: -1,
-						imageCount: -1,
-						time: DateTime.fromMicrosecondsSinceEpoch(0),
-						posts_: [],
-						attachments: []
-					),
-					semanticRootIds: [-10],
-					style: PostSpanZoneStyle.linear
-				),
-				builder: (context, _) => ConstrainedBox(
-					constraints: constraints,
-					child: Text.rich(
-						TextSpan(
-							children: [
-								TextSpan(text: '$title       ', style: CommonTextStyles.bold),
-								if (post != null) ...[
-									const TextSpan(text: '\n'),
-									post.span.build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions(
-										shrinkWrap: true
-									))
-								]
-							]
+		return Column(
+			mainAxisSize: MainAxisSize.min,
+			crossAxisAlignment: CrossAxisAlignment.start,
+			children: [
+				Row(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						Flexible(
+							child: Text(
+								'$title       ',
+								style: TextStyle(
+									color: ChanceTheme.backgroundColorOf(context),
+									fontWeight: FontWeight.bold,
+									fontVariations: CommonFontVariations.bold
+								)
+							)
 						),
-						overflow: TextOverflow.fade
+						SizedBox(
+							width: topRightCornerInsetWidth
+						)
+					]
+				),
+				if (post case Post p) ...[
+					const SizedBox(height: 8),
+					Flexible(
+						child: SingleChildScrollView(
+							primary: false,
+							padding: const EdgeInsets.only(bottom: 8),
+							child: ChangeNotifierProvider<PostSpanZoneData>(
+								create: (context) => PostSpanRootZoneData(
+									imageboard: context.read<Imageboard>(),
+									thread: thread ?? Thread(
+										board: notification.target.board,
+										id: notification.target.threadId,
+										isDeleted: false,
+										isArchived: false,
+										title: '',
+										isSticky: false,
+										replyCount: -1,
+										imageCount: -1,
+										time: DateTime.fromMicrosecondsSinceEpoch(0),
+										posts_: [],
+										attachments: []
+									),
+									semanticRootIds: [-10],
+									style: PostSpanZoneStyle.linear
+								),
+								child: IgnorePointer(
+									child: PostRow(
+										post: p,
+										shrinkWrap: true
+									)
+								)
+							)
+						)
 					)
-				)
-			)
+				]
+				else if (thread case Thread t) ...[
+					const SizedBox(height: 8),
+					Flexible(
+						child: SingleChildScrollView(
+							primary: false,
+							padding: const EdgeInsets.only(bottom: 8),
+							child: IgnorePointer(
+								child: ThreadRow(
+									thread: t,
+									isSelected: false
+								)
+							)
+						)
+					)
+				]
+			]
 		);
 	}
 }
@@ -293,54 +343,61 @@ class TopNotification extends StatelessWidget {
 				child: Container(
 					color: ChanceTheme.primaryColorOf(context),
 					child: Row(
-						crossAxisAlignment: CrossAxisAlignment.center,
+						crossAxisAlignment: CrossAxisAlignment.start,
 						children: [
 							Expanded(
-								child: AdaptiveFilledButton(
-									borderRadius: BorderRadius.zero,
+								child: CupertinoInkwell(
 									alignment: Alignment.topLeft,
 									onPressed: onTap,
 									padding: const EdgeInsets.only(top: 16, right: 16, left: 16),
 									child: ImageboardScope(
 										imageboardKey: null, // it could be the dev board
 										imageboard: notification.imageboard,
-										child: NotificationContent(
-											notification: notification.notification,
+										child: ConstrainedBox(
 											constraints: const BoxConstraints(
-												maxHeight: 80,
+												maxHeight: 200,
 												minHeight: 80
+											),
+											child: NotificationContent(
+												notification: notification.notification,
 											)
 										)
 									)
 								)
 							),
-							if (notification is ThreadWatchNotification && !notification.isMuted) AdaptiveFilledButton(
-								padding: const EdgeInsets.all(16),
-								borderRadius: BorderRadius.zero,
-								alignment: Alignment.topCenter,
-								onPressed: onTapMute,
-								child: const Icon(CupertinoIcons.bell_slash)
-							),
-							AdaptiveFilledButton(
-								padding: const EdgeInsets.all(16),
-								borderRadius: BorderRadius.zero,
-								alignment: Alignment.topCenter,
-								onPressed: onTapClose,
-								child: Stack(
-									alignment: Alignment.center,
-									children: [
-										const Icon(CupertinoIcons.xmark),
-										IgnorePointer(
-											child: AnimatedBuilder(
-												animation: notification.autoCloseAnimation!,
-												builder: (context, _) => CircularProgressIndicator(
-													value: notification.autoCloseAnimation!.value,
-													color: ChanceTheme.backgroundColorOf(context)
+							Column(
+								mainAxisSize: MainAxisSize.min,
+								mainAxisAlignment: MainAxisAlignment.start,
+								children: [
+									AdaptiveFilledButton(
+										padding: const EdgeInsets.all(16),
+										borderRadius: BorderRadius.zero,
+										alignment: Alignment.topCenter,
+										onPressed: onTapClose,
+										child: Stack(
+											alignment: Alignment.center,
+											children: [
+												Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context)),
+												IgnorePointer(
+													child: AnimatedBuilder(
+														animation: notification.autoCloseAnimation!,
+														builder: (context, _) => CircularProgressIndicator(
+															value: notification.autoCloseAnimation!.value,
+															color: ChanceTheme.backgroundColorOf(context)
+														)
+													)
 												)
-											)
+											]
 										)
-									]
-								)
+									),
+									if ((notification.notification is ThreadWatchNotification || notification.notification is ThreadWatchPageNotification) && !notification.isMuted) AdaptiveFilledButton(
+										padding: const EdgeInsets.all(16),
+										borderRadius: BorderRadius.zero,
+										alignment: Alignment.topCenter,
+										onPressed: onTapMute,
+										child: Icon(CupertinoIcons.bell_slash, color: ChanceTheme.backgroundColorOf(context))
+									)
+								]
 							)
 						]
 					)
@@ -355,90 +412,116 @@ class CornerNotification extends StatelessWidget {
 	final VoidCallback onTap;
 	final VoidCallback onTapClose;
 	final VoidCallback onTapMute;
+	final double maxWidth;
 
 	const CornerNotification({
 		required this.notification,
 		required this.onTap,
 		required this.onTapClose,
 		required this.onTapMute,
+		required this.maxWidth,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
-		return AnimatedSize(
-			duration: const Duration(milliseconds: 500),
+		return TweenAnimationBuilder(
+			tween: Tween<double>(begin: 0, end: notification.closed ? 0.0 : 1.0),
+			duration: const Duration(milliseconds: 300),
 			curve: Curves.ease,
-			child: notification.closed ? const SizedBox.shrink() : Padding(
-				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
-				child: Stack(
-					children: [
-						Padding(
-							padding: const EdgeInsets.all(8),
-							child: AdaptiveFilledButton(
+			builder: (context, opacity, child) {
+				return Opacity(
+					opacity: opacity,
+					child: child
+				);
+			},
+			child: AnimatedSize(
+				duration: const Duration(milliseconds: 500),
+				curve: Curves.ease,
+				child: notification.closed ? const SizedBox(width: double.infinity) : Padding(
+					padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+					child: Stack(
+						children: [
+							Padding(
 								padding: const EdgeInsets.all(8),
-								onPressed: onTap,
-								child: ImageboardScope(
-									imageboardKey: null, // it could be the dev board
-									imageboard: notification.imageboard,
-									child: NotificationContent(
-										notification: notification.notification,
-										constraints: const BoxConstraints(
-											maxWidth: 300,
-											maxHeight: 200
+								child: CupertinoInkwell(
+									padding: EdgeInsets.zero,
+									onPressed: onTap,
+									child: Container(
+										padding: const EdgeInsets.all(8),
+										decoration: BoxDecoration(
+											color: ChanceTheme.primaryColorOf(context),
+											borderRadius: BorderRadius.circular(8),
+											border: Border.all(
+												color: ChanceTheme.backgroundColorOf(context)
+											)
+										),
+										child: ImageboardScope(
+											imageboardKey: null, // it could be the dev board
+											imageboard: notification.imageboard,
+											child: ConstrainedBox(
+												constraints: BoxConstraints(
+													maxWidth: maxWidth,
+													maxHeight: 200
+												),
+												child: NotificationContent(
+													notification: notification.notification,
+													topRightCornerInsetWidth: 50
+												)
+											)
 										)
 									)
 								)
-							)
-						),
-						Positioned.fill(
-							child: Align(
-								alignment: Alignment.topRight,
-								child: Row(
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										if (!notification.isMuted) ...[
+							),
+							Positioned.fill(
+								child: Align(
+									alignment: Alignment.topRight,
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											if (!notification.isMuted) ...[
+												CupertinoButton(
+													minSize: 0,
+													padding: const EdgeInsets.all(8),
+													borderRadius: BorderRadius.circular(100),
+													color: ChanceTheme.secondaryColorOf(context),
+													onPressed: onTapMute,
+													child: Icon(CupertinoIcons.bell_slash, size: 20, color: ChanceTheme.primaryColorOf(context))
+												),
+												const SizedBox(width: 8),
+											],
 											CupertinoButton(
 												minSize: 0,
-												padding: const EdgeInsets.all(8),
+												padding: EdgeInsets.zero,
 												borderRadius: BorderRadius.circular(100),
 												color: ChanceTheme.secondaryColorOf(context),
-												onPressed: onTapMute,
-												child: Icon(CupertinoIcons.bell_slash, size: 20, color: ChanceTheme.primaryColorOf(context))
-											),
-											const SizedBox(width: 8),
-										],
-										CupertinoButton(
-											minSize: 0,
-											padding: EdgeInsets.zero,
-											borderRadius: BorderRadius.circular(100),
-											color: ChanceTheme.secondaryColorOf(context),
-											onPressed: onTapClose,
-											child: Stack(
-												alignment: Alignment.center,
-												children: [
-													Icon(CupertinoIcons.xmark, size: 17, color: ChanceTheme.primaryColorOf(context)),
-													IgnorePointer(
-														child: AnimatedBuilder(
-															animation: notification.autoCloseAnimation!,
-															builder: (context, _) => Transform.scale(
-																scale: 0.8,
-																child: CircularProgressIndicator(
-																	value: notification.autoCloseAnimation!.value,
-																	color: ChanceTheme.primaryColorOf(context),
-																	strokeWidth: 4,
+												onPressed: onTapClose,
+												child: Stack(
+													alignment: Alignment.center,
+													children: [
+														Icon(CupertinoIcons.xmark, size: 17, color: ChanceTheme.primaryColorOf(context)),
+														IgnorePointer(
+															child: AnimatedBuilder(
+																animation: notification.autoCloseAnimation!,
+																builder: (context, _) => Transform.scale(
+																	scale: 0.8,
+																	child: CircularProgressIndicator(
+																		value: notification.autoCloseAnimation!.value,
+																		color: ChanceTheme.primaryColorOf(context),
+																		strokeWidth: 4,
+																	)
 																)
 															)
 														)
-													)
-												]
+													]
+												)
 											)
-										)
-									]
+										]
+									)
 								)
 							)
-						)
-					]
+						]
+					)
 				)
 			)
 		);
