@@ -527,6 +527,20 @@ class PostPinkQuoteSpan extends PostQuoteSpan {
 	String toString() => 'PostPinkQuoteSpan($child)';
 }
 
+class PostBlueQuoteSpan extends PostQuoteSpan {
+	const PostBlueQuoteSpan(super.child);
+
+	@override
+	InlineSpan build(context, zone, settings, theme, options) {
+		return child.build(context, zone, settings, theme, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(color: theme.quoteColor.shiftHue(135))
+		));
+	}
+
+	@override
+	String toString() => 'PostBlueQuoteSpan($child)';
+}
+
 class PostQuoteLinkSpan extends PostSpan {
 	final String board;
 	final int? threadId;

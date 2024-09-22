@@ -86,7 +86,7 @@ class SiteLainchan extends ImageboardSite {
 							yield PostLinkSpan(node.attributes['href']!);
 						}
 					}
-					else if (node.localName == 'strong') {
+					else if (node.localName == 'strong' || node.localName == 'b') {
 						yield PostBoldSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
 					else if (node.localName == 'em') {
@@ -97,11 +97,20 @@ class SiteLainchan extends ImageboardSite {
 					}
 					else if (node.localName == 'span') {
 						if (node.classes.contains('quote') || node.classes.contains('unkfunc')) {
-							yield PostQuoteSpan(makeSpan(board, threadId, node.innerHtml));
+							yield PostQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+						}
+						else if (node.classes.contains('quote2')) {
+							yield PostPinkQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+						}
+						else if (node.classes.contains('quote3')) {
+							yield PostBlueQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 						}
 						else {
 							yield PostTextSpan(node.text);
 						}
+					}
+					else if (node.localName == 'font' && node.attributes.containsKey('color')) {
+						yield PostColorSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)), colorToHex(node.attributes['color']!));
 					}
 					else if (node.localName == 'p') {
 						if (node.classes.contains('quote')) {
