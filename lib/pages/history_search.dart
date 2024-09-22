@@ -77,10 +77,12 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	bool? _filterIsThread;
 	_FilterSavedThreadsOnly _filterSavedThreadsOnly = _FilterSavedThreadsOnly.everything;
 	_FilterYourPostsOnly _filterYourPostsOnly = _FilterYourPostsOnly.everything;
+	late final RefreshableListController<ImageboardScoped<HistorySearchResult>> _listController;
 
 	@override
 	void initState() {
 		super.initState();
+		_listController = RefreshableListController();
 		if (widget.initialSavedThreadsOnly) {
 			_filterSavedThreadsOnly = _FilterSavedThreadsOnly.savedThreads;
 		}
@@ -427,7 +429,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 			) : MaybeScrollbar(
 				child: RefreshableList<ImageboardScoped<HistorySearchResult>>(
 					listUpdater: (_) => throw UnimplementedError(),
-					id: 'historysearch[${widget.selectedResult}]',
+					id: 'historysearch',
+					rebuildId: '${widget.selectedResult}',
+					controller: _listController,
 					filterableAdapter: (i) => i.item.post ?? i.item.thread,
 					initialList: results,
 					disableUpdates: true,
@@ -445,12 +449,36 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 									),
 									builder: (context, _) => PostRow(
 										post: row.item.post!,
-										onThumbnailTap: (attachment) => showGallery(
-											context: context,
-											attachments: [attachment],
-											semanticParentIds: [-11],
-											heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-										),
+										onThumbnailTap: (initialAttachment) {
+											final attachments = {
+												for (final w in _listController.items)
+													for (final attachment in w.item.item.post?.attachments ?? w.item.item.thread.attachments)
+														attachment: w.item
+											};
+											showGallery(
+												context: context,
+												attachments: attachments.keys.toList(),
+												replyCounts: {
+													for (final item in attachments.entries) item.key: item.value.item.post?.replyCount ?? item.value.item.thread.replyCount
+												},
+												threads: (
+													threads: {
+														for (final item in attachments.entries) item.key: item.value.imageboard.scope(item.value.item.thread)
+													},
+													onThreadSelected: (t) {
+														final x = _listController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.thread.identifier == t.item.identifier).item;
+														widget.onResultSelected(x.imageboard.scope(x.item.identifier));
+													}
+												),
+												initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
+												onChange: (attachment) {
+													final value = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value;
+													_listController.animateTo((p) => p == value);
+												},
+												semanticParentIds: [-11],
+												heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+											);
+										},
 										showCrossThreadLabel: false,
 										showBoardName: true,
 										showSiteIcon: ImageboardRegistry.instance.count > 1,
@@ -506,5 +534,6 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	@override
 	void dispose() {
 		super.dispose();
+		_listController.dispose();
 	}
 }

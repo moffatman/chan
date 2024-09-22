@@ -1032,6 +1032,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final Future<List<T>?> Function(RefreshableListUpdateOptions options) listUpdater;
 	final Future<List<T>> Function(T after)? listExtender;
 	final String id;
+	final String rebuildId;
 	final RefreshableListController<T>? controller;
 	final String? filterHint;
 	final Widget Function(BuildContext context, T value, VoidCallback resetPage, RegExp filterPattern)? filteredItemBuilder;
@@ -1074,6 +1075,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		required this.listUpdater,
 		this.listExtender,
 		required this.id,
+		this.rebuildId = '',
 		this.controller,
 		this.filterHint,
 		this.filteredItemBuilder,
@@ -2917,7 +2919,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															);
 														},
 														list: values,
-														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
 														didFinishLayout: widget.controller?.didFinishLayout,
 														childCount: values.length,
 														addRepaintBoundaries: false,
@@ -2944,7 +2946,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															);
 														},
 														list: values,
-														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
 														didFinishLayout: widget.controller?.didFinishLayout,
 														childCount: values.length,
 														addRepaintBoundaries: false,
@@ -2980,7 +2982,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														},
 														separatorSentinel: dividerColor,
 														list: values,
-														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
+														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${widget.controller?.useDummyItemsInRange}${widget.useAllDummies}',
 														childCount: values.length * 2,
 														findChildIndexCallback: (key) {
 															if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
@@ -3121,7 +3123,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																]
 															),
 															list: filteredValues,
-															id: '$forceRebuildId',
+															id: '$forceRebuildId${widget.rebuildId}',
 															childCount: filteredValues.length,
 															addRepaintBoundaries: false,
 															addAutomaticKeepAlives: false
@@ -3163,7 +3165,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															),
 															separatorSentinel: dividerColor,
 															list: filteredValues,
-															id: '$forceRebuildId',
+															id: '$forceRebuildId${widget.rebuildId}',
 															childCount: filteredValues.length * 2,
 															addRepaintBoundaries: false,
 															addAutomaticKeepAlives: false
