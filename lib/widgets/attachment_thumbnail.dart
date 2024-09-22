@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
@@ -157,6 +156,33 @@ class AttachmentThumbnail extends StatelessWidget {
 		Key? key
 	}) : super(key: key);
 
+	Widget _maybeHero(BuildContext context, Widget child) {
+		return (hero != null) ? Hero(
+			tag: hero!,
+			child: child,
+			flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+				return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+			},
+			createRectTween: (startRect, endRect) {
+				if (startRect != null && endRect != null) {
+					if (attachment.type == AttachmentType.image) {
+						// Need to deflate the original startRect because it has inbuilt layoutInsets
+						// This AttachmentThumbnail will always fill its size
+						final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+						startRect = rootPadding.deflateRect(startRect);
+					}
+					if (fit == BoxFit.cover && attachment.width != null && attachment.height != null) {
+						// This is AttachmentViewer -> AttachmentThumbnail (cover)
+						// Need to shrink the startRect, so it only contains the image
+						final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), startRect.size).destination;
+						startRect = Alignment.center.inscribe(fittedStartSize, startRect);
+					}
+				}
+				return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+			}
+		) : child;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
@@ -193,13 +219,21 @@ class AttachmentThumbnail extends StatelessWidget {
 			url = s.getSpoilerImageUrl(attachment, thread: thread)?.toString() ?? '';
 		}
 		if (url.isEmpty) {
-			return SizedBox(
-				width: effectiveWidth,
-				height: effectiveHeight,
-				child: Center(
-					child: Icon(attachment.icon ?? Adaptive.icons.photo, size: max(24, 0.5 * min(effectiveWidth, effectiveHeight)))
-				)
-			);
+			const icon = CupertinoIcons.exclamationmark_triangle_fill;
+			return _maybeHero(context, _AttachmentThumbnailPlaceholder(
+				child: null,
+				icon: icon,
+				effectiveWidth: effectiveWidth,
+				effectiveHeight: effectiveHeight,
+				attachment: attachment,
+				afterPaint: _makeKeyedAfterPaint(
+					attachment: attachment,
+					cornerIcon: null,
+					alreadyShowingBigIcon: icon,
+					primaryColor: ChanceTheme.primaryColorOf(context)
+				),
+				fit: fit
+			));
 		}
 		ImageProvider image = ExtendedNetworkImageProvider(
 			url,
@@ -335,30 +369,7 @@ class AttachmentThumbnail extends StatelessWidget {
 				fit: fit
 			);
 		}
-		return (hero != null) ? Hero(
-			tag: hero!,
-			child: child,
-			flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
-				return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
-			},
-			createRectTween: (startRect, endRect) {
-				if (startRect != null && endRect != null) {
-					if (attachment.type == AttachmentType.image) {
-						// Need to deflate the original startRect because it has inbuilt layoutInsets
-						// This AttachmentThumbnail will always fill its size
-						final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
-						startRect = rootPadding.deflateRect(startRect);
-					}
-					if (fit == BoxFit.cover && attachment.width != null && attachment.height != null) {
-						// This is AttachmentViewer -> AttachmentThumbnail (cover)
-						// Need to shrink the startRect, so it only contains the image
-						final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), startRect.size).destination;
-						startRect = Alignment.center.inscribe(fittedStartSize, startRect);
-					}
-				}
-				return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
-			}
-		) : child;
+		return _maybeHero(context, child);
 	}
 }
 
@@ -429,7 +440,11 @@ class _AttachmentThumbnailPlaceholderLayoutDelegate extends SingleChildLayoutDel
 	});
 
 	Size _getChildSize(BoxConstraints constraints) {
-		return applyBoxFit(fit, Size(attachment.width?.toDouble() ?? effectiveWidth, attachment.height?.toDouble() ?? effectiveHeight), constraints.biggest).destination;
+		Size biggest = constraints.biggest;
+		if (biggest.isInfinite) {
+			biggest = Size(effectiveWidth, effectiveHeight);
+		}
+		return applyBoxFit(fit, Size(attachment.width?.toDouble() ?? effectiveWidth, attachment.height?.toDouble() ?? effectiveHeight), biggest).destination;
 	}
 
 	@override

@@ -175,6 +175,7 @@ class SiteLainchan extends ImageboardSite {
 				url: getAttachmentUrl(board, '$id$ext').toString(),
 				thumbnailUrl: switch (postData['thumb'] as String?) {
 					'file' || null => (type == AttachmentType.mp3 ? '' : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
+					'spoiler' => '',
 					String thumb => 'https://$baseUrl/$basePath/$board/thumb/$thumb',
 				},
 				md5: data['md5'] ?? '',
