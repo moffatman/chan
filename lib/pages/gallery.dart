@@ -599,7 +599,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																			fit: BoxFit.cover
 																		)
 																	),
-																	if (isNormalAttachment) Positioned(
+																	if (isNormalAttachment && icon != null) Positioned(
 																		bottom: 0,
 																		right: 0,
 																		child: Container(
@@ -706,7 +706,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																fit: BoxFit.cover
 															)
 														),
-														if (isNormalAttachment) Positioned(
+														if (isNormalAttachment && icon != null) Positioned(
 															bottom: 0,
 															right: 0,
 															child: Container(
