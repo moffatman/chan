@@ -131,6 +131,7 @@ void showToast({
 	required BuildContext context,
 	required String message,
 	required IconData? icon,
+	Widget? iconWidget,
 	bool hapticFeedback = true,
 	Widget? button,
 	(String, VoidCallback)? easyButton,
@@ -178,6 +179,10 @@ void showToast({
 					if (icon != null) Padding(
 						padding: const EdgeInsets.only(right: 12),
 						child: Icon(icon, color: theme.primaryColor),
+					)
+					else if (iconWidget != null) Padding(
+						padding: const EdgeInsets.only(right: 12),
+						child: iconWidget
 					),
 					Flexible(
 						child: Text(

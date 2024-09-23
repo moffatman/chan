@@ -49,7 +49,15 @@ InlineSpan makeFlagSpan({
 			showToast(
 				context: context,
 				message: flag.name,
-				icon: CupertinoIcons.flag,
+				icon: null,
+				iconWidget: ExtendedImage.network(
+					part.imageUrl,
+					width: part.imageWidth,
+					height: part.imageHeight,
+					cache: true,
+					enableLoadState: false,
+					headers: context.read<ImageboardSite>().getHeaders(Uri.parse(part.imageUrl))
+				),
 				easyButton: easyButton
 			);
 		};
