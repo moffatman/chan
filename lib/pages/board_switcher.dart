@@ -166,6 +166,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (!mounted) {
 			return;
 		}
+		if (!_focusNode.hasFocus) {
+			return;
+		}
 		_showSelectedItem = !isPhoneSoftwareKeyboard();
 		setState(() {});
 	}
