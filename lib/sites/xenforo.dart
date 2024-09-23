@@ -512,11 +512,7 @@ class SiteXenforo extends ImageboardSite {
 						board: board,
 						id: id,
 						text: '',
-						name: e.querySelector('a.username')?.attributes['href']?.split('/').tryLastWhere((p) => p.isNotEmpty)
-							?? switch (e.querySelector('.username[data-user-id]')) {
-								dom.Element e => '${e.text.trim()}.${e.attributes['data-user-id']}',
-								null => '<unknown user>'
-							},
+						name: _parseUsernameFromLink(e.querySelector('a.username')),
 						time: time,
 						threadId: id,
 						spanFormat: PostSpanFormat.xenforo,
@@ -527,7 +523,7 @@ class SiteXenforo extends ImageboardSite {
 						board: board,
 						id: -(int.tryParse(e.querySelectorAll('.structItem-pageJump a').tryLast?.text ?? '') ?? 1),
 						text: '',
-						name: e.querySelector('.structItem-cell--latest a.username')?.attributes['href']?.split('/').tryLastWhere((p) => p.isNotEmpty) ?? '<unknown user>',
+						name: _parseUsernameFromLink(e.querySelector('.structItem-cell--latest a.username')),
 						time: _parseTime(lastPostTime),
 						threadId: id,
 						spanFormat: PostSpanFormat.pageStub,
@@ -579,15 +575,29 @@ class SiteXenforo extends ImageboardSite {
 		return url;
 	}
 
+	static String _parseUsernameFromLink(dom.Element? e) {
+		if (e != null) {
+			if (e.attributes['href']?.split('/').tryLastWhere((p) => p.isNotEmpty) case String x) {
+				return x;
+			}
+			if (e.attributes['data-user-id'] case String userId) {
+				return '${e.text.trim()}.$userId';
+			}
+		}
+		return '<unknown user>';
+	}
+
 	List<Post> _getPostsFromThreadPage(String board, int threadId, dom.Document document) {
 		final pageNavPages = document.querySelector('.pageNav-main')?.querySelectorAll('.pageNav-page') ?? [];
 		final currentPageNumber = int.tryParse(pageNavPages.tryFirstWhere((e) => e.classes.contains('pageNav-page--current'))?.text ?? '') ?? 1;
 		final lastPageNumber = int.tryParse(pageNavPages.tryLast?.text ?? '') ?? 1;
+		final opName = _parseUsernameFromLink(document.querySelector('.p-description .username'));
 		Post generateStub(int pageNumber) => Post(
 			board: board,
 			threadId: threadId,
 			text: '',
-			name: '',
+			// To avoid wasted memory, we only need thread.posts.first to have correct OP name
+			name: pageNumber == 1 ? opName : '',
 			time: DateTime.now(), // arbitrary
 			id: -pageNumber,
 			spanFormat: PostSpanFormat.pageStub,
@@ -603,11 +613,7 @@ class SiteXenforo extends ImageboardSite {
 				id: int.parse(e.id.split('-')[2]),
 				text: _fixRelativeUrls(e.querySelector('.message-body .bbWrapper')!.innerHtml),
 				parentId: -currentPageNumber,
-				name: e.querySelector('.message-name a')?.attributes['href']?.split('/').tryLastWhere((p) => p.isNotEmpty)
-					?? switch (e.querySelector('.message-name .username[data-user-id]')) {
-						dom.Element e => '${e.text.trim()}.${e.attributes['data-user-id']}',
-						null => '<unknown user>'
-					},
+				name: _parseUsernameFromLink(e.querySelector('.message-name a')),
 				time: _parseTime(e.querySelector('.message-attribution-main time')!),
 				spanFormat: PostSpanFormat.xenforo,
 				attachments_: e.querySelectorAll('.message-attachments .file-preview img').map((img) {
