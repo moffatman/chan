@@ -344,6 +344,11 @@ class ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread != null && scrollTo != null) {
 			Post? target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
 			if (target != null && _listController.isOnscreen(target)) {
+				if (_useAllDummies) {
+					setState(() {
+						_useAllDummies = false;
+					});
+				}
 				if (glow) {
 					_glowPost(scrollTo.$1);
 				}
@@ -430,6 +435,7 @@ class ThreadPageState extends State<ThreadPage> {
 			if (mounted) {
 				setState(() {
 					blocked = false;
+					_useAllDummies = false;
 				});
 			}
 		}
