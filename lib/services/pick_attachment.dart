@@ -56,15 +56,12 @@ Future<String?> _copyFileToSafeLocation(String? path) async {
 	if (path == null) {
 		return null;
 	}
-	if (path.startsWith('/') && path.contains('com.moffatman.chan-Inbox')) {
-		// Files will be deleted from here eventually by iOS
-		final parent = Directory('${Persistence.temporaryDirectory.path}/inboxcache/${DateTime.now().millisecondsSinceEpoch}');
-		await parent.create(recursive: true);
-		final destPath = '${parent.path}/${path.split('/').last}';
-		await File(path).copy(destPath);
-		return destPath;
-	}
-	return path;
+	// Copy to a timestamp dir. So that multiple picks will get a new path, avoid stale caching
+	final parent = Directory('${Persistence.temporaryDirectory.path}/inboxcache/${DateTime.now().millisecondsSinceEpoch}');
+	await parent.create(recursive: true);
+	final destPath = '${parent.path}/${path.split('/').last}';
+	await File(path).copy(destPath);
+	return destPath;
 }
 
 Future<File?> downloadToShareCache({

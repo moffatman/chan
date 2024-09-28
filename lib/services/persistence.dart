@@ -28,6 +28,7 @@ import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' as webview;
@@ -747,6 +748,9 @@ class Persistence extends ChangeNotifier {
 		}
 		if (deletedCount > 0) {
 			print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
+		}
+		if ((await FilePicker.platform.clearTemporaryFiles()) ?? false) {
+			print('Deleted FilePicker junk');
 		}
 		await ensureTemporaryDirectoriesExist();
 	}
