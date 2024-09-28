@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
@@ -1193,11 +1194,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			type: attachmentExt == 'webm' ?
 				AttachmentType.webm :
 				(attachmentExt == 'mp4' ? AttachmentType.mp4 : AttachmentType.image),
-			md5: _attachmentScan?.$3.toString() ?? '',
+			md5: switch (_attachmentScan?.$3) {
+				Digest digest => base64Encode(digest.bytes),
+				null => ''
+			},
 			id: '${identityHashCode(attachment)}',
 			filename: attachment?.uri.pathSegments.last ?? '',
 			thumbnailUrl: '',
-			board: 'reply-form',
+			board: widget.board.s,
 			width: _attachmentScan?.$1.width,
 			height: _attachmentScan?.$1.height,
 			sizeInBytes: _attachmentScan?.$1.sizeInBytes,

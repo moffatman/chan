@@ -1257,12 +1257,7 @@ class _SavedPageState extends State<SavedPage> {
 														controller.dispose();
 													}
 												),
-												...buildImageSearchActions(context, () async => item.item.attachment).map((a) => ContextMenuAction(
-													isDestructiveAction: a.isDestructiveAction,
-													onPressed: a.onPressed,
-													trailingIcon: a.trailingIcon,
-													child: a.child,
-												))
+												...buildImageSearchActions(context, [item.item.attachment])
 											],
 											child: Container(
 												decoration: BoxDecoration(

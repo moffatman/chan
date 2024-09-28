@@ -742,7 +742,7 @@ class BoardPageState extends State<BoardPage> {
 							}
 						}
 					),
-					if (thread.attachments.any((a) => a.type.isImageSearchable)) ...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments.where((a) => a.type.isImageSearchable).toList())),
+					...buildImageSearchActions(context, thread.attachments),
 					ContextMenuAction(
 						trailingIcon: Adaptive.icons.share,
 						child: const Text('Share...'),

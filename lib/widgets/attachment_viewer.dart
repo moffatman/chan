@@ -1545,12 +1545,7 @@ class AttachmentViewer extends StatelessWidget {
 						},
 						child: const Text('Translate')
 					),
-					...buildImageSearchActions(context, () async => attachment).map((a) => ContextMenuAction(
-						isDestructiveAction: a.isDestructiveAction,
-						onPressed: a.onPressed,
-						trailingIcon: a.trailingIcon,
-						child: a.child,
-					)),
+					...buildImageSearchActions(context, [attachment]),
 					if (context.select<Settings, bool>((p) => p.isMD5Hidden(attachment.md5))) ContextMenuAction(
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {

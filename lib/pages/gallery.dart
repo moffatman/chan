@@ -15,6 +15,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/status_bar.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/theme.dart';
@@ -176,6 +177,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	late final BufferedListenable _scrollCoalescer;
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
+	final _imageSearchButtonKey = GlobalKey(debugLabel: 'GalleryPage._imageSearchButtonKey');
 	final _shareButtonKey = GlobalKey(debugLabel: 'GalleryPage._shareButtonKey');
 	late final EasyListenable _slideListenable;
 	bool _hideRotateButton = false;
@@ -884,10 +886,27 @@ class _GalleryPageState extends State<GalleryPage> {
 													},
 													icon: const Icon(CupertinoIcons.rectangle_grid_2x2)
 												),
-												if (currentAttachment.attachment.type.isVideo) AdaptiveIconButton(
+												// image has these in the ContextMenu
+												if (currentAttachment.attachment.type != AttachmentType.image) AdaptiveIconButton(
+													key: _imageSearchButtonKey,
 													onPressed: () async {
 														final actions = [
-															...buildImageSearchActions(context, () => Future.value(currentAttachment.attachment)),
+															...buildImageSearchActions(context, [currentAttachment.attachment]),
+															ContextMenuAction(
+																child: const Text('Share link'),
+																trailingIcon: CupertinoIcons.link,
+																onPressed: () async {
+																	final text = _getController(currentAttachment).goodImageSource?.toString() ?? currentAttachment.attachment.url;
+																	final offset = (_imageSearchButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+																	final size = _imageSearchButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+																	shareOne(
+																		context: context,
+																		text: text,
+																		type: "text",
+																		sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+																	);
+																}
+															),
 															...(widget.additionalContextMenuActionsBuilder?.call(currentAttachment) ?? const Iterable<ContextMenuAction>.empty())
 														];
 														await showAdaptiveModalPopup(

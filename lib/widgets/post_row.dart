@@ -739,6 +739,7 @@ class PostRow extends StatelessWidget {
 			);
 		}
 		final replyBoxZone = context.watch<ReplyBoxZone?>();
+		final imageSearchActions = buildImageSearchActions(context, latestPost.attachments);
 		return ContextMenu(
 			backgroundColor: theme.backgroundColor,
 			enableLongPress: !withinSelectable,
@@ -1101,15 +1102,16 @@ class PostRow extends StatelessWidget {
 						);
 					}
 				),
-				if (latestPost.attachments.any((a) => a.type.isImageSearchable)) ContextMenuAction(
+				if (imageSearchActions.length == 1) imageSearchActions.first
+				else if (imageSearchActions.length > 1) ContextMenuAction(
 					child: const Text('Search image'),
 					trailingIcon: Icons.image_search,
 					onPressed: () async {
-						final actions = buildImageSearchActions(context, () => whichAttachment(context, latestPost.attachments.where((a) => a.type.isImageSearchable).toList()));
 						await showAdaptiveDialog(
 							context: context,
+							barrierDismissible: true,
 							builder: (context) => AdaptiveActionSheet(
-								actions: actions.toActionSheetActions(context),
+								actions: imageSearchActions.toActionSheetActions(context),
 								cancelButton: AdaptiveActionSheetAction(
 									onPressed: () => Navigator.pop(context),
 									child: const Text('Cancel')
