@@ -864,7 +864,12 @@ class ThreadPageState extends State<ThreadPage> {
 	Future<void> _onPostLoadedFromArchive(Post asArchived) async {
 		final thread = persistentState.thread;
 		if (persistentState.identifier == asArchived.threadIdentifier && thread != null) {
+			final newInsert = zone.findPost(asArchived.id) == null;
 			thread.mergePosts(null, [asArchived], context.read<ImageboardSite>());
+			if (newInsert) {
+				newPostIds.add(asArchived.id);
+				persistentState.unseenPostIds.data.add(asArchived.id);
+			}
 			zone.addThread(thread);
 			await persistentState.didMutateThread();
 			_listController.state?.acceptNewList(thread.posts);
