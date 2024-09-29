@@ -729,7 +729,12 @@ class ThreadRow extends StatelessWidget {
 						},
 						false => _ContentFocusedMultiChildWidgetAttachmentSizing.fixed
 					},
-					attachment: att_,
+					attachment: ConstrainedBox(
+						constraints: BoxConstraints(
+							maxHeight: MediaQuery.sizeOf(context).height / 2,
+						),
+						child: att_
+					),
 					text: txt
 				);
 			}
