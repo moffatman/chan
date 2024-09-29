@@ -250,7 +250,6 @@ class PostRow extends StatelessWidget {
 		final parentZone = context.watch<PostSpanZoneData>();
 		final translatedPostSnapshot = parentZone.translatedPost(post.id);
 		final settings = context.watch<Settings>();
-		final mouseSettings = context.watch<MouseSettings>();
 		final theme = context.watch<SavedTheme>();
 		final parentZoneThreadState = parentZone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		final receipt = parentZoneThreadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
@@ -763,7 +762,7 @@ class PostRow extends StatelessWidget {
 						replyBoxZone?.onQuoteText(latestPost.span.buildText(), backlink: latestPost.identifier);
 					}
 				),
-				if (settings.materialStyle || mouseSettings.supportMouse) ContextMenuAction(
+				ContextMenuAction(
 					child: const Text('Select text'),
 					trailingIcon: CupertinoIcons.selection_pin_in_out,
 					onPressed: () {

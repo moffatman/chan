@@ -167,6 +167,14 @@ class SelectablePostPage extends StatelessWidget {
 									style: TextStyle(
 										color: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
 									)
+								),
+								const SizedBox(height: 16),
+								if (!ChanceTheme.materialOf(context) && !context.watch<MouseSettings>().supportMouse) Text(
+									'NEW FEATURE: You can select and quote text from posts directly in the long-press context menu. Try it out! It\'s the menu you used to open this popup.',
+									textAlign: TextAlign.left,
+									style: TextStyle(
+										color: ChanceTheme.secondaryColorOf(context)
+									)
 								)
 							]
 						)
