@@ -15,6 +15,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
+import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
@@ -505,6 +506,7 @@ class _SavedPageState extends State<SavedPage> {
 												}
 											),
 										],
+										contextMenuBuilderBuilder: makeGeneralContextMenuBuilder,
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
 											child: AnimatedBuilder(
@@ -723,6 +725,7 @@ class _SavedPageState extends State<SavedPage> {
 												isDestructiveAction: true
 											)
 										],
+										contextMenuBuilderBuilder: makeGeneralContextMenuBuilder,
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
 											child: Builder(

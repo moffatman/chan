@@ -14,6 +14,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/report_post.dart';
 import 'package:chan/services/reverse_image_search.dart';
@@ -805,6 +806,7 @@ class BoardPageState extends State<BoardPage> {
 						)
 					)
 				],
+				contextMenuBuilderBuilder: makeGeneralContextMenuBuilder,
 				maxHeight: useCatalogGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight,
 				child: GestureDetector(
 					onDoubleTap: settings.doubleTapToHideThreads ? () {

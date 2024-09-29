@@ -6,6 +6,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
@@ -302,6 +303,7 @@ class HistoryPageState extends State<HistoryPage> {
 												isDestructiveAction: true
 											)
 										],
+										contextMenuBuilderBuilder: makeGeneralContextMenuBuilder,
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
 											child: ImageboardScope(

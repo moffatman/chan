@@ -3,6 +3,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
+import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
@@ -160,6 +161,7 @@ class QueueEntryWidget extends StatelessWidget {
 							onPressed: () {}
 						)
 					],
+					contextMenuBuilderBuilder: makeGeneralContextMenuBuilder,
 					child: Container(
 						decoration: BoxDecoration(
 							border: Border(

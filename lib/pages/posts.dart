@@ -6,6 +6,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -292,6 +293,7 @@ class _PostsPageState extends State<PostsPage> {
 														trailingIcon: CupertinoIcons.paperplane
 													)
 												],
+												contextMenuBuilderBuilder: makeGeneralContextMenuBuilder,
 												child: Container(
 													decoration: const BoxDecoration(
 														border: Border(

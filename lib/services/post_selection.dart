@@ -8,6 +8,48 @@ import 'package:chan/widgets/reply_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+ContextMenuButtonItem _makeTranslateItem({
+	required SelectedContent? Function() getSelection,
+	required BuildContext contextMenuContext,
+	required SelectableRegionState selectableRegionState,
+}) => ContextMenuButtonItem(
+	onPressed: () {
+		final text = getSelection()?.plainText ?? '';
+		final future = translateHtml(text, toLanguage: Settings.instance.translationTargetLanguage);
+		selectableRegionState.hideToolbar();
+		showAdaptiveDialog(
+			context: contextMenuContext,
+			barrierDismissible: true,
+			builder: (context) => AdaptiveAlertDialog(
+				title: const Text('Translation'),
+				content: FutureBuilder(
+					future: future,
+					builder: (context, snapshot) {
+						final data = snapshot.data;
+						if (data != null) {
+							return Text(data, style: const TextStyle(fontSize: 16));
+						}
+						final error = snapshot.error;
+						if (error != null) {
+							return Text('Error: ${error.toStringDio()}');
+						}
+						return const Center(
+							child: CircularProgressIndicator.adaptive()
+						);
+					}
+				),
+				actions: [
+					AdaptiveDialogAction(
+						onPressed: () => Navigator.pop(context),
+						child: const Text('Close')
+					)
+				],
+			)
+		);
+	},
+	label: 'Translate'
+);
+
 SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 	required PostSpanZoneData zone,
 	required ReplyBoxZone replyBoxZone,
@@ -38,42 +80,26 @@ SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 					)
 				],
 				...selectableRegionState.contextMenuButtonItems,
-				ContextMenuButtonItem(
-					onPressed: () {
-						final text = getSelection()?.plainText ?? '';
-						final future = translateHtml(text, toLanguage: Settings.instance.translationTargetLanguage);
-						selectableRegionState.hideToolbar();
-						showAdaptiveDialog(
-							context: contextMenuContext,
-							barrierDismissible: true,
-							builder: (context) => AdaptiveAlertDialog(
-								title: const Text('Translation'),
-								content: FutureBuilder(
-									future: future,
-									builder: (context, snapshot) {
-										final data = snapshot.data;
-										if (data != null) {
-											return Text(data, style: const TextStyle(fontSize: 16));
-										}
-										final error = snapshot.error;
-										if (error != null) {
-											return Text('Error: ${error.toStringDio()}');
-										}
-										return const Center(
-											child: CircularProgressIndicator.adaptive()
-										);
-									}
-								),
-								actions: [
-									AdaptiveDialogAction(
-										onPressed: () => Navigator.pop(context),
-										child: const Text('Close')
-									)
-								],
-							)
-						);
-					},
-					label: 'Translate'
+				_makeTranslateItem(
+					getSelection: getSelection,
+					contextMenuContext: contextMenuContext,
+					selectableRegionState: selectableRegionState
+				)
+			]
+		);
+	};
+}
+
+SelectableRegionContextMenuBuilder makeGeneralContextMenuBuilder(SelectedContent? Function() getSelection) {
+	return (contextMenuContext, selectableRegionState) {
+		return AdaptiveTextSelectionToolbar.buttonItems(
+			anchors: selectableRegionState.contextMenuAnchors,
+			buttonItems: [
+				...selectableRegionState.contextMenuButtonItems,
+				_makeTranslateItem(
+					getSelection: getSelection,
+					contextMenuContext: contextMenuContext,
+					selectableRegionState: selectableRegionState
 				)
 			]
 		);

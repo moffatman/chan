@@ -743,7 +743,7 @@ class PostRow extends StatelessWidget {
 		return ContextMenu(
 			backgroundColor: theme.backgroundColor,
 			enableLongPress: !withinSelectable,
-			contextMenuBuilderBuilder: replyBoxZone == null ? null : (getSelection) => makePostContextMenuBuilder(
+			contextMenuBuilderBuilder: replyBoxZone == null ? makeGeneralContextMenuBuilder : (getSelection) => makePostContextMenuBuilder(
 				zone: parentZone,
 				replyBoxZone: replyBoxZone,
 				context: context,
