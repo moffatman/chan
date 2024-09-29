@@ -50,7 +50,7 @@ class HistoryPageState extends State<HistoryPage> {
 				valueListenable: _valueInjector,
 				builder: (context, ImageboardScoped<PostIdentifier>? selectedResult, child) {
 					return HistorySearchPage(
-						query: query,
+						initialQuery: query,
 						selectedResult: _valueInjector.value,
 						onResultSelected: (result) {
 							masterDetailKey.currentState!.setValue(result);

@@ -113,6 +113,36 @@ extension BinarySafeWhere<T> on List<T> {
 		}
 		return -1;
 	}
+	Future<int> binarySearchFirstIndexWhereAsync(Future<bool> Function(T v) f) async {
+		if (isEmpty) {
+			return -1;
+		}
+		int min = 0;
+		int max = length - 1;
+		while (min < max) {
+			final int mid = min + ((max - min) >> 1);
+			final T element = this[mid];
+			final T next = this[mid + 1];
+			final bool elementPasses = await f(element);
+			final bool nextElementPasses = await f(next);
+			if (!elementPasses && nextElementPasses) {
+				return mid + 1;
+			}
+			else if (elementPasses) {
+				max = mid;
+			}
+			else {
+				min = mid + 1;
+			}
+		}
+		if (await f(first)) {
+			return 0;
+		}
+		else if (await f(last)) {
+			return length - 1;
+		}
+		return -1;
+	}
 	T? binarySearchTryFirstWhere(bool Function(T v) f) {
 		final index = binarySearchFirstIndexWhere(f);
 		if (index == -1) {
@@ -146,6 +176,36 @@ extension BinarySafeWhere<T> on List<T> {
 			return length - 1;
 		}
 		else if (f(first)) {
+			return 0;
+		}
+		return -1;
+	}
+	Future<int> binarySearchLastIndexWhereAsync(Future<bool> Function(T v) f) async {
+		if (isEmpty) {
+			return -1;
+		}
+		int min = 0;
+		int max = length - 1;
+		while (min < max) {
+			final int mid = min + ((max - min) >> 1);
+			final T element = this[mid];
+			final T next = this[mid + 1];
+			final bool elementPasses = await f(element);
+			final bool nextElementPasses = await f(next);
+			if (elementPasses && !nextElementPasses) {
+				return mid;
+			}
+			else if (elementPasses) {
+				min = mid + 1;
+			}
+			else {
+				max = mid;
+			}
+		}
+		if (await f(last)) {
+			return length - 1;
+		}
+		else if (await f(first)) {
 			return 0;
 		}
 		return -1;

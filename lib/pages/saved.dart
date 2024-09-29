@@ -195,7 +195,7 @@ class _SavedPageState extends State<SavedPage> {
 						ImageboardScoped<ThreadOrPostIdentifier> t => t.imageboard.scope(t.item.postOrOp)
 					};
 					return HistorySearchPage(
-						query: query,
+						initialQuery: query,
 						initialSavedThreadsOnly: true,
 						selectedResult: asPost,
 						onResultSelected: (result) async {
@@ -227,7 +227,7 @@ class _SavedPageState extends State<SavedPage> {
 				builder: (context, PostThreadCombo? selectedResult, child) {
 					final post = selectedResult?.post.identifier;
 					return HistorySearchPage(
-						query: query,
+						initialQuery: query,
 						initialYourPostsOnly: true,
 						selectedResult: post == null ? null : selectedResult?.imageboard.scope(post),
 						onResultSelected: (result) async {

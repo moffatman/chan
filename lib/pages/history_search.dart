@@ -44,16 +44,25 @@ enum _FilterYourPostsOnly {
 	repliesToYourPosts
 }
 
+extension _Comparison on DateTime {
+	bool operator >= (DateTime other) {
+		return !(isBefore(other));
+	}
+	bool operator <= (DateTime other) {
+		return !(isAfter(other));
+	}
+}
+
 
 class HistorySearchPage extends StatefulWidget {
-	final String query;
+	final String initialQuery;
 	final ImageboardScoped<PostIdentifier>? selectedResult;
 	final ValueChanged<ImageboardScoped<PostIdentifier>?> onResultSelected;
 	final bool initialSavedThreadsOnly;
 	final bool initialYourPostsOnly;
 
 	const HistorySearchPage({
-		required this.query,
+		required this.initialQuery,
 		required this.selectedResult,
 		required this.onResultSelected,
 		this.initialSavedThreadsOnly = false,
@@ -66,8 +75,10 @@ class HistorySearchPage extends StatefulWidget {
 }
 
 class _HistorySearchPageState extends State<HistorySearchPage> {
+	String _query = '';
 	int numer = 0;
 	int denom = 1;
+	bool _scanningPhase = false;
 	List<ImageboardScoped<HistorySearchResult>>? results;
 	ImageboardScoped<ImageboardBoard>? _filterBoard;
 	DateTime? _filterDateStart;
@@ -82,6 +93,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	@override
 	void initState() {
 		super.initState();
+		_query = widget.initialQuery;
 		_listController = RefreshableListController();
 		if (widget.initialSavedThreadsOnly) {
 			_filterSavedThreadsOnly = _FilterSavedThreadsOnly.savedThreads;
@@ -94,12 +106,12 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
 	Future<void> _runQuery() async {
 		final theseResults = <ImageboardScoped<HistorySearchResult>>[];
-		setState(() {});
-		numer = 0;
-		denom = Persistence.sharedThreadStateBox.values.length;
-		await Future.wait(Persistence.sharedThreadStateBox.values.map((threadState) async {
-			if (threadState.imageboard == null ||
+		final firstPass = <ImageboardScoped<BoardKey>, List<PersistentThreadState>>{};
+		for (final threadState in Persistence.sharedThreadStateBox.values) {
+			final imageboard = threadState.imageboard;
+			if (imageboard == null ||
 			    !threadState.showInHistory ||
+					!threadState.isThreadCached ||
 					!mounted ||
 					(_filterBoard != null &&
 					(_filterBoard!.imageboard != threadState.imageboard ||
@@ -113,17 +125,77 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 							_FilterYourPostsOnly.everything || _FilterYourPostsOnly.notYourPosts => false,
 							_FilterYourPostsOnly.yourPosts || _FilterYourPostsOnly.repliesToYourPosts => threadState.youIds.isEmpty
 						}) {
-				numer++;
-				return;
+				continue;
 			}
+			(firstPass[imageboard.scope(BoardKey(threadState.board))] ??= []).add(threadState);
+		}
+		final filterDateStart = _filterDateStart;
+		final filterDateEnd = _filterDateEnd;
+		if (filterDateStart != null || filterDateEnd != null) {
+			// Need all lists oldest->newest thread
+			for (final list in firstPass.values) {
+				list.sort((a, b) => a.id.compareTo(b.id));
+			}
+			_scanningPhase = true;
+			denom = (filterDateStart != null ? firstPass.length : 0) + (filterDateEnd != null ? firstPass.length : 0);
+		}
+		else {
+			denom = 1;
+		}
+		numer = 0;
+		setState(() {});
+		if (filterDateStart != null) {
+			await Future.wait(firstPass.entries.toList(growable: false).map((e) async {
+				final startIndex = await e.value.binarySearchFirstIndexWhereAsync((ts) async {
+					final thread = await ts.getThread();
+					return thread!.time >= filterDateStart;
+				});
+				if (startIndex == -1) {
+					// No matches
+					e.value.clear();
+				}
+				else {
+					e.value.removeRange(0, startIndex);
+				}
+				setState(() {
+					numer++;
+				});
+			}));
+		}
+		if (filterDateEnd != null) {
+			await Future.wait(firstPass.entries.toList(growable: false).map((e) async {
+				if (e.value.isEmpty) {
+					return;
+				}
+				final endIndex = await e.value.binarySearchLastIndexWhereAsync((ts) async {
+					final thread = await ts.getThread();
+					return thread!.time <= filterDateEnd;
+				});
+				if (endIndex == -1) {
+					// No matches
+					e.value.clear();
+				}
+				else {
+					e.value.removeRange(endIndex + 1, e.value.length);
+				}
+				setState(() {
+					numer++;
+				});
+			}));
+		}
+		numer = 0;
+		denom = firstPass.values.fold(0, (t, l) => t + l.length);
+		_scanningPhase = false;
+		setState(() {});
+		final query = RegExp(RegExp.escape(_query), caseSensitive: false);
+		await Future.wait(firstPass.values.expand((l) => l).map((threadState) async {
 			final thread = await threadState.getThread();
-			final query = RegExp(RegExp.escape(widget.query), caseSensitive: false);
 			if (thread != null) {
 				for (final post in thread.posts) {
 					if (post.isStub || post.isPageStub) {
 						continue;
 					}
-					if (widget.query.isNotEmpty && !post.span.buildText().contains(query)) {
+					if (_query.isNotEmpty && !post.span.buildText().contains(query)) {
 						continue;
 					}
 					if (_filterIsThread != null && _filterIsThread != (post.id == thread.id)) {
@@ -135,10 +207,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					if (_filterHasAttachment != null && _filterHasAttachment != post.attachments.isNotEmpty) {
 						continue;
 					}
-					if (_filterDateStart != null && _filterDateStart!.isAfter(post.time)) {
+					if (filterDateStart != null && filterDateStart.isAfter(post.time)) {
 						continue;
 					}
-					if (_filterDateEnd != null && _filterDateEnd!.isBefore(post.time)) {
+					if (filterDateEnd != null && filterDateEnd.isBefore(post.time)) {
 						continue;
 					}
 					if (_filterYourPostsOnly == _FilterYourPostsOnly.yourPosts || _filterYourPostsOnly == _FilterYourPostsOnly.notYourPosts) {
@@ -172,7 +244,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final queryPattern = RegExp(RegExp.escape(widget.query), caseSensitive: false);
+		final queryPattern = RegExp(RegExp.escape(_query), caseSensitive: false);
 		return AdaptiveScaffold(
 			bar: AdaptiveBar(
 				title: FittedBox(
@@ -180,7 +252,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							Text('${results != null ? '${results?.length} results' : 'Searching'}${widget.query.isNotEmpty ? ' for "${widget.query}"' : ''}'),
+							Text('${results != null ? '${results?.length} results' : 'Searching'}${_query.isNotEmpty ? ' for "$_query"' : ''}'),
 							...[
 								if (_filterBoard != null) Row(
 									mainAxisSize: MainAxisSize.min,
@@ -234,6 +306,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 						minSize: 0,
 						onPressed: () async {
 							bool anyChange = false;
+							final controller = TextEditingController(text: _query);
 							await showAdaptiveModalPopup(
 								context: context,
 								builder: (context) => StatefulBuilder(
@@ -244,6 +317,16 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											child: Column(
 												mainAxisSize: MainAxisSize.min,
 												children: [
+													const SizedBox(height: 16),
+													SizedBox(
+														width: 200,
+														child: AdaptiveTextField(
+															controller: controller,
+															placeholder: 'Query',
+															onChanged: (_) => anyChange = true
+														)
+													),
+													const SizedBox(height: 16),
 													Row(
 														mainAxisAlignment: MainAxisAlignment.center,
 														children: [
@@ -310,7 +393,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 															setDialogState(() {});
 															anyChange = true;
 														},
-														child: Text(_filterDateStart == null ? 'Pick End Date' : 'End Date: ${_filterDateEnd?.toISO8601Date}')
+														child: Text(_filterDateEnd == null ? 'Pick End Date' : 'End Date: ${_filterDateEnd?.toISO8601Date}')
 													),
 													const SizedBox(height: 16),
 													AdaptiveSegmentedControl<NullSafeOptional>(
@@ -395,6 +478,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 									)
 								)
 							);
+							_query = controller.text;
 							if (anyChange) {
 								setState(() {
 									results = null;
@@ -412,17 +496,24 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
+							// Maintain centering
+							const Text(''),
+							const SizedBox(height: 8),
 							ClipRRect(
 								borderRadius: const BorderRadius.all(Radius.circular(8)),
 								child: LinearProgressIndicator(
-									value: numer / denom,
+									value: denom == 0 ? null : numer / denom,
 									backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
-									color: ChanceTheme.primaryColorOf(context),
+									color: ChanceTheme.primaryColorOf(context).withOpacity(_scanningPhase ? 0.5 : 1.0),
 									minHeight: 8
 								)
 							),
 							const SizedBox(height: 8),
-							Text('$numer / $denom')
+							if (!_scanningPhase && numer > 0)
+								Text('$numer / $denom', style: CommonTextStyles.tabularFigures)
+							else
+								// Maintain height
+								const Text('')
 						]
 					)
 				)
@@ -431,6 +522,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					listUpdater: (_) => throw UnimplementedError(),
 					id: 'historysearch',
 					rebuildId: '${widget.selectedResult}',
+					filterHint: 'Filter...',
 					controller: _listController,
 					filterableAdapter: (i) => i.item.post ?? i.item.thread,
 					initialList: results,
@@ -489,7 +581,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											widget.onResultSelected(row.imageboard.scope(row.item.identifier));
 										},
 										baseOptions: PostSpanRenderOptions(
-											highlightPattern: widget.query.isEmpty ? null : queryPattern
+											highlightPattern: _query.isEmpty ? null : queryPattern
 										),
 									)
 								)
@@ -518,7 +610,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											showBoardName: true,
 											showSiteIcon: ImageboardRegistry.instance.count > 1,
 											baseOptions: PostSpanRenderOptions(
-												highlightPattern: widget.query.isEmpty ? null : queryPattern
+												highlightPattern: _query.isEmpty ? null : queryPattern
 											),
 										)
 									)
