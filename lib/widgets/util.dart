@@ -1196,6 +1196,9 @@ class RenderFixedWidthLayoutBox extends RenderProxyBox {
 				if (constraints.maxWidth > (_width + threshold)) {
 					width = constraints.maxWidth - threshold;
 				}
+				else if (constraints.maxWidth < (_width - threshold)) {
+					width = constraints.maxWidth + threshold;
+				}
 				else {
 					width = _width;
 				}
