@@ -169,7 +169,7 @@ class CloudflareInterceptor extends Interceptor {
 	}
 
 	static bool _responseMatches(Response response) {
-		if ([403, 503].contains(response.statusCode) && response.headers.value(Headers.contentTypeHeader)!.contains('text/html')) {
+		if ([403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
 			final document = parse(response.data);
 			final title = document.querySelector('title')?.text ?? '';
 			return _titleMatches(title);
@@ -190,7 +190,7 @@ class CloudflareInterceptor extends Interceptor {
 	}
 
 	static bool _responseMatchesBlock(Response response) {
-		if ([403, 503].contains(response.statusCode) && response.headers.value(Headers.contentTypeHeader)!.contains('text/html')) {
+		if ([403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
 			return _bodyMatchesBlock(response.data);
 		}
 		return false;
