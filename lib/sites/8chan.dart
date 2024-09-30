@@ -14,7 +14,8 @@ class Site8Chan extends SiteLynxchan {
 		required super.defaultUsername,
 		required super.overrideUserAgent,
 		required super.archives,
-		required super.hasLinkCookieAuth
+		required super.hasLinkCookieAuth,
+		required super.hasPagedCatalog
 	});
 
 	@override
@@ -59,8 +60,9 @@ class Site8Chan extends SiteLynxchan {
 		listEquals(other.archives, archives) &&
 		listEquals(other.boards, boards) &&
 		other.defaultUsername == defaultUsername &&
-		other.hasLinkCookieAuth == hasLinkCookieAuth;
+		other.hasLinkCookieAuth == hasLinkCookieAuth &&
+		other.hasPagedCatalog == hasPagedCatalog;
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername, hasLinkCookieAuth);
+	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername, hasLinkCookieAuth, hasPagedCatalog);
 }

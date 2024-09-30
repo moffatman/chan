@@ -2009,7 +2009,8 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false
+			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false,
+			hasPagedCatalog: data['hasPagedCatalog'] ?? true
 		);
 	}
 	else if (data['type'] == '8chan') {
@@ -2020,7 +2021,8 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false
+			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false,
+			hasPagedCatalog: data['hasPagedCatalog'] ?? true
 		);
 	}
 	else if (data['type'] == 'lainchan2') {

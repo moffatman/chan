@@ -91,7 +91,8 @@ class SiteLynxchan extends ImageboardSite {
 		required this.defaultUsername,
 		required super.overrideUserAgent,
 		required super.archives,
-		required this.hasLinkCookieAuth
+		required this.hasLinkCookieAuth,
+		required this.hasPagedCatalog
 	});
 
 	ImageboardFlag? _makeFlag(Map<String, dynamic> data) {
@@ -281,7 +282,7 @@ class SiteLynxchan extends ImageboardSite {
 		);
 	}
 
-	void _updateBoardInformation(String boardName, Map<String, dynamic> data) async {
+	void _updateBoardInformation(String boardName, Map<String, dynamic> data) {
 		try {
 			final board = (persistence?.maybeGetBoard(boardName))!;
 			board.maxCommentCharacters = data['maxMessageLength'];
@@ -308,6 +309,16 @@ class SiteLynxchan extends ImageboardSite {
 		}
 	}
 
+	Future<void> _maybeUpdateBoardInformation(String boardName) async {
+		final board = (persistence?.maybeGetBoard(boardName))!;
+		if (DateTime.now().difference(board.additionalDataTime ?? DateTime(2000)) > const Duration(days: 3)) {
+			// Not updated recently
+			return;
+		}
+		final response = await client.getUri(Uri.https(baseUrl, '/$boardName/1.json'));
+		_updateBoardInformation(boardName, response.data);
+	}
+
 	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/$page.json'), options: Options(
 			validateStatus: (status) => status == 200 || status == 404,
@@ -319,51 +330,66 @@ class SiteLynxchan extends ImageboardSite {
 			throw BoardNotFoundException(board);
 		}
 		_updateBoardInformation(board, response.data);
-		return (response.data['threads'] as List).map((obj) {
-			final op = Post(
+		return (response.data['threads'] as List).cast<Map>().map((o) => _makeThreadFromCatalog(board, o.cast<String, dynamic>())..currentPage = page).toList();
+	}
+
+	Thread _makeThreadFromCatalog(String board, Map<String, dynamic> obj) {
+		final op = Post(
+			board: board,
+			text: obj['markdown'],
+			name: obj['name'] ?? defaultUsername,
+			flag: _makeFlag(obj),
+			capcode: obj['signedRole'],
+			time: DateTime.parse(obj['creation']),
+			threadId: obj['threadId'],
+			id: obj['threadId'],
+			spanFormat: PostSpanFormat.lynxchan,
+			attachments_: (obj['files'] as List?)?.map((f) => Attachment(
+				type: AttachmentType.fromFilename(f['path']),
 				board: board,
-				text: obj['markdown'],
-				name: obj['name'],
-				flag: _makeFlag(obj),
-				capcode: obj['signedRole'],
-				time: DateTime.parse(obj['creation']),
+				id: f['path'],
+				ext: '.${(f['path'] as String).split('.').last}',
+				filename: f['originalName'] ?? (f['path'] as String).split('/').last,
+				url: Uri.https(baseUrl, f['path']).toString(),
+				thumbnailUrl: Uri.https(baseUrl, f['thumb']).toString(),
+				md5: '',
+				width: f['width'],
+				height: f['height'],
 				threadId: obj['threadId'],
-				id: obj['threadId'],
-				spanFormat: PostSpanFormat.lynxchan,
-				attachments_: (obj['files'] as List).map((f) => Attachment(
-					type: AttachmentType.fromFilename(f['path']),
-					board: board,
-					id: f['path'],
-					ext: '.${(f['path'] as String).split('.').last}',
-					filename: f['originalName'],
-					url: Uri.https(baseUrl, f['path']).toString(),
-					thumbnailUrl: Uri.https(baseUrl, f['thumb']).toString(),
-					md5: '',
-					width: f['width'],
-					height: f['height'],
-					threadId: obj['threadId'],
-					sizeInBytes: f['size']
-				)).toList()
-			);
-			return Thread(
-				posts_: [op],
-				replyCount: (obj['omittedPosts'] ?? obj['ommitedPosts'] ?? 0) + (obj['posts'] as List).length,
-				imageCount: (obj['omittedFiles'] ?? 0) + (obj['posts'] as List).fold<int>(0, (c, p) => c + (p['files'] as List).length),
-				id: op.id,
-				board: board,
-				title: (obj['subject'] as String?)?.unescapeHtml,
-				isSticky: obj['pinned'],
-				time: DateTime.parse(obj['creation']),
-				attachments: op.attachments_,
-				currentPage: page
-			);
-		}).toList();
+				sizeInBytes: f['size']
+			)).toList() ?? const []
+		);
+		return Thread(
+			posts_: [op],
+			replyCount: obj['postCount'] ?? ((obj['omittedPosts'] ?? obj['ommitedPosts'] ?? 0) + ((obj['posts'] as List?)?.length ?? 0)),
+			imageCount: obj['fileCount'] ?? ((obj['omittedFiles'] ?? 0) + ((obj['posts'] as List?)?.fold<int>(0, (c, p) => c + (p['files'] as List).length) ?? 0)),
+			id: op.id,
+			board: board,
+			title: (obj['subject'] as String?)?.unescapeHtml,
+			isSticky: obj['pinned'],
+			time: DateTime.parse(obj['creation']),
+			attachments: op.attachments_,
+			currentPage: obj['page']
+		);
 	}
 
 
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
-		return _getCatalogPage(board, 1, priority: priority);
+		if (hasPagedCatalog) {
+			return await _getCatalogPage(board, 1, priority: priority);
+		}
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
+			validateStatus: (status) => status == 200 || status == 404,
+			extra: {
+				kPriority: priority
+			}
+		));
+		if (response.statusCode == 404) {
+			throw BoardNotFoundException(board);
+		}
+		_maybeUpdateBoardInformation(board); // Don't await
+		return (response.data as List).cast<Map>().map((o) => _makeThreadFromCatalog(board, o.cast<String, dynamic>())).toList();
 	}
 
 	@override
@@ -414,6 +440,7 @@ class SiteLynxchan extends ImageboardSite {
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority);
+		_maybeUpdateBoardInformation(thread.board); // Don't await
 		final op = _makePost(thread.board, thread.id, thread.id, response.data);
 		final posts = [
 			op,
@@ -460,7 +487,7 @@ class SiteLynxchan extends ImageboardSite {
 	String get siteType => 'lynxchan';
 
 	@override
-	bool get hasPagedCatalog => true;
+	final bool hasPagedCatalog;
 
 	@override
 	Future<void> clearPseudoCookies() async {
@@ -479,8 +506,9 @@ class SiteLynxchan extends ImageboardSite {
 		listEquals(other.archives, archives) &&
 		listEquals(other.boards, boards) &&
 		other.defaultUsername == defaultUsername &&
-		other.hasLinkCookieAuth == hasLinkCookieAuth;
+		other.hasLinkCookieAuth == hasLinkCookieAuth &&
+		other.hasPagedCatalog == hasPagedCatalog;
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername, hasLinkCookieAuth);
+	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername, hasLinkCookieAuth, hasPagedCatalog);
 }
