@@ -211,6 +211,7 @@ class _ContextMenuState extends State<ContextMenu> {
 				);
 				return FixedWidthLayoutBox(
 					width: width ?? estimateWidth(context),
+					threshold: 0.15,
 					child: widget.contextMenuBuilderBuilder == null ? child : SelectionArea(
 						contextMenuBuilder: widget.contextMenuBuilderBuilder?.call(() => _lastSelection),
 						onSelectionChanged: (selection) => _lastSelection = selection,
