@@ -408,6 +408,11 @@ final behaviorSettings = [
 		setting: Settings.saveThreadAutomaticallyWhenReplyingSetting
 	),
 	const SwitchSettingWidget(
+		description: 'Hide reply field when submitting',
+		icon: CupertinoIcons.reply,
+		setting: Settings.closeReplyBoxAfterSubmittingSetting
+	),
+	const SwitchSettingWidget(
 		description: 'Cancellable replies swipe gesture',
 		icon: CupertinoIcons.reply_all,
 		helpText: 'When swiping from right to left to open a post\'s replies, only continuing the swipe will open the replies. Releasing the swipe in another direction will cancel the gesture.',

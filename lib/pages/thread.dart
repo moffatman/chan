@@ -1939,7 +1939,8 @@ class ThreadPageState extends State<ThreadPage> {
 																					_suggestedNewGeneral = null;
 																				});
 																			}
-																		)
+																		),
+																		replyBoxKey: _replyBoxKey
 																	)
 																)
 															),
@@ -2030,6 +2031,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final VoidCallback startCaching;
 	final VoidCallback openGalleryGrid;
 	final SuggestedNewThread? suggestedThread;
+	final GlobalKey<ReplyBoxState> replyBoxKey;
 	
 	const _ThreadPositionIndicator({
 		required this.persistentState,
@@ -2049,6 +2051,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.startCaching,
 		required this.openGalleryGrid,
 		required this.suggestedThread,
+		required this.replyBoxKey,
 		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
@@ -2923,6 +2926,61 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											),
 											const SizedBox(width: 8)
 										],
+										if (widget.replyBoxKey.currentState case ReplyBoxState replyBoxState) ValueListenableBuilder(
+											valueListenable: replyBoxState.postingPost,
+											builder: (context, postingPost, _) {
+												if (postingPost == null) {
+													return const SizedBox.shrink();
+												}
+												return Padding(
+													padding: const EdgeInsets.only(right: 8),
+													child: AdaptiveFilledButton(
+														padding: const EdgeInsets.all(8),
+														color: theme.primaryColorWithBrightness(0.6),
+														onPressed: replyBoxState.toggleReplyBox,
+														child: AnimatedSize(
+															duration: const Duration(milliseconds: 200),
+															curve: Curves.ease,
+															child: Row(
+																children: [
+																	Icon(CupertinoIcons.reply, color: theme.backgroundColor, size: 19),
+																	const SizedBox(width: 4),
+																	DebouncedBuilder(
+																		value: postingPost.statusText,
+																		period: const Duration(milliseconds: 100),
+																		builder: (s) => Text(s, style: TextStyle(color: theme.backgroundColor))
+																	),
+																	if (postingPost.isActivelyProcessing) ...[
+																		const SizedBox(width: 8),
+																		SizedBox(
+																			width: 10,
+																			height: 10,
+																			child: ColorFiltered(
+																				colorFilter: theme.brightness == Brightness.dark ? const ColorFilter.matrix([
+																					-1, 0, 0, 0, 255,
+																					0, -1, 0, 0, 255,
+																					0, 0, -1, 0, 255,
+																					0, 0, 0, 1, 0
+																				]) :  const ColorFilter.matrix([
+																					1, 0, 0, 0, 0,
+																					0, 1, 0, 0, 0,
+																					0, 0, 1, 0, 0,
+																					0, 0, 0, 1, 0
+																				]),
+																				child: CircularProgressIndicator.adaptive(
+																					valueColor: AlwaysStoppedAnimation(theme.backgroundColor),
+																				)
+																			)
+																		),
+																		const SizedBox(width: 4)
+																	]
+																]
+															)
+														)
+													)
+												);
+											}
+										),
 										if (poll != null) ...[
 											AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),

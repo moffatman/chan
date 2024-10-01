@@ -2345,6 +2345,18 @@ class SavedSettingsFields {
     fieldName: 'openDrawerThreadsInNewTabs',
     merger: PrimitiveMerger(),
   );
+  static bool getCloseReplyBoxAfterSubmitting(SavedSettings x) =>
+      x.closeReplyBoxAfterSubmitting;
+  static void setCloseReplyBoxAfterSubmitting(SavedSettings x, bool v) =>
+      x.closeReplyBoxAfterSubmitting = v;
+  static const closeReplyBoxAfterSubmitting =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getCloseReplyBoxAfterSubmitting,
+    setter: setCloseReplyBoxAfterSubmitting,
+    fieldNumber: 197,
+    fieldName: 'closeReplyBoxAfterSubmitting',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2541,7 +2553,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     193: SavedSettingsFields.doubleTapToHideThreads,
     194: SavedSettingsFields.cloverStyleCatalogCounters,
     195: SavedSettingsFields.alwaysUseWideDrawerGesture,
-    196: SavedSettingsFields.openDrawerThreadsInNewTabs
+    196: SavedSettingsFields.openDrawerThreadsInNewTabs,
+    197: SavedSettingsFields.closeReplyBoxAfterSubmitting
   };
 
   @override
@@ -2752,13 +2765,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       cloverStyleCatalogCounters: fields[194] as bool?,
       alwaysUseWideDrawerGesture: fields[195] as bool?,
       openDrawerThreadsInNewTabs: fields[196] as bool?,
+      closeReplyBoxAfterSubmitting: fields[197] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(184)
+      ..writeByte(185)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3126,7 +3140,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(195)
       ..write(obj.alwaysUseWideDrawerGesture)
       ..writeByte(196)
-      ..write(obj.openDrawerThreadsInNewTabs);
+      ..write(obj.openDrawerThreadsInNewTabs)
+      ..writeByte(197)
+      ..write(obj.closeReplyBoxAfterSubmitting);
   }
 
   @override

@@ -120,8 +120,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _optionsFieldController;
 	late final TextEditingController _filenameController;
 	late final FocusNode _textFocusNode;
-	QueuedPost? _postingPost;
-	bool get loading => _postingPost != null;
+	late final ValueNotifier<QueuedPost?> postingPost;
+	bool get loading => postingPost.value != null;
 	(MediaScan, FileStat, Digest)? _attachmentScan;
 	File? attachment;
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
@@ -354,6 +354,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	void initState() {
 		super.initState();
 		final persistence = context.read<Persistence>();
+		postingPost = ValueNotifier(null);
 		_textFieldController = ReplyBoxTextEditingController(text: widget.initialDraft?.text);
 		_subjectFieldController = TextEditingController(text: widget.initialDraft?.subject);
 		_optionsFieldController = TextEditingController(text: widget.initialDraft?.options);
@@ -519,7 +520,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 		}
 		for (final draft in Outbox.instance.queuedPostsFor(context.read<Imageboard>().key, widget.board.s, widget.threadId)) {
-			if (!_submittingPosts.contains(draft) && draft != _postingPost) {
+			if (!_submittingPosts.contains(draft) && draft != postingPost.value) {
 				// This is some message restored from persistence.outbox (previous app launch)
 				_submittingPosts.add(draft);
 				_listenToReplyPosting(draft);
@@ -958,23 +959,35 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			);
 			return;
 		}
+		bool autohid = false;
 		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(context,
-			beforeModal: hideReplyBox,
-			afterModal: showReplyBox
+			beforeModal: () {
+				if (show) {
+					autohid = true;
+					hideReplyBox();
+				}
+			},
+			afterModal: () {
+				if (autohid) {
+					showReplyBox();
+					autohid = false;
+				}
+			}
 		));
 		// Remember _disableLoginSystem, it will also be kept in the draft
 		if (!_disableLoginSystem) {
 			_showAttachmentOptions = false;
 		}
-		final oldPostingPost = _postingPost;
+		final oldPostingPost = postingPost.value;
 		if (oldPostingPost != null) {
 			// This should never happen tbqh
 			_submittingPosts.add(oldPostingPost);
 		}
-		_postingPost = entry;
+		postingPost.value = entry;
 		// This needs to happen last so it doesn't eagerly assume this is an undeletion
 		_listenToReplyPosting(entry);
 		setState(() {});
+		hideReplyBox();
 	}
 
 	void _reset() {
@@ -990,27 +1003,27 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	void _postInBackground() {
-		final toMove = _postingPost;
+		final toMove = postingPost.value;
 		if (toMove == null) {
 			return;
 		}
 		_submittingPosts.add(toMove);
 		_reset();
 		setState(() {
-			_postingPost = null;
+			postingPost.value = null;
 		});
 	}
 
 	/// Return the primary outgoing post to the reply box
 	void _cancel() {
-		final post = _postingPost;
+		final post = postingPost.value;
 		if (post == null) {
 			return;
 		}
 		post.cancel();
 		post.delete();
 		setState(() {
-			_postingPost = null;
+			postingPost.value = null;
 		});
 		// The old contents should still be in the reply box.
 	}
@@ -1034,7 +1047,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				setState(() {});
 				return;
 			}
-			if (!_submittingPosts.contains(post) && post != _postingPost) {
+			if (!_submittingPosts.contains(post) && post != postingPost.value) {
 				// Undelete
 				_submittingPosts.add(post);
 				setState(() {});
@@ -1044,30 +1057,37 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				_submittingPosts.remove(post);
 				widget.onReplyPosted(state.result);
 				mediumHapticFeedback();
-				if (post == _postingPost) {
+				if (post == postingPost.value) {
 					_reset();
 					_rootFocusNode.unfocus();
 					// Hide reply box
 					setState(() {
-						_postingPost = null;
+						postingPost.value = null;
 					});
 					hideReplyBox();
 				}
 			}
-			else if (state is QueueStateFailed<PostReceipt> && post == _postingPost) {
+			else if (state is QueueStateFailed<PostReceipt> && post == postingPost.value) {
 				post.removeListener(listener);
 				post.delete();
 				setState(() {
-					_postingPost = null;
+					postingPost.value = null;
 				});
+				if (!show) {
+					showReplyBox();
+				}
 			}
-			else if (state is QueueStateIdle<PostReceipt> && post == _postingPost) {
+			else if (state is QueueStateIdle<PostReceipt> && post == postingPost.value) {
 				// User cancelled captcha
 				post.removeListener(listener);
 				post.delete();
 				setState(() {
-					_postingPost = null;
+					postingPost.value = null;
 				});
+				// Probably they cancelled it to fix a typo or something
+				if (!show) {
+					showReplyBox();
+				}
 			}
 		}
 		post.addListener(listener);
@@ -1557,7 +1577,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final snippets = site.getBoardSnippets(widget.board.s);
 		const infiniteLimit = 1 << 50;
 		final settings = context.watch<Settings>();
-		final postingPost = _postingPost;
+		final postingPost = this.postingPost.value;
 		return CallbackShortcuts(
 			bindings: {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit,
@@ -1768,11 +1788,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																			}
 																		}
 																		if (pair == null) {
-																			return DebouncedBuilder(
-																				value: postingPost.statusText,
-																				period: const Duration(milliseconds: 100),
-																				builder: (s) => Text(s, style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5)))
-																			);
+																			return const SizedBox.shrink();
 																		}
 																		return AdaptiveThinButton(
 																			backgroundFilled: true,
@@ -2180,7 +2196,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										builder: (context, _) {
 											final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)];
 											Widget build(BuildContext context) {
-												final ourCount = _submittingPosts.length + (_postingPost != null ? 1 : 0);
+												final ourCount = _submittingPosts.length + (postingPost.value != null ? 1 : 0);
 												final activeCount = Outbox.instance.activeCount;
 												final othersCount = queue?.list.where((e) => !e.state.isIdle && e.thread != thread).length ?? 0;
 												final DateTime time;
@@ -2198,7 +2214,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													// There are outbox things in other threads
 													(activeCount > ourCount) ||
 													// There is a meaningful cooldown and nothing else is showing it
-													((time.difference(now) > const Duration(seconds: 5)) && _submittingPosts.isEmpty && _postingPost == null);
+													((time.difference(now) > const Duration(seconds: 5)) && _submittingPosts.isEmpty && postingPost.value == null);
 												if (!(show && shouldShow)) {
 													return const SizedBox(width: double.infinity);
 												}
@@ -2496,7 +2512,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	@override
 	void dispose() {
 		super.dispose();
-		if (_postingPost != null) {
+		if (postingPost.value != null) {
 			// Since we didn't clear out the reply field yet. Just send a fake draft above.
 			if (_optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
 				// A few things we have to save

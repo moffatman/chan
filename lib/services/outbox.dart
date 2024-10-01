@@ -138,7 +138,7 @@ class QueueStateDeleted<T> extends QueueState<T> {
 sealed class QueueEntry<T> extends ChangeNotifier {
 	final _lock = Mutex();
 	bool get isActivelyProcessing => _lock.isLocked;
-	String get statusText => isActivelyProcessing ? '${state.activeName}...' : state.idleName;
+	String get statusText => isActivelyProcessing ? state.activeName : state.idleName;
 	final String imageboardKey;
 	Imageboard get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey)!;
 	ImageboardSite get site => imageboard.site;
