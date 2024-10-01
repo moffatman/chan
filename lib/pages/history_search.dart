@@ -146,6 +146,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		setState(() {});
 		if (filterDateStart != null) {
 			await Future.wait(firstPass.entries.toList(growable: false).map((e) async {
+				if (!mounted) return;
 				final startIndex = await e.value.binarySearchFirstIndexWhereAsync((ts) async {
 					final thread = await ts.getThread();
 					return thread!.time >= filterDateStart;
@@ -164,7 +165,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		}
 		if (filterDateEnd != null) {
 			await Future.wait(firstPass.entries.toList(growable: false).map((e) async {
-				if (e.value.isEmpty) {
+				if (!mounted || e.value.isEmpty) {
 					return;
 				}
 				final endIndex = await e.value.binarySearchLastIndexWhereAsync((ts) async {
@@ -189,7 +190,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		setState(() {});
 		final query = RegExp(RegExp.escape(_query), caseSensitive: false);
 		await Future.wait(firstPass.values.expand((l) => l).map((threadState) async {
+			if (!mounted) return;
 			final thread = await threadState.getThread();
+			if (!mounted) return;
 			if (thread != null) {
 				for (final post in thread.posts) {
 					if (post.isStub || post.isPageStub) {
