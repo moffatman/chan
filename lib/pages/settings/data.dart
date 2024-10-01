@@ -742,12 +742,20 @@ final dataSettings = [
 				if (!context.mounted) {
 					return;
 				}
-				await shareOne(
-					context: context,
-					text: file.path,
-					type: 'file',
-					sharePositionOrigin: globalRect
-				);
+				if (Platform.isAndroid) {
+					await saveFileAs(
+						sourcePath: file.path,
+						destinationName: file.path.split('/').last
+					);
+				}
+				else {
+					await shareOne(
+						context: context,
+						text: file.path,
+						type: 'file',
+						sharePositionOrigin: globalRect
+					);
+				}
 			}
 			catch (e, st) {
 				Future.error(e, st);
@@ -772,7 +780,7 @@ final dataSettings = [
 				return total;
 			}, wait: const Duration(milliseconds: 100));
 			if (!context.mounted) return;
-			final ok = await showAdaptiveDialog<bool>(
+			final cb = await showAdaptiveDialog<Future<void> Function(File)>(
 				context: context,
 				builder: (context) => AdaptiveAlertDialog(
 					title: const Text('Export Options'),
@@ -800,17 +808,29 @@ final dataSettings = [
 					),
 					actions: [
 						AdaptiveDialogAction(
-							onPressed: () => Navigator.pop(context, true),
+							onPressed: () => Navigator.pop<Future<void> Function(File)>(context, (File file) => shareOne(
+									context: context,
+									text: file.path,
+									type: 'file',
+									sharePositionOrigin: globalRect
+							)),
 							child: const Text('Export')
 						),
+						if (Platform.isAndroid) AdaptiveDialogAction(
+							onPressed: () => Navigator.pop<Future<void> Function(File)>(context, (File file) => saveFileAs(
+								sourcePath: file.path,
+								destinationName: file.path.split('/').last
+							)),
+							child: const Text('Export as...')
+						),
 						AdaptiveDialogAction(
-							onPressed: () => Navigator.pop(context, false),
+							onPressed: () => Navigator.pop(context, null),
 							child: const Text('Cancel')
 						)
 					]
 				)
 			);
-			if (ok != true) return;
+			if (cb == null) return;
 			if (!context.mounted) return;
 			try {
 				final file = await modalLoad(context, 'Exporting...', (_) => export(
@@ -820,12 +840,7 @@ final dataSettings = [
 				if (!context.mounted) {
 					return;
 				}
-				await shareOne(
-					context: context,
-					text: file.path,
-					type: 'file',
-					sharePositionOrigin: globalRect
-				);
+				await cb(file);
 			}
 			catch (e, st) {
 				Future.error(e, st);
