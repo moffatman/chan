@@ -248,6 +248,97 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	@override
 	Widget build(BuildContext context) {
 		final queryPattern = RegExp(RegExp.escape(_query), caseSensitive: false);
+		Widget itemBuilder(BuildContext context, ImageboardScoped<HistorySearchResult> row, {RegExp? highlight}) {
+		if (row.item.post != null) {
+			return ImageboardScope(
+				imageboardKey: null,
+				imageboard: row.imageboard,
+				child: ChangeNotifierProvider<PostSpanZoneData>(
+					create: (context) => PostSpanRootZoneData(
+						imageboard: row.imageboard,
+						thread: row.item.thread,
+						semanticRootIds: [-11],
+						style: PostSpanZoneStyle.linear
+					),
+					builder: (context, _) => PostRow(
+						post: row.item.post!,
+						onThumbnailTap: (initialAttachment) {
+							final attachments = {
+								for (final w in _listController.items)
+									for (final attachment in w.item.item.post?.attachments ?? w.item.item.thread.attachments)
+										attachment: w.item
+							};
+							showGallery(
+								context: context,
+								attachments: attachments.keys.toList(),
+								replyCounts: {
+									for (final item in attachments.entries) item.key: item.value.item.post?.replyCount ?? item.value.item.thread.replyCount
+								},
+								threads: (
+									threads: {
+										for (final item in attachments.entries) item.key: item.value.imageboard.scope(item.value.item.thread)
+									},
+									onThreadSelected: (t) {
+										final x = _listController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.thread.identifier == t.item.identifier).item;
+										widget.onResultSelected(x.imageboard.scope(x.item.identifier));
+									}
+								),
+								initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
+								onChange: (attachment) {
+									final value = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value;
+									_listController.animateTo((p) => p == value);
+								},
+								semanticParentIds: [-11],
+								heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+							);
+						},
+						showCrossThreadLabel: false,
+						showBoardName: true,
+						showSiteIcon: ImageboardRegistry.instance.count > 1,
+						allowTappingLinks: false,
+						isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
+						onTap: () {
+							row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
+							widget.onResultSelected(row.imageboard.scope(row.item.identifier));
+						},
+						baseOptions: PostSpanRenderOptions(
+							highlightPattern: highlight ?? (_query.isEmpty ? null : queryPattern)
+						),
+					)
+				)
+			);
+		}
+		else {
+			return ImageboardScope(
+				imageboardKey: null,
+				imageboard: row.imageboard,
+				child: Builder(
+					builder: (context) => CupertinoButton(
+						padding: EdgeInsets.zero,
+						onPressed: () {
+							row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
+							widget.onResultSelected(row.imageboard.scope(row.item.identifier));
+						},
+						child: ThreadRow(
+							thread: row.item.thread,
+							onThumbnailTap: (attachment) => showGallery(
+								context: context,
+								attachments: [attachment],
+								semanticParentIds: [-11],
+								heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+							),
+							isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
+							showBoardName: true,
+							showSiteIcon: ImageboardRegistry.instance.count > 1,
+							baseOptions: PostSpanRenderOptions(
+								highlightPattern: _query.isEmpty ? null : queryPattern
+							),
+						)
+					)
+				)
+			);
+		}
+	}
 		return AdaptiveScaffold(
 			bar: AdaptiveBar(
 				title: FittedBox(
@@ -530,97 +621,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					filterableAdapter: (i) => i.item.post ?? i.item.thread,
 					initialList: results,
 					disableUpdates: true,
-					itemBuilder: (context, row) {
-						if (row.item.post != null) {
-							return ImageboardScope(
-								imageboardKey: null,
-								imageboard: row.imageboard,
-								child: ChangeNotifierProvider<PostSpanZoneData>(
-									create: (context) => PostSpanRootZoneData(
-										imageboard: row.imageboard,
-										thread: row.item.thread,
-										semanticRootIds: [-11],
-										style: PostSpanZoneStyle.linear
-									),
-									builder: (context, _) => PostRow(
-										post: row.item.post!,
-										onThumbnailTap: (initialAttachment) {
-											final attachments = {
-												for (final w in _listController.items)
-													for (final attachment in w.item.item.post?.attachments ?? w.item.item.thread.attachments)
-														attachment: w.item
-											};
-											showGallery(
-												context: context,
-												attachments: attachments.keys.toList(),
-												replyCounts: {
-													for (final item in attachments.entries) item.key: item.value.item.post?.replyCount ?? item.value.item.thread.replyCount
-												},
-												threads: (
-													threads: {
-														for (final item in attachments.entries) item.key: item.value.imageboard.scope(item.value.item.thread)
-													},
-													onThreadSelected: (t) {
-														final x = _listController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.thread.identifier == t.item.identifier).item;
-														widget.onResultSelected(x.imageboard.scope(x.item.identifier));
-													}
-												),
-												initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
-												onChange: (attachment) {
-													final value = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value;
-													_listController.animateTo((p) => p == value);
-												},
-												semanticParentIds: [-11],
-												heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-											);
-										},
-										showCrossThreadLabel: false,
-										showBoardName: true,
-										showSiteIcon: ImageboardRegistry.instance.count > 1,
-										allowTappingLinks: false,
-										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
-										onTap: () {
-											row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
-											widget.onResultSelected(row.imageboard.scope(row.item.identifier));
-										},
-										baseOptions: PostSpanRenderOptions(
-											highlightPattern: _query.isEmpty ? null : queryPattern
-										),
-									)
-								)
-							);
-						}
-						else {
-							return ImageboardScope(
-								imageboardKey: null,
-								imageboard: row.imageboard,
-								child: Builder(
-									builder: (context) => CupertinoButton(
-										padding: EdgeInsets.zero,
-										onPressed: () {
-											row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
-											widget.onResultSelected(row.imageboard.scope(row.item.identifier));
-										},
-										child: ThreadRow(
-											thread: row.item.thread,
-											onThumbnailTap: (attachment) => showGallery(
-												context: context,
-												attachments: [attachment],
-												semanticParentIds: [-11],
-												heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-											),
-											isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
-											showBoardName: true,
-											showSiteIcon: ImageboardRegistry.instance.count > 1,
-											baseOptions: PostSpanRenderOptions(
-												highlightPattern: _query.isEmpty ? null : queryPattern
-											),
-										)
-									)
-								)
-							);
-						}
-					}
+					itemBuilder: itemBuilder,
+					filteredItemBuilder: (context, row, resetPage, filter) => itemBuilder(context, row, highlight: filter),
 				)
 			)
 		);
