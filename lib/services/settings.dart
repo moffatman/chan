@@ -1210,6 +1210,8 @@ class SavedSettings extends HiveObject {
 	bool cloverStyleCatalogCounters;
 	@HiveField(195)
 	bool alwaysUseWideDrawerGesture;
+	@HiveField(196)
+	bool openDrawerThreadsInNewTabs;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1407,6 +1409,7 @@ class SavedSettings extends HiveObject {
 		bool? doubleTapToHideThreads,
 		bool? cloverStyleCatalogCounters,
 		bool? alwaysUseWideDrawerGesture,
+		bool? openDrawerThreadsInNewTabs,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1625,7 +1628,8 @@ class SavedSettings extends HiveObject {
 		doubleTapToHidePosts = doubleTapToHidePosts ?? false,
 		doubleTapToHideThreads = doubleTapToHideThreads ?? false,
 		cloverStyleCatalogCounters = cloverStyleCatalogCounters ?? false,
-		alwaysUseWideDrawerGesture = alwaysUseWideDrawerGesture ?? false {
+		alwaysUseWideDrawerGesture = alwaysUseWideDrawerGesture ?? false,
+		openDrawerThreadsInNewTabs = openDrawerThreadsInNewTabs ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2834,6 +2838,9 @@ class Settings extends ChangeNotifier {
 
 	static const alwaysUseWideDrawerGestureSetting = SavedSetting(SavedSettingsFields.alwaysUseWideDrawerGesture);
 	bool get alwaysUseWideDrawerGesture => alwaysUseWideDrawerGestureSetting(this);
+
+	static const openDrawerThreadsInNewTabsSetting = SavedSetting(SavedSettingsFields.openDrawerThreadsInNewTabs);
+	bool get openDrawerThreadsInNewTabs => openDrawerThreadsInNewTabsSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

@@ -962,6 +962,61 @@ class ChanTabs extends ChangeNotifier {
 		runWhenIdle(const Duration(seconds: 1), Persistence.saveTabs);
 	}
 	
+	bool goToPost({
+		required String imageboardKey,
+		required String board,
+		required int? threadId,
+		int? postId,
+		required bool openNewTabIfNeeded,
+		bool initiallyUseArchive = false
+	}) {
+		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.board == board && tab.thread?.id == threadId);
+		final tabAlreadyExisted = tab != null;
+		if (openNewTabIfNeeded) {
+			if (tab == null && threadId != null) {
+				// Maybe we can reuse a tab sitting at catalog for this board
+				bool pred(tab) => tab.imageboardKey == imageboardKey && tab.board == board && tab.thread == null;
+				final catalogTab = tab = tryIf(Persistence.tabs[Persistence.currentTabIndex], pred) ?? Persistence.tabs.tryFirstWhere(pred);
+				if (catalogTab != null) {
+					tab = catalogTab;
+					if (postId != null) {
+						catalogTab.initialPostId[ThreadIdentifier(board, threadId)] = postId;
+					}
+					() async {
+						for (int i = 0; i < 200 && catalogTab.masterDetailKey.currentState == null; i++) {
+							await Future.delayed(const Duration(milliseconds: 50));
+						}
+						catalogTab.masterDetailKey.currentState?.setValue(ThreadIdentifier(board, threadId));
+					}();
+					catalogTab.didUpdate();
+				}
+			}
+			tab ??= addNewTab(
+				activate: false,
+				withImageboardKey: imageboardKey,
+				withBoard: board,
+				withThreadId: threadId,
+				withInitialPostId: postId,
+				initiallyUseArchive: initiallyUseArchive
+			);
+		}
+		if (tab != null) {
+			mainTabIndex = 0;
+			browseTabIndex = Persistence.tabs.indexOf(tab);
+			if (tabAlreadyExisted && postId != null) {
+				_scrollExistingTab(tab, postId);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	static void _scrollExistingTab(PersistentBrowserTab tab, int postId) async {
+		for (int i = 0; i < 200 && tab.threadPageState == null; i++) {
+			await Future.delayed(const Duration(milliseconds: 50));
+		}
+		tab.threadPageState?.scrollToPost(postId);
+	}
 
 	ImageboardScoped<ThreadWatch>? get selectedWatchedThread {
 		return _savedMasterDetailKey.currentState?.getValue1();
@@ -1260,17 +1315,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	void _scrollExistingTab(PersistentBrowserTab tab, int postId) async {
-		for (int i = 0; i < 200 && tab.threadPageState == null; i++) {
-			await Future.delayed(const Duration(milliseconds: 50));
-		}
-		tab.threadPageState?.scrollToPost(postId);
-	}
-
 	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification, {
 		bool initiallyUseArchive = false
 	}) async {
-		if (!_goToPost(
+		if (!_tabs.goToPost(
 			imageboardKey: imageboard.key,
 			board: notification.board,
 			threadId: notification.threadId,
@@ -1280,7 +1328,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		)) {
 			final watch = imageboard.persistence.browserState.threadWatches[notification.threadIdentifier];
 			if (watch == null) {
-				_goToPost(
+				_tabs.goToPost(
 					imageboardKey: imageboard.key,
 					board: notification.board,
 					threadId: notification.threadId,
@@ -1292,7 +1340,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			else {
 				await _tabs.openSavedTab();
 				if (_tabs.selectedWatchedThread?.item == watch && notification.postId != null) {
-					_scrollExistingTab(_savedFakeTab, notification.postId!);
+					ChanTabs._scrollExistingTab(_savedFakeTab, notification.postId!);
 				}
 				else {
 					if (notification.postId != null) {
@@ -1428,54 +1476,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (mounted) {
 			setState(() {});
 		}
-	}
-
-
-	bool _goToPost({
-		required String imageboardKey,
-		required String board,
-		required int? threadId,
-		int? postId,
-		required bool openNewTabIfNeeded,
-		bool initiallyUseArchive = false
-	}) {
-		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.board == board && tab.thread?.id == threadId);
-		final tabAlreadyExisted = tab != null;
-		if (openNewTabIfNeeded) {
-			if (tab == null && threadId != null) {
-				// Maybe we can reuse a tab sitting at catalog for this board
-				final catalogTab = tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.board == board && tab.thread == null);
-				if (catalogTab != null) {
-					if (postId != null) {
-						catalogTab.initialPostId[ThreadIdentifier(board, threadId)] = postId;
-					}
-					() async {
-						for (int i = 0; i < 200 && catalogTab.masterDetailKey.currentState == null; i++) {
-							await Future.delayed(const Duration(milliseconds: 50));
-						}
-						catalogTab.masterDetailKey.currentState?.setValue(ThreadIdentifier(board, threadId));
-					}();
-					catalogTab.didUpdate();
-				}
-			}
-			tab ??= _tabs.addNewTab(
-				activate: false,
-				withImageboardKey: imageboardKey,
-				withBoard: board,
-				withThreadId: threadId,
-				withInitialPostId: postId,
-				initiallyUseArchive: initiallyUseArchive
-			);
-		}
-		if (tab != null) {
-			_tabs.mainTabIndex = 0;
-			_tabs.browseTabIndex = Persistence.tabs.indexOf(tab);
-			if (tabAlreadyExisted && postId != null) {
-				_scrollExistingTab(tab, postId);
-			}
-			return true;
-		}
-		return false;
 	}
 
 	Widget _buildTab(int index) {

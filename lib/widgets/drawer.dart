@@ -395,7 +395,17 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					if (tabs.mainTabIndex != 0) {
 						tabs.mainTabIndex = 0;
 					}
-					tabs.setCurrentBrowserThread(watch.imageboard.scope(watch.item.threadIdentifier), showAnimationsForward: false);
+					if (settings.openDrawerThreadsInNewTabs) {
+						tabs.goToPost(
+							imageboardKey: watch.imageboard.key,
+							board: watch.item.board,
+							threadId: watch.item.threadId,
+							openNewTabIfNeeded: true
+						);
+					}
+					else {
+						tabs.setCurrentBrowserThread(watch.imageboard.scope(watch.item.threadIdentifier), showAnimationsForward: false);
+					}
 					_afterUse();
 				},
 				menuAxisDirection: AxisDirection.right
@@ -450,7 +460,17 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					if (tabs.mainTabIndex != 0) {
 						tabs.mainTabIndex = 0;
 					}
-					tabs.setCurrentBrowserThread(state.imageboard!.scope(state.identifier), showAnimationsForward: false);
+					if (settings.openDrawerThreadsInNewTabs) {
+						tabs.goToPost(
+							imageboardKey: state.imageboard!.key,
+							board: state.board,
+							threadId: state.id,
+							openNewTabIfNeeded: true
+						);
+					}
+					else {
+						tabs.setCurrentBrowserThread(state.imageboard!.scope(state.identifier), showAnimationsForward: false);
+					}
 					_afterUse();
 				},
 				menuAxisDirection: AxisDirection.right

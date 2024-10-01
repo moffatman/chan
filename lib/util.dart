@@ -7,6 +7,14 @@ import 'package:mutex/mutex.dart';
 
 final lineSeparatorPattern = RegExp(r'\r?\n');
 
+/// Syntactic sugar
+T? tryIf<T>(T obj, bool Function(T v) f) {
+	if (f(obj)) {
+		return obj;
+	}
+	return null;
+}
+
 extension SafeWhere<T> on Iterable<T> {
 	T? tryFirstWhere(bool Function(T v) f) {
 		for (final v in this) {

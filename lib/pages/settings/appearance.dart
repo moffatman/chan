@@ -282,6 +282,17 @@ final appearanceSettings = [
 			setting: Settings.alwaysUseWideDrawerGestureSetting
 		)
 	),
+	SettingHiding(
+		hidden: MappedMutableSetting(
+			Settings.androidDrawerSetting,
+			FieldMappers.invert
+		),
+		setting: const SwitchSettingWidget(
+			description: 'Open threads from side drawer into new tabs',
+			icon: CupertinoIcons.rectangle_stack_badge_plus,
+			setting: Settings.openDrawerThreadsInNewTabsSetting
+		)
+	),
 	const SegmentedSettingWidget(
 		description: 'Page Style',
 		icon: CupertinoIcons.doc,

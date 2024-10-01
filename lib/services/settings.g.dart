@@ -2333,6 +2333,18 @@ class SavedSettingsFields {
     fieldName: 'alwaysUseWideDrawerGesture',
     merger: PrimitiveMerger(),
   );
+  static bool getOpenDrawerThreadsInNewTabs(SavedSettings x) =>
+      x.openDrawerThreadsInNewTabs;
+  static void setOpenDrawerThreadsInNewTabs(SavedSettings x, bool v) =>
+      x.openDrawerThreadsInNewTabs = v;
+  static const openDrawerThreadsInNewTabs =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getOpenDrawerThreadsInNewTabs,
+    setter: setOpenDrawerThreadsInNewTabs,
+    fieldNumber: 196,
+    fieldName: 'openDrawerThreadsInNewTabs',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2528,7 +2540,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     192: SavedSettingsFields.doubleTapToHidePosts,
     193: SavedSettingsFields.doubleTapToHideThreads,
     194: SavedSettingsFields.cloverStyleCatalogCounters,
-    195: SavedSettingsFields.alwaysUseWideDrawerGesture
+    195: SavedSettingsFields.alwaysUseWideDrawerGesture,
+    196: SavedSettingsFields.openDrawerThreadsInNewTabs
   };
 
   @override
@@ -2738,13 +2751,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       doubleTapToHideThreads: fields[193] as bool?,
       cloverStyleCatalogCounters: fields[194] as bool?,
       alwaysUseWideDrawerGesture: fields[195] as bool?,
+      openDrawerThreadsInNewTabs: fields[196] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(183)
+      ..writeByte(184)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3110,7 +3124,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(194)
       ..write(obj.cloverStyleCatalogCounters)
       ..writeByte(195)
-      ..write(obj.alwaysUseWideDrawerGesture);
+      ..write(obj.alwaysUseWideDrawerGesture)
+      ..writeByte(196)
+      ..write(obj.openDrawerThreadsInNewTabs);
   }
 
   @override
