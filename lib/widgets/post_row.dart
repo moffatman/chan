@@ -171,6 +171,7 @@ class PostRow extends StatelessWidget {
 	final bool showYourPostBorder;
 	final bool highlight;
 	final Widget? overrideReplyCount;
+	final bool showReplyCount;
 	final bool dim;
 	final bool showPostNumber;
 	final double? largeImageWidth;
@@ -195,6 +196,7 @@ class PostRow extends StatelessWidget {
 		this.highlight = false,
 		this.baseOptions,
 		this.overrideReplyCount,
+		this.showReplyCount = true,
 		this.dim = false,
 		this.showPostNumber = true,
 		this.largeImageWidth,
@@ -361,7 +363,7 @@ class PostRow extends StatelessWidget {
 											onThumbnailLoadError: onThumbnailLoadError,
 											revealSpoilerImages: revealSpoilerImages,
 											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
-											postInject: overrideReplyCount != null ? WidgetSpan(
+											postInject: showReplyCount ? (overrideReplyCount != null ? WidgetSpan(
 												alignment: PlaceholderAlignment.top,
 												child: Visibility(
 													visible: false,
@@ -375,7 +377,7 @@ class PostRow extends StatelessWidget {
 												)
 											) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
 												child: SizedBox(width: (4 + replyIds.length.toString().length) * 8)
-											))
+											))) : null
 										)
 									),
 									// In practice this is the height of a line of text
@@ -623,44 +625,46 @@ class PostRow extends StatelessWidget {
 									]
 								)
 							),
-							if (overrideReplyCount != null) Positioned.fill(
-								child: Align(
-									alignment: Alignment.bottomRight,
-									child: DecoratedBox(
-										decoration: BoxDecoration(
-											gradient: LinearGradient(
-												begin: Alignment.centerRight,
-												end: Alignment.centerLeft,
-												colors: [
-													Color.alphaBlend(backgroundColor, theme.backgroundColor),
-													Color.alphaBlend(backgroundColor, theme.backgroundColor).withOpacity(0)
-												]
+							if (showReplyCount)
+								if (overrideReplyCount != null) Positioned.fill(
+									child: Align(
+										alignment: Alignment.bottomRight,
+										child: DecoratedBox(
+											decoration: BoxDecoration(
+												gradient: LinearGradient(
+													begin: Alignment.centerRight,
+													end: Alignment.centerLeft,
+													colors: [
+														Color.alphaBlend(backgroundColor, theme.backgroundColor),
+														Color.alphaBlend(backgroundColor, theme.backgroundColor).withOpacity(0)
+													]
+												)
+											),
+											child: Padding(
+												padding: const EdgeInsets.all(16),
+												child: overrideReplyCount!
 											)
-										),
-										child: Padding(
-											padding: const EdgeInsets.all(16),
-											child: overrideReplyCount!
 										)
 									)
 								)
-							)
-							else if (cloverStyleRepliesButton) Positioned.fill(
-								child: Align(
-									alignment: Alignment.bottomLeft,
-									child: AdaptiveIconButton(
-										padding: EdgeInsets.zero,
-										minSize: 0,
-										onPressed: openReplies,
-										icon: SizedBox(
-											width: double.infinity,
-											child: Padding(
-												padding: const EdgeInsets.only(left: 16, bottom: 16),
-												child: SelectionContainer.disabled(
-													child: Text(
-														describeCount(replyIds.length, 'reply', plural: 'replies'),
-														style: TextStyle(
-															fontSize: 17 + (7 * slideFactor.clamp(0, 1)),
-															color: theme.primaryColor.withOpacity(0.7)
+								else if (cloverStyleRepliesButton) Positioned.fill(
+									child: Align(
+										alignment: Alignment.bottomLeft,
+										child: AdaptiveIconButton(
+											padding: EdgeInsets.zero,
+											minSize: 0,
+											onPressed: openReplies,
+											icon: SizedBox(
+												width: double.infinity,
+												child: Padding(
+													padding: const EdgeInsets.only(left: 16, bottom: 16),
+													child: SelectionContainer.disabled(
+														child: Text(
+															describeCount(replyIds.length, 'reply', plural: 'replies'),
+															style: TextStyle(
+																fontSize: 17 + (7 * slideFactor.clamp(0, 1)),
+																color: theme.primaryColor.withOpacity(0.7)
+															)
 														)
 													)
 												)
@@ -668,42 +672,41 @@ class PostRow extends StatelessWidget {
 										)
 									)
 								)
-							)
-							else if (!settings.cloverStyleRepliesButton && replyIds.isNotEmpty) Positioned.fill(
-								child: Align(
-									alignment: Alignment.bottomRight,
-									child: CupertinoInkwell(
+								else if (!settings.cloverStyleRepliesButton && replyIds.isNotEmpty) Positioned.fill(
+									child: Align(
 										alignment: Alignment.bottomRight,
-										padding: const EdgeInsets.only(bottom: 16, right: 16),
-										onPressed: openReplies,
-										child: Transform.scale(
+										child: CupertinoInkwell(
 											alignment: Alignment.bottomRight,
-											scale: 1 + slideFactor.clamp(0, 1),
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													Icon(
-														CupertinoIcons.reply_thick_solid,
-														color: theme.secondaryColor,
-														size: 14
-													),
-													const SizedBox(width: 4),
-													SelectionContainer.disabled(
-														child: Text(
-															replyIds.length.toString(),
-															style: TextStyle(
-																color: theme.secondaryColor,
-																fontWeight: FontWeight.bold,
-																fontVariations: CommonFontVariations.bold
+											padding: const EdgeInsets.only(bottom: 16, right: 16),
+											onPressed: openReplies,
+											child: Transform.scale(
+												alignment: Alignment.bottomRight,
+												scale: 1 + slideFactor.clamp(0, 1),
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(
+															CupertinoIcons.reply_thick_solid,
+															color: theme.secondaryColor,
+															size: 14
+														),
+														const SizedBox(width: 4),
+														SelectionContainer.disabled(
+															child: Text(
+																replyIds.length.toString(),
+																style: TextStyle(
+																	color: theme.secondaryColor,
+																	fontWeight: FontWeight.bold,
+																	fontVariations: CommonFontVariations.bold
+																)
 															)
 														)
-													)
-												]
+													]
+												)
 											)
 										)
 									)
-								)
-							),
+								),
 							if (savedPost != null || translatedPostSnapshot != null) Positioned.fill(
 								child: Align(
 									alignment: Alignment.topRight,

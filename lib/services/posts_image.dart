@@ -43,6 +43,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 	bool expandPrimaryImage = lastStyle.expandPrimaryImage;
 	bool revealYourPosts = lastStyle.revealYourPosts;
 	bool includeFooter = lastStyle.includeFooter;
+	bool showReplyCounts = lastStyle.showReplyCounts;
 	if (!useTree && childDepth > 1) {
 		childDepth = 1;
 	}
@@ -137,6 +138,22 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 									value: revealYourPosts,
 									onChanged: (x) => setDialogState(() {
 										revealYourPosts = x;
+									})
+								)
+							]
+						),
+						const SizedBox(height: 8),
+						Row(
+							children: [
+								const Icon(CupertinoIcons.reply),
+								const SizedBox(width: 8),
+								const Expanded(
+									child: Text('Show reply counts', textAlign: TextAlign.left)
+								),
+								AdaptiveSwitch(
+									value: showReplyCounts,
+									onChanged: (x) => setDialogState(() {
+										showReplyCounts = x;
 									})
 								)
 							]
@@ -249,7 +266,8 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 			width: width,
 			expandPrimaryImage: expandPrimaryImage,
 			revealYourPosts: revealYourPosts,
-			includeFooter: includeFooter
+			includeFooter: includeFooter,
+			showReplyCounts: showReplyCounts
 		);
 	}
 	return null;

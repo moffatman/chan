@@ -52,6 +52,8 @@ class ShareablePostsStyle {
 	final bool revealYourPosts;
 	@HiveField(7, defaultValue: true)
 	final bool includeFooter;
+	@HiveField(8, defaultValue: true)
+	final bool showReplyCounts;
 
 	const ShareablePostsStyle({
 		this.useTree = false,
@@ -61,7 +63,8 @@ class ShareablePostsStyle {
 		this.overrideThemeKey,
 		this.expandPrimaryImage = false,
 		this.revealYourPosts = true,
-		this.includeFooter = true
+		this.includeFooter = true,
+		this.showReplyCounts = true
 	});
 
 	@override
@@ -75,10 +78,11 @@ class ShareablePostsStyle {
 		other.overrideThemeKey == overrideThemeKey &&
 		other.expandPrimaryImage == expandPrimaryImage &&
 		other.revealYourPosts == revealYourPosts &&
-		other.includeFooter == includeFooter;
+		other.includeFooter == includeFooter &&
+		other.showReplyCounts == showReplyCounts;
 	
 	@override
-	int get hashCode => Object.hash(useTree, parentDepth, childDepth, width, overrideThemeKey, expandPrimaryImage, revealYourPosts, includeFooter);
+	int get hashCode => Object.hash(useTree, parentDepth, childDepth, width, overrideThemeKey, expandPrimaryImage, revealYourPosts, includeFooter, showReplyCounts);
 }
 
 class ShareablePosts extends StatefulWidget {
@@ -135,7 +139,8 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						showBoardName: p.id == primaryPostId,
 						showSiteIcon: p.id == primaryPostId,
 						revealYourPosts: style.revealYourPosts,
-						revealSpoilerImages: true
+						revealSpoilerImages: true,
+						showReplyCount: widget.style.showReplyCounts
 					),
 					collapsedItemBuilder: ({
 						required BuildContext context,
@@ -156,6 +161,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									showSiteIcon: value.id == primaryPostId,
 									revealYourPosts: style.revealYourPosts,
 									revealSpoilerImages: true,
+									showReplyCount: widget.style.showReplyCounts,
 									overrideReplyCount: Row(
 										mainAxisSize: MainAxisSize.min,
 										children: [
@@ -302,6 +308,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					shrinkWrap: true,
 					showBoardName: true,
 					showSiteIcon: true,
+					showReplyCount: widget.style.showReplyCounts,
 					baseOptions: options,
 					revealYourPosts: style.revealYourPosts
 				)
@@ -328,6 +335,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									revealSpoilerImages: true,
 									shrinkWrap: true,
 									baseOptions: options,
+									showReplyCount: widget.style.showReplyCounts,
 									revealYourPosts: style.revealYourPosts
 								)
 							)
@@ -344,6 +352,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									post: child,
 									revealSpoilerImages: true,
 									shrinkWrap: true,
+									showReplyCount: widget.style.showReplyCounts,
 									baseOptions: options,
 									revealYourPosts: style.revealYourPosts
 								)
