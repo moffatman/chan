@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
@@ -263,7 +265,27 @@ class ThreadWatcher extends ChangeNotifier {
 	Future<bool> _updateThread(PersistentThreadState threadState) async {
 		Thread? newThread;
 		try {
-			newThread = await site.getThread(threadState.identifier, priority: RequestPriority.functional);
+			if (site.isPaged) {
+				final oldThread = await threadState.getThread();
+				if (oldThread != null) {
+					final lastIncompletePageParentId = oldThread.posts_.tryLast?.parentId;
+					if (lastIncompletePageParentId != null && lastIncompletePageParentId.isNegative) {
+						final newChildren = await site.getStubPosts(oldThread.identifier, [ParentAndChildIdentifier.same(lastIncompletePageParentId)], priority: RequestPriority.functional);
+						final oldIds = {
+							for (final post in oldThread.posts_)
+								post.id: post.isStub
+						};
+						for (final p in newChildren) {
+							if (!p.isPageStub && oldIds[p.id] != p.isStub && !threadState.youIds.contains(p.id)) {
+								threadState.unseenPostIds.data.add(p.id);
+							}
+						}
+						oldThread.mergePosts(null, newChildren, site);
+						await threadState.didMutateThread();
+					}
+				}
+			}
+			newThread ??= await site.getThread(threadState.identifier, priority: RequestPriority.functional);
 		}
 		on ThreadNotFoundException {
 			final watch = persistence.browserState.threadWatches[threadState.identifier];

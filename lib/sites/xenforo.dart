@@ -725,7 +725,7 @@ class SiteXenforo extends ImageboardSite {
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority}) async {
 		// Just do one at a time
 		final postId = postIds.first;
-		if (postIds.single.childId.isNegative) {
+		if (postId.childId.isNegative) {
 			// Request for page
 			final response = await client.getUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-${-postId.childId}'));
 			final document = parse(response.data);

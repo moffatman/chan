@@ -1488,6 +1488,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		final updatingWithId = widget.id;
 		List<T>? newList;
+		final treeAdapter = widget.treeAdapter;
 		try {
 			error.value = null;
 			updatingNow.value = widget.id;
@@ -1500,10 +1501,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (mergeTrees) {
 				_mergeTrees(rebuild: false);
 			}
-			if (extend && widget.treeAdapter != null && ((lastItem?.representsStubChildren ?? false))) {
-				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem!.parentIds, lastItem.id);
+			if (extend && treeAdapter != null && lastItem != null && lastItem.representsStubChildren) {
+				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, lastItem.id);
 				try {
-					newList = await widget.treeAdapter!.updateWithStubItems(originalList!, lastItem.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(lastItem.id)] : lastItem.representsKnownStubChildren);
+					newList = await treeAdapter.updateWithStubItems(originalList!, lastItem.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(lastItem.id)] : lastItem.representsKnownStubChildren);
 				}
 				catch (e, st) {
 					if (mounted) {
@@ -1513,6 +1514,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				finally {
 					_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem);
 				}
+			}
+			else if (extend && lastItem != null && treeAdapter != null && treeAdapter.isPaged && !treeAdapter.getIsPageStub(lastItem.item) && treeAdapter.getParentIds(lastItem.item).isNotEmpty) {
+				// If we aren't ending on unloaded pages, first reload the last loaded page
+				newList = await treeAdapter.updateWithStubItems(originalList!, [ParentAndChildIdentifier.same(treeAdapter.getParentIds(lastItem.item).first)]);
 			}
 			else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
 				final newItems = (await Future.wait([widget.listExtender!(originalList!.last), Future<List<T>?>.delayed(minUpdateDuration)])).first!;
