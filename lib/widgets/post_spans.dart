@@ -1422,7 +1422,7 @@ class PostCatalogSearchSpan extends PostSpan {
 	@override
 	build(context, zone, settings, theme, options) {
 		return TextSpan(
-			text: '>>/$board/$query',
+			text: zone.imageboard.site.formatBoardSearchLink(board, query),
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline,
 				decorationColor: theme.secondaryColor,
@@ -1448,7 +1448,7 @@ class PostCatalogSearchSpan extends PostSpan {
 
 	@override
 	String buildText({bool forQuoteComparison = false}) {
-		return '>>/$board/$query';
+		return '>>>/$board/$query';
 	}
 
 	@override

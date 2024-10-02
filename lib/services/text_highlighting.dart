@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 final _greentextRegex = RegExp(r'^>.*$', multiLine: true);
-final _quotelinkRegex = RegExp(r'>>(?:(>\/[a-zA-Z0-9]*\/[a-zA-Z0-9]*)|(\d+))');
+final _quotelinkRegex = RegExp(r'>>(?:(>\/[a-zA-Z0-9]*\/[a-zA-Z0-9\-_]*)|(\d+))');
 
 extension _TextRangeOverlap on TextRange {
 	bool overlapsWith(TextRange other) {

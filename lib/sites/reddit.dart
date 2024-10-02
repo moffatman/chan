@@ -1462,6 +1462,9 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	String formatBoardLink(String name) => '/r/$name';
+	
+	@override
+	String formatBoardSearchLink(String name, String query) => '/r/$name/$query';
 
 	@override
 	int placeOrphanPost(List<Post> posts, Post post) {
