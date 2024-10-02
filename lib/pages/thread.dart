@@ -1905,6 +1905,7 @@ class ThreadPageState extends State<ThreadPage> {
 																		passedFirstLoad: _passedFirstLoad,
 																		blocked: blocked,
 																		boardSemanticId: widget.boardSemanticId,
+																		forceThreadRebuild: () => setState(() {}),
 																		developerModeButtons: [
 																			[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
 																				final allIds = (persistentState.thread?.posts_.map((i) => i.id) ?? _listController.items.map((i) => i.id));
@@ -2032,6 +2033,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final VoidCallback openGalleryGrid;
 	final SuggestedNewThread? suggestedThread;
 	final GlobalKey<ReplyBoxState> replyBoxKey;
+	final VoidCallback forceThreadRebuild;
 	
 	const _ThreadPositionIndicator({
 		required this.persistentState,
@@ -2052,6 +2054,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.openGalleryGrid,
 		required this.suggestedThread,
 		required this.replyBoxKey,
+		required this.forceThreadRebuild,
 		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
@@ -2646,7 +2649,49 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													}))
 												],
 												[
-													('Mark as read', const Icon(CupertinoIcons.xmark_circle, size: 19), _whiteCountAbove <= 0 && _whiteCountBelow <= 0 ? null : () async {
+													if (!widget.useTree) ('Mark as last-seen', const Icon(CupertinoIcons.asterisk_circle, size: 19), _greyCount == 0 ? null : () async {
+														final threadState = widget.persistentState;
+														final lastVisibleItem = widget.listController.lastVisibleItem;
+														int lastVisibleIndex = widget.listController.lastVisibleIndex;
+														if (lastVisibleItem == null || lastVisibleIndex == -1) {
+															alertError(context, Exception('Failed to find last visible post'), StackTrace.current);
+															return;
+														}
+														lastVisibleIndex++; // start at first offscreen post visible
+														final newlyUnseenPostIds = Iterable.generate(widget.listController.itemsLength - lastVisibleIndex, (i) => i + lastVisibleIndex).map((i) => widget.listController.getItem(i).item.id).toSet();
+														final unseenPostIds = threadState.unseenPostIds.data.toSet();
+														final newPostIds = widget.newPostIds.toSet();
+														final lastSeenPostId = threadState.lastSeenPostId;
+														widget.newPostIds.addAll(newlyUnseenPostIds);
+														threadState.unseenPostIds.data.addAll(newlyUnseenPostIds);
+														threadState.lastSeenPostId = lastVisibleItem.id;
+														threadState.didUpdate();
+														widget.listController.state?.forceRebuildId++;
+														setState(() {});
+														_onSlowScroll();
+														widget.forceThreadRebuild();
+														await threadState.save();
+														if (context.mounted) {
+															showUndoToast(
+																context: context,
+																message: 'Marked Post ${lastVisibleItem.id} as last-seen',
+																onUndo: () async {
+																	widget.newPostIds.clear();
+																	widget.newPostIds.addAll(newPostIds);
+																	threadState.unseenPostIds.data.clear();
+																	threadState.unseenPostIds.data.addAll(unseenPostIds);
+																	threadState.lastSeenPostId = lastSeenPostId;
+																	threadState.didUpdate();
+																	widget.listController.state?.forceRebuildId++;
+																	setState(() {});
+																	_onSlowScroll();
+																	widget.forceThreadRebuild();
+																	await threadState.save();
+																}
+															);
+														}
+													}),
+													('Mark as read', const Icon(CupertinoIcons.xmark_circle, size: 19), _whiteCountAbove <= 0 && _whiteCountBelow <= 0 && widget.newPostIds.isEmpty ? null : () async {
 														final threadState = widget.persistentState;
 														final unseenPostIds = threadState.unseenPostIds.data.toSet();
 														final newPostIds = widget.newPostIds.toSet();
@@ -2655,8 +2700,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														threadState.unseenPostIds.data.clear();
 														threadState.lastSeenPostId = threadState.thread?.posts_.fold<int>(0, (m, p) => max(m, p.id));
 														threadState.didUpdate();
+														widget.listController.state?.forceRebuildId++;
 														setState(() {});
 														_onSlowScroll();
+														widget.forceThreadRebuild();
 														await threadState.save();
 														if (context.mounted) {
 															showUndoToast(
@@ -2667,8 +2714,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																	threadState.unseenPostIds.data.addAll(unseenPostIds);
 																	threadState.lastSeenPostId = lastSeenPostId;
 																	threadState.didUpdate();
+																	widget.listController.state?.forceRebuildId++;
 																	setState(() {});
 																	_onSlowScroll();
+																	widget.forceThreadRebuild();
 																	await threadState.save();
 																}
 															);
@@ -2702,10 +2751,12 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												if (developerMode) ...widget.developerModeButtons
 											]) Padding(
 												padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-												child: Row(
-													mainAxisSize: MainAxisSize.min,
-													children: buttons.expand((button) => [
-														const SizedBox(width: 8),
+												child: Wrap(
+													alignment: widget.reversed ? WrapAlignment.start : WrapAlignment.end,
+													runAlignment: WrapAlignment.end,
+													runSpacing: 16,
+													spacing: 8,
+													children: buttons.map((button) =>
 														AdaptiveFilledButton(
 															disabledColor: theme.primaryColorWithBrightness(0.4),
 															padding: const EdgeInsets.all(8),
@@ -2724,7 +2775,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																]
 															)
 														)
-													]).skip(1).toList()
+													).toList()
 												)
 											)
 										]
