@@ -264,7 +264,9 @@ class _SavedPageState extends State<SavedPage> {
 			Future.microtask(_removeArchivedHack.didUpdate);
 		}
 		_lastTickerMode = tickerMode;
+		final persistencesAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList());
 		final threadStateBoxesAnimation = Persistence.sharedThreadStateBox.listenable();
+		final savedPostsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedPostsListenable).toList());
 		final savedAttachmentsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList());
 		final imageboardIds = <String, int>{};
 		return MultiMasterDetailPage5(
@@ -310,7 +312,18 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						]
 					),
-					icon: CupertinoIcons.bell_fill,
+					icon: AnimatedBuilder(
+						animation: persistencesAnimation,
+						builder: (context, _) => CachingBuilder(
+							value: ImageboardRegistry.instance.imageboards.any((i) => i.persistence.browserState.threadWatches.values.isNotEmpty),
+							builder: (value) => Builder(
+								builder: (context) => Icon(
+									value ? CupertinoIcons.bell_fill : CupertinoIcons.bell,
+									color: ChanceTheme.primaryColorOf(context)
+								)
+							)
+						)
+					),
 					masterBuilder: (context, selected, setter) {
 						final settings = context.watch<Settings>();
 						return RefreshableList<ImageboardScoped<(ThreadWatch, Thread)>>(
@@ -364,7 +377,7 @@ class _SavedPageState extends State<SavedPage> {
 							},
 							minUpdateDuration: Duration.zero,
 							autoExtendDuringScroll: true,
-							updateAnimation: Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList()),
+							updateAnimation: persistencesAnimation,
 							disableUpdates: !TickerMode.of(context),
 							key: _watchedThreadsListKey,
 							id: 'watched',
@@ -602,7 +615,18 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						]
 					),
-					icon: CupertinoIcons.tray_full,
+					icon: AnimatedBuilder(
+						animation: threadStateBoxesAnimation,
+						builder: (context, _) => CachingBuilder(
+							value: Persistence.sharedThreadStateBox.values.any((s) => s.savedTime != null),
+							builder: (value) => Builder(
+								builder: (context) => Icon(
+									value ? CupertinoIcons.tray_full_fill : CupertinoIcons.tray_full,
+									color: ChanceTheme.primaryColorOf(context)
+								)
+							)
+						)
+					),
 					masterBuilder: (context, selectedThread, threadSetter) {
 						final settings = context.watch<Settings>();
 						final sortMethod = getSavedThreadsSortMethodTuple();
@@ -805,7 +829,12 @@ class _SavedPageState extends State<SavedPage> {
 					navigationBar: const AdaptiveBar(
 						title: Text('Your Posts')
 					),
-					icon: CupertinoIcons.pencil,
+					icon: Builder(
+						builder: (context) => Icon(
+							CupertinoIcons.pencil,
+							color: ChanceTheme.primaryColorOf(context)
+						)
+					),
 					masterBuilder: (context, selected, setter) {
 						return RefreshableList<PostThreadCombo>(
 							aboveFooter: ValueListenableBuilder(
@@ -963,7 +992,18 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						]
 					),
-					icon: CupertinoIcons.reply,
+					icon: AnimatedBuilder(
+						animation: savedPostsNotifiersAnimation,
+						builder: (context, _) => CachingBuilder(
+							value: ImageboardRegistry.instance.imageboards.any((i) => i.persistence.savedPosts.isNotEmpty),
+							builder: (value) => Builder(
+								builder: (context) => Icon(
+									value ? CupertinoIcons.reply_thick_solid : CupertinoIcons.reply_all,
+									color: ChanceTheme.primaryColorOf(context)
+								)
+							)
+						)
+					),
 					masterBuilder: (context, selected, setter) {
 						return RefreshableList<ImageboardScoped<(SavedPost, Thread)>>(
 							aboveFooter: ValueListenableBuilder(
@@ -1008,7 +1048,7 @@ class _SavedPageState extends State<SavedPage> {
 							id: 'savedPosts',
 							key: _savedPostsListKey,
 							autoExtendDuringScroll: true,
-							updateAnimation: Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList()),
+							updateAnimation: savedPostsNotifiersAnimation,
 							disableUpdates: !TickerMode.of(context),
 							minUpdateDuration: Duration.zero,
 							sortMethods: [getSavedPostsSortMethodTuple()],
@@ -1153,7 +1193,12 @@ class _SavedPageState extends State<SavedPage> {
 						]
 					),
 					useRootNavigator: true,
-					icon: Adaptive.icons.photo,
+					icon: Builder(
+						builder: (context) => Icon(
+							Adaptive.icons.photo,
+							color: ChanceTheme.primaryColorOf(context)
+						)
+					),
 					masterBuilder: (context, selected, setter) => RefreshableList<ImageboardScoped<SavedAttachment>>(
 						id: 'savedAttachments',
 						controller: _savedAttachmentsController,

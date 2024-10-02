@@ -1287,6 +1287,36 @@ class FixedWidthLayoutBox extends SingleChildRenderObjectWidget {
 	}
 }
 
+class CachingBuilder<T> extends StatefulWidget {
+	final T value;
+	final Widget Function(T) builder;
+	const CachingBuilder({
+		required this.value,
+		required this.builder,
+		super.key
+	});
+	
+	@override
+	createState() => _CachingBuilderState<T>();
+}
+
+class _CachingBuilderState<T> extends State<CachingBuilder<T>> {
+	Widget? _widget;
+
+	@override
+	void didUpdateWidget(CachingBuilder<T> oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.value != oldWidget.value) {
+			_widget = null;
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return _widget ??= widget.builder(widget.value);
+	}
+}
+
 class CachingContextBuilder<T> extends StatefulWidget {
 	final T Function(BuildContext) watcher;
 	final Widget Function(T) builder;

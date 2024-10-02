@@ -111,7 +111,7 @@ class MasterDetailPage<T> extends StatelessWidget {
 class MultiMasterPane<T> {
 	final Widget? title;
 	final AdaptiveBar? navigationBar;
-	final IconData? icon;
+	final Widget? icon;
 	final Widget Function(BuildContext context, bool Function(BuildContext, T) isSelected, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
 	ValueNotifier<T?> currentValue;
@@ -443,10 +443,7 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 															indicatorColor: ChanceTheme.primaryColorOf(context),
 															dividerColor: ChanceTheme.primaryColorWithBrightness20Of(context),
 															tabs: panes.map((pane) => Tab(
-																icon: Icon(
-																	pane.icon,
-																	color: ChanceTheme.primaryColorOf(context)
-																)
+																icon: pane.icon
 															)).toList()
 														)
 													)
