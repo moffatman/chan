@@ -813,7 +813,15 @@ class PostRow extends StatelessWidget {
 					child: const Text('Unsave post'),
 					trailingIcon: Adaptive.icons.bookmarkFilled,
 					onPressed: () {
-						context.read<Persistence>().unsavePost(post);
+						final persistence = context.read<Persistence>();
+						persistence.unsavePost(post);
+						showUndoToast(
+							context: context,
+							message: 'Unsaved post',
+							onUndo: () {
+								persistence.savePost(latestPost);
+							}
+						);
 					}
 				),
 				if (parentZoneThreadState != null) ...[
