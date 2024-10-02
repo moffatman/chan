@@ -49,7 +49,6 @@ class _SwitchingViewState<T> extends State<SwitchingView<T>> {
     final ks = widget.items.toSet();
     for (final key in focusNodes.keys.toList(growable: false)) {
       if (!ks.contains(key)) {
-        print('Scrapping $key');
         discardedNodes.add(focusNodes.remove(key)!);
         willPopZones.remove(key);
         widgets.remove(key);
