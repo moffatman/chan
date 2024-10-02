@@ -2252,6 +2252,19 @@ extension WatchIdentity on BuildContext {
 	T watchIdentity<T>() => select<T, T>(identity);
 }
 
+extension Bounds on BuildContext {
+	Rect? get globalPaintBounds {
+		final box = findRenderObject();
+		if (box is! RenderBox) {
+			return null;
+		}
+		return Rect.fromPoints(
+			box.localToGlobal(box.paintBounds.topLeft),
+			box.localToGlobal(box.paintBounds.bottomRight)
+		);
+	}
+}
+
 class NullableColorFiltered extends SingleChildRenderObjectWidget {
   /// Creates a widget that applies a [ColorFilter] to its child.
   const NullableColorFiltered({required this.colorFilter, super.child, super.key});
