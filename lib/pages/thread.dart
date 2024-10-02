@@ -2941,40 +2941,43 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														child: AnimatedSize(
 															duration: const Duration(milliseconds: 200),
 															curve: Curves.ease,
-															child: Row(
-																children: [
-																	Icon(CupertinoIcons.reply, color: theme.backgroundColor, size: 19),
-																	const SizedBox(width: 4),
-																	DebouncedBuilder(
-																		value: postingPost.statusText,
-																		period: const Duration(milliseconds: 100),
-																		builder: (s) => Text(s, style: TextStyle(color: theme.backgroundColor))
-																	),
-																	if (postingPost.isActivelyProcessing) ...[
-																		const SizedBox(width: 8),
-																		SizedBox(
-																			width: 10,
-																			height: 10,
-																			child: ColorFiltered(
-																				colorFilter: theme.brightness == Brightness.dark ? const ColorFilter.matrix([
-																					-1, 0, 0, 0, 255,
-																					0, -1, 0, 0, 255,
-																					0, 0, -1, 0, 255,
-																					0, 0, 0, 1, 0
-																				]) :  const ColorFilter.matrix([
-																					1, 0, 0, 0, 0,
-																					0, 1, 0, 0, 0,
-																					0, 0, 1, 0, 0,
-																					0, 0, 0, 1, 0
-																				]),
-																				child: CircularProgressIndicator.adaptive(
-																					valueColor: AlwaysStoppedAnimation(theme.backgroundColor),
-																				)
-																			)
+															child: AnimatedBuilder(
+																animation: postingPost,
+																builder: (context, _) => Row(
+																	children: [
+																		Icon(CupertinoIcons.reply, color: theme.backgroundColor, size: 19),
+																		const SizedBox(width: 4),
+																		DebouncedBuilder(
+																			value: postingPost.statusText,
+																			period: const Duration(milliseconds: 100),
+																			builder: (s) => Text(s, style: TextStyle(color: theme.backgroundColor))
 																		),
-																		const SizedBox(width: 4)
+																		if (postingPost.isActivelyProcessing) ...[
+																			const SizedBox(width: 8),
+																			SizedBox(
+																				width: 10,
+																				height: 10,
+																				child: ColorFiltered(
+																					colorFilter: theme.brightness == Brightness.dark ? const ColorFilter.matrix([
+																						-1, 0, 0, 0, 255,
+																						0, -1, 0, 0, 255,
+																						0, 0, -1, 0, 255,
+																						0, 0, 0, 1, 0
+																					]) :  const ColorFilter.matrix([
+																						1, 0, 0, 0, 0,
+																						0, 1, 0, 0, 0,
+																						0, 0, 1, 0, 0,
+																						0, 0, 0, 1, 0
+																					]),
+																					child: CircularProgressIndicator.adaptive(
+																						valueColor: AlwaysStoppedAnimation(theme.backgroundColor),
+																					)
+																				)
+																			),
+																			const SizedBox(width: 4)
+																		]
 																	]
-																]
+																)
 															)
 														)
 													)
