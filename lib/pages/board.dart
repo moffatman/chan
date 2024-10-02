@@ -887,6 +887,23 @@ class BoardPageState extends State<BoardPage> {
 			navigationBarBoardName = board != null ? imageboard.site.formatBoardName(board!.name) : 'Select Board';
 		}
 		final supportsSearch = imageboard?.site.supportsSearch(board?.name) ?? const ImageboardSearchMetadata(name: '', options: ImageboardSearchOptions());
+		final sortMethods = <Comparator<Thread>>[
+			if (variant.sortingMethod == ThreadSortingMethod.replyCount)
+				(a, b) => b.replyCount.compareTo(a.replyCount)
+			else if (variant.sortingMethod == ThreadSortingMethod.threadPostTime)
+				(a, b) => b.id.compareTo(a.id)
+			else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
+				(a, b) {
+					_lastCatalogUpdateTime ??= DateTime.now();
+					return -1 * ((b.replyCount + 1) / b.time.difference(_lastCatalogUpdateTime!).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(_lastCatalogUpdateTime!).inSeconds);
+				}
+			else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
+				(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
+			else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
+				(a, b) => b.imageCount.compareTo(a.imageCount)
+			else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)
+				(a, b) => a.compareTo(b)
+		];
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			bar: AdaptiveBar(
@@ -1173,23 +1190,7 @@ class BoardPageState extends State<BoardPage> {
 														imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
 														await imageboard.persistence.didUpdateBrowserState();
 													},
-													sortMethods: [
-														if (variant.sortingMethod == ThreadSortingMethod.replyCount)
-															(a, b) => b.replyCount.compareTo(a.replyCount)
-														else if (variant.sortingMethod == ThreadSortingMethod.threadPostTime)
-															(a, b) => b.id.compareTo(a.id)
-														else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
-															(a, b) {
-																_lastCatalogUpdateTime ??= DateTime.now();
-																return -1 * ((b.replyCount + 1) / b.time.difference(_lastCatalogUpdateTime!).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(_lastCatalogUpdateTime!).inSeconds);
-															}
-														else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
-															(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
-														else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
-															(a, b) => b.imageCount.compareTo(a.imageCount)
-														else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)
-															(a, b) => a.compareTo(b)
-													],
+													sortMethods: sortMethods,
 													reverseSort: variant.reverseAfterSorting,
 													minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
 													gridDelegate: (useCatalogGrid && !settings.useStaggeredCatalogGrid) ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
@@ -1326,18 +1327,22 @@ class BoardPageState extends State<BoardPage> {
 																								const SizedBox(width: 8),
 																								Icon(CupertinoIcons.xmark, color: theme.backgroundColor)
 																							] : [
-																								Icon(CupertinoIcons.doc, color: theme.backgroundColor),
-																								SizedBox(
-																									width: 25,
+																								if (sortMethods.isEmpty)
+																									Icon(CupertinoIcons.doc, color: theme.backgroundColor),
+																								ConstrainedBox(
+																									constraints: BoxConstraints(
+																										minWidth: MediaQuery.textScalerOf(context).scale(24)
+																									),
 																									child: AnimatedBuilder(
 																										animation: _listController.slowScrolls,
 																										builder: (context, _) {
 																											_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
 																											return Text(
-																												_page.toString(),
+																												(sortMethods.isEmpty ? _page : (_listController.itemsLength - (_listController.lastVisibleIndex + 1))).toString(),
 																												textAlign: TextAlign.center,
 																												style: TextStyle(
-																													color: theme.backgroundColor
+																													color: theme.backgroundColor,
+																													fontFeatures: const [FontFeature.tabularFigures()]
 																												)
 																											);
 																										}
