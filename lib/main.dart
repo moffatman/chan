@@ -1230,11 +1230,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}
 			}
 			else if (uri.pathSegments.length >= 2 && uri.pathSegments[1] == 'thread') {
-				_tabs.addNewTab(
-					withImageboardKey: uri.host,
-					withBoard: uri.pathSegments[0],
-					withThreadId: int.parse(uri.pathSegments[2]),
-					activate: true
+				_tabs.goToPost(
+					imageboardKey: uri.host,
+					board: uri.pathSegments[0],
+					threadId: int.parse(uri.pathSegments[2]),
+					postId: int.tryParse(uri.queryParameters['postId'] ?? ''),
+					openNewTabIfNeeded: true
 				);
 			}
 			else if (uri.host == 'site') {
