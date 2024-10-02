@@ -135,13 +135,13 @@ extension on GallerySavePathOrganizing {
 			case GallerySavePathOrganizing.boardAndThreadSubfolders:
 				return [attachment.board, attachment.threadId.toString()];
 			case GallerySavePathOrganizing.boardAndThreadNameSubfolders:
-				final title = controller.thread?.title;
+				final title = controller.thread?.title?.replaceAll('/', '_');
 				if (title == null) {
 					return [attachment.board, attachment.threadId.toString()];
 				}
 				return [attachment.board, '${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
 			case GallerySavePathOrganizing.threadNameSubfolders:
-				final title = controller.thread?.title;
+				final title = controller.thread?.title?.replaceAll('/', '_');
 				if (title == null) {
 					return ['${attachment.board} - ${attachment.threadId}'];
 				}
@@ -153,13 +153,13 @@ extension on GallerySavePathOrganizing {
 			case GallerySavePathOrganizing.siteBoardAndThreadSubfolders:
 			return [controller.imageboard.site.name, attachment.board, attachment.threadId.toString()];
 			case GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders:
-				final title = controller.thread?.title;
+				final title = controller.thread?.title?.replaceAll('/', '_');
 				if (title == null) {
 					return [attachment.board, attachment.threadId.toString()];
 				}
 				return [controller.imageboard.site.name, attachment.board, '${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
 			case GallerySavePathOrganizing.siteAndThreadNameSubfolders:
-				final title = controller.thread?.title;
+				final title = controller.thread?.title?.replaceAll('/', '_');
 				if (title == null) {
 					return ['${attachment.board} - ${attachment.threadId}'];
 				}
