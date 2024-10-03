@@ -107,7 +107,7 @@
             </intent-filter>
         </receiver>
         <!-- for android N and below -->
-        <receiver android:name="dev.fluttercommunity.plus.connectivity.ConnectivityBroadcastReceiver" android:exported="false">
+        <receiver android:name=".ConnectivityBroadcastReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
