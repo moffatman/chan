@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
@@ -85,16 +86,53 @@ class WeakNavigator extends StatefulWidget {
     }
     return Navigator.of(context).pop;
   }
+
+  static setHandleStatusBarTap(BuildContext context, bool Function() handleStatusBarTap) {
+    final route = context.read<WeakNavigatorRoute?>();
+    if (route != null) {
+      route.handleStatusBarTap = handleStatusBarTap;
+    }
+    else {
+
+    }
+  }
+}
+
+class WeakNavigatorRoute<T> {
+  final Widget child;
+  final Curve curve;
+  final AnimationController forwardController;
+  final CurvedAnimation forwardCurvedAnimation;
+  final AnimationController coverController;
+  final Completer<T> completer;
+  bool Function()? handleStatusBarTap;
+  late final OverlayEntry overlayEntry = OverlayEntry(
+    builder: (context) => FadeTransition(
+      opacity: forwardCurvedAnimation,
+      child: _AnimatedBlur(
+        animation: coverController,
+        curve: curve,
+        child: Provider<WeakNavigatorRoute>.value(
+          value: this,
+          child: child
+        )
+      )
+    ),
+    maintainState: true
+  );
+
+  WeakNavigatorRoute({
+    required this.child,
+    required this.curve,
+    required this.forwardController,
+    required this.forwardCurvedAnimation,
+    required this.coverController,
+    required this.completer
+  });
 }
 
 class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMixin {
-  final List<({
-    OverlayEntry overlayEntry,
-    AnimationController forwardController,
-    CurvedAnimation forwardCurvedAnimation,
-    AnimationController coverController,
-    Completer completer
-  })> stack = [];
+  final List<WeakNavigatorRoute> stack = [];
   final _overlayKey = GlobalKey<OverlayState>();
   late OverlayEntry rootEntry;
   late final AnimationController rootCoverAnimationController = AnimationController(vsync: this, duration: widget.duration);
@@ -146,18 +184,9 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       vsync: this,
       duration: widget.duration
     );
-    final entry = (
-      overlayEntry: OverlayEntry(
-        builder: (context) => FadeTransition(
-          opacity: forwardCurvedAnimation,
-          child: _AnimatedBlur(
-            animation: coverController,
-            curve: widget.curve,
-            child: child
-          )
-        ),
-        maintainState: true
-      ),
+    final entry = WeakNavigatorRoute<T>(
+      curve: widget.curve,
+      child: child,
       forwardController: forwardController,
       forwardCurvedAnimation: forwardCurvedAnimation,
       coverController: coverController,
@@ -211,6 +240,10 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     }
     stack.clear();
     setState(() {});
+  }
+
+  bool handleStatusBarTap() {
+    return stack.tryLast?.handleStatusBarTap?.call() ?? false;
   }
 
   @override
