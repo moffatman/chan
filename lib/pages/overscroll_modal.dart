@@ -146,8 +146,22 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		}
 	}
 
+	bool _handleStatusBarTap() {
+		if (!mounted || _controller.tryPosition == null) {
+			// probably dead
+			return false;
+		}
+		// Logic copied from Scaffold / CupertinoPageScaffold
+		_controller.animateTo(0,
+			duration: platformIsMaterial ? const Duration(milliseconds: 1000) : const Duration(milliseconds: 500),
+			curve: platformIsMaterial ? Curves.easeOutCirc : Curves.linearToEaseOut
+		);
+		return true;
+	}
+
 	@override
 	Widget build(BuildContext context) {
+		WeakNavigator.setHandleStatusBarTap(context, _handleStatusBarTap);
 		final child = widget.child == null ? null : KeyedSubtree(
 			key: _childWidgetKey,
 			child: widget.child!
