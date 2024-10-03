@@ -15,6 +15,7 @@ import 'package:chan/version.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_apns_only/flutter_apns_only.dart';
 import 'package:flutter/services.dart';
@@ -178,9 +179,18 @@ class Notifications {
 	@override
 	String toString() => 'Notifications(siteType: $siteType, id: $id, tapStream: $tapStream)';
 
+	/// iOS 18 has a known issue where foreground messages are received twice
+	static final List<Map> _previousMessageDatas = [];
 	static Future<void> _onMessage(Map messageData) async {
 		final data = messageData.cast<String, String>();
 		print('_onMessage');
+		if (_previousMessageDatas.any((m) => mapEquals(messageData, m))) {
+			print('Duplicate message!');
+			return;
+		}
+		_previousMessageDatas.add(messageData);
+		// Cleanup memory usage later
+		Future.delayed(const Duration(minutes: 3), () => _previousMessageDatas.remove(messageData));
 		print(data);
 		if (data.containsKey('threadId') && data.containsKey('userId')) {
 			final child = _children[data['userId']];
