@@ -613,7 +613,7 @@ class SiteXenforo extends ImageboardSite {
 				id: int.parse(e.id.split('-')[2]),
 				text: _fixRelativeUrls(e.querySelector('.message-body .bbWrapper')!.innerHtml),
 				parentId: -currentPageNumber,
-				name: _parseUsernameFromLink(e.querySelector('.message-name a')),
+				name: _parseUsernameFromLink(e.querySelector('.message-name a') ?? e.querySelector('.message-name .username')),
 				time: _parseTime(e.querySelector('.message-attribution-main time')!),
 				spanFormat: PostSpanFormat.xenforo,
 				attachments_: e.querySelectorAll('.message-attachments .file-preview img').map((img) {
