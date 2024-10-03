@@ -1182,6 +1182,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool useFiltersFromContext;
 	final bool useAllDummies;
 	final Widget? injectBelowScrollbar;
+	final bool Function()? handleStatusBarTap;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -1223,6 +1224,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.useFiltersFromContext = true,
 		this.useAllDummies = false,
 		this.injectBelowScrollbar,
+		this.handleStatusBarTap,
 		Key? key
 	}) : super(key: key);
 
@@ -2845,6 +2847,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (!mounted || controller.scrollController?.tryPosition == null) {
 			// probably dead
 			return false;
+		}
+		if (widget.handleStatusBarTap?.call() ?? false) {
+			// handled above
+			return true;
 		}
 		// Logic copied from Scaffold / CupertinoPageScaffold
 		controller.animateToIndex(0,
