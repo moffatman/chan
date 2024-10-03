@@ -1146,6 +1146,11 @@ class ThreadPageState extends State<ThreadPage> {
 			for (final post in thread.posts_)
 				post.id: post.isStub
 		};
+		if (!setEquals(persistentState.unseenPostIds.data, newPostIds)) {
+			newPostIds.clear();
+			newPostIds.addAll(persistentState.unseenPostIds.data);
+			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
+		}
 		for (final p in newChildren) {
 			if (!p.isPageStub && oldIds[p.id] != p.isStub && !persistentState.youIds.contains(p.id)) {
 				persistentState.unseenPostIds.data.add(p.id);
