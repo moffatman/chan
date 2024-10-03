@@ -1619,6 +1619,9 @@ class ThreadPageState extends State<ThreadPage> {
 																	(int treeSplitId, List<Post> posts) => treeSplitId < posts.fold(0, (m, p) => max(m, p.id)),
 																	_ => false
 																}),
+																handleStatusBarTap: () {
+																	return _weakNavigatorKey.currentState?.handleStatusBarTap() ?? false;
+																},
 																autoUpdateDuration: autoUpdateDuration,
 																initialList: persistentState.thread?.posts ?? (site.isPaged ? null : site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1)),
 																initialTreeSplitId: persistentState.treeSplitId,
