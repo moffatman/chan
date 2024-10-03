@@ -172,6 +172,8 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	ThreadIdentifier? get thread;
 	Duration get _regretDelay => Duration.zero;
 
+	bool shouldReplace(QueueEntry other);
+
 	Future<void> submit(BuildContext? context) async {
 		// Note -- if we are failed here. we might have a captcha.
 		// But just throw it away, it avoids tracking captcha problems.
@@ -469,6 +471,14 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 		// The listener in ReplyBox may mutate us...
 		imageboard.listenToReplyPosting(this);
 	}
+
+	@override
+	bool shouldReplace(QueueEntry other) {
+		if (other is QueuedPost) {
+			return other.imageboardKey == imageboardKey && other.post == post;
+		}
+		return false;
+	}
 }
 
 class QueuedReport extends QueueEntry<void> {
@@ -508,6 +518,14 @@ class QueuedReport extends QueueEntry<void> {
 
 	@override
 	Future<CaptchaRequest> _getCaptchaRequest() async => method.getCaptchaRequest();
+
+	@override
+	bool shouldReplace(QueueEntry other) {
+		if (other is QueuedReport) {
+			return other.imageboardKey == imageboardKey && other.method.post == method.post;
+		}
+		return false;
+	}
 }
 
 class QueuedDeletion extends QueueEntry<void> {
@@ -546,6 +564,15 @@ class QueuedDeletion extends QueueEntry<void> {
 
 	@override
 	Future<CaptchaRequest> _getCaptchaRequest() async => site.getDeleteCaptchaRequest(thread);
+
+
+	@override
+	bool shouldReplace(QueueEntry other) {
+		if (other is QueuedDeletion) {
+			return other.imageboardKey == imageboardKey && other.thread == thread && other.receipt.id == receipt.id;
+		}
+		return false;
+	}
 }
 
 class OutboxQueue extends ChangeNotifier {
@@ -661,6 +688,11 @@ class Outbox extends ChangeNotifier {
 		print('Woken up!');
 		if (newEntry != null) {
 			final queue = queues.putIfAbsent(newEntry._key, () => OutboxQueue()..addListener(_onOutboxQueueUpdate));
+			for (final other in queue.list) {
+				if (newEntry.shouldReplace(other)) {
+					other.delete();
+				}
+			}
 			queue.list.add(newEntry);
 			if (queue.list.first.state.isIdle) {
 				// List was idle, set the cooldown based on new entry type

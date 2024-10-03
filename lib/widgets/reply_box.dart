@@ -1044,6 +1044,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			if (state is QueueStateDeleted<PostReceipt>) {
 				// Don't remove listener, in case undeleted
 				_submittingPosts.remove(post);
+				if (post == postingPost.value) {
+					setState(() {
+						postingPost.value = null;
+					});
+				}
 				setState(() {});
 				return;
 			}
