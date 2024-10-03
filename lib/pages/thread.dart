@@ -2014,6 +2014,9 @@ class ThreadPageState extends State<ThreadPage> {
 																	(int treeSplitId, List<Post> posts) => treeSplitId < posts.fold(0, (m, p) => max(m, p.id)),
 																	_ => false
 																}),
+																handleStatusBarTap: () {
+																	return _weakNavigatorKey.currentState?.handleStatusBarTap() ?? false;
+																},
 																autoUpdateDuration: persistentState.disableUpdates ? null : autoUpdateDuration,
 																initialList: persistentState.thread?.postsToShow.toList()
 																								?? (
