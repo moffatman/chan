@@ -108,7 +108,8 @@ class Imageboard extends ChangeNotifier {
 			}
 			site.initState();
 			initialized = true;
-			for (final draft in persistence.browserState.outbox) {
+			// submitPost might mutate the outbox
+			for (final draft in persistence.browserState.outbox.toList(growable: false)) {
 				final thread = draft.thread;
 				if (thread != null) {
 					// Load for [title], [isArchived]
