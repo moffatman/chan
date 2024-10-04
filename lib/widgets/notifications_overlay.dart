@@ -5,6 +5,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -241,7 +242,7 @@ class NotificationContent extends StatelessWidget {
 		else {
 			title = 'New ${isYou ? 'reply' : 'post'} in /${notification.target.board}/${notification.target.threadId}';
 		}
-		return Column(
+		final child = Column(
 			mainAxisSize: MainAxisSize.min,
 			crossAxisAlignment: CrossAxisAlignment.start,
 			children: [
@@ -315,6 +316,13 @@ class NotificationContent extends StatelessWidget {
 				]
 			]
 		);
+		if (Settings.materialStyleSetting.watch(context)) {
+			return Material(
+				color: Colors.transparent,
+				child: child
+			);
+		}
+		return child;
 	}
 }
 
