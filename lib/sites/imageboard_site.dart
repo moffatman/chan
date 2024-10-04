@@ -1252,6 +1252,7 @@ class DraftPost {
 		other.name == name &&
 		other.options == options &&
 		other.subject == subject &&
+		other.text == text &&
 		other.file == file &&
 		other.spoiler == spoiler &&
 		other.overrideFilenameWithoutExtension == overrideFilenameWithoutExtension &&
@@ -1260,10 +1261,10 @@ class DraftPost {
 		other.overrideRandomizeFilenames == overrideRandomizeFilenames;
 	
 	@override
-	int get hashCode => Object.hash(board, threadId, name, options, subject, file, spoiler, overrideFilenameWithoutExtension, flag, useLoginSystem, overrideRandomizeFilenames);
+	int get hashCode => Object.hash(board, threadId, name, options, subject, text, file, spoiler, overrideFilenameWithoutExtension, flag, useLoginSystem, overrideRandomizeFilenames);
 
 	@override
-	String toString() => 'DraftPost(board: $board, threadId: $threadId, name: $name, options: $options, subject: $subject, file: $file, spoiler: $spoiler, overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension, flag: $flag, useLoginSystem: $useLoginSystem, overrideRandomizeFilenames: $overrideRandomizeFilenames)';
+	String toString() => 'DraftPost(board: $board, threadId: $threadId, name: $name, options: $options, subject: $subject, text: $text, file: $file, spoiler: $spoiler, overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension, flag: $flag, useLoginSystem: $useLoginSystem, overrideRandomizeFilenames: $overrideRandomizeFilenames)';
 }
 
 @HiveType(typeId: 48)
