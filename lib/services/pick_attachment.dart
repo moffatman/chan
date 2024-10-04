@@ -129,12 +129,12 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final gallery = AttachmentPickingSource(
 		name: 'Image Gallery',
 		icon: Adaptive.icons.photo,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.image).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.image, compressionQuality: 0, allowCompression: false).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
 	);
 	final videoGallery = AttachmentPickingSource(
 		name: 'Video Gallery',
 		icon: CupertinoIcons.play_rectangle,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.video).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.video, compressionQuality: 0, allowCompression: false).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
 	);
 	final picker = ImagePicker();
 	final camera = AttachmentPickingSource(
@@ -175,7 +175,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final file = AttachmentPickingSource(
 		name: 'File',
 		icon: CupertinoIcons.folder,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.any).then((x) => _copyFileToSafeLocation(x?.files.single.path))
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.any, compressionQuality: 0, allowCompression: false).then((x) => _copyFileToSafeLocation(x?.files.single.path))
 	);
 	final clipboard = AttachmentPickingSource(
 		name: 'Clipboard',
