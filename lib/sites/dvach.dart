@@ -45,17 +45,23 @@ class SiteDvach extends ImageboardSite {
 				kPriority: priority
 			}
 		));
-		return (response.data['boards'] as List).map((board) => ImageboardBoard(
-			name: board['id'],
-			title: board['name'],
-			isWorksafe: board['category'] != 'Взрослым',
-			webmAudioAllowed: true,
-			threadCommentLimit: board['bump_limit'],
-			maxCommentCharacters: board['max_comment'],
-			maxImageSizeBytes: board['max_files_size'],
-			maxWebmSizeBytes: board['max_files_size'],
-			pageCount: board['max_pages']
-		)).toList();
+		return (response.data['boards'] as List).map((board) {
+			final maxFileSizeBytes = switch (board['max_files_size']) {
+				int kb => 1024 * kb,
+				_ => null
+			};
+			return ImageboardBoard(
+				name: board['id'],
+				title: board['name'],
+				isWorksafe: board['category'] != 'Взрослым',
+				webmAudioAllowed: true,
+				threadCommentLimit: board['bump_limit'],
+				maxCommentCharacters: board['max_comment'],
+				maxImageSizeBytes: maxFileSizeBytes,
+				maxWebmSizeBytes: maxFileSizeBytes,
+				pageCount: board['max_pages']
+			);
+		}).toList();
 	}
 
 
