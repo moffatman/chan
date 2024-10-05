@@ -1284,7 +1284,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																		),
 																		actions: [
 																			AdaptiveDialogAction(
-																				onPressed: () => Navigator.pop(context, controller.value),
+																				onPressed: () => Navigator.pop(context, controller.text),
 																				child: const Text('Go')
 																			),
 																			AdaptiveDialogAction(
