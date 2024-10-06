@@ -581,7 +581,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																			builder: (innerContext) => OverscrollModalPage(
 																				child: Container(
 																					width: double.infinity,
-																					color: ChanceTheme.backgroundColorOf(context),
+																					color: ChanceTheme.backgroundColorOf(innerContext),
 																					padding: const EdgeInsets.all(16),
 																					child: Column(
 																						children: [
