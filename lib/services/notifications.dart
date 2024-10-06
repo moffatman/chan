@@ -362,6 +362,7 @@ class Notifications {
 					onDidReceiveNotificationResponse: _onLocalNotificationTapped,
 					onDidReceiveBackgroundNotificationResponse: _onBackgroundLocalNotificationTapped
 				);
+				await FlutterLocalNotificationsPlugin().resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
 				await UnifiedPush.initialize(
 					onNewEndpoint: onNewUnifiedPushEndpoint,
 					onUnregistered: onUnifiedPushUnregistered,
@@ -414,6 +415,7 @@ class Notifications {
 			}
 			else if (Platform.isAndroid) {
 				await registerUnifiedPush();
+				await FlutterLocalNotificationsPlugin().resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
 			}
 		}
 		else if (Persistence.settings.usePushNotifications == false) {
