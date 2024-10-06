@@ -1620,7 +1620,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				// No need to check disabledArchiveNames, they can't fail to begin with
 				if (error.value is CloudflareHandlerNotAllowedException) {
 					try {
-						return await error.key.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic);
+						return await error.key.search(query, page: page, lastResult: lastResult, priority: priority);
 					}
 					catch (e, st) {
 						if (e is! BoardNotFoundException) {
