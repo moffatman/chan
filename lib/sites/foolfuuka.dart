@@ -441,6 +441,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (data['error'] != null) {
 			throw FoolFuukaException(data['error']);
 		}
+		if ((data['0']['posts'] as Iterable).isEmpty) {
+			throw FoolFuukaException('No results');
+		}
 		return ImageboardArchiveSearchResultPage(
 			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map((dynamic data) async {
 				if (data['op'] == '1') {
