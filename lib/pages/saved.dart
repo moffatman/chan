@@ -763,7 +763,7 @@ class _SavedPageState extends State<SavedPage> {
 													showSiteIcon: true,
 													forceShowInHistory: true,
 													onThumbnailLoadError: (error, stackTrace) {
-														state.imageboard!.threadWatcher.fixBrokenThread(state.thread!.identifier);
+														state.imageboard?.threadWatcher.fixBrokenThread(state.identifier);
 													},
 													semanticParentIds: const [-12],
 													onThumbnailTap: (initialAttachment) {
