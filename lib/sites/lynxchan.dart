@@ -1,3 +1,4 @@
+// ignore_for_file: argument_type_not_assignable
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
@@ -127,14 +128,14 @@ class SiteLynxchan extends ImageboardSite {
 				'json': '1',
 				'identifier': fileSha256
 			}), cancelToken: cancelToken);
-			if (filePresentResponse.data is bool) {
-				fileAlreadyUploaded = filePresentResponse.data;
+			if (filePresentResponse.data case bool x) {
+				fileAlreadyUploaded = x;
 			}
 			else {
 				if (filePresentResponse.data['status'] != 'ok') {
 					throw PostFailedException('Error checking if file was already uploaded: ${filePresentResponse.data['error'] ?? filePresentResponse.data}');
 				}
-				fileAlreadyUploaded = filePresentResponse.data['data'];
+				fileAlreadyUploaded = filePresentResponse.data['data'] as bool;
 			}
 		}
 		final flag = post.flag;
@@ -285,7 +286,7 @@ class SiteLynxchan extends ImageboardSite {
 	void _updateBoardInformation(String boardName, Map<String, dynamic> data) {
 		try {
 			final board = (persistence?.maybeGetBoard(boardName))!;
-			board.maxCommentCharacters = data['maxMessageLength'];
+			board.maxCommentCharacters = data['maxMessageLength'] as int?;
 			final fileSizeParts = (data['maxFileSize'] as String).split(' ');
 			double maxFileSize = double.parse(fileSizeParts.first);
 			if (fileSizeParts[1].toLowerCase().startsWith('m')) {
@@ -297,10 +298,10 @@ class SiteLynxchan extends ImageboardSite {
 			else {
 				throw Exception('Unexpected file-size unit: ${fileSizeParts[1]}');
 			}
-			board.captchaMode = data['captchaMode'];
+			board.captchaMode = data['captchaMode'] as int?;
 			board.maxImageSizeBytes = maxFileSize.round();
 			board.maxWebmSizeBytes = maxFileSize.round();
-			board.pageCount = data['pageCount'];
+			board.pageCount = data['pageCount'] as int?;
 			board.additionalDataTime = DateTime.now();
 		}
 		catch (e, st) {

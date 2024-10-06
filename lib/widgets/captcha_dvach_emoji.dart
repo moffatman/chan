@@ -83,7 +83,7 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 
 	static Future<CaptchaDvachEmojiPage> _makePage(Map response) async {
 		return CaptchaDvachEmojiPage(
-			image: await decodeImageFromList(base64.decode(response['image'])),
+			image: await decodeImageFromList(base64.decode(response['image'] as String)),
 			keyboardImages: await Future.wait((response['keyboard'] as List).cast<String>().map((bytes) => decodeImageFromList(base64.decode(bytes))))
 		);
 	}
@@ -99,11 +99,11 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 			throw CaptchaDvachEmojiException('Got status code ${idResponse.statusCode}');
 		}
 		if (idResponse.data['error'] != null) {
-			throw CaptchaDvachEmojiException(idResponse.data['error']['message']);
+			throw CaptchaDvachEmojiException(idResponse.data['error']['message'] as String);
 		}
 		final chal = CaptchaDvachEmojiChallenge(
 			acquiredAt: DateTime.now(),
-			id: idResponse.data['id'],
+			id: idResponse.data['id'] as String,
 			lifetime: widget.request.challengeLifetime
 		);
 		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/emoji/show', {
@@ -117,7 +117,7 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 		if (imageResponse.statusCode != 200) {
 			throw CaptchaDvachEmojiException('Got status code ${idResponse.statusCode}');
 		}
-		return (chal, await _makePage(imageResponse.data));
+		return (chal, await _makePage(imageResponse.data as Map));
 	}
 
 	void _tryRequestChallenge() async {
@@ -150,9 +150,10 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 			final response = await widget.site.client.postUri(Uri.https(widget.site.baseUrl, '/api/captcha/emoji/click'), data: {
 				'captchaTokenID': challenge!.$1.id,
 				'emojiNumber': emojiNumber
-			});
-			final success = response.data['success'];
-			if (success != null) {
+			}, options: Options(
+				responseType: ResponseType.json
+			));
+			if (response.data['success'] case String success) {
 				// Done
 				widget.onCaptchaSolved(DvachEmojiCaptchaSolution(
 					id: success,
@@ -162,7 +163,7 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 			}
 			else {
 				final oldPage = challenge!.$2;
-				challenge = (challenge!.$1, await _makePage(response.data));
+				challenge = (challenge!.$1, await _makePage(response.data as Map));
 				oldPage.dispose();
 			}
 		}

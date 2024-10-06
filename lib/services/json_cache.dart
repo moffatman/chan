@@ -5,6 +5,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
 
@@ -48,8 +49,10 @@ class JsonCache {
 		name: 'embedRegexes',
 		defaultValue: const [],
 		updater: () async {
-			final response = await Settings.instance.client.get('https://noembed.com/providers');
-			final data = jsonDecode(response.data);
+			final response = await Settings.instance.client.get('https://noembed.com/providers', options: Options(
+				responseType: ResponseType.plain
+			));
+			final data = jsonDecode(response.data as String) as List;
 			return List<String>.from(data.expand((x) => (x['patterns'] as List<dynamic>).cast<String>()));
 		},
 		caster: (list) => (list as List).cast<String>(),
@@ -62,7 +65,7 @@ class JsonCacheEntry<T extends Object> extends ChangeNotifier {
 	final String name;
 	final JsonCache parent;
 	final Future<T> Function() updater;
-	final T Function(Object) caster;
+	final T Function(dynamic) caster;
 	T? defaultValue;
 	T? value;
 	double updateOdds;

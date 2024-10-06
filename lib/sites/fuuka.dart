@@ -192,7 +192,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				kPriority: priority
 			}
 		));
-		final thread = await _makeThread(response.data, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!), priority: priority);
+		final thread = await _makeThread(parse(response.data).body!, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!), priority: priority);
 		return thread.posts.firstWhere((t) => t.id == id);
 	}
 	Future<Thread> _makeThread(dom.Element document, String board, int id, {required RequestPriority priority}) async {

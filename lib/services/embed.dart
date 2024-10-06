@@ -9,6 +9,7 @@ import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
@@ -77,15 +78,18 @@ final _twitterPattern = RegExp(r'(?:x|twitter)\.com/[^/]+/status/(\d+)');
 
 Future<EmbedData?> _loadTwitter(String id) async {
 	final response = await Settings.instance.client.getUri(Uri.https('api.vxtwitter.com', '/_/status/$id'));
-	return EmbedData(
-		title: response.data['text'],
-		provider: 'Twitter',
-		author: response.data['user_name'],
-		thumbnailUrl: switch ((response.data['media_extended'] as List?)?.tryFirst?['thumbnail_url']) {
-			String url => generateThumbnailerForUrl(Uri.parse(url)).toString(),
-			_ => response.data['user_profile_image_url']
-		}
-	);
+	if (response.data case Map data) {
+		return EmbedData(
+			title: data['text'] as String?,
+			provider: 'Twitter',
+			author: data['user_name'] as String?,
+			thumbnailUrl: switch ((response.data['media_extended'] as List?)?.tryFirst?['thumbnail_url']) {
+				String url => generateThumbnailerForUrl(Uri.parse(url)).toString(),
+				_ => response.data['user_profile_image_url'] as String?
+			}
+		);
+	}
+	return null;
 }
 
 final _instagramPattern = RegExp(r'instagram\.com/p/([^/]+)');
@@ -208,17 +212,19 @@ Future<EmbedData?> loadEmbedData(String url) async {
 		}
 		final response = await Settings.instance.client.get('https://noembed.com/embed', queryParameters: {
 			'url': url
-		});
-		if (response.data != null) {
-			final data = jsonDecode(response.data);
-			String? thumbnailUrl = data['thumbnail_url'];
+		}, options: Options(
+			responseType: ResponseType.plain
+		));
+		if (response.data case String responseData) {
+			final data = jsonDecode(responseData) as Map;
+			String? thumbnailUrl = data['thumbnail_url'] as String?;
 			if (thumbnailUrl?.startsWith('//') == true) {
 				thumbnailUrl = 'https:$thumbnailUrl';
 			}
 			return EmbedData(
-				title: data['title'],
-				provider: data['provider_name'],
-				author: data['author_name'],
+				title: data['title'] as String?,
+				provider: data['provider_name'] as String?,
+				author: data['author_name'] as String?,
 				thumbnailUrl: thumbnailUrl
 			);
 		}

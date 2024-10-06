@@ -2451,7 +2451,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					list: treeRoots,
 					sortMethods: widget.sortMethods.isEmpty ? <Comparator<_TreeNode<RefreshableListItem<T>>>>[
 						(a, b) => a.id.compareTo(b.id)
-					] : widget.sortMethods.map((c) => (a, b) => c(a.item.item, b.item.item)).toList(),
+					] : widget.sortMethods.map((c) => (_TreeNode<RefreshableListItem<T>> a, _TreeNode<RefreshableListItem<T>> b) => c(a.item.item, b.item.item)).toList(),
 					reverseSort: widget.reverseSort,
 					item: orphan
 				);
@@ -3628,7 +3628,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				for (final item in _items)
 					if (item.cachedHeight != null)
 						item.item: item.cachedHeight!
-			} : {};
+			} : <RefreshableListItem<T>, double>{};
 			_items = items.map((item) => _BuiltRefreshableListItem(item)..cachedHeight = oldCachedHeights[item]).toList();
 		}
 		_items.tryFirst?.cachedOffset = oldFirstOffset;

@@ -212,7 +212,7 @@ class SiteKarachan extends ImageboardSite {
 		if (response.data is! String) {
 			throw Exception('Bad response: ${response.data}');
 		}
-		final data = jsonDecode(response.data);
+		final data = jsonDecode(response.data as String);
 		if ((data['realDeleted'] ?? '[]') == '[]') {
 			// Didn't delete
 			final msg = parseFragment(data['msg']).text ?? 'unknown';
@@ -455,7 +455,7 @@ class SiteKarachan extends ImageboardSite {
 		if (response.data is! String) {
 			throw Exception('Bad response: ${response.data}');
 		}
-		final data = jsonDecode(response.data);
+		final data = jsonDecode(response.data as String);
 		final postid = data['postid'] as int?;
 		if (postid == null) {
 			throw Exception('${data['title']}: ${parseFragment(data['msg']).text}');

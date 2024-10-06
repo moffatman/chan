@@ -1,3 +1,4 @@
+// ignore_for_file: argument_type_not_assignable
 import 'dart:convert';
 
 import 'package:chan/models/flag.dart';
@@ -542,16 +543,21 @@ class SiteReddit extends ImageboardSite {
 		title: data['public_description'],
 		isWorksafe: data['over18'] == false,
 		webmAudioAllowed: true,
-		icon: (data['icon_img']?.isEmpty ?? true) ? null : Uri.parse(data['icon_img'])
+		icon: switch (data['icon_img']) {
+			'' => null,
+			String x => Uri.parse(x),
+			_ => null
+		}
 	);
 
 	Future<String> _getRedgifsToken() async {
 		final response = await client.getUri(Uri.https('api.redgifs.com', '/v2/auth/temporary'), options: Options(
 			extra: {
 				kPriority: RequestPriority.cosmetic
-			}
+			},
+			responseType: ResponseType.json
 		));
-		return response.data['token'];
+		return response.data['token'] as String;
 	}
 
 	/// Resolve image hosting sites to hotlinks
@@ -711,7 +717,7 @@ class SiteReddit extends ImageboardSite {
 		final attachments = <Attachment>[];
 		Future<void> dumpAttachments(dynamic data) async {
 			if (data['media_metadata'] != null) {
-				for (final item in data['media_metadata'].values) {
+				for (final item in (data['media_metadata'] as Map).values) {
 					if (item['m'] == null && item['e'] == 'RedditVideo') {
 						attachments.add(Attachment(
 							type: AttachmentType.mp4,
@@ -794,11 +800,11 @@ class SiteReddit extends ImageboardSite {
 						height: data['preview']['images'][0]['source']?['height'],
 						md5: '',
 						sizeInBytes: null,
-						thumbnailUrl: url.$2.thumbnailUrl ?? (data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString())
+						thumbnailUrl: url.$2.thumbnailUrl ?? ((data['preview']['images'][0]['resolutions'] as List).isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString())
 					)));
 				}
 			}
-			else if (!(data['is_self'] ?? false) && data['url'] != null) {
+			else if (!(data['is_self'] as bool? ?? false) && data['url'] != null) {
 				final urls = await _resolveUrl(data['url']);
 				attachments.addAll(urls.indexed.map((url) => Attachment(
 					type: url.$2.type,
@@ -820,7 +826,7 @@ class SiteReddit extends ImageboardSite {
 			if (galleryItems != null) {
 				galleryMap = {
 					for (final (i, item) in galleryItems.indexed)
-						item['media_id']: (i, item['caption'] as String?)
+						item['media_id'] as String: (i, item['caption'] as String?)
 				};
 			}
 			else {
@@ -839,18 +845,18 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 		}
-		final String url = data['url'];
+		final url = data['url'] as String;
 		String text = '';
-		if (data['is_self'] ?? false) {
-			text = data['selftext'] ?? '';
+		if (data['is_self'] as bool? ?? false) {
+			text = data['selftext'] as String? ?? '';
 		}
 		else {
 			text = '[${url.split('#').first.split('?').first.replaceFirst(RegExp(r'^https://'), '')}](${data['url']})';
-			if ((data['selftext'] ?? '').isNotEmpty) {
+			if ((data['selftext'] as String? ?? '').isNotEmpty) {
 				text += '\n\n${data['selftext']}';
 			}
 		}
-		final Map? crosspostParent = (data['crosspost_parent_list'] as List?)?.tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']);
+		final crosspostParent = (data['crosspost_parent_list'] as List?)?.tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']) as Map?;
 		if (crosspostParent != null) {
 			await dumpAttachments(crosspostParent);
 			text = '<crosspostparent board="${crosspostParent['subreddit']}" id="${crosspostParent['id']}"></crosspostparent>\n$text';
@@ -885,7 +891,11 @@ class SiteReddit extends ImageboardSite {
 				data['link_flair_text'] == null ? null : ImageboardFlag.text((data['link_flair_text'] as String).unescapeHtml)
 			),
 			id: id,
-			suggestedVariant: (data['suggested_sort']?.isNotEmpty ?? false) ? _RedditApiName.toVariant(data['suggested_sort']) : null,
+			suggestedVariant: switch (data['suggested_sort']) {
+				'' => null,
+				String x => _RedditApiName.toVariant(x),
+				_ => null
+			},
 			poll: switch (data['poll_data']) {
 				Map m => ImageboardPoll(
 					title: null,
@@ -1026,7 +1036,7 @@ class SiteReddit extends ImageboardSite {
 					kPriority: priority
 				}
 			));
-			final things = response.data['json']['data']['things'];
+			final things = response.data['json']['data']['things'] as List;
 			for (final thing in things) {
 				final parentId = fromRedditId(thing['data']['parent'].split('_')[1]);
 				if (thing['kind'] == 'more' || thing['data']['id'] == 't1__') {
@@ -1266,7 +1276,7 @@ class SiteReddit extends ImageboardSite {
 					if (child['id'] == '_') {
 						parent?.hasOmittedReplies = true;
 					}
-					for (final childId in child['children']) {
+					for (final childId in child['children'] as List) {
 						final id = fromRedditId(childId);
 						ret.posts_.add(Post(
 							board: thread.board,

@@ -71,7 +71,7 @@ Future<File> export({
 				  toPreserve.contains(key)) {
 				final thread = await Persistence.sharedThreadsBox.get(key);
 				if (thread != null) {
-					await box.put(key, Hive.decode(Hive.encode(thread)));
+					await box.put(key, Hive.decode(Hive.encode(thread)) as Thread);
 				}
 			}
 		}
@@ -144,7 +144,7 @@ sealed class ImportLog {
 }
 
 class ImportLogConflict<Ancestor extends HiveObjectMixin, T> extends ImportLog {
-	final String? key;
+	final dynamic key;
 	final MergeConflict<Ancestor, T> conflict;
 	final Ancestor yours;
 	final Ancestor theirs;
@@ -301,7 +301,7 @@ Future<List<ImportLog>> import(File archive) async {
 				final yours = yourBox.get(key);
 				if (yours == null) {
 					newCount++;
-					await yourBox.put(key, Hive.decode(Hive.encode(theirs)));
+					await yourBox.put(key, Hive.decode(Hive.encode(theirs)) as T);
 					return;
 				}
 				final results = Hive.merge(
@@ -365,7 +365,7 @@ Future<List<ImportLog>> import(File archive) async {
 				final yours = await yourBox.get(key);
 				if (yours == null) {
 					newCount++;
-					await yourBox.put(key, Hive.decode(Hive.encode(theirs)));
+					await yourBox.put(key, Hive.decode(Hive.encode(theirs)) as T);
 					continue;
 				}
 				final results = Hive.merge(

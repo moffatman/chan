@@ -34,12 +34,12 @@ Future<String> saveFile({
 	required String destinationName
 }) async {
 	try {
-		return await _platform.invokeMethod('saveFile', {
+		return (await _platform.invokeMethod<String>('saveFile', {
 			'sourcePath': sourcePath,
 			'destinationDir': destinationDir,
 			'destinationSubfolders': destinationSubfolders,
 			'destinationName': destinationName
-		});
+		}))!;
 	}
 	on PlatformException catch (e) {
 		if (e.code == 'DirectoryNotFound') {

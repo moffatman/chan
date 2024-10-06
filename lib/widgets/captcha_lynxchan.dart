@@ -105,9 +105,9 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		}
 		else {
 			if (idResponse.data['error'] != null) {
-				throw CaptchaLynxchanException(idResponse.data['error']['message']);
+				throw CaptchaLynxchanException(idResponse.data['error']['message'] as String);
 			}
-			id = idResponse.data['data'];
+			id = idResponse.data['data'] as String;
 			imagePath = '/.global/captchas/${id.substring(0, 24)}';
 		}
 		final imageResponse = await widget.site.client.get('https://${widget.site.baseUrl}$imagePath', options: Options(
@@ -123,7 +123,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			id: id,
 			acquiredAt: DateTime.now(),
 			lifetime: const Duration(minutes: 2),
-			imageBytes: Uint8List.fromList(imageResponse.data)
+			imageBytes: Uint8List.fromList(imageResponse.data as List<int>)
 		);
 	}
 

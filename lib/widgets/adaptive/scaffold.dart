@@ -107,7 +107,7 @@ class _NotifyingDrawerButtonWrapper extends StatelessWidget {
 			return child;
 		}
 		final tabs = context.watch<ChanTabs?>();
-		int combine(savedCount, devCount) {
+		int combine(int savedCount, int devCount) {
 			if (tabs?.mainTabIndex == 4) {
 				// Already in Settings
 				return savedCount;

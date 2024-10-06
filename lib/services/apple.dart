@@ -16,7 +16,7 @@ Future<void> initializeIsOnMac() async {
 		return;
 	}
   try {
-		isOnMac = await _platform.invokeMethod('isOnMac');
+		isOnMac = await _platform.invokeMethod<bool>('isOnMac') ?? false;
 	}
 	on MissingPluginException {
 		return;
@@ -32,7 +32,7 @@ Future<void> initializeIsDevelopmentBuild() async {
 		return;
 	}
 	try {
-		isDevelopmentBuild = await _platform.invokeMethod('isDevelopmentBuild');
+		isDevelopmentBuild = await _platform.invokeMethod<bool>('isDevelopmentBuild') ?? false;
 	}
 	on MissingPluginException {
 		return;

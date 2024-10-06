@@ -20,7 +20,7 @@ import 'package:screenshot/screenshot.dart';
 int _countDescendants(PostSpanZoneData zone, Post post) {
 	int visit(int id) {
 		int x = 0;
-		for (final r in zone.findPost(id)?.replyIds ?? []) {
+		for (final r in zone.findPost(id)?.replyIds ?? <int>[]) {
 			x += 1 + visit(r);
 		}
 		return x;

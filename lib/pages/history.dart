@@ -208,7 +208,9 @@ class HistoryPageState extends State<HistoryPage> {
 											icon: Icon(Settings.recordThreadsInHistorySetting.watch(context) ? CupertinoIcons.stop : CupertinoIcons.play),
 											onPressed: () {
 												Settings.recordThreadsInHistorySetting.value = !Settings.instance.recordThreadsInHistory;
-												threadSetter(context.read<MasterDetailHint>().currentValue);
+												if (context.read<MasterDetailHint>().currentValue case ImageboardScoped<PostIdentifier>? thread) {
+													threadSetter(thread);
+												}
 												showToast(
 													context: context,
 													message: Settings.instance.recordThreadsInHistory ? 'History resumed' : 'History stopped',

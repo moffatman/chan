@@ -1,4 +1,4 @@
-// ignore_for_file: file_names
+// ignore_for_file: file_names, argument_type_not_assignable, invalid_assignment
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -561,8 +561,8 @@ class Site4Chan extends ImageboardSite {
 				}
 			}
 			final Map<int, _CatalogCacheEntry> entries = {};
-			for (final page in response.data) {
-				for (final threadData in page['threads']) {
+			for (final page in response.data as List) {
+				for (final threadData in page['threads'] as List) {
 					entries[threadData['no']] = _CatalogCacheEntry(
 						page: page['page'],
 						replyCount: threadData['replies'],
@@ -764,8 +764,8 @@ class Site4Chan extends ImageboardSite {
 			}
 		}
 		final List<Thread> threads = [];
-		for (final page in response.data) {
-			for (final threadData in page['threads']) {
+		for (final page in response.data as List) {
+			for (final threadData in page['threads'] as List) {
 				threads.add(_makeThread(board, threadData, currentPage: page['page']));
 			}
 		}
@@ -1164,8 +1164,8 @@ class Site4Chan extends ImageboardSite {
 				final response = await client.getUri(Uri.https(baseUrl, '/$board/')).timeout(const Duration(seconds: 5));
 				final doc = parse(response.data);
 				flagMap = {
-					for (final e in doc.querySelector('select[name="flag"]')?.querySelectorAll('option') ?? [])
-						(e.attributes['value'] ?? 0): e.text
+					for (final e in doc.querySelector('select[name="flag"]')?.querySelectorAll('option') ?? <dom.Element>[])
+						(e.attributes['value'] ?? '0'): e.text
 				};
 			}
 			catch (e, st) {

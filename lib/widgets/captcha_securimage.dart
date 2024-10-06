@@ -77,17 +77,17 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 			throw CaptchaSecurimageException('Got status code ${challengeResponse.statusCode}');
 		}
 		final data = challengeResponse.data;
-		if (data['error'] != null) {
-			throw CaptchaSecurimageException(data['error']);
+		if (data['error'] case String error) {
+			throw CaptchaSecurimageException(error);
 		}
-		final base64Data = RegExp(r'base64,([^"]+)').firstMatch(data['captchahtml'])?.group(1);
+		final base64Data = RegExp(r'base64,([^"]+)').firstMatch(data['captchahtml'] as String)?.group(1);
 		if (base64Data == null) {
 			throw CaptchaSecurimageException('Image missing from response');
 		}
 		return CaptchaSecurimageChallenge(
-			cookie: data['cookie'],
+			cookie: data['cookie'] as String,
 			acquiredAt: DateTime.now(),
-			lifetime: Duration(seconds: data['expires_in']),
+			lifetime: Duration(seconds: (data['expires_in'] as num).toInt()),
 			imageBytes: base64Decode(base64Data)
 		);
 	}

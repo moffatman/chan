@@ -85,6 +85,18 @@ class WebImagePickerPage extends StatefulWidget {
 	createState() => _WebImagePickerPageState();
 }
 
+typedef _WebImageResult = ({
+	String src,
+	int width,
+	int height,
+	double displayWidth,
+	double displayHeight,
+	double top,
+	double left,
+	bool visible1,
+	bool visible2
+});
+
 class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	InAppWebViewController? webViewController;
 
@@ -400,7 +412,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 								ElevatedButton(
 									child: Icon(Adaptive.icons.photo),
 									onPressed: () async {
-										final List<dynamic> returnedResults = await webViewController?.evaluateJavascript(
+										final returnedResults = await webViewController?.evaluateJavascript(
 											source: '''[...document.querySelectorAll('img')].map(img => {
 												var rect = img.getBoundingClientRect()
 												return {
@@ -411,7 +423,6 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													displayHeight: rect.height,
 													top: rect.top,
 													left: rect.left,
-													alt: img.alt,
 													visible1: rect.bottom >= 0 && rect.right >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight) && rect.left <= (window.innerWidth || document.documentElement.clientWidth),
 													visible2: (
 														document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2) ||
@@ -419,14 +430,26 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													) == img
 												}
 											})'''
-										);
-										final results = [...returnedResults];
-										results.removeWhere((r) => r['displayWidth'] * r['displayHeight'] == 0);
-										results.removeWhere((r) => r['src'].endsWith('.svg'));
-										results.removeWhere((r) => r['src'].isEmpty);
-										results.sort((a, b) => a['left'].compareTo(b['left']));
-										mergeSort<dynamic>(results, compare: (a, b) => a['top'].compareTo(b['top']));
-										makeGrid(BuildContext context, List<dynamic> images) => GridView.builder(
+										) as List;
+										// Have to copy it as the List is unmodifiable
+										final results = returnedResults.map<_WebImageResult>((r) => (
+											src: r['src'] as String,
+											width: (r['width'] as num).toInt(),
+											height: (r['height'] as num).toInt(),
+											displayWidth: r['displayWidth'] as double,
+											displayHeight: r['displayHeight'] as double,
+											top: r['top'] as double,
+											left: r['left'] as double,
+											visible1: r['visible1'] as bool,
+											visible2: r['visible2'] as bool
+										)).toList();
+										results.removeWhere((r) => r.width * r.height <= 1);
+										results.removeWhere((r) => r.displayWidth * r.displayHeight == 0);
+										results.removeWhere((r) => r.src.endsWith('.svg'));
+										results.removeWhere((r) => r.src.isEmpty);
+										results.sort((a, b) => a.left.compareTo(b.left));
+										mergeSort<_WebImageResult>(results, compare: (a, b) => a.top.compareTo(b.top));
+										makeGrid(BuildContext context, List<_WebImageResult> images) => GridView.builder(
 											gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
 												maxCrossAxisExtent: 150,
 												mainAxisSpacing: 16,
@@ -438,13 +461,13 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											itemBuilder: (context, i) {
 												final image = images[i];
 												Widget imageWidget = ExtendedImage.network(
-													image['src'],
+													image.src,
 													cache: true,
 													fit: BoxFit.contain
 												);
 												Uint8List? data;
-												if (image['src'].startsWith('data:')) {
-													data = base64Decode(image['src'].split(',')[1]);
+												if (image.src.startsWith('data:')) {
+													data = base64Decode(image.src.split(',')[1]);
 													imageWidget = ExtendedImage.memory(
 														data,
 														fit: BoxFit.contain
@@ -457,7 +480,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																Navigator.of(context).pop(data);
 																return;
 															}
-															final file = await getCachedImageFile(image['src']);
+															final file = await getCachedImageFile(image.src);
 															if (!context.mounted) return;
 															if (file != null) {
 																// Avoid second download
@@ -470,7 +493,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															final response = await modalLoad(context, 'Downloading...', (controller) async {
 																final token = CancelToken();
 																controller.onCancel = token.cancel;
-																final response = await settings.client.get(image['src'], options: Options(
+																final response = await settings.client.get(image.src, options: Options(
 																	responseType: ResponseType.bytes
 																), cancelToken: token);
 																if (response.data is Uint8List) {
@@ -478,7 +501,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																}
 																// Something this happens with cloudflare clearance,
 																// we get <img> as String, just try again
-																return await settings.client.get(image['src'], options: Options(
+																return await settings.client.get(image.src, options: Options(
 																	responseType: ResponseType.bytes
 																), cancelToken: token);
 															}, cancellable: true);
@@ -498,7 +521,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																child: imageWidget
 															),
 															const SizedBox(height: 4),
-															Text('${image['width'].round()}x${image['height'].round()}', style: const TextStyle(
+															Text('${image.width}x${image.height}', style: const TextStyle(
 																fontSize: 16
 															))
 														]
@@ -506,10 +529,10 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												);
 											},
 										);
-										final noVisible2 = results.every((r) => !r['visible2']);
-										final fullImages = results.where((r) => r['visible1'] && (noVisible2 || r['visible2']) && r['width'] * r['height'] >= 10201).toList();
-										final thumbnails = results.where((r) => r['visible1'] && (noVisible2 || r['visible2']) && r['width'] * r['height'] < 10201).toList();
-										final offscreen = results.where((r) => !(r['visible1'] && (noVisible2 || r['visible2']))).toList();
+										final noVisible2 = results.every((r) => !r.visible2);
+										final fullImages = results.where((r) => r.visible1 && (noVisible2 || r.visible2) && r.width * r.height >= 10201).toList();
+										final thumbnails = results.where((r) => r.visible1 && (noVisible2 || r.visible2) && r.width * r.height < 10201).toList();
+										final offscreen = results.where((r) => !(r.visible1 && (noVisible2 || r.visible2))).toList();
 										if (!context.mounted) return;
 										final pickedBytes = await Navigator.of(context).push<Uint8List>(TransparentRoute(
 											builder: (context) => OverscrollModalPage(

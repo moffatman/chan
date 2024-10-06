@@ -1,3 +1,4 @@
+// ignore_for_file: argument_type_not_assignable
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
@@ -282,10 +283,10 @@ class SiteHackerNews extends ImageboardSite {
 		String text;
 		switch (d['type']) {
 			case 'story':
-				text = d['text'] ?? d['url'] ?? '';
+				text = d['text'] as String? ?? d['url'] as String? ?? '';
 				break;
 			case 'job':
-				text = d['text'] ?? d['url'] ?? '';
+				text = d['text'] as String? ?? d['url'] as String? ?? '';
 				break;
 			case 'poll':
 				final responses = await Future.wait<Map>(d['parts'].map((int part) async {

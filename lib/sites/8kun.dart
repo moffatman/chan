@@ -52,9 +52,9 @@ class Site8Kun extends SiteLainchan2 {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode ?? 0);
 		}
-		return (jsonDecode(response.data)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
+		return (jsonDecode(response.data as String)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
 			name: board.key,
-			title: board.value['title'],
+			title: board.value['title'] as String,
 			isWorksafe: board.value['sfw'] == 1,
 			webmAudioAllowed: true
 		)).toList();
@@ -78,9 +78,9 @@ class Site8Kun extends SiteLainchan2 {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode ?? 0);
 		}
-		return (jsonDecode(response.data)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
+		return (jsonDecode(response.data as String)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
 			name: board.key,
-			title: board.value['title'],
+			title: board.value['title'] as String,
 			isWorksafe: board.value['sfw'] == 1,
 			webmAudioAllowed: true
 		)).toList();

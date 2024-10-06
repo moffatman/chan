@@ -75,10 +75,10 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 			throw CaptchaDvachException('Got status code ${idResponse.statusCode}');
 		}
 		if (idResponse.data['error'] != null) {
-			throw CaptchaDvachException(idResponse.data['error']['message']);
+			throw CaptchaDvachException(idResponse.data['error']['message'] as String);
 		}
-		final String id = idResponse.data['id'];
-		final String inputType = idResponse.data['input'];
+		final id = idResponse.data['id'] as String;
+		final inputType = idResponse.data['input'] as String;
 		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/show', {
 			'id': id
 		}), options: Options(
@@ -95,7 +95,7 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 			inputType: inputType,
 			acquiredAt: DateTime.now(),
 			lifetime: widget.request.challengeLifetime,
-			imageBytes: Uint8List.fromList(imageResponse.data)
+			imageBytes: Uint8List.fromList(imageResponse.data as List<int>)
 		);
 	}
 

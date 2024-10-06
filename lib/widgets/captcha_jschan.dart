@@ -83,7 +83,7 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 			id: filenameParts[0],
 			acquiredAt: DateTime.now(),
 			lifetime: const Duration(seconds: 300),
-			imageBytes: Uint8List.fromList(response.data)
+			imageBytes: Uint8List.fromList(response.data as List<int>)
 		);
 	}
 

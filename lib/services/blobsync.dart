@@ -64,7 +64,7 @@ class BlobSync {
 			)
 		);
 		if (response.statusCode == 409) {
-			throw CurrentBlobOutOfDateException(path, response.data['lastRev']);
+			throw CurrentBlobOutOfDateException(path, response.data['lastRev'] as int);
 		}
 		if (response.statusCode != 200) {
 			final error = (response.data as Map?)?['error'] as String?;
@@ -75,7 +75,7 @@ class BlobSync {
 				throw BlobSyncServerException(path, 'HTTP Error ${response.statusCode}');
 			}
 		}
-		return response.data['rev'];
+		return response.data['rev'] as int;
 	}
 
 	void listenToTheirVersion({

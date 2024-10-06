@@ -25,8 +25,8 @@ extension SafeWhere<T> on Iterable<T> {
 		return null;
 	}
 	T? tryLastWhere(bool Function(T v) f) {
-		if (this is List) {
-			final list = this as List;
+		if (this is List<T>) {
+			final list = this as List<T>;
 			for (final v in list.reversed) {
 				if (f(v)) {
 					return v;
@@ -556,7 +556,7 @@ void insertIntoSortedList<T>({
 	try {
 		int i = 0;
 		for (final originalMethod in sortMethods) {
-			method(a, b) => originalMethod(a, b) * (reverseSort ? -1 : 1);
+			method(T a, T b) => originalMethod(a, b) * (reverseSort ? -1 : 1);
 			final comp = i == list.length ? -1 : method(item, list[i]);
 			if (comp > 0) {
 				// go forwards
@@ -719,7 +719,7 @@ extension LooksForeign on String {
 	bool get looksForeign => codeUnits.any((i) => i >= 128);
 }
 
-T identity<T>(x) => x;
+T identity<T>(T x) => x;
 
 class SelectListenable<T extends Listenable, X> extends ChangeNotifier {
   SelectListenable(this._child, this._map) {

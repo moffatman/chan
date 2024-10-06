@@ -938,7 +938,7 @@ class _SavedPageState extends State<SavedPage> {
 													attachments: attachments,
 													replyCounts: {
 														for (final state in _yourPostsListController.items)
-															for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.attachments ?? [])
+															for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
 																attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.replyCount ?? 0
 													},
 													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
@@ -1085,7 +1085,7 @@ class _SavedPageState extends State<SavedPage> {
 														attachments: attachments,
 														replyCounts: {
 															for (final state in _postListController.items)
-																for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.$1.post.threadIdentifier)?.thread?.attachments ?? [])
+																for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.$1.post.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
 																	attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.$1.post.threadIdentifier)?.thread?.replyCount ?? 0
 														},
 														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),

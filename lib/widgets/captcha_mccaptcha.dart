@@ -72,12 +72,12 @@ class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 		if (challengeResponse.statusCode != 200) {
 			throw CaptchaMcCaptchaException('Got status code ${challengeResponse.statusCode}');
 		}
-		final data = jsonDecode(challengeResponse.data);
+		final data = jsonDecode(challengeResponse.data as String);
 		final b64str = data['base64Image'] as String;
 		const kHint = ';base64,';
 		return CaptchaMcCaptchaChallenge(
 			image: await decodeImageFromList(Uint8List.fromList(base64Decode(b64str.substring(b64str.indexOf(kHint) + kHint.length)))),
-			guid: data['guid'],
+			guid: data['guid'] as String,
 			acquiredAt: DateTime.now()
 		);
 	}

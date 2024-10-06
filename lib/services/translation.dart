@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:chan/services/compress_html.dart';
 import 'package:chan/services/settings.dart';
+import 'package:dio/dio.dart';
 import 'package:html/parser.dart';
 
 const _translationApiRoot = 'https://api.chance.surf/translate';
@@ -52,11 +53,13 @@ Future<String> translateHtml(String html, {required String toLanguage}) async {
 	final response = await Settings.instance.client.get(_translationApiRoot, queryParameters: {
 		'html': compressed.html,
 		'to': toLanguage
-	});
-	if (response.data['error'] != null) {
-		throw TranslationException(response.data['error']);
+	}, options: Options(
+		responseType: ResponseType.json
+	));
+	if (response.data['error'] case String error) {
+		throw TranslationException(error);
 	}
-	return compressed.decompressTranslation(response.data['html']);
+	return compressed.decompressTranslation(response.data['html'] as String);
 }
 
 Future<List<String>> batchTranslate(List<String> input, {required String toLanguage}) async {

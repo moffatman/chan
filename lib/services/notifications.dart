@@ -265,46 +265,47 @@ class Notifications {
 
 	@pragma('vm:entry-point')
 	static Future<void> onUnifiedPushMessage(Uint8List message, String instance) async {
-		final data = json.decode(utf8.decode(message));
+		final notification = json.decode(utf8.decode(message)) as Map;
+		final data = (notification['data'] as Map).cast<String, String>();
 		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-			_onMessage(data['data']);
+			_onMessage(data);
 		}
 		else {
 			FlutterLocalNotificationsPlugin().show(
-				int.parse(data['data']['postId']),
-				data['title'],
-				data['body'],
+				int.tryParse(data['postId'] ?? '') ?? int.parse(data['threadId']!),
+				notification['title'] as String?,
+				notification['body'] as String?,
 				NotificationDetails(
 					android: AndroidNotificationDetails(
 						'up', 'Unified Push',
 						importance: Importance.high,
 						priority: Priority.high,
-						groupKey: _makeNotificationThreadId(data['data'])
+						groupKey: _makeNotificationThreadId(data)
 					)
 				),
-				payload: json.encode(data['data'])
+				payload: json.encode(data)
 			);
 		}
 	}
 
 	@pragma('vm:entry-point')
 	static Future<void> onAPNSLaunch(ApnsRemoteMessage message) async {
-		_onMessageOpenedApp(message.payload['data']);
+		_onMessageOpenedApp(message.payload['data'] as Map);
 	}
 
 	@pragma('vm:entry-point')
 	static Future<void> onAPNSMessage(ApnsRemoteMessage message) async {
-		_onMessage(message.payload['data']);
+		_onMessage(message.payload['data'] as Map);
 	}
 
 	@pragma('vm:entry-point')
 	static Future<void> onAPNSResume(ApnsRemoteMessage message) async {
-		_onMessageOpenedApp(message.payload['data']);
+		_onMessageOpenedApp(message.payload['data'] as Map);
 	}
 
 	@pragma('vm:entry-point')
 	static Future<void> _onLocalNotificationTapped(NotificationResponse response) async {
-		_onMessageOpenedApp(json.decode(response.payload!));
+		_onMessageOpenedApp(json.decode(response.payload!) as Map);
 	}
 
 	@pragma('vm:entry-point')
@@ -384,7 +385,7 @@ class Notifications {
 				}
 				final initial = await FlutterLocalNotificationsPlugin().getNotificationAppLaunchDetails();
 				if (initial?.didNotificationLaunchApp ?? false) {
-					_onMessageOpenedApp(json.decode(initial!.notificationResponse!.payload!));
+					_onMessageOpenedApp(json.decode(initial!.notificationResponse!.payload!) as Map);
 				}
 			}
 			else if (Platform.isIOS || Platform.isMacOS) {
@@ -468,7 +469,7 @@ class Notifications {
 			'siteData': siteData,
 			'filters': ''
 		}));
-		final String digest = response.data['digest'];
+		final digest = response.data['digest'] as String;
 		final emptyDigest = base64Encode(md5.convert(''.codeUnits).bytes);
 		if (digest != emptyDigest) {
 			print('Need to resync notifications $id');
@@ -488,7 +489,7 @@ class Notifications {
 					'siteData': siteData,
 					'filters': Settings.instance.filterConfiguration
 				}));
-				final String digest = response.data['digest'];
+				final digest = response.data['digest'] as String;
 				if (digest != _calculateDigest()) {
 					print('Need to resync notifications $id');
 					await _client.put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({

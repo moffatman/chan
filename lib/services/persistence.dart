@@ -817,7 +817,7 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 			if (deprecatedThreadStatesBox != null) {
-				for (final String key in deprecatedThreadStatesBox.keys) {
+				for (final key in deprecatedThreadStatesBox.keys) {
 					if (sharedThreadStateBox.containsKey('imageboardKey/$key')) {
 						continue;
 					}
@@ -1176,8 +1176,8 @@ class Persistence extends ChangeNotifier {
 
 	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
 		final deadline = DateTime.now().subtract(const Duration(days: 3));
-		for (final String k in sharedBoardsBox.keys) {
-			if (!k.startsWith('$imageboardKey/')) {
+		for (final k in sharedBoardsBox.keys) {
+			if (k is! String || !k.startsWith('$imageboardKey/')) {
 				continue;
 			}
 			final v = sharedBoardsBox.get(k)!;
@@ -1258,7 +1258,7 @@ class Persistence extends ChangeNotifier {
 	static Future<void> saveCookiesFromWebView(Uri uri) async {
 		final cookies = await webview.CookieManager.instance().getCookies(url: webview.WebUri.uri(uri));
 		await currentCookies.saveFromResponse(uri, cookies.map((cookie) {
-			final newCookie = MyCookie(cookie.name, cookie.value);
+			final newCookie = MyCookie(cookie.name, cookie.value as String);
 			newCookie.domain = cookie.domain;
 			if (cookie.expiresDate != null) {
 				newCookie.expires = DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!);

@@ -8,7 +8,7 @@ const _platform = MethodChannel('com.moffatman.chan/clipboard');
 
 Future<bool> doesClipboardContainImage() async {
 	try {
-		return await _platform.invokeMethod('doesClipboardContainImage');
+		return await _platform.invokeMethod<bool>('doesClipboardContainImage') ?? false;
 	}
 	on Exception {
 		return false;

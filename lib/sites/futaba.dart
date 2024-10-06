@@ -155,7 +155,7 @@ class SiteFutaba extends ImageboardSite {
 				kPriority: priority
 			}
 		));
-		final document = await parse(response.data);
+		final document = await parse(Uint8List.fromList(response.data as List<int>));
 		return document.querySelectorAll('td a').where((e) {
 			return e.attributes['href']?.endsWith('futaba.htm') ?? false;
 		}).map((e) {
@@ -188,7 +188,7 @@ class SiteFutaba extends ImageboardSite {
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
 		}
-		return await parse(response.data);
+		return await parse(Uint8List.fromList(response.data as List<int>));
 	}
 
 	@override
@@ -325,7 +325,7 @@ class SiteFutaba extends ImageboardSite {
 		final response = await client.getThreadUri(Uri.parse(getWebUrlImpl(thread.board, thread.id)), options: Options(
 			responseType: ResponseType.bytes
 		), priority: priority);
-		final document = await parse(response.data);
+		final document = await parse(Uint8List.fromList(response.data as List<int>));
 		return _makeThread(document.querySelector('.thre')!, thread.board);
 
 	}

@@ -806,7 +806,7 @@ class ThreadPageState extends State<ThreadPage> {
 			context: context,
 			attachments: attachments,
 			replyCounts: {
-				for (final post in persistentState.thread?.posts ?? const Iterable.empty())
+				for (final post in persistentState.thread?.posts ?? const Iterable<Post>.empty())
 					for (final attachment in post.attachments)
 						attachment: post.replyIds.length
 			},

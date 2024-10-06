@@ -1,3 +1,4 @@
+// ignore_for_file: argument_type_not_assignable
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
@@ -186,7 +187,7 @@ class SiteJsChan extends ImageboardSite {
 		);
 		String? title;
 		if (response.data is Map) {
-			title = response.data['title'];
+			title = response.data['title'] as String?;
 		}
 		else if (response.data is String) {
 			title = parse(response.data).querySelector('title')?.text;
@@ -222,7 +223,7 @@ class SiteJsChan extends ImageboardSite {
 				}
 			));
 			page++;
-			maxPage = response.data['maxPage'];
+			maxPage = response.data['maxPage'] as int;
 			list.addAll((response.data['boards'] as List).where((board) => board['webring'] != true).map((board) => ImageboardBoard(
 				name: board['_id'],
 				title: board['settings']['name'],

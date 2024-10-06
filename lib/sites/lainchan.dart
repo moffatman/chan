@@ -1,3 +1,4 @@
+// ignore_for_file: argument_type_not_assignable
 import 'dart:async';
 import 'dart:convert';
 
@@ -149,7 +150,7 @@ class SiteLainchan extends ImageboardSite {
 		final ret = <Attachment>[];
 		Attachment? makeAttachment(dynamic data) {
 			final id = data['tim'];
-			final String ext = data['ext'];
+			final ext = data['ext'] as String;
 			AttachmentType type = AttachmentType.image;
 			if (ext == 'deleted') {
 				return null;
@@ -276,7 +277,7 @@ class SiteLainchan extends ImageboardSite {
 	static final _pollFormPattern = RegExp('<div [^>]+class=\'pollform\'>.*<\\/div>(?:<br\\/>)?');
 
 	Post _makePost(String board, int threadId, dynamic data) {
-		final int id = data['no'];
+		final id = data['no'] as int;
 		final String text;
 		if (id == threadId) {
 			// Only OP can have inline poll metadata
@@ -317,7 +318,7 @@ class SiteLainchan extends ImageboardSite {
 		}
 		final firstPost = response.data['posts'][0];
 		final hasPoll = _pollFormPattern.hasMatch(firstPost['com'] as String? ?? '');
-		final List<Post> posts = (response.data['posts'] ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
+		final List<Post> posts = (response.data['posts'] as List? ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
 		return Thread(
 			board: thread.board,
 			id: thread.id,
@@ -349,10 +350,10 @@ class SiteLainchan extends ImageboardSite {
 			}
 		}
 		final List<Thread> threads = [];
-		for (final page in response.data) {
-			for (final threadData in (page['threads'] ?? [])) {
+		for (final page in response.data as List) {
+			for (final threadData in (page['threads'] as List? ?? [])) {
 				final threadAsPost = _makePost(board, threadData['no'], threadData);
-				final int? currentPage = page['page'];
+				final currentPage = page['page'] as int?;
 				final thread = Thread(
 					board: board,
 					id: threadData['no'],
@@ -404,7 +405,7 @@ class SiteLainchan extends ImageboardSite {
 		final page = await client.get(referer, options: Options(validateStatus: (x) => true), cancelToken: cancelToken);
 		final Map<String, dynamic> fields = {
 			for (final field in parse(page.data).querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
-				field.attributes['name']!: field.attributes['value'] ?? field.text
+				field.attributes['name'] as String: field.attributes['value'] ?? field.text
 		};
 		fields['body'] = post.text;
 		fields['password'] = password;

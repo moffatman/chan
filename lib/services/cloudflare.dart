@@ -36,6 +36,38 @@ extension HtmlTitle on Response {
 	}
 }
 
+Future<String> _bodyAsString(dynamic data) async => switch (data) {
+	String raw => raw,
+	List<int> bytes => utf8.decode(bytes),
+	ResponseBody stream => await utf8.decodeStream(stream.stream),
+	Object? other => jsonEncode(other)
+};
+
+Future<({Uint8List data, String contentType})?> _requestDataAsBytes(RequestOptions options) async {
+	final Uint8List data;
+	final String contentType;
+	if (options.data is FormData) {
+		contentType = 'multipart/form-data; boundary=${options.data.boundary}';
+		data = Uint8List.fromList(await (options.data as FormData).finalize().fold<List<int>>([], (a, b) => a + b));
+	}
+	else if (options.data case String str) {
+		data = utf8.encode(str);
+		contentType = 'text/plain';
+	}
+	else if (Transformer.isJsonMimeType(options.contentType)) {
+		data = utf8.encode(jsonEncode(options.data));
+		contentType = 'application/json';
+	}
+	else if (options.data case Map map) {
+		contentType = Headers.formUrlEncodedContentType;
+		data = utf8.encode(Transformer.urlEncodeMap(map));
+	}
+	else {
+		return null;
+	}
+	return (data: data, contentType: contentType);
+}
+
 extension _Cloudflare on RequestPriority {
 	bool get shouldPopupCloudflare => switch(this) {
 		RequestPriority.interactive || RequestPriority.functional => true,
@@ -189,9 +221,9 @@ class CloudflareInterceptor extends Interceptor {
 		].every((substring) => lower.contains(substring));
 	}
 
-	static bool _responseMatchesBlock(Response response) {
+	static Future<bool> _responseMatchesBlock(Response response) async {
 		if ([403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
-			return _bodyMatchesBlock(response.data);
+			_bodyMatchesBlock(await _bodyAsString(response.data));
 		}
 		return false;
 	}
@@ -309,7 +341,7 @@ class CloudflareInterceptor extends Interceptor {
 			// User recently rejected a non-interactive cloudflare login, reject it
 			throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
 		}
-		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push(adaptivePageRoute(
+		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<T>(adaptivePageRoute(
 			builder: (context) => AdaptiveScaffold(
 				bar: AdaptiveBar(
 					title: Text('$gatewayName Login')
@@ -350,33 +382,23 @@ class CloudflareInterceptor extends Interceptor {
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
 		if (options.cloudflare) {
 			try {
-				if (options.data is FormData) {
-					options.headers[Headers.contentTypeHeader] =
-							'multipart/form-data; boundary=${options.data.boundary}';
-					options.data = await (options.data as FormData).finalize().fold<List<int>>([], (a, b) => a + b);
-				}
-				else if (options.data is String) {
-					options.data = utf8.encode(options.data);
-				}
-				else if (Transformer.isJsonMimeType(options.contentType)) {
-					options.data = utf8.encode(jsonEncode(options.data));
-				}
-				else if (options.data is Map) {
-					options.headers[Headers.contentTypeHeader] = Headers.formUrlEncodedContentType;
-					options.data = utf8.encode(Transformer.urlEncodeMap(options.data));
-				}
+				final requestData = await _requestDataAsBytes(options);
 				final data = await _useWebview(
 					handler: _buildHandler(options.uri),
 					cookieUrl: options.uri,
-					userAgent: options.headers['user-agent'] ?? Persistence.settings.userAgent,
+					userAgent: options.headers['user-agent'] as String? ?? Settings.instance.userAgent,
 					initialUrlRequest: URLRequest(
 						url: WebUri.uri(options.uri),
 						mainDocumentURL: WebUri.uri(options.uri),
 						method: options.method,
 						headers: {
-							for (final h in options.headers.entries) h.key: h.value
+							for (final h in options.headers.entries)
+								if (h.value case String value)
+									h.key: value,
+							if (requestData != null)
+								Headers.contentTypeHeader: requestData.contentType
 						},
-						body: options.data == null ? null : Uint8List.fromList(options.data)
+						body: requestData?.data
 					),
 					priority: options.priority
 				);
@@ -399,7 +421,7 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		if (_responseMatchesBlock(response)) {
+		if (await _responseMatchesBlock(response)) {
 			handler.reject(DioError(
 				requestOptions: response.requestOptions,
 				response: response,
@@ -422,18 +444,21 @@ class CloudflareInterceptor extends Interceptor {
 				if (gatewayName != null) {
 					// Start the request again
 					// We need to ensure cookies are preserved in all navigation sequences
+					final requestData = await _requestDataAsBytes(response.requestOptions);
 					data = await _useWebview(
 						handler: _buildHandler(response.requestOptions.uri),
 						cookieUrl: response.requestOptions.uri,
-						userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
+						userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
 						initialUrlRequest: URLRequest(
 							url: WebUri.uri(response.requestOptions.uri),
 							mainDocumentURL: WebUri.uri(response.requestOptions.uri),
 							method: response.requestOptions.method,
 							headers: {
-								for (final h in response.requestOptions.headers.entries) h.key: h.value.toString()
+								for (final h in response.requestOptions.headers.entries) h.key: h.value.toString(),
+								if (requestData != null)
+									Headers.contentTypeHeader: requestData.contentType
 							},
-							body: response.requestOptions.data == null ? null : Uint8List.fromList(response.requestOptions.data)
+							body: requestData?.data
 						),
 						priority: response.requestOptions.priority,
 						gatewayName: gatewayName
@@ -443,14 +468,9 @@ class CloudflareInterceptor extends Interceptor {
 					data = await _useWebview(
 						handler: _buildHandler(response.requestOptions.uri),
 						cookieUrl: response.requestOptions.uri,
-						userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
+						userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
 						initialData: InAppWebViewInitialData(
-							data: response.data is String ? response.data : switch (response.requestOptions.responseType) {
-								ResponseType.bytes => utf8.decode(response.data),
-								ResponseType.json => jsonEncode(response.data),
-								ResponseType.plain => response.data,
-								ResponseType.stream => await utf8.decodeStream((response.data as ResponseBody).stream)
-							},
+							data: await _bodyAsString(response),
 							baseUrl: WebUri.uri(response.realUri.fillInFrom(response.requestOptions.uri))
 						),
 						priority: response.requestOptions.priority
@@ -478,7 +498,7 @@ class CloudflareInterceptor extends Interceptor {
 	void onError(DioError err, ErrorInterceptorHandler handler) async {
 		if (err.type == DioErrorType.response &&
 		    err.response != null &&
-				_responseMatchesBlock(err.response!)) {
+				await _responseMatchesBlock(err.response!)) {
 			handler.reject(DioError(
 				requestOptions: err.requestOptions,
 				response: err.response,
@@ -501,14 +521,9 @@ class CloudflareInterceptor extends Interceptor {
 				final data = await _useWebview(
 					handler: _buildHandler(err.requestOptions.uri),
 					cookieUrl: err.requestOptions.uri,
-					userAgent: err.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
+					userAgent: err.requestOptions.headers['user-agent'] as String? ?? Settings.instance.userAgent,
 					initialData: InAppWebViewInitialData(
-						data: err.response?.data is String ? err.response!.data : switch (err.requestOptions.responseType) {
-							ResponseType.bytes => utf8.decode(err.response!.data),
-							ResponseType.json => jsonEncode(err.response!.data),
-							ResponseType.plain => err.response!.data,
-							ResponseType.stream => await utf8.decodeStream((err.response!.data as ResponseBody).stream)
-						},
+						data: await _bodyAsString(err.response?.data),
 						baseUrl: WebUri.uri(err.response!.realUri.fillInFrom(err.requestOptions.uri))
 					),
 					priority: err.requestOptions.priority

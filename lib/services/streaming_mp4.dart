@@ -647,7 +647,7 @@ class StreamingMP4Conversion {
 			await expected.parent.create(recursive: true);
 			await joined.file.rename(expected.path);
 			_joinedCompleter.complete(expected);
-		}().catchError((e, st) {
+		}().catchError((Object e, StackTrace st) {
 			_joinedCompleter.completeError(e, st);
 		});
 		return joinedConversion.progress;

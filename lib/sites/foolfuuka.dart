@@ -1,3 +1,4 @@
+// ignore_for_file: argument_type_not_assignable
 import 'dart:convert';
 
 import 'package:chan/models/attachment.dart';
@@ -43,7 +44,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	final bool useRandomUseragent;
 	final bool hasAttachmentRateLimit;
 	ImageboardFlag? _makeFlag(dynamic data) {
-		if (data['poster_country'] != null && data['poster_country'].isNotEmpty) {
+		if ((data['poster_country'] as String?)?.isNotEmpty ?? false) {
 			return ImageboardFlag(
 				name: data['poster_country_name'] ?? const {
 					'XE': 'England',
@@ -55,7 +56,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				imageHeight: 11
 			);
 		}
-		else if (data['troll_country_name'] != null && data['troll_country_name'].isNotEmpty) {
+		else if ((data['troll_country_name'] as String?)?.isNotEmpty ?? false) {
 			return ImageboardFlag(
 				name: data['troll_country_name'],
 				imageUrl: Uri.https(staticUrl, '/image/flags/${data['board']?['shortname']}/${data['troll_country_code'].toLowerCase()}.gif').toString(),
@@ -177,7 +178,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 	Attachment? _makeAttachment(dynamic data) {
 		if (data['media'] != null) {
-			final List<String> serverFilenameParts =  data['media']['media_orig'].split('.');
+			final serverFilenameParts = (data['media']['media_orig'] as String).split('.');
 			Uri url = Uri.parse(data['media']['media_link'] ?? data['media']['remote_media_link']);
 			Uri thumbnailUrl = Uri.parse(data['media']['thumb_link']);
 			if (url.host.isEmpty) {
@@ -210,7 +211,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	static final _postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]{1,18})/');
 
 	Future<Post> _makePost(dynamic data, {bool resolveIds = true, required RequestPriority priority}) async {
-		final String board = data['board']['shortname'];
+		final board = data['board']['shortname'] as String;
 		final int threadId = int.parse(data['thread_num']);
 		final int id = int.parse(data['num']);
 		_precachePostThreadId(board, id, threadId);
@@ -310,12 +311,13 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage, required RequestPriority priority}) async {
 		final op = data[thread.id.toString()]['op'];
-		var replies = data[thread.id.toString()]['posts'] ?? [];
-		if (replies is Map) {
-			replies = replies.entries.where((e) => int.tryParse(e.key) != null).map((e) => e.value);
-		}
+		final replies = switch (data[thread.id.toString()]['posts']) {
+			List x => x,
+			Map m => m.entries.where((e) => int.tryParse(e.key) != null).map((e) => e.value),
+			_ => []
+		};
 		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, priority: priority)))).toList();
-		final String? title = op['title'];
+		final title = op['title'] as String?;
 		final a = _makeAttachment(op);
 		return Thread(
 			board: thread.board,
@@ -386,12 +388,12 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
 		}
-		final Iterable<dynamic> boardData = response.data['archives'].values;
+		final boardData = (response.data['archives'] as Map).values;
 		return boardData.map((archive) {
 			return ImageboardBoard(
 				name: archive['shortname'],
 				title: archive['name'],
-				isWorksafe: !archive['is_nsfw'],
+				isWorksafe: !(archive['is_nsfw'] as bool),
 				webmAudioAllowed: false
 			);
 		}).toList();

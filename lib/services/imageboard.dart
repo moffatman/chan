@@ -257,7 +257,7 @@ class Imageboard extends ChangeNotifier {
 				// Wait for both forcedCheck and minimum time
 				// Because if dart is paused while backgrounded, the minimum time
 				// will be misleading
-				forcedCheckFuture.catchError((e, st) {
+				forcedCheckFuture.catchError((Object e, StackTrace st) {
 					Future.error(e, st); // crashlytics
 				}),
 				Future.delayed(const Duration(seconds: 20))

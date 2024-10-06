@@ -57,7 +57,7 @@ Future<CaptchaSolution?> solveCaptcha({
 			throw const HeadlessSolveNotPossibleException();
 		}
 		beforeModal?.call();
-		final solution = await Navigator.of(context, rootNavigator: true).push(TransparentRoute(
+		final solution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: builder(Navigator.of(context).pop)
 			)
@@ -118,7 +118,7 @@ Future<CaptchaSolution?> solveCaptcha({
 					}
 					else if (e is dio.DioError && e.error is CloudflareHandlerInterruptedException) {
 						// Avoid two cloudflare popups
-						initialChallengeException = e.error;
+						initialChallengeException = e.error as CloudflareHandlerInterruptedException;
 					}
 					else {
 						Future.error(e, st); // Report to crashlytics

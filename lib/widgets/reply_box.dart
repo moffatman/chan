@@ -239,7 +239,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				if (_previousPostReceiptIsTooOld(thread?.time)) {
 					continue;
 				}
-				for (final post in thread?.posts_ ?? const Iterable.empty()) {
+				for (final post in thread?.posts_ ?? const Iterable<Post>.empty()) {
 					if (!state.youIds.contains(post.id)) {
 						continue;
 					}
@@ -375,7 +375,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			setState(() {
 				_flags = flags;
 			});
-		}).catchError((e, st) {
+		}).catchError((Object e, StackTrace st) {
 			Future.error(e, st); // Crashlytics
 			print('Error getting flags for ${widget.board}: $e');
 		});

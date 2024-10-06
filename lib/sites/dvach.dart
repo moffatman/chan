@@ -1,3 +1,4 @@
+// ignore_for_file: argument_type_not_assignable
 import 'package:chan/models/attachment.dart';
 
 import 'package:chan/models/board.dart';
@@ -150,7 +151,7 @@ class SiteDvach extends ImageboardSite {
 		else if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
 		}
-		final int? threadsPerPage = response.data['board']['threads_per_page'];
+		final threadsPerPage = response.data['board']['threads_per_page'] as int?;
 		return (response.data['threads'] as List<dynamic>).cast<Map<String, dynamic>>().asMap().entries.map((e) {
 			final op = _makePost(board, e.value['num'], e.value);
 			return Thread(

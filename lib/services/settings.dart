@@ -439,18 +439,19 @@ class SavedTheme {
 	ThemeData get materialThemeData {
 		final colorScheme = ColorScheme.fromSwatch(
 			brightness: brightness,
-			primarySwatch: MaterialColor(primaryColor.value, Map.fromIterable(
-				[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-				key: (strength) => (strength * 1000).round(),
-				value: (strength) {
+			primarySwatch: MaterialColor(primaryColor.value, Map.fromEntries(
+				[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((strength) {
 					final ds = 0.5 - strength;
-					return Color.fromRGBO(
-						primaryColor.red + ((ds < 0) ? primaryColor.red : (255 - primaryColor.red) * ds).round(),
-						primaryColor.green + ((ds < 0) ? primaryColor.green : (255 - primaryColor.green) * ds).round(),
-						primaryColor.blue + ((ds < 0) ? primaryColor.blue : (255 - primaryColor.blue) * ds).round(),
-						1
+					return MapEntry<int, Color>(
+						(strength * 1000).round(),
+						Color.fromRGBO(
+							primaryColor.red + ((ds < 0) ? primaryColor.red : (255 - primaryColor.red) * ds).round(),
+							primaryColor.green + ((ds < 0) ? primaryColor.green : (255 - primaryColor.green) * ds).round(),
+							primaryColor.blue + ((ds < 0) ? primaryColor.blue : (255 - primaryColor.blue) * ds).round(),
+							1
+						)
 					);
-				}
+				})
 			)),
 			accentColor: secondaryColor,
 			cardColor: barColor,
@@ -1713,7 +1714,7 @@ abstract class MutableSetting<T> {
 	const MutableSetting();
 	T read(BuildContext context);
 	T watch(BuildContext context);
-	T get(BuildContext context, listen) => listen ? watch(context) : read(context);
+	T get(BuildContext context, bool listen) => listen ? watch(context) : read(context);
 	Future<void> didMutate(BuildContext context);
 	Future<void> Function() makeDidMutate(BuildContext context) => () => didMutate(context);
 	List<String> get syncPaths;

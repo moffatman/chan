@@ -131,14 +131,14 @@ class MediaScan {
 					throw const MediaScanException(0, 'No output from ffprobe');
 				}
 				final data = jsonDecode(result.output);
-				final seconds = double.tryParse(data['format']?['duration'] ?? '');
+				final seconds = double.tryParse(data['format']?['duration'] as String? ?? '');
 				int width = 0;
 				int height = 0;
 				double? videoFramerate;
-				Map? metadata = data['format']?['tags'];
+				Map? metadata = data['format']?['tags'] as Map?;
 				for (final stream in (data['streams'] as List<dynamic>)) {
-					width = max(width, stream['width'] ?? 0);
-					height = max(height, stream['height'] ?? 0);
+					width = max(width, stream['width'] as int? ?? 0);
+					height = max(height, stream['height'] as int? ?? 0);
 					if (stream['codec_type'] == 'video') {
 						final avgFramerateFractionString = stream['avg_frame_rate'] as String?;
 						final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
@@ -154,14 +154,14 @@ class MediaScan {
 				return MediaScan(
 					hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
 					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
-					bitrate: int.tryParse(data['format']?['bit_rate'] ?? ''),
+					bitrate: int.tryParse(data['format']?['bit_rate'] as String? ?? ''),
 					width: width == 0 ? null : width,
 					height: height == 0 ? null : height,
-					codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
+					codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'] as String?,
 					videoFramerate: videoFramerate,
-					sizeInBytes: int.tryParse(data['format']?['size'] ?? ''),
+					sizeInBytes: int.tryParse(data['format']?['size'] as String? ?? ''),
 					metadata: metadata,
-					format: (data['format'] as Map?)?['format_name']
+					format: (data['format'] as Map?)?['format_name'] as String?
 				);
 			});
 		}
@@ -256,6 +256,9 @@ class MediaScan {
 				runWhenIdle(const Duration(seconds: 1), _closeBox);
 				final mediaScanBox = _mediaScanBox ??= await Hive.openLazyBox<MediaScan>('mediaScans');
 				for (final key in mediaScanBox.keys) {
+					if (key is! String) {
+						continue;
+					}
 					final value = await mediaScanBox.get(key);
 					if (value != null) {
 						_fileScans[key] = value;

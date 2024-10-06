@@ -36,7 +36,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 		super.initState();
 		final site = context.read<ImageboardSite>();
 		if (site.supportsUserInfo) {
-			_future = site.getUserInfo(widget.username).catchError((e, st) {
+			_future = site.getUserInfo(widget.username).catchError((Object e, StackTrace st) {
 				Future.error(e, st); // Crashlytics
 				Error.throwWithStackTrace(e, st);
 			});
@@ -120,7 +120,7 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 													padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
 													onPressed: () {
 														setState(() {
-															_future = site.getUserInfo(widget.username).catchError((e, st) {
+															_future = site.getUserInfo(widget.username).catchError((Object e, StackTrace st) {
 																Future.error(e, st); // Crashlytics
 																Error.throwWithStackTrace(e, st);
 															});

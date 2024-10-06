@@ -16,7 +16,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 extension WithinRange on num {
-  withinRange(num low, num high) {
+  bool withinRange(num low, num high) {
     return this >= low && this <= high;
   }
 }

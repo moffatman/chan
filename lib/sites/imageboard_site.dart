@@ -1,3 +1,4 @@
+// ignore_for_file: argument_type_not_assignable
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -1759,7 +1760,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			'diffs': base64Url.encode(gzip.encode(utf8.encode(diffs.join(','))))
 		});
 		return {
-			for (final entry in (response.data as Map).entries) int.parse(entry.key): entry.value
+			for (final entry in (response.data as Map).entries) int.parse(entry.key as String): entry.value as String
 		};
 	}
 	@override

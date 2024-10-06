@@ -124,26 +124,26 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	if (site is Site4Chan) {
 		site.resetCaptchaTicketTimer();
 	}
-	if (data['pcd'] != null) {
-		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] ?? 'Please wait a while.', challengeResponse.cloudflare, DateTime.now().add(Duration(seconds: data['pcd'].toInt())));
+	if (data['pcd'] case num pcd) {
+		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] as String? ?? 'Please wait a while.', challengeResponse.cloudflare, DateTime.now().add(Duration(seconds: pcd.toInt())));
 	}
 	final DateTime? tryAgainAt;
-	if (data['cd'] != null) {
-		tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt()));
+	if (data['cd'] case num cd) {
+		tryAgainAt = DateTime.now().add(Duration(seconds: cd.toInt()));
 	}
 	else {
 		tryAgainAt = null;
 	}
-	if (data['error'] != null) {
+	if (data['error'] case String error) {
 		if (tryAgainAt != null) {
-			throw Captcha4ChanCustomChallengeCooldownException(data['error'], challengeResponse.cloudflare, tryAgainAt);
+			throw Captcha4ChanCustomChallengeCooldownException(error, challengeResponse.cloudflare, tryAgainAt);
 		}
-		throw Captcha4ChanCustomChallengeException(data['error'], challengeResponse.cloudflare);
+		throw Captcha4ChanCustomChallengeException(error, challengeResponse.cloudflare);
 	}
 	Completer<ui.Image>? foregroundImageCompleter;
 	if (data['img'] != null) {
 		foregroundImageCompleter = Completer<ui.Image>();
-		MemoryImage(base64Decode(data['img'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+		MemoryImage(base64Decode(data['img'] as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 			foregroundImageCompleter!.complete(info.image);
 		}, onError: (e, st) {
 			foregroundImageCompleter!.completeError(e);
@@ -152,7 +152,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	Completer<ui.Image>? backgroundImageCompleter;
 	if (data['bg'] != null) {
 		backgroundImageCompleter = Completer<ui.Image>();
-		MemoryImage(base64Decode(data['bg'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+		MemoryImage(base64Decode(data['bg'] as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 			backgroundImageCompleter!.complete(info.image);
 		}, onError: (e, st) {
 			backgroundImageCompleter!.completeError(e);
@@ -162,10 +162,10 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	final backgroundImage = await backgroundImageCompleter?.future;
 	return Captcha4ChanCustomChallenge(
 		request: request,
-		challenge: data['challenge'],
+		challenge: data['challenge'] as String,
 		acquiredAt: DateTime.now(),
 		tryAgainAt: tryAgainAt,
-		lifetime: Duration(seconds: data['ttl'].toInt()),
+		lifetime: Duration(seconds: (data['ttl'] as num).toInt()),
 		foregroundImage: foregroundImage,
 		backgroundImage: backgroundImage,
 		cloudflare: challengeResponse.cloudflare

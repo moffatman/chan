@@ -102,10 +102,11 @@ class SearchPageState extends State<SearchPage> {
 			paneCreator: () =>
 				MultiMasterPane<SelectedSearchResult>(
 					masterBuilder: (context, currentValue, setValue) {
-						final v = context.watch<MasterDetailHint>().currentValue;
-						WidgetsBinding.instance.addPostFrameCallback((_){
-							_valueInjector.value = v;
-						});
+						if (context.watch<MasterDetailHint>().currentValue case SelectedSearchResult? v) {
+							WidgetsBinding.instance.addPostFrameCallback((_){
+								_valueInjector.value = v;
+							});
+						}
 						return SearchComposePage(
 							onSearchComposed: onSearchComposed,
 							onManualResult: (result) => setValue(result)
