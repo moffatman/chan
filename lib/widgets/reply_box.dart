@@ -34,6 +34,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:chan/widgets/widget_decoration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart' as dio;
@@ -1679,166 +1680,164 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						Flexible(
 							child: ConstrainedBox(
 								constraints: BoxConstraints(
-									maxHeight: min(_maxReplyBoxHeight, 100 + settings.replyBoxHeightOffset),
+									minHeight: settings.replyBoxHeightOffset + 100
 								),
-								child: Stack(
-									alignment: Alignment.center,
-									fit: StackFit.expand,
-									children: [
-										AdaptiveTextField(
-											key: _textFieldKey,
-											enabled: !loading,
-											enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-											smartDashesType: SmartDashesType.disabled,
-											smartQuotesType: SmartQuotesType.disabled,
-											controller: _textFieldController,
-											autofocus: widget.fullyExpanded,
-											contentInsertionConfiguration: ContentInsertionConfiguration(
-												onContentInserted: (content) async {
-													final data = content.data;
-													if (data == null) {
-														return;
-													}
-													if (data.isEmpty) {
-														return;
-													}
-													String filename = Uri.parse(content.uri).pathSegments.last;
-													if (!filename.contains('.')) {
-														filename += '.${content.mimeType.split('/').last}';
-													}
-													final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
-													await f.create(recursive: true);
-													await f.writeAsBytes(data, flush: true);
-													setAttachment(f);
+								child: WidgetDecoration(
+									// ignore: sort_child_properties_last
+									child: AdaptiveTextField(
+										key: _textFieldKey,
+										enabled: !loading,
+										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+										smartDashesType: SmartDashesType.disabled,
+										smartQuotesType: SmartQuotesType.disabled,
+										controller: _textFieldController,
+										autofocus: widget.fullyExpanded,
+										contentInsertionConfiguration: ContentInsertionConfiguration(
+											onContentInserted: (content) async {
+												final data = content.data;
+												if (data == null) {
+													return;
 												}
-											),
-											spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
-											contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
-												anchors: editableTextState.contextMenuAnchors,
-												buttonItems: [
-													...editableTextState.contextMenuButtonItems.map((item) {
-														if (item.type == ContextMenuButtonType.paste) {
-															return item.copyWith(
-																onPressed: () {
-																	item.onPressed?.call();
-																	_handleImagePaste(manual: false);
-																}
-															);
-														}
-														return item;
-													}),
-													ContextMenuButtonItem(
-														onPressed: _handleImagePaste,
-														label: 'Paste image'
-													),
-													if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
-														return ContextMenuButtonItem(
-															onPressed: () {
-																final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
-																editableTextState.userUpdateTextEditingValue(
-																	editableTextState.textEditingValue.replaced(
-																		editableTextState.textEditingValue.selection,
-																		snippet.wrap(selectedText)
-																	),
-																	SelectionChangedCause.toolbar
-																);
-															},
-															label: snippet.name
-														);
-													})
-												]
-											),
-											placeholder: 'Comment',
-											textAlignVertical: TextAlignVertical.top,
-											expands: true,
-											minLines: null,
-											maxLines: null,
-											focusNode: _textFocusNode,
-											textCapitalization: TextCapitalization.sentences,
-											keyboardAppearance: ChanceTheme.brightnessOf(context),
+												if (data.isEmpty) {
+													return;
+												}
+												String filename = Uri.parse(content.uri).pathSegments.last;
+												if (!filename.contains('.')) {
+													filename += '.${content.mimeType.split('/').last}';
+												}
+												final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
+												await f.create(recursive: true);
+												await f.writeAsBytes(data, flush: true);
+												setAttachment(f);
+											}
 										),
-										if (postingPost != null) Wrap(
-											direction: Axis.vertical,
-											spacing: 8,
-											runSpacing: 8,
-											alignment: WrapAlignment.center,
-											runAlignment: WrapAlignment.center,
-											crossAxisAlignment: WrapCrossAlignment.center,
-											children: [
-												AnimatedBuilder(
-													animation: Outbox.instance,
-													builder: (context, _) {
-														final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)];
-														if (queue == null) {
-															return const SizedBox.shrink();
-														}
-														return AnimatedBuilder(
-															animation: queue,
-															builder: (context, _) {
-																return AnimatedBuilder(
-																	animation: postingPost,
-																	builder: (context, _) {
-																		(DateTime, VoidCallback, String)? pair;
-																		final state = postingPost.state;
-																		if (state is QueueStateNeedsCaptcha<PostReceipt> && queue.captchaAllowedTime.isAfter(DateTime.now())) {
-																			pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now(), 'Waiting for captcha');
-																		}
-																		else if (state is QueueStateWaitingWithCaptcha<PostReceipt> && queue.allowedTime.isAfter(DateTime.now())) {
-																			pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now(), 'Waiting for cooldown');
-																		}
-																		else if (state is QueueStateSubmitting<PostReceipt>) {
-																			final wait = state.wait;
-																			if (wait != null) {
-																				pair = (wait.until, wait.skip, state.message ?? 'Waiting');
-																			}
-																		}
-																		if (pair == null) {
-																			return const SizedBox.shrink();
-																		}
-																		return AdaptiveThinButton(
-																			backgroundFilled: true,
-																			onPressed: pair.$2,
-																			padding: const EdgeInsets.all(8),
-																			child: Row(
-																				mainAxisSize: MainAxisSize.min,
-																				children: [
-																					Text('${pair.$3} '),
-																					GreedySizeCachingBox(
-																						alignment: Alignment.centerRight,
-																						child: TimedRebuilder(
-																							interval: const Duration(seconds: 1),
-																							function: () => formatDuration(pair?.$1.difference(DateTime.now()).clampAboveZero ?? Duration.zero),
-																							builder: (context, delta) => Text(
-																								'($delta)',
-																								style: CommonTextStyles.tabularFigures
-																							)
-																						)
-																					)
-																				]
-																			)
-																		);
-																	}
-																);
+										spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
+										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
+											anchors: editableTextState.contextMenuAnchors,
+											buttonItems: [
+												...editableTextState.contextMenuButtonItems.map((item) {
+													if (item.type == ContextMenuButtonType.paste) {
+														return item.copyWith(
+															onPressed: () {
+																item.onPressed?.call();
+																_handleImagePaste(manual: false);
 															}
 														);
 													}
+													return item;
+												}),
+												ContextMenuButtonItem(
+													onPressed: _handleImagePaste,
+													label: 'Paste image'
 												),
-												AdaptiveThinButton(
-													padding: const EdgeInsets.all(8),
-													onPressed: _postInBackground,
-													backgroundFilled: true,
-													child: const Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															Icon(CupertinoIcons.tray_arrow_up, size: 16),
-															SizedBox(width: 8),
-															Text('Post in background')
-														]
-													)
-												)
+												if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
+													return ContextMenuButtonItem(
+														onPressed: () {
+															final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
+															editableTextState.userUpdateTextEditingValue(
+																editableTextState.textEditingValue.replaced(
+																	editableTextState.textEditingValue.selection,
+																	snippet.wrap(selectedText)
+																),
+																SelectionChangedCause.toolbar
+															);
+														},
+														label: snippet.name
+													);
+												})
 											]
-										)
-									]
+										),
+										placeholder: 'Comment',
+										textAlignVertical: TextAlignVertical.top,
+										expands: true,
+										minLines: null,
+										maxLines: null,
+										focusNode: _textFocusNode,
+										textCapitalization: TextCapitalization.sentences,
+										keyboardAppearance: ChanceTheme.brightnessOf(context),
+									),
+									position: DecorationPosition.foreground,
+									decoration: postingPost != null ? Wrap(
+										direction: Axis.vertical,
+										spacing: 8,
+										runSpacing: 8,
+										alignment: WrapAlignment.center,
+										runAlignment: WrapAlignment.center,
+										crossAxisAlignment: WrapCrossAlignment.center,
+										children: [
+											AnimatedBuilder(
+												animation: Outbox.instance,
+												builder: (context, _) {
+													final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)];
+													if (queue == null) {
+														return const SizedBox.shrink();
+													}
+													return AnimatedBuilder(
+														animation: queue,
+														builder: (context, _) {
+															return AnimatedBuilder(
+																animation: postingPost,
+																builder: (context, _) {
+																	(DateTime, VoidCallback, String)? pair;
+																	final state = postingPost.state;
+																	if (state is QueueStateNeedsCaptcha<PostReceipt> && queue.captchaAllowedTime.isAfter(DateTime.now())) {
+																		pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now(), 'Waiting for captcha');
+																	}
+																	else if (state is QueueStateWaitingWithCaptcha<PostReceipt> && queue.allowedTime.isAfter(DateTime.now())) {
+																		pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now(), 'Waiting for cooldown');
+																	}
+																	else if (state is QueueStateSubmitting<PostReceipt>) {
+																		final wait = state.wait;
+																		if (wait != null) {
+																			pair = (wait.until, wait.skip, state.message ?? 'Waiting');
+																		}
+																	}
+																	if (pair == null) {
+																		return const SizedBox.shrink();
+																	}
+																	return AdaptiveThinButton(
+																		backgroundFilled: true,
+																		onPressed: pair.$2,
+																		padding: const EdgeInsets.all(8),
+																		child: Row(
+																			mainAxisSize: MainAxisSize.min,
+																			children: [
+																				Text('${pair.$3} '),
+																				GreedySizeCachingBox(
+																					alignment: Alignment.centerRight,
+																					child: TimedRebuilder(
+																						interval: const Duration(seconds: 1),
+																						function: () => formatDuration(pair?.$1.difference(DateTime.now()).clampAboveZero ?? Duration.zero),
+																						builder: (context, delta) => Text(
+																							'($delta)',
+																							style: CommonTextStyles.tabularFigures
+																						)
+																					)
+																				)
+																			]
+																		)
+																	);
+																}
+															);
+														}
+													);
+												}
+											),
+											AdaptiveThinButton(
+												padding: const EdgeInsets.all(8),
+												onPressed: _postInBackground,
+												backgroundFilled: true,
+												child: const Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(CupertinoIcons.tray_arrow_up, size: 16),
+														SizedBox(width: 8),
+														Text('Post in background')
+													]
+												)
+											)
+										]
+									) : const SizedBox.shrink()
 								)
 							)
 						)
