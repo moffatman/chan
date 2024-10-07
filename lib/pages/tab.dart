@@ -62,7 +62,7 @@ class ImageboardTab extends StatelessWidget {
 					if (thread != null) {
 						tab.threadForPullTab = null;
 						// ensure state created before didUpdate
-						tab.imageboard?.persistence.getThreadState(thread);
+						tab.persistence?.getThreadState(thread);
 					}
 					Future.delayed(const Duration(seconds: 1), Persistence.saveTabs);
 					tab.didUpdate();
