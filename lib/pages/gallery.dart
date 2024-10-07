@@ -598,7 +598,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																			mayObscure: true
 																		) : SavedAttachmentThumbnail(
 																			file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
-																			fit: BoxFit.cover
+																			fit: BoxFit.cover,
+																			fontSize: 10
 																		)
 																	),
 																	if (isNormalAttachment && icon != null) Positioned(
