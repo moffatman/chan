@@ -76,6 +76,41 @@ class PostThreadCombo {
 
 typedef SavedPageMasterDetailPanesState = MultiMasterDetailPage5State<ImageboardScoped<ThreadWatch>, ImageboardScoped<ThreadOrPostIdentifier>, PostThreadCombo, ImageboardScoped<SavedPost>, ImageboardScoped<SavedAttachment>>;
 
+/// As different archives may have slight mismatches
+({Post post, Attachment attachment})? _findMatchingAttachment(Thread thread, Attachment a) {
+	final best = <({Post post, Attachment attachment})>[];
+	int bestScore = -1;
+	for (final post in thread.posts) {
+		for (final other in post.attachments) {
+			int score = 0;
+			if (a.id.isNotEmpty && a.id == other.id) {
+				score += 5;
+			}
+			if (a.id.isNotEmpty && other.id.contains(a.id)) {
+				// Archive may have timestamp with further precision
+				score++;
+			}
+			if (a.filename.isNotEmpty && a.filename == other.filename) {
+				score++;
+			}
+			if (a.md5.isNotEmpty && a.md5 == other.md5) {
+				score++;
+			}
+			if (a.width != null && a.height != null && a.width == other.width && a.height == other.height) {
+				score++;
+			}
+			if (score > bestScore) {
+				bestScore = score;
+				best.clear();
+			}
+			if (score == bestScore) {
+				best.add((post: post, attachment: other));
+			}
+		}
+	}
+	return best.trySingle;
+}
+
 class SavedPage extends StatefulWidget {
 	final GlobalKey<SavedPageMasterDetailPanesState> masterDetailKey;
 
@@ -256,6 +291,74 @@ class _SavedPageState extends State<SavedPage> {
 			settings: dontAutoPopSettings
 		));
 	}
+
+	static ContextMenuAction _makeFindSavedAttachmentInThreadAction({
+		required Attachment attachment,
+		required bool poppedOut,
+		required BuildContext context,
+		required BuildContext? innerContext,
+		required Imageboard? imageboard
+	}) => ContextMenuAction(
+		child: const Text('Find in thread'),
+		trailingIcon: CupertinoIcons.return_icon,
+		onPressed: () async {
+			try {
+				final threadId = attachment.threadId;
+				if (threadId == null) {
+					throw Exception('Attachment saved without thread ID');
+				}
+				final threadIdentifier = ThreadIdentifier(attachment.board, threadId);
+				if (imageboard == null) {
+					throw Exception('Could not find corresponding site');
+				}
+				final (thread, postId) = await modalLoad(
+					context,
+					'Finding...',
+					(controller) async {
+						final threadState = imageboard.persistence.getThreadStateIfExists(threadIdentifier);
+						Thread? thread = await threadState?.getThread();
+						if (thread == null) {
+							try {
+								thread = await imageboard.site.getThread(threadIdentifier, priority: RequestPriority.interactive);
+							}
+							on ThreadNotFoundException {
+								thread = await imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (t) async {
+									if (_findMatchingAttachment(t, attachment) == null) {
+										throw Exception('Could not find attachment in thread');
+									}
+								});
+							}
+						}
+						final postId = _findMatchingAttachment(thread, attachment)?.post.id;
+						return (thread, postId);
+					}
+				);
+				if (!context.mounted) {
+					return;
+				}
+				if (poppedOut && innerContext != null) {
+					Navigator.pop(innerContext);
+				}
+				Navigator.of((poppedOut || innerContext == null) ? context : innerContext).push(adaptivePageRoute(
+					builder: (ctx) => ImageboardScope(
+						imageboardKey: null,
+						imageboard: imageboard,
+						child: ThreadPage(
+							thread: thread.identifier,
+							initialPostId: postId,
+							initiallyUseArchive: thread.isArchived,
+							boardSemanticId: -1
+						)
+					)
+				));
+			}
+			catch (e, st) {
+				if (context.mounted) {
+					alertError(context, e, st);
+				}
+			}
+		}
+	);
 
 	@override
 	Widget build(BuildContext context) {
@@ -1305,7 +1408,14 @@ class _SavedPageState extends State<SavedPage> {
 														controller.dispose();
 													}
 												),
-												...buildImageSearchActions(context, [item.item.attachment])
+												...buildImageSearchActions(context, [item.item.attachment]),
+												_makeFindSavedAttachmentInThreadAction(
+													attachment: item.item.attachment,
+													poppedOut: false,
+													context: context,
+													innerContext: null,
+													imageboard: item.imageboard
+												)
 											],
 											child: Container(
 												decoration: BoxDecoration(
@@ -1390,77 +1500,12 @@ class _SavedPageState extends State<SavedPage> {
 										updateOverlays: false,
 										heroOtherEndIsBoxFitCover: false,
 										additionalContextMenuActionsBuilder: (attachment) => [
-											ContextMenuAction(
-												child: const Text('Find in thread'),
-												trailingIcon: CupertinoIcons.return_icon,
-												onPressed: () async {
-													try {
-														final threadId = attachment.attachment.threadId;
-														if (threadId == null) {
-															throw Exception('Attachment saved without thread ID');
-														}
-														final threadIdentifier = ThreadIdentifier(attachment.attachment.board, threadId);
-														final imageboardKey = imageboardIds.entries.tryFirstWhere((e) => e.value == attachment.semanticParentIds.last)?.key;
-														if (imageboardKey == null) {
-															throw Exception('Could not find corresponding site key');
-														}
-														final imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey);
-														if (imageboard == null) {
-															throw Exception('Could not find corresponding site');
-														}
-														final (thread, postId) = await modalLoad(
-															context,
-															'Finding...',
-															(controller) async {
-																bool attachmentMatches(Attachment a) {
-																	if (a.md5.isNotEmpty && attachment.attachment.md5.isNotEmpty && a.md5 == attachment.attachment.md5) {
-																		return true;
-																	}
-																	return a.id == attachment.attachment.id;
-																}
-																final threadState = imageboard.persistence.getThreadStateIfExists(threadIdentifier);
-																Thread? thread = await threadState?.getThread();
-																if (thread == null) {
-																	try {
-																		thread = await imageboard.site.getThread(threadIdentifier, priority: RequestPriority.interactive);
-																	}
-																	on ThreadNotFoundException {
-																		thread = await imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (t) async {
-																			if (!t.posts_.any((p) => p.attachments.any(attachmentMatches))) {
-																				throw Exception('Could not find attachment in thread');
-																			}
-																		});
-																	}
-																}
-																final postId = thread.posts_.tryFirstWhere((p) => p.attachments.any(attachmentMatches))?.id;
-																return (thread, postId);
-															}
-														);
-														if (!mounted) {
-															return;
-														}
-														if (poppedOut) {
-															Navigator.pop(innerContext);
-														}
-														Navigator.of(poppedOut ? context : innerContext).push(adaptivePageRoute(
-															builder: (ctx) => ImageboardScope(
-																imageboardKey: null,
-																imageboard: imageboard,
-																child: ThreadPage(
-																	thread: thread.identifier,
-																	initialPostId: postId,
-																	initiallyUseArchive: thread.isArchived,
-																	boardSemanticId: -1
-																)
-															)
-														));
-													}
-													catch (e, st) {
-														if (mounted) {
-															alertError(context, e, st);
-														}
-													}
-												}
+											_makeFindSavedAttachmentInThreadAction(
+												attachment: attachment.attachment,
+												poppedOut: poppedOut,
+												context: context,
+												innerContext: innerContext,
+												imageboard: ImageboardRegistry.instance.getImageboard(imageboardIds.entries.tryFirstWhere((e) => e.value == attachment.semanticParentIds.last)?.key)
 											)
 										],
 									)
@@ -1851,42 +1896,13 @@ class MissingAttachmentsControls extends StatelessWidget {
 				catch (e, st) {
 					Future.error(e, st); // crashlytics
 				}
-				Attachment? find(Thread thread) {
-					final a = attachment.item.attachment;
-					final best = <Attachment>[];
-					int bestScore = -1;
-					for (final other in thread.posts.expand((p) => p.attachments)) {
-						int score = 0;
-						if (a.id.isNotEmpty && a.id == other.id) {
-							score += 5;
-						}
-						if (a.id.isNotEmpty && other.id.contains(a.id)) {
-							// Archive may have timestamp with further precision
-							score++;
-						}
-						if (a.filename.isNotEmpty && a.filename == other.filename) {
-							score++;
-						}
-						if (a.width != null && a.height != null && a.width == other.width && a.height == other.height) {
-							score++;
-						}
-						if (score > bestScore) {
-							bestScore = score;
-							best.clear();
-						}
-						if (score == bestScore) {
-							best.add(other);
-						}
-					}
-					return best.trySingle;
-				}
 				final threadId = attachment.item.attachment.threadId;
 				if (threadId != null) {
 					final threadIdentifier = ThreadIdentifier(attachment.item.attachment.board, threadId);
 					try {
 						// Get the archived thread
 						final archivedThread = await attachment.imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (thread) async {
-							final found = find(thread);
+							final found = _findMatchingAttachment(thread, attachment.item.attachment)?.attachment;
 							if (found == null) {
 								throw Exception('Attachment not found in ${thread.archiveName}');
 							}
@@ -1900,7 +1916,7 @@ class MissingAttachmentsControls extends StatelessWidget {
 								}
 							));
 						});
-						final found = find(archivedThread);
+						final found = _findMatchingAttachment(archivedThread, attachment.item.attachment)?.attachment;
 						if (found != null) {
 							await attachment.imageboard.site.client.download(found.url, attachment.item.file.path, options: Options(
 								headers: {
