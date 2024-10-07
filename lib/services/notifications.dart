@@ -330,7 +330,7 @@ class Notifications {
 	}
 
 	static Future<void> registerUnifiedPush() async {
-		if ((await UnifiedPush.getDistributor()).isNotEmpty) {
+		if ((await UnifiedPush.getDistributor())?.isNotEmpty ?? false) {
 			return;
 		}
 		final distributors = await UnifiedPush.getDistributors();

@@ -51,7 +51,10 @@ dependencies:
   share_plus: ^10.0.1
   extended_image_library: ^3.3.0
   flutter_inappwebview: ^6.0.0-beta.24+1
-  home_indicator: ^2.0.0
+  home_indicator:
+    git:
+      url: https://github.com/moffatman/flutter_home_indicator
+      ref: master
   linkify: ^4.1.0
   auto_size_text: ^3.0.0
   hive: ^2.0.1
@@ -80,7 +83,10 @@ dependencies:
   normal: ^0.6.0
   pool: ^1.5.0
   connectivity_plus: ^4.0.2
-  receive_sharing_intent: ^1.8.0
+  receive_sharing_intent:
+    git:
+      url: https://github.com/moffatman/receive_sharing_intent
+      ref: master
   native_drag_n_drop:
     git:
       url: https://github.com/moffatman/FlutterNativeDragAndDrop
@@ -89,13 +95,13 @@ dependencies:
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0
   firebase_core: ^3.5.0
-  unifiedpush: ^4.0.0
+  unifiedpush: ^5.0.2
   flutter_apns_only: ^1.6.0
   flutter_local_notifications: ^17.2.1+2
   path_provider: ^2.0.10
   path_provider_ios: ^2.0.11
   async: ^2.9.0
-  flutter_email_sender: ^5.1.0
+  flutter_email_sender: ^6.0.3
   dynamic_color: ^1.5.2
   flutter:
     sdk: flutter
@@ -173,6 +179,7 @@ dependency_overrides:
   heic_to_jpg:
     git:
       url: https://github.com/moffatman/flutter_heic_to_jpg.git
+      ref: main
   extended_image:
     git:
       url: https://github.com/moffatman/extended_image.git

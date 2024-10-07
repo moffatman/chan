@@ -35,6 +35,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     compileSdkVersion 34
 
+    namespace "com.moffatman.chan"
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).

@@ -187,7 +187,7 @@ packages:
     description:
       path: "."
       ref: master
-      resolved-ref: a09281e6373e84debcc9d427a7cce2194f2de733
+      resolved-ref: "01958ab8842badf1024094032439c32f577f17ba"
       url: "https://github.com/moffatman/charset_converter.git"
     source: git
     version: "2.2.0"
@@ -513,19 +513,19 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_email_sender
-      sha256: "9e253c69617f43d4cb5de672e93a7a19c12a21fb6a75e66c6ce7626336c4c1bc"
+      sha256: fb515d4e073d238d0daf1d765e5318487b6396d46b96e0ae9745dbc9a133f97a
       url: "https://pub.dev"
     source: hosted
-    version: "5.2.0"
+    version: "6.0.3"
   flutter_exif_rotation:
     dependency: "direct main"
     description:
       path: "."
       ref: master
-      resolved-ref: abf15593b2e5d4a124b2e3b5f97c6a7cd618c1f3
+      resolved-ref: d903c76f284e1164bbae45050e9325dd5be0015a
       url: "https://github.com/moffatman/flutter_exif_rotation"
     source: git
-    version: "0.5.1"
+    version: "0.5.2"
   flutter_highlight:
     dependency: "direct main"
     description:
@@ -683,8 +683,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
-      resolved-ref: "854763e90e873c95076eeb30712ccedccd822151"
+      ref: main
+      resolved-ref: "8e1a6bcea3933185477d8953674b17ecde1215bb"
       url: "https://github.com/moffatman/flutter_heic_to_jpg.git"
     source: git
     version: "0.2.0"
@@ -725,10 +725,11 @@ packages:
   home_indicator:
     dependency: "direct main"
     description:
-      name: home_indicator
-      sha256: b2a2149e24cabbf2a1950a75eaa1416a711737a41f89a6a4989387834c00b337
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: master
+      resolved-ref: "7a5588a09981307f769a4850f5a616194d98949f"
+      url: "https://github.com/moffatman/flutter_home_indicator"
+    source: git
     version: "2.0.2"
   html:
     dependency: "direct main"
@@ -1108,7 +1109,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "2409372660393eaf9adf22618fa8af7781541a2b"
+      resolved-ref: "2a3ac7077e8f01429460bb19416cd5a8f1f7d344"
       url: "https://github.com/moffatman/FlutterNativeDragAndDrop"
     source: git
     version: "0.0.5"
@@ -1315,10 +1316,11 @@ packages:
   receive_sharing_intent:
     dependency: "direct main"
     description:
-      name: receive_sharing_intent
-      sha256: f127989f8662ea15e193bd1e10605e5a0ab6bb92dffd51f3ce002feb0ce24c93
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: master
+      resolved-ref: "820fa2c7e848d538c8c91a0fb517dcf7134982a7"
+      url: "https://github.com/moffatman/receive_sharing_intent"
+    source: git
     version: "1.8.0"
   safe_local_storage:
     dependency: transitive
@@ -1649,26 +1651,26 @@ packages:
     dependency: "direct main"
     description:
       name: unifiedpush
-      sha256: fa0f38104cacd258b750d400c1842fa71ac4bbf29b3c741944d2c6d4572d789e
+      sha256: "6dbed5a6305ca33f1865c7a3d814ae39476b79a2d23ca76a5708f023f405730f"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.3"
+    version: "5.0.2"
   unifiedpush_android:
     dependency: transitive
     description:
       name: unifiedpush_android
-      sha256: f69a30edcd6f777d0d2877429558ab8615fe6691a21ea7d4563406373582c5e0
+      sha256: "7443dece0a850ae956514f809983eb2b39fc518c2c7d24dbfe817198bec89134"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "2.3.0"
   unifiedpush_platform_interface:
     dependency: transitive
     description:
       name: unifiedpush_platform_interface
-      sha256: "29412ec89f361c43ba06061a7ab9d50a09704e03f6df724b822a39b802bfb666"
+      sha256: dd588d78a8b2bfc10430e30035526e98caa543d0b7364a6344b5eb4815721c6d
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "2.0.2"
   universal_io:
     dependency: transitive
     description:
