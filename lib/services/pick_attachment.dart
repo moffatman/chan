@@ -127,14 +127,9 @@ List<AttachmentPickingSource> getAttachmentSources({
 	required bool includeClipboard
 }) {
 	final gallery = AttachmentPickingSource(
-		name: 'Image Gallery',
+		name: 'Gallery',
 		icon: Adaptive.icons.photo,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.image, compressionQuality: 0, allowCompression: false).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
-	);
-	final videoGallery = AttachmentPickingSource(
-		name: 'Video Gallery',
-		icon: CupertinoIcons.play_rectangle,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.video, compressionQuality: 0, allowCompression: false).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
+		pick: (context) => FilePicker.platform.pickFiles(type: FileType.media, compressionQuality: 0, allowCompression: false).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
 	);
 	final picker = ImagePicker();
 	final camera = AttachmentPickingSource(
@@ -239,7 +234,6 @@ List<AttachmentPickingSource> getAttachmentSources({
 		return [
 			if (anySaved) saved,
 			gallery,
-			videoGallery,
 			file,
 			web,
 			if (!isOnMac) ...[
