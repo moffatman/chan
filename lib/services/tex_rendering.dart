@@ -82,7 +82,7 @@ class TeXRendering {
 			jsObjectName: 'TeXViewRenderedCallback',
 			allowedOriginRules: {'*'},
 			onPostMessage: (message, origin, isMainFrame, replyProxy) {
-				_renderCallbackCompleter?.complete(message);
+				_renderCallbackCompleter?.complete(message?.data as String);
 			}
 		));
 		await Future.any([loadCompleter.future, Future.delayed(const Duration(seconds: 5))]);
