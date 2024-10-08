@@ -244,9 +244,9 @@ class SiteLynxchan extends ImageboardSite {
 		final list = <ImageboardBoard>[];
 		final linkPattern = RegExp(r'^\/([^/]+)\/ - (.*)$');
 		for (final cell in document.querySelectorAll('#divBoards .boardsCell')) {
-			final col1 = cell.querySelector('span')!;
-			final match = linkPattern.firstMatch(col1.querySelector('.linkBoard')?.text ?? '');
-			if (match == null) {
+			final col1 = cell.querySelector('span');
+			final match = linkPattern.firstMatch(col1?.querySelector('.linkBoard')?.text ?? '');
+			if (col1 == null || match == null) {
 				continue;
 			}
 			list.add(ImageboardBoard(
@@ -255,6 +255,21 @@ class SiteLynxchan extends ImageboardSite {
 				isWorksafe: col1.querySelector('.indicatorSfw') != null,
 				webmAudioAllowed: true
 			));
+		}
+		if (list.isEmpty) {
+			for (final cell in document.querySelectorAll('#divBoards tr')) {
+				final col1 = cell.querySelector('td');
+				final match = linkPattern.firstMatch(col1?.querySelector('.linkBoard')?.text ?? '');
+				if (col1 == null || match == null) {
+					continue;
+				}
+				list.add(ImageboardBoard(
+					name: match.group(1)!,
+					title: match.group(2)!,
+					isWorksafe: col1.querySelector('.indicatorSfw') != null,
+					webmAudioAllowed: true
+				));
+			}
 		}
 		return list;
 	}

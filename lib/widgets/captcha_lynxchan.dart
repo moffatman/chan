@@ -74,16 +74,20 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			if (lastSolvedCaptcha != null) 'solvedCaptcha': lastSolvedCaptcha
 		}), options: Options(
 			responseType: ResponseType.json,
+			followRedirects: false, // dio loses the cookies in the first 303 response
+			validateStatus: (status) => (status ?? 0) < 400,
 			extra: {
 				kPriority: RequestPriority.interactive
 			}
 		));
-		if (idResponse.statusCode != 200) {
-			throw CaptchaLynxchanException('Got status code ${idResponse.statusCode}');
-		}
 		final String id;
 		final String imagePath;
-		if (idResponse.data is String) {
+		final redirectPath = idResponse.headers.value('location');
+		if (redirectPath != null && redirectPath.startsWith('/.global/captchas/')) {
+			id = redirectPath.split('/').last;
+			imagePath = redirectPath;
+		}
+		else if (idResponse.data is String) {
 			final fromCookie = idResponse.headers['set-cookie']?.tryMapOnce((cookie) {
 				return RegExp(r'captchaid=([^;]+)').firstMatch(cookie)?.group(1);
 			});
