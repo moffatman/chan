@@ -8,11 +8,13 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:math';
 
 import 'package:chan/services/apple.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 extension WithinRange on num {
@@ -49,12 +51,15 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 		Object? debugOwner,
 		Set<PointerDeviceKind>? supportedDevices,
 		this.dragStartBehavior = DragStartBehavior.start,
+    this.multitouchDragStrategy = MultitouchDragStrategy.latestPointer,
 		this.velocityTrackerBuilder = _defaultBuilder,
 	}) : super(debugOwner: debugOwner, supportedDevices: supportedDevices);
 
 	static VelocityTracker _defaultBuilder(PointerEvent event) => VelocityTracker.withKind(event.kind);
 
 	DragStartBehavior dragStartBehavior;
+
+  MultitouchDragStrategy multitouchDragStrategy;
 
 	GestureDragDownCallback? onDown;
 
@@ -90,9 +95,13 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 	Offset _getDeltaForDetails(Offset delta);
 	double? _getPrimaryValueFromOffset(Offset value);
+  _DragDirection? _getPrimaryDragAxis() => null;
 	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop);
 
 	final Map<int, VelocityTracker> _velocityTrackers = <int, VelocityTracker>{};
+  final Map<int, Offset> _moveDeltaBeforeFrame = <int, Offset>{};
+  Duration? _frameTimeStamp;
+  Offset _lastUpdatedDeltaForPan = Offset.zero;
 	final Map<int, Duration> _pointerDownTimes = <int, Duration>{};
 
 	bool _hasSufficientDurationToAccept(PointerEvent event) {
@@ -169,6 +178,198 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
     }
   }
 
+  bool _shouldTrackMoveEvent(int pointer) {
+    final bool result;
+    switch (multitouchDragStrategy) {
+      case MultitouchDragStrategy.sumAllPointers:
+      case MultitouchDragStrategy.averageBoundaryPointers:
+        result = true;
+      case MultitouchDragStrategy.latestPointer:
+        result = _activePointer == null || pointer == _activePointer;
+    }
+    return result;
+  }
+
+  void _recordMoveDeltaForMultitouch(int pointer, Offset localDelta) {
+    if (multitouchDragStrategy != MultitouchDragStrategy.averageBoundaryPointers) {
+      assert(_frameTimeStamp == null);
+      assert(_moveDeltaBeforeFrame.isEmpty);
+      return;
+    }
+
+    assert(_frameTimeStamp == SchedulerBinding.instance.currentSystemFrameTimeStamp);
+
+    if (_state != _DragState.accepted || localDelta == Offset.zero) {
+      return;
+    }
+
+    if (_moveDeltaBeforeFrame.containsKey(pointer)) {
+      final Offset offset = _moveDeltaBeforeFrame[pointer]!;
+      _moveDeltaBeforeFrame[pointer] = offset + localDelta;
+    } else {
+      _moveDeltaBeforeFrame[pointer] = localDelta;
+    }
+  }
+
+  double _getSumDelta({
+    required int pointer,
+    required bool positive,
+    required _DragDirection axis,
+  }) {
+    double sum = 0.0;
+
+    if (!_moveDeltaBeforeFrame.containsKey(pointer)) {
+      return sum;
+    }
+
+    final Offset offset = _moveDeltaBeforeFrame[pointer]!;
+    if (positive) {
+      if (axis == _DragDirection.vertical) {
+        sum = max(offset.dy, 0.0);
+      } else {
+        sum = max(offset.dx, 0.0);
+      }
+    } else {
+      if (axis == _DragDirection.vertical) {
+        sum = min(offset.dy, 0.0);
+      } else {
+        sum = min(offset.dx, 0.0);
+      }
+    }
+
+    return sum;
+  }
+
+  int? _getMaxSumDeltaPointer({
+    required bool positive,
+    required _DragDirection axis,
+  }) {
+    if (_moveDeltaBeforeFrame.isEmpty) {
+      return null;
+    }
+
+    int? ret;
+    double? max;
+    double sum;
+    for (final int pointer in _moveDeltaBeforeFrame.keys) {
+      sum = _getSumDelta(pointer: pointer, positive: positive, axis: axis);
+      if (ret == null) {
+        ret = pointer;
+        max = sum;
+      } else {
+        if (positive) {
+          if (sum > max!) {
+            ret = pointer;
+            max = sum;
+          }
+        } else {
+          if (sum < max!) {
+            ret = pointer;
+            max = sum;
+          }
+        }
+      }
+    }
+    assert(ret != null);
+    return ret;
+  }
+
+  Offset _resolveLocalDeltaForMultitouch(int pointer, Offset localDelta) {
+    if (multitouchDragStrategy != MultitouchDragStrategy.averageBoundaryPointers) {
+      if (_frameTimeStamp != null) {
+        _moveDeltaBeforeFrame.clear();
+        _frameTimeStamp = null;
+        _lastUpdatedDeltaForPan = Offset.zero;
+      }
+      return localDelta;
+    }
+
+    final Duration currentSystemFrameTimeStamp = SchedulerBinding.instance.currentSystemFrameTimeStamp;
+    if (_frameTimeStamp != currentSystemFrameTimeStamp) {
+      _moveDeltaBeforeFrame.clear();
+      _lastUpdatedDeltaForPan = Offset.zero;
+      _frameTimeStamp = currentSystemFrameTimeStamp;
+    }
+
+    assert(_frameTimeStamp == SchedulerBinding.instance.currentSystemFrameTimeStamp);
+
+    final _DragDirection? axis = _getPrimaryDragAxis();
+
+    if (_state != _DragState.accepted || localDelta == Offset.zero || (_moveDeltaBeforeFrame.isEmpty && axis != null)) {
+      return localDelta;
+    }
+
+    final double dx,dy;
+    if (axis == _DragDirection.horizontal) {
+      dx = _resolveDelta(pointer: pointer, axis: _DragDirection.horizontal, localDelta: localDelta);
+      assert(dx.abs() <= localDelta.dx.abs());
+      dy = 0.0;
+    } else if (axis == _DragDirection.vertical) {
+      dx = 0.0;
+      dy = _resolveDelta(pointer: pointer, axis: _DragDirection.vertical, localDelta: localDelta);
+      assert(dy.abs() <= localDelta.dy.abs());
+    } else {
+      final double averageX = _resolveDeltaForPanGesture(axis: _DragDirection.horizontal, localDelta: localDelta);
+      final double averageY = _resolveDeltaForPanGesture(axis: _DragDirection.vertical, localDelta: localDelta);
+      final Offset updatedDelta = Offset(averageX, averageY) - _lastUpdatedDeltaForPan;
+      _lastUpdatedDeltaForPan = Offset(averageX, averageY);
+      dx = updatedDelta.dx;
+      dy = updatedDelta.dy;
+    }
+
+    return Offset(dx, dy);
+  }
+
+  double _resolveDelta({
+    required int pointer,
+    required _DragDirection axis,
+    required Offset localDelta,
+  }) {
+    final bool positive = axis == _DragDirection.horizontal ? localDelta.dx > 0 : localDelta.dy > 0;
+    final double delta = axis == _DragDirection.horizontal ? localDelta.dx : localDelta.dy;
+    final int? maxSumDeltaPointer = _getMaxSumDeltaPointer(positive: positive, axis: axis);
+    assert(maxSumDeltaPointer != null);
+
+    if (maxSumDeltaPointer == pointer) {
+      return delta;
+    } else {
+      final double maxSumDelta = _getSumDelta(pointer: maxSumDeltaPointer!, positive: positive, axis: axis);
+      final double curPointerSumDelta = _getSumDelta(pointer: pointer, positive: positive, axis: axis);
+      if (positive) {
+        if (curPointerSumDelta + delta > maxSumDelta) {
+          return curPointerSumDelta + delta - maxSumDelta;
+        } else {
+          return 0.0;
+        }
+      } else {
+        if (curPointerSumDelta + delta < maxSumDelta) {
+          return curPointerSumDelta + delta - maxSumDelta;
+        } else {
+          return 0.0;
+        }
+      }
+    }
+  }
+
+  double _resolveDeltaForPanGesture({
+    required _DragDirection axis,
+    required Offset localDelta,
+  }) {
+    final double delta = axis == _DragDirection.horizontal ? localDelta.dx : localDelta.dy;
+    final int pointerCount = _acceptedActivePointers.length;
+    assert(pointerCount >= 1);
+
+    double sum = delta;
+    for (final Offset offset in _moveDeltaBeforeFrame.values) {
+      if (axis == _DragDirection.horizontal) {
+        sum += offset.dx;
+      } else {
+        sum += offset.dy;
+      }
+    }
+    return sum / pointerCount;
+  }
+
   @override
   void handleEvent(PointerEvent event) {
     assert(_state != _DragState.ready);
@@ -183,16 +384,17 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
       }
     }
 
-    if (event is PointerMoveEvent) {
+    if (event is PointerMoveEvent && _shouldTrackMoveEvent(event.pointer)) {
       if (event.buttons != _initialButtons) {
         _giveUpPointer(event.pointer);
         return;
       }
+      final Offset resolvedDelta = _resolveLocalDeltaForMultitouch(event.pointer, event.localDelta);
       if (_state == _DragState.accepted) {
         _checkUpdate(
           sourceTimeStamp: event.timeStamp,
-          delta: _getDeltaForDetails(event.localDelta),
-          primaryDelta: _getPrimaryValueFromOffset(event.localDelta),
+          delta: _getDeltaForDetails(resolvedDelta),
+          primaryDelta: _getPrimaryValueFromOffset(resolvedDelta),
           globalPosition: event.position,
           localPosition: event.localPosition,
         );
@@ -216,13 +418,15 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           resolve(GestureDisposition.accepted);
 				}
       }
+      _recordMoveDeltaForMultitouch(event.pointer, event.localDelta);
     }
     if (event is PointerPanZoomUpdateEvent) {
+      final Offset resolvedDelta = _resolveLocalDeltaForMultitouch(event.pointer, event.panDelta);
       if (_state == _DragState.accepted) {
         _checkUpdate(
           sourceTimeStamp: event.timeStamp,
-          delta: _getDeltaForDetails(event.panDelta),
-          primaryDelta: _getPrimaryValueFromOffset(event.panDelta),
+          delta: _getDeltaForDetails(resolvedDelta),
+          primaryDelta: _getPrimaryValueFromOffset(resolvedDelta),
           globalPosition: event.position + event.pan,
           localPosition: event.localPosition + event.pan
         );
@@ -247,18 +451,21 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           resolve(GestureDisposition.accepted);
 				}
       }
+      _recordMoveDeltaForMultitouch(event.pointer, event.panDelta);
     }
     if (event is PointerUpEvent || event is PointerCancelEvent || event is PointerPanZoomEndEvent) {
       _giveUpPointer(event.pointer);
     }
   }
 
-	final Set<int> _acceptedActivePointers = <int>{};
+	final List<int> _acceptedActivePointers = <int>[];
+  int? _activePointer;
 
 	@override
 	void acceptGesture(int pointer) {
 		assert(!_acceptedActivePointers.contains(pointer));
 		_acceptedActivePointers.add(pointer);
+    _activePointer = pointer;
 		if (_state != _DragState.accepted) {
 			_state = _DragState.accepted;
 			final OffsetPair delta = _pendingDragOffset;
@@ -332,6 +539,12 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 		if (!_acceptedActivePointers.remove(pointer)) {
 			resolvePointer(pointer, GestureDisposition.rejected);
 		}
+
+    _moveDeltaBeforeFrame.remove(pointer);
+    if (_activePointer == pointer) {
+      _activePointer =
+        _acceptedActivePointers.isNotEmpty ? _acceptedActivePointers.first : null;
+    }
 	}
 
 	void _checkDown() {
@@ -465,6 +678,9 @@ class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 	@override
 	double _getPrimaryValueFromOffset(Offset value) => value.dy;
 
+  @override
+  _DragDirection? _getPrimaryDragAxis() => _DragDirection.vertical;
+
 	@override
 	String get debugDescription => 'vertical drag';
 }
@@ -513,6 +729,9 @@ class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 
 	@override
 	double _getPrimaryValueFromOffset(Offset value) => value.dx;
+
+  @override
+  _DragDirection? _getPrimaryDragAxis() => _DragDirection.horizontal;
 
 	@override
 	String get debugDescription => 'horizontal drag';
@@ -590,6 +809,11 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 
 	@override
 	String get debugDescription => 'pan';
+}
+
+enum _DragDirection {
+  horizontal,
+  vertical
 }
 
 // The following is copied from 'multitap.dart', with the arena holding and releasing removed.
