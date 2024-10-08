@@ -222,29 +222,24 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				 board.item.title.toLowerCase().contains(normalized) ||
 				 board.imageboard.site.name.toLowerCase().contains(normalized));
 		}).toList();
-		if (normalized.isNotEmpty) {
-			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-				return (b.item.title.toLowerCase().contains(normalized) ? 1 : 0) - (a.item.title.toLowerCase().contains(normalized) ? 1 : 0);
-			});
-			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-				return (a.item.name.toLowerCase().indexOfOrInfinity(normalized) + a.item.name.length) - (b.item.name.toLowerCase().indexOfOrInfinity(normalized) + b.item.name.length);
-			});
-		}
+		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
+			return a.item.name.length - b.item.name.length;
+		});
 		final imageboards = allImageboards.toList();
 		imageboards.remove(currentImageboard);
 		imageboards.insert(0, currentImageboard);
+		final favsList = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
+		final favsOrder = {
+			for (final pair in favsList.asMap().entries)
+				pair.value.imageboard.scope(pair.value.item): pair.key
+		};
 		if (searchString.isEmpty) {
-			final favsList = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
 			if (widget.currentlyPickingFavourites) {
-				filteredBoards.removeWhere((b) => favsList.any((f) => f.imageboard == b.imageboard && f.item == b.item.boardKey));
+				filteredBoards.removeWhere((b) => favsOrder.containsKey(b.imageboard.scope(b.item.boardKey)));
 			}
 			else {
-				final favs = {
-					for (final pair in favsList.asMap().entries)
-						pair.value.imageboard.scope(pair.value.item): pair.key
-				};
 				mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-					return (favs[a.imageboard.scope(a.item.boardKey)] ?? favs.length) - (favs[b.imageboard.scope(b.item.boardKey)] ?? favs.length);
+					return (favsOrder[a.imageboard.scope(a.item.boardKey)] ?? favsOrder.length) - (favsOrder[b.imageboard.scope(b.item.boardKey)] ?? favsOrder.length);
 				});
 			}
 		}
@@ -274,9 +269,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			final favs = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
 			filteredBoards = filteredBoards.where((b) => favs.any((f) => f.imageboard == b.imageboard && f.item == b.item.boardKey)).toList();
 		}
-		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return ((b.item.name.isEmpty ? b.item.title : b.item.name).toLowerCase().startsWith(normalized) ? 1 : 0) - ((a.item.name.isEmpty ? a.item.title : a.item.name).toLowerCase().startsWith(normalized) ? 1 : 0);
-		});
+		if (normalized.isNotEmpty) {
+			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
+				return 20*a.item.name.toLowerCase().indexOfOrInfinity(normalized) + (favsOrder[a.imageboard.scope(a.item.boardKey)] ?? favsOrder.length) - 20*b.item.name.toLowerCase().indexOfOrInfinity(normalized) - (favsOrder[b.imageboard.scope(b.item.boardKey)] ?? favsOrder.length);
+			});
+		}
 		if (searchString.isNotEmpty && !settings.onlyShowFavouriteBoardsInSwitcher) {
 			if (currentImageboard.site.allowsArbitraryBoards) {
 				final fakeBoard = ImageboardBoard(
@@ -288,7 +285,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				if (filteredBoards.isEmpty) {
 					filteredBoards.add(currentImageboard.scope(fakeBoard));
 				}
-				else if (!filteredBoards.any((b) => b.item.name == searchString && b.imageboard == currentImageboard)) {
+				else if (!filteredBoards.any((b) => b.item.name.toLowerCase() == searchString && b.imageboard == currentImageboard)) {
 					filteredBoards.insert(1, currentImageboard.scope(fakeBoard));
 				}
 			}
