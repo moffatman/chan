@@ -358,19 +358,19 @@ packages:
     description:
       path: "."
       ref: chan_master
-      resolved-ref: "61d21e4db19412684f59e3ac8b8a59d6aba04815"
+      resolved-ref: eb47676cfa78057d3829ba8b58a4e08421d99d5a
       url: "https://github.com/moffatman/extended_image.git"
     source: git
-    version: "8.0.2"
+    version: "8.3.1"
   extended_image_library:
     dependency: "direct main"
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "7c233e7903f64c1dec37b09a03420af80230eda0"
+      resolved-ref: b73a47fe8c5e78588a5db00453b97324c3807eef
       url: "https://github.com/moffatman/extended_image_library.git"
     source: git
-    version: "3.4.0"
+    version: "4.0.5"
   fake_async:
     dependency: transitive
     description:
@@ -659,10 +659,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_fonts
-      sha256: "6b6f10f0ce3c42f6552d1c70d2c28d764cf22bb487f50f66cca31dcd5194f4d6"
+      sha256: "2776c66b3e97c6cdd58d1bd3281548b074b64f1fd5c8f82391f7456e38849567"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.4"
+    version: "4.0.5"
   graphs:
     dependency: transitive
     description:
@@ -752,18 +752,18 @@ packages:
     dependency: transitive
     description:
       name: http
-      sha256: "5895291c13fa8a3bd82e76d5627f69e0d85ca6a30dcac95c4ea19a5d555879c2"
+      sha256: b9c29a161230ee03d3ccf545097fccd9b87a5264228c5d348202e0f0c28f9010
       url: "https://pub.dev"
     source: hosted
-    version: "0.13.6"
+    version: "1.2.2"
   http_client_helper:
     dependency: transitive
     description:
       name: http_client_helper
-      sha256: "14c6e756644339f561321dab021215475ba4779aa962466f59ccb3ecf66b36c3"
+      sha256: "8a9127650734da86b5c73760de2b404494c968a3fd55602045ffec789dac3cb1"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.4"
+    version: "3.0.0"
   http_multi_server:
     dependency: transitive
     description:
