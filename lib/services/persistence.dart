@@ -159,6 +159,7 @@ class Persistence extends ChangeNotifier {
 	static late final Directory webmCacheDirectory;
 	static late final Directory httpCacheDirectory;
 	static late final Directory shareCacheDirectory;
+	static late final Directory savedAttachmentsDirectory;
 	static late final PersistCookieJar wifiCookies;
 	static late final PersistCookieJar cellularCookies;
 	static PersistCookieJar get currentCookies {
@@ -439,6 +440,7 @@ class Persistence extends ChangeNotifier {
 		}
 		await ensureTemporaryDirectoriesExist();
 		documentsDirectory = await getApplicationDocumentsDirectory();
+		savedAttachmentsDirectory = Directory('${documentsDirectory.path}/$savedAttachmentsDir');
 		try {
 			// Boxes were always saved as lowercase, but backups may have been
 			// upper case in the past. Just correct all '*.hive*' to be lower case.
@@ -465,7 +467,7 @@ class Persistence extends ChangeNotifier {
 			storage: FileStorage('${temporaryDirectory.path}/cellular')
 		);
 		await cellularCookies.forceInit();
-		await Directory('${documentsDirectory.path}/$savedAttachmentsDir').create(recursive: true);
+		await savedAttachmentsDirectory.create(recursive: true);
 		final settingsBox = await _openBoxWithBackup<SavedSettings>(settingsBoxName, compactionStrategy: (int entries, int deletedEntries) {
 			return deletedEntries > 5;
 		});
@@ -479,6 +481,7 @@ class Persistence extends ChangeNotifier {
 			// Don't await
 			clearFilesystemCaches(Duration(days: settings.automaticCacheClearDays));
 		}
+		_clearOrphanedSavedAttachments(); // Don't await
 		settings.launchCount++;
 		_startBoxBackupTimer(settingsBoxName);
 		sharedThreadStateBox = await _openBoxWithBackup<PersistentThreadState>(sharedThreadStatesBoxName);
@@ -649,6 +652,20 @@ class Persistence extends ChangeNotifier {
 			folderSizes.update(_knownCacheDirs[directory.path.split('/').last] ?? 'Other', (total) => total + size, ifAbsent: () => size);
 		}
 		return folderSizes;
+	}
+
+	static Future<void> _clearOrphanedSavedAttachments() async {
+		final ignorePaths = settings.savedAttachmentsBySite.values.expand((sas) => sas.values.map((sa) => sa.file.path)).toSet();
+		await for (final child in savedAttachmentsDirectory.list()) {
+			if (ignorePaths.contains(child.path)) {
+				continue;
+			}
+			final stat = await child.stat();
+			if (stat.type == FileSystemEntityType.file) {
+				print('Deleting orphaned saved attachment: ${child.path}');
+				await child.delete();
+			}
+		}
 	}
 
 	static Future<void> clearFilesystemCaches(Duration? olderThan) async {
@@ -1137,10 +1154,8 @@ class Persistence extends ChangeNotifier {
 	}
 
 	void deleteSavedAttachment(Attachment attachment) {
-		final removed = savedAttachments.remove(attachment.globalId);
-		if (removed != null) {
-			removed.deleteFiles();
-		}
+		savedAttachments.remove(attachment.globalId);
+		// Don't actually delete file, in case the user resaves it quickly.
 		if (savedAttachments.isEmpty) {
 			attachmentSourceNotifier.didUpdate();
 		}
@@ -1757,19 +1772,10 @@ class SavedAttachment {
 		required this.savedExt
 	}) : tags = tags ?? [];
 
-	Future<void> deleteFiles() async {
-		try {
-			await file.delete();
-		}
-		on PathNotFoundException {
-			// Ignore
-		}
-	}
-
 	static final _badPathCharacters = RegExp(r'[/:]');
 
 	File get file {
-		final base = '${Persistence.documentsDirectory.path}/${Persistence.savedAttachmentsDir}/${attachment.globalId.replaceAll(_badPathCharacters, '_')}';
+		final base = '${Persistence.savedAttachmentsDirectory.path}/${attachment.globalId.replaceAll(_badPathCharacters, '_')}';
 		if (savedExt == null) {
 			// Not yet fixed
 			return File('$base${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');

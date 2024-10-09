@@ -1263,12 +1263,10 @@ class _SavedPageState extends State<SavedPage> {
 														attachmentSourceNotifier.didUpdate();
 													}
 													Persistence.settings.save();
-													bool actuallyDelete = true;
 													showUndoToast(
 														context: context,
 														message: 'Deleted ${describeCount(toDelete.length, 'attachment')}',
 														onUndo: () {
-															actuallyDelete = false;
 															// Restore all the objects
 															for (final item in toDelete) {
 																item.imageboard.persistence.savedAttachments[item.item.attachment.globalId] = item.item;
@@ -1280,14 +1278,6 @@ class _SavedPageState extends State<SavedPage> {
 															Persistence.settings.save();
 														}
 													);
-													Future.delayed(const Duration(seconds: 10), () async {
-														if (actuallyDelete) {
-															// Objects are really gone, delete the saved files
-															for (final item in toDelete) {
-																await item.item.deleteFiles();
-															}
-														}
-													});
 												} : null,
 										child: const Icon(CupertinoIcons.delete)
 									)
