@@ -589,7 +589,7 @@ class ThreadRow extends StatelessWidget {
 			}
 			return [
 				const SizedBox(width: 8),
-				if (!settings.imagesOnRight && !site.classicCatalogStyle && attachments != null) Padding(
+				if (!site.classicCatalogStyle && attachments != null) Padding(
 					padding: const EdgeInsets.only(top: 8),
 					child: attachments,
 				),
@@ -630,7 +630,14 @@ class ThreadRow extends StatelessWidget {
 												)
 											)
 										]
-										else if (!settings.useFullWidthForCatalogCounters && !(showLastReplies && thread.posts_.length > 1)) countersPlaceholder,
+										else if (!settings.useFullWidthForCatalogCounters && !(showLastReplies && thread.posts_.length > 1))
+											if (settings.imagesOnRight && !site.classicCatalogStyle) ...[
+												const TextSpan(text: '\n'),
+												WidgetSpan(
+													child: countersPlaceholderWidget
+												)
+											]
+											else countersPlaceholder,
 										// Hack to avoid extra line with same height of countersPlaceholder
 										const TextSpan(text: ' ', style: TextStyle(fontSize: 0)),
 										// Uuse thread and not latestThread
@@ -677,10 +684,7 @@ class ThreadRow extends StatelessWidget {
 						)
 					)
 				),
-				if (settings.imagesOnRight && !site.classicCatalogStyle && attachments != null) Padding(
-					padding: const EdgeInsets.only(top: 8, right: 8),
-					child: attachments,
-				),
+				if (settings.imagesOnRight) const SizedBox(width: 8)
 			];
 		}
 		Widget buildContentFocused() {
@@ -779,7 +783,12 @@ class ThreadRow extends StatelessWidget {
 								hideThumbnails: hideThumbnails,
 								charactersPerLine: charactersPerLine,
 							)),
-							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) countersPlaceholder,
+							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) WidgetSpan(
+								child: SizedBox(
+									width: double.infinity,
+									child: countersPlaceholderWidget
+								)
+							),
 							if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText && style == ThreadRowStyle.grid) TextSpan(text: '\n' * 25)
 						];
 						return IgnorePointer(
