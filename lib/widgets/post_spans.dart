@@ -2731,7 +2731,7 @@ TextSpan buildPostInfoRow({
 			else if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
 					text: settings.filterProfanity(site.formatUsername(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (thisPostIsPostedByOP ? ' (OP)' : ''),
-					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: isYourPost ? theme.secondaryColor : (thisPostIsPostedByOP ? theme.quoteColor.shiftHue(-200).shiftSaturation(-0.3) : null)),
+					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: isYourPost ? theme.secondaryColor : (thisPostIsPostedByOP ? theme.secondaryColor.shiftHue(20).shiftSaturation(-0.3) : null)),
 					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
 						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
@@ -2762,7 +2762,7 @@ TextSpan buildPostInfoRow({
 				else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
 				if (post.capcode != null) TextSpan(
 					text: '## ${post.capcode} ',
-					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.quoteColor.shiftHue(200).shiftSaturation(-0.3))
+					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.secondaryColor.shiftHue(20).shiftSaturation(-0.3))
 				)
 			]
 			else if (field == PostDisplayField.posterId && post.posterId != null) ...[
