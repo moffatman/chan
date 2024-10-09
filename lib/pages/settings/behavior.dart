@@ -261,15 +261,18 @@ final behaviorSettings = [
 		setting: Settings.settingsQuickActionSetting,
 		builder: (settingsQuickAction) => AutoSizeText(settingsQuickAction.name, maxLines: 2, textAlign: TextAlign.center),
 		onPressed: (context, quickAction, setQuickAction) async {
-			final newAction = await showAdaptiveDialog<SettingsQuickAction>(
+			final newAction = await showAdaptiveDialog<NullWrapper<SettingsQuickAction>>(
 				context: context,
 				barrierDismissible: true,
 				builder: (context) => AdaptiveAlertDialog(
 					title: const Text('Pick Settings icon long-press action'),
 					actions: [
-						...SettingsQuickAction.values.map((action) => AdaptiveDialogAction(
+						...[
+							...SettingsQuickAction.values,
+							null
+						].map((action) => AdaptiveDialogAction(
 							isDefaultAction: action == quickAction,
-							onPressed: () => Navigator.pop(context, action),
+							onPressed: () => Navigator.pop(context, NullWrapper(action)),
 							child: Text(action.name)
 						)),
 						AdaptiveDialogAction(
@@ -280,7 +283,7 @@ final behaviorSettings = [
 				)
 			);
 			if (newAction != null) {
-				setQuickAction(newAction);
+				setQuickAction(newAction.value);
 			}
 		}
 	),

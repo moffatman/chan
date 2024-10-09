@@ -694,7 +694,7 @@ extension SettingsQuickActionName on SettingsQuickAction? {
 			case SettingsQuickAction.togglePixelatedThumbnails:
 				return 'Toggle pixelated thumbnails';
 			case null:
-				return 'None';
+				return 'Do nothing';
 		}
 	}
 }
