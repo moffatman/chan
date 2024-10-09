@@ -833,8 +833,13 @@ class _GalleryPageState extends State<GalleryPage> {
 				return Colors.black.withOpacity(1 - factor.clamp(0, 1));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
-				final a = ((details?.velocity ?? Velocity.zero).pixelsPerSecond.direction / pi).abs();
-				return ((details?.pointerCount ?? 0) == 0) && widget.allowPop && (a >= 0.25 && a <= 0.75) && (state?.imageGestureState?.gestureDetails?.totalScale ?? 1) <= 1;
+				final dragAngle = (details?.velocity ?? Velocity.zero).pixelsPerSecond.direction / pi;
+				final imageAngle = switch (state?.imageGestureState?.gestureDetails?.slidePageOffset?.direction) {
+					double a => a / pi,
+					null => dragAngle
+				};
+				final a = dragAngle.abs();
+				return ((details?.pointerCount ?? 0) == 0) && widget.allowPop && (a >= 0.25 && a <= 0.75) && (imageAngle.sign == dragAngle.sign);
 			},
 			child: ChanceTheme(
 				themeKey: settings.darkThemeKey,
