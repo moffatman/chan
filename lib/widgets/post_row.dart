@@ -1117,9 +1117,8 @@ class PostRow extends StatelessWidget {
 					child: const Text('Search image'),
 					trailingIcon: Icons.image_search,
 					onPressed: () async {
-						await showAdaptiveDialog(
+						await showAdaptiveModalPopup(
 							context: context,
-							barrierDismissible: true,
 							builder: (context) => AdaptiveActionSheet(
 								actions: imageSearchActions.toActionSheetActions(context),
 								cancelButton: AdaptiveActionSheetAction(
