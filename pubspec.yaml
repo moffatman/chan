@@ -35,7 +35,6 @@ dependencies:
       url: https://github.com/moffatman/media-kit.git
       ref: main
       path: libs/android/media_kit_libs_android_video_encoders_gpl
-  media_kit_native_event_loop: ^1.0.7
   media_kit_libs_windows_video_encoders_gpl:
     git:
       url: https://github.com/moffatman/media-kit.git
@@ -239,11 +238,6 @@ dependency_overrides:
       url: https://github.com/moffatman/media-kit.git
       ref: main
       path: media_kit
-  media_kit_native_event_loop:
-    git:
-      url: https://github.com/moffatman/media-kit.git
-      ref: main
-      path: media_kit_native_event_loop
   media_kit_video:
     git:
       url: https://github.com/moffatman/media-kit.git
