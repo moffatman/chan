@@ -1678,10 +1678,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							}
 						),
 						Flexible(
-							child: ConstrainedBox(
-								constraints: BoxConstraints(
-									minHeight: settings.replyBoxHeightOffset + 100
-								),
+							child: SizedBox(
+								height: settings.replyBoxHeightOffset + 100,
 								child: WidgetDecoration(
 									// ignore: sort_child_properties_last
 									child: AdaptiveTextField(
