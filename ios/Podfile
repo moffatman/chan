@@ -32,6 +32,11 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  # For Share extension
+  target 'Chance' do
+    inherit! :search_paths
+  end
 end
 
 def fix_config(config)
