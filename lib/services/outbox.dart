@@ -177,15 +177,18 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	Future<void> submit(BuildContext? context) async {
 		// Note -- if we are failed here. we might have a captcha.
 		// But just throw it away, it avoids tracking captcha problems.
-		_state._dispose();
-		_state = QueueStateNeedsCaptcha(context);
-		notifyListeners();
-		if (queue?.captchaAllowedTime.isAfter(DateTime.now()) == false) {
-			// Grab the new captcha right away
-			await _preSubmit();
+		try {
+			_state._dispose();
+			_state = QueueStateNeedsCaptcha(context);
+			notifyListeners();
+			if (queue?.captchaAllowedTime.isAfter(DateTime.now()) == false) {
+				// Grab the new captcha right away
+				await _preSubmit();
+			}
 		}
-		notifyListeners();
-		Future.microtask(Outbox.instance._process);
+		finally {
+			Future.microtask(Outbox.instance._process);
+		}
 	}
 
 	@mustCallSuper
@@ -685,86 +688,95 @@ class Outbox extends ChangeNotifier {
 	}
 
 	Future<void> _process<T>([QueueEntry<T>? newEntry]) => _lock.protect(() async {
-		print('Woken up!');
-		if (newEntry != null) {
-			final queue = queues.putIfAbsent(newEntry._key, () => OutboxQueue()..addListener(_onOutboxQueueUpdate));
-			for (final other in queue.list) {
-				if (newEntry.shouldReplace(other)) {
-					other.delete();
+		try {
+			print('Woken up!');
+			if (newEntry != null) {
+				final queue = queues.putIfAbsent(newEntry._key, () => OutboxQueue()..addListener(_onOutboxQueueUpdate));
+				for (final other in queue.list) {
+					if (newEntry.shouldReplace(other)) {
+						other.delete();
+					}
 				}
-			}
-			queue.list.add(newEntry);
-			if (queue.list.first.state.isIdle) {
-				// List was idle, set the cooldown based on new entry type
-				final submissionTimes = queue.list.tryMap((e) => e.state._submissionTime).toList();
-				if (submissionTimes.isNotEmpty) {
-					final newAllowedTime = submissionTimes.reduce((a, b) => a.isAfter(b) ? a : b).add(newEntry._cooldown);
-					if (newAllowedTime.isAfter(queue.allowedTime)) {
-						queue.allowedTime = newAllowedTime;
+				queue.list.add(newEntry);
+				if (queue.list.first.state.isIdle) {
+					// List was idle, set the cooldown based on new entry type
+					final submissionTimes = queue.list.tryMap((e) => e.state._submissionTime).toList();
+					if (submissionTimes.isNotEmpty) {
+						final newAllowedTime = submissionTimes.reduce((a, b) => a.isAfter(b) ? a : b).add(newEntry._cooldown);
+						if (newAllowedTime.isAfter(queue.allowedTime)) {
+							queue.allowedTime = newAllowedTime;
+						}
 					}
 				}
 			}
-		}
-		final nextWakeups = <DateTime>[];
-		for (final queue in queues.entries) {
-			if (queue.value.list.isEmpty) {
-				continue;
-			}
-			if (queue.value.list.every((e) => e.state.isIdle)) {
-				continue;
-			}
-			// Put idle entries at the end
-			queue.value._sortList();
-			if (queue.value.captchaAllowedTime.isAfter(DateTime.now()) && queue.value.list.first.state._needsCaptcha) {
-				print('Can\'t fill first captcha yet');
-				// Need captcha and not allowed yet, go to sleep
-				nextWakeups.add(queue.value.captchaAllowedTime);
-				continue;
-			}
-			print('Try filling first captcha');
-			// Fill the captcha
-			await queue.value.list.first._preSubmit();
-			if (queue.value.captchaAllowedTime.isAfter(DateTime.now()) && queue.value.list.first.state._needsCaptcha) {
-				print('Got cooldown filling first captcha');
-				// Need captcha and not allowed yet, go to sleep
-				nextWakeups.add(queue.value.captchaAllowedTime);
-				continue;
-			}
-			if (queue.value.allowedTime.isAfter(DateTime.now())) {
-				print('Can\'t submit yet');
-				// Can't submit yet, go to sleep
-				nextWakeups.add(queue.value.allowedTime);
-				continue;
-			}
-			print('Try submitting first entry');
-			// Submit the post
-			final submitted = await queue.value.list.first._submit();
-			if (queue.value.list.length > 1 && !queue.value.list[1].state.isIdle) {
-				if (submitted) {
-					queue.value.allowedTime = DateTime.now().add(queue.value.list[1]._cooldown);
+			final nextWakeups = <DateTime>[];
+			for (final queue in queues.entries) {
+				if (queue.value.list.isEmpty) {
+					continue;
 				}
-				// Retrigger wakeup immediately to look at next post for captcha purposes
-				nextWakeups.add(DateTime.now());
+				if (queue.value.list.every((e) => e.state.isIdle)) {
+					continue;
+				}
+				// Put idle entries at the end
+				queue.value._sortList();
+				if (queue.value.captchaAllowedTime.isAfter(DateTime.now()) && queue.value.list.first.state._needsCaptcha) {
+					print('Can\'t fill first captcha yet');
+					// Need captcha and not allowed yet, go to sleep
+					nextWakeups.add(queue.value.captchaAllowedTime);
+					continue;
+				}
+				print('Try filling first captcha');
+				// Fill the captcha
+				await queue.value.list.first._preSubmit();
+				if (queue.value.captchaAllowedTime.isAfter(DateTime.now()) && queue.value.list.first.state._needsCaptcha) {
+					print('Got cooldown filling first captcha');
+					// Need captcha and not allowed yet, go to sleep
+					nextWakeups.add(queue.value.captchaAllowedTime);
+					continue;
+				}
+				if (queue.value.allowedTime.isAfter(DateTime.now())) {
+					print('Can\'t submit yet');
+					// Can't submit yet, go to sleep
+					nextWakeups.add(queue.value.allowedTime);
+					continue;
+				}
+				print('Try submitting first entry');
+				// Submit the post
+				final submitted = await queue.value.list.first._submit();
+				if (queue.value.list.length > 1 && !queue.value.list[1].state.isIdle) {
+					if (submitted) {
+						queue.value.allowedTime = DateTime.now().add(queue.value.list[1]._cooldown);
+					}
+					// Retrigger wakeup immediately to look at next post for captcha purposes
+					nextWakeups.add(DateTime.now());
+				}
+				else {
+					// Just use current queue subitem type. It could be corrected if a different subtype is submitted
+					if (submitted) {
+						queue.value.allowedTime = DateTime.now().add(queue.value.list.first._cooldown);
+					}
+					// Mainly to notifyListeners() and freshen up widgets that show timer 
+					nextWakeups.add(queue.value.allowedTime);
+				}
+			}
+			if (nextWakeups.isNotEmpty) {
+				final time = nextWakeups.reduce((a, b) => a.isBefore(b) ? a : b);
+				final delay = time.difference(DateTime.now());
+				print('Will wake up again in $delay');
+				Future.delayed(delay, _process);
 			}
 			else {
-				// Just use current queue subitem type. It could be corrected if a different subtype is submitted
-				if (submitted) {
-					queue.value.allowedTime = DateTime.now().add(queue.value.list.first._cooldown);
-				}
-				// Mainly to notifyListeners() and freshen up widgets that show timer 
-				nextWakeups.add(queue.value.allowedTime);
+				print('Will not wake up again');
 			}
+			notifyListeners();
 		}
-		if (nextWakeups.isNotEmpty) {
-			final time = nextWakeups.reduce((a, b) => a.isBefore(b) ? a : b);
-			final delay = time.difference(DateTime.now());
-			print('Will wake up again in $delay');
-			Future.delayed(delay, _process);
+		catch (e, st) {
+			Future.error(e, st); // crashlytics
+			print(e);
+			print(st);
+			print('Something went wrong in _process, rescheduling in 1 second');
+			Future.delayed(const Duration(seconds: 1), _process);
 		}
-		else {
-			print('Will not wake up again');
-		}
-		notifyListeners();
 	});
 
 	QueuedPost submitPost(String imageboardKey, DraftPost post, QueueState<PostReceipt> initialState) {
