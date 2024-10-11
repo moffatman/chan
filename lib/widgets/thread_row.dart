@@ -299,11 +299,7 @@ class ThreadRow extends StatelessWidget {
 		final site = context.watch<ImageboardSite>();
 		final latestThread = threadState?.thread ?? thread;
 		final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), site.isPaged ? 0 : (latestThread.posts_.length - 1));
-		final int latestImageCount = (thread.isSticky && latestReplyCount == 1000) ? latestThread.imageCount : max(thread.imageCount, latestThread.imageCount);
-		int unseenReplyCount = 0;
-		int unseenImageCount = 0;
 		final grey = theme.primaryColorWithBrightness(0.6);
-		Color? otherMetadataColor;
 		String? threadAsUrl;
 		final firstUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url;
 		final backgroundColor = isSelected ? theme.primaryColorWithBrightness(0.2) : theme.backgroundColor;
@@ -312,18 +308,30 @@ class ThreadRow extends StatelessWidget {
 		if (firstUrl != null) {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(_leadingWwwPattern, '');
 		}
-		if (threadState?.lastSeenPostId != null) {
+		final threadSeen = threadState?.lastSeenPostId != null && (forceShowInHistory ?? (threadState?.showInHistory ?? false));
+		final bool hasUnseenReplies;
+		if ((threadState?.unseenReplyCount() ?? 0) > 0) {
+			hasUnseenReplies = true;
+		}
+		else if (site.isPaged) {
+			final catalogLastTime = thread.posts_.tryLast?.time;
+			final stateLastTime = threadState?.thread?.posts_.tryLast?.time;
+			hasUnseenReplies = catalogLastTime != null && stateLastTime != null && catalogLastTime.isAfter(stateLastTime);
+		}
+		else if (threadSeen) {
 			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
-				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
+				hasUnseenReplies = max(thread.replyCount, latestThread.replyCount) > (threadState!.thread?.replyCount ?? 0);
 			}
 			else {
-				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + ((latestReplyCount + 1) - latestThread.posts_.length);
+				hasUnseenReplies = ((latestReplyCount + 1) > latestThread.posts_.length);
 			}
-			unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.expand((x) => x.attachments).length ?? 0));
-			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
 		}
+		else {
+			hasUnseenReplies = false;
+		}
+		final otherMetadataColor = hasUnseenReplies ? null : grey;
 		final watch = threadState?.threadWatch;
-		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0) && (forceShowInHistory ?? threadState.showInHistory);
+		final dimThisThread = dimReadThreads && !isSelected && threadSeen && (watch == null || !hasUnseenReplies);
 		final approxWidth = style.isGrid ? settings.catalogGridWidth : estimateWidth(context);
 		final inContextMenuHack = context.watch<ContextMenuHint?>() != null;
 		double? approxHeight = style.isGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight;
