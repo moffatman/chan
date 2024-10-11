@@ -734,6 +734,137 @@ class SliderSettingWidget extends StandardImmutableSettingWidget<double> {
 	int get hashCode => Object.hash(icon, iconBuilder, description, setting, helpText, helpTextBuilder, disabled, subsetting, min, step, max, textFormatter, widgetFormatter, enabledSetting);
 }
 
+class NullableSliderSettingWidget extends StandardImmutableSettingWidget<double?> {
+	final double min;
+	final double step;
+	final double max;
+	final String Function(double?)? textFormatter;
+	final Widget Function(double?)? widgetFormatter;
+	final ImmutableSetting<bool>? enabledSetting;
+
+	const NullableSliderSettingWidget({
+		super.icon,
+		super.iconBuilder,
+		required super.description,
+		required super.setting,
+		super.helpText,
+		required this.min,
+		required this.step,
+		required this.max,
+		this.textFormatter,
+		this.widgetFormatter,
+		this.enabledSetting,
+		super.keywords,
+		super.disabled
+	});
+
+	@override
+	Widget buildImpl(BuildContext context) {
+		final enabledSetting = this.enabledSetting;
+		final textFormatter = this.textFormatter;
+		final widgetFormatter = this.widgetFormatter;
+		final enabled = enabledSetting?.watch(context);
+		final value = setting.watch(context);
+		final divisions = ((max - min) / step).round();
+		return Padding(
+			padding: const EdgeInsets.symmetric(vertical: 8),
+			child: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					Row(
+						crossAxisAlignment: CrossAxisAlignment.center,
+						children: [
+							_makeIcon(),
+							Expanded(
+								child: Text.rich(
+									TextSpan(
+										children: [
+											TextSpan(text: description),
+											if (enabled != null) const TextSpan(text: '\n')
+											else if (textFormatter != null) const TextSpan(text: ': '),
+											if (textFormatter != null) TextSpan(text: textFormatter(value), style: TextStyle(
+												color: (enabled == false) ? ChanceTheme.primaryColorWithBrightness50Of(context) : ChanceTheme.primaryColorWithBrightness80Of(context),
+												fontFeatures: const [ui.FontFeature.tabularFigures()]
+											))
+										]
+									)
+								)
+							),
+							_makeSyncButton(setting.syncPaths),
+							_makeHelpButton(context),
+							if (widgetFormatter != null) widgetFormatter(value),
+							if (value != null) AdaptiveButton(
+								padding: const EdgeInsets.only(left: 8, right: 8),
+								onPressed: () {
+									setting.write(context, null);
+								},
+								child: Text(textFormatter?.call(null) ?? 'Reset')
+							),
+							if (divisions >= 100 || (divisions >= 50 && step == 1)) ...[
+								AdaptiveIconButton(
+									padding: EdgeInsets.zero,
+									onPressed: value != null && value <= min ? null : () {
+										setting.write(context, (value ?? (max + step)) - step);
+									},
+									icon: const Icon(CupertinoIcons.minus)
+								),
+								AdaptiveIconButton(
+									padding: EdgeInsets.zero,
+									onPressed: value == null || value >= max ? null : () {
+										setting.write(context, value + step);
+									},
+									icon: const Icon(CupertinoIcons.plus)
+								)
+							],
+							if (enabled != null) AdaptiveSwitch(
+								value: enabled,
+								onChanged: (v) => enabledSetting?.write(context, v)
+							),
+						]
+					),
+					const SizedBox(height: 16),
+					Padding(
+						padding: const EdgeInsets.symmetric(horizontal: 16),
+						child: Opacity(
+							opacity: enabled == false ? 0.5 : 1,
+							child: Slider.adaptive(
+								min: min,
+								max: max,
+								divisions: divisions,
+								value: value ?? max,
+								onChanged: enabled == false ? null : makeWriter(context)
+							)
+						)
+					)
+				]
+			)
+		);
+	}
+
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is NullableSliderSettingWidget &&
+		other.icon == icon &&
+		other.iconBuilder == iconBuilder &&
+		other.description == description &&
+		other.setting == setting &&
+		other.helpText == helpText &&
+		other.helpTextBuilder == helpTextBuilder &&
+		other.disabled == disabled &&
+		other.subsetting == subsetting &&
+		other.min == min &&
+		other.step == step &&
+		other.max == max &&
+		other.textFormatter == textFormatter &&
+		other.widgetFormatter == widgetFormatter &&
+		other.enabledSetting == enabledSetting;
+	
+	@override
+	int get hashCode => Object.hash(icon, iconBuilder, description, setting, helpText, helpTextBuilder, disabled, subsetting, min, step, max, textFormatter, widgetFormatter, enabledSetting);
+}
+
 class ImmutableButtonSettingWidget<T> extends StandardImmutableSettingWidget<T> {
 	final Widget Function(T) builder;
 	final void Function(BuildContext context, T, ValueChanged<T>) onPressed;

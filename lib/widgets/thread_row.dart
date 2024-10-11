@@ -326,7 +326,10 @@ class ThreadRow extends StatelessWidget {
 		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0) && (forceShowInHistory ?? threadState.showInHistory);
 		final approxWidth = style.isGrid ? settings.catalogGridWidth : estimateWidth(context);
 		final inContextMenuHack = context.watch<ContextMenuHint?>() != null;
-		final approxHeight = (style.isGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight) * (inContextMenuHack ? 5 : 1);
+		double? approxHeight = style.isGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight;
+		if (approxHeight != null) {
+			approxHeight *= (inContextMenuHack ? 5 : 1);
+		}
 		final countersSpan = buildThreadCounters(
 			settings: settings,
 			theme: theme,
@@ -511,7 +514,10 @@ class ThreadRow extends StatelessWidget {
 											latestThread.posts_.first.span.build(
 												context, context.watch<PostSpanZoneData>(), settings, theme,
 												(baseOptions ?? const PostSpanRenderOptions()).copyWith(
-													maxLines: 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
+													maxLines: switch (approxHeight) {
+														double approxHeight => 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
+														null => null
+													},
 													charactersPerLine: (approxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 													postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1)	? null : countersPlaceholder,
 													ensureTrailingNewline: true
@@ -650,7 +656,10 @@ class ThreadRow extends StatelessWidget {
 					builder: (ctx, _) {
 						final others = [
 							if (site.classicCatalogStyle && latestThread.posts_.first.text.isNotEmpty) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-								maxLines: 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
+								maxLines: switch (approxHeight) {
+									double approxHeight => 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
+									null => null
+								},
 								charactersPerLine: (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 							)),
 							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) countersPlaceholder,

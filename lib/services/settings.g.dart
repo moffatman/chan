@@ -1033,11 +1033,11 @@ class SavedSettingsFields {
     fieldName: 'catalogGridModeAttachmentInBackground',
     merger: PrimitiveMerger(),
   );
-  static double getMaxCatalogRowHeight(SavedSettings x) =>
+  static double? getMaxCatalogRowHeight(SavedSettings x) =>
       x.maxCatalogRowHeight;
-  static void setMaxCatalogRowHeight(SavedSettings x, double v) =>
+  static void setMaxCatalogRowHeight(SavedSettings x, double? v) =>
       x.maxCatalogRowHeight = v;
-  static const maxCatalogRowHeight = HiveFieldAdapter<SavedSettings, double>(
+  static const maxCatalogRowHeight = HiveFieldAdapter<SavedSettings, double?>(
     getter: getMaxCatalogRowHeight,
     setter: setMaxCatalogRowHeight,
     fieldNumber: 79,

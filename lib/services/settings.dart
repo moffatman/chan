@@ -979,7 +979,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(78)
 	bool catalogGridModeAttachmentInBackground;
 	@HiveField(79)
-	double maxCatalogRowHeight;
+	double? maxCatalogRowHeight;
 	@HiveField(80)
 	Map<String, SavedTheme> themes;
 	@HiveField(81)
@@ -1296,7 +1296,7 @@ class SavedSettings extends HiveObject {
 		double? textScale,
 		this.catalogGridModeTextLinesLimit,
 		bool? catalogGridModeAttachmentInBackground,
-		double? maxCatalogRowHeight,
+		this.maxCatalogRowHeight,
 		Map<String, SavedTheme>? themes,
 		String? lightThemeKey,
 		String? darkThemeKey,
@@ -1508,7 +1508,6 @@ class SavedSettings extends HiveObject {
 		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false,
 		textScale = textScale ?? 1.0,
 		catalogGridModeAttachmentInBackground = catalogGridModeAttachmentInBackground ?? false,
-		maxCatalogRowHeight = maxCatalogRowHeight ?? 125,
 		themes = themes ?? {
 			'Light': SavedTheme(
 				primaryColor: (deprecatedLightTheme ?? defaultLightTheme).primaryColor,
@@ -2476,7 +2475,7 @@ class Settings extends ChangeNotifier {
 	bool get catalogGridModeAttachmentInBackground => catalogGridModeAttachmentInBackgroundSetting(this);
 
 	static const maxCatalogRowHeightSetting = SavedSetting(SavedSettingsFields.maxCatalogRowHeight);
-	double get maxCatalogRowHeight => maxCatalogRowHeightSetting(this);
+	double? get maxCatalogRowHeight => maxCatalogRowHeightSetting(this);
 
 	static const lightThemeKeySetting = SavedSetting(SavedSettingsFields.lightThemeKey);
 	String get lightThemeKey => lightThemeKeySetting(this);

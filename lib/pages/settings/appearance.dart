@@ -955,7 +955,7 @@ final appearanceSettings = [
 				height: Settings.maxCatalogRowHeightSetting.watch(context),
 				child: Stack(
 					children: [
-						Positioned.fill(
+						if (Settings.maxCatalogRowHeightSetting.watch(context) != null) Positioned.fill(
 							child: Container(
 								decoration: BoxDecoration(
 									border: Border.all(
@@ -996,14 +996,17 @@ final appearanceSettings = [
 				description: 'Show last replies',
 				setting: Settings.showLastRepliesInCatalogSetting
 			),
-			SliderSettingWidget(
+			NullableSliderSettingWidget(
 				description: 'Max height',
 				keywords: ['size'],
 				setting: Settings.maxCatalogRowHeightSetting,
 				min: 100,
-				max: 600,
+				max: 900,
 				step: 1,
-				textFormatter: (height) => '${height.round()} px'
+				textFormatter: (height) => switch (height) {
+					double height => '${height.round()} px',
+					null => 'Unlimited'
+				}
 			)
 		]
 	),
