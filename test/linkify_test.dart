@@ -99,5 +99,31 @@ void main() {
 			expect(link.url, 'https://www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
 			expect(link.name, 'www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
 		});
+
+		test('slash needed to make a link', () {
+			final r = SiteReddit.makeSpan('', 0, '1.to(5)');
+			expect(r.children, hasLength(2));
+			final link = r.children[0] as PostLinkSpan;
+			expect(link.url, 'https://1.to');
+			expect(link.name, '1.to');
+			final text = r.children[1] as PostTextSpan;
+			expect(text.text, '(5)');
+		});
+
+		test('link inside code block should not be linkified', () {
+			final r = SiteReddit.makeSpan('', 0, '```1.to```');
+			final code = r.children.single as PostCodeSpan;
+			expect(code.text, '1.to');
+		});
+
+		test('link after code block', () {
+			final r = SiteReddit.makeSpan('', 0, '```code```1.to');
+			expect(r.children, hasLength(2));
+			final code = r.children[0] as PostCodeSpan;
+			expect(code.text, 'code');
+			final link = r.children[1] as PostLinkSpan;
+			expect(link.url, 'https://1.to');
+			expect(link.name, '1.to');
+		});
 	});
 }

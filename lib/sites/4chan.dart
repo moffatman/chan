@@ -299,7 +299,9 @@ class Site4Chan extends ImageboardSite {
 		] : const [
 			LooseUrlLinkifier(),
 			ChanceLinkifier()
-		]).map((elem) {
+		], options: const LinkifyOptions(
+			defaultToHttps: true
+		)).map((elem) {
 			if (elem is _QuoteLinkElement) {
 				return PostQuoteLinkSpan(
 					board: fromSearchThread!.board,

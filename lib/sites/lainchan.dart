@@ -54,7 +54,9 @@ class SiteLainchan extends ImageboardSite {
 	});
 
 	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: const [ChanceLinkifier(), LooseUrlLinkifier()]).map((elem) {
+		return linkify(text, linkifiers: const [ChanceLinkifier(), LooseUrlLinkifier()], options: const LinkifyOptions(
+			defaultToHttps: true
+		)).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url, name: elem.text);
 			}

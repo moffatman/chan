@@ -1,13 +1,13 @@
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\u007F-\uFFFF]*)",
+  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\u007F-\uFFFF]*)?)",
   caseSensitive: false,
   dotAll: true,
 );
 
 final _looseUrlRegexWithBackslash = RegExp(
-  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\\\u007F-\uFFFF]*)",
+  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\\\u007F-\uFFFF]*)?)",
   caseSensitive: false,
   dotAll: true,
 );
@@ -102,6 +102,22 @@ class LooseUrlLinkifier extends Linkifier {
                 || (
                   (match.group(1)?.endsWith('](') ?? false)
                   && (match.group(2)?.contains(')') ?? false)
+                )
+                // [... $host](
+                // Sometimes people note the site in a markdown URL label
+                || (
+                  (match.group(1)?.contains('[') ?? false)
+                  && !(match.group(1)?.contains(']') ?? false)
+                  && !(match.group(2)?.contains('/') ?? false) // not a full URL
+                  && switch (element.text.indexOf(']', match.end)) {
+                    -1 => false, // No closing bracket
+                    // The closing bracket is not for a separate link
+                    int index => element.text.indexOf('[', match.end) < index
+                  }
+                )
+                /// ``` $host ```
+                || (
+                  '```'.allMatches(match.group(1)!).length % 2 == 1
                 )
               )
         ) {

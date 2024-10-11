@@ -42,7 +42,9 @@ Future<bool> embedPossible(String url) async {
 }
 
 Future<String?>? findEmbedUrl(String text) async {
-	for (final element in linkify(text, linkifiers: const [LooseUrlLinkifier()])) {
+	for (final element in linkify(text, linkifiers: const [LooseUrlLinkifier()], options: const LinkifyOptions(
+		defaultToHttps: true
+	))) {
 		if (element is UrlElement) {
 			if (await embedPossible(element.url)) {
 				return element.url;
