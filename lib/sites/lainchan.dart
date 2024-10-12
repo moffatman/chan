@@ -70,6 +70,7 @@ class SiteLainchan extends ImageboardSite {
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAll('<em>//</em>', '//'));
+		int spoilerSpanId = 0;
 		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
 			for (final node in nodes) {
 				if (node is dom.Element) {
@@ -108,6 +109,18 @@ class SiteLainchan extends ImageboardSite {
 						else if (node.classes.contains('quote3')) {
 							yield PostBlueQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 						}
+						else if (node.classes.contains('u')) {
+							yield PostUnderlinedSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+						}
+						else if (node.classes.contains('o')) {
+							yield PostOverlinedSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+						}
+						else if (node.classes.contains('spoiler')) {
+							yield PostSpoilerSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)), spoilerSpanId++);
+						}
+						else if (node.classes.contains('s')) {
+							yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+						}
 						else {
 							yield PostTextSpan(node.text);
 						}
@@ -123,6 +136,12 @@ class SiteLainchan extends ImageboardSite {
 							yield* visit(node.nodes);
 						}
 						yield const PostLineBreakSpan();
+					}
+					else if (node.localName == 'sup') {
+						yield PostSuperscriptSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
+					else if (node.localName == 'sub') {
+						yield PostSubscriptSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
 					else {
 						yield PostTextSpan(node.outerHtml);

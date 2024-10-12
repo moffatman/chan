@@ -1078,6 +1078,16 @@ const greentextSnippet = ImageboardSnippet.complex(
 	previewBuilder: _previewQuoteSnippet
 );
 
+class SnippetPreviewBuilders {
+	static PostSpan bold(String input) => PostBoldSpan(PostTextSpan(input));
+	static PostSpan italic(String input) => PostItalicSpan(PostTextSpan(input));
+	static PostSpan underline(String input) => PostUnderlinedSpan(PostTextSpan(input));
+	static PostSpan overline(String input) => PostOverlinedSpan(PostTextSpan(input));
+	static PostSpan strikethrough(String input) => PostStrikethroughSpan(PostTextSpan(input));
+	static PostSpan superscript(String input) => PostSuperscriptSpan(PostTextSpan(input));
+	static PostSpan subscript(String input) => PostSubscriptSpan(PostTextSpan(input));
+}
+
 class ImageboardSearchOptions {
 	final bool text;
 	final bool name;

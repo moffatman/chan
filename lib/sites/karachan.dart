@@ -470,10 +470,6 @@ class SiteKarachan extends ImageboardSite {
 		);
 	}
 
-	static PostSpan _boldPreviewBuilder(String input) => PostBoldSpan(PostTextSpan(input));
-	static PostSpan _italicPreviewBuilder(String input) => PostItalicSpan(PostTextSpan(input));
-	static PostSpan _underlinePreviewBuilder(String input) => PostUnderlinedSpan(PostTextSpan(input));
-
 	@override
 	Iterable<ImageboardSnippet> getBoardSnippets(String board) sync* {
 		yield greentextSnippet;
@@ -482,21 +478,21 @@ class SiteKarachan extends ImageboardSite {
 			name: 'Bold',
 			start: '[b]',
 			end: '[/b]',
-			previewBuilder: _boldPreviewBuilder
+			previewBuilder: SnippetPreviewBuilders.bold
 		);
 		yield const ImageboardSnippet.simple(
 			icon: CupertinoIcons.italic,
 			name: 'Italic',
 			start: '[i]',
 			end: '[/i]',
-			previewBuilder: _italicPreviewBuilder
+			previewBuilder: SnippetPreviewBuilders.italic
 		);
 		yield const ImageboardSnippet.simple(
 			icon: CupertinoIcons.underline,
 			name: 'Underline',
 			start: '[u]',
 			end: '[/u]',
-			previewBuilder: _underlinePreviewBuilder
+			previewBuilder: SnippetPreviewBuilders.underline
 		);
 		yield const ImageboardSnippet.simple(
 			icon: CupertinoIcons.chevron_left_slash_chevron_right,

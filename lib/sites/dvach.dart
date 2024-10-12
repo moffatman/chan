@@ -11,8 +11,9 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
@@ -263,7 +264,63 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [
-		greentextSnippet
+		ImageboardSnippet.simple(
+			icon: CupertinoIcons.bold,
+			name: 'Bold',
+			start: '[b]',
+			end: '[/b]',
+			previewBuilder: SnippetPreviewBuilders.bold
+		),
+		ImageboardSnippet.simple(
+			icon: CupertinoIcons.italic,
+			name: 'Italic',
+			start: '[i]',
+			end: '[/i]',
+			previewBuilder: SnippetPreviewBuilders.italic
+		),
+		greentextSnippet,
+		// There is no Cupertino overline icon, use material for both for consistency
+		ImageboardSnippet.simple(
+			icon: Icons.format_underline,
+			name: 'Underline',
+			start: '[u]',
+			end: '[/u]',
+			previewBuilder: SnippetPreviewBuilders.underline
+		),
+		ImageboardSnippet.simple(
+			icon: Icons.format_overline,
+			name: 'Overline',
+			start: '[o]',
+			end: '[/o]',
+			previewBuilder: SnippetPreviewBuilders.overline
+		),
+		ImageboardSnippet.simple(
+			icon: CupertinoIcons.eye_slash,
+			name: 'Spoiler',
+			start: '[spoiler]',
+			end: '[/spoiler]'
+		),
+		ImageboardSnippet.simple(
+			icon: CupertinoIcons.strikethrough,
+			name: 'Strikethrough',
+			start: '[s]',
+			end: '[/s]',
+			previewBuilder: SnippetPreviewBuilders.strikethrough
+		),
+		ImageboardSnippet.simple(
+			icon: CupertinoIcons.textformat_superscript,
+			name: 'Superscript',
+			start: '[sup]',
+			end: '[/sup]',
+			previewBuilder: SnippetPreviewBuilders.superscript
+		),
+		ImageboardSnippet.simple(
+			icon: CupertinoIcons.textformat_subscript,
+			name: 'Subscript',
+			start: '[sub]',
+			end: '[/sub]',
+			previewBuilder: SnippetPreviewBuilders.subscript
+		),
 	];
 
 	@override

@@ -462,6 +462,31 @@ class PostUnderlinedSpan extends PostSpan {
 	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
+class PostOverlinedSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostOverlinedSpan(this.child);
+
+	@override
+	InlineSpan build(context, zone, settings, theme, options) {
+		return child.build(context, zone, settings, theme, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(
+				decoration: TextDecoration.overline,
+				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
+			)
+		));
+	}
+
+	@override
+	String buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
+
+	@override
+	bool get containsLink => child.containsLink;
+
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
+}
+
 class PostLineBreakSpan extends PostSpan {
 	const PostLineBreakSpan();
 
@@ -1596,7 +1621,25 @@ class PostSuperscriptSpan extends PostSpan {
 	@override
 	build(context, zone, settings, theme, options) {
 		return child.build(context, zone, settings, theme, options.copyWith(
-			baseTextStyle: options.baseTextStyle.copyWith(fontSize: 10)
+			baseTextStyle: options.baseTextStyle.copyWith(fontFeatures: const [FontFeature.superscripts()])
+		));
+	}
+	@override
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
+	@override
+	bool get containsLink => child.containsLink;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
+}
+
+class PostSubscriptSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostSubscriptSpan(this.child);
+	@override
+	build(context, zone, settings, theme, options) {
+		return child.build(context, zone, settings, theme, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(fontFeatures: const [FontFeature.subscripts()])
 		));
 	}
 	@override
