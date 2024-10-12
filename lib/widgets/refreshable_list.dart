@@ -257,6 +257,20 @@ class SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery extends SliverGr
   }
 }
 
+extension _ListBeginsWith<T> on List<T> {
+	bool beginsWith(List<T> other) {
+		if (other.length > length) {
+			// Too short to match
+		}
+		for (int i = 0; i < other.length; i++) {
+			if (this[i] != other[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+}
+
 class _TreeTooDeepException implements Exception {
 	const _TreeTooDeepException();
 }
@@ -554,7 +568,7 @@ class _RefreshableTreeItemsCacheKey {
 				return false;
 			}
 		}
-		return parentIds[ancestor.parentIds.length] == thisId;
+		return parentIds[ancestor.parentIds.length] == ancestor.thisId;
 	}
 }
 
@@ -755,19 +769,19 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void unhideItem(RefreshableListItem<T> item) {
+	void unhideItem(RefreshableListItem<T> item, {bool includingParents = false}) {
 		final x = [
 			...item.parentIds,
 			item.id
 		];
-		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
+		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id) || (includingParents && item._key.isDescendantOf(key)));
 		final manuallyCollapsedItemsLengthBefore = manuallyCollapsedItems.length;
-		manuallyCollapsedItems.removeWhere((w) => listEquals(w, x));
+		manuallyCollapsedItems.removeWhere(includingParents ? x.beginsWith : (w) => listEquals(w, x));
 		if (manuallyCollapsedItemsLengthBefore != manuallyCollapsedItems.length) {
 			state.widget.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		}
 		final automaticallyCollapsedItemsLengthBefore = state._automaticallyCollapsedItems.length;
-		state._automaticallyCollapsedItems.removeWhere((w) => listEquals(w, x));
+		state._automaticallyCollapsedItems.removeWhere(includingParents ? x.beginsWith : (w) => listEquals(w, x));
 		if (automaticallyCollapsedItemsLengthBefore != state._automaticallyCollapsedItems.length) {
 			state._onAutomaticallyCollapsedItemExpanded.call(x);
 		}
@@ -912,7 +926,7 @@ class _Divider<T extends Object> extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final treeItems = context.read<_RefreshableTreeItems>();
+		final treeItems = context.read<_RefreshableTreeItems<T>>();
 		if (!treeItems.state.useTree) {
 			return Divider(
 				thickness: 1,
@@ -929,7 +943,7 @@ class _Divider<T extends Object> extends StatelessWidget {
 				itemBeforeDepth = null;
 			}
 		}
-		else if (context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemBefore).isHidden)) {
+		else if (context.select<_RefreshableTreeItems<T>, bool>((c) => !c.isItemHidden(itemBefore).isHidden)) {
 			itemBeforeDepth = itemBefore.depth;
 		}
 		else {
@@ -944,7 +958,7 @@ class _Divider<T extends Object> extends StatelessWidget {
 				itemAfterDepth = null;
 			}
 		}
-		else if (itemAfter != null && context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemAfter!).isHidden)) {
+		else if (itemAfter != null && context.select<_RefreshableTreeItems<T>, bool>((c) => !c.isItemHidden(itemAfter!).isHidden)) {
 			itemAfterDepth = itemAfter!.depth;
 		}
 		else {
@@ -1149,7 +1163,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	static final Map<String, Set<int>> _overrideExpandAutomaticallyCollapsedTopLevelItemsCache = {};
 	Set<int> get _overrideExpandAutomaticallyCollapsedTopLevelItems => _overrideExpandAutomaticallyCollapsedTopLevelItemsCache.putIfAbsent(widget.id, () => {});
 	List<RefreshableListItem<T>> filteredValues = [];
-	late _RefreshableTreeItems _refreshableTreeItems;
+	late _RefreshableTreeItems<T> _refreshableTreeItems;
 	int forceRebuildId = 0;
 	Timer? _trailingUpdateAnimationTimer;
 	bool _treeBuildingFailed = false;
@@ -1712,13 +1726,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		bool loadingOmittedItems = false;
 		final TreeItemCollapseType? isHidden;
 		if (widget.treeAdapter != null && useTree) {
-			isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value));
+			isHidden = context.select<_RefreshableTreeItems<T>, TreeItemCollapseType?>((c) => c.isItemHidden(value));
 		}
 		else {
 			isHidden = null;
 		}
 		if (widget.treeAdapter != null && (useTree || value.representsStubChildren || value.representsUnloadedPages.isNotEmpty) && !isHidden.isHidden) {
-			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
+			loadingOmittedItems = context.select<_RefreshableTreeItems<T>, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
 		if (filterPattern != null && widget.filteredItemBuilder != null) {
 			child = value.representsStubChildren ? const SizedBox.shrink() : Builder(
@@ -1938,11 +1952,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						onTap: loadingOmittedItems ? null : () async {
 							if (!value.representsStubChildren) {
 								if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
-									context.read<_RefreshableTreeItems>().swapSubtreeTo(value);
+									context.read<_RefreshableTreeItems<T>>().swapSubtreeTo(value);
 									Future.delayed(_treeAnimationDuration, () => widget.controller?._alignToItemIfPartiallyAboveFold(value));
 								}
 								else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
-									context.read<_RefreshableTreeItems>().revealNewInsertsBelow(value);
+									context.read<_RefreshableTreeItems<T>>().revealNewInsertsBelow(value);
 									// At the same time, trigger any loading
 									final stubParent = widget.controller?.items.tryFirstWhere((otherItem) {
 										return otherItem.item == value.item &&
@@ -1955,7 +1969,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 									}
 								}
 								else if (isHidden != null) {
-									context.read<_RefreshableTreeItems>().unhideItem(value);
+									context.read<_RefreshableTreeItems<T>>().unhideItem(value);
 									if (isHidden == TreeItemCollapseType.topLevelCollapsed) {
 										final stubParent = widget.controller?.items.tryFirstWhere((otherItem) {
 											return otherItem.item == value.item &&
@@ -1969,7 +1983,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 									}
 								}
 								else if (value.treeDescendantIds.isNotEmpty || !(widget.treeAdapter?.collapsedItemsShowBody ?? false)) {
-									context.read<_RefreshableTreeItems>().hideItem(value);
+									context.read<_RefreshableTreeItems<T>>().hideItem(value);
 									widget.controller?._alignToItemIfPartiallyAboveFold(value);
 								}
 							}
@@ -3699,7 +3713,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		double alignment = 0.0,
 		bool Function(T val)? orElseLast,
 		Duration duration = const Duration(milliseconds: 200),
-		Curve curve = Curves.easeInOut
+		Curve curve = Curves.easeInOut,
+		bool revealIfHidden = true
 	}) async {
 		int targetIndex = _items.indexWhere((i) => f(i.item.item));
 		if (targetIndex == -1) {
@@ -3710,9 +3725,14 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				throw const ItemNotFoundException('No matching item to scroll to');
 			}
 		}
-		await animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve);
+		await animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, revealIfHidden: revealIfHidden);
 	}
-	Future<void> animateToIfOffscreen(bool Function(T val) f, {double alignment = 0.0, bool Function(T val)? orElseLast, Duration duration = const Duration(milliseconds: 200)}) async {
+	Future<void> animateToIfOffscreen(bool Function(T val) f, {
+		double alignment = 0.0,
+		bool Function(T val)? orElseLast,
+		Duration duration = const Duration(milliseconds: 200),
+		bool revealIfHidden = true
+	}) async {
 		int targetIndex = _items.indexWhere((i) => f(i.item.item));
 		if (targetIndex == -1) {
 			if (orElseLast != null) {
@@ -3730,7 +3750,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	Future<void> animateToIndex(int targetIndex, {
 		double alignment = 0.0,
 		Duration duration = const Duration(milliseconds: 200),
-		Curve curve = Curves.easeInOut
+		Curve curve = Curves.easeInOut,
+		bool revealIfHidden = true
 	}) async {
 		final startPixels = scrollController?.tryPosition?.pixels ?? 0;
 		final (int, int) proposedRange;
@@ -3759,7 +3780,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			state?._rebuild();
 			try {
 				await SchedulerBinding.instance.endOfFrame;
-				await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels);
+				await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
 			}
 			catch (e, st) {
 				print(e);
@@ -3778,18 +3799,22 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		else {
 			// Just to be safe
 			useDummyItemsInRange = null;
-			await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels);
+			await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
 		}
 	}
 	Future<void> _animateToIndex(int targetIndex, {
 		required double alignment,
 		required Duration duration,
 		Curve curve = Curves.easeInOut,
-		required double startPixels
+		required double startPixels,
+		required bool revealIfHidden
 	}) async {
 		print('$contentId animating to $targetIndex (${_items[targetIndex].item.item}) (alignment: $alignment)');
 		final start = DateTime.now();
 		currentTargetIndex = targetIndex;
+		if (isItemHidden(_items[targetIndex].item).isHidden) {
+			state?._refreshableTreeItems.unhideItem(_items[targetIndex].item, includingParents: true);
+		}
 		final initialContentId = contentId;
 		if (_estimateOffset(targetIndex) == null) {
 			// Or it will hang
