@@ -2126,7 +2126,10 @@ class NotificationListener2<T1 extends Notification, T2 extends Notification> ex
 }
 
 class ChanceDivider extends StatelessWidget {
+	final double height;
+
 	const ChanceDivider({
+		this.height = 0,
 		super.key
 	});
 
@@ -2134,7 +2137,7 @@ class ChanceDivider extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return Divider(
 			thickness: 1,
-			height: 0,
+			height: height,
 			color: ChanceTheme.primaryColorWithBrightness20Of(context)
 		);
 	}

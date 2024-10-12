@@ -1732,7 +1732,7 @@ class PostDividerSpan extends PostSpan {
 	const PostDividerSpan();
 	@override
 	build(context, zone, settings, theme, options) => const WidgetSpan(
-		child: ChanceDivider()
+		child: ChanceDivider(height: 16)
 	);
 
 	@override
