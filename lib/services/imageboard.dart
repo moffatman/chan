@@ -399,10 +399,6 @@ class Imageboard extends ChangeNotifier {
 					});
 				}
 				else {
-					if (e.toStringDio().toLowerCase().contains('captcha')) {
-						// Captcha didn't work. For now, let's disable the auto captcha solver
-						Outbox.instance.headlessSolveFailed = true;
-					}
 					alertError(ImageboardRegistry.instance.context!, e, state.stackTrace);
 				}
 			}

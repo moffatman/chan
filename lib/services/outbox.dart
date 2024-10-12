@@ -412,6 +412,10 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					if (_state is! QueueStateDeleted<T>) {
 						// Don't revive due to exception from cancellation
 						_state = QueueStateFailed(e, st, captchaSolution: captchaSolution);
+						if (e.toStringDio().toLowerCase().contains('captcha')) {
+							// Captcha didn't work. For now, let's disable the auto captcha solver
+							Outbox.instance.headlessSolveFailed = true;
+						}
 						notifyListeners();
 					}
 				}
