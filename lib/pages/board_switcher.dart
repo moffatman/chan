@@ -66,7 +66,6 @@ class BoardSwitcherPage extends StatefulWidget {
 
 class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late final FocusNode _focusNode;
-	late final FocusNode _listenerFocusNode;
 	late List<Imageboard> allImageboards;
 	int currentImageboardIndex = 0;
 	Imageboard get currentImageboard => allImageboards[currentImageboardIndex];
@@ -83,6 +82,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	bool _showSelectedItem = isOnMac;
 	late TextEditingController _textEditingController;
 	late StreamSubscription<BoxEvent> _boardsBoxSubscription;
+	final Map<ImageboardScoped<ImageboardBoard?>, BuildContext> _contexts = {};
 
 	bool isPhoneSoftwareKeyboard() {
 		return MediaQueryData.fromView(View.of(context)).viewInsets.bottom > 100;
@@ -131,7 +131,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		scrollController = ScrollController();
 		_backgroundColor = ValueNotifier<Color?>(null);
 		_focusNode = FocusNode();
-		_listenerFocusNode = FocusNode();
 		allImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
 		currentImageboardIndex = allImageboards.indexOf(ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey) ?? allImageboards.first);
 		if (currentImageboardIndex == -1) {
@@ -321,7 +320,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		filteredBoards.addAll(allImageboards.where((i) {
 			return i != currentImageboard && i.site.allowsArbitraryBoards;
 		}).map((i) => i.scope(null)));
-		final effectiveSelectedIndex = min(_selectedIndex, filteredBoards.length - 1);
+		final effectiveSelectedIndex = _selectedIndex.clamp(0, filteredBoards.length - 1);
 		return AdaptiveScaffold(
 			disableAutoBarHiding: true,
 			resizeToAvoidBottomInset: false,
@@ -329,27 +328,29 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			bar: AdaptiveBar(
 				title: FractionallySizedBox(
 					widthFactor: 0.75,
-					child: KeyboardListener(
-						focusNode: _listenerFocusNode,
-						onKeyEvent: (e) {
-							if (e is! KeyDownEvent) {
-								return;
-							}
-							switch (e.logicalKey) {
-								case LogicalKeyboardKey.arrowDown:
-									if (effectiveSelectedIndex < filteredBoards.length - 1) {
-										setState(() {
-											_selectedIndex++;
-										});
+					child: CallbackShortcuts(
+						bindings: {
+							LogicalKeySet(LogicalKeyboardKey.arrowDown): () {
+								if (effectiveSelectedIndex < filteredBoards.length - 1) {
+									setState(() {
+										_selectedIndex++;
+									});
+									final context = _contexts[filteredBoards[_selectedIndex]];
+									if (context != null) {
+										Scrollable.ensureVisible(context, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd);
 									}
-									break;
-								case LogicalKeyboardKey.arrowUp:
+								}
+							},
+							LogicalKeySet(LogicalKeyboardKey.arrowUp): () {
 								if (effectiveSelectedIndex > 0) {
 									setState(() {
 										_selectedIndex--;
 									});
+									final context = _contexts[filteredBoards[_selectedIndex]];
+									if (context != null) {
+										Scrollable.ensureVisible(context, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart);
+									}
 								}
-								break;
 							}
 						},
 						child: AdaptiveTextField(
@@ -629,8 +630,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									final board = filteredBoards[i].item;
 									final imageboard = filteredBoards[i].imageboard;
 									final isSelected = _showSelectedItem && i == effectiveSelectedIndex;
+									final Widget child;
 									if (board != null) {
-										return ContextMenu(
+										child = ContextMenu(
 											backgroundColor: Colors.transparent,
 											actions: [
 												if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ContextMenuAction(
@@ -738,7 +740,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										);
 									}
 									else {
-										return CupertinoButton(
+										child = CupertinoButton(
 											padding: EdgeInsets.zero,
 											child: Container(
 												padding: const EdgeInsets.all(4),
@@ -785,6 +787,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											}
 										);
 									}
+									return BuildContextMapRegistrant(
+										map: _contexts,
+										value: filteredBoards[i],
+										child: child
+									);
 								}
 							) : GridView.extent(
 								physics: const AlwaysScrollableScrollPhysics(),
@@ -798,8 +805,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									final imageboard = item.imageboard;
 									final board = item.item;
 									final isSelected = _showSelectedItem && item == filteredBoards[effectiveSelectedIndex];
+									final Widget child;
 									if (board != null) {
-										return ContextMenu(
+										child = ContextMenu(
 											backgroundColor: Colors.transparent,
 											actions: [
 												if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ContextMenuAction(
@@ -894,50 +902,57 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											)
 										);
 									}
-									return CupertinoButton(
-										padding: EdgeInsets.zero,
-										child: Container(
-											padding: const EdgeInsets.all(4),
-											decoration: BoxDecoration(
-												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												color: Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
-											),
-											child: Stack(
-												children: [
-													if (allImageboards.length > 1) Align(
-														alignment: Alignment.topLeft,
-														child: Padding(
-															padding: const EdgeInsets.only(top: 2, left: 2),
-															child: ImageboardIcon(
-																imageboardKey: imageboard.key
-															)
-														)
-													),
-													Column(
-														mainAxisAlignment: MainAxisAlignment.start,
-														crossAxisAlignment: CrossAxisAlignment.center,
-														children: [
-															const SizedBox(height: 20),
-															if (imageboard.site.supportsMultipleBoards) Flexible(
-																child: AutoSizeText(
-																	'Search ${imageboard.site.name}',
-																	textAlign: TextAlign.center,
-																	style: isSelected ? CommonTextStyles.bold : null
+									else {
+										child = CupertinoButton(
+											padding: EdgeInsets.zero,
+											child: Container(
+												padding: const EdgeInsets.all(4),
+												decoration: BoxDecoration(
+													borderRadius: const BorderRadius.all(Radius.circular(4)),
+													color: Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
+												),
+												child: Stack(
+													children: [
+														if (allImageboards.length > 1) Align(
+															alignment: Alignment.topLeft,
+															child: Padding(
+																padding: const EdgeInsets.only(top: 2, left: 2),
+																child: ImageboardIcon(
+																	imageboardKey: imageboard.key
 																)
 															)
-														]
-													)
-												]
-											)
-										),
-										onPressed: () {
-											setState(() {
-												currentImageboardIndex = allImageboards.indexOf(imageboard);
-											});
-											typeahead.clear();
-											typeaheadLoading.clear();
-											_updateTypeaheadBoards(searchString);
-										}
+														),
+														Column(
+															mainAxisAlignment: MainAxisAlignment.start,
+															crossAxisAlignment: CrossAxisAlignment.center,
+															children: [
+																const SizedBox(height: 20),
+																if (imageboard.site.supportsMultipleBoards) Flexible(
+																	child: AutoSizeText(
+																		'Search ${imageboard.site.name}',
+																		textAlign: TextAlign.center,
+																		style: isSelected ? CommonTextStyles.bold : null
+																	)
+																)
+															]
+														)
+													]
+												)
+											),
+											onPressed: () {
+												setState(() {
+													currentImageboardIndex = allImageboards.indexOf(imageboard);
+												});
+												typeahead.clear();
+												typeaheadLoading.clear();
+												_updateTypeaheadBoards(searchString);
+											}
+										);
+									}
+									return BuildContextMapRegistrant(
+										map: _contexts,
+										value: item,
+										child: child
 									);
 								}).toList()
 							)
