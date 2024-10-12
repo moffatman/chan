@@ -415,7 +415,6 @@ class BoardPageState extends State<BoardPage> {
 									),
 									Expanded(
 										child: Text(subvariant.name, style: TextStyle(
-											fontSize: 20,
 											fontWeight: subvariant == currentVariant ? FontWeight.bold : null,
 											fontVariations: subvariant == currentVariant ? CommonFontVariations.bold : null
 										))
