@@ -760,10 +760,15 @@ class ThreadPageState extends State<ThreadPage> {
 		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && context.read<ImageboardSite>().useTree && persistentState.firstVisiblePostId == null))) {
 			await _blockAndScrollToPostIfNeeded(delayBeforeScroll: delayBeforeScroll);
 		}
-		else if (_useAllDummies) {
-			setState(() {
-				_useAllDummies = false;
-			});
+		else {
+			if (explicitScrollToId == widget.thread.id) {
+				_glowPost(widget.thread.id);
+			}
+			if (_useAllDummies) {
+				setState(() {
+					_useAllDummies = false;
+				});
+			}
 		}
 	}
 
