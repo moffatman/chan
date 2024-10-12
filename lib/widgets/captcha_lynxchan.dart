@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/sites/8chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/util.dart';
@@ -77,7 +79,9 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			followRedirects: false, // dio loses the cookies in the first 303 response
 			validateStatus: (status) => (status ?? 0) < 400,
 			extra: {
-				kPriority: RequestPriority.interactive
+				kPriority: RequestPriority.interactive,
+				// Or else it confuses the redirect gateway and the captcha image redirect
+				kCloudflare: widget.site is Site8Chan
 			}
 		));
 		final String id;
