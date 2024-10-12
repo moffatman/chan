@@ -166,6 +166,11 @@ class SiteDvach extends ImageboardSite {
 				currentPage: threadsPerPage == null ? null : ((e.key ~/ threadsPerPage) + 1),
 				replyCount: e.value['posts_count'] - 1,
 				imageCount: e.value['files_count'] - op.attachments.length,
+				isEndless: e.value['endless'] == 1,
+				lastUpdatedTime: switch (e.value['lasthit']) {
+					int s => DateTime.fromMillisecondsSinceEpoch(s * 1000),
+					_ => null
+				}
 			);
 		}).toList();
 	}
@@ -183,7 +188,12 @@ class SiteDvach extends ImageboardSite {
 			attachments: posts.first.attachments_,
 			posts_: posts,
 			replyCount: response.data['posts_count'] - 1,
-			imageCount: response.data['files_count'] - posts.first.attachments.length
+			imageCount: response.data['files_count'] - posts.first.attachments.length,
+			isEndless: response.data['threads'].first['posts'].first['endless'] == 1,
+			lastUpdatedTime: switch (response.data['threads'].first['posts'].first['lasthit']) {
+				int s => DateTime.fromMillisecondsSinceEpoch(s * 1000),
+				_ => null
+			}
 		);
 	}
 

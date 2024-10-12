@@ -166,6 +166,15 @@ class ThreadFields {
     fieldName: 'poll',
     merger: NullableMerger(AdaptedMerger(ImageboardPollAdapter.kTypeId)),
   );
+  static bool getIsEndless(Thread x) => x.isEndless;
+  static void setIsEndless(Thread x, bool v) => x.isEndless = v;
+  static const isEndless = HiveFieldAdapter<Thread, bool>(
+    getter: getIsEndless,
+    setter: setIsEndless,
+    fieldNumber: 20,
+    fieldName: 'isEndless',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ThreadAdapter extends TypeAdapter<Thread> {
@@ -196,7 +205,8 @@ class ThreadAdapter extends TypeAdapter<Thread> {
     16: ThreadFields.attachments,
     17: ThreadFields.suggestedVariant,
     18: ThreadFields.archiveName,
-    19: ThreadFields.poll
+    19: ThreadFields.poll,
+    20: ThreadFields.isEndless
   };
 
   @override
@@ -239,6 +249,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       suggestedVariant: fields[17] as ThreadVariant?,
       poll: fields[19] as ImageboardPoll?,
       archiveName: fields[18] as String?,
+      isEndless: fields[20] == null ? false : fields[20] as bool,
     );
   }
 
@@ -264,6 +275,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       if (obj.suggestedVariant != null) 17: obj.suggestedVariant,
       if (obj.archiveName != null) 18: obj.archiveName,
       if (obj.poll != null) 19: obj.poll,
+      if (obj.isEndless) 20: obj.isEndless,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

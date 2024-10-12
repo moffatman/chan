@@ -50,7 +50,7 @@ TextSpan buildThreadCounters({
 }) {
 	final site = imageboard.site;
 	final latestThread = threadState?.thread ?? thread;
-	final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), site.isPaged ? 0 : latestThread.posts_.length - 1);
+	final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), (site.isPaged || latestThread.isEndless) ? 0 : latestThread.posts_.length - 1);
 	final int latestImageCount = (thread.isSticky && latestReplyCount == 1000) ? latestThread.imageCount : max(thread.imageCount, latestThread.imageCount);
 	int unseenReplyCount = 0;
 	int unseenYouCount = 0;
@@ -62,12 +62,15 @@ TextSpan buildThreadCounters({
 	Color? otherMetadataColor;
 	final threadSeen = threadState?.lastSeenPostId != null && (forceShowInHistory ?? (threadState?.showInHistory ?? false));
 	bool showReplyTimeInsteadOfReplyCount = false;
-	if (threadSeen && site.isPaged) {
+	if (threadSeen && (site.isPaged || thread.isEndless)) {
 		// image count stuff intentionally not covered here...
 		unseenReplyCount = threadState?.unseenReplyCount() ?? 0;
+		unseenImageCount = threadState?.unseenImageCount() ?? 0;
+		imageCountColor = unseenImageCount <= 0 ? grey : null;
 		unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
-		final catalogLastTime = thread.posts_.tryLast?.time;
-		final stateLastTime = threadState?.thread?.posts_.tryLast?.time;
+		final catalogLastTime = thread.lastUpdatedTime ?? thread.posts_.tryLast?.time;
+		final stateLastTime = threadState?.thread?.lastUpdatedTime ?? threadState?.thread?.posts_.tryLast?.time;
+		print('${thread.identifier} catalogLastTime=$catalogLastTime, stateLastTime=$stateLastTime');
 		showReplyTimeInsteadOfReplyCount = catalogLastTime != null &&
 				stateLastTime != null &&
 				catalogLastTime.isAfter(stateLastTime);
@@ -143,7 +146,7 @@ TextSpan buildThreadCounters({
 					IconSpan(icon: CupertinoIcons.reply, size: 18, color: replyCountColor),
 					space,
 				],
-				if (showReplyTimeInsteadOfReplyCount) TextSpan(text: formatRelativeTime(thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
+				if (showReplyTimeInsteadOfReplyCount) TextSpan(text: formatRelativeTime(thread.lastUpdatedTime ?? thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
 				else if (countsUnreliable && latestThread == thread) const TextSpan(text: '—')
 				else TextSpan(text: (latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 				if (unseenReplyCount > 0) TextSpan(text: '+$unseenReplyCount'),
@@ -298,7 +301,7 @@ class ThreadRow extends StatelessWidget {
 		final imageboard = context.watch<Imageboard>();
 		final site = context.watch<ImageboardSite>();
 		final latestThread = threadState?.thread ?? thread;
-		final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), site.isPaged ? 0 : (latestThread.posts_.length - 1));
+		final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), (site.isPaged || thread.isEndless) ? 0 : (latestThread.posts_.length - 1));
 		final grey = theme.primaryColorWithBrightness(0.6);
 		String? threadAsUrl;
 		final firstUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url;
@@ -313,9 +316,9 @@ class ThreadRow extends StatelessWidget {
 		if ((threadState?.unseenReplyCount() ?? 0) > 0) {
 			hasUnseenReplies = true;
 		}
-		else if (site.isPaged) {
-			final catalogLastTime = thread.posts_.tryLast?.time;
-			final stateLastTime = threadState?.thread?.posts_.tryLast?.time;
+		else if (site.isPaged || thread.isEndless) {
+			final catalogLastTime = thread.lastUpdatedTime ?? thread.posts_.tryLast?.time;
+			final stateLastTime = threadState?.thread?.lastUpdatedTime ?? threadState?.thread?.posts_.tryLast?.time;
 			hasUnseenReplies = catalogLastTime != null && stateLastTime != null && catalogLastTime.isAfter(stateLastTime);
 		}
 		else if (threadSeen) {

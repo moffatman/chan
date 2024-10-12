@@ -73,6 +73,10 @@ class Thread extends HiveObject implements Filterable {
 	String? archiveName;
 	@HiveField(19, isOptimized: true)
 	ImageboardPoll? poll;
+	@HiveField(20, isOptimized: true, defaultValue: false)
+	bool isEndless;
+	// Do not persist, for limited usage which doesn't matter beyond current session
+	DateTime? lastUpdatedTime;
 	Thread({
 		required this.posts_,
 		this.isArchived = false,
@@ -92,7 +96,9 @@ class Thread extends HiveObject implements Filterable {
 		required this.attachments,
 		this.suggestedVariant,
 		this.poll,
-		this.archiveName
+		this.archiveName,
+		this.isEndless = false,
+		this.lastUpdatedTime
 	}) : board = intern(board);
 	
 	bool _initialized = false;
