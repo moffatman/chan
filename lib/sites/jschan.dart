@@ -79,7 +79,7 @@ class SiteJsChan extends ImageboardSite {
 						}
 					}
 					else if (node.localName == 'a') {
-						yield PostLinkSpan(node.attributes['href']!, name: node.text);
+						yield PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull);
 					}
 					else if (node.localName == 'small' && node.text == '(OP)') {
 						// Do nothing, Chance handles adding "(OP)"

@@ -66,7 +66,7 @@ class SiteLainchan extends ImageboardSite {
 		}).toList();
 	}
 
-	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+)(?:\.html)?#(\d+)');
+	static final _quoteLinkPattern = RegExp(r'\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+)(?:\.html)?#(\d+)');
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAll('<em>//</em>', '//'));
@@ -79,7 +79,8 @@ class SiteLainchan extends ImageboardSite {
 					}
 					else if (node.localName == 'a' && node.attributes['href'] != null) {
 						final match = _quoteLinkPattern.firstMatch(node.attributes['href']!);
-						if (match != null) {
+						// Make sure this isn't just a link to another imageboard
+						if (match != null && (Uri.tryParse(node.attributes['href']!)?.host.isEmpty ?? true)) {
 							yield PostQuoteLinkSpan(
 								board: match.group(1)!,
 								threadId: int.parse(match.group(2)!),
@@ -87,7 +88,7 @@ class SiteLainchan extends ImageboardSite {
 							);
 						}
 						else {
-							yield PostLinkSpan(node.attributes['href']!);
+							yield PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull);
 						}
 					}
 					else if (node.localName == 'strong' || node.localName == 'b') {

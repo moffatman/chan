@@ -11,6 +11,7 @@ import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:charset_converter/charset_converter.dart';
@@ -120,7 +121,7 @@ class SiteFutaba extends ImageboardSite {
 					}
 				}
 				else if (node.localName == 'a') {
-					elements.add(PostLinkSpan(node.attributes['href']!.replaceFirst(RegExp(r'^\/bin\/jump\.php\?'), '')));
+					elements.add(PostLinkSpan(node.attributes['href']!.replaceFirst(RegExp(r'^\/bin\/jump\.php\?'), ''), name: node.text.nonEmptyOrNull));
 				}
 				else {
 					elements.add(PostTextSpan(node.outerHtml));

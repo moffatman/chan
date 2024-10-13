@@ -14,6 +14,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
@@ -54,7 +55,7 @@ class SiteLynxchan extends ImageboardSite {
 						));
 					}
 					else {
-						elements.add(PostLinkSpan(node.attributes['href']!));
+						elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
 					}
 				}
 				else if (node.localName == 'span') {

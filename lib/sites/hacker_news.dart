@@ -144,7 +144,7 @@ class SiteHackerNews extends ImageboardSite {
 						yield const PostLineBreakSpan();
 					}
 					else if (node.localName == 'a') {
-						yield PostLinkSpan(node.attributes['href']!, name: node.text);
+						yield PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull);
 					}
 					else if (node.localName == 'b') {
 						yield PostBoldSpan(PostTextSpan(node.text));

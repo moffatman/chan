@@ -376,7 +376,7 @@ class SiteReddit extends ImageboardSite {
 					else if (node.localName == 'a') {
 						final href = node.attributes['href'];
 						if (href != null) {
-							yield PostLinkSpan(href, name: node.text);
+							yield PostLinkSpan(href, name: node.text.nonEmptyOrNull);
 						}
 						else {
 							// Some edge case
