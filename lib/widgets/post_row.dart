@@ -17,7 +17,6 @@ import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -230,7 +229,8 @@ class PostRow extends StatelessWidget {
 			);
 		}
 		final rootContext = context;
-		final site = context.watch<ImageboardSite>();
+		final imageboard = context.watch<Imageboard>();
+		final site = imageboard.site;
 		final notifications = context.watch<Notifications>();
 		final savedPost = context.select<Persistence, SavedPost?>((p) => p.getSavedPost(post));
 		Post latestPost = savedPost?.post ?? post;
@@ -276,7 +276,7 @@ class PostRow extends StatelessWidget {
 		replyIds.removeWhere((id) {
 			final replyPost = parentZone.findPost(id);
 			if (replyPost != null) {
-				if (Filter.of(context).filter(replyPost)?.type.hide == true) {
+				if (Filter.of(context).filter(imageboard.key, replyPost)?.type.hide == true) {
 					return true;
 				}
 			}

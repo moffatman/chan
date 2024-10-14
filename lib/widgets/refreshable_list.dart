@@ -1064,7 +1064,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool allowReordering;
 	final ValueChanged<T>? onWantAutosave;
 	final void Function(T, AutoWatchType)? onWantAutowatch;
-	final Filterable Function(T)? filterableAdapter;
+	final (String imageboardKey, Filterable item) Function(T)? filterableAdapter;
 	final FilterAlternative? filterAlternative;
 	final bool useTree;
 	final RefreshableTreeAdapter<T>? treeAdapter;
@@ -1538,12 +1538,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				final filterableAdapter = widget.filterableAdapter;
 				if (filterableAdapter != null) {
 					// We have the ability to get identifier for each item
-					final oldIds = originalList!.map((i) => filterableAdapter(i).id).toSet();
+					final oldIds = originalList!.map((i) => filterableAdapter(i).$2.id).toSet();
 					newList = originalList!.followedBy(newItems.where((newItem) {
 						// Item may be already seen in old list
 						// This could be because of long time between updates, the item
 						// changed in position in the server's list.
-						return !oldIds.contains(filterableAdapter(newItem).id);
+						return !oldIds.contains(filterableAdapter(newItem).$2.id);
 					})).toList();
 				}
 				else {
@@ -2580,19 +2580,19 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			filteredValues = <RefreshableListItem<T>>[];
 			final filter = Filter.of(context);
 			for (final item in sortedList) {
-				final item_ = filterableAdapter?.call(item);
-				if (item_ != null) {
-					if (queryPattern != null && !_matchesSearchFilter(item_, queryPattern)) {
+				final pair = filterableAdapter?.call(item);
+				if (pair != null) {
+					if (queryPattern != null && !_matchesSearchFilter(pair.$2, queryPattern)) {
 						continue;
 					}
-					final result = widget.useFiltersFromContext && filterableAdapter != null ? filter.filter(item_) : null;
+					final result = widget.useFiltersFromContext && filterableAdapter != null ? filter.filter(pair.$1, pair.$2) : null;
 					if (result != null) {
 						bool pinned = false;
 						if (result.type.pinToTop && widget.allowReordering) {
 							pinned = true;
 							pinnedValues.add(RefreshableListItem(
 								item: item,
-								id: item_.id,
+								id: pair.$2.id,
 								highlighted: result.type.highlight,
 								pinned: true,
 								state: this
@@ -2608,7 +2608,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (result.type.hide) {
 							filteredValues.add(RefreshableListItem(
 								item: item,
-								id: item_.id,
+								id: pair.$2.id,
 								filterReason: result.reason,
 								state: this
 							));
@@ -2616,7 +2616,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						else if (!pinned) {
 							values.add(RefreshableListItem(
 								item: item,
-								id: item_.id,
+								id: pair.$2.id,
 								highlighted: result.type.highlight,
 								filterCollapsed: result.type.collapse,
 								state: this
@@ -2627,7 +2627,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 				values.add(RefreshableListItem(
 					item: item,
-					id: item_?.id ?? widget.treeAdapter?.getId(item) ?? 0,
+					id: pair?.$2.id ?? widget.treeAdapter?.getId(item) ?? 0,
 					state: this
 				));
 			}

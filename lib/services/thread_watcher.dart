@@ -389,7 +389,7 @@ class ThreadWatcher extends ChangeNotifier {
 				}
 				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board, priority: RequestPriority.functional);
 				for (final thread in catalog) {
-					final result = Settings.instance.globalFilter.filter(thread);
+					final result = Settings.instance.globalFilter.filter(imageboardKey, thread);
 					if (result?.type.autoSave ?? false) {
 						if (!(persistence.browserState.autosavedIds[board]?.contains(thread.id) ?? false)) {
 							final threadState = persistence.getThreadState(thread.identifier);

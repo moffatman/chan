@@ -71,7 +71,7 @@ class _SettingsSyncButton extends StatelessWidget {
 }
 */
 
-Future<Imageboard?> _pickImageboard(BuildContext context, Imageboard current) {
+Future<Imageboard?> pickImageboard(BuildContext context, Imageboard current) {
 	return showAdaptiveModalPopup<Imageboard?>(
 		context: context,
 		builder: (context) => AdaptiveActionSheet(
@@ -1132,7 +1132,7 @@ class ImageboardScopedSettingWidget extends SettingWidget {
 							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(8),
 								onPressed: () async {
-									final newImageboard = await _pickImageboard(context, imageboard);
+									final newImageboard = await pickImageboard(context, imageboard);
 									if (newImageboard != null) {
 										setImageboard(newImageboard);
 									}
@@ -1218,7 +1218,7 @@ class ImageboardScopedSettingGroup extends SettingWidget {
 								AdaptiveFilledButton(
 									padding: const EdgeInsets.all(8),
 									onPressed: () async {
-										final newImageboard = await _pickImageboard(context, imageboard);
+										final newImageboard = await pickImageboard(context, imageboard);
 										if (newImageboard != null) {
 											setImageboard(newImageboard);
 										}

@@ -130,7 +130,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					listUpdater: (_) => throw UnimplementedError(),
 					initialList: zone.findThread(zone.primaryThreadId)!.posts,
 					id: 'shareable',
-					filterableAdapter: (p) => p,
+					filterableAdapter: (p) => (zone.imageboard.key, p),
 					itemBuilder: (context, p) => PostRow(
 						post: p,
 						largeImageWidth: (p.id == primaryPostId && style.expandPrimaryImage) ? style.width : null,

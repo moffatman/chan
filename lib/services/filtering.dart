@@ -127,7 +127,7 @@ class EmptyFilterable implements Filterable {
 }
 
 abstract class Filter {
-	FilterResult? filter(Filterable item);
+	FilterResult? filter(String imageboardKey, Filterable item);
 
 	static Filter of(BuildContext context, {bool listen = true}) {
 		return (listen ? context.watch<Filter?>() : context.read<Filter?>()) ?? const DummyFilter();
@@ -140,20 +140,22 @@ class FilterCache<T extends Filter> implements Filter {
 	T wrappedFilter;
 	FilterCache(this.wrappedFilter);
 	// Need to use two seperate maps as we can't store null in [_cache]
-	final WeakMap<Filterable, bool?> _contains = WeakMap();
-	final WeakMap<Filterable, FilterResult?> _cache = WeakMap();
+	final Map<String, WeakMap<Filterable, bool?>> _contains = {};
+	final Map<String, WeakMap<Filterable, FilterResult?>> _cache = {};
 
 	@override
-	FilterResult? filter(Filterable item) {
-		if (_contains.get(item) != true) {
-			_contains.add(key: item, value: true);
-			final result = wrappedFilter.filter(item);
+	FilterResult? filter(String imageboardKey, Filterable item) {
+		final contains = _contains[imageboardKey] ??= WeakMap();
+		final cache = _cache[imageboardKey] ??= WeakMap();
+		if (contains.get(item) != true) {
+			contains.add(key: item, value: true);
+			final result = wrappedFilter.filter(imageboardKey, item);
 			if (result != null) {
-				_cache.add(key: item, value: result);
+				cache.add(key: item, value: result);
 			}
 			return result;
 		}
-		return _cache.get(item);
+		return cache.get(item);
 	}
 
 	@override
@@ -178,8 +180,12 @@ class CustomFilter implements Filter {
 	final RegExp pattern;
 	List<String> patternFields;
 	FilterResultType outputType;
-	List<String> boards;
-	List<String> excludeBoards;
+	Set<String> boards;
+	Map<String, Set<String>> boardsBySite;
+	Set<String> excludeBoards;
+	Map<String, Set<String>> excludeBoardsBySite;
+	Set<String> sites;
+	Set<String> excludeSites;
 	bool? hasFile;
 	bool? threadsOnly;
 	int? minRepliedTo;
@@ -194,8 +200,12 @@ class CustomFilter implements Filter {
 		required this.pattern,
 		this.patternFields = defaultPatternFields,
 		this.outputType = const FilterResultType(hide: true),
-		this.boards = const [],
-		this.excludeBoards = const [],
+		this.boards = const {},
+		this.boardsBySite = const {},
+		this.excludeBoards = const {},
+		this.excludeBoardsBySite = const {},
+		this.sites = const {},
+		this.excludeSites = const {},
 		this.hasFile,
 		this.threadsOnly,
 		this.minRepliedTo,
@@ -206,14 +216,25 @@ class CustomFilter implements Filter {
 		this.configuration = configuration ?? toStringConfiguration();
 	}
 	@override
-	FilterResult? filter(Filterable item) {
+	FilterResult? filter(String imageboardKey, Filterable item) {
 		if (disabled) {
 			return null;
 		}
-		if (boards.isNotEmpty && !boards.contains(item.board)) {
+		if (sites.isNotEmpty && !sites.contains(imageboardKey)) {
 			return null;
 		}
-		if (excludeBoards.isNotEmpty && excludeBoards.contains(item.board)) {
+		if (excludeSites.contains(imageboardKey)) {
+			return null;
+		}
+		if ((boards.isNotEmpty || boardsBySite.isNotEmpty)
+		     && !boards.contains(item.board)
+				 && !(boardsBySite[imageboardKey]?.contains(item.board) ?? false)) {
+			return null;
+		}
+		if (excludeBoards.contains(item.board)) {
+			return null;
+		}
+		if (excludeBoardsBySite[imageboardKey]?.contains(item.board) ?? false) {
 			return null;
 		}
 		if (hasFile != null && hasFile != item.hasFile) {
@@ -255,6 +276,13 @@ class CustomFilter implements Filter {
 				configuration: configuration,
 				disabled: configuration.startsWith('#'),
 				label: match.group(1)!,
+				// Initialize these things so they aren't const
+				boards: {},
+				boardsBySite: {},
+				excludeBoards: {},
+				excludeBoardsBySite: {},
+				sites: {},
+				excludeSites: {},
 				pattern: RegExp(match.group(2)!, multiLine: !flags.contains('s'), caseSensitive: !flags.contains('i'))
 			);
 			int i = 5;
@@ -328,16 +356,32 @@ class CustomFilter implements Filter {
 					}
 				}
 				else if (s.startsWith('boards:') || s.startsWith('board:')) {
-					if (filter.boards.isEmpty) {
-						// It could be initialized to a const list, better just replace it
-						filter.boards = s.split(_separatorPattern).skip(1).toList();
-					}
-					else {
-						filter.boards.addAll(s.split(_separatorPattern).skip(1));
+					for (final board in s.split(_separatorPattern).skip(1)) {
+						final slashIndex = board.indexOf('/');
+						if (slashIndex != -1) {
+							(filter.boardsBySite[board.substring(0, slashIndex)] ??= {}).add(board.substring(slashIndex + 1));
+						}
+						else {
+							filter.boards.add(board);
+						}
 					}
 				}
 				else if (s.startsWith('exclude:')) {
-					filter.excludeBoards = s.split(_separatorPattern).skip(1).toList();
+					for (final board in s.split(_separatorPattern).skip(1)) {
+						final slashIndex = board.indexOf('/');
+						if (slashIndex != -1) {
+							(filter.excludeBoardsBySite[board.substring(0, slashIndex)] ??= {}).add(board.substring(slashIndex + 1));
+						}
+						else {
+							filter.excludeBoards.add(board);
+						}
+					}
+				}
+				else if (s.startsWith('site:') || s.startsWith('sites:')) {
+					filter.sites.addAll(s.split(_separatorPattern).skip(1));
+				}
+				else if (s.startsWith('excludeSite:') || s.startsWith('excludeSites:')) {
+					filter.excludeSites.addAll(s.split(_separatorPattern).skip(1));
 				}
 				else if (s == 'file:only') {
 					filter.hasFile = true;
@@ -459,11 +503,23 @@ class CustomFilter implements Filter {
 		if (patternFields.isNotEmpty && !setEquals(patternFields.toSet(), defaultPatternFields.toSet())) {
 			out.write(';type:${patternFields.join(',')}');
 		}
-		if (boards.isNotEmpty) {
-			out.write(';boards:${boards.join(',')}');
+		if (boards.isNotEmpty || boardsBySite.isNotEmpty) {
+			out.write(';boards:${[
+				...boards,
+				...boardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
+			].join(',')}');
 		}
-		if (excludeBoards.isNotEmpty) {
-			out.write(';exclude:${excludeBoards.join(',')}');
+		if (excludeBoards.isNotEmpty || excludeBoardsBySite.isNotEmpty) {
+			out.write(';exclude:${[
+				...excludeBoards,
+				...excludeBoardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
+			].join(',')}');
+		}
+		if (sites.isNotEmpty) {
+			out.write(';sites:${sites.join(',')}');
+		}
+		if (excludeSites.isNotEmpty) {
+			out.write(';excludeSites:${excludeSites.join(',')}');
 		}
 		if (hasFile == true) {
 			out.write(';file:only');
@@ -519,7 +575,7 @@ class IDFilter implements Filter {
 		required this.showIds
   });
 	@override
-	FilterResult? filter(Filterable item) {
+	FilterResult? filter(String imageboardKey, Filterable item) {
 		if (hideIds.contains(item.id)) {
 			return FilterResult(const FilterResultType(hide: true), 'Manually hidden');
 		}
@@ -560,7 +616,7 @@ class ThreadFilter implements Filter {
 		required this.posterIds
 	});
 	@override
-	FilterResult? filter(Filterable item) {
+	FilterResult? filter(String imageboardKey, Filterable item) {
 		if (hideIds.contains(item.id)) {
 			return FilterResult(const FilterResultType(hide: true), 'Manually hidden');
 		}
@@ -603,7 +659,7 @@ class MD5Filter implements Filter {
 	final int depth; 
 	MD5Filter(this.md5s, this.applyToThreads, this.depth);
 	@override
-	FilterResult? filter(Filterable item) {
+	FilterResult? filter(String imageboardKey, Filterable item) {
 		if (!applyToThreads && item.isThread) {
 			return null;
 		}
@@ -640,9 +696,9 @@ class FilterGroup<T extends Filter> implements Filter {
 	final List<T> filters;
 	FilterGroup(this.filters);
 	@override
-	FilterResult? filter(Filterable item) {
+	FilterResult? filter(String imageboardKey, Filterable item) {
 		for (final filter in filters) {
-			final result = filter.filter(item);
+			final result = filter.filter(imageboardKey, item);
 			if (result != null) {
 				return result;
 			}
@@ -669,7 +725,7 @@ class FilterGroup<T extends Filter> implements Filter {
 class DummyFilter implements Filter {
 	const DummyFilter();
 	@override
-	FilterResult? filter(Filterable item) => null;
+	FilterResult? filter(String imageboardKey, Filterable item) => null;
 
 	@override
 	bool get supportsMetaFilter => false;
@@ -735,7 +791,7 @@ class MetaFilter implements Filter {
 	final toxicRepliedToIds = <int, FilterResult>{};
 	final treeToxicRepliedToIds = <int, FilterResult>{};
 
-	MetaFilter(Filter parent, List<Filterable>? list) {
+	MetaFilter(Filter parent, String imageboardKey, List<Filterable>? list) {
 		if (list == null || !parent.supportsMetaFilter) {
 			// Nothing to do
 			return;
@@ -746,7 +802,7 @@ class MetaFilter implements Filter {
 		sorted.sort((a, b) => a.id.compareTo(b.id));
 
 		for (final item in sorted) {
-			final result = parent.filter(item);
+			final result = parent.filter(imageboardKey, item);
 			if (result != null && result.type.hideReplyChains) {
 				treeToxicRepliedToIds[item.id] = result;
 			}
@@ -763,7 +819,7 @@ class MetaFilter implements Filter {
 	}
 
 	@override
-	FilterResult? filter(Filterable item) {
+	FilterResult? filter(String imageboardKey, Filterable item) {
 		if (toxicRepliedToIds.isEmpty && treeToxicRepliedToIds.isEmpty) {
 			return null;
 		}

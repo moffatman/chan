@@ -223,7 +223,7 @@ class HistoryPageState extends State<HistoryPage> {
 							),
 							body: RefreshableList<PersistentThreadState>(
 								useFiltersFromContext: false,
-								filterableAdapter: (t) => t,
+								filterableAdapter: (t) => (t.imageboardKey, t),
 								filterAlternative: FilterAlternative(
 									name: 'full history',
 									suggestWhenFilterEmpty: true,

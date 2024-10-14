@@ -618,7 +618,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					rebuildId: '${widget.selectedResult}',
 					filterHint: 'Filter...',
 					controller: _listController,
-					filterableAdapter: (i) => i.item.post ?? i.item.thread,
+					filterableAdapter: (i) => (i.imageboard.key, i.item.post ?? i.item.thread),
 					initialList: results,
 					disableUpdates: true,
 					itemBuilder: itemBuilder,

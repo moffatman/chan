@@ -1278,7 +1278,8 @@ class ThreadPageState extends State<ThreadPage> {
 	@override
 	Widget build(BuildContext context) {
 		_parentTab = context.watchIdentity<PersistentBrowserTab?>();
-		final site = context.watch<ImageboardSite>();
+		final imageboard = context.watch<Imageboard>();
+		final site = imageboard.site;
 		final theme = context.watch<SavedTheme>();
 		String title = site.formatBoardName(widget.thread.board);
 		final threadTitle = (persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title)?.nonEmptyOrNull;
@@ -1604,7 +1605,7 @@ class ThreadPageState extends State<ThreadPage> {
 														fit: StackFit.expand,
 														children: [
 															RefreshableList<Post>(
-																filterableAdapter: (t) => t,
+																filterableAdapter: (t) => (imageboard.key, t),
 																initialFilter: widget.initialSearch,
 																onFilterChanged: (filter) {
 																	_searching = filter != null;

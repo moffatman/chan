@@ -1,9 +1,11 @@
+import 'package:chan/pages/settings/common.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/filter_editor.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -170,6 +172,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	late final TextEditingController _posterIdController;
 	late final TextEditingController _flagController;
 	late final TextEditingController _replyCountController;
+	late Imageboard imageboard;
 
 	@override
 	void initState() {
@@ -184,6 +187,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 		_posterIdController = TextEditingController();
 		_flagController = TextEditingController();
 		_replyCountController = TextEditingController();
+		imageboard = ImageboardRegistry.instance.imageboards.first;
 	}
 
 	@override
@@ -237,7 +241,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	FilterResult? result;
 
 	void _recalculate() {
-		result = makeFilter(Settings.instance.filterConfiguration).filter(this);
+		result = makeFilter(Settings.instance.filterConfiguration).filter(imageboard.key, this);
 		setState(() {});
 	}
 
@@ -332,7 +336,29 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 							}
 						)
 					)
-				]
+				],
+				Center(
+					child: AdaptiveFilledButton(
+						padding: const EdgeInsets.all(8),
+						onPressed: () async {
+							final newImageboard = await pickImageboard(context, imageboard);
+							if (newImageboard != null) {
+								imageboard = newImageboard;
+								_recalculate();
+							}
+						},
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								ImageboardIcon(
+									imageboardKey: imageboard.key
+								),
+								const SizedBox(width: 8),
+								Text(imageboard.site.name)
+							]
+						)
+					)
+				)
 			]
 		);
 	}

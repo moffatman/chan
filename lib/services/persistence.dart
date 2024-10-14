@@ -1567,15 +1567,15 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		return _filteredPosts ??= _makeFilteredPosts();
 	}
 	List<Post>? _makeFilteredPosts() => thread?.posts.where((p) {
-		final threadResult = threadFilter.filter(p);
+		final threadResult = threadFilter.filter(imageboardKey, p);
 		if (threadResult != null) {
 			return !threadResult.type.hide;
 		}
-		final metaResult = metaFilter.filter(p);
+		final metaResult = metaFilter.filter(imageboardKey, p);
 		if (metaResult != null) {
 			return !metaResult.type.hide;
 		}
-		final globalResult = Settings.instance.globalFilter.filter(p);
+		final globalResult = Settings.instance.globalFilter.filter(imageboardKey, p);
 		if (globalResult != null) {
 			return !globalResult.type.hide;
 		}
@@ -1620,7 +1620,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		posterIds: hiddenPosterIds
 	));
 	late Filter threadFilter = _makeThreadFilter();
-	MetaFilter _makeMetaFilter() => MetaFilter(Settings.instance.globalFilter, thread?.posts);
+	MetaFilter _makeMetaFilter() => MetaFilter(Settings.instance.globalFilter, imageboardKey, thread?.posts);
 	late MetaFilter metaFilter = _makeMetaFilter();
 	void setPostHiding(int id, PostHidingState state) {
 		switch (state) {

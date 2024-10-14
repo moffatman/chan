@@ -1,9 +1,12 @@
+import 'package:chan/models/board.dart';
+import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -78,6 +81,201 @@ List<String> _splitByTopLevelPipe(String str) {
 	return out;
 }
 
+Future<void> editSiteSet({
+	required BuildContext context,
+	required Set<String> siteKeys,
+	required String title,
+}) async {
+	final theme = context.read<SavedTheme>();
+	final siteKeyList = siteKeys.toList();
+	await showAdaptiveDialog(
+		barrierDismissible: true,
+		context: context,
+		builder: (context) => StatefulBuilder(
+			builder: (context, setDialogState) {
+				final unselectedImageboards = ImageboardRegistry.instance.imageboards.where((imageboard) => !siteKeyList.contains(imageboard.key)).toList();
+				return AdaptiveAlertDialog(
+					title: Padding(
+						padding: const EdgeInsets.only(bottom: 16),
+						child: Text(title)
+					),
+					content: SizedBox(
+						width: 100,
+						height: 350,
+						child: ListView.builder(
+							itemCount: siteKeyList.length,
+							itemBuilder: (context, i) {
+								final imageboard = ImageboardRegistry.instance.getImageboard(siteKeyList[i]);
+								return Padding(
+									padding: const EdgeInsets.all(4),
+									child: Container(
+										decoration: BoxDecoration(
+											borderRadius: const BorderRadius.all(Radius.circular(4)),
+											color: theme.primaryColor.withOpacity(0.1)
+										),
+										padding: const EdgeInsets.only(left: 16),
+										child: Row(
+											children: [
+												if (imageboard != null) Padding(
+													padding: const EdgeInsets.only(right: 8),
+													child: ImageboardIcon(
+														site: imageboard.site
+													)
+												),
+												Expanded(
+													child: Text(imageboard?.site.name ?? 'Unknown site: "${siteKeyList[i]}"', style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
+												),
+												CupertinoButton(
+													child: const Icon(CupertinoIcons.delete),
+													onPressed: () {
+														siteKeyList.removeAt(i);
+														setDialogState(() {});
+													}
+												)
+											]
+										)
+									)
+								);
+							}
+						)
+					),
+					actions: [
+						AdaptiveDialogAction(
+							onPressed: unselectedImageboards.isEmpty ? null : () async {
+								final controller = TextEditingController();
+								final newItem = await showAdaptiveModalPopup<Imageboard?>(
+									context: context,
+									builder: (context) => AdaptiveActionSheet(
+										title: const Text('Select site'),
+										actions: unselectedImageboards.map((imageboard) => AdaptiveActionSheetAction(
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													ImageboardIcon(imageboardKey: imageboard.key),
+													const SizedBox(width: 8),
+													Text(imageboard.site.name)
+												]
+											),
+											onPressed: () {
+												Navigator.of(context, rootNavigator: true).pop(imageboard);
+											}
+										)).toList(),
+										cancelButton: AdaptiveActionSheetAction(
+											child: const Text('Cancel'),
+											onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+										)
+									)
+								);
+								if (newItem != null) {
+									siteKeyList.add(newItem.key);
+									setDialogState(() {});
+								}
+								controller.dispose();
+							},
+							child: const Text('Add site')
+						),
+						AdaptiveDialogAction(
+							child: const Text('Close'),
+							onPressed: () => Navigator.pop(context)
+						)
+					]
+				);
+			}
+		)
+	);
+	siteKeys.clear();
+	siteKeys.addAll(siteKeyList);
+}
+
+Future<void> editBoardSet({
+	required BuildContext context,
+	required Set<String> boards,
+	required String title,
+}) async {
+	final theme = context.read<SavedTheme>();
+	final boardList = boards.toList();
+	await showAdaptiveDialog(
+		barrierDismissible: true,
+		context: context,
+		builder: (context) => StatefulBuilder(
+			builder: (context, setDialogState) => AdaptiveAlertDialog(
+				title: Padding(
+					padding: const EdgeInsets.only(bottom: 16),
+					child: Text(title)
+				),
+				content: SizedBox(
+					width: 100,
+					height: 350,
+					child: ListView.builder(
+						itemCount: boardList.length,
+						itemBuilder: (context, i) {
+							final (imageboardKey, boardName) = switch (boardList[i].indexOf('/')) {
+								-1 => (null, boardList[i]),
+								int slashIndex => (boardList[i].substring(0, slashIndex), boardList[i].substring(slashIndex + 1))
+							};
+							return Padding(
+								padding: const EdgeInsets.all(4),
+								child: Container(
+									decoration: BoxDecoration(
+										borderRadius: const BorderRadius.all(Radius.circular(4)),
+										color: theme.primaryColor.withOpacity(0.1)
+									),
+									padding: const EdgeInsets.only(left: 16),
+									child: Row(
+										children: [
+											if (imageboardKey != null) Padding(
+												padding: const EdgeInsets.only(right: 8),
+												child: ImageboardIcon(
+													imageboardKey: imageboardKey,
+													boardName: boardName
+												)
+											),
+											Expanded(
+												child: Text(boardName, style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
+											),
+											CupertinoButton(
+												child: const Icon(CupertinoIcons.delete),
+												onPressed: () {
+													boardList.removeAt(i);
+													setDialogState(() {});
+												}
+											)
+										]
+									)
+								)
+							);
+						}
+					)
+				),
+				actions: [
+					AdaptiveDialogAction(
+						child: const Text('Add board'),
+						onPressed: () async {
+							final controller = TextEditingController();
+							final newItem = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+								builder: (ctx) => const BoardSwitcherPage(
+									allowPickingWholeSites: false
+								)
+							));
+							if (newItem != null) {
+								boardList.add('${newItem.imageboard.key}/${newItem.item.boardKey}');
+								setDialogState(() {});
+							}
+							controller.dispose();
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Close'),
+						onPressed: () => Navigator.pop(context)
+					)
+				]
+			)
+		)
+	);
+	boards.clear();
+	boards.addAll(boardList);
+}
+
 class _FilterEditorState extends State<FilterEditor> {
 	late final TextEditingController regexController;
 	late final FocusNode regexFocusNode;
@@ -145,8 +343,16 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool? hasFile = filter.hasFile;
 			bool? threadsOnly = filter.threadsOnly;
 			bool? deletedOnly = filter.deletedOnly;
-			final List<String> boards = filter.boards.toList();
-			final List<String> excludeBoards = filter.excludeBoards.toList();
+			final Set<String> boards = {
+				...filter.boards,
+				...filter.boardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
+			};
+			final Set<String> excludeBoards = {
+				...filter.excludeBoards,
+				...filter.excludeBoardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
+			};
+			final Set<String> sites = filter.sites.toSet();
+			final Set<String> excludeSites = filter.excludeSites.toSet();
 			int? minRepliedTo = filter.minRepliedTo;
 			int? minReplyCount = filter.minReplyCount;
 			int? maxReplyCount = filter.maxReplyCount;
@@ -338,10 +544,9 @@ class _FilterEditorState extends State<FilterEditor> {
 									AdaptiveFilledButton(
 										padding: const EdgeInsets.all(16),
 										onPressed: () async {
-											await editStringList(
+											await editBoardSet(
 												context: context,
-												list: boards,
-												name: 'board',
+												boards: boards,
 												title: 'Edit boards'
 											);
 											setInnerState(() {});
@@ -352,15 +557,40 @@ class _FilterEditorState extends State<FilterEditor> {
 									AdaptiveFilledButton(
 										padding: const EdgeInsets.all(16),
 										onPressed: () async {
-											await editStringList(
+											await editBoardSet(
 												context: context,
-												list: excludeBoards,
-												name: 'excluded board',
+												boards: excludeBoards,
 												title: 'Edit excluded boards'
 											);
 											setInnerState(() {});
 										},
 										child: Text(excludeBoards.isEmpty ? 'No excluded boards' : 'Exclude ${excludeBoards.map((b) => '/$b/').join(', ')}')
+									),
+									const SizedBox(height: 32),
+									AdaptiveFilledButton(
+										padding: const EdgeInsets.all(16),
+										onPressed: () async {
+											await editSiteSet(
+												context: context,
+												siteKeys: sites,
+												title: 'Edit sites'
+											);
+											setInnerState(() {});
+										},
+										child: Text(sites.isEmpty ? 'All sites' : 'Only on ${sites.join(', ')}')
+									),
+									const SizedBox(height: 16),
+									AdaptiveFilledButton(
+										padding: const EdgeInsets.all(16),
+										onPressed: () async {
+											await editSiteSet(
+												context: context,
+												siteKeys: excludeSites,
+												title: 'Edit excluded sites'
+											);
+											setInnerState(() {});
+										},
+										child: Text(excludeSites.isEmpty ? 'No excluded sites' : 'Exclude ${excludeSites.join(', ')}')
 									),
 									const SizedBox(height: 16),
 									AdaptiveFilledButton(
@@ -599,11 +829,37 @@ class _FilterEditorState extends State<FilterEditor> {
 							),
 							AdaptiveActionSheetAction(
 								onPressed: () {
+									final boards2 = <String>{};
+									final boardsBySite = <String, Set<String>>{};
+									for (final board in boards) {
+										final slashIndex = board.indexOf('/');
+										if (slashIndex != -1) {
+											(boardsBySite[board.substring(0, slashIndex)] ??= {}).add(board.substring(slashIndex + 1));
+										}
+										else {
+											boards2.add(board);
+										}
+									}
+									final excludeBoards2 = <String>{};
+									final excludeBoardsBySite = <String, Set<String>>{};
+									for (final board in excludeBoards) {
+										final slashIndex = board.indexOf('/');
+										if (slashIndex != -1) {
+											(excludeBoardsBySite[board.substring(0, slashIndex)] ??= {}).add(board.substring(slashIndex + 1));
+										}
+										else {
+											excludeBoards2.add(board);
+										}
+									}
 									Navigator.pop(context, (false, CustomFilter(
 										pattern: RegExp(patternController.text, caseSensitive: isCaseSensitive, multiLine: !isSingleLine),
 										patternFields: patternFields,
-										boards: boards,
-										excludeBoards: excludeBoards,
+										boards: boards2,
+										boardsBySite: boardsBySite,
+										excludeBoards: excludeBoards2,
+										excludeBoardsBySite: excludeBoardsBySite,
+										sites: sites,
+										excludeSites: excludeSites,
 										hasFile: hasFile,
 										threadsOnly: threadsOnly,
 										deletedOnly: deletedOnly,
@@ -668,7 +924,10 @@ class _FilterEditorState extends State<FilterEditor> {
 													'Qualifiers may be added after the regex:\n'
 													'`;boards:<list>` Only apply on certain boards\n'
 													'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
+													'Matching a board only on a specific site can be done too e.g. `;board:4chan/tv`\n'
 													'`;exclude:<list>` Don\'t apply on certain boards\n'
+													'`;site:<list>` Only apply on certain sites\n'
+													'`;excludeSite:<list>` Don\'t apply on certain sites\n'
 													'`;highlight` Highlight instead of hiding matches\n'
 													'`;top` Pin match to top of list instead of hiding\n'
 													'`;notify` Send a push notification (if enabled) for matches\n'
@@ -820,7 +1079,13 @@ class _FilterEditorState extends State<FilterEditor> {
 											)
 										),
 										for (final board in filter.value.boards) TextSpan(text: '/$board/'),
+										for (final entry in filter.value.boardsBySite.entries)
+											for (final board in entry.value) TextSpan(text: '/${entry.key}/$board/'),
 										for (final board in filter.value.excludeBoards) TextSpan(text: 'not /$board/'),
+										for (final entry in filter.value.excludeBoardsBySite.entries)
+											for (final board in entry.value) TextSpan(text: 'not /${entry.key}/$board/'),
+										for (final siteKey in filter.value.sites) TextSpan(text: siteKey),
+										for (final siteKey in filter.value.excludeSites) TextSpan(text: 'not $siteKey'),
 										if (!setEquals(filter.value.patternFields.toSet(), defaultPatternFields.toSet()))
 											for (final field in filter.value.patternFields) TextSpan(text: field)
 									].expand((x) => [const TextSpan(text: ', '), x]).skip(1).toList()

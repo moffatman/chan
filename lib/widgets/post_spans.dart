@@ -692,7 +692,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			text += ' (You)';
 		}
 		final linkedPost = zone.findPost(postId);
-		if (linkedPost != null && Filter.of(context).filter(linkedPost)?.type.hide == true && !options.imageShareMode) {
+		if (linkedPost != null && Filter.of(context).filter(zone.imageboard.key, linkedPost)?.type.hide == true && !options.imageShareMode) {
 			text += ' (Hidden)';
 		}
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(this) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;

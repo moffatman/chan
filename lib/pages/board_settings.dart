@@ -169,7 +169,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 								forBoard: widget.board.name,
 								blankFilter: CustomFilter(
 									pattern: RegExp('', caseSensitive: false),
-									boards: [widget.board.name],
+									boards: {widget.board.name},
 									outputType: const FilterResultType(
 										notify: true
 									)

@@ -458,7 +458,7 @@ class _SavedPageState extends State<SavedPage> {
 									)
 								],
 							),
-							filterableAdapter: (t) => t.item.$2,
+							filterableAdapter: (t) => (t.imageboard.key, t.item.$2),
 							useFiltersFromContext: false,
 							controller: _watchedListController,
 							listUpdater: (options) async {
@@ -750,7 +750,7 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
-							filterableAdapter: (t) => t.$2,
+							filterableAdapter: (t) => (t.$1.imageboardKey, t.$2),
 							controller: _threadListController,
 							listUpdater: (options) async {
 								final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
@@ -956,7 +956,7 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
-							filterableAdapter: (t) => t.post,
+							filterableAdapter: (t) => (t.imageboard.key, t.post),
 							controller: _yourPostsListController,
 							listUpdater: (options) async {
 								_yourPostsLists = {};
@@ -1128,7 +1128,7 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
-							filterableAdapter: (t) => t.item.$1.post,
+							filterableAdapter: (t) => (t.imageboard.key, t.item.$1.post),
 							controller: _postListController,
 							listUpdater: (options) async {
 								final savedPosts = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedPosts.values.map(i.scope)).toList();

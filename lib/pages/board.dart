@@ -1150,7 +1150,7 @@ class BoardPageState extends State<BoardPage> {
 															});
 														}
 													},
-													filterableAdapter: (t) => t,
+													filterableAdapter: (t) => (imageboard?.key ?? '', t),
 													allowReordering: true,
 													onWantAutosave: (thread) async {
 														final persistence = context.read<Persistence>();
