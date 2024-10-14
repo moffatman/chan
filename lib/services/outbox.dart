@@ -90,7 +90,7 @@ class QueueStateSubmitting<T> extends QueueState<T> {
 	@override
 	String toString() => 'QueueStateSubmitting(message: $message, wait: $wait, cancelToken: $cancelToken)';
 	@override
-	String get idleName => 'Submitting';
+	String get idleName => message ?? 'Submitting';
 }
 
 class QueueStateFailed<T> extends QueueState<T> {

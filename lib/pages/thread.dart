@@ -40,6 +40,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/shareable_posts.dart';
+import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:chan/widgets/weak_navigator.dart';
@@ -3014,6 +3015,15 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																			period: const Duration(milliseconds: 100),
 																			builder: (s) => Text(s, style: TextStyle(color: theme.backgroundColor))
 																		),
+																		if (postingPost.state case QueueStateSubmitting<PostReceipt> state)
+																			if (state.wait case ({VoidCallback skip, DateTime until}) wait) TimedRebuilder(
+																				interval: const Duration(seconds: 1),
+																				function: () => formatDuration(wait.until.difference(DateTime.now()).clampAboveZero),
+																				builder: (context, delta) => Text(
+																					' ($delta)',
+																					style: CommonTextStyles.tabularFigures
+																				)
+																			),
 																		if (postingPost.isActivelyProcessing) ...[
 																			const SizedBox(width: 8),
 																			SizedBox(

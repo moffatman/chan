@@ -767,3 +767,12 @@ extension SubscribeOwned on ChangeNotifier {
 		return OwnedChangeNotifierSubscription._(this, callback);
 	}
 }
+
+extension ClampAboveZero on Duration {
+	Duration get clampAboveZero {
+		if (isNegative) {
+			return Duration.zero;
+		}
+		return this;
+	}
+}

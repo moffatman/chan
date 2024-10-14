@@ -48,16 +48,6 @@ import 'package:linkify/linkify.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 
-extension _ClampAboveZero on Duration {
-	Duration get clampAboveZero {
-		if (isNegative) {
-			return Duration.zero;
-		}
-		return this;
-	}
-}
-
-
 /// Some pickers (iOS) put the file in a Chance-owned path that wouldn't be
 /// automatically cleaned up. Move it out of there.
 Future<File> _moveFileOutOfDocumentsDir(File file) async {
