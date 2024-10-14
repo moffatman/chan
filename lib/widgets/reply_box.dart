@@ -965,13 +965,13 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		bool autohid = false;
 		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(context,
 			beforeModal: () {
-				if (show) {
+				if (mounted && show) {
 					autohid = true;
 					hideReplyBox();
 				}
 			},
 			afterModal: () {
-				if (autohid) {
+				if (mounted && autohid) {
 					showReplyBox();
 					autohid = false;
 				}
