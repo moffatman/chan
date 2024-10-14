@@ -271,12 +271,12 @@ class Imageboard extends ChangeNotifier {
 		else {
 			captchaSolution.dispose(); // junk
 			receipt.spamFiltered = true;
-			persistence.didUpdateBrowserState();
 			// Put it back in the Outbox
 			if (!persistence.browserState.outbox.contains(submittedPost)) {
 				// It may already be in the outbox if it's a draft
 				persistence.browserState.outbox.add(submittedPost); // For restoration if app is closed
 			}
+			persistence.didUpdateBrowserState();
 			Outbox.instance.submitPost(key, submittedPost, const QueueStateIdle());
 			showToast(
 				context: ImageboardRegistry.instance.context!,
