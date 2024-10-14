@@ -472,7 +472,12 @@ class SavedTheme {
 				bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: 17, height: 1.3)
 			)
 		).copyWith(
-			platform: (platformIsMaterial || !Settings.instance.materialStyle) ? null : TargetPlatform.android,
+			platform: switch ((platformIsMaterial, Settings.instance.materialStyle)) {
+				(true, true) => null,
+				(false, true) => TargetPlatform.android,
+				(false, false) => null,
+				(true, false) => TargetPlatform.iOS
+			},
 			pageTransitionsTheme: const PageTransitionsTheme(builders: {}),
 			iconTheme: IconThemeData(
 				color: primaryColor
