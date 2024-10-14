@@ -131,7 +131,16 @@ class LooseUrlLinkifier extends Linkifier {
 
           if (match.group(2)?.isNotEmpty == true) {
             String originalUrl = _handleBackslashes(match.group(2)!);
-            String? end;
+            String end = '';
+
+            /// (... $link)
+            if (
+                  originalUrl.endsWith(')')
+                  && (match.group(1)?.lastIndexOf('(') ?? -1) > (match.group(1)?.lastIndexOf(')') ?? -1)
+            ) {
+              end = ')$end';
+              originalUrl = originalUrl.substring(0, originalUrl.length - 1);
+            }
 
             if (options.excludeLastPeriod) {
               int c = 0;
@@ -141,7 +150,7 @@ class LooseUrlLinkifier extends Linkifier {
                 }
               }
               if (c > 0) {
-                end = '.' * c;
+                end = ('.' * c) + end;
                 originalUrl = originalUrl.substring(0, originalUrl.length - c);
               }
             }
@@ -170,7 +179,7 @@ class LooseUrlLinkifier extends Linkifier {
               list.add(UrlElement(originalUrl));
             }
 
-            if (end != null) {
+            if (end.isNotEmpty) {
               list.add(TextElement(end));
             }
           }

@@ -125,5 +125,17 @@ void main() {
 			expect(link.url, 'https://1.to');
 			expect(link.name, '1.to');
 		});
+
+		test('link at end of bracketed text', () {
+			final r = SiteReddit.makeSpan('', 0, 'text1 (text2 https://m.jpost.com/international/article-806165)');
+			expect(r.children, hasLength(3));
+			final start = r.children[0] as PostTextSpan;
+			expect(start.text, 'text1 (text2 ');
+			final link = r.children[1] as PostLinkSpan;
+			expect(link.url, 'https://m.jpost.com/international/article-806165');
+			expect(link.name, 'm.jpost.com/international/article-806165');
+			final end = r.children[2] as PostTextSpan;
+			expect(end.text, ')');
+		});
 	});
 }
