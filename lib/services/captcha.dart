@@ -56,13 +56,23 @@ Future<CaptchaSolution?> solveCaptcha({
 		if (context == null) {
 			throw const HeadlessSolveNotPossibleException();
 		}
-		beforeModal?.call();
+		try {
+			beforeModal?.call();
+		}
+		catch (e, st) {
+			Future.error(e, st); // crashlytics
+		}
 		final solution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: builder(Navigator.of(context).pop)
 			)
 		));
-		afterModal?.call();
+		try {
+			afterModal?.call();
+		}
+		catch (e, st) {
+			Future.error(e, st); // crashlytics
+		}
 		return solution;
 	}
 	final settings = Settings.instance;
