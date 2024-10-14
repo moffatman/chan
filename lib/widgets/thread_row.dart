@@ -536,6 +536,8 @@ class ThreadRow extends StatelessWidget {
 											)
 										]
 										else if (!settings.useFullWidthForCatalogCounters && !(showLastReplies && thread.posts_.length > 1)) countersPlaceholder,
+										// Hack to avoid extra line with same height of countersPlaceholder
+										const TextSpan(text: ' ', style: TextStyle(fontSize: 0)),
 										// Uuse thread and not latestThread
 										// The last replies should be only those from the catalog/search query
 										if (showLastReplies) ...[
