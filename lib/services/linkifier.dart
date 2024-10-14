@@ -1,13 +1,13 @@
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\u007F-\uFFFF]*)?)",
+  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\u007F-\u009F\u00A1-\uFFFF]*)?)",
   caseSensitive: false,
   dotAll: true,
 );
 
 final _looseUrlRegexWithBackslash = RegExp(
-  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\\\u007F-\uFFFF]*)?)",
+  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9@:%_\+.~#?&/=,!;()'\\\u007F-\u009F\u00A1-\uFFFF]*)?)",
   caseSensitive: false,
   dotAll: true,
 );
