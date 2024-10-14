@@ -95,7 +95,7 @@ Future<CaptchaSolution?> solveCaptcha({
 			Exception? initialChallengeException;
 			try {
 				// Grab the challenge without popping up, to process initial cooldown without interruption
-				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority).timeout(const Duration(seconds: 15));
+				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority).timeout(const Duration(minutes: 1));
 			}
 			on Exception catch (e) {
 				if (context == null || e is CooldownException) {
