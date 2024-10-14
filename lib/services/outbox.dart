@@ -353,8 +353,8 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						);
 						notifyListeners();
 						await Future.any([Future.delayed(regretTime.difference(DateTime.now())), skipCompleter.future, cancelToken.whenCancel]);
-						if (cancelToken.isCancelled) {
-							if (!_state.isFinished) {
+						if (cancelToken.isCancelled || _state.isIdle) {
+							if (!_state.isIdle) {
 								_state = const QueueStateIdle();
 								notifyListeners();
 							}
@@ -374,8 +374,8 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						);
 						notifyListeners();
 						await Future.any([Future.delayed(delay), skipCompleter.future, cancelToken.whenCancel]);
-						if (cancelToken.isCancelled) {
-							if (!_state.isFinished) {
+						if (cancelToken.isCancelled || _state.isIdle) {
+							if (!_state.isIdle) {
 								_state = const QueueStateIdle();
 								notifyListeners();
 							}
