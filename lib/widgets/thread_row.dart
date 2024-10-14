@@ -83,7 +83,7 @@ TextSpan buildThreadCounters({
 			pageCountColor = grey;
 		}
 	}
-	else if (threadSeen && showUnseenCounters) {
+	else if (threadSeen && threadState?.lastSeenPostId != null && showUnseenCounters) {
 		if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
 			unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
 		}
@@ -311,7 +311,7 @@ class ThreadRow extends StatelessWidget {
 		if (firstUrl != null) {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(_leadingWwwPattern, '');
 		}
-		final threadSeen = threadState?.lastSeenPostId != null && (forceShowInHistory ?? (threadState?.showInHistory ?? false));
+		final threadSeen = threadState != null && (forceShowInHistory ?? threadState.showInHistory);
 		final bool hasUnseenReplies;
 		if ((threadState?.unseenReplyCount() ?? 0) > 0) {
 			hasUnseenReplies = true;
@@ -322,8 +322,8 @@ class ThreadRow extends StatelessWidget {
 			hasUnseenReplies = catalogLastTime != null && stateLastTime != null && catalogLastTime.isAfter(stateLastTime);
 		}
 		else if (threadSeen) {
-			if (threadState?.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
-				hasUnseenReplies = max(thread.replyCount, latestThread.replyCount) > (threadState!.thread?.replyCount ?? 0);
+			if (threadState.useTree ?? imageboard.persistence.browserState.useTree ?? site.useTree) {
+				hasUnseenReplies = max(thread.replyCount, latestThread.replyCount) > (threadState.thread?.replyCount ?? 0);
 			}
 			else {
 				hasUnseenReplies = ((latestReplyCount + 1) > latestThread.posts_.length);
