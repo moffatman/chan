@@ -360,13 +360,13 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 	}
 
-	Future<void> _animateToPage(int index, {int milliseconds = 200}) async {
+	Future<void> _animateToPage(int index, {int milliseconds = 200, bool overrideRateLimit = false}) async {
 		if (currentController.gestureKey.currentState?.extendedImageSlidePageState?.isSliding ?? false) {
 			return;
 		}
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (Settings.instance.autoloadAttachments && !attachment.attachment.isRateLimited) {
+		if (Settings.instance.autoloadAttachments && (overrideRateLimit || !attachment.attachment.isRateLimited)) {
 			_getController(attachment).loadFullAttachment().then((x) {
 				if (mounted) {
 					_currentAttachmentChanged.didUpdate();
@@ -572,7 +572,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													if (_scrollSheetController.size > 0.5) {
 														_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
 													}
-													_animateToPage(index);
+													_animateToPage(index, overrideRateLimit: true);
 												},
 												child: SizedBox(
 													width: _thumbnailSize + 8,
@@ -682,7 +682,7 @@ class _GalleryPageState extends State<GalleryPage> {
 											minSize: 0,
 											onPressed: () {
 												_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-												Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
+												Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index, overrideRateLimit: true));
 											},
 											child: Container(
 												padding: const EdgeInsets.all(4),
@@ -1128,7 +1128,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																		);
 																		return;
 																	}
-																	_animateToPage(index);
+																	_animateToPage(index, overrideRateLimit: true);
 																}
 																final onNeedScrollToPost = zone.onNeedScrollToPost == null ? null : (Post post) {
 																	navigator.popUntil((r) => r == currentRoute);
@@ -1306,7 +1306,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																}
 																final index = int.tryParse(str ?? '');
 																if (index != null) {
-																	_animateToPage((index - 1).clamp(0, widget.attachments.length - 1), milliseconds: 0);
+																	_animateToPage((index - 1).clamp(0, widget.attachments.length - 1), milliseconds: 0, overrideRateLimit: true);
 																}
 															},
 															child: Container(
