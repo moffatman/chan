@@ -1243,14 +1243,18 @@ class PostLinkSpan extends PostSpan {
 				if (imageboardTarget != null && imageboardTarget.imageboard.key == zone.imageboard.key) {
 					final thread = imageboardTarget.item.threadIdentifier;
 					if (thread != null) {
-						return PostQuoteLinkSpan(
-							board: imageboardTarget.item.board,
-							threadId: thread.id,
-							postId: imageboardTarget.item.postId ?? thread.id,
-							key: ObjectKey(this)
-						).build(context, zone, settings, theme, options);
+						if (zone.imageboard.site.explicitIds) {
+							return PostQuoteLinkSpan(
+								board: imageboardTarget.item.board,
+								threadId: thread.id,
+								postId: imageboardTarget.item.postId ?? thread.id,
+								key: ObjectKey(this)
+							).build(context, zone, settings, theme, options);
+						}
 					}
-					return PostBoardLinkSpan(imageboardTarget.item.board).build(context, zone, settings, theme, options);
+					else {
+						return PostBoardLinkSpan(imageboardTarget.item.board).build(context, zone, settings, theme, options);
+					}
 				}
 				Widget buildEmbed({
 					required Widget left,
@@ -1311,14 +1315,14 @@ class PostLinkSpan extends PostSpan {
 				if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
 					byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
 				}
-				if (snapshot.data?.thumbnailWidget != null || snapshot.data?.thumbnailUrl != null) {
+				if (snapshot.data?.thumbnailWidget != null || snapshot.data?.thumbnailUrl != null || snapshot.data?.imageboardTarget != null) {
 					final lines = [
 						if (name != null && !url.contains(name!) && (snapshot.data?.title?.contains(name!) != true)) name!,
 						if (snapshot.data?.title?.isNotEmpty ?? false) snapshot.data!.title!
 						else if (name == null || url.contains(name!)) url
 					];
 					Widget? tapChildChild = snapshot.data?.thumbnailWidget;
-					if (tapChildChild == null) {
+					if (tapChildChild == null && snapshot.data?.thumbnailUrl != null) {
 						ImageProvider image = ExtendedNetworkImageProvider(
 							snapshot.data!.thumbnailUrl!,
 							cache: true,
@@ -1362,6 +1366,12 @@ class PostLinkSpan extends PostSpan {
 								child: tapChildChild
 							);
 						}
+					}
+					if (tapChildChild == null && snapshot.data?.imageboardTarget != null) {
+						tapChildChild = ImageboardIcon(
+							imageboardKey: snapshot.data?.imageboardTarget?.imageboard.key,
+							boardName: snapshot.data?.imageboardTarget?.item.board
+						);
 					}
 					tapChild = buildEmbed(
 						left: ClipRRect(
