@@ -230,7 +230,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				final savedFields = site.loginSystem?.getSavedLoginFields();
 				if (useLoginSystem && savedFields != null) {
 					try {
-						await site.loginSystem?.login(savedFields);
+						await site.loginSystem?.login(savedFields).timeout(const Duration(seconds: 15));
 					}
 					catch (e) {
 						final context = initialState.context ?? ImageboardRegistry.instance.context;
@@ -245,10 +245,10 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					}
 				}
 				else {
-					await site.loginSystem?.logout(false);
+					await site.loginSystem?.logout(false).timeout(const Duration(seconds: 15));
 				}
 				DateTime? tryAgainAt0;
-				final request = await _getCaptchaRequest();
+				final request = await _getCaptchaRequest().timeout(const Duration(seconds: 15));
 				final captcha = await solveCaptcha(
 					context: (initialState.context?.mounted ?? false) ? initialState.context : null,
 					beforeModal: initialState.beforeModal,
@@ -387,7 +387,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						cancelToken: cancelToken
 					);
 					notifyListeners();
-					final result = await _submitImpl(captchaSolution, cancelToken);
+					final result = await _submitImpl(captchaSolution, cancelToken).timeout(const Duration(minutes: 1));
 					_state = QueueStateDone(DateTime.now(), result, captchaSolution);
 					notifyListeners();
 					return true;
