@@ -46,6 +46,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 
 	Future<void> _readFilesystemInfo() async {
 		folderSizes = null;
+		if (!mounted) return;
 		setState(() {});
 		folderSizes = await Persistence.getFilesystemCacheSizes();
 		if (!mounted) return;

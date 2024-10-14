@@ -641,10 +641,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			Future.error(e, st);
 			_cloudGuessFailed = true;
 		}
-		setState(() {
-			_guessingProgress = 1;
-			_greyOutPickers = false;
-		});
+		if (mounted) {
+			setState(() {
+				_guessingProgress = 1;
+				_greyOutPickers = false;
+			});
+		}
 	}
 
 	void _useCloudGuess(String answer) {
