@@ -1768,20 +1768,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 															return AnimatedBuilder(
 																animation: postingPost,
 																builder: (context, _) {
-																	(DateTime, VoidCallback, String)? pair;
-																	final state = postingPost.state;
-																	if (state is QueueStateNeedsCaptcha<PostReceipt> && queue.captchaAllowedTime.isAfter(DateTime.now())) {
-																		pair = (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now(), 'Waiting for captcha');
-																	}
-																	else if (state is QueueStateWaitingWithCaptcha<PostReceipt> && queue.allowedTime.isAfter(DateTime.now())) {
-																		pair = (queue.allowedTime, () => queue.allowedTime = DateTime.now(), 'Waiting for cooldown');
-																	}
-																	else if (state is QueueStateSubmitting<PostReceipt>) {
-																		final wait = state.wait;
-																		if (wait != null) {
-																			pair = (wait.until, wait.skip, state.message ?? 'Waiting');
-																		}
-																	}
+																	final pair = postingPost.pair;
 																	if (pair == null) {
 																		return const SizedBox.shrink();
 																	}
@@ -1797,7 +1784,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																					alignment: Alignment.centerRight,
 																					child: TimedRebuilder(
 																						interval: const Duration(seconds: 1),
-																						function: () => formatDuration(pair?.$1.difference(DateTime.now()).clampAboveZero ?? Duration.zero),
+																						function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
 																						builder: (context, delta) => Text(
 																							'($delta)',
 																							style: CommonTextStyles.tabularFigures

@@ -221,6 +221,25 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		Future.microtask(Outbox.instance._process);
 	}
 
+	/// Convenience for UI
+	(DateTime, VoidCallback, String)? get pair {
+		final state = _state;
+		final queue = this.queue;
+		if (state is QueueStateNeedsCaptcha<T> && queue != null && queue.captchaAllowedTime.isAfter(DateTime.now())) {
+			return (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now(), 'Waiting for captcha');
+		}
+		else if (state is QueueStateWaitingWithCaptcha<T> && queue != null && queue.allowedTime.isAfter(DateTime.now())) {
+			return (queue.allowedTime, () => queue.allowedTime = DateTime.now(), 'Waiting for cooldown');
+		}
+		else if (state is QueueStateSubmitting<T>) {
+			final wait = state.wait;
+			if (wait != null) {
+				return (wait.until, wait.skip, state.message ?? 'Waiting');
+			}
+		}
+		return null;
+	}
+
 	Future<void> _preSubmit() => _lock.protect(() async {
 		final initialState = state;
 		final QueueStateNeedsCaptcha<T>? initialNeedsCaptchaState;

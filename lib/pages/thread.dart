@@ -2447,7 +2447,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 	@override
 	Widget build(BuildContext context) {
 		final theme = context.watch<SavedTheme>();
-		final radius = ChanceTheme.materialOf(context) ? const Radius.circular(4) : const Radius.circular(8);
+		final useMaterial = ChanceTheme.materialOf(context);
+		final radius = useMaterial ? const Radius.circular(4) : const Radius.circular(8);
 		final radiusAlone = BorderRadius.all(radius);
 		final radiusStart = widget.reversed ? BorderRadius.only(topRight: radius, bottomRight: radius) : BorderRadius.only(topLeft: radius, bottomLeft: radius);
 		final radiusEnd = widget.reversed ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : BorderRadius.only(topRight: radius, bottomRight: radius);
@@ -3006,50 +3007,52 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															curve: Curves.ease,
 															child: AnimatedBuilder(
 																animation: postingPost,
-																builder: (context, _) => Row(
-																	children: [
-																		Icon(CupertinoIcons.reply, color: theme.backgroundColor, size: 19),
-																		const SizedBox(width: 4),
-																		DebouncedBuilder(
-																			value: postingPost.statusText,
-																			period: const Duration(milliseconds: 100),
-																			builder: (s) => Text(s, style: TextStyle(color: theme.backgroundColor))
-																		),
-																		if (postingPost.state case QueueStateSubmitting<PostReceipt> state)
-																			if (state.wait case ({VoidCallback skip, DateTime until}) wait) TimedRebuilder(
+																builder: (context, _) {
+																	final pair = postingPost.pair;
+																	return Row(
+																		children: [
+																			Icon(CupertinoIcons.reply, color: theme.backgroundColor, size: 19),
+																			const SizedBox(width: 4),
+																			DebouncedBuilder(
+																				value: pair?.$3 ?? postingPost.statusText,
+																				period: const Duration(milliseconds: 100),
+																				builder: (s) => Text(s, style: TextStyle(color: theme.backgroundColor))
+																			),
+																			if (pair != null) TimedRebuilder(
 																				interval: const Duration(seconds: 1),
-																				function: () => formatDuration(wait.until.difference(DateTime.now()).clampAboveZero),
+																				function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
 																				builder: (context, delta) => Text(
 																					' ($delta)',
 																					style: CommonTextStyles.tabularFigures
 																				)
 																			),
-																		if (postingPost.isActivelyProcessing) ...[
-																			const SizedBox(width: 8),
-																			SizedBox(
-																				width: 10,
-																				height: 10,
-																				child: ColorFiltered(
-																					colorFilter: theme.brightness == Brightness.dark ? const ColorFilter.matrix([
-																						-1, 0, 0, 0, 255,
-																						0, -1, 0, 0, 255,
-																						0, 0, -1, 0, 255,
-																						0, 0, 0, 1, 0
-																					]) :  const ColorFilter.matrix([
-																						1, 0, 0, 0, 0,
-																						0, 1, 0, 0, 0,
-																						0, 0, 1, 0, 0,
-																						0, 0, 0, 1, 0
-																					]),
-																					child: CircularProgressIndicator.adaptive(
-																						valueColor: AlwaysStoppedAnimation(theme.backgroundColor),
+																			if (postingPost.isActivelyProcessing) ...[
+																				const SizedBox(width: 8),
+																				SizedBox(
+																					width: 10,
+																					height: 10,
+																					child: ColorFiltered(
+																						colorFilter: !useMaterial ? const ColorFilter.matrix([
+																							-1, 0, 0, 0, 255,
+																							0, -1, 0, 0, 255,
+																							0, 0, -1, 0, 255,
+																							0, 0, 0, 1, 0
+																						]) :  const ColorFilter.matrix([
+																							1, 0, 0, 0, 0,
+																							0, 1, 0, 0, 0,
+																							0, 0, 1, 0, 0,
+																							0, 0, 0, 1, 0
+																						]),
+																						child: CircularProgressIndicator.adaptive(
+																							valueColor: AlwaysStoppedAnimation(theme.backgroundColor),
+																						)
 																					)
-																				)
-																			),
-																			const SizedBox(width: 4)
+																				),
+																				const SizedBox(width: 4)
+																			]
 																		]
-																	]
-																)
+																	);
+																}
 															)
 														)
 													)
