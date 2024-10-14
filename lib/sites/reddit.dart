@@ -312,12 +312,17 @@ class SiteReddit extends ImageboardSite {
 		return s.reversed.join('');
 	}
 
-	static int fromRedditId(String id) {
+	static int? fromRedditId(String id) {
 		int ret = 0;
 		int multiplier = 1;
 		final chars = id.characters.toList();
 		for (int i = chars.length - 1; i >= 0; i--) {
-			ret += _base36Dec[chars[i]]! * multiplier;
+			final val = _base36Dec[chars[i]];
+			if (val == null) {
+				// Invalid character
+				return null;
+			}
+			ret += val * multiplier;
 			multiplier *= 36;
 		}
 		return ret;
@@ -445,8 +450,8 @@ class SiteReddit extends ImageboardSite {
 					else if (node.localName == 'crosspostparent') {
 						yield PostQuoteLinkSpan(
 							board: node.attributes['board']!,
-							threadId: fromRedditId(node.attributes['id']!),
-							postId: fromRedditId(node.attributes['id']!)
+							threadId: fromRedditId(node.attributes['id']!)!,
+							postId: fromRedditId(node.attributes['id']!)!
 						);
 					}
 					else if (node.localName == _kSubredditLinkLocalName) {
@@ -713,7 +718,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	Future<Thread> _makeThread(dynamic data) async {
-		final id = fromRedditId(data['id']);
+		final id = fromRedditId(data['id'])!;
 		final attachments = <Attachment>[];
 		Future<void> dumpAttachments(dynamic data) async {
 			if (data['media_metadata'] != null) {
@@ -1043,7 +1048,7 @@ class SiteReddit extends ImageboardSite {
 					newPosts[parentId]?.hasOmittedReplies = true;
 				}
 				else {
-					final id = fromRedditId(thing['data']['id'].split('_')[1]);
+					final id = fromRedditId(thing['data']['id'].split('_')[1])!;
 					final doc = parseFragment(HtmlUnescape().convert(thing['data']['content']));
 					ImageboardMultiFlag? flag;
 					final flair = doc.querySelector('.flairrichtext');
@@ -1211,7 +1216,7 @@ class SiteReddit extends ImageboardSite {
 	static final _emotePattern = RegExp(r'!\[img\]\((emote|[^)]+)\)');
 
 	Post _makePost(Map<String, dynamic> child, {int? parentId, required ThreadIdentifier thread}) {
-		final id = fromRedditId(child['id']);
+		final id = fromRedditId(child['id'])!;
 		final List<(String, String)> inlineImageUrls = [];
 		final text = unescape.convert(child['body'])._matchReplaceAndAddGiphyImages(inlineImageUrls).replaceAllMapped(RegExp(r'^https:\/\/(?:preview|i).redd.it\/[^\r\n\t\f\v\) ]+', multiLine: true), (match) {
 			inlineImageUrls.add((
@@ -1277,7 +1282,7 @@ class SiteReddit extends ImageboardSite {
 						parent?.hasOmittedReplies = true;
 					}
 					for (final childId in child['children'] as List) {
-						final id = fromRedditId(childId);
+						final id = fromRedditId(childId)!;
 						ret.posts_.add(Post(
 							board: thread.board,
 							text: '',
@@ -1364,7 +1369,7 @@ class SiteReddit extends ImageboardSite {
 					return ImageboardArchiveSearchResult.thread(await _makeThread(c['data']));
 				}
 				else if (c['kind'] == 't1') {
-					return ImageboardArchiveSearchResult.post(_makePost(c['data'], thread: ThreadIdentifier(c['data']['subreddit'], fromRedditId((c['data']['link_id'] as String).split('_').last))));
+					return ImageboardArchiveSearchResult.post(_makePost(c['data'], thread: ThreadIdentifier(c['data']['subreddit'], fromRedditId((c['data']['link_id'] as String).split('_').last)!)));
 				}
 				else {
 					throw FormatException('Unrecognized search result [kind]', c['kind']);
