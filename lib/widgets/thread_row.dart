@@ -165,7 +165,7 @@ TextSpan buildThreadCounters({
 			children: [
 				if (!settings.cloverStyleCatalogCounters) ...[
 					const TextSpan(text: '\u2009'), // To provide even appearance as photos icon is wide
-					IconSpan(icon: Adaptive.icons.photo, size: 18, color: imageCountColor),
+					IconSpan(icon: CupertinoIcons.photo, size: 18, color: imageCountColor),
 					space,
 				],
 				if (latestImageCount > unseenImageCount) ...[
