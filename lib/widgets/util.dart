@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/thread.dart';
@@ -505,6 +506,24 @@ class ErrorMessageCard extends StatelessWidget {
 	}
 }
 
+Future<void> openImageboardTarget(BuildContext context, (Imageboard, BoardThreadOrPostIdentifier, bool) imageboardTarget) {
+	return (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
+			builder: (ctx) => ImageboardScope(
+			imageboardKey: null,
+			imageboard: imageboardTarget.$1,
+			child: imageboardTarget.$2.threadId == null ? BoardPage(
+				initialBoard: imageboardTarget.$1.persistence.getBoard(imageboardTarget.$2.board),
+				semanticId: -1
+			) : ThreadPage(
+				thread: imageboardTarget.$2.threadIdentifier!,
+				initialPostId: imageboardTarget.$2.postId,
+				initiallyUseArchive: imageboardTarget.$3,
+				boardSemanticId: -1
+			)
+		)
+	));
+}
+
 Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false, bool useCooperativeBrowser = false}) async {
 	if (url.isScheme('chance')) {
 		fakeLinkStream.add(url.toString());
@@ -519,21 +538,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	final settings = Settings.instance;
 	final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
 	openInChance() {
-		(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
-			builder: (ctx) => ImageboardScope(
-				imageboardKey: null,
-				imageboard: imageboardTarget!.$1,
-				child: imageboardTarget.$2.threadId == null ? BoardPage(
-					initialBoard: imageboardTarget.$1.persistence.getBoard(imageboardTarget.$2.board),
-					semanticId: -1
-				) : ThreadPage(
-					thread: imageboardTarget.$2.threadIdentifier!,
-					initialPostId: imageboardTarget.$2.postId,
-					initiallyUseArchive: imageboardTarget.$3,
-					boardSemanticId: -1
-				)
-			)
-		));
+		openImageboardTarget(context, imageboardTarget!);
 	}
 	final bool isMediaLink = [
 		'.webm',

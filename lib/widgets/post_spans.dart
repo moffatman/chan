@@ -1240,20 +1240,20 @@ class PostLinkSpan extends PostSpan {
 			}
 			if (snapshot != null) {
 				final imageboardTarget = snapshot.data?.imageboardTarget;
-				if (imageboardTarget != null && imageboardTarget.imageboard.key == zone.imageboard.key) {
-					final thread = imageboardTarget.item.threadIdentifier;
+				if (imageboardTarget != null && imageboardTarget.$1.key == zone.imageboard.key) {
+					final thread = imageboardTarget.$2.threadIdentifier;
 					if (thread != null) {
 						if (zone.imageboard.site.explicitIds) {
 							return PostQuoteLinkSpan(
-								board: imageboardTarget.item.board,
+								board: imageboardTarget.$2.board,
 								threadId: thread.id,
-								postId: imageboardTarget.item.postId ?? thread.id,
+								postId: imageboardTarget.$2.postId ?? thread.id,
 								key: ObjectKey(this)
 							).build(context, zone, settings, theme, options);
 						}
 					}
 					else {
-						return PostBoardLinkSpan(imageboardTarget.item.board).build(context, zone, settings, theme, options);
+						return PostBoardLinkSpan(imageboardTarget.$2.board).build(context, zone, settings, theme, options);
 					}
 				}
 				Widget buildEmbed({
@@ -1369,8 +1369,8 @@ class PostLinkSpan extends PostSpan {
 					}
 					if (tapChildChild == null && snapshot.data?.imageboardTarget != null) {
 						tapChildChild = ImageboardIcon(
-							imageboardKey: snapshot.data?.imageboardTarget?.imageboard.key,
-							boardName: snapshot.data?.imageboardTarget?.item.board
+							imageboardKey: snapshot.data?.imageboardTarget?.$1.key,
+							boardName: snapshot.data?.imageboardTarget?.$2.board
 						);
 					}
 					tapChild = buildEmbed(
@@ -1409,7 +1409,13 @@ class PostLinkSpan extends PostSpan {
 						);
 					}
 					onTap() {
-						openBrowser(context, cleanedUri!);
+						final imageboardTarget = snapshot?.data?.imageboardTarget;
+						if (imageboardTarget != null) {
+							openImageboardTarget(context, imageboardTarget);
+						}
+						else {
+							openBrowser(context, cleanedUri!);
+						}
 					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,

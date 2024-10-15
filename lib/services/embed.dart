@@ -61,7 +61,7 @@ class EmbedData {
 	final String? author;
 	final String? thumbnailUrl;
 	final Widget? thumbnailWidget;
-	final ImageboardScoped<BoardThreadOrPostIdentifier>? imageboardTarget;
+	final (Imageboard imageboard, BoardThreadOrPostIdentifier target, bool useArchive)? imageboardTarget;
 
 	const EmbedData({
 		required this.title,
@@ -192,7 +192,7 @@ Future<EmbedData?> loadEmbedData(String url) async {
 					provider: target.$1.site.name,
 					author: target.$1.site.formatUsername(post.name),
 					thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
-					imageboardTarget: target.$1.scope(target.$2)
+					imageboardTarget: target
 				);
 			}
 			String title = thread.title ?? thread.posts_.first.span.buildText();
@@ -205,7 +205,7 @@ Future<EmbedData?> loadEmbedData(String url) async {
 				provider: '${target.$1.site.name} (${target.$1.site.formatBoardName(thread.board)})',
 				author: target.$1.site.formatUsername(post.name),
 				thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
-				imageboardTarget: target.$1.scope(target.$2)
+				imageboardTarget: target
 			);
 		}
 		final youtubeShortsMatch = _youtubeShortsRegex.firstMatch(url);
