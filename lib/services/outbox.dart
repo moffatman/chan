@@ -192,7 +192,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	}
 
 	@mustCallSuper
-	void delete() {
+	void delete({bool isReplacement = false}) {
 		final state = this.state;
 		if (state is QueueStateSubmitting<T>) {
 			state.cancelToken?.cancel();
@@ -460,10 +460,12 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 	Future<CaptchaRequest> _getCaptchaRequest() => site.getCaptchaRequest(post.board, post.threadId);
 
 	@override
-	void delete() {
+	void delete({bool isReplacement = false}) {
 		super.delete();
-		imageboard.persistence.browserState.outbox.remove(post);
-		imageboard.persistence.didUpdateBrowserState();
+		if (!isReplacement) {
+			imageboard.persistence.browserState.outbox.remove(post);
+			imageboard.persistence.didUpdateBrowserState();
+		}
 	}
 
 	@override
@@ -717,7 +719,7 @@ class Outbox extends ChangeNotifier {
 				final queue = queues.putIfAbsent(newEntry._key, () => OutboxQueue()..addListener(_onOutboxQueueUpdate));
 				for (final other in queue.list) {
 					if (newEntry.shouldReplace(other)) {
-						other.delete();
+						other.delete(isReplacement: true);
 					}
 				}
 				queue.list.add(newEntry);
