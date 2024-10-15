@@ -277,6 +277,7 @@ class Imageboard extends ChangeNotifier {
 				persistence.browserState.outbox.add(submittedPost); // For restoration if app is closed
 			}
 			persistence.didUpdateBrowserState();
+			Outbox.instance.headlessSolveFailed = true;
 			Outbox.instance.submitPost(key, submittedPost, const QueueStateIdle());
 			showToast(
 				context: ImageboardRegistry.instance.context!,
