@@ -10,6 +10,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -653,7 +654,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		_lastCloudGuess = answer;
 		final newGuess = Chan4CustomCaptchaGuess.dummy(answer);
 		_lastGuess = newGuess;
-		_lastGuesses = Chan4CustomCaptchaGuesses.dummy(answer, max(answer.length, 6));
+		_lastGuesses = Chan4CustomCaptchaGuesses.dummy(answer, max(answer.length, 10));
 		numLetters = newGuess.numLetters;
 		final selection = _solutionController.selection;
 		_previousText = ''; // Force animation of all pickers
@@ -1249,14 +1250,18 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									mainAxisAlignment: MainAxisAlignment.center,
 									children: [
 										const SizedBox(width: 40),
-										AdaptiveSegmentedControl<int>(
+										if (widget.request.possibleLetterCounts.trySingle != numLetters) AdaptiveSegmentedControl<int>(
 											children: widget.request.possibleLetterCounts.isEmpty ? const {
 												4: (null, '4 letters'),
 												5: (null, '5 letters'),
 												6: (null, '6 letters')
 											} : {
+												if (numLetters < widget.request.possibleLetterCounts.first)
+													numLetters: (null, describeCount(numLetters, 'letter')),
 												for (final count in widget.request.possibleLetterCounts)
-													count: (null, '$count letters')
+													count: (null, describeCount(count, 'letter')),
+												if (numLetters > widget.request.possibleLetterCounts.last)
+													numLetters: (null, describeCount(numLetters, 'letter'))
 											},
 											groupValue: numLetters,
 											onValueChanged: (x) {
