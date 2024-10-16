@@ -251,7 +251,7 @@ Future<_CloudGuess> _cloudGuess({
 				return bytes;
 			}
 		)
-	).timeout(const Duration(seconds: 5));
+	).timeout(const Duration(seconds: 8));
 	final answer = response.data as String;
 	if (answer.length > 10) {
 		// Answer shouldn't be that long
