@@ -584,7 +584,7 @@ class VideoServer {
 
 	Future<void> ensureRunning() => _lock.protect(() async {
 		if (_httpServer == null) {
-			final h = _httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+			final h = _httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, port, shared: true);
 			h.listen(_handleRequest, cancelOnError: false, onDone: () => _lock.protect(() async {
 				if (h == _httpServer) {
 					_httpServer = null;
