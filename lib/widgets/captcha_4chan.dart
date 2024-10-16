@@ -806,14 +806,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		catch(e, st) {
 			if (e is Captcha4ChanCustomChallengeCooldownException) {
-				final onTryAgainAt = widget.onTryAgainAt;
-				if (onTryAgainAt != null) {
-					onTryAgainAt.call(e.tryAgainAt);
-					if (mounted) {
-						// No need to keep the popup open
-						widget.onCaptchaSolved(null);
-					}
-				}
 				tryAgainAt = e.tryAgainAt;
 			}
 			print(e);
@@ -1507,6 +1499,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 
 	@override
 	void dispose() {
+		final tryAgainAt = this.tryAgainAt;
+		if (tryAgainAt != null && tryAgainAt.isAfter(DateTime.now())) {
+			widget.onTryAgainAt?.call(tryAgainAt);
+		}
 		super.dispose();
 		_solutionNode.dispose();
 		_solutionController.dispose();

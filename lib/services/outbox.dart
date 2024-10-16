@@ -291,11 +291,11 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				if (captcha != null) {
 					_state = QueueStateWaitingWithCaptcha(DateTime.now(), captcha);
 				}
-				else if (tryAgainAt != null) {
-					queue?.captchaAllowedTime = tryAgainAt;
-					// Don't change state, just try again at that time
-				}
 				else {
+					if (tryAgainAt != null) {
+						queue?.captchaAllowedTime = tryAgainAt;
+					}
+					// Maybe remember the captcha cooldown. But don't try to resubmit then.
 					print('Idling following captcha == null');
 					_state = const QueueStateIdle();
 				}
