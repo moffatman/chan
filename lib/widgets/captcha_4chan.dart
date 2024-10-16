@@ -606,7 +606,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	final List<_PickerStuff> _orphanPickerStuff = [];
 	double? _guessingProgress = 0.0;
 	CancelableOperation<Chan4CustomCaptchaGuesses>? _guessInProgress;
-	bool _offerGuess = false;
 	bool _cloudGuessFailed = false;
 	String? _lastCloudGuess;
 	String? _ip;
@@ -620,7 +619,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		setState(() {
 			_guessingProgress = null;
 			_greyOutPickers = true;
-			_offerGuess = false;
 		});
 		try {
 			final image = await _screenshotImage();
@@ -674,7 +672,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		setState(() {
 			_guessingProgress = 0.0;
 			_greyOutPickers = true;
-			_offerGuess = false;
 		});
 		try {
 			_guessInProgress?.cancel();
@@ -1096,6 +1093,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			final theme = context.watch<SavedTheme>();
 			final scaleFactor = MediaQuery.textScalerOf(context).scale(17) / 17;
 			final maxWidth = 500 * scaleFactor;
+			final possibleLetterCounts = switch (widget.request.possibleLetterCounts) {
+				[] => [4, 5, 6],
+				List<int> list => list
+			};
 			return Center(
 				child: ConstrainedBox(
 					constraints: BoxConstraints(
@@ -1159,11 +1160,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 														onChangeEnd: (newOffset) {
 															if (_solutionController.text.toUpperCase() == _lastGuess.guess.toUpperCase()) {
 																_animateGuess();
-															}
-															else {
-																setState(() {
-																	_offerGuess = true;
-																});
 															}
 														}
 													)
@@ -1246,71 +1242,55 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								)
 							),
 							if (useNewCaptchaForm) ...[
-								Row(
-									mainAxisAlignment: MainAxisAlignment.center,
-									children: [
-										const SizedBox(width: 40),
-										if (widget.request.possibleLetterCounts.trySingle != numLetters) AdaptiveSegmentedControl<int>(
-											children: widget.request.possibleLetterCounts.isEmpty ? const {
-												4: (null, '4 letters'),
-												5: (null, '5 letters'),
-												6: (null, '6 letters')
-											} : {
-												if (numLetters < widget.request.possibleLetterCounts.first)
-													numLetters: (null, describeCount(numLetters, 'letter')),
-												for (final count in widget.request.possibleLetterCounts)
-													count: (null, describeCount(count, 'letter')),
-												if (numLetters > widget.request.possibleLetterCounts.last)
-													numLetters: (null, describeCount(numLetters, 'letter'))
-											},
-											groupValue: numLetters,
-											onValueChanged: (x) {
-												if (x != numLetters) {
-													numLetters = x;
-													final selection = _solutionController.selection;
-													final oldGuess = _lastGuess;
-													_lastGuess = _lastGuesses?.forNumLetters(numLetters) ?? Chan4CustomCaptchaGuess.dummy('0' * numLetters);
-													String newGuessText = _lastGuess.guess;
-													_guessConfidences = _lastGuess.confidences.toList();
-													// We want keys to match up to same pickerStuff, not to widget-indexes
-													final tmp = _pickerStuff.keys.toSet();
-													for (final id in _lastGuess.keys.asMap().entries) {
-														if (_pickerStuff.containsKey(id.value)) {
-															// Same key in both guesses
-															tmp.remove(id.value);
-															final indexInOldGuess = oldGuess.keys.indexOf(id.value);
-															if (indexInOldGuess != -1) {
-																// Copy the old letter, in case the user modified it
-																newGuessText = newGuessText.replaceRange(id.key, id.key + 1, _solutionController.text[indexInOldGuess]);
-															}
-														}
+								const SizedBox(height: 8),
+								if (possibleLetterCounts.trySingle != numLetters) AdaptiveSegmentedControl<int>(
+									children: {
+										if (numLetters < possibleLetterCounts.first)
+											numLetters: (null, describeCount(numLetters, 'letter')),
+										for (final count in possibleLetterCounts)
+											count: (null, describeCount(count, 'letter')),
+										if (numLetters > possibleLetterCounts.last)
+											numLetters: (null, describeCount(numLetters, 'letter'))
+									},
+									groupValue: numLetters,
+									onValueChanged: (x) {
+										if (x != numLetters) {
+											numLetters = x;
+											final selection = _solutionController.selection;
+											final oldGuess = _lastGuess;
+											_lastGuess = _lastGuesses?.forNumLetters(numLetters) ?? Chan4CustomCaptchaGuess.dummy('0' * numLetters);
+											String newGuessText = _lastGuess.guess;
+											_guessConfidences = _lastGuess.confidences.toList();
+											// We want keys to match up to same pickerStuff, not to widget-indexes
+											final tmp = _pickerStuff.keys.toSet();
+											for (final id in _lastGuess.keys.asMap().entries) {
+												if (_pickerStuff.containsKey(id.value)) {
+													// Same key in both guesses
+													tmp.remove(id.value);
+													final indexInOldGuess = oldGuess.keys.indexOf(id.value);
+													if (indexInOldGuess != -1) {
+														// Copy the old letter, in case the user modified it
+														newGuessText = newGuessText.replaceRange(id.key, id.key + 1, _solutionController.text[indexInOldGuess]);
 													}
-													for (final orphanKey in tmp) {
-														// Old letter slot not in new guess
-														final orphan = _pickerStuff.remove(orphanKey);
-														if (orphan != null) {
-															_orphanPickerStuff.add(orphan);
-														}
-													}
-													_solutionController.text = newGuessText;
-													_solutionController.selection = TextSelection(
-														baseOffset: min(numLetters - 1, selection.baseOffset),
-														extentOffset: min(numLetters, selection.extentOffset)
-													);
-													setState(() {});
 												}
 											}
-										),
-										SizedBox(
-											width: 40,
-											child: _offerGuess ? AdaptiveIconButton(
-												minSize: 0,
-												onPressed: _animateGuess,
-												icon: const Icon(CupertinoIcons.goforward)
-											) : null
-										)
-									]
+											for (final orphanKey in tmp) {
+												// Old letter slot not in new guess
+												final orphan = _pickerStuff.remove(orphanKey);
+												if (orphan != null) {
+													_orphanPickerStuff.add(orphan);
+												}
+											}
+											_solutionController.text = newGuessText;
+											_solutionController.selection = TextSelection(
+												baseOffset: min(numLetters - 1, selection.baseOffset),
+												extentOffset: min(numLetters, selection.extentOffset)
+											);
+											setState(() {});
+										}
+									}
 								),
+								const SizedBox(height: 8),
 								IgnorePointer(
 									ignoring: _greyOutPickers,
 									child: Opacity(
