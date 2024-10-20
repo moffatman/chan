@@ -323,7 +323,7 @@ class Notifications {
 		final future = _waitForNextUnifiedPushEndpoint();
 		await UnifiedPush.saveDistributor(distributor);
 		await UnifiedPush.registerApp();
-		await future.timeout(const Duration(milliseconds: 300), onTimeout: () async {
+		await future.timeout(const Duration(seconds: 2), onTimeout: () async {
 			await UnifiedPush.unregister();
 			throw TimeoutException('Distributor did not provide an endpoint');
 		});
