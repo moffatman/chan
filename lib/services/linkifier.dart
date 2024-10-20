@@ -101,7 +101,12 @@ class LooseUrlLinkifier extends Linkifier {
                 // ]($link)
                 || (
                   (match.group(1)?.endsWith('](') ?? false)
-                  && (match.group(2)?.contains(')') ?? false)
+                  && (
+                    (match.group(2)?.contains(')') ?? false)
+                    ||
+                      (match.end < (element.text.length)
+                      && element.text[match.end] == ')')
+                  )
                 )
                 // [... $host](
                 // Sometimes people note the site in a markdown URL label

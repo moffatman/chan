@@ -137,5 +137,15 @@ void main() {
 			final end = r.children[2] as PostTextSpan;
 			expect(end.text, ')');
 		});
+
+		test('markdown url without path', () {
+			final r = SiteReddit.makeSpan('', 0, 'Local anti-cycling group: [Let’s work collaboratively to address emergency response delays](https://balanceonbloor.ca)');
+			expect(r.children, hasLength(2));
+			final start = r.children[0] as PostTextSpan;
+			expect(start.text, 'Local anti-cycling group: ');
+			final link = r.children[1] as PostLinkSpan;
+			expect(link.url, 'https://balanceonbloor.ca');
+			expect(link.name, 'Let’s work collaboratively to address emergency response delays');
+		});
 	});
 }
