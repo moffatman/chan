@@ -470,7 +470,7 @@ class CloudflareInterceptor extends Interceptor {
 						cookieUrl: response.requestOptions.uri,
 						userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
 						initialData: InAppWebViewInitialData(
-							data: await _bodyAsString(response),
+							data: await _bodyAsString(response.data),
 							baseUrl: WebUri.uri(response.realUri.fillInFrom(response.requestOptions.uri))
 						),
 						priority: response.requestOptions.priority
