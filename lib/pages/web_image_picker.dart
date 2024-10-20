@@ -436,10 +436,10 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											src: r['src'] as String,
 											width: (r['width'] as num).toInt(),
 											height: (r['height'] as num).toInt(),
-											displayWidth: r['displayWidth'] as double,
-											displayHeight: r['displayHeight'] as double,
-											top: r['top'] as double,
-											left: r['left'] as double,
+											displayWidth: (r['displayWidth'] as num).toDouble(),
+											displayHeight: (r['displayHeight'] as num).toDouble(),
+											top: (r['top'] as num).toDouble(),
+											left: (r['left'] as num).toDouble(),
 											visible1: r['visible1'] as bool,
 											visible2: r['visible2'] as bool
 										)).toList();
