@@ -1217,44 +1217,36 @@ class Site4Chan extends ImageboardSite {
 	String get defaultUsername => 'Anonymous';
 	
 	@override
-	Iterable<ImageboardSnippet> getBoardSnippets(String board) sync* {
-		yield greentextSnippet;
-		if (board == 'g') {
-			yield const ImageboardSnippet.simple(
-				icon: CupertinoIcons.chevron_left_slash_chevron_right,
-				name: 'Code',
-				start: '[code]',
-				end: '[/code]',
-				previewBuilder: PostCodeSpan.new
-			);
-		}
-		else if (board == 'jp') {
-			yield const ImageboardSnippet.simple(
-				icon: CupertinoIcons.text_justify,
-				name: 'Shift-JIS',
-				start: '[sjis]',
-				end: '[/sjis]',
-				previewBuilder: PostShiftJISSpan.new
-			);
-		}
-		else if (board == 'sci') {
-			yield const ImageboardSnippet.simple(
-				icon: CupertinoIcons.function,
-				name: 'Math',
-				start: '[math]',
-				end: '[/math]',
-				previewBuilder: PostTeXSpan.new
-			);
-		}
-		if (persistence?.getBoard(board).spoilers == true) {
-			yield const ImageboardSnippet.simple(
-				icon: CupertinoIcons.eye_slash,
-				name: 'Spoiler',
-				start: '[spoiler]',
-				end: '[/spoiler]'
-			);
-		}
-	}
+	List<ImageboardSnippet> getBoardSnippets(String board) => [
+		greentextSnippet,
+		if (board == 'g') const ImageboardSnippet.simple(
+			icon: CupertinoIcons.chevron_left_slash_chevron_right,
+			name: 'Code',
+			start: '[code]',
+			end: '[/code]',
+			previewBuilder: PostCodeSpan.new
+		)
+		else if (board == 'jp') const ImageboardSnippet.simple(
+			icon: CupertinoIcons.text_justify,
+			name: 'Shift-JIS',
+			start: '[sjis]',
+			end: '[/sjis]',
+			previewBuilder: PostShiftJISSpan.new
+		)
+		else if (board == 'sci') const ImageboardSnippet.simple(
+			icon: CupertinoIcons.function,
+			name: 'Math',
+			start: '[math]',
+			end: '[/math]',
+			previewBuilder: PostTeXSpan.new
+		),
+		if (persistence?.getBoard(board).spoilers ?? false) const ImageboardSnippet.simple(
+			icon: CupertinoIcons.eye_slash,
+			name: 'Spoiler',
+			start: '[spoiler]',
+			end: '[/spoiler]'
+		)
+	];
 
 	@override
 	bool get supportsPushNotifications => true;

@@ -1657,7 +1657,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get siteType;
 	String get siteData;
 	String get defaultUsername;
-	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const Iterable.empty();
+	List<ImageboardSnippet> getBoardSnippets(String board) => const [];
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async => [];
 	bool get allowsArbitraryBoards => false;
 	bool get classicCatalogStyle => true;

@@ -273,7 +273,7 @@ class SiteDvach extends ImageboardSite {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => SiteLainchan.decodeGenericUrl(baseUrl, 'res', url);
 
 	@override
-	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [
+	List<ImageboardSnippet> getBoardSnippets(String board) => const [
 		ImageboardSnippet.simple(
 			icon: CupertinoIcons.bold,
 			name: 'Bold',

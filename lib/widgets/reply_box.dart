@@ -1837,234 +1837,244 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			});
 		}
 		final imageboard = context.read<Imageboard>();
+		final emotes = imageboard.site.getEmotes();
+		final snippets = context.read<ImageboardSite>().getBoardSnippets(widget.board.s);
 		final defaultTextStyle = DefaultTextStyle.of(context).style;
 		final settings = context.watch<Settings>();
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.end,
 			children: [
-				for (final snippet in context.read<ImageboardSite>().getBoardSnippets(widget.board.s)) AdaptiveIconButton(
-					onPressed: () async {
-						final initialSelection = _textFieldController.selection;
-						// This only works because all the ImageboardSnippets are const
-						final controller = _snippetControllers.putIfAbsent(snippet, () => TextEditingController());
-						if (!initialSelection.isCollapsed) {
-							controller.text = initialSelection.textInside(_textFieldController.text);
-						}
-						final content = await showAdaptiveDialog<String>(
-							context: context,
-							barrierDismissible: true,
-							builder: (context) => AdaptiveAlertDialog(
-								title: Text('${snippet.name} block'),
-								content: Padding(
-									padding: const EdgeInsets.only(top: 16),
-									child: AdaptiveTextField(
-										autofocus: true,
-										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-										smartDashesType: SmartDashesType.disabled,
-										smartQuotesType: SmartQuotesType.disabled,
-										minLines: 5,
-										maxLines: 5,
-										controller: controller,
-										onSubmitted: (s) => Navigator.pop(context, s)
-									)
-								),
-								actions: [
-									AdaptiveDialogAction(
-										isDefaultAction: true,
-										onPressed: () => Navigator.pop(context, controller.text),
-										child: const Text('Insert')
-									),
-									if (snippet.previewBuilder != null) AdaptiveDialogAction(
-										child: const Text('Preview'),
-										onPressed: () {
-											showAdaptiveDialog<bool>(
-												context: context,
-												barrierDismissible: true,
-												builder: (context) => AdaptiveAlertDialog(
-													title: Text('${snippet.name} preview'),
-													content: ChangeNotifierProvider<PostSpanZoneData>(
-														create: (context) => PostSpanRootZoneData(
-															imageboard: imageboard,
-															thread: Thread(posts_: [], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
-															semanticRootIds: [-14],
-															style: PostSpanZoneStyle.linear
-														),
-														builder: (context, _) => DefaultTextStyle(
-															style: defaultTextStyle,
-															child: Text.rich(
-																snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
-															)
-														)
-													),
-													actions: [
-														AdaptiveDialogAction(
-															isDefaultAction: true,
-															child: const Text('Close'),
-															onPressed: () => Navigator.pop(context)
-														)
-													]
-												)
-											);
-										}
-									),
-									AdaptiveDialogAction(
-										child: const Text('Cancel'),
-										onPressed: () => Navigator.pop(context)
-									)
-								]
-							)
-						);
-						if (content != null) {
-							_insertText(snippet.wrap(content), addNewlineIfAtEnd: false, initialSelection: initialSelection);
-							controller.clear();
-						}
-					},
-					icon: Icon(snippet.icon)
-				),
-				if (_flags.isNotEmpty) Center(
-					child: AdaptiveIconButton(
-						onPressed: _pickFlag,
-						icon: IgnorePointer(
-							child: flag != null ? ExtendedImage.network(
-								flag!.imageUrl,
-								cache: true,
-							) : const Icon(CupertinoIcons.flag)
-						)
-					)
-				),
-				if (context.read<ImageboardSite>().getEmotes().isNotEmpty) Center(
-					child: AdaptiveIconButton(
-						onPressed: _pickEmote,
-						icon: const Icon(CupertinoIcons.smiley)
-					)
-				),
 				Expanded(
-					child: Align(
-						alignment: Alignment.centerRight,
-						child: AnimatedSize(
-							alignment: Alignment.centerLeft,
-							duration: const Duration(milliseconds: 250),
-							curve: Curves.ease,
-							child: attachment != null ? AdaptiveIconButton(
-								padding: const EdgeInsets.only(left: 8, right: 8),
-								onPressed: expandAttachmentOptions,
-								icon: Row(
+					child: ListView(
+						scrollDirection: Axis.horizontal,
+						reverse: true,
+						children: [
+							for (final snippet in snippets) AdaptiveIconButton(
+								onPressed: () async {
+									final initialSelection = _textFieldController.selection;
+									// This only works because all the ImageboardSnippets are const
+									final controller = _snippetControllers.putIfAbsent(snippet, () => TextEditingController());
+									if (!initialSelection.isCollapsed) {
+										controller.text = initialSelection.textInside(_textFieldController.text);
+									}
+									final content = await showAdaptiveDialog<String>(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											title: Text('${snippet.name} block'),
+											content: Padding(
+												padding: const EdgeInsets.only(top: 16),
+												child: AdaptiveTextField(
+													autofocus: true,
+													enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+													smartDashesType: SmartDashesType.disabled,
+													smartQuotesType: SmartQuotesType.disabled,
+													minLines: 5,
+													maxLines: 5,
+													controller: controller,
+													onSubmitted: (s) => Navigator.pop(context, s)
+												)
+											),
+											actions: [
+												AdaptiveDialogAction(
+													isDefaultAction: true,
+													onPressed: () => Navigator.pop(context, controller.text),
+													child: const Text('Insert')
+												),
+												if (snippet.previewBuilder != null) AdaptiveDialogAction(
+													child: const Text('Preview'),
+													onPressed: () {
+														showAdaptiveDialog<bool>(
+															context: context,
+															barrierDismissible: true,
+															builder: (context) => AdaptiveAlertDialog(
+																title: Text('${snippet.name} preview'),
+																content: ChangeNotifierProvider<PostSpanZoneData>(
+																	create: (context) => PostSpanRootZoneData(
+																		imageboard: imageboard,
+																		thread: Thread(posts_: [], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
+																		semanticRootIds: [-14],
+																		style: PostSpanZoneStyle.linear
+																	),
+																	builder: (context, _) => DefaultTextStyle(
+																		style: defaultTextStyle,
+																		child: Text.rich(
+																			snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
+																		)
+																	)
+																),
+																actions: [
+																	AdaptiveDialogAction(
+																		isDefaultAction: true,
+																		child: const Text('Close'),
+																		onPressed: () => Navigator.pop(context)
+																	)
+																]
+															)
+														);
+													}
+												),
+												AdaptiveDialogAction(
+													child: const Text('Cancel'),
+													onPressed: () => Navigator.pop(context)
+												)
+											]
+										)
+									);
+									if (content != null) {
+										_insertText(snippet.wrap(content), addNewlineIfAtEnd: false, initialSelection: initialSelection);
+										controller.clear();
+									}
+								},
+								icon: Icon(snippet.icon)
+							),
+							if (_flags.isNotEmpty) Center(
+								child: AdaptiveIconButton(
+									onPressed: _pickFlag,
+									icon: IgnorePointer(
+										child: flag != null ? ExtendedImage.network(
+											flag!.imageUrl,
+											cache: true,
+										) : const Icon(CupertinoIcons.flag)
+									)
+								)
+							),
+							if (emotes.isNotEmpty) Center(
+								child: AdaptiveIconButton(
+									onPressed: _pickEmote,
+									icon: const Icon(CupertinoIcons.smiley)
+								)
+							),
+							if (snippets.isNotEmpty || _flags.isNotEmpty || emotes.isNotEmpty) Container(
+								margin: const EdgeInsets.symmetric(horizontal: 8),
+								width: 2,
+								height: 32,
+								color: settings.theme.barColor
+							),
+							AnimatedSize(
+								alignment: Alignment.centerRight,
+								duration: const Duration(milliseconds: 250),
+								curve: Curves.ease,
+								child: attachment != null ? AdaptiveIconButton(
+									padding: const EdgeInsets.only(left: 8, right: 8),
+									onPressed: expandAttachmentOptions,
+									icon: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											showAttachmentOptions ? const Icon(CupertinoIcons.chevron_down) : const Icon(CupertinoIcons.chevron_up),
+											const SizedBox(width: 8),
+											ClipRRect(
+												borderRadius: BorderRadius.circular(4),
+												child: ConstrainedBox(
+													constraints: const BoxConstraints(
+														maxWidth: 32,
+														maxHeight: 32
+													),
+													child: SavedAttachmentThumbnail(file: attachment!, fontSize: 12)
+												)
+											),
+										]
+									)
+								) : _attachmentProgress != null ? Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [
-										showAttachmentOptions ? const Icon(CupertinoIcons.chevron_down) : const Icon(CupertinoIcons.chevron_up),
-										const SizedBox(width: 8),
-										ClipRRect(
-											borderRadius: BorderRadius.circular(4),
-											child: ConstrainedBox(
-												constraints: const BoxConstraints(
-													maxWidth: 32,
-													maxHeight: 32
-												),
-												child: SavedAttachmentThumbnail(file: attachment!, fontSize: 12)
-											)
-										),
-									]
-								)
-							) : _attachmentProgress != null ? Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Text(_attachmentProgress!.$1),
-									const SizedBox(width: 16),
-									SizedBox(
-										width: 100,
-										child: AdaptiveButton(
-											padding: EdgeInsets.zero,
-											onPressed: _attachmentProgress?.$2 == null ? null : () async {
-												final confirmed = await confirm(context, 'Stop conversion?', actionName: 'Stop');
-												if (confirmed) {
-													_attachmentProgress?.$2?.cancel();
-													_attachmentProgress = null;
-													setState(() {});
-												}
-											},
-											child: ClipRRect(
-												borderRadius: BorderRadius.circular(4),
-												child: ValueListenableBuilder<double?>(
-													valueListenable: _attachmentProgress!.$2?.progress ?? const StoppedValueListenable(null),
-													builder: (context, value, _) => LinearProgressIndicator(
-														value: value,
-														minHeight: 20,
-														valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-														backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
-													)
-												)
-											)
-										)
-									)
-								]
-							) : AnimatedBuilder(
-								animation: attachmentSourceNotifier,
-								builder: (context, _) => ListView(
-									shrinkWrap: true,
-									scrollDirection: Axis.horizontal,
-									children: [
-										for (final file in receivedFilePaths.reversed) GestureDetector(
-											onLongPress: () async {
-												if (await confirm(context, 'Remove received file?')) {
-													receivedFilePaths.remove(file);
-													setState(() {});
-												}
-											},
-											child: AdaptiveIconButton(
-												onPressed: () => setAttachment(File(file)),
-												icon: ClipRRect(
+										Text(_attachmentProgress!.$1),
+										const SizedBox(width: 16),
+										SizedBox(
+											width: 100,
+											child: AdaptiveButton(
+												padding: EdgeInsets.zero,
+												onPressed: _attachmentProgress?.$2 == null ? null : () async {
+													final confirmed = await confirm(context, 'Stop conversion?', actionName: 'Stop');
+													if (confirmed) {
+														_attachmentProgress?.$2?.cancel();
+														_attachmentProgress = null;
+														setState(() {});
+													}
+												},
+												child: ClipRRect(
 													borderRadius: BorderRadius.circular(4),
-													child: ConstrainedBox(
-														constraints: const BoxConstraints(
-															maxWidth: 32,
-															maxHeight: 32
-														),
-														child: SavedAttachmentThumbnail(
-															file: File(file)
+													child: ValueListenableBuilder<double?>(
+														valueListenable: _attachmentProgress!.$2?.progress ?? const StoppedValueListenable(null),
+														builder: (context, value, _) => LinearProgressIndicator(
+															value: value,
+															minHeight: 20,
+															valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+															backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
 														)
 													)
 												)
 											)
-										),
-										for (final picker in getAttachmentSources(includeClipboard: false)) AdaptiveIconButton(
-											onPressed: () async {
-												FocusNode? focusToRestore;
-												if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
-													focusToRestore = _lastNearbyFocus?.$2;
-												}
-												_attachmentProgress = ('Picking', null);
-												setState(() {});
-												// Local [context] is not safe. It will die when we go to 'Picking'
-												try {
-													final path = await picker.pick(this.context);
-													if (path != null) {
-														await setAttachment(File(path));
-													}
-													else {
-														_attachmentProgress = null;
-													}
-												}
-												catch (e, st) {
-													Future.error(e, st);
-													if (context.mounted) {
-														alertError(context, e, st);
-													}
-													_attachmentProgress = null;
-												}
-												focusToRestore?.requestFocus();
-												if (mounted) {
-													setState(() {});
-												}
-											},
-											icon: Transform.scale(
-												scale: picker.iconSizeMultiplier,
-												child: Icon(picker.icon)
-											)
 										)
 									]
+								) : AnimatedBuilder(
+									animation: attachmentSourceNotifier,
+									builder: (context, _) => Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											for (final file in receivedFilePaths.reversed) GestureDetector(
+												onLongPress: () async {
+													if (await confirm(context, 'Remove received file?')) {
+														receivedFilePaths.remove(file);
+														setState(() {});
+													}
+												},
+												child: AdaptiveIconButton(
+													onPressed: () => setAttachment(File(file)),
+													icon: ClipRRect(
+														borderRadius: BorderRadius.circular(4),
+														child: ConstrainedBox(
+															constraints: const BoxConstraints(
+																maxWidth: 32,
+																maxHeight: 32
+															),
+															child: SavedAttachmentThumbnail(
+																file: File(file)
+															)
+														)
+													)
+												)
+											),
+											for (final picker in getAttachmentSources(includeClipboard: false)) AdaptiveIconButton(
+												onPressed: () async {
+													FocusNode? focusToRestore;
+													if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
+														focusToRestore = _lastNearbyFocus?.$2;
+													}
+													_attachmentProgress = ('Picking', null);
+													setState(() {});
+													// Local [context] is not safe. It will die when we go to 'Picking'
+													try {
+														final path = await picker.pick(this.context);
+														if (path != null) {
+															await setAttachment(File(path));
+														}
+														else {
+															_attachmentProgress = null;
+														}
+													}
+													catch (e, st) {
+														Future.error(e, st);
+														if (context.mounted) {
+															alertError(context, e, st);
+														}
+														_attachmentProgress = null;
+													}
+													focusToRestore?.requestFocus();
+													if (mounted) {
+														setState(() {});
+													}
+												},
+												icon: Transform.scale(
+													scale: picker.iconSizeMultiplier,
+													child: Icon(picker.icon)
+												)
+											)
+										]
+									)
 								)
 							)
-						)
+						].reversed.toList()
 					)
 				),
 				AdaptiveIconButton(

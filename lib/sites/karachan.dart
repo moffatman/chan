@@ -471,43 +471,43 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Iterable<ImageboardSnippet> getBoardSnippets(String board) sync* {
-		yield greentextSnippet;
-		yield const ImageboardSnippet.simple(
+	List<ImageboardSnippet> getBoardSnippets(String board) => const [
+		greentextSnippet,
+		ImageboardSnippet.simple(
 			icon: CupertinoIcons.bold,
 			name: 'Bold',
 			start: '[b]',
 			end: '[/b]',
 			previewBuilder: SnippetPreviewBuilders.bold
-		);
-		yield const ImageboardSnippet.simple(
+		),
+		ImageboardSnippet.simple(
 			icon: CupertinoIcons.italic,
 			name: 'Italic',
 			start: '[i]',
 			end: '[/i]',
 			previewBuilder: SnippetPreviewBuilders.italic
-		);
-		yield const ImageboardSnippet.simple(
+		),
+		ImageboardSnippet.simple(
 			icon: CupertinoIcons.underline,
 			name: 'Underline',
 			start: '[u]',
 			end: '[/u]',
 			previewBuilder: SnippetPreviewBuilders.underline
-		);
-		yield const ImageboardSnippet.simple(
+		),
+		ImageboardSnippet.simple(
 			icon: CupertinoIcons.chevron_left_slash_chevron_right,
 			name: 'Code',
 			start: '[code]',
 			end: '[/code]',
 			previewBuilder: PostCodeSpan.new
-		);
-		yield const ImageboardSnippet.simple(
+		),
+		ImageboardSnippet.simple(
 			icon: CupertinoIcons.eye_slash,
 			name: 'Spoiler',
 			start: '[s]',
 			end: '[/s]'
-		);
-	}
+		)
+	];
 
 	@override
 	bool operator == (Object other) =>

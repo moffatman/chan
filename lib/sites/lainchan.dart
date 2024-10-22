@@ -607,7 +607,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const [
+	List<ImageboardSnippet> getBoardSnippets(String board) => const [
 		greentextSnippet
 	];
 
