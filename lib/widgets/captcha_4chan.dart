@@ -826,11 +826,13 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				backgroundSlide = bestSlide;
 			});
 		}
+		else {
+			backgroundSlide = 0;
+		}
 		if (useNewCaptchaForm) {
 			await _animateGuess();
 		}
 		else {
-			backgroundSlide = 0;
 			setState(() {});
 			_solutionNode.requestFocus();
 		}
