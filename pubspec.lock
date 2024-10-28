@@ -236,8 +236,8 @@ packages:
     description:
       path: "packages/connectivity_plus/connectivity_plus"
       ref: check_mobile_first
-      resolved-ref: "452aa4b6448adbd3a9e592b82da3e9d355af2125"
-      url: "https://github.com/ente-io/plus_plugins.git"
+      resolved-ref: "60a7190c03719991c47b00db258fa09a3df5d14a"
+      url: "https://github.com/moffatman/plus_plugins.git"
     source: git
     version: "4.0.2"
   connectivity_plus_platform_interface:
