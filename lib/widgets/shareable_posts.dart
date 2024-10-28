@@ -140,6 +140,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						showSiteIcon: p.id == primaryPostId,
 						revealYourPosts: style.revealYourPosts,
 						revealSpoilerImages: true,
+						forceAbsoluteTime: true,
 						showReplyCount: widget.style.showReplyCounts
 					),
 					collapsedItemBuilder: ({
@@ -161,6 +162,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									showSiteIcon: value.id == primaryPostId,
 									revealYourPosts: style.revealYourPosts,
 									revealSpoilerImages: true,
+									forceAbsoluteTime: true,
 									showReplyCount: widget.style.showReplyCounts,
 									overrideReplyCount: Row(
 										mainAxisSize: MainAxisSize.min,
@@ -303,6 +305,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 				child: PostRow(
 					post: post,
 					revealSpoilerImages: true,
+					forceAbsoluteTime: true,
 					highlight: parents.isNotEmpty || children.isNotEmpty,
 					largeImageWidth: style.expandPrimaryImage ? style.width : null,
 					shrinkWrap: true,
@@ -333,6 +336,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 								child: PostRow(
 									post: parent.$1,
 									revealSpoilerImages: true,
+									forceAbsoluteTime: true,
 									shrinkWrap: true,
 									baseOptions: options,
 									showReplyCount: widget.style.showReplyCounts,
@@ -351,6 +355,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 								child: PostRow(
 									post: child,
 									revealSpoilerImages: true,
+									forceAbsoluteTime: true,
 									shrinkWrap: true,
 									showReplyCount: widget.style.showReplyCounts,
 									baseOptions: options,

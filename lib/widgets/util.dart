@@ -299,15 +299,15 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 	}
 }
 
-String formatTime(DateTime time) {
+String formatTime(DateTime time, {bool forceFullDate = false}) {
 	final now = DateTime.now();
 	final notToday = (now.day != time.day) || (now.month != time.month) || (now.year != time.year);
 	String prefix = '';
-	if (notToday || Persistence.settings.exactTimeShowsDateForToday) {
+	if (forceFullDate || notToday || Persistence.settings.exactTimeShowsDateForToday) {
 		if (Persistence.settings.exactTimeUsesCustomDateFormat) {
 			prefix = '${time.formatDate(Persistence.settings.customDateFormat)} ';
 		}
-		else if (now.difference(time).inDays > 7) {
+		else if (forceFullDate || now.difference(time).inDays > 7) {
 			prefix = '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} ';
 		}
 		else {

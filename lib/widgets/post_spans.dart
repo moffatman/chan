@@ -2714,6 +2714,7 @@ TextSpan buildPostInfoRow({
 	required PostSpanZoneData zone,
 	bool interactive = true,
 	bool showPostNumber = true,
+	bool forceAbsoluteTime = false,
 	ValueChanged<Attachment>? propagatedOnThumbnailTap
 }) {
 	final thread = zone.findThread(post.threadId);
@@ -2881,11 +2882,15 @@ TextSpan buildPostInfoRow({
 				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 			)
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
-				text: '${formatTime(post.time)} '
+				text: '${formatTime(post.time, forceFullDate: forceAbsoluteTime)} '
 			)
-			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
-				text: '${formatRelativeTime(post.time)} ago '
-			)
+			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts)
+			 	if (!settings.showAbsoluteTimeOnPosts && forceAbsoluteTime) TextSpan(
+					text: '${formatTime(post.time, forceFullDate: true)} '
+				)
+				else TextSpan(
+					text: '${formatRelativeTime(post.time)} ago '
+				)
 			else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
 				if (showSiteIcon) WidgetSpan(
 					alignment: PlaceholderAlignment.middle,

@@ -177,6 +177,7 @@ class PostRow extends StatelessWidget {
 	final bool revealYourPosts;
 	final bool revealSpoilerImages;
 	final bool expandedInline;
+	final bool forceAbsoluteTime;
 
 	const PostRow({
 		required this.post,
@@ -202,6 +203,7 @@ class PostRow extends StatelessWidget {
 		this.revealYourPosts = true,
 		this.revealSpoilerImages = false,
 		this.expandedInline = false,
+		this.forceAbsoluteTime = false,
 		Key? key
 	}) : super(key: key);
 
@@ -516,6 +518,7 @@ class PostRow extends StatelessWidget {
 																			context: context,
 																			zone: ctx.watch<PostSpanZoneData>(),
 																			showPostNumber: showPostNumber,
+																			forceAbsoluteTime: forceAbsoluteTime,
 																			propagatedOnThumbnailTap: baseOptions?.propagateOnThumbnailTap == true ? onThumbnailTap : null,
 																			interactive: allowTappingLinks
 																		),
