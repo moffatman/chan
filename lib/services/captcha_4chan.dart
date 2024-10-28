@@ -360,7 +360,7 @@ void _guess(_GuessParam param) async {
 	}).toList();*/
 	param.sendPort.send(1.0);
 	final numLettersGuess = (answersBest.last.score < 45) ? answersBest.length : answersBest.length - 1;
-	param.sendPort.send(Chan4CustomCaptchaGuesses._(answersBest, numLettersGuess));
+	param.sendPort.send(Chan4CustomCaptchaGuesses._(answersBest, min(6, numLettersGuess)));
 }
 
 class _GuessParam {

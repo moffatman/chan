@@ -698,7 +698,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_guessInProgress?.cancel();
 			_guessInProgress = guess(
 				await _screenshotImage(),
-				maxNumLetters: 6,
+				maxNumLetters: 10,
 				onProgress: (progress) {
 					setState(() {
 						_guessingProgress = progress;
