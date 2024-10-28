@@ -320,7 +320,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		filteredBoards.addAll(allImageboards.where((i) {
 			return i != currentImageboard && i.site.allowsArbitraryBoards;
 		}).map((i) => i.scope(null)));
-		final effectiveSelectedIndex = _selectedIndex.clamp(0, filteredBoards.length - 1);
+		final effectiveSelectedIndex = filteredBoards.isEmpty ? 0 : _selectedIndex.clamp(0, filteredBoards.length - 1);
 		return AdaptiveScaffold(
 			disableAutoBarHiding: true,
 			resizeToAvoidBottomInset: false,
