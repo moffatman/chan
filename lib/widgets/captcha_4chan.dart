@@ -179,31 +179,47 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 	final fgBytes = (await challenge.foregroundImage!.toByteData())!;
 	final bgWidth = challenge.backgroundImage!.width;
 	final toCheck = <({int offset, int r})>[];
-	for (int x = 0; x < fgWidth - 1; x++) {
-		for (int y = 0; y < fgHeight - 1; y++) {
+	for (int x = 2; x < fgWidth - 3; x++) {
+		for (int y = 2; y < fgHeight - 3; y++) {
 			final thisIndex = 4 * (x + (y * fgWidth));
 			final thisR = fgBytes.getUint8(thisIndex);
 			final thisA = fgBytes.getUint8(thisIndex + 3);
-			final rightIndex = thisIndex + 4;
-			final rightA = fgBytes.getUint8(rightIndex + 3);
-			final downIndex = thisIndex + (4 * fgWidth);
-			final downA = fgBytes.getUint8(downIndex + 3);
-			if (thisA > rightA) {
+			final rightIndex1 = thisIndex + 4;
+			final rightIndex2 = thisIndex + 8;
+			final rightIndex3 = thisIndex + 12;
+			final rightA1 = fgBytes.getUint8(rightIndex1 + 3);
+			final rightA2 = fgBytes.getUint8(rightIndex2 + 3);
+			final rightA3 = fgBytes.getUint8(rightIndex3 + 3);
+			final downIndex1 = thisIndex + (4 * fgWidth);
+			final downIndex2 = thisIndex + (8 * fgWidth);
+			final downIndex3 = thisIndex + (12 * fgWidth);
+			final downA1 = fgBytes.getUint8(downIndex1 + 3);
+			final downA2 = fgBytes.getUint8(downIndex2 + 3);
+			final downA3 = fgBytes.getUint8(downIndex3 + 3);
+			final leftIndex1 = thisIndex - 4;
+			final leftIndex2 = thisIndex - 8;
+			final leftA1 = fgBytes.getUint8(leftIndex1 + 3);
+			final leftA2 = fgBytes.getUint8(leftIndex2 + 3);
+			final upIndex1 = thisIndex - (4 * fgWidth);
+			final upIndex2 = thisIndex - (8 * fgWidth);
+			final upA1 = fgBytes.getUint8(upIndex1 + 3);
+			final upA2 = fgBytes.getUint8(upIndex2 + 3);
+			if (thisA > rightA1 && thisA == leftA1 && thisA == leftA2 && rightA1 == rightA2 && rightA1 == rightA3) {
 				// this is the opaque fg pixel
 				toCheck.add((offset: 4 * ((x + 1) + (y * bgWidth)), r: thisR));
 			}
-			else if (thisA < rightA) {
+			else if (thisA < rightA1 && thisA == leftA1 && thisA == leftA2 && rightA1 == rightA2 && rightA1 == rightA3) {
 				// this is the transparent fg pixel
-				final rightR = fgBytes.getUint8(rightIndex);
+				final rightR = fgBytes.getUint8(rightIndex1);
 				toCheck.add((offset: 4 * (x + (y * bgWidth)), r: rightR));
 			}
-			if (thisA > downA) {
+			if (thisA > downA1 && thisA == upA1 && thisA == upA2 && downA1 == downA2 && downA1 == downA3) {
 				// this is the opaque fg pixel
 				toCheck.add((offset: 4 * (x + ((y + 1) * bgWidth)), r: thisR));
 			}
-			else if (thisA < downA) {
+			else if (thisA < downA1 && thisA == upA1 && thisA == upA2 && downA1 == downA2 && downA1 == downA3) {
 				// this is the transparent fg pixel
-				final downR = fgBytes.getUint8(downIndex);
+				final downR = fgBytes.getUint8(downIndex1);
 				toCheck.add((offset: 4 * (x + (y * bgWidth)), r: downR));
 			}
 		}
