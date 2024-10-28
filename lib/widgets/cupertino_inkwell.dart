@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:chan/widgets/default_gesture_detector.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
 
 class CupertinoInkwell<T> extends StatefulWidget {
   /// Creates an iOS-style button.
@@ -154,7 +156,10 @@ class _CupertinoInkwellState extends State<CupertinoInkwell> with SingleTickerPr
 									alignment: widget.alignment,
 									widthFactor: 1.0,
 									heightFactor: 1.0,
-									child: widget.child,
+									child: Provider.value(
+                    value: DefaultOnTapCallback(widget.onPressed),
+                    child: widget.child,
+                  ),
 								),
 							),
 						),
