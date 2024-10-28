@@ -661,6 +661,8 @@ final dataSettings = [
 							mainAxisSize: MainAxisSize.min,
 							children: [
 								const SizedBox(height: 10),
+								const Text('Cloudflare clearance will probably only work on the default user-agent'),
+								const SizedBox(height: 10),
 								Visibility.maintain(
 									visible: (userAgent?.isEmpty ?? true),
 									child: const Text('You are currently using your system\'s default User-Agent (recommended)')
