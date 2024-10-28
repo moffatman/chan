@@ -178,6 +178,10 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 	final fgHeight = challenge.foregroundImage!.height;
 	final fgBytes = (await challenge.foregroundImage!.toByteData())!;
 	final bgWidth = challenge.backgroundImage!.width;
+	final maxSlide = bgWidth - fgWidth;
+	if (maxSlide <= 0) {
+		return 0;
+	}
 	final toCheck = <({int offset, int r})>[];
 	for (int x = 2; x < fgWidth - 3; x++) {
 		for (int y = 2; y < fgHeight - 3; y++) {
@@ -226,7 +230,6 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 	}
 	int bestSlide = 0;
 	int lowestMismatch = toCheck.length + 1;
-	final maxSlide = bgWidth - fgWidth;
 	final bgBytes = (await challenge.backgroundImage!.toByteData())!;
 	slideloop:
 	for (int xSlide = 0; xSlide < maxSlide; xSlide++) {
@@ -581,17 +584,19 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 	void paint(Canvas canvas, Size size) {
 		final double height = foregroundImage.height.toDouble();
 		final double width = foregroundImage.width.toDouble();
+		bool fgSlide = false;
 		if (backgroundImage != null) {
+			fgSlide = backgroundImage!.width < foregroundImage.width;
 			canvas.drawImageRect(
 				backgroundImage!,
-				Rect.fromLTWH(backgroundSlide.toDouble(), 0, width, height),
+				Rect.fromLTWH(fgSlide ? 0 : backgroundSlide.toDouble(), 0, width, height),
 				Rect.fromLTWH(0, 0, size.width, size.height),
 				Paint()
 			);
 		}
 		canvas.drawImageRect(
 			foregroundImage,
-			Rect.fromLTWH(0, 0, width, height),
+			Rect.fromLTWH(fgSlide ? backgroundSlide.toDouble() : 0, 0, width, height),
 			Rect.fromLTWH(0, 0, size.width, size.height),
 			Paint()
 		);
@@ -1107,6 +1112,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				[] => [4, 5, 6],
 				List<int> list => list
 			};
+			final maxSlide = ((challenge?.backgroundImage?.width ?? challenge?.foregroundImage?.width ?? 0) - (challenge?.foregroundImage?.width ?? 0)).abs();
 			return Center(
 				child: ConstrainedBox(
 					constraints: BoxConstraints(
@@ -1130,7 +1136,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 											await _animateGuess();
 										},
 										child: CustomPaint(
-											size: Size(challenge!.foregroundImage!.width.toDouble(), challenge!.foregroundImage!.height.toDouble()),
+											size: Size(min(challenge!.backgroundImage?.width ?? challenge!.foregroundImage!.width, challenge!.foregroundImage!.width).toDouble(), challenge!.foregroundImage!.height.toDouble()),
 											painter: _Captcha4ChanCustomPainter(
 												foregroundImage: challenge!.foregroundImage!,
 												backgroundImage: challenge!.backgroundImage,
@@ -1149,7 +1155,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										flex: 1,
 										child:  _cooldownedRetryButton(context)
 									),
-									if (challenge!.backgroundImage != null) Flexible(
+									if (maxSlide > 0) Flexible(
 										flex: 2,
 										fit: FlexFit.tight,
 										child: Padding(
@@ -1160,8 +1166,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 													opacity: _greyOutPickers ? 0.5 : 1.0,
 													child: Slider.adaptive(
 														value: backgroundSlide.toDouble(),
-														divisions: challenge!.backgroundImage!.width - challenge!.foregroundImage!.width,
-														max: (challenge!.backgroundImage!.width - challenge!.foregroundImage!.width).toDouble(),
+														divisions: maxSlide,
+														max: maxSlide.toDouble(),
 														onChanged: (newOffset) {
 															setState(() {
 																backgroundSlide = newOffset.floor();
