@@ -1569,24 +1569,30 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				// Try again, allowing cloudflare clearance
 				for (final error in errors.entries.toList(growable: false)) { // concurrent modification
 					if (error is CloudflareHandlerNotAllowedException) {
-						final thread_ = await error.key.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
-						await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
-						thread_.archiveName = error.key.name;
-						fallback = thread_;
 						try {
-							await validator(thread_);
+							final thread_ = await error.key.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
+							await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
+							thread_.archiveName = error.key.name;
+							fallback = thread_;
+							try {
+								await validator(thread_);
+							}
+							catch (e) {
+								if (
+									(e is AttachmentNotArchivedException || e is AttachmentNotFoundException) &&
+									identical(fallback, thread_)
+								) {
+									fallback = null;
+								}
+								rethrow;
+							}
+							completer.complete(thread_);
+							return;
 						}
 						catch (e) {
-							if (
-								(e is AttachmentNotArchivedException || e is AttachmentNotFoundException) &&
-								identical(fallback, thread_)
-							) {
-								fallback = null;
-							}
-							rethrow;
+							// Update to new error
+							errors[error.key] = e;
 						}
-						completer.complete(thread_);
-						return;
 					}
 				}
 			}
