@@ -82,7 +82,7 @@ enum PostSpanFormat {
 	@HiveField(13)
 	jsChan;
 	bool get hasInlineAttachments => switch (this) {
-		xenforo => true,
+		xenforo || reddit => true,
 		_ => false
 	};
 }
@@ -136,7 +136,7 @@ class Post implements Filterable {
 			case PostSpanFormat.futaba:
 				return SiteFutaba.makeSpan(board, threadId, text);
 			case PostSpanFormat.reddit:
-				return SiteReddit.makeSpan(board, threadId, text);
+				return SiteReddit.makeSpan(board, threadId, text, attachments: attachments_);
 			case PostSpanFormat.hackerNews:
 				return SiteHackerNews.makeSpan(text);
 			case PostSpanFormat.stub:

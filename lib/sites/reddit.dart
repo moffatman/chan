@@ -156,19 +156,6 @@ extension _RedditApiName on ThreadVariant {
 	}
 }
 
-extension _ExtractGiphyGIFs on String {
-	static final _giphyRegex = RegExp(r'!\[gif\]\(giphy\|([^|)]+)(?:\|[^)]+)?\)');
-	String _matchReplaceAndAddGiphyImages(List<(String, String)> list) {
-		return replaceAllMapped(_giphyRegex, (match) {
-			list.add((
-				'https://media.giphy.com/media/${match.group(1)}/200w_s.gif',
-				'https://media.giphy.com/media/${match.group(1)}/giphy.gif'
-			));
-			return '';
-		});
-	}
-}
-
 extension _RedditApiId on ImageboardArchiveSearchResult {
 	String get redditApiId {
 		if (thread == null) {
@@ -328,6 +315,8 @@ class SiteReddit extends ImageboardSite {
 		return ret;
 	}
 
+	static final _inlineImagePattern = RegExp(r'https:\/\/(?:preview|i)\.redd\.it\/[^\r\n\t\f\v\) ]+');
+
 	static final _inlineSyntaxes = [
 		_SuperscriptSyntax(),
 		_SpoilerSyntax(),
@@ -338,7 +327,7 @@ class SiteReddit extends ImageboardSite {
 		_UserWithLeadingSlashSyntax()
 	];
 
-	static PostNodeSpan makeSpan(String board, int threadId, String text) {
+	static PostNodeSpan makeSpan(String board, int threadId, String text, {List<Attachment> attachments = const []}) {
 		text = unescape.convert(text);
 		final body = parseFragment(
 			markdown.markdownToHtml(
@@ -381,7 +370,27 @@ class SiteReddit extends ImageboardSite {
 					else if (node.localName == 'a') {
 						final href = node.attributes['href'];
 						if (href != null) {
-							yield PostLinkSpan(href, name: node.text.nonEmptyOrNull);
+							if (!attachments.any((a) => a.url == href) && _inlineImagePattern.hasMatch(href)) {
+								yield PostAttachmentsSpan([
+									Attachment(
+										type: AttachmentType.image,
+										board: board,
+										id: href,
+										ext: href.substring(href.lastIndexOf('.')).split('?').first,
+										filename: href.substring(href.lastIndexOf('/') + 1).split('?').first,
+										url: href,
+										thumbnailUrl: generateThumbnailerForUrl(Uri.parse(href)).toString(),
+										md5: '',
+										width: null,
+										height: null,
+										threadId: threadId,
+										sizeInBytes: null
+									)
+								]);
+							}
+							else {
+								yield PostLinkSpan(href, name: node.text.nonEmptyOrNull);
+							}
 						}
 						else {
 							// Some edge case
@@ -474,12 +483,71 @@ class SiteReddit extends ImageboardSite {
 							yield PostTextSpan(node.outerHtml);
 						}
 					}
+					else if (node.localName == 'img' && (node.attributes['src']?.startsWith('giphy%7C') ?? false)) {
+						final giphyId = Uri.decodeComponent(node.attributes['src']!).split('|')[1];
+						yield PostAttachmentsSpan([
+							Attachment(
+								board: board,
+								type: AttachmentType.image,
+								ext: '.gif',
+								id: giphyId,
+								filename: 'giphy.gif',
+								url: 'https://media.giphy.com/media/$giphyId/giphy.gif',
+								thumbnailUrl: 'https://media.giphy.com/media/$giphyId/200w_s.gif',
+								md5: '',
+								width: null,
+								height: null,
+								threadId: threadId,
+								sizeInBytes: null
+							)
+						]);
+					}
 					else if (node.localName == 'img' && node.attributes.containsKey('src')) {
-						yield PostInlineImageSpan(
-								src: node.attributes['src']!,
+						String src = node.attributes['src']!;
+						if (!attachments.any((a) => a.url == src) && _inlineImagePattern.hasMatch(src)) {
+							yield PostAttachmentsSpan([
+								Attachment(
+										type: AttachmentType.image,
+										board: board,
+										id: src,
+										ext: src.substring(src.lastIndexOf('.')).split('?').first,
+										filename: src.substring(src.lastIndexOf('/') + 1).split('?').first,
+										url: src,
+										thumbnailUrl: generateThumbnailerForUrl(Uri.parse(src)).toString(),
+										md5: '',
+										width: null,
+										height: null,
+										threadId: threadId,
+										sizeInBytes: null
+									)
+							]);
+						}
+						else if (!src.contains('.')) {
+							final url = Uri.https('i.redd.it', '/$src.gif');
+							yield PostAttachmentsSpan([
+								Attachment(
+									board: board,
+									type: AttachmentType.image,
+									ext: '.gif',
+									id: src,
+									filename: '$src.gif',
+									url: url.toString(),
+									thumbnailUrl: generateThumbnailerForUrl(url).toString(),
+									md5: '',
+									width: null,
+									height: null,
+									threadId: threadId,
+									sizeInBytes: null
+								)
+							]);
+						}
+						else {
+							yield PostInlineImageSpan(
+								src: src,
 								width: int.tryParse(node.attributes['height'] ?? '') ?? 16,
 								height: int.tryParse(node.attributes['width'] ?? '') ?? 16
 							);
+						}
 					}
 					else if (node.attributes.values.every((v) => v.isEmpty)) {
 						// Some joker made up their own span
@@ -1066,19 +1134,14 @@ class SiteReddit extends ImageboardSite {
 						);
 					}
 					final html = unescape.convert(thing['data']['contentHTML']);
-					final List<(String, String)> inlineImageUrls = [];
 					final text = (thing['data']['contentText'] as String).replaceAllMapped(RegExp(r'!\[img\]\(([^)]+)\)'), (match) {
 						final regex = r'href="([^"]+' + match.group(1)! + r'[^"]+)"';
 						final matchInHtml = RegExp(regex).firstMatch(html)?.group(1);
 						if (matchInHtml != null) {
-							inlineImageUrls.add((
-								matchInHtml,
-								matchInHtml
-							));
-							return '';
+							return '![img]($matchInHtml)';
 						}
 						return match.group(0)!;
-					})._matchReplaceAndAddGiphyImages(inlineImageUrls);
+					});
 					final post = Post(
 						board: thread.board,
 						text: text,
@@ -1089,20 +1152,7 @@ class SiteReddit extends ImageboardSite {
 						parentId: parentId,
 						id: id,
 						spanFormat: PostSpanFormat.reddit,
-						attachments_: inlineImageUrls.map((url) => Attachment(
-							type: AttachmentType.image,
-							board: thread.board,
-							id: '${id}_${url.$2}',
-							ext: url.$2.substring(url.$2.lastIndexOf('.')).split('?').first,
-							filename: url.$2.substring(url.$2.lastIndexOf('/') + 1).split('?').first,
-							url: url.$2,
-							thumbnailUrl: url.$1,
-							md5: '',
-							width: null,
-							height: null,
-							threadId: thread.id,
-							sizeInBytes: null
-						)).toList(),
+						attachments_: const [],
 						upvotes: int.tryParse(doc.querySelector('.score.unvoted')?.attributes['title'] ?? '')
 					);
 					_updateTimeEstimateData(post.id, post.time);
@@ -1217,14 +1267,7 @@ class SiteReddit extends ImageboardSite {
 
 	Post _makePost(Map<String, dynamic> child, {int? parentId, required ThreadIdentifier thread}) {
 		final id = fromRedditId(child['id'])!;
-		final List<(String, String)> inlineImageUrls = [];
-		final text = unescape.convert(child['body'])._matchReplaceAndAddGiphyImages(inlineImageUrls).replaceAllMapped(RegExp(r'^https:\/\/(?:preview|i).redd.it\/[^\r\n\t\f\v\) ]+', multiLine: true), (match) {
-			inlineImageUrls.add((
-				match.group(0)!,
-				match.group(0)!
-			));
-			return '';
-		}).replaceAllMapped(_emotePattern, (match) {
+		final text = unescape.convert(child['body']).replaceAllMapped(_emotePattern, (match) {
 			final metadata = child['media_metadata']?[match.group(1)];
 			if (metadata == null) {
 				return match.group(0)!;
@@ -1240,20 +1283,7 @@ class SiteReddit extends ImageboardSite {
 			threadId: thread.id,
 			id: id,
 			spanFormat: PostSpanFormat.reddit,
-			attachments_: inlineImageUrls.map((url) => Attachment(
-				type: AttachmentType.image,
-				board: thread.board,
-				id: '${id}_${url.$2}',
-				ext: url.$2.substring(url.$2.lastIndexOf('.')).split('?').first,
-				filename: url.$2.substring(url.$2.lastIndexOf('/') + 1).split('?').first,
-				url: url.$2,
-				thumbnailUrl: url.$1,
-				md5: '',
-				width: null,
-				height: null,
-				threadId: thread.id,
-				sizeInBytes: null
-			)).toList(),
+			attachments_: const [],
 			parentId: parentId,
 			upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
 			capcode: child['distinguished']

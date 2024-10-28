@@ -1826,6 +1826,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get hasLinkCookieAuth => false;
 	Uri? get authPage => null;
 	bool get hasExpiringThreads => true;
+	bool get hasLargeInlineAttachments => false;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
 	String? getRedirectGatewayName(Uri uri, String? title) => null;

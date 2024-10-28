@@ -345,9 +345,8 @@ class PostAttachmentsSpan extends PostSpan {
 									),
 									fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 									shrinkHeight: !settings.squareThumbnails,
-									// On the website these are huge (full-width). Put them to a largeish size here.
-									width: 250,
-									height: 250,
+									width: zone.imageboard.site.hasLargeInlineAttachments ? 250 : null,
+									height: zone.imageboard.site.hasLargeInlineAttachments ? 250 : null,
 									mayObscure: true,
 									cornerIcon: AttachmentThumbnailCornerIcon(
 										backgroundColor: theme.backgroundColor,

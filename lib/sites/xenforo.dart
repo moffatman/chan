@@ -977,6 +977,10 @@ class SiteXenforo extends ImageboardSite {
 	@override
 	bool get hasExpiringThreads => false;
 
+	/// On the website these are huge (full-width)
+	@override
+	bool get hasLargeInlineAttachments => true;
+
 	@override
 	bool operator == (Object other) =>
 		identical(other, this) ||
