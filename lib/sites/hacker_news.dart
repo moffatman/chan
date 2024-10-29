@@ -129,7 +129,7 @@ class SiteHackerNews extends ImageboardSite {
 				}
 				if (node is dom.Element) {
 					if (node.localName == 'p') {
-						if (addedLinebreakBefore) {
+						if (!addedLinebreakBefore) {
 							yield const PostLineBreakSpan();
 						}
 						if (node.text.startsWith('>')) {
@@ -183,7 +183,14 @@ class SiteHackerNews extends ImageboardSite {
 					}
 				}
 				else {
-					yield* Site4Chan.parsePlaintext(node.text ?? '');
+					final text = node.text ?? '';
+					final children = Site4Chan.parsePlaintext(text);
+					if (text.startsWith('>')) {
+						yield PostQuoteSpan(PostNodeSpan(children));
+					}
+					else {
+						yield* children;
+					}
 				}
 			}
 		}
