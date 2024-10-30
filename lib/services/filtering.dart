@@ -788,13 +788,21 @@ class FilterZone extends StatelessWidget {
 }
 
 class MetaFilter implements Filter {
-	final toxicRepliedToIds = <int, FilterResult>{};
-	final treeToxicRepliedToIds = <int, FilterResult>{};
+	final toxicRepliedToIds = <int, String>{};
+	final treeToxicRepliedToIds = <int, String>{};
 
-	MetaFilter(Filter parent, String imageboardKey, List<Filterable>? list) {
+	MetaFilter({
+		required Filter parent,
+		required String imageboardKey,
+		required List<int> initialTreeToxicRepliedToIds,
+		required List<Filterable>? list
+	}) {
 		if (list == null || !parent.supportsMetaFilter) {
 			// Nothing to do
 			return;
+		}
+		for (final initial in initialTreeToxicRepliedToIds) {
+			treeToxicRepliedToIds[initial] = 'manually hidden';
 		}
 		// Not all sites ensure strictly chronological sorting
 		// This is important so that only one pass is needed to tree-hide
@@ -804,10 +812,10 @@ class MetaFilter implements Filter {
 		for (final item in sorted) {
 			final result = parent.filter(imageboardKey, item);
 			if (result != null && result.type.hideReplyChains) {
-				treeToxicRepliedToIds[item.id] = result;
+				treeToxicRepliedToIds[item.id] = result.reason;
 			}
 			else if (result != null && result.type.hideReplies) {
-				toxicRepliedToIds[item.id] = result;
+				toxicRepliedToIds[item.id] = result.reason;
 			}
 			if (item.repliedToIds.any(treeToxicRepliedToIds.containsKey)) {
 				final match = item.repliedToIds.tryMapOnce((id) => treeToxicRepliedToIds[id]);
@@ -826,11 +834,11 @@ class MetaFilter implements Filter {
 		for (final id in item.repliedToIds) {
 			final match = toxicRepliedToIds[id];
 			if (match != null) {
-				return FilterResult(const FilterResultType(hide: true), 'Replied to $id (${match.reason})');
+				return FilterResult(const FilterResultType(hide: true), 'Replied to $id ($match)');
 			}
 			final treeMatch = treeToxicRepliedToIds[id];
 			if (treeMatch != null) {
-				return FilterResult(const FilterResultType(hide: true), 'In reply chain of $id (${treeMatch.reason})');
+				return FilterResult(const FilterResultType(hide: true), 'In reply chain of $id ($treeMatch)');
 			}
 		}
 		return null;

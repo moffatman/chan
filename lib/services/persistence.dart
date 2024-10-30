@@ -1616,46 +1616,63 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	Filter _makeThreadFilter() => FilterCache(ThreadFilter(
 		hideIds: hiddenPostIds,
 		showIds: overrideShowPostIds,
-		repliedToIds: treeHiddenPostIds,
+		repliedToIds: const [],
 		posterIds: hiddenPosterIds
 	));
 	late Filter threadFilter = _makeThreadFilter();
-	MetaFilter _makeMetaFilter() => MetaFilter(Settings.instance.globalFilter, imageboardKey, thread?.posts);
+	MetaFilter _makeMetaFilter() => MetaFilter(
+		parent: Settings.instance.globalFilter,
+		imageboardKey: imageboardKey,
+		initialTreeToxicRepliedToIds: treeHiddenPostIds,
+		list: thread?.posts
+	);
 	late MetaFilter metaFilter = _makeMetaFilter();
 	void setPostHiding(int id, PostHidingState state) {
+		bool threadFilterDirty = false;
+		bool metaFilterDirty = false;
 		switch (state) {
 			case PostHidingState.none:
-				hiddenPostIds.remove(id);
-				treeHiddenPostIds.remove(id);
-				overrideShowPostIds.remove(id);
+				threadFilterDirty |= hiddenPostIds.remove(id);
+				metaFilterDirty |= treeHiddenPostIds.remove(id);
+				threadFilterDirty |= overrideShowPostIds.remove(id);
 				break;
 			case PostHidingState.shown:
-				hiddenPostIds.remove(id);
-				treeHiddenPostIds.remove(id);
+				threadFilterDirty |= hiddenPostIds.remove(id);
+				metaFilterDirty |= treeHiddenPostIds.remove(id);
 				if (!overrideShowPostIds.contains(id)) {
 					overrideShowPostIds.add(id);
+					threadFilterDirty = true;
 				}
 				break;
 			case PostHidingState.hidden:
 				if (!hiddenPostIds.contains(id)) {
 					hiddenPostIds.add(id);
+					threadFilterDirty = true;
 				}
-				treeHiddenPostIds.remove(id);
-				overrideShowPostIds.remove(id);
+				metaFilterDirty |= treeHiddenPostIds.remove(id);
+				threadFilterDirty |= overrideShowPostIds.remove(id);
 				break;
 			case PostHidingState.treeHidden:
 				if (!hiddenPostIds.contains(id)) {
 					hiddenPostIds.add(id);
+					threadFilterDirty = true;
 				}
 				if (!treeHiddenPostIds.contains(id)) {
 					treeHiddenPostIds.add(id);
+					metaFilterDirty = true;
 				}
-				overrideShowPostIds.remove(id);
+				threadFilterDirty |= overrideShowPostIds.remove(id);
 				break;
 		}
-		// invalidate cache
-		threadFilter = _makeThreadFilter();
-		_invalidate();
+		if (threadFilterDirty) {
+			threadFilter = _makeThreadFilter();
+		}
+		if (metaFilterDirty) {
+			metaFilter = _makeMetaFilter();
+		}
+		if (threadFilterDirty || metaFilterDirty) {
+			_invalidate();
+		}
 	}
 	PostHidingState getPostHiding(int id) {
 		if (treeHiddenPostIds.contains(id)) {
