@@ -617,6 +617,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	DateTime? tryAgainAt;
 	Captcha4ChanCustomChallenge? challenge;
 	int backgroundSlide = 0;
+	final GlobalKey<AdaptiveTextFieldState> _solutionKey = GlobalKey(debugLabel: '_Captcha4ChanCustomState._solutionKey');
 	late final FocusNode _solutionNode;
 	late final TextEditingController _solutionController;
 	List<double> _guessConfidences = List.generate(6, (i) => 1.0);
@@ -1246,6 +1247,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 											)
 										},
 										child: AdaptiveTextField(
+											key: _solutionKey,
 											focusNode: _solutionNode,
 											enableIMEPersonalizedLearning: false,
 											keyboardType: TextInputType.visiblePassword,
@@ -1434,6 +1436,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																						onTap: () {
 																							_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
 																							_solutionNode.requestFocus();
+																							_solutionKey.currentState?.editableText?.requestKeyboard();
 																							setState(() {});
 																						},
 																						child: SizedBox(height: 50 * scaleFactor)
