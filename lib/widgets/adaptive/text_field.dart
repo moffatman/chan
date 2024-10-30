@@ -74,7 +74,7 @@ class AdaptiveTextField extends StatefulWidget {
 class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 	final _textFieldKey = GlobalKey(debugLabel: 'AdaptiveTextFieldState._textFieldKey');
 
-	 static Widget _defaultMaterialContextMenuBuilder(BuildContext context, EditableTextState editableTextState) {
+	static Widget _defaultMaterialContextMenuBuilder(BuildContext context, EditableTextState editableTextState) {
 		return AdaptiveTextSelectionToolbar.editableText(
 			editableTextState: editableTextState,
 		);
