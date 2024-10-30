@@ -18,6 +18,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
@@ -531,49 +532,82 @@ class ThreadRow extends StatelessWidget {
 			final headerLines = (headerRow.fold(0, (s, e) => s + e.toPlainText().length) / charactersPerLine).lazyCeil();
 			maxSpanLines = totalLines - headerLines;
 		}
+		TextSpan? makeCornerIconAppendText() => latestThread.attachments.length > 1 ? TextSpan(
+			children: [
+				TextSpan(text: '${latestThread.attachments.length} '),
+				TextSpan(
+					text: String.fromCharCode(CupertinoIcons.photo_on_rectangle.codePoint),
+					style: TextStyle(
+						fontSize: 16,
+						height: kTextHeightNone,
+						fontFamily: CupertinoIcons.photo_on_rectangle.fontFamily,
+						color: theme.primaryColor,
+						package: CupertinoIcons.photo_on_rectangle.fontPackage
+					)
+				),
+				const TextSpan(text: ' ')
+			]
+		) : null;
 		List<Widget> rowChildren() {
 			final Widget? attachments;
 			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) {
+				final attachment = latestThread.attachments.first;
+				final taggedAttachment = TaggedAttachment(
+					attachment: attachment,
+					semanticParentIds: semanticParentIds,
+					postId: latestThread.id,
+					imageboard: imageboard
+				);
 				attachments = Padding(
-					padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: latestThread.attachments.map((attachment) {
-							final taggedAttachment = TaggedAttachment(
-								attachment: attachment,
-								semanticParentIds: semanticParentIds,
-								postId: latestThread.id,
-								imageboard: imageboard
-							);
-							return PopupAttachment(
-								attachment: attachment,
-								child: CupertinoInkwell(
-									padding: EdgeInsets.zero,
-									minimumSize: Size.zero,
-									onPressed: onThumbnailTap?.bind1(taggedAttachment),
-									child: ConstrainedBox(
-										constraints: BoxConstraints(
-											minHeight: attachment.type == AttachmentType.url ? 75 : 51,
-											maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
-										),
-										child: AttachmentThumbnail(
-											onLoadError: onThumbnailLoadError,
-											attachment: attachment,
-											mayObscure: true,
-											hero: taggedAttachment,
-											fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-											shrinkHeight: !settings.squareThumbnails,
-											hide: hideThumbnails,
-											cornerIcon: AttachmentThumbnailCornerIcon(
-												backgroundColor: backgroundColor,
-												borderColor: borderColor,
-												size: null
-											)
+					padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8, bottom: 8) : const EdgeInsets.only(right: 8, bottom: 8),
+					child: WidgetDecoration(
+						position: DecorationPosition.background,
+						// Major hack to keep Hero looking OK-ish
+						decoration: Stack(
+							fit: StackFit.expand,
+							children: latestThread.attachments.skip(1).map((a) => Hero(
+								tag: TaggedAttachment(
+									attachment: a,
+									semanticParentIds: semanticParentIds,
+									postId: latestThread.id,
+									imageboard: imageboard
+								),
+								child: const SizedBox.shrink(),
+								flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+									// Just always use the gallery one
+									return (direction == HeroFlightDirection.push ? toContext.widget as Hero : fromContext.widget as Hero).child;
+								}
+							)).toList(),
+						),
+						child: PopupAttachment(
+							attachment: attachment,
+							child: CupertinoInkwell(
+								padding: EdgeInsets.zero,
+								minimumSize: Size.zero,
+								onPressed: onThumbnailTap?.bind1(taggedAttachment),
+								child: ConstrainedBox(
+									constraints: BoxConstraints(
+										minHeight: attachment.type == AttachmentType.url ? 75 : 51,
+										maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
+									),
+									child: AttachmentThumbnail(
+										onLoadError: onThumbnailLoadError,
+										attachment: attachment,
+										mayObscure: true,
+										hero: taggedAttachment,
+										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+										shrinkHeight: !settings.squareThumbnails,
+										hide: hideThumbnails,
+										cornerIcon: AttachmentThumbnailCornerIcon(
+											backgroundColor: backgroundColor,
+											borderColor: borderColor,
+											size: null,
+											appendText: makeCornerIconAppendText()
 										)
 									)
 								)
-							);
-						}).expand((x) => [x, const SizedBox(height: 8)]).toList()
+							)
+						)
 					)
 				);
 			}
@@ -742,22 +776,7 @@ class ThreadRow extends StatelessWidget {
 												(false, true) => Alignment.topRight,
 												(false, false) => Alignment.bottomRight
 											},
-											appendText: latestThread.attachments.length > 1 ? TextSpan(
-												children: [
-													TextSpan(text: '${latestThread.attachments.length} '),
-													TextSpan(
-														text: String.fromCharCode(Adaptive.icons.photos.codePoint),
-														style: TextStyle(
-															fontSize: 16,
-															height: kTextHeightNone,
-															fontFamily: Adaptive.icons.photos.fontFamily,
-															color: theme.primaryColor,
-															package: Adaptive.icons.photos.fontPackage
-														)
-													),
-													const TextSpan(text: ' ')
-												]
-											) : null
+											appendText: makeCornerIconAppendText()
 										),
 										hero: taggedAttachment
 									)
