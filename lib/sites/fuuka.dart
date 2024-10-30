@@ -190,8 +190,15 @@ class FuukaArchive extends ImageboardSiteArchive {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/post/$id'), options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			validateStatus: (_) => true,
 		));
+		if (response.statusCode == 404) {
+			throw PostNotFoundException(board, id);
+		}
+		if ((response.statusCode ?? 400) >= 400) {
+			throw HTTPStatusException(response.statusCode ?? 0);
+		}
 		final thread = await _makeThread(parse(response.data).body!, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!), priority: priority);
 		return thread.posts.firstWhere((t) => t.id == id);
 	}
