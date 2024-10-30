@@ -1618,6 +1618,24 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) => searchArchives(query, page: page, lastResult: lastResult, priority: priority);
 
+	Future<void> _ensureSearchResultCookiesMemoized(ImageboardArchiveSearchResult result) async {
+		if (result.thread case Thread t) {
+			for (final a in t.attachments) {
+				await _ensureCookiesMemoizedForAttachment(a);
+			}
+			for (final p in t.posts_) {
+				for (final a in p.attachments_) {
+					await _ensureCookiesMemoizedForAttachment(a);
+				}
+			}
+		}
+		else if (result.post case Post p) {
+			for (final a in p.attachments_) {
+				await _ensureCookiesMemoizedForAttachment(a);
+			}
+		}
+	}
+
 	Future<ImageboardArchiveSearchResultPage> searchArchives(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
 		final errors = <ImageboardSiteArchive, Object>{};
 		for (final archive in archives) {
@@ -1625,7 +1643,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				continue;
 			}
 			try {
-				return await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic);
+				final result = await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic);
+				result.posts.forEach(_ensureSearchResultCookiesMemoized);
+				return result;
 			}
 			catch (e, st) {
 				if (e is! BoardNotFoundException) {
@@ -1642,7 +1662,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				// No need to check disabledArchiveNames, they can't fail to begin with
 				if (_isCloudflareNotAllowedException(error.value)) {
 					try {
-						return await error.key.search(query, page: page, lastResult: lastResult, priority: priority);
+						final result = await error.key.search(query, page: page, lastResult: lastResult, priority: priority);
+						result.posts.forEach(_ensureSearchResultCookiesMemoized);
+						return result;
 					}
 					catch (e, st) {
 						if (e is! BoardNotFoundException) {
