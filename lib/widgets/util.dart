@@ -1980,6 +1980,13 @@ class RenderGreedySizeCachingBox extends RenderProxyBox {
 		required this.heightResetThreshold
 	});
 
+	@override
+	void setupParentData(RenderBox child) {
+    if (child.parentData is! BoxParentData) {
+      child.parentData = BoxParentData();
+    }
+  }
+
   @override
   void performLayout() {
     if (child != null) {
@@ -1994,14 +2001,38 @@ class RenderGreedySizeCachingBox extends RenderProxyBox {
 			_cachedSize = size;
 		}
 		size = constraints.constrain(Size(math.max(_cachedSize.width, size.width), math.max(_cachedSize.height, size.height)));
+		(child?.parentData as BoxParentData?)?.offset = alignment.inscribe(child!.size, Offset.zero & size).topLeft;
 		_cachedSize = size;
   }
 
 	@override
   void paint(PaintingContext context, Offset offset) {
     if (child != null) {
-			context.paintChild(child!, alignment.inscribe(child!.size, offset & size).topLeft);
+			context.paintChild(child!, (child!.parentData as BoxParentData).offset + offset);
     }
+  }
+
+	@override
+	void applyPaintTransform(RenderBox child, Matrix4 transform) {
+    final Offset offset = (child.parentData! as BoxParentData).offset;
+    transform.translate(offset.dx, offset.dy);
+  }
+
+	@override
+  bool hitTestChildren(BoxHitTestResult result, { required Offset position }) {
+    final RenderBox? child = this.child;
+    if (child != null) {
+      final BoxParentData childParentData = child.parentData! as BoxParentData;
+      return result.addWithPaintOffset(
+        offset: childParentData.offset,
+        position: position,
+        hitTest: (BoxHitTestResult result, Offset transformed) {
+          assert(transformed == position - childParentData.offset);
+          return child.hitTest(result, position: transformed);
+        },
+      );
+    }
+    return false;
   }
 }
 
@@ -2032,6 +2063,114 @@ class GreedySizeCachingBox extends SingleChildRenderObjectWidget {
 		renderObject.alignment = alignment;
 		renderObject.widthResetThreshold = widthResetThreshold;
 		renderObject.heightResetThreshold = heightResetThreshold;
+	}
+}
+
+class RenderWidthSnappingBox extends RenderProxyBox {
+	RenderWidthSnappingBox({
+		required double factor,
+		required Alignment alignment
+	}) : _factor = factor, _alignment = alignment;
+
+	double _factor;
+	set factor(double newValue) {
+		if (newValue == _factor) {
+			return;
+		}
+		_factor = newValue;
+		markNeedsLayout();
+	}
+	Alignment _alignment;
+	set alignment(Alignment newValue) {
+		if (newValue == _alignment) {
+			return;
+		}
+		_alignment = newValue;
+		markNeedsLayout();
+	}
+
+	@override
+	void setupParentData(RenderBox child) {
+    if (child.parentData is! BoxParentData) {
+      child.parentData = BoxParentData();
+    }
+  }
+
+  @override
+  void performLayout() {
+    if (child != null) {
+      child!.layout(constraints, parentUsesSize: true);
+      if (child!.size.width >= (constraints.maxWidth * _factor)) {
+				// Snap
+				size = Size(constraints.maxWidth, child!.size.height);
+				(child!.parentData as BoxParentData).offset = _alignment.inscribe(child!.size, Offset.zero & size).topLeft;
+			}
+			else {
+				// Don't snap
+				size = child!.size;
+				(child!.parentData as BoxParentData).offset = Offset.zero;
+			}
+    }
+		else {
+      size = computeSizeForNoChild(constraints);
+    }
+  }
+
+	@override
+  void paint(PaintingContext context, Offset offset) {
+    if (child != null) {
+			context.paintChild(child!, offset + (child!.parentData as BoxParentData).offset);
+    }
+  }
+
+	@override
+	void applyPaintTransform(RenderBox child, Matrix4 transform) {
+    final Offset offset = (child.parentData! as BoxParentData).offset;
+    transform.translate(offset.dx, offset.dy);
+  }
+
+	@override
+  bool hitTestChildren(BoxHitTestResult result, { required Offset position }) {
+    final RenderBox? child = this.child;
+    if (child != null) {
+      final BoxParentData childParentData = child.parentData! as BoxParentData;
+      return result.addWithPaintOffset(
+        offset: childParentData.offset,
+        position: position,
+        hitTest: (BoxHitTestResult result, Offset transformed) {
+          assert(transformed == position - childParentData.offset);
+          return child.hitTest(result, position: transformed);
+        },
+      );
+    }
+    return false;
+  }
+}
+
+class WidthSnappingBox extends SingleChildRenderObjectWidget {
+	/// At what scalar factor of maximum width should the container be snapped to fill
+	final double factor;
+	final Alignment alignment;
+
+	const WidthSnappingBox({
+		required super.child,
+		required this.factor,
+		this.alignment = Alignment.topLeft,
+		super.key
+	});
+
+	@override
+	RenderWidthSnappingBox createRenderObject(BuildContext context) {
+		return RenderWidthSnappingBox(
+			factor: factor,
+			alignment: alignment
+		);
+	}
+	
+	@override
+	void updateRenderObject(BuildContext context, RenderWidthSnappingBox renderObject) {
+		renderObject.factor = factor;
+		renderObject.alignment = alignment;
 	}
 }
 
