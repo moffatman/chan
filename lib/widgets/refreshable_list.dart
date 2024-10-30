@@ -3911,13 +3911,17 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 
 		// The scrollController's maxScrollExtent is not trustworthy
-		final double maxScrollExtent;
+		double maxScrollExtent;
 		if (_items.last.cachedHeight != null && _items.last.cachedOffset != null) {
 			final footerHeight = state?.widget.footer != null ? 40 : 0; // Lazy estimate
 			maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset;
 		}
 		else {
 			maxScrollExtent = scrollController!.position.maxScrollExtent - (state?.updatingNow.value != null ? 64 : 0);
+		}
+		// Give up and fallback
+		if (maxScrollExtent <= 0) {
+			maxScrollExtent = scrollController!.position.maxScrollExtent;
 		}
 		double finalDestination = finalDestinationUnclamped.clamp(0, maxScrollExtent);
 		if (scrollController!.position.pixels != finalDestination) {
