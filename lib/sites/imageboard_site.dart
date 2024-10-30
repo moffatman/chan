@@ -1462,6 +1462,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
 		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');
 	}
+
+	static bool _isCloudflareNotAllowedException(Object e) => switch (e) {
+		CloudflareHandlerNotAllowedException() => true,
+		DioError dioError => dioError.error is CloudflareHandlerNotAllowedException,
+		_ => false
+	};
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) async {
 		final Map<ImageboardSiteArchive, Object> errors = {};
 		for (final archive in archives) {
@@ -1484,7 +1490,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			// Try again, allowing cloudflare clearance
 			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
 				// No need to check disabledArchiveNames, they can't fail to begin with
-				if (error.value is CloudflareHandlerNotAllowedException) {
+				if (_isCloudflareNotAllowedException(error.value)) {
 					try {
 						final post = await error.key.getPost(board, id, priority: priority);
 						post.archiveName = error.key.name;
@@ -1568,7 +1574,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			if (priority != RequestPriority.cosmetic) {
 				// Try again, allowing cloudflare clearance
 				for (final error in errors.entries.toList(growable: false)) { // concurrent modification
-					if (error is CloudflareHandlerNotAllowedException) {
+					if (_isCloudflareNotAllowedException(error.value)) {
 						try {
 							final thread_ = await error.key.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
 							await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
@@ -1634,7 +1640,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			// Try again, allowing cloudflare clearance
 			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
 				// No need to check disabledArchiveNames, they can't fail to begin with
-				if (error.value is CloudflareHandlerNotAllowedException) {
+				if (_isCloudflareNotAllowedException(error.value)) {
 					try {
 						return await error.key.search(query, page: page, lastResult: lastResult, priority: priority);
 					}
