@@ -575,6 +575,10 @@ class VideoServer {
 		}
 	}
 
+	Future<void> cleanupCachedDownloadTreeFromUri(Uri uri) async {
+		await cleanupCachedDownloadTree(_encodeDigest(uri));
+	}
+
 	static const _kRootUriName = '__chanceroot';
 
 	Uri getUri(String digest) {

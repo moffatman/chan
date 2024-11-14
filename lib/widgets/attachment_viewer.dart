@@ -405,12 +405,12 @@ class AttachmentViewerController extends ChangeNotifier {
 		};
 	}
 
-	Future<Uri> _getGoodSource({required RequestPriority priority}) async {
+	Future<Uri> _getGoodSource({required RequestPriority priority, bool force = false}) async {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
 		final alreadyCached = await AttachmentCache.optimisticallyFindFile(attachment);
-		if (alreadyCached != null) {
+		if (!force && alreadyCached != null) {
 			return alreadyCached.uri;
 		}
 		final attachmentUrl = Uri.parse(attachment.url);
@@ -582,27 +582,34 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			final startTime = DateTime.now();
 			if (soundSource == null && (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf)) {
-				_goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive);
-				_recordUrlTime(_goodImageSource!, attachment.type, DateTime.now().difference(startTime));
-				if (_goodImageSource?.scheme == 'file') {
-					_onCacheCompleted(File(_goodImageSource!.toFilePath()));
+				final url = _goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive, force: force);
+				if (force) {
+					await clearDiskCachedImage(url.toString());
+				}
+				_recordUrlTime(url, attachment.type, DateTime.now().difference(startTime));
+				if (url.scheme == 'file') {
+					_onCacheCompleted(File(url.toFilePath()));
 				}
 				if (_isDisposed) return;
 				notifyListeners();
 				if (background && attachment.type == AttachmentType.image) {
 					await ExtendedNetworkImageProvider(
-						goodImageSource.toString(),
+						url.toString(),
 						cache: true,
-						headers: getHeaders(goodImageSource!)
+						headers: getHeaders(url)
 					).getNetworkImageData();
-					final file = await getCachedImageFile(goodImageSource.toString());
+					final file = await getCachedImageFile(url.toString());
 					if (file != null && _cachedFile?.path != file.path) {
 						_onCacheCompleted(file);
 					}
 				}
 			}
 			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
-				final url = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive);
+				final url = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive, force: force);
+				if (force) {
+					await VideoServer.instance.interruptOngoingDownloadFromUri(url);
+					await VideoServer.instance.cleanupCachedDownloadTreeFromUri(url);
+				}
 				bool transcode = false;
 				if (attachment.type == AttachmentType.webm && url.path.endsWith('.webm')) {
 					transcode |= Settings.featureWebmTranscodingForPlayback && settings.webmTranscoding == WebmTranscodingSetting.always;
