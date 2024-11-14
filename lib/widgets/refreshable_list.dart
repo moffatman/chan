@@ -3876,7 +3876,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			}
 		}
 		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
-			throw Exception('Scrolling timed out');
+			throw TimeoutException('Scrolling timed out');
 		}
 		if (_isDisposed) {
 			return;

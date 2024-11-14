@@ -1313,8 +1313,13 @@ class BoardPageState extends State<BoardPage> {
 																								_listController.state?.closeSearch();
 																							}
 																							else {
-																								await scrollToTop();
-																								_page = _listController.items.first.item.currentPage ?? 1;
+																								try {
+																									await scrollToTop();
+																									_page = _listController.items.first.item.currentPage ?? 1;
+																								}
+																								on TimeoutException {
+																									// Sometimes this happens. Don't do anything
+																								}
 																							}
 																						},
 																						color: primaryColorWithBrightness80,
