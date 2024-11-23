@@ -1,4 +1,5 @@
 import 'package:chan/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -153,13 +154,27 @@ class _AncestorScrollBuilderState extends State<AncestorScrollBuilder> {
 }
 
 class ScrollTrackerNavigatorObserver extends NavigatorObserver {
+	static bool _isWeakIsh(Route route) {
+		return route is TransparentRoute || route is PopupRoute;
+	}
+	
 	@override
 	void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-		ScrollTracker.instance.navigatorDidPush();
+		if (_isWeakIsh(route)) {
+			ScrollTracker.instance.weakNavigatorDidPush();
+		}
+		else {
+			ScrollTracker.instance.navigatorDidPush();
+		}
 	}
 
 	@override
 	void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-		ScrollTracker.instance.navigatorDidPop();
+		if (_isWeakIsh(route)) {
+			ScrollTracker.instance.weakNavigatorDidPop();
+		}
+		else {
+			ScrollTracker.instance.navigatorDidPop();
+		}
 	}
 }
