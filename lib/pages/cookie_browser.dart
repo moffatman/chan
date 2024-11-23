@@ -1,6 +1,8 @@
 
 import 'package:chan/services/dark_mode_browser.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/report_bug.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +62,9 @@ class _CookieBrowserState extends State<CookieBrowser> {
 	Widget _buildBody() {
 		if (_initialized.hasError) {
 			return Center(
-				child: ErrorMessageCard('${_initialized.error}')
+				child: ErrorMessageCard(_initialized.error!.toStringDio(), remedies: {
+					'Report bug': () => reportBug(_initialized.error!, _initialized.stackTrace!)
+				})
 			);
 		}
 		if (!_initialized.hasData) {

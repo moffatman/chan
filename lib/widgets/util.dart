@@ -462,7 +462,7 @@ class TrulyTransparentRoute<T> extends PageRoute<T> {
 
 class ErrorMessageCard extends StatelessWidget {
 	final String message;
-	final Map<String, VoidCallback> remedies;
+	final Map<String, FutureOr<void> Function()> remedies;
 
 	const ErrorMessageCard(this.message, {
 		this.remedies = const {},
@@ -477,30 +477,44 @@ class ErrorMessageCard extends StatelessWidget {
 				color: ChanceTheme.primaryColorOf(context),
 				borderRadius: const BorderRadius.all(Radius.circular(8))
 			),
-			child: Column(
-				mainAxisSize: MainAxisSize.min,
-				children: [
-					Icon(CupertinoIcons.exclamationmark_triangle_fill, color: ChanceTheme.backgroundColorOf(context)),
-					const SizedBox(height: 8),
-					Flexible(
-						child: Text(
-							message,
-							style: TextStyle(color: ChanceTheme.backgroundColorOf(context)),
-							textAlign: TextAlign.center,
-							overflow: TextOverflow.fade
-						)
-					),
-					for (final remedy in remedies.entries) ...[
+			child: IntrinsicWidth(
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
+					crossAxisAlignment: CrossAxisAlignment.stretch,
+					children: [
+						Icon(CupertinoIcons.exclamationmark_triangle_fill, color: ChanceTheme.backgroundColorOf(context)),
 						const SizedBox(height: 8),
-						CupertinoButton(
-							color: ChanceTheme.backgroundColorOf(context),
-							onPressed: remedy.value,
-							child: Text(remedy.key, style: TextStyle(
-								color: ChanceTheme.primaryColorOf(context)
-							), textAlign: TextAlign.center)
-						)
+						Flexible(
+							child: Text(
+								message,
+								style: TextStyle(color: ChanceTheme.backgroundColorOf(context)),
+								textAlign: TextAlign.center,
+								overflow: TextOverflow.fade
+							)
+						),
+						if (remedies.isNotEmpty) const SizedBox(height: 8),
+						for (final remedy in remedies.entries) ...[
+							const SizedBox(height: 8),
+							CupertinoButton(
+								color: ChanceTheme.backgroundColorOf(context),
+								onPressed: () async {
+									try {
+										await remedy.value.call();
+									}
+									catch (e, st) {
+										Future.error(e, st); // crashlytics
+										if (context.mounted) {
+											alertError(context, e, st);
+										}
+									}
+								},
+								child: Text(remedy.key, style: TextStyle(
+									color: ChanceTheme.primaryColorOf(context)
+								), textAlign: TextAlign.center)
+							)
+						]
 					]
-				]
+				)
 			)
 		);
 	}

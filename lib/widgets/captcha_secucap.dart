@@ -5,6 +5,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +46,7 @@ class CaptchaSecucapChallenge {
 }
 
 class _CaptchaSecucapState extends State<CaptchaSecucap> {
-	String? errorMessage;
+	(Object, StackTrace)? error;
 	CaptchaSecucapChallenge? challenge;
 	late final FocusNode _solutionNode;
 
@@ -75,7 +76,7 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 	void _tryRequestChallenge() async {
 		try {
 			setState(() {
-				errorMessage = null;
+				error = null;
 				challenge = null;
 			});
 			challenge = await _requestChallenge();
@@ -86,17 +87,29 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 			print(e);
 			print(st);
 			setState(() {
-				errorMessage = e.toStringDio();
+				error = (e, st);
 			});
 		}
 	}
 
 	Widget _build(BuildContext context) {
-		if (errorMessage != null) {
+		if (error != null) {
 			return Center(
 				child: Column(
 					children: [
-						Text(errorMessage!),
+						Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								Flexible(
+									child: Text(error!.$1.toStringDio())
+								),
+								const SizedBox(width: 8),
+								AdaptiveIconButton(
+									onPressed: () => alertError(context, error!.$1, error!.$2, barrierDismissible: true),
+									icon: const Icon(CupertinoIcons.info)
+								)
+							]
+						),
 						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
 							icon: const Icon(CupertinoIcons.refresh)

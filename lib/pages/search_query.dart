@@ -7,6 +7,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -63,7 +64,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		catch (e, st) {
 			print(e);
 			print(st);
-			result = AsyncSnapshot.withError(ConnectionState.done, e);
+			result = AsyncSnapshot.withError(ConnectionState.done, e, st);
 			if (mounted) setState(() {});
 		}
 	}
@@ -158,16 +159,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	Widget _build(BuildContext context, SelectedSearchResult? currentValue, ValueChanged<SelectedSearchResult?> setValue) {
 		if (result.error != null) {
 			return Center(
-				child: Column(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						ErrorMessageCard(result.error!.toStringDio()),
-						CupertinoButton(
-							onPressed: _runQuery,
-							child: const Text('Retry')
-						)
-					]
-				)
+				child: ErrorMessageCard(result.error!.toStringDio(), remedies: {
+					'Retry': _runQuery,
+					'Report bug': () => reportBug(result.error!, result.stackTrace!)
+				})
 			);
 		}
 		else if (!loading && result.hasData) {

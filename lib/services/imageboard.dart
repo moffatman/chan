@@ -40,15 +40,15 @@ class Imageboard extends ChangeNotifier {
 	late final Persistence persistence;
 	late final ThreadWatcher threadWatcher;
 	late final Notifications notifications;
-	String? setupErrorMessage;
-	String? boardFetchErrorMessage;
+	(Object, StackTrace)? setupError;
+	(Object, StackTrace)? boardFetchError;
 	bool boardsLoading = false;
 	bool initialized = false;
 	bool _persistenceInitialized = false;
 	bool _threadWatcherInitialized = false;
 	bool _notificationsInitialized = false;
 	final String key;
-	bool get seemsOk => initialized && !(boardsLoading && persistence.boards.isEmpty) && setupErrorMessage == null && boardFetchErrorMessage == null;
+	bool get seemsOk => initialized && !(boardsLoading && persistence.boards.isEmpty) && setupError == null && boardFetchError == null;
 	final ThreadWatcherController? threadWatcherController;
 
 	Imageboard({
@@ -73,7 +73,7 @@ class Imageboard extends ChangeNotifier {
 		}
 		catch (e, st) {
 			Future.error(e, st); // Crashlytics
-			setupErrorMessage = e.toStringDio();
+			setupError = (e, st);
 			notifyListeners();
 		}
 	}
@@ -119,7 +119,7 @@ class Imageboard extends ChangeNotifier {
 			}
 		}
 		catch (e, st) {
-			setupErrorMessage = e.toStringDio();
+			setupError = (e, st);
 			print('Error initializing $key');
 			print(e);
 			print(st);
@@ -135,7 +135,7 @@ class Imageboard extends ChangeNotifier {
 	Future<void> setupBoards() async {
 		try {
 			boardsLoading = true;
-			boardFetchErrorMessage = null;
+			boardFetchError = null;
 			notifyListeners();
 			final freshBoards = await site.getBoards(priority: RequestPriority.interactive);
 			if (freshBoards.isEmpty) {
@@ -147,7 +147,7 @@ class Imageboard extends ChangeNotifier {
 			print('Error setting up boards for $key');
 			print(error);
 			print(st);
-			boardFetchErrorMessage = error.toStringDio();
+			boardFetchError = (error, st);
 		}
 		boardsLoading = false;
 		notifyListeners();
@@ -484,8 +484,7 @@ class ImageboardRegistry extends ChangeNotifier {
 
 	ImageboardRegistry._();
 	
-	String? setupError;
-	StackTrace? setupStackTrace;
+	(Object, StackTrace)? setupError;
 	final Map<String, Imageboard> _sites = {};
 	int get count => _sites.length;
 	Iterable<Imageboard> get imageboardsIncludingUninitialized => _sites.values;
@@ -570,8 +569,7 @@ class ImageboardRegistry extends ChangeNotifier {
 				}
 			}
 			catch (e, st) {
-				setupError = 'Fatal setup error\n${e.toStringDio()}';
-				setupStackTrace = st;
+				setupError = (e, st);
 				print(e);
 				print(st);
 			}
@@ -603,7 +601,7 @@ class ImageboardRegistry extends ChangeNotifier {
 	Future<void> retryFailedBoardSetup() async {
 		final futures = <Future>[];
 		for (final i in imageboards) {
-			if (i.boardFetchErrorMessage != null) {
+			if (i.boardFetchError != null) {
 				futures.add(i.setupBoards());
 			}
 		}

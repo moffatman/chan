@@ -1711,14 +1711,10 @@ class ThreadPageState extends State<ThreadPage> {
 																	)
 																),
 																remedies: {
-																	if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => AdaptiveFilledButton(
-																		child: const Text('Try archive'),
-																		onPressed: () async {
-																			persistentState.useArchive = true;
-																			await persistentState.save();
-																			await updater();
-																		}
-																	)
+																	if (site.archives.isNotEmpty) ThreadNotFoundException: ('Try archive', () async {
+																		persistentState.useArchive = true;
+																		await persistentState.save();
+																	})
 																},
 																listUpdater: (options) async {
 																	if (persistentState.disableUpdates && (persistentState.useArchive == (persistentState.thread?.archiveName != null))) {

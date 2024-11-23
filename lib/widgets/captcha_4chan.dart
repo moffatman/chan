@@ -684,7 +684,7 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 typedef _PickerStuff = ({GlobalKey key, UniqueKey wrapperKey, FixedExtentScrollController controller});
 
 class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
-	String? errorMessage;
+	(Object, StackTrace)? error;
 	DateTime? tryAgainAt;
 	Captcha4ChanCustomChallenge? challenge;
 	int backgroundSlide = 0;
@@ -865,7 +865,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	void _tryRequestChallenge() async {
 		try {
 			setState(() {
-				errorMessage = null;
+				error = null;
 				tryAgainAt = null;
 				challenge?.dispose();
 				challenge = null;
@@ -905,7 +905,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			print(st);
 			if (!mounted) return;
 			setState(() {
-				errorMessage = e.toStringDio();
+				error = (e, st);
 			});
 		}
 	}
@@ -1063,13 +1063,13 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		final exception = widget.initialChallengeException;
 		if (exception != null) {
 			if (exception is Captcha4ChanCustomChallengeException) {
-				errorMessage = exception.message;
+				error = (exception, StackTrace.current);
 				if (exception is Captcha4ChanCustomChallengeCooldownException) {
 					tryAgainAt = exception.tryAgainAt;
 				}
 			}
 			else {
-				errorMessage = exception.toString();
+				error = (exception, StackTrace.current);
 			}
 		}
 		else if (guess != null) {
@@ -1129,12 +1129,24 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Widget _build(BuildContext context) {
-		if (errorMessage != null) {
+		if (error != null) {
 			return Center(
 				child: Column(
 					children: [
-						Text(errorMessage!),
-						if (errorMessage?.contains('Posting on this board requires a verified email') ?? false) ...[
+						Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								Flexible(
+									child: Text(error!.$1.toStringDio())
+								),
+								const SizedBox(width: 8),
+								AdaptiveIconButton(
+									onPressed: () => alertError(context, error!.$1, error!.$2, barrierDismissible: true),
+									icon: const Icon(CupertinoIcons.info)
+								)
+							]
+						),
+						if (error?.$1.toString().contains('Posting on this board requires a verified email') ?? false) ...[
 							const SizedBox(height: 16),
 							const ChanceDivider(),
 							const SizedBox(height: 16),

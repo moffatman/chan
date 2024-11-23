@@ -28,6 +28,7 @@ import 'package:chan/services/media.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
+import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/rlimit.dart';
 import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
@@ -426,10 +427,8 @@ class _ChanAppState extends State<ChanApp> {
 												color: ChanceTheme.backgroundColorOf(context),
 												child: Center(
 													child: ImageboardRegistry.instance.setupError != null ? Builder(
-														builder: (context) => ErrorMessageCard(ImageboardRegistry.instance.setupError!, remedies: {
-															if (ImageboardRegistry.instance.setupStackTrace != null) 'More details': () {
-																alertError(context, ImageboardRegistry.instance.setupError!, ImageboardRegistry.instance.setupStackTrace!);
-															},
+														builder: (context) => ErrorMessageCard('Fatal setup error\n${ImageboardRegistry.instance.setupError!.$1.toStringDio()}', remedies: {
+															'Report bug': () => reportBug(ImageboardRegistry.instance.setupError!.$1, ImageboardRegistry.instance.setupError!.$2),
 															'Try editing sites': () async {
 																final list = Settings.instance.settings.contentSettings.siteKeys.toList();
 																await editStringList(

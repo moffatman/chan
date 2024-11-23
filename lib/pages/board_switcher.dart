@@ -73,7 +73,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	final Map<String, List<ImageboardBoard>> typeahead = {};
 	final Set<String> typeaheadLoading = {};
 	String searchString = '';
-	String? errorMessage;
 	late final ScrollController scrollController;
 	late final ValueNotifier<Color?> _backgroundColor;
 	int _pointersDownCount = 0;

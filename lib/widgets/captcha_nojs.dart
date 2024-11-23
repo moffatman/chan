@@ -6,7 +6,9 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' show Document;
 import 'package:html/parser.dart' show parse;
@@ -103,7 +105,7 @@ class CaptchaNoJSChallenge {
 }
 
 class _CaptchaNoJSState extends State<CaptchaNoJS> {
-	String? errorMessage;
+	(Object, StackTrace)? error;
 	CaptchaNoJSChallenge? challenge;
 
 	List<List<CaptchaNoJSSubimage>> _makeSubimages(ui.Image image, int columns, int rows) {
@@ -184,16 +186,16 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 	void _tryRequestChallenge() async {
 		try {
 			setState(() {
-				errorMessage = null;
+				error = null;
 				challenge?.dispose();
 				challenge = null;
 			});
 			challenge = await _requestChallenge();
 			setState(() {});
 		}
-		catch(e) {
+		catch(e, st) {
 			setState(() {
-				errorMessage = e.toStringDio();
+				error = (e, st);
 			});
 		}
 	}
@@ -205,7 +207,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		}
 		final chal = challenge!;
 		setState(() {
-			errorMessage = null;
+			error = null;
 			challenge = null;
 		});
 		final submissionResponse = await widget.site.client.postUri(
@@ -250,7 +252,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			print(e);
 			print(st);
 			setState(() {
-				errorMessage = e.toStringDio();
+				error = (e, st);
 			});
 		}
 	}
@@ -262,14 +264,26 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 	}
 
 	Widget _build(BuildContext context) {
-		if (errorMessage != null) {
+		if (error != null) {
 			return Center(
 				child: Column(
 					children: [
-						Text(errorMessage!),
+						Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								Flexible(
+									child: Text(error!.$1.toStringDio())
+								),
+								const SizedBox(width: 8),
+								AdaptiveIconButton(
+									onPressed: () => alertError(context, error!.$1, error!.$2, barrierDismissible: true),
+									icon: const Icon(CupertinoIcons.info)
+								)
+							]
+						),
 						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
-							icon: const Text('Retry')
+							icon: const Icon(CupertinoIcons.refresh)
 						)
 					]
 				)

@@ -50,7 +50,7 @@ class CaptchaJsChanChallenge {
 }
 
 class _CaptchaJsChanState extends State<CaptchaJsChan> {
-	String? errorMessage;
+	(Object, StackTrace)? error;
 	CaptchaJsChanChallenge? challenge;
 	final selected = <int>{};
 	late final TextEditingController controller;
@@ -90,7 +90,7 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 	void _tryRequestChallenge() async {
 		try {
 			setState(() {
-				errorMessage = null;
+				error = null;
 				challenge = null;
 			});
 			challenge = await _requestChallenge();
@@ -103,7 +103,7 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 			print(e);
 			print(st);
 			setState(() {
-				errorMessage = e.toStringDio();
+				error = (e, st);
 			});
 		}
 	}
@@ -139,11 +139,23 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 	}
 
 	Widget _build(BuildContext context) {
-		if (errorMessage != null) {
+		if (error != null) {
 			return Center(
 				child: Column(
 					children: [
-						Text(errorMessage!),
+						Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								Flexible(
+									child: Text(error!.$1.toStringDio())
+								),
+								const SizedBox(width: 8),
+								AdaptiveIconButton(
+									onPressed: () => alertError(context, error!.$1, error!.$2, barrierDismissible: true),
+									icon: const Icon(CupertinoIcons.info)
+								)
+							]
+						),
 						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
 							icon: const Icon(CupertinoIcons.refresh)

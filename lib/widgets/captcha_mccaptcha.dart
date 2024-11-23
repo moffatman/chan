@@ -6,6 +6,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +50,7 @@ class CaptchaMcCaptchaChallenge {
 
 class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 	final _customPaintKey = GlobalKey(debugLabel: '_CaptchaMcCaptchaState._customPaintKey');
-	String? errorMessage;
+	(Object, StackTrace)? error;
 	CaptchaMcCaptchaChallenge? challenge;
 	/// Unit vector (0,1)
 	Offset? tappedPosition;
@@ -86,7 +87,7 @@ class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 		try {
 			challenge?.image.dispose();
 			setState(() {
-				errorMessage = null;
+				error = null;
 				challenge = null;
 				tappedPosition = null;
 			});
@@ -97,18 +98,30 @@ class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 			print(e);
 			print(st);
 			setState(() {
-				errorMessage = e.toStringDio();
+				error = (e, st);
 			});
 		}
 	}
 
 	Widget _build(BuildContext context) {
 		final challenge = this.challenge;
-		if (errorMessage != null) {
+		if (error != null) {
 			return Center(
 				child: Column(
 					children: [
-						Text(errorMessage!),
+						Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								Flexible(
+									child: Text(error!.$1.toStringDio())
+								),
+								const SizedBox(width: 8),
+								AdaptiveIconButton(
+									onPressed: () => alertError(context, error!.$1, error!.$2, barrierDismissible: true),
+									icon: const Icon(CupertinoIcons.info)
+								)
+							]
+						),
 						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
 							icon: const Icon(CupertinoIcons.refresh)

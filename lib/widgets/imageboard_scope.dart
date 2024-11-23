@@ -1,5 +1,7 @@
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/report_bug.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,15 +46,18 @@ class ImageboardScope extends StatelessWidget {
 						)
 					);
 				}
-				else if (b.setupErrorMessage != null) {
+				else if (b.setupError != null) {
 					return Center(
-						child: ErrorMessageCard('Error with imageboard $imageboardKey:\n${b.setupErrorMessage}')
+						child: ErrorMessageCard('Error with imageboard $imageboardKey:\n${b.setupError!.$1.toStringDio()}', remedies: {
+							'Report bug': () => reportBug(b.setupError!.$1, b.setupError!.$2)
+						})
 					);
 				}
-				else if (b.boardFetchErrorMessage != null) {
+				else if (b.boardFetchError != null) {
 					return Center(
-						child: ErrorMessageCard('Error fetching boards for imageboard $imageboardKey:\n${b.boardFetchErrorMessage}', remedies: {
-							'Retry': b.setupBoards
+						child: ErrorMessageCard('Error fetching boards for imageboard $imageboardKey:\n${b.boardFetchError!.$1.toStringDio()}', remedies: {
+							'Retry': b.setupBoards,
+							'Report bug': () => reportBug(b.boardFetchError!.$1, b.boardFetchError!.$2)
 						})
 					);
 				}

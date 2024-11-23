@@ -52,7 +52,7 @@ class CaptchaSecurimageChallenge {
 }
 
 class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
-	String? errorMessage;
+	(Object, StackTrace)? error;
 	CaptchaSecurimageChallenge? challenge;
 	late final FocusNode _solutionNode;
 
@@ -95,7 +95,7 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 	void _tryRequestChallenge() async {
 		try {
 			setState(() {
-				errorMessage = null;
+				error = null;
 				challenge = null;
 			});
 			challenge = await _requestChallenge();
@@ -106,17 +106,29 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 			print(e);
 			print(st);
 			setState(() {
-				errorMessage = e.toStringDio();
+				error = (e, st);
 			});
 		}
 	}
 
 	Widget _build(BuildContext context) {
-		if (errorMessage != null) {
+		if (error != null) {
 			return Center(
 				child: Column(
 					children: [
-						Text(errorMessage!),
+						Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								Flexible(
+									child: Text(error!.$1.toStringDio())
+								),
+								const SizedBox(width: 8),
+								AdaptiveIconButton(
+									onPressed: () => alertError(context, error!.$1, error!.$2, barrierDismissible: true),
+									icon: const Icon(CupertinoIcons.info)
+								)
+							]
+						),
 						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
 							icon: const Icon(CupertinoIcons.refresh)
