@@ -797,7 +797,7 @@ class MetaFilter implements Filter {
 		required List<int> initialTreeToxicRepliedToIds,
 		required List<Filterable>? list
 	}) {
-		if (list == null || !parent.supportsMetaFilter) {
+		if (list == null || (!parent.supportsMetaFilter && initialTreeToxicRepliedToIds.isEmpty)) {
 			// Nothing to do
 			return;
 		}
