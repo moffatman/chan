@@ -522,13 +522,19 @@ class Site4Chan extends ImageboardSite {
 			capcode: data['capcode']
 		);
 	}
+	static AttachmentType _getAttachmentType(String ext) => switch (ext) {
+		'.webm' => AttachmentType.webm,
+		'.pdf' => AttachmentType.pdf,
+		'.mp4' => AttachmentType.mp4,
+		_ => AttachmentType.image
+	};
 	Attachment? _makeAttachment(String board, int threadId, dynamic data) {
 		if (data['tim'] != null) {
 			final int id = data['tim'];
 			final String ext = data['ext'];
 			return Attachment(
 				id: id.toString(),
-				type: data['ext'] == '.webm' ? AttachmentType.webm : (data['ext'] == '.pdf' ? AttachmentType.pdf : AttachmentType.image),
+				type: _getAttachmentType(data['ext']),
 				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
@@ -1329,7 +1335,7 @@ class Site4Chan extends ImageboardSite {
 				attachment = Attachment(
 					board: board,
 					id: fullUrl.split('/').last.split('.').first,
-					type: ext == '.webm' ? AttachmentType.webm : (ext == '.pdf' ? AttachmentType.pdf : AttachmentType.image),
+					type: _getAttachmentType(ext),
 					ext: ext,
 					filename: file.querySelectorAll('.fileText a').last.text.trim(),
 					url: fullUrl,
