@@ -172,24 +172,29 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		lifetime: Duration(seconds: (data['ttl'] as num).toInt()),
 		foregroundImage: foregroundImage,
 		backgroundImage: backgroundImage,
+		backgroundWidth: (data['bg_width'] as num?)?.toInt(),
 		cloudflare: challengeResponse.cloudflare
 	);
 }
+
+const _kMaxBlackR = 103;
 
 Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 	final fgWidth = challenge.foregroundImage!.width;
 	final fgHeight = challenge.foregroundImage!.height;
 	final fgBytes = (await challenge.foregroundImage!.toByteData())!;
 	final bgWidth = challenge.backgroundImage!.width;
-	final maxSlide = bgWidth - fgWidth;
+	final maxSlide = (challenge.backgroundWidth ?? bgWidth) - fgWidth;
 	if (maxSlide <= 0) {
 		return 0;
 	}
-	final toCheck = <({int offset, int r})>[];
-	for (int x = 2; x < fgWidth - 3; x++) {
-		for (int y = 2; y < fgHeight - 3; y++) {
+	final toCheck = <({int offset, bool black})>[];
+	final fgTransparentLines = <int, List<({int x0, int x1})>>{};
+	for (int y = (fgHeight * 0.2).floor(); y < (fgHeight * 0.8).ceil(); y++) {
+		int? lineStart;
+		for (int x = 2; x < fgWidth - 3; x++) {
 			final thisIndex = 4 * (x + (y * fgWidth));
-			final thisR = fgBytes.getUint8(thisIndex);
+			final thisBlack = fgBytes.getUint8(thisIndex) < _kMaxBlackR;
 			final thisA = fgBytes.getUint8(thisIndex + 3);
 			final rightIndex1 = thisIndex + 4;
 			final rightIndex2 = thisIndex + 8;
@@ -213,39 +218,100 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 			final upA2 = fgBytes.getUint8(upIndex2 + 3);
 			if (thisA > rightA1 && thisA == leftA1 && thisA == leftA2 && rightA1 == rightA2 && rightA1 == rightA3) {
 				// this is the opaque fg pixel
-				toCheck.add((offset: 4 * ((x + 1) + (y * bgWidth)), r: thisR));
+				toCheck.add((offset: 4 * ((x + 1) + (y * bgWidth)), black: thisBlack));
+				lineStart = x + 1;
 			}
 			else if (thisA < rightA1 && thisA == leftA1 && thisA == leftA2 && rightA1 == rightA2 && rightA1 == rightA3) {
 				// this is the transparent fg pixel
-				final rightR = fgBytes.getUint8(rightIndex1);
-				toCheck.add((offset: 4 * (x + (y * bgWidth)), r: rightR));
+				final rightBlack = fgBytes.getUint8(rightIndex1) < _kMaxBlackR;
+				toCheck.add((offset: 4 * (x + (y * bgWidth)), black: rightBlack));
+				if (lineStart != null && (x - lineStart) > 10) {
+					(fgTransparentLines[y] ??= []).add((x0: lineStart, x1: x));
+					lineStart = null;
+				}
 			}
 			if (thisA > downA1 && thisA == upA1 && thisA == upA2 && downA1 == downA2 && downA1 == downA3) {
 				// this is the opaque fg pixel
-				toCheck.add((offset: 4 * (x + ((y + 1) * bgWidth)), r: thisR));
+				toCheck.add((offset: 4 * (x + ((y + 1) * bgWidth)), black: thisBlack));
 			}
 			else if (thisA < downA1 && thisA == upA1 && thisA == upA2 && downA1 == downA2 && downA1 == downA3) {
 				// this is the transparent fg pixel
-				final downR = fgBytes.getUint8(downIndex1);
-				toCheck.add((offset: 4 * (x + (y * bgWidth)), r: downR));
+				final downBlack = fgBytes.getUint8(downIndex1) < _kMaxBlackR;
+				toCheck.add((offset: 4 * (x + (y * bgWidth)), black: downBlack));
 			}
 		}
 	}
 	int bestSlide = 0;
 	int lowestMismatch = toCheck.length + 1;
 	final bgBytes = (await challenge.backgroundImage!.toByteData())!;
+	final bgBlackLines = <int, List<({int x0, int x1})>>{};
+	final rValues = <int>{};
+	for (int y = (fgHeight * 0.2).floor(); y < (fgHeight * 0.8).ceil(); y++) {
+		int? lineStart;
+		for (int x = 0; x < bgWidth; x++) {
+			final thisIndex = 4 * (x + (y * bgWidth));
+			final thisR = bgBytes.getUint8(thisIndex);
+			rValues.add(thisR);
+			final thisBlack = thisR < _kMaxBlackR;
+			if (thisBlack) {
+				lineStart ??= x;
+			}
+			else {
+				if (lineStart != null && (x - lineStart) > 10) {
+					(bgBlackLines[y] ??= []).add((x0: lineStart, x1: x));
+				}
+				lineStart = null;
+			}
+		}
+	}
+	final greyCaptchaMode = rValues.length > 2;
+	// Some future optimization could be to ignore 1-2px horizontal lines here
+	final bgSize = 4 * bgWidth * challenge.backgroundImage!.height;
 	slideloop:
 	for (int xSlide = 0; xSlide < maxSlide; xSlide++) {
 		int mismatch = 0;
 		final offset = 4 * xSlide;
 		for (final check in toCheck) {
-			final thisR = bgBytes.getUint8(check.offset + offset);
-			if (thisR != check.r) {
+			final pos = check.offset + offset;
+			if (pos >= bgSize) {
+				// Offscreen. Presumably this won't happen, they won't let you slide the end of background to be visible.
+				// Since you may just start wrapping silently if not checking the last row.
+				continue;
+			}
+			final thisBlack = bgBytes.getUint8(pos) < _kMaxBlackR;
+			if (thisBlack != check.black) {
 				mismatch++;
 				if (mismatch > lowestMismatch) {
 					continue slideloop;
 				}
 			}
+		}
+		if (greyCaptchaMode) {
+			for (int y = (fgHeight * 0.2).floor(); y < (fgHeight * 0.8).ceil(); y++) {
+				final fgs = fgTransparentLines[y];
+				final bgs = bgBlackLines[y];
+				if (fgs == null || bgs == null) {
+					continue;
+				}
+				for (final fg in fgs) {
+					// Just for optimization
+					final fgx0 = fg.x0 + xSlide;
+					final fgx1 = fg.x1 + xSlide;
+					for (final bg in bgs) {
+						if (bg.x0 <= fgx0 && bg.x1 >= fgx1) {
+							mismatch += 10;
+							if (mismatch > lowestMismatch) {
+								continue slideloop;
+							}
+							// No double matches are possible
+							break;
+						}
+					}
+				}
+			}
+		}
+		if (mismatch > lowestMismatch) {
+			continue;
 		}
 		lowestMismatch = mismatch;
 		bestSlide = xSlide;
@@ -544,6 +610,7 @@ class Captcha4ChanCustomChallenge {
 	DateTime get expiresAt => acquiredAt.add(lifetime);
 	final ui.Image? foregroundImage;
 	final ui.Image? backgroundImage;
+	final int? backgroundWidth;
 	final bool cloudflare;
 	bool _isDisposed = false;
 
@@ -555,6 +622,7 @@ class Captcha4ChanCustomChallenge {
 		required this.lifetime,
 		required this.foregroundImage,
 		required this.backgroundImage,
+		required this.backgroundWidth,
 		required this.cloudflare
 	});
 
@@ -1116,7 +1184,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				[] => [4, 5, 6],
 				List<int> list => list
 			};
-			final maxSlide = ((challenge?.backgroundImage?.width ?? challenge?.foregroundImage?.width ?? 0) - (challenge?.foregroundImage?.width ?? 0)).abs();
+			final maxSlide = ((challenge?.backgroundWidth ?? challenge?.backgroundImage?.width ?? challenge?.foregroundImage?.width ?? 0) - (challenge?.foregroundImage?.width ?? 0)).abs();
 			return Center(
 				child: ConstrainedBox(
 					constraints: BoxConstraints(
