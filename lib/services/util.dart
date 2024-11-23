@@ -74,9 +74,10 @@ extension UnescapeHtml on String {
 }
 
 abstract class ExtendedException implements Exception {
-	const ExtendedException();
+	const ExtendedException({this.additionalFiles = const {}});
 	Map<String, FutureOr<void> Function(BuildContext)> get remedies => const {};
 	bool get isReportable;
+	final Map<String, Uint8List> additionalFiles;
 }
 
 extension IfMounted on BuildContext {

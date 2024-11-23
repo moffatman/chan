@@ -61,21 +61,22 @@ typedef CloudGuessedCaptcha4ChanCustom = ({
 	bool confident
 });
 
-class Captcha4ChanCustomChallengeException implements Exception {
+class Captcha4ChanCustomChallengeException extends ExtendedException {
 	final String message;
 	final bool cloudflare;
-	const Captcha4ChanCustomChallengeException(this.message, this.cloudflare);
+	const Captcha4ChanCustomChallengeException(this.message, this.cloudflare, {super.additionalFiles});
 
 	@override
 	String toString() => 'Failed to get 4chan captcha: $message';
+	
+	@override
+	bool get isReportable => true;
 }
 
-class Captcha4ChanCustomChallengeCooldownException extends CooldownException implements Captcha4ChanCustomChallengeException {
+class Captcha4ChanCustomChallengeCooldownException extends Captcha4ChanCustomChallengeException implements CooldownException {
 	@override
-	final String message;
-	@override
-	final bool cloudflare;
-	const Captcha4ChanCustomChallengeCooldownException(this.message, this.cloudflare, DateTime tryAgainAt) : super(tryAgainAt);
+	final DateTime tryAgainAt;
+	const Captcha4ChanCustomChallengeCooldownException(super.message, super.cloudflare, this.tryAgainAt);
 
 	@override
 	String toString() => 'Failed to get 4chan captcha: $message';
@@ -109,7 +110,9 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	if (data is String) {
 		final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(data);
 		if (match == null) {
-			throw Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system', challengeResponse.cloudflare);
+			throw Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system', challengeResponse.cloudflare, additionalFiles: {
+				'challenge.txt': utf8.encode(data)
+			});
 		}
 		data = jsonDecode(match.group(1)!)['twister'];
 	}

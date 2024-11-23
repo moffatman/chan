@@ -13,6 +13,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:html/parser.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mutex/mutex.dart';
@@ -29,10 +30,12 @@ extension HandleSpacesInPath on Uri {
 	}
 }
 
-class MediaScanException implements Exception {
+class MediaScanException extends ExtendedException {
 	final int code;
 	final String output;
-	const MediaScanException(this.code, this.output);
+	const MediaScanException(this.code, this.output, {super.additionalFiles});
+	@override
+	bool get isReportable => true;
 
 	@override
 	String toString() => 'MediaScanException(code: $code, output: $output)';
@@ -124,8 +127,53 @@ class MediaScan {
 					logLevel: 8 // AV_LOG_FATAL
 				);
 				if (result.returnCode != 0) {
-					// Below regexes are to cleanup some JSON junk in the output, trimming all leading and trailing non-word characters
-					throw MediaScanException(result.returnCode, result.output.replaceFirst(RegExp(r'^[^\w]*'), '').replaceFirst(RegExp(r'[^\w]*$'), ''));
+					final files = <String, Uint8List>{};
+					if (result.returnCode == 1 && file.isScheme('file')) {
+						final stat = await File(file.path).stat();
+						if (stat.size == 0) {
+							throw const MediaScanException(1, 'File is empty');
+						}
+						if (stat.size < 50e3) {
+							// Try to get a message out of it. Maybe it's HTML or something
+							try {
+								final string = await File(file.path).readAsString();
+								if (string.contains('<body>')) {
+									final document = parse(string);
+									if (document.querySelector('title')?.text.nonEmptyOrNull case String title) {
+										throw MediaScanException(1, title);
+									}
+									for (int i = 1; i < 6; i++) {
+										final headers = document.querySelectorAll('h$i');
+										if (headers.trySingle?.text.nonEmptyOrNull case String header) {
+											throw MediaScanException(1, header);
+										}
+										if (headers.length > 1) {
+											// Can't pick between multiple
+											break;
+										}
+									}
+								}
+								else if (string.length < 100) {
+									throw MediaScanException(1, string);
+								}
+							}
+							catch (e) {
+								if (e is MediaScanException) {
+									rethrow;
+								}
+								// Else do nothing, this is sketchy code
+							}
+						}
+						if (stat.size < 5e6 /* 5 MB */) {
+							files[file.pathSegments.last] = await File(file.path).readAsBytes();
+						}
+					}
+					throw MediaScanException(
+						result.returnCode,
+						// Below regexes are to cleanup some JSON junk in the output, trimming all leading and trailing non-word characters
+						result.output.replaceFirst(RegExp(r'^[^\w]*'), '').replaceFirst(RegExp(r'[^\w]*$'), ''),
+						additionalFiles: files
+					);
 				}
 				if (result.output.isEmpty) {
 					throw const MediaScanException(0, 'No output from ffprobe');
