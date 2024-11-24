@@ -144,4 +144,7 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
 	
 	@override
 	Iterable<ImageboardBoard> get boards => parent.boards;
+
+  @override
+  SpamFilterStatus getSpamFilterStatus(String? ip) => parent.getSpamFilterStatus(ip);
 }

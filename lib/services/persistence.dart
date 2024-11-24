@@ -136,6 +136,12 @@ class DurationAdapter extends TypeAdapter<Duration> {
   }
 }
 
+enum SpamFilterStatus {
+	never,
+	recently,
+	currently
+}
+
 class Persistence extends ChangeNotifier {
 	final String imageboardKey;
 	Persistence(this.imageboardKey);
@@ -1283,6 +1289,40 @@ class Persistence extends ChangeNotifier {
 			newCookie.secure = cookie.isSecure ?? false;
 			return newCookie;
 		}).toList());
+	}
+
+	SpamFilterStatus getSpamFilterStatus(String? ip) {
+		final receipts = Persistence.sharedThreadStateBox.values.expand<PostReceipt>((state) {
+			if (state.imageboardKey != imageboardKey) {
+				return const Iterable.empty();
+			}
+			return state.receipts.where((r) => r.ip == ip);
+		}).toList();
+		final nullTime = DateTime(2000);
+		receipts.sort((a, b) {
+			return (a.time ?? nullTime).compareTo(b.time ?? nullTime);
+		});
+		if (receipts.length > 10) {
+			// Don't look too far back
+			receipts.removeRange(0, receipts.length - 10);
+		}
+		// Sorted so newest receipt is last
+		if (receipts.isEmpty) {
+			// Fresh IP
+			return SpamFilterStatus.never;
+		}
+		else if (receipts.last.spamFiltered) {
+			// Last post was spam-filtered
+			return SpamFilterStatus.currently;
+		}
+		else if (receipts.any((r) => r.spamFiltered) && ip != null) {
+			// Some previous post was spam-filtered
+			return SpamFilterStatus.recently;
+		}
+		else {
+			// Never spam-filtered
+			return SpamFilterStatus.never;
+		}
 	}
 
 	@override

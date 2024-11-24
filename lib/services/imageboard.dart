@@ -187,7 +187,7 @@ class Imageboard extends ChangeNotifier {
 		}
 	}
 
-	void _listenForSpamFilter(DraftPost submittedPost, PostReceipt receipt, CaptchaSolution captchaSolution) async {
+	void _listenForSpamFilter(DraftPost submittedPost, PostReceipt receipt, CaptchaSolution captchaSolution, bool showToastOnSuccess) async {
 		final threadIdentifier =
 			// Reply
 			submittedPost.thread ??
@@ -267,6 +267,14 @@ class Imageboard extends ChangeNotifier {
 		if (postShowedUp) {
 			onSuccessfulCaptchaSubmitted(captchaSolution);
 			receipt.spamFiltered = false;
+			if (showToastOnSuccess) {
+				showToast(
+					context: ImageboardRegistry.instance.context!,
+					message: 'Post successful',
+					icon: captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
+					hapticFeedback: false
+				);
+			}
 		}
 		else {
 			captchaSolution.dispose(); // junk
@@ -312,19 +320,20 @@ class Imageboard extends ChangeNotifier {
 				post.removeListener(listener);
 				print(state.result);
 				mediumHapticFeedback();
+				final showTwoToasts = persistence.getSpamFilterStatus(state.captchaSolution.ip) != SpamFilterStatus.never;
 				if (state.captchaSolution.autoSolved) {
 					Outbox.instance.headlessSolveFailed = false;
 				}
 				if (state.result.spamFiltered) {
-					_listenForSpamFilter(post.post, state.result, state.captchaSolution);
+					_listenForSpamFilter(post.post, state.result, state.captchaSolution, showTwoToasts);
 				}
 				else {
 					onSuccessfulCaptchaSubmitted(state.captchaSolution);
 				}
 				showToast(
 					context: ImageboardRegistry.instance.context!,
-					message: 'Post successful',
-					icon: state.captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
+					message: showTwoToasts ? 'Post submitted' : 'Post successful',
+					icon: showTwoToasts ? CupertinoIcons.clock : (state.captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark),
 					hapticFeedback: false
 				);
 				_maybeShowDubsToast(state.result.id);

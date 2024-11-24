@@ -1394,34 +1394,11 @@ class Site4Chan extends ImageboardSite {
 			if (captcha.challenge == 'noop') {
 				return super.getCaptchaUsableTime(captcha);
 			}
-			final receipts = Persistence.sharedThreadStateBox.values.expand<PostReceipt>((state) {
-				if (state.imageboardKey != persistence?.imageboardKey) {
-					return const Iterable.empty();
-				}
-				return state.receipts.where((r) => r.ip == captcha.ip);
-			}).toList();
-			final nullTime = DateTime(2000);
-			receipts.sort((a, b) {
-				return (a.time ?? nullTime).compareTo(b.time ?? nullTime);
-			});
-			// Sorted so newest receipt is last
-			Duration delay;
-			if (receipts.isEmpty) {
-				// Fresh IP
-				delay = spamFilterCaptchaDelayGreen;
-			}
-			else if (receipts.last.spamFiltered) {
-				// Last post was spam-filtered
-				delay = spamFilterCaptchaDelayRed;
-			}
-			else if (receipts.any((r) => r.spamFiltered) && captcha.ip != null) {
-				// Some previous post was spam-filtered
-				delay = spamFilterCaptchaDelayYellow;
-			}
-			else {
-				// Never spam-filtered
-				delay = spamFilterCaptchaDelayGreen;
-			}
+			Duration delay = switch (persistence?.getSpamFilterStatus(captcha.ip)) {
+				SpamFilterStatus.currently => spamFilterCaptchaDelayRed,
+				SpamFilterStatus.recently => spamFilterCaptchaDelayYellow,
+				SpamFilterStatus.never || null => spamFilterCaptchaDelayGreen
+			};
 			if (delay > const Duration(seconds: 4)) {
 				// +[0-4]s
 				delay += Duration(milliseconds: random.nextInt(4000));
