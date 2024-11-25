@@ -103,17 +103,7 @@ class AdaptiveThinButton<T> extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final onPressed = this.onPressed == null ? null : () async {
-			try {
-				await this.onPressed?.call();
-			}
-			catch (e, st) {
-				Future.error(e, st);
-				if (context.mounted) {
-					alertError(context, e, st);
-				}
-			}
-		};
+		final onPressed = wrapButtonCallback(context, this.onPressed);
 		if (ChanceTheme.materialOf(context)) {
 			final theme = context.watch<SavedTheme>();
 			return OutlinedButton(
@@ -181,17 +171,7 @@ class AdaptiveIconButton<T> extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final onPressed = this.onPressed == null ? null : () async {
-			try {
-				await this.onPressed?.call();
-			}
-			catch (e, st) {
-				Future.error(e, st);
-				if (context.mounted) {
-					alertError(context, e, st);
-				}
-			}
-		};
+		final onPressed = wrapButtonCallback(context, this.onPressed);
 		if (ChanceTheme.materialOf(context)) {
 			return IconButton(
 				padding: padding,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/context_menu.dart';
@@ -80,9 +82,9 @@ class AdaptiveActionSheet extends StatelessWidget {
 	}
 }
 
-class AdaptiveActionSheetAction extends StatelessWidget {
+class AdaptiveActionSheetAction<T> extends StatelessWidget {
 	final Widget child;
-	final VoidCallback? onPressed;
+	final FutureOr<T> Function()? onPressed;
 	final bool isDefaultAction;
 	final bool isDestructiveAction;
 	final bool isSelected;
@@ -100,6 +102,7 @@ class AdaptiveActionSheetAction extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final onPressed = wrapButtonCallback(context, this.onPressed);
 		if (ChanceTheme.materialOf(context)) {
 			return ListTile(
 				selected: isSelected,

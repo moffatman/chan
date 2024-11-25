@@ -128,6 +128,23 @@ Future<void> alertError(BuildContext context, Object error, StackTrace? stackTra
 	if (stackTrace != null && !(error is ExtendedException && !error.isReportable)) 'Report bug': () => reportBug(error, stackTrace)
 }, barrierDismissible: barrierDismissible);
 
+VoidCallback? wrapButtonCallback<T>(BuildContext context, FutureOr<T> Function()? fn) {
+	if (fn == null) {
+		return null;
+	}
+	return () async {
+		try {
+			await fn();
+		}
+		catch (e, st) {
+			Future.error(e, st);
+			if (context.mounted) {
+				alertError(context, e, st);
+			}
+		}
+	};
+}
+
 void showToast({
 	required BuildContext context,
 	required String message,

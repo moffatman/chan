@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chan/main.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/services/imageboard.dart';
@@ -14,10 +16,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-class AdaptiveBarAction {
+class AdaptiveBarAction<T> {
 	final Widget icon;
 	final String title;
-	final VoidCallback? onPressed;
+	final FutureOr<T> Function()? onPressed;
 
 	const AdaptiveBarAction({
 		required this.icon,

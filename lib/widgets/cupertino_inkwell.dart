@@ -27,7 +27,7 @@ class CupertinoInkwell<T> extends StatefulWidget {
   bool get enabled => onPressed != null;
 
   @override
-  State<CupertinoInkwell> createState() => _CupertinoInkwellState();
+  State<CupertinoInkwell<T>> createState() => _CupertinoInkwellState<T>();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -36,7 +36,7 @@ class CupertinoInkwell<T> extends StatefulWidget {
   }
 }
 
-class _CupertinoInkwellState extends State<CupertinoInkwell> with SingleTickerProviderStateMixin {
+class _CupertinoInkwellState<T> extends State<CupertinoInkwell<T>> with SingleTickerProviderStateMixin {
   // Eyeballed values. Feel free to tweak.
   static const Duration kFadeOutDuration = Duration(milliseconds: 120);
   static const Duration kFadeInDuration = Duration(milliseconds: 180);
@@ -63,7 +63,7 @@ class _CupertinoInkwellState extends State<CupertinoInkwell> with SingleTickerPr
   }
 
   @override
-  void didUpdateWidget(CupertinoInkwell old) {
+  void didUpdateWidget(CupertinoInkwell<T> old) {
     super.didUpdateWidget(old);
     _setTween();
   }
@@ -118,17 +118,7 @@ class _CupertinoInkwellState extends State<CupertinoInkwell> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    final onPressed = widget.onPressed == null ? null : () async {
-			try {
-				await widget.onPressed?.call();
-			}
-			catch (e, st) {
-				Future.error(e, st);
-				if (context.mounted) {
-					alertError(context, e, st);
-				}
-			}
-		};
+    final onPressed = wrapButtonCallback(context, widget.onPressed);
     final bool enabled = widget.enabled;
 
     return MouseRegion(

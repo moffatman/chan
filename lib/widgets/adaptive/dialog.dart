@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/material.dart';
 
-class AdaptiveDialogAction extends StatelessWidget {
+class AdaptiveDialogAction<T> extends StatelessWidget {
 	final Widget child;
-	final VoidCallback? onPressed;
+	final FutureOr<T> Function()? onPressed;
 	final bool isDefaultAction;
 	final bool isDestructiveAction;
 
@@ -19,6 +21,7 @@ class AdaptiveDialogAction extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final onPressed = wrapButtonCallback(context, this.onPressed);
 		if (ChanceTheme.materialOf(context)) {
 			return TextButton(
 				onPressed: onPressed,

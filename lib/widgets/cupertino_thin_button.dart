@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 
-class CupertinoThinButton extends StatefulWidget {
+class CupertinoThinButton<T> extends StatefulWidget {
 	final Widget child;
-	final VoidCallback? onPressed;
+	final FutureOr<T> Function()? onPressed;
 	final EdgeInsets padding;
 	final bool filled;
 	final bool backgroundFilled;
@@ -28,7 +31,8 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 
 	@override
 	Widget build(BuildContext context) {
-		final baseOpacity = widget.onPressed == null ? 0.5 : 1.0;
+		final onPressed = wrapButtonCallback(context, widget.onPressed);
+		final baseOpacity = onPressed == null ? 0.5 : 1.0;
 		final baseColor = (widget.color ?? ChanceTheme.primaryColorOf(context)).withOpacity(baseOpacity);
 		Color? color;
 		if (_pressed) {
@@ -39,7 +43,7 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 		}
 		return GestureDetector(
 			onTapDown: (_) {
-				if (widget.onPressed == null) {
+				if (onPressed == null) {
 					return;
 				}
 				setState(() {
@@ -55,7 +59,7 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 				setState(() {
 					_pressed = false;
 				});
-				widget.onPressed?.call();
+				onPressed?.call();
 			},
 			child: Container(
 				decoration: BoxDecoration(
