@@ -103,7 +103,6 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 								Flexible(
 									child: Text(error!.$1.toStringDio())
 								),
-								const SizedBox(width: 8),
 								AdaptiveIconButton(
 									onPressed: () => alertError(context, error!.$1, error!.$2, barrierDismissible: true),
 									icon: const Icon(CupertinoIcons.info)
