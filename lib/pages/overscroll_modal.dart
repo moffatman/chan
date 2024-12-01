@@ -48,10 +48,10 @@ class OverscrollModalPage extends StatefulWidget {
 	}) : child = null;
 
 	@override
-	createState() => _OverscrollModalPageState();
+	createState() => OverscrollModalPageState();
 }
 
-class _OverscrollModalPageState extends State<OverscrollModalPage> {
+class OverscrollModalPageState extends State<OverscrollModalPage> {
 	late final ScrollController _controller;
 	final GlobalKey _scrollKey = GlobalKey(debugLabel: '_OverscrollModalPageState._scrollKey');
 	final GlobalKey _childKey = GlobalKey(debugLabel: '_OverscrollModalPageState._childKey');
@@ -69,6 +69,14 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		_scrollStopPosition = -1 * min(150.0 + widget.heightEstimate, context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height / 2);
 		_controller = ScrollController(initialScrollOffset: Settings.instance.showAnimations ? _scrollStopPosition : 0);
 		_controller.addListener(_onScrollUpdate);
+	}
+
+	Future<void> animateToProportion(double factor) async {
+		await _controller.animateTo(
+			factor * _controller.position.maxScrollExtent,
+			duration: const Duration(milliseconds: 200),
+			curve: Curves.ease
+		);
 	}
 
 	// To fix behavior when stopping the scroll-in with tap event

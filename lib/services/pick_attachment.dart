@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:chan/models/attachment.dart';
+import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/apple.dart';
@@ -11,6 +13,9 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/services/clipboard_image.dart';
@@ -193,8 +198,10 @@ List<AttachmentPickingSource> getAttachmentSources({
 		pick: (context) {
 			final savedAttachments = ImageboardRegistry.instance.imageboardsIncludingDev.expand((i) => i.persistence.savedAttachments.values).toList();
 			savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
+			final key = GlobalKey<OverscrollModalPageState>();
 			return Navigator.of(context).push<String>(TransparentRoute(
 				builder: (context) => OverscrollModalPage.sliver(
+					key: key,
 					sliver: DecoratedSliver(
 						decoration: BoxDecoration(
 							color: ChanceTheme.backgroundColorOf(context)
@@ -214,12 +221,54 @@ List<AttachmentPickingSource> getAttachmentSources({
 								itemBuilder: (context, i) {
 									final attachment = savedAttachments[i];
 									return GestureDetector(
-										onTap: () {
-											Navigator.of(context).pop(attachment.file.path);
+										onLongPress: () {
+											showGallery(
+												initialAttachment: attachment.attachment,
+												context: context,
+												attachments: savedAttachments.map((a) => a.attachment).toList(),
+												semanticParentIds: [-999],
+												overrideSources: {
+													for (final l in savedAttachments)
+														l.attachment: l.file.uri
+												},
+												onChange: (a) {
+													key.currentState!.animateToProportion(savedAttachments.indexWhere((s) => s.attachment == a) / savedAttachments.length);
+												},
+												heroOtherEndIsBoxFitCover: false
+											);
 										},
-										child: ClipRRect(
-											borderRadius: BorderRadius.circular(8),
-											child: SavedAttachmentThumbnail(file: attachment.file, fit: BoxFit.cover)
+										child: CupertinoInkwell(
+											padding: EdgeInsets.zero,
+											onPressed: () {
+												Navigator.of(context).pop(attachment.file.path);
+											},
+											child: ClipRRect(
+												borderRadius: BorderRadius.circular(8),
+												child: Hero(
+													tag: TaggedAttachment(
+														attachment: attachment.attachment,
+														semanticParentIds: [-999]
+													),
+													child: SavedAttachmentThumbnail(
+														file: attachment.file,
+														fit: BoxFit.contain
+													),
+													flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+														return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+													},
+													createRectTween: (startRect, endRect) {
+														if (startRect != null && endRect != null) {
+															if (attachment.attachment.type == AttachmentType.image) {
+																// Need to deflate the original startRect because it has inbuilt layoutInsets
+																// This SavedAttachmentThumbnail will always fill its size
+																final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+																startRect = rootPadding.deflateRect(startRect);
+															}
+														}
+														return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+													}
+												)
+											)
 										)
 									);
 								}
