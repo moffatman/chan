@@ -477,6 +477,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				);
 			}
 			showReplyBox();
+			_postInBackground();
 			_insertText('>>$id');
 		}
 	}
@@ -491,6 +492,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				);
 			}
 			showReplyBox();
+			_postInBackground();
 			if (backlink != null) {
 				if (ImageboardBoard.getKey(backlink.board) != widget.board) {
 					_insertText('>>>/${backlink.board}/${backlink.postId}');
@@ -1845,7 +1847,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						reverse: true,
 						children: [
 							for (final snippet in snippets) AdaptiveIconButton(
-								onPressed: () async {
+								onPressed: loading ? null : () async {
 									final initialSelection = _textFieldController.selection;
 									// This only works because all the ImageboardSnippets are const
 									final controller = _snippetControllers.putIfAbsent(snippet, () => TextEditingController());
@@ -1925,7 +1927,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							),
 							if (_flags.isNotEmpty) Center(
 								child: AdaptiveIconButton(
-									onPressed: _pickFlag,
+									onPressed: loading ? null : _pickFlag,
 									icon: IgnorePointer(
 										child: flag != null ? ExtendedImage.network(
 											flag!.imageUrl,
@@ -1935,7 +1937,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								)
 							),
 							if (emotes.isNotEmpty) Center(
-								child: AdaptiveIconButton(
+								child: loading ? null : AdaptiveIconButton(
 									onPressed: _pickEmote,
 									icon: const Icon(CupertinoIcons.smiley)
 								)
@@ -1952,7 +1954,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								curve: Curves.ease,
 								child: attachment != null ? AdaptiveIconButton(
 									padding: const EdgeInsets.only(left: 8, right: 8),
-									onPressed: expandAttachmentOptions,
+									onPressed: loading ? null : expandAttachmentOptions,
 									icon: Row(
 										mainAxisSize: MainAxisSize.min,
 										children: [
@@ -2008,14 +2010,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										mainAxisSize: MainAxisSize.min,
 										children: [
 											for (final file in receivedFilePaths.reversed) GestureDetector(
-												onLongPress: () async {
+												onLongPress: loading ? null : () async {
 													if (await confirm(context, 'Remove received file?')) {
 														receivedFilePaths.remove(file);
 														setState(() {});
 													}
 												},
 												child: AdaptiveIconButton(
-													onPressed: () => setAttachment(File(file)),
+													onPressed: loading ? null : () => setAttachment(File(file)),
 													icon: ClipRRect(
 														borderRadius: BorderRadius.circular(4),
 														child: ConstrainedBox(
@@ -2031,7 +2033,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												)
 											),
 											for (final picker in getAttachmentSources(includeClipboard: false)) AdaptiveIconButton(
-												onPressed: () async {
+												onPressed: loading ? null : () async {
 													FocusNode? focusToRestore;
 													if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
 														focusToRestore = _lastNearbyFocus?.$2;
@@ -2073,7 +2075,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					)
 				),
 				AdaptiveIconButton(
-					onPressed: expandOptions,
+					onPressed: loading ? null : expandOptions,
 					icon: const Icon(CupertinoIcons.gear)
 				),
 				if (_submittingPosts.isNotEmpty) AdaptiveIconButton(
@@ -2088,7 +2090,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					}
 				),
 				GestureDetector(
-					onLongPress: () {
+					onLongPress: loading ? null : () {
 						// Save as draft
 						final persistence = context.read<Persistence>();
 						final post = _makeDraft();
