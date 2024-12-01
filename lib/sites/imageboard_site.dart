@@ -1452,7 +1452,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			..._memoizedWifiHeaders[url.host] ?? {}
 		};
 	}
-	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 	String get baseUrl;
 	Uri get iconUrl;
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]);
@@ -1853,6 +1852,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	int? get subjectCharacterLimit => null;
 	bool get hasLinkCookieAuth => false;
 	Uri? get authPage => null;
+	/// Remember these fields (HTML "name"s) between uses
+	Set<String> get authPageFormFields => const {};
 	bool get hasExpiringThreads => true;
 	bool get hasLargeInlineAttachments => false;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
@@ -1865,6 +1866,8 @@ abstract class ImageboardSiteLoginSystem {
 	Map<PersistCookieJar, bool> loggedIn = {};
 	ImageboardSite get parent;
 	String get name;
+	bool get hidden;
+	Uri? get iconUrl => null;
 	List<ImageboardSiteLoginField> getLoginFields();
 	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
 	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {

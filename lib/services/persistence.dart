@@ -1276,7 +1276,7 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
-	static Future<void> saveCookiesFromWebView(Uri uri) async {
+	static Future<List<webview.Cookie>> saveCookiesFromWebView(Uri uri) async {
 		final cookies = await webview.CookieManager.instance().getCookies(url: webview.WebUri.uri(uri));
 		await currentCookies.saveFromResponse(uri, cookies.map((cookie) {
 			final newCookie = MyCookie(cookie.name, cookie.value as String);
@@ -1289,6 +1289,7 @@ class Persistence extends ChangeNotifier {
 			newCookie.secure = cookie.isSecure ?? false;
 			return newCookie;
 		}).toList());
+		return cookies;
 	}
 
 	SpamFilterStatus getSpamFilterStatus(String? ip) {

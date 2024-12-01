@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/auth_page_helper.dart';
 import 'package:chan/services/captcha.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
@@ -222,19 +223,56 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	}
 
 	/// Convenience for UI
-	(DateTime, VoidCallback, String)? get pair {
+	({
+		DateTime deadline,
+		FutureOr Function(BuildContext) action,
+		String label,
+		bool highPriority
+	})? get pair {
 		final state = _state;
 		final queue = this.queue;
 		if (state is QueueStateNeedsCaptcha<T> && queue != null && queue.captchaAllowedTime.isAfter(DateTime.now())) {
-			return (queue.captchaAllowedTime, () => queue.captchaAllowedTime = DateTime.now(), 'Waiting for captcha');
+			if (
+				imageboard.site.authPage != null &&
+				imageboard.site.hasLinkCookieAuth &&
+				queue.captchaAllowedTime.difference(DateTime.now()) > const Duration(minutes: 3)
+			){
+				return (
+					deadline: queue.captchaAllowedTime,
+					action: (context) async {
+						final authorized = await showAuthPageHelperPopup(context, imageboard);
+						if (authorized) {
+							queue.captchaAllowedTime = DateTime.now();
+						}
+					},
+					label: 'Tap to login',
+					highPriority: true
+				);
+			}
+			return (
+				deadline: queue.captchaAllowedTime,
+				action: (_) => queue.captchaAllowedTime = DateTime.now(),
+				label: 'Waiting for captcha',
+				highPriority: false
+			);
 		}
 		else if (state is QueueStateWaitingWithCaptcha<T> && queue != null && queue.allowedTime.isAfter(DateTime.now())) {
-			return (queue.allowedTime, () => queue.allowedTime = DateTime.now(), 'Waiting for cooldown');
+			return (
+				deadline: queue.allowedTime,
+				action: (_) => queue.allowedTime = DateTime.now(),
+				label: 'Waiting for cooldown',
+				highPriority: false
+			);
 		}
 		else if (state is QueueStateSubmitting<T>) {
 			final wait = state.wait;
 			if (wait != null) {
-				return (wait.until, wait.skip, state.message ?? 'Waiting');
+				return (
+					deadline: wait.until,
+					action: (_) => wait.skip,
+					label: state.message ?? 'Waiting',
+					highPriority: false
+				);
 			}
 		}
 		return null;

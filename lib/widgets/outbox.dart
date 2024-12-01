@@ -16,7 +16,6 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -269,15 +268,8 @@ class QueueEntryWidget extends StatelessWidget {
 														icon: Row(
 															mainAxisSize: MainAxisSize.min,
 															children: [
-																SizedBox(
-																	width: 16,
-																	height: 16,
-																	child: ExtendedImage.network(
-																		entry.site.passIconUrl.toString(),
-																		cache: true,
-																		enableLoadState: false,
-																		fit: BoxFit.contain
-																	)
+																ImageboardSiteLoginSystemIcon(
+																	loginSystem: entry.site.loginSystem,
 																),
 																const SizedBox(width: 4),
 																Icon(entry.useLoginSystem ? CupertinoIcons.checkmark_square : CupertinoIcons.square)

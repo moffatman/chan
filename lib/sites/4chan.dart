@@ -1136,11 +1136,6 @@ class Site4Chan extends ImageboardSite {
 		required this.stickyCloudflare,
 	});
 
-
-
-	@override
-	Uri get passIconUrl => Uri.https(staticUrl, '/image/minileaf.gif');
-
 	@override
 	String get siteType => '4chan';
 	@override
@@ -1413,6 +1408,12 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
+	Uri? get authPage => Uri.https(sysUrl, '/signin');
+
+	@override
+	Set<String> get authPageFormFields => const {'email'};
+
+	@override
 	bool get hasLinkCookieAuth => true;
 }
 
@@ -1483,4 +1484,10 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   String get name => '4chan Pass';
+
+	@override
+	Uri get iconUrl => Uri.https(parent.staticUrl, '/image/minileaf.gif');
+
+	@override
+	bool get hidden => false;
 }

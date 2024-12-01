@@ -734,4 +734,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   String get name => 'Administrator';
+
+	@override
+	bool get hidden => true;
 }

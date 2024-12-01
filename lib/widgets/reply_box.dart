@@ -28,6 +28,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -1547,15 +1548,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							icon: Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									SizedBox(
-										width: 16,
-										height: 16,
-										child: ExtendedImage.network(
-											site.passIconUrl.toString(),
-											cache: true,
-											enableLoadState: false,
-											fit: BoxFit.contain
-										)
+									ImageboardSiteLoginSystemIcon(
+										loginSystem: site.loginSystem
 									),
 									const SizedBox(width: 2),
 									Icon(_disableLoginSystem ? CupertinoIcons.square : CupertinoIcons.checkmark_square)
@@ -1772,19 +1766,20 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																	if (pair == null) {
 																		return const SizedBox.shrink();
 																	}
+																	final time = pair.deadline;
 																	return AdaptiveThinButton(
 																		backgroundFilled: true,
-																		onPressed: pair.$2,
+																		onPressed: () => pair.action(context),
 																		padding: const EdgeInsets.all(8),
 																		child: Row(
 																			mainAxisSize: MainAxisSize.min,
 																			children: [
-																				Text('${pair.$3} '),
+																				Text('${pair.label} '),
 																				GreedySizeCachingBox(
 																					alignment: Alignment.centerRight,
 																					child: TimedRebuilder(
 																						interval: const Duration(seconds: 1),
-																						function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
+																						function: () => formatDuration(time.difference(DateTime.now()).clampAboveZero),
 																						builder: (context, delta) => Text(
 																							'($delta)',
 																							style: CommonTextStyles.tabularFigures

@@ -416,4 +416,7 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   String get name => 'Passcode';
+
+	@override
+	bool get hidden => false;
 }

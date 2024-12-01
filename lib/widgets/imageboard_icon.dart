@@ -77,3 +77,48 @@ class ImageboardIcon extends StatelessWidget {
 		return child;
 	}
 }
+
+class ImageboardSiteLoginSystemIcon extends StatelessWidget {
+	final ImageboardSiteLoginSystem? loginSystem;
+	final double size;
+
+	const ImageboardSiteLoginSystemIcon({
+		required this.loginSystem,
+		this.size = 16,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		final url = loginSystem?.iconUrl;
+		final cacheSize = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
+		return SizedBox.square(
+			dimension: size,
+			child: url != null ? ExtendedImage.network(
+				url.toString(),
+				headers: loginSystem?.parent.getHeaders(url),
+				cache: true,
+				enableLoadState: true,
+				loadStateChanged: (state) {
+					if (state.extendedImageLoadState == LoadState.failed) {
+						return Builder(
+							builder: (context) => Center(
+								child: Icon(CupertinoIcons.exclamationmark_triangle_fill, size: size)
+							)
+						);
+					}
+					else if (state.extendedImageLoadState == LoadState.loading) {
+						return const SizedBox();
+					}
+					return null;
+				},
+				filterQuality: FilterQuality.high,
+				fit: BoxFit.contain,
+				width: size,
+				height: size,
+				cacheWidth: cacheSize,
+				cacheHeight: cacheSize,
+			) : Icon(CupertinoIcons.person, size: size)
+		);
+	}
+}

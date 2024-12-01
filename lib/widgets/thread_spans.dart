@@ -2,6 +2,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
@@ -104,14 +105,8 @@ class PassSinceSpan extends TextSpan {
 				child: Row(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						SizedBox(
-							width: 16,
-							height: 16,
-							child: ExtendedImage.network(
-								site.passIconUrl.toString(),
-								cache: true,
-								enableLoadState: false
-							)
+						ImageboardSiteLoginSystemIcon(
+							loginSystem: site.loginSystem
 						),
 						Text(sinceYear.toString(), textScaler: TextScaler.noScaling, style: const TextStyle(fontSize: 16))
 					]

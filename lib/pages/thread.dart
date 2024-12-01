@@ -2994,29 +2994,29 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												}
 												return Padding(
 													padding: const EdgeInsets.only(right: 8),
-													child: AdaptiveFilledButton(
-														padding: const EdgeInsets.all(8),
-														color: theme.primaryColorWithBrightness(0.6),
-														onPressed: replyBoxState.toggleReplyBox,
-														child: AnimatedSize(
-															duration: const Duration(milliseconds: 200),
-															curve: Curves.ease,
-															child: AnimatedBuilder(
-																animation: postingPost,
-																builder: (context, _) {
-																	final pair = postingPost.pair;
-																	return Row(
+													child: AnimatedBuilder(
+														animation: postingPost,
+														builder: (context, _) {
+															final pair = postingPost.pair;
+															return AdaptiveFilledButton(
+																padding: const EdgeInsets.all(8),
+																color: theme.primaryColorWithBrightness(0.6),
+																onPressed: pair != null && pair.highPriority ? () => pair.action(context) : replyBoxState.toggleReplyBox,
+																child: AnimatedSize(
+																	duration: const Duration(milliseconds: 200),
+																	curve: Curves.ease,
+																	child: Row(
 																		children: [
 																			Icon(CupertinoIcons.reply, color: theme.backgroundColor, size: 19),
 																			const SizedBox(width: 4),
 																			DebouncedBuilder(
-																				value: pair?.$3 ?? postingPost.statusText,
+																				value: pair?.label ?? postingPost.statusText,
 																				period: const Duration(milliseconds: 100),
 																				builder: (s) => Text(s, style: TextStyle(color: theme.backgroundColor))
 																			),
 																			if (pair != null) TimedRebuilder(
 																				interval: const Duration(seconds: 1),
-																				function: () => formatDuration(pair.$1.difference(DateTime.now()).clampAboveZero),
+																				function: () => formatDuration(pair.deadline.difference(DateTime.now()).clampAboveZero),
 																				builder: (context, delta) => Text(
 																					' ($delta)',
 																					style: CommonTextStyles.tabularFigures
@@ -3047,10 +3047,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																				const SizedBox(width: 4)
 																			]
 																		]
-																	);
-																}
-															)
-														)
+																	)
+																)
+															);
+														}
 													)
 												);
 											}

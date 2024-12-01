@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:chan/pages/cookie_browser.dart';
 import 'package:chan/pages/settings/common.dart';
+import 'package:chan/services/auth_page_helper.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/settings.dart';
@@ -13,6 +14,24 @@ import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
+Future<void> _showLoginSystemPopup(BuildContext context, ImageboardSiteLoginSystem loginSystem) async {
+	await showAdaptiveDialog(
+		context: context,
+		barrierDismissible: true,
+		builder: (context) => AdaptiveAlertDialog(
+			content: SettingsLoginPanel(
+				loginSystem: loginSystem
+			),
+			actions: [
+				AdaptiveDialogAction(
+					onPressed: () => Navigator.pop(context),
+					child: const Text('Close')
+				)
+			]
+		)
+	);
+}
 
 final siteSettings = [
 	const SwitchSettingWidget(
@@ -43,152 +62,170 @@ final siteSettings = [
 						children: [
 							ImageboardIcon(imageboardKey: imageboard.key),
 							const SizedBox(width: 16),
-							Expanded(
+							GestureDetector(
+								onDoubleTap: switch (imageboard.site.loginSystem) {
+									ImageboardSiteLoginSystem loginSystem => switch (loginSystem.hidden) {
+										true => () => _showLoginSystemPopup(context, loginSystem),
+										false => null
+									},
+									null => null
+								},
 								child: Text(imageboard.site.name)
 							),
-							if (imageboard.site.loginSystem != null) AnimatedBuilder(
-								animation: imageboard.persistence,
-								builder: (context, _) => AdaptiveIconButton(
-									icon: imageboard.persistence.browserState.loginFields.isNotEmpty
-										? const Text('Logged in') : const Text('Log in'),
-									onPressed: () => showAdaptiveDialog(
-										context: context,
-										barrierDismissible: true,
-										builder: (context) => AdaptiveAlertDialog(
-											content: SettingsLoginPanel(
-												loginSystem: imageboard.site.loginSystem!
-											),
-											actions: [
-												AdaptiveDialogAction(
-													onPressed: () => Navigator.pop(context),
-													child: const Text('Close')
-												)
-											]
-										)
-									)
-								)
-							),
-							if (imageboard.site.authPage case Uri url) AdaptiveIconButton(
-								icon: const Icon(CupertinoIcons.globe),
-								onPressed: () => openCookieBrowser(
-									context,
-									url,
-								)
-							),
-							if (imageboard.site.hasLinkCookieAuth) AdaptiveIconButton(
-								icon: const Icon(CupertinoIcons.link),
-								onPressed: () async {
-									final controller = TextEditingController();
-									final linkStr = await showAdaptiveDialog<String>(
-										context: context,
-										barrierDismissible: true,
-										builder: (context) => AdaptiveAlertDialog(
-											title: const Text('Verification Link'),
-											content: Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													const SizedBox(height: 10),
-													AdaptiveTextField(
-														controller: controller,
-														autofocus: true,
-														smartDashesType: SmartDashesType.disabled,
-														smartQuotesType: SmartQuotesType.disabled,
-														minLines: 1,
-														maxLines: 1,
-														onSubmitted: (s) => Navigator.pop(context, s)
+							Expanded(
+								child: Wrap(
+									alignment: WrapAlignment.end,
+									crossAxisAlignment: WrapCrossAlignment.center,
+									children: [
+										if (imageboard.site.loginSystem case ImageboardSiteLoginSystem loginSystem)
+											if (!loginSystem.hidden) Padding(
+												padding: const EdgeInsets.symmetric(vertical: 12),
+												child: AnimatedBuilder(
+													animation: imageboard.persistence,
+													builder: (context, _) => AdaptiveThinButton(
+														filled: loginSystem.getSavedLoginFields() != null,
+														padding: const EdgeInsets.all(6),
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																ImageboardSiteLoginSystemIcon(
+																	loginSystem: loginSystem
+																),
+																Text(loginSystem.name)
+															]
+														),
+														onPressed: () => _showLoginSystemPopup(context, loginSystem)
 													)
-												]
-											),
-											actions: [
-												AdaptiveDialogAction(
-													isDefaultAction: true,
-													child: const Text('Submit'),
-													onPressed: () => Navigator.pop(context, controller.text.isEmpty ? null : controller.text)
-												),
-												AdaptiveDialogAction(
-													child: const Text('Cancel'),
-													onPressed: () => Navigator.pop(context)
 												)
-											]
+											),
+										if (imageboard.site.authPage != null && imageboard.site.hasLinkCookieAuth) AdaptiveIconButton(
+											icon: const Icon(CupertinoIcons.link),
+											onPressed: () => showAuthPageHelperPopup(context, imageboard)
 										)
-									);
-									controller.dispose();
-									if (linkStr == null) {
-										return;
-									}
-									final url = Uri.tryParse(linkStr);
-									if (url == null) {
-										if (context.mounted) {
-											alertError(context, 'Invalid URL', null);
-										}
-										return;
-									}
-									await imageboard.site.loginSystem?.logout(false);
-									if (!context.mounted) {
-										return;
-									}
-									openCookieBrowser(
-										context,
-										url,
-									);
-								}
-							),
-							if (imageboard.site.archives.isNotEmpty) AdaptiveIconButton(
-								icon: const Icon(CupertinoIcons.archivebox),
-								onPressed: () => showAdaptiveDialog<bool>(
-									context: context,
-									barrierDismissible: true,
-									builder: (context) => StatefulBuilder(
-										builder: (context, setDialogState) => AdaptiveAlertDialog(
-											title: const Text('Archives'),
-											content: Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													const SizedBox(height: 16),
-													for (final archive in imageboard.site.archives) Row(
-														children: [
-															Expanded(
-																child: Text(archive.name, textAlign: TextAlign.left)
+										else if (imageboard.site.authPage case Uri url) AdaptiveIconButton(
+											icon: const Icon(CupertinoIcons.globe),
+											onPressed: () => openCookieBrowser(
+												context,
+												url,
+											)
+										)
+										else if (imageboard.site.hasLinkCookieAuth) AdaptiveIconButton(
+											icon: const Icon(CupertinoIcons.link),
+											onPressed: () async {
+												final controller = TextEditingController();
+												final linkStr = await showAdaptiveDialog<String>(
+													context: context,
+													barrierDismissible: true,
+													builder: (context) => AdaptiveAlertDialog(
+														title: const Text('Verification Link'),
+														content: Column(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																const SizedBox(height: 10),
+																AdaptiveTextField(
+																	controller: controller,
+																	autofocus: true,
+																	smartDashesType: SmartDashesType.disabled,
+																	smartQuotesType: SmartQuotesType.disabled,
+																	minLines: 1,
+																	maxLines: 1,
+																	onSubmitted: (s) => Navigator.pop(context, s)
+																)
+															]
+														),
+														actions: [
+															AdaptiveDialogAction(
+																isDefaultAction: true,
+																child: const Text('Submit'),
+																onPressed: () => Navigator.pop(context, controller.text.isEmpty ? null : controller.text)
 															),
-															AdaptiveSwitch(
-																value: !imageboard.persistence.browserState.disabledArchiveNames.contains(archive.name),
-																onChanged: (enable) {
-																	if (enable) {
-																		imageboard.persistence.browserState.disabledArchiveNames.remove(archive.name);
-																	}
-																	else {
-																		imageboard.persistence.browserState.disabledArchiveNames.add(archive.name);
-																	}
-																	imageboard.persistence.didUpdateBrowserState();
-																	setDialogState(() {});
-																}
+															AdaptiveDialogAction(
+																child: const Text('Cancel'),
+																onPressed: () => Navigator.pop(context)
 															)
 														]
 													)
-												]
-											),
-											actions: [
-												AdaptiveDialogAction(
-													isDefaultAction: true,
-													onPressed: () => Navigator.pop(context, true),
-													child: const Text('Close'),
+												);
+												controller.dispose();
+												if (linkStr == null) {
+													return;
+												}
+												final url = Uri.tryParse(linkStr);
+												if (url == null) {
+													if (context.mounted) {
+														alertError(context, 'Invalid URL', null);
+													}
+													return;
+												}
+												await imageboard.site.loginSystem?.logout(false);
+												if (!context.mounted) {
+													return;
+												}
+												openCookieBrowser(
+													context,
+													url,
+												);
+											}
+										),
+										if (imageboard.site.archives.isNotEmpty) AdaptiveIconButton(
+											icon: const Icon(CupertinoIcons.archivebox),
+											onPressed: () => showAdaptiveDialog<bool>(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => StatefulBuilder(
+													builder: (context, setDialogState) => AdaptiveAlertDialog(
+														title: const Text('Archives'),
+														content: Column(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																const SizedBox(height: 16),
+																for (final archive in imageboard.site.archives) Row(
+																	children: [
+																		Expanded(
+																			child: Text(archive.name, textAlign: TextAlign.left)
+																		),
+																		AdaptiveSwitch(
+																			value: !imageboard.persistence.browserState.disabledArchiveNames.contains(archive.name),
+																			onChanged: (enable) {
+																				if (enable) {
+																					imageboard.persistence.browserState.disabledArchiveNames.remove(archive.name);
+																				}
+																				else {
+																					imageboard.persistence.browserState.disabledArchiveNames.add(archive.name);
+																				}
+																				imageboard.persistence.didUpdateBrowserState();
+																				setDialogState(() {});
+																			}
+																		)
+																	]
+																)
+															]
+														),
+														actions: [
+															AdaptiveDialogAction(
+																isDefaultAction: true,
+																onPressed: () => Navigator.pop(context, true),
+																child: const Text('Close'),
+															)
+														]
+													)
 												)
-											]
+											)
+										),
+										AdaptiveIconButton(
+											icon: const Icon(CupertinoIcons.delete),
+											onPressed: () async {
+												final really = await confirm(context, 'Really delete ${imageboard.site.name}? Data will be gone forever.', actionName: 'Delete');
+												if (really && context.mounted) {
+													await modalLoad(context, 'Cleaning up...', (_) async {
+														await imageboard.deleteAllData();
+														Settings.instance.removeSiteKey(imageboard.key);
+													});
+												}
+											}
 										)
-									)
+									]
 								)
-							),
-							AdaptiveIconButton(
-								icon: const Icon(CupertinoIcons.delete),
-								onPressed: () async {
-									final really = await confirm(context, 'Really delete ${imageboard.site.name}? Data will be gone forever.', actionName: 'Delete');
-									if (really && context.mounted) {
-										await modalLoad(context, 'Cleaning up...', (_) async {
-											await imageboard.deleteAllData();
-											Settings.instance.removeSiteKey(imageboard.key);
-										});
-									}
-								}
 							)
 						]
 					)
