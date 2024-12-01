@@ -1004,6 +1004,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		attachment = null;
 		_attachmentScan = null;
 		_overrideRandomizeFilenames = false;
+		spoiler = false;
 		_didUpdateDraft();
 	}
 
