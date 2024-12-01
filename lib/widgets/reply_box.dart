@@ -148,6 +148,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		null => null
 	};
 
+	bool _textIsEmpty = true;
 	String get text => _textFieldController.text;
 	set text(String newText) => _textFieldController.text = newText;
 
@@ -251,6 +252,11 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void _onTextChanged() {
+		if (text.isEmpty != _textIsEmpty) {
+			setState(() {
+				_textIsEmpty = text.isEmpty;
+			});
+		}
 		_didUpdateDraft();
 		runWhenIdle(const Duration(milliseconds: 50), _scanForUrl);
 	}
@@ -350,6 +356,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		final persistence = context.read<Persistence>();
 		postingPost = ValueNotifier(null);
 		_textFieldController = ReplyBoxTextEditingController(text: widget.initialDraft?.text);
+		_textIsEmpty = text.isEmpty;
 		_subjectFieldController = TextEditingController(text: widget.initialDraft?.subject);
 		_optionsFieldController = TextEditingController(text: widget.initialDraft?.options);
 		_filenameController = TextEditingController(text: widget.initialDraft?.overrideFilenameWithoutExtension);
@@ -2124,9 +2131,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					child: Opacity(
 						opacity: widget.isArchived ? 0.5 : 1,
 						child: AdaptiveIconButton(
-							onPressed: _attachmentProgress != null ? null : (loading ? _cancel : switch ((text, attachment)) {
+							onPressed: _attachmentProgress != null ? null : (loading ? _cancel : switch ((_textIsEmpty, attachment)) {
 								// Don't allow empty post
-								('', null) => null,
+								(true, null) => null,
 								_ => _submit
 							}),
 							icon: Icon(loading ? CupertinoIcons.xmark : CupertinoIcons.paperplane)
