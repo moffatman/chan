@@ -231,7 +231,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	final _playerErrorStream = StreamController<String>.broadcast();
 	({
 		ValueNotifier<int> currentBytes,
-		int totalBytes,
+		int? totalBytes,
 		Uri uri
 	})? _soundSourceDownload;
 
@@ -541,6 +541,11 @@ class AttachmentViewerController extends ChangeNotifier {
 			if (soundSource != null) {
 				try {
 					final currentBytes = ValueNotifier<int>(0);
+					_soundSourceDownload = (
+						currentBytes: currentBytes,
+						totalBytes: null,
+						uri: soundSource
+					);
 					final soundFile = await VideoServer.instance.cachingDownload(
 						uri: soundSource,
 						interruptible: true,
@@ -1774,7 +1779,10 @@ class AttachmentViewer extends StatelessWidget {
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
 																		LinearProgressIndicator(
-																			value: currentBytes / soundSourceDownload.totalBytes,
+																			value: switch (soundSourceDownload.totalBytes) {
+																				int totalBytes => currentBytes / totalBytes,
+																				null => null
+																			},
 																			backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context)
 																		),
 																		const SizedBox(height: 16),
@@ -1787,7 +1795,7 @@ class AttachmentViewer extends StatelessWidget {
 																					child: const Text('Cancel')
 																				),
 																				const Spacer(),
-																				Text('${formatFilesize(currentBytes)} / ${formatFilesize(soundSourceDownload.totalBytes)}')
+																				if (soundSourceDownload.totalBytes case int totalBytes) Text('${formatFilesize(currentBytes)} / ${formatFilesize(totalBytes)}')
 																			]
 																		)
 																	]

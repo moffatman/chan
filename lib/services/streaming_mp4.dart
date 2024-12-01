@@ -93,6 +93,7 @@ class VideoServer {
 	static VideoServer? _server;
 	final Directory webmRoot;
 	final Directory httpRoot;
+	final Map<String, HttpClient?> _earlyClients = {};
 	final Map<String, _CachingFile> _caches = {};
 	final Map<String, Set<_CachingFile>> _children = {};
 	HttpServer? _httpServer;
@@ -377,89 +378,95 @@ class VideoServer {
 		final file = getFile(digest);
 		final stat = await file.stat();
 		_CachingFile? cachingFile0;
-		if (stat.type == FileSystemEntityType.file) {
-			// First HEAD, to see if we have the right size file cached
-			final headRequest = await _client.headUrl(uri);
-			for (final header in headers.entries) {
-				headRequest.headers.set(header.key, header.value);
-			}
-			final headResponse = await headRequest.close();
-			headResponse.drain(); // HEAD should have no body, but just to be safe
-			cachingFile0= _CachingFile(
-				file: file,
-				totalBytes: headResponse.contentLength,
-				statusCode: headResponse.statusCode,
-				headers: headers
-			);
-			if (!force && stat.size == cachingFile0.totalBytes && !uri.path.endsWith('m3u8')) {
-				// File is already downloaded and filesize matches
-				cachingFile0.currentBytes = cachingFile0.totalBytes;
-				cachingFile0.completer.complete();
-				return cachingFile0;
-			}
-			if (interruptible && !force && !uri.path.endsWith('m3u8')) {
-				cachingFile0.currentBytes = stat.size;
-			}
-			else {
-				// Corrupt file
-				await file.delete();
-			}
-		}
-		// Now GET the file for real
 		HttpClient? interruptibleClient = interruptible ? (HttpClient()..badCertificateCallback = badCertificateCallback) : null;
-		final client = interruptibleClient ?? _client;
-		final httpRequest = await client.getUrl(uri);
-		for (final header in headers.entries) {
-			httpRequest.headers.set(header.key, header.value);
-		}
-		if ((cachingFile0?.currentBytes ?? 0) != 0) {
-			httpRequest.headers.set('Range', 'bytes=${cachingFile0?.currentBytes}-');
-		}
-		final response = await httpRequest.close();
-		final cachingFile = cachingFile0 ?? _CachingFile(
-			file: file,
-			totalBytes: response.contentLength,
-			statusCode: response.statusCode,
-			headers: headers
-		);
-		cachingFile._client = interruptibleClient;
-		if (!file.existsSync()) {
-			await file.create(recursive: true);
-		}
-		final handle = await file.open(mode:cachingFile.currentBytes == 0 ? FileMode.writeOnly : FileMode.writeOnlyAppend);
-		() async {
-			try {
-				await for (final chunk in response) {
-					await cachingFile.lock.protect(() async {
-						await handle.writeFrom(chunk);
-						await handle.flush();
-						cachingFile.currentBytes += chunk.length;
-						cachingFile.didUpdate();
-					});
+		_earlyClients[digest] = interruptibleClient;
+		try {
+			final client = interruptibleClient ?? _client;
+			if (stat.type == FileSystemEntityType.file) {
+				// First HEAD, to see if we have the right size file cached
+				final headRequest = await client.headUrl(uri);
+				for (final header in headers.entries) {
+					headRequest.headers.set(header.key, header.value);
 				}
-				cachingFile._client?.close();
-				cachingFile._client = null;
-				cachingFile.completer.complete();
-			}
-			catch (e, st) {
-				cachingFile._client?.close();
-				cachingFile._client = null;
-				cachingFile.completer.completeError(e, st);
-				if (!(cachingFile._interrupted && e is HttpException)) {
-					print('Deleting file');
-					await file.delete();
+				final headResponse = await headRequest.close();
+				headResponse.drain(); // HEAD should have no body, but just to be safe
+				cachingFile0= _CachingFile(
+					file: file,
+					totalBytes: headResponse.contentLength,
+					statusCode: headResponse.statusCode,
+					headers: headers
+				);
+				if (!force && stat.size == cachingFile0.totalBytes && !uri.path.endsWith('m3u8')) {
+					// File is already downloaded and filesize matches
+					cachingFile0.currentBytes = cachingFile0.totalBytes;
+					cachingFile0.completer.complete();
+					return cachingFile0;
+				}
+				if (interruptible && !force && !uri.path.endsWith('m3u8')) {
+					cachingFile0.currentBytes = stat.size;
 				}
 				else {
-					print('Not deleting file');
+					// Corrupt file
+					await file.delete();
 				}
 			}
-		}();
-		if (uri.path.endsWith('m3u8')) {
-			// contentLength is not trustworthy for some reason...
-			await cachingFile.completer.future;
-			cachingFile.totalBytes = cachingFile.currentBytes;
+			// Now GET the file for real
+			final HttpClientRequest httpRequest = await client.getUrl(uri);
+			for (final header in headers.entries) {
+				httpRequest.headers.set(header.key, header.value);
+			}
+			if ((cachingFile0?.currentBytes ?? 0) != 0) {
+				httpRequest.headers.set('Range', 'bytes=${cachingFile0?.currentBytes}-');
+			}
+			final response = await httpRequest.close();
+			final cachingFile = cachingFile0 ?? _CachingFile(
+				file: file,
+				totalBytes: response.contentLength,
+				statusCode: response.statusCode,
+				headers: headers
+			);
+			cachingFile._client = interruptibleClient;
+			if (!file.existsSync()) {
+				await file.create(recursive: true);
+			}
+			final handle = await file.open(mode:cachingFile.currentBytes == 0 ? FileMode.writeOnly : FileMode.writeOnlyAppend);
+			() async {
+				try {
+					await for (final chunk in response) {
+						await cachingFile.lock.protect(() async {
+							await handle.writeFrom(chunk);
+							await handle.flush();
+							cachingFile.currentBytes += chunk.length;
+							cachingFile.didUpdate();
+						});
+					}
+					cachingFile._client?.close();
+					cachingFile._client = null;
+					cachingFile.completer.complete();
+				}
+				catch (e, st) {
+					cachingFile._client?.close();
+					cachingFile._client = null;
+					cachingFile.completer.completeError(e, st);
+					if (!(cachingFile._interrupted && e is HttpException)) {
+						print('Deleting file');
+						await file.delete();
+					}
+					else {
+						print('Not deleting file');
+					}
+				}
+			}();
+			if (uri.path.endsWith('m3u8')) {
+				// contentLength is not trustworthy for some reason...
+				await cachingFile.completer.future;
+				cachingFile.totalBytes = cachingFile.currentBytes;
+			}
+			return cachingFile;
 		}
-		return cachingFile;
+		finally {
+			_earlyClients.remove(digest);
+		}
 	}
 
 	Future<String> startCachingDownload({
@@ -541,6 +548,7 @@ class VideoServer {
 	Future<void> interruptOngoingDownload(String digest) async {
 		final cachingFile = _caches[digest];
 		if (cachingFile == null) {
+			_earlyClients[digest]?.close(force: true);
 			return;
 		}
 		if (cachingFile._client == null) {
