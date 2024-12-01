@@ -983,7 +983,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		// This needs to happen last so it doesn't eagerly assume this is an undeletion
 		_listenToReplyPosting(entry);
 		setState(() {});
-		hideReplyBox();
+		if (context.read<Settings>().closeReplyBoxAfterSubmitting) {
+			hideReplyBox();
+		}
 	}
 
 	void _reset() {
@@ -1065,7 +1067,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					setState(() {
 						postingPost.value = null;
 					});
-					hideReplyBox();
+					if (context.read<Settings>().closeReplyBoxAfterSubmitting) {
+						hideReplyBox();
+					}
 				}
 			}
 			else if (state is QueueStateFailed<PostReceipt> && post == postingPost.value) {
