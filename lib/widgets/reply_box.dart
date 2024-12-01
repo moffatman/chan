@@ -1850,84 +1850,93 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						scrollDirection: Axis.horizontal,
 						reverse: true,
 						children: [
-							for (final snippet in snippets) AdaptiveIconButton(
-								onPressed: loading ? null : () async {
-									final initialSelection = _textFieldController.selection;
-									// This only works because all the ImageboardSnippets are const
-									final controller = _snippetControllers.putIfAbsent(snippet, () => TextEditingController());
-									if (!initialSelection.isCollapsed) {
-										controller.text = initialSelection.textInside(_textFieldController.text);
+							for (final snippet in snippets) GestureDetector(
+								onLongPress: loading ? null : () {
+									if (_textFieldController.selection.isCollapsed) {
+										// No selection
+										return;
 									}
-									final content = await showAdaptiveDialog<String>(
-										context: context,
-										barrierDismissible: true,
-										builder: (context) => AdaptiveAlertDialog(
-											title: Text('${snippet.name} block'),
-											content: Padding(
-												padding: const EdgeInsets.only(top: 16),
-												child: AdaptiveTextField(
-													autofocus: true,
-													enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-													smartDashesType: SmartDashesType.disabled,
-													smartQuotesType: SmartQuotesType.disabled,
-													minLines: 5,
-													maxLines: 5,
-													controller: controller,
-													onSubmitted: (s) => Navigator.pop(context, s)
-												)
-											),
-											actions: [
-												AdaptiveDialogAction(
-													isDefaultAction: true,
-													onPressed: () => Navigator.pop(context, controller.text),
-													child: const Text('Insert')
-												),
-												if (snippet.previewBuilder != null) AdaptiveDialogAction(
-													child: const Text('Preview'),
-													onPressed: () {
-														showAdaptiveDialog<bool>(
-															context: context,
-															barrierDismissible: true,
-															builder: (context) => AdaptiveAlertDialog(
-																title: Text('${snippet.name} preview'),
-																content: ChangeNotifierProvider<PostSpanZoneData>(
-																	create: (context) => PostSpanRootZoneData(
-																		imageboard: imageboard,
-																		thread: Thread(posts_: [], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
-																		semanticRootIds: [-14],
-																		style: PostSpanZoneStyle.linear
-																	),
-																	builder: (context, _) => DefaultTextStyle(
-																		style: defaultTextStyle,
-																		child: Text.rich(
-																			snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
-																		)
-																	)
-																),
-																actions: [
-																	AdaptiveDialogAction(
-																		isDefaultAction: true,
-																		child: const Text('Close'),
-																		onPressed: () => Navigator.pop(context)
-																	)
-																]
-															)
-														);
-													}
-												),
-												AdaptiveDialogAction(
-													child: const Text('Cancel'),
-													onPressed: () => Navigator.pop(context)
-												)
-											]
-										)
-									);
-									if (content != null) {
-										_insertText(snippet.wrap(content), addNewlineIfAtEnd: false, initialSelection: initialSelection);
-										controller.clear();
-									}
+									_insertText(snippet.wrap(_textFieldController.selection.textInside(_textFieldController.text)), addNewlineIfAtEnd: false, initialSelection: _textFieldController.selection);
 								},
-								icon: Icon(snippet.icon)
+								child: AdaptiveIconButton(
+									onPressed: loading ? null : () async {
+										final initialSelection = _textFieldController.selection;
+										// This only works because all the ImageboardSnippets are const
+										final controller = _snippetControllers.putIfAbsent(snippet, () => TextEditingController());
+										if (!initialSelection.isCollapsed) {
+											controller.text = initialSelection.textInside(_textFieldController.text);
+										}
+										final content = await showAdaptiveDialog<String>(
+											context: context,
+											barrierDismissible: true,
+											builder: (context) => AdaptiveAlertDialog(
+												title: Text('${snippet.name} block'),
+												content: Padding(
+													padding: const EdgeInsets.only(top: 16),
+													child: AdaptiveTextField(
+														autofocus: true,
+														enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+														smartDashesType: SmartDashesType.disabled,
+														smartQuotesType: SmartQuotesType.disabled,
+														minLines: 5,
+														maxLines: 5,
+														controller: controller,
+														onSubmitted: (s) => Navigator.pop(context, s)
+													)
+												),
+												actions: [
+													AdaptiveDialogAction(
+														isDefaultAction: true,
+														onPressed: () => Navigator.pop(context, controller.text),
+														child: const Text('Insert')
+													),
+													if (snippet.previewBuilder != null) AdaptiveDialogAction(
+														child: const Text('Preview'),
+														onPressed: () {
+															showAdaptiveDialog<bool>(
+																context: context,
+																barrierDismissible: true,
+																builder: (context) => AdaptiveAlertDialog(
+																	title: Text('${snippet.name} preview'),
+																	content: ChangeNotifierProvider<PostSpanZoneData>(
+																		create: (context) => PostSpanRootZoneData(
+																			imageboard: imageboard,
+																			thread: Thread(posts_: [], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
+																			semanticRootIds: [-14],
+																			style: PostSpanZoneStyle.linear
+																		),
+																		builder: (context, _) => DefaultTextStyle(
+																			style: defaultTextStyle,
+																			child: Text.rich(
+																				snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
+																			)
+																		)
+																	),
+																	actions: [
+																		AdaptiveDialogAction(
+																			isDefaultAction: true,
+																			child: const Text('Close'),
+																			onPressed: () => Navigator.pop(context)
+																		)
+																	]
+																)
+															);
+														}
+													),
+													AdaptiveDialogAction(
+														child: const Text('Cancel'),
+														onPressed: () => Navigator.pop(context)
+													)
+												]
+											)
+										);
+										if (content != null) {
+											_insertText(snippet.wrap(content), addNewlineIfAtEnd: false, initialSelection: initialSelection);
+											controller.clear();
+										}
+									},
+									icon: Icon(snippet.icon)
+								)
 							),
 							if (_flags.isNotEmpty) Center(
 								child: AdaptiveIconButton(
