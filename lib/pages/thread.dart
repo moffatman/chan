@@ -2457,7 +2457,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value.isCached && e.key.sizeInBytes == null);
 		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
 		final showGalleryGridButton = Settings.showGalleryGridButtonSetting.watch(context);
-		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
+		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.where((a) => a.type != AttachmentType.url).length);
 		final postSortingMethod = widget.persistentState.effectivePostSortingMethod;
 		final poll = widget.thread?.poll;
 		return Stack(
@@ -2529,7 +2529,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														)
 													);
 												})],
-												[(
+												if (realImageCount > 0) [(
 													describeCount(realImageCount, 'image'),
 													const RotatedBox(
 														quarterTurns: 1,
