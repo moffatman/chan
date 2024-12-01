@@ -269,7 +269,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			if (wait != null) {
 				return (
 					deadline: wait.until,
-					action: (_) => wait.skip,
+					action: (_) => wait.skip(),
 					label: state.message ?? 'Waiting',
 					highPriority: false
 				);
