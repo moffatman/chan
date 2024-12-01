@@ -123,7 +123,8 @@ extension _DisableUpdates on PersistentThreadState {
 enum _AttachmentCachingStatus {
 	uncached,
 	cached,
-	willNotAutoCacheDueToRateLimiting;
+	willNotAutoCacheDueToRateLimiting,
+	uncacheable;
 	bool get isCached => this == cached;
 }
 
@@ -492,6 +493,10 @@ class ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _checkAttachmentCache(Attachment attachment) async {
 		if (_cached[attachment] == _AttachmentCachingStatus.cached) return;
+		if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.url) {
+			_cached[attachment] = _AttachmentCachingStatus.uncacheable;
+			return;
+		}
 		_cached[attachment] = switch (await (await AttachmentCache.optimisticallyFindFile(attachment))?.exists()) {
 			true => _AttachmentCachingStatus.cached,
 			null || false => _cached[attachment] ?? _AttachmentCachingStatus.uncached
