@@ -482,17 +482,23 @@ class SiteLainchan extends ImageboardSite {
 			cancelToken: cancelToken
 		);
 		if (response.isRedirect ?? false) {
-			final digitMatches = RegExp(r'\d+').allMatches(response.redirects.last.location.toString());
+			// Don't match numbers in the hostname
+			final digitMatches = RegExp(r'\d+').allMatches('${response.redirects.last.location.path}?${response.redirects.last.location.query}');
 			if (digitMatches.isNotEmpty) {
-				return PostReceipt(
-					post: post,
-					id: int.parse(digitMatches.last.group(0)!),
-					password: password,
-					name: post.name ?? '',
-					options: post.options ?? '',
-					time: DateTime.now(),
-					ip: captchaSolution.ip
-				);
+				final id = int.parse(digitMatches.last.group(0)!);
+				final threadId = post.threadId;
+				// Sanity check in case it matched other number in the path
+				if (threadId == null || id > threadId) {
+					return PostReceipt(
+						post: post,
+						id: id,
+						password: password,
+						name: post.name ?? '',
+						options: post.options ?? '',
+						time: DateTime.now(),
+						ip: captchaSolution.ip
+					);
+				}
 			}
 		}
 		if ((response.statusCode ?? 0) >= 400) {
