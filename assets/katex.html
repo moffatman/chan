@@ -7,8 +7,9 @@
     <link crossorigin="anonymous" href="../flutter_tex.css" rel="stylesheet">
     <link crossorigin="anonymous" href="katex.min.css" rel="stylesheet">
     <script crossorigin="anonymous" src="katex.min.js"></script>
-    <script crossorigin="anonymous" src="auto-render.min.js"></script>
-    <script crossorigin="anonymous" src="mhchem.min.js"></script>
+    <script crossorigin="anonymous" src="contrib/mathtex-script-type.min.js"></script>
+    <script crossorigin="anonymous" src="contrib/auto-render.min.js"></script>
+    <script crossorigin="anonymous" src="contrib/mhchem.min.js"></script>
     <title>katex</title>
     <script>
         var formulasScrollStyle =
@@ -53,14 +54,14 @@
 
     function initView(jsonData) {
         appendStyle(formulasScrollStyle);
-        initTeXView(jsonData);
+        initTeXView(jsonData, "katex");
     }
 
     function renderTeXView(onCompleteCallback) {
         renderMathInElement(teXView);
         setTimeout(function () {
             onCompleteCallback();
-        }, 100)
+        }, 0)
     }
 
 
