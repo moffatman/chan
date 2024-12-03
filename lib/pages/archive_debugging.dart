@@ -95,7 +95,7 @@ class WrappedArchive extends ImageboardSite {
   Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => null;
 
   @override
-  Uri get iconUrl => Uri.https('google.com', '/favicon.ico');
+  Uri? get iconUrl => Uri.https('google.com', '/favicon.ico');
   
   @override
   String get defaultUsername => '';

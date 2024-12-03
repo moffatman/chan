@@ -338,7 +338,7 @@ class SiteDvach extends ImageboardSite {
 	@override
 	String get siteData => baseUrl;
 	@override
-	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
+	Uri? get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 	@override
 	String get defaultUsername => 'Аноним';
 

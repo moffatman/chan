@@ -1212,7 +1212,7 @@ class Site4Chan extends ImageboardSite {
 	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, Object.hashAll(archives), Object.hashAll(captchaUserAgents.values), overrideUserAgent, searchUrl, Object.hashAll(possibleCaptchaLetterCounts), Object.hashAll(postingHeaders.values), captchaTicketLifetime, reportCooldown, subjectCharacterLimit, spamFilterCaptchaDelayGreen, spamFilterCaptchaDelayYellow, spamFilterCaptchaDelayRed, stickyCloudflare);
 	
 	@override
-	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
+	Uri? get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 
 	@override
 	String get defaultUsername => 'Anonymous';
@@ -1486,7 +1486,7 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
   String get name => '4chan Pass';
 
 	@override
-	Uri get iconUrl => Uri.https(parent.staticUrl, '/image/minileaf.gif');
+	Uri? get iconUrl => Uri.https(parent.staticUrl, '/image/minileaf.gif');
 
 	@override
 	bool get hidden => false;

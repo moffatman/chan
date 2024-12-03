@@ -749,7 +749,7 @@ class SiteXenforo extends ImageboardSite {
   }
 
   @override
-  Uri get iconUrl => Uri.https(baseUrl, faviconPath);
+  Uri? get iconUrl => Uri.https(baseUrl, faviconPath);
 
 	@override
 	ImageboardSearchMetadata supportsSearch(String? board) {

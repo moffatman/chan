@@ -407,7 +407,7 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
+	Uri? get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 
 	@override
 	String get siteData => baseUrl;

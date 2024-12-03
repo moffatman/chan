@@ -35,7 +35,7 @@ class SiteLainchan extends ImageboardSite {
 	@override
 	final String name;
 	final int? maxUploadSizeBytes;
-	final String faviconPath;
+	final String? faviconPath;
 	@override
 	final String defaultUsername;
 
@@ -645,7 +645,11 @@ class SiteLainchan extends ImageboardSite {
 	int get hashCode => Object.hash(baseUrl, basePath, name, maxUploadSizeBytes, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername);
 	
 	@override
-	Uri get iconUrl {
+	Uri? get iconUrl {
+		final faviconPath = this.faviconPath;
+		if (faviconPath == null) {
+			return null;
+		}
 		if (faviconPath.startsWith('/')) {
 			return Uri.https(baseUrl, faviconPath);
 		}

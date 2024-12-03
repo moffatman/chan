@@ -337,7 +337,7 @@ class SiteJsChan extends ImageboardSite {
 	}
 
 	@override
-	Uri get iconUrl => Uri.https(baseUrl, faviconPath);
+	Uri? get iconUrl => Uri.https(baseUrl, faviconPath);
 
 	@override
 	String get siteData => baseUrl;

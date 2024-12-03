@@ -490,7 +490,7 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
+	Uri? get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 
 	@override
 	List<ImageboardSnippet> getBoardSnippets(String board) => const [

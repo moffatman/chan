@@ -31,7 +31,7 @@ class ImageboardIcon extends StatelessWidget {
 		if (site == null) {
 			return Icon(CupertinoIcons.exclamationmark_triangle_fill, size: size);
 		}
-		Uri url = site.iconUrl;
+		Uri? url = site.iconUrl;
 		bool clipOval = false;
 		if (boardName != null) {
 			final boardUrl = imageboard?.persistence.getBoard(boardName!).icon;
@@ -43,7 +43,7 @@ class ImageboardIcon extends StatelessWidget {
 		final cacheSize = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
 		final child = SizedBox.square(
 			dimension: size,
-			child: ExtendedImage.network(
+			child: url != null ? ExtendedImage.network(
 				url.toString(),
 				headers: site.getHeaders(url),
 				cache: true,
@@ -67,7 +67,7 @@ class ImageboardIcon extends StatelessWidget {
 				height: size,
 				cacheWidth: cacheSize,
 				cacheHeight: cacheSize,
-			)
+			) : Icon(CupertinoIcons.globe, size: size)
 		);
 		if (clipOval) {
 			return ClipOval(
