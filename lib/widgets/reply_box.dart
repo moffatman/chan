@@ -593,7 +593,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (audioPresent == true && audioAllowed == false) {
 			solutions.add('removing audio');
 		}
-		if (solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(ext)) {
+		if (solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm', 'mp4'].contains(ext)) {
 			return source;
 		}
 		final existingResult = await transcode.getDestinationIfSatisfiesConstraints();
@@ -814,7 +814,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					width: scan.width,
 					height: scan.height,
 					maximumDimension: settings.maximumImageUploadDimension,
-					transcode: MediaConversion.toWebm(
+					size: size,
+					maximumSize: board.maxWebmSizeBytes,
+					transcode: MediaConversion.toMp4(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,

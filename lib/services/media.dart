@@ -339,12 +339,16 @@ class MediaScan {
 		return frames.round() > 1;
 	}
 
+	static const _kUnremoveableMetadataFields = {
+		'major_brand',
+		'minor_version',
+		'compatible_brands',
+		'encoder'
+	};
 	bool get hasMetadata {
 		final map = metadata;
 		return map != null &&
-		       map.isNotEmpty &&
-					 // ENCODER tag cannot be removed
-					 map.keys.trySingle != 'ENCODER';
+		       map.keys.any((k) => !_kUnremoveableMetadataFields.contains(k.toLowerCase()));
 	}
 
 	@override
@@ -404,13 +408,25 @@ class MediaConversion {
 	static MediaConversion toMp4(Uri inputFile, {
 		Map<String, String> headers = const {},
 		Uri? soundSource,
-		bool copyStreams = false
+		bool copyStreams = false,
+		bool stripAudio = false,
+		int? maximumSizeInBytes,
+		double? maximumDurationInSeconds,
+		int? maximumDimension,
+		bool removeMetadata = false,
+		bool randomizeChecksum = false,
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'mp4',
 			headers: headers,
 			soundSource: soundSource,
+			stripAudio: stripAudio,
+			maximumSizeInBytes: maximumSizeInBytes,
+			maximumDurationInSeconds: maximumDurationInSeconds,
+			maximumDimension: maximumDimension,
+			removeMetadata: removeMetadata,
+			randomizeChecksum: randomizeChecksum,
 			copyStreams: copyStreams || inputFile.path.endsWith('.m3u8')
 		);
 	}
@@ -715,9 +731,11 @@ class MediaConversion {
 						if (stripAudio) '-an',
 						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
 						else if (outputFileExtension != 'png') ...['-b:v', bitrateString],
-						if (outputFileExtension == 'webm') ...[
+						if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') ...[
 							'-minrate', bitrateString,
 							'-maxrate', bitrateString,
+						],
+						if (outputFileExtension == 'webm') ...[
 							if (copyStreams && soundSource == null) ...[
 								'-acodec', 'copy'
 							]
@@ -749,14 +767,23 @@ class MediaConversion {
 							'-hls_time', '3',
 							'-hls_flags', 'split_by_time'
 						],
-						if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams) ...[
-							'-c:a', 'aac',
-							if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
+						if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8')) ...[
+							if (copyStreams && soundSource == null)
+								...['-acodec', 'copy']
+							else
+								...['-c:a', 'aac'],
+							if (copyStreams)
+								...['-vcodec', 'copy']
+							else if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
 								...['-vcodec', 'h264_videotoolbox']
 							else
 								...['-c:v', 'libx264', '-preset', 'medium']
 						],
-						if (copyStreams && outputFileExtension != 'webm') ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy'],
+						if (copyStreams && outputFileExtension != 'webm' && outputFileExtension != 'mp4') ...[
+							'-acodec', 'copy',
+							'-vcodec', 'copy',
+							'-c', 'copy'
+						],
 						if (maximumDurationInSeconds != null) ...['-t', (maximumDurationInSeconds! * _durationArgumentFactor).toString()],
 						if (removeMetadata) ...['-map_metadata', '-1'],
 						if (vfs.isNotEmpty) ...['-vf', vfs.join(',')],
