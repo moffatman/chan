@@ -1764,7 +1764,7 @@ class _ConditionalOnTapUpState extends State<ConditionalOnTapUp> {
 	}
 }
 
-extension HasOnePosition on ScrollController {
+extension ProtectedAccess on ScrollController {
 	// ignore: INVALID_USE_OF_PROTECTED_MEMBER
 	bool get hasOnePosition => positions.length == 1;
 	ScrollPosition? get tryPosition {
@@ -1773,6 +1773,8 @@ extension HasOnePosition on ScrollController {
 		}
 		return null;
 	}
+	// ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+	bool get activityIsDriven => tryPosition?.activity is DrivenScrollActivity;
 }
 
 Future<bool> confirm(BuildContext context, String message, {String actionName = 'OK'}) async {

@@ -2790,7 +2790,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						onPointerUp: (e) {
 							_lastPointerUpTime = DateTime.now();
 							_pointerDownCount--;
-							if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {
+							if (widget.controller?.scrollController != null && widget.controller!.scrollController!.activityIsDriven && _pointerDownCount == 0) {
 								widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
 							}
 							widget.controller?.cancelCurrentAnimation();
