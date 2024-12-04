@@ -62,18 +62,24 @@ enum RequestPriority {
 	cosmetic
 }
 
-class PostNotFoundException implements Exception {
+class PostNotFoundException extends ExtendedException {
 	String board;
 	int id;
 	PostNotFoundException(this.board, this.id);
 	@override
 	String toString() => 'Post not found: /$board/$id';
+
+	@override
+	bool get isReportable => false;
 }
 
-class ThreadNotFoundException implements Exception {
+class ThreadNotFoundException extends ExtendedException {
 	const ThreadNotFoundException();
 	@override
 	String toString() => 'Thread not found';
+
+	@override
+	bool get isReportable => false;
 }
 
 class BoardNotFoundException implements Exception {
@@ -83,11 +89,14 @@ class BoardNotFoundException implements Exception {
 	String toString() => 'Board not found: /$board/';
 }
 
-class BoardNotArchivedException implements Exception {
+class BoardNotArchivedException extends ExtendedException {
 	String board;
 	BoardNotArchivedException(this.board);
 	@override
 	String toString() => 'Board not archived: /$board/';
+
+	@override
+	bool get isReportable => false;
 }
 
 class HTTPStatusException implements Exception {
