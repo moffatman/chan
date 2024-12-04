@@ -483,7 +483,7 @@ class SiteLainchan extends ImageboardSite {
 		);
 		if (response.isRedirect ?? false) {
 			// Don't match numbers in the hostname
-			final digitMatches = RegExp(r'\d+').allMatches('${response.redirects.last.location.path}?${response.redirects.last.location.query}');
+			final digitMatches = RegExp(r'\d+').allMatches(response.redirects.last.location.replace(host: 'host.com').toString());
 			if (digitMatches.isNotEmpty) {
 				final id = int.parse(digitMatches.last.group(0)!);
 				final threadId = post.threadId;
@@ -533,9 +533,9 @@ class SiteLainchan extends ImageboardSite {
 				}
 			}
 			else {
-				for (final post in (await getThread(ThreadIdentifier(post.board, threadId), priority: RequestPriority.interactive)).posts) {
-					if ((post.span.buildText().similarityTo(post.text) > 0.9) && (post.time.compareTo(now) >= 0)) {
-						newPostId = post.id;
+				for (final p in (await getThread(ThreadIdentifier(post.board, threadId), priority: RequestPriority.interactive)).posts) {
+					if ((p.time.compareTo(now) >= 0) && (p.span.buildText().similarityTo(post.text) > 0.9)) {
+						newPostId = p.id;
 					}
 				}
 			}
