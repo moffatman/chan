@@ -70,7 +70,6 @@ TextSpan buildThreadCounters({
 		unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
 		final catalogLastTime = thread.lastUpdatedTime ?? thread.posts_.tryLast?.time;
 		final stateLastTime = threadState?.thread?.lastUpdatedTime ?? threadState?.thread?.posts_.tryLast?.time;
-		print('${thread.identifier} catalogLastTime=$catalogLastTime, stateLastTime=$stateLastTime');
 		showReplyTimeInsteadOfReplyCount = catalogLastTime != null &&
 				stateLastTime != null &&
 				catalogLastTime.isAfter(stateLastTime);
