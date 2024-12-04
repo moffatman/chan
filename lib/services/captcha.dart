@@ -99,6 +99,12 @@ Future<CaptchaSolution?> solveCaptcha({
 			}
 			on Exception catch (e) {
 				if (context == null || e is CooldownException) {
+					if (
+						e is CloudflareHandlerNotAllowedException ||
+					  (e is dio.DioError && e.error is CloudflareHandlerNotAllowedException)
+					) {
+						throw const HeadlessSolveNotPossibleException();
+					}
 					rethrow;
 				}
 				initialChallengeException = e;
