@@ -144,6 +144,10 @@ class SiteLainchan extends ImageboardSite {
 					else if (node.localName == 'sub') {
 						yield PostSubscriptSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
+					else if (node.localName == 'pre') {
+						yield PostCodeSpan(node.text.trim());
+						yield const PostLineBreakSpan();
+					}
 					else {
 						yield PostTextSpan(node.outerHtml);
 					}
