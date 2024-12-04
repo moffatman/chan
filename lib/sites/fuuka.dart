@@ -355,7 +355,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		final pattern = RegExp(r'https?:\/\/' + baseUrl + r'\/([^\/]+)\/thread\/(\d+)(#p(\d+))?');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
-			return BoardThreadOrPostIdentifier(match.group(1)!, int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
+			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(1)!), int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
 		}
 		return null;
 	}

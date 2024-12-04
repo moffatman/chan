@@ -626,7 +626,7 @@ class SiteLainchan extends ImageboardSite {
 		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/((' + res + r'\/(\d+)\.html(#[qp](\d+))?.*)|(index\.html))?$');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
-			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(4) ?? ''), int.tryParse(match.group(6) ?? ''));
+			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(1)!), int.tryParse(match.group(4) ?? ''), int.tryParse(match.group(6) ?? ''));
 		}
 		return null;
 	}

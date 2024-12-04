@@ -140,7 +140,7 @@ class SiteFutaba extends ImageboardSite {
 		final pattern = RegExp(r'https?:\/\/(.*\.)?' + (baseBaseUrl ?? baseUrl).replaceAll('.', r'\.') + r'\/([^\/]+)\/((res\/(\d+)\.html?(#sd(\d+))?.*)|(index\.html?))?$');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
-			return BoardThreadOrPostIdentifier(match.group(2)!, int.tryParse(match.group(5) ?? ''), int.tryParse(match.group(7) ?? ''));
+			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(2)!), int.tryParse(match.group(5) ?? ''), int.tryParse(match.group(7) ?? ''));
 		}
 		return null;
 	}

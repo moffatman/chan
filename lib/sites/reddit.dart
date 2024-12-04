@@ -606,7 +606,7 @@ class SiteReddit extends ImageboardSite {
 					postId = fromRedditId(match.group(6)!.split('?').first);
 				}
 			}
-			return BoardThreadOrPostIdentifier(match.group(2)!, threadId, postId);
+			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(2)!), threadId, postId);
 		}
 		return null;
 	}

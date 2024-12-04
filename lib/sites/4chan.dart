@@ -1145,7 +1145,7 @@ class Site4Chan extends ImageboardSite {
 		final pattern = RegExp(r'https?:\/\/' + base.replaceAll('.', r'\.') + r'\/([^\/]+)\/(thread\/(\d+)(\/?#[pq](\d+))?)?');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
-			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(3) ?? ''), int.tryParse(match.group(5) ?? ''));
+			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(1)!), int.tryParse(match.group(3) ?? ''), int.tryParse(match.group(5) ?? ''));
 		}
 		return null;
 	}
