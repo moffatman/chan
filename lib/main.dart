@@ -850,15 +850,11 @@ class ChanTabs extends ChangeNotifier {
 		required Axis? titles
 	}) async {
 		lightHapticFeedback();
-		final ro = context.findRenderObject()! as RenderBox;
 		showTabMenu(
 			context: context,
 			direction: direction,
 			titles: titles,
-			origin: Rect.fromPoints(
-				ro.localToGlobal(ro.semanticBounds.topLeft),
-				ro.localToGlobal(ro.semanticBounds.bottomRight)
-			),
+			origin: context.globalSemanticBounds!,
 			actions: [
 				TabMenuAction(
 					icon: CupertinoIcons.eyeglasses,
@@ -1670,15 +1666,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return Builder(
 			builder: (context) {
 				void showThisTabMenu() {
-					final ro = context.findRenderObject()! as RenderBox;
 					showTabMenu(
 						context: context,
 						direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
 						titles: Axis.vertical,
-						origin: Rect.fromPoints(
-							ro.localToGlobal(ro.semanticBounds.topLeft),
-							ro.localToGlobal(ro.semanticBounds.bottomRight)
-						),
+						origin: context.globalSemanticBounds!,
 						actions: [
 							if (!Settings.instance.usingHomeBoard || index < 0) TabMenuAction(
 								icon: CupertinoIcons.xmark,

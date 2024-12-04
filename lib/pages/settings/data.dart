@@ -737,9 +737,7 @@ final dataSettings = [
 		description: 'Export data to JSON',
 		icon: CupertinoIcons.chevron_left_slash_chevron_right,
 		onPressed: (context) async {
-			final ro = context.findRenderObject() as RenderBox;
-			final localRect = ro.paintBounds;
-			final globalRect = Rect.fromPoints(ro.localToGlobal(localRect.topLeft), ro.localToGlobal(localRect.bottomRight));
+			final globalRect = context.globalPaintBounds;
 			try {
 				final file = await modalLoad(context, 'Exporting...', (_) => exportJson());
 				if (!context.mounted) {
@@ -772,9 +770,7 @@ final dataSettings = [
 		description: 'Backup data',
 		icon: CupertinoIcons.share_up,
 		onPressed: (context) async {
-			final ro = context.findRenderObject() as RenderBox;
-			final localRect = ro.paintBounds;
-			final globalRect = Rect.fromPoints(ro.localToGlobal(localRect.topLeft), ro.localToGlobal(localRect.bottomRight));
+			final globalRect = context.globalPaintBounds;
 			final attachmentsSizeInBytes = await modalLoad(context, 'Scanning...', (_) async {
 				int total = 0;
 				await for (final file in Persistence.savedAttachmentsDirectory.list(recursive: true)) {

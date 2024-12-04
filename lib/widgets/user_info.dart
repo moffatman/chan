@@ -84,14 +84,12 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 									Builder(
 										builder: (context) => AdaptiveIconButton(
 											icon: Icon(Adaptive.icons.share),
-											onPressed: snapshot.data?.webUrl == null ? null : () {
-												final offset = (context.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-												final size = context.findRenderObject()?.semanticBounds.size;
-												shareOne(
+											onPressed: snapshot.data?.webUrl == null ? null : () async {
+												await shareOne(
 													context: context,
 													text: (snapshot.data?.webUrl).toString(),
 													type: "text",
-													sharePositionOrigin: (offset != null && size != null) ? offset & size : null,
+													sharePositionOrigin: context.globalSemanticBounds
 												);
 											}
 										)

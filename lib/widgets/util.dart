@@ -2295,6 +2295,9 @@ extension WatchIdentity on BuildContext {
 
 extension Bounds on BuildContext {
 	Rect? get globalPaintBounds {
+		if (!mounted) {
+			return null;
+		}
 		final box = findRenderObject();
 		if (box is! RenderBox) {
 			return null;
@@ -2302,6 +2305,19 @@ extension Bounds on BuildContext {
 		return Rect.fromPoints(
 			box.localToGlobal(box.paintBounds.topLeft),
 			box.localToGlobal(box.paintBounds.bottomRight)
+		);
+	}
+	Rect? get globalSemanticBounds {
+		if (!mounted) {
+			return null;
+		}
+		final box = findRenderObject();
+		if (box is! RenderBox) {
+			return null;
+		}
+		return Rect.fromPoints(
+			box.localToGlobal(box.semanticBounds.topLeft),
+			box.localToGlobal(box.semanticBounds.bottomRight)
 		);
 	}
 }

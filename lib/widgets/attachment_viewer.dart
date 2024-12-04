@@ -1520,9 +1520,7 @@ class AttachmentViewer extends StatelessWidget {
 					ContextMenuAction(
 						trailingIcon: Adaptive.icons.share,
 						onPressed: () async {
-							final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-							final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-							await controller.share((offset != null && size != null) ? offset & size : null);
+							await controller.share(controller.contextMenuShareButtonKey.currentContext?.globalSemanticBounds);
 						},
 						key: controller.contextMenuShareButtonKey,
 						child: const Text('Share')
@@ -1533,13 +1531,11 @@ class AttachmentViewer extends StatelessWidget {
 						trailingIcon: CupertinoIcons.link,
 						onPressed: () async {
 							final text = controller.goodImageSource?.toString() ?? controller.attachment.url;
-							final offset = (controller.contextMenuShareLinkButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-							final size = controller.contextMenuShareLinkButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-							shareOne(
+							await shareOne(
 								context: context,
 								text: text,
 								type: "text",
-								sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+								sharePositionOrigin: controller.contextMenuShareLinkButtonKey.currentContext?.globalSemanticBounds
 							);
 						}
 					),

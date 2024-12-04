@@ -140,15 +140,11 @@ class DrawerList<T extends Object> {
 		final innerBuilder = Builder(
 			builder: (context) {
 				void showThisTabMenu() {
-					final ro = context.findRenderObject()! as RenderBox;
 					showTabMenu(
 						context: context,
 						direction: menuAxisDirection,
 						titles: null,
-						origin: Rect.fromPoints(
-							ro.localToGlobal(ro.semanticBounds.topLeft),
-							ro.localToGlobal(ro.semanticBounds.bottomRight)
-						),
+						origin: context.globalSemanticBounds!,
 						actions: [
 							if (onClose != null) TabMenuAction(
 								icon: Icons.close,
@@ -623,15 +619,11 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 										);
 									}
 									else if (newMode == DrawerMode.watchedThreads) {
-										final ro = context.findRenderObject() as RenderBox;
 										showTabMenu(
 											context: context,
 											direction: AxisDirection.down,
 											titles: Axis.horizontal,
-											origin: Rect.fromPoints(
-												ro.localToGlobal(ro.semanticBounds.topLeft),
-												ro.localToGlobal(ro.semanticBounds.bottomRight)
-											),
+											origin: context.globalSemanticBounds!,
 											actions: [
 												TabMenuAction(
 													icon: CupertinoIcons.sort_down,
@@ -643,15 +635,11 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 										);
 									}
 									else if (newMode == DrawerMode.savedThreads) {
-										final ro = context.findRenderObject() as RenderBox;
 										showTabMenu(
 											context: context,
 											direction: AxisDirection.down,
 											titles: Axis.horizontal,
-											origin: Rect.fromPoints(
-												ro.localToGlobal(ro.semanticBounds.topLeft),
-												ro.localToGlobal(ro.semanticBounds.bottomRight)
-											),
+											origin: context.globalSemanticBounds!,
 											actions: [
 												TabMenuAction(
 													icon: CupertinoIcons.sort_down,

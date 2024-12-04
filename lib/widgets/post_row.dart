@@ -569,12 +569,8 @@ class PostRow extends StatelessWidget {
 																minSize: 0,
 																padding: const EdgeInsets.symmetric(horizontal: 4),
 																onPressed: zone.mode == ContextMenuHintMode.longPressDisabled ? () {
-																	final box = context.findRenderObject() as RenderBox;
 																	zone.open(
-																		from: Rect.fromPoints(
-																			box.localToGlobal(box.paintBounds.topLeft),
-																			box.localToGlobal(box.paintBounds.bottomRight)
-																		)
+																		from: context.globalPaintBounds
 																	);
 																} : null
 															)
@@ -782,21 +778,12 @@ class PostRow extends StatelessWidget {
 				ContextMenuAction(
 					child: const Text('Share text'),
 					trailingIcon: Adaptive.icons.share,
-					onPressed: () {
-						final Rect? sharePositionOrigin;
-						if (rootContext.mounted) {
-							final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-							final size = rootContext.findRenderObject()?.semanticBounds.size;
-							sharePositionOrigin = (offset != null && size != null) ? offset & size : null;
-						}
-						else {
-							sharePositionOrigin = null;
-						}
-						shareOne(
+					onPressed: () async {
+						await shareOne(
 							context: context,
 							text: (translatedPostSnapshot?.data ?? latestPost).span.buildText(),
 							type: "text",
-							sharePositionOrigin: sharePositionOrigin
+							sharePositionOrigin: rootContext.globalSemanticBounds
 						);
 					}
 				),
@@ -982,17 +969,8 @@ class PostRow extends StatelessWidget {
 				ContextMenuAction(
 					child: const Text('Share link'),
 					trailingIcon: Adaptive.icons.share,
-					onPressed: () {
-						final Rect? sharePositionOrigin;
-						if (rootContext.mounted) {
-							final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-							final size = rootContext.findRenderObject()?.semanticBounds.size;
-							sharePositionOrigin = (offset != null && size != null) ? offset & size : null;
-						}
-						else {
-							sharePositionOrigin = null;
-						}
-						shareOne(
+					onPressed: () async {
+						await shareOne(
 							context: context,
 							text: site.getWebUrl(
 								board: latestPost.board,
@@ -1001,7 +979,7 @@ class PostRow extends StatelessWidget {
 								archiveName: latestPost.archiveName ?? parentZoneThreadState?.thread?.archiveName
 							),
 							type: "text",
-							sharePositionOrigin: sharePositionOrigin
+							sharePositionOrigin: rootContext.globalSemanticBounds
 						);
 					}
 				),
@@ -1098,20 +1076,11 @@ class PostRow extends StatelessWidget {
 						if (which == null || !context.mounted) {
 							return;
 						}
-						final Rect? sharePositionOrigin;
-						if (rootContext.mounted) {
-							final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-							final size = rootContext.findRenderObject()?.semanticBounds.size;
-							sharePositionOrigin = (offset != null && size != null) ? offset & size : null;
-						}
-						else {
-							sharePositionOrigin = null;
-						}
-						shareOne(
+						await shareOne(
 							context: context,
 							text: which.url,
 							type: "text",
-							sharePositionOrigin: sharePositionOrigin
+							sharePositionOrigin: rootContext.globalSemanticBounds
 						);
 					}
 				),

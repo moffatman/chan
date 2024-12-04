@@ -903,13 +903,11 @@ class _GalleryPageState extends State<GalleryPage> {
 																trailingIcon: CupertinoIcons.link,
 																onPressed: () async {
 																	final text = _getController(currentAttachment).goodImageSource?.toString() ?? currentAttachment.attachment.url;
-																	final offset = (_imageSearchButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-																	final size = _imageSearchButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-																	shareOne(
+																	await shareOne(
 																		context: context,
 																		text: text,
 																		type: "text",
-																		sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+																		sharePositionOrigin: _imageSearchButtonKey.currentContext?.globalSemanticBounds
 																	);
 																}
 															),
@@ -966,9 +964,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												AdaptiveIconButton(
 													key: _shareButtonKey,
 													onPressed: currentController.canShare ? () async {
-														final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-														final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-														await currentController.share((offset != null && size != null) ? offset & size : null);
+														await currentController.share(_shareButtonKey.currentContext?.globalSemanticBounds);
 													} : null,
 													icon: Icon(Adaptive.icons.share)
 												)

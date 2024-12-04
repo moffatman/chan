@@ -249,17 +249,17 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 											Builder(
 												builder: (context) => AdaptiveIconButton(
 													padding: const EdgeInsets.all(16.0),
-													onPressed: () {
+													onPressed: () async {
 														final url = _url ?? widget.initialUrlRequest?.url;
 														if (url == null) {
 															alertError(context, 'No URL', null);
 														}
 														else {
-															shareOne(
+															await shareOne(
 																context: context,
 																text: url.toString(),
 																type: 'text',
-																sharePositionOrigin: (context.findRenderObject() as RenderBox?)?.paintBounds
+																sharePositionOrigin: context.globalPaintBounds
 															);
 														}
 													},

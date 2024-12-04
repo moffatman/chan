@@ -1513,11 +1513,9 @@ class ThreadPageState extends State<ThreadPage> {
 										builder: (context) => AdaptiveIconButton(
 											key: _shareButtonKey,
 											icon: Icon(Adaptive.icons.share),
-											onPressed: () {
-												final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-												final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+											onPressed: () async {
 												final openInNewTabZone = context.read<OpenInNewTabZone?>();
-												shareOne(
+												await shareOne(
 													context: context,
 													text: site.getWebUrl(
 														board: widget.thread.board,
@@ -1525,7 +1523,7 @@ class ThreadPageState extends State<ThreadPage> {
 														archiveName: archiveName
 													),
 													type: "text",
-													sharePositionOrigin: (offset != null && size != null) ? offset & size : null,
+													sharePositionOrigin: _shareButtonKey.currentContext?.globalSemanticBounds,
 													additionalOptions: {
 														if (openInNewTabZone != null) 'Open in new tab': () => openInNewTabZone.onWantOpenThreadInNewTab(context.read<Imageboard>().key, widget.thread),
 														'Share as image': () async {
