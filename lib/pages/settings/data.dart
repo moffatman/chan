@@ -7,6 +7,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/import_export.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/storage.dart';
@@ -498,15 +499,26 @@ final dataSettings = [
 			setting: Settings.askForAuthenticationOnLaunchSetting
 		)
 	),
-	if (Platform.isAndroid) ImmutableButtonSettingWidget(
-		description: 'Media save directory',
-		icon: CupertinoIcons.floppy_disk,
-		setting: Settings.androidGallerySavePathSetting,
-		builder: (androidGallerySavePath) => Text(androidGallerySavePath == null ? 'Set' : 'Change'),
-		onPressed: (context, currentPath, setPath) async {
-			setPath(await pickDirectory());
-		}
-	),
+	if (Platform.isAndroid) ...[
+		ImmutableButtonSettingWidget(
+			description: 'Media save directory',
+			icon: CupertinoIcons.floppy_disk,
+			setting: Settings.androidGallerySavePathSetting,
+			builder: (androidGallerySavePath) => Text(androidGallerySavePath == null ? 'Set' : 'Change'),
+			onPressed: (context, currentPath, setPath) async {
+				setPath(await pickDirectory());
+			}
+		),
+		ImmutableButtonSettingWidget(
+			description: 'Media picker',
+			icon: CupertinoIcons.photo,
+			setting: Settings.androidGalleryPickerSetting,
+			builder: (androidGalleryPicker) => Text(androidGalleryPicker == null ? 'Set' : 'Change'),
+			onPressed: (context, currentPicker, setPicker) async {
+				setPicker(await chooseAndroidPicker(context) ?? currentPicker);
+			}
+		),
+	],
 	const SegmentedSettingWidget(
 		description: 'Media saving filenames',
 		icon: CupertinoIcons.doc_text,

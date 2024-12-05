@@ -6,13 +6,19 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.UriPermission;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
+import android.util.Base64;
 import android.webkit.MimeTypeMap;
 import android.util.Log;
 import android.webkit.WebSettings;
@@ -23,6 +29,7 @@ import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTre
 import androidx.annotation.NonNull;
 import androidx.documentfile.provider.DocumentFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -31,6 +38,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import io.flutter.embedding.android.FlutterFragmentActivity;
 import io.flutter.embedding.engine.FlutterEngine;
@@ -237,6 +246,38 @@ public class MainActivity extends FlutterFragmentActivity {
                         this.newDocumentSourcePath = call.argument("sourcePath");
                         String destinationName = call.argument("destinationName");
                         newDocument.launch(destinationName);
+                    }
+                    else if (call.method.equals("getPickerList")) {
+                        PackageManager pm = getApplicationContext().getPackageManager();
+                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                        intent.addCategory(Intent.CATEGORY_OPENABLE);
+                        intent.setType("image/*,video/*");
+                        result.success(pm.queryIntentActivities(intent, 0).stream().map(resolveInfo -> {
+                            Drawable icon = resolveInfo.loadIcon(pm);
+                            Bitmap bitmap = null;
+                            if (icon instanceof BitmapDrawable) {
+                                bitmap = ((BitmapDrawable)icon).getBitmap();
+                            }
+                            if (bitmap == null) {
+                                if (icon.getIntrinsicWidth() <= 0 || icon.getIntrinsicHeight() <= 0) {
+                                    bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+                                }
+                                else {
+                                    bitmap = Bitmap.createBitmap(icon.getIntrinsicWidth(), icon.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+                                }
+                                Canvas canvas = new Canvas(bitmap);
+                                icon.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                                icon.draw(canvas);
+                            }
+                            ByteArrayOutputStream os = new ByteArrayOutputStream();
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
+                            return Map.of(
+                                    "package", resolveInfo.activityInfo.packageName,
+                                    "application", resolveInfo.activityInfo.applicationInfo.name,
+                                    "label", pm.getApplicationLabel(resolveInfo.activityInfo.applicationInfo).toString(),
+                                    "icon", Base64.encodeToString(os.toByteArray(), Base64.NO_WRAP)
+                            );
+                        }).collect(Collectors.toList()));
                     }
                     else {
                         result.notImplemented();

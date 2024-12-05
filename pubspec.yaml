@@ -67,7 +67,10 @@ dependencies:
   highlight: ^0.7.0
   flutter_highlight: ^0.7.0
   google_fonts: ^4.0.3
-  file_picker: ^8.0.7
+  file_picker:
+    git:
+      url: https://github.com/moffatman/flutter_file_picker
+      ref: master
   flutter_colorpicker: ^1.1.0
   photo_manager: ^3.1.1
   flutter_tex: ^4.0.3+4

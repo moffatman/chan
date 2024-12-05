@@ -9,6 +9,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/storage.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -118,14 +119,55 @@ class AttachmentPickingSource {
 	final String name;
 	final IconData icon;
 	final Future<String?> Function(BuildContext context) pick;
+	final Future<void> Function(BuildContext context)? onLongPress;
 	final double iconSizeMultiplier;
 
 	const AttachmentPickingSource({
 		required this.name,
 		required this.icon,
 		required this.pick,
+		this.onLongPress,
 		this.iconSizeMultiplier = 1
 	});
+}
+
+Future<String?> chooseAndroidPicker(BuildContext context) async {
+	if (!Platform.isAndroid) {
+		return '';
+	}
+	final list = await getPickerList();
+	if (list.isEmpty) {
+		// Use default
+		return '';
+	}
+	if (list.length == 1) {
+		return list.single.package;
+	}
+	if (context.mounted) {
+		return await showAdaptiveModalPopup<String>(
+			context: context,
+			builder: (context) => AdaptiveActionSheet(
+				title: const Text('Choose gallery picker'),
+				actions: list.map((intent) => AdaptiveActionSheetAction(
+						onPressed: () => Navigator.pop(context, intent.package),
+						trailing: switch (intent.icon) {
+							MemoryImage image => Image(
+								image: image,
+								width: 30,
+								height: 30
+							),
+							null => null
+						},
+						child: Text(intent.label)
+				)).toList(),
+				cancelButton: AdaptiveActionSheetAction(
+					child: const Text('Cancel'),
+					onPressed: () => Navigator.pop(context)
+				)
+			)
+		);
+	}
+	return null;
 }
 
 List<AttachmentPickingSource> getAttachmentSources({
@@ -134,7 +176,33 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final gallery = AttachmentPickingSource(
 		name: 'Gallery',
 		icon: Adaptive.icons.photo,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.media, compressionQuality: 0, allowCompression: false).then((x) => _stripFileTimestamp(x?.files.trySingle?.path)).then(_copyFileToSafeLocation)
+		pick: (context) async {
+			String? androidPackage;
+			if (Platform.isAndroid) {
+				try {
+					androidPackage = Settings.instance.androidGalleryPicker ??= await chooseAndroidPicker(context);
+					if (androidPackage == null) {
+						// User cancelled
+						return null;
+					}
+				}
+				catch (e, st) {
+					// Who knows what could go wrong here. Don't break the picker, just fallback to default picker (null)
+					Future.error(e, st); // crashlytics
+				}
+			}
+			final result = await FilePicker.platform.pickFiles(
+				type: FileType.media,
+				compressionQuality: 0,
+				allowCompression: false,
+				androidPackage: androidPackage?.nonEmptyOrNull
+			);
+			final path = await _stripFileTimestamp(result?.files.trySingle?.path);
+			return _copyFileToSafeLocation(path);
+		},
+		onLongPress: (context) async {
+			Settings.instance.androidGalleryPicker = (await chooseAndroidPicker(context)) ?? Settings.instance.androidGalleryPicker;
+		}
 	);
 	final picker = ImagePicker();
 	final camera = AttachmentPickingSource(
@@ -339,6 +407,7 @@ Future<File?> pickAttachment({
 									if (i < sources.length) {
 										final entry = sources[i];
 										return GestureDetector(
+											onLongPress: bind1(entry.onLongPress, context),
 											onTap: () async {
 												loadingPick = true;
 												setPickerDialogState(() {});

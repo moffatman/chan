@@ -2055,39 +2055,44 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													)
 												)
 											),
-											for (final picker in getAttachmentSources(includeClipboard: false)) AdaptiveIconButton(
-												onPressed: loading ? null : () async {
-													FocusNode? focusToRestore;
-													if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
-														focusToRestore = _lastNearbyFocus?.$2;
-													}
-													_attachmentProgress = ('Picking', null);
-													setState(() {});
-													// Local [context] is not safe. It will die when we go to 'Picking'
-													try {
-														final path = await picker.pick(this.context);
-														if (path != null) {
-															await setAttachment(File(path));
+											for (final picker in getAttachmentSources(includeClipboard: false)) GestureDetector(
+												onLongPress: bind1(picker.onLongPress, this.context),
+												child: AdaptiveIconButton(
+													onPressed: loading ? null : () async {
+														FocusNode? focusToRestore;
+														if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
+															focusToRestore = _lastNearbyFocus?.$2;
 														}
-														else {
+														_attachmentProgress = ('Picking', null);
+														setState(() {});
+														// Local [context] is not safe. It will die when we go to 'Picking'
+														try {
+															final path = await picker.pick(this.context);
+															if (path != null) {
+																await setAttachment(File(path));
+															}
+															else {
+																_attachmentProgress = null;
+															}
+														}
+														catch (e, st) {
+															Future.error(e, st);
+															// Local [context] is not safe. It will die when we go to 'Picking'
+															final context = this.context;
+															if (context.mounted) {
+																alertError(context, e, st);
+															}
 															_attachmentProgress = null;
 														}
-													}
-													catch (e, st) {
-														Future.error(e, st);
-														if (context.mounted) {
-															alertError(context, e, st);
+														focusToRestore?.requestFocus();
+														if (mounted) {
+															setState(() {});
 														}
-														_attachmentProgress = null;
-													}
-													focusToRestore?.requestFocus();
-													if (mounted) {
-														setState(() {});
-													}
-												},
-												icon: Transform.scale(
-													scale: picker.iconSizeMultiplier,
-													child: Icon(picker.icon)
+													},
+													icon: Transform.scale(
+														scale: picker.iconSizeMultiplier,
+														child: Icon(picker.icon)
+													)
 												)
 											)
 										]

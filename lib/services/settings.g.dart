@@ -2357,6 +2357,17 @@ class SavedSettingsFields {
     fieldName: 'closeReplyBoxAfterSubmitting',
     merger: PrimitiveMerger(),
   );
+  static String? getAndroidGalleryPicker(SavedSettings x) =>
+      x.androidGalleryPicker;
+  static void setAndroidGalleryPicker(SavedSettings x, String? v) =>
+      x.androidGalleryPicker = v;
+  static const androidGalleryPicker = HiveFieldAdapter<SavedSettings, String?>(
+    getter: getAndroidGalleryPicker,
+    setter: setAndroidGalleryPicker,
+    fieldNumber: 198,
+    fieldName: 'androidGalleryPicker',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2554,7 +2565,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     194: SavedSettingsFields.cloverStyleCatalogCounters,
     195: SavedSettingsFields.alwaysUseWideDrawerGesture,
     196: SavedSettingsFields.openDrawerThreadsInNewTabs,
-    197: SavedSettingsFields.closeReplyBoxAfterSubmitting
+    197: SavedSettingsFields.closeReplyBoxAfterSubmitting,
+    198: SavedSettingsFields.androidGalleryPicker
   };
 
   @override
@@ -2766,13 +2778,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       alwaysUseWideDrawerGesture: fields[195] as bool?,
       openDrawerThreadsInNewTabs: fields[196] as bool?,
       closeReplyBoxAfterSubmitting: fields[197] as bool?,
+      androidGalleryPicker: fields[198] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(185)
+      ..writeByte(186)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3142,7 +3155,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(196)
       ..write(obj.openDrawerThreadsInNewTabs)
       ..writeByte(197)
-      ..write(obj.closeReplyBoxAfterSubmitting);
+      ..write(obj.closeReplyBoxAfterSubmitting)
+      ..writeByte(198)
+      ..write(obj.androidGalleryPicker);
   }
 
   @override

@@ -1220,6 +1220,8 @@ class SavedSettings extends HiveObject {
 	bool openDrawerThreadsInNewTabs;
 	@HiveField(197)
 	bool closeReplyBoxAfterSubmitting;
+	@HiveField(198)
+	String? androidGalleryPicker;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1419,6 +1421,7 @@ class SavedSettings extends HiveObject {
 		bool? alwaysUseWideDrawerGesture,
 		bool? openDrawerThreadsInNewTabs,
 		bool? closeReplyBoxAfterSubmitting,
+		this.androidGalleryPicker,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -2853,6 +2856,10 @@ class Settings extends ChangeNotifier {
 
 	static const closeReplyBoxAfterSubmittingSetting = SavedSetting(SavedSettingsFields.closeReplyBoxAfterSubmitting);
 	bool get closeReplyBoxAfterSubmitting => closeReplyBoxAfterSubmittingSetting(this);
+
+	static const androidGalleryPickerSetting = SavedSetting(SavedSettingsFields.androidGalleryPicker);
+	String? get androidGalleryPicker => androidGalleryPickerSetting(this);
+	set androidGalleryPicker(String? setting) => androidGalleryPickerSetting.set(this, setting);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
