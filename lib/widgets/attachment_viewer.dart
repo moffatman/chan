@@ -610,7 +610,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 			}
 			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
-				final url = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive, force: force);
+				final url = _goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive, force: force);
 				if (force) {
 					await VideoServer.instance.interruptOngoingDownloadFromUri(url);
 					await VideoServer.instance.cleanupCachedDownloadTreeFromUri(url);
@@ -1390,7 +1390,7 @@ class AttachmentViewer extends StatelessWidget {
 									}
 								});
 							}
-							buildContent(context, _) {
+							Widget buildContent(BuildContext context, Widget? _) {
 								Widget child = const SizedBox.shrink();
 								if (controller.error case (Object e, StackTrace st)) {
 									child = Center(
@@ -1398,6 +1398,7 @@ class AttachmentViewer extends StatelessWidget {
 											padding: const EdgeInsets.all(32),
 											child: ErrorMessageCard(e.toStringDio(), remedies: {
 													'Retry': () => controller.reloadFullAttachment(),
+													'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url)),
 													if (e is! ExtendedException || e.isReportable) 'Report bug': () => reportBug(e, st),
 													if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
 												}
@@ -1809,6 +1810,7 @@ class AttachmentViewer extends StatelessWidget {
 							if (controller.error case (Object e, StackTrace st)) Center(
 								child: ErrorMessageCard(e.toStringDio(), remedies: {
 									'Retry': () => controller.reloadFullAttachment(),
+									'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url)),
 									if (e is! ExtendedException || e.isReportable) 'Report bug': () => reportBug(e, st),
 									if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
 								})
