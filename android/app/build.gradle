@@ -102,7 +102,7 @@ dependencies {
     implementation "androidx.activity:activity:1.4.0"
     implementation "androidx.fragment:fragment:1.4.1"
     implementation 'com.google.firebase:firebase-crashlytics-ndk:18.2.11'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     implementation 'androidx.window:window:1.0.0'
     implementation 'androidx.window:window-java:1.0.0'
     implementation 'com.github.UnifiedPush:android-foss_embedded_fcm_distributor:1.0.0'
