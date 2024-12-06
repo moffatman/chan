@@ -39,6 +39,8 @@ class _TabMenuOverlay extends StatefulWidget {
 	createState() => _TabMenuOverlayState();
 }
 
+final _allOpenTabMenuClosers = <VoidCallback>[];
+
 class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProviderStateMixin {
 	Size? lastSize;
 	late final AnimationController _animationController;
@@ -56,9 +58,13 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProvi
 			parent: _animationController,
 			curve: Curves.ease
 		);
+		_allOpenTabMenuClosers.add(onDone);
 	}
 
 	void onDone() async {
+		if (fakeDone) {
+			return;
+		}
 		setState(() {
 			fakeDone = true;
 		});
@@ -196,6 +202,7 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProvi
 	@override
 	void dispose() {
 		_animationController.dispose();
+		_allOpenTabMenuClosers.remove(onDone);
 		super.dispose();
 	}
 }
@@ -223,4 +230,16 @@ Future<void> showTabMenu({
 	Overlay.of(context, rootOverlay: true).insert(entry);
 	await completer.future;
 	entry.remove();
+}
+
+void closeAllOpenTabMenus() {
+	for (final closer in _allOpenTabMenuClosers) {
+		try {
+			closer.call();
+		}
+		catch (e, st) {
+			// Don't stop iterating
+			Future.error(e, st);
+		}
+	}
 }

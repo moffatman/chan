@@ -1923,6 +1923,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Future<void> _backButton() async {
+		closeAllOpenTabMenus();
 		if (_drawerScaffoldKey.currentState?.isDrawerOpen ?? false) {
 			_drawerScaffoldKey.currentState?.closeDrawer();
 			// Closed the side drawer
