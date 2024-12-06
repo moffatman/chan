@@ -31,14 +31,15 @@ extension HandleSpacesInPath on Uri {
 }
 
 class MediaScanException extends ExtendedException {
+	final Uri path;
 	final int code;
 	final String output;
-	const MediaScanException(this.code, this.output, {super.additionalFiles});
+	const MediaScanException(this.path, this.code, this.output, {super.additionalFiles});
 	@override
 	bool get isReportable => true;
 
 	@override
-	String toString() => 'MediaScanException(code: $code, output: $output)';
+	String toString() => 'MediaScanException(path: $path, code: $code, output: $output)';
 }
 
 class MediaConversionFFMpegException implements Exception {
@@ -131,7 +132,7 @@ class MediaScan {
 					if (result.returnCode == 1 && file.isScheme('file')) {
 						final stat = await File(file.path).stat();
 						if (stat.size == 0) {
-							throw const MediaScanException(1, 'File is empty');
+							throw MediaScanException(file, 1, 'File is empty');
 						}
 						if (stat.size < 50e3) {
 							// Try to get a message out of it. Maybe it's HTML or something
@@ -140,12 +141,12 @@ class MediaScan {
 								if (string.contains('<body>')) {
 									final document = parse(string);
 									if (document.querySelector('title')?.text.nonEmptyOrNull case String title) {
-										throw MediaScanException(1, title);
+										throw MediaScanException(file, 1, title);
 									}
 									for (int i = 1; i < 6; i++) {
 										final headers = document.querySelectorAll('h$i');
 										if (headers.trySingle?.text.nonEmptyOrNull case String header) {
-											throw MediaScanException(1, header);
+											throw MediaScanException(file, 1, header);
 										}
 										if (headers.length > 1) {
 											// Can't pick between multiple
@@ -154,7 +155,7 @@ class MediaScan {
 									}
 								}
 								else if (string.length < 100) {
-									throw MediaScanException(1, string);
+									throw MediaScanException(file, 1, string);
 								}
 							}
 							catch (e) {
@@ -169,6 +170,7 @@ class MediaScan {
 						}
 					}
 					throw MediaScanException(
+						file,
 						result.returnCode,
 						// Below regexes are to cleanup some JSON junk in the output, trimming all leading and trailing non-word characters
 						result.output.replaceFirst(RegExp(r'^[^\w]*'), '').replaceFirst(RegExp(r'[^\w]*$'), ''),
@@ -176,7 +178,7 @@ class MediaScan {
 					);
 				}
 				if (result.output.isEmpty) {
-					throw const MediaScanException(0, 'No output from ffprobe');
+					throw MediaScanException(file, 0, 'No output from ffprobe');
 				}
 				final data = jsonDecode(result.output);
 				final seconds = double.tryParse(data['format']?['duration'] as String? ?? '');
