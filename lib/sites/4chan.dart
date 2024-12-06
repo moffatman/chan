@@ -1449,11 +1449,11 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 			})
 		);
 		loggedIn[Persistence.currentCookies] = false;
-		await CookieManager.instance().deleteCookies(
-			url: WebUri(parent.sysUrl)
-		);
 		if (fromBothWifiAndCellular) {
 			// No way to log out from non active connection. got to clear the cookies.
+			await CookieManager.instance().deleteCookies(
+				url: WebUri(parent.sysUrl)
+			);
 			await Persistence.nonCurrentCookies.deletePreservingCloudflare(Uri.https(parent.sysUrl, '/'), true);
 			loggedIn[Persistence.nonCurrentCookies] = false;
 		}

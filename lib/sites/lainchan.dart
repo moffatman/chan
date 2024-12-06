@@ -710,16 +710,16 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 			));
 		}
 		loggedIn[Persistence.currentCookies] = false;
-		await CookieManager.instance().deleteCookies(
-			url: WebUri.uri(sysUrl)
-		);
-		await CookieManager.instance().deleteCookies(
-			url: WebUri.uri(modUrl)
-		);
 		if (fromBothWifiAndCellular) {
 			// No way to log out from non active connection. got to clear the cookies.
 			await Persistence.nonCurrentCookies.deletePreservingCloudflare(sysUrl, true);
 			await Persistence.nonCurrentCookies.deletePreservingCloudflare(modUrl, true);
+			await CookieManager.instance().deleteCookies(
+				url: WebUri.uri(sysUrl)
+			);
+			await CookieManager.instance().deleteCookies(
+				url: WebUri.uri(modUrl)
+			);
 			loggedIn[Persistence.nonCurrentCookies] = false;
 		}
   }

@@ -382,11 +382,11 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
   Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
 		await parent.client.postUri(Uri.https(parent.baseUrl, '/user/passlogout'));
 		loggedIn[Persistence.currentCookies] = false;
-		await CookieManager.instance().deleteCookies(
-			url: WebUri(parent.baseUrl)
-		);
 		if (fromBothWifiAndCellular) {
 			await Persistence.nonCurrentCookies.deletePreservingCloudflare(Uri.https(parent.baseUrl, '/'), true);
+			await CookieManager.instance().deleteCookies(
+				url: WebUri(parent.baseUrl)
+			);
 			loggedIn[Persistence.nonCurrentCookies] = false;
 		}
   }
