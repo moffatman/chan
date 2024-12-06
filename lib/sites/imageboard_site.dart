@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
@@ -776,14 +775,16 @@ class Recaptcha3Solution extends CaptchaSolution {
 class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	final String challenge;
 	final String response;
-	final ui.Image? alignedImage;
+	final int? slide;
+	final Map<String, dynamic> originalData;
 	final Duration lifetime;
 	Chan4CustomCaptchaSolution({
 		required this.challenge,
 		required this.response,
 		required super.acquiredAt,
 		required this.lifetime,
-		required this.alignedImage,
+		required this.slide,
+		required this.originalData,
 		required super.cloudflare,
 		required super.ip,
 		super.autoSolved
@@ -792,12 +793,6 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	DateTime? get expiresAt => acquiredAt.add(lifetime);
 	@override
 	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';
-
-	@override
-	void dispose() {
-		super.dispose();
-		alignedImage?.dispose();
-	}
 }
 
 class SecurimageCaptchaSolution extends CaptchaSolution {

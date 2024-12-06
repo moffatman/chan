@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:ui';
+import 'dart:convert';
 
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/cloudflare.dart';
@@ -23,9 +23,8 @@ import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http_parser/http_parser.dart';
 
-const _captchaContributionServer = 'https://captcha.chance.surf';
+const _captchaContributionServer = 'https://captcha.chance.surf/json.php';
 
 bool canCaptchaBeSolvedHeadlessly({
 	required CaptchaRequest request
@@ -256,20 +255,14 @@ void onSuccessfulCaptchaSubmitted(CaptchaSolution solution) async {
 		if (Settings.contributeCaptchasSetting.value != true) {
 			return;
 		}
-		final bytes = await solution.alignedImage?.toByteData(format: ImageByteFormat.png);
-		if (bytes == null) {
-			print('Something went wrong converting the captcha image to bytes');
-			return;
-		}
 		final response = await Settings.instance.client.post(
 			_captchaContributionServer,
 			data: dio.FormData.fromMap({
 				'text': solution.response,
-				'image': dio.MultipartFile.fromBytes(
-					bytes.buffer.asUint8List(),
-					filename: 'upload.png',
-					contentType: MediaType("image", "png")
-				)
+				'json': jsonEncode({
+					'challenge': solution.originalData,
+					'slide': solution.slide
+				})
 			}),
 			options: dio.Options(
 				validateStatus: (x) => true,

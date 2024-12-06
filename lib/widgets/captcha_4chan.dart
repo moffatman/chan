@@ -57,7 +57,7 @@ typedef _CloudGuess = ({
 typedef CloudGuessedCaptcha4ChanCustom = ({
 	Captcha4ChanCustomChallenge challenge,
 	Chan4CustomCaptchaSolution solution,
-	int slide,
+	int? slide,
 	bool confident
 });
 
@@ -173,7 +173,8 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		foregroundImage: foregroundImage,
 		backgroundImage: backgroundImage,
 		backgroundWidth: (data['bg_width'] as num?)?.toInt(),
-		cloudflare: challengeResponse.cloudflare
+		cloudflare: challengeResponse.cloudflare,
+		originalData: (data as Map).cast<String, dynamic>()
 	);
 }
 
@@ -395,7 +396,7 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 
 	final Chan4CustomCaptchaSolution solution;
 	final bool confident;
-	int slide = 0;
+	int? slide;
 
 	if (challenge.foregroundImage == null && challenge.backgroundImage == null) {
 		if (challenge.challenge == 'noop') {
@@ -404,8 +405,9 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 				response: '',
 				acquiredAt: challenge.acquiredAt,
 				lifetime: challenge.lifetime,
-				alignedImage: null,
+				originalData: challenge.originalData,
 				cloudflare: challenge.cloudflare,
+				slide: null,
 				ip: null
 			);
 			confident = true;
@@ -445,7 +447,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 			response: cloudGuess.answer,
 			acquiredAt: challenge.acquiredAt,
 			lifetime: challenge.lifetime,
-			alignedImage: image,
+			originalData: challenge.originalData,
+			slide: slide,
 			cloudflare: challenge.cloudflare,
 			ip: cloudGuess.ip,
 			autoSolved: true
@@ -612,6 +615,7 @@ class Captcha4ChanCustomChallenge {
 	final ui.Image? backgroundImage;
 	final int? backgroundWidth;
 	final bool cloudflare;
+	final Map<String, dynamic> originalData;
 	bool _isDisposed = false;
 
 	Captcha4ChanCustomChallenge({
@@ -623,7 +627,8 @@ class Captcha4ChanCustomChallenge {
 		required this.foregroundImage,
 		required this.backgroundImage,
 		required this.backgroundWidth,
-		required this.cloudflare
+		required this.cloudflare,
+		required this.originalData
 	});
 
 	bool isReusableFor(Chan4CustomCaptchaRequest request, Duration validityPeriod) {
@@ -883,7 +888,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 						response: '',
 						acquiredAt: challenge!.acquiredAt,
 						lifetime: challenge!.lifetime,
-						alignedImage: null,
+						originalData: challenge!.originalData,
+						slide: null,
 						cloudflare: challenge!.cloudflare,
 						ip: null
 					));
@@ -1031,7 +1037,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			response: response,
 			acquiredAt: challenge!.acquiredAt,
 			lifetime: challenge!.lifetime,
-			alignedImage: await _screenshotImage(),
+			originalData: challenge!.originalData,
+			slide: backgroundSlide,
 			cloudflare: challenge!.cloudflare,
 			ip: _ip,
 			autoSolved: response == _lastCloudGuess
@@ -1075,7 +1082,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		else if (guess != null) {
 			_ip = guess.solution.ip;
 			challenge = guess.challenge;
-			backgroundSlide = guess.slide;
+			backgroundSlide = guess.slide ?? 0;
 			tryAgainAt = guess.challenge.tryAgainAt;
 			Future.delayed(const Duration(milliseconds: 10), () {
 				_useCloudGuess(guess.solution.response);
