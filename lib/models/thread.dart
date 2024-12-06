@@ -194,19 +194,17 @@ class Thread extends HiveObject implements Filterable {
 			}
 			else {
 				final newIndex = site.placeOrphanPost(posts_, newChild);
-				postIdToListIndex.updateAll((postId, listIndex) {
-					if (listIndex >= newIndex) {
-						return listIndex + 1;
-					}
-					return listIndex;
-				});
-				postIdToListIndex[newChild.id] = newIndex;
-				// other posts may be children of new post
-				for (final post in posts_) {
-					if (post.parentId == newChild.id || post.repliedToIds.contains(newChild.id)) {
-						newChild.maybeAddReplyId(post.id);
+				if (newIndex < postIdToListIndex.length) {
+					for (int i = newIndex + 1; i < posts_.length; i++) {
+						final post = posts_[i];
+						postIdToListIndex[post.id] = i;
+						// other posts may be children of new post
+						if (post.parentId == newChild.id || post.repliedToIds.contains(newChild.id)) {
+							newChild.maybeAddReplyId(post.id);
+						}
 					}
 				}
+				postIdToListIndex[newChild.id] = newIndex;
 				// new post may be a child of other posts
 				for (final repliedToId in [newChild.parentId, newChild.repliedToIds]) {
 					final parentIndex = postIdToListIndex[repliedToId];
