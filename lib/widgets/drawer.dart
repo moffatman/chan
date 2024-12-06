@@ -669,6 +669,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					),
 					Expanded(
 						child: Material(
+							color: backgroundColor,
 							child: RefreshIndicator(
 								notificationPredicate: (x) => list.onRefresh != null,
 								onRefresh: () async {
