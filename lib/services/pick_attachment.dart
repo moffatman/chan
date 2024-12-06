@@ -201,7 +201,17 @@ List<AttachmentPickingSource> getAttachmentSources({
 			return _copyFileToSafeLocation(path);
 		},
 		onLongPress: (context) async {
-			Settings.instance.androidGalleryPicker = (await chooseAndroidPicker(context)) ?? Settings.instance.androidGalleryPicker;
+			final choice = await chooseAndroidPicker(context);
+			if (choice != null) {
+				Settings.instance.androidGalleryPicker = choice;
+				if (context.mounted) {
+					showToast(
+						context: context,
+						icon: Adaptive.icons.photo,
+						message: 'Media picker chosen'
+					);
+				}
+			}
 		}
 	);
 	final picker = ImagePicker();
