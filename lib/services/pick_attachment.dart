@@ -11,6 +11,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -54,7 +55,16 @@ Future<String?> _stripFileTimestamp(String? path) async {
 	}
 	// Assuming ownership of file
 	final dest = '${match.group(1)}${match.group(2)}';
-	await File(path).rename(dest);
+	final stat = await File(path).stat();
+	if (stat.type == FileSystemEntityType.directory) {
+		if (await Directory(dest).exists()) {
+			await Directory(dest).delete(recursive: true);
+		}
+		await Directory(path).rename(dest);
+	}
+	else {
+		await File(path).rename(dest);
+	}
 	return dest;
 }
 
@@ -66,7 +76,16 @@ Future<String?> _copyFileToSafeLocation(String? path) async {
 	final parent = Directory('${Persistence.temporaryDirectory.path}/inboxcache/${DateTime.now().millisecondsSinceEpoch}');
 	await parent.create(recursive: true);
 	final destPath = '${parent.path}/${path.split('/').last}';
-	await File(path).copy(destPath);
+	final stat = await File(path).stat();
+	if (stat.type == FileSystemEntityType.directory) {
+		if (await Directory(destPath).exists()) {
+			await Directory(destPath).delete(recursive: true);
+		}
+		await Directory(path).copy(destPath);
+	}
+	else {
+		await File(path).copy(destPath);
+	}
 	return destPath;
 }
 

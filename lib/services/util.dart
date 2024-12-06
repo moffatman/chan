@@ -69,6 +69,33 @@ Future<void> copyUngzipped(String inputPath, String outputPath) async {
 	await compute(_copyUngzipped, (inputPath, outputPath));
 }
 
+extension _WithoutTrailingSlash on String {
+	String get withoutTrailingSlash {
+		int end = length - 1;
+		while (this[end] == '/') {
+			end--;
+		}
+		return substring(0, end + 1);
+	}
+}
+
+extension Copy on Directory {
+	Future<Directory> copy(String newPath) async {
+		final cleanSrc = path.withoutTrailingSlash;
+		final cleanDest = newPath.withoutTrailingSlash;
+		final newDir = await Directory(newPath).create(recursive: true);
+		await for (final child in list(followLinks: false)) {
+			await switch (child) {
+				File file => file.copy(file.path.replaceFirst(cleanSrc, cleanDest)),
+				Directory directory => directory.copy(directory.path.replaceFirst(cleanSrc, cleanDest)),
+				Link link => Link(link.path.replaceFirst(cleanSrc, cleanDest)).create(await link.target()),
+				_ => null
+			};
+		}
+		return newDir;
+	}
+}
+
 extension UnescapeHtml on String {
 	String get unescapeHtml => unescape.convert(this);
 }

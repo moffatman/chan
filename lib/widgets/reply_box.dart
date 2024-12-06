@@ -702,6 +702,56 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				// Rename it with extension
 				file = await file.copy('${Persistence.shareCacheDirectory.path}/${file.uri.pathSegments.last}.$newExt');
 			}
+			if (file.path.endsWith('.pvt')) {
+				// Live Photo (it's a directory)
+				File? image;
+				File? video;
+				await for (final child in Directory(file.path).list()) {
+					final childExt = child.path.split('.').last.toLowerCase();
+					if (childExt == 'mov') {
+						video = File(child.path);
+					}
+					else if (childExt == 'jpeg' || childExt == 'jpg' || childExt == 'heic') {
+						image = File(child.path);
+					}
+				}
+				if (image != null && video != null) {
+					if (!mounted) {
+						return;
+					}
+					file = await showAdaptiveDialog<File>(
+						context: context,
+						builder: (context) => AdaptiveAlertDialog(
+							title: const Text('Live Photo'),
+							content: const Text('Which part of the Live Photo do you want to post?'),
+							actions: [
+								AdaptiveDialogAction(
+									onPressed: () => Navigator.pop(context, image),
+									child: const Text('Image')
+								),
+								AdaptiveDialogAction(
+									onPressed: () => Navigator.pop(context, video),
+									child: const Text('Video')
+								),
+								AdaptiveDialogAction(
+									onPressed: () => Navigator.pop(context),
+									child: const Text('Cancel')
+								)
+							]
+						)
+					);
+					if (file == null) {
+						// User cancelled
+						return;
+					}
+ 				}
+				else {
+					file = image ?? video;
+					if (file == null) {
+						throw Exception('Failed to extract contents of Live Photo');
+					}
+				}
+			}
 			String ext = file.uri.pathSegments.last.split('.').last.toLowerCase();
 			if (ext == 'jpg' || ext == 'jpeg' || ext == 'heic') {
 				file = await FlutterExifRotation.rotateImage(path: file.path);
