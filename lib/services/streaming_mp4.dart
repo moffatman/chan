@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
@@ -86,6 +87,40 @@ extension _Normalize on _RawRange {
 		start: start,
 		inclusiveEnd: inclusiveEnd ?? (fileLength - 1)
 	);
+}
+
+extension _Retry429 on HttpClient {
+	static const _kMaxRetries = 5;
+	Future<HttpClientResponse> headUrl429(Uri uri, {Map<String, String> headers = const {}, int currentRetries = 0}) async {
+		final headRequest = await headUrl(uri);
+		for (final header in headers.entries) {
+			headRequest.headers.set(header.key, header.value);
+		}
+		final headResponse = await headRequest.close();
+		if (headResponse.statusCode == 429 && currentRetries < (_kMaxRetries)) {
+			headResponse.drain(); // HEAD should have no body, but just to be safe
+			final seconds = max(int.tryParse(headResponse.headers.value('retry-after') ?? '') ?? 0, pow(2, currentRetries + 1).ceil());
+			print('[_Retry429] Waiting $seconds seconds due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
+			await Future.delayed(Duration(seconds: seconds));
+			return headUrl429(uri, headers: headers, currentRetries: currentRetries + 1);
+		}
+		return headResponse;
+	}
+	Future<HttpClientResponse> getUrl429(Uri uri, {Map<String, String> headers = const {}, int currentRetries = 0}) async {
+		final HttpClientRequest httpRequest = await getUrl(uri);
+		for (final header in headers.entries) {
+			httpRequest.headers.set(header.key, header.value);
+		}
+		final response = await httpRequest.close();
+		if (response.statusCode == 429 && currentRetries < _kMaxRetries) {
+			response.drain(); // trash it
+			final seconds = max(int.tryParse(response.headers.value('retry-after') ?? '') ?? 0, pow(2, currentRetries + 1).ceil());
+			print('[_Retry429] Waiting $seconds seconds due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
+			await Future.delayed(Duration(seconds: seconds));
+			return getUrl429(uri, headers: headers, currentRetries: currentRetries + 1);
+		}
+		return response;
+	}
 }
 
 class VideoServer {
@@ -384,12 +419,11 @@ class VideoServer {
 			final client = interruptibleClient ?? _client;
 			if (stat.type == FileSystemEntityType.file) {
 				// First HEAD, to see if we have the right size file cached
-				final headRequest = await client.headUrl(uri);
-				for (final header in headers.entries) {
-					headRequest.headers.set(header.key, header.value);
-				}
-				final headResponse = await headRequest.close();
+				final headResponse = await client.headUrl429(uri, headers: headers);
 				headResponse.drain(); // HEAD should have no body, but just to be safe
+				if (headResponse.statusCode >= 400) {
+					throw HTTPStatusException(headResponse.statusCode);
+				}
 				cachingFile0= _CachingFile(
 					file: file,
 					totalBytes: headResponse.contentLength,
@@ -411,14 +445,15 @@ class VideoServer {
 				}
 			}
 			// Now GET the file for real
-			final HttpClientRequest httpRequest = await client.getUrl(uri);
-			for (final header in headers.entries) {
-				httpRequest.headers.set(header.key, header.value);
+			final response = await client.getUrl429(uri, headers: {
+				...headers,
+				if ((cachingFile0?.currentBytes ?? 0) != 0)
+					'Range': 'bytes=${cachingFile0?.currentBytes}-'
+			});
+			if (response.statusCode >= 400) {
+				response.drain(); // throw it away
+				throw HTTPStatusException(response.statusCode);
 			}
-			if ((cachingFile0?.currentBytes ?? 0) != 0) {
-				httpRequest.headers.set('Range', 'bytes=${cachingFile0?.currentBytes}-');
-			}
-			final response = await httpRequest.close();
 			final cachingFile = cachingFile0 ?? _CachingFile(
 				file: file,
 				totalBytes: response.contentLength,

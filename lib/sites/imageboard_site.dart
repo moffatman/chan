@@ -12,6 +12,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
+import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
@@ -1351,6 +1352,7 @@ abstract class ImageboardSiteArchive {
 	ImageboardSiteArchive({
 		required this.overrideUserAgent
 	}) {
+		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(SeparatedCookieManager(
 			wifiCookieJar: Persistence.wifiCookies,

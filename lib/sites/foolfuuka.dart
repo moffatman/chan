@@ -5,7 +5,6 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
-import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/util.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -501,11 +500,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		this.hasAttachmentRateLimit = false,
 		this.boards,
 		required super.overrideUserAgent
-	}) : super() {
-		client.interceptors.add(HTTP429BackoffInterceptor(
-			client: client
-		));
-	}
+	});
 
 	@override
 	String get userAgent {
