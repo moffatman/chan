@@ -1398,7 +1398,7 @@ class AttachmentViewer extends StatelessWidget {
 											padding: const EdgeInsets.all(32),
 											child: ErrorMessageCard(e.toStringDio(), remedies: {
 													'Retry': () => controller.reloadFullAttachment(),
-													'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url)),
+													'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url), useGalleryIfPossible: false),
 													if (e is! ExtendedException || e.isReportable) 'Report bug': () => reportBug(e, st),
 													if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
 												}
@@ -1810,7 +1810,7 @@ class AttachmentViewer extends StatelessWidget {
 							if (controller.error case (Object e, StackTrace st)) Center(
 								child: ErrorMessageCard(e.toStringDio(), remedies: {
 									'Retry': () => controller.reloadFullAttachment(),
-									'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url)),
+									'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url), useGalleryIfPossible: false),
 									if (e is! ExtendedException || e.isReportable) 'Report bug': () => reportBug(e, st),
 									if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
 								})

@@ -555,7 +555,7 @@ Future<void> openImageboardTarget(BuildContext context, (Imageboard, BoardThread
 	));
 }
 
-Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false, bool useCooperativeBrowser = false}) async {
+Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false, bool useCooperativeBrowser = false, bool useGalleryIfPossible = true}) async {
 	if (url.isScheme('chance')) {
 		fakeLinkStream.add(url.toString());
 		return;
@@ -571,7 +571,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	openInChance() {
 		openImageboardTarget(context, imageboardTarget!);
 	}
-	final bool isMediaLink = [
+	final bool isMediaLink = useGalleryIfPossible && [
 		'.webm',
 		'.mkv',
 		'.mov',
