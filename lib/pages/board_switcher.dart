@@ -216,12 +216,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		List<ImageboardScoped<ImageboardBoard>> filteredBoards = boards.where((board) {
 			return
 				settings.showBoard(board.item) &&
-				(board.item.name.toLowerCase().contains(normalized) ||
+				(board.item.boardKey.s.contains(normalized) ||
 				 board.item.title.toLowerCase().contains(normalized) ||
 				 board.imageboard.site.name.toLowerCase().contains(normalized));
 		}).toList();
 		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return a.item.name.length - b.item.name.length;
+			return a.item.boardKey.s.compareTo(b.item.boardKey.s);
 		});
 		final imageboards = allImageboards.toList();
 		imageboards.remove(currentImageboard);
@@ -269,7 +269,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 		if (normalized.isNotEmpty) {
 			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-				return 20*a.item.name.toLowerCase().indexOfOrInfinity(normalized) + (favsOrder[a.imageboard.scope(a.item.boardKey)] ?? favsOrder.length) - 20*b.item.name.toLowerCase().indexOfOrInfinity(normalized) - (favsOrder[b.imageboard.scope(b.item.boardKey)] ?? favsOrder.length);
+				return 20*a.item.boardKey.s.indexOfOrInfinity(normalized) + (favsOrder[a.imageboard.scope(a.item.boardKey)] ?? favsOrder.length) - 20*b.item.boardKey.s.indexOfOrInfinity(normalized) - (favsOrder[b.imageboard.scope(b.item.boardKey)] ?? favsOrder.length);
 			});
 		}
 		if (searchString.isNotEmpty && !settings.onlyShowFavouriteBoardsInSwitcher) {
@@ -283,7 +283,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				if (filteredBoards.isEmpty) {
 					filteredBoards.add(currentImageboard.scope(fakeBoard));
 				}
-				else if (!filteredBoards.any((b) => b.item.name.toLowerCase() == searchString && b.imageboard == currentImageboard)) {
+				else if (!filteredBoards.any((b) => b.item.boardKey.s == searchString && b.imageboard == currentImageboard)) {
 					filteredBoards.insert(1, currentImageboard.scope(fakeBoard));
 				}
 			}
