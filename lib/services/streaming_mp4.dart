@@ -141,7 +141,7 @@ class VideoServer {
 	static void initializeStatic(Directory webmRoot, Directory httpRoot, {
 		bool bufferOutput = true,
 		int port = 4070,
-		int insignificantByteThreshold = 50 << 10 // 50 KB
+		int insignificantByteThreshold = 80 << 10 // 80 KB
 	}) {
 		_server = VideoServer(
 			webmRoot: webmRoot,
