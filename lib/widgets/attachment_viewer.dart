@@ -342,6 +342,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		controller.player.stream.videoParams.listen(_onPlayerVideoParams);
 		final platformPlayer = player.platform;
 		if (platformPlayer is NativePlayer) {
+			await platformPlayer.setProperty('cache-on-disk', 'no');
 			for (final option in Settings.instance.mpvOptions.entries) {
 				await platformPlayer.setProperty(option.key, option.value);
 			}
