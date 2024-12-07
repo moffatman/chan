@@ -273,7 +273,6 @@ public class MainActivity extends FlutterFragmentActivity {
                             bitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
                             return Map.of(
                                     "package", resolveInfo.activityInfo.packageName,
-                                    "application", resolveInfo.activityInfo.applicationInfo.name,
                                     "label", pm.getApplicationLabel(resolveInfo.activityInfo.applicationInfo).toString(),
                                     "icon", Base64.encodeToString(os.toByteArray(), Base64.NO_WRAP)
                             );
