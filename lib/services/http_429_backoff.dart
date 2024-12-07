@@ -21,7 +21,7 @@ class HTTP429BackoffInterceptor extends Interceptor {
 		};
 		if (response.statusCode == 429 &&
 				currentRetries < maxRetries) {
-			final seconds = max(int.tryParse(response.headers.value('retry-after') ?? '') ?? 0, pow(2, currentRetries + 1).ceil());
+			final seconds = max(int.tryParse(response.headers.value('retry-after') ?? '') ?? 0, min(6, pow(2, currentRetries + 1).ceil()));
 			print('[HTTP429BackoffInterceptor] Waiting $seconds seconds due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
 			await Future.delayed(Duration(seconds: seconds));
 			try {
@@ -59,7 +59,7 @@ class HTTP429BackoffInterceptor extends Interceptor {
 		if (err.type == DioErrorType.response &&
 			  err.response?.statusCode == 429 &&
 				currentRetries < maxRetries) {
-			final seconds = max(int.tryParse(err.response?.headers.value('retry-after') ?? '') ?? 0, pow(2, currentRetries + 1).ceil());
+			final seconds = max(int.tryParse(err.response?.headers.value('retry-after') ?? '') ?? 0, min(6, pow(2, currentRetries + 1).ceil()));
 			print('[HTTP429BackoffInterceptor] Waiting $seconds seconds due to server-side rate-limiting (url: ${err.requestOptions.uri}, currentRetries: $currentRetries)');
 			await Future.delayed(Duration(seconds: seconds));
 			try {

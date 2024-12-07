@@ -99,7 +99,7 @@ extension _Retry429 on HttpClient {
 		final headResponse = await headRequest.close();
 		if (headResponse.statusCode == 429 && currentRetries < (_kMaxRetries)) {
 			headResponse.drain(); // HEAD should have no body, but just to be safe
-			final seconds = max(int.tryParse(headResponse.headers.value('retry-after') ?? '') ?? 0, pow(2, currentRetries + 1).ceil());
+			final seconds = max(int.tryParse(headResponse.headers.value('retry-after') ?? '') ?? 0, min(6, pow(2, currentRetries + 1).ceil()));
 			print('[_Retry429] Waiting $seconds seconds due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
 			await Future.delayed(Duration(seconds: seconds));
 			return headUrl429(uri, headers: headers, currentRetries: currentRetries + 1);
@@ -114,7 +114,7 @@ extension _Retry429 on HttpClient {
 		final response = await httpRequest.close();
 		if (response.statusCode == 429 && currentRetries < _kMaxRetries) {
 			response.drain(); // trash it
-			final seconds = max(int.tryParse(response.headers.value('retry-after') ?? '') ?? 0, pow(2, currentRetries + 1).ceil());
+			final seconds = max(int.tryParse(response.headers.value('retry-after') ?? '') ?? 0, min(6, pow(2, currentRetries + 1).ceil()));
 			print('[_Retry429] Waiting $seconds seconds due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
 			await Future.delayed(Duration(seconds: seconds));
 			return getUrl429(uri, headers: headers, currentRetries: currentRetries + 1);
