@@ -761,7 +761,8 @@ class PostRow extends StatelessWidget {
 					child: const Text('Quotelink all'),
 					trailingIcon: CupertinoIcons.reply_all,
 					onPressed: () {
-						replyBoxZone?.onQuoteText(latestPost.span.buildText(), backlink: latestPost.identifier);
+						// Remove single-line quotelinks
+						replyBoxZone?.onQuoteText(latestPost.span.buildText().replaceAll(RegExp(r'^>>\d+\n', multiLine: true), ''), backlink: latestPost.identifier);
 					}
 				),
 				ContextMenuAction(
