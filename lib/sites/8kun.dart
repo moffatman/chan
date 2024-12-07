@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 class Site8Kun extends SiteLainchan2 {
 	@override
 	final String sysUrl;
+	@override
 	final String imageUrl;
 
 	Site8Kun({

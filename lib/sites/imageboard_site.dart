@@ -1459,6 +1459,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		};
 	}
 	String get baseUrl;
+	String? get imageUrl => null;
 	Uri? get iconUrl;
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]);
 	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread) async => const NoCaptchaRequest();

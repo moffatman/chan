@@ -415,6 +415,10 @@ class AttachmentViewerController extends ChangeNotifier {
 			return alreadyCached.uri;
 		}
 		final attachmentUrl = Uri.parse(attachment.url);
+		if (!_checkArchives && attachmentUrl.host == site.imageUrl) {
+			// Just assume it's right. Avoid a useless HEAD.
+			return attachmentUrl;
+		}
 		Response result = await site.client.requestUri(attachmentUrl, options: Options(
 			method: attachmentUrl.path.endsWith('.m3u8') ? 'GET' : 'HEAD',
 			validateStatus: (_) => true,
