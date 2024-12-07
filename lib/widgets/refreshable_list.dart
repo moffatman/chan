@@ -3761,6 +3761,11 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		Curve curve = Curves.easeInOut,
 		bool revealIfHidden = true
 	}) async {
+		if (targetIndex < 0 || targetIndex >= itemsLength) {
+			print('Someone tried to animateTo an invalid index (0 <= $targetIndex < $itemsLength)');
+			print(StackTrace.current);
+			return;
+		}
 		final startPixels = scrollController?.tryPosition?.pixels ?? 0;
 		final (int, int) proposedRange;
 		final rangeBonus = (state?.useTree == true || state?.widget.gridDelegate != null || state?.widget.staggeredGridDelegate != null) ? 5 : 0;

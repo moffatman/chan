@@ -1251,8 +1251,8 @@ class BoardPageState extends State<BoardPage> {
 																		final theme = context.watch<SavedTheme>();
 																		final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
 																		scrollAnimationDuration() => Settings.instance.showAnimations ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
-																		scrollToTop() => _listController.animateTo((post) => true, duration: scrollAnimationDuration());
-																		scrollToBottom() => _listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0, duration: scrollAnimationDuration());
+																		scrollToTop() => _listController.animateToIndex(0, duration: scrollAnimationDuration());
+																		scrollToBottom() => _listController.animateToIndex(_listController.itemsLength - 1, alignment: 1.0, duration: scrollAnimationDuration());
 																		final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
 																		return Row(
 																			mainAxisSize: MainAxisSize.min,
