@@ -36,7 +36,8 @@ Future<void> reportBug(Object error, StackTrace stackTrace) async {
 	}
 	catch (e, st) {
 		// Mail client missing?
-		final message = '${e.toStringDio()}\n\n$st';
+		Future.error(e, st);
+		final message = '${error.toStringDio()}\n\n$stackTrace';
 		alert(ImageboardRegistry.instance.context!, 'Error', message, actions: {
 			'Copy': () => Clipboard.setData(ClipboardData(text: message))
 		});
