@@ -29,7 +29,7 @@ class SiteLainchanOrg extends SiteLainchan {
 			validateStatus: (_) => true
 		));
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode ?? 0);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		final document = parse(response.data);
 		return document.querySelectorAll('.boardlist a').where((e) => e.attributes['title'] != null && (e.attributes['href'] ?? '').contains('/')).map((e) => ImageboardBoard(

@@ -422,7 +422,7 @@ class VideoServer {
 				final headResponse = await client.headUrl429(uri, headers: headers);
 				headResponse.drain(); // HEAD should have no body, but just to be safe
 				if (headResponse.statusCode >= 400) {
-					throw HTTPStatusException(headResponse.statusCode);
+					throw HTTPStatusException(uri, headResponse.statusCode);
 				}
 				cachingFile0= _CachingFile(
 					file: file,
@@ -452,7 +452,7 @@ class VideoServer {
 			});
 			if (response.statusCode >= 400) {
 				response.drain(); // throw it away
-				throw HTTPStatusException(response.statusCode);
+				throw HTTPStatusException(uri, response.statusCode);
 			}
 			final cachingFile = cachingFile0 ?? _CachingFile(
 				file: file,

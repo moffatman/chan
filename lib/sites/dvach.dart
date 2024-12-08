@@ -150,7 +150,7 @@ class SiteDvach extends ImageboardSite {
 			throw BoardNotFoundException(board);
 		}
 		else if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode!);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		final threadsPerPage = response.data['board']['threads_per_page'] as int?;
 		return (response.data['threads'] as List<dynamic>).cast<Map<String, dynamic>>().asMap().entries.map((e) {

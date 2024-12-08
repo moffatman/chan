@@ -372,7 +372,7 @@ class SiteLainchan extends ImageboardSite {
 				return Future.error(BoardNotFoundException(board));
 			}
 			else {
-				return Future.error(HTTPStatusException(response.statusCode!));
+				return Future.error(HTTPStatusException.fromResponse(response));
 			}
 		}
 		final List<Thread> threads = [];
@@ -511,7 +511,7 @@ class SiteLainchan extends ImageboardSite {
 				throw PostFailedException(message);
 			}
 			else {
-				throw HTTPStatusException(response.statusCode ?? 0);
+				throw HTTPStatusException.fromResponse(response);
 			}
 		}
 		final doc = parse(response.data);
@@ -586,7 +586,7 @@ class SiteLainchan extends ImageboardSite {
 				}
 				throw DeletionFailedException(error);
 			}
-			throw HTTPStatusException(response.statusCode!);
+			throw HTTPStatusException.fromResponse(response);
 		}
 	}
 

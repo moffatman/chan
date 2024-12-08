@@ -24,7 +24,7 @@ extension SiteErrorHandling on Dio {
 		if (status == 404) {
 			throw const ThreadNotFoundException();
 		}
-		throw HTTPStatusException(status ?? 0);
+		throw HTTPStatusException.fromResponse(response);
 	}
 }
 

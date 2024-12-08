@@ -51,7 +51,7 @@ class Site8Kun extends SiteLainchan2 {
 			validateStatus: (_) => true
 		));
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode ?? 0);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		return (jsonDecode(response.data as String)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
 			name: board.key,
@@ -77,7 +77,7 @@ class Site8Kun extends SiteLainchan2 {
 			validateStatus: (_) => true
 		));
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode ?? 0);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		return (jsonDecode(response.data as String)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
 			name: board.key,

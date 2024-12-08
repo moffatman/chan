@@ -566,7 +566,7 @@ class Site4Chan extends ImageboardSite {
 					return Future.error(BoardNotFoundException(thread.board));
 				}
 				else {
-					return Future.error(HTTPStatusException(response.statusCode!));
+					return Future.error(HTTPStatusException.fromResponse(response));
 				}
 			}
 			final Map<int, _CatalogCacheEntry> entries = {};
@@ -647,7 +647,7 @@ class Site4Chan extends ImageboardSite {
 			if (response.statusCode == 404) {
 				throw const ThreadNotFoundException();
 			}
-			throw HTTPStatusException(response.statusCode!);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread, priority: priority);
 		return _threadCache['${thread.board}/${thread.id}']!.thread;
@@ -671,7 +671,7 @@ class Site4Chan extends ImageboardSite {
 				return Future.error(BoardNotFoundException(board));
 			}
 			else {
-				return Future.error(HTTPStatusException(response.statusCode!));
+				return Future.error(HTTPStatusException.fromResponse(response));
 			}
 		}
 		final document = parse(response.data);
@@ -769,7 +769,7 @@ class Site4Chan extends ImageboardSite {
 				return Future.error(BoardNotFoundException(board));
 			}
 			else {
-				return Future.error(HTTPStatusException(response.statusCode!));
+				return Future.error(HTTPStatusException.fromResponse(response));
 			}
 		}
 		final List<Thread> threads = [];
@@ -956,7 +956,7 @@ class Site4Chan extends ImageboardSite {
 			)
 		);
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode!);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		final document = parse(response.data);
 		final errSpan = document.querySelector('#errmsg');

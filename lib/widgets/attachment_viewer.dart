@@ -481,7 +481,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (result.statusCode == 404) {
 			throw AttachmentNotFoundException(attachment);
 		}
-		throw HTTPStatusException(result.statusCode!);
+		throw HTTPStatusException.fromResponse(result);
 	}
 
 	void _scheduleHidingOfLoadingProgress() async {

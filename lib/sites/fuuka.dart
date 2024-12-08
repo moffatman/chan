@@ -197,7 +197,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			throw PostNotFoundException(board, id);
 		}
 		if ((response.statusCode ?? 400) >= 400) {
-			throw HTTPStatusException(response.statusCode ?? 0);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		final thread = await _makeThread(parse(response.data).body!, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!), priority: priority);
 		return thread.posts.firstWhere((t) => t.id == id);
@@ -310,7 +310,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			}
 		));
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode!);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		final document = parse(response.data);
 		return ImageboardArchiveSearchResultPage(

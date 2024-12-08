@@ -272,7 +272,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			if (response.statusCode == 404) {
 				throw PostNotFoundException(board, id);
 			}
-			throw HTTPStatusException(response.statusCode!);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		if (response.data['error'] != null) {
 			if (response.data['error'] == 'Post not found.') {
@@ -385,7 +385,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			}
 		));
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode!);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		final boardData = (response.data['archives'] as Map).values;
 		return boardData.map((archive) {
@@ -434,7 +434,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			)
 		);
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode!);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		final data = response.data;
 		if (data['error'] != null) {

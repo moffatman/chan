@@ -194,7 +194,7 @@ class SiteJsChan extends ImageboardSite {
 		}
 		if (title == null) {
 			print(response.data);
-			throw HTTPStatusException(response.statusCode ?? 0);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		if (title != 'Success') {
 			if (response.data is Map) {
@@ -385,7 +385,7 @@ class SiteJsChan extends ImageboardSite {
 			cancelToken: cancelToken
 		);
 		if (response.data is! Map) {
-			throw HTTPStatusException(response.statusCode ?? 0);
+			throw HTTPStatusException.fromResponse(response);
 		}
 		final postId = response.data['postId'] as int?;
 		if (postId != null) {
