@@ -253,6 +253,15 @@ extension MaybeAdd<T> on List<T> {
 	}
 }
 
+extension MaybeReversed<T> on List<T> {
+	List<T> maybeReversed(bool shouldReverse) {
+		if (shouldReverse) {
+			return reversed.toList(growable: false);
+		}
+		return this;
+	}
+}
+
 extension AsyncPutIfAbsent<K, V> on Map<K, V> {
 	Future<V> putIfAbsentAsync(K key, Future<V> Function() ifAbsent) async {
 		final currentValue = this[key];

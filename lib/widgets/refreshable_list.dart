@@ -3336,16 +3336,16 @@ class RefreshableListFooter extends StatelessWidget {
 		return GestureDetector(
 			behavior: HitTestBehavior.opaque,
 			onTap: updatingNow ? null : updater,
-			child: Container(
-				color: error != null ? Colors.orange.withOpacity(0.5) : null,
+			child: Padding(
 				padding: const EdgeInsets.all(1),
 				child: Center(
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (error != null) ...[
-								const SizedBox(height: 16),
-								Row(
+							if (error != null) Container(
+								padding: const EdgeInsets.all(16),
+								color: Colors.orange.withOpacity(0.5),
+								child: Row(
 									mainAxisAlignment: MainAxisAlignment.center,
 									children: [
 										Flexible(
@@ -3354,12 +3354,11 @@ class RefreshableListFooter extends StatelessWidget {
 										const SizedBox(width: 8),
 										AdaptiveIconButton(
 											onPressed: () => alertError(context, error!.$1, error!.$2, barrierDismissible: true),
-											icon: const Icon(CupertinoIcons.info)
+											icon: const Icon(CupertinoIcons.exclamationmark_triangle)
 										)
-									]
+									].maybeReversed(!Settings.showListPositionIndicatorsOnLeftSetting.watch(context))
 								),
-								const SizedBox(height: 16)
-							],
+							),
 							if (!updatingNow && remedy != null) ...[
 								AdaptiveFilledButton(
 									child: Text(remedy!.$1),
