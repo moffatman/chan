@@ -933,6 +933,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		else {
 			setState(() {});
+			_solutionController.clear();
 			_solutionNode.requestFocus();
 		}
 	}
