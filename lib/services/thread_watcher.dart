@@ -528,7 +528,7 @@ class ThreadWatcherController extends ChangeNotifier {
 		}
 		else {
 			updateNotificationsBadgeCount();
-			for (final watcher in _watchers) {
+			for (final watcher in _watchers.toList()) {
 				if (_doghouse.contains(watcher)) {
 					_doghouse.remove(watcher);
 					continue;
