@@ -134,7 +134,8 @@ Future<EmbedData?> loadEmbedData(String url) async {
 				title: site.name,
 				provider: site.baseUrl,
 				author: null,
-				thumbnailUrl: site.iconUrl.toString()
+				thumbnailUrl: site.iconUrl?.toString(),
+				thumbnailWidget: site.iconUrl == null ? const Icon(CupertinoIcons.globe) : null
 			);
 		}
 		catch (e) {
