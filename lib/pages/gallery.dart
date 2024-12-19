@@ -1136,7 +1136,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																	imageboardKey: null,
 																	imageboard: imageboard,
 																	child: PostsPage(
-																		zone: zone.childZoneFor(null, onNeedScrollToPost: onNeedScrollToPost),
+																		zone: zone.childZoneFor(post?.id, onNeedScrollToPost: onNeedScrollToPost),
 																		header: PostRow(
 																			post: post!,
 																			isSelected: post.replyCount > 0,
