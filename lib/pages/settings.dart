@@ -236,6 +236,7 @@ class _SettingsPageState extends State<SettingsPage> {
 												name: 'chance',
 												title: 'Chance - Imageboard Browser',
 												isWorksafe: true,
+												maxWebmDurationSeconds: 120,
 												webmAudioAllowed: false,
 												maxImageSizeBytes: 8000000,
 												maxWebmSizeBytes: 8000000
