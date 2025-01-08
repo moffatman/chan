@@ -29,6 +29,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
+import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -39,7 +40,6 @@ import 'package:chan/widgets/widget_decoration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart' as dio;
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -1160,7 +1160,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	void _pickEmote() async {
-		final emotes = context.read<ImageboardSite>().getEmotes();
+		final site = context.read<ImageboardSite>();
+		final emotes = site.getEmotes();
 		final pickedEmote = await Navigator.of(context).push<ImageboardEmote>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
@@ -1188,8 +1189,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											onTap: () {
 												Navigator.of(context).pop(emote);
 											},
-											child: emote.image != null ? ExtendedImage.network(
-												emote.image.toString(),
+											child: emote.image != null ? CNetworkImage(
+												url: emote.image.toString(),
+												client: site.client,
 												fit: BoxFit.contain,
 												cache: true
 											) : Text(emote.text ?? '', style: const TextStyle(
@@ -1212,6 +1214,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	}
 
 	void _pickFlag() async {
+		final site = context.read<ImageboardSite>();
 		final pickedFlag = await Navigator.of(context).push<ImageboardBoardFlag>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
@@ -1235,8 +1238,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										icon: Row(
 											children: [
 												if (flag.code == '0') const SizedBox(width: 16)
-												else ExtendedImage.network(
-													flag.imageUrl,
+												else CNetworkImage(
+													url: flag.imageUrl,
+													client: site.client,
 													fit: BoxFit.contain,
 													cache: true
 												),
@@ -2002,8 +2006,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								child: AdaptiveIconButton(
 									onPressed: loading ? null : _pickFlag,
 									icon: IgnorePointer(
-										child: flag != null ? ExtendedImage.network(
-											flag!.imageUrl,
+										child: flag != null ? CNetworkImage(
+											url: flag!.imageUrl,
+											client: imageboard.site.client,
 											cache: true,
 										) : const Icon(CupertinoIcons.flag)
 									)

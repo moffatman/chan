@@ -7,8 +7,10 @@ import 'package:async/async.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/attachment_cache.dart';
+import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/reverse_image_search.dart';
@@ -387,6 +389,13 @@ class AttachmentViewerController extends ChangeNotifier {
 			// Bump to bottom of stack
 			_videoControllers.add(this);
 		}
+		if (val && _cachedFile == null) {
+			http429Queue.prioritize(Uri.parse(attachment.thumbnailUrl));
+			http429Queue.prioritize(Uri.parse(attachment.url));
+			if (_goodImageSource != null) {
+				http429Queue.prioritize(_goodImageSource!);
+			}
+		}
 		_lock.protect(() async {
 			if (val) {
 				await videoPlayerController?.player.play();
@@ -497,6 +506,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_showLoadingProgress.value = false;
 		final controller = videoPlayerController;
 		_videoPlayerController = null;
+		VideoServer.instance.interruptEarlyDownloadFromUri(_goodImageSource);
 		_goodImageSource = null;
 		notifyListeners();
 		await controller?.player.dispose();
@@ -603,8 +613,9 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (_isDisposed) return;
 				notifyListeners();
 				if (background && attachment.type == AttachmentType.image) {
-					await ExtendedNetworkImageProvider(
+					await CNetworkImageProvider(
 						url.toString(),
+						client: site.client,
 						cache: true,
 						headers: getHeaders(url)
 					).getNetworkImageData();
@@ -657,7 +668,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							interruptible: attachment.thumbnailUrl.isEmpty
 						);
 						_conversionDisposers.add(() {
-							VideoServer.instance.interruptOngoingDownload(hash);
+							VideoServer.instance.interruptOngoingDownloadFromUri(url);
 						});
 						if (_isDisposed) return;
 						_videoLoadingProgress = progressNotifier;
@@ -1124,6 +1135,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_videoControllers.remove(this);
 		_ongoingConversion?.cancelIfActive();
 		_playerErrorStream.close();
+		VideoServer.instance.interruptEarlyDownloadFromUri(_goodImageSource);
 		final downloadingSoundUri = _soundSourceDownload?.uri;
 		if (downloadingSoundUri != null) {
 			VideoServer.instance.interruptOngoingDownloadFromUri(downloadingSoundUri);
@@ -1281,8 +1293,9 @@ class AttachmentViewer extends StatelessWidget {
 				)
 			);
 		}
-		ImageProvider image = ExtendedNetworkImageProvider(
+		ImageProvider image = CNetworkImageProvider(
 			source.toString(),
+			client: controller.site.client,
 			cache: true,
 			headers: controller.getHeaders(source)
 		);

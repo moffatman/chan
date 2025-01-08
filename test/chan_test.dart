@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/compress_html.dart';
+import 'package:chan/services/priority_queue.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:flutter/foundation.dart';
@@ -415,7 +417,7 @@ void main() {
         expect(chunks2.length, equals(2));
         expect(chunks2[1].length, equals(200));
         expect(response2StreamSubscriptionIsDone, isTrue);
-        final file2 = VideoServer.instance.optimisticallyGetFile(uri1.resolve('./File2.ext2'));
+        final file2 = VideoServer.instance.optimisticallyGetFile(uri1.resolve('./File2.ext2'))!;
         expect(await file2.exists(), isTrue);
         expect(await file2.length(), equals(300));
         await VideoServer.instance.cleanupCachedDownloadTree(digest);
@@ -547,7 +549,7 @@ void main() {
         expect(chunks2.length, equals(0));
         expect(response2StreamSubscriptionIsDone, isTrue);
         expect(response2StreamSubscriptionIsErrored, isFalse);
-        final file2 = VideoServer.instance.optimisticallyGetFile(uri1.resolve('./File2.m3u8'));
+        final file2 = VideoServer.instance.optimisticallyGetFile(uri1.resolve('./File2.m3u8'))!;
         expect(await file2.exists(), isFalse);
       }
       finally {
@@ -567,7 +569,8 @@ void main() {
       });
       try {
         VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false, insignificantByteThreshold: 0);
-        final digestFuture = VideoServer.instance.startCachingDownload(uri: Uri.http('localhost:${fakeServer.port}'), interruptible: true);
+        final url = Uri.http('localhost:${fakeServer.port}');
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: url, interruptible: true);
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests[0].method, equals('GET'));
         requests[0].response.bufferOutput = false;
@@ -591,7 +594,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
         expect(chunks.length, equals(1));
         expect(chunks[0].length, equals(1000));
-        await VideoServer.instance.interruptOngoingDownload(digest);
+        await VideoServer.instance.interruptOngoingDownloadFromUri(url);
         await Future.delayed(const Duration(milliseconds: 200));
         requests[0].response.add(Uint8List(9000));
         await requests[0].response.close();
@@ -645,6 +648,51 @@ void main() {
         fakeServer.close();
         VideoServer.teardownStatic();
       }
+    });
+  });
+
+  group('PriorityQueue', () {
+    test('basic', () async {
+      final q = PriorityQueue<(String, String), String>(groupKeyer: (k) => k.$1);
+      // Both should start (start in parallel mode)
+      const a = ('1', 'a');
+      const b = ('1', 'b');
+      await q.start(a);
+      await q.start(b);
+      bool d1a = false;
+      q.delay(a, const Duration(seconds: 1)).then((_) => d1a = true);
+      bool d2b = false;
+      q.delay(b, const Duration(seconds: 2)).then((_) => d2b = true);
+      const c = ('1', 'c');
+      bool sc = false;
+      q.start(c).then((_) => sc = true);
+      // The delay should be extended
+      await Future.delayed(const Duration(milliseconds: 1100));
+      expect(d1a, isFalse);
+      expect(d2b, isFalse);
+      expect(sc, isFalse);
+      await Future.delayed(const Duration(seconds: 1));
+      expect(d1a, isTrue);
+      expect(d2b, isFalse);
+      expect(sc, isFalse);
+      await q.end(a);
+      await Future.delayed(Duration.zero);
+      expect(d2b, isTrue);
+      expect(sc, isFalse);
+      await q.end(b);
+      await Future.delayed(Duration.zero);
+      expect(sc, isTrue);
+      await q.end(c);
+      // Should be back in parallel mode
+      const d = ('1', 'd');
+      const e = ('1', 'e');
+      const f = ('1', 'f');
+      await q.start(d);
+      await q.start(e);
+      await q.end(d);
+      await q.start(f);
+      await q.end(e);
+      await q.end(f);
     });
   });
 }

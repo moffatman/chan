@@ -4,6 +4,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/attachment_cache.dart';
+import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
@@ -235,8 +236,9 @@ class AttachmentThumbnail extends StatelessWidget {
 				fit: fit
 			));
 		}
-		ImageProvider image = ExtendedNetworkImageProvider(
+		ImageProvider image = CNetworkImageProvider(
 			url,
+			client: s.client,
 			cache: true,
 			headers: {
 				...s.getHeaders(Uri.parse(url)),

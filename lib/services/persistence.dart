@@ -166,15 +166,15 @@ class Persistence extends ChangeNotifier {
 	static late final Directory httpCacheDirectory;
 	static late final Directory shareCacheDirectory;
 	static late final Directory savedAttachmentsDirectory;
-	static late final PersistCookieJar wifiCookies;
-	static late final PersistCookieJar cellularCookies;
-	static PersistCookieJar get currentCookies {
+	static late final CookieJar wifiCookies;
+	static late final CookieJar cellularCookies;
+	static CookieJar get currentCookies {
 		if (Settings.instance.isConnectedToWifi) {
 			return wifiCookies;
 		}
 		return cellularCookies;
 	}
-	static PersistCookieJar get nonCurrentCookies {
+	static CookieJar get nonCurrentCookies {
 		if (Settings.instance.isConnectedToWifi) {
 			return cellularCookies;
 		}
@@ -429,6 +429,12 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(const ImageboardPollAdapter());
 	}
 
+	static Future<void> initializeForTesting() async {
+		settings = SavedSettings();
+		wifiCookies = DefaultCookieJar();
+		cellularCookies = DefaultCookieJar();
+	}
+
 	static Future<void> initializeStatic() async {
 		appLaunchTime = DateTime.now();
 		initializeHive();
@@ -466,14 +472,14 @@ class Persistence extends ChangeNotifier {
 		catch (e, st) {
 			Future.error(e, st);
 		}
-		wifiCookies = PersistCookieJar(
+		final wifiCookies1 = wifiCookies = PersistCookieJar(
 			storage: FileStorage(temporaryDirectory.path)
 		);
-		await wifiCookies.forceInit();
-		cellularCookies = PersistCookieJar(
+		await wifiCookies1.forceInit();
+		final cellularCookies1 = cellularCookies = PersistCookieJar(
 			storage: FileStorage('${temporaryDirectory.path}/cellular')
 		);
-		await cellularCookies.forceInit();
+		await cellularCookies1.forceInit();
 		await savedAttachmentsDirectory.create(recursive: true);
 		final settingsBox = await _openBoxWithBackup<SavedSettings>(settingsBoxName, compactionStrategy: (int entries, int deletedEntries) {
 			return deletedEntries > 5;
@@ -681,13 +687,15 @@ class Persistence extends ChangeNotifier {
 			return;
 		}
 		final ignorePaths = <String>[];
-		if (Persistence.wifiCookies.storage case FileStorage storage) {
-			// ignore: invalid_use_of_visible_for_testing_member
-			ignorePaths.add(storage.currentDirectory);
-		}
-		if (Persistence.cellularCookies.storage case FileStorage storage) {
-			// ignore: invalid_use_of_visible_for_testing_member
-			ignorePaths.add(storage.currentDirectory);
+		for (final jar in [wifiCookies, cellularCookies]) {
+			ignorePaths.maybeAdd(switch(jar) {
+				PersistCookieJar persist => switch (persist.storage) {
+					// ignore: invalid_use_of_visible_for_testing_member
+					FileStorage storage => storage.currentDirectory,
+					_ => null
+				},
+				_ => null
+			});
 		}
 		DateTime? deadline;
 		if (olderThan != null) {
@@ -2252,7 +2260,7 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
           typeId == other.typeId;
 }
 
-extension PseudoCookies on PersistCookieJar {
+extension PseudoCookies on CookieJar {
 	static final _pseudoCookieUri = Uri.parse('https://chancepseudo.com');
 	static const _expiresOffset = Duration(days: 1000);
 
@@ -2278,7 +2286,7 @@ extension PseudoCookies on PersistCookieJar {
 	}
 }
 
-extension PreserveCloudflareClearance on PersistCookieJar {
+extension PreserveCloudflareClearance on CookieJar {
 	Future<void> deletePreservingCloudflare(Uri uri, [bool withDomainSharedCookie = false]) async {
 		final toSave = (await loadForRequest(uri)).where((cookie) {
 			return cookie.name == 'cf_clearance';

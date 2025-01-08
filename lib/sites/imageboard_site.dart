@@ -1433,7 +1433,9 @@ abstract class ImageboardSiteArchive {
 			}
 		));
 		client.interceptors.add(CloudflareInterceptor());
-		client.interceptors.add(LoggingInterceptor.instance);
+		if (!kInUnitTest) {
+			client.interceptors.add(LoggingInterceptor.instance);
+		}
 		client.httpClientAdapter = BadCertificateHttpClientAdapter();
 	}
 	String get name;
@@ -1937,7 +1939,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 
 abstract class ImageboardSiteLoginSystem {
 	@protected
-	Map<PersistCookieJar, bool> loggedIn = {};
+	Map<CookieJar, bool> loggedIn = {};
 	ImageboardSite get parent;
 	String get name;
 	bool get hidden;
@@ -1970,7 +1972,7 @@ abstract class ImageboardSiteLoginSystem {
 		}
 		await logoutImpl(fromBothWifiAndCellular);
 	}
-	bool isLoggedIn(PersistCookieJar jar) {
+	bool isLoggedIn(CookieJar jar) {
 		return loggedIn.putIfAbsent(jar, () => false);
 	}
 }

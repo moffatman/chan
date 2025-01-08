@@ -7,6 +7,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
@@ -460,8 +461,9 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											itemCount: images.length,
 											itemBuilder: (context, i) {
 												final image = images[i];
-												Widget imageWidget = ExtendedImage.network(
-													image.src,
+												Widget imageWidget = CNetworkImage(
+													url: image.src,
+													client: null,
 													cache: true,
 													fit: BoxFit.contain
 												);

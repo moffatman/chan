@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
 
 final lineSeparatorPattern = RegExp(r'\r?\n');
+final kInUnitTest = Platform.environment.containsKey('FLUTTER_TEST');
 
 /// Syntactic sugar
 T? tryIf<T>(T obj, bool Function(T v) f) {

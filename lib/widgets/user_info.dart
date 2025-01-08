@@ -8,8 +8,8 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
+import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -62,8 +62,9 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 									if (site.supportsUserAvatars)
 										if (data?.avatar != null) Padding(
 											padding: const EdgeInsets.only(right: 16),
-											child: ExtendedImage.network(
-												data!.avatar!.toString(),
+											child: CNetworkImage(
+												url: data!.avatar!.toString(),
+												client: site.client,
 												width: 64,
 												height: 64,
 												fit: BoxFit.cover

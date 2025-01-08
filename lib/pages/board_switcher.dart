@@ -12,9 +12,9 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -687,7 +687,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				height: 30,
 																				child: FittedBox(
 																					fit: BoxFit.contain,
-																					child: ExtendedImage.network(board.icon!.toString())
+																					child: CNetworkImage(
+																						url: board.icon!.toString(),
+																						client: imageboard.site.client
+																					)
 																				)
 																			)
 																		),

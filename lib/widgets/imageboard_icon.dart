@@ -1,5 +1,6 @@
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/network_image.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -43,9 +44,9 @@ class ImageboardIcon extends StatelessWidget {
 		final cacheSize = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
 		final child = SizedBox.square(
 			dimension: size,
-			child: url != null ? ExtendedImage.network(
-				url.toString(),
-				headers: site.getHeaders(url),
+			child: url != null ? CNetworkImage(
+				url: url.toString(),
+				client: site.client,
 				cache: true,
 				enableLoadState: true,
 				loadStateChanged: (state) {
@@ -94,9 +95,9 @@ class ImageboardSiteLoginSystemIcon extends StatelessWidget {
 		final cacheSize = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
 		return SizedBox.square(
 			dimension: size,
-			child: url != null ? ExtendedImage.network(
-				url.toString(),
-				headers: loginSystem?.parent.getHeaders(url),
+			child: url != null ? CNetworkImage(
+				url: url.toString(),
+				client: loginSystem?.parent.client,
 				cache: true,
 				enableLoadState: true,
 				loadStateChanged: (state) {

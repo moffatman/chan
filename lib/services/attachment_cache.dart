@@ -28,7 +28,7 @@ class AttachmentCache {
 			// Fall through in case WEBM is directly playing
 		}
 		final file = VideoServer.instance.optimisticallyGetFile(Uri.parse(attachment.url));
-		if (await file.exists()) {
+		if (file != null && await file.exists()) {
 			return file;
 		}
 		return null;

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/services/bad_certificate.dart';
+import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -91,35 +92,68 @@ extension _Normalize on _RawRange {
 
 extension _Retry429 on HttpClient {
 	static const _kMaxRetries = 5;
-	Future<HttpClientResponse> headUrl429(Uri uri, {Map<String, String> headers = const {}, int currentRetries = 0}) async {
-		final headRequest = await headUrl(uri);
-		for (final header in headers.entries) {
-			headRequest.headers.set(header.key, header.value);
+	void _checkGiveUp(Uri uri, DateTime? start) {
+		final time = VideoServer.instance._earlyGiveUp[uri];
+		if (time == null || start == null) {
+			return;
 		}
-		final headResponse = await headRequest.close();
-		if (headResponse.statusCode == 429 && currentRetries < (_kMaxRetries)) {
-			headResponse.drain(); // HEAD should have no body, but just to be safe
-			final seconds = max(int.tryParse(headResponse.headers.value('retry-after') ?? '') ?? 0, min(6, pow(2, currentRetries + 1).ceil()));
-			print('[_Retry429] Waiting $seconds seconds due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
-			await Future.delayed(Duration(seconds: seconds));
-			return headUrl429(uri, headers: headers, currentRetries: currentRetries + 1);
+		if (start.isBefore(time)) {
+			throw Exception('Gave up after ${time.difference(time)}');
 		}
-		return headResponse;
 	}
-	Future<HttpClientResponse> getUrl429(Uri uri, {Map<String, String> headers = const {}, int currentRetries = 0}) async {
-		final HttpClientRequest httpRequest = await getUrl(uri);
-		for (final header in headers.entries) {
-			httpRequest.headers.set(header.key, header.value);
+	Future<HttpClientResponse> headUrl429(Uri uri, {Map<String, String> headers = const {}, int currentRetries = 0, DateTime? start}) async {
+		try {
+			_checkGiveUp(uri, start ??= DateTime.now());
+			if (currentRetries == 0) {
+				await http429Queue.start(uri);
+				_checkGiveUp(uri, start);
+			}
+			final headRequest = await headUrl(uri);
+			for (final header in headers.entries) {
+				headRequest.headers.set(header.key, header.value);
+			}
+			final headResponse = await headRequest.close();
+			if (headResponse.statusCode == 429 && currentRetries < (_kMaxRetries)) {
+				headResponse.drain(); // HEAD should have no body, but just to be safe
+				final delay = get429Delay(headResponse.headers.value('retry-after'), currentRetries);
+				print('[_Retry429] Waiting $delay due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
+				await http429Queue.delay(uri, delay);
+				return await headUrl429(uri, headers: headers, currentRetries: currentRetries + 1, start: start);
+			}
+			return headResponse;
 		}
-		final response = await httpRequest.close();
-		if (response.statusCode == 429 && currentRetries < _kMaxRetries) {
-			response.drain(); // trash it
-			final seconds = max(int.tryParse(response.headers.value('retry-after') ?? '') ?? 0, min(6, pow(2, currentRetries + 1).ceil()));
-			print('[_Retry429] Waiting $seconds seconds due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
-			await Future.delayed(Duration(seconds: seconds));
-			return getUrl429(uri, headers: headers, currentRetries: currentRetries + 1);
+		finally {
+			if (currentRetries == 0) {
+				await http429Queue.end(uri);
+			}
 		}
-		return response;
+	}
+	Future<HttpClientResponse> getUrl429(Uri uri, {Map<String, String> headers = const {}, int currentRetries = 0, DateTime? start}) async {
+		try {
+			_checkGiveUp(uri, start ??= DateTime.now());
+			if (currentRetries == 0) {
+				await http429Queue.start(uri);
+				_checkGiveUp(uri, start);
+			}
+			final HttpClientRequest httpRequest = await getUrl(uri);
+			for (final header in headers.entries) {
+				httpRequest.headers.set(header.key, header.value);
+			}
+			final response = await httpRequest.close();
+			if (response.statusCode == 429 && currentRetries < _kMaxRetries) {
+				response.drain(); // trash it
+				final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
+				print('[_Retry429] Waiting $delay due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
+				await http429Queue.delay(uri, delay);
+				return await getUrl429(uri, headers: headers, currentRetries: currentRetries + 1, start: start);
+			}
+			return response;
+		}
+		finally {
+			if (currentRetries == 0) {
+				await http429Queue.end(uri);
+			}
+		}
 	}
 }
 
@@ -131,6 +165,7 @@ class VideoServer {
 	final Map<String, HttpClient?> _earlyClients = {};
 	final Map<String, _CachingFile> _caches = {};
 	final Map<String, Set<_CachingFile>> _children = {};
+	final Map<Uri, DateTime> _earlyGiveUp = {};
 	HttpServer? _httpServer;
 	bool _stopped = false;
 	final bool bufferOutput;
@@ -320,7 +355,16 @@ class VideoServer {
 		return getFile(digest);
 	});
 
-	File optimisticallyGetFile(Uri uri) => getFile(_encodeDigest(uri));
+	File? optimisticallyGetFile(Uri uri) {
+		final digest = _encodeDigest(uri);
+		if (_caches[digest]?.completer.isCompleted == false) {
+			return null;
+		}
+		if (_caches[digest] == null && _earlyClients.containsKey(digest)) {
+			return null;
+		}
+		return getFile(digest);
+	}
 
 	Future<void> _handleRequest(HttpRequest request) async {
 		request.response.persistentConnection = request.persistentConnection;
@@ -475,6 +519,7 @@ class VideoServer {
 							cachingFile.didUpdate();
 						});
 					}
+					await handle.close();
 					cachingFile._client?.close();
 					cachingFile._client = null;
 					cachingFile.completer.complete();
@@ -580,7 +625,16 @@ class VideoServer {
 		return getFile(digest);
 	}
 
-	Future<void> interruptOngoingDownload(String digest) async {
+	Future<void> interruptEarlyDownloadFromUri(Uri? uri) async {
+		if (uri == null) {
+			return;
+		}
+		_earlyGiveUp[uri] = DateTime.now();
+	}
+
+	Future<void> interruptOngoingDownloadFromUri(Uri url) async {
+		final digest = _encodeDigest(url);
+		interruptEarlyDownloadFromUri(url);
 		final cachingFile = _caches[digest];
 		if (cachingFile == null) {
 			_earlyClients[digest]?.close(force: true);
@@ -596,10 +650,6 @@ class VideoServer {
 		cachingFile._interrupted = true;
 		cachingFile._client?.close(force: true);
 		_caches.remove(digest);
-	}
-
-	Future<void> interruptOngoingDownloadFromUri(Uri uri) async {
-		await interruptOngoingDownload(_encodeDigest(uri));
 	}
 
 	Future<void> cleanupCachedDownloadTree(String digest) async {

@@ -3019,7 +3019,9 @@ class Settings extends ChangeNotifier {
 
 	Settings._() {
 		mouseSettings = MouseSettings._(this);
-		client.interceptors.add(LoggingInterceptor.instance);
+		if (!kInUnitTest) {
+			client.interceptors.add(LoggingInterceptor.instance);
+		}
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
 				options.headers[HttpHeaders.acceptEncodingHeader] ??= 'gzip';

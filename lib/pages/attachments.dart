@@ -5,6 +5,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -14,7 +15,6 @@ import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/refreshable_list.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -212,8 +212,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 										final goodSource = _getController(attachment).goodImageSource;
 										if (attachment.attachment.type == AttachmentType.image && goodSource != null) {
 											// Ensure full-resolution copy is loaded into the image cache
-											final stream = ExtendedNetworkImageProvider(
+											final stream = CNetworkImageProvider(
 												goodSource.toString(),
+												client: _getController(attachment).site.client,
 												cache: true,
 												headers: _getController(attachment).getHeaders(goodSource)
 											).resolve(ImageConfiguration.empty);

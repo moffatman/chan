@@ -16,6 +16,7 @@ import 'package:chan/services/embed.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
@@ -27,6 +28,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/util.dart';
@@ -1322,8 +1324,9 @@ class PostLinkSpan extends PostSpan {
 					];
 					Widget? tapChildChild = snapshot.data?.thumbnailWidget;
 					if (tapChildChild == null && snapshot.data?.thumbnailUrl != null) {
-						ImageProvider image = ExtendedNetworkImageProvider(
+						ImageProvider image = CNetworkImageProvider(
 							snapshot.data!.thumbnailUrl!,
+							client: zone.imageboard.site.client,
 							cache: true,
 						);
 						final FilterQuality filterQuality;
@@ -1540,9 +1543,9 @@ class PostInlineImageSpan extends PostSpan {
 			child: SizedBox(
 				width: width.toDouble(),
 				height: height.toDouble(),
-				child: ExtendedImage.network(
-					src,
-					headers: zone.imageboard.site.getHeaders(Uri.parse(src)),
+				child: CNetworkImage(
+					url: src,
+					client: zone.imageboard.site.client,
 					cache: true,
 					enableLoadState: false
 				)
