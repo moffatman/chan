@@ -266,3 +266,4 @@ dependency_overrides:
       ref: master
   analyzer: ^6.7.0
   dart_style: ^2.3.6
+  js: ^0.7.1 # Needed to run with current connectivity_plus tag

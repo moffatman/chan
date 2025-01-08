@@ -239,7 +239,7 @@ class Persistence extends ChangeNotifier {
 		bool backupCorrupted = false;
 		try {
 			box = await Hive.openLazyBox<T>(boxName, compactionStrategy: compactionStrategy, crashRecovery: false);
-			_backupBox(boxPath, backupBoxPath, gzip: gzip);
+			_backupBox(box, backupBoxPath, gzip: gzip);
 		}
 		catch (e, st) {
 			if (await File(backupBoxPath).exists()) {
@@ -282,28 +282,29 @@ class Persistence extends ChangeNotifier {
 		return box;
 	}
 
-	static Future<void> _backupBox(String boxPath, String backupBoxPath, {bool gzip = false}) async {
-		if (await File(boxPath).exists()) {
-			if (gzip) {
-				await copyGzipped(boxPath, backupBoxPath);
-			}
-			else {
-				await File(boxPath).copy(backupBoxPath);
-			}
+	static Future<void> _backupBox<T>(BoxBase<T> box, String backupBoxPath, {bool gzip = false}) async {
+		final boxPath = box.path;
+		if (boxPath != null && await File(boxPath).exists()) {
+			await box.protectWrite(() async {
+				if (gzip) {
+					await copyGzipped(boxPath, backupBoxPath);
+				}
+				else {
+					await File(boxPath).copy(backupBoxPath);
+				}
+			});
 		}
 		else {
 			print('Box not found on disk: $boxPath');
 		}
 	}
 
-	static void _startBoxBackupTimer(String name, {bool gzip = false}) {
-		final boxName = '$_boxPrefix$name';
-		final boxPath = '${documentsDirectory.path}/$boxName.hive';
+	static void _startBoxBackupTimer<T>(BoxBase<T> box, String name, {bool gzip = false}) {
 		final backupBoxName = '$_backupBoxPrefix$name';
 		final backupBoxPath = '${documentsDirectory.path}/$backupBoxName.hive${gzip ? '.gz' : ''}';
 		Timer.periodic(_backupUpdateDuration, (_) async {
 			if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-				await _backupBox(boxPath, backupBoxPath, gzip: gzip);
+				await _backupBox(box, backupBoxPath, gzip: gzip);
 			}
 		});
 	}
@@ -489,17 +490,17 @@ class Persistence extends ChangeNotifier {
 		}
 		_clearOrphanedSavedAttachments(); // Don't await
 		settings.launchCount++;
-		_startBoxBackupTimer(settingsBoxName);
+		_startBoxBackupTimer(settingsBox, settingsBoxName);
 		sharedThreadStateBox = await _openBoxWithBackup<PersistentThreadState>(sharedThreadStatesBoxName);
-		_startBoxBackupTimer(sharedThreadStatesBoxName);
+		_startBoxBackupTimer(sharedThreadStateBox, sharedThreadStatesBoxName);
 		sharedBoardsBox = await _openBoxWithBackup<ImageboardBoard>(sharedBoardsBoxName);
-		_startBoxBackupTimer(sharedBoardsBoxName);
+		_startBoxBackupTimer(sharedBoardsBox, sharedBoardsBoxName);
 		if (sharedBoardsBox.isEmpty) {
 			// First launch on new version
 			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
 		}
 		sharedThreadsBox = await _openLazyBoxWithBackup<Thread>(sharedThreadsBoxName, gzip: true);
-		_startBoxBackupTimer(sharedThreadsBoxName, gzip: true);
+		_startBoxBackupTimer(sharedThreadsBox, sharedThreadsBoxName, gzip: true);
 		for (final tab in tabs) {
 			final board = tab.board;
 			if (board != null &&
