@@ -271,6 +271,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
 				return 20*a.item.boardKey.s.indexOfOrInfinity(normalized) + (favsOrder[a.imageboard.scope(a.item.boardKey)] ?? favsOrder.length) - 20*b.item.boardKey.s.indexOfOrInfinity(normalized) - (favsOrder[b.imageboard.scope(b.item.boardKey)] ?? favsOrder.length);
 			});
+			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
+				final aMatches = a.item.boardKey.s == normalized && a.imageboard == currentImageboard;
+				final bMatches = b.item.boardKey.s == normalized && b.imageboard == currentImageboard;
+				if (aMatches == bMatches) {
+					return 0;
+				}
+				return aMatches ? -1 : 1;
+			});
 		}
 		if (searchString.isNotEmpty && !settings.onlyShowFavouriteBoardsInSwitcher) {
 			if (currentImageboard.site.allowsArbitraryBoards) {
