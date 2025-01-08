@@ -509,7 +509,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		VideoServer.instance.interruptEarlyDownloadFromUri(_goodImageSource);
 		_goodImageSource = null;
 		notifyListeners();
-		await controller?.player.dispose();
+		if (controller != null) {
+			await controller.player.pause();
+			await _lock.protect(controller.player.dispose);
+		}
 	}
 
 	Future<void> _loadFullAttachment(bool background, {bool force = false}) => _lock.protect(() async {
@@ -746,19 +749,19 @@ class AttachmentViewerController extends ChangeNotifier {
 							_scheduleHidingOfLoadingProgress();
 						});
 					_hideVideoPlayerController = false;
-					if (_isDisposed) {
+					if (_isDisposed || controller != _videoPlayerController) {
 						waitForPlaying.complete(false);
 						return;
 					}
 					if (settings.muteAudio.value) {
 						await controller.player.setVolume(0);
-						if (_isDisposed) {
+						if (_isDisposed || controller != _videoPlayerController) {
 							waitForPlaying.complete(false);
 							return;
 						}
 					}
 					await controller.player.setPlaylistMode(PlaylistMode.single);
-					if (_isDisposed) {
+					if (_isDisposed || controller != _videoPlayerController) {
 						waitForPlaying.complete(false);
 						return;
 					}
@@ -800,10 +803,10 @@ class AttachmentViewerController extends ChangeNotifier {
 								}
 							});
 						}
-						if (_isDisposed) return;
+						if (_isDisposed || controller != _videoPlayerController) return;
 						await controller.player.play();
 					}
-					if (_isDisposed) return;
+					if (_isDisposed || controller != _videoPlayerController) return;
 				}
 				notifyListeners();
 			}
