@@ -640,15 +640,12 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				transcode |= url.path.endsWith('.m3u8');
 				transcode |= soundSource != null;
-				if (!transcode) {
+				if (!transcode && Settings.featureWebmTranscodingForPlayback && settings.webmTranscoding == WebmTranscodingSetting.vp9 && attachment.type == AttachmentType.webm) {
 					final scan = await MediaScan.scan(url, headers: getHeaders(url));
 					if (_isDisposed) {
 						return;
 					}
-					_hasAudio = scan.hasAudio;
-					if (scan.codec == 'vp9' && Settings.featureWebmTranscodingForPlayback && settings.webmTranscoding == WebmTranscodingSetting.vp9) {
-						transcode = true;
-					}
+					transcode |= scan.codec == 'vp9';
 				}
 				if (!transcode) {
 					if (url.scheme == 'file') {
@@ -676,8 +673,14 @@ class AttachmentViewerController extends ChangeNotifier {
 						if (_isDisposed) return;
 						_videoLoadingProgress = progressNotifier;
 						notifyListeners();
+						final proxiedUrl = VideoServer.instance.getUri(hash);
+						final scan = await MediaScan.scan(proxiedUrl);
+						if (_isDisposed) {
+							return;
+						}
+						_hasAudio = scan.hasAudio;
 						if (isPrimary || !background) {
-							await (await _ensureController()).player.open(Media(VideoServer.instance.getUri(hash).toString()), play: false);
+							await (await _ensureController()).player.open(Media(proxiedUrl.toString()), play: false);
 						}
 						else {
 							// This is a preload or something, wait for the download to finish
