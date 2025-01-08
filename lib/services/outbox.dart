@@ -708,6 +708,7 @@ class Outbox extends ChangeNotifier {
 	}
 
 	final _lock = Mutex();
+	Timer? _timer;
 	final Map<QueueEntryActionKey, OutboxQueue> queues = {};
 	bool headlessSolveFailed = false;
 	bool? _lastIsConnectedToWifi;
@@ -826,7 +827,8 @@ class Outbox extends ChangeNotifier {
 				final time = nextWakeups.reduce((a, b) => a.isBefore(b) ? a : b);
 				final delay = time.difference(DateTime.now());
 				print('Will wake up again in $delay');
-				Future.delayed(delay, _process);
+				_timer?.cancel();
+				_timer = Timer(delay, _process);
 			}
 			else {
 				print('Will not wake up again');
@@ -838,7 +840,8 @@ class Outbox extends ChangeNotifier {
 			print(e);
 			print(st);
 			print('Something went wrong in _process, rescheduling in 1 second');
-			Future.delayed(const Duration(seconds: 1), _process);
+			_timer?.cancel();
+			_timer = Timer(const Duration(seconds: 1), _process);
 		}
 	});
 
