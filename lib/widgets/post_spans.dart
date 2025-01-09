@@ -2394,7 +2394,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	}
 
 	void addThread(Thread thread) {
-		assert(thread.board == board);
+		assert(thread.board.toLowerCase() == board.toLowerCase());
 		if (!_threads.containsKey(thread.id)) {
 			final threadState = imageboard.persistence.getThreadStateIfExists(thread.identifier);
 			if (threadState != null) {

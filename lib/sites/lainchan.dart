@@ -477,7 +477,8 @@ class SiteLainchan extends ImageboardSite {
 				responseType: ResponseType.plain,
 				validateStatus: (x) => true,
 				headers: {
-					'Referer': referer
+					// lainchan has some greek letter boards
+					'Referer': Uri.encodeFull(referer)
 				},
 				extra: {
 					kPriority: RequestPriority.interactive
@@ -601,7 +602,9 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	String _getWebUrl(String board, {int? threadId, int? postId, bool mod = false}) {
-		String threadUrl = 'https://$baseUrl$basePath/${mod ? 'mod.php?/' : ''}$board/';
+		// This maybeGetBoard trick is for lainchan greek letter boards
+		// We need to use the non-normalized name
+		String threadUrl = 'https://$baseUrl$basePath/${mod ? 'mod.php?/' : ''}${persistence?.maybeGetBoard(board)?.name ?? board}/';
 		if (threadId != null) {
 			threadUrl += '$res/$threadId.html';
 			if (postId != null) {
@@ -668,6 +671,11 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	bool get supportsPushNotifications => true;
+
+	@override
+	String formatBoardName(String name) => '/${persistence?.maybeGetBoard(name)?.name ?? name}/';
+	@override
+	String formatBoardNameWithoutTrailingSlash(String name) => '/${persistence?.maybeGetBoard(name)?.name ?? name}';
 }
 
 class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
