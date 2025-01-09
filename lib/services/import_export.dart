@@ -403,11 +403,14 @@ Future<List<ImportLog>> import(File archive) async {
 
 		Future<void> importSubdir({
 			required String subdir,
-			required String type
+			required String type,
+			bool errorIfMissing = true
 		}) async {
 			final folder = Directory('${dir.path}/$subdir');
 			if (!(await folder.exists())) {
-				log.add(ImportLogFailure(filename: subdir, type: type, message: 'Missing subdirectory'));
+				if (errorIfMissing) {
+					log.add(ImportLogFailure(filename: subdir, type: type, message: 'Missing subdirectory'));
+				}
 				return;
 			}
 			int newCount = 0;
@@ -512,7 +515,8 @@ Future<List<ImportLog>> import(File archive) async {
 
 		await importSubdir(
 			subdir: Persistence.savedAttachmentsDir,
-			type: 'Saved Attachments'
+			type: 'Saved Attachments',
+			errorIfMissing: false
 		);
 		await importSubdir(
 			subdir: Persistence.fontsDir,
