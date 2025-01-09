@@ -166,7 +166,13 @@ class MediaScan {
 							}
 						}
 						if (stat.size < 5e6 /* 5 MB */) {
-							files[file.pathSegments.last] = await File(file.path).readAsBytes();
+							try {
+								files[file.pathSegments.last] = await File(file.path).readAsBytes();
+							}
+							catch (e, st) {
+								// The file may not be accessible. just give up.
+								Future.error(e, st);
+							}
 						}
 					}
 					throw MediaScanException(
