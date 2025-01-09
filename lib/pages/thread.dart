@@ -1360,7 +1360,15 @@ class ThreadPageState extends State<ThreadPage> {
 							bar: AdaptiveBar(
 								title: GestureDetector(
 									onTap: () {
-										alert(context, 'Thread title', title);
+										alert(context, 'Thread title', title, actions: {
+											if (_parentTab?.board?.toLowerCase() != widget.thread.board.toLowerCase())
+												'Open ${site.formatBoardName(widget.thread.board)}': () => context.read<ChanTabs>().goToPost(
+													imageboardKey: imageboard.key,
+													board: widget.thread.board,
+													threadId: null,
+													openNewTabIfNeeded: true
+												)
+										});
 									},
 									child: Padding(
 										padding: const EdgeInsets.only(top: 8, bottom: 8),
