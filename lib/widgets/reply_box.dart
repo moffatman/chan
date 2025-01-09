@@ -2194,9 +2194,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					child: Opacity(
 						opacity: widget.isArchived ? 0.5 : 1,
 						child: AdaptiveIconButton(
-							onPressed: _attachmentProgress != null ? null : (loading ? _cancel : switch ((_textIsEmpty, attachment)) {
-								// Don't allow empty post
-								(true, null) => null,
+							onPressed: _attachmentProgress != null ? null : (loading ? _cancel : switch ((kDebugMode, _textIsEmpty, attachment)) {
+								// Don't allow empty post in release mode
+								(false, true, null) => null,
 								_ => _submit
 							}),
 							icon: Icon(loading ? CupertinoIcons.xmark : CupertinoIcons.paperplane)
