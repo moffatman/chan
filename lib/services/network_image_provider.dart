@@ -32,7 +32,7 @@ class CNetworkImageProvider extends ExtendedNetworkImageProvider {
 		), onReceiveProgress: chunkEvents == null ? null : (count, total) {
 			chunkEvents.add(ImageChunkEvent(
 				cumulativeBytesLoaded: count,
-				expectedTotalBytes: total
+				expectedTotalBytes: total > 0 ? total : null
 			));
 		});
 		final bytes = response.data as List<int>;
