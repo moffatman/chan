@@ -3135,6 +3135,9 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 				settings.handleThemesAltered();
 			}
 		}
+		else if (state == AppLifecycleState.hidden) {
+			await flushIdleTasks();
+		}
 	}
 
 	@override

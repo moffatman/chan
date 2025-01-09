@@ -453,6 +453,16 @@ Future<void> runWhenIdle(Duration duration, FutureOr Function() function) {
 	return completer.future;
 }
 
+Future<void> flushIdleTasks() {
+	final entries = _functionIdleTimers.entries.toList();
+	_functionIdleTimers.clear();
+	return Future.wait(entries.map((e) async {
+		e.value.timer.cancel();
+		await e.key();
+		e.value.completer.complete();
+	}));
+}
+
 enum NullSafeOptional {
 	null_,
 	false_,
