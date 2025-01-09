@@ -642,11 +642,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										child = ContextMenu(
 											backgroundColor: Colors.transparent,
 											actions: [
-												if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ContextMenuAction(
+												if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ContextMenuAction(
 													child: const Text('Unfavourite'),
 													trailingIcon: CupertinoIcons.star,
 													onPressed: () {
-														currentImageboard.persistence.browserState.favouriteBoards.remove(board.boardKey);
+														imageboard.persistence.browserState.favouriteBoards.remove(board.boardKey);
 														setState(() {});
 													}
 												)
@@ -654,7 +654,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													child: const Text('Favourite'),
 													trailingIcon: CupertinoIcons.star_fill,
 													onPressed: () {
-														currentImageboard.persistence.browserState.favouriteBoards.add(board.boardKey);
+														imageboard.persistence.browserState.favouriteBoards.add(board.boardKey);
 														setState(() {});
 													}
 												),
@@ -820,11 +820,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										child = ContextMenu(
 											backgroundColor: Colors.transparent,
 											actions: [
-												if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ContextMenuAction(
+												if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ContextMenuAction(
 													child: const Text('Unfavourite'),
 													trailingIcon: CupertinoIcons.star,
 													onPressed: () {
-														currentImageboard.persistence.browserState.favouriteBoards.remove(board.boardKey);
+														imageboard.persistence.browserState.favouriteBoards.remove(board.boardKey);
 														setState(() {});
 													}
 												)
@@ -832,7 +832,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													child: const Text('Favourite'),
 													trailingIcon: CupertinoIcons.star_fill,
 													onPressed: () {
-														currentImageboard.persistence.browserState.favouriteBoards.add(board.boardKey);
+														imageboard.persistence.browserState.favouriteBoards.add(board.boardKey);
 														setState(() {});
 													}
 												),
