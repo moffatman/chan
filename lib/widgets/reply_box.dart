@@ -560,6 +560,8 @@ class ReplyBoxState extends State<ReplyBox> {
 		int? maximumSize,
 		bool? audioPresent,
 		bool? audioAllowed,
+		String? codec,
+		Set<String>? allowedCodecs,
 		int? durationInSeconds,
 		int? maximumDurationInSeconds,
 		int? width,
@@ -585,6 +587,12 @@ class ReplyBoxState extends State<ReplyBox> {
 		const kRandomizingChecksum = 'randomizing checksum';
 		if (randomizeChecksum) {
 			solutions.add(kRandomizingChecksum);
+		}
+		if (switch((codec, allowedCodecs)) {
+			(String codec_, Set<String> allowedCodecs_) => !allowedCodecs_.contains(codec_),
+			_ => false
+		}) {
+			solutions.add('re-encoding');
 		}
 		transcode.copyStreams = solutions.isEmpty;
 		if (metadataPresent && !metadataAllowed) {
@@ -859,6 +867,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					source: file,
 					audioAllowed: board.webmAudioAllowed,
 					audioPresent: scan.hasAudio,
+					codec: scan.codec,
+					allowedCodecs: {'h264'},
 					durationInSeconds: scan.duration?.inSeconds,
 					maximumDurationInSeconds: board.maxWebmDurationSeconds,
 					width: scan.width,

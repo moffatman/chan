@@ -600,6 +600,10 @@ class MediaConversion {
 		if (scan.hasMetadata && removeMetadata) {
 			return null;
 		}
+		if (outputFileExtension == 'mp4' && scan.codec != 'h264') {
+			// Lazy fix. but so far we only need h264 mp4 on all sites
+			return null;
+		}
 		if (randomizeChecksum) {
 			return null;
 		}
