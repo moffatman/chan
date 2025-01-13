@@ -656,14 +656,14 @@ class ImageboardRegistry extends ChangeNotifier {
 		}
 	}
 
-	String? getRedirectGatewayName(Uri? uri, String? title) {
+	ImageboardRedirectGateway? getRedirectGateway(Uri? uri, String? title) {
 		if (uri == null) {
 			return null;
 		}
-		return imageboards.tryMapOnce((i) => i.site.getRedirectGatewayName(uri, title));
+		return imageboards.tryMapOnce((i) => i.site.getRedirectGateway(uri, title));
 	}
 
-	bool isRedirectGateway(Uri? uri, String? title) => getRedirectGatewayName(uri, title) != null;
+	bool isRedirectGateway(Uri? uri, String? title) => getRedirectGateway(uri, title) != null;
 }
 
 class ImageboardScoped<T> {

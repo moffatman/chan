@@ -42,9 +42,13 @@ class Site8Chan extends SiteLynxchan {
 	}
 
 	@override
-	String? getRedirectGatewayName(Uri uri, String? title) {
+	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? title) {
 		if ((uri.host == baseUrl || uri.host == '') && uri.path == '/.static/pages/disclaimer.html') {
-			return '8chan';
+			return const ImageboardRedirectGateway(
+				name: '8chan',
+				alwaysNeedsManualSolving: false,
+				autoClickSelector: 'h1 a'
+			);
 		}
 		return null;
 	}

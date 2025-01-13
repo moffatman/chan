@@ -1406,6 +1406,21 @@ class ImageboardPoll {
 	int get hashCode => Object.hash(title, Object.hashAll(rows));
 }
 
+class ImageboardRedirectGateway {
+	final String name;
+	final String? autoClickSelector;
+	final bool alwaysNeedsManualSolving;
+
+	const ImageboardRedirectGateway({
+		required this.name,
+		required this.alwaysNeedsManualSolving,
+		this.autoClickSelector,
+	});
+
+	@override
+	String toString() => 'ImageboardRedirectGateway(name: $name, alwaysNeedsManualSolving: $alwaysNeedsManualSolving, autoClickSelector: $autoClickSelector)';
+}
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio(BaseOptions(
 		/// Avoid hanging for 2 minutes+ with default value
@@ -1934,7 +1949,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get hasLargeInlineAttachments => false;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
-	String? getRedirectGatewayName(Uri uri, String? title) => null;
+	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? title) => null;
 }
 
 abstract class ImageboardSiteLoginSystem {

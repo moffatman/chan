@@ -266,6 +266,7 @@ class CloudflareInterceptor extends Interceptor {
 		required Uri cookieUrl,
 		required RequestPriority priority,
 		bool toast = true,
+		String? autoClickSelector,
 		String gatewayName = _kDefaultGatewayName
 	}) => runEphemerallyLocked(cookieUrl.topLevelHost, () => _webViewLock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
@@ -292,6 +293,7 @@ class CloudflareInterceptor extends Interceptor {
 			clearSessionCache: true,
 			transparentBackground: true
 		);
+		bool firstLoad = true;
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<T> callback, ValueChanged<Exception> errorCallback) => (controller, uri) async {
 			await maybeApplyDarkModeBrowserJS(controller);
 			final title = await controller.getTitle() ?? '';
@@ -309,6 +311,10 @@ class CloudflareInterceptor extends Interceptor {
 			final html = await controller.getHtml() ?? '';
 			if (_bodyMatchesBlock(html)) {
 				errorCallback(const CloudflareHandlerBlockedException());
+			}
+			if (autoClickSelector != null && firstLoad) {
+				firstLoad = false;
+				await controller.evaluateJavascript(source: 'document.querySelector("$autoClickSelector").click()');
 			}
 		};
 		HeadlessInAppWebView? headlessWebView;
@@ -440,8 +446,8 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			try {
 				final _CloudflareResponse data;
-				final gatewayName = ImageboardRegistry.instance.getRedirectGatewayName(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri), response.htmlTitle);
-				if (gatewayName != null) {
+				final gateway = ImageboardRegistry.instance.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri), response.htmlTitle);
+				if (gateway != null) {
 					// Start the request again
 					// We need to ensure cookies are preserved in all navigation sequences
 					final requestData = await _requestDataAsBytes(response.requestOptions);
@@ -449,6 +455,8 @@ class CloudflareInterceptor extends Interceptor {
 						handler: _buildHandler(response.requestOptions.uri),
 						cookieUrl: response.requestOptions.uri,
 						userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
+						skipHeadless: gateway.alwaysNeedsManualSolving,
+						autoClickSelector: gateway.autoClickSelector,
 						initialUrlRequest: URLRequest(
 							url: WebUri.uri(response.requestOptions.uri),
 							mainDocumentURL: WebUri.uri(response.requestOptions.uri),
@@ -461,7 +469,7 @@ class CloudflareInterceptor extends Interceptor {
 							body: requestData?.data
 						),
 						priority: response.requestOptions.priority,
-						gatewayName: gatewayName
+						gatewayName: gateway.name
 					);
 				 }
 				 else {
