@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 class CNetworkImage extends StatelessWidget {
 	final String url;
 	final Dio? client;
+	final Map<String, String>? headers;
 	final bool cache;
 	final BoxFit? fit;
 	final bool enableLoadState;
@@ -19,6 +20,7 @@ class CNetworkImage extends StatelessWidget {
 	const CNetworkImage({
 		required this.url,
 		required this.client,
+		this.headers,
 		this.cache = false,
 		this.fit,
 		this.enableLoadState = false,
@@ -38,6 +40,7 @@ class CNetworkImage extends StatelessWidget {
 				provider: CNetworkImageProvider(
 					url,
 					client: client,
+					headers: headers,
 					cache: cache
 				),
 				cacheWidth: cacheWidth,

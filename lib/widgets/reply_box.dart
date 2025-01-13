@@ -35,7 +35,7 @@ import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/widget_decoration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
@@ -1500,7 +1500,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									}
 									return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 								},
-								child: SavedAttachmentThumbnail(file: attachment!, fit: BoxFit.contain)
+								child: MediaThumbnail(uri: attachment!.uri, fit: BoxFit.contain)
 							),
 							onTap: () async {
 								showGallery(
@@ -2055,7 +2055,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														maxWidth: 32,
 														maxHeight: 32
 													),
-													child: SavedAttachmentThumbnail(file: attachment!, fontSize: 12)
+													child: MediaThumbnail(uri: attachment!.uri, fontSize: 12)
 												)
 											),
 										]
@@ -2113,8 +2113,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 																maxWidth: 32,
 																maxHeight: 32
 															),
-															child: SavedAttachmentThumbnail(
-																file: File(file)
+															child: MediaThumbnail(
+																uri: Uri.file(file)
 															)
 														)
 													)

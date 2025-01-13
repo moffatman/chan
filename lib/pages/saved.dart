@@ -36,7 +36,7 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
-import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/sliver_staggered_grid.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
@@ -1419,8 +1419,8 @@ class _SavedPageState extends State<SavedPage> {
 														attachment: item.item.attachment,
 														semanticParentIds: [-5, imageboardIds.putIfAbsent(item.imageboard.key, () => imageboardIds.length)]
 													),
-													child: SavedAttachmentThumbnail(
-														file: item.item.file,
+													child: MediaThumbnail(
+														uri: item.item.file.uri,
 														fit: BoxFit.contain
 													),
 													flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {

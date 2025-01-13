@@ -1,13 +1,11 @@
 
-import 'dart:io';
-
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/text_highlighting.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
-import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -58,8 +56,8 @@ class DraftPostWidget extends StatelessWidget {
 								maxWidth: 64,
 								maxHeight: 64
 							),
-							child: SavedAttachmentThumbnail(
-								file: File(file)
+							child: MediaThumbnail(
+								uri: Uri.file(file)
 							)
 						)
 					)

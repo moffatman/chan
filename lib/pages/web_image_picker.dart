@@ -7,6 +7,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -95,7 +96,8 @@ typedef _WebImageResult = ({
 	double top,
 	double left,
 	bool visible1,
-	bool visible2
+	bool visible2,
+	bool isVideo
 });
 
 class _WebImagePickerPageState extends State<WebImagePickerPage> {
@@ -193,6 +195,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
+		final backgroundColor = ChanceTheme.backgroundColorOf(context);
 		return AdaptiveScaffold(
 			bar: AdaptiveBar(
 				title: AdaptiveSearchTextField(
@@ -335,7 +338,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										}
 									),
 									if (showSearchHistory) Container(
-										color: ChanceTheme.backgroundColorOf(context),
+										color: backgroundColor,
 										child: ListView(
 											children: Persistence.recentWebImageSearches.where((s) {
 													return s.toLowerCase().contains(urlController.text.toLowerCase());
@@ -413,22 +416,50 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 								ElevatedButton(
 									child: Icon(Adaptive.icons.photo),
 									onPressed: () async {
+										final headers = {
+											'user-agent': useDesktopUserAgent ? _kDesktopUserAgent : _kMobileUserAgent
+										};
+										if (await webViewController?.getUrl() case WebUri url) {
+											final cookies = await CookieManager.instance().getCookies(url: url);
+											headers['cookie'] = cookies.map((c) => '${c.name}=${c.value}').join('; ');
+										}
 										final returnedResults = await webViewController?.evaluateJavascript(
-											source: '''[...document.querySelectorAll('img')].map(img => {
+											source: '''[...document.querySelectorAll('img, video'), ...[...document.querySelectorAll('iframe')].flatMap(iframe => {
+												try {
+													return [...iframe.contentWindow.document.body.querySelectorAll('img, video')]
+												}
+												catch (ex) {
+													// Security error
+													return []
+												}
+											})].map(img => {
 												var rect = img.getBoundingClientRect()
+												var src = img.src
+												if (!src && img.localName == 'video') {
+													var sources = [...img.querySelectorAll('source')]
+													var candidate = [
+														sources.find((e) => e.type == 'video/mp4'),
+														sources.find((e) => e.type == 'video/webm'),
+														sources[0]
+													].find((e) => !!e)
+													if (candidate) {
+														src = candidate.src
+													}
+												}
 												return {
-													src: img.src,
-													width: img.naturalWidth,
-													height: img.naturalHeight,
+													src: src,
+													width: img.naturalWidth || img.videoWidth || img.width,
+													height: img.naturalHeight || img.videoHeight || img.height,
 													displayWidth: rect.width,
 													displayHeight: rect.height,
 													top: rect.top,
 													left: rect.left,
 													visible1: rect.bottom >= 0 && rect.right >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight) && rect.left <= (window.innerWidth || document.documentElement.clientWidth),
-													visible2: (
+													visible2: img.paused === false || (
 														document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2) ||
 														document.elementFromPoint((rect.left + rect.right) / 2, (0.8 * rect.top) + (0.2 * rect.bottom))
-													) == img
+													) == img,
+													isVideo: img.localName == 'video'
 												}
 											})'''
 										) as List;
@@ -442,13 +473,24 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											top: (r['top'] as num).toDouble(),
 											left: (r['left'] as num).toDouble(),
 											visible1: r['visible1'] as bool,
-											visible2: r['visible2'] as bool
+											visible2: r['visible2'] as bool,
+											isVideo: r['isVideo'] as bool
 										)).toList();
 										results.removeWhere((r) => r.width * r.height <= 1);
 										results.removeWhere((r) => r.displayWidth * r.displayHeight == 0);
 										results.removeWhere((r) => r.src.endsWith('.svg'));
 										results.removeWhere((r) => r.src.isEmpty);
 										results.sort((a, b) => a.left.compareTo(b.left));
+										if (results.isEmpty) {
+											if (context.mounted) {
+												showToast(
+													context: context,
+													icon: CupertinoIcons.exclamationmark_triangle,
+													message: 'No images found'
+												);
+											}
+											return;
+										}
 										mergeSort<_WebImageResult>(results, compare: (a, b) => a.top.compareTo(b.top));
 										makeGrid(BuildContext context, List<_WebImageResult> images) => GridView.builder(
 											gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -463,6 +505,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												final image = images[i];
 												Widget imageWidget = CNetworkImage(
 													url: image.src,
+													headers: headers,
 													client: null,
 													cache: true,
 													fit: BoxFit.contain
@@ -496,7 +539,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																final token = CancelToken();
 																controller.onCancel = token.cancel;
 																final response = await settings.client.get(image.src, options: Options(
-																	responseType: ResponseType.bytes
+																	responseType: ResponseType.bytes,
+																	headers: headers
 																), cancelToken: token);
 																if (response.data is Uint8List) {
 																	return response;
@@ -504,7 +548,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																// Something this happens with cloudflare clearance,
 																// we get <img> as String, just try again
 																return await settings.client.get(image.src, options: Options(
-																	responseType: ResponseType.bytes
+																	responseType: ResponseType.bytes,
+																	headers: headers
 																), cancelToken: token);
 															}, cancellable: true);
 															if (!context.mounted) return;
@@ -518,9 +563,13 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														}
 													},
 													child: Column(
+														crossAxisAlignment: CrossAxisAlignment.stretch,
 														children: [
 															Expanded(
-																child: imageWidget
+																child: image.isVideo ? MediaThumbnail(
+																	uri: Uri.parse(image.src),
+																	headers: headers
+																) : imageWidget
 															),
 															const SizedBox(height: 4),
 															Text('${image.width}x${image.height}', style: const TextStyle(
@@ -540,7 +589,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											builder: (context) => OverscrollModalPage(
 												child: Container(
 													width: double.infinity,
-													color: ChanceTheme.backgroundColorOf(context),
+													color: backgroundColor,
 													padding: const EdgeInsets.all(16),
 													child: Column(
 														children: [
@@ -556,7 +605,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																			builder: (innerContext) => OverscrollModalPage(
 																				child: Container(
 																					width: double.infinity,
-																					color: ChanceTheme.backgroundColorOf(innerContext),
+																					color: backgroundColor,
 																					padding: const EdgeInsets.all(16),
 																					child: Column(
 																						children: [
@@ -583,7 +632,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																			builder: (innerContext) => OverscrollModalPage(
 																				child: Container(
 																					width: double.infinity,
-																					color: ChanceTheme.backgroundColorOf(innerContext),
+																					color: backgroundColor,
 																					padding: const EdgeInsets.all(16),
 																					child: Column(
 																						children: [

@@ -1,34 +1,38 @@
-import 'dart:io';
-
 import 'package:chan/services/media.dart';
 import 'package:chan/widgets/thumbnail_image_provider.dart';
 import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class SavedAttachmentThumbnail extends StatefulWidget {
-	final File file;
+class MediaThumbnail extends StatefulWidget {
+	final Uri uri;
+	final Map<String, String>? headers;
 	final BoxFit? fit;
 	final double? fontSize;
-	const SavedAttachmentThumbnail({
-		required this.file,
+	const MediaThumbnail({
+		required this.uri,
+		this.headers,
 		this.fit,
 		this.fontSize,
 		Key? key
 	}) : super(key: key);
 
 	@override
-	createState() => _SavedAttachmentThumbnailState();
+	createState() => _MediaThumbnailState();
 }
 
-class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
+class _MediaThumbnailState extends State<MediaThumbnail> {
 	MediaScan? scan;
 
-	String get ext => widget.file.path.split('.').last.toLowerCase();
+	String get ext => widget.uri.path.split('.').last.toLowerCase();
+
+	bool get isVideo => {
+		'webm', 'mp4', 'mov', 'm4v', 'mkv', 'mpeg', 'avi', '3gp', 'm2ts'
+	}.contains(ext);
 
 	Future<void> _scan() async {
-		if (ext == 'webm' || ext == 'mp4' || ext == 'mov') {
-			scan = await MediaScan.scan(widget.file.uri);
+		if (isVideo) {
+			scan = await MediaScan.scan(widget.uri);
 			if (mounted) setState(() {});
 		}
 	}
@@ -40,9 +44,9 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 	}
 
 	@override
-	void didUpdateWidget(SavedAttachmentThumbnail old) {
+	void didUpdateWidget(MediaThumbnail old) {
 		super.didUpdateWidget(old);
-		if (widget.file.path != old.file.path) {
+		if (widget.uri != old.uri) {
 			setState(() {
 				scan = null;
 			});
@@ -62,7 +66,21 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 						label = Text('${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}', style: TextStyle(fontSize: widget.fontSize));
 					}
 				}
-				if ((ext == 'webm' || ext == 'mp4' || ext == 'mov') && constraints.maxWidth > 50 && constraints.maxHeight > 50) {
+				final image = Image(
+					image: ThumbnailImageProvider(
+						uri: widget.uri,
+						headers: widget.headers
+					),
+					loadingBuilder: (context, child, progress) => Center(
+						child: progress == null ? child : const CircularProgressIndicator.adaptive()
+					),
+					errorBuilder: (context, e, st) {
+						Future.error(e, st); // crashlytics
+						return const Icon(CupertinoIcons.question_square);
+					},
+					fit: widget.fit
+				);
+				if ((isVideo) && constraints.maxWidth > 50 && constraints.maxHeight > 50) {
 					return Center(
 						child: WidgetDecoration(
 							position: DecorationPosition.foreground,
@@ -77,28 +95,12 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 									child: label
 								)
 							) : null,
-							child: Image(
-								image: ThumbnailImageProvider(
-									file: widget.file
-								),
-								errorBuilder: (context, e, st) {
-									Future.error(e, st); // crashlytics
-									return const Icon(CupertinoIcons.question_square);
-								},
-								fit: widget.fit
-							)
+							child: image
 						)
 					);
 				}
 				else {
-					return Image(
-						image: ThumbnailImageProvider(file: widget.file),
-						errorBuilder: (context, e, st) {
-							Future.error(e, st); // crashlytics
-							return const Icon(CupertinoIcons.question_square);
-						},
-						fit: widget.fit
-					);
+					return image;
 				}
 			}
 		);

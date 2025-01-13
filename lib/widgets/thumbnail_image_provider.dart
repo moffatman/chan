@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:chan/services/media.dart';
@@ -6,11 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
 class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
-	final File file;
+	final Uri uri;
+	final Map<String, String>? headers;
 	final double scale;
 
 	ThumbnailImageProvider({
-		required this.file,
+		required this.uri,
+		this.headers,
 		this.scale = 1.0
 	});
 
@@ -19,7 +20,7 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 		return MultiFrameImageStreamCompleter(
 			codec: () async {
 				assert(key == this);
-				final conversion = MediaConversion.extractThumbnail(file.uri);
+				final conversion = MediaConversion.extractThumbnail(uri, headers: headers);
 				Uint8List bytes;
 				if (await conversion.getDestination().exists()) {
 					bytes = await conversion.getDestination().readAsBytes();
@@ -41,12 +42,12 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is ThumbnailImageProvider) &&
-		(other.file.path == file.path) &&
+		(other.uri == uri) &&
 		(other.scale == scale);
 
 	@override
-	int get hashCode => Object.hash(file.path, scale);
+	int get hashCode => Object.hash(uri, scale);
 
 	@override
-	String toString() => 'ThumbnailImageProvider(file: $file, scale; $scale)';
+	String toString() => 'ThumbnailImageProvider(uri: $uri, scale; $scale)';
 }

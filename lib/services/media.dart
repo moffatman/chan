@@ -63,6 +63,7 @@ class MediaConversionResult {
 @HiveType(typeId: 38)
 class MediaScan {
 	static final Map<String, MediaScan> _fileScans = {};
+	static final Map<Uri, MediaScan> _webScans = {};
 	@HiveField(0)
 	final bool hasAudio;
 	@HiveField(1)
@@ -107,7 +108,14 @@ class MediaScan {
 		int tries = 0
 	}) async {
 		try {
+			if (_webScans[file] case MediaScan scan) {
+				return scan;
+			}
 			return await _ffprobeLock.protect<MediaScan>(() async {
+				// May be two simultaneous scans, so recheck after getting the lock
+				if (_webScans[file] case MediaScan scan) {
+					return scan;
+				}
 				final result = await FFTools.ffprobe(
 					arguments: [
 						"-v",
@@ -207,7 +215,7 @@ class MediaScan {
 						}
 					}
 				}
-				return MediaScan(
+				final scan = MediaScan(
 					hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
 					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
 					bitrate: int.tryParse(data['format']?['bit_rate'] as String? ?? ''),
@@ -219,6 +227,10 @@ class MediaScan {
 					metadata: metadata,
 					format: (data['format'] as Map?)?['format_name'] as String?
 				);
+				if (file.scheme != 'file') {
+					_webScans[file] = scan;
+				}
+				return scan;
 			});
 		}
 		on FormatException {
@@ -523,13 +535,14 @@ class MediaConversion {
 		);
 	}
 
-	static MediaConversion extractThumbnail(Uri inputFile) {
+	static MediaConversion extractThumbnail(Uri inputFile, {Map<String, String>? headers}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'jpg',
 			maximumDimension: 250,
 			extraOptions: ['-frames:v', '1'],
-			cacheKey: 'thumb'
+			cacheKey: 'thumb',
+			headers: headers ?? const {}
 		);
 	}
 

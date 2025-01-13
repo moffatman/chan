@@ -18,7 +18,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
-import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:dio/dio.dart';
@@ -346,8 +346,8 @@ List<AttachmentPickingSource> getAttachmentSources({
 														attachment: attachment.attachment,
 														semanticParentIds: [-999]
 													),
-													child: SavedAttachmentThumbnail(
-														file: attachment.file,
+													child: MediaThumbnail(
+														uri: attachment.file.uri,
 														fit: BoxFit.contain
 													),
 													flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
@@ -499,7 +499,7 @@ Future<File?> pickAttachment({
 											},
 											child: ClipRRect(
 												borderRadius: BorderRadius.circular(8),
-												child: SavedAttachmentThumbnail(file: file, fit: BoxFit.cover)
+												child: MediaThumbnail(uri: file.uri, fit: BoxFit.cover)
 											)
 										);
 									}

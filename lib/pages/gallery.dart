@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:math';
 import 'dart:ui';
@@ -29,7 +28,7 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/reply_box.dart';
-import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
@@ -596,8 +595,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																			height: _thumbnailSize,
 																			fit: BoxFit.cover,
 																			mayObscure: true
-																		) : SavedAttachmentThumbnail(
-																			file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
+																		) : MediaThumbnail(
+																			uri: widget.overrideSources[attachment.attachment]!,
 																			fit: BoxFit.cover,
 																			fontSize: 10
 																		)
@@ -704,8 +703,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																height: maxCrossAxisExtent,
 																fit: BoxFit.cover,
 																mayObscure: true
-															) : SavedAttachmentThumbnail(
-																file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
+															) : MediaThumbnail(
+																uri: widget.overrideSources[attachment.attachment]!,
 																fit: BoxFit.cover
 															)
 														),
