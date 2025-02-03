@@ -11,7 +11,7 @@ class AttachmentCache {
 	static onCached(Attachment attachment) {
 		_streamController.add(attachment);
 	}
-	static Future<File?> optimisticallyFindFile(Attachment attachment) async {
+	static Future<File?> _optimisticallyFindFile(Attachment attachment) async {
 		if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.url) {
 			// Not cacheable
 			return null;
@@ -32,5 +32,19 @@ class AttachmentCache {
 			return file;
 		}
 		return null;
+	}
+	static Future<File?> optimisticallyFindFile(Attachment attachment) async {
+		switch ((await _optimisticallyFindFile(attachment), attachment.sizeInBytes)) {
+			case (File file, int sizeInBytes):
+				final stat = await file.stat();
+				if (stat.size != sizeInBytes) {
+					print('FILE SIZE MISMATCH $attachment $file ${stat.size}');
+					await file.delete();
+					return null;
+				}
+				return file;
+			default:
+				return null;
+		}
 	}
 }
