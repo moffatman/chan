@@ -1042,6 +1042,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (_isDownloaded && !force && dir == null) return null;
 		final settings = Settings.instance;
 		String filename;
+		_isDownloaded = true; // Lazy lock against concurrent download
 		bool successful = false;
 		if (Platform.isIOS) {
 			AssetPathEntity? album;
@@ -1063,7 +1064,6 @@ class AttachmentViewerController extends ChangeNotifier {
 			if (album != null) {
 				await PhotoManager.editor.copyAssetToPath(asset: asAsset, pathEntity: album);
 			}
-			_isDownloaded = true;
 			successful = true;
 		}
 		else if (Platform.isAndroid) {
@@ -1108,7 +1108,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		else {
 			throw UnsupportedError("Downloading not supported on this platform");
 		}
-		onDownloaded?.call();
+		_isDownloaded = successful;
+		if (successful) {
+			onDownloaded?.call();
+		}
 		notifyListeners();
 		return successful ? filename : null;
 	}
