@@ -2628,7 +2628,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												})],
 												[
 													('${postSortingMethod == PostSortingMethod.none ? 'Sort' : postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19), () async {
-														final defaultMethod = widget.persistentState.imageboard?.persistence.browserState.postSortingMethodPerBoard[widget.persistentState.board] ?? widget.persistentState.imageboard?.persistence.browserState.postSortingMethod ?? PostSortingMethod.none;
+														final defaultMethod = widget.persistentState.imageboard?.persistence.browserState.postSortingMethodPerBoard[widget.persistentState.boardKey] ?? widget.persistentState.imageboard?.persistence.browserState.postSortingMethod ?? PostSortingMethod.none;
 														final choice = await showAdaptiveModalPopup<NullWrapper<PostSortingMethod>>(
 															context: context,
 															useRootNavigator: false,

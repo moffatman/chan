@@ -24,6 +24,7 @@ linter:
   rules:
     avoid_print: false  # Uncomment to disable the `avoid_print` rule
     unrelated_type_equality_checks: true
+    collection_methods_unrelated_type: true
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 
 # Additional information about this file can be found at

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chan/models/board.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
@@ -137,7 +138,7 @@ class ThreadWatcher extends ChangeNotifier {
 	final Set<ThreadIdentifier> fixedThreads = {};
 	final Set<ThreadIdentifier> brokenThreads = {};
 	final List<String> watchForStickyOnBoards;
-	final Map<String, List<Thread>> _lastCatalogs = {};
+	final Map<BoardKey, List<Thread>> _lastCatalogs = {};
 	final List<ThreadIdentifier> _unseenStickyThreads = [];
 	final ThreadWatcherController controller;
 	final unseenCount = ValueNotifier<int>(0);
@@ -354,8 +355,9 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 		_lastCatalogs.clear();
 		_unseenStickyThreads.clear();
-		for (final board in watchForStickyOnBoards) {
-			_lastCatalogs[board] ??= await site.getCatalog(board, priority: RequestPriority.functional);
+		for (final rawBoard in watchForStickyOnBoards) {
+			final board = ImageboardBoard.getKey(rawBoard);
+			_lastCatalogs[board] ??= await site.getCatalog(board.s, priority: RequestPriority.functional);
 			_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
 			// Update sticky threads for (you)s
 			final stickyThreadStates = _lastCatalogs[board]!.where((t) => t.isSticky).map((t) => persistence.getThreadStateIfExists(t.identifier)).where((s) => s != null).map((s) => s!).toList();
@@ -382,12 +384,13 @@ class ThreadWatcher extends ChangeNotifier {
 			if (line.disabled || (!line.outputType.autoSave && line.outputType.autoWatch == null)) {
 				continue;
 			}
-			for (final board in line.boards) {
-				final imageboardBoard = persistence.maybeGetBoard(board);
+			for (final rawBoard in line.boards) {
+				final imageboardBoard = persistence.maybeGetBoard(rawBoard);
 				if (imageboardBoard == null) {
 					continue;
 				}
-				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board, priority: RequestPriority.functional);
+				final board = ImageboardBoard.getKey(rawBoard);
+				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board.s, priority: RequestPriority.functional);
 				for (final thread in catalog) {
 					final result = Settings.instance.globalFilter.filter(imageboardKey, thread);
 					if (result?.type.autoSave ?? false) {
@@ -456,7 +459,7 @@ class ThreadWatcher extends ChangeNotifier {
 		});
 	}
 
-	List<Thread>? peekLastCatalog(String board) => _lastCatalogs[board];
+	List<Thread>? peekLastCatalog(BoardKey board) => _lastCatalogs[board];
 
 	@override
 	void dispose() {

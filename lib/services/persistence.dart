@@ -603,6 +603,10 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 			await sharedThreadsBox.flush();
+			settings.appliedMigrations.add('bB');
+			await settings.save();
+		}
+		if (!settings.appliedMigrations.contains('bB2')) {
 			for (final browserState in settings.browserStateBySite.values) {
 				_fixBoardKeyList(browserState.favouriteBoards);
 				_fixBoardKeyMap(browserState.hiddenIds);
@@ -615,7 +619,7 @@ class Persistence extends ChangeNotifier {
 				_fixBoardKeyMap(browserState.postSortingMethodPerBoard);
 				_fixBoardKeyMap(browserState.downloadSubfoldersPerBoard);
 			}
-			settings.appliedMigrations.add('bB');
+			settings.appliedMigrations.add('bB2');
 			await settings.save();
 		}
 	}
@@ -1646,6 +1650,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	@override
 	@HiveField(19, defaultValue: '')
 	String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	@override
 	@HiveField(20, defaultValue: 0)
 	int id;
@@ -1783,7 +1788,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 
 	PostSortingMethod get effectivePostSortingMethod =>
 		postSortingMethod ??
-		imageboard?.persistence.browserState.postSortingMethodPerBoard[board] ??
+		imageboard?.persistence.browserState.postSortingMethodPerBoard[boardKey] ??
 		imageboard?.persistence.browserState.postSortingMethod ??
 		PostSortingMethod.none;
 }
@@ -2111,10 +2116,13 @@ class PersistentBrowserState {
 	}
 	
 	bool? getThreadHiding(ThreadIdentifier thread) {
-		if (overrideShowIds[thread.board]?.contains(thread.id) ?? false) {
+		if (overrideShowIds[thread.boardKey]?.contains(thread.id) ?? false) {
 			return false;
 		}
-		return hiddenIds[thread.board]?.contains(thread.id);
+		if (hiddenIds[thread.boardKey]?.contains(thread.id) ?? false) {
+			return true;
+		}
+		return null;
 	}
 
 	void setThreadHiding(ThreadIdentifier thread, bool? hiding) {
@@ -2124,21 +2132,21 @@ class PersistentBrowserState {
 				if (!map.contains(thread.id)) {
 					map.add(thread.id);
 				}
-				overrideShowIds[thread.board]?.remove(thread.id);
+				overrideShowIds[thread.boardKey]?.remove(thread.id);
 				break;
 			case false:
 				final map = overrideShowIds.putIfAbsent(thread.boardKey, () => []);
 				if (!map.contains(thread.id)) {
 					map.add(thread.id);
 				}
-				hiddenIds[thread.board]?.remove(thread.id);
+				hiddenIds[thread.boardKey]?.remove(thread.id);
 				break;
 			case null:
-				hiddenIds[thread.board]?.remove(thread.id);
-				overrideShowIds[thread.board]?.remove(thread.id);
+				hiddenIds[thread.boardKey]?.remove(thread.id);
+				overrideShowIds[thread.boardKey]?.remove(thread.id);
 				break;
 		}
-		_catalogFilters.remove(thread.board);
+		_catalogFilters.remove(thread.boardKey);
 	}
 }
 

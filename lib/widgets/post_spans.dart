@@ -1956,18 +1956,20 @@ class PostSpanZone extends StatelessWidget {
 	final int postId;
 	final Widget child;
 	final PostSpanZoneStyle? style;
+	final PostQuoteLinkSpan? link;
 
 	const PostSpanZone({
 		required this.postId,
 		required this.child,
 		this.style,
+		this.link,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return ChangeNotifierProvider<PostSpanZoneData>.value(
-			value: context.read<PostSpanZoneData>().childZoneFor(postId, style: style),
+			value: context.read<PostSpanZoneData>().childZoneFor(postId, style: style, link: link),
 			child: child
 		);
 	}
@@ -1980,7 +1982,7 @@ enum PostSpanZoneStyle {
 }
 
 abstract class PostSpanZoneData extends ChangeNotifier {
-	final Map<(int?, PostSpanZoneStyle?, int?, ValueChanged<Post>?), PostSpanZoneData> _children = {};
+	final Map<(int?, PostSpanZoneStyle?, int?, ValueChanged<Post>?, PostQuoteLinkSpan?), _PostSpanChildZoneData> _children = {};
 	String get board;
 	int get primaryThreadId;
 	ThreadIdentifier get primaryThread => ThreadIdentifier(board, primaryThreadId);
@@ -2012,7 +2014,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		_shouldExpandPost[link] = !shouldExpandPost(link);
 		if (!_shouldExpandPost[link]!) {
 			_expandedPostContexts.remove(link);
-			_children[link]?.unExpandAllPosts();
+			_children.entries.where((c) => c.key.$5 == link).forEach((c) => c.value.unExpandAllPosts());
 		}
 		notifyListeners();
 	}
@@ -2069,9 +2071,10 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	PostSpanZoneData childZoneFor(int? postId, {
 		PostSpanZoneStyle? style,
 		int? fakeHoistedRootId,
-		ValueChanged<Post>? onNeedScrollToPost
+		ValueChanged<Post>? onNeedScrollToPost,
+		PostQuoteLinkSpan? link
 	}) {
-		final key = (postId, style, fakeHoistedRootId, onNeedScrollToPost);
+		final key = (postId, style, fakeHoistedRootId, onNeedScrollToPost, link);
 		return _children[key] ??= _PostSpanChildZoneData(
 			parent: this,
 			postId: postId,
@@ -2579,7 +2582,7 @@ class ExpandingPost extends StatelessWidget {
 											);
 										},
 										shrinkWrap: true,
-										expandedInline: true
+										expandedInlineWithin: link
 									)
 								)
 							)

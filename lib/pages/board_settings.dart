@@ -88,7 +88,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 							),
 							const SizedBox(height: 16),
 							AdaptiveChoiceControl(
-								groupValue: widget.imageboard.persistence.browserState.useCatalogGridPerBoard[widget.board.name].value,
+								groupValue: widget.imageboard.persistence.browserState.useCatalogGridPerBoard[widget.board.boardKey].value,
 								knownWidth: (context.watch<MasterDetailLocation?>()?.isVeryConstrained ?? false) ? 0 : MediaQuery.sizeOf(context).width,
 								children: {
 									NullSafeOptional.false_: (CupertinoIcons.rectangle_grid_1x2, 'Rows'),
@@ -101,7 +101,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 										widget.imageboard.persistence.browserState.useCatalogGridPerBoard[widget.board.boardKey] = newValue;
 									}
 									else {
-										widget.imageboard.persistence.browserState.useCatalogGridPerBoard.remove(widget.board.name);
+										widget.imageboard.persistence.browserState.useCatalogGridPerBoard.remove(widget.board.boardKey);
 									}
 									widget.imageboard.persistence.didUpdateBrowserState();
 									setState(() {});
@@ -113,7 +113,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 							),
 							const SizedBox(height: 16),
 							AdaptiveChoiceControl(
-								groupValue: NullWrapper(widget.imageboard.persistence.browserState.postSortingMethodPerBoard[widget.board.name]),
+								groupValue: NullWrapper(widget.imageboard.persistence.browserState.postSortingMethodPerBoard[widget.board.boardKey]),
 								knownWidth: (context.watch<MasterDetailLocation?>()?.isVeryConstrained ?? false) ? 0 : MediaQuery.sizeOf(context).width,
 								children: {
 									const NullWrapper<PostSortingMethod>(null): (null, 'Default (${(widget.imageboard.persistence.browserState.postSortingMethod ?? PostSortingMethod.none).displayName})'),
@@ -126,7 +126,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 										widget.imageboard.persistence.browserState.postSortingMethodPerBoard[widget.board.boardKey] = newValue;
 									}
 									else {
-										widget.imageboard.persistence.browserState.postSortingMethodPerBoard.remove(widget.board.name);
+										widget.imageboard.persistence.browserState.postSortingMethodPerBoard.remove(widget.board.boardKey);
 									}
 									widget.imageboard.persistence.didUpdateBrowserState();
 									setState(() {});

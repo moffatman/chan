@@ -197,7 +197,7 @@ class BoardPageState extends State<BoardPage> {
 	bool _searching = false;
 	bool _skipNextIndicatorSwipe = false;
 
-	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.name];
+	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.boardKey];
 	CatalogVariant? get _defaultGlobalVariant => context.read<ImageboardSite?>()?.defaultCatalogVariant;
 
 	@override
@@ -502,7 +502,7 @@ class BoardPageState extends State<BoardPage> {
 		final persistence = context.watch<Persistence?>();
 		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant) ?? CatalogVariant.unsorted;
 		final openInNewTabZone = context.read<OpenInNewTabZone?>();
-		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.name] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
+		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.boardKey] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
 		Widget itemBuilder(BuildContext context, Thread thread, {RegExp? highlightPattern}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isYou = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.youIds.contains(thread.id) ?? false);
@@ -1003,7 +1003,7 @@ class BoardPageState extends State<BoardPage> {
 									widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
 								}
 								else if (choice.$2 == _ThreadSortingMethodScope.board) {
-									persistence?.browserState.catalogVariants.remove(board?.name);
+									persistence?.browserState.catalogVariants.remove(board?.boardKey);
 								}
 								setState(() {});
 								return;
@@ -1154,7 +1154,7 @@ class BoardPageState extends State<BoardPage> {
 													allowReordering: true,
 													onWantAutosave: (thread) async {
 														final persistence = context.read<Persistence>();
-														if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
+														if (persistence.browserState.autosavedIds[thread.boardKey]?.contains(thread.id) ?? false) {
 															// Already saw this thread
 															return;
 														}
@@ -1168,7 +1168,7 @@ class BoardPageState extends State<BoardPage> {
 													onWantAutowatch: (thread, autoWatch) async {
 														final imageboard = context.read<Imageboard>();
 														await Future.microtask(() => {});
-														if (imageboard.persistence.browserState.autowatchedIds[thread.board]?.contains(thread.id) ?? false) {
+														if (imageboard.persistence.browserState.autowatchedIds[thread.boardKey]?.contains(thread.id) ?? false) {
 															// Already saw this thread
 															return;
 														}

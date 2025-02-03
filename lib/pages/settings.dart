@@ -136,7 +136,7 @@ class _SettingsPageState extends State<SettingsPage> {
 				alignment: Alignment.topCenter,
 				child: FutureBuilder<List<Thread>>(
 					future: stickyFuture,
-					initialData: context.read<ThreadWatcher>().peekLastCatalog('chance')?.where((c) => c.isSticky).toList(),
+					initialData: context.read<ThreadWatcher>().peekLastCatalog(BoardKey('chance'))?.where((c) => c.isSticky).toList(),
 					builder: (context, snapshot) {
 						if (!snapshot.hasData) {
 							return const SizedBox(

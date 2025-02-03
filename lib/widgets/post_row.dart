@@ -176,7 +176,7 @@ class PostRow extends StatelessWidget {
 	final double? largeImageWidth;
 	final bool revealYourPosts;
 	final bool revealSpoilerImages;
-	final bool expandedInline;
+	final PostQuoteLinkSpan? expandedInlineWithin;
 	final bool forceAbsoluteTime;
 
 	const PostRow({
@@ -202,7 +202,7 @@ class PostRow extends StatelessWidget {
 		this.largeImageWidth,
 		this.revealYourPosts = true,
 		this.revealSpoilerImages = false,
-		this.expandedInline = false,
+		this.expandedInlineWithin,
 		this.forceAbsoluteTime = false,
 		Key? key
 	}) : super(key: key);
@@ -1105,7 +1105,8 @@ class PostRow extends StatelessWidget {
 			],
 			child: PostSpanZone(
 				postId: latestPost.id,
-				style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
+				link: expandedInlineWithin,
+				style: expandedInlineWithin != null ? PostSpanZoneStyle.expandedInline : null,
 				child: (replyIds.isNotEmpty) ? SliderBuilder(
 					popup: PostsPage(
 						postsIdsToShow: replyIds,

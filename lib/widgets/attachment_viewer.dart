@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:async/async.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/attachment_cache.dart';
 import 'package:chan/services/http_429_backoff.dart';
@@ -68,6 +69,10 @@ Duration _estimateUrlTime(Uri url, AttachmentType type) {
 	return time.clamp(_minUrlTime, _maxUrlTime);
 }
 
+extension _BoardKey on Attachment {
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
+}
+
 const _kDeviceGalleryAlbumName = 'Chance';
 
 extension _Current on Playlist {
@@ -124,7 +129,7 @@ final List<AttachmentViewerController> _videoControllers = [];
 extension on GallerySavePathOrganizing {
 	List<String> subfoldersFor(AttachmentViewerController controller) {
 		final attachment = controller.attachment;
-		final override = controller.imageboard.persistence.browserState.downloadSubfoldersPerBoard[attachment.board];
+		final override = controller.imageboard.persistence.browserState.downloadSubfoldersPerBoard[attachment.boardKey];
 		if (override != null) {
 			return override.split('/');
 		}
@@ -169,7 +174,7 @@ extension on GallerySavePathOrganizing {
 		}
 	}
 	String? albumNameFor(AttachmentViewerController controller) {
-		final override = controller.imageboard.persistence.browserState.downloadSubfoldersPerBoard[controller.attachment.board];
+		final override = controller.imageboard.persistence.browserState.downloadSubfoldersPerBoard[controller.attachment.boardKey];
 		if (override != null) {
 			return override;
 		}

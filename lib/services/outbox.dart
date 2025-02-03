@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/auth_page_helper.dart';
 import 'package:chan/services/captcha.dart';
@@ -15,7 +16,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
 
-typedef QueueEntryActionKey = (String imageboardKey, String board, ImageboardAction action);
+typedef QueueEntryActionKey = (String imageboardKey, BoardKey board, ImageboardAction action);
 
 sealed class QueueState<T> {
 	const QueueState();
@@ -174,14 +175,14 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		required QueueState<T> state
 	}) : _state = state;
 
-	String get _board;
+	BoardKey get _board;
 	ImageboardAction get action;
 	Future<CaptchaRequest> _getCaptchaRequest();
 
 	QueueEntryActionKey get _key => (imageboardKey, _board, site.getQueue(action));
 	OutboxQueue? get queue => Outbox.instance.queues[_key];
 	DateTime? get allowedTime => queue?.allowedTime;
-	Duration get _cooldown => site.getActionCooldown(_board, action, !Settings.instance.isConnectedToWifi);
+	Duration get _cooldown => site.getActionCooldown(_board.s, action, !Settings.instance.isConnectedToWifi);
 	ThreadIdentifier? get thread;
 	Duration get _regretDelay => Duration.zero;
 
@@ -528,7 +529,7 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 	}
 
 	@override
-	String get _board => post.board;
+	BoardKey get _board => ImageboardBoard.getKey(post.board);
 
 	@override
 	ImageboardAction get action => post.action;
@@ -590,7 +591,7 @@ class QueuedReport extends QueueEntry<void> {
 	}
 
 	@override
-	String get _board => method.post.board;
+	BoardKey get _board => ImageboardBoard.getKey(method.post.board);
 
 	@override
 	ImageboardAction get action => ImageboardAction.report;
@@ -639,7 +640,7 @@ class QueuedDeletion extends QueueEntry<void> {
 	}
 
 	@override
-	String get _board => thread.board;
+	BoardKey get _board => thread.boardKey;
 
 	@override
 	ImageboardAction get action => ImageboardAction.delete;
