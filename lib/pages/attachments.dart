@@ -209,8 +209,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 									onPressed: () async {
 										final lastPrimary = _lastPrimaryController;
 										lastPrimary?.isPrimary = false;
-										final goodSource = _getController(attachment).goodImageSource;
-										if (attachment.attachment.type == AttachmentType.image && goodSource != null) {
+										final goodSource = _getController(attachment).goodImagePublicSource;
+										if (attachment.attachment.type == AttachmentType.image) {
 											// Ensure full-resolution copy is loaded into the image cache
 											final stream = CNetworkImageProvider(
 												goodSource.toString(),

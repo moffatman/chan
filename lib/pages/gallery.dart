@@ -901,7 +901,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																child: const Text('Share link'),
 																trailingIcon: CupertinoIcons.link,
 																onPressed: () async {
-																	final text = _getController(currentAttachment).goodImageSource?.toString() ?? currentAttachment.attachment.url;
+																	final text = _getController(currentAttachment).goodImagePublicSource.toString();
 																	await shareOne(
 																		context: context,
 																		text: text,

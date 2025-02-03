@@ -1388,7 +1388,7 @@ class _SavedPageState extends State<SavedPage> {
 													trailingIcon: CupertinoIcons.link,
 													onPressed: () async {
 														final controller = makeController();
-														final text = controller.goodImageSource?.toString() ?? controller.attachment.url;
+														final text = controller.goodImagePublicSource.toString();
 														shareOne(
 															context: context,
 															text: text,

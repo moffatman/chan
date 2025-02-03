@@ -275,6 +275,16 @@ class AttachmentViewerController extends ChangeNotifier {
 	/// Blocks of text to draw on top of image
 	List<RecognizedTextBlock> get textBlocks => _textBlocks;
 
+	Uri get goodImagePublicSource {
+		switch (_goodImageSource) {
+			case Uri url:
+				if (!url.isScheme('file')) {
+					return url;
+				}
+		}
+		return Uri.parse(attachment.url);
+	}
+
 	Thread? get thread {
 		final threadId = attachment.threadId;
 		if (threadId == null) {
@@ -1560,7 +1570,7 @@ class AttachmentViewer extends StatelessWidget {
 						child: const Text('Share link'),
 						trailingIcon: CupertinoIcons.link,
 						onPressed: () async {
-							final text = controller.goodImageSource?.toString() ?? controller.attachment.url;
+							final text = controller.goodImagePublicSource.toString();
 							await shareOne(
 								context: context,
 								text: text,
@@ -1907,7 +1917,7 @@ class AttachmentViewer extends StatelessWidget {
 								remedies: {
 									'Open externally': () => shareOne(
 										context: context,
-										text: controller.goodImageSource.toString(),
+										text: controller.goodImagePublicSource.toString(),
 										type: 'text',
 										sharePositionOrigin: null
 									)
