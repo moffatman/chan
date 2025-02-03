@@ -25,6 +25,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/installed_fonts.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
@@ -313,7 +314,7 @@ class _ChanAppState extends State<ChanApp> {
 			context: context,
 			sites: _lastSites,
 			keys: _lastSiteKeys
-		);
+		).then(_precacheIcons);
 		Settings.instance.addListener(_onSettingsUpdate);
 		JsonCache.instance.sites.addListener(_onSitesUpdate);
 	}
@@ -333,7 +334,7 @@ class _ChanAppState extends State<ChanApp> {
 				context: context,
 				sites: _lastSites,
 				keys: _lastSiteKeys
-			);
+			).then(_precacheIcons);
 		}
 	}
 
@@ -344,7 +345,23 @@ class _ChanAppState extends State<ChanApp> {
 				context: context,
 				sites: _lastSites,
 				keys: _lastSiteKeys
-			);
+			).then(_precacheIcons);
+		}
+	}
+
+	/// Try to get instant icons in the board switcher
+	void _precacheIcons(void _) {
+		for (final imageboard in ImageboardRegistry.instance.imageboards) {
+			for (final url in [
+				imageboard.site.iconUrl,
+				...imageboard.persistence.browserState.favouriteBoards
+					.tryMap((b) => imageboard.persistence.maybeGetBoard(b.s))
+					.map((b) => b.icon)
+			]) {
+				if (url != null) {
+					precacheImage(CNetworkImageProvider(url.toString(), client: imageboard.site.client), context);
+				}
+			}
 		}
 	}
 
