@@ -370,4 +370,10 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			)
 		);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		challenge?.dispose();
+	}
 }
