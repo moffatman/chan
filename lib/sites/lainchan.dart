@@ -734,7 +734,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields, {CancelToken? cancelToken}) async {
     final response = await parent.client.postUri(
 			Uri.https(parent.sysUrl, '${parent.basePath}/mod.php'),
 			data: {
@@ -747,6 +747,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 				followRedirects: false,
 				validateStatus: (x) => true
 			),
+			cancelToken: cancelToken
 		);
 		final document = parse(response.data);
 		if (document.querySelector('h2') != null) {

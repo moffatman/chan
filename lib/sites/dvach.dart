@@ -393,7 +393,7 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields, {CancelToken? cancelToken}) async {
 		final response = await parent.client.postUri(
 			Uri.https(parent.baseUrl, '/user/passlogin'),
 			data: FormData.fromMap({
@@ -403,7 +403,8 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 				responseType: ResponseType.plain,
 				validateStatus: (_) => true,
 				followRedirects: false // This makes sure cookie is remembered
-			)
+			),
+			cancelToken: cancelToken
 		);
 		
 		if ((response.statusCode ?? 400) >= 400) {

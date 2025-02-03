@@ -1468,13 +1468,14 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields, {CancelToken? cancelToken}) async {
 		final response = await parent.client.postUri(
 			Uri.https(parent.sysUrl, '/auth'),
 			data: FormData.fromMap({
 				for (final field in fields.entries) field.key.formKey: field.value
 			}),
-			options: Options(responseType: ResponseType.plain)
+			options: Options(responseType: ResponseType.plain),
+			cancelToken: cancelToken
 		);
 		final document = parse(response.data);
 		final message = document.querySelector('h2')?.text;

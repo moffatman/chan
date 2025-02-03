@@ -1962,7 +1962,7 @@ abstract class ImageboardSiteLoginSystem {
 	bool get hidden;
 	Uri? get iconUrl => null;
 	List<ImageboardSiteLoginField> getLoginFields();
-	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
+	Future<void> login(Map<ImageboardSiteLoginField, String> fields, {CancelToken? cancelToken});
 	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {
 		 if (parent.persistence?.browserState.loginFields.isNotEmpty ?? false) {
 			 try {

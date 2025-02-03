@@ -85,7 +85,8 @@ class Captcha4ChanCustomChallengeCooldownException extends Captcha4ChanCustomCha
 Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	required ImageboardSite site,
 	required Chan4CustomCaptchaRequest request,
-	RequestPriority priority = RequestPriority.interactive
+	RequestPriority priority = RequestPriority.interactive,
+	CancelToken? cancelToken
 }) async {
 	final reusable = _reusableChallenges.tryFirstWhere((c) => c.isReusableFor(request, const Duration(seconds: 15)));
 	if (reusable != null) {
@@ -102,7 +103,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		extra: {
 			kPriority: priority
 		}
-	));
+	), cancelToken: cancelToken);
 	if (challengeResponse.statusCode != 200) {
 		throw Captcha4ChanCustomChallengeException('Got status code ${challengeResponse.statusCode}', challengeResponse.cloudflare);
 	}
@@ -322,7 +323,8 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 
 Future<_CloudGuess> _cloudGuess({
 	required ImageboardSite site,
-	required ui.Image image
+	required ui.Image image,
+	CancelToken? cancelToken
 }) async {
 	final pngData = await image.toByteData(format: ui.ImageByteFormat.png);
 	if (pngData == null) {
@@ -339,7 +341,8 @@ Future<_CloudGuess> _cloudGuess({
 			requestEncoder: (request, options) {
 				return bytes;
 			}
-		)
+		),
+		cancelToken: cancelToken
 	).timeout(const Duration(seconds: 8));
 	final answer = response.data as String;
 	if (answer.length > 10) {
@@ -357,7 +360,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 	required ImageboardSite site,
 	required Chan4CustomCaptchaRequest request,
 	required RequestPriority priority,
-	Captcha4ChanCustomChallenge? challenge
+	Captcha4ChanCustomChallenge? challenge,
+	CancelToken? cancelToken
 }) async {
 	if (challenge?.isReusableFor(request, const Duration(seconds: 15)) == false) {
 		challenge?.dispose();
@@ -367,7 +371,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 		challenge ??= await requestCaptcha4ChanCustomChallenge(
 			site: site,
 			request: request,
-			priority: priority
+			priority: priority,
+			cancelToken: cancelToken
 		);
 	}
 	on Captcha4ChanCustomChallengeCooldownException catch (first) {
@@ -383,7 +388,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 			challenge = await requestCaptcha4ChanCustomChallenge(
 				site: site,
 				request: request,
-				priority: RequestPriority.cosmetic
+				priority: RequestPriority.cosmetic,
+				cancelToken: cancelToken
 			);
 		}
 		on DioError catch (second) {
@@ -439,7 +445,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 
 		final cloudGuess = await _cloudGuess(
 			site: site,
-			image: image
+			image: image,
+			cancelToken: cancelToken
 		);
 
 		solution = Chan4CustomCaptchaSolution(

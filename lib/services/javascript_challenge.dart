@@ -1,5 +1,6 @@
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:dio/dio.dart';
 
 /// [javascript] should be an expression. could resolve to a Promise.
 Future<String> solveJavascriptChallenge({
@@ -8,7 +9,8 @@ Future<String> solveJavascriptChallenge({
 	/// Will be called for a while until true
 	String waitJavascript = 'true',
 	required RequestPriority priority,
-	required String name
+	required String name,
+	CancelToken? cancelToken
 }) async {
 	return await useCloudflareClearedWebview(
 		handler: (controller, url) async {
@@ -29,6 +31,7 @@ Future<String> solveJavascriptChallenge({
 		},
 		uri: url,
 		priority: priority,
-		gatewayName: name
+		gatewayName: name,
+		cancelToken: cancelToken
 	);
 }

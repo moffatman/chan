@@ -25,7 +25,6 @@ sealed class QueueState<T> {
 	bool get _needsCaptcha => false;
 	DateTime? get _submissionTime => null;
 	String get idleName;
-	String get activeName => idleName;
 	void _dispose() {}
 }
 
@@ -52,8 +51,21 @@ class QueueStateNeedsCaptcha<T> extends QueueState<T> {
 	bool get _needsCaptcha => true;
 	@override
 	String get idleName => 'Needs captcha';
+}
+
+class QueueStateGettingCaptcha<T> extends QueueState<T> {
+	final CancelToken? cancelToken;
+	const QueueStateGettingCaptcha({
+		this.cancelToken
+	});
 	@override
-	String get activeName => 'Getting captcha';
+	bool get isIdle => false;
+	@override
+	bool get isSubmittable => false;
+	@override
+	String toString() => 'QueueStateGettingCaptcha(cancelToken: $cancelToken)';
+	@override
+	String get idleName => 'Getting captcha';
 }
 
 class QueueStateWaitingWithCaptcha<T> extends QueueState<T> {
@@ -139,7 +151,7 @@ class QueueStateDeleted<T> extends QueueState<T> {
 sealed class QueueEntry<T> extends ChangeNotifier {
 	final _lock = Mutex();
 	bool get isActivelyProcessing => _lock.isLocked;
-	String get statusText => isActivelyProcessing ? state.activeName : state.idleName;
+	String get statusText => state.idleName;
 	final String imageboardKey;
 	Imageboard get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey)!;
 	ImageboardSite get site => imageboard.site;
@@ -198,6 +210,9 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		if (state is QueueStateSubmitting<T>) {
 			state.cancelToken?.cancel();
 		}
+		else if (state is QueueStateGettingCaptcha<T>) {
+			state.cancelToken?.cancel();
+		}
 		_state._dispose();
 		_state = const QueueStateDeleted();
 		notifyListeners();
@@ -213,6 +228,9 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	void cancel() {
 		final state = this.state;
 		if (state is QueueStateSubmitting<T>) {
+			state.cancelToken?.cancel();
+		}
+		else if (state is QueueStateGettingCaptcha<T>) {
 			state.cancelToken?.cancel();
 		}
 		print('$this::cancel()');
@@ -284,10 +302,12 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		if (initialState is QueueStateNeedsCaptcha<T>) {
 			initialNeedsCaptchaState = initialState;
 			try {
+				final cancelToken = CancelToken();
+				_state = QueueStateGettingCaptcha(cancelToken: cancelToken);
 				final savedFields = site.loginSystem?.getSavedLoginFields();
 				if (useLoginSystem && savedFields != null) {
 					try {
-						await site.loginSystem?.login(savedFields).timeout(const Duration(seconds: 15));
+						await site.loginSystem?.login(savedFields, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
 					}
 					catch (e) {
 						final context = initialState.context ?? ImageboardRegistry.instance.context;
@@ -312,6 +332,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					afterModal: initialState.afterModal,
 					site: site,
 					request: request,
+					cancelToken: cancelToken,
 					onTryAgainAt: (x) => tryAgainAt0 = x,
 					forceHeadless: switch (initialState.context?.mounted ?? false) {
 						true => switch (Outbox.instance.headlessSolveFailed) {

@@ -274,7 +274,8 @@ class CloudflareInterceptor extends Interceptor {
 		required RequestPriority priority,
 		bool toast = true,
 		String? autoClickSelector,
-		String gatewayName = _kDefaultGatewayName
+		String gatewayName = _kDefaultGatewayName,
+		CancelToken? cancelToken
 	}) => runEphemerallyLocked(cookieUrl.topLevelHost, () => _webViewLock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
 		final manager = CookieManager.instance();
@@ -343,7 +344,8 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			await Future.any([
 				headlessCompleter.future,
-				Future.delayed(const Duration(seconds: 5))
+				Future.delayed(const Duration(seconds: 5)),
+				if (cancelToken?.whenCancel case Future<DioError> whenCancel) whenCancel
 			]);
 			if (headlessCompleter.isCompleted) {
 				headlessWebView.dispose();
@@ -354,7 +356,16 @@ class CloudflareInterceptor extends Interceptor {
 			// User recently rejected a non-interactive cloudflare login, reject it
 			throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
 		}
-		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<T>(adaptivePageRoute(
+		if (cancelToken?.isCancelled ?? false) {
+			throw CloudflareHandlerInterruptedException(gatewayName);
+		}
+		final navigator = Navigator.of(ImageboardRegistry.instance.context!);
+		final settings = RouteSettings(name: 'cloudflare${DateTime.now().millisecondsSinceEpoch}');
+		cancelToken?.whenCancel.then((_) {
+			// Close the popup if still open
+			navigator.popUntil((r) => r.settings != settings);
+		});
+		final ret = await navigator.push<T>(adaptivePageRoute(
 			builder: (context) => AdaptiveScaffold(
 				bar: AdaptiveBar(
 					title: Text('$gatewayName Login')
@@ -370,6 +381,7 @@ class CloudflareInterceptor extends Interceptor {
 					)
 				)
 			),
+			settings: settings,
 			useFullWidthGestures: gatewayName == _kDefaultGatewayName // Normal cloudflare should be OK
 		));
 		headlessWebView?.dispose();
@@ -413,7 +425,8 @@ class CloudflareInterceptor extends Interceptor {
 						},
 						body: requestData?.data
 					),
-					priority: options.priority
+					priority: options.priority,
+					cancelToken: options.cancelToken
 				);
 				final newResponse = data.response(options);
 				if (newResponse != null) {
@@ -476,7 +489,8 @@ class CloudflareInterceptor extends Interceptor {
 							body: requestData?.data
 						),
 						priority: response.requestOptions.priority,
-						gatewayName: gateway.name
+						gatewayName: gateway.name,
+						cancelToken: response.requestOptions.cancelToken
 					);
 				 }
 				 else {
@@ -488,7 +502,8 @@ class CloudflareInterceptor extends Interceptor {
 							data: await _bodyAsString(response.data),
 							baseUrl: WebUri.uri(response.realUri.fillInFrom(response.requestOptions.uri))
 						),
-						priority: response.requestOptions.priority
+						priority: response.requestOptions.priority,
+						cancelToken: response.requestOptions.cancelToken
 					);
 				}
 				final newResponse = data.response(response.requestOptions);
@@ -541,7 +556,8 @@ class CloudflareInterceptor extends Interceptor {
 						data: await _bodyAsString(err.response?.data),
 						baseUrl: WebUri.uri(err.response!.realUri.fillInFrom(err.requestOptions.uri))
 					),
-					priority: err.requestOptions.priority
+					priority: err.requestOptions.priority,
+					cancelToken: err.requestOptions.cancelToken
 				);
 				final newResponse = data.response(err.requestOptions);
 				if (newResponse != null) {
@@ -568,7 +584,8 @@ Future<T> useCloudflareClearedWebview<T>({
 	String? userAgent,
 	required RequestPriority priority,
 	bool toast = true,
-	required String gatewayName
+	required String gatewayName,
+	CancelToken? cancelToken
 }) => CloudflareInterceptor._useWebview(
 	handler: handler,
 	cookieUrl: uri,
@@ -581,5 +598,6 @@ Future<T> useCloudflareClearedWebview<T>({
 	),
 	priority: priority,
 	toast: toast,
-	gatewayName: gatewayName
+	gatewayName: gatewayName,
+	cancelToken: cancelToken
 );

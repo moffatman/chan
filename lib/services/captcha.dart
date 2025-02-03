@@ -21,6 +21,7 @@ import 'package:chan/widgets/captcha_secucap.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -49,7 +50,8 @@ Future<CaptchaSolution?> solveCaptcha({
 	ValueChanged<DateTime>? onTryAgainAt,
 	VoidCallback? beforeModal,
 	VoidCallback? afterModal,
-	bool? forceHeadless
+	bool? forceHeadless,
+	CancelToken? cancelToken
 }) async {
 	Future<CaptchaSolution?> pushModal(Widget Function(ValueChanged<CaptchaSolution?> onCaptchaSolved) builder) async {
 		if (context == null) {
@@ -83,7 +85,7 @@ Future<CaptchaSolution?> solveCaptcha({
 				onCaptchaSolved: onCaptchaSolved
 			));
 		case Recaptcha3Request():
-			return await solveRecaptchaV3(request);
+			return await solveRecaptchaV3(request, cancelToken: cancelToken);
 		case Chan4CustomCaptchaRequest():
 			final priority = switch (forceHeadless) {
 				true => RequestPriority.cosmetic,
@@ -94,7 +96,7 @@ Future<CaptchaSolution?> solveCaptcha({
 			Exception? initialChallengeException;
 			try {
 				// Grab the challenge without popping up, to process initial cooldown without interruption
-				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority).timeout(const Duration(minutes: 1));
+				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority, cancelToken: cancelToken).timeout(const Duration(minutes: 1));
 			}
 			on Exception catch (e) {
 				if (context == null || e is CooldownException) {
@@ -114,7 +116,8 @@ Future<CaptchaSolution?> solveCaptcha({
 						request: request,
 						site: site,
 						priority: priority,
-						challenge: initialChallenge
+						challenge: initialChallenge,
+						cancelToken: cancelToken
 					).timeout(const Duration(seconds: 15));
 					if (cloudSolution.confident) {
 						cloudSolution.challenge.dispose();

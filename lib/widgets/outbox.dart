@@ -195,6 +195,7 @@ class QueueEntryWidget extends StatelessWidget {
 															switch (state) {
 																QueueStateSubmitting() => state.message ?? 'Submitting',
 																QueueStateNeedsCaptcha() => 'Waiting',
+																QueueStateGettingCaptcha() => 'Getting captcha',
 																QueueStateWaitingWithCaptcha() => 'Waiting with captcha',
 																QueueStateIdle() => 'Draft',
 																QueueStateDeleted() || QueueStateFailed() || QueueStateDone() => switch (entry.isArchived) {
@@ -467,7 +468,7 @@ class OutboxModal extends StatelessWidget {
 									);
 								}
 								if (entry == null) {
-									final boardName = (ImageboardRegistry.instance.getImageboard(queue.key.$1)?.site.formatBoardName(queue.key.$2)).toString();
+									final boardName = (ImageboardRegistry.instance.getImageboard(queue.key.$1)?.site.formatBoardName(queue.key.$2.s)).toString();
 									return Builder(
 										key: ObjectKey(list[i]),
 										builder: (context) => Container(
