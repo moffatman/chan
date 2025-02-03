@@ -144,7 +144,8 @@ class SiteDvach extends ImageboardSite {
 			validateStatus: (s) => true,
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.json
 		));
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
@@ -177,7 +178,7 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority);
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority, responseType: ResponseType.json);
 		final posts = (response.data['threads'].first['posts'] as List<dynamic>).map((data) => _makePost(thread.board, thread.id, data)).toList();
 		return Thread(
 			board: thread.board,
@@ -399,6 +400,7 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 				for (final field in fields.entries) field.key.formKey: field.value
 			}),
 			options: Options(
+				responseType: ResponseType.plain,
 				validateStatus: (_) => true,
 				followRedirects: false // This makes sure cookie is remembered
 			)

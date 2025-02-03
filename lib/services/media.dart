@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:async/async.dart';
+import 'package:chan/services/html_error.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/util.dart';
@@ -13,7 +14,6 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:html/parser.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mutex/mutex.dart';
@@ -146,21 +146,8 @@ class MediaScan {
 							// Try to get a message out of it. Maybe it's HTML or something
 							try {
 								final string = await File(file.path).readAsString();
-								if (string.contains('<body>')) {
-									final document = parse(string);
-									if (document.querySelector('title')?.text.nonEmptyOrNull case String title) {
-										throw MediaScanException(file, 1, title);
-									}
-									for (int i = 1; i < 6; i++) {
-										final headers = document.querySelectorAll('h$i');
-										if (headers.trySingle?.text.nonEmptyOrNull case String header) {
-											throw MediaScanException(file, 1, header);
-										}
-										if (headers.length > 1) {
-											// Can't pick between multiple
-											break;
-										}
-									}
+								if (extractHtmlError(string) case String error) {
+									throw MediaScanException(file, 1, error);
 								}
 								else if (string.length < 100) {
 									throw MediaScanException(file, 1, string);

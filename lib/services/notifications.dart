@@ -470,7 +470,7 @@ class Notifications {
 			'siteType': siteType,
 			'siteData': siteData,
 			'filters': ''
-		}));
+		}), options: Options(responseType: ResponseType.json));
 		final digest = response.data['digest'] as String;
 		final emptyDigest = base64Encode(md5.convert(''.codeUnits).bytes);
 		if (digest != emptyDigest) {
@@ -490,7 +490,7 @@ class Notifications {
 					'siteType': siteType,
 					'siteData': siteData,
 					'filters': Settings.instance.filterConfiguration
-				}));
+				}), options: Options(responseType: ResponseType.json));
 				final digest = response.data['digest'] as String;
 				if (digest != _calculateDigest()) {
 					print('Need to resync notifications $id');

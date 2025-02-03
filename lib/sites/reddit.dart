@@ -645,7 +645,8 @@ class SiteReddit extends ImageboardSite {
 					},
 					extra: {
 						kPriority: RequestPriority.cosmetic
-					}
+					},
+					responseType: ResponseType.json
 				));
 				final link = response.data['data']?['link'] as String?;
 				if (link != null) {
@@ -667,7 +668,8 @@ class SiteReddit extends ImageboardSite {
 					},
 					extra: {
 						kPriority: RequestPriority.cosmetic
-					}
+					},
+					responseType: ResponseType.json
 				));
 				final imageData = response.data['data'] as List<dynamic>?;
 				if (imageData != null && imageData.isNotEmpty) {
@@ -700,7 +702,8 @@ class SiteReddit extends ImageboardSite {
 					final redirectResponse = await client.head(url, options: Options(
 						extra: {
 							kPriority: RequestPriority.cosmetic
-						}
+						},
+						responseType: ResponseType.json
 					));
 					if (!redirectResponse.realUri.host.contains('gfycat')) {
 						return _resolveUrl(redirectResponse.realUri.toString());
@@ -738,7 +741,8 @@ class SiteReddit extends ImageboardSite {
 						},
 						extra: {
 							kPriority: RequestPriority.cosmetic
-						}
+						},
+						responseType: ResponseType.json
 					));
 				}
 				catch (e) {
@@ -752,7 +756,8 @@ class SiteReddit extends ImageboardSite {
 								},
 								extra: {
 									kPriority: RequestPriority.cosmetic
-								}
+								},
+								responseType: ResponseType.json
 							));
 						}
 					}
@@ -1007,7 +1012,8 @@ class SiteReddit extends ImageboardSite {
 		final response = await client.getUri(Uri.https(baseUrl, '/subreddits/popular.json'), options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.json
 		));
 		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
 	}
@@ -1017,7 +1023,7 @@ class SiteReddit extends ImageboardSite {
 		final response = await client.getUri(Uri.https('api.$baseUrl', '/subreddits/search', {
 			'q': query,
 			'typeahead_active': 'true'
-		}));
+		}), options: Options(responseType: ResponseType.json));
 		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
 	}
 
@@ -1043,7 +1049,8 @@ class SiteReddit extends ImageboardSite {
 				final response = await client.getUri(Uri.https(baseUrl, '/r/$board/about.json'), options: Options(
 					extra: {
 						kPriority: priority
-					}
+					},
+					responseType: ResponseType.json
 				));
 				newBoard = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
 			}
@@ -1082,7 +1089,8 @@ class SiteReddit extends ImageboardSite {
 		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', suffix.$2), options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.json
 		));
 		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
 			final t = await _makeThread(d['data']);
@@ -1107,7 +1115,8 @@ class SiteReddit extends ImageboardSite {
 			}), options: Options(
 				extra: {
 					kPriority: priority
-				}
+				},
+				responseType: ResponseType.json
 			));
 			final things = response.data['json']['data']['things'] as List;
 			for (final thing in things) {
@@ -1206,7 +1215,8 @@ class SiteReddit extends ImageboardSite {
 		}), options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.json
 		));
 		final newPage = (after.currentPage ?? 1) + 1;
 		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
@@ -1294,7 +1304,7 @@ class SiteReddit extends ImageboardSite {
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getThreadUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
-		}), priority: priority);
+		}), priority: priority, responseType: ResponseType.json);
 		final ret = await _makeThread(response.data[0]['data']['children'][0]['data']);
 		addChildren(int parentId, List<dynamic> childData, Post? parent) {
 			for (final childContainer in childData) {
@@ -1367,7 +1377,8 @@ class SiteReddit extends ImageboardSite {
 			}), options: Options(
 				extra: {
 					kPriority: priority
-				}
+				},
+				responseType: ResponseType.json
 			));
 		}
 		else {
@@ -1384,7 +1395,8 @@ class SiteReddit extends ImageboardSite {
 			}), options: Options(
 				extra: {
 					kPriority: priority
-				}
+				},
+				responseType: ResponseType.json
 			));
 		}
 		return ImageboardArchiveSearchResultPage(
@@ -1525,7 +1537,7 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<ImageboardUserInfo> getUserInfo(String username) async {
-		final aboutResponse = await client.getUri(Uri.https(baseUrl, '/user/$username/about.json'));
+		final aboutResponse = await client.getUri(Uri.https(baseUrl, '/user/$username/about.json'), options: Options(responseType: ResponseType.json));
 		return ImageboardUserInfo(
 			username: username,
 			avatar: Uri.parse(unescape.convert(aboutResponse.data['data']['icon_img'])),

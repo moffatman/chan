@@ -229,7 +229,8 @@ class SiteKarachan extends ImageboardSite {
 		final response = await client.getUri(Uri.https(baseUrl, '/search.php'), options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.plain
 		));
 		final document = parse(response.data);
 		return document.querySelectorAll('#menu a[data-linktype="imageboard"]').map((e) => ImageboardBoard(
@@ -358,7 +359,8 @@ class SiteKarachan extends ImageboardSite {
 			options: Options(
 				extra: {
 					kPriority: priority
-				}
+				},
+				responseType: ResponseType.plain
 			)
 		);
 		final document = parse(response.data);
@@ -389,7 +391,8 @@ class SiteKarachan extends ImageboardSite {
 		final uri = Uri.https(baseUrl,'/${thread.board}/res/${thread.id}.html');
 		final response = await client.getThreadUri(
 			uri,
-			priority: priority
+			priority: priority,
+			responseType: ResponseType.plain
 		);
 		final document = parse(response.data);
 		return _makeThread(thread.board, uri, document.querySelector('.thread')!);

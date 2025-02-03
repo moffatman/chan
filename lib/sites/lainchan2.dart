@@ -125,7 +125,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		if (imageThumbnailExtension != '') {
 			return broken;
 		}
-		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.html'), priority: priority);
+		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.html'), priority: priority, responseType: ResponseType.plain);
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.posts_.expand((p) => p.attachments)) {
@@ -153,7 +153,8 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		final response = await client.getUri(Uri.https(baseUrl, '$basePath/$board/catalog.html'), options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.plain
 		));
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();

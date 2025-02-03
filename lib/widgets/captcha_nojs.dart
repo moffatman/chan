@@ -217,6 +217,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			data: 'c=${chal.responseKey}${chal.subimages.expand((r) => r).where((s) => s.selected).map((s) => '&response=${s.id}').join()}',
 			options: Options(
 				contentType: Headers.formUrlEncodedContentType,
+				responseType: ResponseType.plain,
 				headers: {
 					'Referer': 'https://www.google.com/recaptcha/api/fallback?k=${widget.request.key}',
 					..._headers

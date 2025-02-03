@@ -265,7 +265,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			options: Options(
 				extra: {
 					kPriority: priority
-				}
+				},
+				responseType: ResponseType.json
 			)
 		);
 		if (response.statusCode != 200) {
@@ -344,6 +345,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				'board': thread.board,
 				'num': thread.id.toString()
 			}),
+			responseType: ResponseType.json,
 			priority: priority
 		);
 		final data = response.data;
@@ -360,7 +362,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}), options: Options(
 				extra: {
 					kPriority: priority
-				}
+				},
+				responseType: ResponseType.json
 			)
 		);
 		return Future.wait((response.data as Map<dynamic, dynamic>).keys.where((threadIdStr) {
@@ -382,7 +385,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.json
 		));
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
@@ -428,6 +432,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
  			}),
 			options: Options(
 				validateStatus: (x) => true,
+				responseType: ResponseType.json,
 				extra: {
 					kPriority: priority
 				}

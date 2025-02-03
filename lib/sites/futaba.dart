@@ -323,9 +323,7 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.parse(getWebUrlImpl(thread.board, thread.id)), options: Options(
-			responseType: ResponseType.bytes
-		), priority: priority);
+		final response = await client.getThreadUri(Uri.parse(getWebUrlImpl(thread.board, thread.id)), responseType: ResponseType.bytes, priority: priority);
 		final document = await parse(Uint8List.fromList(response.data as List<int>));
 		return _makeThread(document.querySelector('.thre')!, thread.board);
 

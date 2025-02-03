@@ -79,7 +79,9 @@ class EmbedData {
 final _twitterPattern = RegExp(r'(?:x|twitter)\.com/[^/]+/status/(\d+)');
 
 Future<EmbedData?> _loadTwitter(String id) async {
-	final response = await Settings.instance.client.getUri(Uri.https('api.vxtwitter.com', '/_/status/$id'));
+	final response = await Settings.instance.client.getUri(Uri.https('api.vxtwitter.com', '/_/status/$id'), options: Options(
+		responseType: ResponseType.json
+	));
 	if (response.data case Map data) {
 		return EmbedData(
 			title: data['text'] as String?,
@@ -97,7 +99,9 @@ Future<EmbedData?> _loadTwitter(String id) async {
 final _instagramPattern = RegExp(r'instagram\.com/p/([^/]+)');
 
 Future<EmbedData?> _loadInstagram(String id) async {
-	final response = await Settings.instance.client.getUri(Uri.https('www.instagram.com', '/p/$id/embed/captioned'));
+	final response = await Settings.instance.client.getUri(Uri.https('www.instagram.com', '/p/$id/embed/captioned'), options: Options(
+		responseType: ResponseType.plain
+	));
 	final document = parse(response.data);
 	final caption = document.querySelector('.Caption');
 	final src = document.querySelector('.EmbeddedMediaImage')?.attributes['src'];

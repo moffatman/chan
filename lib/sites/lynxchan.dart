@@ -128,7 +128,7 @@ class SiteLynxchan extends ImageboardSite {
 			final filePresentResponse = await client.getUri(Uri.https(baseUrl, '/checkFileIdentifier.js', {
 				'json': '1',
 				'identifier': fileSha256
-			}), cancelToken: cancelToken);
+			}), cancelToken: cancelToken, options: Options(responseType: ResponseType.json));
 			if (filePresentResponse.data case bool x) {
 				fileAlreadyUploaded = x;
 			}
@@ -167,7 +167,8 @@ class SiteLynxchan extends ImageboardSite {
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: RequestPriority.interactive
-			}
+			},
+			responseType: ResponseType.json
 		), cancelToken: cancelToken);
 		if (response.data is String) {
 			final document = parse(response.data);
@@ -220,7 +221,8 @@ class SiteLynxchan extends ImageboardSite {
 		}, options: Options(
 			extra: {
 				kPriority: RequestPriority.interactive
-			}
+			},
+			responseType: ResponseType.json
 		));
 		if (response.data['status'] != 'ok') {
 			throw DeletionFailedException(response.data['data'] ?? response.data);
@@ -233,6 +235,7 @@ class SiteLynxchan extends ImageboardSite {
 			return boards!;
 		}
 		final response = await client.getUri(Uri.https(baseUrl, '/boards.js'), options: Options(
+			responseType: ResponseType.plain,
 			extra: {
 				kPriority: priority
 			}
@@ -280,6 +283,7 @@ class SiteLynxchan extends ImageboardSite {
 		final response = await client.getUri(Uri.https(baseUrl, '/boards.js', {
 			'boardUri': query
 		}), options: Options(
+			responseType: ResponseType.plain,
 			extra: {
 				kPriority: RequestPriority.functional
 			}
@@ -341,7 +345,8 @@ class SiteLynxchan extends ImageboardSite {
 			validateStatus: (status) => status == 200 || status == 404,
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.json
 		));
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
@@ -456,7 +461,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority);
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority, responseType: ResponseType.json);
 		_maybeUpdateBoardInformation(thread.board); // Don't await
 		final op = _makePost(thread.board, thread.id, thread.id, response.data);
 		final posts = [

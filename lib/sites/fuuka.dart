@@ -192,6 +192,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				kPriority: priority
 			},
 			validateStatus: (_) => true,
+			responseType: ResponseType.plain
 		));
 		if (response.statusCode == 404) {
 			throw PostNotFoundException(board, id);
@@ -236,7 +237,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 				'board': thread.board,
 				'num': thread.id.toString()
 			}),
-			priority: priority
+			priority: priority,
+			responseType: ResponseType.plain
 		);
 		return _makeThread(parse(response.data).body!, thread.board, thread.id, priority: priority);
 	}
@@ -244,6 +246,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
 			validateStatus: (x) => true,
+			responseType: ResponseType.plain,
 			extra: {
 				kPriority: priority
 			}

@@ -38,7 +38,7 @@ class JsonCache {
 			}
 			final response = await Settings.instance.client.get('$contentSettingsApiRoot/sites', queryParameters: {
 				'platform': platform
-			});
+			}, options: Options(responseType: ResponseType.json));
 			return (response.data['data'] as Map).cast<String, Map>();
 		},
 		caster: (data) => (data as Map).cast<String, Map>(),

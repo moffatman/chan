@@ -321,7 +321,7 @@ class SiteJsChan extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}.json'), priority: priority);
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}.json'), priority: priority, responseType: ResponseType.json);
 		return _makeThread(response.data);
 	}
 

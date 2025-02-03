@@ -15,6 +15,7 @@ import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/streaming_mp4.dart';
+import 'package:chan/services/strict_json.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/url_regexes.dart';
 import 'package:chan/services/user_agents.dart';
@@ -3029,6 +3030,7 @@ class Settings extends ChangeNotifier {
 			}
 		));
 		client.interceptors.add(CloudflareInterceptor());
+		client.interceptors.add(StrictJsonInterceptor());
 		client.httpClientAdapter = BadCertificateHttpClientAdapter();
 		muteAudio.value = _settings.muteAudio;
 		_tryToSetupFilter();

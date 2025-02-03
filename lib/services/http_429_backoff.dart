@@ -74,41 +74,38 @@ class HTTP429BackoffInterceptor extends Interceptor {
 				final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
 				print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
 				await http429Queue.delay(response.requestOptions.uri, delay);
-				try {
-					final response2 = await client.requestUri(
-						response.requestOptions.uri,
-						data: response.requestOptions.data,
-						cancelToken: response.requestOptions.cancelToken,
-						options: Options(
-							headers: response.requestOptions.headers,
-							extra: {
-								...response.requestOptions.extra,
-								_kExtraRetriesKey: currentRetries + 1
-							},
-							validateStatus: response.requestOptions.validateStatus
-						)
-					);
-					handler.resolve(response2);
-				}
-				catch (e, st) {
-					if (e is DioError) {
-						handler.reject(e);
-					}
-					else {
-						handler.reject(DioError(
-							requestOptions: response.requestOptions,
-							response: response,
-							error: e
-						)..stackTrace = st);
-					}
-				}
-				return;
+				final response2 = await client.requestUri(
+					response.requestOptions.uri,
+					data: response.requestOptions.data,
+					cancelToken: response.requestOptions.cancelToken,
+					options: Options(
+						headers: response.requestOptions.headers,
+						extra: {
+							...response.requestOptions.extra,
+							_kExtraRetriesKey: currentRetries + 1
+						},
+						validateStatus: response.requestOptions.validateStatus
+					)
+				);
+				handler.next(response2);
 			}
-			handler.next(response);
-		}
-		finally {
+			else {
+				handler.next(response);
+			}
 			if (currentRetries == 0) {
 				http429Queue.end(response.requestOptions.uri);
+			}
+		}
+		catch (e, st) {
+			if (e is DioError) {
+				handler.reject(e);
+			}
+			else {
+				handler.reject(DioError(
+					requestOptions: response.requestOptions,
+					response: response,
+					error: e
+				)..stackTrace = st);
 			}
 		}
 	}
@@ -137,7 +134,7 @@ class HTTP429BackoffInterceptor extends Interceptor {
 							validateStatus: err.requestOptions.validateStatus
 						)
 					);
-					handler.resolve(response);
+					handler.resolve(response, true);
 				}
 				catch (e, st) {
 					if (e is DioError) {

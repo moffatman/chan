@@ -398,7 +398,7 @@ class SiteXenforo extends ImageboardSite {
 			}
 		}
 		// We don't know the board, need to get it from the page
-		final response = await client.get(getWebUrlImpl('', threadId));
+		final response = await client.get(getWebUrlImpl('', threadId), options: Options(responseType: ResponseType.plain));
 		final document = parse(response.data);
 		final boardLink = document.querySelector('.p-breadcrumbs')?.querySelectorAll('a').tryLast?.attributes['href'] ?? '';
 		if (boardLink.startsWith('/')) {
@@ -454,7 +454,7 @@ class SiteXenforo extends ImageboardSite {
 
   @override
   Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
-    final response = await client.getUri(Uri.https(baseUrl, basePath));
+    final response = await client.getUri(Uri.https(baseUrl, basePath), options: Options(responseType: ResponseType.plain));
 		final document = parse(response.data);
 		return document.querySelectorAll('.node--forum .node-title a').tryMap((e) {
 			final parts = e.attributes['href']?.split('/') ?? [];
@@ -483,7 +483,7 @@ class SiteXenforo extends ImageboardSite {
 	static final _catalogReplyCountPattern = RegExp(r'^(\d+)(K?)$');
 
 	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '$basePath/forums/$board/page-$page'));
+		final response = await client.getUri(Uri.https(baseUrl, '$basePath/forums/$board/page-$page'), options: Options(responseType: ResponseType.plain));
 		final document = parse(response.data);
 		return document.querySelectorAll('.structItem--thread').map((e) {
 			// Like "6K" "400"
@@ -648,7 +648,7 @@ class SiteXenforo extends ImageboardSite {
   @override
   Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		// Little trick to always start loading on last page
-    final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-9999999'), priority: priority);
+    final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-9999999'), priority: priority, responseType: ResponseType.plain);
 		final document = parse(response.data);
 		final lastPostNumber = int.parse(_postNumberPattern.firstMatch(document.querySelectorAll('article.message--post').last.querySelectorAll('header.message-attribution li').last.text)!.group(1)!.replaceAll(',', ''));
 		final label = document.querySelector('.p-title-value .label')?.text;
@@ -727,12 +727,12 @@ class SiteXenforo extends ImageboardSite {
 		final postId = postIds.first;
 		if (postId.childId.isNegative) {
 			// Request for page
-			final response = await client.getUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-${-postId.childId}'));
+			final response = await client.getUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-${-postId.childId}'), options: Options(responseType: ResponseType.plain));
 			final document = parse(response.data);
 			return _getPostsFromThreadPage(thread.board, thread.id, document);
 		}
 		// Request for post
-		final response = await client.getUri(Uri.https(baseUrl, '$basePath/goto/post', {'id': postId.childId.toString()}));
+		final response = await client.getUri(Uri.https(baseUrl, '$basePath/goto/post', {'id': postId.childId.toString()}), options: Options(responseType: ResponseType.plain));
 		final document = parse(response.data);
 		return _getPostsFromThreadPage(thread.board, thread.id, document);
 	}
@@ -789,7 +789,7 @@ class SiteXenforo extends ImageboardSite {
 			pageOneResponse = null;
 		}
 		else {
-			final homepageResponse = await client.getUri(Uri.https(baseUrl, '$basePath/search/'));
+			final homepageResponse = await client.getUri(Uri.https(baseUrl, '$basePath/search/'), options: Options(responseType: ResponseType.plain));
 			final homepageDocument = parse(homepageResponse.data);
 			final form = homepageDocument.querySelector('.p-body-pageContent form')!;
 			final Map<String, dynamic> fields = {
@@ -802,7 +802,8 @@ class SiteXenforo extends ImageboardSite {
 			}
 			fields.addAll(commonFields);
 			pageOneResponse = await client.postUri(Uri.https(baseUrl, form.attributes['action']!), data: fields, options: Options(
-				contentType: Headers.formUrlEncodedContentType
+				contentType: Headers.formUrlEncodedContentType,
+				responseType: ResponseType.plain
 			));
 			final match = _searchIdPattern.firstMatch(pageOneResponse.redirects.tryLast?.location.toString() ?? '');
 			if (match != null) {
@@ -827,7 +828,7 @@ class SiteXenforo extends ImageboardSite {
 					'c[nodes][0]': query.boards.first.split('.').last
 				},
 				...commonFields
-			}));
+			}), options: Options(responseType: ResponseType.plain));
 		}
 		final document = parse(response.data);
 		return ImageboardArchiveSearchResultPage(
@@ -938,7 +939,7 @@ class SiteXenforo extends ImageboardSite {
 	@override
 	Future<ImageboardUserInfo> getUserInfo(String username) async {
 		final url = Uri.https(baseUrl, '$basePath/members/$username');
-		final response = await client.getUri(url);
+		final response = await client.getUri(url, options: Options(responseType: ResponseType.plain));
 		final document = parse(response.data);
 		return ImageboardUserInfo(
 			username: username,

@@ -103,7 +103,7 @@ List<ContextMenuAction> buildImageSearchActions(BuildContext context, Iterable<A
 					final queryHash = await modalLoad<String>(context, 'Searching TinEye...', (_) async {
 						final response = await Settings.instance.client.postUri(Uri.https('tineye.com', '/api/v1/result_json/'), data: FormData.fromMap({
 							'url': attachment._urlForSearch
-						}));
+						}), options: Options(responseType: ResponseType.json));
 						return response.data['query_hash'] as String;
 					}, wait: const Duration(milliseconds: 150), cancellable: true);
 					if (context.mounted) {
@@ -151,7 +151,7 @@ List<ContextMenuAction> buildImageSearchActions(BuildContext context, Iterable<A
 					final resultHash = await modalLoad<String>(context, 'Searching lenso.ai...', (_) async {
 						final response = await Settings.instance.client.postUri(Uri.https('lenso.ai', '/api/upload'), data: FormData.fromMap({
 							'image': 'data:image/$ext;base64,$b64Blob'
-						}));
+						}), options: Options(responseType: ResponseType.json));
 						return response.data['id'] as String;
 					}, wait: const Duration(milliseconds: 150), cancellable: true);
 					if (context.mounted) {

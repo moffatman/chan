@@ -333,7 +333,7 @@ packages:
     description:
       path: dio
       ref: develop
-      resolved-ref: "1ec2dbe5031ab904b52ce6567144bc9fd15cf3f8"
+      resolved-ref: "8467c3e5da945a8f123ec7b1e91b12f1b8b55a27"
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "4.0.6"

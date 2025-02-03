@@ -338,7 +338,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.json'), priority: priority);
+		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.json'), priority: priority, responseType: ResponseType.json);
 		if (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false) {
 			throw const ThreadNotFoundException();
 		}
@@ -572,6 +572,7 @@ class SiteLainchan extends ImageboardSite {
 				if (imageOnly) 'file': 'on'
 			}),
 			options: Options(
+				responseType: ResponseType.plain,
 				validateStatus: (x) => true,
 				extra: {
 					kPriority: RequestPriority.interactive
@@ -704,7 +705,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
 		final sysUrl = Uri.https(parent.sysUrl, '${parent.basePath}/');
 		final modUrl = Uri.https(parent.sysUrl, '${parent.basePath}/mod.php');
-		final response = await parent.client.getUri(modUrl);
+		final response = await parent.client.getUri(modUrl, options: Options(responseType: ResponseType.plain));
 		final document = parse(response.data);
 		if (document.querySelector('title')?.text != 'Login') {
 			// Actually logged in
@@ -741,6 +742,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 				'login': 'Continue'
 			},
 			options: Options(
+				responseType: ResponseType.plain,
 				contentType: Headers.formUrlEncodedContentType,
 				followRedirects: false,
 				validateStatus: (x) => true

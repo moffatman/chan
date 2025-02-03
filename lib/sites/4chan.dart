@@ -600,6 +600,7 @@ class Site4Chan extends ImageboardSite {
 			options: Options(
 				headers: headers,
 				validateStatus: (x) => true,
+				responseType: ResponseType.json,
 				extra: {
 					kPriority: priority
 				}
@@ -664,7 +665,8 @@ class Site4Chan extends ImageboardSite {
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.plain
 		));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
@@ -785,7 +787,8 @@ class Site4Chan extends ImageboardSite {
 		final response = await client.getUri(Uri.https(apiUrl, '/boards.json'), options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.json
 		));
 		return (response.data['boards'] as List<dynamic>).map((board) {
 			return ImageboardBoard(
@@ -952,7 +955,8 @@ class Site4Chan extends ImageboardSite {
 			options: Options(
 				extra: {
 					kPriority: RequestPriority.interactive
-				}
+				},
+				responseType: ResponseType.plain
 			)
 		);
 		if (response.statusCode != 200) {
@@ -1028,7 +1032,7 @@ class Site4Chan extends ImageboardSite {
 			}
 		}
 		try {
-			final response = await client.getUri(endpoint);
+			final response = await client.getUri(endpoint, options: Options(responseType: ResponseType.plain));
 			final document = parse(response.data);
 			final error = document.querySelector('h3 > font[color="#FF0000"]')?.text;
 			if (error != null) {
@@ -1165,7 +1169,9 @@ class Site4Chan extends ImageboardSite {
 		return _boardFlags.putIfAbsent(board, () => AsyncMemoizer<List<ImageboardBoardFlag>>()).runOnce(() async {
 			Map<String, String> flagMap = boardFlags[board] ?? {};
 			try {
-				final response = await client.getUri(Uri.https(baseUrl, '/$board/')).timeout(const Duration(seconds: 5));
+				final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
+					responseType: ResponseType.plain
+				)).timeout(const Duration(seconds: 5));
 				final doc = parse(response.data);
 				flagMap = {
 					for (final e in doc.querySelector('select[name="flag"]')?.querySelectorAll('option') ?? <dom.Element>[])
@@ -1288,7 +1294,8 @@ class Site4Chan extends ImageboardSite {
 			},
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.plain
 		));
 		final document = parse(response.data);
 		final threads = document.querySelectorAll('.thread').expand((thread) {
@@ -1466,7 +1473,8 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 			Uri.https(parent.sysUrl, '/auth'),
 			data: FormData.fromMap({
 				for (final field in fields.entries) field.key.formKey: field.value
-			})
+			}),
+			options: Options(responseType: ResponseType.plain)
 		);
 		final document = parse(response.data);
 		final message = document.querySelector('h2')?.text;

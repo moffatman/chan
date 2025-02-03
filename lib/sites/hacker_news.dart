@@ -272,7 +272,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	Future<_HNObject> _getAlgolia(int id, {required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https('hn.algolia.com', '/api/v1/items/$id'), priority: priority);
+		final response = await client.getThreadUri(Uri.https('hn.algolia.com', '/api/v1/items/$id'), priority: priority, responseType: ResponseType.json);
 		return (await _makeHNObjectAlgolia(response.data))!;
 	}
 
@@ -429,7 +429,8 @@ class SiteHackerNews extends ImageboardSite {
 		}), options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.plain
 		));
 		final doc = parse(response.data);
 		final ids = doc.querySelectorAll('.athing').map((e) => int.parse(e.id));
@@ -612,7 +613,8 @@ class SiteHackerNews extends ImageboardSite {
 		}, options: Options(
 			extra: {
 				kPriority: priority
-			}
+			},
+			responseType: ResponseType.json
 		));
 		return ImageboardArchiveSearchResultPage(
 			page: response.data['page'] + 1,
@@ -679,7 +681,7 @@ class SiteHackerNews extends ImageboardSite {
 
 	@override
 	Future<ImageboardUserInfo> getUserInfo(String username) async {
-		final response = await client.get('https://hn.algolia.com/api/v1/users/$username');
+		final response = await client.get('https://hn.algolia.com/api/v1/users/$username', options: Options(responseType: ResponseType.json));
 		if (response.data['error'] != null) {
 			throw Exception(response.data['error']);
 		}

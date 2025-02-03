@@ -115,16 +115,16 @@ class CloudflareHandlerBlockedException implements Exception {
 	String toString() => 'Cloudflare clearance was blocked by the server';
 }
 
-dynamic _decode(ResponseType type, String data) {
+({dynamic data, bool isJson}) _decode(ResponseType type, String data) {
 	if (type == ResponseType.json && (data.startsWith('{') || data.startsWith('['))) {
 		try {
-			return jsonDecode(data);
+			return (data: jsonDecode(data), isJson: true);
 		}
 		on FormatException {
 			// ignore
 		}
 	}
-	return data;
+	return (data: data, isJson: false);
 }
 
 
@@ -132,13 +132,20 @@ typedef _CloudflareResponse = ({String? content, Uri? uri});
 
 extension on _CloudflareResponse {
 	Response? response(RequestOptions options) {
+		final resp = switch (content) {
+			null => (data: null, isJson: false),
+			String content => _decode(options.responseType ?? ResponseType.json, content)
+		};
 		return Response(
 			requestOptions: options,
-			data: content == null ? null : _decode(options.responseType, content!),
+			data: resp.data,
 			isRedirect: uri != options.uri,
 			redirects: [
 				if (uri != null && uri != options.uri) RedirectRecord(302, 'GET', uri!)
 			],
+			headers: Headers.fromMap({
+				if (resp.isJson) Headers.contentTypeHeader: [Headers.jsonContentType]
+			}),
 			statusCode: content == null ? 302 : 200,
 			extra: {
 				kCloudflare: true
@@ -538,7 +545,7 @@ class CloudflareInterceptor extends Interceptor {
 				);
 				final newResponse = data.response(err.requestOptions);
 				if (newResponse != null) {
-					handler.resolve(newResponse);
+					handler.resolve(newResponse, true);
 					return;
 				}
 			}

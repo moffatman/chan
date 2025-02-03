@@ -17,6 +17,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/strict_json.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/8chan.dart';
@@ -1448,6 +1449,7 @@ abstract class ImageboardSiteArchive {
 			}
 		));
 		client.interceptors.add(CloudflareInterceptor());
+		client.interceptors.add(StrictJsonInterceptor());
 		if (!kInUnitTest) {
 			client.interceptors.add(LoggingInterceptor.instance);
 		}
