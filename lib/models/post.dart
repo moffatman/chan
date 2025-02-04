@@ -113,7 +113,7 @@ class Post implements Filterable {
 	@HiveField(5)
 	final int id;
 	@HiveField(7, isOptimized: true, merger: PrimitiveMerger<Flag?>())
-	final Flag? flag;
+	Flag? flag;
 	@HiveField(8, isOptimized: true)
 	final String? posterId;
 	@HiveField(9)

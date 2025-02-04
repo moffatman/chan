@@ -8,6 +8,7 @@ class SiteErischan extends SiteLainchan2 {
 		required super.baseUrl,
 		required super.name,
 		required super.overrideUserAgent,
+		required super.boardsWithHtmlOnlyFlags,
 		required super.archives
 	}) : super(
 		basePath: '',
@@ -32,8 +33,9 @@ class SiteErischan extends SiteLainchan2 {
 		other.baseUrl == baseUrl &&
 		other.name == name &&
 		other.overrideUserAgent == overrideUserAgent &&
-		listEquals(other.archives, archives);
+		listEquals(other.archives, archives) &&
+		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags);
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, overrideUserAgent, Object.hashAll(archives));
+	int get hashCode => Object.hash(baseUrl, name, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boardsWithHtmlOnlyFlags));
 }

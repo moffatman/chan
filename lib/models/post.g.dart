@@ -50,8 +50,10 @@ class PostFields {
     merger: PrimitiveMerger(),
   );
   static Flag? getFlag(Post x) => x.flag;
-  static const flag = ReadOnlyHiveFieldAdapter<Post, Flag?>(
+  static void setFlag(Post x, Flag? v) => x.flag = v;
+  static const flag = HiveFieldAdapter<Post, Flag?>(
     getter: getFlag,
+    setter: setFlag,
     fieldNumber: 7,
     fieldName: 'flag',
     merger: PrimitiveMerger<Flag?>(),

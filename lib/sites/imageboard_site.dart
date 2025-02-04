@@ -2052,6 +2052,7 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			boardsWithCaptcha: (data['boardsWithCaptcha'] as List?)?.cast<String>(),
+			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			captchaQuestion: data['captchaQuestion']
 		);
 	}
@@ -2060,6 +2061,7 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			overrideUserAgent: overrideUserAgent,
+			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			archives: archives
 		);
 	}
@@ -2115,6 +2117,7 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			overrideUserAgent: overrideUserAgent,
+			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			archives: archives
 		);
 	}
@@ -2181,6 +2184,7 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			boards: boards,
+			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()
@@ -2201,6 +2205,7 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			boards: boards,
+			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()

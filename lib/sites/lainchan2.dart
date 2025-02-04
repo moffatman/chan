@@ -1,4 +1,5 @@
 import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan_org.dart';
@@ -95,6 +96,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	final formLock = Mutex();
 	@override
 	final String res;
+	final List<String> boardsWithHtmlOnlyFlags;
 
 	SiteLainchan2({
 		required super.baseUrl,
@@ -104,6 +106,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		required this.imageThumbnailExtension,
 		required super.overrideUserAgent,
 		required super.archives,
+		required this.boardsWithHtmlOnlyFlags,
 		super.faviconPath,
 		super.boardsPath,
 		this.boards,
@@ -122,7 +125,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final broken = await super.getThreadImpl(thread, priority: priority);
-		if (imageThumbnailExtension != '') {
+		if (imageThumbnailExtension != '' && !boardsWithHtmlOnlyFlags.contains(thread.board)) {
 			return broken;
 		}
 		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.html'), priority: priority, responseType: ResponseType.plain);
@@ -140,6 +143,22 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		// Copy corrected thumbnail URLs to thread from posts_.first
 		for (final a in broken.posts_.first.attachments) {
 			broken.attachments.tryFirstWhere((a2) => a.id == a2.id)?.thumbnailUrl = a.thumbnailUrl;
+		}
+		for (final flag in document.querySelectorAll('.post > p > label > img.flag')) {
+			final postId = int.tryParse(flag.parent?.parent?.parent?.id.split('_').last ?? '');
+			if (postId == null) {
+				continue;
+			}
+			final post = broken.posts_.tryFirstWhere((p) => p.id == postId);
+			if (post == null) {
+				continue;
+			}
+			post.flag = ImageboardFlag(
+				name: flag.attributes['alt'] ?? '<unknown>',
+				imageUrl: Uri.parse(getWebUrlImpl(thread.board, thread.id)).resolve(flag.attributes['src']!).toString(),
+				imageWidth: 17,
+				imageHeight: 14
+			);
 		}
 		return broken;
 	}
@@ -191,8 +210,9 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		(other.imageThumbnailExtension == imageThumbnailExtension) &&
 		(other.boardsPath == boardsPath) &&
 		(other.faviconPath == faviconPath) &&
-		listEquals(other.boards, boards);
+		listEquals(other.boards, boards) &&
+		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, name, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername, Object.hashAll(formBypass.keys), imageThumbnailExtension, boardsPath, faviconPath, Object.hashAll(boards ?? []));
+	int get hashCode => Object.hash(baseUrl, basePath, name, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername, Object.hashAll(formBypass.keys), imageThumbnailExtension, boardsPath, faviconPath, Object.hashAll(boards ?? []), Object.hashAll(boardsWithHtmlOnlyFlags));
 }
