@@ -204,22 +204,14 @@ public class MainActivity extends FlutterFragmentActivity {
                                     dir = dir.createDirectory(subdirName);
                                 }
                             }
-                            String filename = destinationName;
-                            int duplicateNumber = 0;
-                            DocumentFile existing;
-                            do {
-                                if (duplicateNumber > 0) {
-                                    int dotPos = destinationName.lastIndexOf('.');
-                                    if (dotPos == -1) {
-                                        result.error("FilenameProblem", "Supplied filename has no file extension", null);
-                                        return;
-                                    }
-                                    filename = String.format("%s (%d)%s", destinationName.substring(0, dotPos), duplicateNumber, destinationName.substring(dotPos));
-                                }
-                                existing = fastFindFile(dir, filename);
-                                duplicateNumber++;
-                            } while (existing != null);
-                            DocumentFile file = dir.createFile(MimeTypeMap.getFileExtensionFromUrl(filename), filename);
+                            int dotPos = destinationName.lastIndexOf('.');
+                            if (dotPos == -1) {
+                                result.error("FilenameProblem", "Supplied filename has no file extension", null);
+                            }
+                            DocumentFile file = dir.createFile(
+                                    MimeTypeMap.getSingleton().getMimeTypeFromExtension(destinationName.substring(dotPos + 1)),
+                                    destinationName.substring(0, dotPos)
+                            );
                             ParcelFileDescriptor destinationFileDescriptor = getContentResolver().openFileDescriptor(file.getUri(), "w");
                             File sourceFile = new File(sourcePath);
                             FileOutputStream destinationWriteStream = new FileOutputStream(destinationFileDescriptor.getFileDescriptor());
@@ -232,7 +224,7 @@ public class MainActivity extends FlutterFragmentActivity {
                             destinationWriteStream.close();
                             destinationFileDescriptor.close();
                             sourceReadStream.close();
-                            result.success(filename);
+                            result.success(file.getName());
                         }
                         catch (FileNotFoundException e) {
                             result.error("FileNotFound", e.getMessage(), null);
