@@ -676,21 +676,23 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 								onRefresh: () async {
 									await list.onRefresh?.call();
 								},
-								child: ReorderableListView.builder(
-									key: PageStorageKey(settings.drawerMode),
-									primary: false,
-									buildDefaultDragHandles: false,
-									physics: const AlwaysScrollableScrollPhysics(),
-									itemCount: list.pinFirstItem ? list.list.length - 1 : list.list.length,
-									onReorder: (oldIndex, newIndex) {
-										final oldI = list.pinFirstItem ? oldIndex + 1 : oldIndex;
-										final newI = list.pinFirstItem ? newIndex + 1 : newIndex;
-										list.onReorder?.call(oldI, newI);
-									},
-									itemBuilder: (context, index) {
-										final i = list.pinFirstItem ? index + 1 : index;
-										return list.itemBuilder(context, i);
-									}
+								child: MaybeScrollbar(
+									child: ReorderableListView.builder(
+										key: PageStorageKey(settings.drawerMode),
+										primary: false,
+										buildDefaultDragHandles: false,
+										physics: const AlwaysScrollableScrollPhysics(),
+										itemCount: list.pinFirstItem ? list.list.length - 1 : list.list.length,
+										onReorder: (oldIndex, newIndex) {
+											final oldI = list.pinFirstItem ? oldIndex + 1 : oldIndex;
+											final newI = list.pinFirstItem ? newIndex + 1 : newIndex;
+											list.onReorder?.call(oldI, newI);
+										},
+										itemBuilder: (context, index) {
+											final i = list.pinFirstItem ? index + 1 : index;
+											return list.itemBuilder(context, i);
+										}
+									)
 								)
 							)
 						)
