@@ -65,9 +65,10 @@ class _TabListTile extends StatelessWidget {
 				mainAxisSize: MainAxisSize.min,
 				children: [
 					if (data.unseenYouCount > 0) Text(
-						'${data.unseenYouCount}',
+						'${data.unseenYouCount} ',
 						style: TextStyle(
-							color: theme.secondaryColor
+							color: theme.secondaryColor,
+							fontWeight: FontWeight.bold
 						)
 					),
 					if (data.unseenCount > 0 && !(data.threadState?.threadWatch?.localYousOnly ?? false)) Text(
