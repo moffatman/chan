@@ -46,6 +46,10 @@ Future<bool> showAuthPageHelperPopup(BuildContext context, Imageboard imageboard
 					child: const Text('Paste link')
 				),
 				AdaptiveDialogAction(
+					onPressed: () => Navigator.pop(context, true),
+					child: const Text('Recheck status')
+				),
+				AdaptiveDialogAction(
 					onPressed: () => Navigator.pop(context, false),
 					child: const Text('Cancel')
 				)
