@@ -302,7 +302,7 @@ Future<List<ImportLog>> import(File archive) async {
 				if (yours == null) {
 					newCount++;
 					await yourBox.put(key, Hive.decode(Hive.encode(theirs)) as T);
-					return;
+					continue;
 				}
 				final results = Hive.merge(
 					merger: merger,
