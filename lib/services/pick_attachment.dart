@@ -93,7 +93,10 @@ Future<File?> downloadToShareCache({
 	required BuildContext context,
 	required Uri url
 }) async {
-	final client = context.read<ImageboardSite?>()?.client ?? Settings.instance.client;
+	final client =
+		ImageboardRegistry.instance.imageboards.tryFirstWhere((i) => i.site.imageUrl == url.host)?.site.client ??
+		context.read<ImageboardSite?>()?.client ??
+		Settings.instance.client;
 	final filename = url.pathSegments.tryLast;
 	final path = '${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}_${filename ?? ''}';
 	return await modalLoad(context, 'Downloading...', (controller) async {
