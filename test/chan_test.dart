@@ -6,6 +6,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/compress_html.dart';
 import 'package:chan/services/priority_queue.dart';
 import 'package:chan/services/streaming_mp4.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:flutter/foundation.dart';
 import 'package:test/test.dart';
@@ -694,5 +695,13 @@ void main() {
       await q.end(e);
       await q.end(f);
     });
+  });
+
+  test('FileBasename', () {
+    expect(FileBasename.get('asdf///'), 'asdf');
+    expect(FileBasename.get('/'), '/');
+    expect(FileBasename.get('a//'), 'a');
+    expect(FileBasename.get('asdf'), 'asdf');
+    expect(FileBasename.get('/f/g/b/c'), 'c');
   });
 }

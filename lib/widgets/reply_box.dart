@@ -59,7 +59,7 @@ Future<File> _moveFileOutOfDocumentsDir(File file) async {
 		// Move it to temp path
 		final parent = Directory('${Persistence.temporaryDirectory.path}/inboxcache/${DateTime.now().millisecondsSinceEpoch}');
 		await parent.create(recursive: true);
-		final destPath = '${parent.path}/${file.path.split('/').last}';
+		final destPath = '${parent.path}/${file.basename}';
 		return await file.rename(destPath);
 	}
 	return file;

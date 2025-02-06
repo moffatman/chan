@@ -935,7 +935,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	String get cacheExt {
 		final cached = _cachedFile;
 		if (cached != null) {
-			final basename = cached.path.split('/').last;
+			final basename = cached.basename;
 			final parts = basename.split('.');
 			if (parts.length > 1) {
 				return '.${parts.last}';

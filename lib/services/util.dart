@@ -79,6 +79,25 @@ extension _WithoutTrailingSlash on String {
 	}
 }
 
+extension FileBasename on FileSystemEntity {
+	static String get(String path) {
+		int inclusiveEnd = path.length - 1;
+		while (inclusiveEnd > 0 && path.codeUnitAt(inclusiveEnd) == 0x2F) {
+			inclusiveEnd--;
+		}
+		if (inclusiveEnd < 0) {
+			// Give up
+			return path;
+		}
+		if (inclusiveEnd == 0) {
+			// To handle '///' etc, and not return empty string
+			return path.substring(0, 1);
+		}
+		return path.substring(path.lastIndexOf('/', inclusiveEnd) + 1, inclusiveEnd + 1);
+	}
+	String get basename => get(path);
+}
+
 extension Copy on Directory {
 	Future<Directory> copy(String newPath) async {
 		final cleanSrc = path.withoutTrailingSlash;

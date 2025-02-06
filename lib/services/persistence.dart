@@ -435,6 +435,24 @@ class Persistence extends ChangeNotifier {
 		cellularCookies = DefaultCookieJar();
 	}
 
+	/// We used to store cookies in temp dir. Move them to documents dir.
+	static Future<FileStorage> _maybeMigrateCookieStorage(String suffix) async {
+		final oldParent = '${temporaryDirectory.path}$suffix';
+		final newParent = '${documentsDirectory.path}$suffix';
+		final dummyJar = PersistCookieJar();
+		// ignore: invalid_use_of_visible_for_testing_member
+		final dummyStorage = FileStorage.test(oldParent);
+		await dummyStorage.init(dummyJar.persistSession, dummyJar.ignoreExpires);
+		// ignore: invalid_use_of_visible_for_testing_member
+		final oldDir = Directory(dummyStorage.currentDirectory);
+		if (await oldDir.exists()) {
+			print('Moving $oldDir to:');
+			await oldDir.copy(dprint('$newParent/${oldDir.basename}'));
+			await oldDir.delete(recursive: true);
+		}
+		return FileStorage(newParent);
+	}
+
 	static Future<void> initializeStatic() async {
 		appLaunchTime = DateTime.now();
 		initializeHive();
@@ -458,7 +476,7 @@ class Persistence extends ChangeNotifier {
 			// Boxes were always saved as lowercase, but backups may have been
 			// upper case in the past. Just correct all '*.hive*' to be lower case.
 			for (final doc in documentsDirectory.listSync()) {
-				final filename = doc.path.split('/').last;
+				final filename = doc.basename;
 				if (!filename.contains('.hive')) {
 					continue;
 				}
@@ -473,11 +491,11 @@ class Persistence extends ChangeNotifier {
 			Future.error(e, st);
 		}
 		final wifiCookies1 = wifiCookies = PersistCookieJar(
-			storage: FileStorage(temporaryDirectory.path)
+			storage: await _maybeMigrateCookieStorage('')
 		);
 		await wifiCookies1.forceInit();
 		final cellularCookies1 = cellularCookies = PersistCookieJar(
-			storage: FileStorage('${temporaryDirectory.path}/cellular')
+			storage: await _maybeMigrateCookieStorage('/cellular')
 		);
 		await cellularCookies1.forceInit();
 		await savedAttachmentsDirectory.create(recursive: true);
@@ -666,7 +684,7 @@ class Persistence extends ChangeNotifier {
 			else {
 				size = stat.size;
 			}
-			folderSizes.update(_knownCacheDirs[directory.path.split('/').last] ?? 'Other', (total) => total + size, ifAbsent: () => size);
+			folderSizes.update(_knownCacheDirs[directory.basename] ?? 'Other', (total) => total + size, ifAbsent: () => size);
 		}
 		return folderSizes;
 	}
@@ -690,17 +708,6 @@ class Persistence extends ChangeNotifier {
 			// The temporary directory is shared between applications, it's not safe to clear it. 
 			return;
 		}
-		final ignorePaths = <String>[];
-		for (final jar in [wifiCookies, cellularCookies]) {
-			ignorePaths.maybeAdd(switch(jar) {
-				PersistCookieJar persist => switch (persist.storage) {
-					// ignore: invalid_use_of_visible_for_testing_member
-					FileStorage storage => storage.currentDirectory,
-					_ => null
-				},
-				_ => null
-			});
-		}
 		DateTime? deadline;
 		if (olderThan != null) {
 			deadline = DateTime.now().subtract(olderThan);
@@ -714,7 +721,7 @@ class Persistence extends ChangeNotifier {
 			final stat = await child.stat();
 			if (stat.type == FileSystemEntityType.file) {
 				// Probably something from file_pickers
-				if ((deadline == null || stat.accessed.compareTo(deadline) < 0) && !ignorePaths.any(child.path.startsWith)) {
+				if ((deadline == null || stat.accessed.compareTo(deadline) < 0)) {
 					deletedSize += stat.size;
 					deletedCount++;
 					try {
@@ -741,7 +748,7 @@ class Persistence extends ChangeNotifier {
 					// Race condition - deleted already?
 					continue;
 				}
-				if ((deadline == null || stat.accessed.isBefore(deadline)) && !ignorePaths.any(child.path.startsWith)) {
+				if ((deadline == null || stat.accessed.isBefore(deadline))) {
 					deletedCount++;
 					try {
 						await dir.delete();

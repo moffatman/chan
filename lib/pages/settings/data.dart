@@ -758,7 +758,7 @@ final dataSettings = [
 				if (Platform.isAndroid) {
 					await saveFileAs(
 						sourcePath: file.path,
-						destinationName: file.path.split('/').last
+						destinationName: file.basename
 					);
 				}
 				else {
@@ -830,7 +830,7 @@ final dataSettings = [
 						if (Platform.isAndroid) AdaptiveDialogAction(
 							onPressed: () => Navigator.pop<Future<void> Function(File)>(context, (File file) => saveFileAs(
 								sourcePath: file.path,
-								destinationName: file.path.split('/').last
+								destinationName: file.basename
 							)),
 							child: const Text('Export as...')
 						),

@@ -369,7 +369,7 @@ final appearanceSettings = [
 									if (path == null) {
 										return;
 									}
-									final basename = path.split('/').last;
+									final basename = FileBasename.get(path);
 									final ttfFolder = await Directory('${Persistence.documentsDirectory.path}/${Persistence.fontsDir}').create();
 									await File(path).copy('${ttfFolder.path}/$basename');
 									if (context.mounted) {

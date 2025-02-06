@@ -3008,7 +3008,7 @@ TextSpan buildDraftInfoRow({
 					context: null,
 					metadata: [
 						(
-							filename: post.overrideFilename ?? file.split('/').last,
+							filename: post.overrideFilename ?? FileBasename.get(file),
 							sizeInBytes: scan?.sizeInBytes,
 							width: scan?.width,
 							height: scan?.height
