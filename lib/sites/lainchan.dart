@@ -104,7 +104,7 @@ class SiteLainchan extends ImageboardSite {
 						if (node.classes.contains('quote') || node.classes.contains('unkfunc')) {
 							yield PostQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 						}
-						else if (node.classes.contains('quote2')) {
+						else if (node.classes.contains('quote2') || node.classes.contains('rquote')) {
 							yield PostPinkQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 						}
 						else if (node.classes.contains('quote3')) {
