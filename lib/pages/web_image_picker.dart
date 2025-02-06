@@ -167,13 +167,18 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 			}
 			if (url.path.isNotEmpty || value.startsWith('https://')) {
 				// No downloading junk like "something.png"
-				final file = await downloadToShareCache(context: context, url: url);
-				if (!mounted) {
-					return;
+				try {
+					final file = await downloadToShareCache(context: context, url: url);
+					if (!mounted) {
+						return;
+					}
+					if (file != null) {
+						Navigator.pop(context, file);
+						return;
+					}
 				}
-				if (file != null) {
-					Navigator.pop(context, file);
-					return;
+				catch (e, st) {
+					alertError(context, e, st);
 				}
 			}
 			// User cancelled, just go forward to the URL
