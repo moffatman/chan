@@ -371,7 +371,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					);
 				}
 				queue?.captchaAllowedTime = e.tryAgainAt;
-				// Don't change state, just try again at that time
+				_state = initialNeedsCaptchaState;
 			}
 			on HeadlessSolveNotPossibleException {
 				final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
