@@ -472,6 +472,7 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					masterBuilder: (context, selected, setter) {
 						final settings = context.watch<Settings>();
+						final theme = context.watch<SavedTheme>();
 						return RefreshableList<ImageboardScoped<(ThreadWatch, Thread)>>(
 							aboveFooter: Column(
 								mainAxisSize: MainAxisSize.min,
@@ -665,51 +666,57 @@ class _SavedPageState extends State<SavedPage> {
 												animation: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.$1.threadIdentifier),
 												builder: (context, child) {
 													final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.$1.threadIdentifier);
-													return ThreadRow(
-														thread: threadState!.thread ?? watch.item.$2,
-														isSelected: isSelected,
-														style: settings.useCatalogGrid ?
-															(settings.useStaggeredCatalogGrid ? ThreadRowStyle.staggeredGrid : ThreadRowStyle.grid)
-															: ThreadRowStyle.row,
-														showBoardName: true,
-														showSiteIcon: true,
-														showPageNumber: true,
-														forceShowInHistory: true,
-														dimReadThreads: watch.item.$1.zombie,
-														onThumbnailLoadError: (error, stackTrace) {
-															watch.imageboard.threadWatcher.fixBrokenThread(watch.item.$1.threadIdentifier);
-														},
-														semanticParentIds: const [-4],
-														onThumbnailTap: (initialAttachment) {
-															final attachments = {
-																for (final w in _watchedListController.items)
-																	for (final attachment in w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																		attachment: w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)!
-																};
-															showGallery(
-																context: context,
-																attachments: attachments.keys.toList(),
-																replyCounts: {
-																	for (final item in attachments.entries) item.key: item.value.thread!.replyCount
-																},
-																threads: (
-																	threads: {
-																		for (final item in attachments.entries) item.key: item.value.imageboard!.scope(item.value.thread!)
+													return NullableColorFiltered(
+														colorFilter:
+															((threadState?.unseenReplyIdsToYouCount() ?? 0) > 0) ?
+																ColorFilter.mode(theme.secondaryColor.withOpacity(0.15), BlendMode.srcOver) : null,
+														child: ThreadRow(
+															thread: threadState!.thread ?? watch.item.$2,
+															isSelected: isSelected,
+															style: settings.useCatalogGrid ?
+																(settings.useStaggeredCatalogGrid ? ThreadRowStyle.staggeredGrid : ThreadRowStyle.grid)
+																: ThreadRowStyle.row,
+															showBoardName: true,
+															showSiteIcon: true,
+															showPageNumber: true,
+															forceShowInHistory: true,
+															dimReadThreads: watch.item.$1.zombie,
+															invertCountersIfUnread: true,
+															onThumbnailLoadError: (error, stackTrace) {
+																watch.imageboard.threadWatcher.fixBrokenThread(watch.item.$1.threadIdentifier);
+															},
+															semanticParentIds: const [-4],
+															onThumbnailTap: (initialAttachment) {
+																final attachments = {
+																	for (final w in _watchedListController.items)
+																		for (final attachment in w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
+																			attachment: w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)!
+																	};
+																showGallery(
+																	context: context,
+																	attachments: attachments.keys.toList(),
+																	replyCounts: {
+																		for (final item in attachments.entries) item.key: item.value.thread!.replyCount
 																	},
-																	onThreadSelected: (t) {
-																		final x = _watchedListController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.$1.threadIdentifier == t.item.identifier).item;
-																		setter(x.imageboard.scope(x.item.$1));
-																	}
-																),
-																initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
-																onChange: (attachment) {
-																	final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
-																	_watchedListController.animateTo((p) => p.item.$1.threadIdentifier == threadId);
-																},
-																semanticParentIds: [-4],
-																heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
-															);
-														}
+																	threads: (
+																		threads: {
+																			for (final item in attachments.entries) item.key: item.value.imageboard!.scope(item.value.thread!)
+																		},
+																		onThreadSelected: (t) {
+																			final x = _watchedListController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.$1.threadIdentifier == t.item.identifier).item;
+																			setter(x.imageboard.scope(x.item.$1));
+																		}
+																	),
+																	initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
+																	onChange: (attachment) {
+																		final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
+																		_watchedListController.animateTo((p) => p.item.$1.threadIdentifier == threadId);
+																	},
+																	semanticParentIds: [-4],
+																	heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
+																);
+															}
+														)
 													);
 												}
 											),

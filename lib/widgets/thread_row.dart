@@ -46,7 +46,8 @@ TextSpan buildThreadCounters({
 	bool showUnseenColors = true,
 	bool showUnseenCounters = true,
 	bool? forceShowInHistory,
-	required bool showChrome
+	required bool showChrome,
+	bool invert = false
 }) {
 	final site = imageboard.site;
 	final latestThread = threadState?.thread ?? thread;
@@ -55,7 +56,7 @@ TextSpan buildThreadCounters({
 	int unseenReplyCount = 0;
 	int unseenYouCount = 0;
 	int unseenImageCount = 0;
-	final grey = theme.primaryColorWithBrightness(0.6);
+	final grey = theme.primaryColorWithBrightness(invert ? 0.4 : 0.6);
 	Color? replyCountColor;
 	Color? imageCountColor;
 	Color? pageCountColor;
@@ -209,12 +210,14 @@ class _ThreadCounters extends StatelessWidget {
 	final bool useFittedBox;
 	final bool showChrome;
 	final Alignment alignment;
+	final bool invert;
 
 	const _ThreadCounters({
 		required this.counters,
 		required this.useFittedBox,
 		required this.showChrome,
 		required this.alignment,
+		this.invert = false,
 	});
 
 	@override
@@ -222,23 +225,26 @@ class _ThreadCounters extends StatelessWidget {
 		if (counters.children?.isEmpty ?? false) {
 			return const SizedBox.shrink();
 		}
+		final theme = context.watch<SavedTheme>();
+		final style = invert ? TextStyle(
+			color: theme.backgroundColor
+		) : null;
 		final row = useFittedBox ? FittedBox(
 			alignment: alignment,
 			fit: BoxFit.scaleDown,
-			child: Text.rich(counters)
-		) : Text.rich(counters, maxLines: 1, overflow: TextOverflow.ellipsis);
+			child: Text.rich(counters, style: style)
+		) : Text.rich(counters, maxLines: 1, overflow: TextOverflow.ellipsis, style: style);
 		if (!showChrome) {
 			return row;
 		}
 		final settings = context.watch<Settings>();
-		final theme = context.watch<SavedTheme>();
 		return Container(
 			decoration: BoxDecoration(
 				borderRadius: settings.useFullWidthForCatalogCounters ? null : (settings.imagesOnRight ? const BorderRadius.only(topRight: Radius.circular(8)) : const BorderRadius.only(topLeft: Radius.circular(8))),
-				color: theme.backgroundColor,
-				border:  settings.useFullWidthForCatalogCounters ? Border(
-					top: BorderSide(color: theme.primaryColorWithBrightness(0.2)),
-				) : Border.all(color: theme.primaryColorWithBrightness(0.2))
+				color: invert ? theme.primaryColor : theme.backgroundColor,
+				border: settings.useFullWidthForCatalogCounters ? Border(
+					top: BorderSide(color: theme.primaryColorWithBrightness(invert ? 0.8 : 0.2)),
+				) : Border.all(color: theme.primaryColorWithBrightness(invert ? 0.8 : 0.2))
 			),
 			margin: settings.useFullWidthForCatalogCounters ? EdgeInsets.zero : (settings.imagesOnRight ? const EdgeInsets.only(right: 10) : const EdgeInsets.only(left: 10)),
 			padding: settings.useFullWidthForCatalogCounters ? const EdgeInsets.all(4) : const EdgeInsets.all(2),
@@ -273,6 +279,7 @@ class ThreadRow extends StatelessWidget {
 	final bool showLastReplies;
 	final bool showPageNumber;
 	final bool? forceShowInHistory;
+	final bool invertCountersIfUnread;
 
 	const ThreadRow({
 		required this.thread,
@@ -289,6 +296,7 @@ class ThreadRow extends StatelessWidget {
 		this.showLastReplies = false,
 		this.showPageNumber = false,
 		this.forceShowInHistory,
+		this.invertCountersIfUnread = false,
 		Key? key
 	}) : super(key: key);
 
@@ -340,6 +348,11 @@ class ThreadRow extends StatelessWidget {
 		if (approxHeight != null) {
 			approxHeight *= (inContextMenuHack ? 5 : 1);
 		}
+		final invertCounters = invertCountersIfUnread && switch (watch?.localYousOnly) {
+			null => false, // no watch
+			true => (threadState?.unseenReplyIdsToYouCount() ?? 0) > 0,
+			false => (threadState?.unseenReplyCount() ?? 0) > 0
+		};
 		final countersSpan = buildThreadCounters(
 			settings: settings,
 			theme: theme,
@@ -349,7 +362,8 @@ class ThreadRow extends StatelessWidget {
 			threadState: threadState,
 			showPageNumber: showPageNumber,
 			forceShowInHistory: forceShowInHistory,
-			showChrome: true
+			showChrome: true,
+			invert: invertCounters
 		);
 		final textScaler = MediaQuery.textScalerOf(context);
 		final countersPlaceholderWidget = SizedBox(
@@ -785,6 +799,7 @@ class ThreadRow extends StatelessWidget {
 							useFittedBox: true,
 							showChrome: true,
 							alignment: settings.cloverStyleCatalogCounters ? Alignment.centerLeft : Alignment.centerRight,
+							invert: invertCounters
 						)
 					]
 				)
@@ -798,6 +813,7 @@ class ThreadRow extends StatelessWidget {
 								useFittedBox: true,
 								showChrome: true,
 								alignment: settings.cloverStyleCatalogCounters ? Alignment.centerLeft : Alignment.centerRight,
+								invert: invertCounters
 							)
 						)
 					)
