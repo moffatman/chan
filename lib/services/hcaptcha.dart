@@ -23,18 +23,18 @@ Future<HCaptchaSolution> solveHCaptcha(HCaptchaRequest request, {CancelToken? ca
 					window.pcd_c_done = resolve;
 					let script = document.createElement("script");
 					script.src = "https://js.hcaptcha.com/1/api.js?onload=pcd_c_loaded&render=explicit&recaptchacompat=off";
-					script.onerror = () => reject(new Error("failed to load HCaptcha script"));
+					script.onerror = () => reject(new Error("failed to load hCaptcha script"));
 					document.head.appendChild(script);
 				});
 			''');
 			if (result?.value case String token) {
 				return token;
 			}
-			throw Exception('Got bad value from HCaptcha injection: $result');
+			throw Exception('Got bad value from hCaptcha injection: $result');
 		},
 		uri: request.hostPage,
 		priority: RequestPriority.interactive,
-		gatewayName: 'HCaptcha',
+		gatewayName: 'hCaptcha',
 		skipHeadless: true,
 		cancelToken: cancelToken
 	);

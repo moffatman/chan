@@ -134,23 +134,23 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		site.resetCaptchaTicketTimer();
 	}
 	if (data['mpcd'] == true) {
-		// HCaptcha block
+		// hCaptcha block
 		if (priority == RequestPriority.cosmetic) {
 			throw const HeadlessSolveNotPossibleException();
 		}
 		if (hCaptchaSolution != null) {
-			throw Captcha4ChanCustomChallengeException('Still got HCaptcha block even with $hCaptchaSolution', challengeResponse.cloudflare);
+			throw Captcha4ChanCustomChallengeException('Still got hCaptcha block even with $hCaptchaSolution', challengeResponse.cloudflare);
 		}
 		final hCaptchaKey = request.hCaptchaKey;
 		if (hCaptchaKey == null) {
-			throw Captcha4ChanCustomChallengeException('Got HCaptcha block, but don\'t know what key to use', challengeResponse.cloudflare);
+			throw Captcha4ChanCustomChallengeException('Got hCaptcha block, but don\'t know what key to use', challengeResponse.cloudflare);
 		}
 		final solution = await solveHCaptcha(HCaptchaRequest(
 			/// Relatively safe page to load and replace
 			hostPage: Uri.https(request.challengeUrl.host, '/robots.txt'),
 			siteKey: hCaptchaKey,
 		), cancelToken: cancelToken);
-		// Retry with HCaptcha
+		// Retry with hCaptcha
 		return await requestCaptcha4ChanCustomChallenge(
 			site: site,
 			request: request,
