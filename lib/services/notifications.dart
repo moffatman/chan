@@ -461,7 +461,7 @@ class Notifications {
 			...boardWatches.map((w) => w.board)
 		];
 		boards.sort((a, b) => a.compareTo(b));
-		return base64Encode(md5.convert(boards.join(',').codeUnits).bytes);
+		return base64Encode(md5.convert(utf8.encode(boards.join(','))).bytes);
 	}
 
 	Future<void> deleteAllNotificationsFromServer() async {
