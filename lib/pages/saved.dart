@@ -384,6 +384,30 @@ class _SavedPageState extends State<SavedPage> {
 							Builder(
 								builder: (context) => CupertinoButton(
 									padding: EdgeInsets.zero,
+									child: Icon(CupertinoIcons.settings, color: Notifications.staticError != null ? Colors.red : null),
+									onPressed: () {
+										Navigator.of(context).push(TransparentRoute(
+											builder: (context) => OverscrollModalPage(	
+												child: Container(
+													width: double.infinity,
+													padding: const EdgeInsets.all(16),
+													color: ChanceTheme.backgroundColorOf(context),
+													alignment: Alignment.center,
+													child: ConstrainedBox(
+														constraints: const BoxConstraints(
+															maxWidth: 500
+														),
+														child: const ThreadWatcherControls()
+													)
+												)
+											)
+										));
+									}
+								)
+							),
+							Builder(
+								builder: (context) => CupertinoButton(
+									padding: EdgeInsets.zero,
 									child: const Icon(CupertinoIcons.archivebox),
 									onPressed: () => showAdaptiveModalPopup(
 										context: context,
@@ -449,13 +473,6 @@ class _SavedPageState extends State<SavedPage> {
 					masterBuilder: (context, selected, setter) {
 						final settings = context.watch<Settings>();
 						return RefreshableList<ImageboardScoped<(ThreadWatch, Thread)>>(
-							header: const Column(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									ThreadWatcherControls(),
-									ChanceDivider()
-								]
-							),
 							aboveFooter: Column(
 								mainAxisSize: MainAxisSize.min,
 								children: [
@@ -1568,147 +1585,144 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 				notificationsError ??= i.notifications.error;
 			}
 		}
-		return AnimatedSize(
-			duration: const Duration(milliseconds: 300),
-			child: Container(
-				padding: const EdgeInsets.all(8),
-				child: Column(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						AnimatedBuilder(
-							animation: w,
-							builder: (context, _) => Row(
-								children: [
-									const SizedBox(width: 16),
-									Expanded(
-										child: Column(
-											mainAxisSize: MainAxisSize.min,
-											crossAxisAlignment: CrossAxisAlignment.center,
-											children: [
-												const Text('Local Watcher'),
-												const SizedBox(height: 8),
-												if (w.nextUpdate != null && w.lastUpdate != null) ClipRRect(
-													borderRadius: const BorderRadius.all(Radius.circular(8)),
-													child: TimedRebuilder(
-														enabled: TickerMode.of(context),
-														interval: const Duration(seconds: 1),
-														function: () {
-															final now = DateTime.now();
-															return w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds;
-														},
-														builder: (context, value) {
-															return LinearProgressIndicator(
-																value: value,
-																color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
-																backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context),
-																minHeight: 8
-															);
-														}
-													)
-												)
-											]
-										)
-									),
-									const SizedBox(width: 16),
-									CupertinoButton(
-										onPressed: w.update,
-										child: const Icon(CupertinoIcons.refresh)
-									),
-									AdaptiveSwitch(
-										value: w.active,
-										onChanged: (val) {
-											if (val) {
-												w.update();
-											}
-											else {
-												w.cancel();
-											}
-										}
-									)
-								]
-							)
-						),
-						Row(
+		return Container(
+			padding: const EdgeInsets.all(8),
+			child: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					AnimatedBuilder(
+						animation: w,
+						builder: (context, _) => Row(
 							children: [
 								const SizedBox(width: 16),
-								const AutoSizeText('Push Notifications'),
-								const Spacer(),
-								if (notificationsError != null) CupertinoButton(
-									onPressed: () {
-										alertError(context, notificationsError!.$1, notificationsError.$2);
-									},
-									child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)
-								),
-								if (Platform.isAndroid && (settings.usePushNotifications ?? false)) CupertinoButton(
-									onPressed: () async {
-										try {
-											final currentDistributor = await UnifiedPush.getDistributor();
-											final distributors = await UnifiedPush.getDistributors();
-											if (!context.mounted) return;
-											final newDistributor = await showAdaptiveDialog<String>(
-												context: context,
-												barrierDismissible: true,
-												builder: (context) => AdaptiveAlertDialog(
-													title: const Text('UnifiedPush Distributor'),
-													content: Column(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															const SizedBox(height: 16),
-															const Flexible(
-																child: Text('Select which service will be used to deliver your push notifications.')
-															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
-																onPressed: () => openBrowser(context, Uri.https('unifiedpush.org', '/users/distributors/')),
-																child: const Row(
-																	mainAxisSize: MainAxisSize.min,
-																	children: [
-																		Text('More info', style: TextStyle(fontSize: 15)),
-																		Icon(CupertinoIcons.chevron_right, size: 15)
-																	]
-																)
-															)
-														]
-													),
-													actions: [
-														...distributors.map((distributor) => AdaptiveDialogAction(
-															isDefaultAction: distributor == currentDistributor,
-															onPressed: () => Navigator.pop(context, distributor),
-															child: Text(distributor == 'com.moffatman.chan' ? 'Firebase (requires Google services)' : distributor)
-														)),
-														AdaptiveDialogAction(
-															onPressed: () => Navigator.pop(context),
-															child: const Text('Cancel')
-														)
-													]
+								Expanded(
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										crossAxisAlignment: CrossAxisAlignment.center,
+										children: [
+											const Text('Local Watcher'),
+											const SizedBox(height: 8),
+											if (w.nextUpdate != null && w.lastUpdate != null) ClipRRect(
+												borderRadius: const BorderRadius.all(Radius.circular(8)),
+												child: TimedRebuilder(
+													enabled: TickerMode.of(context),
+													interval: const Duration(seconds: 1),
+													function: () {
+														final now = DateTime.now();
+														return w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds;
+													},
+													builder: (context, value) {
+														return LinearProgressIndicator(
+															value: value,
+															color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
+															backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context),
+															minHeight: 8
+														);
+													}
 												)
-											);
-											if (newDistributor != null) {
-												await Notifications.tryUnifiedPushDistributor(newDistributor);
-											}
-										}
-										catch (e, st) {
-											if (context.mounted) {
-												alertError(context, e, st);
-											}
-											Notifications.registerUnifiedPush();
-										}
-									},
-									child: const Icon(CupertinoIcons.wrench)
+											)
+										]
+									)
 								),
-								const SizedBox(
-									height: 60
+								const SizedBox(width: 16),
+								CupertinoButton(
+									onPressed: w.update,
+									child: const Icon(CupertinoIcons.refresh)
 								),
 								AdaptiveSwitch(
-									value: settings.usePushNotifications ?? false,
+									value: w.active,
 									onChanged: (val) {
-										settings.usePushNotifications = val;
+										if (val) {
+											w.update();
+										}
+										else {
+											w.cancel();
+										}
 									}
 								)
 							]
 						)
-					]
-				)
+					),
+					Row(
+						children: [
+							const SizedBox(width: 16),
+							const AutoSizeText('Push Notifications'),
+							const Spacer(),
+							if (notificationsError != null) CupertinoButton(
+								onPressed: () {
+									alertError(context, notificationsError!.$1, notificationsError.$2);
+								},
+								child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)
+							),
+							if (Platform.isAndroid && (settings.usePushNotifications ?? false)) CupertinoButton(
+								onPressed: () async {
+									try {
+										final currentDistributor = await UnifiedPush.getDistributor();
+										final distributors = await UnifiedPush.getDistributors();
+										if (!context.mounted) return;
+										final newDistributor = await showAdaptiveDialog<String>(
+											context: context,
+											barrierDismissible: true,
+											builder: (context) => AdaptiveAlertDialog(
+												title: const Text('UnifiedPush Distributor'),
+												content: Column(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														const SizedBox(height: 16),
+														const Flexible(
+															child: Text('Select which service will be used to deliver your push notifications.')
+														),
+														CupertinoButton(
+															padding: EdgeInsets.zero,
+															onPressed: () => openBrowser(context, Uri.https('unifiedpush.org', '/users/distributors/')),
+															child: const Row(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	Text('More info', style: TextStyle(fontSize: 15)),
+																	Icon(CupertinoIcons.chevron_right, size: 15)
+																]
+															)
+														)
+													]
+												),
+												actions: [
+													...distributors.map((distributor) => AdaptiveDialogAction(
+														isDefaultAction: distributor == currentDistributor,
+														onPressed: () => Navigator.pop(context, distributor),
+														child: Text(distributor == 'com.moffatman.chan' ? 'Firebase (requires Google services)' : distributor)
+													)),
+													AdaptiveDialogAction(
+														onPressed: () => Navigator.pop(context),
+														child: const Text('Cancel')
+													)
+												]
+											)
+										);
+										if (newDistributor != null) {
+											await Notifications.tryUnifiedPushDistributor(newDistributor);
+										}
+									}
+									catch (e, st) {
+										if (context.mounted) {
+											alertError(context, e, st);
+										}
+										Notifications.registerUnifiedPush();
+									}
+								},
+								child: const Icon(CupertinoIcons.wrench)
+							),
+							const SizedBox(
+								height: 60
+							),
+							AdaptiveSwitch(
+								value: settings.usePushNotifications ?? false,
+								onChanged: (val) {
+									settings.usePushNotifications = val;
+								}
+							)
+						]
+					)
+				]
 			)
 		);
 	}
