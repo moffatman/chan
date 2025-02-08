@@ -1418,9 +1418,12 @@ class AttachmentViewer extends StatelessWidget {
 							if (controller.cacheCompleted) {
 								loadingValue = 1;
 							}
-							if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
+							if (loadstate.extendedImageLoadState == LoadState.completed || (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null)) {
 								// If we got image download completion, we can check if it's cached
-								loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
+								loadingValue = switch (loadstate.extendedImageLoadState) {
+									LoadState.completed => 1,
+									_ => loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!
+								};
 								if ((source != Uri.parse(attachment.thumbnailUrl)) && loadingValue == 1) {
 									getCachedImageFile(source.toString()).then((file) {
 										if (file != null) {
