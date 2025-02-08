@@ -20,7 +20,7 @@ extension SiteErrorHandling on Dio {
 			responseType: responseType
 		));
 		final status = response.statusCode;
-		if (status != null && status >= 200 && status < 300) {
+		if (status != null && status >= 200 && status < 400) {
 			return response;	
 		}
 		if (status == 404) {
