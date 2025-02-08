@@ -1223,6 +1223,8 @@ class SavedSettings extends HiveObject {
 	bool closeReplyBoxAfterSubmitting;
 	@HiveField(198)
 	String? androidGalleryPicker;
+	@HiveField(199)
+	bool onlyShowUnreadWatches;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1423,6 +1425,7 @@ class SavedSettings extends HiveObject {
 		bool? openDrawerThreadsInNewTabs,
 		bool? closeReplyBoxAfterSubmitting,
 		this.androidGalleryPicker,
+		bool? onlyShowUnreadWatches,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1642,7 +1645,8 @@ class SavedSettings extends HiveObject {
 		cloverStyleCatalogCounters = cloverStyleCatalogCounters ?? false,
 		alwaysUseWideDrawerGesture = alwaysUseWideDrawerGesture ?? false,
 		openDrawerThreadsInNewTabs = openDrawerThreadsInNewTabs ?? false,
-		closeReplyBoxAfterSubmitting = closeReplyBoxAfterSubmitting ?? true {
+		closeReplyBoxAfterSubmitting = closeReplyBoxAfterSubmitting ?? true,
+		onlyShowUnreadWatches = onlyShowUnreadWatches ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2861,6 +2865,10 @@ class Settings extends ChangeNotifier {
 	static const androidGalleryPickerSetting = SavedSetting(SavedSettingsFields.androidGalleryPicker);
 	String? get androidGalleryPicker => androidGalleryPickerSetting(this);
 	set androidGalleryPicker(String? setting) => androidGalleryPickerSetting.set(this, setting);
+
+	static const onlyShowUnreadWatchesSetting = SavedSetting(SavedSettingsFields.onlyShowUnreadWatches);
+	bool get onlyShowUnreadWatches => onlyShowUnreadWatchesSetting(this);
+	set onlyShowUnreadWatches(bool setting) => onlyShowUnreadWatchesSetting.set(this, setting);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

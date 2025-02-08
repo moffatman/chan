@@ -12,6 +12,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mutex/mutex.dart';
 
+extension ShouldCountAsUnread on ImageboardScoped<ThreadWatch> {
+	PersistentThreadState? get threadState => imageboard.persistence.getThreadStateIfExists(item.threadIdentifier);
+	bool get shouldCountAsUnread {
+		if (item.localYousOnly) {
+			return (threadState?.unseenReplyIdsToYouCount() ?? 0) > 0;
+		}
+		return (threadState?.unseenReplyCount() ?? 0) > 0;
+	}
+}
+
 final _watchMutex = ReadWriteMutex();
 Future<List<ImageboardScoped<ThreadWatch>>> loadWatches() => _watchMutex.protectRead(() async {
 	final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.values.map(i.scope)).toList();

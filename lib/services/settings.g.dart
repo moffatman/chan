@@ -2368,6 +2368,17 @@ class SavedSettingsFields {
     fieldName: 'androidGalleryPicker',
     merger: PrimitiveMerger(),
   );
+  static bool getOnlyShowUnreadWatches(SavedSettings x) =>
+      x.onlyShowUnreadWatches;
+  static void setOnlyShowUnreadWatches(SavedSettings x, bool v) =>
+      x.onlyShowUnreadWatches = v;
+  static const onlyShowUnreadWatches = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getOnlyShowUnreadWatches,
+    setter: setOnlyShowUnreadWatches,
+    fieldNumber: 199,
+    fieldName: 'onlyShowUnreadWatches',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2566,7 +2577,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     195: SavedSettingsFields.alwaysUseWideDrawerGesture,
     196: SavedSettingsFields.openDrawerThreadsInNewTabs,
     197: SavedSettingsFields.closeReplyBoxAfterSubmitting,
-    198: SavedSettingsFields.androidGalleryPicker
+    198: SavedSettingsFields.androidGalleryPicker,
+    199: SavedSettingsFields.onlyShowUnreadWatches
   };
 
   @override
@@ -2779,13 +2791,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       openDrawerThreadsInNewTabs: fields[196] as bool?,
       closeReplyBoxAfterSubmitting: fields[197] as bool?,
       androidGalleryPicker: fields[198] as String?,
+      onlyShowUnreadWatches: fields[199] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(186)
+      ..writeByte(187)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3157,7 +3170,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(197)
       ..write(obj.closeReplyBoxAfterSubmitting)
       ..writeByte(198)
-      ..write(obj.androidGalleryPicker);
+      ..write(obj.androidGalleryPicker)
+      ..writeByte(199)
+      ..write(obj.onlyShowUnreadWatches);
   }
 
   @override

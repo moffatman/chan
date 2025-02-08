@@ -358,6 +358,9 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 		else if (settings.drawerMode == DrawerMode.watchedThreads) {
 			final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.values.map(i.scope)).toList();
 			sortWatchedThreads(watches);
+			if (settings.onlyShowUnreadWatches) {
+				watches.removeWhere((w) => !w.shouldCountAsUnread);
+			}
 			list = DrawerList<ImageboardScoped<ThreadWatch>>(
 				list: watches,
 				builder: (watch, builder) {
@@ -630,6 +633,19 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 													icon: CupertinoIcons.sort_down,
 													title: 'Sort...',
 													onPressed: () => selectWatchedThreadsSortMethod(context)
+												),
+												TabMenuAction(
+													icon: settings.onlyShowUnreadWatches ? CupertinoIcons.asterisk_circle_fill : CupertinoIcons.asterisk_circle,
+													title: settings.onlyShowUnreadWatches ? 'Showing unread only' : 'Showing all threads',
+													onPressed: () {
+														settings.onlyShowUnreadWatches = !settings.onlyShowUnreadWatches;
+														showToast(
+															context: context,
+															icon: settings.onlyShowUnreadWatches ? CupertinoIcons.asterisk_circle_fill : CupertinoIcons.asterisk_circle,
+															message: settings.onlyShowUnreadWatches ? 'Showing unread only' : 'Showing all threads'
+														);
+														setState(() {});
+													}
 												),
 												...thread_actions.getWatchedThreadsActions(context, onMutate: () => setState(() {}))
 											]

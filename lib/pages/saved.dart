@@ -9,6 +9,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/history_search.dart';
 import 'package:chan/pages/master_detail.dart';
+import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
@@ -412,6 +413,24 @@ class _SavedPageState extends State<SavedPage> {
 									child: const Icon(CupertinoIcons.sort_down),
 									onPressed: () => selectWatchedThreadsSortMethod(context)
 								)
+							),
+							Builder(
+								builder: (context) {
+									final onlyShowUnreadWatches = Settings.onlyShowUnreadWatchesSetting.watch(context);
+									return CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: Icon(onlyShowUnreadWatches ? CupertinoIcons.asterisk_circle_fill : CupertinoIcons.asterisk_circle),
+										onPressed: () {
+											final v = Settings.instance.onlyShowUnreadWatches = !onlyShowUnreadWatches;
+											showToast(
+												context: context,
+												icon: v ? CupertinoIcons.asterisk_circle_fill : CupertinoIcons.asterisk_circle,
+												message: v ? 'Showing unread only' : 'Showing all threads'
+											);
+											_watchedListController.update();
+										}
+									);
+								}
 							)
 						]
 					),
@@ -470,7 +489,7 @@ class _SavedPageState extends State<SavedPage> {
 									if (thread == null) {
 										missing.add(item.imageboard.scope(item.item.threadIdentifier));
 									}
-									else {
+									else if (!settings.onlyShowUnreadWatches || item.shouldCountAsUnread) {
 										out.add(item.imageboard.scope((item.item, thread)));
 									}
 								}
