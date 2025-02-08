@@ -140,6 +140,7 @@ Future<void> updateNotificationsBadgeCount() async {
 
 const _notificationSettingsApiRoot = 'https://push.chance.surf';
 //const _notificationSettingsApiRoot = 'http://localhost:3001';
+const _kProtocolVersion = 1;
 
 class Notifications {
 	static (Object, StackTrace)? staticError;
@@ -469,7 +470,9 @@ class Notifications {
 			'token2': (await _getToken())?.toMap(),
 			'siteType': siteType,
 			'siteData': siteData,
-			'filters': ''
+			'filters': '',
+			'hiddenImageMD5s': '',
+			'protocolVersion': _kProtocolVersion
 		}), options: Options(responseType: ResponseType.json));
 		final digest = response.data['digest'] as String;
 		final emptyDigest = base64Encode(md5.convert(''.codeUnits).bytes);
@@ -489,16 +492,18 @@ class Notifications {
 					'token2': (await _getToken())?.toMap(),
 					'siteType': siteType,
 					'siteData': siteData,
-					'filters': Settings.instance.filterConfiguration
+					'filters': Settings.instance.filterConfiguration,
+					'hiddenImageMD5s': Persistence.settings.hiddenImageMD5s.join('\n'),
+					'protocolVersion': _kProtocolVersion
 				}), options: Options(responseType: ResponseType.json));
 				final digest = response.data['digest'] as String;
 				if (digest != _calculateDigest()) {
-					print('Need to resync notifications $id');
+					print('Need to resync notifications $id ($digest -> ${_calculateDigest()})');
 					await _client.put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 						'watches': [
 							...threadWatches.values.where((w) => !w.zombie),
 							...boardWatches
-						].map((w) => w.toMap()).toList()
+						].map((w) => w.toMap(persistence)).toList()
 					}));
 				}
 			}
@@ -634,15 +639,19 @@ class Notifications {
 		}
 	}
 
-	void didUpdateWatch(Watch watch, {bool possiblyDisabledPush = false}) {
-		if (Persistence.settings.usePushNotifications == true && watch.push) {
-			_replace(watch);
-		}
-		else if (possiblyDisabledPush) {
-			_delete(watch);
+	void didUpdateWatch(Watch watch, {bool possiblyDisabledPush = false, bool updateBrowserState = true}) {
+		if (Persistence.settings.usePushNotifications ?? false) {
+			if (watch.push) {
+				_replace(watch);
+			}
+			else if (possiblyDisabledPush) {
+				_delete(watch);
+			}
 		}
 		localWatcher?.onWatchUpdated(watch);
-		persistence.didUpdateBrowserState();
+		if (updateBrowserState) {
+			persistence.didUpdateBrowserState();
+		}
 	}
 
 	Future<void> zombifyThreadWatch(ThreadWatch watch, bool deleted) async {
@@ -721,7 +730,7 @@ class Notifications {
 	Future<void> _create(Watch watch) async {
 		await _client.post(
 			'$_notificationSettingsApiRoot/user/$id/watch',
-			data: jsonEncode(watch.toMap())
+			data: jsonEncode(watch.toMap(persistence))
 		);
 	}
 
@@ -729,7 +738,7 @@ class Notifications {
 		if (watch.push) {
 			await _client.put(
 				'$_notificationSettingsApiRoot/user/$id/watch',
-				data: jsonEncode(watch.toMap())
+				data: jsonEncode(watch.toMap(persistence))
 			);
 		}
 		else {
@@ -740,14 +749,14 @@ class Notifications {
 	Future<void> _update(Watch watch) async {
 		await _client.patch(
 			'$_notificationSettingsApiRoot/user/$id/watch',
-			data: jsonEncode(watch.toMap())
+			data: jsonEncode(watch.toMap(persistence))
 		);
 	}
 
 	Future<bool> _delete(Watch watch) async {
 		final response = await _client.delete(
 			'$_notificationSettingsApiRoot/user/$id/watch',
-			data: jsonEncode(watch.toMap()),
+			data: jsonEncode(watch.toMap(persistence)),
 			options: Options(
 				responseType: ResponseType.json
 			)

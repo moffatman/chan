@@ -1676,6 +1676,13 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	@override
 	bool get isDeleted => thread?.isDeleted ?? false;
 
+	void _maybeUpdateWatch() {
+		final threadWatch = this.threadWatch;
+		if (threadWatch != null) {
+			imageboard?.notifications.didUpdateWatch(threadWatch, updateBrowserState: false);
+		}
+	}
+
 	Filter _makeThreadFilter() => FilterCache(ThreadFilter(
 		hideIds: hiddenPostIds,
 		showIds: overrideShowPostIds,
@@ -1735,6 +1742,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		}
 		if (threadFilterDirty || metaFilterDirty) {
 			_invalidate();
+			_maybeUpdateWatch();
 		}
 	}
 	PostHidingState getPostHiding(int id) {
@@ -1755,12 +1763,14 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		// invalidate cache
 		threadFilter = _makeThreadFilter();
 		_invalidate();
+		_maybeUpdateWatch();
 	}
 	void unHidePosterId(String id) {
 		hiddenPosterIds.remove(id);
 		// invalidate cache
 		threadFilter = _makeThreadFilter();
 		_invalidate();
+		_maybeUpdateWatch();
 	}
 
 	bool isAttachmentDownloaded(Attachment attachment) => downloadedAttachmentIds.contains(attachment.id);

@@ -23,15 +23,15 @@ enum WatchAction {
 
 abstract class Watch {
 	String get type;
-	Map<String, dynamic> toMap() {
+	Map<String, dynamic> toMap(Persistence? persistence) {
 		return {
 			'type': type,
-			..._toMap()
+			..._toMap(persistence)
 		};
 	}
-	Map<String, dynamic> _toMap();
+	Map<String, dynamic> _toMap(Persistence? persistence);
 	@override
-	String toString() => 'Watch(${toMap()})';
+	String toString() => 'Watch(${toMap(null)})';
 	bool get push => true;
 }
 
@@ -82,7 +82,7 @@ class ThreadWatch extends Watch {
 	@override
 	String get type => 'thread';
 	@override
-	Map<String, dynamic> _toMap() => {
+	Map<String, dynamic> _toMap(Persistence? persistence) => {
 		'lastSeenId': lastSeenId,
 		'board': board,
 		'threadId': threadId.toString(),
@@ -90,7 +90,9 @@ class ThreadWatch extends Watch {
 		'youIds': youIds,
 		'notifyOnSecondLastPage': notifyOnSecondLastPage,
 		'notifyOnLastPage': notifyOnLastPage,
-		'notifyOnDead': notifyOnDead
+		'notifyOnDead': notifyOnDead,
+		'treeHiddenPostIds': persistence?.getThreadStateIfExists(threadIdentifier)?.treeHiddenPostIds,
+		'hiddenPosterIds': persistence?.getThreadStateIfExists(threadIdentifier)?.hiddenPosterIds
 	};
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
 
@@ -118,7 +120,7 @@ class BoardWatch extends Watch {
 	@override
 	String get type => 'board';
 	@override
-	Map<String, dynamic> _toMap() => {
+	Map<String, dynamic> _toMap(Persistence? persistence) => {
 		'board': board,
 		'threadsOnly': threadsOnly
 	};
