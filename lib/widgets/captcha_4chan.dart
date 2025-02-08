@@ -4,8 +4,10 @@ import 'dart:math';
 import 'dart:ui' as ui show Image, ImageByteFormat, PictureRecorder;
 
 import 'package:async/async.dart';
+import 'package:chan/services/captcha.dart';
 import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/hcaptcha.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
@@ -86,6 +88,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	required ImageboardSite site,
 	required Chan4CustomCaptchaRequest request,
 	RequestPriority priority = RequestPriority.interactive,
+	HCaptchaSolution? hCaptchaSolution,
 	CancelToken? cancelToken
 }) async {
 	final reusable = _reusableChallenges.tryFirstWhere((c) => c.isReusableFor(request, const Duration(seconds: 15)));
@@ -96,7 +99,8 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	final Response challengeResponse = await site.client.getUri(request.challengeUrl.replace(
 		queryParameters: {
 			...request.challengeUrl.queryParameters,
-			'ticket': await Persistence.currentCookies.readPseudoCookie(Site4Chan.kTicketPseudoCookieKey)
+			'ticket': await Persistence.currentCookies.readPseudoCookie(Site4Chan.kTicketPseudoCookieKey),
+			if (hCaptchaSolution != null) 'ticket_resp': Uri.encodeComponent(hCaptchaSolution.token)
 		}
 	), options: Options(
 		headers: request.challengeHeaders,
@@ -128,6 +132,32 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	}
 	if (site is Site4Chan) {
 		site.resetCaptchaTicketTimer();
+	}
+	if (data['mpcd'] == true) {
+		// HCaptcha block
+		if (priority == RequestPriority.cosmetic) {
+			throw const HeadlessSolveNotPossibleException();
+		}
+		if (hCaptchaSolution != null) {
+			throw Captcha4ChanCustomChallengeException('Still got HCaptcha block even with $hCaptchaSolution', challengeResponse.cloudflare);
+		}
+		final hCaptchaKey = request.hCaptchaKey;
+		if (hCaptchaKey == null) {
+			throw Captcha4ChanCustomChallengeException('Got HCaptcha block, but don\'t know what key to use', challengeResponse.cloudflare);
+		}
+		final solution = await solveHCaptcha(HCaptchaRequest(
+			/// Relatively safe page to load and replace
+			hostPage: Uri.https(request.challengeUrl.host, '/robots.txt'),
+			siteKey: hCaptchaKey,
+		), cancelToken: cancelToken);
+		// Retry with HCaptcha
+		return await requestCaptcha4ChanCustomChallenge(
+			site: site,
+			request: request,
+			priority: priority,
+			hCaptchaSolution: solution,
+			cancelToken: cancelToken
+		);
 	}
 	if (data['pcd'] case num pcd) {
 		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] as String? ?? 'Please wait a while.', challengeResponse.cloudflare, DateTime.now().add(Duration(seconds: pcd.toInt())));

@@ -703,16 +703,18 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
 	final Map<String, String> challengeHeaders;
 	final List<int> possibleLetterCounts;
+	final String? hCaptchaKey;
 	final bool stickyCloudflare;
 
 	const Chan4CustomCaptchaRequest({
 		required this.challengeUrl,
 		required this.challengeHeaders,
 		required this.possibleLetterCounts,
+		required this.hCaptchaKey,
 		required this.stickyCloudflare
 	});
 	@override
-	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders, possibleLetterCounts: $possibleLetterCounts, stickyCloudflare: $stickyCloudflare)';
+	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders, possibleLetterCounts: $possibleLetterCounts, hCaptchaKey: $hCaptchaKey, stickyCloudflare: $stickyCloudflare)';
 
 	@override
 	bool get cloudSolveSupported => true;
@@ -724,10 +726,11 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 		other.challengeUrl == challengeUrl &&
 		mapEquals(other.challengeHeaders, challengeHeaders) &&
 		listEquals(other.possibleLetterCounts, possibleLetterCounts) &&
+		other.hCaptchaKey == hCaptchaKey &&
 		other.stickyCloudflare == stickyCloudflare;
 	
 	@override
-	int get hashCode => Object.hash(challengeUrl, Object.hashAll(challengeHeaders.values), Object.hashAll(possibleLetterCounts), stickyCloudflare);
+	int get hashCode => Object.hash(challengeUrl, Object.hashAll(challengeHeaders.values), Object.hashAll(possibleLetterCounts), hCaptchaKey, stickyCloudflare);
 }
 
 class SecurimageCaptchaRequest extends CaptchaRequest {
@@ -791,6 +794,17 @@ class JsChanCaptchaRequest extends CaptchaRequest {
 	});
 	@override
 	String toString() => 'JsChanCaptchaRequest(challengeUrl: $challengeUrl, type: $type)';
+}
+
+class HCaptchaRequest extends CaptchaRequest {
+	final Uri hostPage;
+	final String siteKey;
+	const HCaptchaRequest({
+		required this.hostPage,
+		required this.siteKey
+	});
+	@override
+	String toString() => 'HCaptchaRequest(hostPage: $hostPage, siteKey: $siteKey)';
 }
 
 abstract class CaptchaSolution {
@@ -998,6 +1012,21 @@ class JsChanTextCaptchaSolution extends JsChanCaptchaSolution {
 	});
 	@override
 	String toString() => 'JsChanTextCaptchaSolution(id: $id, text: $text, lifetime: $lifetime)';
+}
+
+class HCaptchaSolution extends CaptchaSolution {
+	/// From hcaptcha docs
+	static const kLifetime = Duration(seconds: 120);
+	final String token;
+	@override
+	DateTime? get expiresAt => acquiredAt.add(kLifetime);
+
+	HCaptchaSolution({
+		required super.acquiredAt,
+		required this.token
+	});
+	@override
+	String toString() => 'HCaptchaSolution(token: $token)';
 }
 
 
@@ -2128,6 +2157,7 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			imageUrl: data['imageUrl'],
 			captchaKey: data['captchaKey'],
+			hCaptchaKey: data['hCaptchaKey'],
 			apiUrl: data['apiUrl'],
 			sysUrl: data['sysUrl'],
 			baseUrl: data['baseUrl'],

@@ -13,6 +13,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart';
 import 'package:mutex/mutex.dart';
@@ -332,7 +333,8 @@ class CloudflareInterceptor extends Interceptor {
 				initialSettings: initialSettings,
 				initialUrlRequest: initialUrlRequest,
 				initialData: initialData,
-				onLoadStop: buildOnLoadStop(headlessCompleter.complete, headlessCompleter.completeError)
+				onLoadStop: buildOnLoadStop(headlessCompleter.complete, headlessCompleter.completeError),
+				onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 			);
 			await headlessWebView.run();
 			if (toast) {
@@ -378,6 +380,7 @@ class CloudflareInterceptor extends Interceptor {
 						initialUrlRequest: initialUrlRequest,
 						initialData: initialData,
 						onLoadStop: buildOnLoadStop(Navigator.of(context).pop, Navigator.of(context).pop),
+						onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 					)
 				)
 			),
@@ -585,7 +588,8 @@ Future<T> useCloudflareClearedWebview<T>({
 	required RequestPriority priority,
 	bool toast = true,
 	required String gatewayName,
-	CancelToken? cancelToken
+	CancelToken? cancelToken,
+	bool skipHeadless = false
 }) => CloudflareInterceptor._useWebview(
 	handler: handler,
 	cookieUrl: uri,
@@ -599,5 +603,6 @@ Future<T> useCloudflareClearedWebview<T>({
 	priority: priority,
 	toast: toast,
 	gatewayName: gatewayName,
+	skipHeadless: skipHeadless,
 	cancelToken: cancelToken
 );

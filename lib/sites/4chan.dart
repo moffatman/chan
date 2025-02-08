@@ -147,6 +147,7 @@ class Site4Chan extends ImageboardSite {
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
 	final bool stickyCloudflare;
+	final String? hCaptchaKey;
 
 	@override
 	late final Site4ChanPassLoginSystem loginSystem = Site4ChanPassLoginSystem(this);
@@ -835,6 +836,7 @@ class Site4Chan extends ImageboardSite {
 				if (userAgent != null) 'user-agent': userAgent
 			},
 			possibleLetterCounts: possibleCaptchaLetterCounts,
+			hCaptchaKey: hCaptchaKey,
 			stickyCloudflare: stickyCloudflare
 		);
 	}
@@ -1125,6 +1127,7 @@ class Site4Chan extends ImageboardSite {
 		required this.imageUrl,
 		required this.name,
 		required this.captchaKey,
+		required this.hCaptchaKey,
 		required super.overrideUserAgent,
 		required super.archives,
 		required this.captchaUserAgents,

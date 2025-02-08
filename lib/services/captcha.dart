@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/hcaptcha.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/recaptchav3.dart';
 import 'package:chan/services/settings.dart';
@@ -204,6 +205,8 @@ Future<CaptchaSolution?> solveCaptcha({
 				onCaptchaSolved: onCaptchaSolved,
 				site: site
 			));
+		case HCaptchaRequest():
+			return solveHCaptcha(request);
 		case NoCaptchaRequest():
 			return NoCaptchaSolution(DateTime.now());
 	}
