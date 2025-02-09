@@ -447,7 +447,7 @@ class Persistence extends ChangeNotifier {
 		final oldDir = Directory(dummyStorage.currentDirectory);
 		if (await oldDir.exists()) {
 			print('Moving $oldDir to:');
-			await oldDir.copy(dprint('$newParent/${oldDir.basename}'));
+			await oldDir.copy('$newParent/${oldDir.basename}');
 			await oldDir.delete(recursive: true);
 		}
 		return FileStorage(newParent);
