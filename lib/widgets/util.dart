@@ -537,7 +537,7 @@ class ErrorMessageCard extends StatelessWidget {
 	}
 }
 
-Future<void> openImageboardTarget(BuildContext context, (Imageboard, BoardThreadOrPostIdentifier, bool) imageboardTarget) {
+Future<void> openImageboardTarget(BuildContext context, (Imageboard, BoardThreadOrPostIdentifier, String?) imageboardTarget) {
 	return (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 			builder: (ctx) => ImageboardScope(
 			imageboardKey: null,

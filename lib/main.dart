@@ -779,7 +779,7 @@ class ChanTabs extends ChangeNotifier {
 		int? withInitialPostId,
 		String? withInitialSearch,
 		bool keepTabPopupOpen = false,
-		bool initiallyUseArchive = false
+		String? initiallyUseArchive
 	}) {
 		final pos = atPosition ?? Persistence.tabs.length;
 		final tab = PersistentBrowserTab(
@@ -793,8 +793,8 @@ class ChanTabs extends ChangeNotifier {
 		if (withBoard != null && withThreadId != null && withInitialPostId != null) {
 			tab.initialPostId[ThreadIdentifier(withBoard, withThreadId)] = withInitialPostId;
 		}
-		if (withBoard != null && withThreadId != null && initiallyUseArchive) {
-			tab.initiallyUseArchive[ThreadIdentifier(withBoard, withThreadId)] = true;
+		if (withBoard != null && withThreadId != null && initiallyUseArchive != null) {
+			tab.initiallyUseArchive[ThreadIdentifier(withBoard, withThreadId)] = initiallyUseArchive;
 		}
 		insertInitializedTab(pos, tab,
 			keepTabPopupOpen: keepTabPopupOpen,
@@ -980,7 +980,7 @@ class ChanTabs extends ChangeNotifier {
 		required int? threadId,
 		int? postId,
 		required bool openNewTabIfNeeded,
-		bool initiallyUseArchive = false
+		String? initiallyUseArchive
 	}) {
 		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.board == board && tab.thread?.id == threadId);
 		final tabAlreadyExisted = tab != null;
@@ -1329,7 +1329,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification, {
-		bool initiallyUseArchive = false
+		String? initiallyUseArchive
 	}) async {
 		if (!_tabs.goToPost(
 			imageboardKey: imageboard.key,

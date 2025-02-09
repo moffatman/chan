@@ -66,7 +66,7 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority}) {
+  Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, String? archiveName}) {
     return archive.getThread(thread, priority: priority);
   }
 

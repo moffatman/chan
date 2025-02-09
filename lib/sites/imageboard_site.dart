@@ -1633,9 +1633,18 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw BoardNotArchivedException(board);
 		}
 	}
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority}) async {
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, String? archiveName}) async {
 		final Map<ImageboardSiteArchive, Object> errors = {};
 		Thread? fallback;
+		final isReallyArchived = () async {
+			try {
+				final t = await getThread(thread, priority: priority);
+				return t.isArchived;
+			}
+			on ThreadNotFoundException {
+				return true;
+			}
+		}();
 		final validator = customValidator ?? (Thread thread) async {
 			final opAttachment = thread.attachments.tryFirst ?? thread.posts_.tryFirst?.attachments.tryFirst;
 			if (opAttachment != null) {
@@ -1651,9 +1660,44 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			}
 		};
 		final completer = Completer<Thread>();
+		if (archiveName != null) {
+			final archive = archives.tryFirstWhere((a) => a.name == archiveName);
+			if (archive != null) {
+				try {
+					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
+					await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
+					thread_.archiveName = archive.name;
+					thread_.isArchived = await isReallyArchived;
+					fallback = thread_;
+					try {
+						await validator(thread_);
+					}
+					catch (e) {
+						if (
+							(e is AttachmentNotArchivedException || e is AttachmentNotFoundException)
+						) {
+							fallback = null;
+						}
+						rethrow;
+					}
+					return thread_;
+				}
+				catch(e, st) {
+					if (e is! BoardNotFoundException) {
+						print('Error getting $thread from preferred ${archive.name}: ${e.toStringDio()}');
+						print(st);
+						errors[archive] = e;
+					}
+				}
+			}
+		}
 		() async {
 			await Future.wait(archives.map((archive) async {
 				if (persistence?.browserState.disabledArchiveNames.contains(archive.name) ?? false) {
+					return null;
+				}
+				if (archiveName == archive.name) {
+					// It should have been already attempted
 					return null;
 				}
 				try {
@@ -1661,6 +1705,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					if (completer.isCompleted) return null;
 					await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
 					thread_.archiveName = archive.name;
+					thread_.isArchived = await isReallyArchived;
 					fallback = thread_;
 					if (completer.isCompleted) return null;
 					try {

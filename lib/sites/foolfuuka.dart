@@ -324,7 +324,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			isDeleted: op['deleted'] == '1',
 			replyCount: op['nreplies'] ?? (posts.length - 1),
 			imageCount: posts.skip(1).expand((post) => post.attachments).length,
-			isArchived: true,
+			isArchived: false,
 			posts_: posts,
 			id: thread.id,
 			attachments: a == null ? [] : [a],

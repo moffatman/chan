@@ -570,7 +570,7 @@ class SiteHackerNews extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority}) => getThread(thread, priority: priority);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, String? archiveName}) => getThread(thread, priority: priority);
 
 	@override
 	List<CatalogVariantGroup> get catalogVariantGroups => const [

@@ -131,7 +131,7 @@ enum _AttachmentCachingStatus {
 class ThreadPage extends StatefulWidget {
 	final ThreadIdentifier thread;
 	final int? initialPostId;
-	final bool initiallyUseArchive;
+	final String? initiallyUseArchive;
 	final int boardSemanticId;
 	final String? initialSearch;
 	final ValueChanged<ThreadIdentifier>? onWantChangeThread;
@@ -139,7 +139,7 @@ class ThreadPage extends StatefulWidget {
 	const ThreadPage({
 		required this.thread,
 		this.initialPostId,
-		this.initiallyUseArchive = false,
+		this.initiallyUseArchive,
 		required this.boardSemanticId,
 		this.initialSearch,
 		this.onWantChangeThread,
@@ -581,8 +581,8 @@ class ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread == null) {
 			persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
 		}
-		persistentState.useArchive |= widget.initiallyUseArchive;
-		persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] ?? false;
+		persistentState.useArchive |= widget.initiallyUseArchive != null;
+		persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] != null;
 		persistentState.save();
 		_maybeUpdateWatch();
 		persistentState.thread?.preinit();
@@ -701,8 +701,8 @@ class ThreadPageState extends State<ThreadPage> {
 			persistentState.save(); // Save old state in case it had pending scroll update to save
 			persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 			persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
-			persistentState.useArchive |= widget.initiallyUseArchive;
-			persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] ?? false;
+			persistentState.useArchive |= widget.initiallyUseArchive != null;
+			persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] != null;
 			final oldZone = zone;
 			Future.delayed(const Duration(milliseconds: 100), () => oldZone.dispose());
 			final imageboard = context.read<Imageboard>();
@@ -1039,7 +1039,14 @@ class ThreadPageState extends State<ThreadPage> {
 		_checkForeground();
 		final Thread newThread;
 		if (tmpPersistentState.useArchive) {
-			newThread = await site.getThreadFromArchive(widget.thread, priority: _priority);
+			newThread = await site.getThreadFromArchive(
+				widget.thread,
+				priority: _priority,
+				archiveName:
+					tmpPersistentState.thread?.archiveName ??
+					widget.initiallyUseArchive ??
+					context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread]
+			);
 		}
 		else {
 			try {

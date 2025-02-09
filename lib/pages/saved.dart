@@ -347,7 +347,7 @@ class _SavedPageState extends State<SavedPage> {
 						child: ThreadPage(
 							thread: thread.identifier,
 							initialPostId: postId,
-							initiallyUseArchive: thread.isArchived,
+							initiallyUseArchive: thread.archiveName,
 							boardSemanticId: -1
 						)
 					)

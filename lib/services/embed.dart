@@ -61,7 +61,7 @@ class EmbedData {
 	final String? author;
 	final String? thumbnailUrl;
 	final Widget? thumbnailWidget;
-	final (Imageboard imageboard, BoardThreadOrPostIdentifier target, bool useArchive)? imageboardTarget;
+	final (Imageboard imageboard, BoardThreadOrPostIdentifier target, String? useArchive)? imageboardTarget;
 
 	const EmbedData({
 		required this.title,
@@ -182,7 +182,7 @@ Future<EmbedData?> loadEmbedData(String url) async {
 		if (target != null && target.$2.threadId != null) {
 			Thread? thread = await target.$1.persistence.getThreadStateIfExists(target.$2.threadIdentifier!)?.getThread();
 			try {
-				if (!target.$3) {
+				if (target.$3 == null) {
 					thread = await target.$1.site.getThread(target.$2.threadIdentifier!, priority: RequestPriority.cosmetic);
 				}
 			}

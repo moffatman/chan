@@ -617,16 +617,16 @@ class ImageboardRegistry extends ChangeNotifier {
 		await Future.wait(futures);
 	}
 
-	Future<(Imageboard, BoardThreadOrPostIdentifier, bool)?> decodeUrl(String url) async {
+	Future<(Imageboard, BoardThreadOrPostIdentifier, String?)?> decodeUrl(String url) async {
 		for (final imageboard in ImageboardRegistry.instance.imageboards) {
 			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url);
-			bool usedArchive = false;
+			String? usedArchive;
 			for (final archive in imageboard.site.archives) {
 				if (dest != null) {
 					break;
 				}
 				dest = await archive.decodeUrl(url);
-				usedArchive = true;
+				usedArchive = archive.name;
 			}
 			if (dest != null) {
 				return (imageboard, dest, usedArchive);

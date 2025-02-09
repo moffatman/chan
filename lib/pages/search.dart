@@ -24,7 +24,7 @@ class SelectedSearchResult {
 	final Imageboard imageboard;
 	final ImageboardArchiveSearchResult result;
 	final String? threadSearch;
-	final bool fromArchive;
+	final String? fromArchive;
 
 	const SelectedSearchResult({
 		required this.imageboard,
@@ -454,7 +454,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 												try {
 													final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3), priority: RequestPriority.interactive);
 													return SelectedSearchResult(
-														fromArchive: false,
+														fromArchive: null,
 														threadSearch: null,
 														imageboard: target.$1,
 														result: ImageboardArchiveSearchResult.thread(thread)
@@ -468,7 +468,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													final liveThread = await target.$1.site.getThread(post.threadIdentifier, priority: RequestPriority.interactive);
 													final livePost = liveThread.posts_.firstWhere((p) => p.id == target.$3);
 													return SelectedSearchResult(
-														fromArchive: false,
+														fromArchive: null,
 														threadSearch: null,
 														imageboard: target.$1,
 														result: ImageboardArchiveSearchResult.post(livePost)
@@ -477,7 +477,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 												catch (_) {
 													// Truly archived
 													return SelectedSearchResult(
-														fromArchive: true,
+														fromArchive: post.archiveName,
 														threadSearch: null,
 														imageboard: target.$1,
 														result: ImageboardArchiveSearchResult.post(post)

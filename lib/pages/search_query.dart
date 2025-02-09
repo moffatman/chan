@@ -214,7 +214,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 											imageboard: context.read<Imageboard>(),
 											result: row,
 											threadSearch: null,
-											fromArchive: result.data!.archive.isArchive
+											fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
 										)),
 										baseOptions: PostSpanRenderOptions(
 											highlightPattern: widget.query.query.isEmpty ? null : queryPattern
@@ -230,7 +230,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										result: row,
 										// Only do a thread-search if we have a match in lastReplies and not OP
 										threadSearch: (matchingPostIndex > 0) ? widget.query.query : null,
-										fromArchive: result.data!.archive.isArchive
+										fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
 									)),
 									child: ThreadRow(
 										thread: row.thread!,

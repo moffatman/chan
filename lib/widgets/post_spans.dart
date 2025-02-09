@@ -636,7 +636,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					child: ThreadPage(
 						thread: ThreadIdentifier(board, actualThreadId),
 						initialPostId: postId,
-						initiallyUseArchive: threadId == null,
+						initiallyUseArchive: threadId == null ? '' : null,
 						boardSemanticId: -1
 					)
 				)
