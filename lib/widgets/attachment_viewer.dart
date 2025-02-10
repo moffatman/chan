@@ -664,6 +664,8 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				if (!transcode) {
 					if (url.scheme == 'file') {
+						final scan = await MediaScan.scan(url);
+						_hasAudio = scan.hasAudio;
 						final file = File(url.toStringFFMPEG());
 						if (isPrimary || !background) {
 							await (await _ensureController()).player.open(Media(file.path), play: false);
