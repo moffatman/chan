@@ -355,6 +355,12 @@ class SiteLynxchan extends ImageboardSite {
 		return (response.data['threads'] as List).cast<Map>().map((o) => _makeThreadFromCatalog(board, o.cast<String, dynamic>())..currentPage = page).toList();
 	}
 
+	static int? _tryParseInt(dynamic s) => switch (s) {
+		int x => x,
+		String x => int.tryParse(x),
+		_ => null
+	};
+
 	Thread _makeThreadFromCatalog(String board, Map<String, dynamic> obj) {
 		final op = Post(
 			board: board,
@@ -375,8 +381,8 @@ class SiteLynxchan extends ImageboardSite {
 				url: Uri.https(baseUrl, f['path']).toString(),
 				thumbnailUrl: Uri.https(baseUrl, f['thumb']).toString(),
 				md5: '',
-				width: f['width'],
-				height: f['height'],
+				width: _tryParseInt(f['width']),
+				height: _tryParseInt(f['height']),
 				threadId: obj['threadId'],
 				sizeInBytes: f['size']
 			)).toList() ?? const []
@@ -451,8 +457,8 @@ class SiteLynxchan extends ImageboardSite {
 				url: Uri.https(baseUrl, e.value['path']).toString(),
 				thumbnailUrl: Uri.https(baseUrl, e.value['thumb']).toString(),
 				md5: '',
-				width: e.value['width'],
-				height: e.value['height'],
+				width: _tryParseInt(e.value['width']),
+				height: _tryParseInt(e.value['height']),
 				threadId: obj['threadId'],
 				sizeInBytes: e.value['size']
 			)).toList()
