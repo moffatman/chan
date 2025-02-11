@@ -242,6 +242,9 @@ abstract class StandardSettingWidget extends SettingWidget {
 				return;
 			}
 		}
+		if (helpText?.toLowerCase().contains(query) ?? false) {
+			yield this;
+		}
 	}
 
 	Widget _makeIcon([Color? color]) => (iconBuilder != null || icon != null) ? Padding(
