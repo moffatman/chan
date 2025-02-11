@@ -7,6 +7,7 @@ import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
@@ -350,7 +351,7 @@ class VideoServer {
 	// TODO: Maybe switch to base36?
 	// Because a lot of filesystems are case-insensitive, the odds of collision here
 	// are much higher. My estimate about 99x more likely.
-	File getFile(String digest) => File('${httpRoot.path}/${base64Url.encode(md5.convert(base64Url.decode(digest)).bytes)}');
+	File getFile(String digest) => httpRoot.file(base64Url.encode(md5.convert(base64Url.decode(digest)).bytes));
 	Future<File>? getFutureFile(String digest) => _caches[digest]?.completer.future.then((_) {
 		return getFile(digest);
 	});

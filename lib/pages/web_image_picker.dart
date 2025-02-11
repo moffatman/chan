@@ -6,6 +6,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/network_image.dart';
@@ -666,7 +667,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												ext = 'jpg';
 											}
 											if (ext != null) {
-												final f = File('${Persistence.temporaryDirectory.path}/webpickercache/${DateTime.now().millisecondsSinceEpoch}.$ext');
+												final f = Persistence.temporaryDirectory.file('webpickercache/${DateTime.now().millisecondsSinceEpoch}.$ext');
 												await f.create(recursive: true);
 												await f.writeAsBytes(pickedBytes, flush: true);
 												if (context.mounted) {

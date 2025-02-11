@@ -11,7 +11,7 @@ import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:mutex/mutex.dart';
 
 class LoggingInterceptor extends Interceptor {
-	final path = '${Persistence.temporaryDirectory.path}/network.log';
+	final path = Persistence.temporaryDirectory.child('network.log');
 	late final IOSink file = File(path).openWrite();
 	final lock = Mutex();
 	static final instance = LoggingInterceptor._();

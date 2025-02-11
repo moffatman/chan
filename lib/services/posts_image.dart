@@ -7,6 +7,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -330,7 +331,7 @@ Future<File> sharePostsAsImage({
 		// Lazy hack
 		delay: needToLoadThumbnails ? const Duration(seconds: 2) : const Duration(milliseconds: 500)
 	);
-	final file = File('${Persistence.shareCacheDirectory.path}/${imageboard.site.name}_${effectiveZone.board}_$primaryPostId.png');
+	final file = Persistence.shareCacheDirectory.file('${imageboard.site.name}_${effectiveZone.board}_$primaryPostId.png');
 	await file.writeAsBytes(img);
 	return file;
 }

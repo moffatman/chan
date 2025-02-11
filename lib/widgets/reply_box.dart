@@ -57,9 +57,9 @@ Future<File> _moveFileOutOfDocumentsDir(File file) async {
 	if (parentResolved == docsResolved) {
 		// The file is an immediate child of docs dir. This is because of bad picker behaviour
 		// Move it to temp path
-		final parent = Directory('${Persistence.temporaryDirectory.path}/inboxcache/${DateTime.now().millisecondsSinceEpoch}');
+		final parent = Persistence.temporaryDirectory.dir('inboxcache/${DateTime.now().millisecondsSinceEpoch}');
 		await parent.create(recursive: true);
-		final destPath = '${parent.path}/${file.basename}';
+		final destPath = parent.child(file.basename);
 		return await file.rename(destPath);
 	}
 	return file;
@@ -708,7 +708,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					throw Exception('No file extension, and scan format was unrecognized: "$format"');
 				}
 				// Rename it with extension
-				file = await file.copy('${Persistence.shareCacheDirectory.path}/${file.uri.pathSegments.last}.$newExt');
+				file = await file.copy(Persistence.shareCacheDirectory.child('${file.uri.pathSegments.last}.$newExt'));
 			}
 			if (file.path.endsWith('.pvt')) {
 				// Live Photo (it's a directory)
@@ -1769,7 +1769,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												if (!filename.contains('.')) {
 													filename += '.${content.mimeType.split('/').last}';
 												}
-												final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}/$filename');
+												final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}/$filename');
 												await f.create(recursive: true);
 												await f.writeAsBytes(data, flush: true);
 												setAttachment(f);

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
@@ -12,9 +10,9 @@ import 'package:flutter_email_sender/flutter_email_sender.dart';
 Future<void> reportBug(Object error, StackTrace stackTrace) async {
 	final attachmentPaths = <String>[];
 	if (error is ExtendedException && error.additionalFiles.isNotEmpty) {
-		final dir = await Directory('${Persistence.temporaryDirectory.path}/bug_${DateTime.now().millisecondsSinceEpoch}').create(recursive: true);
+		final dir = await Persistence.temporaryDirectory.dir('bug_${DateTime.now().millisecondsSinceEpoch}').create(recursive: true);
 		for (final file in error.additionalFiles.entries) {
-			await File('${dir.path}/${file.key}').writeAsBytes(file.value);
+			await dir.file(file.key).writeAsBytes(file.value);
 		}
 	}
 	try {

@@ -555,9 +555,9 @@ class MediaConversion {
 		final filenameWithoutExtension = filenameParts.join('.');
 		if (requiresSubdirectory) {
 			subdir += '/$filenameWithoutExtension';
-			Directory('${Persistence.webmCacheDirectory.path}/$subdir').createSync(recursive: true);
+			Persistence.webmCacheDirectory.dir(subdir).createSync(recursive: true);
 		}
-		return File('${Persistence.webmCacheDirectory.path}/$subdir/$filenameWithoutExtension$cacheKey.$outputFileExtension');
+		return Persistence.webmCacheDirectory.file('$subdir/$filenameWithoutExtension$cacheKey.$outputFileExtension');
 	}
 
 	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints() async {

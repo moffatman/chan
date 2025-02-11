@@ -196,9 +196,9 @@ class Persistence extends ChangeNotifier {
 		CompactionStrategy compactionStrategy = defaultCompactionStrategy,
 	}) async {
 		final boxName = '$_boxPrefix$name';
-		final boxPath = '${documentsDirectory.path}/$boxName.hive';
+		final boxPath = documentsDirectory.child('$boxName.hive');
 		final backupBoxName = '$_backupBoxPrefix$name';
-		final backupBoxPath = '${documentsDirectory.path}/$backupBoxName.hive';
+		final backupBoxPath = documentsDirectory.child('$backupBoxName.hive');
 		Box<T> box;
 		try {
 			box = await Hive.openBox<T>(boxName, compactionStrategy: compactionStrategy, crashRecovery: false);
@@ -212,7 +212,7 @@ class Persistence extends ChangeNotifier {
 				print(st);
 				final backupTime = (await File(backupBoxPath).stat()).modified;
 				if (await File(boxPath).exists()) {
-					await File(boxPath).copy('${documentsDirectory.path}/$boxName.broken.hive');
+					await File(boxPath).copy(documentsDirectory.child('$boxName.broken.hive'));
 					await File(backupBoxPath).copy(boxPath);
 				}
 				box = await Hive.openBox<T>(boxName, compactionStrategy: compactionStrategy);
@@ -232,9 +232,9 @@ class Persistence extends ChangeNotifier {
 		bool gzip = false
 	}) async {
 		final boxName = '$_boxPrefix$name';
-		final boxPath = '${documentsDirectory.path}/$boxName.hive';
+		final boxPath = documentsDirectory.child('$boxName.hive');
 		final backupBoxName = '$_backupBoxPrefix$name';
-		final backupBoxPath = '${documentsDirectory.path}/$backupBoxName.hive${gzip ? '.gz' : ''}';
+		final backupBoxPath = documentsDirectory.child('$backupBoxName.hive${gzip ? '.gz' : ''}');
 		LazyBox<T> box;
 		bool backupCorrupted = false;
 		try {
@@ -247,7 +247,7 @@ class Persistence extends ChangeNotifier {
 				print(st);
 				final backupTime = (await File(backupBoxPath).stat()).modified;
 				if (await File(boxPath).exists()) {
-					await File(boxPath).copy('${documentsDirectory.path}/$boxName.broken.hive');
+					await File(boxPath).copy(documentsDirectory.child('$boxName.broken.hive'));
 					if (gzip) {
 						try {
 							await copyUngzipped(backupBoxPath, boxPath);
@@ -255,7 +255,7 @@ class Persistence extends ChangeNotifier {
 						on FormatException {
 							// Backup box is corrupted
 							backupCorrupted = true;
-							await File(backupBoxPath).rename('${documentsDirectory.path}/$backupBoxName.broken.hive.gz');
+							await File(backupBoxPath).rename(documentsDirectory.child('$backupBoxName.broken.hive.gz'));
 							await File(boxPath).delete();
 						}
 					}
@@ -301,7 +301,7 @@ class Persistence extends ChangeNotifier {
 
 	static void _startBoxBackupTimer<T>(BoxBase<T> box, String name, {bool gzip = false}) {
 		final backupBoxName = '$_backupBoxPrefix$name';
-		final backupBoxPath = '${documentsDirectory.path}/$backupBoxName.hive${gzip ? '.gz' : ''}';
+		final backupBoxPath = documentsDirectory.child('$backupBoxName.hive${gzip ? '.gz' : ''}');
 		Timer.periodic(_backupUpdateDuration, (_) async {
 			if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 				await _backupBox(box, backupBoxPath, gzip: gzip);
@@ -362,7 +362,7 @@ class Persistence extends ChangeNotifier {
 
 	static Future<void> ensureTemporaryDirectoriesExist() async {
 		await webmCacheDirectory.create(recursive: true);
-		final oldHttpCache = Directory('${webmCacheDirectory.path}/httpcache');
+		final oldHttpCache = webmCacheDirectory.dir('httpcache');
 		if (oldHttpCache.statSync().type == FileSystemEntityType.directory) {
 			await oldHttpCache.rename(httpCacheDirectory.path);
 		}
@@ -457,9 +457,9 @@ class Persistence extends ChangeNotifier {
 		appLaunchTime = DateTime.now();
 		initializeHive();
 		temporaryDirectory = (await getTemporaryDirectory()).absolute;
-		webmCacheDirectory = Directory('${temporaryDirectory.path}/webmcache');
-		httpCacheDirectory = Directory('${temporaryDirectory.path}/httpcache');
-		shareCacheDirectory = Directory('${temporaryDirectory.path}/sharecache');
+		webmCacheDirectory = temporaryDirectory.dir('webmcache');
+		httpCacheDirectory = temporaryDirectory.dir('httpcache');
+		shareCacheDirectory = temporaryDirectory.dir('sharecache');
 		try {
 			if (await shareCacheDirectory.exists()) {
 				// This data is always useless upon app relaunch
@@ -471,7 +471,7 @@ class Persistence extends ChangeNotifier {
 		}
 		await ensureTemporaryDirectoriesExist();
 		documentsDirectory = await getApplicationDocumentsDirectory();
-		savedAttachmentsDirectory = Directory('${documentsDirectory.path}/$savedAttachmentsDir');
+		savedAttachmentsDirectory = documentsDirectory.dir(savedAttachmentsDir);
 		try {
 			// Boxes were always saved as lowercase, but backups may have been
 			// upper case in the past. Just correct all '*.hive*' to be lower case.
@@ -759,7 +759,7 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 		}
-		final oldSavedThumbnailsDir = Directory('${documentsDirectory.path}/saved_attachments_thumbs');
+		final oldSavedThumbnailsDir = documentsDirectory.dir('saved_attachments_thumbs');
 		if ((await oldSavedThumbnailsDir.stat()).type == FileSystemEntityType.directory) {
 			// No longer needed, thumbnails handled via MediaConversion from full file
 			try {
@@ -1865,7 +1865,7 @@ class SavedAttachment {
 	static final _badPathCharacters = RegExp(r'[/:]');
 
 	File get file {
-		final base = '${Persistence.savedAttachmentsDirectory.path}/${attachment.globalId.replaceAll(_badPathCharacters, '_')}';
+		final base = Persistence.savedAttachmentsDirectory.child(attachment.globalId.replaceAll(_badPathCharacters, '_'));
 		if (savedExt == null) {
 			// Not yet fixed
 			return File('$base${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');

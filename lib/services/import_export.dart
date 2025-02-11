@@ -9,6 +9,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/util.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:archive/archive_io.dart';
 import 'package:uuid/uuid.dart';
@@ -38,7 +39,7 @@ Future<File> export({
 	required bool includeSavedAttachments,
 	required bool includeFullHistory
 }) async {
-	final destination = '${Persistence.temporaryDirectory.path}/${DateTime.now().millisecondsSinceEpoch ~/ 1000}.backup.zip';
+	final destination = Persistence.temporaryDirectory.child('${DateTime.now().millisecondsSinceEpoch ~/ 1000}.backup.zip');
 	final compressibleFiles = <String>[];
 	final renamedCompressibleFiles = <(String, String)>[];
 	final uncompressibleDirs = <String>[];
@@ -48,7 +49,7 @@ Future<File> export({
 		'${Persistence.sharedThreadStatesBoxName}.hive',
 		if (includeFullHistory) '${Persistence.sharedThreadsBoxName}.hive',
 	]) {
-		final file = File('${Persistence.documentsDirectory.path}/$filename');
+		final file = Persistence.documentsDirectory.file(filename);
 		if (await file.exists()) {
 			compressibleFiles.add(file.path);
 		}
@@ -81,7 +82,7 @@ Future<File> export({
 		if (includeSavedAttachments) Persistence.savedAttachmentsDir,
 		Persistence.fontsDir
 	]) {
-		final dir = Directory('${Persistence.documentsDirectory.path}/$dirname');
+		final dir = Persistence.documentsDirectory.dir(dirname);
 		if (await dir.exists()) {
 			// These folders probably can't be compressed
 			uncompressibleDirs.add(dir.path);
@@ -99,7 +100,7 @@ Future<File> export({
 
 Future<File> exportJson() async {
 	final encoder = ZipFileEncoder();
-	encoder.create('${Persistence.temporaryDirectory.path}/${DateTime.now().millisecondsSinceEpoch ~/ 1000}.json.zip');
+	encoder.create(Persistence.temporaryDirectory.child('${DateTime.now().millisecondsSinceEpoch ~/ 1000}.json.zip'));
 	void dumpOne(String path, dynamic object) {
 		// ArchiveFile.file only works for ascii
 		final buffer = utf8.encode(Hive.encodeJson(object));
@@ -195,7 +196,7 @@ class ImportLogSummary extends ImportLog {
 Future<List<ImportLog>> import(File archive) async {
 	final log = <ImportLog>[];
 	try {
-		final dir = Directory('${Persistence.temporaryDirectory.path}/import-${DateTime.now().millisecondsSinceEpoch}');
+		final dir = Persistence.temporaryDirectory.dir('import-${DateTime.now().millisecondsSinceEpoch}');
 		await dir.create(recursive: true);
 		await extractFileToDisk(archive.path, dir.path);
 		Future<void> hiveImportSingleton<T extends HiveObject>({
@@ -406,7 +407,7 @@ Future<List<ImportLog>> import(File archive) async {
 			required String type,
 			bool errorIfMissing = true
 		}) async {
-			final folder = Directory('${dir.path}/$subdir');
+			final folder = dir.dir(subdir);
 			if (!(await folder.exists())) {
 				if (errorIfMissing) {
 					log.add(ImportLogFailure(filename: subdir, type: type, message: 'Missing subdirectory'));
@@ -419,7 +420,7 @@ Future<List<ImportLog>> import(File archive) async {
 			await for (final child in folder.list(recursive: true)) {
 				final srcStat = await child.stat();
 				final relative = child.path.replaceFirst('${folder.path}/', '');
-				final destPath = '${Persistence.documentsDirectory.path}/$subdir/$relative';
+				final destPath = Persistence.documentsDirectory.child('$subdir/$relative');
 				if (srcStat.type == FileSystemEntityType.directory) {
 					await Directory(destPath).create(recursive: true);
 					continue;

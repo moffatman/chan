@@ -73,9 +73,9 @@ Future<String?> _copyFileToSafeLocation(String? path) async {
 		return null;
 	}
 	// Copy to a timestamp dir. So that multiple picks will get a new path, avoid stale caching
-	final parent = Directory('${Persistence.temporaryDirectory.path}/inboxcache/${DateTime.now().millisecondsSinceEpoch}');
+	final parent = Persistence.temporaryDirectory.dir('inboxcache/${DateTime.now().millisecondsSinceEpoch}');
 	await parent.create(recursive: true);
-	final destPath = '${parent.path}/${path.split('/').last}';
+	final destPath = parent.child(FileBasename.get(path));
 	final stat = await File(path).stat();
 	if (stat.type == FileSystemEntityType.directory) {
 		if (await Directory(destPath).exists()) {
@@ -98,7 +98,7 @@ Future<File?> downloadToShareCache({
 		context.read<ImageboardSite?>()?.client ??
 		Settings.instance.client;
 	final filename = url.pathSegments.tryLast;
-	final path = '${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}_${filename ?? ''}';
+	final path = Persistence.shareCacheDirectory.child('${DateTime.now().millisecondsSinceEpoch}_${filename ?? ''}');
 	return await modalLoad(context, 'Downloading...', (controller) async {
 		final alreadyCached = await getCachedImageFile(url.toString());
 		if (alreadyCached != null) {

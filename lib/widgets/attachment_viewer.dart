@@ -985,7 +985,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				return (await conversion.start()).file;
 			}, cancellable: true);
 		}
-		return await file.copy('${Persistence.shareCacheDirectory.path}/$newFilename');
+		return await file.copy(Persistence.shareCacheDirectory.child(newFilename));
 	}
 
 	Future<void> share(Rect? sharePosition) async {

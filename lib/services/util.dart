@@ -115,6 +115,15 @@ extension Copy on Directory {
 	}
 }
 
+extension ChildPath on Directory {
+	/// Construct path of a child
+	String child(String childName) => '$path/$childName';
+	/// Construct File for a child
+	File file(String childName) => File(child(childName));
+	/// Construct Directory for a child
+	Directory dir(String childName) => Directory(child(childName));
+}
+
 extension UnescapeHtml on String {
 	String get unescapeHtml => unescape.convert(this);
 }

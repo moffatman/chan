@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/util.dart';
 import 'package:flutter/services.dart';
 import 'package:mime/mime.dart';
 
@@ -27,7 +28,7 @@ Future<File?> getClipboardImageAsFile() async {
 			ext = 'jpg';
 		}
 		if (ext != null) {
-			final f = File('${Persistence.shareCacheDirectory.path}/${DateTime.now().millisecondsSinceEpoch}.$ext');
+			final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}.$ext');
 			await f.create(recursive: true);
 			await f.writeAsBytes(image, flush: true);
 			return f;

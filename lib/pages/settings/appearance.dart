@@ -370,8 +370,8 @@ final appearanceSettings = [
 										return;
 									}
 									final basename = FileBasename.get(path);
-									final ttfFolder = await Directory('${Persistence.documentsDirectory.path}/${Persistence.fontsDir}').create();
-									await File(path).copy('${ttfFolder.path}/$basename');
+									final ttfFolder = await Persistence.documentsDirectory.dir(Persistence.fontsDir).create();
+									await File(path).copy(ttfFolder.child(basename));
 									if (context.mounted) {
 										Navigator.pop(context, [basename]);
 									}
@@ -402,7 +402,7 @@ final appearanceSettings = [
 				if (family != null && (family.endsWith('.ttf') || family.endsWith('.otf'))) {
 					// Cleanup previous picked font
 					try {
-						await File('${Persistence.documentsDirectory.path}/${Persistence.fontsDir}/$family').delete();
+						await Persistence.documentsDirectory.dir(Persistence.fontsDir).file(family).delete();
 					}
 					catch (e, st) {
 						Future.error(e, st);
@@ -450,7 +450,7 @@ final appearanceSettings = [
 				if (oldFont != selectedFont && oldFont != null && (oldFont.endsWith('.ttf') || oldFont.endsWith('.otf'))) {
 					// Cleanup previous picked font
 					try {
-						await File('${Persistence.documentsDirectory.path}/${Persistence.fontsDir}/$oldFont').delete();
+						await Persistence.documentsDirectory.dir(Persistence.fontsDir).file(oldFont).delete();
 					}
 					catch (e, st) {
 						Future.error(e, st);

@@ -79,7 +79,7 @@ class JsonCacheEntry<T extends Object> extends ChangeNotifier {
 		this.updateOdds = 1
 	}) : value = defaultValue;
 
-	late final _file = File('${Persistence.documentsDirectory.path}/$name.json');
+	late final _file = Persistence.documentsDirectory.file('$name.json');
 
 	Future<void> loadFromDisk() => parent.lock.protect(() async {
 		if (await _file.exists()) {
