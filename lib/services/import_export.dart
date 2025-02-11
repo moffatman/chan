@@ -143,7 +143,7 @@ sealed class ImportLog {
 	});
 }
 
-class ImportLogConflict<Ancestor extends HiveObjectMixin, T> extends ImportLog {
+class ImportLogConflict<Ancestor, T> extends ImportLog {
 	final dynamic key;
 	final MergeConflict<Ancestor, T> conflict;
 	final Ancestor yours;

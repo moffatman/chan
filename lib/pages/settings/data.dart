@@ -361,7 +361,24 @@ class ImportLogFailureWidget extends StatelessWidget {
 	}
 }
 
-class ImportLogConflictWidget<Ancestor extends HiveObjectMixin, T> extends StatefulWidget {
+InlineSpan _importFieldValue<T>(T value) => switch (value) {
+	Color color => TextSpan(children: [
+		WidgetSpan(
+			child: Container(
+				width: 20,
+				height: 20,
+				decoration: BoxDecoration(
+					color: color,
+					borderRadius: BorderRadius.circular(10)
+				)
+			)
+		),
+		TextSpan(text: ' #${color.red.toRadixString(16)}${color.green.toRadixString(16)}${color.blue.toRadixString(16)}')
+	]),
+	dynamic x => TextSpan(text: x.toString())
+};
+
+class ImportLogConflictWidget<Ancestor, T> extends StatefulWidget {
 	final ImportLogConflict<Ancestor, T> conflict;
 
 	const ImportLogConflictWidget({
@@ -373,7 +390,7 @@ class ImportLogConflictWidget<Ancestor extends HiveObjectMixin, T> extends State
 	createState() => _ImportLogConflictWidgetState();
 }
 
-class _ImportLogConflictWidgetState<Ancestor extends HiveObjectMixin, T> extends State<ImportLogConflictWidget<Ancestor, T>> {
+class _ImportLogConflictWidgetState<Ancestor, T> extends State<ImportLogConflictWidget<Ancestor, T>> {
 	bool accepted = false;
 	late final T originalYours;
 
@@ -427,7 +444,7 @@ class _ImportLogConflictWidgetState<Ancestor extends HiveObjectMixin, T> extends
 										mainAxisAlignment: MainAxisAlignment.center,
 										children: [
 											const Text('Yours', style: TextStyle(fontSize: 15)),
-											Text(originalYours.toString())
+											Text.rich(_importFieldValue(originalYours))
 										]
 									)
 								)
@@ -452,7 +469,7 @@ class _ImportLogConflictWidgetState<Ancestor extends HiveObjectMixin, T> extends
 										mainAxisAlignment: MainAxisAlignment.center,
 										children: [
 											const Text('Imported', style: TextStyle(fontSize: 15)),
-											Text(widget.conflict.conflict.get(widget.conflict.theirs).toString())
+											Text.rich(_importFieldValue(widget.conflict.conflict.get(widget.conflict.theirs)))
 										]
 									)
 								)
