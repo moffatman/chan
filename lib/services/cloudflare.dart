@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:chan/services/dark_mode_browser.dart';
 import 'package:chan/services/imageboard.dart';
