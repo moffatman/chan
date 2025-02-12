@@ -120,13 +120,16 @@ Future<void> alert(BuildContext context, String title, String message, {
 Future<void> alertError(BuildContext context, Object error, StackTrace? stackTrace, {
 	Map<String, FutureOr<void> Function()> actions = const {},
 	bool barrierDismissible = false
-}) => alert(context, 'Error', error.toStringDio(), actions: {
-	...actions,
-	if (error is ExtendedException)
-		for (final remedy in error.remedies.entries)
-			remedy.key: () => remedy.value(context),
-	if (stackTrace != null && !(error is ExtendedException && !error.isReportable)) 'Report bug': () => reportBug(error, stackTrace)
-}, barrierDismissible: barrierDismissible);
+}) {
+	final extendedException = ExtendedException.extract(error);
+	return alert(context, 'Error', error.toStringDio(), actions: {
+		...actions,
+		if (extendedException != null)
+			for (final remedy in extendedException.remedies.entries)
+				remedy.key: () => remedy.value(context),
+		if (stackTrace != null && (extendedException?.isReportable ?? true)) 'Report bug': () => reportBug(error, stackTrace)
+	}, barrierDismissible: barrierDismissible);
+}
 
 VoidCallback? wrapButtonCallback<T>(BuildContext context, FutureOr<T> Function()? fn) {
 	if (fn == null) {

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/services/persistence.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -133,6 +134,13 @@ abstract class ExtendedException implements Exception {
 	Map<String, FutureOr<void> Function(BuildContext)> get remedies => const {};
 	bool get isReportable;
 	final Map<String, Uint8List> additionalFiles;
+
+	/// May be in a DioError wrapper
+	static ExtendedException? extract(dynamic error) => switch (error) {
+		DioError err => extract(err.error),
+		ExtendedException e => e,
+		_ => null
+	};
 }
 
 extension IfMounted on BuildContext {
