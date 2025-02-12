@@ -168,7 +168,7 @@ class SiteLynxchan extends ImageboardSite {
 			extra: {
 				kPriority: RequestPriority.interactive
 			},
-			responseType: ResponseType.json
+			responseType: null
 		), cancelToken: cancelToken);
 		if (response.data is String) {
 			final document = parse(response.data);

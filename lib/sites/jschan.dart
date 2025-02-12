@@ -182,7 +182,7 @@ class SiteJsChan extends ImageboardSite {
 				},
 				contentType: Headers.formUrlEncodedContentType,
 				validateStatus: (_) => true,
-				responseType: ResponseType.json
+				responseType: null
 			)
 		);
 		String? title;

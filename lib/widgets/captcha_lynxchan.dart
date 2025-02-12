@@ -75,7 +75,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			'd': (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
 			if (lastSolvedCaptcha != null) 'solvedCaptcha': lastSolvedCaptcha
 		}), options: Options(
-			responseType: ResponseType.json,
+			responseType: null, // NB: Do not strictly check response type
 			followRedirects: false, // dio loses the cookies in the first 303 response
 			validateStatus: (status) => (status ?? 0) < 400,
 			extra: {
