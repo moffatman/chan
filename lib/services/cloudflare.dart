@@ -18,6 +18,7 @@ import 'package:html/parser.dart';
 import 'package:mutex/mutex.dart';
 
 const kCloudflare = 'cloudflare';
+const kRedirectGateway = 'redirect_gateway';
 
 extension CloudflareWanted on RequestOptions {
 	bool get cloudflare => extra[kCloudflare] == true;
@@ -407,7 +408,8 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-		if (options.cloudflare) {
+		final redirectGateway = options.extra[kRedirectGateway] as ImageboardRedirectGateway?;
+		if (options.cloudflare || redirectGateway != null) {
 			try {
 				final requestData = await _requestDataAsBytes(options);
 				final data = await _useWebview(
@@ -428,7 +430,9 @@ class CloudflareInterceptor extends Interceptor {
 						body: requestData?.data
 					),
 					priority: options.priority,
-					cancelToken: options.cancelToken
+					cancelToken: options.cancelToken,
+					autoClickSelector: redirectGateway?.autoClickSelector,
+					gatewayName: redirectGateway?.name ?? _kDefaultGatewayName
 				);
 				final newResponse = data.response(options);
 				if (newResponse != null) {

@@ -758,11 +758,14 @@ class DvachEmojiCaptchaRequest extends CaptchaRequest {
 
 class LynxchanCaptchaRequest extends CaptchaRequest {
 	final String board;
+	/// Force use of webview/RedirectGateway
+	final ImageboardRedirectGateway? redirectGateway;
 	const LynxchanCaptchaRequest({
-		required this.board
+		required this.board,
+		this.redirectGateway
 	});
 	@override
-	String toString() => 'LynxchanCaptchaRequest(board: $board)';
+	String toString() => 'LynxchanCaptchaRequest(board: $board, redirectGateway: $redirectGateway)';
 }
 
 class SecucapCaptchaRequest extends CaptchaRequest {

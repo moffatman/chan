@@ -18,10 +18,17 @@ class Site8Chan extends SiteLynxchan {
 		required super.hasPagedCatalog
 	});
 
+	static const _kRedirectGateway = ImageboardRedirectGateway(
+		name: '8chan',
+		alwaysNeedsManualSolving: false,
+		autoClickSelector: 'h1 a'
+	);
+
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
 		return LynxchanCaptchaRequest(
-			board: board
+			board: board,
+			redirectGateway: _kRedirectGateway
 		);
 	}
 
@@ -44,11 +51,7 @@ class Site8Chan extends SiteLynxchan {
 	@override
 	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? title) {
 		if ((uri.host == baseUrl || uri.host == '') && uri.path == '/.static/pages/disclaimer.html') {
-			return const ImageboardRedirectGateway(
-				name: '8chan',
-				alwaysNeedsManualSolving: false,
-				autoClickSelector: 'h1 a'
-			);
+			return _kRedirectGateway;
 		}
 		return null;
 	}
