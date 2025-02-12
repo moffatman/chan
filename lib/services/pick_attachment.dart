@@ -120,7 +120,7 @@ Future<File?> downloadToShareCache({
 				final ext = response.headers.value(Headers.contentTypeHeader)?.split('/').tryLast;
 				if (ext != null) {
 					// We can use MIME
-					return await File(path).rename('${path}thumb.$ext');
+					return await File(path).rename('$path.$ext');
 				}
 				// IDK good luck lol
 			}
