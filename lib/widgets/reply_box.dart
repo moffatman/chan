@@ -647,7 +647,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 Future<void> _handleImagePaste({bool manual = true}) async {
-		final file = await getClipboardImageAsFile();
+		final file = await getClipboardImageAsFile(context);
 		if (file != null) {
 			setAttachment(file);
 		}
@@ -1654,9 +1654,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			bindings: {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit,
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyV): () async {
-					if (await doesClipboardContainImage()) {
+					if (await doesClipboardContainImage() && context.mounted) {
 						try {
-							final image = await getClipboardImageAsFile();
+							final image = await getClipboardImageAsFile(context);
 							if (image != null) {
 								setAttachment(image);
 							}

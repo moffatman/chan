@@ -280,7 +280,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final clipboard = AttachmentPickingSource(
 		name: 'Clipboard',
 		icon: CupertinoIcons.doc_on_clipboard,
-		pick: (context) => getClipboardImageAsFile().then((x) {
+		pick: (context) => getClipboardImageAsFile(context).then((x) {
 			if (x == null && context.mounted) {
 				showToast(
 					context: context,
