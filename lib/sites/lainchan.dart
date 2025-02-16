@@ -429,10 +429,20 @@ class SiteLainchan extends ImageboardSite {
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
 		final referer = _getWebUrl(post.board, threadId: post.threadId, mod: loginSystem.isLoggedIn(Persistence.currentCookies));
 		final page = await client.get(referer, options: Options(validateStatus: (x) => true), cancelToken: cancelToken);
+		final pageDoc = parse(page.data);
 		final Map<String, dynamic> fields = {
-			for (final field in parse(page.data).querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
+			for (final field in pageDoc.querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
 				field.attributes['name'] as String: field.attributes['value'] ?? field.text
 		};
+		int? lastKnownId;
+		if (post.threadId != null) {
+			for (final post in pageDoc.querySelectorAll('.post').reversed) {
+				if (int.tryParse(post.id.split('_').last) case int id) {
+					lastKnownId = id;
+					break;
+				}
+			}
+		}
 		fields['body'] = post.text;
 		fields['password'] = password;
 		if (post.threadId != null) {
@@ -539,7 +549,10 @@ class SiteLainchan extends ImageboardSite {
 			}
 			else {
 				for (final p in (await getThread(ThreadIdentifier(post.board, threadId), priority: RequestPriority.interactive)).posts) {
-					if ((p.time.compareTo(now) >= 0) && (p.span.buildText().similarityTo(post.text) > 0.9)) {
+					if (switch (lastKnownId) {
+						int id => p.id > id,
+						null => p.time.compareTo(now) >= 0
+					} && (p.span.buildText().similarityTo(post.text) > 0.9)) {
 						newPostId = p.id;
 					}
 				}
