@@ -356,8 +356,11 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						queue?.captchaAllowedTime = tryAgainAt;
 					}
 					// Maybe remember the captcha cooldown. But don't try to resubmit then.
-					print('Idling following captcha == null');
-					_state = const QueueStateIdle();
+					if (_state is! QueueStateDeleted<T>) {
+						// Don't revive due to exception from cancellation
+						print('Idling following captcha == null');
+						_state = const QueueStateIdle();
+					}
 				}
 			}
 			on CooldownException catch (e) {
