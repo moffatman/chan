@@ -374,7 +374,7 @@ class CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Ticke
       vsync: this,
     );
     _openController.addStatusListener(_onDecoyAnimationStatusChange);
-    recognizer = LongPressGestureRecognizer(duration: kLongPressTimeout ~/ 2)
+    recognizer = LongPressGestureRecognizer(debugOwner: this, duration: kLongPressTimeout ~/ 2)
       ..onLongPressDown = _onLongPressDown
       ..onLongPressUp = _onLongPressUp
       ..onLongPress = onLongPress

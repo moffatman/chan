@@ -618,7 +618,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		else {
 			color = theme.secondaryColor;
 		}
-		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
+		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () {
 			if (settings.openCrossThreadLinksInNewTab) {
 				final newTabZone = context.read<OpenInNewTabZone?>();
 				final imageboardKey = context.read<Imageboard>().key;
@@ -664,7 +664,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		else {
 			text += ' (Dead)';
 		}
-		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
+		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () {
 			if (zone.isLoadingPostFromArchive(board, postId) == false) zone.loadPostFromArchive(board, postId);
 		});
 		return (TextSpan(
@@ -708,7 +708,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			PostSpanZoneStyle.tree => stackCount == 0,
 			_ => !expandedImmediatelyAbove
 		};
-		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
+		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () async {
 			if (enableInteraction) {
 				if (!settings.mouseSettings.supportMouse || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.popupPostsPage) {
 					zone.highlightQuoteLinkId = postId;
@@ -974,7 +974,7 @@ class PostBoardLinkSpan extends PostSpan {
 				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
 				decoration: TextDecoration.underline
 			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
+			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () async {
 				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 					builder: (ctx) => ImageboardScope(
 						imageboardKey: null,
@@ -1161,7 +1161,7 @@ class PostSpoilerSpan extends PostSpan {
 	@override
 	build(context, zone, settings, theme, options) {
 		final showSpoiler = options.imageShareMode || options.showRawSource || zone.shouldShowSpoiler(id) || forceReveal;
-		final toggleRecognizer = TapGestureRecognizer()..onTap = () {
+		final toggleRecognizer = TapGestureRecognizer(debugOwner: this)..onTap = () {
 			zone.toggleShowingOfSpoiler(id);
 		};
 		final hiddenColor = theme.primaryColor;
@@ -1431,7 +1431,7 @@ class PostLinkSpan extends PostSpan {
 			}
 		}
 		return PostTextSpan(name ?? url).build(context, zone, settings, theme, options.copyWith(
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(cleanedUrl))),
+			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () => openBrowser(context, cleanedUri!)),
 			baseTextStyle: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			)
@@ -1471,7 +1471,7 @@ class PostCatalogSearchSpan extends PostSpan {
 				decorationColor: theme.secondaryColor,
 				color: theme.secondaryColor
 			),
-			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
+			recognizer: TapGestureRecognizer(debugOwner: this)..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
@@ -1702,7 +1702,7 @@ class PostPopupSpan extends PostSpan {
 				decoration: TextDecoration.underline,
 				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
 			),
-			recognizer: options.overridingRecognizer ?? TapGestureRecognizer()..onTap = () {
+			recognizer: options.overridingRecognizer ?? TapGestureRecognizer(debugOwner: this)..onTap = () {
 				showAdaptiveModalPopup(
 					context: context,
 					builder: (context) => AdaptiveActionSheet(
@@ -1858,7 +1858,7 @@ class PostUserLinkSpan extends PostSpan {
 				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
 				decoration: TextDecoration.underline
 			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
+			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () async {
 				final postIdsToShow = zone.findThread(zone.primaryThreadId)?.posts.where((p) => p.name == username).map((p) => p.id).toList() ?? [];
 				WeakNavigator.push(context, PostsPage(
 					postsIdsToShow: postIdsToShow,
@@ -2621,7 +2621,7 @@ Iterable<TextSpan> _makeAttachmentInfo({
 			if (ellipsizedFilename != null && settings.ellipsizeLongFilenamesOnPosts) {
 				yield TextSpan(
 					text: '$ellipsizedFilename ',
-					recognizer: context != null ? (TapGestureRecognizer()..onTap = () {
+					recognizer: context != null ? (TapGestureRecognizer(debugOwner: metadata)..onTap = () {
 						alert(context, 'Full filename', attachment.filename);
 					}) : null
 				);
@@ -2797,7 +2797,7 @@ TextSpan buildPostInfoRow({
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
 					text: settings.filterProfanity(site.formatUsername(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (thisPostIsPostedByOP ? ' (OP)' : ''),
 					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: isYourPost ? theme.secondaryColor : (thisPostIsPostedByOP ? theme.secondaryColor.shiftHue(20).shiftSaturation(-0.3) : null)),
-					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer()..onTap = () {
+					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
 						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
 							alertError(context, 'Could not find any posts with name "${site.formatUsername(post.name)}". This is likely a problem with Chance...', null);
@@ -2911,7 +2911,7 @@ TextSpan buildPostInfoRow({
 					style: TextStyle(
 						color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.primaryColor).withOpacity(0.5)
 					),
-					recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer()..onTap = () {
+					recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
 						context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
 					}) : null
 				),
@@ -2920,7 +2920,7 @@ TextSpan buildPostInfoRow({
 					style: TextStyle(
 						color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.secondaryColor)
 					),
-					recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer()..onTap = () {
+					recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
 						context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
 					}) : null
 				),

@@ -1730,7 +1730,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				return RawGestureDetector(
 					gestures: {
 						if (index <= 0 && axis == Axis.horizontal) WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
-							() => WeakVerticalDragGestureRecognizer(weakness: 2, sign: -1),
+							() => WeakVerticalDragGestureRecognizer(debugOwner: this, weakness: 2, sign: -1),
 							(recognizer) {
 								recognizer.onEnd = (details) {
 									if ((details.primaryVelocity ?? 0) >= 0) {
@@ -1743,7 +1743,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							}
 						),
 						if (index <= 0 && axis == Axis.vertical) WeakHorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakHorizontalDragGestureRecognizer>(
-							() => WeakHorizontalDragGestureRecognizer(weakness: 2, sign: 1),
+							() => WeakHorizontalDragGestureRecognizer(debugOwner: this, weakness: 2, sign: 1),
 							(recognizer) {
 								recognizer.onEnd = (details) {
 									if ((details.primaryVelocity ?? 0) <= 0) {
@@ -2337,7 +2337,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												behavior: HitTestBehavior.translucent,
 												gestures: {
 													WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
-														() => WeakVerticalDragGestureRecognizer(weakness: 1, sign: 1),
+														() => WeakVerticalDragGestureRecognizer(debugOwner: this, weakness: 1, sign: 1),
 														(recognizer) {
 															recognizer.onEnd = (details) {
 																if (details.velocity.pixelsPerSecond.dy > 0 && _showTabPopup.value) {

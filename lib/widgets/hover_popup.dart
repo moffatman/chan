@@ -86,6 +86,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		super.initState();
 		ScrollTracker.instance.isScrolling.addListener(_onIsScrollingChange);
 		recognizer = LongPressGestureRecognizer(
+			debugOwner: this,
 			duration: kLongPressTimeout ~/ 2,
 			postAcceptSlopTolerance: 99999
 		)

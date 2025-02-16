@@ -27,7 +27,7 @@ class _DoubleTapDragDetectorState extends State<DoubleTapDragDetector> {
 	@override
 	void initState() {
 		super.initState();
-		recognizer = DoubleTapDragGestureRecognizer()
+		recognizer = DoubleTapDragGestureRecognizer(debugOwner: this)
 			..onDoubleTapDrag = _onUpdate
 			..onDoubleTapDone = _onEnd
 			..onDoubleTapCancel = _onCancel

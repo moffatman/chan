@@ -85,7 +85,7 @@ InlineSpan makeFlagSpan({
 			));
 		}
 		if (part.name.isNotEmpty && part.imageUrl.isNotEmpty && appendLabels) {
-			children.add(TextSpan(text: ' ${part.name}', recognizer: TapGestureRecognizer()..onTap = onTap));
+			children.add(TextSpan(text: ' ${part.name}', recognizer: TapGestureRecognizer(debugOwner: flag)..onTap = onTap));
 		}
 		padding = true;
 	}

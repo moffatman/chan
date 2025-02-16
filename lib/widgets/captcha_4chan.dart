@@ -1199,7 +1199,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									const TextSpan(text: 'Note from Chance:\nGo to '),
 									TextSpan(
 										text: 'https://sys.4chan.org/signin',
-										recognizer: TapGestureRecognizer()..onTap = () => shareOne(
+										recognizer: TapGestureRecognizer(debugOwner: this)..onTap = () => shareOne(
 											context: context,
 											text: 'https://sys.4chan.org/signin',
 											type: 'text',
