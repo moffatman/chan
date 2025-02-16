@@ -100,6 +100,10 @@ Future<CaptchaSolution?> solveCaptcha({
 				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority, cancelToken: cancelToken).timeout(const Duration(minutes: 1));
 			}
 			on Exception catch (e) {
+				if (e is dio.DioError && e.type == DioErrorType.cancel) {
+					// User cancelled it
+					return null;
+				}
 				if (context == null || e is CooldownException) {
 					if (
 						e is CloudflareHandlerNotAllowedException ||
@@ -129,6 +133,10 @@ Future<CaptchaSolution?> solveCaptcha({
 					initialCloudGuess = cloudSolution;
 				}
 				catch (e, st) {
+					if (e is dio.DioError && e.type == DioErrorType.cancel) {
+						// User cancelled it
+						return null;
+					}
 					if (context == null || e is CooldownException) {
 						rethrow;
 					}
