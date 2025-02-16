@@ -363,7 +363,7 @@ class RefreshableListItem<T extends Object> {
 	@override
 	String toString({bool long = false}) => 'RefreshableListItem<$T>(${[
 		id.toString(),
-		if (representsStubChildren) 'representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren}',
+		if (representsStubChildren) 'representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren.length > 1 ? representsKnownStubChildren : '<known(${representsKnownStubChildren.length})>'}',
 		if (representsUnloadedPages.isNotEmpty) 'representsUnloadedPages: $representsUnloadedPages',
 		if (treeDescendantIds.isNotEmpty) 'treeDescendantIds: $treeDescendantIds)',
 		if (long) ...[
