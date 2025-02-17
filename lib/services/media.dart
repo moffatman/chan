@@ -440,7 +440,8 @@ class MediaConversion {
 
 	static MediaConversion toHLS(Uri inputFile, {
 		Map<String, String> headers = const {},
-		Uri? soundSource
+		Uri? soundSource,
+		required bool copyStreams
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -448,7 +449,7 @@ class MediaConversion {
 			headers: headers,
 			soundSource: soundSource,
 			requiresSubdirectory: true,
-			copyStreams: inputFile.path.endsWith('.m3u8')
+			copyStreams: copyStreams
 		);
 	}
 

@@ -821,7 +821,12 @@ class StreamingMP4Conversion {
 				hasAudio: true, // assumption
 			);
 		}
-		final streamingConversion = _streamingConversion = MediaConversion.toHLS(inputFile, headers: headers, soundSource: soundSource);
+		final streamingConversion = _streamingConversion = MediaConversion.toHLS(
+			inputFile,
+			headers: headers,
+			soundSource: soundSource,
+			copyStreams: inputExtension == 'm3u8' || (soundSource != null && inputExtension == 'mp4')
+		);
 		final streamingConversionFuture = streamingConversion.start();
 		streamingConversionFuture.then((result) => _handleJoining(result.file.uri));
 		await Future.any([_waitForTwoTSFiles(streamingConversion.getDestination().parent), streamingConversionFuture]);
