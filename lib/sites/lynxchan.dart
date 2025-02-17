@@ -352,7 +352,7 @@ class SiteLynxchan extends ImageboardSite {
 			throw BoardNotFoundException(board);
 		}
 		_updateBoardInformation(board, response.data);
-		return (response.data['threads'] as List).cast<Map>().map((o) => _makeThreadFromCatalog(board, o.cast<String, dynamic>())..currentPage = page).toList();
+		return (response.data['threads'] as List).cast<Map>().map(wrapUnsafe((o) => _makeThreadFromCatalog(board, o.cast<String, dynamic>())..currentPage = page)).toList();
 	}
 
 	static int? _tryParseInt(dynamic s) => switch (s) {
@@ -366,7 +366,7 @@ class SiteLynxchan extends ImageboardSite {
 			board: board,
 			text: obj['markdown'],
 			name: obj['name'] ?? defaultUsername,
-			flag: _makeFlag(obj),
+			flag: wrapUnsafe(_makeFlag)(obj),
 			capcode: obj['signedRole'],
 			time: DateTime.parse(obj['creation']),
 			threadId: obj['threadId'],
@@ -435,19 +435,19 @@ class SiteLynxchan extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	Post _makePost(String board, int threadId, int id, Map<String, dynamic> obj) {
+	Post _makePost(String board, int threadId, int id, Map<String, dynamic> obj) => unsafe(obj, () {
 		return Post(
 			board: board,
 			text: obj['markdown'],
 			name: obj['name'],
-			flag: _makeFlag(obj),
+			flag: wrapUnsafe(_makeFlag)(obj),
 			capcode: obj['signedRole'],
 			time: DateTime.parse(obj['creation']),
 			threadId: threadId,
 			posterId: obj['id'],
 			id: id,
 			spanFormat: PostSpanFormat.lynxchan,
-			attachments_: (obj['files'] as List).asMap().entries.map((e) => Attachment(
+			attachments_: (obj['files'] as List).asMap().entries.map(wrapUnsafe((e) => Attachment(
 				type: AttachmentType.fromFilename(e.value['path']),
 				board: board,
 				// Lynxchan dedupes images. Prepend some uniqueness here to avoid Hero problems later.
@@ -461,9 +461,9 @@ class SiteLynxchan extends ImageboardSite {
 				height: _tryParseInt(e.value['height']),
 				threadId: obj['threadId'],
 				sizeInBytes: e.value['size']
-			)).toList()
+			))).toList()
 		);
-	}
+	});
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {

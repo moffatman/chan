@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:hive/hive.dart';
 import 'package:html_unescape/html_unescape_small.dart';
 
 bool isDesktop() {
@@ -151,3 +152,74 @@ extension IfMounted on BuildContext {
 		return null;
 	}
 }
+
+class UnsafeParseException<S, T> extends ExtendedException {
+	final Object error;
+	final StackTrace stackTrace;
+	final S object;
+
+	UnsafeParseException({
+		required this.error,
+		required this.stackTrace,
+		required this.object
+	}) : super(
+		additionalFiles: {
+			'error.txt': utf8.encode('$error\n\n$stackTrace'),
+			if (ExtendedException.extract(error) case ExtendedException e)
+				for (final file in e.additionalFiles.entries)
+					'nested_${file.key}': file.value
+		}
+	) {
+		try {
+			additionalFiles['object.json'] = utf8.encode(Hive.encodeJson(object));
+		}
+		catch (e, st) {
+			additionalFiles['object.json.error.txt'] = utf8.encode('$e\n\n$st');
+			additionalFiles['object.txt'] = utf8.encode(object.toString());
+		}
+	}
+
+	@override
+	bool get isReportable => true;
+	@override
+	String toString() => 'UnsafeParseException<$S, $T>(error: $error)';
+}
+
+T unsafe<S, T>(S input, T Function() f) {
+	try {
+		return f();
+	}
+	catch (e, st) {
+		throw UnsafeParseException<S, T>(
+			error: e,
+			stackTrace: st,
+			object: input
+		);
+	}
+}
+
+Future<T> unsafeAsync<S, T>(S input, Future<T> Function() f) async {
+	try {
+		return await f();
+	}
+	catch (e, st) {
+		throw UnsafeParseException<S, T>(
+			error: e,
+			stackTrace: st,
+			object: input
+		);
+	}
+}
+
+T Function(S) wrapUnsafe<S, T>(T Function(S) f) => (input) {
+	try {
+		return f(input);
+	}
+	catch (e, st) {
+		throw UnsafeParseException<S, T>(
+			error: e,
+			stackTrace: st,
+			object: input
+		);
+	}
+};

@@ -159,54 +159,56 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 			cancelToken: cancelToken
 		);
 	}
-	if (data['pcd'] case num pcd) {
-		throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] as String? ?? 'Please wait a while.', challengeResponse.cloudflare, DateTime.now().add(Duration(seconds: pcd.toInt())));
-	}
-	final DateTime? tryAgainAt;
-	if (data['cd'] case num cd) {
-		tryAgainAt = DateTime.now().add(Duration(seconds: cd.toInt()));
-	}
-	else {
-		tryAgainAt = null;
-	}
-	if (data['error'] case String error) {
-		if (tryAgainAt != null) {
-			throw Captcha4ChanCustomChallengeCooldownException(error, challengeResponse.cloudflare, tryAgainAt);
+	return await unsafeAsync(data, () async {
+		if (data['pcd'] case num pcd) {
+			throw Captcha4ChanCustomChallengeCooldownException(data['pcd_msg'] as String? ?? 'Please wait a while.', challengeResponse.cloudflare, DateTime.now().add(Duration(seconds: pcd.toInt())));
 		}
-		throw Captcha4ChanCustomChallengeException(error, challengeResponse.cloudflare);
-	}
-	Completer<ui.Image>? foregroundImageCompleter;
-	if (data['img'] != null) {
-		foregroundImageCompleter = Completer<ui.Image>();
-		MemoryImage(base64Decode(data['img'] as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
-			foregroundImageCompleter!.complete(info.image);
-		}, onError: (e, st) {
-			foregroundImageCompleter!.completeError(e);
-		}));
-	}
-	Completer<ui.Image>? backgroundImageCompleter;
-	if (data['bg'] != null) {
-		backgroundImageCompleter = Completer<ui.Image>();
-		MemoryImage(base64Decode(data['bg'] as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
-			backgroundImageCompleter!.complete(info.image);
-		}, onError: (e, st) {
-			backgroundImageCompleter!.completeError(e);
-		}));
-	}
-	final foregroundImage = await foregroundImageCompleter?.future;
-	final backgroundImage = await backgroundImageCompleter?.future;
-	return Captcha4ChanCustomChallenge(
-		request: request,
-		challenge: data['challenge'] as String,
-		acquiredAt: DateTime.now(),
-		tryAgainAt: tryAgainAt,
-		lifetime: Duration(seconds: (data['ttl'] as num).toInt()),
-		foregroundImage: foregroundImage,
-		backgroundImage: backgroundImage,
-		backgroundWidth: (data['bg_width'] as num?)?.toInt(),
-		cloudflare: challengeResponse.cloudflare,
-		originalData: (data as Map).cast<String, dynamic>()
-	);
+		final DateTime? tryAgainAt;
+		if (data['cd'] case num cd) {
+			tryAgainAt = DateTime.now().add(Duration(seconds: cd.toInt()));
+		}
+		else {
+			tryAgainAt = null;
+		}
+		if (data['error'] case String error) {
+			if (tryAgainAt != null) {
+				throw Captcha4ChanCustomChallengeCooldownException(error, challengeResponse.cloudflare, tryAgainAt);
+			}
+			throw Captcha4ChanCustomChallengeException(error, challengeResponse.cloudflare);
+		}
+		Completer<ui.Image>? foregroundImageCompleter;
+		if (data['img'] != null) {
+			foregroundImageCompleter = Completer<ui.Image>();
+			MemoryImage(base64Decode(data['img'] as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+				foregroundImageCompleter!.complete(info.image);
+			}, onError: (e, st) {
+				foregroundImageCompleter!.completeError(e);
+			}));
+		}
+		Completer<ui.Image>? backgroundImageCompleter;
+		if (data['bg'] != null) {
+			backgroundImageCompleter = Completer<ui.Image>();
+			MemoryImage(base64Decode(data['bg'] as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+				backgroundImageCompleter!.complete(info.image);
+			}, onError: (e, st) {
+				backgroundImageCompleter!.completeError(e);
+			}));
+		}
+		final foregroundImage = await foregroundImageCompleter?.future;
+		final backgroundImage = await backgroundImageCompleter?.future;
+		return Captcha4ChanCustomChallenge(
+			request: request,
+			challenge: data['challenge'] as String,
+			acquiredAt: DateTime.now(),
+			tryAgainAt: tryAgainAt,
+			lifetime: Duration(seconds: (data['ttl'] as num).toInt()),
+			foregroundImage: foregroundImage,
+			backgroundImage: backgroundImage,
+			backgroundWidth: (data['bg_width'] as num?)?.toInt(),
+			cloudflare: challengeResponse.cloudflare,
+			originalData: (data as Map).cast<String, dynamic>()
+		);
+	});
 }
 
 const _kMaxBlackR = 103;

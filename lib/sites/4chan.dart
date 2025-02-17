@@ -477,7 +477,7 @@ class Site4Chan extends ImageboardSite {
 		return PostNodeSpan(elements.toList(growable: false));
 	}
 
-	ImageboardFlag? _makeFlag(dynamic data, String board) {
+	ImageboardFlag? _makeFlag(dynamic data, String board) => unsafe(data, () {
 		if (data['country'] != null) {
 			return ImageboardFlag(
 				name: unescape.convert(data['country_name']),
@@ -503,9 +503,9 @@ class Site4Chan extends ImageboardSite {
 			);
 		}
 		return null;
-	}
+	});
 
-	Post _makePost(String board, int threadId, dynamic data) {
+	Post _makePost(String board, int threadId, dynamic data) => unsafe(data, () {
 		final a = _makeAttachment(board, threadId, data);
 		return Post(
 			board: board,
@@ -523,14 +523,14 @@ class Site4Chan extends ImageboardSite {
 			passSinceYear: data['since4pass'],
 			capcode: data['capcode']
 		);
-	}
+	});
 	static AttachmentType _getAttachmentType(String ext) => switch (ext) {
 		'.webm' => AttachmentType.webm,
 		'.pdf' => AttachmentType.pdf,
 		'.mp4' => AttachmentType.mp4,
 		_ => AttachmentType.image
 	};
-	Attachment? _makeAttachment(String board, int threadId, dynamic data) {
+	Attachment? _makeAttachment(String board, int threadId, dynamic data) => unsafe(data, () {
 		if (data['tim'] != null) {
 			final int id = data['tim'];
 			final String ext = data['ext'];
@@ -551,7 +551,7 @@ class Site4Chan extends ImageboardSite {
 			);
 		}
 		return null;
-	}
+	});
 
 	Future<int?> _getThreadPage(ThreadIdentifier thread, {required RequestPriority priority}) async {
 		final now = DateTime.now();
@@ -609,41 +609,43 @@ class Site4Chan extends ImageboardSite {
 		);
 		if (response.statusCode == 200) {
 			final data = response.data;
-			final String? title = data['posts']?[0]?['sub'];
-			final a = _makeAttachment(thread.board, thread.id, data['posts'][0]);
-			final output = Thread(
-				board: thread.board,
-				isDeleted: false,
-				replyCount: data['posts'][0]['replies'],
-				imageCount: data['posts'][0]['images'],
-				isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
-				posts_: (data['posts'] ?? []).map<Post>((postData) {
-					return _makePost(thread.board, thread.id, postData);
-				}).toList(),
-				id: data['posts'][0]['no'],
-				attachments: a == null ? [] : [a],
-				attachmentDeleted: data['posts'][0]['filedeleted'] == 1,
-				title: (title == null) ? null : unescape.convert(title),
-				isSticky: data['posts'][0]['sticky'] == 1,
-				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
-				currentPage: await _getThreadPage(thread, priority: priority),
-				uniqueIPCount: data['posts'][0]['unique_ips'],
-				customSpoilerId: data['posts'][0]['custom_spoiler']
-			);
-			if (output.posts_.length == output.uniqueIPCount) {
-				for (int i = 0; i < output.posts_.length; i++) {
-					output.posts_[i].ipNumber = i + 1;
+			await unsafeAsync(data, () async {
+				final String? title = data['posts']?[0]?['sub'];
+				final a = _makeAttachment(thread.board, thread.id, data['posts'][0]);
+				final output = Thread(
+					board: thread.board,
+					isDeleted: false,
+					replyCount: data['posts'][0]['replies'],
+					imageCount: data['posts'][0]['images'],
+					isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
+					posts_: (data['posts'] ?? []).map<Post>((postData) {
+						return _makePost(thread.board, thread.id, postData);
+					}).toList(),
+					id: data['posts'][0]['no'],
+					attachments: a == null ? [] : [a],
+					attachmentDeleted: data['posts'][0]['filedeleted'] == 1,
+					title: (title == null) ? null : unescape.convert(title),
+					isSticky: data['posts'][0]['sticky'] == 1,
+					time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
+					currentPage: await _getThreadPage(thread, priority: priority),
+					uniqueIPCount: data['posts'][0]['unique_ips'],
+					customSpoilerId: data['posts'][0]['custom_spoiler']
+				);
+				if (output.posts_.length == output.uniqueIPCount) {
+					for (int i = 0; i < output.posts_.length; i++) {
+						output.posts_[i].ipNumber = i + 1;
+					}
 				}
-			}
-			else if (output.uniqueIPCount == 1) {
-				for (final post in output.posts_) {
-					post.ipNumber = 1;
+				else if (output.uniqueIPCount == 1) {
+					for (final post in output.posts_) {
+						post.ipNumber = 1;
+					}
 				}
-			}
-			_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
-				thread: output,
-				lastModified: response.headers.value('last-modified')!
-			);
+				_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
+					thread: output,
+					lastModified: response.headers.value('last-modified')!
+				);
+			});
 		}
 		else if (!(response.statusCode == 304 && headers != null)) {
 			if (response.statusCode == 404) {
@@ -735,7 +737,7 @@ class Site4Chan extends ImageboardSite {
 		}).toList();
 	}
 
-	Thread _makeThread(String board, dynamic threadData, {int? currentPage, bool isArchived = false}) {
+	Thread _makeThread(String board, dynamic threadData, {int? currentPage, bool isArchived = false}) => unsafe(threadData, () {
 		final String? title = threadData['sub'];
 		final int threadId = threadData['no'];
 		final Post threadAsPost = _makePost(board, threadId, threadData);
@@ -754,7 +756,7 @@ class Site4Chan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
 			currentPage: currentPage
 		);
-	}
+	});
 
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
@@ -791,7 +793,7 @@ class Site4Chan extends ImageboardSite {
 			},
 			responseType: ResponseType.json
 		));
-		return (response.data['boards'] as List<dynamic>).map((board) {
+		return (response.data['boards'] as List<dynamic>).map(wrapUnsafe((board) {
 			return ImageboardBoard(
 				name: board['board'],
 				title: board['title'],
@@ -809,7 +811,7 @@ class Site4Chan extends ImageboardSite {
 				imageCooldown: board['cooldowns']?['images'],
 				spoilers: board['spoilers'] == 1
 			);
-		}).toList();
+		})).toList();
 	}
 
 	@override
