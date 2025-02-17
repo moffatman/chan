@@ -377,10 +377,25 @@ class ThreadRow extends StatelessWidget {
 		final borderRadius = (style.isGrid && settings.catalogGridModeCellBorderRadiusAndMargin) ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
 		final double subheaderFontSize = site.classicCatalogStyle ? 16 : 15;
 		final spaceSpan = site.classicCatalogStyle ? const TextSpan(text: ' ') : const TextSpan(text: ' ', style: TextStyle(fontSize: 15));
+		final op = latestThread.posts_.first;
 		final headerRow = [
-			if (settings.showNameInCatalog && !(settings.hideDefaultNamesInCatalog && latestThread.posts_.first.name == site.defaultUsername)) ...[
+			if (
+				settings.showNameInCatalog &&
+				// Don't add if default should be hidden
+			  !(settings.hideDefaultNamesInCatalog && op.name == site.defaultUsername && op.trip == null) &&
+				// Don't add if blank
+				!(op.name.isEmpty && (op.trip == null || !settings.showTripOnPosts))
+			) ...[
 				TextSpan(
-					text: settings.filterProfanity(site.formatUsername(latestThread.posts_.first.name)),
+					text: settings.filterProfanity(site.formatUsername(op.name)),
+					style: TextStyle(
+						fontWeight: FontWeight.w600,
+						fontVariations: CommonFontVariations.w600,
+						fontSize: subheaderFontSize
+					)
+				),
+				if (settings.showTripOnPosts && op.trip != null) TextSpan(
+					text: settings.filterProfanity(op.trip!),
 					style: TextStyle(
 						fontWeight: FontWeight.w600,
 						fontVariations: CommonFontVariations.w600,
@@ -389,11 +404,11 @@ class ThreadRow extends StatelessWidget {
 				),
 				spaceSpan
 			],
-			if (settings.showFlagInCatalogHeader && latestThread.posts_.first.flag != null) ...[
+			if (settings.showFlagInCatalogHeader && op.flag != null) ...[
 				makeFlagSpan(
 					context: context,
 					zone: null,
-					flag: latestThread.posts_.first.flag!,
+					flag: op.flag!,
 					includeTextOnlyContent: true,
 					appendLabels: settings.showCountryNameInCatalogHeader,
 					style: TextStyle(
@@ -535,7 +550,7 @@ class ThreadRow extends StatelessWidget {
 										),
 										if (site.classicCatalogStyle) ...[
 											if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
-											latestThread.posts_.first.span.build(
+											op.span.build(
 												context, context.watch<PostSpanZoneData>(), settings, theme,
 												(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 													maxLines: switch (approxHeight) {
@@ -681,7 +696,7 @@ class ThreadRow extends StatelessWidget {
 					),
 					builder: (ctx, _) {
 						final others = [
-							if (site.classicCatalogStyle && latestThread.posts_.first.text.isNotEmpty) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+							if (site.classicCatalogStyle && op.text.isNotEmpty) op.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 								maxLines: switch (approxHeight) {
 									double approxHeight => 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
 									null => null
@@ -706,7 +721,7 @@ class ThreadRow extends StatelessWidget {
 					}
 				)
 			);
-			if (headerRow.isEmpty && latestThread.posts_.first.text.isEmpty) {
+			if (headerRow.isEmpty && op.text.isEmpty) {
 				// Avoid too big blank space when there is no text
 				return Column(
 					mainAxisSize: MainAxisSize.min,
