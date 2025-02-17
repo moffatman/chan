@@ -25,6 +25,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
@@ -61,6 +62,7 @@ import 'package:string_similarity/string_similarity.dart';
 
 class PostSpanRenderOptions {
 	final TapGestureRecognizer? recognizer;
+	final GestureRecognizer? recognizer2;
 	final bool overrideRecognizer;
 	final Color? overrideTextColor;
 	final bool showCrossThreadLabel;
@@ -82,6 +84,7 @@ class PostSpanRenderOptions {
 	final bool showEmbeds;
 	const PostSpanRenderOptions({
 		this.recognizer,
+		this.recognizer2,
 		this.overrideRecognizer = false,
 		this.overrideTextColor,
 		this.showCrossThreadLabel = true,
@@ -106,6 +109,7 @@ class PostSpanRenderOptions {
 
 	PostSpanRenderOptions copyWith({
 		TapGestureRecognizer? recognizer,
+		GestureRecognizer? recognizer2,
 		bool? overrideRecognizer,
 		Color? overrideTextColor,
 		TextStyle? baseTextStyle,
@@ -123,6 +127,7 @@ class PostSpanRenderOptions {
 		bool? showEmbeds
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer ?? this.recognizer,
+		recognizer2: recognizer2 ?? this.recognizer2,
 		overrideRecognizer: overrideRecognizer ?? this.overrideRecognizer,
 		overrideTextColor: overrideTextColor ?? this.overrideTextColor,
 		showCrossThreadLabel: showCrossThreadLabel ?? this.showCrossThreadLabel,
@@ -747,7 +752,8 @@ class PostTextSpan extends PostTerminalSpan {
 				if (match.start != lastEnd) {
 					children.add(TextSpan(
 						text: str.substring(lastEnd, match.start),
-						recognizer: options.recognizer
+						recognizer: options.recognizer,
+						recognizer2: options.recognizer2
 					));
 				}
 				children.add(TextSpan(
@@ -756,21 +762,24 @@ class PostTextSpan extends PostTerminalSpan {
 						color: Colors.black,
 						backgroundColor: Colors.yellow
 					),
-					recognizer: options.recognizer
+					recognizer: options.recognizer,
+					recognizer2: options.recognizer2
 				));
 				lastEnd = match.end;
 			}
 			if (lastEnd < str.length) {
 				children.add(TextSpan(
 					text: str.substring(lastEnd),
-					recognizer: options.recognizer
+					recognizer: options.recognizer,
+					recognizer2: options.recognizer2
 				));
 			}
 		}
 		else {
 			children.add(TextSpan(
 				text: str,
-				recognizer: options.recognizer
+				recognizer: options.recognizer,
+				recognizer2: options.recognizer2
 			));
 		}
 		return TextSpan(
@@ -780,6 +789,7 @@ class PostTextSpan extends PostTerminalSpan {
 				decorationColor: options.overrideTextColor
 			),
 			recognizer: options.recognizer,
+			recognizer2: options.recognizer2,
 			onEnter: options.onEnter,
 			onExit: options.onExit
 		);
@@ -1931,6 +1941,28 @@ class PostLinkSpan extends PostTerminalSpan {
 			_trailingJunkPattern,
 			(m) => m.group(1)!
 		);
+		(String?, BoardThreadOrPostIdentifier, String?)? imageboardTarget;
+		Future<void> onLongPress() async {
+			await shareOne(
+				context: context,
+				text: cleanedUrl,
+				type: "text",
+				sharePositionOrigin: null,
+				additionalOptions: {
+					if (imageboardTarget != null)
+						'Open in new tab': () async {
+							context.read<ChanTabs>().addNewTab(
+								withImageboardKey: imageboardTarget?.$1 ?? context.read<Imageboard?>()?.key,
+								withBoard: imageboardTarget?.$2.board,
+								withThread: imageboardTarget?.$2.threadIdentifier,
+								withInitialPostId: imageboardTarget?.$2.postId,
+								initiallyUseArchive: imageboardTarget?.$3,
+								activate: true
+							);
+						}
+				}
+			);
+		}
 		final cleanedUri = Uri.tryParse(cleanedUrl);
 		if (!options.showRawSource && settings.useEmbeds) {
 			final snapshot = _getSnapshot(zone, options.showEmbeds);
@@ -1941,7 +1973,7 @@ class PostLinkSpan extends PostTerminalSpan {
 					// Just show the URL
 					data = null;
 				}
-				final imageboardTarget = data?.imageboardTarget;
+				imageboardTarget = data?.imageboardTarget;
 				if (imageboardTarget != null && (imageboardTarget.$1 ?? zone.imageboard.key) == zone.imageboard.key) {
 					final thread = imageboardTarget.$2.threadIdentifier;
 					if (thread != null) {
@@ -2172,7 +2204,6 @@ class PostLinkSpan extends PostTerminalSpan {
 						);
 					}
 					onTap() {
-						final imageboardTarget = snapshot.data?.imageboardTarget;
 						if (imageboardTarget != null) {
 							openImageboardTarget(context, (ImageboardRegistry.instance.getImageboard(imageboardTarget.$1) ?? zone.imageboard, imageboardTarget.$2, imageboardTarget.$3));
 						}
@@ -2198,10 +2229,15 @@ class PostLinkSpan extends PostTerminalSpan {
 					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
-						child: CupertinoButton(
-							padding: EdgeInsets.zero,
-							onPressed: onTap,
-							child: tapChild
+						child: GestureDetector(
+							onLongPress: onLongPress,
+							// To win against CupertinoContextMenu2
+							longPressDuration: kLongPressTimeout ~/ 2,
+							child: CupertinoButton(
+								padding: EdgeInsets.zero,
+								onPressed: onTap,
+								child: tapChild
+							)
 						)
 					);
 				}
@@ -2209,6 +2245,7 @@ class PostLinkSpan extends PostTerminalSpan {
 		}
 		return PostTextSpan(name ?? url).build(context, post, zone, settings, theme, options.copyWith(
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () => openBrowser(context, cleanedUri!)),
+			recognizer2: options.overridingRecognizer != null ? null : (LongPressGestureRecognizer(debugOwner: this, duration: kLongPressTimeout ~/ 2)..onLongPress = onLongPress),
 			baseTextStyle: options.baseTextStyle.copyWith(
 				decorationColor: theme.linkColor,
 				decoration: TextDecoration.underline,
