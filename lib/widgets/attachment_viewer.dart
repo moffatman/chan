@@ -162,13 +162,13 @@ extension on GallerySavePathOrganizing {
 			case GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders:
 				final title = controller.thread?.title?.replaceAll('/', '_');
 				if (title == null) {
-					return [attachment.board, attachment.threadId.toString()];
+					return [controller.imageboard.site.name, attachment.board, attachment.threadId.toString()];
 				}
 				return [controller.imageboard.site.name, attachment.board, '${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
 			case GallerySavePathOrganizing.siteAndThreadNameSubfolders:
 				final title = controller.thread?.title?.replaceAll('/', '_');
 				if (title == null) {
-					return ['${attachment.board} - ${attachment.threadId}'];
+					return [controller.imageboard.site.name, '${attachment.board} - ${attachment.threadId}'];
 				}
 				return [controller.imageboard.site.name, '${attachment.board} - ${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
 		}
