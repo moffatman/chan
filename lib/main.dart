@@ -782,19 +782,20 @@ class ChanTabs extends ChangeNotifier {
 		String? initiallyUseArchive
 	}) {
 		final pos = atPosition ?? Persistence.tabs.length;
+		final thread = withThread ?? (withThreadId == null ? null : ThreadIdentifier(withBoard!, withThreadId));
 		final tab = PersistentBrowserTab(
 			imageboardKey: withImageboardKey,
 			board: withImageboardKey == null || withBoard == null ? null : withBoard,
-			thread: withThread ?? (withThreadId == null ? null : ThreadIdentifier(withBoard!, withThreadId)),
+			thread: thread,
 			incognito: incognito,
 			initialSearch: withInitialSearch
 		);
 		tab.initialize();
-		if (withBoard != null && withThreadId != null && withInitialPostId != null) {
-			tab.initialPostId[ThreadIdentifier(withBoard, withThreadId)] = withInitialPostId;
+		if (thread != null && withInitialPostId != null) {
+			tab.initialPostId[thread] = withInitialPostId;
 		}
-		if (withBoard != null && withThreadId != null && initiallyUseArchive != null) {
-			tab.initiallyUseArchive[ThreadIdentifier(withBoard, withThreadId)] = initiallyUseArchive;
+		if (thread != null && initiallyUseArchive != null) {
+			tab.initiallyUseArchive[thread] = initiallyUseArchive;
 		}
 		insertInitializedTab(pos, tab,
 			keepTabPopupOpen: keepTabPopupOpen,
