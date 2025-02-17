@@ -115,7 +115,7 @@ class Imageboard extends ChangeNotifier {
 					// Load for [title], [isArchived]
 					await persistence.getThreadStateIfExists(thread)?.ensureThreadLoaded();
 				}
-				Outbox.instance.submitPost(key, draft, const QueueStateIdle());
+				Outbox.instance.submitPost(key, draft, QueueStateIdle());
 			}
 		}
 		catch (e, st) {
@@ -286,7 +286,7 @@ class Imageboard extends ChangeNotifier {
 			}
 			persistence.didUpdateBrowserState();
 			Outbox.instance.headlessSolveFailed = true;
-			Outbox.instance.submitPost(key, submittedPost, const QueueStateIdle());
+			Outbox.instance.submitPost(key, submittedPost, QueueStateIdle());
 			showToast(
 				context: ImageboardRegistry.instance.context!,
 				message: '${submittedPost.threadId == null ? 'Thread' : 'Post'} spam-filtered',

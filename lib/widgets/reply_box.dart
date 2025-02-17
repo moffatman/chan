@@ -1001,7 +1001,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							onPressed: () {
 								imageboard.persistence.browserState.outbox.add(post);
 								runWhenIdle(const Duration(milliseconds: 500), imageboard.persistence.didUpdateBrowserState);
-								final entry = Outbox.instance.submitPost(imageboard.key, post, const QueueStateIdle());
+								final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateIdle());
 								_submittingPosts.add(entry);
 								_listenToReplyPosting(entry);
 								draft = null; // Clear
@@ -2190,7 +2190,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						post.name = _nameFieldController.text;
 						persistence.browserState.outbox.add(post);
 						runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
-						final entry = Outbox.instance.submitPost(imageboard.key, post, const QueueStateIdle());
+						final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateIdle());
 						_submittingPosts.add(entry);
 						_listenToReplyPosting(entry);
 						draft = null; // Clear
@@ -2252,7 +2252,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		}
 		// Add the old content as a draft to the outbox, if non-trivial
 		if (_isNonTrivial(old) && old != entry.post) {
-			Outbox.instance.submitPost(context.read<Imageboard>().key, old, const QueueStateIdle());
+			Outbox.instance.submitPost(context.read<Imageboard>().key, old, QueueStateIdle());
 		}
 		setState(() {});
 	}

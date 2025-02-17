@@ -19,7 +19,7 @@ import 'package:mutex/mutex.dart';
 typedef QueueEntryActionKey = (String imageboardKey, BoardKey board, ImageboardAction action);
 
 sealed class QueueState<T> {
-	const QueueState();
+	QueueState();
 	bool get isIdle;
 	bool get isSubmittable;
 	bool get isFinished => isIdle && !isSubmittable;
@@ -30,7 +30,7 @@ sealed class QueueState<T> {
 }
 
 class QueueStateIdle<T> extends QueueState<T> {
-	const QueueStateIdle();
+	QueueStateIdle();
 	@override
 	bool get isIdle => true;
 	@override
@@ -43,7 +43,7 @@ class QueueStateNeedsCaptcha<T> extends QueueState<T> {
 	final BuildContext? context;
 	final VoidCallback? beforeModal;
 	final VoidCallback? afterModal;
-	const QueueStateNeedsCaptcha(this.context, {this.beforeModal, this.afterModal});
+	QueueStateNeedsCaptcha(this.context, {this.beforeModal, this.afterModal});
 	@override
 	bool get isIdle => false;
 	@override
@@ -56,7 +56,7 @@ class QueueStateNeedsCaptcha<T> extends QueueState<T> {
 
 class QueueStateGettingCaptcha<T> extends QueueState<T> {
 	final CancelToken? cancelToken;
-	const QueueStateGettingCaptcha({
+	QueueStateGettingCaptcha({
 		this.cancelToken
 	});
 	@override
@@ -72,7 +72,7 @@ class QueueStateGettingCaptcha<T> extends QueueState<T> {
 class QueueStateWaitingWithCaptcha<T> extends QueueState<T> {
 	final DateTime submittedAt;
 	final CaptchaSolution captchaSolution;
-	const QueueStateWaitingWithCaptcha(this.submittedAt, this.captchaSolution);
+	QueueStateWaitingWithCaptcha(this.submittedAt, this.captchaSolution);
 	@override
 	bool get isIdle => false;
 	@override
@@ -92,7 +92,7 @@ class QueueStateSubmitting<T> extends QueueState<T> {
 	/// Can be called to skip current step (arbitrary delay?)
 	final WaitMetadata? wait;
 	final CancelToken? cancelToken;
-	const QueueStateSubmitting({
+	QueueStateSubmitting({
 		required this.message,
 		this.wait,
 		this.cancelToken
@@ -111,7 +111,7 @@ class QueueStateFailed<T> extends QueueState<T> {
 	final Object error;
 	final StackTrace stackTrace;
 	final CaptchaSolution? captchaSolution;
-	const QueueStateFailed(this.error, this.stackTrace, {this.captchaSolution});
+	QueueStateFailed(this.error, this.stackTrace, {this.captchaSolution});
 	@override
 	bool get isIdle => true;
 	@override
@@ -128,7 +128,7 @@ class QueueStateDone<T> extends QueueState<T> {
 	final DateTime time;
 	final CaptchaSolution captchaSolution;
 	final T result;
-	const QueueStateDone(this.time, this.result, this.captchaSolution);
+	QueueStateDone(this.time, this.result, this.captchaSolution);
 	@override
 	bool get isIdle => true;
 	@override
@@ -140,7 +140,7 @@ class QueueStateDone<T> extends QueueState<T> {
 }
 
 class QueueStateDeleted<T> extends QueueState<T> {
-	const QueueStateDeleted();
+	QueueStateDeleted();
 	@override
 	bool get isIdle => true;
 	@override
@@ -188,16 +188,25 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 
 	bool shouldReplace(QueueEntry other);
 
+	bool _transitionIfActive(QueueState<T> newState) {
+		if (_state is QueueStateDeleted<T>) {
+			return false;
+		}
+		_state._dispose();
+		_state = newState;
+		notifyListeners();
+		return true;
+	}
+
 	Future<void> submit(BuildContext? context) async {
 		// Note -- if we are failed here. we might have a captcha.
 		// But just throw it away, it avoids tracking captcha problems.
 		try {
-			_state._dispose();
-			_state = QueueStateNeedsCaptcha(context);
-			notifyListeners();
-			if (queue?.captchaAllowedTime.isAfter(DateTime.now()) == false) {
-				// Grab the new captcha right away
-				await _preSubmit();
+			if (_transitionIfActive(QueueStateNeedsCaptcha(context))) {
+				if (queue?.captchaAllowedTime.isAfter(DateTime.now()) == false) {
+					// Grab the new captcha right away
+					await _preSubmit();
+				}
 			}
 		}
 		finally {
@@ -214,31 +223,30 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		else if (state is QueueStateGettingCaptcha<T>) {
 			state.cancelToken?.cancel();
 		}
-		_state._dispose();
-		_state = const QueueStateDeleted();
-		notifyListeners();
-		Future.microtask(Outbox.instance._process);
+		if (_transitionIfActive(QueueStateDeleted())) {
+			Future.microtask(Outbox.instance._process);
+		}
 	}
 
 	void undelete() {
-		_state = const QueueStateIdle();
+		_state._dispose();
+		_state = QueueStateIdle();
 		notifyListeners();
 		Future.microtask(Outbox.instance._process);
 	}
 
 	void cancel() {
-		final state = this.state;
-		if (state is QueueStateSubmitting<T>) {
-			state.cancelToken?.cancel();
-		}
-		else if (state is QueueStateGettingCaptcha<T>) {
-			state.cancelToken?.cancel();
-		}
 		print('$this::cancel()');
-		_state._dispose();
-		_state = const QueueStateIdle();
-		notifyListeners();
-		Future.microtask(Outbox.instance._process);
+		final state = this.state;
+		if (_transitionIfActive(QueueStateIdle<T>())) {
+			if (state is QueueStateSubmitting<T>) {
+				state.cancelToken?.cancel();
+			}
+			else if (state is QueueStateGettingCaptcha<T>) {
+				state.cancelToken?.cancel();
+			}
+			Future.microtask(Outbox.instance._process);
+		}
 	}
 
 	/// Convenience for UI
@@ -356,10 +364,8 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						queue?.captchaAllowedTime = tryAgainAt;
 					}
 					// Maybe remember the captcha cooldown. But don't try to resubmit then.
-					if (_state is! QueueStateDeleted<T>) {
-						// Don't revive due to exception from cancellation
+					if (_transitionIfActive(QueueStateIdle())) {
 						print('Idling following captcha == null');
-						_state = const QueueStateIdle();
 					}
 				}
 			}
@@ -374,7 +380,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					);
 				}
 				queue?.captchaAllowedTime = e.tryAgainAt;
-				_state = initialNeedsCaptchaState;
+				_transitionIfActive(initialNeedsCaptchaState);
 			}
 			on HeadlessSolveNotPossibleException {
 				final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
@@ -386,16 +392,14 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						easyButton: ('Solve', () => submit(context))
 					);
 				}
-				print('Idling after headless solve failed');
-				_state = const QueueStateIdle();
+				if (_transitionIfActive(QueueStateIdle())) {
+					print('Idling after headless solve failed');
+				}
 			}
 			catch (e, st) {
 				print(e);
 				print(st);
-				if (_state is! QueueStateIdle<T>) {
-					// not cancelled
-					_state = QueueStateFailed(e, st);
-				}
+				_transitionIfActive(QueueStateFailed(e, st));
 			}
 			notifyListeners();
 		}
@@ -407,8 +411,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			final expiresAt = initialState.captchaSolution.expiresAt;
 			if (expiresAt != null && expiresAt.isBefore(deadline)) {
 				initialState.captchaSolution.dispose();
-				_state = initialNeedsCaptchaState ?? const QueueStateNeedsCaptcha(null);
-				notifyListeners();
+				_transitionIfActive(initialNeedsCaptchaState ?? QueueStateNeedsCaptcha(null));
 			}
 		}
 	});
@@ -437,7 +440,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						await Future.any([Future.delayed(regretTime.difference(DateTime.now())), skipCompleter.future, cancelToken.whenCancel]);
 						if (cancelToken.isCancelled || _state.isIdle) {
 							if (!_state.isIdle) {
-								_state = const QueueStateIdle();
+								_state = QueueStateIdle();
 								notifyListeners();
 							}
 							return false;
@@ -458,7 +461,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						await Future.any([Future.delayed(delay), skipCompleter.future, cancelToken.whenCancel]);
 						if (cancelToken.isCancelled || _state.isIdle) {
 							if (!_state.isIdle) {
-								_state = const QueueStateIdle();
+								_state = QueueStateIdle();
 								notifyListeners();
 							}
 							return false;
@@ -491,15 +494,11 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				catch (e, st) {
 					print(e);
 					print(st);
-					if (_state is! QueueStateDeleted<T>) {
-						// Don't revive due to exception from cancellation
-						_state = QueueStateFailed(e, st, captchaSolution: captchaSolution);
-						if (e.toStringDio().toLowerCase().contains('captcha')) {
-							// Captcha didn't work. For now, let's disable the auto captcha solver
-							Outbox.instance.headlessSolveFailed = true;
-						}
-						notifyListeners();
+					if (e.toStringDio().toLowerCase().contains('captcha')) {
+						// Captcha didn't work. For now, let's disable the auto captcha solver
+						Outbox.instance.headlessSolveFailed = true;
 					}
+					_transitionIfActive(QueueStateFailed(e, st, captchaSolution: captchaSolution));
 				}
 			}
 			return false;
