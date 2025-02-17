@@ -23,7 +23,6 @@ class LoggingInterceptor extends Interceptor {
 		await shareOne(
 			context: context,
 			text: gzippedPath,
-			subject: FileBasename.get(gzippedPath),
 			type: 'file',
 			sharePositionOrigin: null
 		);

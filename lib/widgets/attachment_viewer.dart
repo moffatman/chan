@@ -1029,7 +1029,6 @@ class AttachmentViewerController extends ChangeNotifier {
 		await shareOne(
 			context: context,
 			text: path,
-			subject: _downloadFilename(convertForCompatibility),
 			type: "file",
 			sharePositionOrigin: sharePosition
 		);
