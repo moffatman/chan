@@ -376,7 +376,7 @@ class Imageboard extends ChangeNotifier {
 								actions: [
 									if (url != null) AdaptiveDialogAction(
 										child: const Text('See reason'),
-										onPressed: () => openCookieBrowser(context, url)
+										onPressed: () => openCookieBrowser(context, url, useFullWidthGestures: false)
 									),
 									AdaptiveDialogAction(
 										child: const Text('Clear cookies'),

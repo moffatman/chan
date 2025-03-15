@@ -37,7 +37,7 @@ Future<bool> showAuthPageHelperPopup(BuildContext context, Imageboard imageboard
 							bool savedAnything = false;
 							await openCookieBrowser(context, url, onCookiesSaved: (cookies) {
 								savedAnything |= cookies.isNotEmpty;
-							});
+							}, useFullWidthGestures: false);
 							if (savedAnything && context.mounted) {
 								Navigator.pop(context, true);
 							}

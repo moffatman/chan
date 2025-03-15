@@ -201,11 +201,12 @@ class _CookieBrowserState extends State<CookieBrowser> {
 }
 
 // For some unknown reason, need to use root navigator. or else tapping doesn't work well on iosOnMac (due to NativeDropView i guess)
-Future<void> openCookieBrowser(BuildContext context, Uri url, {ValueChanged<List<Cookie>>? onCookiesSaved}) => Navigator.of(context, rootNavigator: true).push(adaptivePageRoute(
+Future<void> openCookieBrowser(BuildContext context, Uri url, {ValueChanged<List<Cookie>>? onCookiesSaved, required bool useFullWidthGestures}) => Navigator.of(context, rootNavigator: true).push(adaptivePageRoute(
 	builder: (context) => CookieBrowser(
 		initialUrl: url,
 		onCookiesSaved: onCookiesSaved
-	)
+	),
+	useFullWidthGestures: useFullWidthGestures
 ));
 
 const _kLoginFieldPrefix = '__cookie_browser__';

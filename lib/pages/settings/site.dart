@@ -107,6 +107,7 @@ final siteSettings = [
 											onPressed: () => openCookieBrowser(
 												context,
 												url,
+												useFullWidthGestures: false
 											)
 										)
 										else if (imageboard.site.hasLinkCookieAuth) AdaptiveIconButton(
@@ -164,6 +165,7 @@ final siteSettings = [
 												openCookieBrowser(
 													context,
 													url,
+													useFullWidthGestures: false,
 												);
 											}
 										),
