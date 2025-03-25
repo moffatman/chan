@@ -265,7 +265,9 @@ class ThreadWatcher extends ChangeNotifier {
 		await _updateThread(persistence.getThreadState(identifier));
 	}
 
-	Future<bool> _updateThread(PersistentThreadState threadState) async {
+	late final _updateThreadDebouncer = Debouncer1(__updateThread);
+	Future<bool> _updateThread(PersistentThreadState threadState) => _updateThreadDebouncer.debounce(threadState);
+	Future<bool> __updateThread(PersistentThreadState threadState) async {
 		Thread? newThread;
 		try {
 			if (site.isPaged) {

@@ -216,7 +216,13 @@ class Notifications {
 			else {
 				throw Exception('Unknown notification type ${data['type']}');
 			}
-			await child.localWatcher?.updateThread(target.thread);
+			if (switch (await child.persistence.getThreadStateIfExists(target.thread)?.getThread()) {
+				// Update needed
+				Thread t => target.postId != null && !t.posts_.any((p) => p.id == target.postId),
+				null => true
+			}) {
+				await child.localWatcher?.updateThread(target.thread);
+			}
 			if (child.getThreadWatch(target.thread)?.foregroundMuted != true) {
 				child.foregroundStream.add(notification);
 			}

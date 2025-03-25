@@ -670,6 +670,26 @@ Future<T> runEphemerallyLocked<T>(String key, Future<T> Function() criticalSecti
 	}
 }
 
+class Debouncer1<T, A1> {
+	final Future<T> Function(A1) function;
+	final Map<A1, Future<T>> _futures = {};
+	Debouncer1(this.function);
+
+	Future<T> debounce(A1 arg) async {
+		final existingFuture = _futures[arg];
+		if (existingFuture != null) {
+			return existingFuture;
+		}
+		final future = _futures[arg] = function(arg);
+		try {
+			return await future;
+		}
+		finally {
+			_futures.remove(arg);
+		}
+	}
+}
+
 extension FriendlyCompare on String {
 	/// Compare case-insensitively, ignoring leading symbols
 	int friendlyCompareTo(String other) {
