@@ -331,8 +331,8 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	Future<void> _maybeUpdateBoardInformation(String boardName) async {
-		final board = (persistence?.maybeGetBoard(boardName))!;
-		if (DateTime.now().difference(board.additionalDataTime ?? DateTime(2000)) > const Duration(days: 3)) {
+		final board = persistence?.maybeGetBoard(boardName);
+		if (DateTime.now().difference(board?.additionalDataTime ?? DateTime(2000)) > const Duration(days: 3)) {
 			// Not updated recently
 			return;
 		}
