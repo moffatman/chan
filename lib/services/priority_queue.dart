@@ -7,6 +7,9 @@ class _PriorityQueueEntry<Key> {
 	final Key key;
 	Completer<void> completer = Completer();
 	_PriorityQueueEntry(this.key);
+
+	@override
+	String toString() => '_PriorityQueueEntry<$Key>($key)';
 }
 
 class _PriorityQueueGroup<Key, GroupKey> {
@@ -117,6 +120,9 @@ class _PriorityQueueGroup<Key, GroupKey> {
 			print('[$groupKey] Still waiting for ${_stack.first.key}');
 		}
 	});
+
+	@override
+	String toString() => '_PriorityQueueGroup<$Key, $GroupKey>(groupKey: $groupKey, _stack: $_stack, delayUntil: $delayUntil)';
 }
 
 class PriorityQueue<Key, GroupKey> {
@@ -154,4 +160,7 @@ class PriorityQueue<Key, GroupKey> {
 			await end(key);
 		}
 	}
+
+	@override
+	String toString() => 'PriorityQueue<$Key, $GroupKey>(_groups: $_groups)';
 }
