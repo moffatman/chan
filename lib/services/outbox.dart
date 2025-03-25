@@ -784,10 +784,7 @@ class Outbox extends ChangeNotifier {
 					// List was idle, set the cooldown based on new entry type
 					final submissionTimes = queue.list.tryMap((e) => e.state._submissionTime).toList();
 					if (submissionTimes.isNotEmpty) {
-						final newAllowedTime = submissionTimes.reduce((a, b) => a.isAfter(b) ? a : b).add(newEntry._cooldown);
-						if (newAllowedTime.isAfter(queue.allowedTime)) {
-							queue.allowedTime = newAllowedTime;
-						}
+						queue.allowedTime = submissionTimes.reduce((a, b) => a.isAfter(b) ? a : b).add(newEntry._cooldown);
 					}
 				}
 			}
