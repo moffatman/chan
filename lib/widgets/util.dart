@@ -1771,7 +1771,7 @@ extension ProtectedAccess on ScrollController {
 	// ignore: INVALID_USE_OF_PROTECTED_MEMBER
 	bool get hasOnePosition => positions.length == 1;
 	ScrollPosition? get tryPosition {
-		if (positions.length == 1) {
+		if (positions.length == 1 && position.haveDimensions) {
 			return position;
 		}
 		return null;

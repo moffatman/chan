@@ -4203,7 +4203,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 	}
 
-	bool get scrollControllerPositionLooksGood => scrollController?.tryPosition?.hasViewportDimension ?? false;
+	bool get scrollControllerPositionLooksGood => scrollController?.tryPosition?.haveDimensions ?? false;
 
 	void mergeTrees() {
 		state?._mergeTrees(rebuild: true);
