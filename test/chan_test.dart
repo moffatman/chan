@@ -7,6 +7,7 @@ import 'package:chan/services/compress_html.dart';
 import 'package:chan/services/priority_queue.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:flutter/foundation.dart';
 import 'package:test/test.dart';
@@ -170,7 +171,7 @@ void main() {
       }
     });
 
-    test('status code', () async {
+    test('status code 404', () async {
       final root = await Directory.current.createTemp('caching_server_');
       VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
       final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -180,7 +181,7 @@ void main() {
         requests.add(request);
       });
       try {
-        final digestFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
+        final digestFuture0 = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests.length, equals(1));
         requests[0].response.bufferOutput = false;
@@ -188,13 +189,28 @@ void main() {
         requests[0].response.contentLength = 10000;
         requests[0].response.add(Uint8List(1000));
         await requests[0].response.flush();
-        final digest = await digestFuture;
+        try {
+          await digestFuture0;
+          throw Exception('Did not get expected exception');
+        }
+        on HTTPStatusException catch (e) {
+          expect(e.code, 404);
+        }
+        final digestFuture1 = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests.length, equals(2));
+        requests[1].response.bufferOutput = false;
+        requests[1].response.statusCode = 200;
+        requests[1].response.contentLength = 10000;
+        requests[1].response.add(Uint8List(1000));
+        await requests[0].response.flush();
+        final digest = await digestFuture1;
         final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
         clientRequest.bufferOutput = false;
         final response = await clientRequest.close();
         await Future.delayed(const Duration(milliseconds: 100));
         expect(response.contentLength, equals(10000));
-        expect(response.statusCode, equals(404));
+        expect(response.statusCode, equals(200));
         final chunks = <List<int>>[];
         bool responseStreamSubscriptionIsDone = false;
         response.listen(chunks.add, onDone: () {
@@ -203,12 +219,12 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
         expect(chunks.length, equals(1));
         expect(chunks[0].length, equals(1000));
-        requests[0].response.add(Uint8List(9000));
-        await requests[0].response.flush();
+        requests[1].response.add(Uint8List(9000));
+        await requests[1].response.flush();
         await Future.delayed(const Duration(milliseconds: 100));
         expect(chunks.length, equals(2));
         expect(chunks[1].length, equals(9000));
-        await requests[0].response.close();
+        await requests[1].response.close();
         await Future.delayed(const Duration(milliseconds: 100));
         expect(chunks.length, equals(2));
         expect(responseStreamSubscriptionIsDone, isTrue);
@@ -225,13 +241,13 @@ void main() {
           responseStreamSubscriptionIsDone = true;
         });
         await Future.delayed(const Duration(milliseconds: 100));
-        expect(response.contentLength, equals(10000));
-        expect(response.statusCode, equals(404));
+        expect(response2.contentLength, equals(10000));
+        expect(response2.statusCode, equals(200));
         await Future.delayed(const Duration(milliseconds: 100));
         expect(chunks.length, equals(1));
         expect(chunks[0].length, equals(10000));
         expect(responseStreamSubscriptionIsDone, isTrue);
-        expect(requests.length, equals(1));
+        expect(requests.length, equals(2));
       }
       finally {
         await root.delete(recursive: true);
@@ -604,7 +620,7 @@ void main() {
         expect(responseStreamSubscriptionIsDone, isTrue);
         expect(responseStreamSubscriptionIsErrored, isTrue);
         await Future.delayed(const Duration(milliseconds: 200));
-        final digestFuture2 = VideoServer.instance.startCachingDownload(uri: Uri.http('localhost:${fakeServer.port}'), interruptible: true);
+        final digestFuture2 = VideoServer.instance.startCachingDownload(uri: url, interruptible: true);
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests.length, equals(2));
         expect(requests[1].method, equals('HEAD'));
@@ -694,6 +710,7 @@ void main() {
       await q.start(f);
       await q.end(e);
       await q.end(f);
+      q.dispose();
     });
   });
 
@@ -703,5 +720,25 @@ void main() {
     expect(FileBasename.get('a//'), 'a');
     expect(FileBasename.get('asdf'), 'asdf');
     expect(FileBasename.get('/f/g/b/c'), 'c');
+  });
+
+  test('debounce', () async {
+    int retval = 0;
+    final debouncer = Debouncer1((int x) async {
+      final r = retval;
+      await Future.delayed(Duration(milliseconds: x));
+      return r;
+    });
+    final f1 = debouncer.debounce(100);
+    retval = 1;
+    await Future.delayed(const Duration(milliseconds: 50));
+    final f2 = debouncer.debounce(100);
+    await Future.delayed(const Duration(milliseconds: 51));
+    final v1 = await f1;
+    expect(v1, equals(0));
+    final v2 = await f2;
+    expect(v2, equals(0));
+    final v3 = await debouncer.debounce(100);
+    expect(v3, equals(1));
   });
 }
