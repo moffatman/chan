@@ -450,9 +450,13 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	void _checkForeground() {
-		final masterDetailHint = context.read<MasterDetailHint?>();
-		_foreground = masterDetailHint == null // Dev board in settings
-				 	|| masterDetailHint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null;
+		_foreground = switch (context.read<MasterDetailHint?>()) {
+			null =>
+				// Dev board in settings
+				context.read<ChanTabs?>()?.mainTabIndex == 4,
+			MasterDetailHint hint =>
+				hint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null
+		};
 	}
 
 	void _onSlowScroll() {
