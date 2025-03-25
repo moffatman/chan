@@ -282,10 +282,10 @@ class PersistentThreadStateFields {
     fieldName: 'primarySubtreeParents',
     merger: MapMerger(PrimitiveMerger()),
   );
-  static bool getShowInHistory(PersistentThreadState x) => x.showInHistory;
-  static void setShowInHistory(PersistentThreadState x, bool v) =>
+  static bool? getShowInHistory(PersistentThreadState x) => x.showInHistory;
+  static void setShowInHistory(PersistentThreadState x, bool? v) =>
       x.showInHistory = v;
-  static const showInHistory = HiveFieldAdapter<PersistentThreadState, bool>(
+  static const showInHistory = HiveFieldAdapter<PersistentThreadState, bool?>(
     getter: getShowInHistory,
     setter: setShowInHistory,
     fieldNumber: 22,
@@ -479,7 +479,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       imageboardKey: fields[18] == null ? '' : fields[18] as String,
       board: fields[19] == null ? '' : fields[19] as String,
       id: fields[20] == null ? 0 : fields[20] as int,
-      showInHistory: fields[22] == null ? true : fields[22] as bool,
+      showInHistory: fields[22] == null ? true : fields[22] as bool?,
       unseenPostIds: fields[24] as EfficientlyStoredIntSet?,
       postSortingMethod: fields[26] as PostSortingMethod?,
       postIdsToStartRepliesAtBottom: fields[27] as EfficientlyStoredIntSet?,

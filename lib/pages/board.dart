@@ -457,7 +457,8 @@ class BoardPageState extends State<BoardPage> {
 	);
 
 	void _showGalleryFromNextImage({bool initiallyShowGrid = false}) {
-		if (board != null && Settings.instance.showImages(context, board!.name)) {
+		final board = this.board;
+		if (board != null && Settings.instance.showImages(context, board.name)) {
 			final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.item.attachments.isNotEmpty, orElse: () {
 				return _listController.items.firstWhere((t) => t.item.attachments.isNotEmpty);
 			});
@@ -466,19 +467,12 @@ class BoardPageState extends State<BoardPage> {
 			showGallery(
 				context: context,
 				attachments: attachments,
-				replyCounts: {
+				threads: {
 					for (final thread in _listController.items)
 						for (final attachment in thread.item.attachments)
-							attachment: thread.item.replyCount
+							attachment: imageboard.scope(thread.item)
 				},
-				threads: (
-					threads: {
-						for (final thread in _listController.items)
-							for (final attachment in thread.item.attachments)
-								attachment: imageboard.scope(thread.item)
-					},
-					onThreadSelected: (t) => _onThreadSelected(t.item.identifier)
-				),
+				onThreadSelected: (t) => _onThreadSelected(t.item.identifier),
 				initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.item.attachments.any((a2) => a2.id == a.id)),
 				onChange: (attachment) {
 					if (_listController.state?.searching ?? false) {
@@ -849,19 +843,12 @@ class BoardPageState extends State<BoardPage> {
 							showGallery(
 								context: context,
 								attachments: initialAttachmentInList == null ? [initialAttachment] : attachments,
-								replyCounts: {
+								threads: {
 									for (final thread in _listController.items)
 										for (final attachment in thread.item.attachments)
-											attachment: thread.item.replyCount
+											attachment: imageboard!.scope(thread.item)
 								},
-								threads: (
-									threads: {
-										for (final thread in _listController.items)
-											for (final attachment in thread.item.attachments)
-												attachment: imageboard!.scope(thread.item)
-									},
-									onThreadSelected: (t) => _onThreadSelected(t.item.identifier)
-								),
+								onThreadSelected: (t) => _onThreadSelected(t.item.identifier),
 								initialAttachment: initialAttachmentInList ?? initialAttachment,
 								onChange: (attachment) {
 									if (_listController.state?.searching ?? false) {

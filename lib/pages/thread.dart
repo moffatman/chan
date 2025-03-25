@@ -817,15 +817,13 @@ class ThreadPageState extends State<ThreadPage> {
 		showGalleryPretagged(
 			context: context,
 			attachments: attachments,
-			replyCounts: {
-				for (final post in persistentState.thread?.posts ?? const Iterable<Post>.empty())
-					for (final attachment in post.attachments)
-						attachment: post.replyIds.length
+			posts: {
+				for (final item in _listController.items)
+					for (final attachment in item.item.attachments)
+						attachment: persistentState.imageboard!.scope(item.item)
 			},
 			zone: zone,
 			replyBoxZone: _replyBoxZone,
-			isAttachmentAlreadyDownloaded: persistentState.isAttachmentDownloaded,
-			onAttachmentDownload: persistentState.didDownloadAttachment,
 			initiallyShowChrome: initiallyShowChrome,
 			initiallyShowGrid: initiallyShowGrid,
 			initialAttachment: initialAttachment,
@@ -1411,7 +1409,7 @@ class ThreadPageState extends State<ThreadPage> {
 											icon: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
 										)
 									),
-									if (!persistentState.showInHistory) AdaptiveIconButton(
+									if (!(persistentState.showInHistory ?? false)) AdaptiveIconButton(
 										onPressed: () {
 											lightHapticFeedback();
 											persistentState.showInHistory = true;

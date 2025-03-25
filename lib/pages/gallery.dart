@@ -102,21 +102,15 @@ class _PaddedRectClipper extends CustomClipper<Rect> {
 	bool shouldReclip(_PaddedRectClipper oldClipper) => padding != oldClipper.padding;
 }
 
-typedef AttachmentThreads = ({
-	Map<Attachment, ImageboardScoped<Thread>> threads,
-	ValueChanged<ImageboardScoped<Thread>> onThreadSelected
-});
-
 class GalleryPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
-	final Map<Attachment, int> replyCounts;
 	final Map<Attachment, Uri> initialGoodSources;
 	final Map<Attachment, Uri> overrideSources;
 	final PostSpanZoneData? zone;
-	final AttachmentThreads? threads;
+	final Map<Attachment, ImageboardScoped<Thread>> threads;
+	final Map<Attachment, ImageboardScoped<Post>> posts;
+	final ValueChanged<ImageboardScoped<Thread>>? onThreadSelected;
 	final ReplyBoxZone? replyBoxZone;
-	final bool Function(Attachment)? isAttachmentAlreadyDownloaded;
-	final ValueChanged<Attachment>? onAttachmentDownload;
 	final TaggedAttachment? initialAttachment;
 	final bool initiallyShowChrome;
 	final ValueChanged<TaggedAttachment>? onChange;
@@ -133,14 +127,13 @@ class GalleryPage extends StatefulWidget {
 
 	const GalleryPage({
 		required this.attachments,
-		this.replyCounts = const {},
 		this.overrideSources = const {},
 		this.initialGoodSources = const {},
 		this.zone,
-		this.threads,
+		this.threads = const {},
+		this.posts = const {},
+		this.onThreadSelected,
 		this.replyBoxZone,
-		this.isAttachmentAlreadyDownloaded,
-		this.onAttachmentDownload,
 		required this.initialAttachment,
 		this.initiallyShowChrome = false,
 		this.onChange,
@@ -190,6 +183,10 @@ class _GalleryPageState extends State<GalleryPage> {
 	/// To prevent Hero when entering with grid initially enabled
 	bool _doneInitialTransition = false;
 	bool _autoRotate = Settings.instance.autoRotateInGallery;
+	final Map<Attachment, int> _replyCounts = {};
+	/// Lazy way to prevent double download of ephemeral attachments, or SavedAttachments
+	/// in the same app session.
+	static final Set<Uri> _downloadedOverrideSources = {};
 
 	@override
 	void initState() {
@@ -197,6 +194,18 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (widget.initiallyShowGrid) {
 			// Hard to mute if loud when grid is covering
 			Settings.instance.setMuteAudio(true);
+		}
+		// Initialize _replyCounts
+		for (final attachment in widget.attachments) {
+			final thread = widget.threads[attachment.attachment];
+			if (thread != null) {
+				_replyCounts[attachment.attachment] = thread.item.replyCount;
+				continue;
+			}
+			final post = widget.posts[attachment.attachment];
+			if (post != null) {
+				_replyCounts[attachment.attachment] = post.item.replyCount;
+			}
 		}
 		_scrollCoalescer = BufferedListenable(const Duration(milliseconds: 10));
 		_slideListenable = EasyListenable();
@@ -300,6 +309,63 @@ class _GalleryPageState extends State<GalleryPage> {
 		_gridViewDesynced |= _gridViewScrollController.position.activity is DragScrollActivity;
 	}
 
+	bool _isAttachmentAlreadyDownloaded(Attachment attachment) {
+		final overrideSource = widget.overrideSources[attachment];
+		if (overrideSource != null) {
+			return _downloadedOverrideSources.contains(overrideSource);
+		}
+		final thread = widget.threads[attachment];
+		if (thread != null) {
+			return thread.imageboard.persistence
+							.getThreadStateIfExists(thread.item.identifier)
+							?.isAttachmentDownloaded(attachment) ?? false;
+		}
+		final post = widget.posts[attachment];
+		if (post != null) {
+			return post.imageboard.persistence
+							.getThreadStateIfExists(post.item.threadIdentifier)
+							?.isAttachmentDownloaded(attachment) ?? false;
+		}
+		// Last resort
+		final threadId = attachment.threadId;
+		if (threadId == null) {
+			return false;
+		}
+		return context.read<Imageboard?>()?.persistence
+						.getThreadStateIfExists(ThreadIdentifier(attachment.board, threadId))
+						?.isAttachmentDownloaded(attachment) ?? false;
+	}
+
+	void _onAttachmentDownload(Attachment attachment) {
+		final overrideSource = widget.overrideSources[attachment];
+		if (overrideSource != null) {
+			_downloadedOverrideSources.add(overrideSource);
+			return;
+		}
+		final thread = widget.threads[attachment];
+		if (thread != null) {
+			final ts = thread.imageboard.persistence
+									.getThreadState(thread.item.identifier, initiallyHideFromHistory: true);
+			ts.didDownloadAttachment(attachment);
+			return;
+		}
+		final post = widget.posts[attachment];
+		if (post != null) {
+			final ts = post.imageboard.persistence
+									.getThreadState(post.item.threadIdentifier, initiallyHideFromHistory: true);
+			ts.didDownloadAttachment(attachment);
+			return;
+		}
+		// Last resort
+		final threadId = attachment.threadId;
+		if (threadId == null) {
+			return;
+		}
+		return context.read<Imageboard?>()?.persistence
+						.getThreadState(ThreadIdentifier(attachment.board, threadId), initiallyHideFromHistory: true)
+						.didDownloadAttachment(attachment);
+	}
+
 	AttachmentViewerController _getController(TaggedAttachment attachment) {
 		if (_controllers[attachment] == null) {
 			_controllers[attachment] = AttachmentViewerController(
@@ -310,8 +376,8 @@ class _GalleryPageState extends State<GalleryPage> {
 				isPrimary: attachment == currentAttachment,
 				overrideSource: widget.overrideSources[attachment.attachment],
 				initialGoodSource: widget.initialGoodSources[attachment.attachment],
-				isDownloaded: widget.isAttachmentAlreadyDownloaded?.call(attachment.attachment) ?? false,
-				onDownloaded: () => widget.onAttachmentDownload?.call(attachment.attachment)
+				isDownloaded: _isAttachmentAlreadyDownloaded(attachment.attachment),
+				onDownloaded: () => _onAttachmentDownload(attachment.attachment)
 			);
 		}
 		return _controllers[attachment]!;
@@ -616,14 +682,14 @@ class _GalleryPageState extends State<GalleryPage> {
 																			child: Icon(icon, size: 15),
 																		)
 																	),
-																	if (showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Container(
+																	if (showReplyCountsInGallery && ((_replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Container(
 																		decoration: BoxDecoration(
 																			borderRadius: BorderRadius.circular(4),
 																			color: Colors.black54
 																		),
 																		padding: const EdgeInsets.all(4),
 																		child: Text(
-																			widget.replyCounts[widget.attachments[index].attachment]!.toString(),
+																			_replyCounts[widget.attachments[index].attachment]!.toString(),
 																			style: const TextStyle(
 																				color: Colors.white70,
 																				fontSize: 14,
@@ -723,7 +789,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																child: Icon(icon, size: 19),
 															)
 														),
-														if (showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Center(
+														if (showReplyCountsInGallery && ((_replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Center(
 															child: Container(
 																decoration: BoxDecoration(
 																	borderRadius: BorderRadius.circular(8),
@@ -731,7 +797,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																),
 																padding: const EdgeInsets.all(8),
 																child: Text(
-																	widget.replyCounts[widget.attachments[index].attachment]!.toString(),
+																	_replyCounts[widget.attachments[index].attachment]!.toString(),
 																	style: const TextStyle(
 																		color: Colors.white70,
 																		fontSize: 38,
@@ -820,7 +886,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		final settings = context.watch<Settings>();
 		final layoutInsets = MediaQuery.paddingOf(context);
 		final zone = widget.zone;
-		final threads = widget.threads;
+		final onThreadSelected = widget.onThreadSelected;
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
@@ -1168,33 +1234,36 @@ class _GalleryPageState extends State<GalleryPage> {
 															},
 															icon: const Icon(CupertinoIcons.reply)
 														),
-														if (threads != null && showChrome) AdaptiveIconButton(
-															padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-															onPressed: () async {
-																final thread = threads.threads[currentAttachment.attachment]!;
-																final pop = await Navigator.of(context).push<bool>(TransparentRoute(
-																	builder: (context) => ImageboardScope(
-																		imageboardKey: null,
-																		imageboard: thread.imageboard,
-																		child: OverscrollModalPage(
-																			child: CupertinoButton(
-																				padding: EdgeInsets.zero,
-																				onPressed: () => Navigator.pop(context, true),
-																				child: ThreadRow(
-																					isSelected: false,
-																					thread: thread.item
+														if (onThreadSelected != null && showChrome) AnimatedBuilder(
+															animation: _currentAttachmentChanged,
+															builder: (context, _) => widget.threads.containsKey(currentAttachment.attachment) ? AdaptiveIconButton(
+																padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+																onPressed: () async {
+																	final thread = widget.threads[currentAttachment.attachment]!;
+																	final pop = await Navigator.of(context).push<bool>(TransparentRoute(
+																		builder: (context) => ImageboardScope(
+																			imageboardKey: null,
+																			imageboard: thread.imageboard,
+																			child: OverscrollModalPage(
+																				child: CupertinoButton(
+																					padding: EdgeInsets.zero,
+																					onPressed: () => Navigator.pop(context, true),
+																					child: ThreadRow(
+																						isSelected: false,
+																						thread: thread.item
+																					)
 																				)
 																			)
 																		)
-																	)
-																));
-																if ((pop ?? false) && context.mounted) {
-																	Navigator.pop(context);
-																	await Future.delayed(settings.showAnimations ? const Duration(milliseconds: 200) : Duration.zero);
-																	threads.onThreadSelected(thread);
-																}
-															},
-															icon: const Icon(CupertinoIcons.reply)
+																	));
+																	if ((pop ?? false) && context.mounted) {
+																		Navigator.pop(context);
+																		await Future.delayed(settings.showAnimations ? const Duration(milliseconds: 200) : Duration.zero);
+																		onThreadSelected(thread);
+																	}
+																},
+																icon: const Icon(CupertinoIcons.reply)
+															) : const SizedBox.shrink()
 														),
 														ValueListenableBuilder<bool>(
 															valueListenable: settings.muteAudio,
@@ -1415,12 +1484,11 @@ Future<Attachment?> showGalleryPretagged({
 	required List<TaggedAttachment> attachments,
 	Map<Attachment, Uri> overrideSources = const {},
 	Map<Attachment, Uri> initialGoodSources = const {},
-	Map<Attachment, int> replyCounts = const {},
 	PostSpanZoneData? zone,
-	AttachmentThreads? threads,
+	Map<Attachment, ImageboardScoped<Thread>> threads = const {},
+	Map<Attachment, ImageboardScoped<Post>> posts = const {},
+	ValueChanged<ImageboardScoped<Thread>>? onThreadSelected,
 	ReplyBoxZone? replyBoxZone,
-	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
-	ValueChanged<Attachment>? onAttachmentDownload,
 	TaggedAttachment? initialAttachment,
 	bool initiallyShowChrome = false,
 	bool initiallyShowGrid = false,
@@ -1442,14 +1510,13 @@ Future<Attachment?> showGalleryPretagged({
 			imageboard: imageboard,
 			child: GalleryPage(
 				attachments: attachments,
-				replyCounts: replyCounts,
 				overrideSources: overrideSources,
 				initialGoodSources: initialGoodSources,
 				zone: zone,
 				threads: threads,
+				posts: posts,
+				onThreadSelected: onThreadSelected,
 				replyBoxZone: replyBoxZone,
-				isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
-				onAttachmentDownload: onAttachmentDownload,
 				initialAttachment: initialAttachment,
 				initiallyShowChrome: initiallyShowChrome,
 				initiallyShowGrid: initiallyShowGrid,
@@ -1478,12 +1545,11 @@ Future<Attachment?> showGallery({
 	required List<Attachment> attachments,
 	Map<Attachment, Uri> overrideSources = const {},
 	Map<Attachment, Uri> initialGoodSources = const {},
-	Map<Attachment, int> replyCounts = const {},
 	PostSpanZoneData? zone,
-	AttachmentThreads? threads,
+	Map<Attachment, ImageboardScoped<Thread>> threads = const {},
+	Map<Attachment, ImageboardScoped<Post>> posts = const {},
+	ValueChanged<ImageboardScoped<Thread>>? onThreadSelected,
 	ReplyBoxZone? replyBoxZone,
-	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
-	ValueChanged<Attachment>? onAttachmentDownload,
 	required Iterable<int> semanticParentIds,
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
@@ -1503,12 +1569,11 @@ Future<Attachment?> showGallery({
 	)).toList(),
 	overrideSources: overrideSources,
 	initialGoodSources: initialGoodSources,
-	replyCounts: replyCounts,
 	zone: zone,
 	threads: threads,
+	posts: posts,
+	onThreadSelected: onThreadSelected,
 	replyBoxZone: replyBoxZone,
-	isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
-	onAttachmentDownload: onAttachmentDownload,
 	initialAttachment: initialAttachment == null ? null : TaggedAttachment(
 		attachment: initialAttachment,
 		semanticParentIds: semanticParentIds

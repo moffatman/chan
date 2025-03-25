@@ -1107,11 +1107,12 @@ class Persistence extends ChangeNotifier {
 		return sharedThreadStateBox.get(getThreadStateBoxKey(imageboardKey, thread));
 	}
 
-	PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
+	PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false, bool initiallyHideFromHistory = false}) {
 		final existingState = sharedThreadStateBox.get(getThreadStateBoxKey(imageboardKey, thread));
 		if (existingState != null) {
 			if (updateOpenedTime) {
 				existingState.lastOpenedTime = DateTime.now();
+				existingState.showInHistory ??= Persistence.settings.recordThreadsInHistory;
 				existingState.save();
 			}
 			return existingState;
@@ -1120,7 +1121,7 @@ class Persistence extends ChangeNotifier {
 			imageboardKey: imageboardKey,
 			board: thread.board,
 			id: thread.id,
-			showInHistory: Persistence.settings.recordThreadsInHistory
+			showInHistory: initiallyHideFromHistory ? null : Persistence.settings.recordThreadsInHistory
 		);
 		sharedThreadStateBox.put(getThreadStateBoxKey(imageboardKey, thread), newState);
 		return newState;
@@ -1485,7 +1486,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	@HiveField(21, defaultValue: <int, int>{})
 	Map<int, int> primarySubtreeParents = {};
 	@HiveField(22, defaultValue: true)
-	bool showInHistory;
+	bool? showInHistory;
 	/// To track scroll position
 	@HiveField(23)
 	int? firstVisiblePostId;

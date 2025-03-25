@@ -2578,6 +2578,9 @@ class ExpandingPost extends StatelessWidget {
 												context: context,
 												attachments: [attachment],
 												semanticParentIds: zone.stackIds,
+												posts: {
+													attachment: zone.imageboard.scope(post)
+												},
 												heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 											);
 										},

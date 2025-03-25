@@ -1,4 +1,6 @@
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board_switcher.dart';
@@ -156,6 +158,33 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		);
 	}
 
+	Future<void> _showGallery(BuildContext context, Attachment initialAttachment) async {
+		final imageboard = context.read<Imageboard>();
+		await showGallery(
+			context: context,
+			attachments: [
+				for (final item in result.data!.posts)
+					for (final attachment in (item.post?.attachments ?? item.thread?.attachments ?? const <Attachment>[]))
+						attachment
+			],
+			initialAttachment: initialAttachment,
+			semanticParentIds: [-7],
+			threads: {
+				for (final item in result.data!.posts)
+					if (item.thread case Thread thread)
+						for (final attachment in thread.attachments)
+							attachment: imageboard.scope(thread)
+			},
+			posts: {
+				for (final item in result.data!.posts)
+					if (item.post case Post post)
+						for (final attachment in post.attachments)
+							attachment: imageboard.scope(post)
+			},
+			heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+		);
+	}
+
 	Widget _build(BuildContext context, SelectedSearchResult? currentValue, ValueChanged<SelectedSearchResult?> setValue) {
 		if (result.error != null) {
 			return Center(
@@ -199,12 +228,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									),
 									child: PostRow(
 										post: row.post!,
-										onThumbnailTap: (attachment) => showGallery(
-											context: context,
-											attachments: [attachment],
-											semanticParentIds: [-7],
-											heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-										),
+										onThumbnailTap: (attachment) => _showGallery(context, attachment),
 										showCrossThreadLabel: false,
 										showBoardName: true,
 										allowTappingLinks: false,
@@ -234,12 +258,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									)),
 									child: ThreadRow(
 										thread: row.thread!,
-										onThumbnailTap: (attachment) => showGallery(
-											context: context,
-											attachments: [attachment],
-											semanticParentIds: [-7],
-											heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-										),
+										onThumbnailTap: (attachment) => _showGallery(context, attachment),
 										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
 										countsUnreliable: result.data!.countsUnreliable,
 										semanticParentIds: const [-7],

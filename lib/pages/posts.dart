@@ -333,17 +333,15 @@ class _PostsPageState extends State<PostsPage> {
 											onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
 																		? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
 											onThumbnailTap: widget.onThumbnailTap ?? (attachment) {
-												final threadState = widget.zone.imageboard.persistence.getThreadStateIfExists(reply.post!.threadIdentifier);
 												showGallery(
 													context: context,
 													attachments: attachments,
-													replyCounts: {
+													posts: {
 														for (final reply in replies)
-															for (final attachment in reply.post!.attachments)
-																attachment: reply.post!.replyIds.length
+															if (reply.post case Post post)
+																for (final attachment in post.attachments)
+																	attachment: widget.zone.imageboard.scope(post)
 													},
-													isAttachmentAlreadyDownloaded: threadState?.isAttachmentDownloaded,
-													onAttachmentDownload: threadState?.didDownloadAttachment,
 													initialAttachment: attachment,
 													semanticParentIds: subzone.stackIds,
 													onChange: (attachment) {

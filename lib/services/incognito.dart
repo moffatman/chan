@@ -55,16 +55,17 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
   SavedPost? getSavedPost(Post post) => parent.getSavedPost(post);
 
   @override
-  PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
+  PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false, bool initiallyHideFromHistory = false}) {
     final existing = getThreadStateIfExists(thread);
 		if (existing != null) {
+      existing.showInHistory ??= Persistence.settings.recordThreadsInHistory;
 			return existing;
 		}
 		final newState = PersistentThreadState(
 			imageboardKey: imageboardKey,
 			board: thread.board,
 			id: thread.id,
-			showInHistory: true,
+			showInHistory: initiallyHideFromHistory ? null : Persistence.settings.recordThreadsInHistory,
 			ephemeralOwner: this
 		);
 		_ephemeralThreadStates[thread] = (newState, EasyListenable());

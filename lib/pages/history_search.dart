@@ -110,7 +110,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		for (final threadState in Persistence.sharedThreadStateBox.values) {
 			final imageboard = threadState.imageboard;
 			if (imageboard == null ||
-			    !threadState.showInHistory ||
+			    !(threadState.showInHistory ?? false) ||
 					!threadState.isThreadCached ||
 					!mounted ||
 					(_filterBoard != null &&
@@ -275,18 +275,19 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 							showGallery(
 								context: context,
 								attachments: attachments.keys.toList(),
-								replyCounts: {
-									for (final item in attachments.entries) item.key: item.value.item.post?.replyCount ?? item.value.item.thread.replyCount
+								threads: {
+									for (final item in attachments.entries)
+										item.key: item.value.imageboard.scope(item.value.item.thread)
 								},
-								threads: (
-									threads: {
-										for (final item in attachments.entries) item.key: item.value.imageboard.scope(item.value.item.thread)
-									},
-									onThreadSelected: (t) {
-										final x = _listController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.thread.identifier == t.item.identifier).item;
-										widget.onResultSelected(x.imageboard.scope(x.item.identifier));
-									}
-								),
+								posts: {
+									for (final item in attachments.entries)
+										if (item.value.item.post case Post post)
+											item.key: item.value.imageboard.scope(post)
+								},
+								onThreadSelected: (t) {
+									final x = _listController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.thread.identifier == t.item.identifier).item;
+									widget.onResultSelected(x.imageboard.scope(x.item.identifier));
+								},
 								initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
 								onChange: (attachment) {
 									final value = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value;
@@ -325,12 +326,29 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 						},
 						child: ThreadRow(
 							thread: row.item.thread,
-							onThumbnailTap: (attachment) => showGallery(
-								context: context,
-								attachments: [attachment],
-								semanticParentIds: [-11],
-								heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-							),
+							onThumbnailTap: (attachment) {
+								final attachments = {
+									for (final w in _listController.items)
+										for (final attachment in w.item.item.post?.attachments ?? w.item.item.thread.attachments)
+											attachment: w.item
+								};
+								showGallery(
+									context: context,
+									attachments: attachments.keys.toList(),
+									initialAttachment: attachment,
+									semanticParentIds: [-11],
+									threads: {
+										for (final item in attachments.entries)
+											item.key: item.value.imageboard.scope(item.value.item.thread)
+									},
+									posts: {
+										for (final item in attachments.entries)
+											if (item.value.item.post case Post post)
+												item.key: item.value.imageboard.scope(post)
+									},
+									heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+								);
+							},
 							isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
 							showBoardName: true,
 							showSiteIcon: ImageboardRegistry.instance.count > 1,

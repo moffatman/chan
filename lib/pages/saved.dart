@@ -691,18 +691,13 @@ class _SavedPageState extends State<SavedPage> {
 																showGallery(
 																	context: context,
 																	attachments: attachments.keys.toList(),
-																	replyCounts: {
-																		for (final item in attachments.entries) item.key: item.value.thread!.replyCount
+																	threads: {
+																		for (final item in attachments.entries) item.key: item.value.imageboard!.scope(item.value.thread!)
 																	},
-																	threads: (
-																		threads: {
-																			for (final item in attachments.entries) item.key: item.value.imageboard!.scope(item.value.thread!)
-																		},
-																		onThreadSelected: (t) {
-																			final x = _watchedListController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.$1.threadIdentifier == t.item.identifier).item;
-																			setter(x.imageboard.scope(x.item.$1));
-																		}
-																	),
+																	onThreadSelected: (t) {
+																		final x = _watchedListController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.$1.threadIdentifier == t.item.identifier).item;
+																		setter(x.imageboard.scope(x.item.$1));
+																	},
 																	initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
 																	onChange: (attachment) {
 																		final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
@@ -913,19 +908,12 @@ class _SavedPageState extends State<SavedPage> {
 														showGallery(
 															context: context,
 															attachments: attachments,
-															replyCounts: {
+															threads: {
 																for (final state in _threadListController.items)
 																	for (final attachment in state.item.$2.attachments)
-																		attachment: state.item.$2.replyCount
+																		attachment: state.item.$1.imageboard!.scope(state.item.$2)
 															},
-															threads: (
-																threads: {
-																	for (final state in _threadListController.items)
-																		for (final attachment in state.item.$2.attachments)
-																			attachment: state.item.$1.imageboard!.scope(state.item.$2)
-																},
-																onThreadSelected: (t) => threadSetter(t.imageboard.scope(t.item.identifier.threadOrPostIdentifier))
-															),
+															onThreadSelected: (t) => threadSetter(t.imageboard.scope(t.item.identifier.threadOrPostIdentifier)),
 															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 															onChange: (attachment) {
 																_threadListController.animateTo((p) => p.$2.attachments.any((a) => a.id == attachment.id));
@@ -1078,10 +1066,10 @@ class _SavedPageState extends State<SavedPage> {
 												showGallery(
 													context: context,
 													attachments: attachments,
-													replyCounts: {
+													posts: {
 														for (final state in _yourPostsListController.items)
-															for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.replyCount ?? 0
+															for (final attachment in state.item.post.attachments)
+																attachment: state.item.imageboard.scope(state.item.post)
 													},
 													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 													onChange: (attachment) {
@@ -1225,10 +1213,10 @@ class _SavedPageState extends State<SavedPage> {
 													showGallery(
 														context: context,
 														attachments: attachments,
-														replyCounts: {
+														posts: {
 															for (final state in _postListController.items)
-																for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.$1.post.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																	attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.$1.post.threadIdentifier)?.thread?.replyCount ?? 0
+																for (final attachment in state.item.item.$1.post.attachments)
+																	attachment: state.item.imageboard.scope(state.item.item.$1.post)
 														},
 														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 														onChange: (attachment) {
@@ -1507,8 +1495,6 @@ class _SavedPageState extends State<SavedPage> {
 								child: Builder(
 									builder: (innerContext) => GalleryPage(
 										initialAttachment: attachment,
-										isAttachmentAlreadyDownloaded: _downloadedAttachments.contains,
-										onAttachmentDownload: _downloadedAttachments.add,
 										attachments: _savedAttachmentsController.items.map((l) {
 											final thisImageboardId = imageboardIds.putIfAbsent(l.item.imageboard.key, () => imageboardIds.length);
 											return TaggedAttachment(

@@ -234,7 +234,7 @@ class HistoryPageState extends State<HistoryPage> {
 								updateAnimation: Persistence.sharedThreadStateBox.listenable(),
 								disableUpdates: !TickerMode.of(context),
 								listUpdater: (options) async {
-									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && s.showInHistory).toList();
+									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && (s.showInHistory ?? false)).toList();
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
 									return _load(0);
 								},
@@ -322,10 +322,10 @@ class HistoryPageState extends State<HistoryPage> {
 															showGallery(
 																context: context,
 																attachments: attachments,
-																replyCounts: {
+																threads: {
 																	for (final state in _listController.items)
 																		for (final attachment in state.item.thread!.attachments)
-																			attachment: state.item.thread!.replyCount
+																			attachment: state.item.imageboard!.scope(state.item.thread!)
 																},
 																initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 																onChange: (attachment) {

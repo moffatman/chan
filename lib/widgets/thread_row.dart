@@ -318,7 +318,7 @@ class ThreadRow extends StatelessWidget {
 		if (firstUrl != null) {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(_leadingWwwPattern, '');
 		}
-		final threadSeen = threadState != null && (forceShowInHistory ?? threadState.showInHistory);
+		final threadSeen = threadState != null && (forceShowInHistory ?? threadState.showInHistory ?? false);
 		final bool hasUnseenReplies;
 		if ((threadState?.unseenReplyCount() ?? 0) > 0) {
 			hasUnseenReplies = true;

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
@@ -27,12 +28,12 @@ class AttachmentsPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
 	final TaggedAttachment? initialAttachment;
 	final ValueChanged<TaggedAttachment>? onChange;
-	final PersistentThreadState? threadState;
+	final PersistentThreadState threadState;
 	const AttachmentsPage({
 		required this.attachments,
 		this.initialAttachment,
 		this.onChange,
-		this.threadState,
+		required this.threadState,
 		Key? key
 	}) : super(key: key);
 
@@ -175,6 +176,13 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 							allowScroll: true,
 							allowPop: false,
 							heroOtherEndIsBoxFitCover: false,
+							posts: {
+								if (widget.threadState.thread case Thread t)
+									if (widget.threadState.imageboard case Imageboard imageboard)
+										for (final post in t.posts)
+											for (final attachment in post.attachments)
+												attachment: imageboard.scope(post)
+							},
 							additionalContextMenuActionsBuilder: (attachment) => [
 								ContextMenuAction(
 									trailingIcon: CupertinoIcons.return_icon,
@@ -246,9 +254,14 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 													if (controller.goodImageSource != null)
 														controller.attachment: controller.goodImageSource!
 											},
+											posts: {
+												if (widget.threadState.thread case Thread t)
+													if (widget.threadState.imageboard case Imageboard imageboard)
+														for (final post in t.posts)
+															for (final attachment in post.attachments)
+																attachment: imageboard.scope(post)
+											},
 											initialAttachment: attachment,
-											isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
-											onAttachmentDownload: widget.threadState?.didDownloadAttachment,
 											useHeroDestinationWidget: true,
 											heroOtherEndIsBoxFitCover: true,
 											additionalContextMenuActionsBuilder: (attachment) => [
