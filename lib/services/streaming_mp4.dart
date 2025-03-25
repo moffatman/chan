@@ -644,6 +644,7 @@ class VideoServer {
 		}
 		if (cachingFile._client == null) {
 			// Not interruptible
+			return;
 		}
 		if ((cachingFile.totalBytes - cachingFile.currentBytes) < insignificantByteThreshold) {
 			// Just let it finish
