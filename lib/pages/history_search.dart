@@ -26,7 +26,7 @@ class HistorySearchResult {
 	final Post? post;
 	HistorySearchResult(this.thread, [this.post]);
 
-	PostIdentifier get identifier => post?.identifier ?? PostIdentifier.thread(thread.identifier);
+	ThreadOrPostIdentifier get identifier => post?.identifier.threadOrPostId ?? thread.identifier.threadOrPostIdentifier;
 
 	@override toString() => 'HistorySearchResult(thread: $thread, post: $post)';
 }
@@ -56,8 +56,8 @@ extension _Comparison on DateTime {
 
 class HistorySearchPage extends StatefulWidget {
 	final String initialQuery;
-	final ImageboardScoped<PostIdentifier>? selectedResult;
-	final ValueChanged<ImageboardScoped<PostIdentifier>?> onResultSelected;
+	final ImageboardScoped<ThreadOrPostIdentifier>? selectedResult;
+	final ValueChanged<ImageboardScoped<ThreadOrPostIdentifier>?> onResultSelected;
 	final bool initialSavedThreadsOnly;
 	final bool initialYourPostsOnly;
 

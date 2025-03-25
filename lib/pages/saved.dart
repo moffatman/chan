@@ -227,14 +227,10 @@ class _SavedPageState extends State<SavedPage> {
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _savedThreadsValueInjector,
 				builder: (context, ImageboardScoped<ThreadOrPostIdentifier>? selectedResult, child) {
-					final asPost = switch (selectedResult) {
-						null => null,
-						ImageboardScoped<ThreadOrPostIdentifier> t => t.imageboard.scope(t.item.postOrOp)
-					};
 					return HistorySearchPage(
 						initialQuery: query,
 						initialSavedThreadsOnly: true,
-						selectedResult: asPost,
+						selectedResult: selectedResult,
 						onResultSelected: (result) async {
 							if (result == null) {
 								widget.masterDetailKey.currentState!.setValue3(null);
@@ -262,7 +258,7 @@ class _SavedPageState extends State<SavedPage> {
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _yourPostsValueInjector,
 				builder: (context, PostThreadCombo? selectedResult, child) {
-					final post = selectedResult?.post.identifier;
+					final post = selectedResult?.post.identifier.threadOrPostId;
 					return HistorySearchPage(
 						initialQuery: query,
 						initialYourPostsOnly: true,

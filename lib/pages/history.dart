@@ -1,5 +1,5 @@
 import 'package:chan/main.dart';
-import 'package:chan/models/post.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/history_search.dart';
 import 'package:chan/pages/master_detail.dart';
@@ -33,9 +33,9 @@ class HistoryPage extends StatefulWidget {
 const _historyPageSize = 35;
 
 class HistoryPageState extends State<HistoryPage> {
-	final masterDetailKey = GlobalKey<MultiMasterDetailPage1State<ImageboardScoped<PostIdentifier>>>();
+	final masterDetailKey = GlobalKey<MultiMasterDetailPage1State<ImageboardScoped<ThreadOrPostIdentifier>>>();
 	late final RefreshableListController<PersistentThreadState> _listController;
-	late final ValueNotifier<ImageboardScoped<PostIdentifier>?> _valueInjector;
+	late final ValueNotifier<ImageboardScoped<ThreadOrPostIdentifier>?> _valueInjector;
 	List<PersistentThreadState> states = [];
 
 	@override
@@ -49,7 +49,7 @@ class HistoryPageState extends State<HistoryPage> {
 		masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _valueInjector,
-				builder: (context, ImageboardScoped<PostIdentifier>? selectedResult, child) {
+				builder: (context, ImageboardScoped<ThreadOrPostIdentifier>? selectedResult, child) {
 					return HistorySearchPage(
 						initialQuery: query,
 						selectedResult: _valueInjector.value,
@@ -92,7 +92,7 @@ class HistoryPageState extends State<HistoryPage> {
 			id: 'history',
 			key: masterDetailKey,
 			paneCreator: () =>
-				MultiMasterPane<ImageboardScoped<PostIdentifier>>(
+				MultiMasterPane<ImageboardScoped<ThreadOrPostIdentifier>>(
 					masterBuilder: (context, selectedThread, threadSetter) {
 						final settings = context.watch<Settings>();
 						return AdaptiveScaffold(
@@ -208,7 +208,7 @@ class HistoryPageState extends State<HistoryPage> {
 											icon: Icon(Settings.recordThreadsInHistorySetting.watch(context) ? CupertinoIcons.stop : CupertinoIcons.play),
 											onPressed: () {
 												Settings.recordThreadsInHistorySetting.value = !Settings.instance.recordThreadsInHistory;
-												if (context.read<MasterDetailHint>().currentValue case ImageboardScoped<PostIdentifier>? thread) {
+												if (context.read<MasterDetailHint>().currentValue case ImageboardScoped<ThreadOrPostIdentifier>? thread) {
 													threadSetter(thread);
 												}
 												showToast(
@@ -245,7 +245,7 @@ class HistoryPageState extends State<HistoryPage> {
 								id: 'history',
 								sortMethods: const [],
 								itemBuilder: (itemContext, state) {
-									final isSelected = selectedThread(itemContext, state.imageboard!.scope(PostIdentifier.thread(state.identifier)));
+									final isSelected = selectedThread(itemContext, state.imageboard!.scope(state.identifier.threadOrPostIdentifier));
 									final openInNewTabZone = context.read<OpenInNewTabZone?>();
 									return ContextMenu(
 										maxHeight: 125,
@@ -338,7 +338,7 @@ class HistoryPageState extends State<HistoryPage> {
 													)
 												)
 											),
-											onTap: () => threadSetter(state.imageboard!.scope(PostIdentifier.thread(state.identifier)))
+											onTap: () => threadSetter(state.imageboard!.scope(state.identifier.threadOrPostIdentifier))
 										)
 									);
 								},
