@@ -526,6 +526,7 @@ class VideoServer {
 					cachingFile.completer.complete();
 				}
 				catch (e, st) {
+					handle.close(); // Don't await
 					cachingFile._client?.close();
 					cachingFile._client = null;
 					cachingFile.completer.completeError(e, st);
