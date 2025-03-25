@@ -198,7 +198,11 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					if (post.isStub || post.isPageStub) {
 						continue;
 					}
-					if (_query.isNotEmpty && !post.span.buildText().contains(query)) {
+					if (
+						_query.isNotEmpty &&
+						!post.span.buildText().contains(query) &&
+						!(post.threadId == post.id && thread.title?.contains(query) == true)
+					) {
 						continue;
 					}
 					if (_filterIsThread != null && _filterIsThread != (post.id == thread.id)) {
