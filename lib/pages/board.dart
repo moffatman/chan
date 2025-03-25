@@ -880,8 +880,17 @@ class BoardPageState extends State<BoardPage> {
 				(a, b) => b.id.compareTo(a.id)
 			else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
 				(a, b) {
-					_lastCatalogUpdateTime ??= DateTime.now();
-					return -1 * ((b.replyCount + 1) / b.time.difference(_lastCatalogUpdateTime!).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(_lastCatalogUpdateTime!).inSeconds);
+					// If no replies, just put it at the bottom
+					if (a.replyCount == 0 && b.replyCount > 0) {
+						return 1;
+					}
+					if (b.replyCount == 0 && a.replyCount > 0) {
+						return -1;
+					}
+					final ref = _lastCatalogUpdateTime ??= DateTime.now();
+					final aAge = a.time.difference(ref).inSeconds;
+					final bAge = b.time.difference(ref).inSeconds;
+					return -1 * ((b.replyCount + 1) / bAge).compareTo((a.replyCount + 1) / aAge);
 				}
 			else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
 				(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
