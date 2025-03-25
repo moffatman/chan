@@ -2221,7 +2221,7 @@ ImageboardSite makeSite(dynamic data) {
 			stickyCloudflare: data['stickyCloudflare'] ?? false,
 			subjectCharacterLimit: data['subjectCharacterLimit'],
 			overrideUserAgent: overrideUserAgent,
-			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())) ?? {},
+			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())),
 			searchUrl: data['searchUrl'] ?? '',
 			archives: archives
 		);

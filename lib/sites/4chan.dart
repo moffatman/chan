@@ -143,7 +143,7 @@ class Site4Chan extends ImageboardSite {
 	final Duration spamFilterCaptchaDelayGreen;
 	final Duration spamFilterCaptchaDelayYellow;
 	final Duration spamFilterCaptchaDelayRed;
-	final Map<String, Map<String, String>> boardFlags;
+	final Map<String, Map<String, String>>? boardFlags;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
 	final bool stickyCloudflare;
@@ -1172,20 +1172,23 @@ class Site4Chan extends ImageboardSite {
 	@override
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) {
 		return _boardFlags.putIfAbsent(board, () => AsyncMemoizer<List<ImageboardBoardFlag>>()).runOnce(() async {
-			Map<String, String> flagMap = boardFlags[board] ?? {};
-			try {
-				final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
-					responseType: ResponseType.plain
-				)).timeout(const Duration(seconds: 5));
-				final doc = parse(response.data);
-				flagMap = {
-					for (final e in doc.querySelector('select[name="flag"]')?.querySelectorAll('option') ?? <dom.Element>[])
-						(e.attributes['value'] ?? '0'): e.text
-				};
-			}
-			catch (e, st) {
-				print('Failed to fetch flags for $name ${formatBoardName(board)}: ${e.toStringDio()}');
-				Future.error(e, st); // crashlytics
+			Map<String, String> flagMap = boardFlags?[board] ?? {};
+			if (boardFlags == null) {
+				// Only fetch flags if 'boardFlags' is missing in sites.json
+				try {
+					final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
+						responseType: ResponseType.plain
+					)).timeout(const Duration(seconds: 5));
+					final doc = parse(response.data);
+					flagMap = {
+						for (final e in doc.querySelector('select[name="flag"]')?.querySelectorAll('option') ?? <dom.Element>[])
+							(e.attributes['value'] ?? '0'): e.text
+					};
+				}
+				catch (e, st) {
+					print('Failed to fetch flags for $name ${formatBoardName(board)}: ${e.toStringDio()}');
+					Future.error(e, st); // crashlytics
+				}
 			}
 			return flagMap.entries.map((entry) => ImageboardBoardFlag(
 				code: entry.key,
