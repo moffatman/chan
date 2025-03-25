@@ -98,18 +98,12 @@ class _PriorityQueueGroup<Key, GroupKey> {
 					entry.completer.complete();
 				}
 			}
-			if (_stack.isEmpty) {
-				parent._reap(this);
-			}
 			return;
 		}
 		print('[$groupKey] Series mode');
 		if (_stack.isEmpty) {
 			print('[$groupKey] Nothing to do');
 			delayUntil = null;
-			if (_stack.isEmpty) {
-				parent._reap(this);
-			}
 			return;
 		}
 		if (!_stack.first.completer.isCompleted) {
@@ -128,14 +122,29 @@ class _PriorityQueueGroup<Key, GroupKey> {
 class PriorityQueue<Key, GroupKey> {
 	final GroupKey Function(Key) groupKeyer;
 	final Map<GroupKey, _PriorityQueueGroup<Key, GroupKey>> _groups = {};
+	late final Timer _reapTimer;
 
 	PriorityQueue({
 		required this.groupKeyer
-	});
+	}) {
+		_reapTimer = Timer.periodic(const Duration(minutes: 3), _reap);
+	}
 
-	void _reap(_PriorityQueueGroup<Key, GroupKey> group) {
-		group._timer?.cancel();
-		_groups.remove(group.groupKey);
+	void dispose() {
+		_reapTimer.cancel();
+		// One final reap
+		_reap(_reapTimer);
+	}
+
+	void _reap(Timer _) {
+		// Use .toList() to avoid ConcurrentModificationException
+		for (final group in _groups.values.toList()) {
+			// Check if group is not busy and nothing is outstanding
+			if (!group._lock.isLocked && group._stack.isEmpty) {
+				group._timer?.cancel();
+				_groups.remove(group.groupKey);
+			}
+		}
 	}
 
 	_PriorityQueueGroup<Key, GroupKey> _getGroup(Key key) {
