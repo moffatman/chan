@@ -319,7 +319,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						await site.loginSystem?.login(savedFields, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
 					}
 					catch (e) {
-						final context = initialState.context ?? ImageboardRegistry.instance.context;
+						final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
 						if (context != null && context.mounted) {
 							showToast(
 								context: context,
@@ -336,20 +336,14 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				DateTime? tryAgainAt0;
 				final request = await _getCaptchaRequest().timeout(const Duration(seconds: 15));
 				final captcha = await solveCaptcha(
-					context: (initialState.context?.mounted ?? false) ? initialState.context : null,
+					context: initialState.context?.ifMounted ?? ImageboardRegistry.instance.context,
 					beforeModal: initialState.beforeModal,
 					afterModal: initialState.afterModal,
 					site: site,
 					request: request,
 					cancelToken: cancelToken,
 					onTryAgainAt: (x) => tryAgainAt0 = x,
-					forceHeadless: switch (initialState.context?.mounted ?? false) {
-						true => switch (Outbox.instance.headlessSolveFailed) {
-								true => false, // Do not use headless solver
-								false => null, // Try headless solver
-						},
-						false => true // Must use headless solver
-					}
+					forceHeadless: null, // Try headless solver
 				);
 				if (_state is QueueStateIdle<T>) {
 					// Cancelled in the meantime
@@ -371,7 +365,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			}
 			on CooldownException catch (e) {
 				print('Got cooldown in $this:_preSubmit() to try again in ${e.tryAgainAt.difference(DateTime.now())}');
-				final context = initialState.context ?? ImageboardRegistry.instance.context;
+				final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
 				if (context != null && context.mounted) {
 					showToast(
 						context: context,
