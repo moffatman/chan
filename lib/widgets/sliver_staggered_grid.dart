@@ -66,6 +66,7 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 
 	int _lastCrossAxisCount = 0;
 	final Map<int, int> _columns = {};
+	bool _resetNextLayout = true;
 
 	@override
 	void setupParentData(RenderObject child) {
@@ -95,6 +96,7 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 		}
 		_columns.clear();
 		_id = value;
+		_resetNextLayout = true;
 		markNeedsLayout();
 	}
 
@@ -176,7 +178,16 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 		// We rely on firstChild to have accurate layout offset. In the case of null
 		// layout offset, we have to find the first child that has valid layout
 		// offset.
-		if (childScrollOffset(firstChild!) == null) {
+		if (_resetNextLayout) {
+			int garbage = 0;
+			RenderBox? p = firstChild;
+			while (p != null) {
+				p = childAfter(p);
+				garbage++;
+			}
+			collectGarbage(garbage, 0);
+		}
+		else if (childScrollOffset(firstChild!) == null) {
 			int leadingChildrenWithoutLayoutOffset = 0;
 			while (earliestUsefulChild != null && childScrollOffset(earliestUsefulChild) == null) {
 				earliestUsefulChild = childAfter(earliestUsefulChild);
@@ -185,14 +196,14 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 			// We should be able to destroy children with null layout offset safely,
 			// because they are likely outside of viewport
 			collectGarbage(leadingChildrenWithoutLayoutOffset, 0);
-			// If can not find a valid layout offset, start from the initial child.
-			if (firstChild == null) {
-				if (!addInitialChild()) {
-					// There are no children.
-					geometry = SliverGeometry.zero;
-					childManager.didFinishLayout();
-					return;
-				}
+		}
+		// If can not find a valid layout offset, start from the initial child.
+		if (firstChild == null) {
+			if (!addInitialChild()) {
+				// There are no children.
+				geometry = SliverGeometry.zero;
+				childManager.didFinishLayout();
+				return;
 			}
 		}
 
@@ -257,7 +268,7 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 			int column;
 			if (existingColumn != null) {
 				column = existingColumn;
-				if (endScrollOffset[column] == 0) {
+				if (endScrollOffset[column] == 0 && !_resetNextLayout) {
 					endScrollOffset[column] = childParentData.layoutOffset ?? 0;
 				}
 			}
@@ -427,6 +438,7 @@ class RenderSliverStaggeredGrid extends RenderSliverMultiBoxAdaptor {
 		if (estimatedMaxScrollOffset == maxEndScrollOffset) {
 			childManager.setDidUnderflow(true);
 		}
+		_resetNextLayout = false;
 		childManager.didFinishLayout();
 	}
 }
