@@ -20,6 +20,10 @@ extension SoundpostAttachment on Attachment {
 				}
 				return Uri.tryParse('https://$source');
 			}
+			on FormatException {
+				// Bad URL encoding
+				return null;
+			}
 			on ArgumentError {
 				// Bad URL encoding
 				return null;
