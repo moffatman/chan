@@ -146,7 +146,8 @@ class Notifications {
 	static (Object, StackTrace)? staticError;
 	(Object, StackTrace)? error;
 	static final Map<String, Notifications> _children = {};
-	final tapStream = StreamController<ThreadOrPostIdentifier>.broadcast();
+	/// This must not be .broadcast(), we need the buffering feature as we add items early.
+	final tapStream = StreamController<ThreadOrPostIdentifier>();
 	final foregroundStream = StreamController<PushNotification>.broadcast();
 	final Persistence persistence;
 	ThreadWatcher? localWatcher;
