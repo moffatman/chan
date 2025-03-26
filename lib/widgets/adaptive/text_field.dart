@@ -24,6 +24,8 @@ class AdaptiveTextField extends StatefulWidget {
 	final GestureTapCallback? onTap;
 	final String? placeholder;
 	final TextStyle? placeholderStyle;
+	final EdgeInsets scrollPadding;
+	final ScrollPhysics? scrollPhysics;
 	final SmartDashesType? smartDashesType;
 	final SmartQuotesType? smartQuotesType;
 	final SpellCheckConfiguration? spellCheckConfiguration;
@@ -55,6 +57,8 @@ class AdaptiveTextField extends StatefulWidget {
 		this.onTap,
 		this.placeholder,
 		this.placeholderStyle,
+		this.scrollPadding = const EdgeInsets.all(20),
+		this.scrollPhysics,
 		this.smartDashesType,
 		this.smartQuotesType,
 		this.spellCheckConfiguration,
@@ -148,6 +152,8 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 				onChanged: widget.onChanged,
 				onSubmitted: widget.onSubmitted,
 				onTap: widget.onTap,
+				scrollPadding: widget.scrollPadding,
+				scrollPhysics: widget.scrollPhysics,
 				smartDashesType: widget.smartDashesType,
 				smartQuotesType: widget.smartQuotesType,
 				spellCheckConfiguration: widget.spellCheckConfiguration,
@@ -192,6 +198,8 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 				onSubmitted: widget.onSubmitted,
 				onTap: widget.onTap,
 				placeholder: widget.placeholder,
+				scrollPadding: widget.scrollPadding,
+				scrollPhysics: widget.scrollPhysics,
 				placeholderStyle: widget.placeholderStyle ?? TextStyle(
 					fontWeight: FontWeight.w400,
 					fontVariations: CommonFontVariations.w400,

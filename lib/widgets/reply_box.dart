@@ -1744,8 +1744,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							}
 						),
 						Flexible(
-							child: SizedBox(
-								height: settings.replyBoxHeightOffset + 100,
+							child: ConstrainedBox(
+								constraints: BoxConstraints(
+									minHeight: settings.replyBoxHeightOffset + 100
+								),
 								child: WidgetDecoration(
 									// ignore: sort_child_properties_last
 									child: AdaptiveTextField(
@@ -1813,6 +1815,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										),
 										placeholder: 'Comment',
 										textAlignVertical: TextAlignVertical.top,
+										// The ListView eats bottom padding, we need to re-add it
+										// for auto-scroll hint to work
+										scrollPadding:
+											const EdgeInsets.all(20) +
+											EdgeInsets.only(
+												bottom: MediaQuery.paddingOf(this.context).bottom
+											),
+										scrollPhysics: const NeverScrollableScrollPhysics(),
 										expands: true,
 										minLines: null,
 										maxLines: null,
@@ -2271,6 +2281,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					child: ListView(
 						primary: false,
 						shrinkWrap: true,
+						// This will override default AlwaysScrollable
+						physics: ScrollConfiguration.of(context).getScrollPhysics(context),
 						children: [
 							Align(
 								alignment: Alignment.centerRight,
