@@ -61,6 +61,8 @@ public class MainActivity extends FlutterFragmentActivity {
 
     private DocumentFile fastFindFile(DocumentFile parent, String name) {
         try {
+            // Android does this when saving. So we need to look for the expected name.
+            String effectiveName = name.replaceAll("[\\\\/:*?\"<>|]", "_");
             try (Cursor cursor = getContentResolver().query(DocumentsContract.buildChildDocumentsUriUsingTree(
                     parent.getUri(),
                     DocumentsContract.getDocumentId(parent.getUri())
@@ -69,7 +71,7 @@ public class MainActivity extends FlutterFragmentActivity {
                     DocumentsContract.Document.COLUMN_DISPLAY_NAME
             }, null, null, null)) {
                 while (cursor.moveToNext()) {
-                    if (name.equals(cursor.getString(1))) {
+                    if (effectiveName.equals(cursor.getString(1))) {
                         return DocumentFile.fromTreeUri(getApplicationContext(), DocumentsContract.buildDocumentUriUsingTree(parent.getUri(), cursor.getString(0)));
                     }
                 }
