@@ -1048,6 +1048,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (_isDownloaded && !force && dir == null) return null;
 		final settings = Settings.instance;
 		String filename;
+		final isRedownload = _isDownloaded;
 		_isDownloaded = true; // Lazy lock against concurrent download
 		bool successful = false;
 		if (Platform.isIOS) {
@@ -1097,12 +1098,14 @@ class AttachmentViewerController extends ChangeNotifier {
 						successful = true;
 					}
 					on DirectoryNotFoundException {
+						_isDownloaded = isRedownload;
 						if (dir == null) {
 							Settings.androidGallerySavePathSetting.value = null;
 						}
 						rethrow;
 					}
 					on InsufficientPermissionException {
+						_isDownloaded = isRedownload;
 						if (dir == null) {
 							Settings.androidGallerySavePathSetting.value = null;
 						}
