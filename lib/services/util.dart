@@ -189,6 +189,9 @@ T unsafe<S, T>(S input, T Function() f) {
 	try {
 		return f();
 	}
+	on ExtendedException {
+		rethrow;
+	}
 	catch (e, st) {
 		throw UnsafeParseException<S, T>(
 			error: e,
@@ -202,6 +205,9 @@ Future<T> unsafeAsync<S, T>(S input, Future<T> Function() f) async {
 	try {
 		return await f();
 	}
+	on ExtendedException {
+		rethrow;
+	}
 	catch (e, st) {
 		throw UnsafeParseException<S, T>(
 			error: e,
@@ -214,6 +220,9 @@ Future<T> unsafeAsync<S, T>(S input, Future<T> Function() f) async {
 T Function(S) wrapUnsafe<S, T>(T Function(S) f) => (input) {
 	try {
 		return f(input);
+	}
+	on ExtendedException {
+		rethrow;
 	}
 	catch (e, st) {
 		throw UnsafeParseException<S, T>(
