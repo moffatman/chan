@@ -617,7 +617,7 @@ class Captcha4ChanCustom extends StatefulWidget {
 	final ValueChanged<Chan4CustomCaptchaSolution?> onCaptchaSolved;
 	final CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
 	final Captcha4ChanCustomChallenge? initialChallenge;
-	final Exception? initialChallengeException;
+	final (Object, StackTrace)? initialChallengeException;
 	final ValueChanged<DateTime>? onTryAgainAt;
 
 	const Captcha4ChanCustom({
@@ -1107,16 +1107,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_greyOutPickers = false;
 		}
 		final guess = widget.initialCloudGuess;
-		final exception = widget.initialChallengeException;
-		if (exception != null) {
-			if (exception is Captcha4ChanCustomChallengeException) {
-				error = (exception, StackTrace.current);
-				if (exception is Captcha4ChanCustomChallengeCooldownException) {
-					tryAgainAt = exception.tryAgainAt;
-				}
-			}
-			else {
-				error = (exception, StackTrace.current);
+		if (widget.initialChallengeException != null) {
+			error = widget.initialChallengeException;
+			if (error?.$1 case CooldownException exception) {
+				tryAgainAt = exception.tryAgainAt;
 			}
 		}
 		else if (guess != null) {

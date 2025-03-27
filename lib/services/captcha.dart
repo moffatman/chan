@@ -94,12 +94,12 @@ Future<CaptchaSolution?> solveCaptcha({
 			};
 			CloudGuessedCaptcha4ChanCustom? initialCloudGuess;
 			Captcha4ChanCustomChallenge? initialChallenge;
-			Exception? initialChallengeException;
+			(Object, StackTrace)? initialChallengeException;
 			try {
 				// Grab the challenge without popping up, to process initial cooldown without interruption
 				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority, cancelToken: cancelToken).timeout(const Duration(minutes: 1));
 			}
-			on Exception catch (e) {
+			on Exception catch (e, st) {
 				if (e is dio.DioError && e.type == DioErrorType.cancel) {
 					// User cancelled it
 					return null;
@@ -113,7 +113,7 @@ Future<CaptchaSolution?> solveCaptcha({
 					}
 					rethrow;
 				}
-				initialChallengeException = e;
+				initialChallengeException = (e, st);
 			}
 			if (initialChallengeException == null && (settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver ?? false) && (forceHeadless ?? true)) {
 				try {
@@ -141,11 +141,11 @@ Future<CaptchaSolution?> solveCaptcha({
 						rethrow;
 					}
 					else if (e is Captcha4ChanCustomChallengeException) {
-						initialChallengeException = e;
+						initialChallengeException = (e, st);
 					}
 					else if (e is dio.DioError && e.error is CloudflareHandlerInterruptedException) {
 						// Avoid two cloudflare popups
-						initialChallengeException = e.error as CloudflareHandlerInterruptedException;
+						initialChallengeException = (e.error as CloudflareHandlerInterruptedException, st);
 					}
 					else {
 						Future.error(e, st); // Report to crashlytics
