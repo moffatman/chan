@@ -470,7 +470,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			}))).toList(),
 			page: page,
 			maxPage: (data['meta']['total_found'] / 25).ceil(),
-			countsUnreliable: true,
+			replyCountsUnreliable: false,
+			imageCountsUnreliable: true,
 			archive: this
 		);
 	}

@@ -892,7 +892,8 @@ class SiteXenforo extends ImageboardSite {
 					attachments_: const []
 				));
 			}).toList(),
-			countsUnreliable: false,
+			replyCountsUnreliable: false,
+			imageCountsUnreliable: false,
 			page: page,
 			maxPage: int.tryParse(document.querySelectorAll('.pageNav-page').tryLast?.text.trim() ?? '') ?? 1,
 			archive: this,

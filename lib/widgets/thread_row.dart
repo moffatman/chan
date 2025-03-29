@@ -42,7 +42,8 @@ TextSpan buildThreadCounters({
 	required PersistentThreadState? threadState,
 	required Thread thread,
 	bool showPageNumber = false,
-	required bool countsUnreliable,
+	required bool replyCountUnreliable,
+	required bool imageCountUnreliable,
 	bool showUnseenColors = true,
 	bool showUnseenCounters = true,
 	bool? forceShowInHistory,
@@ -147,7 +148,7 @@ TextSpan buildThreadCounters({
 					space,
 				],
 				if (showReplyTimeInsteadOfReplyCount) TextSpan(text: formatRelativeTime(thread.lastUpdatedTime ?? thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
-				else if (countsUnreliable && latestThread == thread) const TextSpan(text: '—')
+				else if (replyCountUnreliable && latestThread == thread) const TextSpan(text: '—')
 				else TextSpan(text: (latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 				if (unseenReplyCount > 0) TextSpan(text: '+$unseenReplyCount'),
 				if (unseenYouCount > 0) TextSpan(text: ' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
@@ -172,7 +173,7 @@ TextSpan buildThreadCounters({
 					TextSpan(text: (latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 					if (unseenImageCount > 0) TextSpan(text: '+$unseenImageCount'),
 				]
-				else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const TextSpan(text: '—')
+				else if (unseenImageCount == 0 && (imageCountUnreliable && latestThread == thread)) const TextSpan(text: '—')
 				else TextSpan(text: '$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 				if (settings.cloverStyleCatalogCounters)
 					if (settings.useFullWidthForCatalogCounters)
@@ -273,7 +274,8 @@ class ThreadRow extends StatelessWidget {
 	final ThreadRowStyle style;
 	final bool showSiteIcon;
 	final bool showBoardName;
-	final bool countsUnreliable;
+	final bool replyCountUnreliable;
+	final bool imageCountUnreliable;
 	final PostSpanRenderOptions? baseOptions;
 	final bool dimReadThreads;
 	final bool showLastReplies;
@@ -289,7 +291,8 @@ class ThreadRow extends StatelessWidget {
 		this.style = ThreadRowStyle.row,
 		this.showSiteIcon = false,
 		this.showBoardName = false,
-		this.countsUnreliable = false,
+		this.replyCountUnreliable = false,
+		this.imageCountUnreliable = false,
 		this.semanticParentIds = const [],
 		this.baseOptions,
 		this.dimReadThreads = false,
@@ -356,7 +359,8 @@ class ThreadRow extends StatelessWidget {
 		final countersSpan = buildThreadCounters(
 			settings: settings,
 			theme: theme,
-			countsUnreliable: countsUnreliable,
+			replyCountUnreliable: replyCountUnreliable,
+			imageCountUnreliable: imageCountUnreliable,
 			imageboard: imageboard,
 			thread: thread,
 			threadState: threadState,

@@ -90,7 +90,8 @@ class _TabListTile extends StatelessWidget {
 					thread: currentThread,
 					threadState: data.threadState,
 					showPageNumber: true,
-					countsUnreliable: false,
+					replyCountUnreliable: false,
+					imageCountUnreliable: false,
 					showUnseenColors: false,
 					showUnseenCounters: (data.threadState?.threadWatch?.localYousOnly ?? false),
 					showChrome: false

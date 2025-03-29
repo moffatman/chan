@@ -1385,7 +1385,8 @@ class Site4Chan extends ImageboardSite {
 		}).toList();
 		return ImageboardArchiveSearchResultPage(
 			posts: threads,
-			countsUnreliable: true,
+			replyCountsUnreliable: true,
+			imageCountsUnreliable: true,
 			page: page,
 			maxPage: int.parse(document.querySelectorAll('.pages a').last.text.trim()),
 			archive: this

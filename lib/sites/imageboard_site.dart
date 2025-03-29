@@ -1058,14 +1058,16 @@ class ImageboardArchiveSearchResult {
 
 class ImageboardArchiveSearchResultPage {
 	final List<ImageboardArchiveSearchResult> posts;
-	final bool countsUnreliable;
+	final bool replyCountsUnreliable;
+	final bool imageCountsUnreliable;
 	final int page;
 	final int? maxPage;
 	final ImageboardSiteArchive archive;
 	final Map<String, Object> memo;
 	ImageboardArchiveSearchResultPage({
 		required this.posts,
-		required this.countsUnreliable,
+		required this.replyCountsUnreliable,
+		required this.imageCountsUnreliable,
 		required this.page,
 		required this.maxPage,
 		required this.archive,

@@ -335,7 +335,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 				return ImageboardArchiveSearchResult.post(p);
 			}))).toList(),
 			page: page,
-			countsUnreliable: true,
+			replyCountsUnreliable: true,
+			imageCountsUnreliable: true,
 			maxPage: 100,
 			archive: this
 		);

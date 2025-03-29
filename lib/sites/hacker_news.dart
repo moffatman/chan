@@ -619,7 +619,8 @@ class SiteHackerNews extends ImageboardSite {
 		return ImageboardArchiveSearchResultPage(
 			page: response.data['page'] + 1,
 			maxPage: response.data['nbPages'],
-			countsUnreliable: false,
+			replyCountsUnreliable: false,
+			imageCountsUnreliable: false,
 			archive: this,
 			posts: (response.data['hits'] as List).map((hit) {
 				final id = int.parse(hit['objectID']);
