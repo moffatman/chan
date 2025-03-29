@@ -383,7 +383,8 @@ class SegmentedSettingWidget<T extends Object> extends StandardImmutableSettingW
 		this.knownWidth,
 		super.disabled,
 		super.injectButton,
-		super.confirm
+		super.confirm,
+		super.keywords
 	});
 	
 	@override

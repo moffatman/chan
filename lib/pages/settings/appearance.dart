@@ -301,7 +301,8 @@ final appearanceSettings = [
 			false: (Icons.apple, 'iOS'),
 			true: (Icons.android, 'Android')
 		},
-		setting: Settings.materialRoutesSetting
+		setting: Settings.materialRoutesSetting,
+		keywords: ['swipe', 'swiping', 'gestures']
 	),
 	const SwitchSettingWidget(
 		description: 'Animations',
