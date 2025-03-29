@@ -138,6 +138,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final Timer _focusTimer;
 	(DateTime, FocusNode)? _lastNearbyFocus;
 	bool _disableLoginSystem = false;
+	bool get hasLoginSystem => context.read<ImageboardSite>().loginSystem?.getSavedLoginFields() != null;
 	final Map<ImageboardSnippet, TextEditingController> _snippetControllers = {};
 	final List<QueuedPost> _submittingPosts = [];
 	bool _showSubmittingPosts = false;
@@ -380,7 +381,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			Future.error(e, st); // Crashlytics
 			print('Error getting flags for ${widget.board}: $e');
 		});
-		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
+		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || (_disableLoginSystem && hasLoginSystem)) {
 			_showOptions = true;
 		}
 		_tryUsingInitialFile(widget.initialDraft);
@@ -918,7 +919,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		}
 	}
 
-	Future<bool> _shouldUseLoginSystem() async {
+	Future<bool?> _shouldUseLoginSystem() async {
 		final site = context.read<ImageboardSite>();
 		final settings = Settings.instance;
 		final savedFields = site.loginSystem?.getSavedLoginFields();
@@ -926,7 +927,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			return false;
 		}
 		if (savedFields == null) {
-			return false;
+			return null;
 		}
 		if (settings.connectivity != ConnectivityResult.mobile) {
 			return true;
@@ -2253,7 +2254,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		old.useLoginSystem = entry.useLoginSystem;
 		// Apply the new draft
 		draft = entry.post;
-		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
+		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || (_disableLoginSystem && hasLoginSystem)) {
 			setState(() {_showOptions = true;});
 		}
 		// Delete that draft from the outbox
