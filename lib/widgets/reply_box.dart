@@ -820,9 +820,24 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			}
 			else if (ext == 'gif') {
 				if ((board.maxImageSizeBytes != null) && (size > board.maxImageSizeBytes!)) {
-					throw Exception('GIF is too large, and automatic re-encoding of GIFs is not supported');
+					file = await _showTranscodeWindow(
+						source: file,
+						metadataPresent: scan.hasMetadata,
+						metadataAllowed: !settings.removeMetadataOnUploadedFiles,
+						size: size,
+						maximumSize: board.maxImageSizeBytes,
+						randomizeChecksum: randomizeChecksum,
+						showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum,
+						transcode: MediaConversion.toMp4(
+							file.uri,
+							maximumSizeInBytes: board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
+							maximumDimension: settings.maximumImageUploadDimension,
+							removeMetadata: settings.removeMetadataOnUploadedFiles,
+							randomizeChecksum: randomizeChecksum
+						)
+					);
 				}
-				if (randomizeChecksum) {
+				else if (randomizeChecksum) {
 					file = await _showTranscodeWindow(
 						source: file,
 						metadataPresent: scan.hasMetadata,
