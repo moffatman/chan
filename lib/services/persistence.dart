@@ -368,6 +368,7 @@ class Persistence extends ChangeNotifier {
 		}
 		await httpCacheDirectory.create(recursive: true);
 		await shareCacheDirectory.create(recursive: true);
+		await temporaryDirectory.dir(cacheImageFolderName).create(recursive: true);
 	}
 
 	@visibleForTesting
