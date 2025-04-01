@@ -377,14 +377,15 @@ class SavedTheme {
 	@override
 	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom, locked, titleColor, textFieldColor);
 
-	Color primaryColorWithBrightness(double factor) {
+	final Map<double, Color> _primaryColorWithBrightnessCache = {};
+	Color primaryColorWithBrightness(double factor) => _primaryColorWithBrightnessCache.putIfAbsent(factor, () {
 		return Color.fromRGBO(
 			((primaryColor.red * factor) + (backgroundColor.red * (1 - factor))).round(),
 			((primaryColor.green * factor) + (backgroundColor.green * (1 - factor))).round(),
 			((primaryColor.blue * factor) + (backgroundColor.blue * (1 - factor))).round(),
 			primaryColor.opacity
 		);
-	}
+	});
 
 	Brightness get brightness => primaryColor.computeLuminance() > backgroundColor.computeLuminance() ? Brightness.dark : Brightness.light;
 
