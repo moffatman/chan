@@ -355,11 +355,12 @@ class _ChanAppState extends State<ChanApp> {
 			for (final url in [
 				imageboard.site.iconUrl,
 				...imageboard.persistence.browserState.favouriteBoards
-					.tryMap((b) => imageboard.persistence.maybeGetBoard(b.s))
-					.map((b) => b.icon)
+					.tryMap((b) => imageboard.persistence.maybeGetBoard(b.s)?.icon)
 			]) {
 				if (url != null) {
-					precacheImage(CNetworkImageProvider(url.toString(), client: imageboard.site.client), context);
+					precacheImage(CNetworkImageProvider(url.toString(), client: imageboard.site.client), context, onError: (e, st) {
+						// Do nothing
+					});
 				}
 			}
 		}
