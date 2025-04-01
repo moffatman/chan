@@ -78,7 +78,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			final linkedBoard = parts[3];
 			if (parts.length > 4) {
 				final linkType = parts[4];
-				final linkedId = int.tryParse(parts[5]);
+				final linkedId = int.tryParse(parts.length > 5 ? parts[5] : '');
 				if (linkedId == null) {
 					elements.add(PostCatalogSearchSpan(
 						board: linkedBoard,
