@@ -493,6 +493,7 @@ class _SavedPageState extends State<SavedPage> {
 							),
 							filterableAdapter: (t) => (t.imageboard.key, t.item.$2),
 							useFiltersFromContext: false,
+							includeImageboardKeyAndBoardInSearchString: true,
 							controller: _watchedListController,
 							listUpdater: (options) async {
 								final list = await thread_actions.loadWatches();
@@ -784,6 +785,7 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
+							includeImageboardKeyAndBoardInSearchString: true,
 							filterableAdapter: (t) => (t.$1.imageboardKey, t.$2),
 							controller: _threadListController,
 							listUpdater: (options) async {
@@ -983,6 +985,7 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
+							includeImageboardKeyAndBoardInSearchString: true,
 							filterableAdapter: (t) => (t.imageboard.key, t.post),
 							controller: _yourPostsListController,
 							listUpdater: (options) async {
@@ -1155,6 +1158,7 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							),
 							useFiltersFromContext: false,
+							includeImageboardKeyAndBoardInSearchString: true,
 							filterableAdapter: (t) => (t.imageboard.key, t.item.$1.post),
 							controller: _postListController,
 							listUpdater: (options) async {
@@ -1359,6 +1363,7 @@ class _SavedPageState extends State<SavedPage> {
 						updateAnimation: savedAttachmentsNotifiersAnimation,
 						disableUpdates: !TickerMode.of(context),
 						useFiltersFromContext: false,
+						includeImageboardKeyAndBoardInSearchString: true,
 						filterableAdapter: null,
 						itemBuilder: (context, item) => Builder(
 							builder: (context) {

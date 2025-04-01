@@ -1067,6 +1067,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final void Function(T, AutoWatchType)? onWantAutowatch;
 	final (String imageboardKey, Filterable item) Function(T)? filterableAdapter;
 	final FilterAlternative? filterAlternative;
+	final bool includeImageboardKeyAndBoardInSearchString;
 	final bool useTree;
 	final RefreshableTreeAdapter<T>? treeAdapter;
 	final List<Comparator<T>> sortMethods;
@@ -1111,6 +1112,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.onWantAutowatch,
 		required this.filterableAdapter,
 		this.filterAlternative,
+		this.includeImageboardKeyAndBoardInSearchString = false,
 		this.useTree = false,
 		this.treeAdapter,
 		this.collapsedItemBuilder,
@@ -2552,12 +2554,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return tree;
 	}
 
-	bool _matchesSearchFilter(Filterable item, RegExp query) {
+	bool _matchesSearchFilter(String imageboardKey, Filterable item, RegExp query) {
 		return (_searchStrings[item] ??= [
 			item.id.toString(),
+			if (widget.includeImageboardKeyAndBoardInSearchString) ...[
+				imageboardKey,
+				item.board
+			],
 			...defaultPatternFields.map((field) {
 				return item.getFilterFieldText(field) ?? '';
-			})
+			}),
 		].join(' ')).contains(query);
 	}
 
@@ -2583,7 +2589,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			for (final item in sortedList) {
 				final pair = filterableAdapter?.call(item);
 				if (pair != null) {
-					if (queryPattern != null && !_matchesSearchFilter(pair.$2, queryPattern)) {
+					if (queryPattern != null && !_matchesSearchFilter(pair.$1, pair.$2, queryPattern)) {
 						continue;
 					}
 					final result = widget.useFiltersFromContext && filterableAdapter != null ? filter.filter(pair.$1, pair.$2) : null;
