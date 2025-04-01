@@ -1564,9 +1564,15 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 
 		})['cookie'] = (await Persistence.cellularCookies.loadForRequest(url)).join('; ');
 	}
-	Future<void> _ensureCookiesMemoizedForAttachment(Attachment attachment) async {
-		await _ensureCookiesMemoizedForUrl(Uri.parse(attachment.url));
-		await _ensureCookiesMemoizedForUrl(Uri.parse(attachment.thumbnailUrl));
+	Future<void> _ensureCookiesMemoizedForAttachments(Iterable<Attachment> attachments) async {
+		final firstUrlsForHosts = <String, Uri>{};
+		for (final attachment in attachments) {
+			final url = Uri.parse(attachment.url);
+			firstUrlsForHosts[url.host] ??= url;
+			final thumbnailUrl = Uri.parse(attachment.thumbnailUrl);
+			firstUrlsForHosts[thumbnailUrl.host] ??= thumbnailUrl;
+		}
+		await Future.wait(firstUrlsForHosts.values.map(_ensureCookiesMemoizedForUrl));
 	}
 	Map<String, String> getHeaders(Uri url) {
 		if (Settings.instance.connectivity == ConnectivityResult.mobile) {
@@ -1605,7 +1611,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			try {
 				final post = await archive.getPost(board, id, priority: RequestPriority.cosmetic);
 				post.archiveName = archive.name;
-				await Future.wait(post.attachments.map(_ensureCookiesMemoizedForAttachment));
+				await _ensureCookiesMemoizedForAttachments(post.attachments);
 				return post;
 			}
 			catch(e) {
@@ -1622,7 +1628,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					try {
 						final post = await error.key.getPost(board, id, priority: priority);
 						post.archiveName = error.key.name;
-						await Future.wait(post.attachments.map(_ensureCookiesMemoizedForAttachment));
+						await _ensureCookiesMemoizedForAttachments(post.attachments);
 						return post;
 					}
 					catch (e) {
@@ -1672,7 +1678,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			if (archive != null) {
 				try {
 					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
-					await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
+					await _ensureCookiesMemoizedForAttachments(thread_.posts_.expand((p) => p.attachments));
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
 					fallback = thread_;
@@ -1710,7 +1716,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				try {
 					final thread_ = await archive.getThread(thread, priority: RequestPriority.cosmetic).timeout(const Duration(seconds: 15));
 					if (completer.isCompleted) return null;
-					await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
+					await _ensureCookiesMemoizedForAttachments(thread_.posts_.expand((p) => p.attachments));
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
 					fallback = thread_;
@@ -1750,7 +1756,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					if (_isCloudflareNotAllowedException(error.value)) {
 						try {
 							final thread_ = await error.key.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
-							await Future.wait(thread_.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
+							await _ensureCookiesMemoizedForAttachments(thread_.posts_.expand((p) => p.attachments));
 							thread_.archiveName = error.key.name;
 							fallback = thread_;
 							try {
@@ -1793,19 +1799,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 
 	Future<void> _ensureSearchResultCookiesMemoized(ImageboardArchiveSearchResult result) async {
 		if (result.thread case Thread t) {
-			for (final a in t.attachments) {
-				await _ensureCookiesMemoizedForAttachment(a);
-			}
-			for (final p in t.posts_) {
-				for (final a in p.attachments_) {
-					await _ensureCookiesMemoizedForAttachment(a);
-				}
-			}
+			await _ensureCookiesMemoizedForAttachments(t.attachments.followedBy(t.posts_.expand((p) => p.attachments)));
 		}
 		else if (result.post case Post p) {
-			for (final a in p.attachments_) {
-				await _ensureCookiesMemoizedForAttachment(a);
-			}
+			await _ensureCookiesMemoizedForAttachments(p.attachments);
 		}
 	}
 
@@ -1983,13 +1980,13 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@override
 	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter}) async {
 		final catalog = await super.getCatalog(board, variant: variant, priority: priority, acceptCachedAfter: acceptCachedAfter);
-		await Future.wait(catalog.expand((t) => t.posts_.expand((p) => p.attachments)).map(_ensureCookiesMemoizedForAttachment));
+		await _ensureCookiesMemoizedForAttachments(catalog.expand((t) => t.posts_.expand((p) => p.attachments)));
 		return catalog;
 	}
 	@override
 	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
 		final catalog = await super.getMoreCatalog(board, after, variant: variant, priority: priority);
-		await Future.wait(catalog.expand((t) => t.posts_.expand((p) => p.attachments)).map(_ensureCookiesMemoizedForAttachment));
+		await _ensureCookiesMemoizedForAttachments(catalog.expand((t) => t.posts_.expand((p) => p.attachments)));
 		return catalog;
 	}
 	@protected
@@ -1997,7 +1994,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
 		final theThread = await getThreadImpl(thread, variant: variant, priority: priority);
-		await Future.wait(theThread.posts_.expand((p) => p.attachments).map(_ensureCookiesMemoizedForAttachment));
+		await _ensureCookiesMemoizedForAttachments(theThread.posts_.expand((p) => p.attachments));
 		return theThread;
 	}
 	Future<ImageboardUserInfo> getUserInfo(String username) async => throw UnimplementedError();
