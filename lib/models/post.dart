@@ -330,7 +330,7 @@ class Post implements Filterable {
 		other.archiveName == archiveName;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, isDeleted, Object.hashAll(attachments_), name, hasOmittedReplies, flag, attachmentDeleted, archiveName);
+	int get hashCode => Object.hash(board, id);
 }
 
 class PostIdentifier {

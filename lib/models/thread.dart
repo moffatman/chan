@@ -256,7 +256,7 @@ class Thread extends HiveObject implements Filterable {
 		other.poll == poll;
 
 	@override
-	int get hashCode => id;
+	int get hashCode => Object.hash(board, id);
 
 	@override
 	String toString() {
