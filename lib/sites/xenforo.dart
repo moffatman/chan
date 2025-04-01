@@ -823,6 +823,7 @@ class SiteXenforo extends ImageboardSite {
 			response = await client.getUri(Uri.https(baseUrl, '$basePath/search/$searchId', {
 				'q': query.query,
 				'o': 'date',
+				'page': page.toString(),
 				if (query.boards.isNotEmpty) ...{
 					'c[child_nodes]': '1',
 					'c[nodes][0]': query.boards.first.split('.').last
@@ -895,6 +896,7 @@ class SiteXenforo extends ImageboardSite {
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: false,
 			page: page,
+			canJumpToArbitraryPage: true,
 			maxPage: int.tryParse(document.querySelectorAll('.pageNav-page').tryLast?.text.trim() ?? '') ?? 1,
 			archive: this,
 			memo: {

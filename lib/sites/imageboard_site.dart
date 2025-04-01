@@ -1062,6 +1062,7 @@ class ImageboardArchiveSearchResultPage {
 	final bool imageCountsUnreliable;
 	final int page;
 	final int? maxPage;
+	final bool canJumpToArbitraryPage;
 	final ImageboardSiteArchive archive;
 	final Map<String, Object> memo;
 	ImageboardArchiveSearchResultPage({
@@ -1071,6 +1072,7 @@ class ImageboardArchiveSearchResultPage {
 		required this.page,
 		required this.maxPage,
 		required this.archive,
+		required this.canJumpToArbitraryPage,
 		this.memo = const {}
 	});
 }

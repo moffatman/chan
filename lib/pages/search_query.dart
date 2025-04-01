@@ -93,40 +93,61 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Spacer(),
 				AdaptiveIconButton(
-					onPressed: (loading || result.data?.maxPage == 1 || result.data?.maxPage == null) ? null : () async {
+					onPressed: (loading || result.data?.maxPage == 1 || result.data?.canJumpToArbitraryPage == false) ? null : () async {
 						final controller = TextEditingController();
 						final selectedPage = await showAdaptiveDialog<int>(
 							context: context,
 							barrierDismissible: true,
-							builder: (context) => AdaptiveAlertDialog(
-								title: const Text('Go to page'),
-								content: Padding(
-									padding: const EdgeInsets.only(top: 8),
-									child: AdaptiveTextField(
-										controller: controller,
-										enableIMEPersonalizedLearning: context.watch<Settings>().enableIMEPersonalizedLearning,
-										autofocus: true,
-										keyboardType: TextInputType.number,
-										onSubmitted: (str) {
-											Navigator.pop(context, int.tryParse(str));
+							builder: (context) => StatefulBuilder(
+								builder: (context, setDialogState) {
+									final isOK = switch (int.tryParse(controller.text)) {
+										null || <=0 => false,
+										int x => switch (result.data?.maxPage) {
+											int max => x <= max,
+											null => true
 										}
-									)
-								),
-								actions: [
-									AdaptiveDialogAction(
-										isDefaultAction: true,
-										onPressed: () {
-											Navigator.of(context).pop(int.tryParse(controller.text));
-										},
-										child: const Text('Go')
-									),
-									AdaptiveDialogAction(
-										child: const Text('Cancel'),
-										onPressed: () {
-											Navigator.of(context).pop();
-										}
-									)
-								]
+									};
+									return AdaptiveAlertDialog(
+										title: const Text('Go to page'),
+										content: Padding(
+											padding: const EdgeInsets.only(top: 8),
+											child: AdaptiveTextField(
+												controller: controller,
+												enableIMEPersonalizedLearning: context.watch<Settings>().enableIMEPersonalizedLearning,
+												autofocus: true,
+												keyboardType: TextInputType.number,
+												onChanged: (str) {
+													setDialogState(() {});
+												},
+												onSubmitted: (str) {
+													if (isOK) {
+														Navigator.pop(context, int.tryParse(str));
+													}
+													else {
+														showToast(
+															context: context,
+															icon: CupertinoIcons.number,
+															message: 'Invalid page number'
+														);
+													}
+												}
+											)
+										),
+										actions: [
+											AdaptiveDialogAction(
+												isDefaultAction: true,
+												onPressed: isOK ? () => Navigator.of(context).pop(int.tryParse(controller.text)) : null,
+												child: const Text('Go')
+											),
+											AdaptiveDialogAction(
+												child: const Text('Cancel'),
+												onPressed: () {
+													Navigator.of(context).pop();
+												}
+											)
+										]
+									);
+								}
 							)
 						);
 						if (selectedPage != null) {

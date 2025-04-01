@@ -1388,6 +1388,7 @@ class Site4Chan extends ImageboardSite {
 			replyCountsUnreliable: true,
 			imageCountsUnreliable: true,
 			page: page,
+			canJumpToArbitraryPage: true,
 			maxPage: int.parse(document.querySelectorAll('.pages a').last.text.trim()),
 			archive: this
 		);

@@ -1403,6 +1403,7 @@ class SiteReddit extends ImageboardSite {
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: false,
 			page: page,
+			canJumpToArbitraryPage: false,
 			maxPage: // No next-page hint AND
 			         response.data['data']['after'] == null &&
 							 // We arrived at this page going forward

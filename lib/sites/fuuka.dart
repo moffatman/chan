@@ -337,7 +337,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 			page: page,
 			replyCountsUnreliable: true,
 			imageCountsUnreliable: true,
-			maxPage: 100,
+			maxPage: null,
+			canJumpToArbitraryPage: true,
 			archive: this
 		);
 	}

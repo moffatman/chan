@@ -472,6 +472,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			maxPage: (data['meta']['total_found'] / 25).ceil(),
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: true,
+			canJumpToArbitraryPage: true,
 			archive: this
 		);
 	}

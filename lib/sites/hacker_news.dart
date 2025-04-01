@@ -619,6 +619,7 @@ class SiteHackerNews extends ImageboardSite {
 		return ImageboardArchiveSearchResultPage(
 			page: response.data['page'] + 1,
 			maxPage: response.data['nbPages'],
+			canJumpToArbitraryPage: true,
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: false,
 			archive: this,
