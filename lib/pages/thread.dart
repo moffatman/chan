@@ -2407,6 +2407,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		}
 		final newFilter = Filter.of(context);
 		if (newFilter != _lastFilter) {
+			_lastFilter = newFilter;
 			// Reset some state
 			if (widget.thread == null) {
 				_filteredPosts = null;
