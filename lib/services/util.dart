@@ -193,6 +193,8 @@ T unsafe<S, T>(S input, T Function() f) {
 		rethrow;
 	}
 	catch (e, st) {
+		print(e);
+		print(st);
 		throw UnsafeParseException<S, T>(
 			error: e,
 			stackTrace: st,
@@ -209,6 +211,8 @@ Future<T> unsafeAsync<S, T>(S input, Future<T> Function() f) async {
 		rethrow;
 	}
 	catch (e, st) {
+		print(e);
+		print(st);
 		throw UnsafeParseException<S, T>(
 			error: e,
 			stackTrace: st,
@@ -225,6 +229,8 @@ T Function(S) wrapUnsafe<S, T>(T Function(S) f) => (input) {
 		rethrow;
 	}
 	catch (e, st) {
+		print(e);
+		print(st);
 		throw UnsafeParseException<S, T>(
 			error: e,
 			stackTrace: st,
