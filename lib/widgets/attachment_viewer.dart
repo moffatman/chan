@@ -538,6 +538,9 @@ class AttachmentViewerController extends ChangeNotifier {
 			// Don't keep retrying
 			return;
 		}
+		if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.swf || attachment.type == AttachmentType.url) {
+			return;
+		}
 		final isReloadOfFailed = error != null;
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			final file = await getCachedImageFile(goodImageSource.toString());
@@ -619,7 +622,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 			}
 			final startTime = DateTime.now();
-			if (soundSource == null && (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf)) {
+			if (soundSource == null && attachment.type == AttachmentType.image) {
 				final url = _goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive, force: force);
 				if (force) {
 					await clearDiskCachedImage(url.toString());
@@ -1285,7 +1288,7 @@ class AttachmentViewer extends StatelessWidget {
 	}
 
 	bool _rotate90DegreesClockwise(BuildContext context) {
-		if (!autoRotate || attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf) {
+		if (!autoRotate || attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.swf) {
 			return false;
 		}
 		final displayIsLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
@@ -1909,7 +1912,7 @@ class AttachmentViewer extends StatelessWidget {
 		);
 	}
 
-	Widget _buildPdf(BuildContext context, Size? size) {
+	Widget _buildExternal(BuildContext context, Size? size) {
 		return ExtendedImageSlidePageHandler(
 			heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null,
 			child: SizedBox.fromSize(
@@ -1928,7 +1931,7 @@ class AttachmentViewer extends StatelessWidget {
 						),
 						Center(
 							child: ErrorMessageCard(
-								'PDFs not viewable in-app',
+								'${attachment.type.noun.toUpperCase()}s not viewable in-app',
 								remedies: {
 									'Open externally': () => shareOne(
 										context: context,
@@ -1971,10 +1974,10 @@ class AttachmentViewer extends StatelessWidget {
 						if (attachment.type == AttachmentType.image && (attachment.soundSource == null || controller._soundSourceFailed)) {
 							return _buildImage(context, targetSize, passedFirstBuild);
 						}
-						else if (attachment.type == AttachmentType.pdf) {
+						else if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.swf) {
 							return Padding(
 								padding: layoutInsets,
-								child: _buildPdf(context, targetSize)
+								child: _buildExternal(context, targetSize)
 							);
 						}
 						else if (attachment.type == AttachmentType.url) {

@@ -18,7 +18,9 @@ enum AttachmentType {
 	@HiveField(4)
 	pdf,
 	@HiveField(5)
-	url;
+	url,
+	@HiveField(6)
+	swf;
 	static AttachmentType fromFilename(String filename) {
 		final ext = filename.split('.').last.toLowerCase();
 		switch (ext) {
@@ -30,6 +32,8 @@ enum AttachmentType {
 				return AttachmentType.pdf;
 			case 'mp3':
 				return AttachmentType.mp3;
+			case 'swf':
+				return AttachmentType.swf;
 			default:
 				return AttachmentType.image;
 		}
@@ -41,7 +45,8 @@ enum AttachmentType {
 		image => 'image',
 		mp3 => 'mp3',
 		url => 'web',
-		pdf => 'pdf'
+		pdf => 'pdf',
+		swf => 'swf'
 	};
 }
 
@@ -152,7 +157,7 @@ class Attachment {
 		if (isGif) {
 			return CupertinoIcons.play_arrow;
 		}
-		if (type == AttachmentType.url || type == AttachmentType.pdf) {
+		if (type == AttachmentType.url || type == AttachmentType.pdf || type == AttachmentType.swf) {
 			return CupertinoIcons.link;
 		}
 		return null;

@@ -220,20 +220,24 @@ class AttachmentThumbnail extends StatelessWidget {
 			url = s.getSpoilerImageUrl(attachment, thread: thread)?.toString() ?? '';
 		}
 		if (url.isEmpty) {
-			const icon = CupertinoIcons.exclamationmark_triangle_fill;
-			return _maybeHero(context, _AttachmentThumbnailPlaceholder(
-				child: null,
-				icon: icon,
-				effectiveWidth: effectiveWidth,
-				effectiveHeight: effectiveHeight,
-				attachment: attachment,
-				afterPaint: _makeKeyedAfterPaint(
+			final icon = attachment.icon ?? CupertinoIcons.exclamationmark_triangle_fill;
+			return _maybeHero(context, SizedBox(
+				width: effectiveWidth,
+				height: shrinkHeight || expand ? null : effectiveHeight,
+				child: _AttachmentThumbnailPlaceholder(
+					child: null,
+					icon: icon,
+					effectiveWidth: effectiveWidth,
+					effectiveHeight: effectiveHeight,
 					attachment: attachment,
-					cornerIcon: null,
-					alreadyShowingBigIcon: icon,
-					primaryColor: ChanceTheme.primaryColorOf(context)
-				),
-				fit: fit
+					afterPaint: _makeKeyedAfterPaint(
+						attachment: attachment,
+						cornerIcon: null,
+						alreadyShowingBigIcon: icon,
+						primaryColor: ChanceTheme.primaryColorOf(context)
+					),
+					fit: fit
+				)
 			));
 		}
 		ImageProvider image = CNetworkImageProvider(

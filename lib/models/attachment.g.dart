@@ -255,6 +255,8 @@ class AttachmentTypeAdapter extends TypeAdapter<AttachmentType> {
         return AttachmentType.pdf;
       case 5:
         return AttachmentType.url;
+      case 6:
+        return AttachmentType.swf;
       default:
         return AttachmentType.image;
     }
@@ -280,6 +282,9 @@ class AttachmentTypeAdapter extends TypeAdapter<AttachmentType> {
         break;
       case AttachmentType.url:
         writer.writeByte(5);
+        break;
+      case AttachmentType.swf:
+        writer.writeByte(6);
         break;
     }
   }

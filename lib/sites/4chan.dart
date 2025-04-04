@@ -528,20 +528,29 @@ class Site4Chan extends ImageboardSite {
 		'.webm' => AttachmentType.webm,
 		'.pdf' => AttachmentType.pdf,
 		'.mp4' => AttachmentType.mp4,
+		'.swf' => AttachmentType.swf,
 		_ => AttachmentType.image
 	};
 	Attachment? _makeAttachment(String board, int threadId, dynamic data) => unsafe(data, () {
 		if (data['tim'] != null) {
 			final int id = data['tim'];
 			final String ext = data['ext'];
+			final type = _getAttachmentType(data['ext']);
+			final filename = unescape.convert(data['filename'] ?? '') + (data['ext'] ?? '');
 			return Attachment(
 				id: id.toString(),
-				type: _getAttachmentType(data['ext']),
-				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
+				type: type,
+				filename: filename,
 				ext: ext,
 				board: board,
-				url: Uri.https(imageUrl, '/$board/$id$ext').toString(),
-				thumbnailUrl: Uri.https(imageUrl, '/$board/${id}s.jpg').toString(),
+				url: switch (type) {
+					AttachmentType.swf => Uri.https(imageUrl, '/$board/$filename').toString(),
+					_ => Uri.https(imageUrl, '/$board/$id$ext').toString()
+				},
+				thumbnailUrl: switch (type) {
+					AttachmentType.swf => '',
+					_ => Uri.https(imageUrl, '/$board/${id}s.jpg').toString()
+				},
 				md5: data['md5'],
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
