@@ -211,6 +211,15 @@ class Thread extends HiveObject implements Filterable {
 					if (parentIndex != null) {
 						final parent = posts_[parentIndex];
 						parent.maybeAddReplyId(newChild.id);
+						if (repliedToId == newChild.parentId) {
+							// This isn't a known stub, i tmust be part of the hasOmittedReplies.
+							// This code path isn't always perfect.
+							// E.g. unknownReplies in the new thread now may now mean 2 things instead of
+							// the previously-expanded 1?
+							// But it is usually the right thing to do, to keep the "expand" button
+							// from continuously reappearing after thread refresh.
+							parent.hasOmittedReplies = false;
+						}
 					}
 				}
 			}
