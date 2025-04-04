@@ -9,12 +9,14 @@ class AdaptiveSegmentedControl<T extends Object> extends StatelessWidget {
 	final ValueChanged<T> onValueChanged;
 	final T? groupValue;
 	final EdgeInsets padding;
+	final bool fillWidth;
 
 	const AdaptiveSegmentedControl({
 		required this.children,
 		required this.onValueChanged,
 		this.groupValue,
 		this.padding = const EdgeInsets.symmetric(horizontal: 16),
+		this.fillWidth = false,
 		super.key
 	});
 
@@ -32,7 +34,8 @@ class AdaptiveSegmentedControl<T extends Object> extends StatelessWidget {
 			};
 		}
 		if (ChanceTheme.materialOf(context)) {
-			return Padding(
+			return Container(
+				alignment: fillWidth ? null : Alignment.center,
 				padding: padding,
 				child: SegmentedButton<T>(
 					selected: {
@@ -57,7 +60,7 @@ class AdaptiveSegmentedControl<T extends Object> extends StatelessWidget {
 		}
 		return Container(
 			padding: padding,
-			alignment: Alignment.center,
+			alignment: fillWidth ? null : Alignment.center,
 			child: CupertinoSlidingSegmentedControl<T>(
 				children: {
 					for (final child in children.entries)
