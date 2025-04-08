@@ -1081,11 +1081,13 @@ class TransformedMediaQuery extends StatelessWidget {
 class MaybeScrollbar extends StatelessWidget {
 	final Widget child;
 	final ScrollController? controller;
+	final Widget? injectBelow;
 	final bool? thumbVisibility;
 
 	const MaybeScrollbar({
 		required this.child,
 		this.controller,
+		this.injectBelow,
 		this.thumbVisibility,
 		Key? key
 	}) : super(key: key);
@@ -1093,6 +1095,7 @@ class MaybeScrollbar extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
+		final injectBelow = this.injectBelow;
 		if (settings.showScrollbars) {
 			if (ChanceTheme.materialOf(context)) {
 				return Scrollbar(
@@ -1101,7 +1104,12 @@ class MaybeScrollbar extends StatelessWidget {
 					thickness: settings.scrollbarThickness,
 					interactive: true,
 					thumbVisibility: thumbVisibility,
-					child: child
+					child: injectBelow == null ? child : Stack(
+						children: [
+							Positioned.fill(child: child),
+							injectBelow
+						]
+					)
 				);
 			}
 			return CupertinoScrollbar(
@@ -1112,7 +1120,12 @@ class MaybeScrollbar extends StatelessWidget {
 				thickness: settings.scrollbarThickness,
 				thicknessWhileDragging: settings.scrollbarThickness * (5/3),
 				thumbVisibility: thumbVisibility,
-				child: child
+				child: injectBelow == null ? child : Stack(
+					children: [
+						Positioned.fill(child: child),
+						injectBelow
+					]
+				)
 			);
 		}
 		return child;

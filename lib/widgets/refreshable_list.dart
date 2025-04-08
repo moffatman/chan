@@ -1085,6 +1085,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool autoExtendDuringScroll;
 	final bool useFiltersFromContext;
 	final bool useAllDummies;
+	final Widget? injectBelowScrollbar;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -1131,6 +1132,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.autoExtendDuringScroll = false,
 		this.useFiltersFromContext = true,
 		this.useAllDummies = false,
+		this.injectBelowScrollbar,
 		Key? key
 	}) : super(key: key);
 
@@ -2820,6 +2822,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						},
 						child: MaybeScrollbar(
 							controller: widget.controller?.scrollController,
+							injectBelow: widget.injectBelowScrollbar,
 							child: ChangeNotifierProvider.value(
 								value: _refreshableTreeItems,
 								child: CustomScrollView(
