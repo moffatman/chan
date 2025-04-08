@@ -2480,6 +2480,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.where((a) => a.type != AttachmentType.url).length);
 		final postSortingMethod = widget.persistentState.effectivePostSortingMethod;
 		final poll = widget.thread?.poll;
+		final site = context.read<ImageboardSite>();
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
 			children: [
@@ -2600,19 +2601,71 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													(widget.attachmentsCachingQueue.isEmpty && widget.cachedAttachments.values.any((v) => !v.isCached)) ? widget.startCaching : null
 												)],
 												[('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch)],
-												if (context.read<ImageboardSite>().archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), null)]
-												else if (widget.persistentState.useArchive) [('Live', const ImageboardIcon(), () {
-													widget.persistentState.useArchive = false;
-													widget.persistentState.save();
-													setState(() {});
-													widget.listController.blockAndUpdate();
-												})]
-												else [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
-													widget.persistentState.useArchive = true;
-													widget.persistentState.save();
-													setState(() {});
-													widget.listController.blockAndUpdate();
-												})],
+												if (site.archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), null)]
+												else [
+													if (site.archives.length > 1) ('', const Icon(CupertinoIcons.gear, size: 19), () async {
+														final archives = await modalLoad(context, 'Scanning archives...', (controller) async {
+															return (await Future.wait(
+																site.archives.map(
+																	(s) async => (s, await s.getBoards(priority: RequestPriority.interactive))
+																)
+															)).tryMap((e) {
+																if (e.$2.any((b) => b.boardKey == widget.persistentState.boardKey)) {
+																	return e.$1;
+																}
+																return null;
+															}).toList();
+														});
+														if (!context.mounted) {
+															return;
+														}
+														if (archives.isEmpty) {
+															showToast(
+																context: context,
+																message: 'Board not archived',
+																icon: CupertinoIcons.exclamationmark_triangle
+															);
+															return;
+														}
+														final archive = await showAdaptiveDialog<ImageboardSiteArchive>(
+															context: context,
+															barrierDismissible: true,
+															builder: (context) => AdaptiveAlertDialog(
+																title: const Text('Select archive'),
+																actions: [
+																	for (final a in archives) AdaptiveDialogAction(
+																		onPressed: () => Navigator.pop(context, a),
+																		child: Text(a.name)
+																	),
+																	AdaptiveDialogAction(
+																		onPressed: () => Navigator.pop(context),
+																		child: const Text('Cancel')
+																	)
+																]
+															)
+														);
+														if (archive != null) {
+															// Dreadful hack
+															widget.persistentState.thread?.archiveName = archive.name;
+															widget.persistentState.useArchive = true;
+															widget.persistentState.save();
+															setState(() {});
+															widget.listController.blockAndUpdate();
+														}
+													}),
+													if (widget.persistentState.useArchive) ('Live', const ImageboardIcon(), () {
+														widget.persistentState.useArchive = false;
+														widget.persistentState.save();
+														setState(() {});
+														widget.listController.blockAndUpdate();
+													})
+													else ('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
+														widget.persistentState.useArchive = true;
+														widget.persistentState.save();
+														setState(() {});
+														widget.listController.blockAndUpdate();
+													})
+												],
 												if (widget.persistentState.autoTranslate) [('Original', const Icon(Icons.translate, size: 19), () {
 													widget.persistentState.autoTranslate = false;
 													widget.persistentState.translatedPosts.clear();
