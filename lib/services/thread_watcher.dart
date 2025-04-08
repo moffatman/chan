@@ -168,14 +168,25 @@ class ThreadWatcher extends ChangeNotifier {
 
 	/// Exposed to allow re-initialize after importing
 	Future<void> setInitialCounts() async {
-		for (final watch in persistence.browserState.threadWatches.values) {
-			await persistence.getThreadStateIfExists(watch.threadIdentifier)?.ensureThreadLoaded();
-			watch.watchTime ??= persistence.getThreadStateIfExists(watch.threadIdentifier)?.thread?.posts_.last.time;
-			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
-			if (!watch.localYousOnly) {
-				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;
+		// Could be concurrently-modified
+		for (final watch in persistence.browserState.threadWatches.values.toList()) {
+			final ts = persistence.getThreadStateIfExists(watch.threadIdentifier);
+			final thread = await ts?.ensureThreadLoaded(preinit: false);
+			watch.watchTime ??= thread?.posts_.last.time;
+			if (thread?.posts_.last.id == ts?.lastSeenPostId && (ts?.unseenPostIds.data.isEmpty ?? false)) {
+				// Fast path - all posts seen. Avoid the preinit.
+				cachedUnseenYous[watch.threadIdentifier] = 0;
+				if (!watch.localYousOnly) {
+					cachedUnseen[watch.threadIdentifier] = 0;
+				}
 			}
-			await Future.microtask(() => {});
+			else {
+				await thread?.preinit();
+				cachedUnseenYous[watch.threadIdentifier] = ts?.unseenReplyIdsToYouCount() ?? 0;
+				if (!watch.localYousOnly) {
+					cachedUnseen[watch.threadIdentifier] = ts?.unseenReplyCount() ?? 0;
+				}
+			}
 		}
 		_updateCounts();
 		if (!_initialCountsDone.isCompleted) {
@@ -285,8 +296,9 @@ class ThreadWatcher extends ChangeNotifier {
 								threadState.unseenPostIds.data.add(p.id);
 							}
 						}
-						oldThread.mergePosts(null, newChildren, site);
-						await threadState.didMutateThread();
+						if (oldThread.mergePosts(null, newChildren, site)) {
+							await threadState.didMutateThread();
+						}
 					}
 				}
 			}
@@ -352,7 +364,8 @@ class ThreadWatcher extends ChangeNotifier {
 			if (tab.imageboardKey == imageboardKey && tab.threadPageState == null && tab.thread != null) {
 				// Thread page widget hasn't yet been instantiated
 				final threadState = persistence.getThreadStateIfExists(tab.thread!);
-				if (threadState != null && threadState.thread?.isArchived != true && threadState.thread?.isDeleted != true) {
+				final thread = await threadState?.ensureThreadLoaded(preinit: false);
+				if (threadState != null && thread?.isArchived != true && thread?.isDeleted != true && threadState.threadWatch?.zombie != true) {
 					await _updateThread(threadState);
 				}
 			}

@@ -327,6 +327,20 @@ class Post implements Filterable {
 		other.flag == flag &&
 		other.attachmentDeleted == attachmentDeleted &&
 		other.archiveName == archiveName;
+	
+	bool isIdenticalForFilteringPurposes(Post other) {
+		return 
+			other.board == board &&
+			other.id == id &&
+			//other.upvotes == upvotes &&
+			other.isDeleted == isDeleted &&
+			listEquals(other.attachments_, attachments_) &&
+			other.name == name &&
+			//other.hasOmittedReplies == hasOmittedReplies &&
+			other.flag == flag &&
+			//other.attachmentDeleted == attachmentDeleted &&
+			other.archiveName == archiveName;
+	}
 
 	@override
 	int get hashCode => Object.hash(board, id);

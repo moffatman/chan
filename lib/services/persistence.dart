@@ -1597,11 +1597,13 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		_filteredPosts = null;
 	}
 
-	Future<void> ensureThreadLoaded({bool preinit = true, bool catalog = false}) async {
+	Future<Thread?> ensureThreadLoaded({bool preinit = true, bool catalog = false}) async {
 		Thread? thread = _thread;
 		if (thread != null) {
-			await thread.preinit(catalog: catalog);
-			return;
+			if (preinit) {
+				await thread.preinit(catalog: catalog);
+			}
+			return thread;
 		}
 		// This is to do preinit before setting _thread (which will generate metafilter)
 		thread = await Persistence.getCachedThread(imageboardKey, board, id);
@@ -1616,7 +1618,11 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 				thread = null;
 			}
 		}
-		_thread = thread ?? _thread;
+		if (thread != null) {
+			didUpdate();
+			Persistence._sharedThreadStateListenable.didUpdate();
+		}
+		return _thread = thread ?? _thread;
 	}
 
 	Future<Thread?> getThread() async {
@@ -1627,10 +1633,11 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 
 	Thread? get thread => _thread;
 	set thread(Thread? newThread) {
-		if (newThread != _thread) {
-			if (_thread != null && newThread != null) {
+		final oldThread = _thread;
+		if (newThread != oldThread) {
+			if (oldThread != null && newThread != null) {
 				final oldIds = {
-					for (final post in _thread?.posts_ ?? <Post>[])
+					for (final post in oldThread.posts_)
 						post.id: post.isStub
 				};
 				for (final p in newThread.posts_) {
@@ -1641,9 +1648,12 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			}
 			Persistence.setCachedThread(imageboardKey, board, id, newThread);
 			_thread = newThread;
-			metaFilter = _makeMetaFilter();
-			_youIds = null;
-			_invalidate();
+			// Maybe only .upvotes changed?
+			if (!(oldThread?.isIdenticalForFilteringPurposes(newThread) ?? false)) {
+				metaFilter = _makeMetaFilter();
+				_youIds = null;
+				_invalidate();
+			}
 			didUpdate();
 			Persistence._sharedThreadStateListenable.didUpdate();
 		}

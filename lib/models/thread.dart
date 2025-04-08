@@ -168,7 +168,9 @@ class Thread extends HiveObject implements Filterable {
 		}
 	}
 
-	void mergePosts(Thread? other, List<Post> otherPosts, ImageboardSite site) {
+	/// Return whether any change was made
+	bool mergePosts(Thread? other, List<Post> otherPosts, ImageboardSite site) {
+		bool anyChanges = false;
 		if (other != null) {
 			_markNewIPs(other);
 		}
@@ -180,6 +182,7 @@ class Thread extends HiveObject implements Filterable {
 			if (indexToReplace != null) {
 				final postToReplace = posts_[indexToReplace];
 				if (postToReplace.isStub || newChild.archiveName != null) {
+					anyChanges = true;
 					posts_.removeAt(indexToReplace);
 					posts_.insert(indexToReplace, newChild);
 					newChild.replyIds = postToReplace.replyIds;
@@ -193,6 +196,7 @@ class Thread extends HiveObject implements Filterable {
 				}
 			}
 			else {
+				anyChanges = true;
 				final newIndex = site.placeOrphanPost(posts_, newChild);
 				if (newIndex < postIdToListIndex.length) {
 					for (int i = newIndex + 1; i < posts_.length; i++) {
@@ -246,6 +250,7 @@ class Thread extends HiveObject implements Filterable {
 				}
 			}
 		}
+		return anyChanges;
 	}
 
 	@override
@@ -253,6 +258,7 @@ class Thread extends HiveObject implements Filterable {
 		identical(this, other) ||
 		other is Thread &&
 		other.id == id &&
+		other.board == board &&
 		other.posts_.length == posts_.length &&
 		other.posts_.last == posts_.last &&
 		other.currentPage == currentPage &&
@@ -263,6 +269,34 @@ class Thread extends HiveObject implements Filterable {
 		listEquals(other.attachments, attachments) &&
 		listEquals(other.posts_, posts_) &&
 		other.poll == poll;
+	
+	bool isIdenticalForFilteringPurposes(Thread? other) {
+		if (other == null) {
+			return false;
+		}
+		if (!(
+			other.id == id &&
+			other.board == board &&
+			other.posts_.length == posts_.length &&
+			other.posts_.last == posts_.last &&
+			other.currentPage == currentPage &&
+			other.isArchived == isArchived &&
+			other.isDeleted == isDeleted &&
+			other.isSticky == isSticky &&
+			other.replyCount == replyCount &&
+			listEquals(other.attachments, attachments) &&
+			other.poll == poll
+		)) {
+			return false;
+		}
+		// Lists are sure to be same length
+		for (int i = 0; i < posts_.length; i++) {
+			if (!posts_[i].isIdenticalForFilteringPurposes(other.posts_[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	@override
 	int get hashCode => Object.hash(board, id);
