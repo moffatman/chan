@@ -426,7 +426,15 @@ class AttachmentViewerController extends ChangeNotifier {
 	Map<String, String> getHeaders(Uri url) {
 		return {
 			...site.getHeaders(url),
-			if (_useRandomUserAgent ?? attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+			if (_useRandomUserAgent ?? attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent(),
+		};
+	}
+
+	Future<Map<String, String>> getHeadersWithCookies(Uri url) async {
+		return {
+			...getHeaders(url),
+			'cookie': (await Persistence.currentCookies.loadForRequest(url))
+										.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
 		};
 	}
 
@@ -659,7 +667,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				transcode |= url.path.endsWith('.m3u8');
 				transcode |= soundSource != null;
 				if (!transcode && Settings.featureWebmTranscodingForPlayback && settings.webmTranscoding == WebmTranscodingSetting.vp9 && attachment.type == AttachmentType.webm) {
-					final scan = await MediaScan.scan(url, headers: getHeaders(url));
+					final scan = await MediaScan.scan(url, headers: await getHeadersWithCookies(url));
 					if (_isDisposed) {
 						return;
 					}
@@ -679,7 +687,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						final progressNotifier = ValueNotifier<double?>(null);
 						final hash = await VideoServer.instance.startCachingDownload(
 							uri: url,
-							headers: getHeaders(url),
+							headers: await getHeadersWithCookies(url),
 							onCached: _onCacheCompleted,
 							onProgressChanged: (currentBytes, totalBytes) {
 								progressNotifier.value = currentBytes / totalBytes;
@@ -710,7 +718,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				else {
 					_ongoingConversion?.cancelIfActive();
-					_ongoingConversion = StreamingMP4Conversion(url, headers: getHeaders(url), soundSource: soundSource);
+					_ongoingConversion = StreamingMP4Conversion(url, headers: await getHeadersWithCookies(url), soundSource: soundSource);
 					final result = await _ongoingConversion!.start(force: force);
 					if (_isDisposed) return;
 					_conversionDisposers.add(_ongoingConversion!.dispose);

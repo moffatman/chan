@@ -43,7 +43,6 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/post_spans.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -1549,41 +1548,14 @@ abstract class ImageboardSiteArchive {
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
-	Map<String, Map<String, String>> _memoizedWifiHeaders = {};
-	Map<String, Map<String, String>> _memoizedCellularHeaders = {};
 	final List<ImageboardSiteArchive> archives;
 	ImageboardSite({
 		required this.archives,
 		required super.overrideUserAgent
 	});
-	Future<void> _ensureCookiesMemoizedForUrl(Uri url) async {
-		_memoizedWifiHeaders.putIfAbsent(url.host, () => {
-
-		})['cookie'] = (await Persistence.wifiCookies.loadForRequest(url)).join('; ');
-		_memoizedCellularHeaders.putIfAbsent(url.host, () => {
-
-		})['cookie'] = (await Persistence.cellularCookies.loadForRequest(url)).join('; ');
-	}
-	Future<void> _ensureCookiesMemoizedForAttachments(Iterable<Attachment> attachments) async {
-		final firstUrlsForHosts = <String, Uri>{};
-		for (final attachment in attachments) {
-			final url = Uri.parse(attachment.url);
-			firstUrlsForHosts[url.host] ??= url;
-			final thumbnailUrl = Uri.parse(attachment.thumbnailUrl);
-			firstUrlsForHosts[thumbnailUrl.host] ??= thumbnailUrl;
-		}
-		await Future.wait(firstUrlsForHosts.values.map(_ensureCookiesMemoizedForUrl));
-	}
 	Map<String, String> getHeaders(Uri url) {
-		if (Settings.instance.connectivity == ConnectivityResult.mobile) {
-			return {
-				'user-agent': userAgent,
-				..._memoizedCellularHeaders[url.host] ?? {}
-			};
-		}
 		return {
-			'user-agent': userAgent,
-			..._memoizedWifiHeaders[url.host] ?? {}
+			'user-agent': userAgent
 		};
 	}
 	String get baseUrl;
@@ -1611,7 +1583,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			try {
 				final post = await archive.getPost(board, id, priority: RequestPriority.cosmetic);
 				post.archiveName = archive.name;
-				await _ensureCookiesMemoizedForAttachments(post.attachments);
 				return post;
 			}
 			catch(e) {
@@ -1628,7 +1599,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					try {
 						final post = await error.key.getPost(board, id, priority: priority);
 						post.archiveName = error.key.name;
-						await _ensureCookiesMemoizedForAttachments(post.attachments);
 						return post;
 					}
 					catch (e) {
@@ -1678,7 +1648,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			if (archive != null) {
 				try {
 					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
-					await _ensureCookiesMemoizedForAttachments(thread_.posts_.expand((p) => p.attachments));
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
 					fallback = thread_;
@@ -1716,7 +1685,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				try {
 					final thread_ = await archive.getThread(thread, priority: RequestPriority.cosmetic).timeout(const Duration(seconds: 15));
 					if (completer.isCompleted) return null;
-					await _ensureCookiesMemoizedForAttachments(thread_.posts_.expand((p) => p.attachments));
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
 					fallback = thread_;
@@ -1756,7 +1724,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					if (_isCloudflareNotAllowedException(error.value)) {
 						try {
 							final thread_ = await error.key.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
-							await _ensureCookiesMemoizedForAttachments(thread_.posts_.expand((p) => p.attachments));
 							thread_.archiveName = error.key.name;
 							fallback = thread_;
 							try {
@@ -1797,15 +1764,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) => searchArchives(query, page: page, lastResult: lastResult, priority: priority);
 
-	Future<void> _ensureSearchResultCookiesMemoized(ImageboardArchiveSearchResult result) async {
-		if (result.thread case Thread t) {
-			await _ensureCookiesMemoizedForAttachments(t.attachments.followedBy(t.posts_.expand((p) => p.attachments)));
-		}
-		else if (result.post case Post p) {
-			await _ensureCookiesMemoizedForAttachments(p.attachments);
-		}
-	}
-
 	Future<ImageboardArchiveSearchResultPage> searchArchives(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
 		final errors = <ImageboardSiteArchive, Object>{};
 		for (final archive in archives) {
@@ -1813,9 +1771,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				continue;
 			}
 			try {
-				final result = await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic);
-				result.posts.forEach(_ensureSearchResultCookiesMemoized);
-				return result;
+				return await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic);
 			}
 			catch (e, st) {
 				if (e is! BoardNotFoundException) {
@@ -1832,9 +1788,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				// No need to check disabledArchiveNames, they can't fail to begin with
 				if (_isCloudflareNotAllowedException(error.value)) {
 					try {
-						final result = await error.key.search(query, page: page, lastResult: lastResult, priority: priority);
-						result.posts.forEach(_ensureSearchResultCookiesMemoized);
-						return result;
+						return await error.key.search(query, page: page, lastResult: lastResult, priority: priority);
 					}
 					catch (e, st) {
 						if (e is! BoardNotFoundException) {
@@ -1951,8 +1905,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@mustCallSuper
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
 		_catalogCache.addAll(oldSite._catalogCache);
-		_memoizedWifiHeaders = oldSite._memoizedWifiHeaders;
-		_memoizedCellularHeaders = oldSite._memoizedCellularHeaders;
 		final oldLoggedIn = oldSite.loginSystem?.loggedIn;
 		if (oldLoggedIn != null) {
 			loginSystem?.loggedIn = oldLoggedIn;
@@ -1977,25 +1929,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			for (final entry in (response.data as Map).entries) int.parse(entry.key as String): entry.value as String
 		};
 	}
-	@override
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter}) async {
-		final catalog = await super.getCatalog(board, variant: variant, priority: priority, acceptCachedAfter: acceptCachedAfter);
-		await _ensureCookiesMemoizedForAttachments(catalog.expand((t) => t.posts_.expand((p) => p.attachments)));
-		return catalog;
-	}
-	@override
-	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
-		final catalog = await super.getMoreCatalog(board, after, variant: variant, priority: priority);
-		await _ensureCookiesMemoizedForAttachments(catalog.expand((t) => t.posts_.expand((p) => p.attachments)));
-		return catalog;
-	}
 	@protected
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority});
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final theThread = await getThreadImpl(thread, variant: variant, priority: priority);
-		await _ensureCookiesMemoizedForAttachments(theThread.posts_.expand((p) => p.attachments));
-		return theThread;
+		return await getThreadImpl(thread, variant: variant, priority: priority);
 	}
 	Future<ImageboardUserInfo> getUserInfo(String username) async => throw UnimplementedError();
 	String getWebUrl({
