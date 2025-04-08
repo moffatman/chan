@@ -140,10 +140,9 @@ class ThreadWidgetBuilder extends StatelessWidget {
 						builder: (context) => builder(context, _getData(context))
 					);
 				}
-				return AnimatedBuilder(
-					animation: persistence.listenForPersistentThreadStateChanges(thread),
-					builder: (context, _) {
-						final threadState = persistence.getThreadStateIfExists(thread);
+				return ValueListenableBuilder(
+					valueListenable: persistence.listenForPersistentThreadStateChanges(thread),
+					builder: (context, threadState, _) {
 						if (threadState == null) {
 							return Builder(
 								builder: (context) => builder(context, _getData(context))

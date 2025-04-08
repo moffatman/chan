@@ -9,9 +9,9 @@ import 'package:chan/services/persistence.dart';
 import 'package:flutter/foundation.dart';
 import 'package:chan/util.dart';
 
-class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
+class IncognitoPersistence implements Persistence {
 	final Persistence parent;
-	final _ephemeralThreadStates = <ThreadIdentifier, (PersistentThreadState, EasyListenable)>{};
+	final _ephemeralThreadStates = <ThreadIdentifier, PersistentThreadState>{};
 
 	IncognitoPersistence(this.parent);
 
@@ -40,8 +40,8 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
   void dispose() {
     print('IncognitoPersistence.dispose()');
     print(StackTrace.current);
-		for (final pair in _ephemeralThreadStates.values) {
-			pair.$2.dispose();
+		for (final state in _ephemeralThreadStates.values) {
+			state.dispose();
 		}
 	}
 
@@ -66,15 +66,15 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
 			board: thread.board,
 			id: thread.id,
 			showInHistory: initiallyHideFromHistory ? null : Persistence.settings.recordThreadsInHistory,
-			ephemeralOwner: this
+			incognito: true
 		);
-		_ephemeralThreadStates[thread] = (newState, EasyListenable());
+		_ephemeralThreadStates[thread] = newState;
 		return newState;
   }
 
   @override
   PersistentThreadState? getThreadStateIfExists(ThreadIdentifier? thread) {
-    return _ephemeralThreadStates[thread]?.$1 ?? parent.getThreadStateIfExists(thread);
+    return _ephemeralThreadStates[thread] ?? parent.getThreadStateIfExists(thread);
   }
 
   @override
@@ -92,8 +92,8 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
 	}
 
   @override
-  Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
-		return _ephemeralThreadStates[thread]?.$2 ?? parent.listenForPersistentThreadStateChanges(thread);
+  ValueListenable<PersistentThreadState?> listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
+		return _ephemeralThreadStates[thread] ?? parent.listenForPersistentThreadStateChanges(thread);
 	}
 
   @override
@@ -125,11 +125,6 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
 
   @override
   void unsavePost(Post post) => parent.unsavePost(post);
-	
-	@override
-	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state) async {
-		await Future.microtask(() => _ephemeralThreadStates[state.identifier]?.$2.didUpdate());
-	}
 
   @override
   String toString() => 'IncognitoPersistence(parent: $parent)';

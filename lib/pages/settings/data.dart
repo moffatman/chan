@@ -20,7 +20,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 
@@ -148,9 +147,10 @@ class SettingsThreadsPanel extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return ValueListenableBuilder(
-			valueListenable: Persistence.sharedThreadStateBox.listenable(),
-			builder: (context, Box<PersistentThreadState> threadStateBox, child) {
+		return ListenableBuilder(
+			listenable: Persistence.sharedThreadStateListenable,
+			builder: (context, child) {
+				final threadStateBox = Persistence.sharedThreadStateBox;
 				final oldThreadRows = [0, 7, 14, 30, 60, 90, 180].map((days) {
 					final cutoff = DateTime.now().subtract(Duration(days: days));
 					final oldThreads = threadStateBox.values.where((state) {

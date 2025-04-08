@@ -45,7 +45,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
@@ -365,7 +364,7 @@ class _SavedPageState extends State<SavedPage> {
 		}
 		_lastTickerMode = tickerMode;
 		final persistencesAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList());
-		final threadStateBoxesAnimation = Persistence.sharedThreadStateBox.listenable();
+		final threadStateBoxesAnimation = Persistence.sharedThreadStateListenable;
 		final savedPostsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedPostsListenable).toList());
 		final savedAttachmentsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList());
 		final imageboardIds = <String, int>{};
@@ -659,10 +658,9 @@ class _SavedPageState extends State<SavedPage> {
 										contextMenuBuilderBuilder: makeGeneralContextMenuBuilder,
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
-											child: AnimatedBuilder(
-												animation: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.$1.threadIdentifier),
-												builder: (context, child) {
-													final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.$1.threadIdentifier);
+											child: ValueListenableBuilder(
+												valueListenable: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.$1.threadIdentifier),
+												builder: (context, threadState, child) {
 													return NullableColorFiltered(
 														colorFilter:
 															((threadState?.unseenReplyIdsToYouCount() ?? 0) > 0) ?

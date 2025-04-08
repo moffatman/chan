@@ -88,10 +88,6 @@ class UriAdapter extends TypeAdapter<Uri> {
 const _maxAutosavedIdsPerBoard = 250;
 const _maxHiddenIdsPerBoard = 1000;
 
-abstract class EphemeralThreadStateOwner {
-	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state);
-}
-
 const _deletedRatio = 0.15;
 const _deletedThreshold = 60;
 
@@ -142,10 +138,66 @@ enum SpamFilterStatus {
 	currently
 }
 
+class BoxAndObjectListenable<T extends Listenable, B extends Box<T>> extends ValueListenable<T?> {
+  final B box;
+
+  final dynamic key;
+
+  final List<VoidCallback> _listeners = [];
+
+  StreamSubscription? _subscription;
+
+	T? _value;
+
+  BoxAndObjectListenable(this.box, this.key);
+
+	void _listener(BoxEvent event) {
+		if (key == event.key) {
+			final oldValue = _value;
+			final newValue = _value = box.get(key);
+			if (!identical(oldValue, newValue)) {
+				if (oldValue != null) {
+					_listeners.forEach(oldValue.removeListener);
+				}
+				if (newValue != null) {
+					_listeners.forEach(newValue.addListener);
+				}
+			}
+			for (final listener in _listeners) {
+				listener();
+			}
+		}
+	}
+
+  @override
+  void addListener(VoidCallback listener) {
+    if (_listeners.isEmpty) {
+			_subscription = box.watch().listen(_listener);
+    }
+    _listeners.add(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    _listeners.remove(listener);
+		_value?.removeListener(listener);
+
+    if (_listeners.isEmpty) {
+      _subscription?.cancel();
+      _subscription = null;
+    }
+  }
+
+  @override
+  T? get value => _value;
+}
+
 class Persistence extends ChangeNotifier {
 	final String imageboardKey;
 	Persistence(this.imageboardKey);
 	static late final Box<PersistentThreadState> sharedThreadStateBox;
+	static final _sharedThreadStateListenable = EasyListenable();
+	static final sharedThreadStateListenable = Listenable.merge([sharedThreadStateBox.listenable(), _sharedThreadStateListenable]);
 	static late final Box<ImageboardBoard> sharedBoardsBox;
 	static late final LazyBox<Thread> sharedThreadsBox;
 	Map<String, SavedAttachment> get savedAttachments => settings.savedAttachmentsBySite[imageboardKey]!;
@@ -1214,8 +1266,8 @@ class Persistence extends ChangeNotifier {
 
 	static String getThreadStateBoxKey(String imageboardKey, ThreadIdentifier thread) => '$imageboardKey/${thread.board.toLowerCase()}/${thread.id}';
 
-	Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
-		return sharedThreadStateBox.listenable(keys: [getThreadStateBoxKey(imageboardKey, thread)]);
+	ValueListenable<PersistentThreadState?> listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
+		return BoxAndObjectListenable(sharedThreadStateBox, getThreadStateBoxKey(imageboardKey, thread));
 	}
 
 	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
@@ -1440,7 +1492,7 @@ class TreePathListMerger extends FieldMerger<List<List<int>>> {
 
 @HiveType(typeId: 3)
 
-class PersistentThreadState extends EasyListenable with HiveObjectMixin implements Filterable {
+class PersistentThreadState extends EasyListenable with HiveObjectMixin implements Filterable, ValueListenable<PersistentThreadState> {
 	@HiveField(0)
 	int? lastSeenPostId;
 	@HiveField(1)
@@ -1462,8 +1514,6 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	List<int> hiddenPostIds = [];
 	@HiveField(9)
 	String? deprecatedDraftReply;
-	// Don't persist this
-	EphemeralThreadStateOwner? ephemeralOwner;
 	@HiveField(10, defaultValue: <int>[], merger: SetLikePrimitiveListMerger<int>())
 	List<int> treeHiddenPostIds = [];
 	@HiveField(11, defaultValue: <String>[], merger: SetLikePrimitiveListMerger<String>())
@@ -1512,14 +1562,15 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
-	bool get incognito => ephemeralOwner != null;
+	// Don't persist this
+	final bool incognito;
 
 	PersistentThreadState({
 		required this.imageboardKey,
 		required this.board,
 		required this.id,
 		required this.showInHistory,
-		this.ephemeralOwner,
+		this.incognito = false,
 		EfficientlyStoredIntSet? unseenPostIds,
 		this.postSortingMethod,
 		EfficientlyStoredIntSet? postIdsToStartRepliesAtBottom,
@@ -1593,7 +1644,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			metaFilter = _makeMetaFilter();
 			_youIds = null;
 			_invalidate();
-			save(); // Inform listeners
+			didUpdate();
+			Persistence._sharedThreadStateListenable.didUpdate();
 		}
 	}
 
@@ -1602,7 +1654,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		metaFilter = _makeMetaFilter();
 		_youIds = null;
 		_invalidate();
-		await save(); // Inform listeners
+		didUpdate();
+		Persistence._sharedThreadStateListenable.didUpdate();
 	}
 
 	void didUpdateYourPosts() {
@@ -1784,8 +1837,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 
 	@override
 	Future<void> save() async {
-		if (ephemeralOwner != null) {
-			await ephemeralOwner!.ephemeralThreadStateDidUpdate(this);
+		if (incognito) {
+			didUpdate();
 		}
 		else {
 			await super.save();
@@ -1810,6 +1863,9 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		imageboard?.persistence.browserState.postSortingMethodPerBoard[boardKey] ??
 		imageboard?.persistence.browserState.postSortingMethod ??
 		PostSortingMethod.none;
+	
+	@override
+	PersistentThreadState get value => this;
 }
 
 @HiveType(typeId: 4)

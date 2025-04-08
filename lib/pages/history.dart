@@ -18,7 +18,6 @@ import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -231,7 +230,7 @@ class HistoryPageState extends State<HistoryPage> {
 								),
 								controller: _listController,
 								autoExtendDuringScroll: true,
-								updateAnimation: Persistence.sharedThreadStateBox.listenable(),
+								updateAnimation: Persistence.sharedThreadStateListenable,
 								disableUpdates: !TickerMode.of(context),
 								listUpdater: (options) async {
 									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && (s.showInHistory ?? false)).toList();
