@@ -1445,6 +1445,7 @@ class ThreadPageState extends State<ThreadPage> {
 												else {
 													persistentState.savedTime = DateTime.now();
 												}
+												persistentState.thread ??= persistentState.imageboard?.site.getThreadFromCatalogCache(persistentState.identifier);
 												persistentState.save();
 												setState(() {});
 											},
