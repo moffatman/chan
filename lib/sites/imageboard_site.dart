@@ -1631,15 +1631,20 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		final validator = customValidator ?? (Thread thread) async {
 			final opAttachment = thread.attachments.tryFirst ?? thread.posts_.tryFirst?.attachments.tryFirst;
 			if (opAttachment != null) {
-				await client.head(opAttachment.url, options: Options(
+				final response = await client.head(opAttachment.url, options: Options(
 					headers: {
 						...getHeaders(Uri.parse(opAttachment.url)),
 						if (opAttachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 					},
+					followRedirects: false,
+					validateStatus: (_) => true,
 					extra: {
 						kPriority: priority
 					}
 				));
+				if ((response.statusCode ?? 400) >= 400) {
+					throw HTTPStatusException.fromResponse(response);
+				}
 			}
 		};
 		final completer = Completer<Thread>();

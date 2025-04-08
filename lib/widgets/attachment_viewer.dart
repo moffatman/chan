@@ -455,12 +455,19 @@ class AttachmentViewerController extends ChangeNotifier {
 			method: attachmentUrl.path.endsWith('.m3u8') ? 'GET' : 'HEAD',
 			validateStatus: (_) => true,
 			headers: getHeaders(attachmentUrl),
+			followRedirects: false,
 			extra: {
 				kPriority: priority
 			}
 		));
 		if (result.statusCode == 200) {
 			return attachmentUrl;
+		}
+		if (result.redirects.isNotEmpty) {
+			return result.redirects.last.location;
+		}
+		if (result.headers.value(HttpHeaders.locationHeader) case String location) {
+			return Uri.parse(location);
 		}
 		// handle issue with timestamps in url
 		bool corrected = false;
@@ -471,6 +478,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (corrected) {
 			result = await site.client.head(correctedUrl, options: Options(
 				validateStatus: (_) => true,
+				followRedirects: false,
 				headers: getHeaders(Uri.parse(correctedUrl)),
 				extra: {
 					kPriority: priority
@@ -479,8 +487,15 @@ class AttachmentViewerController extends ChangeNotifier {
 			if (result.statusCode == 200) {
 				return Uri.parse(correctedUrl);
 			}
+			if (result.redirects.isNotEmpty) {
+				return result.redirects.last.location;
+			}
+			if (result.headers.value(HttpHeaders.locationHeader) case String location) {
+				return Uri.parse(location);
+			}
 		}
 		if (_checkArchives && attachment.threadId != null) {
+			final redirectUrls = <String, Uri>{};
 			final archivedThread = await site.getThreadFromArchive(ThreadIdentifier(
 				attachment.board,
 				attachment.threadId!
@@ -493,19 +508,26 @@ class AttachmentViewerController extends ChangeNotifier {
 				_useRandomUserAgent = newAttachment.useRandomUseragent;
 				final check = await site.client.head(newAttachment.url.toString(), options: Options(
 					validateStatus: (_) => true,
+					followRedirects: false,
 					headers: getHeaders(Uri.parse(newAttachment.url)),
 					extra: {
 						kPriority: priority
 					}
 				));
-				if (check.statusCode != 200) {
+				if ((check.statusCode ?? 400) >= 400) {
 					throw AttachmentNotArchivedException(attachment);
+				}
+				if (check.redirects.isNotEmpty) {
+					redirectUrls[newAttachment.url] = check.redirects.last.location;
+				}
+				else if (check.headers.value(HttpHeaders.locationHeader) case String location) {
+					redirectUrls[newAttachment.url] = Uri.parse(location);
 				}
 			}, priority: priority);
 			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
 				?? archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id))!;
 			_useRandomUserAgent = goodAttachment.useRandomUseragent;
-			return Uri.parse(goodAttachment.url);
+			return redirectUrls[goodAttachment.url] ?? Uri.parse(goodAttachment.url);
 		}
 		else {
 			_useRandomUserAgent = null;

@@ -1916,6 +1916,7 @@ class MissingAttachmentsControls extends StatelessWidget {
 					final threadIdentifier = ThreadIdentifier(attachment.item.attachment.board, threadId);
 					try {
 						// Get the archived thread
+						final redirectUrls = <String, String>{};
 						final archivedThread = await attachment.imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (thread) async {
 							final found = _findMatchingAttachment(thread, attachment.item.attachment)?.attachment;
 							if (found == null) {
@@ -1924,16 +1925,27 @@ class MissingAttachmentsControls extends StatelessWidget {
 							if (found.url == attachment.item.attachment.url) {
 								throw Exception('Attachment not really archived on ${thread.archiveName}');
 							}
-							await attachment.imageboard.site.client.head(found.url, options: Options(
+							final response = await attachment.imageboard.site.client.head(found.url, options: Options(
 								headers: {
 									...attachment.imageboard.site.getHeaders(Uri.parse(found.url)),
 									if (found.useRandomUseragent) 'user-agent': makeRandomUserAgent()
-								}
+								},
+								followRedirects: false,
+								validateStatus: (_) => true
 							));
+							if ((response.statusCode ?? 400) >= 400) {
+								throw HTTPStatusException.fromResponse(response);
+							}
+							if (response.redirects.isNotEmpty) {
+								redirectUrls[found.url] = response.redirects.last.location.toString();
+							}
+							else if (response.headers.value(HttpHeaders.locationHeader) case String location) {
+								redirectUrls[found.url] = location;
+							}
 						});
 						final found = _findMatchingAttachment(archivedThread, attachment.item.attachment)?.attachment;
 						if (found != null) {
-							await attachment.imageboard.site.client.download(found.url, attachment.item.file.path, options: Options(
+							await attachment.imageboard.site.client.download(redirectUrls[found.url] ?? found.url, attachment.item.file.path, options: Options(
 								headers: {
 									...attachment.imageboard.site.getHeaders(Uri.parse(found.url)),
 									if (found.useRandomUseragent) 'user-agent': makeRandomUserAgent()
