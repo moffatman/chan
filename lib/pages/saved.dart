@@ -111,6 +111,181 @@ typedef SavedPageMasterDetailPanesState = MultiMasterDetailPage5State<Imageboard
 	return best.trySingle;
 }
 
+abstract class _SavedThreadsLoader {
+	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize();
+	Future<(PersistentThreadState, Thread)?> takeSavedThread();
+}
+
+sealed class _SavedThreadsLoaderImpl<T> implements _SavedThreadsLoader {
+	final List<T> _list = [];
+	Future<T?> _initializeImpl(PersistentThreadState state);
+	void _afterInitializeImpl();
+	@override
+	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize() async {
+		final missing = <ImageboardScoped<ThreadIdentifier>>[];
+		for (final state in Persistence.sharedThreadStateBox.values) {
+			if (state.savedTime == null) {
+				continue;
+			}
+			final imageboard = state.imageboard;
+			if (imageboard == null) {
+				continue;
+			}
+			if (!state.isThreadCached) {
+				missing.add(imageboard.scope(state.identifier));
+				continue;
+			}
+			final entry = await _initializeImpl(state);
+			if (entry != null) {
+				_list.add(entry);
+			}
+		}
+		_afterInitializeImpl();
+		return missing;
+	}
+	PersistentThreadState _takeSavedThreadImpl(T entry);
+	@override
+	Future<(PersistentThreadState, Thread)?> takeSavedThread() async {
+		T? entry = _list.tryRemoveFirst();
+		while (entry != null) {
+			final state = _takeSavedThreadImpl(entry);
+			final thread = await state.getThread();
+			if (thread != null) {
+				return (state, thread);
+			}
+		}
+		return null;
+	}
+}
+
+class _SavedThreadsByTitleLoader extends _SavedThreadsLoaderImpl<(PersistentThreadState, String)> {
+	static final _cache = <PersistentThreadState, String>{};
+	@override
+	Future<(PersistentThreadState, String)?> _initializeImpl(PersistentThreadState state) async {
+		final cached = _cache[state];
+		if (cached != null) {
+			return (state, cached);
+		}
+		final thread = await state.getThread();
+		if (thread == null) {
+			return null;
+		}
+		// Don't store whole Thread for memory reasons
+		// Title should never change in a Thread, safe to cache it
+		final title = _cache[state] = thread.title ?? thread.posts_.tryFirst?.span.buildText() ?? '';
+		return (state, title);
+	}
+	@override
+	void _afterInitializeImpl() {
+		_list.sort((a, b) => a.$2.compareTo(b.$2));
+	}
+	@override
+	PersistentThreadState _takeSavedThreadImpl((PersistentThreadState, String) entry) => entry.$1;
+}
+
+class _SavedThreadsByLastPostTimeLoader extends _SavedThreadsLoaderImpl<(PersistentThreadState, DateTime)> {
+	static final _cache = <PersistentThreadState, DateTime>{};
+	@override
+	Future<(PersistentThreadState, DateTime)?> _initializeImpl(PersistentThreadState state) async {
+		final cached = _cache[state];
+		if (cached != null) {
+			return (state, cached);
+		}
+		final thread = await state.getThread();
+		if (thread == null) {
+			return null;
+		}
+		final time = thread.posts_.tryLast?.time;
+		if (time == null) {
+			return null;
+		}
+		if (thread.isArchived) {
+			// Live threads may change their last-post-time, not safe to cache it
+			_cache[state] = time;
+		}
+		// Don't store whole Thread for memory reasons
+		return (state, time);
+	}
+	@override
+	void _afterInitializeImpl() {
+		_list.sort((a, b) => a.$2.compareTo(b.$2));
+	}
+	@override
+	PersistentThreadState _takeSavedThreadImpl((PersistentThreadState, DateTime) entry) => entry.$1;
+}
+
+class _SavedThreadsBySavedTimeLoader extends _SavedThreadsLoaderImpl<PersistentThreadState> {
+	static final noDate = DateTime.fromMillisecondsSinceEpoch(0);
+	@override
+	Future<PersistentThreadState?> _initializeImpl(PersistentThreadState state) async => state;
+	@override
+	void _afterInitializeImpl() {
+		_list.sort((a, b) => (a.savedTime ?? noDate).compareTo(b.savedTime ?? noDate));
+	}
+	@override
+	PersistentThreadState _takeSavedThreadImpl(PersistentThreadState entry) => entry;
+}
+
+class _SavedThreadsByThreadPostTimeLoader implements _SavedThreadsLoader {
+	final Map<(Imageboard, String), List<PersistentThreadState>> _lists = {};
+	@override
+	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize() async {
+		final missing = <ImageboardScoped<ThreadIdentifier>>[];
+		for (final state in Persistence.sharedThreadStateBox.values) {
+			if (state.savedTime == null) {
+				continue;
+			}
+			final imageboard = state.imageboard;
+			if (imageboard == null) {
+				continue;
+			}
+			if (!state.isThreadCached) {
+				missing.add(imageboard.scope(state.identifier));
+				continue;
+			}
+			final l = _lists.putIfAbsent((imageboard, state.board), () => []);
+			l.add(state);
+		}
+		for (final list in _lists.values) {
+			list.sort((a, b) => a.id.compareTo(b.id));
+		}
+		return missing;
+	}
+	@override
+	Future<(PersistentThreadState, Thread)?> takeSavedThread() async {
+		final heads = <(PersistentThreadState, Thread)>[];
+		for (final entry in _lists.entries) {
+			if (entry.value.isEmpty) {
+				continue;
+			}
+			final state = entry.value.last;
+			final thread = await state.getThread();
+			if (thread == null) {
+				// Something missing. but we don't have to handle it here
+				continue;
+			}
+			heads.add((state, thread));
+		}
+		(PersistentThreadState, Thread)? latestHead;
+		for (final head in heads) {
+			if (latestHead == null || head.$2.time.isAfter(latestHead.$2.time)) {
+				latestHead = head;
+			}
+		}
+		final ret = latestHead;
+		if (ret == null) {
+			// No more entries
+			return null;
+		}
+		final l = _lists[(ret.$1.imageboard, ret.$1.board)];
+		if (l != null && l.isNotEmpty) {
+			// This should always be non-null and non-empty. But just avoid crash.
+			l.removeLast();
+		}
+		return ret;
+	}
+}
+
 class SavedPage extends StatefulWidget {
 	final GlobalKey<SavedPageMasterDetailPanesState> masterDetailKey;
 
@@ -123,6 +298,7 @@ class SavedPage extends StatefulWidget {
 	createState() => _SavedPageState();
 }
 
+const _savedThreadsChunkSize = 25;
 const _yourPostsChunkSize = 25;
 
 class _SavedPageState extends State<SavedPage> {
@@ -142,6 +318,7 @@ class _SavedPageState extends State<SavedPage> {
 	late final ValueNotifier<List<ImageboardScoped<ThreadIdentifier>>> _missingSavedPostsThreads;
 	late final ValueNotifier<List<ImageboardScoped<ThreadIdentifier>>> _missingYourPostsThreads;
 	late final ValueNotifier<List<ImageboardScoped<SavedAttachment>>> _missingSavedAttachments;
+	_SavedThreadsLoader? _savedThreadsLoader;
 	/// for optimization and pagination of loading your posts
 	Map<(Imageboard, String), List<PostIdentifier>> _yourPostsLists = {};
 	late final ValueNotifier<ImageboardScoped<ThreadOrPostIdentifier>?> _savedThreadsValueInjector;
@@ -747,7 +924,13 @@ class _SavedPageState extends State<SavedPage> {
 							CupertinoButton(
 								padding: EdgeInsets.zero,
 								child: const Icon(CupertinoIcons.sort_down),
-								onPressed: () => selectSavedThreadsSortMethod(context)
+								onPressed: () async {
+									final before = Settings.instance.savedThreadsSortingMethod;
+									await selectSavedThreadsSortMethod(context);
+									if (Settings.instance.savedThreadsSortingMethod != before) {
+										await _threadListController.update();
+									}
+								}
 							)
 						]
 					),
@@ -787,18 +970,16 @@ class _SavedPageState extends State<SavedPage> {
 							filterableAdapter: (t) => (t.$1.imageboardKey, t.$2),
 							controller: _threadListController,
 							listUpdater: (options) async {
-								final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
 								if (options.source == RefreshableListUpdateSource.top) {
 									// Refresh threads from network
-									for (final state in states) {
-										if (state.useArchive) {
+									// Lazy, just steal from list
+									for (final item in _threadListController.items) {
+										final (state, thread) = item.item;
+										if (state.useArchive || thread.isArchived) {
 											continue;
 										}
-										final thread = await state.getThread();
-										if (state.thread?.isArchived ?? false) {
-											continue;
-										}
-										if (state.imageboard?.site.hasExpiringThreads == false && thread != null) {
+										// TODO: Put this in a common place. PersistentThreadState. then use it in thread_watcher Persistence.tabs handling, drawer.dart, etc.
+										if (state.imageboard?.site.hasExpiringThreads == false) {
 											// Threads don't go to archived on their own.
 											// So make a judgement call whether it's reasonable to refresh
 											final latestPostTime = thread.posts_.fold<DateTime>(DateTime(2000), (min, post) {
@@ -807,6 +988,7 @@ class _SavedPageState extends State<SavedPage> {
 												}
 												return min;
 											});
+											// TODO: Use lastUpdatedTime? But would need to persist it.
 											if (DateTime.now().difference(latestPostTime) > const Duration(days: 7)) {
 												// A week without updates, don't bother
 												continue;
@@ -820,19 +1002,36 @@ class _SavedPageState extends State<SavedPage> {
 										}
 									}
 								}
-								final out = <(PersistentThreadState, Thread)>[];
-								final missing = <ImageboardScoped<ThreadIdentifier>>[];
-								final batch = await Future.wait(states.map((s) async => (s, await s.getThread())));
-								for (final (state, thread) in batch) {
-									if (thread != null) {
-										out.add((state, thread));
+								final loader = _savedThreadsLoader = switch (settings.savedThreadsSortingMethod) {
+									ThreadSortingMethod.alphabeticByTitle => _SavedThreadsByTitleLoader(),
+									ThreadSortingMethod.savedTime => _SavedThreadsBySavedTimeLoader(),
+									ThreadSortingMethod.lastPostTime => _SavedThreadsByLastPostTimeLoader(),
+									ThreadSortingMethod.threadPostTime => _SavedThreadsByThreadPostTimeLoader(),
+									ThreadSortingMethod other => throw UnsupportedError('Not supported method to sort saved threads: $other')
+								};
+								final missing = await loader.initialize();
+								_missingSavedThreads.value = missing;
+								final ret = <(PersistentThreadState, Thread)>[];
+								for (int i = 0; i < _savedThreadsChunkSize; i++) {
+									final p = await loader.takeSavedThread();
+									if (p == null) {
+										break;
 									}
-									else {
-										missing.maybeAdd(state.imageboard?.scope(state.identifier));
-									}
+									ret.add(p);
 								}
 								_missingSavedThreads.value = missing;
-								return out;
+								return ret;
+							},
+							listExtender: (_) async {
+								final ret = <(PersistentThreadState, Thread)>[];
+								for (int i = 0; i < _savedThreadsChunkSize; i++) {
+									final p = await _savedThreadsLoader?.takeSavedThread();
+									if (p == null) {
+										break;
+									}
+									ret.add(p);
+								}
+								return ret;
 							},
 							minUpdateDuration: Duration.zero,
 							id: 'savedThreads',
