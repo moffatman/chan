@@ -188,6 +188,16 @@ class ThreadWatcher extends ChangeNotifier {
 				}
 			}
 		}
+		for (final tab in Persistence.tabs.toList()) {
+			if (tab.imageboardKey == imageboardKey && tab.threadPageState == null && tab.thread != null) {
+				// Thread page widget hasn't yet been instantiated
+				final threadState = persistence.getThreadStateIfExists(tab.thread!);
+				if (threadState != null && threadState.unseenPostIds.data.isNotEmpty) {
+					await threadState.ensureThreadLoaded(preinit: false);
+					tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
+				}
+			}
+		}
 		_updateCounts();
 		if (!_initialCountsDone.isCompleted) {
 			_initialCountsDone.complete();
@@ -367,6 +377,7 @@ class ThreadWatcher extends ChangeNotifier {
 				final thread = await threadState?.ensureThreadLoaded(preinit: false);
 				if (threadState != null && thread?.isArchived != true && thread?.isDeleted != true && threadState.threadWatch?.zombie != true) {
 					await _updateThread(threadState);
+					tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
 				}
 			}
 		}

@@ -826,6 +826,7 @@ class Expander extends StatefulWidget {
 	final Curve curve;
 	final bool expanded;
 	final bool bottomSafe;
+	final bool keepTickersEnabledWhenCollapsed;
 
 	const Expander({
 		required this.child,
@@ -833,6 +834,7 @@ class Expander extends StatefulWidget {
 		this.curve = Curves.ease,
 		required this.expanded,
 		this.bottomSafe = false,
+		this.keepTickersEnabledWhenCollapsed = false,
 		Key? key
 	}) : super(key: key);
 
@@ -883,7 +885,7 @@ class _ExpanderState extends State<Expander> with SingleTickerProviderStateMixin
 				builder: (context, child) => _HiddenBox(
 					factor: widget.curve.transform(animation.value),
 					child: TickerMode(
-						enabled: animation.value > 0,
+						enabled: widget.keepTickersEnabledWhenCollapsed || animation.value > 0,
 						child: child!
 					)
 				),
@@ -2322,6 +2324,17 @@ extension Bounds on BuildContext {
 			box.localToGlobal(box.semanticBounds.topLeft),
 			box.localToGlobal(box.semanticBounds.bottomRight)
 		);
+	}
+	double? getOffsetToReveal(double alignment) {
+		if (!mounted) {
+			return null;
+		}
+		final ro = findRenderObject();
+		if (ro == null) {
+			return null;
+		}
+		final viewport = RenderAbstractViewport.of(ro);
+		return viewport.getOffsetToReveal(ro, alignment).offset;
 	}
 }
 

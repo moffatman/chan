@@ -1049,19 +1049,66 @@ class ChanTabs extends ChangeNotifier {
 		}
 	}
 
-	void _animateTabList({int? index, Duration duration = const Duration(milliseconds: 500)}) {
+	void _animateTabList({int? index, Duration duration = const Duration(milliseconds: 500), bool inner = false}) async {
 		final pos = index ?? browseTabIndex;
-		final ctx = _tabButtonKeys[pos]?.currentContext;
-		if (ctx == null) {
+		if (_tabButtonKeys[pos]?.currentContext?.ifMounted case BuildContext ctx) {
+			// We can directly scroll
+			await Scrollable.ensureVisible(
+				ctx,
+				alignmentPolicy: pos < 3 ? // Kind of a hack guess, mainly to handle cloning the home tab
+					ScrollPositionAlignmentPolicy.keepVisibleAtStart :
+					ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+				duration: duration
+			);
 			return;
 		}
-		Scrollable.ensureVisible(
-			ctx,
-			alignmentPolicy: pos < 3 ? // Kind of a hack guess, mainly to handle cloning the home tab
-				ScrollPositionAlignmentPolicy.keepVisibleAtStart :
-				ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-			duration: duration
-		);
+		(int, double)? firstKnownItem;
+		(int, double)? lastKnownItem;
+		final viewportDimension = _tabListController.tryPosition?.viewportDimension;
+		if (viewportDimension == null) {
+			return;
+		}
+		for (final entry in _tabButtonKeys.entries) {
+			final offset = entry.value.currentContext?.getOffsetToReveal(0);
+			if (offset != null) {
+				final item = (entry.key, offset);
+				firstKnownItem ??= item;
+				lastKnownItem = item;
+			}
+		}
+		final double estimate;
+		if (firstKnownItem != null && pos < firstKnownItem.$1) {
+			// Animating backwards, go to alignment=0.0
+			estimate = (firstKnownItem.$2 / firstKnownItem.$1) * pos;
+		}
+		else if (lastKnownItem != null && pos > lastKnownItem.$1) {
+			// Animating forwards, go to alignment=1.0
+			final averageItemExtent = lastKnownItem.$2 / lastKnownItem.$1;
+			final estimateAtAlignment0 = averageItemExtent * pos;
+			estimate = min(
+				// Ideal position at alignment=1.0
+				estimateAtAlignment0 + (viewportDimension - averageItemExtent),
+				// Maximum possible position
+				(averageItemExtent * Persistence.tabs.length) - viewportDimension,
+			);
+		}
+		else {
+			// Bizarre situation
+			return;
+		}
+		// Go to first guess
+		if (duration > Duration.zero) {
+			await _tabListController.animateTo(estimate, curve: Curves.ease, duration: duration);
+			await SchedulerBinding.instance.endOfFrame;
+		}
+		else {
+			_tabListController.jumpTo(estimate);
+			await SchedulerBinding.instance.endOfFrame;
+		}
+		if (!inner) {
+			// We can try again to settle it with a fine position
+			_animateTabList(index: index, duration: duration, inner: true);
+		}
 	}
 
 	Future<void> searchArchives(String imageboardKey, String board, String query) async {
@@ -1435,6 +1482,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
 				}
 			});
+		// Set initial tab list up right
+		Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
 		_initialConsume = true;
 		_setAdditionalSafeAreaInsets();
 		ScrollTracker.instance.slowScrollDirection.addListener(_onSlowScrollDirectionChange);
@@ -1878,8 +1927,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				Expanded(
 					child: ReorderableList(
 						controller: _tabs._tabListController,
-						// Take the performance hit, ensure everything is laid out for _animateTabList to work
-						cacheExtent: 9000,
 						scrollDirection: axis,
 						onReorder: _tabs.onReorder,
 						itemCount: usingHomeBoard ? Persistence.tabs.length - 1 : Persistence.tabs.length,
@@ -2330,6 +2377,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											valueListenable: _showTabPopup,
 											builder: (context, showTabPopup, child) => Expander(
 												bottomSafe: false,
+												keepTickersEnabledWhenCollapsed: true,
 												expanded: showTabPopup,
 												duration: const Duration(milliseconds: 200),
 												curve: Curves.ease,
