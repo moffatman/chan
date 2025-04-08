@@ -564,6 +564,54 @@ extension LazyCeil on double {
 	}
 }
 
+class _TrieNode<T extends Object> {
+	final Map<int, _TrieNode<T>> children = {};
+	final T? value;
+	_TrieNode([this.value]);
+	@override
+	String toString() => '_TrieNode<$T>($value, $children)';
+}
+
+class Trie<T extends Object> {
+	final _root = <int, _TrieNode<T>>{};
+	void insert(String key, T value) {
+		final codeUnits = key.codeUnits;
+		Map<int, _TrieNode<T>> node = _root;
+		for (int i = 0; i < codeUnits.length - 1; i++) {
+      node = (node[codeUnits[i]] ??= _TrieNode()).children;
+    }
+		node[codeUnits.last] = _TrieNode(value);
+	}
+	Iterable<(int, T)> _descend(List<int> codeUnits, Map<int, _TrieNode<T>> map, int depth) sync* {
+		if (codeUnits.isEmpty) {
+			return;
+		}
+		final child = map[codeUnits.first];
+		if (child == null) {
+			return;
+		}
+		final value = child.value;
+		if (value != null) {
+			yield (depth, value);
+		}
+		yield* _descend(codeUnits.sublist(1), child.children, depth + 1);
+	}
+	Iterable<(int, T)> descend(String key) => _descend(key.codeUnits, _root, 0);
+	bool contains(String key) {
+		final codeUnits = key.codeUnits;
+		Map<int, _TrieNode<T>> node = _root;
+		for (int i = 0; i < codeUnits.length - 1; i++) {
+      final newNode = node[codeUnits[i]];
+			if (newNode == null) {
+				return false;
+			}
+			node = newNode.children;
+    }
+		return node[codeUnits.last]?.value != null;
+	}
+	void clear() => _root.clear();
+}
+
 void insertIntoSortedList<T>({
 	required List<T> list,
 	required List<Comparator<T>> sortMethods,

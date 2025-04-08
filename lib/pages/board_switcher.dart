@@ -8,6 +8,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -16,7 +17,6 @@ import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/services.dart';
@@ -37,13 +37,34 @@ extension _Nullify on ImageboardScoped<ImageboardBoard> {
 	);
 }
 
-extension _IndexOfOrInfinity on String {
-	int indexOfOrInfinity(String other) {
-		return switch (indexOf(other)) {
-			-1 => 1 << 50,
-			int idx => idx
-		};
-	}
+class _Board {
+	final Imageboard imageboard;
+	final ImageboardBoard item;
+	final int typeaheadIndex;
+	final int matchIndex;
+	final int favsIndex;
+	final int imageboardPriorityIndex;
+
+	_Board(ImageboardScoped<ImageboardBoard> board, {
+		required this.typeaheadIndex,
+		required this.matchIndex,
+		required this.favsIndex,
+		required this.imageboardPriorityIndex
+	}) : imageboard = board.imageboard, item = board.item;
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is _Board &&
+		other.imageboard == imageboard &&
+		other.item == item &&
+		other.typeaheadIndex == typeaheadIndex &&
+		other.matchIndex == matchIndex &&
+		other.favsIndex == favsIndex &&
+		other.imageboardPriorityIndex == imageboardPriorityIndex;
+	
+	@override
+	int get hashCode => Object.hash(imageboard, item, typeaheadIndex, matchIndex, favsIndex, imageboardPriorityIndex);
 }
 
 class BoardSwitcherPage extends StatefulWidget {
@@ -70,8 +91,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	int currentImageboardIndex = 0;
 	Imageboard get currentImageboard => allImageboards[currentImageboardIndex];
 	late List<ImageboardScoped<ImageboardBoard>> boards;
-	final Map<String, List<ImageboardBoard>> typeahead = {};
-	final Set<String> typeaheadLoading = {};
+	static final typeaheads = <Imageboard, Trie<List<ImageboardBoard>>>{};
+	static final typeaheadLoadings = <Imageboard, Set<String>>{};
 	String searchString = '';
 	late final ScrollController scrollController;
 	late final ValueNotifier<Color?> _backgroundColor;
@@ -184,8 +205,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_backgroundColor.value = context.read<SavedTheme>().backgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
 	}
 
-	Future<void> _updateTypeaheadBoards(String query) async {
-		if (query.isEmpty || typeaheadLoading.contains(query)) {
+	Future<void> _updateTypeaheadBoards(String rawQuery) async {
+		final query = rawQuery.toLowerCase();
+		final typeaheadLoading = typeaheadLoadings[currentImageboard] ??= {};
+		final typeahead = typeaheads[currentImageboard] ??= Trie();
+		if (query.isEmpty || typeaheadLoading.contains(query) || typeahead.contains(query)) {
 			return;
 		}
 		final imageboard = currentImageboard;
@@ -196,33 +220,23 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				// Site switched
 				return;
 			}
-			typeaheadLoading.remove(query);
-			typeahead[query] = newTypeaheadBoards;
+			typeahead.insert(query, newTypeaheadBoards);
 			if (mounted) {
 				setState(() {});
 			}
 		}
 		catch (e, st) {
 			Future.error(e, st);
-			if (currentImageboard == imageboard) {
-				typeaheadLoading.remove(query);
-			}
+		}
+		finally {
+			typeaheadLoading.remove(query);
 		}
 	}
 
 	List<ImageboardScoped<ImageboardBoard>> getFilteredBoards() {
 		final settings = Settings.instance;
 		final normalized = searchString.toLowerCase();
-		List<ImageboardScoped<ImageboardBoard>> filteredBoards = boards.where((board) {
-			return
-				settings.showBoard(board.item) &&
-				(board.item.boardKey.s.contains(normalized) ||
-				 board.item.title.toLowerCase().contains(normalized) ||
-				 board.imageboard.site.name.toLowerCase().contains(normalized));
-		}).toList();
-		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return a.item.boardKey.s.compareTo(b.item.boardKey.s);
-		});
+		final matchingOtherImageboards = allImageboards.where((i) => i != currentImageboard && i.site.name.toLowerCase().contains(normalized)).toSet();
 		final imageboards = allImageboards.toList();
 		imageboards.remove(currentImageboard);
 		imageboards.insert(0, currentImageboard);
@@ -231,72 +245,136 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			for (final pair in favsList.asMap().entries)
 				pair.value.imageboard.scope(pair.value.item): pair.key
 		};
-		if (searchString.isEmpty) {
-			if (widget.currentlyPickingFavourites) {
-				filteredBoards.removeWhere((b) => favsOrder.containsKey(b.imageboard.scope(b.item.boardKey)));
-			}
-			else {
-				mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-					return (favsOrder[a.imageboard.scope(a.item.boardKey)] ?? favsOrder.length) - (favsOrder[b.imageboard.scope(b.item.boardKey)] ?? favsOrder.length);
-				});
-			}
-		}
 		final imageboardPriority = {
 			for (final i in imageboards.asMap().entries)
 				i.value: i.key
 		};
-		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return (imageboardPriority[a.imageboard] ?? imageboards.length) - (imageboardPriority[b.imageboard] ?? imageboards.length);
-		});
-		List<ImageboardBoard> typeaheadBoards = [];
-		int longestTypeaheadMatchLength = 0;
-		if (searchString.isNotEmpty) {
-			for (final pair in typeahead.entries) {
-				if (searchString.startsWith(pair.key) && pair.key.length > longestTypeaheadMatchLength) {
-					typeaheadBoards = pair.value;
-					longestTypeaheadMatchLength = pair.key.length;
+		List<_Board> filteredBoards = boards.tryMap((board) {
+			if (!settings.showBoard(board.item)) {
+				return null;
+			}
+			final matchIndex = board.item.boardKey.s.indexOf(normalized);
+			if (
+				!(
+					// Name match
+					matchIndex != -1 ||
+					// Title match
+					(!board.imageboard.site.allowsArbitraryBoards && board.item.title.toLowerCase().contains(normalized)) ||
+					// Site name match
+					matchingOtherImageboards.contains(board.imageboard)
+				)
+			) {
+				return null;
+			}
+			final favsIndex = favsOrder[board.imageboard.scope(board.item.boardKey)];
+			if (widget.currentlyPickingFavourites && favsIndex != null) {
+				return null;
+			}
+			if (!widget.currentlyPickingFavourites && settings.onlyShowFavouriteBoardsInSwitcher && favsIndex == null) {
+				return null;
+			}
+			return _Board(board,
+				typeaheadIndex: 0,
+				matchIndex: matchIndex,
+				favsIndex: favsIndex ?? favsOrder.length,
+				imageboardPriorityIndex: imageboardPriority[board.imageboard] ?? imageboards.length
+			);
+		}).toList();
+		if (normalized.isEmpty) {
+			filteredBoards.sort((a, b) {
+				final imageboardComparison = a.imageboardPriorityIndex - b.imageboardPriorityIndex;
+				if (imageboardComparison != 0) {
+					return imageboardComparison;
+				}
+				return a.favsIndex - b.favsIndex;
+			});
+			return filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
+		}
+		else {
+			final existingNames = filteredBoards.map((b) => b.item.boardKey).toSet();
+			final typeahead = typeaheads[currentImageboard] ??= Trie();
+			for (final (depth, boards) in typeahead.descend(normalized)) {
+				for (final board in boards) {
+					if (existingNames.contains(board.boardKey)) {
+						continue;
+					}
+					existingNames.add(board.boardKey);
+					final matchIndex = board.boardKey.s.indexOf(normalized);
+					if (matchIndex == -1/* && !board.title.toLowerCase().contains(normalized)*/) {
+						// This drops all the "relevant" boards that don't actually match
+						continue;
+					}
+					filteredBoards.add(_Board(currentImageboard.scope(board),
+						typeaheadIndex: 1 + depth,
+						matchIndex: matchIndex,
+						// Don't treat it as a favourite
+						favsIndex: favsOrder.length,
+						imageboardPriorityIndex: 0 // currentImageboard
+					));
 				}
 			}
-		}
-		for (final board in typeaheadBoards) {
-			if (!filteredBoards.any((b) => b.item.name == board.name)) {
-				filteredBoards.add(currentImageboard.scope(board));
-			}
-		}
-		if (settings.onlyShowFavouriteBoardsInSwitcher) {
-			final favs = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
-			filteredBoards = filteredBoards.where((b) => favs.any((f) => f.imageboard == b.imageboard && f.item == b.item.boardKey)).toList();
-		}
-		if (normalized.isNotEmpty) {
-			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-				return 20*a.item.boardKey.s.indexOfOrInfinity(normalized) + (favsOrder[a.imageboard.scope(a.item.boardKey)] ?? favsOrder.length) - 20*b.item.boardKey.s.indexOfOrInfinity(normalized) - (favsOrder[b.imageboard.scope(b.item.boardKey)] ?? favsOrder.length);
-			});
-			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-				final aMatches = a.item.boardKey.s == normalized && a.imageboard == currentImageboard;
-				final bMatches = b.item.boardKey.s == normalized && b.imageboard == currentImageboard;
-				if (aMatches == bMatches) {
-					return 0;
+			filteredBoards.sort((a, b) {
+				final exactMatchA = a.matchIndex == 0 && a.item.boardKey.s.length == normalized.length && a.imageboard == currentImageboard && a.typeaheadIndex == 0;
+				final exactMatchB = b.matchIndex == 0 && b.item.boardKey.s.length == normalized.length && b.imageboard == currentImageboard && b.typeaheadIndex == 0;
+				if (exactMatchA && !exactMatchB) {
+					return -1;
 				}
-				return aMatches ? -1 : 1;
+				if (exactMatchB && !exactMatchA) {
+					return 1;
+				}
+				// Only match favourites if it matches beginning of name
+				final favA = a.matchIndex == 0 && a.favsIndex < favsOrder.length;
+				final favB = b.matchIndex == 0 && b.favsIndex < favsOrder.length;
+				if (favA && !favB) {
+					return -1;
+				}
+				if (favB && !favA) {
+					return 1;
+				}
+				// matchIndex = -1 means it matched based on title or site name
+				if (a.matchIndex == -1 && b.matchIndex != -1) {
+					return 1;
+				}
+				if (b.matchIndex == -1 && a.matchIndex != -1) {
+					return -1;
+				}
+				final imageboardComparison = a.imageboardPriorityIndex - b.imageboardPriorityIndex;
+				if (imageboardComparison != 0) {
+					return imageboardComparison;
+				}
+				final typeaheadComparison = a.typeaheadIndex - b.typeaheadIndex;
+				if (typeaheadComparison != 0) {
+					return typeaheadComparison;
+				}
+				final matchComparison = a.matchIndex - b.matchIndex;
+				if (matchComparison != 0) {
+					return matchComparison;
+				}
+				return a.item.boardKey.s.compareTo(b.item.boardKey.s);
 			});
-		}
-		if (searchString.isNotEmpty && !settings.onlyShowFavouriteBoardsInSwitcher) {
-			if (currentImageboard.site.allowsArbitraryBoards) {
+			final ret = filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
+			if (!settings.onlyShowFavouriteBoardsInSwitcher && currentImageboard.site.allowsArbitraryBoards) {
 				final fakeBoard = ImageboardBoard(
 					name: searchString,
 					title: '',
 					isWorksafe: false,
 					webmAudioAllowed: true
 				);
-				if (filteredBoards.isEmpty) {
-					filteredBoards.add(currentImageboard.scope(fakeBoard));
+				if (ret.isEmpty) {
+					return [currentImageboard.scope(fakeBoard)];
 				}
-				else if (!filteredBoards.any((b) => b.item.boardKey.s == searchString && b.imageboard == currentImageboard)) {
-					filteredBoards.insert(1, currentImageboard.scope(fakeBoard));
+				final exactMatchBoardIndex = filteredBoards.indexWhere(
+					(b) => b.matchIndex == 0 && b.item.boardKey.s.length == normalized.length && b.imageboardPriorityIndex == 0);
+				if (exactMatchBoardIndex == -1) {
+					ret.insert(1, currentImageboard.scope(fakeBoard));
+				}
+				else if (exactMatchBoardIndex > 1) {
+					final exactMatchBoard = ret.removeAt(exactMatchBoardIndex);
+					ret.insert(1, exactMatchBoard);
 				}
 			}
+			return ret;
 		}
-		return filteredBoards;
 	}
 
 	void _afterScroll() {
@@ -324,9 +402,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		final settings = context.watch<Settings>();
 		_backgroundColor.value ??= ChanceTheme.backgroundColorOf(context);
 		final List<ImageboardScoped<ImageboardBoard?>> filteredBoards = getFilteredBoards().map((x) => x.nullify).toList();
-		filteredBoards.addAll(allImageboards.where((i) {
-			return i != currentImageboard && i.site.allowsArbitraryBoards;
-		}).map((i) => i.scope(null)));
+		if (!widget.currentlyPickingFavourites) {
+			// Add a dummy entry at the end to suggest switching to search
+			filteredBoards.addAll(allImageboards.where((i) {
+				return i != currentImageboard && i.site.allowsArbitraryBoards;
+			}).map((i) => i.scope(null)));
+		}
 		final effectiveSelectedIndex = filteredBoards.isEmpty ? 0 : _selectedIndex.clamp(0, filteredBoards.length - 1);
 		return AdaptiveScaffold(
 			disableAutoBarHiding: true,
@@ -404,8 +485,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									setState(() {
 										currentImageboardIndex = allImageboards.indexOf(selected.imageboard);
 									});
-									typeahead.clear();
-									typeaheadLoading.clear();
 									_updateTypeaheadBoards(searchString);
 								}
 								_focusNode.requestFocus();
@@ -522,7 +601,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																					builder: (ctx) => ImageboardScope(
 																						imageboardKey: null,
 																						imageboard: currentImageboard,
-																						child: const BoardSwitcherPage(currentlyPickingFavourites: true)
+																						child: BoardSwitcherPage(currentlyPickingFavourites: true, initialImageboardKey: currentImageboard.key)
 																					)
 																				));
 																				if (board != null && !currentImageboard.persistence.browserState.favouriteBoards.contains(board.item.boardKey)) {
@@ -791,8 +870,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												setState(() {
 													currentImageboardIndex = allImageboards.indexOf(imageboard);
 												});
-												typeahead.clear();
-												typeaheadLoading.clear();
 												_updateTypeaheadBoards(searchString);
 											}
 										);
@@ -953,8 +1030,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												setState(() {
 													currentImageboardIndex = allImageboards.indexOf(imageboard);
 												});
-												typeahead.clear();
-												typeaheadLoading.clear();
 												_updateTypeaheadBoards(searchString);
 											}
 										);
@@ -967,7 +1042,36 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								}).toList()
 							)
 						),
-						Positioned.fill(
+						if (widget.currentlyPickingFavourites) Positioned.fill(
+							child: Align(
+								alignment: Alignment.bottomCenter,
+								child: Builder(
+									builder: (context) => Container(
+										margin: MediaQuery.paddingOf(context),
+										padding: const EdgeInsets.all(16),
+										width: 300 * Settings.textScaleSetting.watch(context),
+										child: Container(
+											decoration: BoxDecoration(
+												borderRadius: BorderRadius.circular(16),
+												color: ChanceTheme.backgroundColorOf(context)
+											),
+											padding: const EdgeInsets.all(16),
+											child: const Row(
+												mainAxisAlignment: MainAxisAlignment.center,
+												children: [
+													Icon(CupertinoIcons.star_fill),
+													SizedBox(width: 8),
+													Flexible(
+														child: AutoSizeText('Add favorite board', textAlign: TextAlign.center, maxLines: 1)
+													)
+												]
+											)
+										)
+									)
+								)
+							)
+						)
+						else Positioned.fill(
 							child: GestureDetector(
 								behavior: HitTestBehavior.translucent,
 								onHorizontalDragEnd: (details) {
