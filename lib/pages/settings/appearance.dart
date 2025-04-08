@@ -856,7 +856,7 @@ final appearanceSettings = [
 													disabled = false;
 													break;
 											}
-											return ReorderableDragStartListener(
+											return ReorderableDelayedDragStartListener(
 												index: pair.key,
 												key: ValueKey(pair.key),
 												child: Container(
