@@ -1629,6 +1629,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			}
 		}();
 		final validator = customValidator ?? (Thread thread) async {
+			if (thread.archiveName == archiveName) {
+				// Skip validation
+				return;
+			}
 			final opAttachment = thread.attachments.tryFirst ?? thread.posts_.tryFirst?.attachments.tryFirst;
 			if (opAttachment != null) {
 				final response = await client.head(opAttachment.url, options: Options(
