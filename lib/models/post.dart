@@ -279,11 +279,10 @@ class Post implements Filterable {
 	List<int>? _repliedToIds;
 	@override
 	List<int> get repliedToIds {
-		_repliedToIds ??= id == threadId ? const [] : [
+		return _repliedToIds ??= id == threadId ? const [] : [
 			if (parentId != null) parentId!,
 			...span.referencedPostIds(board).where((otherId) => otherId != id)
 		].toList(growable: false);
-		return _repliedToIds!;
 	}
 	@override
 	Iterable<String> get md5s => attachments.map((a) => a.md5);
