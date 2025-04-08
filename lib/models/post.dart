@@ -325,7 +325,7 @@ class Post implements Filterable {
 		listEquals(other.attachments_, attachments_) &&
 		other.name == name &&
 		other.hasOmittedReplies == hasOmittedReplies &&
-		other.flag != flag &&
+		other.flag == flag &&
 		other.attachmentDeleted == attachmentDeleted &&
 		other.archiveName == archiveName;
 
