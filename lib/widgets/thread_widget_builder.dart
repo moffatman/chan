@@ -38,7 +38,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 		super.key
 	});
 
-	ThreadWidgetData _getData(context) {
+	ThreadWidgetData _getData(BuildContext context) {
 		const blankIcon = Icon(CupertinoIcons.rectangle_stack);
 		Widget primaryIcon = blankIcon;
 		Widget? secondaryIcon;
