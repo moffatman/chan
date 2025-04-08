@@ -843,7 +843,7 @@ class _SavedPageState extends State<SavedPage> {
 															((threadState?.unseenReplyIdsToYouCount() ?? 0) > 0) ?
 																ColorFilter.mode(theme.secondaryColor.withOpacity(0.15), BlendMode.srcOver) : null,
 														child: ThreadRow(
-															thread: threadState!.thread ?? watch.item.$2,
+															thread: threadState?.thread ?? watch.item.$2,
 															isSelected: isSelected,
 															style: settings.useCatalogGrid ?
 																(settings.useStaggeredCatalogGrid ? ThreadRowStyle.staggeredGrid : ThreadRowStyle.grid)

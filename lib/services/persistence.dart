@@ -149,7 +149,7 @@ class BoxAndObjectListenable<T extends Listenable, B extends Box<T>> extends Val
 
 	T? _value;
 
-  BoxAndObjectListenable(this.box, this.key);
+  BoxAndObjectListenable(this.box, this.key) : _value = box.get(key);
 
 	void _listener(BoxEvent event) {
 		if (key == event.key) {
