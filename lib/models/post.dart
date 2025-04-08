@@ -235,7 +235,7 @@ class Post implements Filterable {
 		this.hasOmittedReplies = false,
 		this.isDeleted = false,
 		this.ipNumber
-	}) : board = intern(board), name = intern(name), attachments_ = attachments_.isEmpty ? const [] : attachments_;
+	}) : board = intern(board), name = intern(name), attachments_ = attachments_.isEmpty ? const [] : List.of(attachments_, growable: false);
 
 	@override
 	String toString() {

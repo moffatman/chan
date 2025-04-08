@@ -93,13 +93,13 @@ class Thread extends HiveObject implements Filterable {
 		this.currentPage,
 		this.uniqueIPCount,
 		this.customSpoilerId,
-		required this.attachments,
+		required List<Attachment> attachments,
 		this.suggestedVariant,
 		this.poll,
 		this.archiveName,
 		this.isEndless = false,
 		this.lastUpdatedTime
-	}) : board = intern(board);
+	}) : board = intern(board), attachments = attachments.isEmpty ? const [] : List.of(attachments, growable: false);
 	
 	bool _initialized = false;
 	List<Post> get posts {
