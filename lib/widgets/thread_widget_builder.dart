@@ -149,6 +149,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 							);
 						}
 						else {
+							Future.microtask(() => threadState.ensureThreadLoaded(preinit: false));
 							return AnimatedBuilder(
 								animation: threadState,
 								builder: (context, _) => builder(context, _getData(context))
