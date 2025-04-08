@@ -191,7 +191,11 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				id: serverFilenameParts.first,
 				filename: data['media']['media_filename'],
 				ext: '.${serverFilenameParts.last}',
-				type: (serverFilenameParts.last == 'webm' || serverFilenameParts.last == 'web') ? AttachmentType.webm : AttachmentType.image,
+				type: switch (serverFilenameParts.last) {
+					'webm' || 'web' => AttachmentType.webm,
+					'mp4' => AttachmentType.mp4,
+					_ => AttachmentType.image
+				},
 				url: url.toString(),
 				thumbnailUrl: thumbnailUrl.toString(),
 				md5: data['media']['safe_media_hash'],
