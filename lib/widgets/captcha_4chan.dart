@@ -211,8 +211,6 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	});
 }
 
-const _kMaxBlackR = 103;
-
 Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 	final fgWidth = challenge.foregroundImage!.width;
 	final fgHeight = challenge.foregroundImage!.height;
@@ -222,13 +220,21 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 	if (maxSlide <= 0) {
 		return 0;
 	}
-	final toCheck = <({int offset, bool black})>[];
-	final fgTransparentLines = <int, List<({int x0, int x1})>>{};
-	for (int y = (fgHeight * 0.2).floor(); y < (fgHeight * 0.8).ceil(); y++) {
-		int? lineStart;
-		for (int x = 2; x < fgWidth - 3; x++) {
+	/// Just keep using same buffer, avoid an allocation
+	final fgSortedColumn = Uint8List(fgHeight);
+	final toCheck = <({int x, int offset, int fgIdx})>[];
+	final y0fg = (fgHeight * 0.2).floor();
+	final y1fg = (fgHeight * 0.8).ceil();
+	for (int x = 2; x < fgWidth - 3; x++) {
+		for (int y = y0fg; y < y1fg; y++) {
 			final thisIndex = 4 * (x + (y * fgWidth));
-			final thisBlack = fgBytes.getUint8(thisIndex) < _kMaxBlackR;
+			final thisRed = fgBytes.getUint8(thisIndex);
+			fgSortedColumn[y] = thisRed;
+		}
+		fgSortedColumn.sort();
+		for (int y = y0fg; y < y1fg; y++) {
+			final thisIndex = 4 * (x + (y * fgWidth));
+			final thisRed = fgBytes.getUint8(thisIndex);
 			final thisA = fgBytes.getUint8(thisIndex + 3);
 			final rightIndex1 = thisIndex + 4;
 			final rightIndex2 = thisIndex + 8;
@@ -252,95 +258,64 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 			final upA2 = fgBytes.getUint8(upIndex2 + 3);
 			if (thisA > rightA1 && thisA == leftA1 && thisA == leftA2 && rightA1 == rightA2 && rightA1 == rightA3) {
 				// this is the opaque fg pixel
-				toCheck.add((offset: 4 * ((x + 1) + (y * bgWidth)), black: thisBlack));
-				lineStart = x + 1;
+				final thisFgIdx = fgSortedColumn.binarySearchCountBefore((r) => r > thisRed);
+				toCheck.add((x: x + 1, offset: 4 * (x + 1 + (y * bgWidth)), fgIdx: thisFgIdx));
 			}
 			else if (thisA < rightA1 && thisA == leftA1 && thisA == leftA2 && rightA1 == rightA2 && rightA1 == rightA3) {
 				// this is the transparent fg pixel
-				final rightBlack = fgBytes.getUint8(rightIndex1) < _kMaxBlackR;
-				toCheck.add((offset: 4 * (x + (y * bgWidth)), black: rightBlack));
-				if (lineStart != null && (x - lineStart) > 10) {
-					(fgTransparentLines[y] ??= []).add((x0: lineStart, x1: x));
-					lineStart = null;
-				}
+				final rightRed = fgBytes.getUint8(rightIndex1);
+				final rightFgIdx = fgSortedColumn.binarySearchCountBefore((r) => r > rightRed);
+				toCheck.add((x: x, offset: 4 * (x + (y * bgWidth)), fgIdx: rightFgIdx));
 			}
 			if (thisA > downA1 && thisA == upA1 && thisA == upA2 && downA1 == downA2 && downA1 == downA3) {
 				// this is the opaque fg pixel
-				toCheck.add((offset: 4 * (x + ((y + 1) * bgWidth)), black: thisBlack));
+				final thisFgIdx = fgSortedColumn.binarySearchCountBefore((r) => r > thisRed);
+				toCheck.add((x: x, offset: 4 * (x + ((y + 1) * bgWidth)), fgIdx: thisFgIdx));
 			}
 			else if (thisA < downA1 && thisA == upA1 && thisA == upA2 && downA1 == downA2 && downA1 == downA3) {
 				// this is the transparent fg pixel
-				final downBlack = fgBytes.getUint8(downIndex1) < _kMaxBlackR;
-				toCheck.add((offset: 4 * (x + (y * bgWidth)), black: downBlack));
+				final downRed = fgBytes.getUint8(downIndex1);
+				final downFgIdx = fgSortedColumn.binarySearchCountBefore((r) => r > downRed);
+				toCheck.add((x: x, offset: 4 * (x + (y * bgWidth)), fgIdx: downFgIdx));
 			}
 		}
 	}
 	int bestSlide = 0;
-	int lowestMismatch = toCheck.length + 1;
+	int lowestMismatch = 1 << 50;
+	final bgHeight = challenge.backgroundImage!.height;
 	final bgBytes = (await challenge.backgroundImage!.toByteData())!;
-	final bgBlackLines = <int, List<({int x0, int x1})>>{};
-	final rValues = <int>{};
-	for (int y = (fgHeight * 0.2).floor(); y < (fgHeight * 0.8).ceil(); y++) {
-		int? lineStart;
-		for (int x = 0; x < bgWidth; x++) {
+	final bgSortedColumns = List.generate(bgWidth, (_) => List.filled(bgHeight, 0), growable: false);
+	final y0bg = (bgHeight * 0.2).floor();
+	final y1bg = (bgHeight * 0.8).ceil();
+	for (int x = 0; x < bgWidth; x++) {
+		for (int y = y0bg; y < y1bg; y++) {
 			final thisIndex = 4 * (x + (y * bgWidth));
-			final thisR = bgBytes.getUint8(thisIndex);
-			rValues.add(thisR);
-			final thisBlack = thisR < _kMaxBlackR;
-			if (thisBlack) {
-				lineStart ??= x;
-			}
-			else {
-				if (lineStart != null && (x - lineStart) > 10) {
-					(bgBlackLines[y] ??= []).add((x0: lineStart, x1: x));
-				}
-				lineStart = null;
-			}
+			final thisRed = bgBytes.getUint8(thisIndex);
+			bgSortedColumns[x][y] = thisRed;
 		}
+		bgSortedColumns[x].sort();
 	}
-	final greyCaptchaMode = rValues.length > 2;
 	// Some future optimization could be to ignore 1-2px horizontal lines here
-	final bgSize = 4 * bgWidth * challenge.backgroundImage!.height;
+	final bgSize = 4 * bgWidth * bgHeight;
 	slideloop:
 	for (int xSlide = 0; xSlide < maxSlide; xSlide++) {
 		int mismatch = 0;
 		final offset = 4 * xSlide;
-		for (final check in toCheck) {
+		for (int i = 0; i < toCheck.length; i++) {
+			final check = toCheck[i];
 			final pos = check.offset + offset;
 			if (pos >= bgSize) {
 				// Offscreen. Presumably this won't happen, they won't let you slide the end of background to be visible.
 				// Since you may just start wrapping silently if not checking the last row.
 				continue;
 			}
-			final thisBlack = bgBytes.getUint8(pos) < _kMaxBlackR;
-			if (thisBlack != check.black) {
-				mismatch++;
+			final thisRed = bgBytes.getUint8(pos);
+			final bgIdx = bgSortedColumns[check.x + xSlide].binarySearchCountBefore((r) => r > thisRed);
+			final diff = bgIdx - check.fgIdx;
+			if (diff != 0) {
+				mismatch += diff.abs();
 				if (mismatch > lowestMismatch) {
 					continue slideloop;
-				}
-			}
-		}
-		if (greyCaptchaMode) {
-			for (int y = (fgHeight * 0.2).floor(); y < (fgHeight * 0.8).ceil(); y++) {
-				final fgs = fgTransparentLines[y];
-				final bgs = bgBlackLines[y];
-				if (fgs == null || bgs == null) {
-					continue;
-				}
-				for (final fg in fgs) {
-					// Just for optimization
-					final fgx0 = fg.x0 + xSlide;
-					final fgx1 = fg.x1 + xSlide;
-					for (final bg in bgs) {
-						if (bg.x0 <= fgx0 && bg.x1 >= fgx1) {
-							mismatch += 10;
-							if (mismatch > lowestMismatch) {
-								continue slideloop;
-							}
-							// No double matches are possible
-							break;
-						}
-					}
 				}
 			}
 		}
