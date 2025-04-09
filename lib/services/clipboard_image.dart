@@ -37,6 +37,9 @@ Future<File?> getClipboardImageAsFile(BuildContext context) async {
 		if (url == null || url.host.isEmpty) {
 			return null;
 		}
+		if (!supportedFileExtensions.contains('.${url.path.split('.').last}')) {
+			return null;
+		}
 		if (url.scheme.isEmpty) {
 			url = url.replace(scheme: 'https');
 		}

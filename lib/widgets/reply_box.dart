@@ -647,18 +647,27 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-Future<void> _handleImagePaste({bool manual = true}) async {
-		final file = await getClipboardImageAsFile(context);
-		if (file != null) {
-			setAttachment(file);
+Future<bool> _handleImagePaste({bool manual = true}) async {
+		try {
+			final file = await getClipboardImageAsFile(context);
+			if (file != null) {
+				setAttachment(file);
+				return true;
+			}
+			else if (manual && mounted) {
+				showToast(
+					context: context,
+					message: 'No image in clipboard',
+					icon: CupertinoIcons.xmark
+				);
+			}
 		}
-		else if (manual && mounted) {
-			showToast(
-				context: context,
-				message: 'No image in clipboard',
-				icon: CupertinoIcons.xmark
-			);
+		catch (e, st) {
+			if (mounted && manual) {
+				alertError(context, e, st, barrierDismissible: true);
+			}
 		}
+		return false;
 	}
 
 	Future<void> setAttachment(File newAttachment, {bool forceRandomizeChecksum = false}) async {
@@ -1801,9 +1810,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													...editableTextState.contextMenuButtonItems.map((item) {
 														if (item.type == ContextMenuButtonType.paste) {
 															return item.copyWith(
-																onPressed: () {
-																	item.onPressed?.call();
-																	_handleImagePaste(manual: false);
+																onPressed: () async {
+																	if (!await _handleImagePaste(manual: false)) {
+																		// Only paste text if image wasn't pasted
+																		item.onPressed?.call();
+																	}
 																}
 															);
 														}
