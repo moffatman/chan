@@ -95,11 +95,12 @@ class _TabListTile extends StatelessWidget {
 					showUnseenColors: false,
 					showUnseenCounters: (data.threadState?.threadWatch?.localYousOnly ?? false),
 					showChrome: false
-				))
+				), textHeightBehavior: const TextHeightBehavior(applyHeightToFirstAscent: false, applyHeightToLastDescent: false))
 			),
 			subtitleTextStyle: TextStyle(
 				color: primaryColorWithBrightness80,
-				fontSize: 15
+				fontSize: 15,
+				height: 1.5
 			)
 		);
 	}
