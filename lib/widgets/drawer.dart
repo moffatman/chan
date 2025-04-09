@@ -321,6 +321,7 @@ class ChanceDrawer extends StatefulWidget {
 
 class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderStateMixin {
 	late final TabController _tabController;
+	late final ScrollController _scrollController;
 
 	@override
 	void initState() {
@@ -334,6 +335,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					_ => 2
 				}
 		);
+		_scrollController = ScrollController(debugLabel: '_ChanceDrawerState._scrollController');
 	}
 
 	void _afterUse() {
@@ -695,9 +697,11 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 									await list.onRefresh?.call();
 								},
 								child: MaybeScrollbar(
+									controller: _scrollController,
 									child: ReorderableListView.builder(
 										key: PageStorageKey(settings.drawerMode),
 										primary: false,
+										scrollController: _scrollController,
 										buildDefaultDragHandles: false,
 										physics: const AlwaysScrollableScrollPhysics(),
 										itemCount: list.pinFirstItem ? list.list.length - 1 : list.list.length,
@@ -728,5 +732,6 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 	void dispose() {
 		super.dispose();
 		_tabController.dispose();
+		_scrollController.dispose();
 	}
 }
