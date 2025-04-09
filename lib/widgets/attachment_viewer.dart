@@ -471,7 +471,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		// handle issue with timestamps in url
 		bool corrected = false;
-		final correctedUrl = attachment.url.toString().replaceAllMapped(RegExp(r'^(.*\/\d+)\d{3}(.*)$'), (match) {
+		final correctedUrl = attachment.url.toString().replaceAllMapped(RegExp(r'^(.*b4k\..*\/\d+)\d{3}(.*)$'), (match) {
 			corrected = true;
 			return '${match.group(1)}${match.group(2)}';
 		});
