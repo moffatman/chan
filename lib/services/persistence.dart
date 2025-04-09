@@ -1862,11 +1862,11 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		await super.delete();
 	}
 
-	ThreadIdentifier get identifier => ThreadIdentifier(board, id);
+	ThreadIdentifier get identifier => ThreadIdentifier(boardKey.s, id);
 	
 	ThreadWatch? get threadWatch => imageboard?.notifications.getThreadWatch(identifier);
 
-	String get boxKey => '$imageboardKey/${board.toLowerCase()}/$id';
+	String get boxKey => '$imageboardKey/${boardKey.s}/$id';
 
 	PostSortingMethod get effectivePostSortingMethod =>
 		postSortingMethod ??
