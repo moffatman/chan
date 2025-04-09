@@ -93,6 +93,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 				}
 			}
 			else {
+				threadState = thread == null ? null : persistence?.getThreadStateIfExists(thread!);
 				primaryIcon = imageboard?.boardsLoading == true ? const SizedBox(
 					width: 30,
 					height: 30,
