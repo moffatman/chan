@@ -184,6 +184,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	bool _doneInitialTransition = false;
 	bool _autoRotate = Settings.instance.autoRotateInGallery;
 	final Map<Attachment, int> _replyCounts = {};
+	/// To show when multiple attachments are on the same post/thread
+	final Map<Attachment, (int, int)> _peers = {};
 	/// Lazy way to prevent double download of ephemeral attachments, or SavedAttachments
 	/// in the same app session.
 	static final Set<Uri> _downloadedOverrideSources = {};
@@ -205,6 +207,23 @@ class _GalleryPageState extends State<GalleryPage> {
 			final post = widget.posts[attachment.attachment];
 			if (post != null) {
 				_replyCounts[attachment.attachment] = post.item.replyCount;
+			}
+		}
+		// Initialize _peers
+		for (final thread in widget.threads.values) {
+			final length = thread.item.attachments.length;
+			if (length > 1) {
+				for (final (i, attachment) in thread.item.attachments.indexed) {
+					_peers[attachment] = (i + 1, length);
+				}
+			}
+		}
+		for (final post in widget.posts.values) {
+			final length = post.item.attachments.length;
+			if (length > 1) {
+				for (final (i, attachment) in post.item.attachments.indexed) {
+					_peers[attachment] = (i + 1, length);
+				}
 			}
 		}
 		_scrollCoalescer = BufferedListenable(const Duration(milliseconds: 10));
@@ -1337,59 +1356,96 @@ class _GalleryPageState extends State<GalleryPage> {
 													child: AnimatedOpacity(
 														duration: const Duration(milliseconds: 300),
 														opacity: showChrome || (_shouldShowPosition.value && settings.showOverlaysInGallery) ? 1 : 0,
-														child: GestureDetector(
-															onTap: () async {
-																final controller = TextEditingController();
-																final str = await showAdaptiveDialog<String>(
-																	barrierDismissible: true,
-																	context: context,
-																	builder: (context) => AdaptiveAlertDialog(
-																		title: const Text('Jump to Attachment'),
-																		content: AdaptiveTextField(
-																			autofocus: true,
-																			controller: controller,
-																			keyboardType: TextInputType.number,
-																			placeholder: 'Attachment #',
-																			onSubmitted: (s) => Navigator.pop(context, s),
-																		),
-																		actions: [
-																			AdaptiveDialogAction(
-																				onPressed: () => Navigator.pop(context, controller.text),
-																				child: const Text('Go')
-																			),
-																			AdaptiveDialogAction(
-																				onPressed: () => Navigator.pop(context),
-																				child: const Text('Cancel')
+														child: Column(
+															mainAxisSize: MainAxisSize.min,
+															crossAxisAlignment: CrossAxisAlignment.start,
+															children: [
+																if (_peers[currentAttachment.attachment] case (int numer, int denom)) Container(
+																	margin: const EdgeInsets.symmetric(horizontal: 16),
+																	padding: const EdgeInsets.all(8),
+																	decoration: const BoxDecoration(
+																		borderRadius: BorderRadius.all(Radius.circular(8)),
+																		color: Colors.black54
+																	),
+																	child: Row(
+																		mainAxisSize: MainAxisSize.min,
+																		children: [
+																			const Icon(CupertinoIcons.photo_on_rectangle, size: 19),
+																			const SizedBox(width: 8),
+																			AnimatedBuilder(
+																				animation: _currentAttachmentChanged,
+																				builder: (context, _) => Text(
+																					'$numer / $denom',
+																					style: TextStyle(
+																						color: settings.darkTheme.primaryColor,
+																						fontFeatures: const [FontFeature.tabularFigures()]
+																					),
+																					textAlign: TextAlign.center
+																				)
 																			)
 																		]
 																	)
-																);
-																controller.dispose();
-																if (!context.mounted) {
-																	return;
-																}
-																final index = int.tryParse(str ?? '');
-																if (index != null) {
-																	_animateToPage((index - 1).clamp(0, widget.attachments.length - 1), milliseconds: 0, overrideRateLimit: true);
-																}
-															},
-															child: Container(
-																margin: showChrome ? EdgeInsets.only(
-																	bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
-																	left: 16
-																) : const EdgeInsets.all(16),
-																padding: const EdgeInsets.all(8),
-																decoration: const BoxDecoration(
-																	borderRadius: BorderRadius.all(Radius.circular(8)),
-																	color: Colors.black54
 																),
-																child: AnimatedBuilder(
-																	animation: _currentAttachmentChanged,
-																	builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
-																		color: settings.darkTheme.primaryColor
-																	))
+																GestureDetector(
+																	onTap: () async {
+																		final controller = TextEditingController();
+																		final str = await showAdaptiveDialog<String>(
+																			barrierDismissible: true,
+																			context: context,
+																			builder: (context) => AdaptiveAlertDialog(
+																				title: const Text('Jump to Attachment'),
+																				content: AdaptiveTextField(
+																					autofocus: true,
+																					controller: controller,
+																					keyboardType: TextInputType.number,
+																					placeholder: 'Attachment #',
+																					onSubmitted: (s) => Navigator.pop(context, s),
+																				),
+																				actions: [
+																					AdaptiveDialogAction(
+																						onPressed: () => Navigator.pop(context, controller.text),
+																						child: const Text('Go')
+																					),
+																					AdaptiveDialogAction(
+																						onPressed: () => Navigator.pop(context),
+																						child: const Text('Cancel')
+																					)
+																				]
+																			)
+																		);
+																		controller.dispose();
+																		if (!context.mounted) {
+																			return;
+																		}
+																		final index = int.tryParse(str ?? '');
+																		if (index != null) {
+																			_animateToPage((index - 1).clamp(0, widget.attachments.length - 1), milliseconds: 0, overrideRateLimit: true);
+																		}
+																	},
+																	child: Container(
+																		margin: const EdgeInsets.all(16),
+																		padding: const EdgeInsets.all(8),
+																		decoration: const BoxDecoration(
+																			borderRadius: BorderRadius.all(Radius.circular(8)),
+																			color: Colors.black54
+																		),
+																		child: AnimatedBuilder(
+																			animation: _currentAttachmentChanged,
+																			builder: (context, _) => Text(
+																				'${currentIndex + 1} / ${widget.attachments.length}',
+																				style: TextStyle(
+																					color: settings.darkTheme.primaryColor,
+																					fontFeatures: const [FontFeature.tabularFigures()]
+																				),
+																				textAlign: TextAlign.center
+																			)
+																		)
+																	)
+																),
+																if (showChrome) SizedBox(
+																	height: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0),
 																)
-															)
+															]
 														)
 													)
 												)
