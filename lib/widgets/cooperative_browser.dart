@@ -282,5 +282,6 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 		super.dispose();
 		_pollAllowedDirections.cancel();
 		_progress.dispose();
+		_showProgressTimer?.cancel();
 	}
 }
