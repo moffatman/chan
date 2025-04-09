@@ -2,6 +2,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/sites/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
@@ -63,8 +64,9 @@ class FuukaArchive extends ImageboardSiteArchive {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
 					}
 				}
-				else if (node.localName == 'a') {
-					final match = _postLinkMatcher.firstMatch(node.attributes['href']!);
+				else if (node.localName == 'a' && node.attributes.containsKey('href')) {
+					final href = node.attributes['href']!;
+					final match = _postLinkMatcher.firstMatch(href);
 					if (match != null) {
 						final board = match.group(1)!;
 						final postId = int.parse(match.group(2)!);
@@ -84,7 +86,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 						}
 					}
 					else {
-						final match = _quoteLinkMatcher.firstMatch(node.attributes['href']!);
+						final match = _quoteLinkMatcher.firstMatch(href);
 						if (match != null) {
 							elements.add(PostQuoteLinkSpan(
 								board: board,
@@ -93,7 +95,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 							));
 						}
 						else {
-							elements.addAll(Site4Chan.parsePlaintext(node.text));
+							elements.add(PostLinkSpan(href, name: node.text.nonEmptyOrNull));
 						}
 					}
 				}

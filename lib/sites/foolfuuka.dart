@@ -7,6 +7,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
@@ -164,6 +165,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				}
 				else if (node.localName == 'strong') {
 					elements.add(PostBoldSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
+				}
+				else if (node.localName == 'a' && node.attributes.containsKey('href')) {
+					elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
 				}
 				else {
 					elements.addAll(Site4Chan.parsePlaintext(node.text));

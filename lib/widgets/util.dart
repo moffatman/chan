@@ -563,11 +563,11 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		fakeLinkStream.add(url.toString());
 		return;
 	}
-	if (url.host.isEmpty && url.scheme.isEmpty) {
-		url = url.replace(
-			scheme: 'https',
-			host: context.read<Imageboard?>()?.site.baseUrl,
-		);
+	if (url.scheme.isEmpty) {
+		url = url.replace(scheme: 'https');
+	}
+	if (url.host.isEmpty) {
+		url = url.replace(host: context.read<Imageboard?>()?.site.baseUrl);
 	}
 	final settings = Settings.instance;
 	final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
