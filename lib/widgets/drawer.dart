@@ -438,7 +438,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 				onReorder: null,
 				onRefresh: () async {
 					for (final state in states) {
-						if (state.thread?.isArchived != true) {
+						if (state.thread?.isArchived != true && state.threadWatch?.zombie != true) {
 							await state.imageboard?.threadWatcher.updateThread(state.identifier);
 						}
 					}
