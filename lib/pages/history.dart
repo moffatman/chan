@@ -70,7 +70,7 @@ class HistoryPageState extends State<HistoryPage> {
 		}
 		final futures = <Future<void>>[];
 		final out = <PersistentThreadState>[];
-		for (int i = startIndex; i < states.length && out.length < _historyPageSize; i++) {
+		for (int i = startIndex; i < states.length && out.length <= _historyPageSize; i++) {
 			final p = states[i];
 			if (p.thread?.posts_.last.isInitialized ?? false) {
 				out.add(p);
