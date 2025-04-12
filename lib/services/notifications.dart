@@ -258,13 +258,13 @@ class Notifications {
 			completer.complete(endpoint);
 		}
 		_unifiedPushNewEndpointCompleters.clear();
-		await _reinitializeChildren();
+		await _reinitializeChildren(allowDeleteAll: false);
 	}
 
 	@pragma('vm:entry-point')
 	static Future<void> onUnifiedPushUnregistered(String instance) async {
 		Persistence.settings.lastUnifiedPushEndpoint = null;
-		_reinitializeChildren();
+		_reinitializeChildren(allowDeleteAll: false);
 	}
 
 	static String _makeNotificationThreadId(Map<String, String> map) {
@@ -434,17 +434,18 @@ class Notifications {
 				await UnifiedPush.unregister();
 			}
 		}
-		await _reinitializeChildren();
+		// For true -> false transition
+		await _reinitializeChildren(allowDeleteAll: true);
 	}
 
 	static Future<void> _didUpdateFilter() async {
 		if (Persistence.settings.usePushNotifications == true) {
-			await _reinitializeChildren();
+			await _reinitializeChildren(allowDeleteAll: true);
 		}
 	}
 
-	static Future<void> _reinitializeChildren() async {
-		await Future.wait(_children.values.map((c) => c.initialize()));
+	static Future<void> _reinitializeChildren({required bool allowDeleteAll}) async {
+		await Future.wait(_children.values.map((c) => c.initialize(allowDeleteAll: allowDeleteAll)));
 	}
 
 	static Future<_NotificationsToken?> _getToken() async {
@@ -491,7 +492,7 @@ class Notifications {
 		}
 	}
 
-	Future<void> initialize() async {
+	Future<void> initialize({required bool allowDeleteAll}) async {
 		_children[id] = this;
 		try {
 			if (Persistence.settings.usePushNotifications == true) {
@@ -514,7 +515,7 @@ class Notifications {
 					}));
 				}
 			}
-			else {
+			else if (allowDeleteAll) {
 				await deleteAllNotificationsFromServer();
 			}
 			if (_unrecognizedByUserId.containsKey(id)) {

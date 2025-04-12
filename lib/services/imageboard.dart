@@ -91,7 +91,7 @@ class Imageboard extends ChangeNotifier {
 				persistence: persistence,
 				site: site
 			);
-			notifications.initialize();
+			notifications.initialize(allowDeleteAll: false);
 			_notificationsInitialized = true;
 			threadWatcher = ThreadWatcher(
 				imageboardKey: key,
