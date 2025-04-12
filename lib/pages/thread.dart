@@ -1921,60 +1921,63 @@ class ThreadPageState extends State<ThreadPage> {
 																	filterHint: 'Search in thread'
 																)
 															),
-															SafeArea(
-																child: Align(
-																	alignment: reverseIndicatorPosition ? Alignment.bottomLeft : Alignment.bottomRight,
-																	child: _ThreadPositionIndicator(
-																		key: _indicatorKey,
-																		reversed: reverseIndicatorPosition,
-																		persistentState: persistentState,
-																		thread: persistentState.thread,
-																		threadIdentifier: widget.thread,
-																		listController: _listController,
-																		zone: zone,
-																		useTree: useTree,
-																		newPostIds: newPostIds,
-																		searching: _searching,
-																		passedFirstLoad: _passedFirstLoad,
-																		blocked: blocked,
-																		boardSemanticId: widget.boardSemanticId,
-																		forceThreadRebuild: () => setState(() {}),
-																		developerModeButtons: [
-																			[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
-																				final allIds = (persistentState.thread?.posts_.map((i) => i.id) ?? _listController.items.map((i) => i.id));
-																				final id = _listController.lastVisibleItem?.id;
-																				if (id != null) {
-																					if (useTree) {
-																						// Something arbitrary
-																						final x = allIds.toList()..shuffle();
-																						persistentState.unseenPostIds.data.addAll(x.take(x.length ~/ 2));
+															Visibility.maintain(
+																visible: !blocked,
+																child: SafeArea(
+																	child: Align(
+																		alignment: reverseIndicatorPosition ? Alignment.bottomLeft : Alignment.bottomRight,
+																		child: _ThreadPositionIndicator(
+																			key: _indicatorKey,
+																			reversed: reverseIndicatorPosition,
+																			persistentState: persistentState,
+																			thread: persistentState.thread,
+																			threadIdentifier: widget.thread,
+																			listController: _listController,
+																			zone: zone,
+																			useTree: useTree,
+																			newPostIds: newPostIds,
+																			searching: _searching,
+																			passedFirstLoad: _passedFirstLoad,
+																			blocked: blocked,
+																			boardSemanticId: widget.boardSemanticId,
+																			forceThreadRebuild: () => setState(() {}),
+																			developerModeButtons: [
+																				[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
+																					final allIds = (persistentState.thread?.posts_.map((i) => i.id) ?? _listController.items.map((i) => i.id));
+																					final id = _listController.lastVisibleItem?.id;
+																					if (id != null) {
+																						if (useTree) {
+																							// Something arbitrary
+																							final x = allIds.toList()..shuffle();
+																							persistentState.unseenPostIds.data.addAll(x.take(x.length ~/ 2));
+																						}
+																						else {
+																							persistentState.unseenPostIds.data.addAll(allIds.where((x) => x > id));
+																						}
+																						persistentState.lastSeenPostId = id;
+																						persistentState.save();
+																						setState(() {});
 																					}
-																					else {
-																						persistentState.unseenPostIds.data.addAll(allIds.where((x) => x > id));
-																					}
-																					persistentState.lastSeenPostId = id;
-																					persistentState.save();
-																					setState(() {});
+																				})]
+																			],
+																			cachedAttachments: _cached,
+																			attachmentsCachingQueue: _cachingQueue,
+																			startCaching: () => _cacheAttachments(automatic: false),
+																			openGalleryGrid: () => _showGalleryFromNextImage(initiallyShowGrid: true),
+																			suggestedThread: _suggestedNewGeneral == null ? null : (
+																				label: _suggestedNewGeneral?.$2 ?? '',
+																				onAccept: () {
+																					widget.onWantChangeThread?.call(_suggestedNewGeneral!.$1);
+																				},
+																				onReject: () {
+																					setState(() {
+																						_rejectedNewGeneralSuggestion = _suggestedNewGeneral?.$1;
+																						_suggestedNewGeneral = null;
+																					});
 																				}
-																			})]
-																		],
-																		cachedAttachments: _cached,
-																		attachmentsCachingQueue: _cachingQueue,
-																		startCaching: () => _cacheAttachments(automatic: false),
-																		openGalleryGrid: () => _showGalleryFromNextImage(initiallyShowGrid: true),
-																		suggestedThread: _suggestedNewGeneral == null ? null : (
-																			label: _suggestedNewGeneral?.$2 ?? '',
-																			onAccept: () {
-																				widget.onWantChangeThread?.call(_suggestedNewGeneral!.$1);
-																			},
-																			onReject: () {
-																				setState(() {
-																					_rejectedNewGeneralSuggestion = _suggestedNewGeneral?.$1;
-																					_suggestedNewGeneral = null;
-																				});
-																			}
-																		),
-																		replyBoxKey: _replyBoxKey
+																			),
+																			replyBoxKey: _replyBoxKey
+																		)
 																	)
 																)
 															)
