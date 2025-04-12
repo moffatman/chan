@@ -135,7 +135,7 @@ class ThreadWatcher extends ChangeNotifier {
 	final Notifications notifications;
 	final Map<ThreadIdentifier, int> cachedUnseen = {};
 	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
-	StreamSubscription<BoxEvent>? _boxSubscription;
+	StreamSubscription<PersistentThreadState>? _boxSubscription;
 	final fixBrokenLock = Mutex();
 	final Set<ThreadIdentifier> fixedThreads = {};
 	final Set<ThreadIdentifier> brokenThreads = {};
@@ -157,7 +157,7 @@ class ThreadWatcher extends ChangeNotifier {
 		this.watchForStickyOnBoards = const []
 	}) {
 		controller.registerWatcher(this);
-		_boxSubscription = Persistence.sharedThreadStateBox.watch().listen(_threadUpdated);
+		_boxSubscription = Persistence.sharedThreadStateStream.listen(_threadUpdated);
 		setInitialCounts();
 		Settings.instance.filterListenable.addListener(_didUpdateFilter);
 	}
@@ -247,36 +247,33 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 	}
 
-	void _threadUpdated(BoxEvent event) async {
+	void _threadUpdated(PersistentThreadState newThreadState) async {
 		await _initialCountsDone.future;
 		// Update notification counters when last-seen-id is saved to disk
-		if (event.value is PersistentThreadState) {
-			final newThreadState = event.value as PersistentThreadState;
-			if (newThreadState.imageboardKey != imageboardKey) {
-				return;
+		if (newThreadState.imageboardKey != imageboardKey) {
+			return;
+		}
+		if (newThreadState.thread != null) {
+			if (_unseenStickyThreads.contains(newThreadState.identifier)) {
+				_unseenStickyThreads.remove(newThreadState.identifier);
+				_updateCounts();
 			}
-			if (newThreadState.thread != null) {
-				if (_unseenStickyThreads.contains(newThreadState.identifier)) {
-					_unseenStickyThreads.remove(newThreadState.identifier);
-					_updateCounts();
+			final watch = persistence.browserState.threadWatches[newThreadState.identifier];
+			if (watch != null) {
+				cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
+				if (!watch.localYousOnly) {
+					cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;
 				}
-				final watch = persistence.browserState.threadWatches[newThreadState.identifier];
-				if (watch != null) {
-					cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
-					if (!watch.localYousOnly) {
-						cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;
-					}
-					_updateCounts();
-					if (newThreadState.thread!.isArchived && !watch.zombie) {
-						await notifications.zombifyThreadWatch(watch, false);
-					}
-					if (!listEquals(watch.youIds, newThreadState.youIds)) {
-						watch.youIds = newThreadState.youIds;
-						notifications.didUpdateWatch(watch);
-					}
-					if (watch.lastSeenId < newThreadState.thread!.posts.last.id) {
-						notifications.updateLastKnownId(watch, newThreadState.thread!.posts.last.id);
-					}
+				_updateCounts();
+				if (newThreadState.thread!.isArchived && !watch.zombie) {
+					await notifications.zombifyThreadWatch(watch, false);
+				}
+				if (!listEquals(watch.youIds, newThreadState.youIds)) {
+					watch.youIds = newThreadState.youIds;
+					notifications.didUpdateWatch(watch);
+				}
+				if (watch.lastSeenId < newThreadState.thread!.posts.last.id) {
+					notifications.updateLastKnownId(watch, newThreadState.thread!.posts.last.id);
 				}
 			}
 		}

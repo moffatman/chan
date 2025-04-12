@@ -197,7 +197,9 @@ class Persistence extends ChangeNotifier {
 	Persistence(this.imageboardKey);
 	static late final Box<PersistentThreadState> sharedThreadStateBox;
 	static final _sharedThreadStateListenable = EasyListenable();
-	static final sharedThreadStateListenable = Listenable.merge([sharedThreadStateBox.listenable(), _sharedThreadStateListenable]);
+	static Listenable get sharedThreadStateListenable => _sharedThreadStateListenable;
+	static final _sharedThreadStateStream = StreamController<PersistentThreadState>.broadcast();
+	static Stream<PersistentThreadState> get sharedThreadStateStream => _sharedThreadStateStream.stream;
 	static late final Box<ImageboardBoard> sharedBoardsBox;
 	static late final LazyBox<Thread> sharedThreadsBox;
 	Map<String, SavedAttachment> get savedAttachments => settings.savedAttachmentsBySite[imageboardKey]!;
@@ -569,6 +571,13 @@ class Persistence extends ChangeNotifier {
 		settings.launchCount++;
 		_startBoxBackupTimer(settingsBox, settingsBoxName);
 		sharedThreadStateBox = await _openBoxWithBackup<PersistentThreadState>(sharedThreadStatesBoxName);
+		// Don't need to manage subscription, this is static
+		sharedThreadStateBox.watch().listen((e) {
+			_sharedThreadStateListenable.didUpdate();
+			if (e.value case PersistentThreadState state) {
+				_sharedThreadStateStream.add(state);
+			}
+		});
 		_startBoxBackupTimer(sharedThreadStateBox, sharedThreadStatesBoxName);
 		sharedBoardsBox = await _openBoxWithBackup<ImageboardBoard>(sharedBoardsBoxName);
 		_startBoxBackupTimer(sharedBoardsBox, sharedBoardsBoxName);
@@ -1620,7 +1629,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		}
 		if (thread != null) {
 			didUpdate();
-			Persistence._sharedThreadStateListenable.didUpdate();
+			Persistence._sharedThreadStateStream.add(this);
 		}
 		return _thread = thread ?? _thread;
 	}
@@ -1656,6 +1665,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			}
 			didUpdate();
 			Persistence._sharedThreadStateListenable.didUpdate();
+			Persistence._sharedThreadStateStream.add(this);
 		}
 	}
 
@@ -1666,6 +1676,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		_invalidate();
 		didUpdate();
 		Persistence._sharedThreadStateListenable.didUpdate();
+		Persistence._sharedThreadStateStream.add(this);
 	}
 
 	void didUpdateYourPosts() {
