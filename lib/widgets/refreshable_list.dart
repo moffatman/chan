@@ -1182,6 +1182,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	bool _addedNetworkResumeCallback = false;
 	final Set<_RefreshableTreeItemsCacheKey> _internedHashKeys = {};
 	final WeakMap<Filterable, String?> _searchStrings = WeakMap();
+	({int valuesLength, int newItemsCount})? _addedItemsFromExtension;
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
 	bool get treeBuildingFailed => _treeBuildingFailed;
@@ -1554,6 +1555,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				else {
 					// Just append the new items
 					newList = originalList!.followedBy(newItems).toList();
+				}
+				if (widget.controller?._items.length case int valuesLength) {
+					_addedItemsFromExtension = (valuesLength: valuesLength, newItemsCount: newList.length - originalList!.length);
 				}
 			}
 			else {
@@ -2750,6 +2754,20 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			widget.controller?.setItems(values);
+			final addedItemsFromExtension = _addedItemsFromExtension;
+			_addedItemsFromExtension = null;
+			if (searching && addedItemsFromExtension != null && addedItemsFromExtension.valuesLength == values.length) {
+				// The list was extended, but no new items were visible. Show a toast to make it clear the update worked.
+				Future.microtask(() {
+					if (context.mounted) {
+						showToast(
+							context: context,
+							message: '${describeCount(addedItemsFromExtension.newItemsCount, 'new item')} loaded',
+							icon: CupertinoIcons.refresh
+						);
+					}
+				});
+			}
 			if (filteredValues.isEmpty) {
 				// Don't auto open filtered values after clearing it before
 				_showFilteredValues = false;
@@ -2873,6 +2891,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																			}
 																		});
 																		widget.onFilterChanged?.call(searchText);
+																	},
+																	onSubmitted: (_) {
+																		final isHardwareKeyboard = MediaQueryData.fromView(View.of(context)).viewInsets.bottom <= 100;
+																		_updateOrExtendWithHapticFeedback();
+																		if (isHardwareKeyboard) {
+																			// Stay focused, usually it will clear to close keyboard (show more items)
+																			Future.microtask(_focusSearch);
+																		}
 																	},
 																	controller: _searchController,
 																	enableIMEPersonalizedLearning: Settings.enableIMEPersonalizedLearningSetting.watch(context),
