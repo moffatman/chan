@@ -13,7 +13,6 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
-import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -764,25 +763,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																children: [
 																	const SizedBox(width: 16),
 																	ImageboardIcon(
-																		imageboardKey: imageboard.key
+																		imageboardKey: imageboard.key,
+																		boardName: board.name,
+																		size: 24
 																	),
 																	const SizedBox(width: 16),
-																	if (board.icon != null) ...[
-																		ClipOval(
-																			child: SizedBox(
-																				width: 30,
-																				height: 30,
-																				child: FittedBox(
-																					fit: BoxFit.contain,
-																					child: CNetworkImage(
-																						url: board.icon!.toString(),
-																						client: imageboard.site.client
-																					)
-																				)
-																			)
-																		),
-																		const SizedBox(width: 16)
-																	],
 																	Expanded(
 																		child: Column(
 																			mainAxisSize: MainAxisSize.min,
