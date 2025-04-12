@@ -220,11 +220,10 @@ class Site4Chan extends ImageboardSite {
 				request: request,
 				priority: RequestPriority.cosmetic // Don't pop up cloudflare
 			);
-			print(challenge);
+			print('Ticket timer result: $challenge');
 		}
-		catch (e, st) {
-			print(e);
-			print(st);
+		catch (e) {
+			print('Ticket timer error: ${e.toStringDio()}');
 		}
 		resetCaptchaTicketTimer();
 	}
