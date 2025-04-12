@@ -1621,6 +1621,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		Thread? fallback;
 		final isReallyArchived = () async {
 			try {
+				// Maybe we already know
+				final t0 = await persistence?.getThreadStateIfExists(thread)?.getThread();
+				if (t0 != null && t0.archiveName == null && t0.isArchived) {
+					return true;
+				}
 				final t = await getThread(thread, priority: priority);
 				return t.isArchived;
 			}
