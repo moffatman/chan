@@ -354,6 +354,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			final Set<String> sites = filter.sites.toSet();
 			final Set<String> excludeSites = filter.excludeSites.toSet();
 			int? minRepliedTo = filter.minRepliedTo;
+			int? maxRepliedTo = filter.maxRepliedTo;
 			int? minReplyCount = filter.minReplyCount;
 			int? maxReplyCount = filter.maxReplyCount;
 			bool hide = filter.outputType.hide;
@@ -596,43 +597,60 @@ class _FilterEditorState extends State<FilterEditor> {
 									AdaptiveFilledButton(
 										padding: const EdgeInsets.all(16),
 										onPressed: () async {
-											final controller = TextEditingController(text: minRepliedTo?.toString());
+											final minController = TextEditingController(text: minRepliedTo?.toString());
+											final maxController = TextEditingController(text: maxRepliedTo?.toString());
 											await showAdaptiveDialog(
 												context: context,
 												barrierDismissible: true,
 												builder: (context) => AdaptiveAlertDialog(
-													title: const Text('Set minimum replied-to posts count'),
+													title: const Text('Set replied-to posts count criteria'),
 													actions: [
-														AdaptiveDialogAction(
-															child: const Text('Clear'),
-															onPressed: () {
-																controller.text = '';
-																Navigator.pop(context);
-															}
-														),
 														AdaptiveDialogAction(
 															child: const Text('Close'),
 															onPressed: () => Navigator.pop(context)
 														)
 													],
-													content: Padding(
-														padding: const EdgeInsets.only(top: 16),
-														child: AdaptiveTextField(
-															autofocus: true,
-															keyboardType: TextInputType.number,
-															controller: controller,
-															onSubmitted: (s) {
-																Navigator.pop(context);
-															}
-														)
+													content: Column(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															const SizedBox(height: 16),
+															const Text('Minimum'),
+															AdaptiveTextField(
+																autofocus: true,
+																keyboardType: TextInputType.number,
+																controller: minController,
+																onSubmitted: (s) {
+																	Navigator.pop(context);
+																}
+															),
+															const Text('Maximum'),
+															AdaptiveTextField(
+																autofocus: true,
+																keyboardType: TextInputType.number,
+																controller: maxController,
+																onSubmitted: (s) {
+																	Navigator.pop(context);
+																}
+															)
+														]
 													)
 												)
 											);
-											minRepliedTo = int.tryParse(controller.text);
-											controller.dispose();
+											minRepliedTo = int.tryParse(minController.text);
+											maxRepliedTo = int.tryParse(maxController.text);
+											minController.dispose();
+											maxController.dispose();
 											setInnerState(() {});
 										},
-										child: Text(minRepliedTo == null ? 'No replied-to criteria' : 'With at least $minRepliedTo replied-to posts')
+										child: Text(switch ((minRepliedTo, maxRepliedTo)) {
+											(null, null) => 'No replied-to criteria',
+											(int min, null) => 'With at least $min replied-to posts',
+											(null, int max) => 'With at most $max replied-to posts',
+											(int min, int max) =>
+												min == max
+													? 'With exactly $min replied-to posts'
+													: 'With between $min and $max replied-to posts'
+										})
 									),
 									const SizedBox(height: 16),
 									AdaptiveFilledButton(
@@ -864,6 +882,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										threadsOnly: threadsOnly,
 										deletedOnly: deletedOnly,
 										minRepliedTo: minRepliedTo,
+										maxRepliedTo: maxRepliedTo,
 										minReplyCount: minReplyCount,
 										maxReplyCount: maxReplyCount,
 										outputType: FilterResultType(
@@ -946,6 +965,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'`;reply` Only apply to replies\n'
 													'`;type:<list>` Only apply regex filter to certain fields\n'
 													'`;minReplied:<number>` Only apply to posts replying to a minimum number of other posts\n'
+													'`;maxReplied:<number>` Only apply to posts replying to a maximum number of other posts\n'
 													'`;minReplyCount:<number>` Only apply to posts with a minimum number of replies\n'
 													'`;maxReplyCount:<number>` Only apply to posts with a maximum number of replies\n'
 													'The list of possible fields is $allPatternFields\n'
@@ -1059,7 +1079,11 @@ class _FilterEditorState extends State<FilterEditor> {
 							subtitle: Text.rich(
 								TextSpan(
 									children: [
-										if (filter.value.minRepliedTo != null) TextSpan(text: 'Replying to >=${filter.value.minRepliedTo}'),
+										if (filter.value.minRepliedTo != null || filter.value.maxRepliedTo != null) TextSpan(text: 'Replying to ${switch ((filter.value.minRepliedTo, filter.value.maxRepliedTo)) {
+											(int min, null) => '>=$min',
+											(null, int max) => '<=$max',
+											(int? min, int? max) => min == max ? '$min' : '$min-$max'
+										}}'),
 										if (filter.value.minReplyCount != null && filter.value.maxReplyCount != null) TextSpan(text: '${filter.value.minReplyCount}-${filter.value.maxReplyCount} replies')
 										else if (filter.value.minReplyCount != null) TextSpan(text: '>=${filter.value.minReplyCount} replies')
 										else if (filter.value.maxReplyCount != null) TextSpan(text: '<=${filter.value.maxReplyCount} replies'),

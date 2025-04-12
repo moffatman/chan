@@ -189,6 +189,7 @@ class CustomFilter implements Filter {
 	bool? hasFile;
 	bool? threadsOnly;
 	int? minRepliedTo;
+	int? maxRepliedTo;
 	bool disabled;
 	int? minReplyCount;
 	int? maxReplyCount;
@@ -209,6 +210,7 @@ class CustomFilter implements Filter {
 		this.hasFile,
 		this.threadsOnly,
 		this.minRepliedTo,
+		this.maxRepliedTo,
 		this.minReplyCount,
 		this.maxReplyCount,
 		this.deletedOnly
@@ -244,6 +246,9 @@ class CustomFilter implements Filter {
 			return null;
 		}
 		if (minRepliedTo != null && item.repliedToIds.length < minRepliedTo!) {
+			return null;
+		}
+		if (maxRepliedTo != null && item.repliedToIds.length > maxRepliedTo!) {
 			return null;
 		}
 		if (minReplyCount != null && item.replyCount < minReplyCount!) {
@@ -407,6 +412,12 @@ class CustomFilter implements Filter {
 						throw FilterException('Not a valid number for minReplied: "${s.split(':')[1]}"');
 					}
 				}
+				else if (s.startsWith('maxReplied')) {
+					filter.maxRepliedTo = int.tryParse(s.split(':')[1]);
+					if (filter.maxRepliedTo == null) {
+						throw FilterException('Not a valid number for maxReplied: "${s.split(':')[1]}"');
+					}
+				}
 				else if (s.startsWith('minReplyCount')) {
 					filter.minReplyCount = int.tryParse(s.split(':')[1]);
 					if (filter.minReplyCount == null) {
@@ -536,6 +547,9 @@ class CustomFilter implements Filter {
 		if (minRepliedTo != null) {
 			out.write(';minReplied:$minRepliedTo');
 		}
+		if (maxRepliedTo != null) {
+			out.write(';maxReplied:$maxRepliedTo');
+		}
 		if (minReplyCount != null) {
 			out.write(';minReplyCount:$minReplyCount');
 		}
@@ -555,7 +569,7 @@ class CustomFilter implements Filter {
 	bool get supportsMetaFilter => outputType.hideReplies || outputType.hideReplyChains;
 
 	@override
-	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadsOnly: $threadsOnly, minRepliedTo: $minRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
+	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadsOnly: $threadsOnly, minRepliedTo: $minRepliedTo, maxRepliedTo: $maxRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
 
 	@override
 	bool operator == (Object other) =>
