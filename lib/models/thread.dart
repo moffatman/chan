@@ -104,18 +104,22 @@ class Thread extends HiveObject implements Filterable {
 	bool _initialized = false;
 	List<Post> get posts {
 		if (!_initialized) {
-			Map<int, Post> postsById = {};
+			final postsById = <int, Post>{};
 			for (final post in posts_) {
-				postsById[post.id] = post;
-				post.replyIds = const [];
+				postsById[post.id] = post..replyIds = [];
 			}
 			for (final post in posts_) {
 				for (final referencedPostId in post.repliedToIds) {
-					if (referencedPostId == post.id) {
-						// Disallow recursive replies
-						continue;
-					}
-					postsById[referencedPostId]?.maybeAddReplyId(post.id);
+					// Already deduplicated
+					postsById[referencedPostId]?.replyIds.add(post.id);
+				}
+			}
+			for (final post in posts_) {
+				if (post.replyIds.isEmpty) {
+					post.replyIds = const [];
+				}
+				else {
+					post.replyIds = post.replyIds.toList(growable: false);
 				}
 			}
 			_initialized = true;

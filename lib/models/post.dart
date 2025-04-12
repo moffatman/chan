@@ -85,6 +85,10 @@ enum PostSpanFormat {
 		xenforo || reddit => true,
 		_ => false
 	};
+	bool get hasInlineReplies => switch (this) {
+		reddit || stub || pageStub => false,
+		_ => true
+	};
 }
 
 void _readHookPostFields(Map<int, dynamic> fields) {
@@ -178,14 +182,14 @@ class Post implements Filterable {
 	static const _kEmptyReplyIds = <int>[];
 	List<int> replyIds = const [];
 	void maybeAddReplyId(int replyId) {
-		if (!replyIds.contains(replyId)) {
-			if (identical(replyIds, _kEmptyReplyIds)) {
-				// Make it modifiable
-				replyIds = [replyId].toList(growable: false);
-			}
-			else {
-				replyIds = [...replyIds, replyId].toList(growable: false);
-			}
+		if (identical(replyIds, _kEmptyReplyIds)) {
+			// Make it modifiable
+			replyIds = List.filled(1, replyId, growable: false);
+		}
+		else if (!replyIds.contains(replyId)) {
+			final oldReplyIds = replyIds;
+			replyIds = List.filled(replyIds.length + 1, replyId, growable: false);
+			replyIds.setAll(0, oldReplyIds);
 		}
 	}
 	@HiveField(11, isOptimized: true, defaultValue: false)
@@ -279,9 +283,21 @@ class Post implements Filterable {
 	List<int>? _repliedToIds;
 	@override
 	List<int> get repliedToIds {
-		return _repliedToIds ??= id == threadId ? const [] : [
-			if (parentId != null) parentId!,
-			...span.referencedPostIds(board).where((otherId) => otherId != id)
+		return _repliedToIds ??= _makeRepliedToIds();
+	}
+	List<int> _makeRepliedToIds() {
+		final parentId = this.parentId;
+		if (!spanFormat.hasInlineReplies) {
+			return parentId != null ? List.filled(1, parentId, growable: false) : const [];
+		}
+		final dedupe = {
+			// Disallow recursive replies
+			id,
+			if (parentId != null) parentId
+		};
+		return [
+			if (parentId != null) parentId,
+			...span.referencedPostIds(board).where(dedupe.add)
 		].toList(growable: false);
 	}
 	@override
