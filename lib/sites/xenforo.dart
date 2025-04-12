@@ -454,7 +454,7 @@ class SiteXenforo extends ImageboardSite {
 
   @override
   Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
-    final response = await client.getUri(Uri.https(baseUrl, basePath), options: Options(responseType: ResponseType.plain));
+    final response = await client.getUri(Uri.https(baseUrl, '$basePath/forums/-/list'), options: Options(responseType: ResponseType.plain));
 		final document = parse(response.data);
 		return document.querySelectorAll('.node--forum .node-title a').tryMap((e) {
 			final parts = e.attributes['href']?.split('/') ?? [];
