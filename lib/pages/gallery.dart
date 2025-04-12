@@ -210,19 +210,21 @@ class _GalleryPageState extends State<GalleryPage> {
 			}
 		}
 		// Initialize _peers
-		for (final thread in widget.threads.values) {
-			final length = thread.item.attachments.length;
-			if (length > 1) {
-				for (final (i, attachment) in thread.item.attachments.indexed) {
-					_peers[attachment] = (i + 1, length);
+		if ((widget.threads.values.toSet().length + widget.posts.values.toSet().length) > 1) {
+			for (final thread in widget.threads.values) {
+				final length = thread.item.attachments.length;
+				if (length > 1) {
+					for (final (i, attachment) in thread.item.attachments.indexed) {
+						_peers[attachment] = (i + 1, length);
+					}
 				}
 			}
-		}
-		for (final post in widget.posts.values) {
-			final length = post.item.attachments.length;
-			if (length > 1) {
-				for (final (i, attachment) in post.item.attachments.indexed) {
-					_peers[attachment] = (i + 1, length);
+			for (final post in widget.posts.values) {
+				final length = post.item.attachments.length;
+				if (length > 1) {
+					for (final (i, attachment) in post.item.attachments.indexed) {
+						_peers[attachment] = (i + 1, length);
+					}
 				}
 			}
 		}
