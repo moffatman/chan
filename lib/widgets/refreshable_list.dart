@@ -3567,7 +3567,12 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		final extentAfter = scrollController?.tryPosition?.extentAfter;
 		if (extentAfter != null) {
 			if (extentAfter < 1000 && _autoExtendEnabled) {
-				state?._autoExtendTrigger();
+				// The list just may be shrinking e.g. via filtering
+				// In that case, don't do an update, and still set the flag to false,
+				// so that first scroll in the shorter list doesn't extend either.
+				if (scrollController?.tryPosition?.isScrollingNotifier.value ?? false) {
+					state?._autoExtendTrigger();
+				}
 				_autoExtendEnabled = false;
 			}
 			else if (extentAfter > 2000) {
