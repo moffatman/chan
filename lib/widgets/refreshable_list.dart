@@ -3419,6 +3419,11 @@ class RefreshableListFooter extends StatelessWidget {
 																					minHeight: 8
 																				);
 																			}
+																		) else LinearProgressIndicator(
+																			value: 0,
+																			color: theme.primaryColor.withOpacity(0.5),
+																			backgroundColor: primaryColorWithBrightness10,
+																			minHeight: 8
 																		),
 																		LinearProgressIndicator(
 																			value: (updatingNow) ? null : (pointerDownNow() ? smoothedValue : 0),
