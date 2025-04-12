@@ -101,7 +101,13 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		if (widget.initialYourPostsOnly) {
 			_filterYourPostsOnly = _FilterYourPostsOnly.yourPosts;
 		}
-		_runQuery();
+		if (widget.initialQuery.isEmpty) {
+			results = [];
+			Future.microtask(_editQuery);
+		}
+		else {
+			_runQuery();
+		}
 	}
 
 	Future<void> _runQuery() async {
@@ -247,6 +253,189 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		theseResults.sort((a, b) => (b.item.post?.time ?? b.item.thread.time).compareTo(a.item.post?.time ?? a.item.thread.time));
 		results = theseResults;
 		setState(() {});
+	}
+
+	Future<void> _editQuery() async {
+		bool anyChange = false;
+		final controller = TextEditingController(text: _query);
+		await showAdaptiveModalPopup(
+			context: context,
+			builder: (context) => StatefulBuilder(
+				builder: (context, setDialogState) => AdaptiveActionSheet(
+					title: const Text('History filters'),
+					message: DefaultTextStyle(
+						style: DefaultTextStyle.of(context).style,
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								const SizedBox(height: 16),
+								SizedBox(
+									width: 200,
+									child: AdaptiveTextField(
+										controller: controller,
+										placeholder: 'Query',
+										onChanged: (_) => anyChange = true
+									)
+								),
+								const SizedBox(height: 16),
+								Row(
+									mainAxisAlignment: MainAxisAlignment.center,
+									children: [
+										AdaptiveFilledButton(
+											padding: const EdgeInsets.all(8),
+											onPressed: () async {
+												final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+													builder: (ctx) => BoardSwitcherPage(
+														initialImageboardKey: _filterBoard?.imageboard.key
+													)
+												));
+												if (newBoard != null) {
+													_filterBoard = newBoard;
+													setDialogState(() {});
+													anyChange = true;
+												}
+											},
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: _filterBoard == null ? const [
+													Text('Board: any')
+												] : [
+													const Text('Board: '),
+													ImageboardIcon(
+														imageboardKey: _filterBoard!.imageboard.key,
+														boardName: _filterBoard!.item.name
+													),
+													const SizedBox(width: 8),
+													Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
+												]
+											)
+										),
+										if (_filterBoard != null) AdaptiveIconButton(
+											onPressed: () {
+												_filterBoard = null;
+												anyChange = true;
+												setDialogState(() {});
+											},
+											icon: const Icon(CupertinoIcons.xmark)
+										)
+									]
+								),
+								const SizedBox(height: 16),
+								AdaptiveFilledButton(
+									padding: const EdgeInsets.all(8),
+									onPressed: () async {
+										_filterDateStart = (await pickDate(
+											context: context,
+											initialDate: _filterDateStart
+										))?.startOfDay;
+										setDialogState(() {});
+										anyChange = true;
+									},
+									child: Text(_filterDateStart == null ? 'Pick Start Date' : 'Start Date: ${_filterDateStart?.toISO8601Date}')
+								),
+								const SizedBox(height: 16),
+								AdaptiveFilledButton(
+									padding: const EdgeInsets.all(8),
+									onPressed: () async {
+										_filterDateEnd = (await pickDate(
+											context: context,
+											initialDate: _filterDateEnd
+										))?.endOfDay;
+										setDialogState(() {});
+										anyChange = true;
+									},
+									child: Text(_filterDateEnd == null ? 'Pick End Date' : 'End Date: ${_filterDateEnd?.toISO8601Date}')
+								),
+								const SizedBox(height: 16),
+								AdaptiveSegmentedControl<NullSafeOptional>(
+									groupValue: _filterIsThread.value,
+									children: const {
+										NullSafeOptional.false_: (null, 'Only replies'),
+										NullSafeOptional.null_: (null, 'Any'),
+										NullSafeOptional.true_: (null, 'Only threads')
+									},
+									onValueChanged: (v) {
+										_filterIsThread = v.value;
+										setDialogState(() {});
+										anyChange = true;
+									}
+								),
+								const SizedBox(height: 16),
+								AdaptiveSegmentedControl<NullSafeOptional>(
+									groupValue: _filterHasAttachment.value,
+									children: const {
+										NullSafeOptional.false_: (null, 'Only without attachment(s)'),
+										NullSafeOptional.null_: (null, 'Any'),
+										NullSafeOptional.true_: (null, 'Only with attachment(s)')
+									},
+									onValueChanged: (v) {
+										_filterHasAttachment = v.value;
+										setDialogState(() {});
+										anyChange = true;
+									}
+								),
+								const SizedBox(height: 16),
+								AdaptiveSegmentedControl<NullSafeOptional>(
+									groupValue: _filterContainsLink.value,
+									children: const {
+										NullSafeOptional.false_: (null, 'Only without link(s)'),
+										NullSafeOptional.null_: (null, 'Any'),
+										NullSafeOptional.true_: (null, 'Only with link(s)')
+									},
+									onValueChanged: (v) {
+										_filterContainsLink = v.value;
+										setDialogState(() {});
+										anyChange = true;
+									}
+								),
+								const SizedBox(height: 16),
+								AdaptiveSegmentedControl<_FilterSavedThreadsOnly>(
+									groupValue: _filterSavedThreadsOnly,
+									children: const {
+										_FilterSavedThreadsOnly.notSavedThreads: (null, 'Only unsaved threads'),
+										_FilterSavedThreadsOnly.everything: (null, 'Any'),
+										_FilterSavedThreadsOnly.savedThreads: (null, 'Only saved threads'),
+									},
+									onValueChanged: (v) {
+										_filterSavedThreadsOnly = v;
+										setDialogState(() {});
+										anyChange = true;
+									}
+								),
+								const SizedBox(height: 16),
+								AdaptiveSegmentedControl<_FilterYourPostsOnly>(
+									groupValue: _filterYourPostsOnly,
+									children: const {
+										_FilterYourPostsOnly.notYourPosts: (null, 'Only others\' posts'),
+										_FilterYourPostsOnly.everything: (null, 'Any'),
+										_FilterYourPostsOnly.yourPosts: (null, 'Only your posts'),
+										_FilterYourPostsOnly.repliesToYourPosts: (null, 'Only replies to your posts'),
+									},
+									onValueChanged: (v) {
+										_filterYourPostsOnly = v;
+										setDialogState(() {});
+										anyChange = true;
+									}
+								)
+							]
+						)
+					),
+					actions: [
+						AdaptiveActionSheetAction(
+							onPressed: () => Navigator.pop(context),
+							child: const Text('Done')
+						)
+					]
+				)
+			)
+		);
+		_query = controller.text;
+		if (anyChange) {
+			setState(() {
+				results = null;
+			});
+			_runQuery();
+		}
 	}
 
 	@override
@@ -420,188 +609,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				actions: [
 					AdaptiveIconButton(
 						minSize: 0,
-						onPressed: () async {
-							bool anyChange = false;
-							final controller = TextEditingController(text: _query);
-							await showAdaptiveModalPopup(
-								context: context,
-								builder: (context) => StatefulBuilder(
-									builder: (context, setDialogState) => AdaptiveActionSheet(
-										title: const Text('History filters'),
-										message: DefaultTextStyle(
-											style: DefaultTextStyle.of(context).style,
-											child: Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													const SizedBox(height: 16),
-													SizedBox(
-														width: 200,
-														child: AdaptiveTextField(
-															controller: controller,
-															placeholder: 'Query',
-															onChanged: (_) => anyChange = true
-														)
-													),
-													const SizedBox(height: 16),
-													Row(
-														mainAxisAlignment: MainAxisAlignment.center,
-														children: [
-															AdaptiveFilledButton(
-																padding: const EdgeInsets.all(8),
-																onPressed: () async {
-																	final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-																		builder: (ctx) => BoardSwitcherPage(
-																			initialImageboardKey: _filterBoard?.imageboard.key
-																		)
-																	));
-																	if (newBoard != null) {
-																		_filterBoard = newBoard;
-																		setDialogState(() {});
-																		anyChange = true;
-																	}
-																},
-																child: Row(
-																	mainAxisSize: MainAxisSize.min,
-																	children: _filterBoard == null ? const [
-																		Text('Board: any')
-																	] : [
-																		const Text('Board: '),
-																		ImageboardIcon(
-																			imageboardKey: _filterBoard!.imageboard.key,
-																			boardName: _filterBoard!.item.name
-																		),
-																		const SizedBox(width: 8),
-																		Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
-																	]
-																)
-															),
-															if (_filterBoard != null) AdaptiveIconButton(
-																onPressed: () {
-																	_filterBoard = null;
-																	anyChange = true;
-																	setDialogState(() {});
-																},
-																icon: const Icon(CupertinoIcons.xmark)
-															)
-														]
-													),
-													const SizedBox(height: 16),
-													AdaptiveFilledButton(
-														padding: const EdgeInsets.all(8),
-														onPressed: () async {
-															_filterDateStart = (await pickDate(
-																context: context,
-																initialDate: _filterDateStart
-															))?.startOfDay;
-															setDialogState(() {});
-															anyChange = true;
-														},
-														child: Text(_filterDateStart == null ? 'Pick Start Date' : 'Start Date: ${_filterDateStart?.toISO8601Date}')
-													),
-													const SizedBox(height: 16),
-													AdaptiveFilledButton(
-														padding: const EdgeInsets.all(8),
-														onPressed: () async {
-															_filterDateEnd = (await pickDate(
-																context: context,
-																initialDate: _filterDateEnd
-															))?.endOfDay;
-															setDialogState(() {});
-															anyChange = true;
-														},
-														child: Text(_filterDateEnd == null ? 'Pick End Date' : 'End Date: ${_filterDateEnd?.toISO8601Date}')
-													),
-													const SizedBox(height: 16),
-													AdaptiveSegmentedControl<NullSafeOptional>(
-														groupValue: _filterIsThread.value,
-														children: const {
-															NullSafeOptional.false_: (null, 'Only replies'),
-															NullSafeOptional.null_: (null, 'Any'),
-															NullSafeOptional.true_: (null, 'Only threads')
-														},
-														onValueChanged: (v) {
-															_filterIsThread = v.value;
-															setDialogState(() {});
-															anyChange = true;
-														}
-													),
-													const SizedBox(height: 16),
-													AdaptiveSegmentedControl<NullSafeOptional>(
-														groupValue: _filterHasAttachment.value,
-														children: const {
-															NullSafeOptional.false_: (null, 'Only without attachment(s)'),
-															NullSafeOptional.null_: (null, 'Any'),
-															NullSafeOptional.true_: (null, 'Only with attachment(s)')
-														},
-														onValueChanged: (v) {
-															_filterHasAttachment = v.value;
-															setDialogState(() {});
-															anyChange = true;
-														}
-													),
-													const SizedBox(height: 16),
-													AdaptiveSegmentedControl<NullSafeOptional>(
-														groupValue: _filterContainsLink.value,
-														children: const {
-															NullSafeOptional.false_: (null, 'Only without link(s)'),
-															NullSafeOptional.null_: (null, 'Any'),
-															NullSafeOptional.true_: (null, 'Only with link(s)')
-														},
-														onValueChanged: (v) {
-															_filterContainsLink = v.value;
-															setDialogState(() {});
-															anyChange = true;
-														}
-													),
-													const SizedBox(height: 16),
-													AdaptiveSegmentedControl<_FilterSavedThreadsOnly>(
-														groupValue: _filterSavedThreadsOnly,
-														children: const {
-															_FilterSavedThreadsOnly.notSavedThreads: (null, 'Only unsaved threads'),
-															_FilterSavedThreadsOnly.everything: (null, 'Any'),
-															_FilterSavedThreadsOnly.savedThreads: (null, 'Only saved threads'),
-														},
-														onValueChanged: (v) {
-															_filterSavedThreadsOnly = v;
-															setDialogState(() {});
-															anyChange = true;
-														}
-													),
-													const SizedBox(height: 16),
-													AdaptiveSegmentedControl<_FilterYourPostsOnly>(
-														groupValue: _filterYourPostsOnly,
-														children: const {
-															_FilterYourPostsOnly.notYourPosts: (null, 'Only others\' posts'),
-															_FilterYourPostsOnly.everything: (null, 'Any'),
-															_FilterYourPostsOnly.yourPosts: (null, 'Only your posts'),
-															_FilterYourPostsOnly.repliesToYourPosts: (null, 'Only replies to your posts'),
-														},
-														onValueChanged: (v) {
-															_filterYourPostsOnly = v;
-															setDialogState(() {});
-															anyChange = true;
-														}
-													)
-												]
-											)
-										),
-										actions: [
-											AdaptiveActionSheetAction(
-												onPressed: () => Navigator.pop(context),
-												child: const Text('Done')
-											)
-										]
-									)
-								)
-							);
-							_query = controller.text;
-							if (anyChange) {
-								setState(() {
-									results = null;
-								});
-								_runQuery();
-							}
-						},
+						onPressed: _editQuery,
 						icon: const Icon(CupertinoIcons.slider_horizontal_3)
 					)
 				]
