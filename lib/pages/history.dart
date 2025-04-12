@@ -333,7 +333,10 @@ class HistoryPageState extends State<HistoryPage> {
 																semanticParentIds: [-3],
 																heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 															);
-														}
+														},
+														onThumbnailLoadError: (e, st) {
+															// ignore
+														},
 													)
 												)
 											),
