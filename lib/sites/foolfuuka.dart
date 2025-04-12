@@ -187,6 +187,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			if (url.host.isEmpty) {
 				url = Uri.https(baseUrl, url.toString());
 			}
+			if (url.host == 'arch.b4k.co') {
+				// They forgot to rewrite their urls
+				url = url.replace(host: 'arch.b4k.dev');
+			}
 			if (thumbnailUrl.host.isEmpty) {
 				thumbnailUrl = Uri.https(baseUrl, thumbnailUrl.toString());
 			}
