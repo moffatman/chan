@@ -25,6 +25,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/reply_box.dart';
@@ -1253,7 +1254,14 @@ class _GalleryPageState extends State<GalleryPage> {
 																	settings: weakSettings
 																));
 															},
-															icon: const Icon(CupertinoIcons.reply)
+															icon: AnimatedBuilder(
+																animation: _currentAttachmentChanged,
+																builder: (context, _) => StationaryNotifyingIcon(
+																	primary: 0,
+																	secondary: _replyCounts[currentAttachment.attachment] ?? 0,
+																	icon: const Icon(CupertinoIcons.reply)
+																)
+															)
 														),
 														if (onThreadSelected != null && showChrome) AnimatedBuilder(
 															animation: _currentAttachmentChanged,
