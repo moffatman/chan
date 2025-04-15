@@ -133,6 +133,17 @@ extension on GallerySavePathOrganizing {
 		if (override != null) {
 			return override.split('/');
 		}
+		if (attachment.board.isEmpty
+		    && attachment.threadId == null
+				&& attachment.thumbnailUrl.isEmpty
+				&& this != GallerySavePathOrganizing.noFolder
+				&& this != GallerySavePathOrganizing.noSubfolders) {
+			// This is a fake attachment used to browse random images
+			// Just put it in a host specific folder. Like catbox.moe?
+			return [
+				if (Uri.tryParse(attachment.url)?.host.nonEmptyOrNull case String host) host
+			];
+		}
 		switch (this) {
 			case GallerySavePathOrganizing.noFolder:
 			case GallerySavePathOrganizing.noSubfolders:
@@ -177,6 +188,11 @@ extension on GallerySavePathOrganizing {
 		final override = controller.imageboard.persistence.browserState.downloadSubfoldersPerBoard[controller.attachment.boardKey];
 		if (override != null) {
 			return override;
+		}
+		if (controller.attachment.board.isEmpty && controller.attachment.threadId == null && controller.attachment.thumbnailUrl.isEmpty) {
+			// This is a fake attachment used to browse random images
+			// Just put it in a general folder
+			return _kDeviceGalleryAlbumName;
 		}
 		return switch (this) {
 			GallerySavePathOrganizing.noFolder => null,
