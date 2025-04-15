@@ -1440,6 +1440,19 @@ class AttachmentViewer extends StatelessWidget {
 					),
 					rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
 					loadStateChanged: (loadstate) {
+						void tryUpdatingAttachment() {
+							if (attachment.width != null && attachment.height != null) {
+								return;
+							}
+							final image = loadstate.extendedImageInfo?.image;
+							if (image != null) {
+								attachment.width ??= image.width;
+								attachment.height ??= image.height;
+								// Now we know the dimensions of the image, maybe we want to allow more zoom
+								final aspectRatio = attachment.aspectRatio;
+								controller.gestureKey.currentState?.imageGestureConfig?.maxScale = 5 * max(aspectRatio, 1/aspectRatio);
+							}
+						}
 						// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
 						if (!controller.cacheCompleted || showLoadingProgress || loadstate.extendedImageLoadState == LoadState.failed) {
 							if (loadstate.extendedImageLoadState == LoadState.failed && controller.isFullResolution) {
@@ -1462,6 +1475,7 @@ class AttachmentViewer extends StatelessWidget {
 									_ => loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!
 								};
 								if ((source != Uri.parse(attachment.thumbnailUrl)) && loadingValue == 1) {
+									tryUpdatingAttachment();
 									getCachedImageFile(source.toString()).then((file) {
 										if (file != null) {
 											controller._onCacheCompleted(file);
@@ -1539,6 +1553,15 @@ class AttachmentViewer extends StatelessWidget {
 								]
 							);
 						}
+						else if (
+							// We may load an anonymous image from disk cache, if we loaded it before
+							// But the fakeAttachment will be new, need to re-fill its fields
+							controller.cacheCompleted
+							&& loadstate.extendedImageLoadState == LoadState.completed
+							&& source.toString() != attachment.thumbnailUrl
+						) {
+							tryUpdatingAttachment();
+						}
 						return null;
 					},
 					initGestureConfigHandler: (state) {
@@ -1548,7 +1571,8 @@ class AttachmentViewer extends StatelessWidget {
 								if (details?.totalScale != null) {
 									onScaleChanged?.call(details!.totalScale!);
 								}
-							}
+							},
+							maxScale: 5 * attachment.aspectRatio
 						);
 					},
 					heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null
