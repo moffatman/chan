@@ -278,7 +278,7 @@ class HistoryPageState extends State<HistoryPage> {
 												isDestructiveAction: true
 											),
 											ContextMenuAction(
-												child: const Text('Remove'),
+												child: const Text('Delete'),
 												onPressed: () async {
 													final watch = state.threadWatch;
 													if (watch != null) {
@@ -300,7 +300,7 @@ class HistoryPageState extends State<HistoryPage> {
 														);
 													}
 												},
-												trailingIcon: CupertinoIcons.xmark,
+												trailingIcon: CupertinoIcons.trash,
 												isDestructiveAction: true
 											)
 										],
