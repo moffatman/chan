@@ -26,6 +26,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -192,36 +193,54 @@ Future<String?> chooseAndroidPicker(BuildContext context) async {
 	return null;
 }
 
+Future<String?> _galleryPicker(BuildContext context) async {
+	String? androidPackage;
+	if (Platform.isAndroid) {
+		try {
+			androidPackage = Settings.instance.androidGalleryPicker ??= await chooseAndroidPicker(context);
+			if (androidPackage == null) {
+				// User cancelled
+				return null;
+			}
+		}
+		catch (e, st) {
+			// Who knows what could go wrong here. Don't break the picker, just fallback to default picker (null)
+			Future.error(e, st); // crashlytics
+		}
+	}
+	try {
+		final result = await FilePicker.platform.pickFiles(
+			type: FileType.media,
+			compressionQuality: 0,
+			allowCompression: false,
+			androidPackage: androidPackage?.nonEmptyOrNull
+		);
+		final path = await _stripFileTimestamp(result?.files.trySingle?.path);
+		return _copyFileToSafeLocation(path);
+	}
+	on PlatformException catch (e) {
+		if (e.code == 'invalid_format_type' && (androidPackage?.isNotEmpty ?? false) && context.mounted) {
+			// Probably they uninstalled their old picker
+			showToast(
+				context: context,
+				message: 'Previous picker unavailable',
+				icon: Adaptive.icons.photo
+			);
+			// Try again without a default
+			Settings.instance.androidGalleryPicker = null;
+			return await _galleryPicker(context);
+		}
+		rethrow;
+	}
+}
+
 List<AttachmentPickingSource> getAttachmentSources({
 	required bool includeClipboard
 }) {
 	final gallery = AttachmentPickingSource(
 		name: 'Gallery',
 		icon: Adaptive.icons.photo,
-		pick: (context) async {
-			String? androidPackage;
-			if (Platform.isAndroid) {
-				try {
-					androidPackage = Settings.instance.androidGalleryPicker ??= await chooseAndroidPicker(context);
-					if (androidPackage == null) {
-						// User cancelled
-						return null;
-					}
-				}
-				catch (e, st) {
-					// Who knows what could go wrong here. Don't break the picker, just fallback to default picker (null)
-					Future.error(e, st); // crashlytics
-				}
-			}
-			final result = await FilePicker.platform.pickFiles(
-				type: FileType.media,
-				compressionQuality: 0,
-				allowCompression: false,
-				androidPackage: androidPackage?.nonEmptyOrNull
-			);
-			final path = await _stripFileTimestamp(result?.files.trySingle?.path);
-			return _copyFileToSafeLocation(path);
-		},
+		pick: _galleryPicker,
 		onLongPress: (context) async {
 			final choice = await chooseAndroidPicker(context);
 			if (choice != null) {
