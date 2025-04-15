@@ -92,6 +92,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late List<ImageboardScoped<ImageboardBoard>> boards;
 	static final typeaheads = <Imageboard, Trie<List<ImageboardBoard>>>{};
 	static final typeaheadLoadings = <Imageboard, Set<String>>{};
+	static final boardsRefreshed = <Imageboard>{};
 	String searchString = '';
 	late final ScrollController scrollController;
 	late final ValueNotifier<Color?> _backgroundColor;
@@ -144,6 +145,16 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 	}
 
+	Future<void> _maybeRefreshBoards() async {
+		final imageboard = currentImageboard;
+		if (boardsRefreshed.contains(imageboard)) {
+			// Don't refresh again
+			return;
+		}
+		await imageboard.refreshBoards();
+		boardsRefreshed.add(imageboard);
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -155,7 +166,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (currentImageboardIndex == -1) {
 			currentImageboardIndex = 0;
 		}
-		currentImageboard.refreshBoards();
+		_maybeRefreshBoards();
 		_fetchBoards();
 		scrollController.addListener(_onScroll);
 		if (Settings.instance.boardSwitcherHasKeyboardFocus) {
@@ -1093,7 +1104,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																setState(() {
 																	currentImageboardIndex--;
 																});
-																currentImageboard.refreshBoards();
+																_maybeRefreshBoards();
 															},
 															icon: const Icon(CupertinoIcons.chevron_left)
 														),
@@ -1117,7 +1128,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																setState(() {
 																	currentImageboardIndex++;
 																});
-																currentImageboard.refreshBoards();
+																_maybeRefreshBoards();
 															},
 															icon: const Icon(CupertinoIcons.chevron_right)
 														)
