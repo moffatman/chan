@@ -38,18 +38,30 @@
                <action android:name="android.intent.action.VIEW" />
                <category android:name="android.intent.category.DEFAULT" />
                <category android:name="android.intent.category.BROWSABLE" />
+               <!-- 1500chan -->
+               <data android:scheme="https" android:host="1500chan.org"/>
                <!-- 2chan -->
                <data android:scheme="https" android:host="*.2chan.net"/>
                <!-- 4chan -->
                <data android:scheme="https" android:host="boards.4chan.org"/>
+               <data android:scheme="https" android:host="archive.4plebs.org"/>
                <data android:scheme="https" android:host="archive.palanq.win"/>
                <data android:scheme="https" android:host="desuarchive.org"/>
                <data android:scheme="https" android:host="boards.fireden.net"/>
                <data android:scheme="https" android:host="archived.moe"/>
                <data android:scheme="https" android:host="arch.b4k.co"/>
+               <data android:scheme="https" android:host="arch.b4k.dev"/>
                <data android:scheme="https" android:host="thebarchive.com"/>
                <data android:scheme="https" android:host="archiveofsins.com"/>
                <data android:scheme="https" android:host="warosu.org"/>
+               <!-- 8chan -->
+               <data android:scheme="https" android:host="8chan.moe"/>
+               <!-- 8kun -->
+               <data android:scheme="https" android:host="8kun.top"/>
+               <!-- 9ch -->
+               <data android:scheme="https" android:host="9ch.site"/>
+               <!-- alogsspace -->
+               <data android:scheme="https" android:host="alogs.space"/>
                <!-- dvach -->
                <data android:scheme="https" android:host="2ch.hk"/>
                <!-- endchan -->
@@ -60,16 +72,45 @@
                <data android:scheme="https" android:host="frenschan.org"/>
                <!-- hackernews -->
                <data android:scheme="https" android:host="news.ycombinator.com"/>
-               <!-- kind -->
-               <data android:scheme="https" android:host="kind.moe"/>
+               <!-- holotower -->
+               <data android:scheme="https" android:host="holotower.org"/>
+               <!-- ign -->
+               <data android:scheme="https" android:host="www.ignboards.com"/>
+               <!-- karachan -->
+               <data android:scheme="https" android:host="karachan.org"/>
+               <!-- kissu -->
+               <data android:scheme="https" android:host="original.kissu.moe"/>
+               <!-- kohlchan -->
+               <data android:scheme="https" android:host="kohlchan.net"/>
                <!-- lainchan  -->
                <data android:scheme="https" android:host="lainchan.org"/>
+               <!-- looksmax -->
+               <data android:scheme="https" android:host="looksmax.org"/>
+               <!-- macrumors -->
+               <data android:scheme="https" android:host="forums.macrumors.com"/>
+               <!-- mintboard -->
+               <data android:scheme="https" android:host="mintboard.org"/>
                <!-- reddit -->
                <data android:scheme="https" android:host="reddit.com"/>
                <data android:scheme="https" android:host="*.reddit.com"/>
                <data android:scheme="https" android:host="reddit.app.link"/>
                <!-- soyjak -->
-               <data android:scheme="https" android:host="soyjak.party"/>
+               <data android:scheme="https" android:host="soyjak.st"/>
+               <data android:scheme="https" android:host="*.soyjak.st"/>
+               <!-- sportschan -->
+               <data android:scheme="https" android:host="sportschan.org"/>
+               <!-- thecoli -->
+               <data android:scheme="https" android:host="thecoli.com"/>
+               <!-- trashchan -->
+               <data android:scheme="https" android:host="trashchan.xyz"/>
+               <!-- tvchan -->
+               <data android:scheme="https" android:host="tvch.moe"/>
+               <!-- uboachan -->
+               <data android:scheme="https" android:host="uboachan.net"/>
+               <!-- urbantoronto -->
+               <data android:scheme="https" android:host="urbantoronto.ca"/>
+               <!-- wizchan -->
+               <data android:scheme="https" android:host="wizchan.org"/>
                <!-- voidchan -->
                <data android:scheme="https" android:host="voidchan.net"/>
             </intent-filter>
