@@ -22,6 +22,7 @@ class OverscrollModalPage extends StatefulWidget {
 	final bool reverse;
 	final ValueChanged<AxisDirection>? onPop;
 	final Widget Function(Widget child) selectionAreaBuilder;
+	final VoidCallback? onSlowScroll;
 
 	const OverscrollModalPage({
 		required this.child,
@@ -32,6 +33,7 @@ class OverscrollModalPage extends StatefulWidget {
 		this.reverse = false,
 		this.onPop,
 		this.selectionAreaBuilder = identity,
+		this.onSlowScroll,
 		super.key
 	}) : sliver = null;
 
@@ -44,6 +46,7 @@ class OverscrollModalPage extends StatefulWidget {
 		this.reverse = false,
 		this.onPop,
 		this.selectionAreaBuilder = identity,
+		this.onSlowScroll,
 		super.key
 	}) : child = null;
 
@@ -61,6 +64,7 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 	late final ValueNotifierAnimation<double> _opacity;
 	bool _popping = false;
 	bool _finishedPopIn = false;
+	final slowScrolls = BufferedListenable(const Duration(milliseconds: 100));
 
 	@override
 	void initState() {
@@ -69,6 +73,22 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 		_scrollStopPosition = -1 * min(150.0 + widget.heightEstimate, context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height / 2);
 		_controller = ScrollController(initialScrollOffset: Settings.instance.showAnimations ? _scrollStopPosition : 0);
 		_controller.addListener(_onScrollUpdate);
+		if (widget.onSlowScroll case VoidCallback onSlowScroll) {
+			slowScrolls.addListener(onSlowScroll);
+		}
+	}
+
+	@override
+	void didUpdateWidget(OverscrollModalPage oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.onSlowScroll != oldWidget.onSlowScroll) {
+			if (oldWidget.onSlowScroll case VoidCallback onSlowScroll) {
+				slowScrolls.removeListener(onSlowScroll);
+			}
+			if (widget.onSlowScroll case VoidCallback onSlowScroll) {
+				slowScrolls.addListener(onSlowScroll);
+			}
+		}
 	}
 
 	Future<void> animateToProportion(double factor) async {
@@ -96,6 +116,7 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 				});
 			}
 		}
+		slowScrolls.didUpdate();
 	}
 
 	void _onPointerDown(PointerEvent event) {
@@ -293,6 +314,7 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 		super.dispose();
 		_controller.dispose();
 		_opacity.dispose();
+		slowScrolls.dispose();
 	}
 }
 

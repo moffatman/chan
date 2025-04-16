@@ -71,7 +71,9 @@ class PostsPage extends StatefulWidget {
 class _PostsPageState extends State<PostsPage> {
 	int _forceRebuildId = 0;
 	final List<_PostsPageItem> replies = [];
-	Map<Post, BuildContext> postContexts = {};
+	final Map<Attachment, int> attachmentsToPostIds = {};
+	final Map<int, BuildContext> postContexts = {};
+	final Set<int> unseenPostIds = {};
 
 	@override
 	void initState() {
@@ -82,6 +84,25 @@ class _PostsPageState extends State<PostsPage> {
 			// If there are only stubs, load them upon opening
 			_onTapStub(replies.last);
 		}
+		// To process initial view
+		unseenPostIds.addAll(widget.postsIdsToShow);
+		if (widget.zone.onPostSeen != null) {
+			Future.microtask(_onSlowScroll);
+		}
+	}
+
+	void _onSlowScroll() {
+		final ourBounds = context.globalPaintBounds;
+		if (ourBounds == null) {
+			return;
+		}
+		unseenPostIds.removeWhere((id) {
+			if (postContexts[id]?.globalPaintBounds?.overlaps(ourBounds) ?? false) {
+				widget.zone.onPostSeen?.call(id);
+				return true;
+			}
+			return false;
+		});
 	}
 
 	void _onZoneUpdate() {
@@ -120,6 +141,9 @@ class _PostsPageState extends State<PostsPage> {
 					)));
 				}
 				else {
+					for (final attachment in matchingPost.attachments) {
+						attachmentsToPostIds[attachment] = id;
+					}
 					replies.add(_PostsPageItem.post(matchingPost));
 				}
 			}
@@ -136,6 +160,9 @@ class _PostsPageState extends State<PostsPage> {
 			else {
 				final archivedPost = widget.zone.crossThreadPostFromArchive(widget.zone.board, id);
 				if (archivedPost != null) {
+					for (final attachment in archivedPost.attachments) {
+						attachmentsToPostIds[attachment] = id;
+					}
 					replies.add(_PostsPageItem.post(archivedPost));
 				}
 			}
@@ -189,6 +216,7 @@ class _PostsPageState extends State<PostsPage> {
 						isRepliesForPostThreadState?.postIdsToStartRepliesAtBottom.data.remove(isRepliesForPostId);
 					}
 				},
+				onSlowScroll: widget.zone.onPostSeen == null ? null : _onSlowScroll,
 				sliver: SliverList(
 					delegate: SliverDontRebuildChildBuilderDelegate(
 						addRepaintBoundaries: false,
@@ -323,8 +351,8 @@ class _PostsPageState extends State<PostsPage> {
 												)
 											);
 										}
-									) : const Text('Missing post')) : BuildContextMapRegistrant(
-										value: reply.post!,
+									) : const Text('Missing post')) : BuildContextMapRegistrant<int>(
+										value: reply.post!.id,
 										map: postContexts,
 										child: PostRow(
 											post: reply.post!,
@@ -345,9 +373,9 @@ class _PostsPageState extends State<PostsPage> {
 													initialAttachment: attachment,
 													semanticParentIds: subzone.stackIds,
 													onChange: (attachment) {
-														final match = postContexts.entries.tryFirstWhere((p) => p.key.attachments.contains(attachment));
-														if (match != null) {
-															Scrollable.ensureVisible(match.value, alignment: 0.5, duration: const Duration(milliseconds: 200));
+														final context = postContexts[attachmentsToPostIds[attachment]];
+														if (context != null) {
+															Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
 														}
 													},
 													heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails

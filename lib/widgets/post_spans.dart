@@ -1990,6 +1990,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	Imageboard get imageboard;
 	Iterable<int> get stackIds;
 	ValueChanged<Post>? get onNeedScrollToPost;
+	ValueChanged<int>? get onPostSeen;
 	bool Function(int postId)? get isPostOnscreen;
 	void Function(int postId, bool glow)? get glowOtherPost;
 	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems;
@@ -2260,6 +2261,9 @@ class _PostSpanChildZoneData extends PostSpanZoneData {
 	bool Function(int)? get isPostOnscreen => parent.isPostOnscreen;
 
 	@override
+	ValueChanged<int>? get onPostSeen => parent.onPostSeen;
+
+	@override
 	void Function(int, bool)? get glowOtherPost => parent.glowOtherPost;
 
 	@override
@@ -2346,6 +2350,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	final bool Function(int)? isPostOnscreen;
 	@override
+	final ValueChanged<int>? onPostSeen;
+	@override
 	final void Function(int, bool)? glowOtherPost;
 	@override
 	Future<void> Function(List<ParentAndChildIdentifier>)? onNeedUpdateWithStubItems;
@@ -2369,6 +2375,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		this.onNeedScrollToPost,
 		this.onPostLoadedFromArchive,
 		this.isPostOnscreen,
+		this.onPostSeen,
 		this.glowOtherPost,
 		this.onNeedUpdateWithStubItems,
 		this.semanticRootIds = const [],
@@ -2385,6 +2392,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		this.onNeedScrollToPost,
 		this.onPostLoadedFromArchive,
 		this.isPostOnscreen,
+		this.onPostSeen,
 		this.glowOtherPost,
 		this.onNeedUpdateWithStubItems,
 		this.semanticRootIds = const [],

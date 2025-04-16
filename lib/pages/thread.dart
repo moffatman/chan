@@ -465,25 +465,25 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	void _onSlowScroll() {
-		final lastItem = _listController.lastVisibleItem;
+		final lastIndex = _listController.lastVisibleIndex;
 		_checkForeground();
-		if (persistentState.thread != null && !blocked && lastItem != null && _foreground) {
+		if (persistentState.thread != null && !blocked && lastIndex != -1 && _foreground) {
+			final lastItem = _listController.getItem(lastIndex);
 			final newLastSeen = lastItem.id;
 			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
 				persistentState.lastSeenPostId = newLastSeen;
 				runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 			}
-			final firstItem = _listController.firstVisibleItem;
-			if (firstItem != null) {
+			final firstIndex = _listController.firstVisibleIndex;
+			if (firstIndex != -1) {
+				final firstItem = _listController.getItem(firstIndex);
 				if (persistentState.firstVisiblePostId != firstItem.item.id) {
 					runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 				}
 				persistentState.firstVisiblePostId = firstItem.item.id;
-				persistentState.firstVisiblePostAlignment = firstItem.alignment;
+				persistentState.firstVisiblePostAlignment = _listController.getItemAlignment(firstIndex);
 			}
-			final firstIndex = _indicatorKey.currentState?.furthestSeenIndexTop;
-			final lastIndex = _indicatorKey.currentState?.furthestSeenIndexBottom;
-			if (firstIndex != null && lastIndex != null && firstIndex <= lastIndex) {
+			if (firstIndex != -1 && lastIndex != -1 && firstIndex <= lastIndex) {
 				final items = _listController.items.toList();
 				final firstIndexClamped = firstIndex.clamp(0, items.length - 1);
 				final seenIds = items.sublist(firstIndexClamped, lastIndex.clamp(firstIndexClamped, items.length - 1) + 1).where((p) => !_listController.isItemHidden(p).isHidden).map((p) => p.item.id);
@@ -580,6 +580,12 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
+	void _onPostSeenFromZone(int id) {
+		persistentState.unseenPostIds.data.remove(id);
+		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+		_indicatorKey.currentState?._updateCounts();
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -646,6 +652,7 @@ class ThreadPageState extends State<ThreadPage> {
 				}
 				return _listController.isOnscreen(post);
 			},
+			onPostSeen: _onPostSeenFromZone,
 			glowOtherPost: (id, glow) {
 				if (glow) {
 					_glowingPostId = id;
@@ -727,6 +734,7 @@ class ThreadPageState extends State<ThreadPage> {
 				onPostLoadedFromArchive: oldZone.onPostLoadedFromArchive,
 				isPostOnscreen: oldZone.isPostOnscreen,
 				glowOtherPost: oldZone.glowOtherPost,
+				onPostSeen: oldZone.onPostSeen,
 				onNeedUpdateWithStubItems: oldZone.onNeedUpdateWithStubItems,
 				semanticRootIds: [widget.boardSemanticId, 0],
 				style: oldZone.style
@@ -2102,8 +2110,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 	List<Post>? _filteredPosts;
 	List<RefreshableListItem<Post>>? _filteredItems;
 	List<int> _youIds = [];
-	int? _lastLastVisibleItemId;
-	int _lastLastSeenPostId = 0;
 	int _redCountAbove = 0;
 	int _redCountBelow = 0;
 	int _whiteCountAbove = 0;
@@ -2112,8 +2118,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 	Timer? _waitForRebuildTimer;
 	late final AnimationController _buttonsAnimationController;
 	late final Animation<double> _buttonsAnimation;
-	int furthestSeenIndexTop = 9999999;
-	int furthestSeenIndexBottom = 0;
 	int _lastListControllerItemsLength = 0;
 	int _lastFirstVisibleIndex = -1;
 	int _lastLastVisibleIndex = -1;
@@ -2129,8 +2133,9 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final site = context.read<ImageboardSite>();
 		await WidgetsBinding.instance.endOfFrame;
 		if (!mounted) return false;
+		final firstVisibleIndex = widget.listController.firstVisibleIndex;
 		final lastVisibleIndex = widget.listController.lastVisibleIndex;
-		if (lastVisibleIndex == -1 || (!widget.useTree && _filteredPosts == null) || (widget.useTree && _filteredItems == null)) {
+		if (firstVisibleIndex == -1 || lastVisibleIndex == -1 || (!widget.useTree && _filteredPosts == null) || (widget.useTree && _filteredItems == null)) {
 			if (!_useCatalogCache) {
 				return false;
 			}
@@ -2160,76 +2165,31 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			setState(() {});
 			return false;
 		}
-		final lastVisibleItemId = widget.listController.getItem(lastVisibleIndex).item.id;
 		_youIds = widget.persistentState.replyIdsToYou() ?? [];
-		if (widget.useTree) {
-			final items = widget.listController.items.toList();
-			final greyBelow = <int>{};
-			final whiteAbove = <int>{};
-			final whiteBelow = <int>{};
-			final redAbove = <int>{};
-			final redBelow = <int>{};
-			if (!widget.passedFirstLoad) {
-				_whiteCountBelow = max(0, (site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0) - (widget.thread?.replyCount ?? 0));
+		final items = widget.listController.items.toList();
+		final greyBelow = <int>{};
+		final whiteAbove = <int>{};
+		final whiteBelow = <int>{};
+		final redAbove = <int>{};
+		final redBelow = <int>{};
+		if (!widget.passedFirstLoad) {
+			_whiteCountBelow = max(0, (site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0) - (widget.thread?.replyCount ?? 0));
+		}
+		else {
+			_whiteCountBelow = 0;
+		}
+		// TODO: Determine if this needs to be / can be memoized
+		for (int i = 0; i < items.length - 1; i++) {
+			if (widget.listController.isItemHidden(items[i]).isDuplicate) {
+				continue;
 			}
-			else {
-				_whiteCountBelow = 0;
+			if (items[i].item.isPageStub) {
+				continue;
 			}
-			// TODO: Determine if this needs to be / can be memoized
-			for (int i = 0; i < items.length - 1; i++) {
-				if (widget.listController.isItemHidden(items[i]).isDuplicate) {
-					continue;
-				}
-				if (items[i].item.isPageStub) {
-					continue;
-				}
-				if (i > furthestSeenIndexBottom) {
-					if (items[i].representsKnownStubChildren.isNotEmpty) {
-						for (final stubChild in items[i].representsKnownStubChildren) {
-							if (widget.newPostIds.contains(stubChild.childId)) {
-								whiteBelow.add(stubChild.childId);
-							}
-							else {
-								greyBelow.add(stubChild.childId);
-							}
-						}
-					}
-					else if (widget.newPostIds.contains(items[i].item.id)) {
-						whiteBelow.add(items[i].item.id);
-						if (_youIds.contains(items[i].item.id)) {
-							redBelow.add(items[i].item.id);
-						}
-					}
-					else {
-						greyBelow.add(items[i].item.id);
-					}
-				}
-				else if (i < furthestSeenIndexTop) {
-					if (items[i].representsKnownStubChildren.isNotEmpty) {
-						for (final stubChild in items[i].representsKnownStubChildren) {
-							if (widget.newPostIds.contains(stubChild.childId)) {
-								whiteAbove.add(stubChild.childId);
-							}
-						}
-					}
-					else if (widget.newPostIds.contains(items[i].item.id)) {
-						whiteAbove.add(items[i].item.id);
-						if (_youIds.contains(items[i].item.id)) {
-							redAbove.add(items[i].item.id);
-						}
-					}
-				}
-				else if (i > lastVisibleIndex) {
-					greyBelow.add(items[i].item.id);
+			if (i > lastVisibleIndex) {
+				if (items[i].representsKnownStubChildren.isNotEmpty) {
 					for (final stubChild in items[i].representsKnownStubChildren) {
-						greyBelow.add(stubChild.childId);
-					}
-				}
-			}
-			if (!items.last.filterCollapsed) {
-				if (items.last.representsKnownStubChildren.isNotEmpty) {
-					for (final stubChild in items.last.representsKnownStubChildren) {
-						if (widget.newPostIds.contains(stubChild.childId)) {
+						if (widget.persistentState.unseenPostIds.data.contains(stubChild.childId)) {
 							whiteBelow.add(stubChild.childId);
 						}
 						else {
@@ -2237,31 +2197,66 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 						}
 					}
 				}
-				else if ((items.length - 1) > furthestSeenIndexBottom) {
-					if (widget.newPostIds.contains(items.last.item.id)) {
-						whiteBelow.add(items.last.item.id);
-						if (_youIds.contains(items.last.item.id)) {
-							redBelow.add(items.last.item.id);
+				else if (widget.persistentState.unseenPostIds.data.contains(items[i].item.id)) {
+					whiteBelow.add(items[i].item.id);
+					if (_youIds.contains(items[i].item.id)) {
+						redBelow.add(items[i].item.id);
+					}
+				}
+				else {
+					greyBelow.add(items[i].item.id);
+				}
+			}
+			else if (i < firstVisibleIndex) {
+				if (items[i].representsKnownStubChildren.isNotEmpty) {
+					for (final stubChild in items[i].representsKnownStubChildren) {
+						if (widget.persistentState.unseenPostIds.data.contains(stubChild.childId)) {
+							whiteAbove.add(stubChild.childId);
 						}
 					}
 				}
-				else if (lastVisibleIndex < (items.length - 1)) {
-					greyBelow.add(items.last.item.id);
+				else if (widget.persistentState.unseenPostIds.data.contains(items[i].item.id)) {
+					whiteAbove.add(items[i].item.id);
+					if (_youIds.contains(items[i].item.id)) {
+						redAbove.add(items[i].item.id);
+					}
 				}
 			}
-			_greyCount = greyBelow.length;
-			_whiteCountAbove = whiteAbove.length;
-			_whiteCountBelow += whiteBelow.length; // Initialized before for-loop
-			_redCountAbove = redAbove.length;
-			_redCountBelow = redBelow.length;
+			else if (i > lastVisibleIndex) {
+				greyBelow.add(items[i].item.id);
+				for (final stubChild in items[i].representsKnownStubChildren) {
+					greyBelow.add(stubChild.childId);
+				}
+			}
 		}
-		else {
-			_lastLastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
-			_redCountBelow = _youIds.binarySearchCountAfter((p) => p > _lastLastSeenPostId);
-			_whiteCountBelow = _filteredPosts!.binarySearchCountAfter((p) => p.id > _lastLastSeenPostId);
-			_greyCount = max(0, widget.listController.itemsLength - (widget.listController.lastVisibleIndex + 1) - _whiteCountBelow);
+		if (!items.last.filterCollapsed) {
+			if (items.last.representsKnownStubChildren.isNotEmpty) {
+				for (final stubChild in items.last.representsKnownStubChildren) {
+					if (widget.persistentState.unseenPostIds.data.contains(stubChild.childId)) {
+						whiteBelow.add(stubChild.childId);
+					}
+					else {
+						greyBelow.add(stubChild.childId);
+					}
+				}
+			}
+			else if ((items.length - 1) > lastVisibleIndex) {
+				if (widget.persistentState.unseenPostIds.data.contains(items.last.item.id)) {
+					whiteBelow.add(items.last.item.id);
+					if (_youIds.contains(items.last.item.id)) {
+						redBelow.add(items.last.item.id);
+					}
+				}
+			}
+			else if (lastVisibleIndex < (items.length - 1)) {
+				greyBelow.add(items.last.item.id);
+			}
 		}
-		_lastLastVisibleItemId = lastVisibleItemId;
+		_greyCount = greyBelow.length;
+		_whiteCountAbove = whiteAbove.length;
+		_whiteCountBelow += whiteBelow.length; // Initialized before for-loop
+		_redCountAbove = redAbove.length;
+		_redCountBelow = redBelow.length;
 		setState(() {});
 		return true;
 	}
@@ -2271,46 +2266,25 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			return false;
 		}
 		final firstVisibleIndex = widget.listController.firstVisibleIndex;
-		if (firstVisibleIndex != -1) {
-			furthestSeenIndexTop = min(firstVisibleIndex, furthestSeenIndexTop);
-		}
 		final lastVisibleIndex = widget.listController.lastVisibleIndex;
-		if (lastVisibleIndex != -1) {
-			furthestSeenIndexBottom = max(lastVisibleIndex, furthestSeenIndexBottom);
+		_filteredItems ??= widget.listController.items.toList();
+		final skip = widget.blocked || (_lastFirstVisibleIndex == firstVisibleIndex && _lastLastVisibleIndex == lastVisibleIndex && _lastItemsLength == widget.listController.itemsLength);
+		if (firstVisibleIndex == -1) {
+			_lastFirstVisibleIndex = -1;
 		}
-		if (widget.useTree) {
-			_filteredItems ??= widget.listController.items.toList();
-			final skip = widget.blocked && _lastFirstVisibleIndex == firstVisibleIndex && _lastLastVisibleIndex == lastVisibleIndex && _lastItemsLength == widget.listController.itemsLength;
-			if (firstVisibleIndex == -1) {
-				_lastFirstVisibleIndex = -1;
-			}
-			if (_lastLastVisibleIndex == -1) {
-				_lastLastVisibleIndex = -1;
-			}
-			if (skip) {
-				return true;
-			}
-			final ok = await _updateCounts();
-			if (ok) {
-				_lastFirstVisibleIndex = firstVisibleIndex;
-				_lastLastVisibleIndex = lastVisibleIndex;
-				_lastItemsLength = widget.listController.itemsLength;
-			}
-			return ok;
+		if (_lastLastVisibleIndex == -1) {
+			_lastLastVisibleIndex = -1;
 		}
-		else {
-			final lastVisibleItemId = (lastVisibleIndex == -1) ? null : widget.listController.getItem(lastVisibleIndex).id;
-			_filteredPosts ??= widget.persistentState.filteredPosts();
-			if (lastVisibleItemId != null &&
-					_filteredPosts != null &&
-					(lastVisibleItemId != _lastLastVisibleItemId ||
-					 _lastLastSeenPostId != (widget.persistentState.lastSeenPostId ?? widget.persistentState.id))) {
-				return await _updateCounts();
-			}
-			else {
-				return lastVisibleItemId != null && _filteredPosts != null;
-			}
+		if (skip) {
+			return true;
 		}
+		final ok = await _updateCounts();
+		if (ok) {
+			_lastFirstVisibleIndex = firstVisibleIndex;
+			_lastLastVisibleIndex = lastVisibleIndex;
+			_lastItemsLength = widget.listController.itemsLength;
+		}
+		return ok;
 	}
 
 	Future<void> _pollForOnSlowScroll() async {
@@ -2354,7 +2328,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		super.didUpdateWidget(oldWidget);
 		if (widget.persistentState != oldWidget.persistentState) {
 			_filteredPosts = null;
-			_lastLastVisibleItemId = null;
 		}
 		if (widget.thread != oldWidget.thread ||
 				widget.useTree != oldWidget.useTree) {
@@ -2366,12 +2339,9 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			else {
 				_filteredPosts = widget.persistentState.filteredPosts();
 				_filteredItems = null; // Likely not built yet
-				furthestSeenIndexTop = 9999999;
-				furthestSeenIndexBottom = 0;
 				_useCatalogCache = false;
 			}
 			if (widget.threadIdentifier != oldWidget.threadIdentifier) {
-				_lastLastSeenPostId = 0;
 				setState(() {
 					_redCountBelow = 0;
 					_whiteCountBelow = 0;
@@ -2387,8 +2357,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			else {
 				_filteredPosts = widget.persistentState.filteredPosts();
 			}
-			furthestSeenIndexTop = 9999999;
-			furthestSeenIndexBottom = 0;
 			_onSlowScroll();
 		}
 		_lastListControllerItemsLength = widget.listController.items.length;
@@ -2430,8 +2398,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			else {
 				_filteredPosts = widget.persistentState.filteredPosts();
 				_filteredItems = null; // Likely not built yet
-				furthestSeenIndexTop = 9999999;
-				furthestSeenIndexBottom = 0;
 				_useCatalogCache = false;
 			}
 			_pollForOnSlowScroll();
@@ -2819,9 +2785,13 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												[
 													('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
 														if (widget.useTree) {
+															final lastVisibleIndex = widget.listController.lastVisibleIndex;
+															if (lastVisibleIndex == -1) {
+																return;
+															}
 															int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
-																return entry.key > furthestSeenIndexBottom &&
-																	(widget.newPostIds.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.newPostIds.contains(id.childId))) &&
+																return entry.key > lastVisibleIndex &&
+																	(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.persistentState.unseenPostIds.data.contains(id.childId))) &&
 																	!entry.value.filterCollapsed;
 															})?.key ?? -1;
 															if (targetIndex != -1) {
@@ -2997,9 +2967,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 									}
 								),
 								onPressed: () {
+									final firstVisibleIndex = widget.listController.firstVisibleIndex;
 									int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
-										return entry.key < furthestSeenIndexTop &&
-											(widget.newPostIds.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.newPostIds.contains(id.childId))) &&
+										return entry.key < firstVisibleIndex &&
+											(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.persistentState.unseenPostIds.data.contains(id.childId))) &&
 											!widget.listController.isItemHidden(entry.value).isDuplicate;
 									})?.key ?? -1;
 									if (targetIndex != -1) {

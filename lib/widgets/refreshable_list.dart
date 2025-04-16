@@ -4004,6 +4004,15 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	void cancelCurrentAnimation() {
 		currentTargetIndex = null;
 	}
+	double getItemAlignment(int index) {
+		if (!scrollControllerPositionLooksGood) {
+			// A guess at alignment
+			return 0;
+		}
+		final viewportStart = scrollController!.position.pixels + topOffset;
+		final itemStart = _items[index].cachedOffset ?? viewportStart;
+		return (itemStart - viewportStart) / (scrollController!.position.viewportDimension - ((_items[index].cachedHeight ?? 0) + topOffset + bottomOffset));
+	}
 	int get firstVisibleIndex {
 		if (scrollControllerPositionLooksGood) {
 			if (_items.isNotEmpty &&
@@ -4036,14 +4045,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		if (index < 0) {
 			return null;
 		}
-		if (!scrollControllerPositionLooksGood) {
-			// A guess at alignment
-			return (item: _items[index].item.item, alignment: 0);
-		}
-		final viewportStart = scrollController!.position.pixels + topOffset;
-		final itemStart = _items[index].cachedOffset ?? viewportStart;
-		final alignment = (itemStart - viewportStart) / (scrollController!.position.viewportDimension - ((_items[index].cachedHeight ?? 0) + topOffset + bottomOffset));
-		return (item: _items[index].item.item, alignment: alignment);
+		return (item: _items[index].item.item, alignment: getItemAlignment(index));
 	}
 	T? get middleVisibleItem {
 		if (scrollControllerPositionLooksGood) {
