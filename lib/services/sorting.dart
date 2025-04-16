@@ -73,7 +73,7 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 	}
 	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
 		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
-			return (b.item.watchTime ?? d).compareTo((a.item.watchTime ?? d));
+			return b.item.watchTime.compareTo(a.item.watchTime);
 		});
 	}
 	mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {

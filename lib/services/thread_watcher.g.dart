@@ -85,9 +85,9 @@ class ThreadWatchFields {
     fieldName: 'foregroundMuted',
     merger: PrimitiveMerger(),
   );
-  static DateTime? getWatchTime(ThreadWatch x) => x.watchTime;
-  static void setWatchTime(ThreadWatch x, DateTime? v) => x.watchTime = v;
-  static const watchTime = HiveFieldAdapter<ThreadWatch, DateTime?>(
+  static DateTime getWatchTime(ThreadWatch x) => x.watchTime;
+  static void setWatchTime(ThreadWatch x, DateTime v) => x.watchTime = v;
+  static const watchTime = HiveFieldAdapter<ThreadWatch, DateTime>(
     getter: getWatchTime,
     setter: setWatchTime,
     fieldNumber: 9,
@@ -158,6 +158,7 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    _readHookThreadWatchFields(fields);
     return ThreadWatch(
       board: fields[0] as String,
       threadId: fields[1] as int,
@@ -168,7 +169,7 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
       pushYousOnly: fields[6] == null ? true : fields[6] as bool?,
       push: fields[7] == null ? true : fields[7] as bool,
       foregroundMuted: fields[8] == null ? false : fields[8] as bool,
-      watchTime: fields[9] as DateTime?,
+      watchTime: fields[9] as DateTime,
       notifyOnSecondLastPage: fields[10] == null ? false : fields[10] as bool,
       notifyOnLastPage: fields[11] == null ? true : fields[11] as bool,
       notifyOnDead: fields[12] == null ? false : fields[12] as bool,

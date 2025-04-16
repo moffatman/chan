@@ -35,7 +35,11 @@ abstract class Watch {
 	bool get push => true;
 }
 
-@HiveType(typeId: 28)
+void _readHookThreadWatchFields(Map<int, dynamic> fields) {
+	fields.putIfAbsent(ThreadWatchFields.watchTime.fieldNumber, () => DateTime.now());
+}
+
+@HiveType(typeId: 28, readHook: _readHookThreadWatchFields)
 class ThreadWatch extends Watch {
 	@HiveField(0)
 	final String board;
@@ -57,7 +61,7 @@ class ThreadWatch extends Watch {
 	@HiveField(8, defaultValue: false)
 	bool foregroundMuted;
 	@HiveField(9)
-	DateTime? watchTime;
+	DateTime watchTime;
 	@HiveField(10, defaultValue: false)
 	bool notifyOnSecondLastPage;
 	@HiveField(11, defaultValue: true)
@@ -172,7 +176,6 @@ class ThreadWatcher extends ChangeNotifier {
 		for (final watch in persistence.browserState.threadWatches.values.toList()) {
 			final ts = persistence.getThreadStateIfExists(watch.threadIdentifier);
 			final thread = await ts?.ensureThreadLoaded(preinit: false);
-			watch.watchTime ??= thread?.posts_.last.time;
 			if (thread?.posts_.last.id == ts?.lastSeenPostId && (ts?.unseenPostIds.data.isEmpty ?? false)) {
 				// Fast path - all posts seen. Avoid the preinit.
 				cachedUnseenYous[watch.threadIdentifier] = 0;

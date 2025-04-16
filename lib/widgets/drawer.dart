@@ -380,7 +380,124 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					);
 				},
 				onRefresh: ImageboardRegistry.threadWatcherController.update,
-				onReorder: null,
+				onReorder: Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.savedTime ? (int oldIndex, int newIndex) {
+					// Make sure they are spaced enough to work
+					final affectedPersistences = Set<Persistence>.identity();
+					const kSafeDistance = Duration(seconds: 1);
+					int zombieIndex = watches.indexWhere((w) => w.item.zombie);
+					if (zombieIndex == -1) {
+						zombieIndex = watches.length;
+					}
+					if (zombieIndex > 0) {
+						Duration offset = Duration.zero;
+						for (int i = 0; i < zombieIndex - 1; i++) {
+							final distanceToNext = watches[i].item.watchTime.difference(watches[i + 1].item.watchTime);
+							if (offset > Duration.zero) {
+								// Move backwards in time to go further away
+								watches[i].item.watchTime = watches[i].item.watchTime.subtract(offset);
+								affectedPersistences.add(watches[i].imageboard.persistence);
+							}
+							if (distanceToNext < kSafeDistance) {
+								// They were already too close. We need to increase offset further
+								offset += (kSafeDistance - distanceToNext);
+							}
+							else if ((distanceToNext - offset) > kSafeDistance) {
+								// They are so far apart, we can give up offset so far
+								offset = Duration.zero;
+							}
+						}
+						if (offset > Duration.zero) {
+							final lastRealWatch = watches[zombieIndex - 1];
+							// Move backwards in time to go further away
+							lastRealWatch.item.watchTime = lastRealWatch.item.watchTime.subtract(offset);
+							affectedPersistences.add(lastRealWatch.imageboard.persistence);
+						}
+					}
+					if (zombieIndex < watches.length) {
+						Duration offset = Duration.zero;
+						for (int i = zombieIndex; i < watches.length - 1; i++) {
+							final distanceToNext = watches[i].item.watchTime.difference(watches[i + 1].item.watchTime);
+							if (offset > Duration.zero) {
+								// Move backwards in time to go further away
+								watches[i].item.watchTime = watches[i].item.watchTime.subtract(offset);
+								affectedPersistences.add(watches[i].imageboard.persistence);
+							}
+							if (distanceToNext < kSafeDistance) {
+								// They were already too close. We need to increase offset further
+								offset += (kSafeDistance - distanceToNext);
+							}
+							else if ((distanceToNext - offset) > kSafeDistance) {
+								// They are so far apart, we can give up offset so far
+								offset = Duration.zero;
+							}
+						}
+						if (offset > Duration.zero) {
+							// Move backwards in time to go further away
+							watches.last.item.watchTime = watches.last.item.watchTime.subtract(offset);
+							affectedPersistences.add(watches.last.imageboard.persistence);
+						}
+					}
+					if ((newIndex >= zombieIndex) != (oldIndex >= zombieIndex)) {
+						final watch = watches[oldIndex];
+						if (newIndex >= zombieIndex) {
+							// Move to end of non-zombiess
+							watch.item.watchTime = watches[zombieIndex - 1].item.watchTime.subtract(const Duration(minutes: 1));
+						}
+						else {
+							// Move to beginning of zombies
+							watch.item.watchTime = watches[zombieIndex].item.watchTime.add(const Duration(minutes: 1));
+						}
+						affectedPersistences.add(watch.imageboard.persistence);
+					}
+					else if ((newIndex - oldIndex).abs() == 1) {
+						// Just swap
+						final tmp = watches[oldIndex].item.watchTime;
+						watches[oldIndex].item.watchTime = watches[newIndex].item.watchTime;
+						watches[newIndex].item.watchTime = tmp;
+						affectedPersistences.add(watches[oldIndex].imageboard.persistence);
+						affectedPersistences.add(watches[newIndex].imageboard.persistence);
+					}
+					else {
+						// Split the difference between adjacent things
+						/// "Before" visually, but actually later in time
+						DateTime newBefore;
+						/// "After" visually, but actually earlier in time
+						DateTime newAfter;
+						if (newIndex == 0) {
+							newBefore = DateTime.now();
+							newAfter = watches[0].item.watchTime;
+						}
+						else if (newIndex >= watches.length - 1) {
+							// Moving down to end
+							newBefore = watches.last.item.watchTime;
+							newAfter = newBefore.subtract(const Duration(hours: 1));
+						}
+						else if (newIndex == zombieIndex) {
+							// Moving to top of zombies list
+							newAfter = watches[newIndex].item.watchTime;
+							newBefore = newAfter.add(const Duration(hours: 1));
+						}
+						else if (oldIndex < newIndex) {
+							// Moving down visually (later in list)
+							newBefore = watches[newIndex - 1].item.watchTime;
+							newAfter = watches[newIndex].item.watchTime;
+						}
+						else {
+							// Moving up visually (earlier in list)
+							newBefore = watches[newIndex - 1].item.watchTime;
+							newAfter = watches[newIndex].item.watchTime;
+						}
+						final watch = watches[oldIndex];
+						// See note above... yeah it's confusing
+						assert(newBefore.isAfter(newAfter));
+						watch.item.watchTime = DateTime.fromMillisecondsSinceEpoch((newBefore.millisecondsSinceEpoch ~/ 2) + (newAfter.millisecondsSinceEpoch ~/ 2));
+						affectedPersistences.add(watch.imageboard.persistence);
+					}
+					for (final persistence in affectedPersistences) {
+						persistence.didUpdateBrowserState();
+					}
+					setState(() {});
+				} : null,
 				onClose: (i) {
 					final watch = watches[i];
 					watch.imageboard.notifications.unsubscribeFromThread(watch.item.threadIdentifier);
