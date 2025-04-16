@@ -48,16 +48,17 @@ class ImageboardScope extends StatelessWidget {
 				}
 				else if (b.setupError != null) {
 					return Center(
-						child: ErrorMessageCard('Error with imageboard $imageboardKey:\n${b.setupError!.$1.toStringDio()}', remedies: {
-							'Report bug': () => reportBug(b.setupError!.$1, b.setupError!.$2)
-						})
+						child: ErrorMessageCard(
+							'Error with imageboard $imageboardKey:\n${b.setupError!.$1.toStringDio()}',
+							remedies: generateBugRemedies(b.setupError!.$1, b.setupError!.$2, context)
+						)
 					);
 				}
 				else if (b.boardFetchError != null) {
 					return Center(
 						child: ErrorMessageCard('Error fetching boards for imageboard $imageboardKey:\n${b.boardFetchError!.$1.toStringDio()}', remedies: {
 							'Retry': b.setupBoards,
-							'Report bug': () => reportBug(b.boardFetchError!.$1, b.boardFetchError!.$2)
+							...generateBugRemedies(b.boardFetchError!.$1, b.boardFetchError!.$2, context)
 						})
 					);
 				}

@@ -211,7 +211,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			return Center(
 				child: ErrorMessageCard(result.error!.toStringDio(), remedies: {
 					'Retry': _runQuery,
-					'Report bug': () => reportBug(result.error!, result.stackTrace!)
+					...generateBugRemedies(result.error!, result.stackTrace!, context)
 				})
 			);
 		}

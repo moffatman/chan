@@ -78,9 +78,10 @@ class _CookieBrowserState extends State<CookieBrowser> {
 	Widget _buildBody() {
 		if (_initialized.hasError) {
 			return Center(
-				child: ErrorMessageCard(_initialized.error!.toStringDio(), remedies: {
-					'Report bug': () => reportBug(_initialized.error!, _initialized.stackTrace!)
-				})
+				child: ErrorMessageCard(
+					_initialized.error!.toStringDio(),
+					remedies: generateBugRemedies(_initialized.error!, _initialized.stackTrace!, context)
+				)
 			);
 		}
 		if (!_initialized.hasData) {

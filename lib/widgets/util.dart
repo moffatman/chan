@@ -121,13 +121,9 @@ Future<void> alertError(BuildContext context, Object error, StackTrace? stackTra
 	Map<String, FutureOr<void> Function()> actions = const {},
 	bool barrierDismissible = false
 }) {
-	final extendedException = ExtendedException.extract(error);
 	return alert(context, 'Error', error.toStringDio(), actions: {
 		...actions,
-		if (extendedException != null)
-			for (final remedy in extendedException.remedies.entries)
-				remedy.key: () => remedy.value(context),
-		if (stackTrace != null && (extendedException?.isReportable ?? true)) 'Report bug': () => reportBug(error, stackTrace)
+		...generateBugRemedies(error, stackTrace, context)
 	}, barrierDismissible: barrierDismissible);
 }
 

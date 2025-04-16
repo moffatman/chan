@@ -446,7 +446,7 @@ class _ChanAppState extends State<ChanApp> {
 												child: Center(
 													child: ImageboardRegistry.instance.setupError != null ? Builder(
 														builder: (context) => ErrorMessageCard('Fatal setup error\n${ImageboardRegistry.instance.setupError!.$1.toStringDio()}', remedies: {
-															'Report bug': () => reportBug(ImageboardRegistry.instance.setupError!.$1, ImageboardRegistry.instance.setupError!.$2),
+															...generateBugRemedies(ImageboardRegistry.instance.setupError!.$1, ImageboardRegistry.instance.setupError!.$2, context),
 															'Try editing sites': () async {
 																final list = Settings.instance.settings.contentSettings.siteKeys.toList();
 																await editStringList(

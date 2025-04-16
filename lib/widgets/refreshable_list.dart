@@ -3314,12 +3314,17 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						child: ErrorMessageCard(
 							'Error loading ${widget.id}:\n${error.$1.toStringDio()}',
 							remedies: {
-								'Retry': _updateWithHapticFeedback,
-								'Report bug': () => reportBug(error.$1, error.$2),
+								'Retry': () => _updateWithHapticFeedback,
+								if (isReportableBug(error.$1)) 'Report bug': () => reportBug(error.$1, error.$2),
 								if (remedy != null) remedy.$1: () async {
 									await remedy.$2.call();
 									await _updateWithHapticFeedback();
 								},
+								...(ExtendedException.extract(error.$1)?.remedies ?? {})
+									.map((k, v) => MapEntry(k, () async {
+										await v(context);
+										await _updateWithHapticFeedback();
+									})),
 								if (widget.initialList?.isNotEmpty ?? false) 'View cached': () {
 									originalList = widget.initialList;
 									this.sortedList = originalList?.toList();
