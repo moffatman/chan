@@ -243,6 +243,9 @@ class SiteReddit extends ImageboardSite {
 	@override
 	String get baseUrl => 'reddit.com';
 
+	static const _kDeleted = '[deleted]';
+	static const _kRemoved = '[removed]';
+
 	static const _base36Enc = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
 	static const _base36Dec = {
@@ -942,15 +945,17 @@ class SiteReddit extends ImageboardSite {
 		if (attachments.isEmpty) {
 			await dumpAttachments(data);
 		}
+		final author = data['author'];
 		final asPost = Post(
 			board: data['subreddit'],
-			name: data['author'],
+			name: author,
 			flag: _makeFlag(data['author_flair_richtext'], data),
 			time: DateTime.fromMillisecondsSinceEpoch(data['created'].toInt() * 1000),
 			threadId: id,
 			id: id,
 			text: text,
 			spanFormat: PostSpanFormat.reddit,
+			isDeleted: author == _kDeleted || text == _kRemoved,
 			attachments_: data['is_self'] == true ? [] : attachments,
 			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'],
 			capcode: data['distinguished']
@@ -965,6 +970,7 @@ class SiteReddit extends ImageboardSite {
 			attachments: asPost.attachments_,
 			replyCount: data['num_comments'],
 			imageCount: 0,
+			isDeleted: asPost.isDeleted,
 			flair: _makeFlag(data['link_flair_richtext'], data) ?? (
 				data['link_flair_text'] == null ? null : ImageboardFlag.text((data['link_flair_text'] as String).unescapeHtml)
 			),
@@ -1151,10 +1157,12 @@ class SiteReddit extends ImageboardSite {
 						}
 						return match.group(0)!;
 					});
+					final author = doc.querySelector('.author')?.text ?? '';
 					final post = Post(
 						board: thread.board,
 						text: text,
-						name: doc.querySelector('.author')?.text ?? '',
+						name: author,
+						isDeleted: author == _kDeleted || text == _kRemoved,
 						flag: flag,
 						time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? _estimateTime(id),
 						threadId: thread.id,
@@ -1284,10 +1292,12 @@ class SiteReddit extends ImageboardSite {
 			}
 			return '<img src="${metadata['s']['u']}" width="${metadata['s']['x']}" height="${metadata['s']['y']}">';
 		});
+		final author = child['author'];
 		return Post(
 			board: thread.board,
 			text: text,
-			name: child['author'],
+			name: author,
+			isDeleted: author == _kDeleted || text == _kRemoved,
 			flag: _makeFlag(child['author_flair_richtext'], child),
 			time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
 			threadId: thread.id,
