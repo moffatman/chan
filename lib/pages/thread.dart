@@ -192,6 +192,11 @@ class ThreadPageState extends State<ThreadPage> {
 		if (currentSnapshot != _lastPersistentThreadStateSnapshot ||
 				savedPostsLength != lastSavedPostsLength ||
 				hiddenMD5sLength != lastHiddenMD5sLength) {
+			if (currentSnapshot.thread?.identifier == _lastPersistentThreadStateSnapshot.thread?.identifier) {
+				// We need to catch newPostIds filled in via thread setter
+				// Since newPostIds is always subset of unseenPostIds, this is safe
+				newPostIds.addAll(persistentState.unseenPostIds.data);
+			}
 			_listController.state?.forceRebuildId++;
 			await persistentState.thread?.preinit();
 			setState(() {});
