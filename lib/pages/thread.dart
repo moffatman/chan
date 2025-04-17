@@ -1981,6 +1981,7 @@ class ThreadPageState extends State<ThreadPage> {
 																						}
 																						persistentState.lastSeenPostId = id;
 																						persistentState.save();
+																						_indicatorKey.currentState?._updateCounts();
 																						setState(() {});
 																					}
 																				})]
@@ -2770,7 +2771,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														threadState.didUpdate();
 														widget.listController.state?.forceRebuildId++;
 														setState(() {});
-														_onSlowScroll();
+														_updateCounts();
 														widget.forceThreadRebuild();
 														await threadState.save();
 														if (context.mounted) {
