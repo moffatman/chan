@@ -1163,6 +1163,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _onDevNotificationTapped(BoardThreadOrPostIdentifier id) async {
+		// Close any gallery or other popup
+		Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
 		_tabs.mainTabIndex = 4;
 		for (int i = 0; i < 200 && _tabs._settingsNavigatorKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
@@ -1380,6 +1382,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification, {
 		String? initiallyUseArchive
 	}) async {
+		// Close any gallery or other popup
+		Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
 		if (!_tabs.goToPost(
 			imageboardKey: imageboard.key,
 			board: notification.board,
