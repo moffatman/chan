@@ -2925,7 +2925,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 									}
 								)
 							),
-							if (widget.useTree && _whiteCountAbove > 0) CupertinoButton(
+							if (_whiteCountAbove > 0) CupertinoButton(
 								padding: EdgeInsets.zero,
 								child: Builder(
 									builder: (context) {
