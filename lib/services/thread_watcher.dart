@@ -343,10 +343,16 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 		}
 		if (newThread != threadState.thread) {
-			newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site);
-			threadState.thread = newThread;
-			threadState.save();
-			return true;
+			final didMerge = newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site);
+			if (
+				// Probably upvotes changed (Reddit fuzzing). Or text changed for real
+				!didMerge
+				// Something was restored (deleted posts), but it still isn't the same
+				|| didMerge && newThread != threadState.thread
+			) {
+				threadState.thread = newThread;
+				return true;
+			}
 		}
 		return false;
 	}
