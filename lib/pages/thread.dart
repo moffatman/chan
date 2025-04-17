@@ -364,9 +364,11 @@ class ThreadPageState extends State<ThreadPage> {
 			try {
 				if (await _ensurePostLoaded(scrollTo.$1)) {
 					// Need to rebuild with new post
+					if (!mounted) return;
 					setState(() {});
 					await WidgetsBinding.instance.endOfFrame;
 				}
+				if (!mounted) return;
 				target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
 				if (target != null && _listController.isOnscreen(target)) {
 					if (_useAllDummies) {
@@ -385,6 +387,7 @@ class ThreadPageState extends State<ThreadPage> {
 							duration: const Duration(milliseconds: 200)
 						);
 						await WidgetsBinding.instance.endOfFrame;
+						if (!mounted) return;
 					}
 					setState(() {
 						blocked = false;
@@ -393,6 +396,7 @@ class ThreadPageState extends State<ThreadPage> {
 				}
 				await Future.delayed(delayBeforeScroll);
 				await WidgetsBinding.instance.endOfFrame;
+				if (!mounted) return;
 				await _listController.animateTo(
 					(post) => post.id == scrollTo!.$1,
 					// Lazy hack. but it works somehow to get to the unloadedPage stub
@@ -403,6 +407,7 @@ class ThreadPageState extends State<ThreadPage> {
 					duration: const Duration(milliseconds: 200)
 				);
 				await WidgetsBinding.instance.endOfFrame;
+				if (!mounted) return;
 				if (_useAllDummies) {
 					//await Future.delayed(const Duration(milliseconds: 500));
 					// Need to realign after popping in proper items
@@ -420,6 +425,7 @@ class ThreadPageState extends State<ThreadPage> {
 						duration: const Duration(milliseconds: 1)
 					);
 					await WidgetsBinding.instance.endOfFrame;
+					if (!mounted) return;
 				}
 				final remainingPx = (_listController.scrollController?.position.extentAfter ?? 9999) -
 					((_listController.state?.updatingNow.value != null) ? 64 : 0);
