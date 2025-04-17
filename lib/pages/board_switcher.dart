@@ -41,12 +41,14 @@ class _Board {
 	final ImageboardBoard item;
 	final int typeaheadIndex;
 	final int matchIndex;
+	final bool exactMatch;
 	final int favsIndex;
 	final int imageboardPriorityIndex;
 
 	_Board(ImageboardScoped<ImageboardBoard> board, {
 		required this.typeaheadIndex,
 		required this.matchIndex,
+		required this.exactMatch,
 		required this.favsIndex,
 		required this.imageboardPriorityIndex
 	}) : imageboard = board.imageboard, item = board.item;
@@ -59,11 +61,15 @@ class _Board {
 		other.item == item &&
 		other.typeaheadIndex == typeaheadIndex &&
 		other.matchIndex == matchIndex &&
+		other.exactMatch == exactMatch &&
 		other.favsIndex == favsIndex &&
 		other.imageboardPriorityIndex == imageboardPriorityIndex;
 	
 	@override
-	int get hashCode => Object.hash(imageboard, item, typeaheadIndex, matchIndex, favsIndex, imageboardPriorityIndex);
+	int get hashCode => Object.hash(imageboard, item, typeaheadIndex, matchIndex, exactMatch, favsIndex, imageboardPriorityIndex);
+
+	@override
+	String toString() => '_Board(imageboard: $imageboard, item: $item, typeaheadIndex: $typeaheadIndex, matchIndex: $matchIndex, exactMatch: $exactMatch, favsIndex: $favsIndex, imageboardPriorityIndex: $imageboardPriorityIndex)';
 }
 
 class BoardSwitcherPage extends StatefulWidget {
@@ -245,8 +251,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	List<ImageboardScoped<ImageboardBoard>> getFilteredBoards() {
 		final settings = Settings.instance;
-		final normalized = searchString.toLowerCase();
-		final matchingOtherImageboards = allImageboards.where((i) => i != currentImageboard && i.site.name.toLowerCase().contains(normalized)).toSet();
+		final keywords = searchString.toLowerCase().split(' ').where((s) => s.isNotEmpty).toList();
+		final matchingOtherImageboards = {
+			for (final keyword in keywords)
+				keyword: allImageboards.where((i) => i != currentImageboard && i.site.name.toLowerCase().contains(keyword)).toSet()
+		};
 		final imageboards = allImageboards.toList();
 		imageboards.remove(currentImageboard);
 		imageboards.insert(0, currentImageboard);
@@ -263,18 +272,29 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			if (!settings.showBoard(board.item)) {
 				return null;
 			}
-			final matchIndex = board.item.boardKey.s.indexOf(normalized);
-			if (
-				!(
-					// Name match
-					matchIndex != -1 ||
-					// Title match
-					(!board.imageboard.site.allowsArbitraryBoards && board.item.title.toLowerCase().contains(normalized)) ||
-					// Site name match
-					matchingOtherImageboards.contains(board.imageboard)
-				)
-			) {
-				return null;
+			bool exactMatch = false;
+			int bestMatchIndex = -1;
+			for (final keyword in keywords) {
+				final matchIndex = board.item.boardKey.s.indexOf(keyword);
+				if (
+					!(
+						// Name match
+						matchIndex != -1 ||
+						// Title match
+						(!board.imageboard.site.allowsArbitraryBoards && board.item.title.toLowerCase().contains(keyword)) ||
+						// Site name match
+						(matchingOtherImageboards[keyword]?.contains(board.imageboard) ?? false)
+					)
+				) {
+					return null;
+				}
+				if (matchIndex == 0 && board.item.boardKey.s.length == keyword.length) {
+					bestMatchIndex = 0;
+					exactMatch = true;
+				}
+				else if (bestMatchIndex == -1 || (matchIndex != -1 && matchIndex < bestMatchIndex)) {
+					bestMatchIndex = matchIndex;
+				}
 			}
 			final favsIndex = favsOrder[board.imageboard.scope(board.item.boardKey)];
 			if (widget.currentlyPickingFavourites && favsIndex != null) {
@@ -285,12 +305,13 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			}
 			return _Board(board,
 				typeaheadIndex: 0,
-				matchIndex: matchIndex,
+				matchIndex: bestMatchIndex,
+				exactMatch: exactMatch,
 				favsIndex: favsIndex ?? favsOrder.length,
 				imageboardPriorityIndex: imageboardPriority[board.imageboard] ?? imageboards.length
 			);
 		}).toList();
-		if (normalized.isEmpty) {
+		if (keywords.isEmpty) {
 			filteredBoards.sort((a, b) {
 				final imageboardComparison = a.imageboardPriorityIndex - b.imageboardPriorityIndex;
 				if (imageboardComparison != 0) {
@@ -301,31 +322,54 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			return filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
 		}
 		else {
-			final existingNames = filteredBoards.map((b) => b.item.boardKey).toSet();
+			final existingNames0 = filteredBoards.map((b) => b.item.boardKey).toSet();
 			final typeahead = typeaheads[currentImageboard] ??= Trie();
-			for (final (depth, boards) in typeahead.descend(normalized)) {
-				for (final board in boards) {
-					if (existingNames.contains(board.boardKey)) {
-						continue;
+			for (int i = 0; i < keywords.length; i++) {
+				// Only consider names once per-keyword in tree
+				final existingNames1 = existingNames0.toSet();
+				for (final (depth, boards) in typeahead.descend(keywords[i])) {
+					outer:
+					for (final board in boards) {
+						if (existingNames1.contains(board.boardKey)) {
+							continue;
+						}
+						existingNames1.add(board.boardKey);
+						final matchIndex = board.boardKey.s.indexOf(keywords[i]);
+						if (matchIndex == -1 && keywords.length == 1) {
+							// This drops all the "relevant" boards that don't actually match
+							continue;
+						}
+						for (int j = 0; j < keywords.length; j++) {
+							if (
+								i != j
+								&& !(
+									// Name match
+									board.boardKey.s.contains(keywords[j]) ||
+									// Title match
+									(board.title.toLowerCase().contains(keywords[j])) ||
+									// Site name match
+									(matchingOtherImageboards[keywords[j]]?.contains(currentImageboard) ?? false)
+								)
+							) {
+								continue outer;
+							}
+						}
+						filteredBoards.add(_Board(currentImageboard.scope(board),
+							typeaheadIndex: 1 + depth,
+							matchIndex: matchIndex,
+							exactMatch: matchIndex == 0 && board.boardKey.s.length == keywords[i].length,
+							// Don't treat it as a favourite
+							favsIndex: favsOrder.length,
+							imageboardPriorityIndex: 0 // currentImageboard
+						));
 					}
-					existingNames.add(board.boardKey);
-					final matchIndex = board.boardKey.s.indexOf(normalized);
-					if (matchIndex == -1/* && !board.title.toLowerCase().contains(normalized)*/) {
-						// This drops all the "relevant" boards that don't actually match
-						continue;
-					}
-					filteredBoards.add(_Board(currentImageboard.scope(board),
-						typeaheadIndex: 1 + depth,
-						matchIndex: matchIndex,
-						// Don't treat it as a favourite
-						favsIndex: favsOrder.length,
-						imageboardPriorityIndex: 0 // currentImageboard
-					));
 				}
+				// Only include names once over all keywords
+				existingNames0.addAll(existingNames1);
 			}
 			filteredBoards.sort((a, b) {
-				final exactMatchA = a.matchIndex == 0 && a.item.boardKey.s.length == normalized.length && a.imageboard == currentImageboard && a.typeaheadIndex == 0;
-				final exactMatchB = b.matchIndex == 0 && b.item.boardKey.s.length == normalized.length && b.imageboard == currentImageboard && b.typeaheadIndex == 0;
+				final exactMatchA = a.exactMatch && a.imageboard == currentImageboard && a.typeaheadIndex == 0;
+				final exactMatchB = b.exactMatch && b.imageboard == currentImageboard && b.typeaheadIndex == 0;
 				if (exactMatchA && !exactMatchB) {
 					return -1;
 				}
@@ -363,7 +407,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				return a.item.boardKey.s.compareTo(b.item.boardKey.s);
 			});
 			final ret = filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
-			if (!settings.onlyShowFavouriteBoardsInSwitcher && currentImageboard.site.allowsArbitraryBoards) {
+			if (
+				!settings.onlyShowFavouriteBoardsInSwitcher
+				&& currentImageboard.site.allowsArbitraryBoards
+				// Presumably there are no boards with spaces
+				&& keywords.length == 1
+			) {
 				final fakeBoard = ImageboardBoard(
 					name: searchString,
 					title: '',
@@ -374,7 +423,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					return [currentImageboard.scope(fakeBoard)];
 				}
 				final exactMatchBoardIndex = filteredBoards.indexWhere(
-					(b) => b.matchIndex == 0 && b.item.boardKey.s.length == normalized.length && b.imageboardPriorityIndex == 0);
+					(b) => b.matchIndex == 0 && b.item.boardKey.s.length == keywords.first.length && b.imageboardPriorityIndex == 0);
 				if (exactMatchBoardIndex == -1) {
 					ret.insert(1, currentImageboard.scope(fakeBoard));
 				}
