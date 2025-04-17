@@ -67,6 +67,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	static final _quoteLinkPattern = RegExp(r'\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+)(?:\.html)?#(\d+)');
+	static final _inlineImageWithDimensionsInNamePattern = RegExp(r'(\d+)x(\d+)\.\w{1,5}$');
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAll('<em>//</em>', '//'));
@@ -147,6 +148,37 @@ class SiteLainchan extends ImageboardSite {
 					else if (node.localName == 'pre') {
 						yield PostCodeSpan(node.text.trim());
 						yield const PostLineBreakSpan();
+					}
+					else if (node.localName == 'img' && node.attributes.containsKey('src')) {
+						final src = node.attributes['src']!;
+						// We may be able to extract the proper dimensions from URL
+						final dimensionMatch = _inlineImageWithDimensionsInNamePattern.firstMatch(src);
+						yield PostInlineImageSpan(
+							src: src,
+							width: int.tryParse(dimensionMatch?.group(1) ?? '') ?? 16,
+							height: int.tryParse(dimensionMatch?.group(2) ?? '') ?? 16
+						);
+					}
+					else if (node.localName == 'small') {
+						yield PostSmallTextSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
+					else if (node.localName == 'big') {
+						yield PostBigTextSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
+					else if (node.localName == 's') {
+						int? deadId;
+						if (node.classes.contains('dead-cite')) {
+							final text = node.text;
+							if (node.text.startsWith('>>')) {
+								deadId = int.tryParse(text.substring(2));
+							}
+						}
+						if (deadId != null) {
+							yield PostQuoteLinkSpan.dead(board: board, postId: deadId);
+						}
+						else {
+							yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+						}
 					}
 					else {
 						yield PostTextSpan(node.outerHtml);

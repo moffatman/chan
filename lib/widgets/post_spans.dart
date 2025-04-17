@@ -1544,7 +1544,10 @@ class PostInlineImageSpan extends PostSpan {
 				width: width.toDouble(),
 				height: height.toDouble(),
 				child: CNetworkImage(
-					url: src,
+					url: Uri.parse(zone.imageboard.site.getWebUrl(
+						board: zone.board,
+						threadId: zone.primaryThreadId
+					)).resolve(src).toString(),
 					client: zone.imageboard.site.client,
 					cache: true,
 					enableLoadState: false
@@ -1948,6 +1951,42 @@ class PostCssSpan extends PostSpan {
 	@override
 	bool get containsLink => child.containsLink;
 
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
+}
+
+class PostSmallTextSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostSmallTextSpan(this.child);
+	@override
+	build(context, zone, settings, theme, options) {
+		return child.build(context, zone, settings, theme, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(fontSize: 14)
+		));
+	}
+	@override
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
+	@override
+	bool get containsLink => child.containsLink;
+	@override
+	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
+}
+
+class PostBigTextSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostBigTextSpan(this.child);
+	@override
+	build(context, zone, settings, theme, options) {
+		return child.build(context, zone, settings, theme, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(fontSize: 23)
+		));
+	}
+	@override
+	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
+	@override
+	bool get containsLink => child.containsLink;
 	@override
 	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
