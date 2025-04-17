@@ -283,6 +283,9 @@ class CloudflareInterceptor extends Interceptor {
 		await manager.deleteAllCookies();
 		final cookies = await Persistence.currentCookies.loadForRequest(cookieUrl);
 		for (final cookie in cookies) {
+			if (cookie.value.isEmpty) {
+				continue;
+			}
 			await manager.setCookie(
 				url: WebUri.uri(cookieUrl),
 				domain: cookie.domain,
@@ -432,7 +435,8 @@ class CloudflareInterceptor extends Interceptor {
 					priority: options.priority,
 					cancelToken: options.cancelToken,
 					autoClickSelector: redirectGateway?.autoClickSelector,
-					gatewayName: redirectGateway?.name ?? _kDefaultGatewayName
+					gatewayName: redirectGateway?.name ?? _kDefaultGatewayName,
+					toast: redirectGateway == null // Not forced
 				);
 				final newResponse = data.response(options);
 				if (newResponse != null) {

@@ -1,27 +1,14 @@
 import 'dart:io';
 
-import 'package:chan/services/settings.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 
 const kDisableCookies = 'disableCookies';
 
 class SeparatedCookieManager extends Interceptor {
-  final CookieJar wifiCookieJar;
-	final CookieJar cellularCookieJar;
 
-  SeparatedCookieManager({
-		required this.wifiCookieJar,
-		required this.cellularCookieJar
-	});
-
-	CookieJar get cookieJar {
-		if (Settings.instance.connectivity == ConnectivityResult.mobile) {
-			return cellularCookieJar;
-		}
-		return wifiCookieJar;
-	}
+  CookieJar get cookieJar => Persistence.currentCookies;
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {

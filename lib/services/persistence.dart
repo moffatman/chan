@@ -2390,10 +2390,17 @@ extension PseudoCookies on CookieJar {
 	}
 }
 
-extension PreserveCloudflareClearance on CookieJar {
+extension CustomDeletion on CookieJar {
 	Future<void> deletePreservingCloudflare(Uri uri, [bool withDomainSharedCookie = false]) async {
 		final toSave = (await loadForRequest(uri)).where((cookie) {
 			return cookie.name == 'cf_clearance';
+		}).toList();
+		await this.delete(uri, withDomainSharedCookie);
+		await saveFromResponse(uri, toSave);
+	}
+	Future<void> deleteWhere(Uri uri, bool Function(Cookie) where, [bool withDomainSharedCookie = false]) async {
+		final toSave = (await loadForRequest(uri)).where((cookie) {
+			return !where(cookie);
 		}).toList();
 		await this.delete(uri, withDomainSharedCookie);
 		await saveFromResponse(uri, toSave);

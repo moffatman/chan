@@ -17,6 +17,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -938,7 +939,7 @@ class Site4Chan extends ImageboardSite {
 	Uri get _bannedUrl => Uri.https('www.4chan.org', '/banned');
 
 	@override
-	Duration getActionCooldown(String board, ImageboardAction action, bool cellular) {
+	Duration getActionCooldown(String board, ImageboardAction action, CookieJar cookies) {
 		final b = persistence?.getBoard(board);
 		var (Duration cooldown, bool isPassReduced) = switch (action) {
 			ImageboardAction.postReply => (Duration(seconds: b?.replyCooldown ?? 0), true),
@@ -948,7 +949,7 @@ class Site4Chan extends ImageboardSite {
 			ImageboardAction.delete => (const Duration(seconds: 3), false)
 		};
 		if (isPassReduced &&
-		    loginSystem.isLoggedIn(cellular ? Persistence.cellularCookies : Persistence.wifiCookies)) {
+		    loginSystem.isLoggedIn(cookies)) {
 			return cooldown ~/ 2;
 		}
 		return cooldown;

@@ -67,9 +67,10 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 	}
 
 	Future<CaptchaLynxchanChallenge> _requestChallenge() async {
-		Persistence.currentCookies.delete(Uri.https(widget.site.baseUrl, '/captcha.js'), true);
+		final captchaJsUrl = Uri.https(widget.site.baseUrl, '/captcha.js');
+		await Persistence.currentCookies.deleteWhere(captchaJsUrl, (c) => c.name == 'captchaid', true);
 		final lastSolvedCaptcha = widget.site.persistence?.browserState.loginFields[SiteLynxchan.kLoginFieldLastSolvedCaptchaKey];
-		final idResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/captcha.js', {
+		final idResponse = await widget.site.client.getUri(captchaJsUrl.replace(queryParameters: {
 			'boardUri': widget.request.board,
 			'd': (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
 			if (lastSolvedCaptcha != null) 'solvedCaptcha': lastSolvedCaptcha
@@ -85,17 +86,30 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		final String id;
 		final String imagePath;
 		final redirectPath = idResponse.headers.value('location');
+		final idFromRequestCookies = switch (idResponse.requestOptions.headers['cookie']) {
+			String cookie => RegExp(r'captchaid=([^;]+)').firstMatch(cookie)?.group(1),
+			_ => null
+		};
+		// cloudflare.dart can't fill in header properly. get it from cookie jar.
+		final idFromResponseCookies = (await Persistence.currentCookies.loadForRequest(captchaJsUrl)).tryMapOnce((cookie) {
+			if (cookie.name == 'captchaid') {
+				return cookie.value;
+			}
+			return null;
+		}) ?? idResponse.headers['set-cookie']?.tryMapOnce((cookie) {
+			return RegExp(r'captchaid=([^;]+)').firstMatch(cookie)?.group(1);
+		});
 		if (redirectPath != null && redirectPath.startsWith('/.global/captchas/')) {
-			id = redirectPath.split('/').last;
+			final fromCookie = idFromResponseCookies ?? idFromRequestCookies;
+			// ID may be truncated. Best to get it from cookie
+			id = fromCookie ?? redirectPath.split('/').last;
 			imagePath = redirectPath;
 		}
 		else if (idResponse.data is String) {
-			final fromCookie = idResponse.headers['set-cookie']?.tryMapOnce((cookie) {
-				return RegExp(r'captchaid=([^;]+)').firstMatch(cookie)?.group(1);
-			});
+			final fromCookie = idFromResponseCookies ?? idFromRequestCookies;
 			if (fromCookie != null) {
 				id = fromCookie;
-				imagePath = '/captcha.js?captchaId=${id.substring(0, 24)}';
+				imagePath = '/.global/captchas/${id.substring(0, 24)}';
 			}
 			else {
 				// 8chan has a <html> with <img>

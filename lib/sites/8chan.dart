@@ -34,16 +34,42 @@ class Site8Chan extends SiteLynxchan {
 
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		final response = await client.postUri(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
-			if (captchaSolution is LynxchanCaptchaSolution) 'captcha': captchaSolution.answer
-		}, options: Options(
+		final blockResponse = await client.postUri(Uri.https(baseUrl, '/blockBypass.js', {'json': '1'}), options: Options(
 			responseType: ResponseType.json,
 			extra: {
 				kPriority: RequestPriority.interactive
 			}
 		));
-		if (response.data['status'] == 'error') {
-			throw PostFailedException(response.data['data'] as String);
+		if (blockResponse.data['status'] == 'error') {
+			throw PostFailedException(blockResponse.data['data'] as String);
+		}
+		if (blockResponse.data['data']['valid'] != true) {
+			if (captchaSolution is LynxchanCaptchaSolution) {
+				// Register the existing captcha
+				final submit1Response = await client.postUri(Uri.https(baseUrl, '/solveCaptcha.js', {'json': '1'}), data: {
+					'captchaId': captchaSolution.id,
+					'answer': captchaSolution.answer
+				});
+				if (submit1Response.data['status'] == 'error') {
+					throw PostFailedException(submit1Response.data['data'] as String);
+				}
+			}
+			throw AdditionalCaptchaRequiredException(
+				captchaRequest: await getCaptchaRequest(post.board, post.threadId),
+				onSolved: (solution2) async {
+					final response = await client.postUri(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
+						if (solution2 is LynxchanCaptchaSolution) 'captcha': solution2.answer
+					}, options: Options(
+						responseType: ResponseType.json,
+						extra: {
+							kPriority: RequestPriority.interactive
+						}
+					));
+					if (response.data['status'] == 'error') {
+						throw PostFailedException(response.data['data'] as String);
+					}
+				}
+			);
 		}
 		return await super.submitPost(post, captchaSolution, cancelToken);
 	}

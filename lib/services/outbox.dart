@@ -182,7 +182,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	QueueEntryActionKey get _key => (imageboardKey, _board, site.getQueue(action));
 	OutboxQueue? get queue => Outbox.instance.queues[_key];
 	DateTime? get allowedTime => queue?.allowedTime;
-	Duration get _cooldown => site.getActionCooldown(_board.s, action, !Settings.instance.isConnectedToWifi);
+	Duration get _cooldown => site.getActionCooldown(_board.s, action, Persistence.currentCookies);
 	ThreadIdentifier? get thread;
 	Duration get _regretDelay => Duration.zero;
 

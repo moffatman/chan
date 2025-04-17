@@ -417,6 +417,31 @@ class Imageboard extends ChangeNotifier {
 		listener();
 	}
 
+	Future<PostReceipt> _submitPostWithAdditionalCaptchaHandling(DraftPost post, CaptchaSolution captchaSolution, dio.CancelToken cancelToken) async {
+		try {
+			return await site.submitPost(post, captchaSolution, cancelToken);
+		}
+		on AdditionalCaptchaRequiredException catch (e) {
+			showToast(
+				context: ImageboardRegistry.instance.context!,
+				message: 'Additional captcha required',
+				icon: CupertinoIcons.exclamationmark_square
+			);
+			final solution = await solveCaptcha(
+				context: ImageboardRegistry.instance.context!,
+				site: site,
+				request: e.captchaRequest
+			);
+			if (solution != null) {
+				await e.onSolved(solution);
+				// Should be allowed now
+				return await site.submitPost(post, captchaSolution, cancelToken);
+			}
+			// Just show that another captcha was needed and not provided
+			rethrow;
+		}
+	}
+
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, dio.CancelToken cancelToken) async {
 		final path = post.file;
 		if (path != null && !File(path).existsSync()) {
@@ -427,7 +452,7 @@ class Imageboard extends ChangeNotifier {
 			persistence.browserState.outbox.add(post); // For restoration if app is closed
 		}
 		runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
-		final receipt = await site.submitPost(post, captchaSolution, cancelToken);
+		final receipt = await _submitPostWithAdditionalCaptchaHandling(post, captchaSolution, cancelToken);
 		persistence.browserState.outbox.remove(post);
 		runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
 		final thread = ThreadIdentifier(post.board, post.threadId ?? receipt.id);

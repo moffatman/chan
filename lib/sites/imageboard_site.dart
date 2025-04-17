@@ -264,6 +264,17 @@ class ReportFailedException implements Exception {
 	String toString() => 'Report failed: $message';
 }
 
+class AdditionalCaptchaRequiredException implements Exception {
+	final CaptchaRequest captchaRequest;
+	final Future<void> Function(CaptchaSolution) onSolved;
+	const AdditionalCaptchaRequiredException({
+		required this.captchaRequest,
+		required this.onSolved
+	});
+	@override
+	String toString() => 'Additional captcha needed';
+}
+
 enum ImageboardAction {
 	postThread(
 		verbSimplePresentLowercase: 'create thread',
@@ -1472,10 +1483,7 @@ abstract class ImageboardSiteArchive {
 	}) {
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(CloudflareBlockingInterceptor());
-		client.interceptors.add(SeparatedCookieManager(
-			wifiCookieJar: Persistence.wifiCookies,
-			cellularCookieJar: Persistence.cellularCookies
-		));
+		client.interceptors.add(SeparatedCookieManager());
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
 				options.headers['user-agent'] ??= userAgent;
@@ -1564,7 +1572,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]);
 	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread) async => const NoCaptchaRequest();
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken);
-	Duration getActionCooldown(String board, ImageboardAction action, bool cellular) => const Duration(seconds: 3);
+	Duration getActionCooldown(String board, ImageboardAction action, CookieJar cookies) => const Duration(seconds: 3);
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
 		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');
 	}
