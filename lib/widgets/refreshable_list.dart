@@ -3314,7 +3314,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						child: ErrorMessageCard(
 							'Error loading ${widget.id}:\n${error.$1.toStringDio()}',
 							remedies: {
-								'Retry': () => _updateWithHapticFeedback,
+								'Retry': _updateWithHapticFeedback,
 								if (isReportableBug(error.$1)) 'Report bug': () => reportBug(error.$1, error.$2),
 								if (remedy != null) remedy.$1: () async {
 									await remedy.$2.call();
