@@ -2222,6 +2222,11 @@ class Settings extends ChangeNotifier {
 
 	void removeSiteKey(String siteKey) {
 		settings.contentSettings.siteKeys.remove(siteKey);
+		if (homeImageboardKey == siteKey) {
+			// This can kind of soft-lock the app. Just clear it.
+			homeImageboardKeySetting.set(this, null);
+			homeBoardNameSetting.set(this, '');
+		}
 		didEdit();
 	}
 
