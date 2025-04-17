@@ -284,8 +284,8 @@ class _SettingsPageState extends State<SettingsPage> {
 	}
 
 	Iterable<Widget> _buildResults() {
-		final q = query.toLowerCase();
-		final results = topLevelSettings.expand((e) =>  e.search(q));
+		final q = query.toLowerCase().split(' ');
+		final results = topLevelSettings.expand((e) => e.search(q));
 		if (results.isEmpty) {
 			return [
 				const Center(
