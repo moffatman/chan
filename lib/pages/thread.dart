@@ -587,9 +587,13 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	void _onPostSeenFromZone(int id) {
-		persistentState.unseenPostIds.data.remove(id);
-		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-		_indicatorKey.currentState?._updateCounts();
+		if (persistentState.unseenPostIds.data.remove(id)) {
+			// The post was offscreen, also remove it from newPostIds
+			// so the unread counter makes more sense when we scroll down to see it
+			newPostIds.remove(id);
+			runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+			_indicatorKey.currentState?._updateCounts();
+		}
 	}
 
 	@override
@@ -659,6 +663,7 @@ class ThreadPageState extends State<ThreadPage> {
 				return _listController.isOnscreen(post);
 			},
 			onPostSeen: _onPostSeenFromZone,
+			highlightedPostIds: newPostIds,
 			glowOtherPost: (id, glow) {
 				if (glow) {
 					_glowingPostId = id;
@@ -741,6 +746,7 @@ class ThreadPageState extends State<ThreadPage> {
 				isPostOnscreen: oldZone.isPostOnscreen,
 				glowOtherPost: oldZone.glowOtherPost,
 				onPostSeen: oldZone.onPostSeen,
+				highlightedPostIds: newPostIds,
 				onNeedUpdateWithStubItems: oldZone.onNeedUpdateWithStubItems,
 				semanticRootIds: [widget.boardSemanticId, 0],
 				style: oldZone.style
