@@ -56,6 +56,7 @@
                <data android:scheme="https" android:host="warosu.org"/>
                <!-- 8chan -->
                <data android:scheme="https" android:host="8chan.moe"/>
+               <data android:scheme="https" android:host="8chan.se"/>
                <!-- 8kun -->
                <data android:scheme="https" android:host="8kun.top"/>
                <!-- 9ch -->
