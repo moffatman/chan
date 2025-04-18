@@ -221,7 +221,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 
 	static final _postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]{1,18})/');
 
-	Future<Post> _makePost(dynamic data, {bool resolveIds = true, required RequestPriority priority}) async {
+	Future<Post> _makePost(dynamic data, {bool resolveIds = true, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final board = data['board']['shortname'] as String;
 		final int threadId = int.parse(data['thread_num']);
 		final int id = int.parse(data['num']);
@@ -231,7 +231,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			for (final match in _postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
 				final board = match.group(1)!;
 				final postId = int.parse(match.group(2)!);
-				final threadId = await _getPostThreadId(board, postId, priority: priority);
+				final threadId = await _getPostThreadId(board, postId, priority: priority, cancelToken: cancelToken);
 				if (threadId != null) {
 					linkedPostThreadIds['$board/$postId'] = threadId;
 				}
@@ -265,8 +265,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			isDeleted: data['deleted'] == '1'
 		);
 	}
-	Future<dynamic> _getPostJson(String board, int id, {required RequestPriority priority}) async {
-		if (!(await getBoards(priority: priority)).any((b) => b.name == board)) {
+	Future<dynamic> _getPostJson(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == board)) {
 			throw BoardNotFoundException(board);
 		}
 		final response = await client.getUri(
@@ -279,7 +279,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					kPriority: priority
 				},
 				responseType: ResponseType.json
-			)
+			),
+			cancelToken: cancelToken
 		);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
@@ -296,18 +297,18 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return response.data;
 	}
 	final _postThreadIdCache = <String, Map<int, int?>>{};
-	Future<int?> __getPostThreadId(String board, int postId, {required RequestPriority priority}) async {
+	Future<int?> __getPostThreadId(String board, int postId, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
-			return int.parse((await _getPostJson(board, postId, priority: priority))['thread_num']);
+			return int.parse((await _getPostJson(board, postId, priority: priority, cancelToken: cancelToken))['thread_num']);
 		}
 		on PostNotFoundException {
 			return null;
 		}
 	}
-	Future<int?> _getPostThreadId(String board, int postId, {required RequestPriority priority}) async {
+	Future<int?> _getPostThreadId(String board, int postId, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		_postThreadIdCache[board] ??= {};
 		if (!_postThreadIdCache[board]!.containsKey(postId)) {
-			_postThreadIdCache[board]?[postId] = await __getPostThreadId(board, postId, priority: priority);
+			_postThreadIdCache[board]?[postId] = await __getPostThreadId(board, postId, priority: priority, cancelToken: cancelToken);
 		}
 		return _postThreadIdCache[board]?[postId];
 	}
@@ -315,20 +316,20 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		_postThreadIdCache.putIfAbsent(board, () => {}).putIfAbsent(postId, () => threadId);
 	}
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) async {		
-		return _makePost(await _getPostJson(board, id, priority: priority), priority: priority);
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {		
+		return await _makePost(await _getPostJson(board, id, priority: priority, cancelToken: cancelToken), priority: priority, cancelToken: cancelToken);
 	}
 	Future<Thread> getThreadContainingPost(String board, int id) async {
 		throw Exception('Unimplemented');
 	}
-	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage, required RequestPriority priority}) async {
+	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final op = data[thread.id.toString()]['op'];
 		final replies = switch (data[thread.id.toString()]['posts']) {
 			List x => x,
 			Map m => m.entries.where((e) => int.tryParse(e.key) != null).map((e) => e.value),
 			_ => []
 		};
-		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, priority: priority)))).toList();
+		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, priority: priority, cancelToken: cancelToken)))).toList();
 		final title = op['title'] as String?;
 		final a = _makeAttachment(op);
 		return Thread(
@@ -348,8 +349,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		if (!(await getBoards(priority: priority)).any((b) => b.name == thread.board)) {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
 		final response = await client.getThreadUri(
@@ -358,16 +359,17 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				'num': thread.id.toString()
 			}),
 			responseType: ResponseType.json,
-			priority: priority
+			priority: priority,
+			cancelToken: cancelToken
 		);
 		final data = response.data;
 		if (data['error'] != null) {
 			throw Exception(data['error']);
 		}
-		return _makeThread(thread, data, priority: priority);
+		return await _makeThread(thread, data, priority: priority, cancelToken: cancelToken);
 	}
 
-	Future<List<Thread>> _getCatalog(String board, int pageNumber, {required RequestPriority priority}) async {
+	Future<List<Thread>> _getCatalog(String board, int pageNumber, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/index', {
 			'board': board,
 			'page': pageNumber.toString()
@@ -376,30 +378,31 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					kPriority: priority
 				},
 				responseType: ResponseType.json
-			)
+			),
+			cancelToken: cancelToken
 		);
 		return Future.wait((response.data as Map<dynamic, dynamic>).keys.where((threadIdStr) {
 			return response.data[threadIdStr]['op'] != null;
 		}).map((threadIdStr) => _makeThread(ThreadIdentifier(
 			board,
 			int.parse(threadIdStr)
-		), response.data, currentPage: pageNumber, priority: priority)).toList());
+		), response.data, currentPage: pageNumber, priority: priority, cancelToken: cancelToken)).toList());
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) => _getCatalog(board, 1, priority: priority);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) => _getCatalog(board, 1, priority: priority, cancelToken: cancelToken);
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) => _getCatalog(board, (after.currentPage ?? 0) + 1, priority: priority);
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) => _getCatalog(board, (after.currentPage ?? 0) + 1, priority: priority, cancelToken: cancelToken);
 
-	Future<List<ImageboardBoard>> _getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> _getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/archives'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
@@ -414,13 +417,12 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}).toList();
 	}
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
-		boards ??= await _getBoards(priority: priority);
-		return boards!;
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
+		return boards ??= await _getBoards(priority: priority, cancelToken: cancelToken);
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final knownBoards = await getBoards(priority: RequestPriority.interactive);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
@@ -448,7 +450,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				extra: {
 					kPriority: priority
 				}
-			)
+			),
+			cancelToken: cancelToken
 		);
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
@@ -471,12 +474,12 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 							data['num']: {
 								'op': data
 							}
-						}, priority: priority)
+						}, priority: priority, cancelToken: cancelToken)
 					);
 				}
 				else {
 					return ImageboardArchiveSearchResult.post(
-						await _makePost(data, resolveIds: false, priority: priority)
+						await _makePost(data, resolveIds: false, priority: priority, cancelToken: cancelToken)
 					);
 				}
 			}))).toList(),

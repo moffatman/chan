@@ -40,13 +40,13 @@ class SiteDvach extends ImageboardSite {
 	});
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/index.json'), options: Options(
 			responseType: ResponseType.json,
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		return (response.data['boards'] as List).map((board) {
 			final maxFileSizeBytes = switch (board['max_files_size']) {
 				int kb => 1024 * kb,
@@ -68,7 +68,7 @@ class SiteDvach extends ImageboardSite {
 
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
 		throw UnimplementedError();
 	}
 
@@ -139,14 +139,14 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (s) => true,
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
 		}
@@ -177,8 +177,8 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority, responseType: ResponseType.json);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
 		final posts = (response.data['threads'].first['posts'] as List<dynamic>).map((data) => _makePost(thread.board, thread.id, data)).toList();
 		return Thread(
 			board: thread.board,
@@ -199,7 +199,7 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 			return const NoCaptchaRequest();
 		}
@@ -380,8 +380,16 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
-		await parent.client.postUri(Uri.https(parent.baseUrl, '/user/passlogout'));
+  Future<void> logoutImpl(bool fromBothWifiAndCellular, CancelToken cancelToken) async {
+		await parent.client.postUri(
+			Uri.https(parent.baseUrl, '/user/passlogout'),
+			options: Options(
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			),
+			cancelToken: cancelToken
+		);
 		loggedIn[Persistence.currentCookies] = false;
 		if (fromBothWifiAndCellular) {
 			await Persistence.nonCurrentCookies.deletePreservingCloudflare(Uri.https(parent.baseUrl, '/'), true);
@@ -393,7 +401,7 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields, {CancelToken? cancelToken}) async {
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields, CancelToken cancelToken) async {
 		final response = await parent.client.postUri(
 			Uri.https(parent.baseUrl, '/user/passlogin'),
 			data: FormData.fromMap({
@@ -402,6 +410,9 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 			options: Options(
 				responseType: ResponseType.plain,
 				validateStatus: (_) => true,
+				extra: {
+					kPriority: RequestPriority.interactive
+				},
 				followRedirects: false // This makes sure cookie is remembered
 			),
 			cancelToken: cancelToken
@@ -411,7 +422,7 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 			final document = parse(response.data);
 			final message = document.querySelector('.msg__title')?.text;
 			loggedIn[Persistence.currentCookies] = false;
-			await logout(false);
+			await logout(false, cancelToken);
 			throw ImageboardSiteLoginException(message ?? 'Unknown error');
 		}
 		loggedIn[Persistence.currentCookies] = true;

@@ -220,8 +220,8 @@ class SiteHackerNews extends ImageboardSite {
 		return out;
 	}
 
-	Future<_HNObject?> _makeHNObjectAlgolia(Map d) async {
-		final children0 = await Future.wait(((d['children'] as List?)?.cast<Map>() ?? []).tryMap(_makeHNObjectAlgolia));
+	Future<_HNObject?> _makeHNObjectAlgolia(Map d, {CancelToken? cancelToken}) async {
+		final children0 = await Future.wait(((d['children'] as List?)?.cast<Map>() ?? []).tryMap((o) => _makeHNObjectAlgolia(o, cancelToken: cancelToken)));
 		final children = children0.tryMap((a) => a).toList();
 		switch (d['type']) {
 			case 'story':
@@ -271,17 +271,17 @@ class SiteHackerNews extends ImageboardSite {
 		}
 	}
 
-	Future<_HNObject> _getAlgolia(int id, {required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https('hn.algolia.com', '/api/v1/items/$id'), priority: priority, responseType: ResponseType.json);
-		return (await _makeHNObjectAlgolia(response.data))!;
+	Future<_HNObject> _getAlgolia(int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		final response = await client.getThreadUri(Uri.https('hn.algolia.com', '/api/v1/items/$id'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
+		return (await _makeHNObjectAlgolia(response.data, cancelToken: cancelToken))!;
 	}
 
-	Future<Thread?> _getThreadForCatalog(int id, {required RequestPriority priority}) async {
+	Future<Thread?> _getThreadForCatalog(int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.get('https://hacker-news.firebaseio.com/v0/item/$id.json', options: Options(
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		if (response.data == null) {
 			// Missing for some reason
 			return null;
@@ -336,7 +336,7 @@ class SiteHackerNews extends ImageboardSite {
 		);
 	}
 
-	Future<Post> _makePost(_HNObject item) async {
+	Post _makePost(_HNObject item) {
 		if (item is _HNComment) {
 			return Post(
 				board: '',
@@ -404,7 +404,7 @@ class SiteHackerNews extends ImageboardSite {
 	String get defaultUsername => '';
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		return [ImageboardBoard(
 			name: '',
 			title: 'Hacker News',
@@ -414,11 +414,11 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		return const NoCaptchaRequest();
 	}
 
-	Future<List<int>> _getSecondChancePoolIds(int? after, {required RequestPriority priority}) async {
+	Future<List<int>> _getSecondChancePoolIds(int? after, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/pool', {
 			if (after != null) 'next': after.toString()
 		}), options: Options(
@@ -426,7 +426,7 @@ class SiteHackerNews extends ImageboardSite {
 				kPriority: priority
 			},
 			responseType: ResponseType.plain
-		));
+		), cancelToken: cancelToken);
 		final doc = parse(response.data);
 		final ids = doc.querySelectorAll('.athing').map((e) => int.parse(e.id));
 		if (after != null) {
@@ -437,10 +437,10 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final List<int> data;
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
-			data = await _getSecondChancePoolIds(null, priority: priority);
+			data = await _getSecondChancePoolIds(null, priority: priority, cancelToken: cancelToken);
 		}
 		else {
 			final name = {
@@ -455,32 +455,32 @@ class SiteHackerNews extends ImageboardSite {
 				extra: {
 					kPriority: priority
 				}
-			));
+			), cancelToken: cancelToken);
 			data = (response.data as List).cast<int>();
 		}
 		_lastCatalogIds[variant] = data;
-		return (await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, priority: priority)))).tryMap((e) => e).toList();
+		return (await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, priority: priority, cancelToken: cancelToken)))).tryMap((e) => e).toList();
 	}
 
-	Future<List<Post>> _getMoreThread(_HNObject item) async {
+	List<Post> _getMoreThread(_HNObject item) {
 		final posts = <Post>[];
-		Future<void> dumpNode(_HNObject item2) async {
+		void dumpNode(_HNObject item2) {
 			if (item2.by.isNotEmpty) {
-				posts.add(await _makePost(item2));
+				posts.add(_makePost(item2));
 			}
 			for (final child in item2.children) {
-				await dumpNode(child);
+				dumpNode(child);
 			}
 		}
-		await dumpNode(item);
+		dumpNode(item);
 		return posts;
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
-			final ids = await _getSecondChancePoolIds(after.id, priority: priority);
-			return (await Future.wait(ids.map((id) => _getThreadForCatalog(id, priority: priority)))).tryMap((e) => e).toList();
+			final ids = await _getSecondChancePoolIds(after.id, priority: priority, cancelToken: cancelToken);
+			return (await Future.wait(ids.map((id) => _getThreadForCatalog(id, priority: priority, cancelToken: cancelToken)))).tryMap((e) => e).toList();
 		}
 		else {
 			final lastCatalogIds = _lastCatalogIds[variant];
@@ -488,23 +488,23 @@ class SiteHackerNews extends ImageboardSite {
 			if (index == -1) {
 				return [];
 			}
-			return (await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map((id) => _getThreadForCatalog(id, priority: priority)))).tryMap((e) => e).toList();
+			return (await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map((id) => _getThreadForCatalog(id, priority: priority, cancelToken: cancelToken)))).tryMap((e) => e).toList();
 		}
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) async {
-		final item = await _getAlgolia(id, priority: priority);
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		final item = await _getAlgolia(id, priority: priority, cancelToken: cancelToken);
 		return _makePost(item);
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final item = await _getAlgolia(thread.id, priority: priority);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final item = await _getAlgolia(thread.id, priority: priority, cancelToken: cancelToken);
 		if (item is! _HNStory) {
 			throw Exception('HN item ${thread.id} is not a thread');
 		}
-		final posts = await _getMoreThread(item);
+		final posts = _getMoreThread(item);
 		return Thread(
 			posts_: posts,
 			replyCount: item.descendants,
@@ -565,7 +565,7 @@ class SiteHackerNews extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, String? archiveName}) => getThread(thread, priority: priority);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) => getThread(thread, priority: priority, cancelToken: cancelToken);
 
 	@override
 	List<CatalogVariantGroup> get catalogVariantGroups => const [
@@ -600,7 +600,7 @@ class SiteHackerNews extends ImageboardSite {
 	];
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.get('https://hn.algolia.com/api/v1/search', queryParameters: {
 			'query': query.query,
 			'page': page - 1,
@@ -610,7 +610,7 @@ class SiteHackerNews extends ImageboardSite {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		return ImageboardArchiveSearchResultPage(
 			page: response.data['page'] + 1,
 			maxPage: response.data['nbPages'],

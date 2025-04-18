@@ -130,7 +130,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				getId: (i) => i.id,
 				getParentIds: (i) => i.parentIds,
 				getHasOmittedReplies: (i) => i.hasUnknownStubChildren,
-				updateWithStubItems: (input, stubIds) async {
+				updateWithStubItems: (input, stubIds, cancelToken) async {
 					final output = input.map((item) {
 						if (stubIds.any((i) => i.childId == item.id)) {
 							return _DebuggingItem(

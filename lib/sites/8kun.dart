@@ -42,7 +42,7 @@ class Site8Kun extends SiteLainchan2 {
 	String getAttachmentId(int postId, String imageId) => '${postId}_$imageId';
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(sysUrl, '/board-search.php'), options: Options(
 			responseType: ResponseType.plain,
 			extra: {
@@ -50,7 +50,7 @@ class Site8Kun extends SiteLainchan2 {
 			},
 			// Needed to allow multiple interception
 			validateStatus: (_) => true
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
@@ -102,7 +102,7 @@ class Site8Kun extends SiteLainchan2 {
 	}
 
 	@override
-	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields) async {
+	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields, CancelToken? cancelToken) async {
 		fields['domain_name_post'] = baseUrl;
 		fields['tor'] = 'null';
 	}

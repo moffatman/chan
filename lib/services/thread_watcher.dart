@@ -9,6 +9,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
@@ -282,13 +283,14 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 	}
 
-	Future<void> updateThread(ThreadIdentifier identifier) async {
-		await _updateThread(persistence.getThreadState(identifier));
+	Future<void> updateThread(ThreadIdentifier identifier, {CancelToken? cancelToken}) async {
+		await _updateThread(persistence.getThreadState(identifier), cancelToken);
 	}
 
-	late final _updateThreadDebouncer = Debouncer1(__updateThread);
-	Future<bool> _updateThread(PersistentThreadState threadState) => _updateThreadDebouncer.debounce(threadState);
-	Future<bool> __updateThread(PersistentThreadState threadState) async {
+	late final _updateThreadDebouncer = Debouncer2(__updateThread);
+	Future<bool> _updateThread(PersistentThreadState threadState, [CancelToken? cancelToken])
+		=> _updateThreadDebouncer.debounce(threadState, cancelToken);
+	Future<bool> __updateThread(PersistentThreadState threadState, CancelToken? cancelToken) async {
 		Thread? newThread;
 		try {
 			if (site.isPaged) {
@@ -296,7 +298,12 @@ class ThreadWatcher extends ChangeNotifier {
 				if (oldThread != null) {
 					final lastIncompletePageParentId = oldThread.posts_.tryLast?.parentId;
 					if (lastIncompletePageParentId != null && lastIncompletePageParentId.isNegative) {
-						final newChildren = await site.getStubPosts(oldThread.identifier, [ParentAndChildIdentifier.same(lastIncompletePageParentId)], priority: RequestPriority.functional);
+						final newChildren = await site.getStubPosts(
+							oldThread.identifier,
+							[ParentAndChildIdentifier.same(lastIncompletePageParentId)],
+							priority: RequestPriority.functional,
+							cancelToken: cancelToken
+						);
 						final oldIds = {
 							for (final post in oldThread.posts_)
 								post.id: post.isStub
@@ -312,7 +319,11 @@ class ThreadWatcher extends ChangeNotifier {
 					}
 				}
 			}
-			newThread ??= await site.getThread(threadState.identifier, priority: RequestPriority.functional);
+			newThread ??= await site.getThread(
+				threadState.identifier,
+				priority: RequestPriority.functional,
+				cancelToken: cancelToken
+			);
 		}
 		on ThreadNotFoundException {
 			final watch = persistence.browserState.threadWatches[threadState.identifier];
@@ -329,7 +340,11 @@ class ThreadWatcher extends ChangeNotifier {
 				return true;
 			}
 			try {
-				newThread = await site.getThreadFromArchive(threadState.identifier, priority: RequestPriority.functional);
+				newThread = await site.getThreadFromArchive(
+					threadState.identifier,
+					priority: RequestPriority.functional,
+					cancelToken: cancelToken
+				);
 			}
 			on ThreadNotFoundException {
 				return false;

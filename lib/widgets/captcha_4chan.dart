@@ -719,6 +719,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	bool _cloudGuessFailed = false;
 	String? _lastCloudGuess;
 	String? _ip;
+	CancelToken? cancelToken;
 
 	int get numLetters => Settings.instance.captcha4ChanCustomNumLetters;
 	set numLetters(int setting) => Settings.captcha4ChanCustomNumLettersSetting.value = setting;
@@ -729,12 +730,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		setState(() {
 			_guessingProgress = null;
 			_greyOutPickers = true;
+			cancelToken = CancelToken();
 		});
 		try {
 			final image = await _screenshotImage();
 			final guess = await _cloudGuess(
 				site: widget.site,
-				image: image
+				image: image,
+				cancelToken: cancelToken
 			);
 			_ip = guess.ip ?? _ip;
 			_useCloudGuess(guess.answer);
@@ -754,6 +757,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			setState(() {
 				_guessingProgress = 1;
 				_greyOutPickers = false;
+				cancelToken = null;
 			});
 		}
 	}
@@ -877,10 +881,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				tryAgainAt = null;
 				challenge?.dispose();
 				challenge = null;
+				cancelToken = CancelToken();
 			});
 			challenge = await requestCaptcha4ChanCustomChallenge(
 				site: widget.site,
-				request: widget.request
+				request: widget.request,
+				cancelToken: cancelToken
 			);
 			tryAgainAt = challenge?.tryAgainAt;
 			if (!mounted) return;
@@ -914,6 +920,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			print(st);
 			if (!mounted) return;
 			setState(() {
+				cancelToken = null;
 				error = (e, st);
 			});
 		}
@@ -1562,34 +1569,45 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										)
 									)
 								),
-								Stack(
+								Row(
 									children: [
-										ClipRRect(
-											borderRadius: BorderRadius.circular(8),
-											child: LinearProgressIndicator(
-												value: _guessingProgress,
-												minHeight: 50,
-												valueColor: AlwaysStoppedAnimation(theme.primaryColor),
-												backgroundColor: theme.primaryColor.withOpacity(0.3)
-											)
-										),
-										CupertinoButton(
-											padding: EdgeInsets.zero,
-											onPressed: _greyOutPickers ? null : () {
-												_submit(_solutionController.text);
-											},
-											child: SizedBox(
-												height: 50,
-												child: Center(
-													child: Text(
-														'Submit',
-														style: TextStyle(
-															fontSize: 20,
-															color: theme.backgroundColor
+										Expanded(
+											child: Stack(
+												children: [
+													ClipRRect(
+														borderRadius: BorderRadius.circular(8),
+														child: LinearProgressIndicator(
+															value: _guessingProgress,
+															minHeight: 50,
+															valueColor: AlwaysStoppedAnimation(theme.primaryColor),
+															backgroundColor: theme.primaryColor.withOpacity(0.3)
+														)
+													),
+													CupertinoButton(
+														padding: EdgeInsets.zero,
+														onPressed: _greyOutPickers ? null : () {
+															_submit(_solutionController.text);
+														},
+														child: SizedBox(
+															height: 50,
+															child: Center(
+																child: Text(
+																	'Submit',
+																	style: TextStyle(
+																		fontSize: 20,
+																		color: theme.backgroundColor
+																	)
+																)
+															)
 														)
 													)
-												)
+												]
 											)
+										),
+										HiddenCancelButton(
+											cancelToken: cancelToken,
+											icon: const Icon(CupertinoIcons.xmark),
+											alignment: Alignment.centerRight
 										)
 									]
 								)
@@ -1600,8 +1618,18 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			);
 		}
 		else {
-			return const Center(
-				child: CircularProgressIndicator.adaptive()
+			return Center(
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						const CircularProgressIndicator.adaptive(),
+						HiddenCancelButton(
+							cancelToken: cancelToken,
+							icon: const Text('Cancel'),
+							alignment: Alignment.topCenter
+						)
+					]
+				)
 			);
 		}
 	}

@@ -430,10 +430,11 @@ class Imageboard extends ChangeNotifier {
 			final solution = await solveCaptcha(
 				context: ImageboardRegistry.instance.context!,
 				site: site,
-				request: e.captchaRequest
+				request: e.captchaRequest,
+				cancelToken: cancelToken
 			);
 			if (solution != null) {
-				await e.onSolved(solution);
+				await e.onSolved(solution, cancelToken);
 				// Should be allowed now
 				return await site.submitPost(post, captchaSolution, cancelToken);
 			}

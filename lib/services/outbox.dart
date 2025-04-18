@@ -177,7 +177,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 
 	BoardKey get _board;
 	ImageboardAction get action;
-	Future<CaptchaRequest> _getCaptchaRequest();
+	Future<CaptchaRequest> _getCaptchaRequest(CancelToken cancelToken);
 
 	QueueEntryActionKey get _key => (imageboardKey, _board, site.getQueue(action));
 	OutboxQueue? get queue => Outbox.instance.queues[_key];
@@ -310,13 +310,13 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		final QueueStateNeedsCaptcha<T>? initialNeedsCaptchaState;
 		if (initialState is QueueStateNeedsCaptcha<T>) {
 			initialNeedsCaptchaState = initialState;
+			final cancelToken = CancelToken();
 			try {
-				final cancelToken = CancelToken();
 				_state = QueueStateGettingCaptcha(cancelToken: cancelToken);
 				final savedFields = site.loginSystem?.getSavedLoginFields();
 				if (useLoginSystem && savedFields != null) {
 					try {
-						await site.loginSystem?.login(savedFields, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
+						await site.loginSystem?.login(savedFields, cancelToken).timeout(const Duration(seconds: 15));
 					}
 					catch (e) {
 						final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
@@ -331,10 +331,10 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					}
 				}
 				else {
-					await site.loginSystem?.logout(false).timeout(const Duration(seconds: 15));
+					await site.loginSystem?.logout(false, cancelToken);
 				}
 				DateTime? tryAgainAt0;
-				final request = await _getCaptchaRequest().timeout(const Duration(seconds: 15));
+				final request = await _getCaptchaRequest(cancelToken);
 				final captcha = await solveCaptcha(
 					context: initialState.context?.ifMounted ?? ImageboardRegistry.instance.context,
 					beforeModal: initialState.beforeModal,
@@ -466,7 +466,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						cancelToken: cancelToken
 					);
 					notifyListeners();
-					final result = await _submitImpl(captchaSolution, cancelToken).timeout(const Duration(minutes: 1));
+					final result = await _submitImpl(captchaSolution, cancelToken);
 					_state = QueueStateDone(DateTime.now(), result, captchaSolution);
 					notifyListeners();
 					return true;
@@ -513,7 +513,7 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 	}
 
 	@override
-	Future<CaptchaRequest> _getCaptchaRequest() => site.getCaptchaRequest(post.board, post.threadId);
+	Future<CaptchaRequest> _getCaptchaRequest(CancelToken cancelToken) => site.getCaptchaRequest(post.board, post.threadId, cancelToken: cancelToken);
 
 	@override
 	void delete({bool isReplacement = false}) {
@@ -583,7 +583,7 @@ class QueuedReport extends QueueEntry<void> {
 
 	@override
 	Future<void> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		await method.onSubmit(choice, captchaSolution);
+		await method.onSubmit(choice, captchaSolution, cancelToken: cancelToken);
 	}
 
 	@override
@@ -601,7 +601,7 @@ class QueuedReport extends QueueEntry<void> {
 	ThreadIdentifier? get thread => method.post.thread;
 
 	@override
-	Future<CaptchaRequest> _getCaptchaRequest() async => method.getCaptchaRequest();
+	Future<CaptchaRequest> _getCaptchaRequest(CancelToken cancelToken) async => method.getCaptchaRequest(cancelToken: cancelToken);
 
 	@override
 	bool shouldReplace(QueueEntry other) {
@@ -632,7 +632,7 @@ class QueuedDeletion extends QueueEntry<void> {
 
 	@override
 	Future<void> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		await site.deletePost(thread, receipt, captchaSolution, imageOnly: imageOnly);
+		await site.deletePost(thread, receipt, captchaSolution, cancelToken, imageOnly: imageOnly);
 	}
 
 	@override
@@ -647,7 +647,7 @@ class QueuedDeletion extends QueueEntry<void> {
 	}
 
 	@override
-	Future<CaptchaRequest> _getCaptchaRequest() async => site.getDeleteCaptchaRequest(thread);
+	Future<CaptchaRequest> _getCaptchaRequest(CancelToken cancelToken) async => site.getDeleteCaptchaRequest(thread, cancelToken: cancelToken);
 
 
 	@override

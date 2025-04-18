@@ -57,7 +57,7 @@ class FormBypassInterceptor extends Interceptor {
 								extra: {
 									_kExtraBypassLock: true
 								}
-							));
+							), cancelToken: response.requestOptions.cancelToken);
 							if (postResponse.realUri.path != response.realUri.path) {
 								return await site.client.fetch(response.requestOptions.copyWith(
 									extra: {
@@ -118,17 +118,17 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	}
 	
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
-		return boards ?? (await super.getBoards(priority: priority));
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
+		return boards ?? (await super.getBoards(priority: priority, cancelToken: cancelToken));
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final broken = await super.getThreadImpl(thread, priority: priority);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final broken = await super.getThreadImpl(thread, priority: priority, cancelToken: cancelToken);
 		if (imageThumbnailExtension != '' && !boardsWithHtmlOnlyFlags.contains(thread.board)) {
 			return broken;
 		}
-		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.html'), priority: priority, responseType: ResponseType.plain);
+		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.html'), priority: priority, responseType: ResponseType.plain, cancelToken: cancelToken);
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.posts_.expand((p) => p.attachments)) {
@@ -164,8 +164,8 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
-		final broken = await super.getCatalogImpl(board, priority: priority);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final broken = await super.getCatalogImpl(board, priority: priority, cancelToken: cancelToken);
 		if (imageThumbnailExtension != '') {
 			return broken;
 		}
@@ -174,7 +174,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 				kPriority: priority
 			},
 			responseType: ResponseType.plain
-		));
+		), cancelToken: cancelToken);
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.expand((t) => t.attachments)) {

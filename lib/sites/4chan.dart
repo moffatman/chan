@@ -562,7 +562,7 @@ class Site4Chan extends ImageboardSite {
 		return null;
 	});
 
-	Future<int?> _getThreadPage(ThreadIdentifier thread, {required RequestPriority priority}) async {
+	Future<int?> _getThreadPage(ThreadIdentifier thread, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final now = DateTime.now();
 		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_catalogCacheLifetime) > 0) {
 			final response = await client.getUri(Uri.https(apiUrl, '/${thread.board}/catalog.json'), options: Options(
@@ -570,7 +570,7 @@ class Site4Chan extends ImageboardSite {
 				extra: {
 					kPriority: priority
 				}
-			));
+			), cancelToken: cancelToken);
 			if (response.statusCode != 200) {
 				if (response.statusCode == 404) {
 					return Future.error(BoardNotFoundException(thread.board));
@@ -598,7 +598,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		Map<String, String>? headers;
 		if (_threadCache['${thread.board}/${thread.id}'] != null) {
 			headers = {
@@ -614,7 +614,8 @@ class Site4Chan extends ImageboardSite {
 				extra: {
 					kPriority: priority
 				}
-			)
+			),
+			cancelToken: cancelToken
 		);
 		if (response.statusCode == 200) {
 			final data = response.data;
@@ -636,7 +637,7 @@ class Site4Chan extends ImageboardSite {
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: data['posts'][0]['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
-					currentPage: await _getThreadPage(thread, priority: priority),
+					currentPage: await _getThreadPage(thread, priority: priority, cancelToken: cancelToken),
 					uniqueIPCount: data['posts'][0]['unique_ips'],
 					customSpoilerId: data['posts'][0]['custom_spoiler']
 				);
@@ -662,24 +663,24 @@ class Site4Chan extends ImageboardSite {
 			}
 			throw HTTPStatusException.fromResponse(response);
 		}
-		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread, priority: priority);
+		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread, priority: priority, cancelToken: cancelToken);
 		return _threadCache['${thread.board}/${thread.id}']!.thread;
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) async {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		throw Exception('Not implemented');
 	}
 
 	static const _kArchivePageSize = 100;
-	Future<List<Thread>> _getArchive(String board, int? after, {required RequestPriority priority}) async {
+	Future<List<Thread>> _getArchive(String board, int? after, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/archive'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.plain
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(BoardNotFoundException(board));
@@ -703,7 +704,7 @@ class Site4Chan extends ImageboardSite {
 		if (selectedIds.isEmpty) {
 			return [];
 		}
-		final cache = await queryPreferredArchive(board, selectedIds).onError((e, st) {
+		final cache = await queryPreferredArchive(board, selectedIds, cancelToken: cancelToken).onError((e, st) {
 			print('Error querying preferred archive: $e');
 			return {};
 		});
@@ -768,16 +769,16 @@ class Site4Chan extends ImageboardSite {
 	});
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (variant == CatalogVariant.chan4NativeArchive) {
-			return _getArchive(board, null, priority: priority);
+			return _getArchive(board, null, priority: priority, cancelToken: cancelToken);
 		}
 		final response = await client.getUri(Uri.https(apiUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(BoardNotFoundException(board));
@@ -795,13 +796,13 @@ class Site4Chan extends ImageboardSite {
 		return threads;
 	}
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(apiUrl, '/boards.json'), options: Options(
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		return (response.data['boards'] as List<dynamic>).map(wrapUnsafe((board) {
 			return ImageboardBoard(
 				name: board['board'],
@@ -824,15 +825,15 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (variant == CatalogVariant.chan4NativeArchive) {
-			return _getArchive(board, after.id, priority: priority);
+			return _getArchive(board, after.id, priority: priority, cancelToken: cancelToken);
 		}
 		return [];
 	}
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 			return const NoCaptchaRequest();
 		}
@@ -956,7 +957,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(sysUrl, '/${thread.board}/imgboard.php'),
 			data: FormData.fromMap({
@@ -970,7 +971,8 @@ class Site4Chan extends ImageboardSite {
 					kPriority: RequestPriority.interactive
 				},
 				responseType: ResponseType.plain
-			)
+			),
+			cancelToken: cancelToken
 		);
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
@@ -1013,12 +1015,12 @@ class Site4Chan extends ImageboardSite {
 	final Map<PostIdentifier, List<ChoiceReportMethodChoice>> _cachedReportForms = {};
 
 	@override
-	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
+	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post, {CancelToken? cancelToken}) async {
 		final endpoint = Uri.https(sysUrl, '/${post.board}/imgboard.php', {
 			'mode': 'report',
 			'no': post.postId.toString()
 		});
-		Future<void> onSubmit(ChoiceReportMethodChoice choice, CaptchaSolution captchaSolution) async {
+		Future<void> onSubmit(ChoiceReportMethodChoice choice, CaptchaSolution captchaSolution, {CancelToken? cancelToken}) async {
 			final response = await client.postUri(endpoint, data: {
 				...choice.value,
 				if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
@@ -1035,9 +1037,10 @@ class Site4Chan extends ImageboardSite {
 					'referer': endpoint.toString()
 				},
 				extra: {
+					kPriority: RequestPriority.interactive,
 					if (captchaSolution.cloudflare && stickyCloudflare) kCloudflare: true
 				}
-			));
+			), cancelToken: cancelToken);
 			final responseDocument = parse(response.data);
 			final message = responseDocument.querySelector('font')?.text;
 			if (message == null || !message.contains('submitted')) {
@@ -1045,7 +1048,16 @@ class Site4Chan extends ImageboardSite {
 			}
 		}
 		try {
-			final response = await client.getUri(endpoint, options: Options(responseType: ResponseType.plain));
+			final response = await client.getUri(
+				endpoint,
+				options: Options(
+					responseType: ResponseType.plain,
+					extra: {
+						kPriority: RequestPriority.interactive
+					}
+				),
+				cancelToken: cancelToken
+			);
 			final document = parse(response.data);
 			final error = document.querySelector('h3 > font[color="#FF0000"]')?.text;
 			if (error != null) {
@@ -1064,11 +1076,11 @@ class Site4Chan extends ImageboardSite {
 							choices: cached,
 							post: post,
 							question: 'Report type',
-							getCaptchaRequest: () async {
+							getCaptchaRequest: ({CancelToken? cancelToken}) async {
 								if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 									return const NoCaptchaRequest();
 								}
-								return await getCaptchaRequest(post.board, 1);
+								return await getCaptchaRequest(post.board, 1, cancelToken: cancelToken);
 							},
 							onSubmit: onSubmit
 						);
@@ -1108,11 +1120,11 @@ class Site4Chan extends ImageboardSite {
 			final captchaMatch = RegExp(r"TCaptcha\.init\(document\.getElementById\('t-root'\), '([^']+)', (\d+)\)").firstMatch(captchaScript);
 			return ChoiceReportMethod(
 				question: 'Report type',
-				getCaptchaRequest: () async {
+				getCaptchaRequest: ({CancelToken? cancelToken}) async {
 					if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 						return const NoCaptchaRequest();
 					}
-					return await getCaptchaRequest(captchaMatch?.group(1) ?? post.board, int.tryParse(captchaMatch?.group(2) ?? '') ?? 1);
+					return await getCaptchaRequest(captchaMatch?.group(1) ?? post.board, int.tryParse(captchaMatch?.group(2) ?? '') ?? 1, cancelToken: cancelToken);
 				},
 				post: post,
 				choices: choices,
@@ -1297,9 +1309,9 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (query.boards.isNotEmpty) {
-			return searchArchives(query, page: page, lastResult: lastResult, priority: priority);
+			return searchArchives(query, page: page, lastResult: lastResult, priority: priority, cancelToken: cancelToken);
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
 		final response = await client.getUri(Uri.https(searchUrl, '/', {
@@ -1313,7 +1325,7 @@ class Site4Chan extends ImageboardSite {
 				kPriority: priority
 			},
 			responseType: ResponseType.plain
-		));
+		), cancelToken: cancelToken);
 		final document = parse(response.data);
 		final threads = document.querySelectorAll('.thread').expand((thread) {
 			if (thread.querySelector('.post.op') == null) {
@@ -1468,12 +1480,18 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
+  Future<void> logoutImpl(bool fromBothWifiAndCellular, CancelToken cancelToken) async {
 		await parent.client.postUri(
 			Uri.https(parent.sysUrl, '/auth'),
 			data: FormData.fromMap({
 				'logout': '1'
-			})
+			}),
+			options: Options(
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			),
+			cancelToken: cancelToken
 		);
 		loggedIn[Persistence.currentCookies] = false;
 		if (fromBothWifiAndCellular) {
@@ -1487,25 +1505,30 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields, {CancelToken? cancelToken}) async {
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields, CancelToken cancelToken) async {
 		final response = await parent.client.postUri(
 			Uri.https(parent.sysUrl, '/auth'),
 			data: FormData.fromMap({
 				for (final field in fields.entries) field.key.formKey: field.value
 			}),
-			options: Options(responseType: ResponseType.plain),
+			options: Options(
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			),
 			cancelToken: cancelToken
 		);
 		final document = parse(response.data);
 		final message = document.querySelector('h2')?.text;
 		if (message == null) {
 			loggedIn[Persistence.currentCookies] = false;
-			await logout(false);
+			await logout(false, cancelToken);
 			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
 		}
 		if (!message.contains('Success!')) {
 			loggedIn[Persistence.currentCookies] = false;
-			await logout(false);
+			await logout(false, cancelToken);
 			throw ImageboardSiteLoginException(message);
 		}
 		loggedIn[Persistence.currentCookies] = true;

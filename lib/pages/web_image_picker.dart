@@ -7,6 +7,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/network_image.dart';
@@ -542,12 +543,13 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																return;
 															}
 															final response = await modalLoad(context, 'Downloading...', (controller) async {
-																final token = CancelToken();
-																controller.onCancel = token.cancel;
 																final response = await settings.client.get(image.src, options: Options(
 																	responseType: ResponseType.bytes,
-																	headers: headers
-																), cancelToken: token);
+																	headers: headers,
+																	extra: {
+																		kPriority: RequestPriority.interactive
+																	}
+																), cancelToken: controller.cancelToken);
 																if (response.data is Uint8List) {
 																	return response;
 																}
@@ -555,8 +557,11 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																// we get <img> as String, just try again
 																return await settings.client.get(image.src, options: Options(
 																	responseType: ResponseType.bytes,
-																	headers: headers
-																), cancelToken: token);
+																	headers: headers,
+																	extra: {
+																		kPriority: RequestPriority.interactive
+																	}
+																), cancelToken: controller.cancelToken);
 															}, cancellable: true);
 															if (!context.mounted) return;
 															Navigator.of(context).pop(response.data);

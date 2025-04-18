@@ -40,6 +40,7 @@ import 'package:chan/widgets/sliver_staggered_grid.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:chan/models/thread.dart';
@@ -1034,9 +1035,18 @@ class BoardPageState extends State<BoardPage> {
 						(mouseSettings.supportMouse && !Navigator.of(context).canPop()) ||
 						// Space is generally available
 						!(context.watch<MasterDetailLocation?>()?.isVeryConstrained ?? false)
-					) AdaptiveIconButton(
-						icon: const Icon(CupertinoIcons.refresh),
-						onPressed: _listController.blockAndUpdate
+					) AnimatedBuilder(
+						animation: _listController,
+						builder: (context, _) => ValueListenableBuilder<(String, CancelToken)?>(
+							valueListenable: _listController.updatingNow,
+							builder: (context, pair, _) => AdaptiveIconButton(
+								icon: pair == null ? const Icon(CupertinoIcons.refresh) : const Icon(CupertinoIcons.xmark),
+								onPressed: switch (pair) {
+									(String _, CancelToken cancelToken) => cancelToken.cancel,
+									null => _listController.blockAndUpdate
+								}
+							)
+						)
 					),
 					if (imageboard?.site.supportsPosting ?? false) NotifyingIcon(
 						sideBySide: true,
@@ -1197,16 +1207,23 @@ class BoardPageState extends State<BoardPage> {
 														maxCrossAxisExtent: settings.catalogGridWidth
 													) : null,
 													controller: _listController,
-													listUpdater: (options) => site.getCatalog(board!.name, variant: variant, priority: RequestPriority.interactive).then((list) async {
+													listUpdater: (options) async {
+														final list = await site.getCatalog(
+															board!.name,
+															variant: variant,
+															priority: RequestPriority.interactive,
+															cancelToken: options.cancelToken
+														);
 														for (final thread in list) {
 															await thread.preinit(catalog: true);
 															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 														}
 														_lastCatalogUpdateTime = DateTime.now();
 														if (settings.hideOldStickiedThreads && board?.name != 'chance') {
-															list = list.where((thread) {
-																return !thread.isSticky || _lastCatalogUpdateTime!.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
-															}).toList();
+															final threshold = _lastCatalogUpdateTime!.subtract(_oldThreadThreshold);
+															list.removeWhere((thread) {
+																return thread.isSticky && thread.time.isBefore(threshold);
+															});
 														}
 														Future.delayed(const Duration(milliseconds: 100), () {
 															if (!mounted) return;
@@ -1215,9 +1232,15 @@ class BoardPageState extends State<BoardPage> {
 															}
 														});
 														return list;
-													}),
+													},
 													autoExtendDuringScroll: true,
-													listExtender: (after) => site.getMoreCatalog(board!.name, after, variant: variant, priority: RequestPriority.interactive).then((list) async {
+													listExtender: (after, cancelToken) => site.getMoreCatalog(
+														board!.name,
+														after,
+														variant: variant,
+														priority: RequestPriority.interactive,
+														cancelToken: cancelToken
+													).then((list) async {
 														for (final thread in list) {
 															await thread.preinit(catalog: true);
 															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();

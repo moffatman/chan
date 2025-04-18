@@ -21,7 +21,9 @@ import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -237,13 +239,7 @@ void showUndoToast({
 
 class ModalLoadController {
 	final progress = ValueNotifier<(String, double?)>(('', null));
-	bool cancelled = false;
-	VoidCallback? onCancel;
-
-	void cancel() {
-		cancelled = true;
-		onCancel?.call();
-	}
+	final cancelToken = CancelToken();
 
 	void dispose() {
 		progress.dispose();
@@ -281,8 +277,8 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 							if (cancellable) CupertinoButton(
 								padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
 								minSize: 0,
-								onPressed: controller.cancelled ? null : () {
-									controller.cancel();
+								onPressed: controller.cancelToken.isCancelled ? null : () {
+									controller.cancelToken.cancel();
 									setDialogState(() {});
 									Future.delayed(const Duration(milliseconds: 750), () {
 										if (!popped && context.mounted) {
@@ -2523,4 +2519,158 @@ class ConditionalShortcut implements ShortcutActivator {
 
 	@override
 	Iterable<LogicalKeyboardKey>? get triggers => parent.triggers;
+}
+
+class Flattener extends SingleChildRenderObjectWidget {
+	const Flattener({
+		required this.flattenWidth,
+		required this.flattenHeight,
+		super.child,
+		super.key
+	});
+
+	final bool flattenWidth;
+	final bool flattenHeight;
+
+	@override
+	RenderFlattener createRenderObject(BuildContext context) {
+		return RenderFlattener(flattenWidth, flattenHeight);
+	}
+
+	@override
+	void updateRenderObject(BuildContext context, RenderFlattener renderObject) {
+		renderObject
+			..flattenWidth = flattenWidth
+			..flattenHeight = flattenHeight;
+	}
+}
+
+class RenderFlattener extends RenderProxyBox {
+	RenderFlattener(this._flattenWidth, this._flattenHeight);
+
+	bool _flattenWidth;
+	set flattenWidth(bool value) {
+		if (value == _flattenWidth) {
+			return;
+		}	
+		_flattenWidth = value;
+		markNeedsLayout();
+	}
+
+	bool _flattenHeight;
+	set flattenHeight(bool value) {
+		if (value == _flattenHeight) {
+			return;
+		}
+		_flattenHeight = value;
+		markNeedsLayout();
+	}
+
+	@override
+	void visitChildrenForSemantics(RenderObjectVisitor visitor) {
+		if (!_flattenWidth && !_flattenHeight) {
+			super.visitChildrenForSemantics(visitor);
+		}
+	}
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+		if (!_flattenWidth && !_flattenHeight) {
+			return super.hitTestChildren(result, position: position);
+		}
+		return false;
+  }
+
+	@override
+  void performLayout() {
+    if (child != null) {
+      child!.layout(constraints, parentUsesSize: true);
+			size = constraints.constrain(Size(
+				_flattenWidth ? 0 : child!.size.width,
+				_flattenHeight ? 0 : child!.size.height
+			));
+    } else {
+      size = computeSizeForNoChild(constraints);
+    }
+  }
+
+	@override
+	void paint(PaintingContext context, Offset offset) {
+		if (_flattenWidth || _flattenHeight) {
+			return;
+		}
+		super.paint(context, offset);
+	}
+}
+
+class HiddenCancelButton extends StatefulWidget {
+	final CancelToken? cancelToken;
+	final Widget icon;
+	final Alignment alignment;
+	final Duration wait;
+	const HiddenCancelButton({
+		required this.cancelToken,
+		required this.icon,
+		required this.alignment,
+		this.wait = const Duration(seconds: 10),
+		super.key
+	});
+	@override
+	createState() => _HiddenCancelButtonState();
+}
+
+class _HiddenCancelButtonState extends State<HiddenCancelButton> {
+	Timer? _timer;
+	bool _show = false;
+
+	void _onTimerFire() {
+		setState(() {
+			_show = true;
+		});
+	}
+
+	@override
+	void initState() {
+		super.initState();
+		if (widget.cancelToken != null) {
+			_timer = Timer(widget.wait, _onTimerFire);
+		}
+	}
+
+	@override
+	void didUpdateWidget(HiddenCancelButton oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.cancelToken != oldWidget.cancelToken) {
+			_show = false;
+			_timer?.cancel();
+			_timer = null;
+			if (widget.cancelToken != null) {
+				_timer = Timer(widget.wait, _onTimerFire);
+			}
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return AnimatedSize(
+			duration: const Duration(milliseconds: 350),
+			curve: Curves.ease,
+			alignment: widget.alignment,
+			child: Flattener(
+				flattenWidth: !_show && widget.alignment.y == 0,
+				flattenHeight: !_show && widget.alignment.x == 0,
+				child: CupertinoInkwell(
+					padding: EdgeInsets.zero,
+					onPressed: widget.cancelToken?.cancel,
+					child: widget.icon
+				)
+			)
+		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_timer?.cancel();
+	}
 }

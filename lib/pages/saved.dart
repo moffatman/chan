@@ -995,7 +995,7 @@ class _SavedPageState extends State<SavedPage> {
 											}
 										}
 										try {
-											await state.imageboard?.threadWatcher.updateThread(state.identifier);
+											await state.imageboard?.threadWatcher.updateThread(state.identifier, cancelToken: options.cancelToken);
 										}
 										catch (e, st) {
 											Future.error(e, st); // crashlytics it
@@ -1022,7 +1022,7 @@ class _SavedPageState extends State<SavedPage> {
 								_missingSavedThreads.value = missing;
 								return ret;
 							},
-							listExtender: (_) async {
+							listExtender: (_, cancelToken) async {
 								final ret = <(PersistentThreadState, Thread)>[];
 								for (int i = 0; i < _savedThreadsChunkSize; i++) {
 									final p = await _savedThreadsLoader?.takeSavedThread();
@@ -1217,7 +1217,7 @@ class _SavedPageState extends State<SavedPage> {
 								_missingYourPostsThreads.value = missing;
 								return ret;
 							},
-							listExtender: (_) async {
+							listExtender: (_, cancelToken) async {
 								final ret = <PostThreadCombo>[];
 								for (int i = 0; i < _yourPostsChunkSize; i++) {
 									final p = await _takeYourPost();
@@ -1953,7 +1953,7 @@ class _MissingControls<T extends Object> extends StatelessWidget {
 					final failed = <ImageboardScoped<T>>[];
 					int i = 0;
 					for (final item in list) {
-						if (controller.cancelled) {
+						if (controller.cancelToken.isCancelled) {
 							break;
 						}
 						if (!await fixer(item)) {

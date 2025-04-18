@@ -292,7 +292,7 @@ class SiteLainchan extends ImageboardSite {
 		return null;
 	}
 
-	Future<ImageboardPoll?> _getPoll(ThreadIdentifier thread) async {
+	Future<ImageboardPoll?> _getPoll(ThreadIdentifier thread, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
 			final response = await client.postUri(Uri.https(sysUrl, '$basePath/poll.php'), data: {
 				'query_poll': '1',
@@ -300,8 +300,11 @@ class SiteLainchan extends ImageboardSite {
 				'board': thread.board
 			}, options: Options(
 				contentType: Headers.formUrlEncodedContentType,
-				responseType: ResponseType.plain
-			));
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: priority
+				}
+			), cancelToken: cancelToken);
 			final data = jsonDecode((response.data as String).trim());
 			final colors = (data['colors'] as List?)?.cast<String>();
 			final question = (data['question'] as List).cast<Map>();
@@ -361,7 +364,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
 		throw Exception('Not implemented');
 	}
 
@@ -369,8 +372,8 @@ class SiteLainchan extends ImageboardSite {
 	String get res => 'res';
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.json'), priority: priority, responseType: ResponseType.json);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.json'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
 		if (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false) {
 			throw const ThreadNotFoundException();
 		}
@@ -388,17 +391,17 @@ class SiteLainchan extends ImageboardSite {
 			replyCount: posts.length - 1,
 			imageCount: posts.skip(1).expand((p) => p.attachments).length,
 			posts_: posts,
-			poll: hasPoll ? await _getPoll(thread) : null
+			poll: hasPoll ? await _getPoll(thread, priority: priority, cancelToken: cancelToken) : null
 		);
 	}
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '$basePath/$board/catalog.json'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(BoardNotFoundException(board));
@@ -433,13 +436,13 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '$basePath/boards.json'), options: Options(
 			responseType: ResponseType.json,
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		return (response.data['boards'] as List<dynamic>).map((board) => ImageboardBoard(
 			name: board['board'],
 			title: board['title'],
@@ -451,7 +454,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@protected
-	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields) async {
+	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields, CancelToken? cancelToken) async {
 		// Hook for subclasses
 	}
 
@@ -460,7 +463,16 @@ class SiteLainchan extends ImageboardSite {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
 		final referer = _getWebUrl(post.board, threadId: post.threadId, mod: loginSystem.isLoggedIn(Persistence.currentCookies));
-		final page = await client.get(referer, options: Options(validateStatus: (x) => true), cancelToken: cancelToken);
+		final page = await client.get(
+			referer,
+			options: Options(
+				validateStatus: (x) => true,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			),
+			cancelToken: cancelToken
+		);
 		final pageDoc = parse(page.data);
 		final Map<String, dynamic> fields = {
 			for (final field in pageDoc.querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
@@ -511,7 +523,7 @@ class SiteLainchan extends ImageboardSite {
 				fields['captcha_text'] = captchaSolution.answer;
 			}
 		}
-		await updatePostingFields(post, fields);
+		await updatePostingFields(post, fields, cancelToken);
 		final response = await client.postUri(
 			Uri.https(sysUrl, '$basePath/post.php'),
 			data: FormData.fromMap(fields),
@@ -571,7 +583,7 @@ class SiteLainchan extends ImageboardSite {
 		int? newPostId;
 		final threadId = post.threadId;
 		await Future.delayed(const Duration(milliseconds: 500));
-		for (int i = 0; newPostId == null && i < 10; i++) {
+		for (int i = 0; newPostId == null && i < 20; i++) {
 			if (threadId == null) {
 				for (final thread in (await getCatalog(post.board, priority: RequestPriority.interactive)).reversed) {
 					if (thread.title == post.subject && (thread.posts[0].span.buildText().similarityTo(post.text) > 0.9) && (thread.time.compareTo(now) >= 0)) {
@@ -592,7 +604,7 @@ class SiteLainchan extends ImageboardSite {
 			await Future.delayed(const Duration(seconds: 2));
 		}
 		if (newPostId == null) {
-			throw TimeoutException('Could not find post ID after submission', const Duration(seconds: 20));
+			throw TimeoutException('Could not find post ID after submission', const Duration(seconds: 40));
 		}
 		return PostReceipt(
 			post: post,
@@ -606,7 +618,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(sysUrl, '$basePath/post.php'),
 			data: FormData.fromMap({
@@ -622,7 +634,8 @@ class SiteLainchan extends ImageboardSite {
 				extra: {
 					kPriority: RequestPriority.interactive
 				}
-			)
+			),
+			cancelToken: cancelToken
 		);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 500) {
@@ -638,12 +651,12 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		return const NoCaptchaRequest();
 	}
 
 	@override
-	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
+	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post, {CancelToken? cancelToken}) async {
 		return WebReportMethod(Uri.https(sysUrl, '$basePath/report.php?post=delete_${post.postId}&board=${post.board}'));
 	}
 
@@ -747,10 +760,15 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> logoutImpl(bool fromBothWifiAndCellular) async {
+  Future<void> logoutImpl(bool fromBothWifiAndCellular, CancelToken cancelToken) async {
 		final sysUrl = Uri.https(parent.sysUrl, '${parent.basePath}/');
 		final modUrl = Uri.https(parent.sysUrl, '${parent.basePath}/mod.php');
-		final response = await parent.client.getUri(modUrl, options: Options(responseType: ResponseType.plain));
+		final response = await parent.client.getUri(modUrl, options: Options(
+			responseType: ResponseType.plain,
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
+		), cancelToken: cancelToken);
 		final document = parse(response.data);
 		if (document.querySelector('title')?.text != 'Login') {
 			// Actually logged in
@@ -760,8 +778,11 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 			}
 			await parent.client.getUri(modUrl.resolve(logoutLink), options: Options(
 				followRedirects: false, // dio loses the cookies in the first 303 response
-				validateStatus: (status) => (status ?? 0) < 400
-			));
+				validateStatus: (status) => (status ?? 0) < 400,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			), cancelToken: cancelToken);
 		}
 		loggedIn[Persistence.currentCookies] = false;
 		if (fromBothWifiAndCellular) {
@@ -779,7 +800,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   }
 
   @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields, {CancelToken? cancelToken}) async {
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields, CancelToken cancelToken) async {
     final response = await parent.client.postUri(
 			Uri.https(parent.sysUrl, '${parent.basePath}/mod.php'),
 			data: {
@@ -790,13 +811,16 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 				responseType: ResponseType.plain,
 				contentType: Headers.formUrlEncodedContentType,
 				followRedirects: false,
-				validateStatus: (x) => true
+				validateStatus: (x) => true,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
 			),
 			cancelToken: cancelToken
 		);
 		final document = parse(response.data);
 		if (document.querySelector('h2') != null) {
-			await logout(false);
+			await logout(false, cancelToken);
 			throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
 		}
 		loggedIn[Persistence.currentCookies] = true;

@@ -30,7 +30,7 @@ class SiteSoyjak extends SiteLainchan2 {
 	String get siteType => 'soyjak';
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		if (boardsWithCaptcha?.contains(board) ?? true) {
 			// If boardsWithCaptcha == null, every board has captcha
 			return McCaptchaRequest(
@@ -55,7 +55,7 @@ class SiteSoyjak extends SiteLainchan2 {
 	}
 
 	@override
-	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields) async {
+	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields, CancelToken? cancelToken) async {
 		fields['integrity-v2'] = await solveJavascriptChallenge(
 			url: Uri.parse(getWebUrl(
 				board: post.board,
@@ -64,7 +64,8 @@ class SiteSoyjak extends SiteLainchan2 {
 			javascript: 'Module.ccall("x", "string")',
 			waitJavascript: 'Object.keys(wasmExports).length > 0',
 			priority: RequestPriority.interactive,
-			name: 'McChallenge'
+			name: 'McChallenge',
+			cancelToken: cancelToken
 		);
 	}
 

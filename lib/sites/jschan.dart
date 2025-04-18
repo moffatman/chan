@@ -158,7 +158,7 @@ class SiteJsChan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/forms/board/${thread.board}/actions'),
 			data: {
@@ -183,7 +183,8 @@ class SiteJsChan extends ImageboardSite {
 				contentType: Headers.formUrlEncodedContentType,
 				validateStatus: (_) => true,
 				responseType: null
-			)
+			),
+			cancelToken: cancelToken
 		);
 		String? title;
 		if (response.data is Map) {
@@ -206,7 +207,7 @@ class SiteJsChan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final list = <ImageboardBoard>[];
 		int page = 1;
 		int maxPage = 1;
@@ -221,7 +222,7 @@ class SiteJsChan extends ImageboardSite {
 				extra: {
 					kPriority: priority
 				}
-			));
+			), cancelToken: cancelToken);
 			page++;
 			maxPage = response.data['maxPage'] as int;
 			list.addAll((response.data['boards'] as List).where((board) => board['webring'] != true).map((board) => ImageboardBoard(
@@ -233,7 +234,12 @@ class SiteJsChan extends ImageboardSite {
 				maxWebmSizeBytes: 16000000
 			)));
 			// The server has some bad caching, you will keep getting the same page if you don't wait
-			await Future.delayed(const Duration(seconds: 2));
+			if (cancelToken != null) {
+				await cancelToken.sleep(const Duration(seconds: 2));
+			}
+			else {
+				await Future.delayed(const Duration(seconds: 2));
+			}
 		}
 		return list;
 	}
@@ -244,10 +250,10 @@ class SiteJsChan extends ImageboardSite {
 	};
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async => _getCaptcha(postingCaptcha);
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async => _getCaptcha(postingCaptcha);
 
 	@override
-	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread) async => _getCaptcha(deletingCaptcha);
+	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread, {CancelToken? cancelToken}) async => _getCaptcha(deletingCaptcha);
 
 	Post _makePost(Map post) {
 		final threadId = post['thread'] ?? post['postId'] /* op */;
@@ -305,23 +311,23 @@ class SiteJsChan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		return (response.data as List).cast<Map>().map(_makeThread).toList();
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) async {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		throw UnimplementedError();
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}.json'), priority: priority, responseType: ResponseType.json);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}.json'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
 		return _makeThread(response.data);
 	}
 

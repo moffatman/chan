@@ -19,7 +19,7 @@ class SiteLainchanOrg extends SiteLainchan {
 	});
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '$basePath$boardsPath'), options: Options(
 			responseType: ResponseType.plain,
 			extra: {
@@ -27,7 +27,7 @@ class SiteLainchanOrg extends SiteLainchan {
 			},
 			// Needed to allow multiple interception
 			validateStatus: (_) => true
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}

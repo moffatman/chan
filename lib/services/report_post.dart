@@ -23,7 +23,7 @@ Future<void> reportPost({
 		final method = await modalLoad(
 			context,
 			'Fetching report details...',
-			(_) => site.getPostReportMethod(post),
+			(c) => site.getPostReportMethod(post, cancelToken: c.cancelToken),
 			wait: const Duration(milliseconds: 100)
 		);
 		final outerContext = context;

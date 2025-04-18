@@ -184,7 +184,7 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/imgboard.php'),
 			data: FormData.fromMap({
@@ -207,7 +207,8 @@ class SiteKarachan extends ImageboardSite {
 				extra: {
 					kPriority: RequestPriority.interactive
 				}
-			)
+			),
+			cancelToken: cancelToken
 		);
 		if (response.data is! String) {
 			throw Exception('Bad response: ${response.data}');
@@ -225,13 +226,13 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/search.php'), options: Options(
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.plain
-		));
+		), cancelToken: cancelToken);
 		final document = parse(response.data);
 		return document.querySelectorAll('#menu a[data-linktype="imageboard"]').map((e) => ImageboardBoard(
 			name: e.attributes['data-short']!,
@@ -244,7 +245,7 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		return Recaptcha3Request(
 			sourceUrl: getWebUrlImpl(board, threadId),
 			key: captchaKey,
@@ -352,7 +353,7 @@ class SiteKarachan extends ImageboardSite {
 		);
 	}
 
-	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority}) async {
+	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final uri = Uri.https(baseUrl, page == 1 ? '/$board/' : '/$board/${page - 1}.html');
 		final response = await client.getUri(
 			uri,
@@ -361,7 +362,8 @@ class SiteKarachan extends ImageboardSite {
 					kPriority: priority
 				},
 				responseType: ResponseType.plain
-			)
+			),
+			cancelToken: cancelToken
 		);
 		final document = parse(response.data);
 		return document.querySelectorAll('.thread').map((e) {
@@ -370,29 +372,30 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
-		return await _getCatalogPage(board, 1, priority: priority);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		return await _getCatalogPage(board, 1, priority: priority, cancelToken: cancelToken);
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
-		return await _getCatalogPage(board, (after.currentPage ?? 0) + 1, priority: priority);
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		return await _getCatalogPage(board, (after.currentPage ?? 0) + 1, priority: priority, cancelToken: cancelToken);
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
 		throw UnimplementedError();
 	}
 
 	static final _fileInfoPattern = RegExp(r'\((\d+(?:\.\d+)?)([KMB]), (\d+)x(\d+)(?: [^ ]+)?, (.+?)(?: \[i] \[g\])?\)');
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final uri = Uri.https(baseUrl,'/${thread.board}/res/${thread.id}.html');
 		final response = await client.getThreadUri(
 			uri,
 			priority: priority,
-			responseType: ResponseType.plain
+			responseType: ResponseType.plain,
+			cancelToken: cancelToken
 		);
 		final document = parse(response.data);
 		return _makeThread(thread.board, uri, document.querySelector('.thread')!);
@@ -453,7 +456,8 @@ class SiteKarachan extends ImageboardSite {
 				extra: {
 					kPriority: RequestPriority.interactive
 				}
-			)
+			),
+			cancelToken: cancelToken
 		);
 		if (response.data is! String) {
 			throw Exception('Bad response: ${response.data}');

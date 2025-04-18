@@ -267,7 +267,7 @@ class ReportFailedException implements Exception {
 
 class AdditionalCaptchaRequiredException implements Exception {
 	final CaptchaRequest captchaRequest;
-	final Future<void> Function(CaptchaSolution) onSolved;
+	final Future<void> Function(CaptchaSolution, CancelToken) onSolved;
 	const AdditionalCaptchaRequiredException({
 		required this.captchaRequest,
 		required this.onSolved
@@ -1299,8 +1299,8 @@ class ChoiceReportMethod extends ImageboardReportMethod {
 	final PostIdentifier post;
 	final String question;
 	final List<ChoiceReportMethodChoice> choices;
-	final Future<CaptchaRequest> Function() getCaptchaRequest;
-	final Future<void> Function(ChoiceReportMethodChoice choice, CaptchaSolution captchaSolution) onSubmit;
+	final Future<CaptchaRequest> Function({CancelToken? cancelToken}) getCaptchaRequest;
+	final Future<void> Function(ChoiceReportMethodChoice choice, CaptchaSolution captchaSolution, {CancelToken? cancelToken}) onSubmit;
 	const ChoiceReportMethod({
 		required this.post,
 		required this.question,
@@ -1505,16 +1505,16 @@ abstract class ImageboardSiteArchive {
 		client.httpClientAdapter = BadCertificateHttpClientAdapter();
 	}
 	String get name;
-	Future<Post> getPost(String board, int id, {required RequestPriority priority});
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority});
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken});
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	@protected
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority});
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
 		return runEphemerallyLocked('getCatalog($name,$board)', () async {
 			if (acceptCachedAfter != null && (_lastCatalogCacheTime[board]?.isAfter(acceptCachedAfter) ?? false)) {
 				return _catalogCache.values.where((t) => !t.isArchived && t.board == board).toList(); // Order is wrong but shouldn't matter
 			}
-			final catalog = await getCatalogImpl(board, variant: variant, priority: priority);
+			final catalog = await getCatalogImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
 			final oldThreads = Map.fromEntries(_catalogCache.entries.where((e) => e.key.board == board));
 			for (final newThread in catalog) {
 				oldThreads.remove(newThread.identifier);
@@ -1530,9 +1530,9 @@ abstract class ImageboardSiteArchive {
 	}
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	@protected
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async => [];
-	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
-		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, priority: priority);
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async => [];
+	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, priority: priority, cancelToken: cancelToken);
 		_catalogCache.addAll({
 			for (final t in moreCatalog)
 				t.identifier: t
@@ -1540,8 +1540,8 @@ abstract class ImageboardSiteArchive {
 		return moreCatalog;
 	}
 	Thread? getThreadFromCatalogCache(ThreadIdentifier identifier) => _catalogCache[identifier];
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority});
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority});
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken});
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken});
 	@protected
 	String getWebUrlImpl(String board, [int? threadId, int? postId]);
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
@@ -1575,11 +1575,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get baseUrl;
 	String? get imageUrl => null;
 	Uri? get iconUrl;
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]);
-	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread) async => const NoCaptchaRequest();
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken});
+	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread, {CancelToken? cancelToken}) async => const NoCaptchaRequest();
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken);
 	Duration getActionCooldown(String board, ImageboardAction action, CookieJar cookies) => const Duration(seconds: 3);
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');
 	}
 
@@ -1630,7 +1630,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw BoardNotArchivedException(board);
 		}
 	}
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, String? archiveName}) async {
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) async {
 		final Map<ImageboardSiteArchive, Object> errors = {};
 		Thread? fallback;
 		final isReallyArchived = () async {
@@ -1640,7 +1640,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				if (t0 != null && t0.archiveName == null && t0.isArchived) {
 					return true;
 				}
-				final t = await getThread(thread, priority: priority);
+				final t = await getThread(thread, priority: priority, cancelToken: cancelToken);
 				return t.isArchived;
 			}
 			on ThreadNotFoundException {
@@ -1664,7 +1664,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					extra: {
 						kPriority: priority
 					}
-				));
+				), cancelToken: cancelToken);
 				if ((response.statusCode ?? 400) >= 400) {
 					throw HTTPStatusException.fromResponse(response);
 				}
@@ -1675,7 +1675,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			final archive = archives.tryFirstWhere((a) => a.name == archiveName);
 			if (archive != null) {
 				try {
-					final thread_ = await archive.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
+					final thread_ = await archive.getThread(thread, priority: priority, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
 					fallback = thread_;
@@ -1711,7 +1711,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					return null;
 				}
 				try {
-					final thread_ = await archive.getThread(thread, priority: RequestPriority.cosmetic).timeout(const Duration(seconds: 15));
+					final thread_ = await archive.getThread(thread, priority: RequestPriority.cosmetic, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
 					if (completer.isCompleted) return null;
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
@@ -1751,7 +1751,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				for (final error in errors.entries.toList(growable: false)) { // concurrent modification
 					if (_isCloudflareNotAllowedException(error.value)) {
 						try {
-							final thread_ = await error.key.getThread(thread, priority: priority).timeout(const Duration(seconds: 15));
+							final thread_ = await error.key.getThread(thread, priority: priority, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
 							thread_.archiveName = error.key.name;
 							fallback = thread_;
 							try {
@@ -1790,16 +1790,17 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) => searchArchives(query, page: page, lastResult: lastResult, priority: priority);
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken})
+		=> searchArchives(query, page: page, lastResult: lastResult, priority: priority, cancelToken: cancelToken);
 
-	Future<ImageboardArchiveSearchResultPage> searchArchives(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
+	Future<ImageboardArchiveSearchResultPage> searchArchives(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final errors = <ImageboardSiteArchive, Object>{};
 		for (final archive in archives) {
 			if (persistence?.browserState.disabledArchiveNames.contains(archive.name) ?? false) {
 				continue;
 			}
 			try {
-				return await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic);
+				return await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic, cancelToken: cancelToken);
 			}
 			catch (e, st) {
 				if (e is! BoardNotFoundException) {
@@ -1816,7 +1817,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				// No need to check disabledArchiveNames, they can't fail to begin with
 				if (_isCloudflareNotAllowedException(error.value)) {
 					try {
-						return await error.key.search(query, page: page, lastResult: lastResult, priority: priority);
+						return await error.key.search(query, page: page, lastResult: lastResult, priority: priority, cancelToken: cancelToken);
 					}
 					catch (e, st) {
 						if (e is! BoardNotFoundException) {
@@ -1832,7 +1833,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		throw Exception('Search failed - exhausted all archives\n${errors.entries.map((e) => '${e.key.name}: ${e.value.toStringDio()}').join('\n')}');
 	}
 	Uri? getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) => null;
-	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post) async {
+	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post, {CancelToken? cancelToken}) async {
 		return WebReportMethod(Uri.parse(getWebUrlImpl(post.board, post.threadId, post.postId)));
 	}
 	Imageboard? imageboard;
@@ -1883,7 +1884,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get supportsPostUpvotes => false;
 	int? get postsPerPage => null;
 	bool get isPaged => postsPerPage != null;
-	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority}) async => throw UnimplementedError();
+	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async => throw UnimplementedError();
 	bool get supportsMultipleBoards => true;
 	bool get supportsPushNotifications => false;
 	bool get supportsUserInfo => false;
@@ -1944,7 +1945,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@mustCallSuper
 	void dispose() {}
 	@protected
-	Future<Map<int, String>> queryPreferredArchive(String board, List<int> threadIds) async {
+	Future<Map<int, String>> queryPreferredArchive(String board, List<int> threadIds, {CancelToken? cancelToken}) async {
 		final sorted = threadIds.toList()..sort();
 		final diffs = List.generate(sorted.length - 1, (i) => sorted[i + 1] - sorted[i]);
 		final response = await client.get('$_preferredArchiveApiRoot/ops', queryParameters: {
@@ -1953,16 +1954,16 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			'board': board,
 			'base': sorted.first.toString(),
 			'diffs': base64Url.encode(gzip.encode(utf8.encode(diffs.join(','))))
-		});
+		}, cancelToken: cancelToken);
 		return {
 			for (final entry in (response.data as Map).entries) int.parse(entry.key as String): entry.value as String
 		};
 	}
 	@protected
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority});
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		return await getThreadImpl(thread, variant: variant, priority: priority);
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		return await getThreadImpl(thread, variant: variant, priority: priority, cancelToken: cancelToken);
 	}
 	Future<ImageboardUserInfo> getUserInfo(String username) async => throw UnimplementedError();
 	String getWebUrl({
@@ -2007,7 +2008,7 @@ abstract class ImageboardSiteLoginSystem {
 	bool get hidden;
 	Uri? get iconUrl => null;
 	List<ImageboardSiteLoginField> getLoginFields();
-	Future<void> login(Map<ImageboardSiteLoginField, String> fields, {CancelToken? cancelToken});
+	Future<void> login(Map<ImageboardSiteLoginField, String> fields, CancelToken cancelToken);
 	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {
 		 if (parent.persistence?.browserState.loginFields.isNotEmpty ?? false) {
 			 try {
@@ -2026,13 +2027,13 @@ abstract class ImageboardSiteLoginSystem {
 		parent.persistence?.browserState.loginFields.clear();
 		await parent.persistence?.didUpdateBrowserState();
 	}
-	Future<void> logoutImpl(bool fromBothWifiAndCellular);
-	Future<void> logout(bool fromBothWifiAndCellular) async {
+	Future<void> logoutImpl(bool fromBothWifiAndCellular, CancelToken cancelToken);
+	Future<void> logout(bool fromBothWifiAndCellular, CancelToken cancelToken) async {
 		if (!fromBothWifiAndCellular && !(loggedIn[Persistence.currentCookies] ?? getSavedLoginFields() != null)) {
 			// No-op
 			return;
 		}
-		await logoutImpl(fromBothWifiAndCellular);
+		await logoutImpl(fromBothWifiAndCellular, cancelToken);
 	}
 	bool isLoggedIn(CookieJar jar) {
 		return loggedIn.putIfAbsent(jar, () => false);

@@ -105,8 +105,6 @@ Future<File?> downloadToShareCache({
 		if (alreadyCached != null) {
 			return alreadyCached;
 		}
-		final token = CancelToken();
-		controller.onCancel = token.cancel;
 		try {
 			final response = await client.downloadUri(url, path, onReceiveProgress: (received, total) {
 				if (total > 0) {
@@ -115,7 +113,7 @@ Future<File?> downloadToShareCache({
 				else {
 					controller.progress.value = ('', null);
 				}
-			}, cancelToken: token);
+			}, cancelToken: controller.cancelToken);
 			if (filename == null || !filename.contains('.')) {
 				// No clear filename with extension from URL
 				final ext = response.headers.value(Headers.contentTypeHeader)?.split('/').tryLast;

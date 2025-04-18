@@ -453,8 +453,17 @@ class SiteXenforo extends ImageboardSite {
   String get defaultUsername => '';
 
   @override
-  Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
-    final response = await client.getUri(Uri.https(baseUrl, '$basePath/forums/-/list'), options: Options(responseType: ResponseType.plain));
+  Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
+    final response = await client.getUri(
+			Uri.https(baseUrl, '$basePath/forums/-/list'),
+			options: Options(
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: priority
+				}
+			),
+			cancelToken: cancelToken
+		);
 		final document = parse(response.data);
 		return document.querySelectorAll('.node--forum .node-title a').tryMap((e) {
 			final parts = e.attributes['href']?.split('/') ?? [];
@@ -472,7 +481,7 @@ class SiteXenforo extends ImageboardSite {
   }
 
   @override
-  Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+  Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
     return const NoCaptchaRequest();
   }
 
@@ -482,8 +491,17 @@ class SiteXenforo extends ImageboardSite {
 
 	static final _catalogReplyCountPattern = RegExp(r'^(\d+)(K?)$');
 
-	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '$basePath/forums/$board/page-$page'), options: Options(responseType: ResponseType.plain));
+	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		final response = await client.getUri(
+			Uri.https(baseUrl, '$basePath/forums/$board/page-$page'),
+			options: Options(
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: priority
+				}
+			),
+			cancelToken: cancelToken
+		);
 		final document = parse(response.data);
 		return document.querySelectorAll('.structItem--thread').map((e) {
 			// Like "6K" "400"
@@ -544,17 +562,17 @@ class SiteXenforo extends ImageboardSite {
 	}
 
   @override
-  Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) {
-    return _getCatalogPage(board, 1, priority: priority);
+  Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) {
+    return _getCatalogPage(board, 1, priority: priority, cancelToken: cancelToken);
   }
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) {
-		return _getCatalogPage(board, (after.currentPage ?? 1) + 1, priority: priority);
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) {
+		return _getCatalogPage(board, (after.currentPage ?? 1) + 1, priority: priority, cancelToken: cancelToken);
 	}
 
   @override
-  Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
+  Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
     throw UnimplementedError();
   }
 
@@ -646,9 +664,9 @@ class SiteXenforo extends ImageboardSite {
 	static final _pollVotesPattern = RegExp(r'Votes: (\d+)');
 
   @override
-  Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+  Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		// Little trick to always start loading on last page
-    final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-9999999'), priority: priority, responseType: ResponseType.plain);
+    final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-9999999'), priority: priority, responseType: ResponseType.plain, cancelToken: cancelToken);
 		final document = parse(response.data);
 		final lastPostNumber = int.parse(_postNumberPattern.firstMatch(document.querySelectorAll('article.message--post').last.querySelectorAll('header.message-attribution li').last.text)!.group(1)!.replaceAll(',', ''));
 		final label = document.querySelector('.p-title-value .label')?.text;
@@ -722,17 +740,35 @@ class SiteXenforo extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority}) async {
+	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		// Just do one at a time
 		final postId = postIds.first;
 		if (postId.childId.isNegative) {
 			// Request for page
-			final response = await client.getUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-${-postId.childId}'), options: Options(responseType: ResponseType.plain));
+			final response = await client.getUri(
+				Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-${-postId.childId}'),
+				options: Options(
+					responseType: ResponseType.plain,
+					extra: {
+						kPriority: priority
+					}
+				),
+				cancelToken: cancelToken
+			);
 			final document = parse(response.data);
 			return _getPostsFromThreadPage(thread.board, thread.id, document);
 		}
 		// Request for post
-		final response = await client.getUri(Uri.https(baseUrl, '$basePath/goto/post', {'id': postId.childId.toString()}), options: Options(responseType: ResponseType.plain));
+		final response = await client.getUri(
+			Uri.https(baseUrl, '$basePath/goto/post', {'id': postId.childId.toString()}),
+			options: Options(
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: priority
+				}
+			),
+			cancelToken: cancelToken
+		);
 		final document = parse(response.data);
 		return _getPostsFromThreadPage(thread.board, thread.id, document);
 	}
@@ -774,7 +810,7 @@ class SiteXenforo extends ImageboardSite {
 	static final _searchLinkPattern = RegExp(r'/threads/[^/]*\.(\d+)(?:/post-(\d+))?');
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final commonFields = {
 			if (query.name != null) 'c[users]': query.name,
 			if (query.postTypeFilter == PostTypeFilter.onlyOPs) 'c[title_only]': '1',
@@ -789,7 +825,16 @@ class SiteXenforo extends ImageboardSite {
 			pageOneResponse = null;
 		}
 		else {
-			final homepageResponse = await client.getUri(Uri.https(baseUrl, '$basePath/search/'), options: Options(responseType: ResponseType.plain));
+			final homepageResponse = await client.getUri(
+				Uri.https(baseUrl, '$basePath/search/'),
+				options: Options(
+					responseType: ResponseType.plain,
+					extra: {
+						kPriority: priority
+					}
+				),
+				cancelToken: cancelToken
+			);
 			final homepageDocument = parse(homepageResponse.data);
 			final form = homepageDocument.querySelector('.p-body-pageContent form')!;
 			final Map<String, dynamic> fields = {
@@ -801,10 +846,18 @@ class SiteXenforo extends ImageboardSite {
 				fields['constraints'] = '{"search_type":"post","c":{"nodes":[${query.boards.first.split('.').last}],"child_nodes":1}}';
 			}
 			fields.addAll(commonFields);
-			pageOneResponse = await client.postUri(Uri.https(baseUrl, form.attributes['action']!), data: fields, options: Options(
-				contentType: Headers.formUrlEncodedContentType,
-				responseType: ResponseType.plain
-			));
+			pageOneResponse = await client.postUri(
+				Uri.https(baseUrl, form.attributes['action']!),
+				data: fields,
+				options: Options(
+					contentType: Headers.formUrlEncodedContentType,
+					responseType: ResponseType.plain,
+					extra: {
+						kPriority: priority
+					}
+				),
+				cancelToken: cancelToken
+			);
 			final match = _searchIdPattern.firstMatch(pageOneResponse.redirects.tryLast?.location.toString() ?? '');
 			if (match != null) {
 				searchId = int.parse(match.group(1)!);
@@ -829,7 +882,12 @@ class SiteXenforo extends ImageboardSite {
 					'c[nodes][0]': query.boards.first.split('.').last
 				},
 				...commonFields
-			}), options: Options(responseType: ResponseType.plain));
+			}), options: Options(
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: priority
+				}
+			), cancelToken: cancelToken);
 		}
 		final document = parse(response.data);
 		return ImageboardArchiveSearchResultPage(

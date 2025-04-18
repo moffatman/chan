@@ -14,6 +14,7 @@ import 'package:chan/widgets/default_gesture_detector.dart';
 import 'package:chan/widgets/sliver_staggered_grid.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart' hide WeakMap;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide WeakMap;
@@ -458,7 +459,7 @@ class RefreshableTreeAdapter<T extends Object> {
 	final int Function(T item) getId;
 	final Iterable<int> Function(T item) getParentIds;
 	final bool Function(T item) getHasOmittedReplies;
-	final Future<List<T>> Function(List<T> currentList, List<ParentAndChildIdentifier> stubIds) updateWithStubItems;
+	final Future<List<T>> Function(List<T> currentList, List<ParentAndChildIdentifier> stubIds, CancelToken? cancelToken) updateWithStubItems;
 	final Widget Function(Widget, List<int>) wrapTreeChild;
 	final int opId;
 	final double Function(T item, double width) estimateHeight;
@@ -583,7 +584,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final List<List<int>> manuallyCollapsedItems;
 	final Map<int, int> defaultPrimarySubtreeParents = {};
 	final Map<int, int> primarySubtreeParents;
-	final Set<List<int>> loadingOmittedItems = {};
+	final Map<List<int>, CancelToken> loadingOmittedItems = {};
 	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = Map.identity();
 	final Map<_RefreshableTreeItemsCacheKey, _DummyStatus> _dummyCache = Map.identity();
 	/// If the bool is false, we haven't laid out this item yet.
@@ -724,9 +725,10 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		});
 	}
 
-  bool isItemLoadingOmittedItems(List<int> parentIds, int? thisId) {
+  CancelToken? isItemLoadingOmittedItems(List<int> parentIds, int? thisId) {
 		// By iterating reversed it will properly handle collapses within collapses
-		for (final loading in loadingOmittedItems) {
+		for (final entry in loadingOmittedItems.entries) {
+			final loading = entry.key;
 			if (loading.length != parentIds.length + 1) {
 				continue;
 			}
@@ -735,17 +737,17 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 				keepGoing = loading[i] == parentIds[i];
 			}
 			if (keepGoing && loading.last == thisId) {
-				return true;
+				return entry.value;
 			}
 		}
-		return false;
+		return null;
 	}
 
-	void itemLoadingOmittedItemsStarted(List<int> parentIds, int thisId) {
-		loadingOmittedItems.add([
+	void itemLoadingOmittedItemsStarted(List<int> parentIds, int thisId, CancelToken cancelToken) {
+		loadingOmittedItems[[
 			...parentIds,
 			thisId
-		]);
+		]] = cancelToken;
 		notifyListeners();
 	}
 
@@ -754,7 +756,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			...item.parentIds,
 			item.id
 		];
-		loadingOmittedItems.removeWhere((w) => listEquals(w, x));
+		loadingOmittedItems.removeWhere((w, cancelToken) => listEquals(w, x));
 		notifyListeners();
 		state._onTreeCollapseOrExpand.call(item, true);
 	}
@@ -1010,18 +1012,21 @@ enum RefreshableListUpdateSource {
 
 class RefreshableListUpdateOptions {
 	final RefreshableListUpdateSource source;
+	final CancelToken cancelToken;
 	const RefreshableListUpdateOptions({
-		required this.source
+		required this.source,
+		required this.cancelToken
 	});
 
 	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is RefreshableListUpdateOptions &&
-		other.source == source;
+		other.source == source &&
+		other.cancelToken == cancelToken;
 	
 	@override
-	int get hashCode => source.hashCode;
+	int get hashCode => Object.hash(source, cancelToken);
 
 	@override
 	String toString() => 'RefreshableListUpdateOptions(source: $source)';
@@ -1045,7 +1050,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	})? collapsedItemBuilder;
 	final List<T>? initialList;
 	final Future<List<T>?> Function(RefreshableListUpdateOptions options) listUpdater;
-	final Future<List<T>> Function(T after)? listExtender;
+	final Future<List<T>> Function(T after, CancelToken cancelToken)? listExtender;
 	final String id;
 	final String rebuildId;
 	final RefreshableListController<T>? controller;
@@ -1144,7 +1149,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	List<T>? originalList;
 	List<T>? sortedList;
 	late final ValueNotifier<(Object, StackTrace)?> error;
-	late final ValueNotifier<String?> updatingNow;
+	late final ValueNotifier<(String, CancelToken)?> updatingNow;
 	late final TextEditingController _searchController;
 	late final FocusNode _searchFocusNode;
 	bool get searchHasFocus => _searchFocusNode.hasFocus;
@@ -1284,7 +1289,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			// There is some change in the list
 			!listEquals(oldWidget.initialList, widget.initialList) &&
 			// Not in the middle of an update
-			(updatingNow.value != widget.id)
+			(updatingNow.value?.$1 != widget.id)
 		) {
 			originalList = widget.initialList;
 			sortedList = originalList?.toList();
@@ -1358,6 +1363,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	void resetTimer() {
+		if (!mounted) {
+			return;
+		}
 		autoUpdateTimer?.cancel();
 		if (widget.autoUpdateDuration != null) {
 			autoUpdateTimer = Timer(widget.autoUpdateDuration!, _autoUpdate);
@@ -1401,15 +1409,22 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> _loadOmittedItems(RefreshableListItem<T> value) async {
-		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id);
+		final cancelToken = CancelToken();
+		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id, cancelToken);
 		try {
-			originalList = await widget.treeAdapter!.updateWithStubItems(originalList!, value.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(value.id)] : value.representsKnownStubChildren);
+			originalList = await widget.treeAdapter!.updateWithStubItems(
+				originalList!,
+				value.representsUnknownStubChildren
+					? [ParentAndChildIdentifier.same(value.id)]
+					: value.representsKnownStubChildren,
+				cancelToken
+			);
 			sortedList = originalList!.toList();
 			_sortList();
 			setState(() { });
 		}
 		catch (e, st) {
-			if (mounted) {
+			if (mounted && !cancelToken.isCancelled) {
 				alertError(context, e, st);
 			}
 		}
@@ -1420,15 +1435,20 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	Future<void> _loadPage(RefreshableListItem<T> value, int page) async {
 		assert(page.isNegative);
-		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id);
+		final cancelToken = CancelToken();
+		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id, cancelToken);
 		try {
-			originalList = await widget.treeAdapter!.updateWithStubItems(originalList!, [ParentAndChildIdentifier.same(page)]);
+			originalList = await widget.treeAdapter!.updateWithStubItems(
+				originalList!,
+				[ParentAndChildIdentifier.same(page)],
+				cancelToken
+			);
 			sortedList = originalList!.toList();
 			_sortList();
 			setState(() { });
 		}
 		catch (e, st) {
-			if (mounted) {
+			if (mounted && !cancelToken.isCancelled) {
 				alertError(context, e, st);
 			}
 		}
@@ -1442,7 +1462,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return;
 		}
 		if (DateTime.now().difference(lastUpdateTime ?? DateTime(2000)) > const Duration(seconds: 1)) {
-			update(options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.animation));
+			update(source: RefreshableListUpdateSource.animation);
 		}
 		else {
 			_trailingUpdateAnimationTimer?.cancel();
@@ -1493,25 +1513,26 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return;
 		}
 		_addedNetworkResumeCallback = false;
-		await update(options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.timer), extend: true);
+		await update(source: RefreshableListUpdateSource.timer, extend: true);
 	}
 
 	Future<void> update({
-		RefreshableListUpdateOptions options = const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.other),
+		RefreshableListUpdateSource source = RefreshableListUpdateSource.other,
 		bool hapticFeedback = false,
 		bool extend = false,
 		bool mergeTrees = false,
 		Duration? overrideMinUpdateDuration
 	}) async {
-		if (updatingNow.value == widget.id) {
+		if (updatingNow.value?.$1 == widget.id) {
 			return;
 		}
 		final updatingWithId = widget.id;
 		List<T>? newList;
 		final treeAdapter = widget.treeAdapter;
+		final cancelToken = CancelToken();
 		try {
 			error.value = null;
-			updatingNow.value = widget.id;
+			Future.microtask(() => updatingNow.value = (widget.id, cancelToken));
 			Duration minUpdateDuration = widget.minUpdateDuration;
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
 				minUpdateDuration *= 2;
@@ -1522,12 +1543,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				_mergeTrees(rebuild: false);
 			}
 			if (extend && treeAdapter != null && lastItem != null && lastItem.representsStubChildren) {
-				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, lastItem.id);
+				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, lastItem.id, cancelToken);
 				try {
-					newList = await treeAdapter.updateWithStubItems(originalList!, lastItem.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(lastItem.id)] : lastItem.representsKnownStubChildren);
+					newList = await treeAdapter.updateWithStubItems(
+						originalList!,
+						lastItem.representsUnknownStubChildren
+							? [ParentAndChildIdentifier.same(lastItem.id)]
+							: lastItem.representsKnownStubChildren,
+						cancelToken
+					);
 				}
 				catch (e, st) {
-					if (mounted) {
+					if (mounted && !cancelToken.isCancelled) {
 						alertError(context, e, st);
 					}
 				}
@@ -1537,10 +1564,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			else if (extend && lastItem != null && treeAdapter != null && treeAdapter.isPaged && !treeAdapter.getIsPageStub(lastItem.item) && treeAdapter.getParentIds(lastItem.item).isNotEmpty) {
 				// If we aren't ending on unloaded pages, first reload the last loaded page
-				newList = await treeAdapter.updateWithStubItems(originalList!, [ParentAndChildIdentifier.same(treeAdapter.getParentIds(lastItem.item).first)]);
+				newList = await treeAdapter.updateWithStubItems(
+					originalList!,
+					[ParentAndChildIdentifier.same(treeAdapter.getParentIds(lastItem.item).first)],
+					cancelToken
+				);
 			}
 			else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
-				final newItems = (await Future.wait([widget.listExtender!(originalList!.last), Future<List<T>?>.delayed(minUpdateDuration)])).first!;
+				final newItems = (await Future.wait([widget.listExtender!(originalList!.last, cancelToken), Future<List<T>?>.delayed(minUpdateDuration)])).first!;
 				final filterableAdapter = widget.filterableAdapter;
 				if (filterableAdapter != null) {
 					// We have the ability to get identifier for each item
@@ -1561,11 +1592,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			else {
-				newList = (await Future.wait([widget.listUpdater(options), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
+				newList = (await Future.wait([widget.listUpdater(RefreshableListUpdateOptions(
+					source: source,
+					cancelToken: cancelToken
+				)), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
 			}
 			if (!mounted) return;
 			if (updatingWithId != widget.id) {
-				if (updatingNow.value == updatingWithId) {
+				if (updatingNow.value?.$1 == updatingWithId) {
 					updatingNow.value = null;
 				}
 				return;
@@ -1575,7 +1609,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		catch (e, st) {
 			error.value = (e, st);
-			if (mounted) {
+			if (cancelToken.isCancelled) {
+				resetTimer();
+			}
+			else if (mounted) {
 				if (widget.controller?.scrollController?.hasOnePosition ?? false) {
 					final position = widget.controller!.scrollController!.position;
 					if (position.extentAfter > 0) {
@@ -1599,7 +1636,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		await widget.controller?.scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
 		if (updatingWithId != widget.id) {
-			if (updatingNow.value == updatingWithId) {
+			if (updatingNow.value?.$1 == updatingWithId) {
 				updatingNow.value = null;
 			}
 			return;
@@ -1652,7 +1689,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	Future<void> _updateWithHapticFeedback() async {
 		await update(
-			options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.top),
+			source: RefreshableListUpdateSource.top,
 			hapticFeedback: true,
 			extend: false,
 			mergeTrees: true
@@ -1661,7 +1698,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	Future<void> _updateOrExtendWithHapticFeedback() async {
 		await update(
-			options: const RefreshableListUpdateOptions(source: RefreshableListUpdateSource.bottom),
+			source: RefreshableListUpdateSource.bottom,
 			hapticFeedback: true,
 			extend: true,
 			mergeTrees: true
@@ -1732,7 +1769,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		Widget child;
 		Widget? collapsed;
-		bool loadingOmittedItems = false;
+		CancelToken? loadingOmittedItems;
 		final TreeItemCollapseType? isHidden;
 		if (widget.treeAdapter != null && useTree) {
 			isHidden = context.select<_RefreshableTreeItems<T>, TreeItemCollapseType?>((c) => c.isItemHidden(value));
@@ -1741,7 +1778,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			isHidden = null;
 		}
 		if (widget.treeAdapter != null && (useTree || value.representsStubChildren || value.representsUnloadedPages.isNotEmpty) && !isHidden.isHidden) {
-			loadingOmittedItems = context.select<_RefreshableTreeItems<T>, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
+			loadingOmittedItems = context.select<_RefreshableTreeItems<T>, CancelToken?>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
 		if (filterPattern != null && widget.filteredItemBuilder != null) {
 			child = value.representsStubChildren ? const SizedBox.shrink() : Builder(
@@ -1834,7 +1871,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 				child = Stack(
 					children: [
-						if (loadingOmittedItems) const LinearProgressIndicator(),
+						if (loadingOmittedItems != null) const LinearProgressIndicator(),
 						child
 					]
 				);
@@ -1844,7 +1881,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					context: context,
 					value: null,
 					collapsedChildIds: value.representsKnownStubChildren.map((x) => x.childId).toSet(),
-					loading: loadingOmittedItems,
+					loading: loadingOmittedItems != null,
 					peekContentHeight: null,
 					stubChildIds: value.representsKnownStubChildren
 				) ?? Container(
@@ -1861,7 +1898,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					context: context,
 					value: value.item,
 					collapsedChildIds: value.treeDescendantIds,
-					loading: loadingOmittedItems,
+					loading: loadingOmittedItems != null,
 					peekContentHeight: (widget.treeAdapter?.collapsedItemsShowBody ?? false) ? double.infinity : null,
 					stubChildIds: null
 				);
@@ -1904,7 +1941,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						context: context,
 						value: value.item,
 						collapsedChildIds: collapsedChildIds,
-						loading: loadingOmittedItems,
+						loading: loadingOmittedItems != null,
 						peekContentHeight: isHidden == TreeItemCollapseType.mutuallyCollapsed ? 90 : double.infinity,
 						stubChildIds: null
 					) ?? Stack(
@@ -1958,7 +1995,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					);
 					child = DefaultGestureDetector(
 						behavior: HitTestBehavior.translucent,
-						onTap: loadingOmittedItems ? null : () async {
+						onTap: loadingOmittedItems?.cancel ?? () async {
 							if (!value.representsStubChildren) {
 								if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
 									context.read<_RefreshableTreeItems<T>>().swapSubtreeTo(value);
@@ -2007,7 +2044,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else if (widget.treeAdapter != null && value.representsStubChildren) {
 				child = GestureDetector(
 					behavior: HitTestBehavior.translucent,
-					onTap: loadingOmittedItems ? null : () => _loadOmittedItems(value),
+					onTap: loadingOmittedItems?.cancel ?? () => _loadOmittedItems(value),
 					child: child
 				);
 			}
@@ -3338,8 +3375,26 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					);
 				}
 				else {
-					return const Center(
-						child: CircularProgressIndicator.adaptive()
+					return Center(
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								const CircularProgressIndicator.adaptive(),
+								ValueListenableBuilder(
+									valueListenable: updatingNow,
+									builder: (context, pair, _) {
+										if (pair == null) {
+											return const SizedBox.shrink();
+										}
+										return HiddenCancelButton(
+											cancelToken: pair.$2,
+											icon: const Text('Cancel'),
+											alignment: Alignment.topCenter
+										);
+									}
+								)
+							]
+						)
 					);
 				}
 			}
@@ -4260,6 +4315,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	void mergeTrees() {
 		state?._mergeTrees(rebuild: true);
 	}
+
+	ValueListenable<(String, CancelToken)?> get updatingNow => state?.updatingNow ?? const StoppedValueListenable(null);
 }
 
 extension _Recurve on Curve {

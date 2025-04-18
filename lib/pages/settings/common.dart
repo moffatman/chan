@@ -1431,10 +1431,12 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 				]
 			)
 		);
-		if (cont == true) {
+		if (cont == true && mounted) {
 			print(fields);
 			try {
-				await widget.loginSystem.login(fields);
+				await modalLoad(context, 'Logging in...', (c) async {
+					await widget.loginSystem.login(fields, c.cancelToken);
+				});
 				widget.loginSystem.parent.persistence?.browserState.loginFields.clear();
 				widget.loginSystem.parent.persistence?.browserState.loginFields.addAll({
 					for (final field in fields.entries) field.key.formKey: field.value
@@ -1470,8 +1472,10 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 										loading = true;
 									});
 									try {
-										await widget.loginSystem.logout(true);
-										await widget.loginSystem.clearSavedLoginFields();
+										await modalLoad(context, 'Logging out...', (c) async {
+											await widget.loginSystem.logout(true, c.cancelToken);
+											await widget.loginSystem.clearSavedLoginFields();
+										});
 									}
 									catch (e, st) {
 										if (context.mounted) {

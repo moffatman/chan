@@ -638,7 +638,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	/// Resolve image hosting sites to hotlinks
-	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl(String url) async {
+	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl(String url, {CancelToken? cancelToken}) async {
 		final uri = Uri.parse(url);
 		try {
 			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io' || uri.host == 'i.imgur.com' || uri.host == 'i.imgur.io') && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
@@ -651,7 +651,7 @@ class SiteReddit extends ImageboardSite {
 						kPriority: RequestPriority.cosmetic
 					},
 					responseType: ResponseType.json
-				));
+				), cancelToken: cancelToken);
 				final link = response.data['data']?['link'] as String?;
 				if (link != null) {
 					return [(
@@ -674,7 +674,7 @@ class SiteReddit extends ImageboardSite {
 						kPriority: RequestPriority.cosmetic
 					},
 					responseType: ResponseType.json
-				));
+				), cancelToken: cancelToken);
 				final imageData = response.data['data'] as List<dynamic>?;
 				if (imageData != null && imageData.isNotEmpty) {
 					return imageData.expand((image) {
@@ -700,7 +700,7 @@ class SiteReddit extends ImageboardSite {
 						kPriority: RequestPriority.cosmetic
 					},
 					validateStatus: (status) => (status != null) && ((status >= 200 && status < 300) || (status == 404))
-				));
+				), cancelToken: cancelToken);
 				if (response.statusCode == 404) {
 					// Sometimes gfycat redirects to redgifs
 					final redirectResponse = await client.head(url, options: Options(
@@ -708,7 +708,7 @@ class SiteReddit extends ImageboardSite {
 							kPriority: RequestPriority.cosmetic
 						},
 						responseType: ResponseType.json
-					));
+					), cancelToken: cancelToken);
 					if (!redirectResponse.realUri.host.contains('gfycat')) {
 						return _resolveUrl(redirectResponse.realUri.toString());
 					}
@@ -747,7 +747,7 @@ class SiteReddit extends ImageboardSite {
 							kPriority: RequestPriority.cosmetic
 						},
 						responseType: ResponseType.json
-					));
+					), cancelToken: cancelToken);
 				}
 				catch (e) {
 					if (e is DioError) {
@@ -762,7 +762,7 @@ class SiteReddit extends ImageboardSite {
 									kPriority: RequestPriority.cosmetic
 								},
 								responseType: ResponseType.json
-							));
+							), cancelToken: cancelToken);
 						}
 					}
 					else {
@@ -794,7 +794,7 @@ class SiteReddit extends ImageboardSite {
 		)];
 	}
 
-	Future<Thread> _makeThread(dynamic data) async {
+	Future<Thread> _makeThread(dynamic data, {CancelToken? cancelToken}) async {
 		final id = fromRedditId(data['id'])!;
 		final attachments = <Attachment>[];
 		Future<void> dumpAttachments(dynamic data) async {
@@ -869,7 +869,7 @@ class SiteReddit extends ImageboardSite {
 					));
 				}
 				else {
-					final urls = await _resolveUrl(data['url']);
+					final urls = await _resolveUrl(data['url'], cancelToken: cancelToken);
 					attachments.addAll(urls.indexed.map((url) => Attachment(
 						type: url.$2.type,
 						board: data['subreddit'],
@@ -887,7 +887,7 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 			else if (!(data['is_self'] as bool? ?? false) && data['url'] != null) {
-				final urls = await _resolveUrl(data['url']);
+				final urls = await _resolveUrl(data['url'], cancelToken: cancelToken);
 				attachments.addAll(urls.indexed.map((url) => Attachment(
 					type: url.$2.type,
 					board: data['subreddit'],
@@ -1015,13 +1015,13 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/subreddits/popular.json'), options: Options(
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
 	}
 
@@ -1038,11 +1038,11 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		return const NoCaptchaRequest();
 	}
 
-	Future<void> _updateBoardIfNeeded(String board, {required RequestPriority priority}) async {
+	Future<void> _updateBoardIfNeeded(String board, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final old = persistence?.maybeGetBoard(board);
 		final boardAge = DateTime.now().difference(old?.additionalDataTime ?? DateTime(2000));
 		if (boardAge > const Duration(days: 3) || old?.popularity == null) {
@@ -1062,7 +1062,7 @@ class SiteReddit extends ImageboardSite {
 						kPriority: priority
 					},
 					responseType: ResponseType.json
-				));
+				), cancelToken: cancelToken);
 				newBoard = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
 			}
 			await persistence?.setBoard(board, newBoard);
@@ -1089,9 +1089,9 @@ class SiteReddit extends ImageboardSite {
 		}[variant] ?? ('.json', <String, String>{});
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
-			await _updateBoardIfNeeded(board, priority: priority);
+			await _updateBoardIfNeeded(board, priority: priority, cancelToken: cancelToken);
 		}
 		catch (e, st) {
 			Future.error(e, st);
@@ -1102,16 +1102,16 @@ class SiteReddit extends ImageboardSite {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
-			final t = await _makeThread(d['data']);
+			final t = await _makeThread(d['data'], cancelToken: cancelToken);
 			t.currentPage = 1;
 			return t;
 	}));
 	}
 
 	@override
-	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority}) async {
+	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final ret = <Post>[];
 		final childIdsToGet = postIds.take(20).toList();
 		final newPosts = <int, Post>{};
@@ -1128,7 +1128,7 @@ class SiteReddit extends ImageboardSite {
 					kPriority: priority
 				},
 				responseType: ResponseType.json
-			));
+			), cancelToken: cancelToken);
 			final things = response.data['json']['data']['things'] as List;
 			for (final thing in things) {
 				final parentId = fromRedditId(thing['data']['parent'].split('_')[1]);
@@ -1220,7 +1220,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final suffix = _getCatalogSuffix(variant);
 		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', {
 			'after': 't3_${toRedditId(after.id)}',
@@ -1230,17 +1230,17 @@ class SiteReddit extends ImageboardSite {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		final newPage = (after.currentPage ?? 1) + 1;
 		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
-			final t = await _makeThread(d['data']);
+			final t = await _makeThread(d['data'], cancelToken: cancelToken);
 			t.currentPage = newPage;
 			return t;
 		}));
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
 		// TODO: implement getPost
 		throw UnimplementedError();
 	}
@@ -1316,11 +1316,11 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getThreadUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
-		}), priority: priority, responseType: ResponseType.json);
-		final ret = await _makeThread(response.data[0]['data']['children'][0]['data']);
+		}), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
+		final ret = await _makeThread(response.data[0]['data']['children'][0]['data'], cancelToken: cancelToken);
 		addChildren(int parentId, List<dynamic> childData, Post? parent) {
 			for (final childContainer in childData) {
 				final child = childContainer['data'];
@@ -1380,7 +1380,7 @@ class SiteReddit extends ImageboardSite {
 	String get name => 'Reddit';
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final Response response;
 		if (query.name != null) {
 			response = await client.getUri(Uri.https(baseUrl, '/user/${query.name}.json', {
@@ -1394,7 +1394,7 @@ class SiteReddit extends ImageboardSite {
 					kPriority: priority
 				},
 				responseType: ResponseType.json
-			));
+			), cancelToken: cancelToken);
 		}
 		else {
 			response = await client.getUri(Uri.https(baseUrl, query.boards.isEmpty ? '/search.json' : '/r/${query.boards.first}/search.json', {
@@ -1412,7 +1412,7 @@ class SiteReddit extends ImageboardSite {
 					kPriority: priority
 				},
 				responseType: ResponseType.json
-			));
+			), cancelToken: cancelToken);
 		}
 		return ImageboardArchiveSearchResultPage(
 			replyCountsUnreliable: false,
@@ -1425,7 +1425,7 @@ class SiteReddit extends ImageboardSite {
 							 (page > (lastResult?.page ?? 0)) ? page : null,
 			posts: await Future.wait((response.data['data']['children'] as List<dynamic>).map((c) async {
 				if (c['kind'] == 't3') {
-					return ImageboardArchiveSearchResult.thread(await _makeThread(c['data']));
+					return ImageboardArchiveSearchResult.thread(await _makeThread(c['data'], cancelToken: cancelToken));
 				}
 				else if (c['kind'] == 't1') {
 					return ImageboardArchiveSearchResult.post(_makePost(c['data'], thread: ThreadIdentifier(c['data']['subreddit'], fromRedditId((c['data']['link_id'] as String).split('_').last)!)));
@@ -1474,7 +1474,7 @@ class SiteReddit extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, String? archiveName}) => getThread(thread, priority: priority);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) => getThread(thread, priority: priority, cancelToken: cancelToken);
 
 	@override
 	List<CatalogVariantGroup> get catalogVariantGroups => const [

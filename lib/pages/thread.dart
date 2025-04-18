@@ -44,6 +44,7 @@ import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:chan/widgets/weak_navigator.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -1007,7 +1008,7 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<bool> _loadReferencedThreads({bool setStateAfterwards = false}) async {
+	Future<bool> _loadReferencedThreads({bool setStateAfterwards = false, CancelToken? cancelToken}) async {
 		final imageboard = context.read<Imageboard>();
 		final tmpZone = zone;
 		final newThread = persistentState.thread;
@@ -1041,7 +1042,7 @@ class ThreadPageState extends State<ThreadPage> {
 				continue;
 			}
 			try {
-				final newThread = await imageboard.site.getThread(id, priority: _priority);
+				final newThread = await imageboard.site.getThread(id, priority: _priority, cancelToken: cancelToken);
 				threadState.thread = newThread;
 				tmpZone.addThread(newThread);
 			}
@@ -1056,7 +1057,7 @@ class ThreadPageState extends State<ThreadPage> {
 		return loadedAnything;
 	}
 
-	Future<Thread> _getUpdatedThread() async {
+	Future<Thread> _getUpdatedThread(CancelToken? cancelToken) async {
 		final tmpPersistentState = persistentState;
 		final site = context.read<ImageboardSite>();
 		final settings = Settings.instance;
@@ -1069,6 +1070,7 @@ class ThreadPageState extends State<ThreadPage> {
 			newThread = await site.getThreadFromArchive(
 				widget.thread,
 				priority: _priority,
+				cancelToken: cancelToken,
 				archiveName:
 					tmpPersistentState.thread?.archiveName ??
 					widget.initiallyUseArchive ??
@@ -1077,7 +1079,7 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		else {
 			try {
-				newThread = await site.getThread(widget.thread, variant: tmpPersistentState.variant, priority: _priority);
+				newThread = await site.getThread(widget.thread, variant: tmpPersistentState.variant, priority: _priority, cancelToken: cancelToken);
 			}
 			on ThreadNotFoundException {
 				if (site.archives.isEmpty) {
@@ -1095,7 +1097,7 @@ class ThreadPageState extends State<ThreadPage> {
 			notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
 		}
 		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site);
-		final loadedReferencedThreads = await _loadReferencedThreads();
+		final loadedReferencedThreads = await _loadReferencedThreads(cancelToken: cancelToken);
 		_checkForNewGeneral();
 		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
@@ -1171,13 +1173,13 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<List<Post>> _updateWithStubItems(List<ParentAndChildIdentifier> ids) async {
+	Future<List<Post>> _updateWithStubItems(List<ParentAndChildIdentifier> ids, {CancelToken? cancelToken}) async {
 		final thread = persistentState.thread;
 		if (thread == null) {
 			throw Exception('Thread not loaded');
 		}
 		final site = context.read<ImageboardSite>();
-		final newChildren = await site.getStubPosts(thread.identifier, ids, priority: RequestPriority.interactive);
+		final newChildren = await site.getStubPosts(thread.identifier, ids, priority: RequestPriority.interactive, cancelToken: cancelToken);
 		if (widget.thread != thread.identifier) {
 			throw Exception('Thread changed');
 		}
@@ -1648,8 +1650,29 @@ class ThreadPageState extends State<ThreadPage> {
 														children: [
 															Visibility(
 																visible: blocked,
-																child: const Center(
-																	child: CircularProgressIndicator.adaptive()
+																child: Center(
+																	child: Column(
+																		mainAxisSize: MainAxisSize.min,
+																		children: [
+																			const CircularProgressIndicator.adaptive(),
+																			AnimatedBuilder(
+																				animation: _listController,
+																				builder: (context, _) => ValueListenableBuilder(
+																					valueListenable: _listController.updatingNow,
+																					builder: (context, pair, _) {
+																						if (pair == null) {
+																							return const SizedBox.shrink();
+																						}
+																						return HiddenCancelButton(
+																							cancelToken: pair.$2,
+																							icon: const Text('Cancel'),
+																							alignment: Alignment.topCenter
+																						);
+																					}
+																				)
+																			)
+																		]
+																	)
 																)
 															),
 															Visibility.maintain(
@@ -1691,7 +1714,7 @@ class ThreadPageState extends State<ThreadPage> {
 																		getIsPageStub: (p) => p.isPageStub,
 																		isPaged: site.isPaged,
 																		getHasOmittedReplies: (p) => p.hasOmittedReplies,
-																		updateWithStubItems: (_, ids) => _updateWithStubItems(ids),
+																		updateWithStubItems: (_, ids, cancelToken) => _updateWithStubItems(ids, cancelToken: cancelToken),
 																		opId: widget.thread.id,
 																		wrapTreeChild: (child, parentIds) {
 																			PostSpanZoneData childZone = zone;
@@ -1776,7 +1799,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			}
 																			return null;
 																		}
-																		return (await _getUpdatedThread()).posts;
+																		return (await _getUpdatedThread(options.cancelToken)).posts;
 																	},
 																	controller: _listController,
 																	itemBuilder: (context, post) {
@@ -2137,7 +2160,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 	int _lastItemsLength = 0;
 	final _animatedPaddingKey = GlobalKey(debugLabel: '_ThreadPositionIndicatorState._animatedPaddingKey');
 	late final ScrollController _menuScrollController;
-	ValueNotifier<String?>? _lastUpdatingNow;
+	ValueNotifier<(String, CancelToken)?>? _lastUpdatingNow;
 	late bool _useCatalogCache;
 	Filter? _lastFilter;
 	bool _skipNextSwipe = false;
@@ -3027,14 +3050,33 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											),
 											const SizedBox(width: 8)
 										],
-										if (!widget.blocked && (widget.listController.state?.updatingNow.value != null) && widget.listController.state?.originalList != null) ...[
-											const SizedBox(
-												width: 16,
-												height: 16,
-												child: CircularProgressIndicator.adaptive()
-											),
-											const SizedBox(width: 8),
-										],
+										if (!widget.blocked && widget.listController.state?.originalList != null) AnimatedBuilder(
+											animation: widget.listController,
+											builder: (context, _) => ValueListenableBuilder(
+												valueListenable: widget.listController.updatingNow,
+												builder: (context, pair, _) {
+													if (pair == null) {
+														return const SizedBox.shrink();
+													}
+													return Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															HiddenCancelButton(
+																cancelToken: pair.$2,
+																icon: const Icon(CupertinoIcons.xmark, size: 19),
+																alignment: Alignment.centerLeft
+															),
+															const SizedBox(
+																width: 16,
+																height: 16,
+																child: CircularProgressIndicator.adaptive()
+															),
+															const SizedBox(width: 8)
+														]
+													);
+												}
+											)
+										),
 										if (!widget.blocked && widget.persistentState.useArchive) ...[
 											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.5)),
 											if (widget.persistentState.thread?.archiveName case String archiveName)

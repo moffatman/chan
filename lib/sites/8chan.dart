@@ -25,7 +25,7 @@ class Site8Chan extends SiteLynxchan {
 	);
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		return LynxchanCaptchaRequest(
 			board: board,
 			redirectGateway: _kRedirectGateway
@@ -39,7 +39,7 @@ class Site8Chan extends SiteLynxchan {
 			extra: {
 				kPriority: RequestPriority.interactive
 			}
-		));
+		), cancelToken: cancelToken);
 		if (blockResponse.data['status'] == 'error') {
 			throw PostFailedException(blockResponse.data['data'] as String);
 		}
@@ -49,14 +49,18 @@ class Site8Chan extends SiteLynxchan {
 				final submit1Response = await client.postUri(Uri.https(baseUrl, '/solveCaptcha.js', {'json': '1'}), data: {
 					'captchaId': captchaSolution.id,
 					'answer': captchaSolution.answer
-				});
+				}, options: Options(
+					extra: {
+						kPriority: RequestPriority.interactive
+					}
+				), cancelToken: cancelToken);
 				if (submit1Response.data['status'] == 'error') {
 					throw PostFailedException(submit1Response.data['data'] as String);
 				}
 			}
 			throw AdditionalCaptchaRequiredException(
-				captchaRequest: await getCaptchaRequest(post.board, post.threadId),
-				onSolved: (solution2) async {
+				captchaRequest: await getCaptchaRequest(post.board, post.threadId, cancelToken: cancelToken),
+				onSolved: (solution2, cancelToken2) async {
 					final response = await client.postUri(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
 						if (solution2 is LynxchanCaptchaSolution) 'captcha': solution2.answer
 					}, options: Options(
@@ -64,7 +68,7 @@ class Site8Chan extends SiteLynxchan {
 						extra: {
 							kPriority: RequestPriority.interactive
 						}
-					));
+					), cancelToken: cancelToken2);
 					if (response.data['status'] == 'error') {
 						throw PostFailedException(response.data['data'] as String);
 					}

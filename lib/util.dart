@@ -748,6 +748,36 @@ class Debouncer1<T, A1> {
 	}
 }
 
+class Debouncer2<T, A1, A2> {
+	final Future<T> Function(A1, A2) function;
+	final Map<(A1, A2), Future<T>> _futures = {};
+	Debouncer2(this.function);
+
+	Future<T> debounce(A1 arg1, A2 arg2) async {
+		final arg = (arg1, arg2);
+		final existingFuture = _futures[arg];
+		if (existingFuture != null) {
+			return existingFuture;
+		}
+		final future = _futures[arg] = function(arg1, arg2);
+		try {
+			return await future;
+		}
+		finally {
+			_futures.remove(arg);
+		}
+	}
+}
+
+extension InterruptibleSleep on CancelToken {
+	Future<void> sleep(Duration duration) async {
+		final error = await Future.any([Future<DioError?>.delayed(duration), whenCancel]);
+		if (error != null) {
+			throw error;
+		}
+	}
+}
+
 extension FriendlyCompare on String {
 	/// Compare case-insensitively, ignoring leading symbols
 	int friendlyCompareTo(String other) {

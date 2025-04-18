@@ -237,7 +237,7 @@ class HistoryPageState extends State<HistoryPage> {
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
 									return _load(0);
 								},
-								listExtender: (after) async {
+								listExtender: (after, cancelToken) async {
 									return _load(states.indexOf(after));
 								},
 								minUpdateDuration: Duration.zero,

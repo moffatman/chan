@@ -148,17 +148,17 @@ final siteSettings = [
 													)
 												);
 												controller.dispose();
-												if (linkStr == null) {
+												if (linkStr == null || !context.mounted) {
 													return;
 												}
 												final url = Uri.tryParse(linkStr);
 												if (url == null) {
-													if (context.mounted) {
-														alertError(context, 'Invalid URL', null);
-													}
+													alertError(context, 'Invalid URL', null);
 													return;
 												}
-												await imageboard.site.loginSystem?.logout(false);
+												await modalLoad(context, 'Logging out...', (c) async {
+													await imageboard.site.loginSystem?.logout(false, c.cancelToken);
+												}, wait: const Duration(seconds: 1));
 												if (!context.mounted) {
 													return;
 												}

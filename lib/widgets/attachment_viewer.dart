@@ -1030,7 +1030,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (convertForCompatibility && cacheExt == '.webm') {
 			file = await modalLoad(context, 'Converting...', (c) async {
 				final conversion = MediaConversion.toMp4(file.uri);
-				c.onCancel = conversion.cancel;
+				c.cancelToken.whenCancel.then((_) => conversion.cancel());
 				return (await conversion.start()).file;
 			}, cancellable: true);
 		}

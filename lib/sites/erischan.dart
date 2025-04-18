@@ -1,6 +1,7 @@
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan2.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 class SiteErischan extends SiteLainchan2 {
@@ -18,7 +19,7 @@ class SiteErischan extends SiteLainchan2 {
 	);
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		return SecucapCaptchaRequest(
 			challengeUrl: Uri.https(baseUrl, '/captcha.php', {
 				random.nextDouble().toString(): ''

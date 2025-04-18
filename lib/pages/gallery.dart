@@ -563,7 +563,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			int downloaded = 0;
 			final failed = <Attachment, String>{};
 			for (final attachment in toDownload) {
-				if (controller.cancelled) return failed;
+				if (controller.cancelToken.isCancelled) return failed;
 				try {
 					await _getController(attachment).preloadFullAttachment();
 					await _getController(attachment).download(dir: dir);

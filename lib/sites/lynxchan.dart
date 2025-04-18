@@ -209,7 +209,7 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		final response = await client.postUri(Uri.https(baseUrl, '/contentActions.js', {
 			'json': '1'
 		}), data: {
@@ -223,14 +223,14 @@ class SiteLynxchan extends ImageboardSite {
 				kPriority: RequestPriority.interactive
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		if (response.data['status'] != 'ok') {
 			throw DeletionFailedException(response.data['data'] ?? response.data);
 		}
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (boards != null) {
 			return boards!;
 		}
@@ -239,7 +239,7 @@ class SiteLynxchan extends ImageboardSite {
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		return _getBoardsFromResponse(response);
 	}
 
@@ -297,7 +297,7 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		final captchaMode = persistence?.maybeGetBoard(board)?.captchaMode ?? 0;
 		if (captchaMode == 0 ||
 				(captchaMode == 1 && threadId != null)) {
@@ -345,14 +345,14 @@ class SiteLynxchan extends ImageboardSite {
 		_updateBoardInformation(boardName, response.data);
 	}
 
-	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority}) async {
+	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/$page.json'), options: Options(
 			validateStatus: (status) => status == 200 || status == 404,
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
 		}
@@ -408,16 +408,16 @@ class SiteLynxchan extends ImageboardSite {
 
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (hasPagedCatalog) {
-			return await _getCatalogPage(board, 1, priority: priority);
+			return await _getCatalogPage(board, 1, priority: priority, cancelToken: cancelToken);
 		}
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (status) => status == 200 || status == 404,
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
 		}
@@ -426,9 +426,9 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
-			return _getCatalogPage(board, (after.currentPage ?? 0) + 1, priority: priority);
+			return _getCatalogPage(board, (after.currentPage ?? 0) + 1, priority: priority, cancelToken: cancelToken);
 		}
 		on BoardNotFoundException {
 			return [];
@@ -436,7 +436,7 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
 		throw UnimplementedError();
 	}
 
@@ -471,8 +471,8 @@ class SiteLynxchan extends ImageboardSite {
 	});
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority, responseType: ResponseType.json);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
 		_maybeUpdateBoardInformation(thread.board); // Don't await
 		final op = _makePost(thread.board, thread.id, thread.id, response.data);
 		final posts = [

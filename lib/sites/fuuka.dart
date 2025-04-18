@@ -156,7 +156,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		}
 		return null;
 	}
-	Future<Post> _makePost(dom.Element element, {required RequestPriority priority}) async {
+	Future<Post> _makePost(dom.Element element, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final thisLinkMatches = _threadLinkMatcher.firstMatch(element.querySelector('.js')!.attributes['href']!)!;
 		final board = thisLinkMatches.group(1)!;
 		final threadId = int.parse(thisLinkMatches.group(2)!);
@@ -171,7 +171,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 					extra: {
 						kPriority: priority
 					}
-				));
+				), cancelToken: cancelToken);
 				if (response.redirects.isNotEmpty) {
 					linkedPostThreadIds['${linkMatches.group(1)!}/${linkMatches.group(2)!}'] = int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!);
 				}
@@ -192,30 +192,30 @@ class FuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) async {		
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {		
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/post/$id'), options: Options(
 			extra: {
 				kPriority: priority
 			},
 			validateStatus: (_) => true,
 			responseType: ResponseType.plain
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode == 404) {
 			throw PostNotFoundException(board, id);
 		}
 		if ((response.statusCode ?? 400) >= 400) {
 			throw HTTPStatusException.fromResponse(response);
 		}
-		final thread = await _makeThread(parse(response.data).body!, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!), priority: priority);
+		final thread = await _makeThread(parse(response.data).body!, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!), priority: priority, cancelToken: cancelToken);
 		return thread.posts.firstWhere((t) => t.id == id);
 	}
-	Future<Thread> _makeThread(dom.Element document, String board, int id, {required RequestPriority priority}) async {
+	Future<Thread> _makeThread(dom.Element document, String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final op = document.querySelector('#p$id');
 		if (op == null) {
 			throw FuukaException('OP was not archived');
 		}
 		final replies = document.querySelectorAll('.reply:not(.subreply)');
-		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, priority: priority)))).toList();
+		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, priority: priority, cancelToken: cancelToken)))).toList();
 		final title = document.querySelector('.filetitle')?.text;
 		return Thread(
 			posts_: posts,
@@ -234,8 +234,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 		throw Exception('Unimplemented');
 	}
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		if (!(await getBoards(priority: priority)).any((b) => b.name == thread.board)) {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
 		final response = await client.getThreadUri(
@@ -244,26 +244,27 @@ class FuukaArchive extends ImageboardSiteArchive {
 				'num': thread.id.toString()
 			}),
 			priority: priority,
-			responseType: ResponseType.plain
+			responseType: ResponseType.plain,
+			cancelToken: cancelToken
 		);
-		return _makeThread(parse(response.data).body!, thread.board, thread.id, priority: priority);
+		return await _makeThread(parse(response.data).body!, thread.board, thread.id, priority: priority, cancelToken: cancelToken);
 	}
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
 			validateStatus: (x) => true,
 			responseType: ResponseType.plain,
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		final document = parse(response.data);
 		int? threadId;
 		dom.Element e = dom.Element.tag('div');
 		final List<Thread> threads = [];
 		for (final child in document.querySelector('.content')!.children) {
 			if (child.localName == 'hr') {
-				threads.add(await _makeThread(e, board, threadId!, priority: priority));
+				threads.add(await _makeThread(e, board, threadId!, priority: priority, cancelToken: cancelToken));
 				e = dom.Element.tag('div');
 			}
 			else {
@@ -280,7 +281,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		return boards!;
 	}
 
@@ -289,11 +290,11 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (query.postTypeFilter == PostTypeFilter.onlyStickies) {
 			throw UnsupportedError('"Only stickies" filtering not supported in Fuuka search');
 		}
-		final knownBoards = await getBoards(priority: priority);
+		final knownBoards = await getBoards(priority: priority, cancelToken: cancelToken);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);
@@ -317,14 +318,14 @@ class FuukaArchive extends ImageboardSiteArchive {
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
 		final document = parse(response.data);
 		return ImageboardArchiveSearchResultPage(
 			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map((e) async {
-				final p = await _makePost(e, priority: priority);
+				final p = await _makePost(e, priority: priority, cancelToken: cancelToken);
 				if (p.id == p.threadId) {
 					return ImageboardArchiveSearchResult.thread(Thread(
 						board: p.board,

@@ -149,13 +149,13 @@ class SiteFutaba extends ImageboardSite {
 	String get defaultUsername => '名無し';
 
 	@override
-	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority}) async {
+	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/index2.html'), options: Options(
 			responseType: ResponseType.bytes,
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		final document = await parse(Uint8List.fromList(response.data as List<int>));
 		return document.querySelectorAll('td a').where((e) {
 			return e.attributes['href']?.endsWith('futaba.htm') ?? false;
@@ -174,18 +174,18 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
+	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
 		return const NoCaptchaRequest();
 	}
 
-	Future<dom.Document> _getCatalogPage(String board, String page, {required RequestPriority priority}) async {
+	Future<dom.Document> _getCatalogPage(String board, String page, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(boardDomain(board), '/$board/$page.htm'), options: Options(
 			responseType: ResponseType.bytes,
 			validateStatus: (status) => status == 200 || status == 404,
 			extra: {
 				kPriority: priority
 			}
-		));
+		), cancelToken: cancelToken);
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
 		}
@@ -193,16 +193,16 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority}) async {
-		final doc0 = await _getCatalogPage(board, 'futaba', priority: priority);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final doc0 = await _getCatalogPage(board, 'futaba', priority: priority, cancelToken: cancelToken);
 		return doc0.querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = 0).toList();
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority}) async {
+	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
 			final pageNumber = (after.currentPage ?? 0) + 1;
-			final doc = await _getCatalogPage(board, pageNumber.toString(), priority: priority);
+			final doc = await _getCatalogPage(board, pageNumber.toString(), priority: priority, cancelToken: cancelToken);
 			return doc.querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = pageNumber).toList();
 		}
 		on BoardNotFoundException {
@@ -211,7 +211,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority}) {
+	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
 		throw UnimplementedError();
 	}
 
@@ -322,8 +322,8 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority}) async {
-		final response = await client.getThreadUri(Uri.parse(getWebUrlImpl(thread.board, thread.id)), responseType: ResponseType.bytes, priority: priority);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final response = await client.getThreadUri(Uri.parse(getWebUrlImpl(thread.board, thread.id)), responseType: ResponseType.bytes, priority: priority, cancelToken: cancelToken);
 		final document = await parse(Uint8List.fromList(response.data as List<int>));
 		return _makeThread(document.querySelector('.thre')!, thread.board);
 

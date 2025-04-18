@@ -254,7 +254,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						getIsPageStub: (p) => p.isPageStub,
 						isPaged: imageboard.site.isPaged,
 						getHasOmittedReplies: (p) => p.hasOmittedReplies,
-						updateWithStubItems: (_, ids) => throw UnimplementedError(),
+						updateWithStubItems: (_, ids, cancelToken) => throw UnimplementedError(),
 						opId: zone.primaryThreadId,
 						wrapTreeChild: (child, parentIds) {
 							PostSpanZoneData childZone = zone;
