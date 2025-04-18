@@ -623,7 +623,8 @@ class SiteReddit extends ImageboardSite {
 			'' => null,
 			String x => Uri.parse(x),
 			_ => null
-		}
+		},
+		popularity: data['subscribers']
 	);
 
 	Future<String> _getRedgifsToken() async {
@@ -1025,6 +1026,9 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
+	ImageboardBoardPopularityType? get boardPopularityType => ImageboardBoardPopularityType.subscriberCount;
+
+	@override
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
 		final response = await client.getUri(Uri.https('api.$baseUrl', '/subreddits/search', {
 			'q': query,
@@ -1039,8 +1043,9 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	Future<void> _updateBoardIfNeeded(String board, {required RequestPriority priority}) async {
-		final boardAge = DateTime.now().difference(persistence?.maybeGetBoard(board)?.additionalDataTime ?? DateTime(2000));
-		if (boardAge > const Duration(days: 3)) {
+		final old = persistence?.maybeGetBoard(board);
+		final boardAge = DateTime.now().difference(old?.additionalDataTime ?? DateTime(2000));
+		if (boardAge > const Duration(days: 3) || old?.popularity == null) {
 			final ImageboardBoard newBoard;
 			if (board == 'popular' || board == 'all') {
 				newBoard = ImageboardBoard(

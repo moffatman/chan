@@ -166,6 +166,13 @@ class ImageboardBoardFields {
     fieldName: 'captchaMode',
     merger: PrimitiveMerger(),
   );
+  static int? getPopularity(ImageboardBoard x) => x.popularity;
+  static const popularity = ReadOnlyHiveFieldAdapter<ImageboardBoard, int?>(
+    getter: getPopularity,
+    fieldNumber: 19,
+    fieldName: 'popularity',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
@@ -197,7 +204,8 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
     15: ImageboardBoardFields.additionalDataTime,
     16: ImageboardBoardFields.subdomain,
     17: ImageboardBoardFields.icon,
-    18: ImageboardBoardFields.captchaMode
+    18: ImageboardBoardFields.captchaMode,
+    19: ImageboardBoardFields.popularity
   };
 
   @override
@@ -239,6 +247,7 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
       subdomain: fields[16] as String?,
       icon: fields[17] as Uri?,
       captchaMode: fields[18] as int?,
+      popularity: fields[19] as int?,
     );
   }
 
@@ -264,6 +273,7 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
       if (obj.subdomain != null) 16: obj.subdomain,
       if (obj.icon != null) 17: obj.icon,
       if (obj.captchaMode != null) 18: obj.captchaMode,
+      if (obj.popularity != null) 19: obj.popularity,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

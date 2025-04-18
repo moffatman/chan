@@ -58,9 +58,17 @@ class Site8Kun extends SiteLainchan2 {
 			name: board.key,
 			title: board.value['title'] as String,
 			isWorksafe: board.value['sfw'] == 1,
-			webmAudioAllowed: true
+			webmAudioAllowed: true,
+			popularity: switch (board.value['posts_total']) {
+				int count => count,
+				String str => int.tryParse(str),
+				_ => null
+			}
 		)).toList();
 	}
+
+	@override
+	ImageboardBoardPopularityType? get boardPopularityType => ImageboardBoardPopularityType.postsCount;
 
 	@override
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
@@ -84,7 +92,12 @@ class Site8Kun extends SiteLainchan2 {
 			name: board.key,
 			title: board.value['title'] as String,
 			isWorksafe: board.value['sfw'] == 1,
-			webmAudioAllowed: true
+			webmAudioAllowed: true,
+			popularity: switch (board.value['posts_total']) {
+				int count => count,
+				String str => int.tryParse(str),
+				_ => null
+			}
 		)).toList();
 	}
 

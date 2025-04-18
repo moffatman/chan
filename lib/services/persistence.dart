@@ -1292,7 +1292,8 @@ class Persistence extends ChangeNotifier {
 		}
 		for (final newBoard in newBoards) {
 			final key = '$imageboardKey/${newBoard.name.toLowerCase()}';
-			if (sharedBoardsBox.get(key)?.additionalDataTime == null) {
+			final old = sharedBoardsBox.get(key);
+			if (old?.additionalDataTime == null || (old?.popularity != newBoard.popularity)) {
 				sharedBoardsBox.put(key, newBoard);
 			}
 		}

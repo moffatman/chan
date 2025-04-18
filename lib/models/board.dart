@@ -49,6 +49,8 @@ class ImageboardBoard extends HiveObject {
 	@HiveField(18, isOptimized: true)
 	int? captchaMode;
 	final BoardKey boardKey;
+	@HiveField(19, isOptimized: true)
+	final int? popularity;
 
 	ImageboardBoard({
 		required String name,
@@ -69,7 +71,8 @@ class ImageboardBoard extends HiveObject {
 		this.additionalDataTime,
 		this.subdomain,
 		this.icon,
-		this.captchaMode
+		this.captchaMode,
+		this.popularity
 	}) : name = intern(name), boardKey = getKey(name);
 
 	@override
@@ -97,10 +100,11 @@ class ImageboardBoard extends HiveObject {
 		(other.additionalDataTime == additionalDataTime) &&
 		(other.subdomain == subdomain) &&
 		(other.icon == icon) &&
-		(other.captchaMode == captchaMode);
+		(other.captchaMode == captchaMode) &&
+		(other.popularity == popularity);
 
 	@override
-	int get hashCode => Object.hash(name, title, isWorksafe, webmAudioAllowed, maxImageSizeBytes, maxWebmSizeBytes, maxWebmDurationSeconds, maxCommentCharacters, threadCommentLimit, threadImageLimit, pageCount, threadCooldown, replyCooldown, imageCooldown, spoilers, additionalDataTime, subdomain, icon, captchaMode);
+	int get hashCode => Object.hash(name, title, isWorksafe, webmAudioAllowed, maxImageSizeBytes, maxWebmSizeBytes, maxWebmDurationSeconds, maxCommentCharacters, threadCommentLimit, threadImageLimit, pageCount, threadCooldown, replyCooldown, imageCooldown, spoilers, additionalDataTime, subdomain, icon, captchaMode, popularity);
 
 	static final _keys = Map<String, BoardKey>.identity();
 	static BoardKey getKey(String board) {

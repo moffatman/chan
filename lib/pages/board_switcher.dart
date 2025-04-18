@@ -8,6 +8,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
@@ -70,6 +71,13 @@ class _Board {
 
 	@override
 	String toString() => '_Board(imageboard: $imageboard, item: $item, typeaheadIndex: $typeaheadIndex, matchIndex: $matchIndex, exactMatch: $exactMatch, favsIndex: $favsIndex, imageboardPriorityIndex: $imageboardPriorityIndex)';
+}
+
+extension _Metadata on ImageboardBoardPopularityType {
+	IconData get icon => switch (this) {
+		ImageboardBoardPopularityType.postsCount => CupertinoIcons.reply,
+		ImageboardBoardPopularityType.subscriberCount => CupertinoIcons.person
+	};
 }
 
 class BoardSwitcherPage extends StatefulWidget {
@@ -317,7 +325,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				if (imageboardComparison != 0) {
 					return imageboardComparison;
 				}
-				return a.favsIndex - b.favsIndex;
+				final favsComparison = a.favsIndex - b.favsIndex;
+				if (favsComparison != 0) {
+					return favsComparison;
+				}
+				return (b.item.popularity ?? 0) - (a.item.popularity ?? 0);
 			});
 			return filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
 		}
@@ -403,6 +415,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				final matchComparison = a.matchIndex - b.matchIndex;
 				if (matchComparison != 0) {
 					return matchComparison;
+				}
+				final popularityComparison = (b.item.popularity ?? 0) - (a.item.popularity ?? 0);
+				if (popularityComparison != 0) {
+					return popularityComparison;
 				}
 				return a.item.boardKey.s.compareTo(b.item.boardKey.s);
 			});
@@ -775,6 +791,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									final board = filteredBoards[i].item;
 									final imageboard = filteredBoards[i].imageboard;
 									final isSelected = _showSelectedItem && i == effectiveSelectedIndex;
+									final popularityType = filteredBoards[i].imageboard.site.boardPopularityType;
 									final Widget child;
 									if (board != null) {
 										child = ContextMenu(
@@ -856,11 +873,28 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	const SizedBox(width: 16)
 																]
 															),
-															if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) const Align(
+															if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey) || popularityType != null) Align(
 																alignment: Alignment.topRight,
 																child: Padding(
-																	padding: EdgeInsets.only(top: 4, right: 4),
-																	child: Icon(CupertinoIcons.star_fill, size: 15)
+																	padding: const EdgeInsets.only(top: 4),
+																	child: Row(
+																		mainAxisSize: MainAxisSize.min,
+																		children: [
+																			if (popularityType != null) ...[
+																				Icon(popularityType.icon, size: 15),
+																				const SizedBox(width: 4),
+																				Text(switch (board.popularity) {
+																					int count => formatCount(count),
+																					null => '—'
+																				}, style: const TextStyle(fontSize: 15)),
+																				const SizedBox(width: 4)
+																			],
+																			if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ...const [
+																				Icon(CupertinoIcons.star_fill, size: 15),
+																				SizedBox(width: 4)
+																			]
+																		]
+																	)
 																)
 															)
 														]
@@ -937,6 +971,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									final imageboard = item.imageboard;
 									final board = item.item;
 									final isSelected = _showSelectedItem && item == filteredBoards[effectiveSelectedIndex];
+									final popularityType = item.imageboard.site.boardPopularityType;
 									final Widget child;
 									if (board != null) {
 										child = ContextMenu(
@@ -976,53 +1011,60 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														borderRadius: const BorderRadius.all(Radius.circular(4)),
 														color: board.isWorksafe ? Colors.blue.withOpacity(isSelected ? 0.3 : 0.1) : Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
 													),
-													child: Stack(
+													child: Column(
+														mainAxisAlignment: MainAxisAlignment.start,
+														crossAxisAlignment: CrossAxisAlignment.center,
 														children: [
-															if (allImageboards.length > 1) Align(
-																alignment: Alignment.topLeft,
-																child: Padding(
-																	padding: const EdgeInsets.only(top: 2, left: 2),
-																	child: ImageboardIcon(
-																		imageboardKey: imageboard.key,
-																		boardName: board.name
+															Container(
+																padding: const EdgeInsets.all(2),
+																child: Row(
+																	children: [
+																		if (allImageboards.length > 1) Padding(
+																			padding: const EdgeInsets.only(left: 2),
+																			child: ImageboardIcon(
+																				imageboardKey: imageboard.key,
+																				boardName: board.name,
+																				size: 13
+																			)
+																		),
+																		const Spacer(),
+																		if (popularityType != null) ...[
+																			Icon(popularityType.icon, size: 13),
+																			const SizedBox(width: 3),
+																			Text(switch (board.popularity) {
+																				int count => formatCount(count),
+																				null => '—'
+																			}, style: const TextStyle(fontSize: 13)),
+																			const SizedBox(width: 2)
+																		],
+																		if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) const Padding(
+																			padding: EdgeInsets.only(right: 2),
+																			child: Icon(CupertinoIcons.star_fill, size: 15)
+																		)
+																	]
+																)
+															),
+															if (board.name.isNotEmpty) Flexible(
+																child: Center(
+																	child: AutoSizeText(
+																		imageboard.site.formatBoardName(board.name),
+																		textAlign: TextAlign.center,
+																		maxLines: 1,
+																		minFontSize: 0,
+																		style: isSelected ? CommonTextStyles.bold : null
 																	)
 																)
 															),
-															if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) const Align(
-																alignment: Alignment.topRight,
-																child: Padding(
-																	padding: EdgeInsets.only(top: 2, right: 2),
-																	child: Icon(CupertinoIcons.star_fill, size: 15)
-																)
-															),
-															Column(
-																mainAxisAlignment: MainAxisAlignment.start,
-																crossAxisAlignment: CrossAxisAlignment.center,
-																children: [
-																	const SizedBox(height: 20),
-																	if (board.name.isNotEmpty) Flexible(
-																		child: Center(
-																			child: AutoSizeText(
-																				imageboard.site.formatBoardName(board.name),
-																				textAlign: TextAlign.center,
-																				maxLines: 1,
-																				minFontSize: 0,
-																				style: isSelected ? CommonTextStyles.bold : null
-																			)
-																		)
-																	),
-																	if (board.title.isNotEmpty) Flexible(
-																		child: Center(
-																			child: AutoSizeText(
-																				board.title,
-																				maxFontSize: board.name.isNotEmpty ? 14 : double.infinity,
-																				maxLines: 2,
-																				textAlign: TextAlign.center,
-																				overflow: TextOverflow.ellipsis
-																			)
-																		)
+															if (board.title.isNotEmpty) Flexible(
+																child: Center(
+																	child: AutoSizeText(
+																		board.title,
+																		maxFontSize: board.name.isNotEmpty ? 14 : double.infinity,
+																		maxLines: 2,
+																		textAlign: TextAlign.center,
+																		overflow: TextOverflow.ellipsis
 																	)
-																]
+																)
 															)
 														]
 													)

@@ -414,11 +414,6 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
-		return [];
-	}
-
-	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
 		return const NoCaptchaRequest();
 	}

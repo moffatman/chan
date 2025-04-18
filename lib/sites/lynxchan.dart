@@ -257,7 +257,8 @@ class SiteLynxchan extends ImageboardSite {
 				name: match.group(1)!,
 				title: match.group(2)!,
 				isWorksafe: col1.querySelector('.indicatorSfw') != null,
-				webmAudioAllowed: true
+				webmAudioAllowed: true,
+				popularity: int.tryParse(cell.querySelector('.labelPostCount')?.text ?? '')
 			));
 		}
 		if (list.isEmpty) {
@@ -271,12 +272,16 @@ class SiteLynxchan extends ImageboardSite {
 					name: match.group(1)!,
 					title: match.group(2)!,
 					isWorksafe: col1.querySelector('.indicatorSfw') != null,
-					webmAudioAllowed: true
+					webmAudioAllowed: true,
+					popularity: int.tryParse(cell.querySelector('.labelPostCount')?.text ?? '')
 				));
 			}
 		}
 		return list;
 	}
+
+	@override
+	ImageboardBoardPopularityType? get boardPopularityType => ImageboardBoardPopularityType.postsCount;
 
 	@override
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
@@ -332,7 +337,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	Future<void> _maybeUpdateBoardInformation(String boardName) async {
 		final board = persistence?.maybeGetBoard(boardName);
-		if (DateTime.now().difference(board?.additionalDataTime ?? DateTime(2000)) > const Duration(days: 3)) {
+		if (board?.popularity != null && DateTime.now().difference(board?.additionalDataTime ?? DateTime(2000)) > const Duration(days: 3)) {
 			// Not updated recently
 			return;
 		}

@@ -1309,6 +1309,11 @@ class ChoiceReportMethod extends ImageboardReportMethod {
 	});
 }
 
+enum ImageboardBoardPopularityType {
+	subscriberCount,
+	postsCount
+}
+
 @HiveType(typeId: 47)
 class DraftPost {
 	@HiveField(0)
@@ -1839,6 +1844,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get defaultUsername;
 	List<ImageboardSnippet> getBoardSnippets(String board) => const [];
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async => [];
+	ImageboardBoardPopularityType? get boardPopularityType => null;
 	bool get allowsArbitraryBoards => false;
 	bool get classicCatalogStyle => true;
 	bool get explicitIds => true;
