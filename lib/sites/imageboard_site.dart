@@ -160,6 +160,7 @@ const kHttpStatusCodes = {
 	508: 'Loop Detected',
 	510: 'Not Extended',
 	511: 'Network Authentication Required',
+	522: 'Connection timeout between Cloudflare and origin server',
 	525: 'SSL handshake failed between Cloudflare and origin server'
 };
 
