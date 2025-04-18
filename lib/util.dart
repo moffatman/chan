@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
@@ -312,14 +313,23 @@ class ExpiringMutexResource<T> {
 }
 
 extension ToStringDio on Object {
-	String toStringDio() {
-		if (this is DioError) {
-			return '${(this as DioError).message}\nURL: ${(this as DioError).requestOptions.uri}';
-		}
-		else {
-			return toString();
-		}
-	}
+	String toStringDio() => switch (this) {
+		DioError err => switch (err.type) {
+			DioErrorType.connectTimeout => 'Connection timeout: ${err.requestOptions.uri}',
+			DioErrorType.sendTimeout => 'Send timeout: ${err.requestOptions.uri}',
+			DioErrorType.receiveTimeout => 'Receive timeout: ${err.requestOptions.uri}',
+			DioErrorType.response => switch (err.response?.statusCode) {
+				int code => 'HTTP Error $code (url: ${err.requestOptions.uri}, meaning: ${kHttpStatusCodes[code] ?? 'unknown'})',
+				null => switch (err.error) {
+					null => 'Unknown response error: ${err.requestOptions.uri}',
+					Object obj => '${obj.toStringDio()}\nURL: ${err.requestOptions.uri}'
+				}
+			},
+			DioErrorType.cancel => 'Request cancelled: ${err.requestOptions.uri}',
+			DioErrorType.other => '${err.error.toStringDio()}\nURL: ${err.requestOptions.uri}'
+		},
+		_ => toString()
+	};
 }
 
 extension Filtering on Listenable {
