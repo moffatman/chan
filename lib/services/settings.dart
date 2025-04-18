@@ -7,6 +7,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
@@ -3043,6 +3044,7 @@ class Settings extends ChangeNotifier {
 				handler.next(options);
 			}
 		));
+		client.interceptors.add(SeparatedCookieManager());
 		client.interceptors.add(CloudflareInterceptor());
 		client.interceptors.add(StrictJsonInterceptor());
 		client.httpClientAdapter = BadCertificateHttpClientAdapter();
