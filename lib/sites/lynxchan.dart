@@ -383,8 +383,8 @@ class SiteLynxchan extends ImageboardSite {
 				id: f['path'],
 				ext: '.${(f['path'] as String).split('.').last}',
 				filename: f['originalName'] ?? (f['path'] as String).split('/').last,
-				url: Uri.https(baseUrl, f['path']).toString(),
-				thumbnailUrl: Uri.https(baseUrl, f['thumb']).toString(),
+				url: Uri.https(imageUrl, f['path']).toString(),
+				thumbnailUrl: Uri.https(imageUrl, f['thumb']).toString(),
 				md5: '',
 				width: _tryParseInt(f['width']),
 				height: _tryParseInt(f['height']),
@@ -459,8 +459,8 @@ class SiteLynxchan extends ImageboardSite {
 				id: '$id-${e.key}-${e.value['path']}',
 				ext: '.${(e.value['path'] as String).split('.').last}',
 				filename: e.value['originalName'],
-				url: Uri.https(baseUrl, e.value['path']).toString(),
-				thumbnailUrl: Uri.https(baseUrl, e.value['thumb']).toString(),
+				url: Uri.https(imageUrl, e.value['path']).toString(),
+				thumbnailUrl: Uri.https(imageUrl, e.value['thumb']).toString(),
 				md5: '',
 				width: _tryParseInt(e.value['width']),
 				height: _tryParseInt(e.value['height']),
@@ -528,6 +528,10 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	static const kLoginFieldLastSolvedCaptchaKey = 'lc';
+
+	@override
+	/// All images hosted in baseUrl anyway
+	String get imageUrl => baseUrl;
 
 	@override
 	bool operator == (Object other) =>
