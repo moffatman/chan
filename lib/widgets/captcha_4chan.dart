@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui show Image, ImageByteFormat, PictureRecorder;
 
-import 'package:async/async.dart';
 import 'package:chan/services/captcha.dart';
 import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
@@ -717,7 +716,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	final Map<Chan4CustomCaptchaLetterKey, _PickerStuff> _pickerStuff = {};
 	final List<_PickerStuff> _orphanPickerStuff = [];
 	double? _guessingProgress = 0.0;
-	CancelableOperation<Chan4CustomCaptchaGuesses>? _guessInProgress;
 	bool _cloudGuessFailed = false;
 	String? _lastCloudGuess;
 	String? _ip;
@@ -786,17 +784,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_greyOutPickers = true;
 		});
 		try {
-			_guessInProgress?.cancel();
-			_guessInProgress = guess(
-				await _screenshotImage(),
-				maxNumLetters: 10,
-				onProgress: (progress) {
-					setState(() {
-						_guessingProgress = progress;
-					});
-				}
-			);
-			_lastGuesses = await _guessInProgress!.value;
+			_lastGuesses = Chan4CustomCaptchaGuesses.dummy('000000', 10);
 			numLetters = _lastGuesses!.likelyNumLetters;
 			final selection = _solutionController.selection;
 			final lastResolvedPickerStuff = {
@@ -829,7 +817,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			print(e);
 			print(st);
 		}
-		if (mounted && context.read<MouseSettings>().supportMouse) {
+		if (mounted) {
+			// Always focus text box, since the guess is garbage
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionNode.requestFocus();
 		}
@@ -1644,7 +1633,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		for (final stuff in _pickerStuff.values.followedBy(_orphanPickerStuff)) {
 			stuff.controller.dispose();
 		}
-		_guessInProgress?.cancel();
 		_storeChallengeForReuse(challenge);
 	}
 }
