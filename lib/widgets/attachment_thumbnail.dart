@@ -11,6 +11,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
@@ -217,7 +218,10 @@ class AttachmentThumbnail extends StatelessWidget {
 			url = attachment.url;
 		}
 		if (spoiler && !settings.alwaysShowSpoilers) {
-			url = s.getSpoilerImageUrl(attachment, thread: thread)?.toString() ?? '';
+			url = s.getSpoilerImageUrl(
+				attachment,
+				thread: context.read<PostSpanZoneData?>()?.primaryThreadState?.thread
+			)?.toString() ?? '';
 		}
 		if (url.isEmpty) {
 			final icon = attachment.icon ?? CupertinoIcons.exclamationmark_triangle_fill;

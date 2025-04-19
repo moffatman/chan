@@ -13,6 +13,7 @@ import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/helpers/http_304.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/util.dart';
@@ -30,42 +31,6 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/widgets/post_spans.dart';
-
-class _ThreadCacheEntry {
-	final Thread thread;
-	final String lastModified;
-	_ThreadCacheEntry({
-		required this.thread,
-		required this.lastModified
-	});
-}
-
-const _catalogCacheLifetime = Duration(seconds: 10);
-
-class _CatalogCacheEntry {
-	final int page;
-	final DateTime lastModified;
-	final int replyCount;
-
-	_CatalogCacheEntry({
-		required this.page,
-		required this.lastModified,
-		required this.replyCount
-	});
-
-	@override
-	String toString() => '_CatalogCacheEntry(page: $page, lastModified: $lastModified, replyCount: $replyCount)';
-}
-
-class _CatalogCache {
-	final DateTime lastUpdated;
-	final Map<int, _CatalogCacheEntry> entries;
-
-	_CatalogCache({
-		required this.lastUpdated,
-		required this.entries
-	});
-}
 
 class _QuoteLinkElement extends LinkifyElement {
 	final int id;
@@ -120,7 +85,7 @@ class _QuoteLinkLinkifier extends Linkifier {
 }
 
 
-class Site4Chan extends ImageboardSite {
+class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 	@override
 	final String name;
 	@override
@@ -145,8 +110,6 @@ class Site4Chan extends ImageboardSite {
 	final Duration spamFilterCaptchaDelayYellow;
 	final Duration spamFilterCaptchaDelayRed;
 	final Map<String, Map<String, String>>? boardFlags;
-	Map<String, _ThreadCacheEntry> _threadCache = {};
-	Map<String, _CatalogCache> _catalogCaches = {};
 	final bool stickyCloudflare;
 	final String? hCaptchaKey;
 
@@ -276,13 +239,6 @@ class Site4Chan extends ImageboardSite {
 			_onDynamicIPKeepAliveTimerFire();
 		}
 		Settings.instance.addListener(_onSettingsUpdate);
-	}
-
-	@override
-	void migrateFromPrevious(Site4Chan oldSite) {
-		super.migrateFromPrevious(oldSite);
-		_threadCache = oldSite._threadCache;
-		_catalogCaches = oldSite._catalogCaches;
 	}
 
 	@override
@@ -562,110 +518,53 @@ class Site4Chan extends ImageboardSite {
 		return null;
 	});
 
-	Future<int?> _getThreadPage(ThreadIdentifier thread, {required RequestPriority priority, CancelToken? cancelToken}) async {
-		final now = DateTime.now();
-		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_catalogCacheLifetime) > 0) {
-			final response = await client.getUri(Uri.https(apiUrl, '/${thread.board}/catalog.json'), options: Options(
-				validateStatus: (x) => true,
-				extra: {
-					kPriority: priority
-				}
-			), cancelToken: cancelToken);
-			if (response.statusCode != 200) {
-				if (response.statusCode == 404) {
-					return Future.error(BoardNotFoundException(thread.board));
-				}
-				else {
-					return Future.error(HTTPStatusException.fromResponse(response));
-				}
+
+	@override
+	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
+		final data = response.data as Map;
+		final String? title = data['posts']?[0]?['sub'];
+		final a = _makeAttachment(thread.board, thread.id, data['posts'][0]);
+		final output = Thread(
+			board: thread.board,
+			isDeleted: false,
+			replyCount: data['posts'][0]['replies'],
+			imageCount: data['posts'][0]['images'],
+			isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
+			posts_: (data['posts'] ?? []).map<Post>((postData) {
+				return _makePost(thread.board, thread.id, postData);
+			}).toList(),
+			id: data['posts'][0]['no'],
+			attachments: a == null ? [] : [a],
+			attachmentDeleted: data['posts'][0]['filedeleted'] == 1,
+			title: (title == null) ? null : unescape.convert(title),
+			isSticky: data['posts'][0]['sticky'] == 1,
+			time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
+			uniqueIPCount: data['posts'][0]['unique_ips'],
+			customSpoilerId: data['posts'][0]['custom_spoiler']
+		);
+		if (output.posts_.length == output.uniqueIPCount) {
+			for (int i = 0; i < output.posts_.length; i++) {
+				output.posts_[i].ipNumber = i + 1;
 			}
-			final Map<int, _CatalogCacheEntry> entries = {};
-			for (final page in response.data as List) {
-				for (final threadData in page['threads'] as List) {
-					entries[threadData['no']] = _CatalogCacheEntry(
-						page: page['page'],
-						replyCount: threadData['replies'],
-						lastModified: DateTime.fromMillisecondsSinceEpoch(threadData['last_modified'] * 1000)
-					);
-				}
-			}
-			_catalogCaches[thread.board] = _CatalogCache(
-				lastUpdated: now,
-				entries: entries
-			);
 		}
-		return _catalogCaches[thread.board]!.entries[thread.id]?.page;
+		else if (output.uniqueIPCount == 1) {
+			for (final post in output.posts_) {
+				post.ipNumber = 1;
+			}
+		}
+		return output;
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		Map<String, String>? headers;
-		if (_threadCache['${thread.board}/${thread.id}'] != null) {
-			headers = {
-				'If-Modified-Since': _threadCache['${thread.board}/${thread.id}']!.lastModified
-			};
-		}
-		final response = await client.getUri(
-			Uri.https(apiUrl,'/${thread.board}/thread/${thread.id}.json'),
-			options: Options(
-				headers: headers,
-				validateStatus: (x) => true,
-				responseType: ResponseType.json,
-				extra: {
-					kPriority: priority
-				}
-			),
-			cancelToken: cancelToken
+	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant})
+		=> RequestOptions(
+			path: '/${thread.board}/thread/${thread.id}.json',
+			baseUrl: 'https://$apiUrl',
+			responseType: ResponseType.json
 		);
-		if (response.statusCode == 200) {
-			final data = response.data;
-			await unsafeAsync(data, () async {
-				final String? title = data['posts']?[0]?['sub'];
-				final a = _makeAttachment(thread.board, thread.id, data['posts'][0]);
-				final output = Thread(
-					board: thread.board,
-					isDeleted: false,
-					replyCount: data['posts'][0]['replies'],
-					imageCount: data['posts'][0]['images'],
-					isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
-					posts_: (data['posts'] ?? []).map<Post>((postData) {
-						return _makePost(thread.board, thread.id, postData);
-					}).toList(),
-					id: data['posts'][0]['no'],
-					attachments: a == null ? [] : [a],
-					attachmentDeleted: data['posts'][0]['filedeleted'] == 1,
-					title: (title == null) ? null : unescape.convert(title),
-					isSticky: data['posts'][0]['sticky'] == 1,
-					time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
-					currentPage: await _getThreadPage(thread, priority: priority, cancelToken: cancelToken),
-					uniqueIPCount: data['posts'][0]['unique_ips'],
-					customSpoilerId: data['posts'][0]['custom_spoiler']
-				);
-				if (output.posts_.length == output.uniqueIPCount) {
-					for (int i = 0; i < output.posts_.length; i++) {
-						output.posts_[i].ipNumber = i + 1;
-					}
-				}
-				else if (output.uniqueIPCount == 1) {
-					for (final post in output.posts_) {
-						post.ipNumber = 1;
-					}
-				}
-				_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
-					thread: output,
-					lastModified: response.headers.value('last-modified')!
-				);
-			});
-		}
-		else if (!(response.statusCode == 304 && headers != null)) {
-			if (response.statusCode == 404) {
-				throw const ThreadNotFoundException();
-			}
-			throw HTTPStatusException.fromResponse(response);
-		}
-		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread, priority: priority, cancelToken: cancelToken);
-		return _threadCache['${thread.board}/${thread.id}']!.thread;
-	}
 
 	@override
 	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
@@ -1001,8 +900,8 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Uri? getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		final customSpoilerId = (thread == null) ? null : _threadCache['${thread.board}/${thread.id}']?.thread.customSpoilerId;
+	Uri? getSpoilerImageUrl(Attachment attachment, {Thread? thread}) {
+		final customSpoilerId = thread?.customSpoilerId;
 		if (customSpoilerId != null) {
 			return Uri.https(staticUrl, '/image/spoiler-${attachment.board}$customSpoilerId.png');
 		}

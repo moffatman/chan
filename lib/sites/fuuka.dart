@@ -286,7 +286,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	String _formatDateForSearch(DateTime d) {
-		return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+		return '${d.year}-${d.dMM}-${d.dDD}';
 	}
 
 	@override

@@ -814,8 +814,8 @@ class SiteXenforo extends ImageboardSite {
 		final commonFields = {
 			if (query.name != null) 'c[users]': query.name,
 			if (query.postTypeFilter == PostTypeFilter.onlyOPs) 'c[title_only]': '1',
-			if (query.startDate != null) 'c[newer_than]': '${query.startDate?.year}-${query.startDate?.month.toString().padLeft(2, '0')}-${query.startDate?.day.toString().padLeft(2, '0')}',
-			if (query.endDate != null) 'c[older_than]': '${query.endDate?.year}-${query.endDate?.month.toString().padLeft(2, '0')}-${query.endDate?.day.toString().padLeft(2, '0')}'
+			if (query.startDate != null) 'c[newer_than]': '${query.startDate?.year}-${query.startDate?.dMM}-${query.startDate?.dDD}',
+			if (query.endDate != null) 'c[older_than]': '${query.endDate?.year}-${query.endDate?.dMM}-${query.endDate?.dDD}'
 		};
 		final int searchId;
 		final Response? pageOneResponse;

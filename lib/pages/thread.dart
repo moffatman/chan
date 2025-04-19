@@ -1062,7 +1062,8 @@ class ThreadPageState extends State<ThreadPage> {
 		final site = context.read<ImageboardSite>();
 		final settings = Settings.instance;
 		final notifications = context.read<Notifications>();
-		final bool firstLoad = tmpPersistentState.thread == null;
+		final oldThread = tmpPersistentState.thread;
+		final bool firstLoad = oldThread == null;
 		// The thread might switch in this interval
 		_checkForeground();
 		final Thread newThread;
@@ -1079,7 +1080,32 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		else {
 			try {
-				newThread = await site.getThread(widget.thread, variant: tmpPersistentState.variant, priority: _priority, cancelToken: cancelToken);
+				final lastUpdatedTime = oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time;
+				if (oldThread != null && lastUpdatedTime != null) {
+					final maybeNewThread = await site.getThreadIfModifiedSince(
+						widget.thread,
+						lastUpdatedTime,
+						variant: tmpPersistentState.variant,
+						priority: _priority,
+						cancelToken: cancelToken
+					);
+					if (maybeNewThread != null) {
+						await site.updatePageNumber(maybeNewThread, true, priority: _priority, cancelToken: cancelToken);
+						newThread = maybeNewThread;
+					}
+					else {
+						await site.updatePageNumber(oldThread, false, priority: _priority, cancelToken: cancelToken);
+						newThread = oldThread;
+					}
+				} 
+				else {
+					newThread = await site.getThread(
+						widget.thread,
+						variant: tmpPersistentState.variant,
+						priority: _priority,
+						cancelToken: cancelToken
+					);
+				}
 			}
 			on ThreadNotFoundException {
 				if (site.archives.isEmpty) {

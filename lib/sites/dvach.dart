@@ -1,4 +1,6 @@
 // ignore_for_file: argument_type_not_assignable
+import 'dart:io';
+
 import 'package:chan/models/attachment.dart';
 
 import 'package:chan/models/board.dart';
@@ -6,9 +8,9 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
+import 'package:chan/sites/helpers/http_304.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
-import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -26,7 +28,7 @@ class DvachException implements Exception {
 	String toString() => 'Dvach error ($code): $message';
 }
 
-class SiteDvach extends ImageboardSite {
+class SiteDvach extends ImageboardSite with Http304CachingThreadMixin {
 	@override
 	final String baseUrl;
 	@override
@@ -177,8 +179,10 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
+	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
 		final posts = (response.data['threads'].first['posts'] as List<dynamic>).map((data) => _makePost(thread.board, thread.id, data)).toList();
 		return Thread(
 			board: thread.board,
@@ -191,12 +195,21 @@ class SiteDvach extends ImageboardSite {
 			replyCount: response.data['posts_count'] - 1,
 			imageCount: response.data['files_count'] - posts.first.attachments.length,
 			isEndless: response.data['threads'].first['posts'].first['endless'] == 1,
-			lastUpdatedTime: switch (response.data['threads'].first['posts'].first['lasthit']) {
-				int s => DateTime.fromMillisecondsSinceEpoch(s * 1000),
-				_ => null
+			// posts.last.time seems to not be exactly right
+			lastUpdatedTime: switch (response.headers.value(HttpHeaders.lastModifiedHeader)) {
+				String time => DateTimeConversion.fromHttpHeader(time)?.toLocal(),
+				null => null
 			}
 		);
 	}
+
+	@override
+	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant})
+		=> RequestOptions(
+			path: '/${thread.board}/res/${thread.id}.json',
+			baseUrl: 'https://$baseUrl',
+			responseType: ResponseType.json
+		);
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {

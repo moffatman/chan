@@ -9,7 +9,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/sites/util.dart';
+import 'package:chan/sites/helpers/http_304.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -27,7 +27,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:string_similarity/string_similarity.dart';
 
-class SiteLainchan extends ImageboardSite {
+class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 	@override
 	final String baseUrl;
 	String get sysUrl => baseUrl;
@@ -372,8 +372,10 @@ class SiteLainchan extends ImageboardSite {
 	String get res => 'res';
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.json'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
+	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
 		if (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false) {
 			throw const ThreadNotFoundException();
 		}
@@ -394,6 +396,15 @@ class SiteLainchan extends ImageboardSite {
 			poll: hasPoll ? await _getPoll(thread, priority: priority, cancelToken: cancelToken) : null
 		);
 	}
+
+	@override
+	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant})
+		=> RequestOptions(
+			path: '$basePath/${thread.board}/$res/${thread.id}.json',
+			baseUrl: 'https://$baseUrl',
+			responseType: ResponseType.json
+		);
+
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '$basePath/$board/catalog.json'), options: Options(

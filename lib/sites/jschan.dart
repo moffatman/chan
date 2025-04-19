@@ -7,9 +7,9 @@ import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
+import 'package:chan/sites/helpers/http_304.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
-import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
@@ -17,7 +17,7 @@ import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
-class SiteJsChan extends ImageboardSite {
+class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 	@override
 	final String baseUrl;
 	@override
@@ -326,10 +326,18 @@ class SiteJsChan extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}.json'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
-		return _makeThread(response.data);
-	}
+	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant})
+		=> RequestOptions(
+			path: '/${thread.board}/thread/${thread.id}.json',
+			baseUrl: 'https://$baseUrl',
+			responseType: ResponseType.json
+		);
+
+	@override
+	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async => _makeThread(response.data);
 
 	@override
 	String getWebUrlImpl(String board, [int? threadId, int? postId]) {

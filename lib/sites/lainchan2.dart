@@ -123,13 +123,16 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	}
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final broken = await super.getThreadImpl(thread, priority: priority, cancelToken: cancelToken);
+	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
+		final broken = await super.makeThread(thread, response, priority: priority, cancelToken: cancelToken);
 		if (imageThumbnailExtension != '' && !boardsWithHtmlOnlyFlags.contains(thread.board)) {
 			return broken;
 		}
-		final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.html'), priority: priority, responseType: ResponseType.plain, cancelToken: cancelToken);
-		final document = parse(response.data);
+		final response2 = await client.getThreadUri(Uri.https(baseUrl, '$basePath/${thread.board}/$res/${thread.id}.html'), priority: priority, responseType: ResponseType.plain, cancelToken: cancelToken);
+		final document = parse(response2.data);
 		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.posts_.expand((p) => p.attachments)) {
 			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id) ?? false);

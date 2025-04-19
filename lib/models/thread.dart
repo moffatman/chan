@@ -75,7 +75,7 @@ class Thread extends HiveObject implements Filterable {
 	ImageboardPoll? poll;
 	@HiveField(20, isOptimized: true, defaultValue: false)
 	bool isEndless;
-	// Do not persist, for limited usage which doesn't matter beyond current session
+	@HiveField(21, isOptimized: true)
 	DateTime? lastUpdatedTime;
 	Thread({
 		required this.posts_,
@@ -284,7 +284,8 @@ class Thread extends HiveObject implements Filterable {
 		other.replyCount == replyCount &&
 		listEquals(other.attachments, attachments) &&
 		listEquals(other.posts_, posts_) &&
-		other.poll == poll;
+		other.poll == poll &&
+		other.lastUpdatedTime == lastUpdatedTime;
 	
 	bool isIdenticalForFilteringPurposes(Thread? other) {
 		if (other == null) {

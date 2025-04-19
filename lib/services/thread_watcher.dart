@@ -293,8 +293,8 @@ class ThreadWatcher extends ChangeNotifier {
 	Future<bool> __updateThread(PersistentThreadState threadState, CancelToken? cancelToken) async {
 		Thread? newThread;
 		try {
+			final oldThread = await threadState.getThread();
 			if (site.isPaged) {
-				final oldThread = await threadState.getThread();
 				if (oldThread != null) {
 					final lastIncompletePageParentId = oldThread.posts_.tryLast?.parentId;
 					if (lastIncompletePageParentId != null && lastIncompletePageParentId.isNegative) {
@@ -319,9 +319,30 @@ class ThreadWatcher extends ChangeNotifier {
 					}
 				}
 			}
+			if ((
+				newThread,
+				oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time
+			) case (null, DateTime lastUpdatedTime)) {
+				final maybeNewThread = await site.getThreadIfModifiedSince(
+					threadState.identifier,
+					lastUpdatedTime,
+					variant: threadState.variant,
+					priority: RequestPriority.functional,
+					cancelToken: cancelToken
+				);
+				if (maybeNewThread != null) {
+					await site.updatePageNumber(maybeNewThread, true, priority: RequestPriority.functional, cancelToken: cancelToken);
+					newThread = maybeNewThread;
+				}
+				else if (oldThread != null) {
+					await site.updatePageNumber(oldThread, false, priority: RequestPriority.functional, cancelToken: cancelToken);
+					newThread = oldThread;
+				}
+			}
 			newThread ??= await site.getThread(
 				threadState.identifier,
 				priority: RequestPriority.functional,
+				variant: threadState.variant,
 				cancelToken: cancelToken
 			);
 		}

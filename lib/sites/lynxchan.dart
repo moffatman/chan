@@ -10,10 +10,10 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/helpers/http_304.dart';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
-import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:crypto/crypto.dart';
@@ -23,7 +23,7 @@ import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:mime/mime.dart';
 
-class SiteLynxchan extends ImageboardSite {
+class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin {
 	@override
 	final String name;
 	@override
@@ -425,6 +425,24 @@ class SiteLynxchan extends ImageboardSite {
 		return (response.data as List).cast<Map>().map((o) => _makeThreadFromCatalog(board, o.cast<String, dynamic>())).toList();
 	}
 
+	/// catalog.json may be missing important details, but always has threadId + page
+	@override
+	Future<Map<int, int>> getCatalogPageMapImpl(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
+			validateStatus: (status) => status == 200 || status == 404,
+			extra: {
+				kPriority: priority
+			}
+		), cancelToken: cancelToken);
+		if (response.statusCode == 404) {
+			throw BoardNotFoundException(board);
+		}
+		return {
+			for (final obj in (response.data as List).cast<Map>())
+				obj['threadId'] as int: obj['page'] as int
+		};
+	}
+
 	@override
 	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
@@ -471,8 +489,10 @@ class SiteLynxchan extends ImageboardSite {
 	});
 
 	@override
-	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
+	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
 		_maybeUpdateBoardInformation(thread.board); // Don't await
 		final op = _makePost(thread.board, thread.id, thread.id, response.data);
 		final posts = [
@@ -489,9 +509,21 @@ class SiteLynxchan extends ImageboardSite {
 			isSticky: response.data['pinned'],
 			time: op.time,
 			attachments: op.attachments_,
-			isArchived: response.data['archived'] ?? false
+			isArchived: response.data['archived'] ?? false,
+			lastUpdatedTime: switch (response.headers.value(HttpHeaders.lastModifiedHeader)) {
+				String time => DateTimeConversion.fromHttpHeader(time)?.toLocal(),
+				null => null
+			}
 		);
 	}
+
+	@override
+	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant})
+		=> RequestOptions(
+			path: '/${thread.board}/res/${thread.id}.json',
+			baseUrl: 'https://$baseUrl',
+			responseType: ResponseType.json
+		);
 
 	@override
 	String getWebUrlImpl(String board, [int? threadId, int? postId]) {

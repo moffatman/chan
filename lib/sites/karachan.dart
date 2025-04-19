@@ -382,6 +382,31 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
+	Future<Map<int, int>> getCatalogPageMapImpl(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
+		final response = await client.getUri(
+			Uri.https(baseUrl, '/$board/catalog.html'),
+			options: Options(
+				extra: {
+					kPriority: priority
+				},
+				responseType: ResponseType.plain,
+				validateStatus: (status) => status == 200 || status == 404
+ 			),
+			cancelToken: cancelToken
+		);
+		if (response.statusCode == 404) {
+			throw BoardNotFoundException(board);
+		}
+		final document = parse(response.data);
+		const kThreadsPage = 10;
+		return {
+			for (final (i, e) in document.querySelectorAll('.thread').indexed)
+				if (e.id.split('-').last.tryParseInt case int id)
+					id: (i ~/ kThreadsPage) + 1
+		};
+	}
+
+	@override
 	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
 		throw UnimplementedError();
 	}

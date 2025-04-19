@@ -692,23 +692,77 @@ extension WaitUntilValue<T> on ValueNotifier<T> {
 	}
 }
 
+extension TryParse on String {
+	int? get tryParseInt => int.tryParse(this);
+	double? get tryParseDouble => double.tryParse(this);
+}
+
 extension DateTimeConversion on DateTime {
 	DateTime get startOfDay => DateTime(year, month, day, 0, 0, 0);
 	DateTime get endOfDay => DateTime(year, month, day, 23, 59, 59);
 	static const kISO8601DateFormat = 'YYYY-MM-DD';
 	String get toISO8601Date => formatDate(kISO8601DateFormat);
-	String get weekdayShortName {
-		const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-		return days[weekday];
-	}
+	// Don't change this without checking httpHeader stuff
+	static const _kWeekdayShortNames = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+	String get weekdayShortName => _kWeekdayShortNames[weekday];
+	static const _kMonthShortNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	String get monthShortName => _kMonthShortNames[month];
 	static final _yearPattern = RegExp('Y+');
+	String get dMM => month.toString().padLeft(2, '0');
+	String get dDD => day.toString().padLeft(2, '0');
+	String get tHH => hour.toString().padLeft(2, '0');
+	String get tMM => minute.toString().padLeft(2, '0');
+	String get tSS => second.toString().padLeft(2, '0');
 	String formatDate(String format) {
 		return format
 			.replaceAllMapped(_yearPattern, (m) => (year % pow(10, m.end - m.start)).toString())
-			.replaceAll('MM', month.toString().padLeft(2, '0'))
+			.replaceAll('MM', dMM)
 			.replaceAll('M', month.toString())
-			.replaceAll('DD', day.toString().padLeft(2, '0'))
+			.replaceAll('DD', dDD)
 			.replaceAll('D', day.toString());
+	}
+	DateTime toSecondsRounded() {
+		return DateTime.fromMillisecondsSinceEpoch(1000 * (millisecondsSinceEpoch / 1000).round(), isUtc: isUtc);
+	}
+	String get _toHttpHeader => '$weekdayShortName, $dDD $monthShortName $year $tHH:$tMM:$tSS GMT';
+	String get toHttpHeader => toUtc().toSecondsRounded()._toHttpHeader;
+	static final _httpHeaderPattern = RegExp(r'^[A-Z][a-z]{2}, (\d\d) ([A-Z][a-z]{2}) (\d{4,}) (\d\d):(\d\d):(\d\d) GMT$');
+	static DateTime? fromHttpHeader(String str) {
+		final match = _httpHeaderPattern.firstMatch(str);
+		if (match == null) {
+			return null;
+		}
+		final day = match.group(1)?.tryParseInt;
+		if (day == null) {
+			return null;
+		}
+		final month = _kMonthShortNames.indexOf(match.group(2) ?? '');
+		if (month < 1) {
+			return null;
+		}
+		final year = match.group(3)?.tryParseInt;
+		if (year == null) {
+			return null;
+		}
+		final hour = match.group(4)?.tryParseInt;
+		if (hour == null) {
+			return null;
+		}
+		final minute = match.group(5)?.tryParseInt;
+		if (minute == null) {
+			return null;
+		}
+		final second = match.group(6)?.tryParseInt;
+		if (second == null) {
+			return null;
+		}
+ 		return DateTime.utc(year, month, day, hour, minute, second);
+	}
+	static DateTime max(DateTime a, DateTime b) {
+		if (a.isAfter(b)) {
+			return a;
+		}
+		return b;
 	}
 }
 

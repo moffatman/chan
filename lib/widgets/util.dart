@@ -320,17 +320,17 @@ String formatTime(DateTime time, {bool forceFullDate = false}) {
 			prefix = '${time.formatDate(Persistence.settings.customDateFormat)} ';
 		}
 		else if (forceFullDate || now.difference(time).inDays > 7) {
-			prefix = '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} ';
+			prefix = '${time.year}-${time.dMM}-${time.dDD} ';
 		}
 		else {
 			prefix = '${time.weekdayShortName} ';
 		}
 	}
 	if (Persistence.settings.exactTimeIsTwelveHour) {
-		return '$prefix${((time.hour - 1) % 12) + 1}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')} ${time.hour >= 12 ? 'PM' : 'AM'}';
+		return '$prefix${((time.hour - 1) % 12) + 1}:${time.tMM}:${time.tSS} ${time.hour >= 12 ? 'PM' : 'AM'}';
 	}
 	else {
-		return '$prefix${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
+		return '$prefix${time.tHH}:${time.tMM}:${time.tSS}';
 	}
 }
 

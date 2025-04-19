@@ -1480,8 +1480,8 @@ abstract class ImageboardSiteArchive {
 		/// 15 seconds should be well long enough for initial TCP handshake
 		connectTimeout: 15000
 	));
-	final Map<ThreadIdentifier, Thread> _catalogCache = {};
-	final Map<String, DateTime> _lastCatalogCacheTime = {};
+	final Map<String, ({Map<int, Thread> cache, DateTime time})> _catalogCache = {};
+	final Map<String, ({Map<int, int> cache, DateTime time})> _catalogPageMapCache = {};
 	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
 	final String? overrideUserAgent;
 	ImageboardSiteArchive({
@@ -1511,21 +1511,51 @@ abstract class ImageboardSiteArchive {
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
 		return runEphemerallyLocked('getCatalog($name,$board)', () async {
-			if (acceptCachedAfter != null && (_lastCatalogCacheTime[board]?.isAfter(acceptCachedAfter) ?? false)) {
-				return _catalogCache.values.where((t) => !t.isArchived && t.board == board).toList(); // Order is wrong but shouldn't matter
+			if (acceptCachedAfter != null) {
+				final entry = _catalogCache[board];
+				if (entry != null && entry.time.isAfter(acceptCachedAfter)) {
+					return entry.cache.values.toList(); // Order is wrong but shouldn't matter
+				}
 			}
 			final catalog = await getCatalogImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
-			final oldThreads = Map.fromEntries(_catalogCache.entries.where((e) => e.key.board == board));
+			final oldCache = _catalogCache[board]?.cache ?? {};
+			final newCache = <int, Thread>{};
 			for (final newThread in catalog) {
-				oldThreads.remove(newThread.identifier);
-				_catalogCache[newThread.identifier] = newThread;
+				oldCache.remove(newThread.id);
+				newCache[newThread.id] = newThread;
 			}
-			for (final oldThread in oldThreads.values) {
+			for (final oldThread in oldCache.values) {
 				// Not in new catalog, it must have been archived
 				oldThread.isArchived = true;
 			}
-			_lastCatalogCacheTime[board] = DateTime.now();
+			_catalogCache[board] = (cache: newCache, time: DateTime.now());
 			return catalog;
+		});
+	}
+	@protected
+	Future<Map<int, int>> getCatalogPageMapImpl(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
+		if (hasPagedCatalog) {
+			// No hope, this needs to be defined per-site if possible
+			return const {};
+		}
+		final catalog = await getCatalog(board, variant: variant, priority: priority, cancelToken: cancelToken, acceptCachedAfter: acceptCachedAfter);
+		return {
+			for (final thread in catalog)
+				if (thread.currentPage case int page)
+					thread.id: page
+		};
+	}
+	Future<Map<int, int>> getCatalogPageMap(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
+		return runEphemerallyLocked('getCatalogPageMap($name,$board)', () async {
+			if (acceptCachedAfter != null) {
+				final entry = _catalogPageMapCache[board];
+				if (entry != null && entry.time.isAfter(acceptCachedAfter)) {
+					return entry.cache;
+				}
+			}
+			final fresh = await getCatalogPageMapImpl(board, variant: variant, priority: priority, acceptCachedAfter: acceptCachedAfter, cancelToken: cancelToken);
+			_catalogPageMapCache[board] = (cache: fresh, time: DateTime.now());
+			return fresh;
 		});
 	}
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
@@ -1533,13 +1563,18 @@ abstract class ImageboardSiteArchive {
 	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async => [];
 	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, priority: priority, cancelToken: cancelToken);
-		_catalogCache.addAll({
+		(_catalogCache[board] ??= (cache: {}, time: DateTime.now())).cache.addAll({
 			for (final t in moreCatalog)
-				t.identifier: t
+				t.id: t
 		});
 		return moreCatalog;
 	}
-	Thread? getThreadFromCatalogCache(ThreadIdentifier identifier) => _catalogCache[identifier];
+	Thread? getThreadFromCatalogCache(ThreadIdentifier? identifier) {
+		if (identifier == null) {
+			return null;
+		}
+		return _catalogCache[identifier.board]?.cache[identifier.id];
+	}
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken});
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken});
 	@protected
@@ -1832,7 +1867,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		}
 		throw Exception('Search failed - exhausted all archives\n${errors.entries.map((e) => '${e.key.name}: ${e.value.toStringDio()}').join('\n')}');
 	}
-	Uri? getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) => null;
+	Uri? getSpoilerImageUrl(Attachment attachment, {Thread? thread}) => null;
 	Future<ImageboardReportMethod> getPostReportMethod(PostIdentifier post, {CancelToken? cancelToken}) async {
 		return WebReportMethod(Uri.parse(getWebUrlImpl(post.board, post.threadId, post.postId)));
 	}
@@ -1935,6 +1970,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@mustCallSuper
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
 		_catalogCache.addAll(oldSite._catalogCache);
+		_catalogPageMapCache.addAll(oldSite._catalogPageMapCache);
 		final oldLoggedIn = oldSite.loginSystem?.loggedIn;
 		if (oldLoggedIn != null) {
 			loginSystem?.loggedIn = oldLoggedIn;
@@ -1963,7 +1999,60 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		return await getThreadImpl(thread, variant: variant, priority: priority, cancelToken: cancelToken);
+		final theThread = await getThreadImpl(thread, variant: variant, priority: priority, cancelToken: cancelToken);
+		await updatePageNumber(theThread, null, priority: priority, cancelToken: cancelToken);
+		return theThread;
+	}
+	/// By default, always fetch the thread
+	/// No currentPage handling, must be handled separately
+	Future<Thread?> getThreadIfModifiedSince(ThreadIdentifier thread, DateTime lastModified, {
+		ThreadVariant? variant,
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async => getThreadImpl(
+		thread,
+		variant: variant,
+		priority: priority,
+		cancelToken: cancelToken
+	);
+	Future<void> updatePageNumber(Thread thread, bool? hasNewPost, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
+		if (!hasExpiringThreads || thread.isArchived || thread.isDeleted) {
+			return;
+		}
+		// The logic here -- if there is no new post, then page only slowly decays
+		// If there was a new post, page probably jumped to 1. But can't just assume 1,
+		// that's only if we have been updating continuously.
+		final acceptCachedAfter = switch (hasNewPost) {
+			true => thread.lastUpdatedTime?.toLocal() ?? thread.posts_.last.time,
+			false => DateTime.now().subtract(const Duration(minutes: 2)),
+			null => DateTimeConversion.max(
+				thread.lastUpdatedTime?.toLocal() ?? thread.posts_.last.time,
+				DateTime.now().subtract(const Duration(minutes: 2))
+			)
+		};
+		if (!hasPagedCatalog) {
+			// We get all the threads in one call
+			final catalog = await getCatalog(
+				thread.board,
+				acceptCachedAfter: acceptCachedAfter,
+				priority: priority,
+				cancelToken: cancelToken
+			);
+			thread.currentPage = catalog.tryFirstWhere((t) => t.id == thread.id)?.currentPage ?? thread.currentPage;
+		}
+		else {
+			// Need to use specialized method (or fail with empty map)
+			final map = await getCatalogPageMap(
+				thread.board,
+				acceptCachedAfter: acceptCachedAfter,
+				priority: priority,
+				cancelToken: cancelToken
+			);
+			thread.currentPage = map[thread.id] ?? thread.currentPage;
+		}
 	}
 	Future<ImageboardUserInfo> getUserInfo(String username) async => throw UnimplementedError();
 	String getWebUrl({
