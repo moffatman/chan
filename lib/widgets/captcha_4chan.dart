@@ -910,6 +910,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					throw Captcha4ChanCustomException('Unknown error, maybe the captcha format has changed: ${challenge!.challenge}');
 				}
 			}
+			cancelToken = null;
 			await _setupChallenge();
 		}
 		catch(e, st) {
