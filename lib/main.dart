@@ -116,7 +116,7 @@ Future<void> innerMain() async {
 }
 
 void main() async {
-	if (Platform.isAndroid || Platform.isIOS) {
+	if ((Platform.isAndroid || Platform.isIOS) && !developerMode) {
 		runZonedGuarded<Future<void>>(
 			innerMain,
 			(error, stack) => FirebaseCrashlytics.instance.recordError(error, stack, fatal: true)
