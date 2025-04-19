@@ -322,11 +322,11 @@ extension ToStringDio on Object {
 				int code => 'HTTP Error $code (url: ${err.requestOptions.uri}, meaning: ${kHttpStatusCodes[code] ?? 'unknown'})',
 				null => switch (err.error) {
 					null => 'Unknown response error: ${err.requestOptions.uri}',
-					Object obj => '${obj.toStringDio()}\nURL: ${err.requestOptions.uri}'
+					Object obj => '$obj\nURL: ${err.requestOptions.uri}'
 				}
 			},
 			DioErrorType.cancel => 'Request cancelled: ${err.requestOptions.uri}',
-			DioErrorType.other => '${err.error.toStringDio()}\nURL: ${err.requestOptions.uri}'
+			DioErrorType.other => '${err.error}\nURL: ${err.requestOptions.uri}'
 		},
 		_ => toString()
 	};
