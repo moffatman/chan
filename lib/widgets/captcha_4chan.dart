@@ -991,17 +991,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		final spaceLocations = <int>[];
 		for (int i = 0; i < numLetters; i++) {
 			final char = newText[i].toUpperCase();
-			if (!captchaLetters.contains(char)) {
-				const remap = {
-					'5': 'S',
-					'B': '8',
-					'F': 'P',
-					'U': 'V',
-					'Z': '2',
-					'O': '0'
-				};
-				if (remap[char] != null) {
-					newText = newText.replaceRange(i, i + 1, remap[char]!);
+			if (!widget.request.letters.contains(char)) {
+				if (widget.request.lettersRemap[char] != null) {
+					newText = newText.replaceRange(i, i + 1, widget.request.lettersRemap[char]!);
 				}
 				else {
 					newText = _previousText;
@@ -1030,7 +1022,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					if (i < _guessConfidences.length && newText[i] != _lastGuess.guess[i]) {
 						_guessConfidences[i] = 1;
 					}
-					WidgetsBinding.instance.addPostFrameCallback((_) => _getPickerStuffForWidgetIndex(i).controller.animateToItem(captchaLetters.indexOf(newText[i].toUpperCase()), duration: const Duration(milliseconds: 250), curve: Curves.elasticIn));
+					WidgetsBinding.instance.addPostFrameCallback((_) => _getPickerStuffForWidgetIndex(i).controller.animateToItem(widget.request.letters.indexOf(newText[i].toUpperCase()), duration: const Duration(milliseconds: 250), curve: Curves.elasticIn));
 				}
 			}
 		}
@@ -1469,7 +1461,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																				onNotification: (notification) {
 																					if (notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
 																						_modifyingFromPicker = true;
-																						final newLetter = captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex];
+																						final newLetter = widget.request.letters[(notification.metrics as FixedExtentMetrics).itemIndex];
 																						_solutionController.value = TextEditingValue(
 																							text: _solutionController.text.replaceRange(i, i + 1, newLetter),
 																							selection: _solutionController.selection,
@@ -1501,12 +1493,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																								).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
 																							)
 																						),
-																						childCount: captchaLetters.length,
+																						childCount: widget.request.letters.length,
 																						itemBuilder: (context, l) => Padding(
-																							key: ValueKey(captchaLetters[l]),
+																							key: ValueKey(widget.request.letters[l]),
 																							padding: const EdgeInsets.all(6),
 																							child: Center(
-																								child: Text(captchaLetters[l],
+																								child: Text(widget.request.letters[l],
 																									style: TextStyle(
 																										fontSize: 34,
 																										color:  ColorTween(

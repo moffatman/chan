@@ -99,6 +99,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 	final String captchaKey;
 	final Map<String, String> captchaUserAgents;
 	final List<int> possibleCaptchaLetterCounts;
+	final List<String> captchaLetters;
+	final Map<String, String> captchaLettersRemap;
 	final Map<String, String> postingHeaders;
 	final Duration? captchaTicketLifetime;
 	Timer? _captchaTicketTimer;
@@ -748,7 +750,9 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			},
 			possibleLetterCounts: possibleCaptchaLetterCounts,
 			hCaptchaKey: hCaptchaKey,
-			stickyCloudflare: stickyCloudflare
+			stickyCloudflare: stickyCloudflare,
+			letters: captchaLetters,
+			lettersRemap: captchaLettersRemap
 		);
 	}
 
@@ -1056,6 +1060,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		required this.searchUrl,
 		required this.boardFlags,
 		required this.possibleCaptchaLetterCounts,
+		required this.captchaLetters,
+		required this.captchaLettersRemap,
 		required this.postingHeaders,
 		required this.captchaTicketLifetime,
 		required this.reportCooldown,
@@ -1134,6 +1140,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		(other.overrideUserAgent == overrideUserAgent) &&
 		(other.searchUrl == searchUrl) &&
 		listEquals(other.possibleCaptchaLetterCounts, possibleCaptchaLetterCounts) &&
+		listEquals(other.captchaLetters, captchaLetters) &&
+		mapEquals(other.captchaLettersRemap, captchaLettersRemap) &&
 		mapEquals(other.postingHeaders, postingHeaders) &&
 		(other.captchaTicketLifetime == captchaTicketLifetime) &&
 		(other.reportCooldown == reportCooldown) &&
@@ -1144,7 +1152,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		(other.stickyCloudflare == stickyCloudflare);
 
 	@override
-	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, Object.hashAll(archives), Object.hashAll(captchaUserAgents.values), overrideUserAgent, searchUrl, Object.hashAll(possibleCaptchaLetterCounts), Object.hashAll(postingHeaders.values), captchaTicketLifetime, reportCooldown, subjectCharacterLimit, spamFilterCaptchaDelayGreen, spamFilterCaptchaDelayYellow, spamFilterCaptchaDelayRed, stickyCloudflare);
+	int get hashCode => Object.hash(name, baseUrl, apiUrl);
 	
 	@override
 	Uri? get iconUrl => Uri.https(baseUrl, '/favicon.ico');

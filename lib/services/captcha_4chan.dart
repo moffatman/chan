@@ -1,8 +1,6 @@
 import 'dart:math';
 import 'package:normal/normal.dart';
 
-part 'captcha_4chan.data.dart';
-
 class Chan4CustomCaptchaGuess {
 	final String guess;
 	final int numLetters;

@@ -716,16 +716,20 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	final List<int> possibleLetterCounts;
 	final String? hCaptchaKey;
 	final bool stickyCloudflare;
+	final List<String> letters;
+	final Map<String, String> lettersRemap;
 
 	const Chan4CustomCaptchaRequest({
 		required this.challengeUrl,
 		required this.challengeHeaders,
 		required this.possibleLetterCounts,
 		required this.hCaptchaKey,
-		required this.stickyCloudflare
+		required this.stickyCloudflare,
+		required this.letters,
+		required this.lettersRemap
 	});
 	@override
-	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders, possibleLetterCounts: $possibleLetterCounts, hCaptchaKey: $hCaptchaKey, stickyCloudflare: $stickyCloudflare)';
+	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders, possibleLetterCounts: $possibleLetterCounts, hCaptchaKey: $hCaptchaKey, stickyCloudflare: $stickyCloudflare, letters: $letters, lettersRemap: $lettersRemap)';
 
 	@override
 	bool get cloudSolveSupported => true;
@@ -738,10 +742,12 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 		mapEquals(other.challengeHeaders, challengeHeaders) &&
 		listEquals(other.possibleLetterCounts, possibleLetterCounts) &&
 		other.hCaptchaKey == hCaptchaKey &&
-		other.stickyCloudflare == stickyCloudflare;
+		other.stickyCloudflare == stickyCloudflare &&
+		listEquals(other.letters, letters) &&
+		mapEquals(other.lettersRemap, lettersRemap);
 	
 	@override
-	int get hashCode => Object.hash(challengeUrl, Object.hashAll(challengeHeaders.values), Object.hashAll(possibleLetterCounts), hCaptchaKey, stickyCloudflare);
+	int get hashCode => Object.hash(challengeUrl, hCaptchaKey);
 }
 
 class SecurimageCaptchaRequest extends CaptchaRequest {
@@ -2270,6 +2276,19 @@ ImageboardSite makeSite(dynamic data) {
 			staticUrl: data['staticUrl'],
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
 			possibleCaptchaLetterCounts: (data['possibleCaptchaLetterCounts'] as List?)?.cast<int>() ?? [],
+			captchaLetters:
+				(data['captchaLetters'] as List?)?.cast<String>() ??
+				['0', '2', '4', '8', 'A', 'D', 'G', 'H', 'J', 'K', 'M', 'N', 'P', 'R', 'S', 'T', 'V', 'W', 'X', 'Y'],
+			captchaLettersRemap:
+				(data['captchaLettersRemap'] as Map?)?.cast<String, String>() ??
+				{
+					'5': 'S',
+					'B': '8',
+					'F': 'P',
+					'U': 'V',
+					'Z': '2',
+					'O': '0'
+				},
 			postingHeaders: (data['postingHeaders'] as Map?)?.cast<String, String>() ?? {},
 			captchaTicketLifetime: captchaTicketLifetime == null ? null : Duration(seconds: captchaTicketLifetime),
 			reportCooldown: Duration(seconds: reportCooldown ?? 20),
