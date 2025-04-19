@@ -551,9 +551,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 			),
 			cancelToken: cancelToken
 		);
-		if (response.isRedirect ?? false) {
+		if (response.redirects.tryLast case RedirectRecord redirect) {
 			// Don't match numbers in the hostname
-			final digitMatches = RegExp(r'\d+').allMatches(response.redirects.last.location.replace(host: 'host.com').toString());
+			final digitMatches = RegExp(r'\d+').allMatches(redirect.location.replace(host: 'host.com').toString());
 			if (digitMatches.isNotEmpty) {
 				final id = int.parse(digitMatches.last.group(0)!);
 				final threadId = post.threadId;
