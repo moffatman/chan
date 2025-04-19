@@ -384,15 +384,15 @@ String formatFilesize(int sizeInBytes) {
 String formatCount(int count) {
 	const kB = 1e9;
 	if (count > kB) {
-		return '${(count / kB).toStringAsFixed(2)} B';
+		return '${(count / kB).toStringAsFixed(2)}B';
 	}
 	const kM = 1e6;
 	if (count > kM) {
-		return '${(count / kM).toStringAsFixed(1)} M';
+		return '${(count / kM).toStringAsFixed(1)}M';
 	}
 	const kK = 1e3;
 	if (count > kK) {
-		return '${(count / kK).round()} K';
+		return '${(count / kK).round()}k';
 	}
 	return count.toString();
 }

@@ -882,7 +882,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																		children: [
 																			if (popularityType != null) ...[
 																				Icon(popularityType.icon, size: 15),
-																				const SizedBox(width: 4),
+																				const SizedBox(width: 2),
 																				Text(switch (board.popularity) {
 																					int count => formatCount(count),
 																					null => '—'
@@ -890,6 +890,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				const SizedBox(width: 4)
 																			],
 																			if (imageboard.persistence.browserState.favouriteBoards.contains(board.boardKey)) ...const [
+																				SizedBox(width: 4),
 																				Icon(CupertinoIcons.star_fill, size: 15),
 																				SizedBox(width: 4)
 																			]
