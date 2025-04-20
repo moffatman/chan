@@ -227,10 +227,11 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 								return _buildPagination();
 							}
 							final row = result.data!.posts[i - 1];
+							final imageboard = context.read<Imageboard>();
 							if (row.post != null) {
 								return ChangeNotifierProvider<PostSpanZoneData>(
 									create: (context) => PostSpanRootZoneData(
-										imageboard: context.read<Imageboard>(),
+										imageboard: imageboard,
 										thread: Thread(
 											board: row.post!.threadIdentifier.board,
 											id: row.post!.threadIdentifier.id,
@@ -247,23 +248,32 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										semanticRootIds: [-7],
 										style: PostSpanZoneStyle.linear
 									),
-									child: PostRow(
-										post: row.post!,
-										onThumbnailTap: (attachment) => _showGallery(context, attachment),
-										showCrossThreadLabel: false,
-										showBoardName: true,
-										allowTappingLinks: false,
-										showPostNumber: false,
-										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
-										onTap: () => setValue(SelectedSearchResult(
-											imageboard: context.read<Imageboard>(),
-											result: row,
-											threadSearch: null,
-											fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
-										)),
-										baseOptions: PostSpanRenderOptions(
-											highlightPattern: widget.query.query.isEmpty ? null : queryPattern
-										),
+									child: ValueListenableBuilder(
+										valueListenable: imageboard.persistence.listenForPersistentThreadStateChanges(row.post!.threadIdentifier),
+										builder: (context, threadState, child) {
+											return Opacity(
+												opacity: (threadState?.showInHistory ?? false) ? 0.5 : 1.0,
+												child: child
+											);
+										},
+										child: PostRow(
+											post: row.post!,
+											onThumbnailTap: (attachment) => _showGallery(context, attachment),
+											showCrossThreadLabel: false,
+											showBoardName: true,
+											allowTappingLinks: false,
+											showPostNumber: false,
+											isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
+											onTap: () => setValue(SelectedSearchResult(
+												imageboard: imageboard,
+												result: row,
+												threadSearch: null,
+												fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
+											)),
+											baseOptions: PostSpanRenderOptions(
+												highlightPattern: widget.query.query.isEmpty ? null : queryPattern
+											),
+										)
 									)
 								);
 							}
@@ -271,7 +281,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 								final matchingPostIndex = row.thread!.posts_.indexWhere((p) => p.span.buildText().toLowerCase().contains(widget.query.query.toLowerCase()));
 								return GestureDetector(
 									onTap: () => setValue(SelectedSearchResult(
-										imageboard: context.read<Imageboard>(),
+										imageboard: imageboard,
 										result: row,
 										// Only do a thread-search if we have a match in lastReplies and not OP
 										threadSearch: (matchingPostIndex > 0) ? widget.query.query : null,
@@ -285,6 +295,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										imageCountUnreliable: result.data!.imageCountsUnreliable,
 										semanticParentIds: const [-7],
 										showBoardName: true,
+										dimReadThreads: true,
 										showLastReplies: true,
 										baseOptions: PostSpanRenderOptions(
 											highlightPattern: widget.query.query.isEmpty ? null : queryPattern
