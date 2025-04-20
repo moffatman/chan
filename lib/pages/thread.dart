@@ -442,7 +442,7 @@ class ThreadPageState extends State<ThreadPage> {
 				}
 				final offset = ((_listController.state?.updatingNow.value != null) ? 64 : 0);
 				final remainingPx = (_listController.scrollController?.position.extentAfter ?? 9999) - offset;
-				if (remainingPx < 32) {
+				if (remainingPx > 0 && remainingPx < 32) {
 					// Close to the end, just round-to there
 					_listController.scrollController!.position.jumpTo(_listController.scrollController!.position.maxScrollExtent - offset);
 				}
