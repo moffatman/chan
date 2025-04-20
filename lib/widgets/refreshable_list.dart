@@ -1211,19 +1211,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_sortList();
 		}
 		if (!widget.disableUpdates) {
-			if ((widget.initialList?.length ?? 0) < 2) {
-				update();
-				resetTimer();
-			}
-			else {
-				Future.delayed(const Duration(seconds: 1), () {
-					if (!mounted || widget.disableUpdates) {
-						return;
-					}
-					update();
-					resetTimer();
-				});
-			}
+			update();
+			resetTimer();
 		}
 		_refreshableTreeItems = _RefreshableTreeItems<T>(
 			manuallyCollapsedItems: widget.initialCollapsedItems?.toList() ?? [],
@@ -1412,14 +1401,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final cancelToken = CancelToken();
 		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id, cancelToken);
 		try {
-			originalList = await widget.treeAdapter!.updateWithStubItems(
+			final newList = await widget.treeAdapter!.updateWithStubItems(
 				originalList!,
 				value.representsUnknownStubChildren
 					? [ParentAndChildIdentifier.same(value.id)]
 					: value.representsKnownStubChildren,
 				cancelToken
 			);
-			sortedList = originalList!.toList();
+			await widget.controller?._initialization;
+			originalList = newList;
+			sortedList = newList.toList();
 			_sortList();
 			setState(() { });
 		}
@@ -1438,12 +1429,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final cancelToken = CancelToken();
 		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id, cancelToken);
 		try {
-			originalList = await widget.treeAdapter!.updateWithStubItems(
+			final newList = await widget.treeAdapter!.updateWithStubItems(
 				originalList!,
 				[ParentAndChildIdentifier.same(page)],
 				cancelToken
 			);
-			sortedList = originalList!.toList();
+			await widget.controller?._initialization;
+			originalList = newList;
+			sortedList = newList.toList();
 			_sortList();
 			setState(() { });
 		}
@@ -1653,6 +1646,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		on TimeoutException {
 			// No popping
 		}
+		await widget.controller?._initialization;
 		if (mounted && (newList != null || error.value != null)) {
 			if (hapticFeedback) {
 				mediumHapticFeedback();
@@ -1680,7 +1674,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
-	void acceptNewList(List<T> list) {
+	Future<void> acceptNewList(List<T> list) async {
+		await widget.controller?._initialization;
 		originalList = list;
 		sortedList = list.toList();
 		_sortList();
@@ -3602,6 +3597,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	bool _autoExtendEnabled = true;
 	bool _isDisposed = false;
 	(int, int)? _lastLaidOutRange;
+	Future<void> _initialization = Future.value();
 	RefreshableListController() {
 		slowScrolls.addListener(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
@@ -4004,7 +4000,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			// add offset to reveal the full footer
 			atAlignment0 += 110;
 		}
-		else if (targetIndex == 0 && state?.widget.filterableAdapter != null) {
+		else if (targetIndex == 0 && state?.widget.filterableAdapter != null && alignment >= 0) {
 			// subtract offset to reveal the search bar
 			atAlignment0 = 0;
 		}
@@ -4067,6 +4063,21 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		final viewportStart = scrollController!.position.pixels + topOffset;
 		final itemStart = _items[index].cachedOffset ?? viewportStart;
 		return (itemStart - viewportStart) / (scrollController!.position.viewportDimension - ((_items[index].cachedHeight ?? 0) + topOffset + bottomOffset));
+	}
+	({T item, double? alignment})? findItem(bool Function(T val) f) {
+		final index = _items.indexWhere((x) => f(x.item.item));
+		if (index == -1) {
+			return null;
+		}
+		final item = _items[index];
+		final double? alignment;
+		if (item.cachedHeight != null && item.cachedOffset != null) {
+			alignment = getItemAlignment(index);
+		}
+		else {
+			alignment = null;
+		}
+		return (item: item.item.item, alignment: alignment);
 	}
 	int get firstVisibleIndex {
 		if (scrollControllerPositionLooksGood) {
@@ -4317,6 +4328,12 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	ValueListenable<(String, CancelToken)?> get updatingNow => state?.updatingNow ?? const StoppedValueListenable(null);
+
+	Future<void> lockInitialization(Future<void> future) async {
+		final completer = Completer<void>();
+		_initialization = completer.future;
+		await future.whenComplete(completer.complete);
+	}
 }
 
 extension _Recurve on Curve {

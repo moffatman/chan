@@ -254,7 +254,7 @@ class ThreadPageState extends State<ThreadPage> {
 					parentId: -1, // Should be ignored
 					childId: postId
 				)])).tryFirstWhere((p) => p.id == postId);
-				_listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
 				loadedSomething = true;
 			}
 			if (post == null) {
@@ -285,7 +285,7 @@ class ThreadPageState extends State<ThreadPage> {
 					parentId: widget.thread.id,
 					childId: postId
 				)]);
-				_listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
 			}
 			else {
 				// Maybe not loaded yet?
@@ -309,53 +309,65 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> scrollToPost(int postId) => _blockAndScrollToPostIfNeeded(
-		target: (postId, 0),
+		target: (postId, null),
 		shouldBlock: false
 	);
 
 	Future<void> _blockAndScrollToPostIfNeeded({
 		Duration delayBeforeScroll = Duration.zero,
-		(int, double)? target,
+		(int, double?)? target,
 		bool shouldBlock = true
 	}) => _scrollLock.protect(() async {
 		if (persistentState.thread == null) {
 			// too early to try to scroll
 			return;
 		}
-		final (int, double)? scrollTo;
+		final int postId;
+		double? targetAlignment;
 		bool glow = false;
 		if (target != null) {
-			scrollTo = target;
+			postId = target.$1;
+			targetAlignment = target.$2;
 			glow = true;
 		}
 		else if (widget.initialPostId != null) {
-			scrollTo = (widget.initialPostId!, 0);
+			postId = widget.initialPostId!;
 			glow = true;
 		}
 		else if (context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread] != null) {
-			scrollTo = (context.read<PersistentBrowserTab>().initialPostId[widget.thread]!, 0);
+			postId = context.read<PersistentBrowserTab>().initialPostId[widget.thread]!;
 			glow = true;
 			context.read<PersistentBrowserTab?>()?.initialPostId.remove(widget.thread);
 		}
 		else if (persistentState.firstVisiblePostId != null) {
-			scrollTo = (persistentState.firstVisiblePostId!, persistentState.firstVisiblePostAlignment ?? 0);
+			postId = persistentState.firstVisiblePostId!;
+			targetAlignment = persistentState.firstVisiblePostAlignment;
 		}
 		else if (persistentState.lastSeenPostId != null) {
-			scrollTo = (persistentState.lastSeenPostId!, 1);
+			postId = persistentState.lastSeenPostId!;
 		}
 		else {
-			scrollTo = null;
+			// Nothing to scroll to
+			return;
 		}
-		if (persistentState.thread != null && scrollTo != null) {
-			Post? target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
-			if (target != null && _listController.isOnscreen(target)) {
+		if (persistentState.thread != null) {
+			double? alignment = _listController.findItem((p) => p.id == postId)?.alignment;
+			bool alignmentMatches() => switch ((alignment, targetAlignment)) {
+				// Alignment is close enough
+				(double a, double ta) => (ta - a).abs() < 0.05,
+				// Just ensure it's onscreen
+				(double a, null) => a >= 0 && a <= 1.0,
+				// Item not built yet
+				(null, _) => false
+			};
+			if (alignmentMatches()) {
 				if (_useAllDummies) {
 					setState(() {
 						_useAllDummies = false;
 					});
 				}
 				if (glow) {
-					_glowPost(scrollTo.$1);
+					_glowPost(postId);
 				}
 				return;
 			}
@@ -363,15 +375,15 @@ class ThreadPageState extends State<ThreadPage> {
 				blocked = shouldBlock;
 			});
 			try {
-				if (await _ensurePostLoaded(scrollTo.$1)) {
+				if (await _ensurePostLoaded(postId)) {
 					// Need to rebuild with new post
 					if (!mounted) return;
 					setState(() {});
 					await WidgetsBinding.instance.endOfFrame;
 				}
 				if (!mounted) return;
-				target = _listController.items.tryFirstWhere((p) => p.id == scrollTo?.$1)?.item;
-				if (target != null && _listController.isOnscreen(target)) {
+				alignment = _listController.findItem((p) => p.id == postId)?.alignment;
+				if (alignmentMatches()) {
 					if (_useAllDummies) {
 						//await Future.delayed(const Duration(milliseconds: 500));
 						// Need to realign after popping in proper items
@@ -379,12 +391,12 @@ class ThreadPageState extends State<ThreadPage> {
 							_useAllDummies = false;
 						});
 						await _listController.animateTo(
-							(post) => post.id == scrollTo!.$1,
+							(post) => post.id == postId,
 							// Lazy hack. but it works somehow to get to the unloadedPage stub
-							orElseLast: scrollTo.$1.isNegative
-								? (post) => post.id.isNegative && post.id > scrollTo!.$1
-								: (post) => post.id <= scrollTo!.$1,
-							alignment: scrollTo.$2,
+							orElseLast: postId.isNegative
+								? (post) => post.id.isNegative && post.id > postId
+								: (post) => post.id <= postId,
+							alignment: targetAlignment ?? 0,
 							duration: const Duration(milliseconds: 200)
 						);
 						await WidgetsBinding.instance.endOfFrame;
@@ -399,12 +411,12 @@ class ThreadPageState extends State<ThreadPage> {
 				await WidgetsBinding.instance.endOfFrame;
 				if (!mounted) return;
 				await _listController.animateTo(
-					(post) => post.id == scrollTo!.$1,
+					(post) => post.id == postId,
 					// Lazy hack. but it works somehow to get to the unloadedPage stub
-					orElseLast: scrollTo.$1.isNegative
-						? (post) => post.id.isNegative && post.id > scrollTo!.$1
-						: (post) => post.id <= scrollTo!.$1,
-					alignment: scrollTo.$2,
+					orElseLast: postId.isNegative
+						? (post) => post.id.isNegative && post.id > postId
+						: (post) => post.id <= postId,
+					alignment: targetAlignment ?? 0,
 					duration: const Duration(milliseconds: 200)
 				);
 				await WidgetsBinding.instance.endOfFrame;
@@ -417,25 +429,25 @@ class ThreadPageState extends State<ThreadPage> {
 					});
 					await WidgetsBinding.instance.endOfFrame;
 					await _listController.animateTo(
-						(post) => post.id == scrollTo!.$1,
+						(post) => post.id == postId,
 						// Lazy hack. but it works somehow to get to the unloadedPage stub
-						orElseLast: scrollTo.$1.isNegative
-							? (post) => post.id.isNegative && post.id > scrollTo!.$1
-							: (post) => post.id <= scrollTo!.$1,
-						alignment: scrollTo.$2,
+						orElseLast: postId.isNegative
+							? (post) => post.id.isNegative && post.id > postId
+							: (post) => post.id <= postId,
+						alignment: targetAlignment ?? 0,
 						duration: const Duration(milliseconds: 1)
 					);
 					await WidgetsBinding.instance.endOfFrame;
 					if (!mounted) return;
 				}
-				final remainingPx = (_listController.scrollController?.position.extentAfter ?? 9999) -
-					((_listController.state?.updatingNow.value != null) ? 64 : 0);
+				final offset = ((_listController.state?.updatingNow.value != null) ? 64 : 0);
+				final remainingPx = (_listController.scrollController?.position.extentAfter ?? 9999) - offset;
 				if (remainingPx < 32) {
 					// Close to the end, just round-to there
-					_listController.scrollController!.position.jumpTo(_listController.scrollController!.position.maxScrollExtent);
+					_listController.scrollController!.position.jumpTo(_listController.scrollController!.position.maxScrollExtent - offset);
 				}
 				if (glow) {
-					_glowPost(scrollTo.$1);
+					_glowPost(postId);
 				}
 			}
 			catch (e, st) {
@@ -677,7 +689,7 @@ class ThreadPageState extends State<ThreadPage> {
 			},
 			onNeedUpdateWithStubItems: (ids) async {
 				await _updateWithStubItems(ids);
-				_listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
 			}
 		);
 		Future.delayed(const Duration(milliseconds: 50), () {
@@ -693,10 +705,10 @@ class ThreadPageState extends State<ThreadPage> {
 		    persistentState.lastSeenPostId != null &&
 				(persistentState.thread?.posts_.length ?? 0) > 20) {
 			_useAllDummies = true;
-			_scrollIfWarranted(const Duration(milliseconds: 500));
+			_listController.lockInitialization(_scrollIfWarranted(const Duration(milliseconds: 500)));
 		}
 		else {
-			_scrollIfWarranted();
+			_listController.lockInitialization(_scrollIfWarranted());
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 		if (Settings.instance.autoCacheAttachments) {
@@ -754,7 +766,11 @@ class ThreadPageState extends State<ThreadPage> {
 			);
 			_maybeUpdateWatch();
 			persistentState.save();
-			_scrollIfWarranted();
+			if ((persistentState.firstVisiblePostAlignment ?? 0) < 0) {
+				// Scrolled down somewhat
+				blocked = true;
+			}
+			_listController.lockInitialization(_scrollIfWarranted());
 			if (Settings.instance.autoCacheAttachments) {
 				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 			}
@@ -908,7 +924,7 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			zone.addThread(thread);
 			await persistentState.didMutateThread();
-			_listController.state?.acceptNewList(thread.posts);
+			await _listController.state?.acceptNewList(thread.posts);
 			setState(() {});
 		}
 	}
