@@ -233,7 +233,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 				board: board,
 				url: getAttachmentUrl(board, '$id$ext').toString(),
 				thumbnailUrl: switch (postData['thumb'] as String?) {
-					'file' || null => (type == AttachmentType.mp3 || type == AttachmentType.mp4 ? '' : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
+					'file' || null => (type == AttachmentType.mp3 || ext == '.mov' ? '' : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
 					'spoiler' => '',
 					String thumb => 'https://$baseUrl$basePath/$board/thumb/$thumb',
 				},
