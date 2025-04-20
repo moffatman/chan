@@ -2660,11 +2660,19 @@ typedef _AttachmentMetadata = ({
 });
 
 extension _EllipsizedFilename on _AttachmentMetadata {
-	String? get ellipsizedFilename {
-		if (filename.length <= 53) {
+	String? getEllipsizedFilename(int totalFiles) {
+		final allowedLength = switch (totalFiles) {
+			<= 1 => 50,
+			2 => 40,
+			3 => 30,
+			4 => 20,
+			int _ => 16
+		};
+		if (filename.length <= (allowedLength + 1)) {
 			return null;
 		}
-		return '${filename.substring(0, 25)}...${filename.substring(filename.length - 25)}';
+		final half = allowedLength ~/ 2;
+		return '${filename.substring(0, half)}…${filename.substring(filename.length - half)}';
 	}
 }
 
@@ -2675,7 +2683,7 @@ Iterable<TextSpan> _makeAttachmentInfo({
 }) sync* {
 	for (final attachment in metadata) {
 		if (settings.showFilenameOnPosts && attachment.filename.isNotEmpty) {
-			final ellipsizedFilename = attachment.ellipsizedFilename;
+			final ellipsizedFilename = attachment.getEllipsizedFilename(metadata.length);
 			if (ellipsizedFilename != null && settings.ellipsizeLongFilenamesOnPosts) {
 				yield TextSpan(
 					text: '$ellipsizedFilename ',
