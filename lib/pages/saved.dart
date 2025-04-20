@@ -542,7 +542,7 @@ class _SavedPageState extends State<SavedPage> {
 		_lastTickerMode = tickerMode;
 		final persistencesAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList());
 		final threadStateBoxesAnimation = Persistence.sharedThreadStateListenable;
-		final savedPostsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedPostsListenable).toList());
+		final savedPostsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedPostsListenable).toList());
 		final savedAttachmentsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboardsIncludingDev.map((i) => i.persistence.savedAttachmentsListenable).toList());
 		final imageboardIds = <String, int>{};
 		return MultiMasterDetailPage5(
@@ -1325,7 +1325,7 @@ class _SavedPageState extends State<SavedPage> {
 					icon: AnimatedBuilder(
 						animation: savedPostsNotifiersAnimation,
 						builder: (context, _) => CachingBuilder(
-							value: ImageboardRegistry.instance.imageboards.any((i) => i.persistence.savedPosts.isNotEmpty),
+							value: ImageboardRegistry.instance.imageboardsIncludingDev.any((i) => i.persistence.savedPosts.isNotEmpty),
 							builder: (value) => Builder(
 								builder: (context) => Icon(
 									value ? CupertinoIcons.reply_thick_solid : CupertinoIcons.reply_all,
@@ -1359,7 +1359,7 @@ class _SavedPageState extends State<SavedPage> {
 							filterableAdapter: (t) => (t.imageboard.key, t.item.$1.post),
 							controller: _postListController,
 							listUpdater: (options) async {
-								final savedPosts = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedPosts.values.map(i.scope)).toList();
+								final savedPosts = ImageboardRegistry.instance.imageboardsIncludingDev.expand((i) => i.persistence.savedPosts.values.map(i.scope)).toList();
 								final pairs = await Future.wait(savedPosts.map((s) async {
 									return (s, await s.imageboard.persistence.getThreadStateIfExists(s.item.post.threadIdentifier)?.getThread());
 								}));
