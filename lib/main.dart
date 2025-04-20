@@ -628,7 +628,7 @@ enum _AuthenticationStatus {
 }
 
 class ChanTabs extends ChangeNotifier {
-	final ValueChanged<bool> onShouldShowTabPopup;
+	final _ChanHomePageState _homePageState;
 	final activeBrowserTab = ValueNotifier<int>(Persistence.currentTabIndex);
 	late Listenable browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 	final _tabController = CupertinoTabController();
@@ -641,10 +641,9 @@ class ChanTabs extends ChangeNotifier {
 	final _historyPageKey = GlobalKey<HistoryPageState>();
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 	late final OwnedChangeNotifierSubscription _settingsSubscription;
+	bool _didHideTabPopupFromReplyBox = false;
 
-	ChanTabs({
-		required this.onShouldShowTabPopup
-	}) {
+	ChanTabs._(this._homePageState) {
 		Persistence.globalTabMutator.addListener(_onGlobalTabMutatorUpdate);
 		ScrollTracker.instance.someNavigatorNavigated.addListener(_onSomeNavigatorNavigated);
 		for (final tab in Persistence.tabs) {
@@ -822,7 +821,7 @@ class ChanTabs extends ChangeNotifier {
 			activeBrowserTab.value = pos;
 			Persistence.currentTabIndex = pos;
 		}
-		onShouldShowTabPopup(keepTabPopupOpen || !activate || !Persistence.settings.closeTabSwitcherAfterUse);
+		_homePageState._onShouldShowTabPopup(keepTabPopupOpen || !activate || !Persistence.settings.closeTabSwitcherAfterUse);
 		_didModifyPersistentTabData();
 		notifyListeners();
 		Future.delayed(const Duration(milliseconds: 100), () {
@@ -929,7 +928,7 @@ class ChanTabs extends ChangeNotifier {
 							browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 							browseTabIndex = homeTabToPreserve == null ? 0 : 1;
 							if (Persistence.settings.closeTabSwitcherAfterUse) {
-								onShouldShowTabPopup(false);
+								_homePageState._onShouldShowTabPopup(false);
 							}
 							if (context.mounted) {
 								showUndoToast(
@@ -1121,6 +1120,19 @@ class ChanTabs extends ChangeNotifier {
 			boards: [board],
 			query: query
 		));
+	}
+
+	void didOpenReplyBox() {
+		if (mainTabIndex == 0 && _homePageState._showTabPopup.value) {
+			_homePageState._onShouldShowTabPopup(false);
+			_didHideTabPopupFromReplyBox = true;
+		}
+	}
+
+	void didCloseReplyBox() {
+		if (mainTabIndex == 0 && !_homePageState._showTabPopup.value && _didHideTabPopupFromReplyBox) {
+			_homePageState._onShouldShowTabPopup(true);
+		}
 	}
 }
 
@@ -1468,9 +1480,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	@override
 	void initState() {
 		super.initState();
-		_tabs = ChanTabs(
-			onShouldShowTabPopup: _onShouldShowTabPopup
-		);
+		_tabs = ChanTabs._(this);
 		_tabs.addListener(_tabsListener);
 		if (!_initialConsume) {
 			AppLinks().getInitialLinkString().then(_consumeLink);

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
@@ -143,6 +144,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	final List<QueuedPost> _submittingPosts = [];
 	bool _showSubmittingPosts = false;
 	bool _overrideRandomizeFilenames = false;
+	ChanTabs? _chanTabs;
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
 		int threadId => ThreadIdentifier(widget.board.s, threadId),
@@ -535,6 +537,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 		widget.onVisibilityChanged?.call();
 		_textFocusNode.requestFocus();
+		_chanTabs?.didOpenReplyBox();
 	}
 
 	void hideReplyBox() {
@@ -543,6 +546,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 		widget.onVisibilityChanged?.call();
 		_rootFocusNode.unfocus();
+		_chanTabs?.didCloseReplyBox();
 	}
 
 	void toggleReplyBox() {
@@ -2298,6 +2302,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 
 	@override
 	Widget build(BuildContext context) {
+		_chanTabs = context.watchIdentity<ChanTabs?>();
 		final settings = context.watch<Settings>();
 		return Focus(
 			focusNode: _rootFocusNode,
@@ -2638,6 +2643,9 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 	@override
 	void dispose() {
 		super.dispose();
+		if (_show) {
+			_chanTabs?.didCloseReplyBox();
+		}
 		if (postingPost.value != null) {
 			// Since we didn't clear out the reply field yet. Just send a fake draft above.
 			if (_optionsFieldController.text.isNotEmpty || _disableLoginSystem) {
