@@ -70,7 +70,11 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 	static final _inlineImageWithDimensionsInNamePattern = RegExp(r'(\d+)x(\d+)\.\w{1,5}$');
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
-		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAll('<em>//</em>', '//'));
+		final body = parseFragment(
+			data.replaceAll('<wbr>', '')
+			.replaceAll('<em>//</em>', '//')
+			.replaceAll('</a> <small>(OP)</small>', '</a>')
+		);
 		int spoilerSpanId = 0;
 		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
 			for (final node in nodes) {
