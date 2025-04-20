@@ -27,6 +27,7 @@ enum AttachmentType {
 			case 'webm':
 				return AttachmentType.webm;
 			case 'mp4':
+			case 'mov':
 				return AttachmentType.mp4;
 			case 'pdf':
 				return AttachmentType.pdf;
