@@ -951,6 +951,55 @@ class ChanTabs extends ChangeNotifier {
 		);
 	}
 
+	ImageboardScoped<ThreadIdentifier>? get currentForegroundThread {
+		switch (mainTabIndex) {
+			case 0:
+				return currentBrowserThread;
+			case 1:
+				switch (_savedMasterDetailKey.currentState?.selectedPane) {
+					case 0:
+						final watched = _savedMasterDetailKey.currentState?.getValue1();
+						if (watched != null) {
+							return watched.imageboard.scope(watched.item.threadIdentifier);
+						}
+					case 1:
+						final saved = _savedMasterDetailKey.currentState?.getValue2();
+						if (saved != null) {
+							return saved.imageboard.scope(saved.item.thread);
+						}
+					case 2:
+						final yourPost = _savedMasterDetailKey.currentState?.getValue3();
+						if (yourPost != null) {
+							return yourPost.imageboard.scope(yourPost.thread.identifier);
+						}
+					case 3:
+						final savedPost = _savedMasterDetailKey.currentState?.getValue4();
+						if (savedPost != null) {
+							return savedPost.imageboard.scope(savedPost.item.post.threadIdentifier);
+						}
+					case 4:
+						// Saved Attachments
+						return null;
+				}
+			case 2:
+				final value = _historyPageKey.currentState?.masterDetailKey.currentState?.getValue();
+				if (value != null) {
+					return value.imageboard.scope(value.item.thread);
+				}
+			case 3:
+				final value = _searchPageKey.currentState?.masterDetailKey.currentState?.getValue();
+				if (value != null) {
+					return value.imageboard.scope(value.result.threadIdentifier);
+				}
+			case 4:
+				final zone = _homePageState.devTab.threadPageState?.zone;
+				if (zone != null) {
+					return zone.imageboard.scope(zone.primaryThread);
+				}
+ 		}
+		return null;
+	}
+
 	ImageboardScoped<ThreadIdentifier>? get currentBrowserThread {
 		final tab = Persistence.tabs[Persistence.currentTabIndex];
 		final thread = tab.thread;

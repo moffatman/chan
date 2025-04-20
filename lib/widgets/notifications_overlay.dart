@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chan/main.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
@@ -76,6 +77,10 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		final threadState = imageboard.persistence.getThreadStateIfExists(notification.target.thread);
 		if (threadState?.youIds.contains(notification.target.postId) ?? false) {
 			// Push server won race first, don't show this notification
+			return;
+		}
+		if (context.read<ChanTabs?>()?.currentForegroundThread == imageboard.scope(notification.target.thread)) {
+			// This thread is already in the foreground, don't show this notification
 			return;
 		}
 		await threadState?.ensureThreadLoaded();
