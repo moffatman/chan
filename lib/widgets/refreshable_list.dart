@@ -4036,7 +4036,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		if (maxScrollExtent <= 0) {
 			maxScrollExtent = scrollController!.position.maxScrollExtent;
 		}
-		double finalDestination = finalDestinationUnclamped.clamp(0, maxScrollExtent);
+		final finalDestination = finalDestinationUnclamped.clamp(0.0, maxScrollExtent);
 		if (scrollController!.position.pixels != finalDestination) {
 			final finalDuration = duration * ((finalDestination - scrollController!.position.pixels) / (startPixels - finalDestination)).abs();
 			await scrollController!.animateTo(
