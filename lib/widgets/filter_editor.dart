@@ -464,7 +464,8 @@ class _FilterEditorState extends State<FilterEditor> {
 													'posterID': 'Poster ID',
 													'flag': 'Flag',
 													'capcode': 'Capcode',
-													'trip': 'Trip'
+													'trip': 'Trip',
+													'email': 'Email'
 												}[field] ?? field),
 												backgroundColor: ChanceTheme.barColorOf(context),
 												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),

@@ -217,6 +217,8 @@ class Post implements Filterable {
 	int? ipNumber;
 	@HiveField(23, isOptimized: true)
 	String? archiveName;
+	@HiveField(24, isOptimized: true)
+	final String? email;
 
 	Post({
 		required String board,
@@ -238,7 +240,8 @@ class Post implements Filterable {
 		this.parentId,
 		this.hasOmittedReplies = false,
 		this.isDeleted = false,
-		this.ipNumber
+		this.ipNumber,
+		this.email
 	}) : board = intern(board), name = intern(name), attachments_ = attachments_.isEmpty ? const [] : List.of(attachments_, growable: false);
 
 	@override
@@ -272,6 +275,8 @@ class Post implements Filterable {
 				return capcode;
 			case 'trip':
 				return trip;
+			case 'email':
+				return email;
 			default:
 				return null;
 		}
@@ -342,7 +347,8 @@ class Post implements Filterable {
 		other.hasOmittedReplies == hasOmittedReplies &&
 		other.flag == flag &&
 		other.attachmentDeleted == attachmentDeleted &&
-		other.archiveName == archiveName;
+		other.archiveName == archiveName &&
+		other.email == email;
 	
 	bool isIdenticalForFilteringPurposes(Post other) {
 		return 
@@ -355,7 +361,8 @@ class Post implements Filterable {
 			//other.hasOmittedReplies == hasOmittedReplies &&
 			other.flag == flag &&
 			//other.attachmentDeleted == attachmentDeleted &&
-			other.archiveName == archiveName;
+			other.archiveName == archiveName &&
+			other.email == email;
 	}
 
 	@override

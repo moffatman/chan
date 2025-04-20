@@ -359,7 +359,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 			spanFormat: PostSpanFormat.lainchan,
 			posterId: data['id'],
 			flag: _makeFlag(data),
-			capcode: data['capcode']
+			capcode: data['capcode'],
+			email: data['email']
 		);
 	}
 

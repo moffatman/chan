@@ -348,6 +348,8 @@ class Thread extends HiveObject implements Filterable {
 				return posts_.first.capcode;
 			case 'trip':
 				return posts_.first.trip;
+			case 'email':
+				return posts_.first.email;
 			default:
 				return null;
 		}

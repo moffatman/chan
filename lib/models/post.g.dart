@@ -181,6 +181,13 @@ class PostFields {
     fieldName: 'archiveName',
     merger: PrimitiveMerger(),
   );
+  static String? getEmail(Post x) => x.email;
+  static const email = ReadOnlyHiveFieldAdapter<Post, String?>(
+    getter: getEmail,
+    fieldNumber: 24,
+    fieldName: 'email',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class PostAdapter extends TypeAdapter<Post> {
@@ -213,7 +220,8 @@ class PostAdapter extends TypeAdapter<Post> {
     20: PostFields.hasOmittedReplies,
     21: PostFields.isDeleted,
     22: PostFields.ipNumber,
-    23: PostFields.archiveName
+    23: PostFields.archiveName,
+    24: PostFields.email
   };
 
   @override
@@ -258,6 +266,7 @@ class PostAdapter extends TypeAdapter<Post> {
       hasOmittedReplies: fields[20] == null ? false : fields[20] as bool,
       isDeleted: fields[21] == null ? false : fields[21] as bool,
       ipNumber: fields[22] as int?,
+      email: fields[24] as String?,
     )..archiveName = fields[23] as String?;
   }
 
@@ -286,6 +295,7 @@ class PostAdapter extends TypeAdapter<Post> {
       if (obj.isDeleted) 21: obj.isDeleted,
       if (obj.ipNumber != null) 22: obj.ipNumber,
       if (obj.archiveName != null) 23: obj.archiveName,
+      if (obj.email != null) 24: obj.email,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

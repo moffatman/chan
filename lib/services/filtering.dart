@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart' hide WeakMap;
 import 'package:provider/provider.dart';
 import 'package:weak_map/weak_map.dart';
 
-const allPatternFields = ['text', 'subject', 'name', 'filename', 'dimensions', 'postID', 'posterID', 'flag', 'capcode', 'trip'];
+const allPatternFields = ['text', 'subject', 'name', 'filename', 'dimensions', 'postID', 'posterID', 'flag', 'capcode', 'trip', 'email'];
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
 
 class AutoWatchType {

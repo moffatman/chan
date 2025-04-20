@@ -2886,6 +2886,10 @@ TextSpan buildPostInfoRow({
 				if (post.capcode != null) TextSpan(
 					text: '## ${post.capcode} ',
 					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.secondaryColor.shiftHue(20).shiftSaturation(-0.3))
+				),
+				if (post.email != null) TextSpan(
+					text: '${post.email} ',
+					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.secondaryColor.shiftHue(90).shiftSaturation(-0.3))
 				)
 			]
 			else if (field == PostDisplayField.posterId && post.posterId != null) ...[
