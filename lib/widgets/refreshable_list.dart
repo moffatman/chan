@@ -2568,17 +2568,21 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		_refreshableTreeItems.itemsWithUnknownStubReplies.addAll(itemsWithOmittedReplies);
 		_needToTransitionNewlyInsertedItems = true;
-		// Reveal all new inserts at the bottom of the list
-		// Showing them won't cause any offset jumps since they are below the existing scroll position.
-		for (final item in out.reversed) {
-			if (item.parentIds.isEmpty && !item.representsStubChildren) {
-				// Parentless items are never set to "newly-inserted" state
-				continue;
+		if (!adapter.newRepliesAreLinear) {
+			// Reveal all new inserts at the bottom of the list
+			// Showing them won't cause any offset jumps since they are below the existing scroll position.
+			for (final item in out.reversed) {
+				if (item.parentIds.isEmpty && !item.representsStubChildren) {
+					// Parentless items are never set to "newly-inserted" state
+					continue;
+				}
+				if (!_refreshableTreeItems.isItemHidden(item).isHidden) {
+					// Clear polluted cache
+					_refreshableTreeItems._cache.remove(item._key);
+					break;
+				}
+				_refreshableTreeItems.revealNewInsert(item, quiet: true, stubOnly: item.representsStubChildren);
 			}
-			if (!_refreshableTreeItems.isItemHidden(item).isHidden) {
-				break;
-			}
-			_refreshableTreeItems.revealNewInsert(item, quiet: true, stubOnly: item.representsStubChildren);
 		}
 		final tree = (tree: out, automaticallyCollapsed: automaticallyCollapsed, automaticallyTopLevelCollapsed: automaticallyTopLevelCollapsed);
 		_lastTree = (
