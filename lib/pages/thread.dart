@@ -701,14 +701,22 @@ class ThreadPageState extends State<ThreadPage> {
 		});
 		_listController.slowScrolls.addListener(_onSlowScroll);
 		context.read<PersistentBrowserTab?>()?.threadPageState = this;
+		final explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
+		final noLoadNeeded = zone.findPost(explicitScrollToId ?? widget.thread.id) != null;
 		if (!(context.read<MasterDetailLocation?>()?.twoPane ?? false) &&
 		    persistentState.lastSeenPostId != null &&
 				(persistentState.thread?.posts_.length ?? 0) > 20) {
 			_useAllDummies = true;
-			_listController.lockInitialization(_scrollIfWarranted(const Duration(milliseconds: 500)));
+			final scrollFuture = _scrollIfWarranted(const Duration(milliseconds: 500));
+			if (noLoadNeeded) {
+				_listController.lockInitialization(scrollFuture);
+			}
 		}
 		else {
-			_listController.lockInitialization(_scrollIfWarranted());
+			final scrollFuture = _scrollIfWarranted();
+			if (noLoadNeeded) {
+				_listController.lockInitialization(scrollFuture);
+			}
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 		if (Settings.instance.autoCacheAttachments) {
@@ -770,7 +778,12 @@ class ThreadPageState extends State<ThreadPage> {
 				// Scrolled down somewhat
 				blocked = true;
 			}
-			_listController.lockInitialization(_scrollIfWarranted());
+			final explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
+			final scrollFuture = _scrollIfWarranted();
+			final noLoadNeeded = zone.findPost(explicitScrollToId ?? widget.thread.id) != null;
+			if (noLoadNeeded) {
+				_listController.lockInitialization(scrollFuture);
+			}
 			if (Settings.instance.autoCacheAttachments) {
 				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 			}
