@@ -2800,6 +2800,7 @@ TextSpan buildPostInfoRow({
 	};
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
 	const lineBreak = TextSpan(text: '\n');
+	final isDeletedStub = post.isDeleted && post.text.isEmpty && post.attachments.isEmpty;
 	final children = [
 		if (post.archiveName != null) ...[
 			WidgetSpan(
@@ -2819,7 +2820,7 @@ TextSpan buildPostInfoRow({
 			TextSpan(
 				text: '[Deleted] ',
 				style: TextStyle(
-					color: theme.secondaryColor,
+					color: isDeletedStub ? null : theme.secondaryColor,
 					fontWeight: FontWeight.w600,
 					fontVariations: CommonFontVariations.w600
 				)
@@ -3016,7 +3017,10 @@ TextSpan buildPostInfoRow({
 		]);
 	}
 	return TextSpan(
-		style: const TextStyle(fontSize: 16),
+		style: isDeletedStub ? TextStyle(
+			color: theme.primaryColorWithBrightness(0.5),
+			fontSize: 16
+		) : const TextStyle(fontSize: 16),
 		children: children
 	);
 }

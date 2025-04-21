@@ -264,6 +264,7 @@ class PostRow extends StatelessWidget {
 		final List<Attachment> largeAttachments = largeImageWidth == null ? [] : latestPost.attachments_;
 		final List<Attachment> smallAttachments = largeImageWidth == null ? latestPost.attachments_ : [];
 		final withinSelectable = SelectionContainer.maybeOf(context) != null;
+		final isDeletedStub = post.isDeleted && post.text.isEmpty && post.attachments.isEmpty;
 		if (isYourPost && showYourPostBorder) {
 			border = Border(
 				left: BorderSide(color: theme.secondaryColor, width: 10)
@@ -332,7 +333,7 @@ class PostRow extends StatelessWidget {
 								onTap?.call();
 							}
 						},
-						child: Text.rich(
+						child: isDeletedStub ? const SizedBox(height: 14) : Text.rich(
 							TextSpan(
 								children: [
 									if (

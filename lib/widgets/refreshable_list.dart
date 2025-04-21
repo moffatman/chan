@@ -1046,7 +1046,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		required Set<int> collapsedChildIds,
 		required bool loading,
 		required double? peekContentHeight,
-		required List<ParentAndChildIdentifier>? stubChildIds
+		required List<ParentAndChildIdentifier>? stubChildIds,
+		required bool alreadyDim
 	})? collapsedItemBuilder;
 	final List<T>? initialList;
 	final Future<List<T>?> Function(RefreshableListUpdateOptions options) listUpdater;
@@ -1878,7 +1879,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					collapsedChildIds: value.representsKnownStubChildren.map((x) => x.childId).toSet(),
 					loading: loadingOmittedItems != null,
 					peekContentHeight: null,
-					stubChildIds: value.representsKnownStubChildren
+					stubChildIds: value.representsKnownStubChildren,
+					alreadyDim: false
 				) ?? Container(
 					height: 30,
 					alignment: Alignment.center,
@@ -1895,7 +1897,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					collapsedChildIds: value.treeDescendantIds,
 					loading: loadingOmittedItems != null,
 					peekContentHeight: (widget.treeAdapter?.collapsedItemsShowBody ?? false) ? double.infinity : null,
-					stubChildIds: null
+					stubChildIds: null,
+					alreadyDim: value.filterCollapsed
 				);
 				if (value.filterCollapsed && collapsed != null) {
 					collapsed = Opacity(
@@ -1938,7 +1941,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						collapsedChildIds: collapsedChildIds,
 						loading: loadingOmittedItems != null,
 						peekContentHeight: isHidden == TreeItemCollapseType.mutuallyCollapsed ? 90 : double.infinity,
-						stubChildIds: null
+						stubChildIds: null,
+						alreadyDim: false
 					) ?? Stack(
 						alignment: Alignment.bottomRight,
 						children: [

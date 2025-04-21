@@ -149,14 +149,15 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						required Set<int> collapsedChildIds,
 						required bool loading,
 						required double? peekContentHeight,
-						required List<ParentAndChildIdentifier>? stubChildIds
+						required List<ParentAndChildIdentifier>? stubChildIds,
+						required bool alreadyDim
 					}) {
 						final settings = context.watch<Settings>();
 						if (peekContentHeight != null && value != null) {
 							final post = Builder(
 								builder: (context) => PostRow(
 									post: value,
-									dim: peekContentHeight.isFinite,
+									dim: !alreadyDim && peekContentHeight.isFinite,
 									baseOptions: options,
 									showBoardName: value.id == primaryPostId,
 									showSiteIcon: value.id == primaryPostId,

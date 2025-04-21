@@ -947,16 +947,18 @@ class SiteReddit extends ImageboardSite {
 			await dumpAttachments(data);
 		}
 		final author = data['author'];
+		final authorIsDeleted = author == _kDeleted;
+		final textIsDeleted = text == _kRemoved || text == _kDeleted;
 		final asPost = Post(
 			board: data['subreddit'],
-			name: author,
+			name: authorIsDeleted ? '' : author,
 			flag: _makeFlag(data['author_flair_richtext'], data),
 			time: DateTime.fromMillisecondsSinceEpoch(data['created'].toInt() * 1000),
 			threadId: id,
 			id: id,
-			text: text,
+			text: textIsDeleted ? '' : text,
 			spanFormat: PostSpanFormat.reddit,
-			isDeleted: author == _kDeleted || text == _kRemoved,
+			isDeleted: authorIsDeleted || textIsDeleted,
 			attachments_: data['is_self'] == true ? [] : attachments,
 			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'],
 			capcode: data['distinguished']
@@ -1163,11 +1165,13 @@ class SiteReddit extends ImageboardSite {
 						return match.group(0)!;
 					});
 					final author = doc.querySelector('.author')?.text ?? '';
+					final authorIsDeleted = author == _kDeleted;
+					final textIsDeleted = text == _kRemoved || text == _kDeleted;
 					final post = Post(
 						board: thread.board,
-						text: text,
-						name: author,
-						isDeleted: author == _kDeleted || text == _kRemoved,
+						text: textIsDeleted ? '' : text,
+						name: authorIsDeleted ? '' : author,
+						isDeleted: authorIsDeleted || textIsDeleted,
 						flag: flag,
 						time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? _estimateTime(id),
 						threadId: thread.id,
@@ -1298,11 +1302,13 @@ class SiteReddit extends ImageboardSite {
 			return '<img src="${metadata['s']['u']}" width="${metadata['s']['x']}" height="${metadata['s']['y']}">';
 		});
 		final author = child['author'];
+		final authorIsDeleted = author == _kDeleted;
+		final textIsDeleted = text == _kRemoved || text == _kDeleted;
 		return Post(
 			board: thread.board,
-			text: text,
-			name: author,
-			isDeleted: author == _kDeleted || text == _kRemoved,
+			text: textIsDeleted ? '' : text,
+			name: authorIsDeleted ? '' : author,
+			isDeleted: authorIsDeleted || textIsDeleted,
 			flag: _makeFlag(child['author_flair_richtext'], child),
 			time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
 			threadId: thread.id,

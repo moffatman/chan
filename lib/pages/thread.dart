@@ -1902,10 +1902,12 @@ class ThreadPageState extends State<ThreadPage> {
 																		required Set<int> collapsedChildIds,
 																		required bool loading,
 																		required double? peekContentHeight,
-																		required List<ParentAndChildIdentifier>? stubChildIds
+																		required List<ParentAndChildIdentifier>? stubChildIds,
+																		required bool alreadyDim
 																	}) {
 																		final newCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
 																		final unseenCount = collapsedChildIds.where((id) => persistentState.unseenPostIds.data.contains(id)).length;
+																		final isDeletedStub = value != null && value.isDeleted && value.text.isEmpty && value.attachments.isEmpty;
 																		if (peekContentHeight != null && value != null) {
 																			final style = TextStyle(
 																				color: theme.secondaryColor,
@@ -1915,7 +1917,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			final post = Builder(
 																				builder: (context) => PostRow(
 																					post: value,
-																					dim: peekContentHeight.isFinite,
+																					dim: !alreadyDim && (isDeletedStub || peekContentHeight.isFinite),
 																					highlight: newPostIds.contains(value.id),
 																					onThumbnailTap: (attachment) {
 																						_showGallery(initialAttachment: TaggedAttachment(
