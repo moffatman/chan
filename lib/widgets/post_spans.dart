@@ -2957,14 +2957,14 @@ TextSpan buildPostInfoRow({
 				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 			)
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
-				text: '${formatTime(post.time, forceFullDate: forceAbsoluteTime)} '
+				text: '${formatTime(post.time.toLocal(), forceFullDate: forceAbsoluteTime)} '
 			)
 			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts)
 			 	if (!settings.showAbsoluteTimeOnPosts && forceAbsoluteTime) TextSpan(
-					text: '${formatTime(post.time, forceFullDate: true)} '
+					text: '${formatTime(post.time.toLocal(), forceFullDate: true)} '
 				)
 				else TextSpan(
-					text: '${formatRelativeTime(post.time)} ago '
+					text: '${formatRelativeTime(post.time.toLocal())} ago '
 				)
 			else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
 				if (showSiteIcon) WidgetSpan(

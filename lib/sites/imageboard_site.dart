@@ -2032,10 +2032,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		// If there was a new post, page probably jumped to 1. But can't just assume 1,
 		// that's only if we have been updating continuously.
 		final acceptCachedAfter = switch (hasNewPost) {
-			true => thread.lastUpdatedTime?.toLocal() ?? thread.posts_.last.time,
+			true => thread.lastUpdatedTime?.toLocal() ?? thread.posts_.last.time.toLocal(),
 			false => DateTime.now().subtract(const Duration(minutes: 2)),
 			null => DateTimeConversion.max(
-				thread.lastUpdatedTime?.toLocal() ?? thread.posts_.last.time,
+				thread.lastUpdatedTime?.toLocal() ?? thread.posts_.last.time.toLocal(),
 				DateTime.now().subtract(const Duration(minutes: 2))
 			)
 		};

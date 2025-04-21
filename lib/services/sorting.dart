@@ -54,7 +54,7 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 	}
 	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
 		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
-			return (b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread?.posts.last.time ?? d).compareTo(a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread?.posts.last.time ?? d);
+			return (b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread?.posts.last.time.toLocal() ?? d).compareTo(a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread?.posts.last.time.toLocal() ?? d);
 		});
 	}
 	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.alphabeticByTitle) {
@@ -93,7 +93,7 @@ Comparator<PersistentThreadState> getSavedThreadsSortMethod() {
 	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 	return switch (Persistence.settings.savedThreadsSortingMethod) {
 		ThreadSortingMethod.alphabeticByTitle => (a, b) => a.thread.compareTo(b.thread),
-		ThreadSortingMethod.lastPostTime => (a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate),
+		ThreadSortingMethod.lastPostTime => (a, b) => (b.thread?.posts.last.time.toLocal() ?? noDate).compareTo(a.thread?.posts.last.time.toLocal() ?? noDate),
 		ThreadSortingMethod.threadPostTime => (a, b) => (b.thread?.time ?? noDate).compareTo(a.thread?.time ?? noDate),
 		ThreadSortingMethod.savedTime || _ => (a, b) => (b.savedTime ?? noDate).compareTo(a.savedTime ?? noDate)
 	};
@@ -103,8 +103,8 @@ Comparator<(PersistentThreadState, Thread)> getSavedThreadsSortMethodTuple() {
 	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 	return switch (Persistence.settings.savedThreadsSortingMethod) {
 		ThreadSortingMethod.alphabeticByTitle => (a, b) => a.$2.compareTo(b.$2),
-		ThreadSortingMethod.lastPostTime => (a, b) => b.$2.posts.last.time.compareTo(a.$2.posts.last.time),
-		ThreadSortingMethod.threadPostTime => (a, b) => b.$2.time.compareTo(a.$2.time),
+		ThreadSortingMethod.lastPostTime => (a, b) => b.$2.posts.last.time.toLocal().compareTo(a.$2.posts.last.time.toLocal()),
+		ThreadSortingMethod.threadPostTime => (a, b) => b.$2.time.toLocal().compareTo(a.$2.time.toLocal()),
 		ThreadSortingMethod.savedTime || _ => (a, b) => (b.$1.savedTime ?? noDate).compareTo(a.$1.savedTime ?? noDate)
 	};
 }
@@ -135,7 +135,7 @@ Future<void> selectSavedThreadsSortMethod(BuildContext context) => showAdaptiveM
 
 Comparator<ImageboardScoped<SavedPost>> getSavedPostsSortMethod() {
 	return switch (Persistence.settings.savedThreadsSortingMethod) {
-		ThreadSortingMethod.lastPostTime => (a, b) => b.item.post.time.compareTo(a.item.post.time),
+		ThreadSortingMethod.lastPostTime => (a, b) => b.item.post.time.toLocal().compareTo(a.item.post.time.toLocal()),
 		ThreadSortingMethod.threadPostTime => (a, b) {
 						final ta = a.imageboard.persistence.getThreadStateIfExists(a.item.post.threadIdentifier)?.thread;
 						final tb = b.imageboard.persistence.getThreadStateIfExists(b.item.post.threadIdentifier)?.thread;
@@ -147,8 +147,8 @@ Comparator<ImageboardScoped<SavedPost>> getSavedPostsSortMethod() {
 
 Comparator<ImageboardScoped<(SavedPost, Thread)>> getSavedPostsSortMethodTuple() {
 	return switch (Persistence.settings.savedThreadsSortingMethod) {
-		ThreadSortingMethod.lastPostTime => (a, b) => b.item.$1.post.time.compareTo(a.item.$1.post.time),
-		ThreadSortingMethod.threadPostTime => (a, b) => b.item.$2.time.compareTo(b.item.$2.time),
+		ThreadSortingMethod.lastPostTime => (a, b) => b.item.$1.post.time.toLocal().compareTo(a.item.$1.post.time.toLocal()),
+		ThreadSortingMethod.threadPostTime => (a, b) => b.item.$2.time.toLocal().compareTo(b.item.$2.time.toLocal()),
 		ThreadSortingMethod.savedTime || _ => (a, b) => b.item.$1.savedTime.compareTo(a.item.$1.savedTime)
 	};
 }

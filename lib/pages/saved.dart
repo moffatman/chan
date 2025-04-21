@@ -1240,7 +1240,7 @@ class _SavedPageState extends State<SavedPage> {
 							updateAnimation: threadStateBoxesAnimation,
 							disableUpdates: !TickerMode.of(context),
 							minUpdateDuration: Duration.zero,
-							sortMethods: [(a, b) => b.post.time.compareTo(a.post.time)],
+							sortMethods: [(a, b) => b.post.time.toLocal().compareTo(a.post.time.toLocal())],
 							itemBuilder: (context, item) => ImageboardScope(
 								imageboardKey: item.imageboard.key,
 								child: ChangeNotifierProvider<PostSpanZoneData>(
