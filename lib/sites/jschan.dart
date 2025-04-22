@@ -173,6 +173,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 				'postpassword': receipt.password,
 				if (captchaSolution is JsChanGridCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort()
 				else if (captchaSolution is JsChanTextCaptchaSolution) 'captcha': captchaSolution.text
+				else if (captchaSolution is HCaptchaSolution) 'captcha': captchaSolution.token
 			},
 			options: Options(
 				headers: {
@@ -251,10 +252,16 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 		return list;
 	}
 
-	CaptchaRequest _getCaptcha(String type) => switch (type) {
-		'none' => const NoCaptchaRequest(),
-		String other => JsChanCaptchaRequest(challengeUrl: Uri.https(baseUrl, '/captcha'), type: other)
-	};
+	CaptchaRequest _getCaptcha(String type) {
+		if (type == 'none') {
+			return const NoCaptchaRequest();
+		}
+		if (type.startsWith('hcaptcha:')) {
+			final parts = type.split(':');
+			return HCaptchaRequest(hostPage: Uri.https(baseUrl, '/robots.txt'), siteKey: parts[1]);
+		}
+		return JsChanCaptchaRequest(challengeUrl: Uri.https(baseUrl, '/captcha'), type: type);
+	}
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async => _getCaptcha(postingCaptcha);
