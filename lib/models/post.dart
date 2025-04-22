@@ -111,6 +111,7 @@ class Post implements Filterable {
 	final String name;
 	@HiveField(3)
 	final DateTime time;
+	@override
 	@HiveField(4)
 	final int threadId;
 	@override

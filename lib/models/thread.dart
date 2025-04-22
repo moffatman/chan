@@ -359,6 +359,8 @@ class Thread extends HiveObject implements Filterable {
 	@override
 	bool get isThread => true;
 	@override
+	int get threadId => id;
+	@override
 	List<int> get repliedToIds => [];
 	@override
 	Iterable<String> get md5s => attachments.map((a) => a.md5);

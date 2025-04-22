@@ -1745,6 +1745,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	@override
 	bool get isThread => true;
 	@override
+	int get threadId => id;
+	@override
 	List<int> get repliedToIds => [];
 	@override
 	int get replyCount => thread?.replyCount ?? 0;

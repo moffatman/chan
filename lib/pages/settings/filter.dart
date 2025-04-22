@@ -203,6 +203,9 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	bool isThread = true;
 
 	@override
+	int get threadId => -1;
+
+	@override
 	bool isDeleted = false;
 
 	@override

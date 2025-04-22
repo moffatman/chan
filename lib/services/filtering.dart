@@ -89,6 +89,7 @@ abstract class Filterable {
 	String? getFilterFieldText(String fieldName);
 	String get board;
 	int get id;
+	int get threadId;
 	Iterable<int> get repliedToIds;
 	bool get hasFile;
 	bool get isThread;
@@ -112,6 +113,9 @@ class EmptyFilterable implements Filterable {
 
   @override
   bool get isThread => false;
+
+	@override
+	int get threadId => 0;
 
 	@override
 	List<int> get repliedToIds => [];
@@ -194,6 +198,7 @@ class CustomFilter implements Filter {
 	int? minReplyCount;
 	int? maxReplyCount;
 	bool? deletedOnly;
+	bool? repliesToOP;
 	CustomFilter({
 		String? configuration,
 		this.disabled = false,
@@ -213,7 +218,8 @@ class CustomFilter implements Filter {
 		this.maxRepliedTo,
 		this.minReplyCount,
 		this.maxReplyCount,
-		this.deletedOnly
+		this.deletedOnly,
+		this.repliesToOP
 	}) {
 		this.configuration = configuration ?? toStringConfiguration();
 	}
@@ -258,6 +264,9 @@ class CustomFilter implements Filter {
 			return null;
 		}
 		if (deletedOnly != null && item.isDeleted != deletedOnly) {
+			return null;
+		}
+		if (repliesToOP != null && item.repliedToIds.contains(item.threadId) != repliesToOP) {
 			return null;
 		}
 		if (pattern.pattern.isNotEmpty) {
@@ -430,6 +439,12 @@ class CustomFilter implements Filter {
 						throw FilterException('Not a valid number for maxReplyCount: "${s.split(':')[1]}"');
 					}
 				}
+				else if (s == 'repliesToOP:only') {
+					filter.repliesToOP = true;
+				}
+				else if (s == 'repliesToOP:no') {
+					filter.repliesToOP = false;
+				}
 				else {
 					throw FilterException('Unknown qualifier "$s"');
 				}
@@ -562,6 +577,12 @@ class CustomFilter implements Filter {
 		else if (deletedOnly == false) {
 			out.write(';deleted:no');
 		}
+		if (repliesToOP == true) {
+			out.write(';repliesToOP:only');
+		}
+		else if (repliesToOP == false) {
+			out.write(';repliesToOP:no');
+		}
 		return out.toString();
 	}
 
@@ -569,7 +590,7 @@ class CustomFilter implements Filter {
 	bool get supportsMetaFilter => outputType.hideReplies || outputType.hideReplyChains;
 
 	@override
-	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadsOnly: $threadsOnly, minRepliedTo: $minRepliedTo, maxRepliedTo: $maxRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
+	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadsOnly: $threadsOnly, minRepliedTo: $minRepliedTo, maxRepliedTo: $maxRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount, repliesToOP: $repliesToOP)';
 
 	@override
 	bool operator == (Object other) =>

@@ -343,6 +343,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool? hasFile = filter.hasFile;
 			bool? threadsOnly = filter.threadsOnly;
 			bool? deletedOnly = filter.deletedOnly;
+			bool? repliesToOP = filter.repliesToOP;
 			final Set<String> boards = {
 				...filter.boards,
 				...filter.boardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
@@ -537,6 +538,26 @@ class _FilterEditorState extends State<FilterEditor> {
 												onTap:() {
 													setInnerState(() {
 														deletedOnly = field;
+													});
+												}
+											)
+										]
+									),
+									const SizedBox(height: 32),
+									AdaptiveListSection(
+										children: [
+											for (final field in [null, true, false]) AdaptiveListTile(
+												title: Text(const{
+													null: 'All posts',
+													true: 'Replying to OP only',
+													false: 'Not replying to OP only'
+												}[field]!),
+												backgroundColor: ChanceTheme.barColorOf(context),
+												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+												trailing: repliesToOP == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+												onTap:() {
+													setInnerState(() {
+														repliesToOP = field;
 													});
 												}
 											)
@@ -882,6 +903,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										hasFile: hasFile,
 										threadsOnly: threadsOnly,
 										deletedOnly: deletedOnly,
+										repliesToOP: repliesToOP,
 										minRepliedTo: minRepliedTo,
 										maxRepliedTo: maxRepliedTo,
 										minReplyCount: minReplyCount,
@@ -1092,6 +1114,8 @@ class _FilterEditorState extends State<FilterEditor> {
 										else if (filter.value.threadsOnly == false) const TextSpan(text: 'Replies only'),
 										if (filter.value.deletedOnly == true) const TextSpan(text: 'Deleted only')
 										else if (filter.value.deletedOnly == false) const TextSpan(text: 'Non-deleted only'),
+										if (filter.value.repliesToOP == true) const TextSpan(text: 'Replying-to-OP only')
+										else if (filter.value.repliesToOP == false) const TextSpan(text: 'Non-replying-to-OP only'),
 										if (filter.value.hasFile == true) const WidgetSpan(
 											child: Icon(CupertinoIcons.doc)
 										)
