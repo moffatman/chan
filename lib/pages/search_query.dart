@@ -250,30 +250,27 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									),
 									child: ValueListenableBuilder(
 										valueListenable: imageboard.persistence.listenForPersistentThreadStateChanges(row.post!.threadIdentifier),
-										builder: (context, threadState, child) {
-											return Opacity(
-												opacity: (threadState?.showInHistory ?? false) ? 0.5 : 1.0,
-												child: child
+										builder: (context, threadState, _) {
+											return PostRow(
+												post: row.post!,
+												dim: threadState?.showInHistory ?? false,
+												onThumbnailTap: (attachment) => _showGallery(context, attachment),
+												showCrossThreadLabel: false,
+												showBoardName: true,
+												allowTappingLinks: false,
+												showPostNumber: false,
+												isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
+												onTap: () => setValue(SelectedSearchResult(
+													imageboard: imageboard,
+													result: row,
+													threadSearch: null,
+													fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
+												)),
+												baseOptions: PostSpanRenderOptions(
+													highlightPattern: widget.query.query.isEmpty ? null : queryPattern
+												),
 											);
-										},
-										child: PostRow(
-											post: row.post!,
-											onThumbnailTap: (attachment) => _showGallery(context, attachment),
-											showCrossThreadLabel: false,
-											showBoardName: true,
-											allowTappingLinks: false,
-											showPostNumber: false,
-											isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
-											onTap: () => setValue(SelectedSearchResult(
-												imageboard: imageboard,
-												result: row,
-												threadSearch: null,
-												fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
-											)),
-											baseOptions: PostSpanRenderOptions(
-												highlightPattern: widget.query.query.isEmpty ? null : queryPattern
-											),
-										)
+										}
 									)
 								);
 							}
