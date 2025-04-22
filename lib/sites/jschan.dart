@@ -108,6 +108,9 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 					else if (node.localName == 'span' && node.classes.contains('spoiler')) {
 						yield PostSpoilerSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)), spoilerSpanId++);
 					}
+					else if (node.localName == 'span' && node.classes.contains('title')) {
+						yield PostSecondaryColorSpan(PostBoldSpan(PostNodeSpan(visit(node.nodes).toList(growable: false))));
+					}
 					else if (node.localName == 'span' && node.classes.contains('mono')) {
 						yield PostCodeSpan(node.text);
 					}
