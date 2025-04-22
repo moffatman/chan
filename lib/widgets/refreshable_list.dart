@@ -1150,7 +1150,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	List<T>? originalList;
 	List<T>? sortedList;
 	late final ValueNotifier<(Object, StackTrace)?> error;
-	late final ValueNotifier<(String, CancelToken)?> updatingNow;
+	late final ValueNotifier<({String id, Future<void> future, CancelToken cancelToken})?> updatingNow;
 	late final TextEditingController _searchController;
 	late final FocusNode _searchFocusNode;
 	bool get searchHasFocus => _searchFocusNode.hasFocus;
@@ -1279,7 +1279,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			// There is some change in the list
 			!listEquals(oldWidget.initialList, widget.initialList) &&
 			// Not in the middle of an update
-			(updatingNow.value?.$1 != widget.id)
+			(updatingNow.value?.id != widget.id)
 		) {
 			originalList = widget.initialList;
 			sortedList = originalList?.toList();
@@ -1517,162 +1517,165 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		bool mergeTrees = false,
 		Duration? overrideMinUpdateDuration
 	}) async {
-		if (updatingNow.value?.$1 == widget.id) {
-			return;
+		if (updatingNow.value?.id == widget.id) {
+			return updatingNow.value?.future;
 		}
-		final updatingWithId = widget.id;
-		List<T>? newList;
-		final treeAdapter = widget.treeAdapter;
 		final cancelToken = CancelToken();
-		try {
-			error.value = null;
-			Future.microtask(() => updatingNow.value = (widget.id, cancelToken));
-			Duration minUpdateDuration = widget.minUpdateDuration;
-			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
-				minUpdateDuration *= 2;
-			}
-			minUpdateDuration = overrideMinUpdateDuration ?? minUpdateDuration;
-			final lastItem = widget.controller?._items.tryLast?.item;
-			if (mergeTrees) {
-				_mergeTrees(rebuild: false);
-			}
-			if (extend && treeAdapter != null && lastItem != null && lastItem.representsStubChildren) {
-				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, lastItem.id, cancelToken);
-				try {
+		final future = () async {
+			final updatingWithId = widget.id;
+			List<T>? newList;
+			final treeAdapter = widget.treeAdapter;
+			try {
+				error.value = null;
+				Duration minUpdateDuration = widget.minUpdateDuration;
+				if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
+					minUpdateDuration *= 2;
+				}
+				minUpdateDuration = overrideMinUpdateDuration ?? minUpdateDuration;
+				final lastItem = widget.controller?._items.tryLast?.item;
+				if (mergeTrees) {
+					_mergeTrees(rebuild: false);
+				}
+				if (extend && treeAdapter != null && lastItem != null && lastItem.representsStubChildren) {
+					_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, lastItem.id, cancelToken);
+					try {
+						newList = await treeAdapter.updateWithStubItems(
+							originalList!,
+							lastItem.representsUnknownStubChildren
+								? [ParentAndChildIdentifier.same(lastItem.id)]
+								: lastItem.representsKnownStubChildren,
+							cancelToken
+						);
+					}
+					catch (e, st) {
+						if (mounted && !cancelToken.isCancelled) {
+							alertError(context, e, st);
+						}
+					}
+					finally {
+						_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem);
+					}
+				}
+				else if (extend && lastItem != null && treeAdapter != null && treeAdapter.isPaged && !treeAdapter.getIsPageStub(lastItem.item) && treeAdapter.getParentIds(lastItem.item).isNotEmpty) {
+					// If we aren't ending on unloaded pages, first reload the last loaded page
 					newList = await treeAdapter.updateWithStubItems(
 						originalList!,
-						lastItem.representsUnknownStubChildren
-							? [ParentAndChildIdentifier.same(lastItem.id)]
-							: lastItem.representsKnownStubChildren,
+						[ParentAndChildIdentifier.same(treeAdapter.getParentIds(lastItem.item).first)],
 						cancelToken
 					);
 				}
-				catch (e, st) {
-					if (mounted && !cancelToken.isCancelled) {
-						alertError(context, e, st);
+				else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
+					final newItems = (await Future.wait([widget.listExtender!(originalList!.last, cancelToken), Future<List<T>?>.delayed(minUpdateDuration)])).first!;
+					final filterableAdapter = widget.filterableAdapter;
+					if (filterableAdapter != null) {
+						// We have the ability to get identifier for each item
+						final oldIds = originalList!.map((i) => filterableAdapter(i).$2.id).toSet();
+						newList = originalList!.followedBy(newItems.where((newItem) {
+							// Item may be already seen in old list
+							// This could be because of long time between updates, the item
+							// changed in position in the server's list.
+							return !oldIds.contains(filterableAdapter(newItem).$2.id);
+						})).toList();
+					}
+					else {
+						// Just append the new items
+						newList = originalList!.followedBy(newItems).toList();
+					}
+					if (widget.controller?._items.length case int valuesLength) {
+						_addedItemsFromExtension = (valuesLength: valuesLength, newItemsCount: newList.length - originalList!.length);
 					}
 				}
-				finally {
-					_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem);
-				}
-			}
-			else if (extend && lastItem != null && treeAdapter != null && treeAdapter.isPaged && !treeAdapter.getIsPageStub(lastItem.item) && treeAdapter.getParentIds(lastItem.item).isNotEmpty) {
-				// If we aren't ending on unloaded pages, first reload the last loaded page
-				newList = await treeAdapter.updateWithStubItems(
-					originalList!,
-					[ParentAndChildIdentifier.same(treeAdapter.getParentIds(lastItem.item).first)],
-					cancelToken
-				);
-			}
-			else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
-				final newItems = (await Future.wait([widget.listExtender!(originalList!.last, cancelToken), Future<List<T>?>.delayed(minUpdateDuration)])).first!;
-				final filterableAdapter = widget.filterableAdapter;
-				if (filterableAdapter != null) {
-					// We have the ability to get identifier for each item
-					final oldIds = originalList!.map((i) => filterableAdapter(i).$2.id).toSet();
-					newList = originalList!.followedBy(newItems.where((newItem) {
-						// Item may be already seen in old list
-						// This could be because of long time between updates, the item
-						// changed in position in the server's list.
-						return !oldIds.contains(filterableAdapter(newItem).$2.id);
-					})).toList();
-				}
 				else {
-					// Just append the new items
-					newList = originalList!.followedBy(newItems).toList();
+					newList = (await Future.wait([widget.listUpdater(RefreshableListUpdateOptions(
+						source: source,
+						cancelToken: cancelToken
+					)), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
 				}
-				if (widget.controller?._items.length case int valuesLength) {
-					_addedItemsFromExtension = (valuesLength: valuesLength, newItemsCount: newList.length - originalList!.length);
+				if (!mounted) return;
+				if (updatingWithId != widget.id) {
+					if (updatingNow.value?.id == updatingWithId) {
+						updatingNow.value = null;
+					}
+					return;
+				}
+				resetTimer();
+				lastUpdateTime = DateTime.now();
+			}
+			catch (e, st) {
+				error.value = (e, st);
+				if (cancelToken.isCancelled) {
+					resetTimer();
+				}
+				else if (mounted) {
+					if (widget.controller?.scrollController?.hasOnePosition ?? false) {
+						final position = widget.controller!.scrollController!.position;
+						if (position.extentAfter > 0) {
+							showToast(
+								context: context,
+								message: 'Error loading ${widget.id}: ${e.toStringDio()}',
+								icon: CupertinoIcons.exclamationmark_triangle
+							);
+						}
+					}
+					if (widget.remedies[e.runtimeType] == null) {
+						print('Error refreshing list: ${e.toStringDio()}');
+						print(st);
+						resetTimer();
+						lastUpdateTime = DateTime.now();
+					}
+					else {
+						nextUpdateTime = null;
+					}
 				}
 			}
-			else {
-				newList = (await Future.wait([widget.listUpdater(RefreshableListUpdateOptions(
-					source: source,
-					cancelToken: cancelToken
-				)), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
-			}
-			if (!mounted) return;
+			await widget.controller?.scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
 			if (updatingWithId != widget.id) {
-				if (updatingNow.value?.$1 == updatingWithId) {
+				if (updatingNow.value?.id == updatingWithId) {
 					updatingNow.value = null;
 				}
 				return;
 			}
-			resetTimer();
-			lastUpdateTime = DateTime.now();
-		}
-		catch (e, st) {
-			error.value = (e, st);
-			if (cancelToken.isCancelled) {
-				resetTimer();
+			if (!mounted) return;
+			updatingNow.value = null;
+			try {
+				if (mounted) {
+					await ModalRoute.of(context)?.popped.timeout(Duration.zero);
+					// Route is popping, just quit
+					return;
+				}
 			}
-			else if (mounted) {
-				if (widget.controller?.scrollController?.hasOnePosition ?? false) {
-					final position = widget.controller!.scrollController!.position;
-					if (position.extentAfter > 0) {
-						showToast(
-							context: context,
-							message: 'Error loading ${widget.id}: ${e.toStringDio()}',
-							icon: CupertinoIcons.exclamationmark_triangle
-						);
+			on TimeoutException {
+				// No popping
+			}
+			await widget.controller?._initialization;
+			if (mounted && (newList != null || error.value != null)) {
+				if (hapticFeedback) {
+					mediumHapticFeedback();
+				}
+				setState(() {
+					originalList = newList ?? originalList;
+					sortedList = originalList?.toList();
+					if (sortedList != null) {
+						_sortList();
 					}
+				});
+			}
+			else if (mounted && newList == null && originalList != null && mergeTrees) {
+				// Just merge trees
+				if (hapticFeedback) {
+					mediumHapticFeedback();
 				}
-				if (widget.remedies[e.runtimeType] == null) {
-					print('Error refreshing list: ${e.toStringDio()}');
-					print(st);
-					resetTimer();
-					lastUpdateTime = DateTime.now();
-				}
-				else {
-					nextUpdateTime = null;
-				}
+				setState(() {});
 			}
-		}
-		await widget.controller?.scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
-		if (updatingWithId != widget.id) {
-			if (updatingNow.value?.$1 == updatingWithId) {
-				updatingNow.value = null;
+			else if (originalList == null) {
+				// returning null means just use the old list. but here we don't have an old list...
+				setState(() {
+					error.value = (Exception('listUpdater returned null'), StackTrace.current);
+				});
 			}
-			return;
-		}
-		if (!mounted) return;
-		updatingNow.value = null;
-		try {
-			if (mounted) {
-				await ModalRoute.of(context)?.popped.timeout(Duration.zero);
-				// Route is popping, just quit
-				return;
-			}
-		}
-		on TimeoutException {
-			// No popping
-		}
-		await widget.controller?._initialization;
-		if (mounted && (newList != null || error.value != null)) {
-			if (hapticFeedback) {
-				mediumHapticFeedback();
-			}
-			setState(() {
-				originalList = newList ?? originalList;
-				sortedList = originalList?.toList();
-				if (sortedList != null) {
-					_sortList();
-				}
-			});
-		}
-		else if (mounted && newList == null && originalList != null && mergeTrees) {
-			// Just merge trees
-			if (hapticFeedback) {
-				mediumHapticFeedback();
-			}
-			setState(() {});
-		}
-		else if (originalList == null) {
-			// returning null means just use the old list. but here we don't have an old list...
-			setState(() {
-				error.value = (Exception('listUpdater returned null'), StackTrace.current);
-			});
-		}
+		}();
+		Future.microtask(() => updatingNow.value = (id: widget.id, future: future, cancelToken: cancelToken));
+		return future;
 	}
 
 	Future<void> acceptNewList(List<T> list) async {
@@ -3390,7 +3393,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 											return const SizedBox.shrink();
 										}
 										return HiddenCancelButton(
-											cancelToken: pair.$2,
+											cancelToken: pair.cancelToken,
 											icon: const Text('Cancel'),
 											alignment: Alignment.topCenter
 										);
@@ -4335,7 +4338,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		state?._mergeTrees(rebuild: true);
 	}
 
-	ValueListenable<(String, CancelToken)?> get updatingNow => state?.updatingNow ?? const StoppedValueListenable(null);
+	ValueListenable<({String id, Future<void> future, CancelToken cancelToken})?> get updatingNow => state?.updatingNow ?? const StoppedValueListenable(null);
 
 	Future<void> lockInitialization(Future<void> future) async {
 		final completer = Completer<void>();

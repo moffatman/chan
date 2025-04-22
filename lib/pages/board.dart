@@ -1037,12 +1037,12 @@ class BoardPageState extends State<BoardPage> {
 						!(context.watch<MasterDetailLocation?>()?.isVeryConstrained ?? false)
 					) AnimatedBuilder(
 						animation: _listController,
-						builder: (context, _) => ValueListenableBuilder<(String, CancelToken)?>(
+						builder: (context, _) => ValueListenableBuilder<({String id, Future<void> future, CancelToken cancelToken})?>(
 							valueListenable: _listController.updatingNow,
 							builder: (context, pair, _) => AdaptiveIconButton(
 								icon: pair == null ? const Icon(CupertinoIcons.refresh) : const Icon(CupertinoIcons.xmark),
-								onPressed: switch (pair) {
-									(String _, CancelToken cancelToken) => cancelToken.cancel,
+								onPressed: switch (pair?.cancelToken) {
+									CancelToken cancelToken => cancelToken.cancel,
 									null => _listController.blockAndUpdate
 								}
 							)

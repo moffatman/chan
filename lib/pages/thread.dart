@@ -1719,7 +1719,7 @@ class ThreadPageState extends State<ThreadPage> {
 																							return const SizedBox.shrink();
 																						}
 																						return HiddenCancelButton(
-																							cancelToken: pair.$2,
+																							cancelToken: pair.cancelToken,
 																							icon: const Text('Cancel'),
 																							alignment: Alignment.topCenter
 																						);
@@ -2217,7 +2217,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 	int _lastItemsLength = 0;
 	final _animatedPaddingKey = GlobalKey(debugLabel: '_ThreadPositionIndicatorState._animatedPaddingKey');
 	late final ScrollController _menuScrollController;
-	ValueNotifier<(String, CancelToken)?>? _lastUpdatingNow;
+	ValueNotifier<({String id, Future<void> future, CancelToken cancelToken})?>? _lastUpdatingNow;
 	late bool _useCatalogCache;
 	Filter? _lastFilter;
 	bool _skipNextSwipe = false;
@@ -3119,7 +3119,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														mainAxisSize: MainAxisSize.min,
 														children: [
 															HiddenCancelButton(
-																cancelToken: pair.$2,
+																cancelToken: pair.cancelToken,
 																icon: const Icon(CupertinoIcons.xmark, size: 19),
 																alignment: Alignment.centerLeft
 															),
