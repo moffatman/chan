@@ -71,9 +71,11 @@ class _MediaThumbnailState extends State<MediaThumbnail> {
 						uri: widget.uri,
 						headers: widget.headers
 					),
-					loadingBuilder: (context, child, progress) => Center(
-						child: progress == null ? child : const CircularProgressIndicator.adaptive()
-					),
+					loadingBuilder: (context, child, progress) =>
+						progress == null ? child :
+						const Center(
+							child: CircularProgressIndicator.adaptive()
+						),
 					errorBuilder: (context, e, st) {
 						Future.error(e, st); // crashlytics
 						return const Icon(CupertinoIcons.question_square);
@@ -81,22 +83,20 @@ class _MediaThumbnailState extends State<MediaThumbnail> {
 					fit: widget.fit
 				);
 				if ((isVideo) && constraints.maxWidth > 50 && constraints.maxHeight > 50) {
-					return Center(
-						child: WidgetDecoration(
-							position: DecorationPosition.foreground,
-							decoration: label != null ? Align(
-								alignment: Alignment.bottomRight,
-								child: Container(
-									decoration: const BoxDecoration(
-										borderRadius: BorderRadius.only(topLeft: Radius.circular(4)),
-										color: Colors.black54
-									),
-									padding: const EdgeInsets.only(left: 4, top: 4, right: 2, bottom: 2),
-									child: label
-								)
-							) : null,
-							child: image
-						)
+					return WidgetDecoration(
+						position: DecorationPosition.foreground,
+						decoration: label != null ? Align(
+							alignment: Alignment.bottomRight,
+							child: Container(
+								decoration: const BoxDecoration(
+									borderRadius: BorderRadius.only(topLeft: Radius.circular(4)),
+									color: Colors.black54
+								),
+								padding: const EdgeInsets.only(left: 4, top: 4, right: 2, bottom: 2),
+								child: label
+							)
+						) : null,
+						child: image
 					);
 				}
 				else {
