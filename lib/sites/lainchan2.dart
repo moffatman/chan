@@ -1,3 +1,4 @@
+import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/thread.dart';
@@ -7,6 +8,7 @@ import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 import 'package:mutex/mutex.dart';
 
@@ -97,6 +99,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	@override
 	final String res;
 	final List<String> boardsWithHtmlOnlyFlags;
+	final List<String>? boardsWithMemeFlags;
 
 	SiteLainchan2({
 		required super.baseUrl,
@@ -107,6 +110,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		required super.overrideUserAgent,
 		required super.archives,
 		required this.boardsWithHtmlOnlyFlags,
+		required this.boardsWithMemeFlags,
 		super.faviconPath,
 		super.boardsPath,
 		this.boards,
@@ -192,6 +196,41 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		return broken;
 	}
 
+	final Map<String, AsyncMemoizer<List<ImageboardBoardFlag>>> _boardFlags = {};
+	@override
+	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) {
+		return _boardFlags.putIfAbsent(board, () => AsyncMemoizer<List<ImageboardBoardFlag>>()).runOnce(() async {
+			Map<String, String> flagMap = {};
+			if (boardsWithMemeFlags != null && (boardsWithMemeFlags!.isEmpty /* all boards */ || boardsWithMemeFlags!.contains(board))) {
+				try {
+					final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
+						responseType: ResponseType.plain
+					)).timeout(const Duration(seconds: 5));
+					final doc = parse(response.data);
+					flagMap = {
+						for (final e in doc.querySelector('select[name="user_flag"]')?.querySelectorAll('option') ?? <dom.Element>[])
+							(e.attributes['value'] ?? '0'): e.text
+					};
+				}
+				catch (e, st) {
+					print('Failed to fetch flags for $name ${formatBoardName(board)}: ${e.toStringDio()}');
+					Future.error(e, st); // crashlytics
+				}
+			}
+			return flagMap.entries.map((entry) => ImageboardBoardFlag(
+				code: entry.key,
+				name: entry.value,
+				imageUrl: Uri.https(baseUrl, '/static/flags/${entry.key}.png').toString()
+			)).toList();
+		});
+	}
+
+	@override
+	void migrateFromPrevious(SiteLainchan2 oldSite) {
+		super.migrateFromPrevious(oldSite);
+		_boardFlags.addAll(oldSite._boardFlags);
+	}
+
 	@override
 	String get siteType => 'lainchan2';
 	@override
@@ -214,8 +253,9 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		(other.boardsPath == boardsPath) &&
 		(other.faviconPath == faviconPath) &&
 		listEquals(other.boards, boards) &&
-		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags);
+		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&
+		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, name, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername, Object.hashAll(formBypass.keys), imageThumbnailExtension, boardsPath, faviconPath, Object.hashAll(boards ?? []), Object.hashAll(boardsWithHtmlOnlyFlags));
+	int get hashCode => Object.hash(baseUrl, basePath);
 }

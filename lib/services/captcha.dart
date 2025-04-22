@@ -215,6 +215,45 @@ Future<CaptchaSolution?> solveCaptcha({
 			));
 		case HCaptchaRequest():
 			return solveHCaptcha(request);
+		case SimpleTextCaptchaRequest():
+			final controller = TextEditingController();
+				try {
+				final submit = await showAdaptiveDialog<bool>(
+					context: ImageboardRegistry.instance.context!,
+					builder: (context) => AdaptiveAlertDialog(
+						title: Text(request.question),
+						content: AdaptiveTextField(
+							autofocus: true,
+							placeholder: 'Answer',
+							controller: controller,
+							onSubmitted: (s) {
+								Navigator.pop(context);
+							}
+						),
+						actions: [
+							AdaptiveDialogAction(
+								child: const Text('Submit'),
+								onPressed: () {
+									Navigator.of(context).pop(true);
+								}
+							),
+							AdaptiveDialogAction(
+								child: const Text('Cancel'),
+								onPressed: () {
+									Navigator.of(context).pop(false);
+								}
+							)
+						]
+					)
+				);
+				if (submit != true) {
+					return null;
+				}
+				return SimpleTextCaptchaSolution(answer: controller.text, acquiredAt: request.acquiredAt);
+			}
+			finally {
+				controller.dispose();
+			}
 		case NoCaptchaRequest():
 			return NoCaptchaSolution(DateTime.now());
 	}

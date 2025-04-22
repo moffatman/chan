@@ -9,6 +9,7 @@ class SiteFrenschan extends SiteLainchan2 {
 		required super.name,
 		required super.overrideUserAgent,
 		required super.boardsWithHtmlOnlyFlags,
+		required super.boardsWithMemeFlags,
 		required super.archives
 	}) : super(
 		basePath: '',
@@ -38,10 +39,11 @@ class SiteFrenschan extends SiteLainchan2 {
 		(other.defaultUsername == defaultUsername) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
-		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags);
+		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&
+		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boardsWithHtmlOnlyFlags));
+	int get hashCode => baseUrl.hashCode;
 
 	@override
 	String get res => 'res';

@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/flag.dart';
+import 'package:chan/services/captcha.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -236,10 +238,13 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 				ext: ext,
 				board: board,
 				url: getAttachmentUrl(board, '$id$ext').toString(),
-				thumbnailUrl: switch (postData['thumb'] as String?) {
-					'file' || null => (type == AttachmentType.mp3 || ext == '.mov' ? '' : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
-					'spoiler' => '',
-					String thumb => 'https://$baseUrl$basePath/$board/thumb/$thumb',
+				thumbnailUrl: switch(data['thumb_path']) {
+					String path => 'https://$baseUrl$path',
+					_ => switch (data['thumb'] as String?) {
+						'file' || null => (type == AttachmentType.mp3 || ext == '.mov' ? '' : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
+						'spoiler' => '',
+						String thumb => 'https://$baseUrl$basePath/$board/thumb/$thumb',
+					}
 				},
 				md5: data['md5'] ?? '',
 				spoiler: data['spoiler'] == 1,
@@ -280,6 +285,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 					}
 				));
 			}
+		}
+		if (postData['files'] case List files) {
+			ret.addAll(files.tryMap(makeAttachment));
 		}
 		return ret;
 	}
@@ -494,6 +502,21 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 			for (final field in pageDoc.querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
 				field.attributes['name'] as String: field.attributes['value'] ?? field.text
 		};
+		if (pageDoc.querySelector('input[name="simple_spam"]')?.parentNode?.parentNode?.firstChild?.text?.nonEmptyOrNull case String simpleSpamQuestion) {
+			final solution = await solveCaptcha(
+				context: ImageboardRegistry.instance.context,
+				site: this,
+				request: SimpleTextCaptchaRequest(
+					question: simpleSpamQuestion,
+					acquiredAt: DateTime.now()
+				),
+				cancelToken: cancelToken
+			);
+			if (solution is! SimpleTextCaptchaSolution) {
+				throw Exception('You didn\'t answer the captcha');
+			}
+			fields['simple_spam'] = solution.answer;
+		}
 		int? lastKnownId;
 		if (post.threadId != null) {
 			for (final post in pageDoc.querySelectorAll('.post').reversed) {
@@ -523,6 +546,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		}
 		if (post.options?.isNotEmpty ?? false) {
 			fields['email'] = post.options;
+		}
+		if (post.flag case ImageboardBoardFlag flag) {
+			fields['user_flag'] = flag.code;
 		}
 		if (captchaSolution is SecurimageCaptchaSolution) {
 			fields['captcha_cookie'] = captchaSolution.cookie;

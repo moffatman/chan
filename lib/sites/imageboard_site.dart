@@ -827,6 +827,17 @@ class HCaptchaRequest extends CaptchaRequest {
 	String toString() => 'HCaptchaRequest(hostPage: $hostPage, siteKey: $siteKey)';
 }
 
+class SimpleTextCaptchaRequest extends CaptchaRequest {
+	final String question;
+	final DateTime acquiredAt;
+	const SimpleTextCaptchaRequest({
+		required this.question,
+		required this.acquiredAt
+	});
+	@override
+	String toString() => 'SimpleTextCaptchaRequest(question: $question, acquiredAt: $acquiredAt)';
+}
+
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
 	final DateTime acquiredAt;
@@ -1049,6 +1060,19 @@ class HCaptchaSolution extends CaptchaSolution {
 	String toString() => 'HCaptchaSolution(token: $token)';
 }
 
+class SimpleTextCaptchaSolution extends CaptchaSolution {
+	final String answer;
+	final Duration? lifetime;
+	@override
+	DateTime? get expiresAt => lifetime == null ? null : acquiredAt.add(lifetime!);
+	SimpleTextCaptchaSolution({
+		required this.answer,
+		required super.acquiredAt,
+		this.lifetime
+	});
+	@override
+	String toString() => 'SimpleTextCaptchaSolution(answer: $answer, lifetime: $lifetime)';
+}
 
 class ImageboardArchiveSearchResult {
 	final Post? post;
@@ -2194,6 +2218,7 @@ ImageboardSite makeSite(dynamic data) {
 			archives: archives,
 			boardsWithCaptcha: (data['boardsWithCaptcha'] as List?)?.cast<String>(),
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
+			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			captchaQuestion: data['captchaQuestion']
 		);
 	}
@@ -2203,6 +2228,7 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			overrideUserAgent: overrideUserAgent,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
+			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives
 		);
 	}
@@ -2259,6 +2285,7 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			overrideUserAgent: overrideUserAgent,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
+			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives
 		);
 	}
@@ -2340,6 +2367,7 @@ ImageboardSite makeSite(dynamic data) {
 			archives: archives,
 			boards: boards,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
+			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()
@@ -2361,6 +2389,7 @@ ImageboardSite makeSite(dynamic data) {
 			archives: archives,
 			boards: boards,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
+			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()

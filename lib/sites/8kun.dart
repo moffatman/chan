@@ -24,6 +24,7 @@ class Site8Kun extends SiteLainchan2 {
 		required super.imageThumbnailExtension,
 		required super.overrideUserAgent,
 		required super.boardsWithHtmlOnlyFlags,
+		required super.boardsWithMemeFlags,
 		required super.archives,
 		super.faviconPath,
 		super.boardsPath,
@@ -131,8 +132,9 @@ class Site8Kun extends SiteLainchan2 {
 		(other.boardsPath == boardsPath) &&
 		(other.faviconPath == faviconPath) &&
 		listEquals(other.boards, boards) &&
-		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags);
+		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&
+		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, sysUrl, imageUrl, name, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername, Object.hashAll(formBypass.keys), imageThumbnailExtension, boardsPath, faviconPath, Object.hashAll(boards ?? []), Object.hashAll(boardsWithHtmlOnlyFlags));
+	int get hashCode => Object.hash(baseUrl, basePath, sysUrl, imageUrl);
 }

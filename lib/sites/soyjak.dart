@@ -16,6 +16,7 @@ class SiteSoyjak extends SiteLainchan2 {
 		this.boardsWithCaptcha,
 		required super.overrideUserAgent,
 		required super.boardsWithHtmlOnlyFlags,
+		required super.boardsWithMemeFlags,
 		required super.archives
 	}) : super(
 		basePath: '',
@@ -95,8 +96,9 @@ class SiteSoyjak extends SiteLainchan2 {
 		(other.defaultUsername == defaultUsername) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
-		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags);
+		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&
+		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, captchaQuestion, Object.hashAll(boardsWithCaptcha ?? []), faviconPath, defaultUsername, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boardsWithHtmlOnlyFlags));
+	int get hashCode => baseUrl.hashCode;
 }
