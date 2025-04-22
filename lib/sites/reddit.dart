@@ -1,5 +1,6 @@
 // ignore_for_file: argument_type_not_assignable
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
@@ -933,7 +934,21 @@ class SiteReddit extends ImageboardSite {
 			text = data['selftext'] as String? ?? '';
 		}
 		else {
-			text = '[${url.split('#').first.split('?').first.replaceFirst(RegExp(r'^https://'), '')}](${data['url']})';
+			String title = url;
+			if (title.startsWith('https://')) {
+				title = title.substring(8);
+			}
+			// The max(30) is to be more lenient on short URLs
+			// Likely the query param holds the link entropy there
+			final anchorPosition = title.indexOf('#');
+			if (anchorPosition != -1 && max(30, anchorPosition) < title.length * 0.65) {
+				title = title.substring(0, anchorPosition);
+			}
+			final queryPosition = title.indexOf('?');
+			if (queryPosition != -1 && max(30, queryPosition) < title.length * 0.65) {
+				title = title.substring(0, queryPosition);
+			}
+			text = '[$title]($url)';
 			if ((data['selftext'] as String? ?? '').isNotEmpty) {
 				text += '\n\n${data['selftext']}';
 			}
