@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' as io;
 
 import 'package:chan/services/dark_mode_browser.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -183,6 +185,25 @@ extension _FillInBlanks on Uri {
 	);
 }
 
+class CloudflareUserException extends ExtendedException {
+	final Uri originalUrl;
+	CloudflareUserException({
+		required this.originalUrl,
+		required Uri? currentUrl,
+		required List<io.Cookie> cookies,
+		required String? html,
+		required String? title
+	}) : super(
+		additionalFiles: {
+			'log.txt': utf8.encode('Original URL: $originalUrl\nCurrent URL: $currentUrl\nCookies: $cookies\nTitle: $title\nHTML follows:\n$html')
+		}
+	);
+	@override
+	bool get isReportable => true;
+	@override
+	String toString() => 'CloudflareUserException(originalUrl: $originalUrl)';
+}
+
 /// Block any processing while Cloudflare is clearing, so that the new cookies
 /// can be injected by a later interceptor
 class CloudflareBlockingInterceptor extends Interceptor {
@@ -306,7 +327,9 @@ class CloudflareInterceptor extends Interceptor {
 			transparentBackground: true
 		);
 		bool firstLoad = true;
+		InAppWebViewController? lastController;
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<T> callback, ValueChanged<Exception> errorCallback) => (controller, uri) async {
+			lastController = controller;
 			await maybeApplyDarkModeBrowserJS(controller);
 			final title = await controller.getTitle() ?? '';
 			if (!ImageboardRegistry.instance.isRedirectGateway(uri, title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
@@ -370,10 +393,25 @@ class CloudflareInterceptor extends Interceptor {
 			// Close the popup if still open
 			navigator.popUntil((r) => r.settings != settings);
 		});
+		final stackTrace = StackTrace.current;
 		final ret = await navigator.push<T>(adaptivePageRoute(
 			builder: (context) => AdaptiveScaffold(
 				bar: AdaptiveBar(
-					title: Text('$gatewayName Login')
+					title: Text('$gatewayName Login'),
+					actions: [
+						AdaptiveIconButton(
+							icon: const Icon(CupertinoIcons.exclamationmark_triangle),
+							onPressed: () async {
+								reportBug(CloudflareUserException(
+									originalUrl: cookieUrl,
+									currentUrl: (await lastController?.getUrl())?.uriValue,
+									cookies: cookies,
+									html: await lastController?.getHtml(),
+									title: await lastController?.getTitle()
+								), stackTrace);
+							}
+						)
+					]
 				),
 				disableAutoBarHiding: true,
 				body: SafeArea(
