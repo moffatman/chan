@@ -210,6 +210,9 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 	}
 
 	@override
+	ImageboardBoardPopularityType? get boardPopularityType => ImageboardBoardPopularityType.postsCount;
+
+	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
 		final list = <ImageboardBoard>[];
 		int page = 1;
@@ -234,7 +237,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 				isWorksafe: board['settings']['sfw'],
 				webmAudioAllowed: true,
 				maxImageSizeBytes: 16000000,
-				maxWebmSizeBytes: 16000000
+				maxWebmSizeBytes: 16000000,
+				popularity: board['sequence_value']
 			)));
 			// The server has some bad caching, you will keep getting the same page if you don't wait
 			if (cancelToken != null) {
