@@ -84,6 +84,10 @@ class SiteSoyjak extends SiteLainchan2 {
 		return null;
 	}
 
+	/// soyjak reuses same image ID for reposts. So need to make it unique within thread
+	@override
+	String getAttachmentId(int postId, String imageId) => '${postId}_$imageId';
+
 	@override
 	bool operator ==(Object other) =>
 		identical(this, other) ||
