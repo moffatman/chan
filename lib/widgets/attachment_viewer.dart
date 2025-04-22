@@ -1588,7 +1588,7 @@ class AttachmentViewer extends StatelessWidget {
 									onScaleChanged?.call(details!.totalScale!);
 								}
 							},
-							maxScale: 5 * attachment.aspectRatio
+							maxScale: 5 * max(attachment.aspectRatio, 1/attachment.aspectRatio)
 						);
 					},
 					heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null
