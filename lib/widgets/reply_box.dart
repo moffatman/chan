@@ -41,6 +41,7 @@ import 'package:chan/widgets/widget_decoration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -2062,6 +2063,12 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 										child: flag != null ? CNetworkImage(
 											url: flag!.imageUrl,
 											client: imageboard.site.client,
+											loadStateChanged: (state) {
+												if (state.extendedImageLoadState == LoadState.failed) {
+													return const Icon(CupertinoIcons.flag);
+												}
+												return null;
+											},
 											cache: true,
 										) : const Icon(CupertinoIcons.flag)
 									)
