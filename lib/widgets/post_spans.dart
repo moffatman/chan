@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/board.dart';
 import 'package:chan/models/intern.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
@@ -761,7 +762,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			}
 		}
 
-		if (actualThreadId != null && (board != zone.board || zone.findThread(actualThreadId) == null || (actualThreadId != zone.primaryThreadId && actualThreadId == postId))) {
+		if (actualThreadId != null && (ImageboardBoard.getKey(board) != ImageboardBoard.getKey(zone.board) || zone.findThread(actualThreadId) == null || (actualThreadId != zone.primaryThreadId && actualThreadId == postId))) {
 			return _buildCrossThreadLink(context, zone, settings, theme, options, actualThreadId);
 		}
 		else {
