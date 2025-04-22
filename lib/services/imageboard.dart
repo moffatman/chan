@@ -644,7 +644,7 @@ class ImageboardRegistry extends ChangeNotifier {
 	}
 
 	Future<(Imageboard, BoardThreadOrPostIdentifier, String?)?> decodeUrl(String url) async {
-		for (final imageboard in ImageboardRegistry.instance.imageboards) {
+		for (final imageboard in ImageboardRegistry.instance.imageboardsIncludingDev) {
 			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url);
 			String? usedArchive;
 			for (final archive in imageboard.site.archives) {
