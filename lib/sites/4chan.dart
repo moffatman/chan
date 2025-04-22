@@ -1361,6 +1361,12 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 
 	@override
 	bool get hasLinkCookieAuth => true;
+
+	@override
+	void migrateFromPrevious(Site4Chan oldSite) {
+		super.migrateFromPrevious(oldSite);
+		_boardFlags.addAll(oldSite._boardFlags);
+	}
 }
 
 class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
