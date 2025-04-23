@@ -207,16 +207,17 @@ class WebGatewayException extends ExtendedException {
 	const WebGatewayException(this.site, this.url);
 	@override
 	bool get isReportable => false;
+	Future<void> openWebGateway(BuildContext context) async {
+		await site.client.getUri(url, options: Options(
+			extra: {
+				kCloudflare: true,
+				kPriority: RequestPriority.interactive
+			}
+		));
+	}
 	@override
 	get remedies => {
-		'Login': (context) async {
-			await site.client.getUri(url, options: Options(
-				extra: {
-					kCloudflare: true,
-					kPriority: RequestPriority.interactive
-				}
-			));
-		}
+		'Login': openWebGateway
 	};
 	@override
 	String toString() => 'Web login required: $url';

@@ -421,24 +421,32 @@ class Imageboard extends ChangeNotifier {
 		try {
 			return await site.submitPost(post, captchaSolution, cancelToken);
 		}
-		on AdditionalCaptchaRequiredException catch (e) {
-			showToast(
-				context: ImageboardRegistry.instance.context!,
-				message: 'Additional captcha required',
-				icon: CupertinoIcons.exclamationmark_square
-			);
-			final solution = await solveCaptcha(
-				context: ImageboardRegistry.instance.context!,
-				site: site,
-				request: e.captchaRequest,
-				cancelToken: cancelToken
-			);
-			if (solution != null) {
-				await e.onSolved(solution, cancelToken);
-				// Should be allowed now
+		catch (e) {
+			if (e is AdditionalCaptchaRequiredException) {
+				showToast(
+					context: ImageboardRegistry.instance.context!,
+					message: 'Additional captcha required',
+					icon: CupertinoIcons.exclamationmark_square
+				);
+				final solution2 = await solveCaptcha(
+					context: ImageboardRegistry.instance.context!,
+					site: site,
+					request: e.captchaRequest,
+					cancelToken: cancelToken
+				);
+				if (solution2 == null) {
+					// Just show that another captcha was needed and not provided
+					rethrow;
+				}
+				await e.onSolved(solution2, cancelToken);
 				return await site.submitPost(post, captchaSolution, cancelToken);
 			}
-			// Just show that another captcha was needed and not provided
+			if (e is WebGatewayException) {
+				// Should pop up cloudflare browser. If user closes it early, it should properly throw
+				await e.openWebGateway(ImageboardRegistry.instance.context!);
+				// Now retry it
+				return await site.submitPost(post, captchaSolution, cancelToken);
+			}
 			rethrow;
 		}
 	}
