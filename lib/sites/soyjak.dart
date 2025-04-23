@@ -89,6 +89,11 @@ class SiteSoyjak extends SiteLainchan2 {
 	String getAttachmentId(int postId, String imageId) => '${postId}_$imageId';
 
 	@override
+	bool get supportsPinkQuotes => true;
+	@override
+	bool get supportsBlueQuotes => true;
+
+	@override
 	bool operator ==(Object other) =>
 		identical(this, other) ||
 		(other is SiteSoyjak) &&

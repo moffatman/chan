@@ -1,4 +1,5 @@
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 final _greentextRegex = RegExp(r'^>.*$', multiLine: true);
+final _pinktextRegex = RegExp(r'^<.*$', multiLine: true);
+final _bluetextRegex = RegExp(r'^\^.*$', multiLine: true);
 final _quotelinkRegex = RegExp(r'>>(?:(>\/[a-zA-Z0-9]*\/[a-zA-Z0-9\-_]*)|(\d+))');
 
 extension _TextRangeOverlap on TextRange {
@@ -19,6 +22,7 @@ extension _TextRangeOverlap on TextRange {
 
 TextSpan buildHighlightedCommentTextSpan({
 	required String text,
+	required ImageboardSite site,
 	PostSpanZoneData? zone,
 	TextStyle? style,
 	TextRange? composing,
@@ -72,6 +76,30 @@ TextSpan buildHighlightedCommentTextSpan({
 				continue;
 			}
 			ranges.add((TextRange(start: match.start, end: match.end), greentextStyle));
+		}
+	}
+	if (site.supportsPinkQuotes) {
+		final color = PostPinkQuoteSpan.getColor(theme);
+		if (color.isReadableOn(theme.textFieldColor)) {
+			final style = TextStyle(color: color, decorationColor: color);
+			for (final match in _pinktextRegex.allMatches(text)) {
+				if (ranges.any((r) => r.$1.start == match.start)) {
+					continue;
+				}
+				ranges.add((TextRange(start: match.start, end: match.end), style));
+			}
+		}
+	}
+	if (site.supportsBlueQuotes) {
+		final color = PostBlueQuoteSpan.getColor(theme);
+		if (color.isReadableOn(theme.textFieldColor)) {
+			final style = TextStyle(color: color, decorationColor: color);
+			for (final match in _bluetextRegex.allMatches(text)) {
+				if (ranges.any((r) => r.$1.start == match.start)) {
+					continue;
+				}
+				ranges.add((TextRange(start: match.start, end: match.end), style));
+			}
 		}
 	}
 

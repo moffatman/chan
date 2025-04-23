@@ -2701,6 +2701,7 @@ class ReplyBoxTextEditingController extends TextEditingController {
 
 			return buildHighlightedCommentTextSpan(
 				text: text,
+				site: context.read<ImageboardSite>(),
 				style: style,
 				zone: context.read<PostSpanZoneData?>(),
 				composing: composingRegionOutOfRange ? null : value.composing

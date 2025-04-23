@@ -84,7 +84,8 @@ class DraftPostWidget extends StatelessWidget {
 										TextSpan(
 											children: [
 											buildHighlightedCommentTextSpan(
-												text: post.text
+												text: post.text,
+												site: imageboard.site
 											),
 											if (origin != DraftPostWidgetOrigin.none) TextSpan(
 												children: [

@@ -543,10 +543,12 @@ class PostQuoteSpan extends PostSpan {
 class PostPinkQuoteSpan extends PostQuoteSpan {
 	const PostPinkQuoteSpan(super.child);
 
+	static Color getColor(SavedTheme theme) => theme.quoteColor.shiftHue(-90);
+
 	@override
 	InlineSpan build(context, zone, settings, theme, options) {
 		return child.build(context, zone, settings, theme, options.copyWith(
-			baseTextStyle: options.baseTextStyle.copyWith(color: theme.quoteColor.shiftHue(-90))
+			baseTextStyle: options.baseTextStyle.copyWith(color: getColor(theme))
 		));
 	}
 
@@ -557,10 +559,12 @@ class PostPinkQuoteSpan extends PostQuoteSpan {
 class PostBlueQuoteSpan extends PostQuoteSpan {
 	const PostBlueQuoteSpan(super.child);
 
+	static Color getColor(SavedTheme theme) => theme.quoteColor.shiftHue(135);
+
 	@override
 	InlineSpan build(context, zone, settings, theme, options) {
 		return child.build(context, zone, settings, theme, options.copyWith(
-			baseTextStyle: options.baseTextStyle.copyWith(color: theme.quoteColor.shiftHue(135))
+			baseTextStyle: options.baseTextStyle.copyWith(color: getColor(theme))
 		));
 	}
 

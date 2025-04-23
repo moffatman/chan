@@ -2117,6 +2117,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
 	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? title) => null;
+	bool get supportsPinkQuotes => false;
+	bool get supportsBlueQuotes => false;
 }
 
 abstract class ImageboardSiteLoginSystem {
