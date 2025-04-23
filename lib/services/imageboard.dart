@@ -408,7 +408,7 @@ class Imageboard extends ChangeNotifier {
 						)
 					});
 				}
-				else {
+				else if (e is! AdditionalCaptchaRequiredException) {
 					alertError(ImageboardRegistry.instance.context!, e, state.stackTrace);
 				}
 			}
