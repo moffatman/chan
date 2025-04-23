@@ -401,7 +401,10 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									Flexible(
 										child: AutoSizeText(
 											footer,
-											maxLines: 2
+											maxLines: 2,
+											style: TextStyle(
+												color: theme.primaryColor
+											)
 										)
 									)
 								]
