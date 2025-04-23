@@ -258,8 +258,9 @@ dependency_overrides:
       path: hive_generator
   html:
     git:
-      url: https://github.com/moffatman/html.git
+      url: https://github.com/moffatman/dart-tools.git
       ref: main
+      path: pkgs/html
   charset_converter:
     git:
       url: https://github.com/moffatman/charset_converter.git

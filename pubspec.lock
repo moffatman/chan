@@ -789,12 +789,12 @@ packages:
   html:
     dependency: "direct main"
     description:
-      path: "."
+      path: "pkgs/html"
       ref: main
-      resolved-ref: cde1e9b57517c151d3c0ee96b670d4d210756757
-      url: "https://github.com/moffatman/html.git"
+      resolved-ref: c6f268352a0d52f7d39aa1d541d82753dd764656
+      url: "https://github.com/moffatman/dart-tools.git"
     source: git
-    version: "0.15.5-wip"
+    version: "0.15.6"
   html_unescape:
     dependency: "direct main"
     description:
