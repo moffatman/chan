@@ -304,7 +304,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		return null;
 	}
 
-	Future<ImageboardPoll?> _getPoll(ThreadIdentifier thread, {required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<ImageboardPoll?> _getPoll1(ThreadIdentifier thread, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
 			final response = await client.postUri(Uri.https(sysUrl, '$basePath/poll.php'), data: {
 				'query_poll': '1',
@@ -347,14 +347,42 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		}
 	}
 
-	static final _pollFormPattern = RegExp('<div [^>]+class=\'pollform\'>.*<\\/div>(?:<br\\/>)?');
+	Future<ImageboardPoll?> _getPoll2(int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		try {
+			final response = await client.postUri(Uri.https(sysUrl, '$basePath/poll.php', {
+				'id': id.toString(),
+				'results': ''
+			}), options: Options(
+				responseType: ResponseType.plain,
+				extra: {
+					kPriority: priority
+				}
+			), cancelToken: cancelToken);
+			final document = parse(response.data);
+			return ImageboardPoll(
+				title: null,
+				rows: document.querySelectorAll('ol li').map((e) => ImageboardPollRow(
+					name: e.querySelector('span')!.text,
+					votes: int.parse(e.querySelector('label')!.text.substring(1).split(' ').first)
+				)).toList()
+			);
+		}
+		catch (e, st) {
+			// Not fatal
+			Future.error(e, st);
+			return null;
+		}
+	}
+
+	static final _pollFormPattern1 = RegExp(r'<div [^>]+class="pollform">.*<\\/div>(?:<br\\/>)?');
+	static final _pollFormPattern2 = RegExp('<iframe [^>]+class="poll" src="/poll.php\\?id=(\\d+).*</iframe>(?:<br\\/>)?');
 
 	Post _makePost(String board, int threadId, dynamic data) {
 		final id = data['no'] as int;
 		final String text;
 		if (id == threadId) {
 			// Only OP can have inline poll metadata
-			text = (data['com'] as String? ?? '').replaceFirst(_pollFormPattern, '');
+			text = (data['com'] as String? ?? '').replaceFirst(_pollFormPattern1, '').replaceFirst(_pollFormPattern2, '');
 		}
 		else {
 			text = data['com'] as String? ?? '';
@@ -393,7 +421,17 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 			throw const ThreadNotFoundException();
 		}
 		final firstPost = response.data['posts'][0];
-		final hasPoll = _pollFormPattern.hasMatch(firstPost['com'] as String? ?? '');
+		final firstPostText = firstPost['com'] as String? ?? '';
+		final ImageboardPoll? poll;
+		if (_pollFormPattern2.firstMatch(firstPostText)?.group(1)?.tryParseInt case int id) {
+			poll = await _getPoll2(id, priority: priority, cancelToken: cancelToken);
+		}
+		else if (_pollFormPattern1.hasMatch(firstPostText)) {
+			poll = await _getPoll1(thread, priority: priority, cancelToken: cancelToken);
+		}
+		else {
+			poll = null;
+		}
 		final List<Post> posts = (response.data['posts'] as List? ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
 		return Thread(
 			board: thread.board,
@@ -406,7 +444,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 			replyCount: posts.length - 1,
 			imageCount: posts.skip(1).expand((p) => p.attachments).length,
 			posts_: posts,
-			poll: hasPoll ? await _getPoll(thread, priority: priority, cancelToken: cancelToken) : null
+			poll: poll
 		);
 	}
 
