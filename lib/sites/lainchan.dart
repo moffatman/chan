@@ -292,7 +292,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		return ret;
 	}
 
-	ImageboardFlag? _makeFlag(dynamic data) {
+	@protected
+	ImageboardFlag? makeFlag(dynamic data) {
 		if (data['country'] != null && data['country_name'] != null) {
 			return ImageboardFlag(
 				name: data['country_name'],
@@ -398,7 +399,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 			attachmentDeleted: data['filedeleted'] == 1 || data['ext'] == 'deleted',
 			spanFormat: PostSpanFormat.lainchan,
 			posterId: data['id'],
-			flag: _makeFlag(data),
+			flag: makeFlag(data),
 			capcode: data['capcode'],
 			email: data['email']
 		);

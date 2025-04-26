@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan2.dart';
 import 'package:dio/dio.dart';
@@ -106,6 +107,20 @@ class Site8Kun extends SiteLainchan2 {
 	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields, CancelToken? cancelToken) async {
 		fields['domain_name_post'] = baseUrl;
 		fields['tor'] = 'null';
+	}
+
+	@override
+	@protected
+	ImageboardFlag? makeFlag(dynamic data) {
+		if ((data['country'], data['country_name']) case (String code, String name)) {
+			return ImageboardFlag(
+				name: name,
+				imageUrl: Uri.https(imageUrl, '$basePath/static/flags/${code.toLowerCase()}.png').toString(),
+				imageWidth: 16,
+				imageHeight: 11
+			);
+		}
+		return null;
 	}
 
 	@override
