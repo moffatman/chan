@@ -21,6 +21,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/css_colors.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:dio/dio.dart';
@@ -769,24 +770,31 @@ extension Contrast on Color {
 		contrastWith(other) > 3;
 }
 
-Color colorToHex(String hexString) {
-	hexString = hexString.replaceFirst('#', '');
-	final buffer = StringBuffer();
-	if (hexString.length == 3) {
-		// Three-digit hex color means double all the letters
-		buffer.write('ff'); // Opacity
-		buffer.write(hexString[0]);
-		buffer.write(hexString[0]);
-		buffer.write(hexString[1]);
-		buffer.write(hexString[1]);
-		buffer.write(hexString[2]);
-		buffer.write(hexString[2]);
+Color? colorToHex(String hexString) {
+	int? color = kCssColors[hexString];
+	if (color == null) {
+		hexString = hexString.replaceFirst('#', '');
+		final buffer = StringBuffer();
+		if (hexString.length == 3) {
+			// Three-digit hex color means double all the letters
+			buffer.write('ff'); // Opacity
+			buffer.write(hexString[0]);
+			buffer.write(hexString[0]);
+			buffer.write(hexString[1]);
+			buffer.write(hexString[1]);
+			buffer.write(hexString[2]);
+			buffer.write(hexString[2]);
+		}
+		else {
+			if (hexString.length <= 6) buffer.write('ff');
+			buffer.write(hexString);
+		}
+		color = int.tryParse(buffer.toString(), radix: 16);
 	}
-	else {
-		if (hexString.length <= 6) buffer.write('ff');
-		buffer.write(hexString);
+	if (color != null) {
+		return Color(color);
 	}
-	return Color(int.parse(buffer.toString(), radix: 16));
+	return null;
 }
 
 class FirstBuildDetector extends StatefulWidget {

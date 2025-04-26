@@ -1569,7 +1569,7 @@ class PostInlineImageSpan extends PostSpan {
 
 class PostColorSpan extends PostSpan {
 	final PostSpan child;
-	final Color color;
+	final Color? color;
 	
 	const PostColorSpan(this.child, this.color);
 	@override
