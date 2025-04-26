@@ -79,7 +79,12 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		);
 		int spoilerSpanId = 0;
 		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
+			bool addLinebreakBefore = false;
 			for (final node in nodes) {
+				if (addLinebreakBefore) {
+					yield const PostLineBreakSpan();
+					addLinebreakBefore = false;
+				}
 				if (node is dom.Element) {
 					if (node.localName == 'br') {
 						yield const PostLineBreakSpan();
@@ -184,6 +189,26 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 						}
 						else {
 							yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+						}
+					}
+					else if (node.localName == 'ol' || node.localName == 'ul') {
+						int i = 1;
+						for (final li in node.nodes) {
+							if (li is dom.Element && li.localName == 'li') {
+								if (addLinebreakBefore) {
+									yield const PostLineBreakSpan();
+									addLinebreakBefore = false;
+								}
+								if (node.localName == 'ol') {
+									yield PostTextSpan('$i. ');
+								}
+								else {
+									yield const PostTextSpan('• ');
+								}
+								yield PostTextSpan(li.text);
+								addLinebreakBefore = true;
+								i++;
+							}
 						}
 					}
 					else {
