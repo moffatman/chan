@@ -205,14 +205,14 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 	Uri getThumbnailUrl(String board, String filename) => Uri.https(baseUrl, '$basePath/$board/thumb/$filename');
 
 	@protected
-	String getAttachmentId(int postId, String imageId) => imageId;
+	String getAttachmentId(int postId, String imageId, String source) => imageId;
 
 	@protected
 	String? get imageThumbnailExtension => '.png';
 
 	List<Attachment> _makeAttachments(String board, int threadId, dynamic postData) {
 		final ret = <Attachment>[];
-		Attachment? makeAttachment(dynamic data) {
+		Attachment? makeAttachment(dynamic data, String source) {
 			final id = data['tim'];
 			final ext = data['ext'] as String;
 			AttachmentType type = AttachmentType.image;
@@ -232,7 +232,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 				type = AttachmentType.pdf;
 			}
 			return Attachment(
-				id: getAttachmentId(postData['no'], id),
+				id: getAttachmentId(postData['no'], id, source),
 				type: type,
 				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
@@ -255,10 +255,10 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 			);
 		}
 		if ((postData['tim'] as String?)?.isNotEmpty ?? false) {
-			ret.maybeAdd(makeAttachment(postData));
+			ret.maybeAdd(makeAttachment(postData, 'postData'));
 			if (postData['extra_files'] != null) {
-				for (final extraFile in (postData['extra_files'] as List<dynamic>).cast<Map<String, dynamic>>()) {
-					ret.maybeAdd(makeAttachment(extraFile));
+				for (final (i, extraFile) in (postData['extra_files'] as List<dynamic>).cast<Map<String, dynamic>>().indexed) {
+					ret.maybeAdd(makeAttachment(extraFile, 'extraFile$i'));
 				}
 			}
 		}
@@ -287,7 +287,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 			}
 		}
 		if (postData['files'] case List files) {
-			ret.addAll(files.tryMap(makeAttachment));
+			ret.addAll(files.indexed.tryMap((f) => makeAttachment(f.$2, 'file${f.$1}')));
 		}
 		return ret;
 	}

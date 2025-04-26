@@ -41,7 +41,7 @@ class Site8Kun extends SiteLainchan2 {
 
 	/// 8kun reuses same image ID for reports. So need to make it unique within thread
 	@override
-	String getAttachmentId(int postId, String imageId) => '${postId}_$imageId';
+	String getAttachmentId(int postId, String imageId, String source) => '${postId}_${imageId}_$source';
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
