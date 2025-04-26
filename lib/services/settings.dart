@@ -15,6 +15,7 @@ import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/request_fixup.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/strict_json.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -3038,12 +3039,7 @@ class Settings extends ChangeNotifier {
 		if (!kInUnitTest) {
 			client.interceptors.add(LoggingInterceptor.instance);
 		}
-		client.interceptors.add(InterceptorsWrapper(
-			onRequest: (options, handler) {
-				options.headers[HttpHeaders.acceptEncodingHeader] ??= 'gzip';
-				handler.next(options);
-			}
-		));
+		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(SeparatedCookieManager());
 		client.interceptors.add(CloudflareInterceptor());
 		client.interceptors.add(StrictJsonInterceptor());
