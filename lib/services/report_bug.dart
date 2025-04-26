@@ -18,7 +18,8 @@ Future<void> reportBug(Object error, StackTrace stackTrace) async {
 		if (e.additionalFiles.isNotEmpty) {
 			final dir = await Persistence.temporaryDirectory.dir('bug_${DateTime.now().millisecondsSinceEpoch}').create(recursive: true);
 			for (final file in e.additionalFiles.entries) {
-				await dir.file(file.key).writeAsBytes(file.value);
+				final f = await dir.file(file.key).writeAsBytes(file.value);
+				attachmentPaths.add(f.path);
 			}
 		}
 	}
