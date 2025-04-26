@@ -929,6 +929,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 
 	Future<void> _setupChallenge() async {
 		_lastCloudGuess = null; // Forget about previous challenge guess
+		tryAgainAt = challenge?.tryAgainAt;
 		if (challenge!.backgroundImage != null) {
 			final bestSlide = await _alignImage(challenge!);
 			if (!mounted) return;
