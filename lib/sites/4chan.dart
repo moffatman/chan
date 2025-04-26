@@ -1015,7 +1015,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 				}
 			)).where((choice) => choice.name.isNotEmpty));
 			_cachedReportForms[post] = choices;
-			Future.delayed(reportCooldown * 2, () {
+			Future.delayed(reportCooldown * 10, () {
 				// Lazy cache cleaning
 				if (identical(_cachedReportForms[post], choices)) {
 					_cachedReportForms.remove(post);
