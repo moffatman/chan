@@ -121,7 +121,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					!mounted ||
 					(_filterBoard != null &&
 					(_filterBoard!.imageboard != threadState.imageboard ||
-						_filterBoard!.item.name != threadState.board)) ||
+						(_filterBoard!.item.name.isNotEmpty && _filterBoard!.item.name != threadState.board))) ||
 						switch (_filterSavedThreadsOnly) {
 							_FilterSavedThreadsOnly.everything => false,
 							_FilterSavedThreadsOnly.savedThreads => threadState.savedTime == null,
@@ -286,7 +286,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											onPressed: () async {
 												final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 													builder: (ctx) => BoardSwitcherPage(
-														initialImageboardKey: _filterBoard?.imageboard.key
+														initialImageboardKey: _filterBoard?.imageboard.key,
+														allowPickingWholeSites: true
 													)
 												));
 												if (newBoard != null) {
@@ -300,23 +301,34 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 												children: _filterBoard == null ? const [
 													Text('Board: any')
 												] : [
-													const Text('Board: '),
+													if (_filterBoard?.item.name == '')
+														const Text('Site: ')
+													else
+														const Text('Board: '),
 													ImageboardIcon(
 														imageboardKey: _filterBoard!.imageboard.key,
 														boardName: _filterBoard!.item.name
 													),
 													const SizedBox(width: 8),
-													Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
+													if (_filterBoard?.item.name == '')
+														Text(_filterBoard!.imageboard.site.name)
+													else
+														Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
 												]
 											)
 										),
-										if (_filterBoard != null) AdaptiveIconButton(
-											onPressed: () {
-												_filterBoard = null;
-												anyChange = true;
-												setDialogState(() {});
-											},
-											icon: const Icon(CupertinoIcons.xmark)
+										if (_filterBoard != null) Padding(
+											padding: const EdgeInsets.only(left: 8),
+											child: AdaptiveIconButton(
+												onPressed: () {
+													_filterBoard = null;
+													anyChange = true;
+													setDialogState(() {});
+												},
+												icon: const Icon(CupertinoIcons.xmark),
+												minSize: 0,
+												padding: EdgeInsets.zero
+											)
 										)
 									]
 								),
@@ -567,7 +579,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											boardName: _filterBoard!.item.name
 										),
 										const SizedBox(width: 8),
-										Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
+										if (_filterBoard!.item.name == '')
+											Text(_filterBoard!.imageboard.site.name)
+										else
+											Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item.name))
 									]
 								),
 								if (_filterSavedThreadsOnly == _FilterSavedThreadsOnly.savedThreads)

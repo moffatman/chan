@@ -280,10 +280,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			if (!settings.showBoard(board.item)) {
 				return null;
 			}
+			final target = board.item.name.isEmpty ? board.imageboard.site.name : board.item.boardKey.s;
 			bool exactMatch = false;
 			int bestMatchIndex = -1;
 			for (final keyword in keywords) {
-				final matchIndex = board.item.boardKey.s.indexOf(keyword);
+				final matchIndex = target.indexOf(keyword);
 				if (
 					!(
 						// Name match
@@ -296,7 +297,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				) {
 					return null;
 				}
-				if (matchIndex == 0 && board.item.boardKey.s.length == keyword.length) {
+				if (matchIndex == 0 && target.length == keyword.length) {
 					bestMatchIndex = 0;
 					exactMatch = true;
 				}
