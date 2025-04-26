@@ -345,7 +345,7 @@ class SiteKarachan extends ImageboardSite {
 				dom.Element e => (posts.length - 1) + int.parse(e.text.trim().split(' ').first) // Text like "250 omitted replies"
 			},
 			imageCount: 0,
-			title: element.querySelector('.postInfo .subject')?.text,
+			title: element.querySelector('.postInfo .subject')?.text.nonEmptyOrNull,
 			time: posts.first.time,
 			attachments: posts.first.attachments_,
 			currentPage: page,
