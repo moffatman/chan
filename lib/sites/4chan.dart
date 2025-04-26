@@ -8,6 +8,7 @@ import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/services/auth_page_helper.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
@@ -833,7 +834,10 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 				if (cooldown != null) {
 					throw PostCooldownException(message, DateTime.now().add(Duration(seconds: cooldown)));
 				}
-				throw PostFailedException(message);
+				throw PostFailedException(message, remedies: {
+					if (message.contains('verify your e-mail address'))
+						'Verify e-mail': (context) => showAuthPageHelperPopup(context, imageboard!)
+				});
 			}
 			else {
 				print(response.data);

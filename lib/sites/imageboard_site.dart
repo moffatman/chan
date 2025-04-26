@@ -181,11 +181,16 @@ class CooldownException implements Exception {
 	String toString() => 'Try again at $tryAgainAt';
 }
 
-class PostFailedException implements Exception {
+class PostFailedException extends ExtendedException {
 	String reason;
-	PostFailedException(this.reason);
+	@override
+	final Map<String, FutureOr<void> Function(BuildContext)> remedies;
+	PostFailedException(this.reason, {this.remedies = const {}});
 	@override
 	String toString() => 'Posting failed: $reason';
+	
+	@override
+	bool get isReportable => true;
 }
 
 class PostCooldownException extends CooldownException {
