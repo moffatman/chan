@@ -118,7 +118,7 @@ class _PersistentThreadStateSnapshot {
 }
 
 extension _DisableUpdates on PersistentThreadState {
-	bool get disableUpdates => (thread?.isDeleted ?? false) || (thread?.isArchived ?? false);
+	bool get disableUpdates => (thread?.isDeleted ?? false) || (thread?.isArchived ?? false) || (thread?.isLocked ?? false);
 }
 
 enum _AttachmentCachingStatus {
@@ -1283,7 +1283,7 @@ class ThreadPageState extends State<ThreadPage> {
 								board: widget.thread.boardKey,
 								threadId: widget.thread.id,
 								onInitState: onInitState,
-								isArchived: persistentState.thread?.isArchived ?? false,
+								isArchived: persistentState.disableUpdates,
 								initialDraft: persistentState.draft,
 								onDraftChanged: (draft) async {
 									persistentState.draft = draft;	
@@ -1397,6 +1397,9 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		else if (persistentState.thread?.isArchived ?? false) {
 			title = '(Archived) $title';
+		}
+		else if (persistentState.thread?.isLocked ?? false) {
+			title = '(Locked) $title';
 		}
 		if (!site.supportsMultipleBoards) {
 			if (threadTitle != null) {
@@ -1660,7 +1663,7 @@ class ThreadPageState extends State<ThreadPage> {
 											mapper: (o) => o.submittableCount - o.queuedPostsFor(persistentState.imageboardKey, widget.thread.board, widget.thread.id).where((e) => e.state.isSubmittable).length
 										),
 										icon: Opacity(
-											opacity: (persistentState.thread?.isArchived ?? false) ? 0.5 : 1,
+											opacity: persistentState.disableUpdates ? 0.5 : 1,
 											child: AdaptiveIconButton(
 												onPressed: () {
 													if ((context.read<MasterDetailLocation?>()?.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
@@ -2099,7 +2102,7 @@ class ThreadPageState extends State<ThreadPage> {
 										key: _replyBoxKey,
 										board: widget.thread.boardKey,
 										threadId: widget.thread.id,
-										isArchived: persistentState.thread?.isArchived ?? false,
+										isArchived: persistentState.disableUpdates,
 										initialDraft: persistentState.draft,
 										onDraftChanged: (draft) {
 											persistentState.draft = draft;
@@ -3138,6 +3141,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.5)),
 											if (widget.persistentState.thread?.archiveName case String archiveName)
 												Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withOpacity(0.5))),
+											const SizedBox(width: 8)
+										],
+										if (!widget.blocked && (widget.persistentState.thread?.isLocked ?? false)) ...[
+											Icon(CupertinoIcons.lock, color: theme.primaryColor.withOpacity(0.5)),
 											const SizedBox(width: 8)
 										],
 										if (!widget.blocked && (widget.listController.state?.treeBuildingFailed ?? false)) ...[

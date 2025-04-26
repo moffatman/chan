@@ -269,7 +269,7 @@ class ThreadWatcher extends ChangeNotifier {
 					cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;
 				}
 				_updateCounts();
-				if (newThreadState.thread!.isArchived && !watch.zombie) {
+				if ((newThreadState.thread!.isArchived || newThreadState.thread!.isLocked) && !watch.zombie) {
 					await notifications.zombifyThreadWatch(watch, false);
 				}
 				if (!listEquals(watch.youIds, newThreadState.youIds)) {

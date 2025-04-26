@@ -185,6 +185,15 @@ class ThreadFields {
     fieldName: 'lastUpdatedTime',
     merger: PrimitiveMerger(),
   );
+  static bool getIsLocked(Thread x) => x.isLocked;
+  static void setIsLocked(Thread x, bool v) => x.isLocked = v;
+  static const isLocked = HiveFieldAdapter<Thread, bool>(
+    getter: getIsLocked,
+    setter: setIsLocked,
+    fieldNumber: 22,
+    fieldName: 'isLocked',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ThreadAdapter extends TypeAdapter<Thread> {
@@ -217,7 +226,8 @@ class ThreadAdapter extends TypeAdapter<Thread> {
     18: ThreadFields.archiveName,
     19: ThreadFields.poll,
     20: ThreadFields.isEndless,
-    21: ThreadFields.lastUpdatedTime
+    21: ThreadFields.lastUpdatedTime,
+    22: ThreadFields.isLocked
   };
 
   @override
@@ -262,6 +272,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       archiveName: fields[18] as String?,
       isEndless: fields[20] == null ? false : fields[20] as bool,
       lastUpdatedTime: fields[21] as DateTime?,
+      isLocked: fields[22] == null ? false : fields[22] as bool,
     );
   }
 
@@ -289,6 +300,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       if (obj.poll != null) 19: obj.poll,
       if (obj.isEndless) 20: obj.isEndless,
       if (obj.lastUpdatedTime != null) 21: obj.lastUpdatedTime,
+      if (obj.isLocked) 22: obj.isLocked,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

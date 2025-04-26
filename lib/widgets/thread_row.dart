@@ -113,6 +113,7 @@ TextSpan buildThreadCounters({
 			)
 		),
 		if (thread.isSticky) IconSpan(icon: CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+		if (thread.isLocked) IconSpan(icon: CupertinoIcons.lock, color: otherMetadataColor, size: 18),
 		if (latestThread.isArchived) IconSpan(icon: CupertinoIcons.archivebox, color: grey, size: 18),
 		if (latestThread.isDeleted) IconSpan(icon: CupertinoIcons.trash, color: grey, size: 18),
 		if (showPageNumber && latestThread.currentPage != null) TextSpan(

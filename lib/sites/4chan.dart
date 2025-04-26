@@ -535,6 +535,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			replyCount: data['posts'][0]['replies'],
 			imageCount: data['posts'][0]['images'],
 			isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
+			isLocked: data['posts'][0]['closed'] == 1,
 			posts_: (data['posts'] ?? []).map<Post>((postData) {
 				return _makePost(thread.board, thread.id, postData);
 			}).toList(),
@@ -664,6 +665,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: threadData['sticky'] == 1,
 			isArchived: isArchived,
+			isLocked: threadData['closed'] == 1,
 			time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
 			currentPage: currentPage
 		);
