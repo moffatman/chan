@@ -74,6 +74,15 @@ class Chan4CustomCaptchaGuesses {
 
 	Chan4CustomCaptchaGuess forNumLetters(int numLetters) {
 		List<MapEntry<int, _LetterScore>> answersBest = _answersBest.asMap().entries.toList();
+		for (int i = answersBest.length; i < numLetters; i++) {
+			answersBest.add(MapEntry(i, _LetterScore(
+				score: i.toDouble(),
+				letter: '0',
+				y: 0,
+				x: i,
+				letterImageWidth: 0
+			)));
+		}
 		answersBest.sort((a, b) => a.value.score.compareTo(b.value.score));
 		answersBest = answersBest.sublist(0, numLetters);
 		answersBest.sort((a, b) => a.value.x - b.value.x);
