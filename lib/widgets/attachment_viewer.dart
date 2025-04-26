@@ -46,7 +46,8 @@ import 'package:mutex/mutex.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart'; 
+import 'package:media_kit_video/media_kit_video.dart';
+import 'package:url_launcher/url_launcher.dart'; 
 import 'package:vector_math/vector_math_64.dart' show Vector3, Quaternion;
 
 final _domainLoadTimes = <(String, AttachmentType), List<Duration>>{};
@@ -257,10 +258,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		int? totalBytes,
 		Uri uri
 	})? _soundSourceDownload;
+	bool _forceBrowserForExternalUrl = false;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
-	bool get isFullResolution => _isFullResolution || overrideSource != null;
+	bool get isFullResolution => _isFullResolution || overrideSource != null || attachment.type.isNonMedia;
 	/// Error that occured while loading the full quality attachment
 	(Object, StackTrace)? get error => _error;
 	/// Whether the loading spinner should be displayed
@@ -584,7 +586,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			// Don't keep retrying
 			return;
 		}
-		if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.swf || attachment.type == AttachmentType.url) {
+		if (attachment.type.isNonMedia) {
 			return;
 		}
 		final isReloadOfFailed = error != null;
@@ -1199,6 +1201,11 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> seekBackward() => _seekRelative(-0.2);
 
+	void _doForceBrowserForExternalUrl() {
+		_forceBrowserForExternalUrl = true;
+		notifyListeners();
+	}
+
 	@override
 	void dispose() {
 		_isDisposed = true;
@@ -1334,7 +1341,7 @@ class AttachmentViewer extends StatelessWidget {
 	}
 
 	bool _rotate90DegreesClockwise(BuildContext context) {
-		if (!autoRotate || attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.swf) {
+		if (!autoRotate || attachment.type.isNonMedia) {
 			return false;
 		}
 		final displayIsLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
@@ -1985,46 +1992,113 @@ class AttachmentViewer extends StatelessWidget {
 	Widget _buildExternal(BuildContext context, Size? size) {
 		return ExtendedImageSlidePageHandler(
 			heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null,
-			child: SizedBox.fromSize(
-				size: size,
-				child: Stack(
-					children: [
-						AttachmentThumbnail(
-							attachment: attachment,
-							width: double.infinity,
-							height: double.infinity,
-							rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
-							gaplessPlayback: true,
-							revealSpoilers: true,
-							site: controller.site,
-							mayObscure: false
-						),
-						Center(
-							child: ErrorMessageCard(
-								'${attachment.type.noun.toUpperCase()}s not viewable in-app',
-								remedies: {
-									'Open externally': () => shareOne(
-										context: context,
-										text: controller.goodImagePublicSource.toString(),
-										type: 'text',
-										sharePositionOrigin: null
-									)
-								}
+			child: GestureDetector(
+				onTap: onTap,
+				child: SizedBox.fromSize(
+					size: size,
+					child: Stack(
+						children: [
+							AttachmentThumbnail(
+								attachment: attachment,
+								width: double.infinity,
+								height: double.infinity,
+								rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
+								gaplessPlayback: true,
+								revealSpoilers: true,
+								site: controller.site,
+								mayObscure: false
+							),
+							Center(
+								child: ErrorMessageCard(
+									'${attachment.type.noun.toUpperCase()}s not viewable in-app',
+									remedies: {
+										'Open externally': () => shareOne(
+											context: context,
+											text: controller.goodImagePublicSource.toString(),
+											type: 'text',
+											sharePositionOrigin: null
+										)
+									}
+								)
 							)
-						)
-					]
+						]
+					)
 				)
 			)
 		);
 	}
 
 	Widget _buildBrowser(BuildContext context, Size? size) {
+		final isExternalUrl = attachment.shouldOpenExternally && !controller._forceBrowserForExternalUrl;
 		return ExtendedImageSlidePageHandler(
 			heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null,
-			child: SizedBox.fromSize(
-				size: size,
-				child: CooperativeInAppBrowser(
-					initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(controller.attachment.url)))
+			child: GestureDetector(
+				onTap: onTap,
+				child: SizedBox.fromSize(
+					size: size,
+					child: isExternalUrl ? Stack(
+						alignment: Alignment.center,
+						children: [
+							AttachmentThumbnail(
+								attachment: attachment,
+								width: double.infinity,
+								height: double.infinity,
+								rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
+								gaplessPlayback: true,
+								revealSpoilers: true,
+								site: controller.site,
+								mayObscure: false
+							),
+							Container(
+								padding: const EdgeInsets.all(16),
+								decoration: BoxDecoration(
+									color: ChanceTheme.primaryColorOf(context),
+									borderRadius: const BorderRadius.all(Radius.circular(8))
+								),
+								child: IntrinsicWidth(
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										crossAxisAlignment: CrossAxisAlignment.stretch,
+										children: [
+											Icon(Icons.launch_rounded, color: ChanceTheme.backgroundColorOf(context)),
+											const SizedBox(height: 8),
+											Flexible(
+												child: Text(
+													'Link to ${Uri.parse(attachment.url).host}',
+													style: TextStyle(color: ChanceTheme.backgroundColorOf(context)),
+													textAlign: TextAlign.center,
+													overflow: TextOverflow.fade
+												)
+											),
+											const SizedBox(height: 8),
+											CupertinoButton(
+												color: ChanceTheme.backgroundColorOf(context),
+												onPressed: () async {
+													final url = Uri.parse(attachment.url);
+													if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
+														await launchUrl(url, mode: LaunchMode.externalApplication);
+													}
+												},
+												child: Text('Open', style: TextStyle(
+													color: ChanceTheme.primaryColorOf(context)
+												), textAlign: TextAlign.center)
+											),
+											const SizedBox(height: 8),
+											CupertinoButton(
+												color: ChanceTheme.backgroundColorOf(context),
+												onPressed: controller._doForceBrowserForExternalUrl,
+												child: Text('View in-app', style: TextStyle(
+													color: ChanceTheme.primaryColorOf(context)
+												), textAlign: TextAlign.center)
+											)
+										]
+									)
+								)
+							)
+						]
+					) : CooperativeInAppBrowser(
+						initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(controller.attachment.url)))
+					)
 				)
 			)
 		);

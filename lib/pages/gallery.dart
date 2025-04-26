@@ -42,6 +42,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:home_indicator/home_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const double _thumbnailSize = 60;
 
@@ -1567,6 +1568,13 @@ Future<Attachment?> showGalleryPretagged({
 	required bool heroOtherEndIsBoxFitCover,
 	List<ContextMenuAction> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
 }) async {
+	if (initialAttachment != null && initialAttachment.attachment.shouldOpenExternally) {
+		final url = Uri.parse(initialAttachment.attachment.url);
+		if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
+			await launchUrl(url, mode: LaunchMode.externalApplication);
+		}
+		return null;
+	}
 	final imageboard = context.read<Imageboard>();
 	final navigator = fullscreen ? Navigator.of(context, rootNavigator: true) : context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context);
 	await handleMutingBeforeShowingGallery();

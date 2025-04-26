@@ -1,6 +1,8 @@
 import 'package:chan/models/intern.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/soundposts.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 part 'attachment.g.dart';
@@ -41,6 +43,7 @@ enum AttachmentType {
 	}
 	bool get isVideo => this == AttachmentType.webm || this == AttachmentType.mp4;
 	bool get isImageSearchable => isVideo || this == AttachmentType.image;
+	bool get isNonMedia => this == AttachmentType.url || this == AttachmentType.pdf || this == AttachmentType.swf;
 	String get noun => switch (this) {
 		webm || mp4 => 'video',
 		image => 'image',
@@ -148,6 +151,17 @@ class Attachment {
 
 	bool get isGif => ext.toLowerCase().endsWith('gif');
 
+	bool get shouldOpenExternally {
+		if (type != AttachmentType.url) {
+			return false;
+		}
+		final host = Uri.tryParse(url)?.host;
+		if (host == null) {
+			return false;
+		}
+		return Settings.instance.hostsToOpenExternally.any((h) => host.endsWith(h));
+	}
+
 	IconData? get icon {
 		if (soundSource != null || type == AttachmentType.mp3) {
 			return CupertinoIcons.volume_up;
@@ -158,7 +172,10 @@ class Attachment {
 		if (isGif) {
 			return CupertinoIcons.play_arrow;
 		}
-		if (type == AttachmentType.url || type == AttachmentType.pdf || type == AttachmentType.swf) {
+		if (shouldOpenExternally) {
+			return Icons.launch_rounded;
+		}
+		if (type.isNonMedia) {
 			return CupertinoIcons.link;
 		}
 		return null;
