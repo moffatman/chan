@@ -172,7 +172,7 @@ TextSpan buildThreadCounters({
 				],
 				if (latestImageCount > unseenImageCount) ...[
 					TextSpan(text: (latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-					if (unseenImageCount > 0) TextSpan(text: '+$unseenImageCount'),
+					if (unseenReplyCount > 0 && unseenImageCount > 0) TextSpan(text: '+$unseenImageCount'),
 				]
 				else if (unseenImageCount == 0 && (imageCountUnreliable && latestThread == thread)) const TextSpan(text: '—')
 				else TextSpan(text: '$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
