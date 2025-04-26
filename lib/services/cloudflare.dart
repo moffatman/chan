@@ -20,10 +20,12 @@ import 'package:html/parser.dart';
 import 'package:mutex/mutex.dart';
 
 const kCloudflare = 'cloudflare';
+const kToastCloudflare = 'toast_cloudflare';
 const kRedirectGateway = 'redirect_gateway';
 
 extension CloudflareWanted on RequestOptions {
 	bool get cloudflare => extra[kCloudflare] == true;
+	bool get toast => extra[kToastCloudflare] != false;
 	RequestPriority get priority => (extra[kPriority] as RequestPriority?) ?? RequestPriority.functional;
 }
 extension CloudflareHandled on Response {
@@ -474,7 +476,7 @@ class CloudflareInterceptor extends Interceptor {
 					cancelToken: options.cancelToken,
 					autoClickSelector: redirectGateway?.autoClickSelector,
 					gatewayName: redirectGateway?.name ?? _kDefaultGatewayName,
-					toast: redirectGateway == null // Not forced
+					toast: options.toast && redirectGateway == null // Not forced
 				);
 				final newResponse = data.response(options);
 				if (newResponse != null) {
