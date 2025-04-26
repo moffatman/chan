@@ -2699,7 +2699,7 @@ class Settings extends ChangeNotifier {
 
 	static const _useMaterialRoutesSetting = SavedSetting(SavedSettingsFields.useMaterialRoutes);
 	static const materialRoutesSetting = SettingWithFallback(_useMaterialRoutesSetting, false);
-	bool get materialRoutes => _useMaterialRoutesSetting(this) ?? materialRoutesSetting.fallback;
+	bool get materialRoutes => false;
 
 	static const hideBarsWhenScrollingDownSetting = SavedSetting(SavedSettingsFields.hideBarsWhenScrollingDown);
 	bool get hideBarsWhenScrollingDown => hideBarsWhenScrollingDownSetting(this);

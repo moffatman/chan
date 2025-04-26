@@ -293,17 +293,6 @@ final appearanceSettings = [
 			setting: Settings.openDrawerThreadsInNewTabsSetting
 		)
 	),
-	const SegmentedSettingWidget(
-		description: 'Page Style',
-		icon: CupertinoIcons.doc,
-		helpText: 'The animations and gestural behaviour when new interface pages open on top of others',
-		children: {
-			false: (Icons.apple, 'iOS'),
-			true: (Icons.android, 'Android')
-		},
-		setting: Settings.materialRoutesSetting,
-		keywords: ['swipe', 'swiping', 'gestures']
-	),
 	const SwitchSettingWidget(
 		description: 'Animations',
 		icon: CupertinoIcons.wand_rays,
