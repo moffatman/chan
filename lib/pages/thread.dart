@@ -841,7 +841,7 @@ class ThreadPageState extends State<ThreadPage> {
 	}) {
 		final commonParentIds = [widget.boardSemanticId, 0];
 		List<TaggedAttachment> attachments = _listController.items.expand((item) {
-			if (item.representsStubChildren) {
+			if (item.representsStubChildren || _listController.isItemHidden(item).isDuplicate) {
 				return const <TaggedAttachment>[];
 			}
 			return item.item.attachments.map((a) => TaggedAttachment(
@@ -861,11 +861,28 @@ class ThreadPageState extends State<ThreadPage> {
 		else {
 			// Dedupe
 			final found = <Attachment, TaggedAttachment>{};
-			for (final a in attachments) {
-				found.putIfAbsent(a.attachment, () => a);
-			}
-			if (initialAttachment != null) {
+			int startIndex = -1;
+			if (useTree && initialAttachment != null) {
+				startIndex = attachments.indexOf(initialAttachment);
 				found[initialAttachment.attachment] = initialAttachment;
+			}
+			if (startIndex == -1) {
+				for (final a in attachments) {
+					found.putIfAbsent(a.attachment, () => a);
+				}
+			}
+			else {
+				final limit = max(startIndex, attachments.length - startIndex);
+				for (int i = 1; i < limit; i++) {
+					final high = startIndex + i;
+					if (high < attachments.length) {
+						found.putIfAbsent(attachments[high].attachment, () => attachments[high]);
+					}
+					final low = startIndex - i;
+					if (low >= 0) {
+						found.putIfAbsent(attachments[low].attachment, () => attachments[low]);
+					}
+				}
 			}
 			attachments.removeWhere((a) => found[a.attachment] != a);
 		}
