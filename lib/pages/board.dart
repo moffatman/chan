@@ -1268,6 +1268,9 @@ class BoardPageState extends State<BoardPage> {
 																child: AnimatedBuilder(
 																	animation: _listController,
 																	builder: (context, _) {
+																		if (_listController.state?.originalList == null) {
+																			return const SizedBox.shrink();
+																		}
 																		final theme = context.watch<SavedTheme>();
 																		final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
 																		scrollAnimationDuration() => Settings.instance.showAnimations ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
