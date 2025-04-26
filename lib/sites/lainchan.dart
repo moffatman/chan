@@ -486,7 +486,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 					attachmentDeleted: threadAsPost.attachmentDeleted,
 					attachments: threadAsPost.attachments_,
 					replyCount: threadData['replies'],
-					imageCount: threadData['images'],
+					imageCount: (threadData['images'] + (threadData['omitted_images'] as int? ?? 0)),
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
 					currentPage: currentPage == null ? null : currentPage + 1
