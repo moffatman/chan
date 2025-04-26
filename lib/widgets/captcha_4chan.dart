@@ -283,8 +283,6 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 			}
 		}
 	}
-	int bestSlide = 0;
-	int lowestMismatch = 1 << 50;
 	final bgHeight = challenge.backgroundImage!.height;
 	final bgBytes = (await challenge.backgroundImage!.toByteData())!;
 	final bgSortedColumns = List.generate(bgWidth, (_) => List.filled(bgHeight, 0), growable: false);
@@ -300,9 +298,10 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 	}
 	// Some future optimization could be to ignore 1-2px horizontal lines here
 	final bgSize = 4 * bgWidth * bgHeight;
-	slideloop:
+	final halfBgHeight = bgHeight ~/ 2;
+	final mismatches = List.filled(maxSlide, 0.0);
 	for (int xSlide = 0; xSlide < maxSlide; xSlide++) {
-		int mismatch = 0;
+		double mismatch = 0;
 		final offset = 4 * xSlide;
 		for (int i = 0; i < toCheck.length; i++) {
 			final check = toCheck[i];
@@ -316,17 +315,31 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 			final bgIdx = bgSortedColumns[check.x + xSlide].binarySearchCountBefore((r) => r > thisRed);
 			final diff = bgIdx - check.fgIdx;
 			if (diff != 0) {
-				mismatch += diff.abs();
-				if (mismatch > lowestMismatch) {
-					continue slideloop;
-				}
+				// Weight mismatches at the extreme of color more
+				mismatch += diff.abs() * (bgIdx - halfBgHeight).abs();
 			}
 		}
-		if (mismatch > lowestMismatch) {
-			continue;
+		mismatches[xSlide] = mismatch;
+	}
+	// Do some smoothing, the perfect slide should be
+	// continuous, not abrupt, that more indicates a trick slide.
+	int bestSlide = 0;
+	double lowestMismatch = double.infinity;
+	for (int x = 0; x < maxSlide; x++) {
+		final double mismatch;
+		if (x == 0) {
+			mismatch = (mismatches[0] + mismatches[0] + mismatches[1]) / 3;
 		}
-		lowestMismatch = mismatch;
-		bestSlide = xSlide;
+		else if (x == maxSlide - 1) {
+			mismatch = (mismatches[maxSlide - 2] + mismatches[maxSlide - 1] + mismatches[maxSlide - 1]) / 3;
+		}
+		else {
+			mismatch = (mismatches[x - 1] + mismatches[x] + mismatches[x] + mismatches[x + 1]) / 4;
+		}
+		if (mismatch < lowestMismatch) {
+			lowestMismatch = mismatch;
+			bestSlide = x;
+		}
 	}
 	return bestSlide;
 }
