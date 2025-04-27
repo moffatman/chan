@@ -555,7 +555,7 @@ class SiteXenforo extends ImageboardSite {
 						board: board,
 						id: id,
 						text: '',
-						name: _parseUsernameFromLink(e.querySelector('a.username')),
+						name: _parseUsernameFromLink(e.querySelector('.username')),
 						time: time,
 						threadId: id,
 						spanFormat: PostSpanFormat.xenforo,
