@@ -401,7 +401,8 @@ class _GalleryPageState extends State<GalleryPage> {
 				overrideSource: widget.overrideSources[attachment.attachment],
 				initialGoodSource: widget.initialGoodSources[attachment.attachment],
 				isDownloaded: _isAttachmentAlreadyDownloaded(attachment.attachment),
-				onDownloaded: () => _onAttachmentDownload(attachment.attachment)
+				onDownloaded: () => _onAttachmentDownload(attachment.attachment),
+				thread: widget.threads[attachment.attachment]?.item
 			);
 		}
 		return _controllers[attachment]!;

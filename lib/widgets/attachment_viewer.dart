@@ -128,6 +128,35 @@ class MediaPlayerException implements Exception {
 const _maxVideoControllers = 3;
 final List<AttachmentViewerController> _videoControllers = [];
 
+final _filenameBannedCharacters = RegExp(r'[|\\?*<":>+[\]/]');
+
+extension on AttachmentViewerController {
+	String get threadIdAndTitle {
+		final id = thread?.id ?? attachment.threadId;
+		final title = thread?.title?.replaceAll(_filenameBannedCharacters, '_').nonEmptyOrNull;
+		if (title != null) {
+			return '$id - $title';
+		}
+		return id.toString();
+	}
+	String get threadSubfolderName {
+		final subfolderName = threadIdAndTitle;
+		if (subfolderName.length > 200) {
+			// Real limit is 255. But let's just be safe
+			return subfolderName.substring(0, 200);
+		}
+		return subfolderName;
+	}
+	String get boardAndThreadSubfolderName {
+		final subfolderName = '${attachment.board} - $threadIdAndTitle';
+		if (subfolderName.length > 200) {
+			// Real limit is 255. But let's just be safe
+			return subfolderName.substring(0, 200);
+		}
+		return subfolderName;
+	}
+}
+
 extension on GallerySavePathOrganizing {
 	List<String> subfoldersFor(AttachmentViewerController controller) {
 		final attachment = controller.attachment;
@@ -155,17 +184,9 @@ extension on GallerySavePathOrganizing {
 			case GallerySavePathOrganizing.boardAndThreadSubfolders:
 				return [attachment.board, attachment.threadId.toString()];
 			case GallerySavePathOrganizing.boardAndThreadNameSubfolders:
-				final title = controller.thread?.title?.replaceAll('/', '_');
-				if (title == null) {
-					return [attachment.board, attachment.threadId.toString()];
-				}
-				return [attachment.board, '${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
+				return [attachment.board, controller.threadSubfolderName];
 			case GallerySavePathOrganizing.threadNameSubfolders:
-				final title = controller.thread?.title?.replaceAll('/', '_');
-				if (title == null) {
-					return ['${attachment.board} - ${attachment.threadId}'];
-				}
-				return ['${attachment.board} - ${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
+				return [controller.boardAndThreadSubfolderName];
 			case GallerySavePathOrganizing.siteSubfolders:
 				return [controller.imageboard.site.name];
 			case GallerySavePathOrganizing.siteAndBoardSubfolders:
@@ -173,17 +194,9 @@ extension on GallerySavePathOrganizing {
 			case GallerySavePathOrganizing.siteBoardAndThreadSubfolders:
 			return [controller.imageboard.site.name, attachment.board, attachment.threadId.toString()];
 			case GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders:
-				final title = controller.thread?.title?.replaceAll('/', '_');
-				if (title == null) {
-					return [controller.imageboard.site.name, attachment.board, attachment.threadId.toString()];
-				}
-				return [controller.imageboard.site.name, attachment.board, '${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
+				return [controller.imageboard.site.name, attachment.board, controller.threadSubfolderName];
 			case GallerySavePathOrganizing.siteAndThreadNameSubfolders:
-				final title = controller.thread?.title?.replaceAll('/', '_');
-				if (title == null) {
-					return [controller.imageboard.site.name, '${attachment.board} - ${attachment.threadId}'];
-				}
-				return [controller.imageboard.site.name, '${attachment.board} - ${attachment.threadId} - ${title.length > 30 ? '${title.substring(0, 27)}...' : title}'];
+				return [controller.imageboard.site.name, controller.boardAndThreadSubfolderName];
 		}
 	}
 	String? albumNameFor(AttachmentViewerController controller) {
@@ -260,6 +273,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		Uri uri
 	})? _soundSourceDownload;
 	bool _forceBrowserForExternalUrl = false;
+	final Thread? _thread;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -310,6 +324,9 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	Thread? get thread {
+		if (_thread != null) {
+			return _thread;
+		}
 		final threadId = attachment.threadId;
 		if (threadId == null) {
 			return null;
@@ -334,7 +351,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		this.onDownloaded,
 		bool isPrimary = false,
 		bool isDownloaded = false,
-	}) : _isPrimary = isPrimary, _isDownloaded = isDownloaded {
+		Thread? thread,
+	}) : _isPrimary = isPrimary, _isDownloaded = isDownloaded, _thread = thread {
 		_longPressFactor.addListener(_onCoalescedLongPressUpdate);
 		// optimistic
 		_goodImageSource = initialGoodSource;
