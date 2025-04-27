@@ -92,7 +92,9 @@ TextSpan buildThreadCounters({
 			unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + ((latestReplyCount + 1) - latestThread.posts_.length);
 		}
 		unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
-		unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.expand((x) => x.attachments).length ?? 0));
+		if (unseenReplyCount > 0) {
+			unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.fold<int>(0, (t, p) => t + p.attachments.length + (p.attachmentDeleted ? 1 : 0)) ?? 0));
+		}
 		replyCountColor = unseenReplyCount <= 0 ? grey : null;
 		imageCountColor = unseenImageCount <= 0 ? grey : null;
 		otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
@@ -172,7 +174,7 @@ TextSpan buildThreadCounters({
 				],
 				if (latestImageCount > unseenImageCount) ...[
 					TextSpan(text: (latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-					if (unseenReplyCount > 0 && unseenImageCount > 0) TextSpan(text: '+$unseenImageCount'),
+					if (unseenImageCount > 0) TextSpan(text: '+$unseenImageCount'),
 				]
 				else if (unseenImageCount == 0 && (imageCountUnreliable && latestThread == thread)) const TextSpan(text: '—')
 				else TextSpan(text: '$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
