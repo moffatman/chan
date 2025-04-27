@@ -452,7 +452,7 @@ class CloudflareInterceptor extends Interceptor {
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
 		final redirectGateway = options.extra[kRedirectGateway] as ImageboardRedirectGateway?;
-		if (options.cloudflare || redirectGateway != null) {
+		if ((options.cloudflare && options.priority.shouldPopupCloudflare) || redirectGateway != null) {
 			try {
 				final requestData = await _requestDataAsBytes(options);
 				final data = await _useWebview(
