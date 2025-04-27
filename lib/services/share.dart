@@ -1,11 +1,11 @@
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/launch_url_externally.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 Future<void> shareOne({
 	required BuildContext context,
@@ -62,9 +62,9 @@ Future<void> shareOne({
 						),
 						AdaptiveActionSheetAction(
 							child: const Text('Open in external browser'),
-							onPressed: () {
+							onPressed: () async {
 								Navigator.of(context, rootNavigator: true).pop();
-								launchUrl(Uri.parse(text), mode: LaunchMode.externalApplication);
+								await launchUrlExternally(Uri.parse(text));
 							}
 						)
 					],

@@ -10,6 +10,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/attachment_cache.dart';
 import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/launch_url_externally.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/persistence.dart';
@@ -2076,7 +2077,7 @@ class AttachmentViewer extends StatelessWidget {
 												onPressed: () async {
 													final url = Uri.parse(attachment.url);
 													if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
-														await launchUrl(url, mode: LaunchMode.externalApplication);
+														await launchUrlExternally(url);
 													}
 												},
 												child: Text('Open', style: TextStyle(

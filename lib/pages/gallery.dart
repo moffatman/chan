@@ -11,6 +11,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/services/audio.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/launch_url_externally.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
@@ -1571,7 +1572,7 @@ Future<Attachment?> showGalleryPretagged({
 	if (initialAttachment != null && initialAttachment.attachment.shouldOpenExternally) {
 		final url = Uri.parse(initialAttachment.attachment.url);
 		if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
-			await launchUrl(url, mode: LaunchMode.externalApplication);
+			await launchUrlExternally(url);
 		}
 		return null;
 	}

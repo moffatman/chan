@@ -1,8 +1,10 @@
 package com.moffatman.chan;
 
 import android.app.NotificationManager;
+import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.UriPermission;
@@ -54,6 +56,7 @@ public class MainActivity extends FlutterFragmentActivity {
 
     private static final String AUDIO_CHANNEL = "com.moffatman.chan/audio";
     private static final String USER_AGENT_CHANNEL = "com.moffatman.chan/userAgent";
+    private static final String LAUNCH_URL_CHANNEL = "com.moffatman.chan/launchUrl";
     private MethodChannel.Result folderResult;
 
     private MethodChannel.Result saveFileAsResult;
@@ -369,6 +372,29 @@ public class MainActivity extends FlutterFragmentActivity {
                     }
                     catch (Exception e) {
                         result.error("JAVA_EXCEPTION", e.getMessage(), null);
+                    }
+                }
+        );
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), LAUNCH_URL_CHANNEL).setMethodCallHandler(
+                (call, result) -> {
+                    if (call.method.equals("launchUrl")) {
+                        String url = call.argument("url");
+                        // Force an actual external app, not just redirecting back to us
+                        ComponentName[] excludedComponentNames = {new ComponentName("com.moffatman.chan", "MainActivity")};
+                        Intent launchIntent =
+                                new Intent(Intent.ACTION_VIEW)
+                                        .setData(Uri.parse(url))
+                                        .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, excludedComponentNames);
+                        try {
+                            startActivity(launchIntent);
+                        } catch (ActivityNotFoundException e) {
+                            result.success(false);
+                        }
+
+                        result.success(true);
+                    }
+                    else {
+                        result.notImplemented();
                     }
                 }
         );

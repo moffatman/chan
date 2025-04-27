@@ -10,6 +10,7 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/launch_url_externally.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/settings.dart';
@@ -595,7 +596,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	].any(url.path.endsWith);
 	if (Persistence.settings.hostsToOpenExternally.any((s) => url.host.endsWith(s))) {
 		if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
-			launchUrl(url, mode: LaunchMode.externalApplication);
+			await launchUrlExternally(url);
 		}
 	}
 	else if (settings.useInternalBrowser == null && !fromShareOne) {
@@ -612,7 +613,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		}
 	}
 	else if ((isOnMac && !useCooperativeBrowser && imageboardTarget == null && !isMediaLink) || settings.useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
-		launchUrl(url, mode: LaunchMode.externalApplication);
+		await launchUrlExternally(url);
 	}
 	else if (imageboardTarget != null && !fromShareOne) {
 		openInChance();
