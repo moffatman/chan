@@ -452,6 +452,9 @@ class SiteXenforo extends ImageboardSite {
   @override
   String get defaultUsername => '';
 
+	@override
+	ImageboardBoardPopularityType? get boardPopularityType => ImageboardBoardPopularityType.postsCount;
+
   @override
   Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
     final response = await client.getUri(
@@ -465,17 +468,39 @@ class SiteXenforo extends ImageboardSite {
 			cancelToken: cancelToken
 		);
 		final document = parse(response.data);
-		return document.querySelectorAll('.node--forum .node-title a').tryMap((e) {
-			final parts = e.attributes['href']?.split('/') ?? [];
+		return document.querySelectorAll('.node--forum').tryMap((forum) {
+			final e = forum.querySelector('.node-title a');
+			final parts = e?.attributes['href']?.split('/') ?? [];
 			parts.removeWhere((e) => e.isEmpty);
-			if (parts.isEmpty) {
+			if (e == null || parts.isEmpty) {
 				return null;
 			}
 			return ImageboardBoard(
 				name: parts.last,
 				title: e.text,
 				isWorksafe: true,
-				webmAudioAllowed: true
+				webmAudioAllowed: true,
+				popularity: forum.querySelectorAll('.node-stats dl').tryMapOnce((dl) {
+					final children = dl.children;
+					if (children.length == 2 && children.first.text == 'Messages' || children.first.text == 'Posts') {
+						String text = children[1].text.replaceAll(',', '').toLowerCase();
+						int multiplier = 1;
+						if (text.endsWith('k')) {
+							multiplier = 1000;
+							text = text.substring(0, text.length - 1);
+						}
+						else if (text.endsWith('m')) {
+							multiplier = 1000000;
+							text = text.substring(0, text.length - 1);
+						}
+						final value = text.tryParseDouble;
+						if (value == null) {
+							return null;
+						}
+						return (value * multiplier).round();
+					}
+					return null;
+				})
 			);
 		}).toList();
   }
