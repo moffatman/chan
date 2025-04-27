@@ -24,9 +24,11 @@ Future<List<String>> getInstalledFontFamilies() async {
 }
 
 String? fontLoadingError;
+String? fallbackFontLoadingError;
 
 Future<void> initializeFonts() async {
 	fontLoadingError = null;
+	fallbackFontLoadingError = null;
 	try {
 		final fontFamilyName = Persistence.settings.fontFamily;
 		if (fontFamilyName != null &&
@@ -45,6 +47,26 @@ Future<void> initializeFonts() async {
 	}
 	catch (e, st) {
 		fontLoadingError = e.toString();
+		Future.error(e, st); // Report to crashlytics
+	}
+	try {
+		final fontFamilyFallbackName = Persistence.settings.fontFamilyFallback;
+		if (fontFamilyFallbackName != null &&
+		    (fontFamilyFallbackName.endsWith('.ttf') || fontFamilyFallbackName.endsWith('.otf'))) {
+			// If fontFamily ends with .ttf or .otf, load it from documents dir
+			final family = fontFamilyFallbackName.split('.').first;
+			final file = Persistence.documentsDirectory.dir(Persistence.fontsDir).file(fontFamilyFallbackName);
+			if (!file.existsSync()) {
+				throw FileSystemException('Font file not found', file.path);
+			}
+			final loader = FontLoader(family);
+			final bytes = await file.readAsBytes();
+			loader.addFont(Future.value(ByteData.view(bytes.buffer)));
+			await loader.load();
+		}
+	}
+	catch (e, st) {
+		fallbackFontLoadingError = e.toString();
 		Future.error(e, st); // Report to crashlytics
 	}
 }

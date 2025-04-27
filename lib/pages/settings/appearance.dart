@@ -186,6 +186,25 @@ int _estimateGridModeColumns(double maxWidth) {
 	return (estimateMasterWidthStatic() / maxWidth).ceil();
 }
 
+Future<void> _cleanupFontFile(String? family) async {
+	if (family == Settings.instance.fontFamily || family == Settings.instance.fontFamilyFallback) {
+		// Still in use
+		return;
+	}
+	if (family != null && (family.endsWith('.ttf') || family.endsWith('.otf'))) {
+		// Cleanup previous picked font
+		try {
+			await Persistence.documentsDirectory.dir(Persistence.fontsDir).file(family).delete();
+		}
+		catch (e, st) {
+			Future.error(e, st);
+			if (ImageboardRegistry.instance.context?.mounted ?? false) {
+				alertError(ImageboardRegistry.instance.context!, e, st);
+			}
+		}
+	}
+}
+
 final appearanceSettings = [
 	SteppableSettingWidget(
 		description: 'Interface scale',
@@ -298,165 +317,161 @@ final appearanceSettings = [
 		icon: CupertinoIcons.wand_rays,
 		setting: Settings.showAnimationsSetting
 	),
-	ImmutableButtonSettingWidget(
-		description: 'Font',
-		icon: CupertinoIcons.textformat_alt,
-		setting: Settings.fontFamilySetting,
-		injectButton: (fontLoadingError == null) ? null : (context, fontFamily, setFontFamily) => AdaptiveIconButton(
-			icon: const Icon(CupertinoIcons.exclamationmark_circle, color: Colors.red),
-			onPressed: () {
-				showAdaptiveDialog<bool>(
-					context: context,
+	for (final fontSetting in [
+		(
+			description: 'Font',
+			setting: Settings.fontFamilySetting,
+			error: fontLoadingError,
+			clearError: () => fontLoadingError = null,
+			hidden: DummyMutableSetting(false)
+		),
+		(
+			description: 'Fallback font',
+			setting: Settings.fontFamilyFallbackSetting,
+			error: fallbackFontLoadingError,
+			clearError: () => fallbackFontLoadingError = null,
+			hidden: const MappedMutableSetting(Settings.fontFamilySetting, FieldMappers.isNull)
+		)
+	]) SettingHiding(
+		hidden: fontSetting.hidden,
+		setting: ImmutableButtonSettingWidget(
+			description: fontSetting.description,
+			icon: CupertinoIcons.textformat_alt,
+			setting: fontSetting.setting,
+			injectButton: (fontSetting.error == null) ? null : (context, fontFamily, setFontFamily) => AdaptiveIconButton(
+				icon: const Icon(CupertinoIcons.exclamationmark_circle, color: Colors.red),
+				onPressed: () {
+					showAdaptiveDialog<bool>(
+						context: context,
+						barrierDismissible: true,
+						builder: (context) => AdaptiveAlertDialog(
+							content: Text('Font loading failed:\n\n${fontSetting.error}'),
+							actions: [
+								AdaptiveDialogAction(
+									child: const Text('OK'),
+									onPressed: () {
+										Navigator.of(context).pop();
+									}
+								)
+							]
+						)
+					);
+				}
+			),
+			builder: (family) => Text(family ?? 'Default'),
+			onPressed: (context, family, setFamily) async {
+				final availableFonts = await showAdaptiveDialog<List<String>>(
 					barrierDismissible: true,
+					context: context,
 					builder: (context) => AdaptiveAlertDialog(
-						content: Text('Font loading failed:\n\n$fontLoadingError'),
+						title: const Text('Choose a font source', textAlign: TextAlign.center),
 						actions: [
 							AdaptiveDialogAction(
-								child: const Text('OK'),
-								onPressed: () {
-									Navigator.of(context).pop();
+								child: const Text('System Fonts'),
+								onPressed: () async {
+									try {
+										final fonts = await getInstalledFontFamilies();
+										if (context.mounted) {
+											Navigator.pop(context, fonts);
+										}
+									}
+									catch (e, st) {
+										if (context.mounted) {
+											alertError(context, e, st);
+										}
+									}
 								}
+							),
+							AdaptiveDialogAction(
+								child: const Text('Google Fonts'),
+								onPressed: () => Navigator.pop(context, allowedGoogleFonts.keys.toList())
+							),
+							AdaptiveDialogAction(
+								child: const Text('Pick font file...'),
+								onPressed: () async {
+									try {
+										final pickerResult = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['ttf', 'otf']);
+										final path = pickerResult?.files.tryFirst?.path;
+										if (path == null) {
+											return;
+										}
+										final basename = FileBasename.get(path);
+										final ttfFolder = await Persistence.documentsDirectory.dir(Persistence.fontsDir).create();
+										await File(path).copy(ttfFolder.child(basename));
+										if (context.mounted) {
+											Navigator.pop(context, [basename]);
+										}
+									}
+									catch (e, st) {
+										Future.error(e, st);
+										if (context.mounted) {
+											alertError(context, e, st);
+										}
+									}
+								}
+							),
+							AdaptiveDialogAction(
+								child: const Text('Reset to default'),
+								onPressed: () => Navigator.pop(context, <String>[])
+							),
+							AdaptiveDialogAction(
+								child: const Text('Cancel'),
+								onPressed: () => Navigator.pop(context)
 							)
 						]
 					)
 				);
-			}
-		),
-		builder: (family) => Text(family ?? 'Default'),
-		onPressed: (context, family, setFamily) async {
-			final availableFonts = await showAdaptiveDialog<List<String>>(
-				barrierDismissible: true,
-				context: context,
-				builder: (context) => AdaptiveAlertDialog(
-					title: const Text('Choose a font source', textAlign: TextAlign.center),
-					actions: [
-						AdaptiveDialogAction(
-							child: const Text('System Fonts'),
-							onPressed: () async {
-								try {
-									final fonts = await getInstalledFontFamilies();
-									if (context.mounted) {
-										Navigator.pop(context, fonts);
-									}
-								}
-								catch (e, st) {
-									if (context.mounted) {
-										alertError(context, e, st);
-									}
-								}
-							}
-						),
-						AdaptiveDialogAction(
-							child: const Text('Google Fonts'),
-							onPressed: () => Navigator.pop(context, allowedGoogleFonts.keys.toList())
-						),
-						AdaptiveDialogAction(
-							child: const Text('Pick font file...'),
-							onPressed: () async {
-								try {
-									final pickerResult = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['ttf', 'otf']);
-									final path = pickerResult?.files.tryFirst?.path;
-									if (path == null) {
-										return;
-									}
-									final basename = FileBasename.get(path);
-									final ttfFolder = await Persistence.documentsDirectory.dir(Persistence.fontsDir).create();
-									await File(path).copy(ttfFolder.child(basename));
-									if (context.mounted) {
-										Navigator.pop(context, [basename]);
-									}
-								}
-								catch (e, st) {
-									Future.error(e, st);
-									if (context.mounted) {
-										alertError(context, e, st);
-									}
-								}
-							}
-						),
-						AdaptiveDialogAction(
-							child: const Text('Reset to default'),
-							onPressed: () => Navigator.pop(context, <String>[])
-						),
-						AdaptiveDialogAction(
-							child: const Text('Cancel'),
-							onPressed: () => Navigator.pop(context)
-						)
-					]
-				)
-			);
-			if (!context.mounted || availableFonts == null) {
-				return;
-			}
-			if (availableFonts.isEmpty) {
-				if (family != null && (family.endsWith('.ttf') || family.endsWith('.otf'))) {
-					// Cleanup previous picked font
-					try {
-						await Persistence.documentsDirectory.dir(Persistence.fontsDir).file(family).delete();
-					}
-					catch (e, st) {
-						Future.error(e, st);
-						if (context.mounted) {
-							alertError(context, e, st);
-						}
-					}
+				if (!context.mounted || availableFonts == null) {
+					return;
 				}
-				fontLoadingError = null;
-				setFamily(null);
-				return;
-			}
-			final selectedFont = availableFonts.trySingle ?? await showAdaptiveDialog<String>(
-				barrierDismissible: true,
-				context: context,
-				builder: (context) => AdaptiveAlertDialog(
-					title: const Text('Choose a font', textAlign: TextAlign.center),
-					content: SizedBox(
-						width: 200,
-						height: 350,
-						child: CupertinoScrollbar(
-							child: ListView.separated(
-								itemCount: availableFonts.length,
-								separatorBuilder: (context, i) => const ChanceDivider(),
-								itemBuilder: (context, i) => AdaptiveDialogAction(
-									onPressed: () => Navigator.pop(context, availableFonts[i]),
-									child: Text(availableFonts[i], style: allowedGoogleFonts[availableFonts[i]]?.call() ?? TextStyle(
-										fontFamily: availableFonts[i]
-									))
+				if (availableFonts.isEmpty) {
+					fontSetting.clearError();
+					setFamily(null);
+					Future.microtask(() => _cleanupFontFile(family));
+					return;
+				}
+				final selectedFont = availableFonts.trySingle ?? await showAdaptiveDialog<String>(
+					barrierDismissible: true,
+					context: context,
+					builder: (context) => AdaptiveAlertDialog(
+						title: const Text('Choose a font', textAlign: TextAlign.center),
+						content: SizedBox(
+							width: 200,
+							height: 350,
+							child: CupertinoScrollbar(
+								child: ListView.separated(
+									itemCount: availableFonts.length,
+									separatorBuilder: (context, i) => const ChanceDivider(),
+									itemBuilder: (context, i) => AdaptiveDialogAction(
+										onPressed: () => Navigator.pop(context, availableFonts[i]),
+										child: Text(availableFonts[i], style: allowedGoogleFonts[availableFonts[i]]?.call() ?? TextStyle(
+											fontFamily: availableFonts[i]
+										))
+									)
 								)
 							)
-						)
-					),
-					actions: [
-						AdaptiveDialogAction(
-							child: const Text('Close'),
-							onPressed: () => Navigator.pop(context)
-						)
-					]
-				)
-			);
-			if (selectedFont != null) {
-				final oldFont = family;
-				setFamily(selectedFont);
-				if (oldFont != selectedFont && oldFont != null && (oldFont.endsWith('.ttf') || oldFont.endsWith('.otf'))) {
-					// Cleanup previous picked font
-					try {
-						await Persistence.documentsDirectory.dir(Persistence.fontsDir).file(oldFont).delete();
+						),
+						actions: [
+							AdaptiveDialogAction(
+								child: const Text('Close'),
+								onPressed: () => Navigator.pop(context)
+							)
+						]
+					)
+				);
+				if (selectedFont != null) {
+					final oldFont = family;
+					setFamily(selectedFont);
+					Future.microtask(() => _cleanupFontFile(oldFont));
+					if (selectedFont.endsWith('.ttf') || selectedFont.endsWith('.otf')) {
+						await initializeFonts();
 					}
-					catch (e, st) {
-						Future.error(e, st);
-						if (context.mounted) {
-							alertError(context, e, st);
-						}
+					else {
+						fontSetting.clearError();
 					}
-				}
-				if (selectedFont.endsWith('.ttf') || selectedFont.endsWith('.otf')) {
-					await initializeFonts();
-				}
-				else {
-					fontLoadingError = null;
 				}
 			}
-		}
+		)
 	),
 	const SegmentedSettingWidget(
 		description: 'Active Theme',

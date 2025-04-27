@@ -1228,6 +1228,8 @@ class SavedSettings extends HiveObject {
 	String? androidGalleryPicker;
 	@HiveField(199)
 	bool onlyShowUnreadWatches;
+	@HiveField(200)
+	String? fontFamilyFallback;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1429,6 +1431,7 @@ class SavedSettings extends HiveObject {
 		bool? closeReplyBoxAfterSubmitting,
 		this.androidGalleryPicker,
 		bool? onlyShowUnreadWatches,
+		this.fontFamilyFallback,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1708,19 +1711,40 @@ class SavedSettings extends HiveObject {
 
 
 	TextStyle get textStyle {
+		final fontFamily = this.fontFamily;
 		if (fontFamily == null) {
 			return platformIsMaterial ? const TextStyle(
 				fontFamily: 'Roboto'
-			) :const TextStyle(
+			) : const TextStyle(
 				fontFamily: 'CupertinoSystemText'
 			);
 		}
-		String name = fontFamily!;
+		String name = fontFamily;
 		if (name.endsWith('.ttf') || name.endsWith('.otf')) {
 			name = name.substring(0, name.length - 4);
 		}
-		return allowedGoogleFonts[name]?.call() ?? TextStyle(
-			fontFamily: name
+		final fontFamilyFallback = this.fontFamilyFallback;
+		List<String>? fallback;
+		if (fontFamilyFallback != null) {
+			String name = fontFamilyFallback;
+			if (name.endsWith('.ttf') || name.endsWith('.otf')) {
+				name = name.substring(0, name.length - 4);
+			}
+			final googleFont = allowedGoogleFonts[name]?.call();
+			fallback = [googleFont?.fontFamily ?? name];
+		}
+		final googleFont = allowedGoogleFonts[name]?.call();
+		if (googleFont != null && fallback != null) {
+			return googleFont.copyWith(
+				// Render the [package] into fontFamily, as it may not be the same as fallback
+				fontFamily: googleFont.fontFamily,
+				package: null,
+				fontFamilyFallback: fallback
+			);
+		}
+		return googleFont ?? TextStyle(
+			fontFamily: name,
+			fontFamilyFallback: fallback
 		);
 	}
 }
@@ -1809,6 +1833,26 @@ class CustomMutableSetting<T> extends MutableSetting<T> {
 
 	@override
 	int get hashCode => Object.hash(reader, watcher, didMutater);
+}
+
+class DummyMutableSetting<T> extends MutableSetting<T> {
+	final T value;
+	DummyMutableSetting(this.value);
+	@override
+	Future<void> didMutate(BuildContext context) async {}
+	@override
+	T read(BuildContext context) => value;
+	@override
+	T watch(BuildContext context) => value;
+	@override
+	List<String> get syncPaths => const [];
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is DummyMutableSetting &&
+		other.value == value;
+	@override
+	int get hashCode => value.hashCode;
 }
 
 class CustomImmutableSetting<T> extends ImmutableSetting<T> {
@@ -1917,6 +1961,8 @@ class FieldMappers {
 	static int intAbs(int x) => x.abs();
 	static double toDoubleAbs(int x) => x.abs().toDouble();
 	static int toIntAbs(double x) => x.abs().toInt();
+	static bool isNull<T>(T? x) => x == null;
+	static bool isNotNull<T>(T? x) => x != null;
 }
 
 class MappedSetting<T, New> extends ImmutableSetting<New> {
@@ -2627,6 +2673,8 @@ class Settings extends ChangeNotifier {
 
 	static const fontFamilySetting = SavedSetting(SavedSettingsFields.fontFamily);
 	String? get fontFamily => fontFamilySetting(this);
+	static const fontFamilyFallbackSetting = SavedSetting(SavedSettingsFields.fontFamilyFallback);
+	String? get fontFamilyFallback => fontFamilyFallbackSetting(this);
 
 	static const autoCacheAttachmentsSettingSetting = SavedSetting(SavedSettingsFields.autoCacheAttachments);
 	AutoloadAttachmentsSetting get autoCacheAttachmentsSetting => autoCacheAttachmentsSettingSetting(this);
