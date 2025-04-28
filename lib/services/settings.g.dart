@@ -2389,6 +2389,16 @@ class SavedSettingsFields {
     fieldName: 'fontFamilyFallback',
     merger: PrimitiveMerger(),
   );
+  static bool getShowYousInScrollbar(SavedSettings x) => x.showYousInScrollbar;
+  static void setShowYousInScrollbar(SavedSettings x, bool v) =>
+      x.showYousInScrollbar = v;
+  static const showYousInScrollbar = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getShowYousInScrollbar,
+    setter: setShowYousInScrollbar,
+    fieldNumber: 201,
+    fieldName: 'showYousInScrollbar',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2589,7 +2599,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     197: SavedSettingsFields.closeReplyBoxAfterSubmitting,
     198: SavedSettingsFields.androidGalleryPicker,
     199: SavedSettingsFields.onlyShowUnreadWatches,
-    200: SavedSettingsFields.fontFamilyFallback
+    200: SavedSettingsFields.fontFamilyFallback,
+    201: SavedSettingsFields.showYousInScrollbar
   };
 
   @override
@@ -2804,13 +2815,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       androidGalleryPicker: fields[198] as String?,
       onlyShowUnreadWatches: fields[199] as bool?,
       fontFamilyFallback: fields[200] as String?,
+      showYousInScrollbar: fields[201] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(188)
+      ..writeByte(189)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3186,7 +3198,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(199)
       ..write(obj.onlyShowUnreadWatches)
       ..writeByte(200)
-      ..write(obj.fontFamilyFallback);
+      ..write(obj.fontFamilyFallback)
+      ..writeByte(201)
+      ..write(obj.showYousInScrollbar);
   }
 
   @override

@@ -1294,6 +1294,11 @@ final appearanceSettings = [
 		formatter: (scrollbarThickness) => '${scrollbarThickness.round()} px',
 		setting: Settings.scrollbarThicknessSetting
 	),
+	const SwitchSettingWidget(
+		description: 'Highlight (You)s in scrollbar',
+		icon: CupertinoIcons.reply,
+		setting: Settings.showYousInScrollbarSetting
+	),
 	SegmentedSettingWidget(
 		description: 'List position indicator location',
 		iconBuilder: (color) => Builder(

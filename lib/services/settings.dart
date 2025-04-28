@@ -1230,6 +1230,8 @@ class SavedSettings extends HiveObject {
 	bool onlyShowUnreadWatches;
 	@HiveField(200)
 	String? fontFamilyFallback;
+	@HiveField(201)
+	bool showYousInScrollbar;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1432,6 +1434,7 @@ class SavedSettings extends HiveObject {
 		this.androidGalleryPicker,
 		bool? onlyShowUnreadWatches,
 		this.fontFamilyFallback,
+		bool? showYousInScrollbar,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1652,7 +1655,8 @@ class SavedSettings extends HiveObject {
 		alwaysUseWideDrawerGesture = alwaysUseWideDrawerGesture ?? false,
 		openDrawerThreadsInNewTabs = openDrawerThreadsInNewTabs ?? false,
 		closeReplyBoxAfterSubmitting = closeReplyBoxAfterSubmitting ?? true,
-		onlyShowUnreadWatches = onlyShowUnreadWatches ?? false {
+		onlyShowUnreadWatches = onlyShowUnreadWatches ?? false,
+		showYousInScrollbar = showYousInScrollbar ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2925,6 +2929,9 @@ class Settings extends ChangeNotifier {
 	static const onlyShowUnreadWatchesSetting = SavedSetting(SavedSettingsFields.onlyShowUnreadWatches);
 	bool get onlyShowUnreadWatches => onlyShowUnreadWatchesSetting(this);
 	set onlyShowUnreadWatches(bool setting) => onlyShowUnreadWatchesSetting.set(this, setting);
+
+	static const showYousInScrollbarSetting = SavedSetting(SavedSettingsFields.showYousInScrollbar);
+	bool get showYousInScrollbar => showYousInScrollbarSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

@@ -2043,7 +2043,18 @@ class ThreadPageState extends State<ThreadPage> {
 																			)
 																		);
 																	},
-																	filterHint: 'Search in thread'
+																	filterHint: 'Search in thread',
+																	injectBelowScrollbar: settings.showYousInScrollbar ? Positioned(
+																		right: 0,
+																		top: 0,
+																		bottom: 0,
+																		child: SafeArea(
+																			child: _ThreadScrollbar(
+																				persistentState: persistentState,
+																				listController: _listController
+																			)
+																		)
+																	) : null
 																)
 															),
 															Visibility.maintain(
@@ -3412,5 +3423,227 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		WidgetsBinding.instance.addPostFrameCallback((_) {
 			_scheduleAdditionalSafeAreaInsetsHide();
 		});
+	}
+}
+
+class _ThreadScrollbar extends StatefulWidget {
+	final PersistentThreadState persistentState;
+	final RefreshableListController<Post> listController;
+
+	const _ThreadScrollbar({
+		required this.persistentState,
+		required this.listController
+	});
+
+	@override
+	createState() => _ThreadScrollbarState();
+}
+
+class _ThreadScrollbarState extends State<_ThreadScrollbar> {
+	ValueListenable<bool> isScrollingNotifier = const ConstantValueListenable(false);
+	bool show = false;
+	int things = 0;
+	Timer? hideTimer;
+
+	@override
+	void initState() {
+		super.initState();
+		widget.listController.slowScrolls.addListener(_onSlowScroll);
+		widget.persistentState.addListener(_onPersistentStateUpdate);
+		things = widget.persistentState.youIds.length + (widget.persistentState.replyIdsToYou()?.length ?? 0);
+	}
+	
+	void _onSlowScroll() {
+		final newIsScrollingNotifier = widget.listController.scrollController?.tryPosition?.isScrollingNotifier;
+		if (isScrollingNotifier != newIsScrollingNotifier) {
+			isScrollingNotifier.removeListener(_onIsScrolling);
+			isScrollingNotifier = newIsScrollingNotifier ?? const ConstantValueListenable(false);
+			isScrollingNotifier.addListener(_onIsScrolling);
+			_onIsScrolling();
+		}
+	}
+
+	void _onPersistentStateUpdate() {
+		final newThings = widget.persistentState.youIds.length + (widget.persistentState.replyIdsToYou()?.length ?? 0);
+		if (newThings != things) {
+			setState(() {
+				things = newThings;
+			});
+		}
+	}
+
+	void _onIsScrolling() {
+		if (!mounted) {
+			return;
+		}
+		final isScrolling = isScrollingNotifier.value;
+		if (isScrolling && !show) {
+			Future.microtask(() => setState(() {
+				show = true;
+			}));
+		}
+		else if (!isScrolling && show) {
+			hideTimer?.cancel();
+			hideTimer = Timer(
+				Settings.instance.materialStyle ? const Duration(milliseconds: 600) : const Duration(milliseconds: 1200),
+				() => setState(() {
+					show = false;
+				})
+			);
+		}
+		else if (isScrolling && show && hideTimer != null) {
+			hideTimer?.cancel();
+			hideTimer = null;
+		}
+	}
+
+	@override
+	void didUpdateWidget(_ThreadScrollbar oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.listController != oldWidget.listController) {
+			oldWidget.listController.slowScrolls.removeListener(_onSlowScroll);
+			widget.listController.slowScrolls.addListener(_onSlowScroll);
+			_onSlowScroll();
+		}
+		if (widget.persistentState != oldWidget.persistentState) {
+			oldWidget.persistentState.removeListener(_onPersistentStateUpdate);
+			widget.persistentState.addListener(_onPersistentStateUpdate);
+			_onPersistentStateUpdate();
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		if (things == 0) {
+			return const SizedBox();
+		}
+		final theme = context.watch<SavedTheme>();
+		final scrollbarThickness = Settings.scrollbarThicknessSetting.watch(context);
+		final material = Settings.instance.materialStyle;
+		return AnimatedOpacity(
+			duration: material ? const Duration(milliseconds: 300) : const Duration(milliseconds: 250),
+			opacity: show ? 1 : 0,
+			curve: Curves.fastOutSlowIn,
+			child: CustomPaint(
+				painter: _ThreadScrollbarCustomPainter(
+					items: widget.listController.items.toList(),
+					youIds: widget.persistentState.youIds.toSet(),
+					replyIdsToYou: widget.persistentState.replyIdsToYou()?.toSet() ?? const {},
+					theme: theme
+				),
+				child: SizedBox(width: scrollbarThickness + (material ? 0 : 6 /* crossAxisMargin */))
+			)
+		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		widget.listController.slowScrolls.removeListener(_onSlowScroll);
+		widget.persistentState.removeListener(_onPersistentStateUpdate);
+		hideTimer?.cancel();
+	}
+}
+
+class _ThreadScrollbarCustomPainter extends CustomPainter {
+	final List<RefreshableListItem<Post>> items;
+	final Set<int> youIds;
+	final Set<int> replyIdsToYou;
+	final SavedTheme theme;
+
+	_ThreadScrollbarCustomPainter({
+		required this.items,
+		required this.youIds,
+		required this.replyIdsToYou,
+		required this.theme
+	});
+
+	// Don't shrink the segment shorter than 12 points
+	static const _kMinHeight = 12.0;
+	
+	@override
+	void paint(ui.Canvas canvas, ui.Size size) {
+		if (items.length < 5) {
+			// It would look garish, and also break loop assumptions later
+			return;
+		}
+		final youPaint = ui.Paint()..color = theme.secondaryColor;
+		final replyToYouPaint = ui.Paint()..color = theme.secondaryColor.towardsBlack(0.5);
+		canvas.saveLayer(null, Paint()..color = Colors.white.withOpacity(0.5)..blendMode = BlendMode.multiply);
+		final hd = size.height / (items.length + 1);
+		List<Paint?> slots = items.map((item) {
+			if (youIds.contains(item.id)) {
+				return youPaint;
+			}
+			else if (replyIdsToYou.contains(item.id)) {
+				return replyToYouPaint;
+			}
+			return null;
+		}).toList();
+		// Bleed color into empty adjacent "slots"
+		final bleedPasses = (_kMinHeight / hd).ceil() - 1;
+		for (int pass = 0; pass < bleedPasses; pass++) {
+			final newSlots = slots.toList();
+			newSlots[0] ??= slots[1];
+			for (int i = 1; i < items.length - 1; i++) {
+				if (newSlots[i] != null) {
+					continue;
+				}
+				final before = slots[i - 1];
+				final after = slots[i + 1];
+				if ((before ?? after) == (after ?? before)) {
+					newSlots[i] = before ?? after;
+				}
+			}
+			newSlots[slots.length - 1] ??= slots[slots.length - 2];
+			slots = newSlots;
+		}
+		// Now merge adjacent slots into Rects
+		Paint? lastPaint;
+		double y0 = 0;
+		for (int i = 0; i < slots.length; i++) {
+			final paint = slots[i];
+			if (paint == null) {
+				if (lastPaint != null) {
+					// End of block
+					print('$y0 -> (${i + 1}): $lastPaint');
+					canvas.drawRect(Rect.fromLTRB(0, y0, size.width, (i + 1) * hd), lastPaint);
+					lastPaint = null;
+				}
+				continue;
+			}
+			if (lastPaint == null) {
+				// Start of block
+				print('$i start $paint');
+				y0 = i * hd;
+				lastPaint = paint;
+			}
+			else if (paint == lastPaint) {
+				// Continue of block, no-op
+			}
+			else {
+				print('$y0 -> (${i + 1}): $lastPaint -> $i start $paint');
+				// End of block, start of new block
+				final y = (i + 0.5) * hd;
+				canvas.drawRect(Rect.fromLTRB(0, y0, size.width, y), lastPaint);
+				lastPaint = paint;
+				y0 = y;
+				lastPaint = paint;
+			}
+		}
+		if (lastPaint != null) {
+			// End of block
+			canvas.drawRect(Rect.fromLTRB(0, y0, size.width, size.height), lastPaint);
+		}
+		canvas.restore();
+	}
+	
+	@override
+	bool shouldRepaint(_ThreadScrollbarCustomPainter oldDelegate) {	
+		return
+			!setEquals(youIds, oldDelegate.youIds) ||
+			!setEquals(replyIdsToYou, oldDelegate.replyIdsToYou) ||
+			!listEquals(items, oldDelegate.items) ||
+			theme != oldDelegate.theme;
 	}
 }

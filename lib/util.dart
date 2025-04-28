@@ -959,3 +959,16 @@ extension ClampAboveZero on Duration {
 		return this;
 	}
 }
+
+class ConstantValueListenable<T> implements ValueListenable<T> {
+	@override
+	final T value;
+
+	const ConstantValueListenable(this.value);
+
+	// Don't notify, it will never change
+	@override
+	void addListener(VoidCallback listener) {}
+	@override
+	void removeListener(VoidCallback listener) {}
+}
