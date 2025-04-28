@@ -873,7 +873,7 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			else {
 				final limit = max(startIndex, attachments.length - startIndex);
-				for (int i = 1; i < limit; i++) {
+				for (int i = 1; i <= limit; i++) {
 					final high = startIndex + i;
 					if (high < attachments.length) {
 						found.putIfAbsent(attachments[high].attachment, () => attachments[high]);
