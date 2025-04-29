@@ -335,7 +335,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			return filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
 		}
 		else {
-			final existingNames0 = filteredBoards.map((b) => b.item.boardKey).toSet();
+			final existingNames0 =
+					filteredBoards.where((b) => b.imageboard == currentImageboard)
+					.map((b) => b.item.boardKey).toSet();
 			final typeahead = typeaheads[currentImageboard] ??= Trie();
 			for (int i = 0; i < keywords.length; i++) {
 				// Only consider names once per-keyword in tree
