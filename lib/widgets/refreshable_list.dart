@@ -147,7 +147,11 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 			}
 		}
 		final double averageExtent;
-		if (knownOffset > 100) {
+		if (knownCount == 0) {
+			// Guess
+			averageExtent = 200;
+		}
+		else if (knownOffset > 100) {
 			averageExtent = knownOffset / knownCount;
 		}
 		else {
