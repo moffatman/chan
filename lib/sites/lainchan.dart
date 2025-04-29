@@ -600,7 +600,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		}
 		final file = post.file;
 		if (file != null) {
-			fields['attachment'] = await MultipartFile.fromFile(file, filename: post.overrideFilename);
+			fields['file'] = await MultipartFile.fromFile(file, filename: post.overrideFilename);
 		}
 		if (post.spoiler == true) {
 			fields['spoiler'] = 'on';
