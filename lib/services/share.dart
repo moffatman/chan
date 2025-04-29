@@ -1,4 +1,5 @@
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/global_pointer_tracker.dart';
 import 'package:chan/services/launch_url_externally.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -15,7 +16,10 @@ Future<void> shareOne({
 	required Rect? sharePositionOrigin,
 	Map<String, VoidCallback> additionalOptions = const {}
 }) async {
-	sharePositionOrigin ??= const Rect.fromLTWH(0, 0, 1, 1);
+	if (sharePositionOrigin == null) {
+		final position = GlobalPointerTracker.instance.value?.position ?? Offset.zero;
+		sharePositionOrigin ??= Rect.fromLTWH(position.dx, position.dy, 1, 1);
+	}
 	lightHapticFeedback();
 	if (type == 'file') {
 		await Share.shareXFiles(

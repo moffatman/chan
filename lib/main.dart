@@ -21,6 +21,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/global_pointer_tracker.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/installed_fonts.dart';
 import 'package:chan/services/json_cache.dart';
@@ -82,6 +83,7 @@ Future<void> innerMain() async {
 	try {
 		await initializeRLimit();
 		WidgetsFlutterBinding.ensureInitialized();
+		GlobalPointerTracker.instance.initialize();
 		await initializeIsDevelopmentBuild();
 		await initializeIsOnMac();
 		await initializeHandoff();
