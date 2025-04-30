@@ -223,10 +223,15 @@ class NotificationContent extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final notification = this.notification;
 		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.target.thread);
-		final thread = threadState?.thread;
+		Thread? thread;
 		Post? post;
 		bool isYou = false;
-		post = thread?.posts.tryFirstWhere((p) => p.id == notification.target.postId);
+		if (notification.target.isThread) {
+			thread = threadState?.thread;
+		}
+		else {
+			post = threadState?.thread?.posts.tryFirstWhere((p) => p.id == notification.target.postId);
+		}
 		if (threadState != null) {
 			isYou = threadState.youIds.contains(notification.target.postId);
 		}
@@ -278,7 +283,7 @@ class NotificationContent extends StatelessWidget {
 							child: ChangeNotifierProvider<PostSpanZoneData>(
 								create: (context) => PostSpanRootZoneData(
 									imageboard: context.read<Imageboard>(),
-									thread: thread ?? Thread(
+									thread: threadState?.thread ?? Thread(
 										board: notification.target.board,
 										id: notification.target.threadId,
 										isDeleted: false,
