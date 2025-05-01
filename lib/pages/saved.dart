@@ -709,6 +709,7 @@ class _SavedPageState extends State<SavedPage> {
 									builder: (context) => AnimatedBuilder(
 										animation: TickerMode.of(context) ? Listenable.merge([
 											_removeArchivedHack,
+											persistencesAnimation,
 											threadStateBoxesAnimation,
 										]) : const AlwaysStoppedAnimation(null),
 										builder: (context, _) => Wrap(
