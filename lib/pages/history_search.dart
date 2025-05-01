@@ -623,7 +623,6 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				),
 				actions: [
 					AdaptiveIconButton(
-						minSize: 0,
 						onPressed: _editQuery,
 						icon: const Icon(CupertinoIcons.slider_horizontal_3)
 					)
