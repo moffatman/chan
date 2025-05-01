@@ -139,22 +139,20 @@ extension on AttachmentViewerController {
 		}
 		return id.toString();
 	}
-	String get threadSubfolderName {
-		final subfolderName = threadIdAndTitle;
-		if (subfolderName.length > 200) {
+	static String _sanitize(String string) {
+		// TODO: Romanize?
+		if (string.length > 200) {
 			// Real limit is 255. But let's just be safe
-			return subfolderName.substring(0, 200);
+			string = string.substring(0, 200);
 		}
-		return subfolderName;
-	}
-	String get boardAndThreadSubfolderName {
-		final subfolderName = '${attachment.board} - $threadIdAndTitle';
-		if (subfolderName.length > 200) {
-			// Real limit is 255. But let's just be safe
-			return subfolderName.substring(0, 200);
+		// Can't end a folder in a '.'
+		while (string[string.length - 1] == '.') {
+			string = string.substring(0, string.length - 1);
 		}
-		return subfolderName;
+		return string;
 	}
+	String get threadSubfolderName => _sanitize(threadIdAndTitle);
+	String get boardAndThreadSubfolderName => _sanitize('${attachment.board} - $threadIdAndTitle');
 }
 
 extension on GallerySavePathOrganizing {
