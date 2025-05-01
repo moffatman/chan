@@ -11,14 +11,30 @@ import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:mutex/mutex.dart';
 
 class LoggingInterceptor extends Interceptor {
-	final path = Persistence.temporaryDirectory.child('network.log');
-	late final IOSink file = File(path).openWrite();
+	final fileObj = Persistence.temporaryDirectory.file('network.log');
+	IOSink? file;
 	final lock = Mutex();
 	static final instance = LoggingInterceptor._();
 
+	/// Create [file], or recreate if it's broken
+	Future<void> initialize() => lock.protect(() async {
+		if (file != null) {
+			// Reinitialization
+			if (await fileObj.exists()) {
+				// No need to recreate it
+				return;
+			}
+		}
+		// Either fresh launch or [fileObj] was removed
+		// Don't await, since the file is deleted, could be some trouble
+		file?.flush();
+		file?.close();
+		file = fileObj.openWrite();
+	});
+
 	Future<void> reportViaShareSheet(BuildContext context) async => lock.protect(() async {
-		final gzippedPath = '$path.gz';
-		await copyGzipped(path, gzippedPath);
+		final gzippedPath = '${fileObj.path}.gz';
+		await copyGzipped(fileObj.path, gzippedPath);
 		if (!context.mounted) return;
 		await shareOne(
 			context: context,
@@ -29,8 +45,8 @@ class LoggingInterceptor extends Interceptor {
 	});
 
 	Future<void> reportViaEmail() async => lock.protect(() async {
-		final gzippedPath = '$path.gz';
-		await copyGzipped(path, gzippedPath);
+		final gzippedPath = '${fileObj.path}.gz';
+		await copyGzipped(fileObj.path, gzippedPath);
 		FlutterEmailSender.send(Email(
 			subject: 'Chance Network Logs',
 			recipients: ['callum@moffatman.com'],
@@ -49,6 +65,10 @@ class LoggingInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) {
 		lock.protect(() async {
+			final file = this.file;
+			if (file == null) {
+				return;
+			}
 			file.writeln('== onRequest(${identityHashCode(options)}) ${DateTime.now()} ${options.uri} ${options.method} ==');
 			file.writeln(options.headers);
 			final data = options.data;
@@ -72,6 +92,10 @@ class LoggingInterceptor extends Interceptor {
     ResponseInterceptorHandler handler,
   ) {
 		lock.protect(() async {
+			final file = this.file;
+			if (file == null) {
+				return;
+			}
 			file.writeln('== onResponse(${identityHashCode(response.requestOptions)}) ${DateTime.now()} ${response.requestOptions.uri} ${response.requestOptions.method} ${response.statusCode} ==');
 			file.writeln(response.headers);
 			if (response.requestOptions.method != 'GET') {
@@ -99,6 +123,10 @@ class LoggingInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) {
 		lock.protect(() async {
+			final file = this.file;
+			if (file == null) {
+				return;
+			}
 			file.writeln('== onError(${identityHashCode(err.requestOptions)}) ${DateTime.now()} ${err.requestOptions.uri} ${err.response?.statusCode} ==');
 			file.writeln(err.response?.headers);
 			file.writeln(err.response?.data);

@@ -27,6 +27,7 @@ import 'package:chan/services/installed_fonts.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/network_image_provider.dart';
+import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
@@ -99,6 +100,7 @@ Future<void> innerMain() async {
 			FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 		}
 		await Persistence.initializeStatic();
+		await LoggingInterceptor.instance.initialize();
 		VideoServer.initializeStatic(Persistence.webmCacheDirectory, Persistence.httpCacheDirectory);
 		await Notifications.initializeStatic();
 		await updateDynamicColors();

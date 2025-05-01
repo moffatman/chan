@@ -19,6 +19,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/incognito.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -423,6 +424,7 @@ class Persistence extends ChangeNotifier {
 		await httpCacheDirectory.create(recursive: true);
 		await shareCacheDirectory.create(recursive: true);
 		await temporaryDirectory.dir(cacheImageFolderName).create(recursive: true);
+		await LoggingInterceptor.instance.initialize();
 	}
 
 	@visibleForTesting
