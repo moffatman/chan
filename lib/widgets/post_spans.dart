@@ -154,30 +154,45 @@ class PostSpanRenderOptions {
 }
 
 @immutable
-abstract class PostSpan {
+sealed class PostSpan {
 	const PostSpan();
-	Iterable<int> referencedPostIds(String forBoard) => const Iterable.empty();
-	Iterable<PostIdentifier> get referencedPostIdentifiers => const Iterable.empty();
-	InlineSpan build(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
-	String buildText({bool forQuoteComparison = false});
-	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
-	Iterable<Attachment> get inlineAttachments;
-	bool get containsLink => false;
+	InlineSpan build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
+	String buildText(Post? post, {bool forQuoteComparison = false});
+	double estimateLines(Post? post, double charactersPerLine) => buildText(post).length / charactersPerLine;
 	@override
 	String toString() {
-		return '$runtimeType(${buildText()})';
+		return '$runtimeType(${buildText(null)})';
+	}
+	Iterable<PostSpan> traverse(Post post);
+}
+
+abstract class PostTerminalSpan extends PostSpan {
+	const PostTerminalSpan();
+	@override
+	Iterable<PostSpan> traverse(Post post) sync* {
+		yield this;
 	}
 }
 
-class _PostWrapperSpan extends PostSpan {
+abstract class PostSpanWithChild extends PostSpan {
+	final PostSpan child;
+	const PostSpanWithChild(this.child);
+	@override
+	buildText(Post? post, {bool forQuoteComparison = false}) => child.buildText(post, forQuoteComparison: forQuoteComparison);
+	@override
+	Iterable<PostSpan> traverse(Post post) sync* {
+		yield this;
+		yield child;
+	}
+}
+
+class _PostWrapperSpan extends PostTerminalSpan {
 	final InlineSpan span;
 	const _PostWrapperSpan(this.span);
 	@override
-	InlineSpan build(context, zone, settings, theme, options) => span;
+	InlineSpan build(context, post, zone, settings, theme, options) => span;
 	@override
-	String buildText({bool forQuoteComparison = false}) => span.toPlainText();
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
+	String buildText(Post? post, {bool forQuoteComparison = false}) => span.toPlainText();
 }
 
 class PostNodeSpan extends PostSpan {
@@ -185,24 +200,13 @@ class PostNodeSpan extends PostSpan {
 	const PostNodeSpan(this.children);
 
 	@override
-	Iterable<int> referencedPostIds(String forBoard) sync* {
-		for (final child in children) {
-			yield* child.referencedPostIds(forBoard);
-		}
+	Iterable<PostSpan> traverse(Post post) sync* {
+		yield this;
+		yield* children;
 	}
 
 	@override
-	Iterable<PostIdentifier> get referencedPostIdentifiers sync* {
-		for (final child in children) {
-			yield* child.referencedPostIdentifiers;
-		}
-	}
-
-	@override
-	Iterable<Attachment> get inlineAttachments => children.expand((c) => c.inlineAttachments);
-
-	@override
-	InlineSpan build(context, zone, settings, theme, options) {
+	InlineSpan build(context, post, zone, settings, theme, options) {
 		PostSpanRenderOptions effectiveOptions = options.copyWith(maxLines: 99999, ensureTrailingNewline: false);
 		final renderChildren = <InlineSpan>[];
 		List<PostSpan> effectiveChildren = children;
@@ -215,17 +219,17 @@ class PostNodeSpan extends PostSpan {
 		double lineGuess = 0;
 		for (int i = 0; i < effectiveChildren.length && lines < options.maxLines; i++) {
 			if ((i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) && (i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan)) {
-				renderChildren.add(effectiveChildren[i].build(context, zone, settings, theme, ownLineOptions));
+				renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, ownLineOptions));
 			}
 			else {
-				renderChildren.add(effectiveChildren[i].build(context, zone, settings, theme, effectiveOptions));
+				renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, effectiveOptions));
 			}
 			if (effectiveChildren[i] is PostLineBreakSpan) {
 				lines += lineGuess.ceil();
 				lineGuess = 0;
 			}
 			else {
-				lineGuess += effectiveChildren[i].buildText().length / options.charactersPerLine;
+				lineGuess += effectiveChildren[i].buildText(post).length / options.charactersPerLine;
 			}
 		}
 		if (lineGuess != 0 && options.ensureTrailingNewline) {
@@ -236,7 +240,7 @@ class PostNodeSpan extends PostSpan {
 		);
 	}
 
-	Widget buildWidget(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
+	Widget buildWidget(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
 		final rows = <List<InlineSpan>>[[]];
 		int lines = preInjectRow != null ? 2 : 1;
 		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
@@ -245,10 +249,10 @@ class PostNodeSpan extends PostSpan {
 				lines++;
 			}
 			else if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
-				rows.last.add(children[i].build(context, zone, settings, theme, options.copyWith(ownLine: true)));
+				rows.last.add(children[i].build(context, post, zone, settings, theme, options.copyWith(ownLine: true)));
 			}
 			else {
-				rows.last.add(children[i].build(context, zone, settings, theme, options));
+				rows.last.add(children[i].build(context, post, zone, settings, theme, options));
 			}
 		}
 		if (postInject != null) {
@@ -279,12 +283,12 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
-		return children.map((x) => x.buildText(forQuoteComparison: forQuoteComparison)).join('');
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
+		return children.map((x) => x.buildText(post, forQuoteComparison: forQuoteComparison)).join('');
 	}
 
 	@override
-	double estimateLines(double charactersPerLine) {
+	double estimateLines(Post? post, double charactersPerLine) {
 		double lines = 0;
 		double lineGuess = 0;
 		for (final child in children) {
@@ -293,7 +297,7 @@ class PostNodeSpan extends PostSpan {
 				lineGuess = 0;
 			}
 			else {
-				lineGuess += child.estimateLines(charactersPerLine);
+				lineGuess += child.estimateLines(post, charactersPerLine);
 			}
 		}
 		lines += lineGuess.ceil();
@@ -301,23 +305,17 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	bool get containsLink => children.any((c) => c.containsLink);
-
-	@override
 	String toString() => 'PostNodeSpan($children)';
 }
 
-class PostAttachmentsSpan extends PostSpan {
+class PostAttachmentsSpan extends PostTerminalSpan {
 	final List<Attachment> attachments;
 	const PostAttachmentsSpan(this.attachments);
 
 	@override
-	Iterable<Attachment> get inlineAttachments => attachments;
-
-	@override
-	InlineSpan build(context, zone, settings, theme, options) {
+	InlineSpan build(context, post, zone, settings, theme, options) {
 		if (options.showRawSource) {
-			return TextSpan(text: buildText());
+			return TextSpan(text: buildText(post));
 		}
 		return WidgetSpan(
 			child: Wrap(
@@ -369,7 +367,7 @@ class PostAttachmentsSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		if (forQuoteComparison) {
 			// Make it look like a SiteXenforo quote (the only use case)
 			return '${attachments.map((a) => '[View Attachment ${a.id}](${a.url})').join('')}\n';
@@ -378,12 +376,12 @@ class PostAttachmentsSpan extends PostSpan {
 	}
 }
 
-class PostTextSpan extends PostSpan {
+class PostTextSpan extends PostTerminalSpan {
 	final String text;
 	const PostTextSpan(this.text);
 
 	@override
-	InlineSpan build(context, zone, settings, theme, options) {
+	InlineSpan build(context, post, zone, settings, theme, options) {
 		final children = <TextSpan>[];
 		final str = settings.filterProfanity(text);
 		final highlightPattern = options.highlightPattern;
@@ -431,110 +429,137 @@ class PostTextSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		return text;
 	}
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
 }
 
-class PostUnderlinedSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostUnderlinedSpan(this.child);
+class PostUnderlinedSpan extends PostSpanWithChild {
+	const PostUnderlinedSpan(super.child);
 
 	@override
-	InlineSpan build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	InlineSpan build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline,
 				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
 			)
 		));
 	}
-
-	@override
-	String buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-
-	@override
-	bool get containsLink => child.containsLink;
-
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostOverlinedSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostOverlinedSpan(this.child);
+class PostOverlinedSpan extends PostSpanWithChild {
+	const PostOverlinedSpan(super.child);
 
 	@override
-	InlineSpan build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	InlineSpan build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.overline,
 				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
 			)
 		));
 	}
-
-	@override
-	String buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-
-	@override
-	bool get containsLink => child.containsLink;
-
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostLineBreakSpan extends PostSpan {
+class PostLineBreakSpan extends PostTerminalSpan {
 	const PostLineBreakSpan();
 
 	@override
-	InlineSpan build(context, zone, settings, theme, options) =>  const TextSpan(text: '\n');
+	InlineSpan build(context, post, zone, settings, theme, options) =>  const TextSpan(text: '\n');
 
 	@override
-	String buildText({bool forQuoteComparison = false}) => '\n';
+	String buildText(Post? post, {bool forQuoteComparison = false}) => '\n';
 
 	@override
 	String toString() => 'PostLineBreakSpan()';
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
 }
 
-class PostQuoteSpan extends PostSpan {
-	final PostSpan child;
-	const PostQuoteSpan(this.child);
+class PostWeakQuoteLinkSpan extends PostSpan {
+	final int id;
+	final PostQuoteSpan quote;
+	final String? author;
+	const PostWeakQuoteLinkSpan({
+		required this.id,
+		required this.quote,
+		this.author
+	});
+
+	/// Positive = exact quote (hide [this.quote])
+	/// Negative = partial quote (still show [this.quote])
+	int? findQuoteTarget(Post? post) {
+		if (post == null) {
+			return null;
+		}
+		final key = '${post.id}/$id';
+		return post.extraMetadata?[key];
+	}
+
+	void setQuoteTarget(Post post, int targetPostId, bool isExactQuote) {
+		final key = '${post.id}/$id';
+		(post.extraMetadata ??= {})[key] = isExactQuote ? targetPostId : -targetPostId;
+	}
+
+	PostSpan _getSpan(Post? post) {
+		final target = findQuoteTarget(post);
+		if (post != null && target != null) {
+			final quoteLink = PostQuoteLinkSpan(
+				board: post.board,
+				threadId: post.threadId,
+				postId: target.abs(),
+				key: ValueKey('${post.id}/$id')
+			);
+			if (target.isNegative) {
+				// Show the context
+				return PostNodeSpan([
+					quoteLink,
+					const PostLineBreakSpan(),
+					quote
+				]);
+			}
+			return quoteLink;
+		}
+		return quote;
+	}
 
 	@override
-	InlineSpan build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	InlineSpan build(context, post, zone, settings, theme, options) {
+		return _getSpan(post).build(context, post, zone, settings, theme, options);
+	}
+
+	@override
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
+		return _getSpan(post).buildText(post, forQuoteComparison: forQuoteComparison);
+	}
+
+	@override
+	Iterable<PostSpan> traverse(Post post) sync* {
+		yield _getSpan(post);
+	}
+
+	@override
+	String toString() => 'PostQuoteWeakLinkSpan(id: $id, author: $author, quote: $quote)';
+}
+
+class PostQuoteSpan extends PostSpanWithChild {
+	const PostQuoteSpan(super.child);
+
+	@override
+	InlineSpan build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(color: theme.quoteColor),
 			showEmbeds: false
 		));
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		if (forQuoteComparison) {
 			// Nested quotes not used
 			return '';
 		}
-		return child.buildText();
+		return child.buildText(post);
 	}
-
-	@override
-	bool get containsLink => child.containsLink;
-
-	@override
-	Iterable<int> referencedPostIds(String forBoard) => child.referencedPostIds(forBoard);
-	@override
-	Iterable<PostIdentifier> get referencedPostIdentifiers => child.referencedPostIdentifiers;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 
 	@override
 	String toString() => 'PostQuoteSpan($child)';
@@ -546,8 +571,8 @@ class PostPinkQuoteSpan extends PostQuoteSpan {
 	static Color getColor(SavedTheme theme) => theme.quoteColor.shiftHue(-90);
 
 	@override
-	InlineSpan build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	InlineSpan build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(color: getColor(theme))
 		));
 	}
@@ -562,8 +587,8 @@ class PostBlueQuoteSpan extends PostQuoteSpan {
 	static Color getColor(SavedTheme theme) => theme.quoteColor.shiftHue(135);
 
 	@override
-	InlineSpan build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	InlineSpan build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(color: getColor(theme))
 		));
 	}
@@ -572,7 +597,7 @@ class PostBlueQuoteSpan extends PostQuoteSpan {
 	String toString() => 'PostBlueQuoteSpan($child)';
 }
 
-class PostQuoteLinkSpan extends PostSpan {
+class PostQuoteLinkSpan extends PostTerminalSpan {
 	final String board;
 	final int? threadId;
 	final int postId;
@@ -590,20 +615,6 @@ class PostQuoteLinkSpan extends PostSpan {
 		required this.postId,
 		this.key
 	}) : board = intern(board), threadId = null;
-
-	@override
-	Iterable<int> referencedPostIds(String forBoard) sync* {
-		if (forBoard == board) {
-			yield postId;
-		}
-	}
-
-	@override
-	Iterable<PostIdentifier> get referencedPostIdentifiers sync* {
-		if (threadId != null) {
-			yield PostIdentifier(board, threadId!, postId);
-		}
-	}
 
 	(TextSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int actualThreadId) {
 		String text = '>>';
@@ -682,7 +693,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
+	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
 		Color color = theme.secondaryColor;
 		if (postId == threadId) {
@@ -690,7 +701,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		if (threadId != zone.primaryThreadId) {
 			color = theme.secondaryColor.shiftHue(-20);
-			if (zone.findPost(zone.stackIds.last)?.threadId != threadId) {
+			if (post?.threadId != threadId) {
 				text += ' (Old thread)';
 			}
 		}
@@ -750,7 +761,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			onExit: options.onExit
 		), recognizer, enableUnconditionalInteraction);
 	}
-	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
+	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		int? actualThreadId = threadId;
 		if (threadId == null) {
 			// Dead links do not know their thread
@@ -771,7 +782,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		else {
 			// Normal link
-			final span = _buildNormalLink(context, zone, settings, theme, options, actualThreadId);
+			final span = _buildNormalLink(context, post, zone, settings, theme, options, actualThreadId);
 			final thisPostInThread = zone.findPost(postId);
 			final stackCount = zone.stackIds.countOf(postId);
 			final enableInteraction = switch(zone.style) {
@@ -860,8 +871,8 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 	}
 	@override
-	build(context, zone, settings, theme, options) {
-		final pair = _build(context, zone, settings, theme, options);
+	build(context, post, zone, settings, theme, options) {
+		final pair = _build(context, post, zone, settings, theme, options);
 		if (options.showRawSource) {
 			return pair.$1;
 		}
@@ -884,16 +895,13 @@ class PostQuoteLinkSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		if (forQuoteComparison) {
 			// Xenforo does not nest quotes
 			return '';
 		}
 		return '>>$postId';
 	}
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
 
 	@override
 	bool operator == (Object other) {
@@ -927,18 +935,18 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 	});
 
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		final thePost = zone.findPost(quoteLink.postId);
-		final theText = thePost?.span.buildText(forQuoteComparison: true);
-		final contextText = this.context.child.buildText(forQuoteComparison: true);
+		final theText = thePost?.span.buildText(thePost, forQuoteComparison: true);
+		final contextText = this.context.child.buildText(post, forQuoteComparison: true);
 		final similarity = theText?.similarityTo(contextText) ?? 0;
 		return TextSpan(
 			children: [
-				quoteLink.build(context, zone, settings, theme, options),
+				quoteLink.build(context, post, zone, settings, theme, options),
 				const TextSpan(text: '\n'),
 				if (similarity < 0.85) ...[
 					// Partial quote, include the snippet
-					this.context.build(context, zone, settings, theme, options),
+					this.context.build(context, post, zone, settings, theme, options),
 					const TextSpan(text: '\n'),
 				]
 			]
@@ -946,32 +954,29 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		if (forQuoteComparison) {
 			// Xenforo does not nest quotes
 			return '';
 		}
-		return '${quoteLink.buildText()}\n${context.buildText()}';
+		return '${quoteLink.buildText(post)}\n${context.buildText(post)}';
 	}
 
 	@override
-	Iterable<int> referencedPostIds(String forBoard) => quoteLink.referencedPostIds(forBoard);
-
-	@override
-	Iterable<PostIdentifier> get referencedPostIdentifiers => quoteLink.referencedPostIdentifiers;
-
-	@override
-	Iterable<Attachment> get inlineAttachments => context.inlineAttachments;
+	Iterable<PostSpan> traverse(Post post) sync* {
+		// Can't figure out whether to show the quote or not here. Assume it's not shown
+		yield quoteLink;
+	}
 
 	@override
 	String toString() => 'PostQuoteLinkWithContextSpan($quoteLink, $context)';
 }
 
-class PostBoardLinkSpan extends PostSpan {
+class PostBoardLinkSpan extends PostTerminalSpan {
 	final String board;
 	PostBoardLinkSpan(String board) : board = intern(board);
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
 			text: zone.imageboard.site.formatBoardLink(board),
 			style: options.baseTextStyle.copyWith(
@@ -999,12 +1004,9 @@ class PostBoardLinkSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		return '>>/$board/';
 	}
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
 }
 
 class _DetectLanguageParam {
@@ -1018,7 +1020,7 @@ void _detectLanguageIsolate(_DetectLanguageParam param) {
 	param.sendPort.send(result.language);
 }
 
-class PostCodeSpan extends PostSpan {
+class PostCodeSpan extends PostTerminalSpan {
 	final String text;
 
 	const PostCodeSpan(this.text);
@@ -1026,7 +1028,7 @@ class PostCodeSpan extends PostSpan {
 	static final _startsWithCapitalLetterPattern = RegExp(r'^[A-Z]');
 
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		if (text.isEmpty) {
 			// New troll strategy with empty [code][/code]
 			// Make it look like something instead of zero-width
@@ -1150,21 +1152,17 @@ class PostCodeSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		return '[code]$text[/code]';
 	}
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
 }
 
-class PostSpoilerSpan extends PostSpan {
-	final PostSpan child;
+class PostSpoilerSpan extends PostSpanWithChild {
 	final int id;
 	final bool forceReveal;
-	const PostSpoilerSpan(this.child, this.id, {this.forceReveal = false});
+	const PostSpoilerSpan(super.child, this.id, {this.forceReveal = false});
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		final showSpoiler = options.imageShareMode || options.showRawSource || zone.shouldShowSpoiler(id) || forceReveal;
 		final toggleRecognizer = TapGestureRecognizer(debugOwner: this)..onTap = () {
 			zone.toggleShowingOfSpoiler(id);
@@ -1174,7 +1172,7 @@ class PostSpoilerSpan extends PostSpan {
 		onEnter(_) => zone.showSpoiler(id);
 		onExit(_) => zone.hideSpoiler(id);
 		return TextSpan(
-			children: [child.build(context, zone, settings, theme, options.copyWith(
+			children: [child.build(context, post, zone, settings, theme, options.copyWith(
 				recognizer: toggleRecognizer,
 				overrideRecognizer: !showSpoiler,
 				overrideTextColor: showSpoiler ? visibleColor : hiddenColor,
@@ -1194,18 +1192,12 @@ class PostSpoilerSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
-		return '[spoiler]${child.buildText(forQuoteComparison: forQuoteComparison)}[/spoiler]';
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
+		return '[spoiler]${child.buildText(post, forQuoteComparison: forQuoteComparison)}[/spoiler]';
 	}
-
-	@override
-	bool get containsLink => child.containsLink;
-
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostLinkSpan extends PostSpan {
+class PostLinkSpan extends PostTerminalSpan {
 	final String url;
 	final String? name;
 	final EmbedData? embedData;
@@ -1214,7 +1206,7 @@ class PostLinkSpan extends PostSpan {
 	static final _trailingJunkPattern = RegExp(r'(\.[A-Za-z0-9\-._~]+)[^A-Za-z0-9\-._~\.\/?]+$');
 
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		// Remove trailing bracket or other punctuation
 		final cleanedUrl = url.replaceAllMapped(
 			_trailingJunkPattern,
@@ -1255,11 +1247,11 @@ class PostLinkSpan extends PostSpan {
 								threadId: thread.id,
 								postId: imageboardTarget.$2.postId ?? thread.id,
 								key: ObjectKey(this)
-							).build(context, zone, settings, theme, options);
+							).build(context, post, zone, settings, theme, options);
 						}
 					}
 					else {
-						return PostBoardLinkSpan(imageboardTarget.$2.board).build(context, zone, settings, theme, options);
+						return PostBoardLinkSpan(imageboardTarget.$2.board).build(context, post, zone, settings, theme, options);
 					}
 				}
 				Widget buildEmbed({
@@ -1435,7 +1427,7 @@ class PostLinkSpan extends PostSpan {
 				}
 			}
 		}
-		return PostTextSpan(name ?? url).build(context, zone, settings, theme, options.copyWith(
+		return PostTextSpan(name ?? url).build(context, post, zone, settings, theme, options.copyWith(
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () => openBrowser(context, cleanedUri!)),
 			baseTextStyle: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
@@ -1444,7 +1436,7 @@ class PostLinkSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		if (name != null && !url.endsWith(name!)) {
 			return '[$name]($url)';
 		}
@@ -1452,15 +1444,9 @@ class PostLinkSpan extends PostSpan {
 			return url;
 		}
 	}
-
-	@override
-	bool get containsLink => true;
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
 }
 
-class PostCatalogSearchSpan extends PostSpan {
+class PostCatalogSearchSpan extends PostTerminalSpan {
 	final String board;
 	final String query;
 	PostCatalogSearchSpan({
@@ -1468,7 +1454,7 @@ class PostCatalogSearchSpan extends PostSpan {
 		required this.query
 	}) : board = intern(board);
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
 			text: zone.imageboard.site.formatBoardSearchLink(board, query),
 			style: options.baseTextStyle.copyWith(
@@ -1495,25 +1481,22 @@ class PostCatalogSearchSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false}) {
 		return '>>>/$board/$query';
 	}
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
 }
 
-class PostTeXSpan extends PostSpan {
+class PostTeXSpan extends PostTerminalSpan {
 	final String tex;
 	const PostTeXSpan(this.tex);
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		final child = TexWidget(
 			tex: tex,
 			color: options.overrideTextColor ?? options.baseTextStyle.color
 		);
 		return options.showRawSource ? TextSpan(
-			text: buildText()
+			text: buildText(post)
 		) : WidgetSpan(
 			alignment: PlaceholderAlignment.middle,
 			child: SingleChildScrollView(
@@ -1523,12 +1506,10 @@ class PostTeXSpan extends PostSpan {
 		);
 	}
 	@override
-	String buildText({bool forQuoteComparison = false}) => '[math]$tex[/math]';
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
+	String buildText(Post? post, {bool forQuoteComparison = false}) => '[math]$tex[/math]';
 }
 
-class PostInlineImageSpan extends PostSpan {
+class PostInlineImageSpan extends PostTerminalSpan {
 	final String src;
 	final int width;
 	final int height;
@@ -1538,7 +1519,7 @@ class PostInlineImageSpan extends PostSpan {
 		required this.height
 	});
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		if (options.showRawSource) {
 			return TextSpan(
 				text: '<img src="$src">'
@@ -1562,148 +1543,90 @@ class PostInlineImageSpan extends PostSpan {
 		);
 	}
 	@override
-	String buildText({bool forQuoteComparison = false}) => src;
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
+	String buildText(Post? post, {bool forQuoteComparison = false}) => src;
 }
 
-class PostColorSpan extends PostSpan {
-	final PostSpan child;
+class PostColorSpan extends PostSpanWithChild {
 	final Color? color;
 	
-	const PostColorSpan(this.child, this.color);
+	const PostColorSpan(super.child, this.color);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(color: color)
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostSecondaryColorSpan extends PostSpan {
-	final PostSpan child;
-	
-	const PostSecondaryColorSpan(this.child);
+class PostSecondaryColorSpan extends PostSpanWithChild {
+	const PostSecondaryColorSpan(super.child);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(color: theme.secondaryColor)
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostBoldSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostBoldSpan(this.child);
+class PostBoldSpan extends PostSpanWithChild {
+	const PostBoldSpan(super.child);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold)
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostItalicSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostItalicSpan(this.child);
+class PostItalicSpan extends PostSpanWithChild {
+	const PostItalicSpan(super.child);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(fontStyle: FontStyle.italic)
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostSuperscriptSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostSuperscriptSpan(this.child);
+class PostSuperscriptSpan extends PostSpanWithChild {
+	const PostSuperscriptSpan(super.child);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(fontFeatures: const [FontFeature.superscripts()])
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostSubscriptSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostSubscriptSpan(this.child);
+class PostSubscriptSpan extends PostSpanWithChild {
+	const PostSubscriptSpan(super.child);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(fontFeatures: const [FontFeature.subscripts()])
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostStrikethroughSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostStrikethroughSpan(this.child);
+class PostStrikethroughSpan extends PostSpanWithChild {
+	const PostStrikethroughSpan(super.child);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(decoration: TextDecoration.lineThrough, decorationColor: options.overrideTextColor ?? options.baseTextStyle.color)
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 
-class PostPopupSpan extends PostSpan {
-	final PostSpan popup;
+class PostPopupSpan extends PostSpanWithChild {
 	final String title;
 	const PostPopupSpan({
-		required this.popup,
+		required PostSpan popup,
 		required this.title
-	});
+	}) : super(popup);
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
 			text: 'Show $title',
 			style: options.baseTextStyle.copyWith(
@@ -1716,7 +1639,7 @@ class PostPopupSpan extends PostSpan {
 					builder: (context) => AdaptiveActionSheet(
 						title: Text(title),
 						message: Text.rich(
-							popup.build(context, zone, settings, theme, options),
+							child.build(context, post, zone, settings, theme, options),
 							textAlign: TextAlign.left,
 						),
 						actions: [
@@ -1734,18 +1657,16 @@ class PostPopupSpan extends PostSpan {
 	}
 
 	@override
-	buildText({bool forQuoteComparison = false}) => '$title\n${popup.buildText(forQuoteComparison: forQuoteComparison)}';
-	@override
-	Iterable<Attachment> get inlineAttachments => popup.inlineAttachments;
+	buildText(Post? post, {bool forQuoteComparison = false}) => '$title\n${child.buildText(post, forQuoteComparison: forQuoteComparison)}';
 }
 
 class PostTableSpan extends PostSpan {
 	final List<List<PostSpan>> rows;
 	const PostTableSpan(this.rows);
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		if (options.showRawSource) {
-			return TextSpan(text: buildText());
+			return TextSpan(text: buildText(post));
 		}
 		return WidgetSpan(
 			child: SingleChildScrollView(
@@ -1761,7 +1682,7 @@ class PostTableSpan extends PostSpan {
 							child: Padding(
 								padding: const EdgeInsets.all(4),
 								child: Text.rich(
-									col.build(context, zone, settings, theme, options),
+									col.build(context, post, zone, settings, theme, options),
 									textAlign: TextAlign.left,
 									textScaler: TextScaler.noScaling
 								)
@@ -1773,51 +1694,34 @@ class PostTableSpan extends PostSpan {
 		);
 	}
 	@override
-	buildText({bool forQuoteComparison = false}) => rows.map((r) => r.map((r) => r.buildText(forQuoteComparison: forQuoteComparison)).join(', ')).join('\n');
+	buildText(Post? post, {bool forQuoteComparison = false}) => rows.map((r) => r.map((r) => r.buildText(post, forQuoteComparison: forQuoteComparison)).join(', ')).join('\n');
 
 	@override
-	Iterable<int> referencedPostIds(String forBoard) sync* {
+	Iterable<PostSpan> traverse(Post post) sync* {
 		for (final row in rows) {
-			for (final child in row) {
-				yield* child.referencedPostIds(forBoard);
-			}
+			yield* row;
 		}
 	}
-
-	@override
-	Iterable<PostIdentifier> get referencedPostIdentifiers sync* {
-		for (final row in rows) {
-			for (final child in row) {
-				yield* child.referencedPostIdentifiers;
-			}
-		}
-	}
-
-	@override
-	Iterable<Attachment> get inlineAttachments => rows.expand((r) => r.expand((c) => c.inlineAttachments));
 }
 
-class PostDividerSpan extends PostSpan {
+class PostDividerSpan extends PostTerminalSpan {
 	const PostDividerSpan();
 	@override
-	build(context, zone, settings, theme, options) => const WidgetSpan(
+	build(context, post, zone, settings, theme, options) => const WidgetSpan(
 		child: ChanceDivider(height: 16)
 	);
 
 	@override
-	buildText({bool forQuoteComparison = false}) => '\n';
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
+	buildText(Post? post, {bool forQuoteComparison = false}) => '\n';
 }
 
-class PostShiftJISSpan extends PostSpan {
+class PostShiftJISSpan extends PostTerminalSpan {
 	final String text;
 
 	const PostShiftJISSpan(this.text);
 
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		final span = TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
@@ -1846,19 +1750,16 @@ class PostShiftJISSpan extends PostSpan {
 	}
 
 	@override
-	buildText({bool forQuoteComparison = false}) => '[sjis]$text[/sjis]';
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
+	buildText(Post? post, {bool forQuoteComparison = false}) => '[sjis]$text[/sjis]';
 }
 
-class PostUserLinkSpan extends PostSpan {
+class PostUserLinkSpan extends PostTerminalSpan {
 	final String username;
 
 	const PostUserLinkSpan(this.username);
 
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
 			text: '/u/${zone.imageboard.site.formatUsername(username)}',
 			style: options.baseTextStyle.copyWith(
@@ -1885,20 +1786,16 @@ class PostUserLinkSpan extends PostSpan {
 	}
 
 	@override
-	buildText({bool forQuoteComparison = false}) => '/u/$username';
-
-	@override
-	Iterable<Attachment> get inlineAttachments => [];
+	buildText(Post? post, {bool forQuoteComparison = false}) => '/u/$username';
 }
 
-class PostCssSpan extends PostSpan {
-	final PostSpan child;
+class PostCssSpan extends PostSpanWithChild {
 	final String css;
 
-	const PostCssSpan(this.child, this.css);
+	const PostCssSpan(super.child, this.css);
 
 	@override
-	build(context, zone, settings, theme, options) {
+	build(context, post, zone, settings, theme, options) {
 		final unrecognizedParts = <String>[];
 		TextStyle style = options.baseTextStyle;
 		for (final part in css.split(';')) {
@@ -1933,7 +1830,7 @@ class PostCssSpan extends PostSpan {
 		}
 
 		if (unrecognizedParts.isEmpty) {
-			return child.build(context, zone, settings, theme, options.copyWith(
+			return child.build(context, post, zone, settings, theme, options.copyWith(
 				baseTextStyle: style
 			));
 		}
@@ -1941,7 +1838,7 @@ class PostCssSpan extends PostSpan {
 			return TextSpan(
 				children: [
 					TextSpan(text: '<span style="${unrecognizedParts.join('; ')}">'),
-					child.build(context, zone, settings, theme, options.copyWith(
+					child.build(context, post, zone, settings, theme, options.copyWith(
 						baseTextStyle: style
 					)),
 					const TextSpan(text: '</span>')
@@ -1951,49 +1848,27 @@ class PostCssSpan extends PostSpan {
 	}
 
 	@override
-	String buildText({bool forQuoteComparison = false}) => '<span style="$css">${child.buildText(forQuoteComparison: forQuoteComparison)}</span>';
-
-	@override
-	bool get containsLink => child.containsLink;
-
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
+	String buildText(Post? post, {bool forQuoteComparison = false}) => '<span style="$css">${child.buildText(post, forQuoteComparison: forQuoteComparison)}</span>';
 }
 
-class PostSmallTextSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostSmallTextSpan(this.child);
+class PostSmallTextSpan extends PostSpanWithChild {
+	const PostSmallTextSpan(super.child);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(fontSize: 14)
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
-class PostBigTextSpan extends PostSpan {
-	final PostSpan child;
-
-	const PostBigTextSpan(this.child);
+class PostBigTextSpan extends PostSpanWithChild {
+	const PostBigTextSpan(super.child);
 	@override
-	build(context, zone, settings, theme, options) {
-		return child.build(context, zone, settings, theme, options.copyWith(
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(fontSize: 23)
 		));
 	}
-	@override
-	buildText({bool forQuoteComparison = false}) => child.buildText(forQuoteComparison: forQuoteComparison);
-	@override
-	bool get containsLink => child.containsLink;
-	@override
-	Iterable<Attachment> get inlineAttachments => child.inlineAttachments;
 }
 
 class PostSpanZone extends StatelessWidget {
@@ -2551,7 +2426,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 				attachments_: post.attachments_,
 				attachmentDeleted: post.attachmentDeleted,
 				posterId: post.posterId,
-				foolfuukaLinkedPostThreadIds: post.foolfuukaLinkedPostThreadIds,
+				extraMetadata: post.extraMetadata,
 				passSinceYear: post.passSinceYear,
 				capcode: post.capcode
 			);
@@ -2963,11 +2838,11 @@ TextSpan buildPostInfoRow({
 				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 			)
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
-				text: '${formatTime(post.time.toLocal(), forceFullDate: forceAbsoluteTime)} '
+				text: '${formatTime(post.time.toLocal(), forceFullDate: forceAbsoluteTime, withSecondsPrecision: site.hasSecondsPrecision)} '
 			)
 			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts)
 			 	if (!settings.showAbsoluteTimeOnPosts && forceAbsoluteTime) TextSpan(
-					text: '${formatTime(post.time.toLocal(), forceFullDate: true)} '
+					text: '${formatTime(post.time.toLocal(), forceFullDate: true, withSecondsPrecision: site.hasSecondsPrecision)} '
 				)
 				else TextSpan(
 					text: '${formatRelativeTime(post.time.toLocal())} ago '
@@ -3115,7 +2990,7 @@ TextSpan buildDraftInfoRow({
 				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
 			)
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts && time != null) TextSpan(
-				text: '${formatTime(time)} '
+				text: '${formatTime(time, withSecondsPrecision: imageboard.site.hasSecondsPrecision)} '
 			)
 			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts && time != null) TextSpan(
 				text: '${formatRelativeTime(time)} ago '

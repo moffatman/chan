@@ -11,6 +11,7 @@ import 'package:chan/services/embed.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/sites/4chan.dart';
+import 'package:chan/sites/helpers/forum.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
@@ -29,7 +30,7 @@ extension _NonEmptyOrNullOrDataUri on String {
 	}
 }
 
-class SiteXenforo extends ImageboardSite {
+class SiteXenforo extends ImageboardSite with ForumSite {
 	@override
   final String baseUrl;
 	@override
@@ -726,45 +727,6 @@ class SiteXenforo extends ImageboardSite {
   }
 
 	@override
-	int placeOrphanPost(List<Post> posts, Post post) {
-		if (post.parentId == null) {
-			return super.placeOrphanPost(posts, post);
-		}
-		// Find last sibling
-		int index = posts.lastIndexWhere((p) => p.parentId == post.parentId);
-		if (index == -1) {
-			// No last sibling, find parent page
-			index = posts.indexWhere((p) => p.id == post.parentId);
-			if (index != -1) {
-				// After parent
-				index++;
-			}
-		}
-		else {
-			// Walk back to find proper sequence within siblings
-			while (
-				index >= 0 &&
-				post.parentId == posts[index].parentId &&
-				post.id < posts[index].id
-			) {
-				// The sibling comes before us
-				index--;
-			}
-			// After sibling
-			index++;
-		}
-		if (index == -1) {
-			// No sibling or parent
-			posts.add(post);
-			return posts.length - 1;
-		}
-		else {
-			posts.insert(index, post);
-			return index;
-		}
-	}
-
-	@override
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		// Just do one at a time
 		final postId = postIds.first;
@@ -1067,6 +1029,9 @@ class SiteXenforo extends ImageboardSite {
 	/// On the website these are huge (full-width)
 	@override
 	bool get hasLargeInlineAttachments => true;
+
+	@override
+	bool get hasSharedIdSpace => true;
 
 	@override
 	bool operator == (Object other) =>

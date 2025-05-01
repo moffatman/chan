@@ -200,7 +200,7 @@ Future<EmbedData?> loadEmbedData(String url) async {
 					imageboardTarget: target
 				);
 			}
-			String title = thread.title ?? thread.posts_.first.span.buildText();
+			String title = thread.title ?? thread.posts_.first.buildText();
 			if (title.length > 50) {
 				final space = title.lastIndexOf(' ', 50);
 				title = '${title.substring(0, space == -1 ? 47 : space)}...';

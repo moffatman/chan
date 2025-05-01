@@ -565,6 +565,8 @@ class SiteHackerNews extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 	@override
 	bool get hasExpiringThreads => false;
+	@override
+	bool get hasSharedIdSpace => true;
 
 	@override
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) => getThread(thread, priority: priority, cancelToken: cancelToken);

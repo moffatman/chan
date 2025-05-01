@@ -275,7 +275,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 								);
 							}
 							else {
-								final matchingPostIndex = row.thread!.posts_.indexWhere((p) => p.span.buildText().toLowerCase().contains(widget.query.query.toLowerCase()));
+								final matchingPostIndex = row.thread!.posts_.indexWhere((p) => p.buildText().toLowerCase().contains(widget.query.query.toLowerCase()));
 								return GestureDetector(
 									onTap: () => setValue(SelectedSearchResult(
 										imageboard: imageboard,

@@ -206,7 +206,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					}
 					if (
 						_query.isNotEmpty &&
-						!post.span.buildText().contains(query) &&
+						!post.buildText().contains(query) &&
 						!(post.threadId == post.id && thread.title?.contains(query) == true)
 					) {
 						continue;
@@ -214,7 +214,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					if (_filterIsThread != null && _filterIsThread != (post.id == thread.id)) {
 						continue;
 					}
-					if (_filterContainsLink != null && _filterContainsLink != post.span.containsLink) {
+					if (_filterContainsLink != null && _filterContainsLink != post.containsLink) {
 						continue;
 					}
 					if (_filterHasAttachment != null && _filterHasAttachment != post.attachments.isNotEmpty) {

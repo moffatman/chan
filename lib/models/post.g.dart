@@ -74,16 +74,14 @@ class PostFields {
     fieldName: 'spanFormat',
     merger: PrimitiveMerger(),
   );
-  static Map<String, int>? getFoolfuukaLinkedPostThreadIds(Post x) =>
-      x.foolfuukaLinkedPostThreadIds;
-  static void setFoolfuukaLinkedPostThreadIds(Post x, Map<String, int>? v) =>
-      x.foolfuukaLinkedPostThreadIds = v;
-  static const foolfuukaLinkedPostThreadIds =
-      HiveFieldAdapter<Post, Map<String, int>?>(
-    getter: getFoolfuukaLinkedPostThreadIds,
-    setter: setFoolfuukaLinkedPostThreadIds,
+  static Map<String, int>? getExtraMetadata(Post x) => x.extraMetadata;
+  static void setExtraMetadata(Post x, Map<String, int>? v) =>
+      x.extraMetadata = v;
+  static const extraMetadata = HiveFieldAdapter<Post, Map<String, int>?>(
+    getter: getExtraMetadata,
+    setter: setExtraMetadata,
     fieldNumber: 12,
-    fieldName: 'foolfuukaLinkedPostThreadIds',
+    fieldName: 'extraMetadata',
     merger: NullableMerger(MapMerger(PrimitiveMerger())),
   );
   static bool getAttachmentDeleted(Post x) => x.attachmentDeleted;
@@ -209,7 +207,7 @@ class PostAdapter extends TypeAdapter<Post> {
     7: PostFields.flag,
     8: PostFields.posterId,
     9: PostFields.spanFormat,
-    12: PostFields.foolfuukaLinkedPostThreadIds,
+    12: PostFields.extraMetadata,
     11: PostFields.attachmentDeleted,
     13: PostFields.trip,
     14: PostFields.passSinceYear,
@@ -256,7 +254,7 @@ class PostAdapter extends TypeAdapter<Post> {
       flag: fields[7] as Flag?,
       attachmentDeleted: fields[11] == null ? false : fields[11] as bool,
       posterId: fields[8] as String?,
-      foolfuukaLinkedPostThreadIds: (fields[12] as Map?)?.cast<String, int>(),
+      extraMetadata: (fields[12] as Map?)?.cast<String, int>(),
       passSinceYear: fields[14] as int?,
       capcode: fields[15] as String?,
       attachments_:
@@ -282,8 +280,7 @@ class PostAdapter extends TypeAdapter<Post> {
       if (obj.flag != null) 7: obj.flag,
       if (obj.posterId != null) 8: obj.posterId,
       9: obj.spanFormat,
-      if (obj.foolfuukaLinkedPostThreadIds != null)
-        12: obj.foolfuukaLinkedPostThreadIds,
+      if (obj.extraMetadata != null) 12: obj.extraMetadata,
       if (obj.attachmentDeleted) 11: obj.attachmentDeleted,
       if (obj.trip != null) 13: obj.trip,
       if (obj.passSinceYear != null) 14: obj.passSinceYear,
@@ -359,6 +356,8 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         return PostSpanFormat.karachan;
       case 13:
         return PostSpanFormat.jsChan;
+      case 14:
+        return PostSpanFormat.jForum;
       default:
         return PostSpanFormat.chan4;
     }
@@ -408,6 +407,9 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         break;
       case PostSpanFormat.jsChan:
         writer.writeByte(13);
+        break;
+      case PostSpanFormat.jForum:
+        writer.writeByte(14);
         break;
     }
   }

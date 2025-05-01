@@ -172,7 +172,7 @@ class _SavedThreadsByTitleLoader extends _SavedThreadsLoaderImpl<(PersistentThre
 		}
 		// Don't store whole Thread for memory reasons
 		// Title should never change in a Thread, safe to cache it
-		final title = _cache[state] = thread.title ?? thread.posts_.tryFirst?.span.buildText() ?? '';
+		final title = _cache[state] = thread.title ?? thread.posts_.tryFirst?.buildText() ?? '';
 		return (state, title);
 	}
 	@override

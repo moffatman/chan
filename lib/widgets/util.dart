@@ -313,7 +313,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 	}
 }
 
-String formatTime(DateTime time, {bool forceFullDate = false}) {
+String formatTime(DateTime time, {bool forceFullDate = false, bool withSecondsPrecision = true}) {
 	final now = DateTime.now();
 	final notToday = (now.day != time.day) || (now.month != time.month) || (now.year != time.year);
 	String prefix = '';
@@ -328,11 +328,21 @@ String formatTime(DateTime time, {bool forceFullDate = false}) {
 			prefix = '${time.weekdayShortName} ';
 		}
 	}
-	if (Persistence.settings.exactTimeIsTwelveHour) {
-		return '$prefix${((time.hour - 1) % 12) + 1}:${time.tMM}:${time.tSS} ${time.hour >= 12 ? 'PM' : 'AM'}';
+	if (withSecondsPrecision) {
+		if (Persistence.settings.exactTimeIsTwelveHour) {
+			return '$prefix${((time.hour - 1) % 12) + 1}:${time.tMM}:${time.tSS} ${time.hour >= 12 ? 'PM' : 'AM'}';
+		}
+		else {
+			return '$prefix${time.tHH}:${time.tMM}:${time.tSS}';
+		}
 	}
 	else {
-		return '$prefix${time.tHH}:${time.tMM}:${time.tSS}';
+		if (Persistence.settings.exactTimeIsTwelveHour) {
+			return '$prefix${((time.hour - 1) % 12) + 1}:${time.tMM} ${time.hour >= 12 ? 'PM' : 'AM'}';
+		}
+		else {
+			return '$prefix${time.tHH}:${time.tMM}';
+		}
 	}
 }
 

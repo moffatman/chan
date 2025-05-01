@@ -188,7 +188,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			threadId: threadId,
 			attachments_: a == null ? [] : [a],
 			spanFormat: PostSpanFormat.fuuka,
-			foolfuukaLinkedPostThreadIds: linkedPostThreadIds
+			extraMetadata: linkedPostThreadIds
 		);
 	}
 	@override

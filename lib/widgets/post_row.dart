@@ -350,14 +350,15 @@ class PostRow extends StatelessWidget {
 											postId: latestPost.parentId!,
 											key: const ValueKey('parentId op quotelink')
 										).build(
-											ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+											ctx, latestPost, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 												shrinkWrap: shrinkWrap
 											)
 										),
 										const TextSpan(text: '\n'),
 									],
 									(translatedPostSnapshot?.data ?? latestPost).span.build(
-										ctx, ctx.watch<PostSpanZoneData>(), settings, theme,
+										ctx, translatedPostSnapshot?.data ?? latestPost,
+										ctx.watch<PostSpanZoneData>(), settings, theme,
 										(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 											showCrossThreadLabel: showCrossThreadLabel,
 											shrinkWrap: shrinkWrap,
@@ -529,11 +530,15 @@ class PostRow extends StatelessWidget {
 																			postId: id,
 																			key: ValueKey('replyId $id')
 																		)).expand((link) => [
-																			link.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-																				showCrossThreadLabel: showCrossThreadLabel,
-																				addExpandingPosts: false,
-																				shrinkWrap: shrinkWrap
-																			)),
+																			link.build(
+																				ctx, latestPost, ctx.watch<PostSpanZoneData>(),
+																				settings, theme,
+																				(baseOptions ?? const PostSpanRenderOptions()).copyWith(
+																					showCrossThreadLabel: showCrossThreadLabel,
+																					addExpandingPosts: false,
+																					shrinkWrap: shrinkWrap
+																				)
+																			),
 																			WidgetSpan(
 																				child: ExpandingPost(link: link),
 																			),
@@ -763,7 +768,7 @@ class PostRow extends StatelessWidget {
 					trailingIcon: CupertinoIcons.reply_all,
 					onPressed: () {
 						// Remove single-line quotelinks
-						replyBoxZone?.onQuoteText(latestPost.span.buildText().replaceAll(RegExp(r'^>>\d+\n', multiLine: true), ''), backlink: latestPost.identifier);
+						replyBoxZone?.onQuoteText(latestPost.buildText().replaceAll(RegExp(r'^>>\d+\n', multiLine: true), ''), backlink: latestPost.identifier);
 					}
 				),
 				ContextMenuAction(
@@ -783,7 +788,7 @@ class PostRow extends StatelessWidget {
 					onPressed: () async {
 						await shareOne(
 							context: context,
-							text: (translatedPostSnapshot?.data ?? latestPost).span.buildText(),
+							text: (translatedPostSnapshot?.data ?? latestPost).buildText(),
 							type: "text",
 							sharePositionOrigin: rootContext.globalSemanticBounds
 						);

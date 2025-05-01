@@ -107,11 +107,18 @@ class Thread extends HiveObject implements Filterable {
 	bool _initialized = false;
 	List<Post> get posts {
 		if (!_initialized) {
+			bool handleWeakQuoteLinks = false;
 			final postsById = <int, Post>{};
 			for (final post in posts_) {
 				postsById[post.id] = post..replyIds = [];
+				handleWeakQuoteLinks |= post.spanFormat.hasWeakQuoteLinks;
 			}
+			final postTexts = <int, String>{};
 			for (final post in posts_) {
+				if (handleWeakQuoteLinks) {
+					post.updateWeakQuoteLinks(postTexts);
+					postTexts[post.id] = post.buildText(forQuoteComparison: true);
+				}
 				for (final referencedPostId in post.repliedToIds) {
 					// Already deduplicated
 					postsById[referencedPostId]?.replyIds.add(post.id);
@@ -175,11 +182,14 @@ class Thread extends HiveObject implements Filterable {
 		}
 	}
 
+	/// If [other] is set, we are the new thread, otherPosts are the old posts
+	/// If [other] is not set, we are the old thread, otherPosts are loaded stubs or archived posts or something
 	/// Return whether any change was made
-	bool mergePosts(Thread? other, List<Post> otherPosts, ImageboardSite site) {
+	bool mergePosts(Thread? oldThread, List<Post> otherPosts, ImageboardSite site) {
+		final weAreOldThread = oldThread == null;
 		bool anyChanges = false;
-		if (other != null) {
-			_markNewIPs(other);
+		if (oldThread != null) {
+			_markNewIPs(oldThread);
 		}
 		final postIdToListIndex = {
 			for (final pair in posts_.asMap().entries) pair.value.id: pair.key
@@ -188,7 +198,12 @@ class Thread extends HiveObject implements Filterable {
 			final indexToReplace = postIdToListIndex[newChild.id];
 			if (indexToReplace != null) {
 				final postToReplace = posts_[indexToReplace];
-				if (postToReplace.isStub || newChild.archiveName != null || (postToReplace.isDeleted && !newChild.isDeleted)) {
+				if (
+					postToReplace.isStub ||
+					newChild.archiveName != null ||
+					(postToReplace.isDeleted && !newChild.isDeleted) ||
+					(weAreOldThread && postToReplace != newChild)
+				) {
 					anyChanges = true;
 					posts_.removeAt(indexToReplace);
 					posts_.insert(indexToReplace, newChild);
@@ -269,6 +284,21 @@ class Thread extends HiveObject implements Filterable {
 				}
 			}
 		}
+		if (anyChanges && site.hasWeakQuoteLinks) {
+			// Rescan weak quote links
+			final postTexts = <int, String>{};
+			for (final post in posts_) {
+				if (post.updateWeakQuoteLinks(postTexts)) {
+					for (final repliedToId in post.repliedToIds) {
+						final repliedToIndex = postIdToListIndex[repliedToId];
+						if (repliedToIndex != null) {
+							posts_[repliedToIndex].maybeAddReplyId(post.id);
+						}
+					}
+				}
+				postTexts[post.id] = post.buildText(forQuoteComparison: true);
+			}
+		}
 		return anyChanges;
 	}
 
@@ -340,7 +370,7 @@ class Thread extends HiveObject implements Filterable {
 			case 'dimensions':
 				return attachments.map((a) => '${a.width}x${a.height}').join('\n');
 			case 'text':
-				return posts_.first.span.buildText();
+				return posts_.first.buildText();
 			case 'postID':
 				return id.toString();
 			case 'posterID':
@@ -389,7 +419,7 @@ class ThreadIdentifier {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is ThreadIdentifier &&
-		other.board == board &&
+		other.boardKey == boardKey &&
 		other.id == id;
 	@override
 	int get hashCode => Object.hash(board, id);
@@ -462,6 +492,6 @@ extension CompareTitle on Thread? {
 		else if (b == null) {
 			return -1;
 		}
-		return (a.title ?? a.posts_.tryFirst?.span.buildText() ?? '').friendlyCompareTo(b.title ?? b.posts_.tryFirst?.span.buildText() ?? '');
+		return (a.title ?? a.posts_.tryFirst?.buildText() ?? '').friendlyCompareTo(b.title ?? b.posts_.tryFirst?.buildText() ?? '');
 	}
 }

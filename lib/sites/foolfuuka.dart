@@ -154,7 +154,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 						}
 					}
 					else if (node.classes.contains('sjis')) {
-						elements.add(PostShiftJISSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml).buildText()));
+						elements.add(PostShiftJISSpan(node.text));
 					}
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
@@ -260,7 +260,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			spanFormat: PostSpanFormat.foolFuuka,
 			flag: _makeFlag(data),
 			posterId: data['poster_hash'],
-			foolfuukaLinkedPostThreadIds: linkedPostThreadIds,
+			extraMetadata: linkedPostThreadIds,
 			passSinceYear: passSinceYear,
 			isDeleted: data['deleted'] == '1'
 		);

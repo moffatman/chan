@@ -35,7 +35,7 @@ class DraftPostWidget extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final thread = imageboard.persistence.getThreadStateIfExists(post.thread)?.thread;
 		final isArchived = thread?.isArchived ?? false;
-		String? title = (thread?.title ?? thread?.posts_.tryFirst?.span.buildText().nonEmptyOrNull);
+		String? title = (thread?.title ?? thread?.posts_.tryFirst?.buildText().nonEmptyOrNull);
 		if ((title?.length ?? 0) > 25) {
 			int firstSpaceBefore25 = title?.lastIndexOf(' ', 25) ?? 0;
 			if (firstSpaceBefore25 < 10) {

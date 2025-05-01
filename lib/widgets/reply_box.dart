@@ -2026,7 +2026,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																		builder: (context, _) => DefaultTextStyle(
 																			style: defaultTextStyle,
 																			child: Text.rich(
-																				snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
+																				snippet.previewBuilder!(controller.text).build(context, null, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
 																			)
 																		)
 																	),

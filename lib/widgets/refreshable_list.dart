@@ -1590,10 +1590,22 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 				}
 				else {
-					newList = (await Future.wait([widget.listUpdater(RefreshableListUpdateOptions(
-						source: source,
-						cancelToken: cancelToken
-					)), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
+					final firstUnloadedPageId = widget.controller?._items.tryMapOnce((i) => i.item.representsUnloadedPages.tryFirst);
+					if (treeAdapter != null && extend && firstUnloadedPageId != null) {
+						// Load the first unloaded page
+						newList = await treeAdapter.updateWithStubItems(
+							originalList!,
+							[ParentAndChildIdentifier.same(firstUnloadedPageId)],
+							cancelToken
+						);
+					}
+					else {
+						// Normal scenario
+						newList = (await Future.wait([widget.listUpdater(RefreshableListUpdateOptions(
+							source: source,
+							cancelToken: cancelToken
+						)), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
+					}
 				}
 				if (!mounted) return;
 				if (updatingWithId != widget.id) {

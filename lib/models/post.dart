@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/intern.dart';
@@ -9,6 +10,7 @@ import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/hacker_news.dart';
+import 'package:chan/sites/jforum.dart';
 import 'package:chan/sites/jschan.dart';
 import 'package:chan/sites/karachan.dart';
 import 'package:chan/sites/lainchan.dart';
@@ -20,6 +22,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 import 'package:mutex/mutex.dart';
+import 'package:string_similarity/string_similarity.dart';
 
 import '../widgets/post_spans.dart';
 
@@ -80,7 +83,9 @@ enum PostSpanFormat {
 	@HiveField(12)
 	karachan,
 	@HiveField(13)
-	jsChan;
+	jsChan,
+	@HiveField(14)
+	jForum;
 	bool get hasInlineAttachments => switch (this) {
 		xenforo || reddit => true,
 		_ => false
@@ -89,6 +94,7 @@ enum PostSpanFormat {
 		reddit || stub || pageStub => false,
 		_ => true
 	};
+	bool get hasWeakQuoteLinks => this == jForum;
 }
 
 void _readHookPostFields(Map<int, dynamic> fields) {
@@ -126,18 +132,20 @@ class Post implements Filterable {
 	// Do not persist
 	PostNodeSpan? _span;
 	bool get isInitialized => _span != null;
+	/// '$board/$postId' -> threadId (for FoolFuuka)
+	/// '$postId/$weakQuoteLinkId' -> postId (for JForum)
 	@HiveField(12, isOptimized: true)
-	Map<String, int>? foolfuukaLinkedPostThreadIds;
+	Map<String, int>? extraMetadata;
 	PostNodeSpan _makeSpan() {
 		switch (spanFormat) {
 			case PostSpanFormat.chan4:
 				return Site4Chan.makeSpan(board, threadId, text);
 			case PostSpanFormat.foolFuuka:
-				return FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
+				return FoolFuukaArchive.makeSpan(board, threadId, extraMetadata ?? {}, text);
 			case PostSpanFormat.lainchan:
 				return SiteLainchan.makeSpan(board, threadId, text);
 			case PostSpanFormat.fuuka:
-				return FuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
+				return FuukaArchive.makeSpan(board, threadId, extraMetadata ?? {}, text);
 			case PostSpanFormat.futaba:
 				return SiteFutaba.makeSpan(board, threadId, text);
 			case PostSpanFormat.reddit:
@@ -162,6 +170,8 @@ class Post implements Filterable {
 				return SiteKarachan.makeSpan(board, threadId, text);
 			case PostSpanFormat.jsChan:
 				return SiteJsChan.makeSpan(board, threadId, text);
+			case PostSpanFormat.jForum:
+				return SiteJForum.makeSpan(text);
 		}
 	}
 	PostNodeSpan get span {
@@ -193,6 +203,42 @@ class Post implements Filterable {
 			replyIds.setAll(0, oldReplyIds);
 		}
 	}
+	bool updateWeakQuoteLinks(Map<int, String> earlierPostTexts) {
+		bool updated = false;
+		outer:
+		for (final s in span.traverse(this)) {
+			if (s is! PostWeakQuoteLinkSpan) {
+				continue;
+			}
+			if (s.findQuoteTarget(this) != null) {
+				// Already matched
+				continue;
+			}
+			final quoteText = s.quote.child.buildText(this, forQuoteComparison: true);
+			// First try for whole string match
+			for (final otherPostText in earlierPostTexts.entries) {
+				final similarity = quoteText.similarityTo(otherPostText.value);
+				if (similarity > 0.9) {
+					s.setQuoteTarget(this, otherPostText.key, true);
+					updated = true;
+					continue outer;
+				}
+			}
+			// Then look for substring
+			for (final otherPostText in earlierPostTexts.entries) {
+				if (otherPostText.value.contains(quoteText)) {
+					final lengthFactor = min(quoteText.length / otherPostText.value.length, otherPostText.value.length / quoteText.length);
+					s.setQuoteTarget(this, otherPostText.key, lengthFactor > 0.9);
+					updated = true;
+					continue outer;
+				}
+			}
+		}
+		if (updated) {
+			_repliedToIds = null;
+		}
+		return updated;
+	}
 	@HiveField(11, isOptimized: true, defaultValue: false)
 	bool attachmentDeleted;
 	@HiveField(13, isOptimized: true)
@@ -203,7 +249,7 @@ class Post implements Filterable {
 	String? capcode;
 	@HiveField(16, isOptimized: true, defaultValue: <Attachment>[], merger: Attachment.unmodifiableListMerger)
 	List<Attachment> attachments_;
-	Iterable<Attachment> get attachments => spanFormat.hasInlineAttachments ? attachments_.followedBy(span.inlineAttachments) : attachments_;
+	Iterable<Attachment> get attachments => spanFormat.hasInlineAttachments ? attachments_.followedBy(_inlineAttachments) : attachments_;
 	@HiveField(17, isOptimized: true)
 	final int? upvotes;
 	@HiveField(18, isOptimized: true)
@@ -233,7 +279,7 @@ class Post implements Filterable {
 		this.flag,
 		this.attachmentDeleted = false,
 		this.posterId,
-		this.foolfuukaLinkedPostThreadIds,
+		this.extraMetadata,
 		this.passSinceYear,
 		this.capcode,
 		required List<Attachment> attachments_,
@@ -263,7 +309,7 @@ class Post implements Filterable {
 			case 'dimensions':
 				return attachments.map((a) => '${a.width}x${a.height}').join('\n');
 			case 'text':
-				return span.buildText();
+				return buildText();
 			case 'postID':
 				return id.toString();
 			case 'posterID':
@@ -303,11 +349,34 @@ class Post implements Filterable {
 		};
 		return [
 			if (parentId != null) parentId,
-			...span.referencedPostIds(board).where(dedupe.add)
+			..._referencedPostIds.where(dedupe.add)
 		].toList(growable: false);
 	}
 	@override
 	Iterable<String> get md5s => attachments.map((a) => a.md5);
+	Iterable<Attachment> get _inlineAttachments sync* {
+		for (final s in span.traverse(this)) {
+			if (s is PostAttachmentsSpan) {
+				yield* s.attachments;
+			}
+		}
+	}
+	bool get containsLink => span.traverse(this).any((s) => s is PostLinkSpan);
+	Iterable<int> get _referencedPostIds sync* {
+		for (final s in span.traverse(this)) {
+			if (s is PostQuoteLinkSpan && s.board == board) {
+				yield s.postId;
+			}
+		}
+	}
+	Iterable<PostIdentifier> get referencedPostIdentifiers sync* {
+		for (final s in span.traverse(this)) {
+			if (s is PostQuoteLinkSpan && s.threadId != null) {
+				yield PostIdentifier(s.board, s.threadId!, s.postId);
+			}
+		}
+	}
+	String buildText({bool forQuoteComparison = false}) => span.buildText(this, forQuoteComparison: forQuoteComparison);
 
 	void migrateFrom(Post previous) {
 		ipNumber ??= previous.ipNumber;
@@ -341,6 +410,7 @@ class Post implements Filterable {
 		other is Post &&
 		other.board == board &&
 		other.id == id &&
+		other.text == text &&
 		other.upvotes == upvotes &&
 		other.isDeleted == isDeleted &&
 		listEquals(other.attachments_, attachments_) &&
@@ -349,12 +419,14 @@ class Post implements Filterable {
 		other.flag == flag &&
 		other.attachmentDeleted == attachmentDeleted &&
 		other.archiveName == archiveName &&
-		other.email == email;
+		other.email == email &&
+		mapEquals(other.extraMetadata, extraMetadata);
 	
 	bool isIdenticalForFilteringPurposes(Post other) {
 		return 
 			other.board == board &&
 			other.id == id &&
+			other.text == text &&
 			//other.upvotes == upvotes &&
 			other.isDeleted == isDeleted &&
 			listEquals(other.attachments_, attachments_) &&

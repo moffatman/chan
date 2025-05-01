@@ -427,7 +427,7 @@ class ThreadRow extends StatelessWidget {
 			],
 			if (settings.showTimeInCatalogHeader) ...[
 				TextSpan(
-					text: formatTime(latestThread.time),
+					text: formatTime(latestThread.time, withSecondsPrecision: site.hasSecondsPrecision),
 					style: TextStyle(
 						fontSize: subheaderFontSize
 					)
@@ -456,7 +456,7 @@ class ThreadRow extends StatelessWidget {
 			)
 		];
 		if (latestThread.title?.isNotEmpty == true) {
-			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, imageboard: imageboard, style: PostSpanZoneStyle.linear), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, op, PostSpanRootZoneData(thread: thread, imageboard: imageboard, style: PostSpanZoneStyle.linear), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold, color: theme.titleColor) : null
 			));
 			if (site.classicCatalogStyle) {
@@ -558,7 +558,7 @@ class ThreadRow extends StatelessWidget {
 										if (site.classicCatalogStyle) ...[
 											if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
 											op.span.build(
-												context, context.watch<PostSpanZoneData>(), settings, theme,
+												context, op, context.watch<PostSpanZoneData>(), settings, theme,
 												(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 													maxLines: switch (approxHeight) {
 														double approxHeight => 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
@@ -703,7 +703,7 @@ class ThreadRow extends StatelessWidget {
 					),
 					builder: (ctx, _) {
 						final others = [
-							if (site.classicCatalogStyle && op.text.isNotEmpty) op.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+							if (site.classicCatalogStyle && op.text.isNotEmpty) op.span.build(ctx, op, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 								maxLines: switch (approxHeight) {
 									double approxHeight => 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
 									null => null

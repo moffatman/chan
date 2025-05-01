@@ -30,6 +30,7 @@ import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/hacker_news.dart';
+import 'package:chan/sites/jforum.dart';
 import 'package:chan/sites/jschan.dart';
 import 'package:chan/sites/karachan.dart';
 import 'package:chan/sites/lainchan.dart';
@@ -1958,6 +1959,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get isPaged => postsPerPage != null;
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async => throw UnimplementedError();
 	bool get supportsMultipleBoards => true;
+	bool get hasSharedIdSpace => false;
+	bool get hasWeakQuoteLinks => false;
+	bool get hasSecondsPrecision => true;
 	bool get supportsPushNotifications => false;
 	bool get supportsUserInfo => false;
 	bool get supportsUserAvatars => false;
@@ -2434,6 +2438,20 @@ ImageboardSite makeSite(dynamic data) {
 			faviconPath: data['faviconPath'],
 			postingCaptcha: data['postingCaptcha'] ?? 'grid',
 			deletingCaptcha: data['deletingCaptcha'] ?? 'grid',
+			overrideUserAgent: overrideUserAgent,
+			archives: archives
+		);
+	}
+	else if (data['type'] == 'jforum') {
+		return SiteJForum(
+			baseUrl: data['baseUrl'],
+			name: data['name'],
+			basePath: data['basePath'],
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
+			faviconPath: data['faviconPath'],
+			threadsPerPage: data['threadsPerPage'] ?? 25,
+			postsPerPage: data['postsPerPage'] ?? 15,
+			searchResultsPerPage: data['searchResultsPerPage'] ?? 25,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives
 		);

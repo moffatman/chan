@@ -55,7 +55,7 @@ class SelectablePostPage extends StatelessWidget {
 												interactive: false
 											),
 											const TextSpan(text: '\n'),
-											post.span.build(context, zone, context.watch<Settings>(), context.watch<SavedTheme>(), PostSpanRenderOptions(
+											post.span.build(context, post, zone, context.watch<Settings>(), context.watch<SavedTheme>(), PostSpanRenderOptions(
 												showRawSource: true,
 												recognizer: TapGestureRecognizer(debugOwner: this),
 												overrideRecognizer: true,
@@ -131,7 +131,7 @@ class SelectablePostPage extends StatelessWidget {
 										AdaptiveFilledButton(
 											padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 											onPressed: !zone.imageboard.site.supportsPosting || (zone.findThread(post.threadId)?.isArchived ?? false) ? null : () {
-												onQuoteText(post.span.buildText(), includeBacklink: true);
+												onQuoteText(post.buildText(), includeBacklink: true);
 												WeakNavigator.pop(context);
 											},
 											child: const Row(
@@ -146,7 +146,7 @@ class SelectablePostPage extends StatelessWidget {
 										AdaptiveFilledButton(
 											padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 											onPressed: !zone.imageboard.site.supportsPosting || (zone.findThread(post.threadId)?.isArchived ?? false) ? null : () {
-												onQuoteText(post.span.buildText(), includeBacklink: false);
+												onQuoteText(post.buildText(), includeBacklink: false);
 												WeakNavigator.pop(context);
 											},
 											child: const Row(

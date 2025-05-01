@@ -236,7 +236,7 @@ class Imageboard extends ChangeNotifier {
 					found = false;
 				}
 				else if (post.id == receipt.id) {
-					final similarity = post.span.buildText().similarityTo(submittedPost.text);
+					final similarity = post.buildText().similarityTo(submittedPost.text);
 					found = similarity > 0.65;
 					break;
 				}

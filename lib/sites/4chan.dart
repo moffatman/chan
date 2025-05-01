@@ -404,7 +404,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 							));
 					}
 					else if (node.classes.contains('sjis')) {
-						elements.add(PostShiftJISSpan(makeSpan(board, threadId, node.innerHtml).buildText()));
+						elements.add(PostShiftJISSpan(node.text));
 					}
 					else {
 						elements.add(PostTextSpan(node.text));

@@ -1063,7 +1063,7 @@ class ThreadPageState extends State<ThreadPage> {
 			return false;
 		}
 		final crossThreads = <ThreadIdentifier, Set<int>>{};
-		for (final id in newThread.posts.expand((p) => p.span.referencedPostIdentifiers)) {
+		for (final id in newThread.posts.expand((p) => p.referencedPostIdentifiers)) {
 			if (id.threadId == newThread.id || id.postId == id.threadId || id.board != newThread.board) {
 				continue;
 			}
@@ -1390,25 +1390,17 @@ class ThreadPageState extends State<ThreadPage> {
 		final imageboard = context.watch<Imageboard>();
 		final site = imageboard.site;
 		final theme = context.watch<SavedTheme>();
-		String title = site.formatBoardName(widget.thread.board);
-		final threadTitle = (persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title)?.nonEmptyOrNull;
-		if (threadTitle != null) {
-			title += ' - ${Settings.instance.filterProfanity(threadTitle)}';
-		}
-		else {
-			final threadText = (persistentState.thread ?? site.getThreadFromCatalogCache(widget.thread))?.posts_.first.span.buildText();
-			if (threadText != null) {
-				title += ' - $threadText';
-			}
-			else {
-				if (title.endsWith('/')) {
-					title += '${widget.thread.id}';
-				}
-				else {
-					title += '/${widget.thread.id}';
-				}
-			}
-		}
+		String boardName = site.formatBoardNameWithoutTrailingSlash(widget.thread.board);
+		final titleParts = [
+			if (site.supportsMultipleBoards && !site.hasSharedIdSpace) boardName,
+			if ((persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title)?.nonEmptyOrNull case String threadTitle)
+				Settings.instance.filterProfanity(threadTitle)
+			else if ((persistentState.thread ?? site.getThreadFromCatalogCache(widget.thread))?.posts_.first.buildText() case String threadText)
+				Settings.instance.filterProfanity(threadText)
+			else
+				'/${widget.thread.id}'
+		];
+		String title = titleParts.join(' - ');
 		if (persistentState.thread?.isDeleted ?? false) {
 			title = '(Deleted) $title';
 		}
@@ -1417,14 +1409,6 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		else if (persistentState.thread?.isLocked ?? false) {
 			title = '(Locked) $title';
-		}
-		if (!site.supportsMultipleBoards) {
-			if (threadTitle != null) {
-				title = Settings.instance.filterProfanity(threadTitle);
-			}
-			else {
-				title = widget.thread.id.toString();
-			}
 		}
 		final watch = context.select<Persistence, ThreadWatch?>((_) => persistentState.threadWatch);
 		final reverseIndicatorPosition = Settings.showListPositionIndicatorsOnLeftSetting.watch(context);
@@ -1803,7 +1787,7 @@ class ThreadPageState extends State<ThreadPage> {
 																		},
 																		estimateHeight: (post, width) {
 																			final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
-																			return post.span.estimateLines(
+																			return post.span.estimateLines(post,
 																				(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
 																			).ceil() * fontSize;
 																		},
@@ -1938,6 +1922,23 @@ class ThreadPageState extends State<ThreadPage> {
 																		required List<ParentAndChildIdentifier>? stubChildIds,
 																		required bool alreadyDim
 																	}) {
+																		if ((value?.id ?? 0).isNegative) {
+																			return Row(
+																				mainAxisAlignment: MainAxisAlignment.center,
+																				children: [
+																					const Icon(CupertinoIcons.doc),
+																					const SizedBox(width: 8),
+																					Flexible(
+																						child: Text(
+																							'Page ${value?.id.abs()}',
+																							textAlign: TextAlign.center
+																						)
+																					),
+																					const SizedBox(width: 8),
+																					const Icon(CupertinoIcons.arrow_up_down)
+																				]
+																			);
+																		}
 																		final newCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
 																		final unseenCount = collapsedChildIds.where((id) => persistentState.unseenPostIds.data.contains(id)).length;
 																		final isDeletedStub = value != null && value.isDeleted && value.text.isEmpty && value.attachments.isEmpty;
