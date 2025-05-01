@@ -8,6 +8,7 @@ import 'package:chan/pages/settings/filter.dart';
 import 'package:chan/pages/settings/image_filter.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/translation.dart';
@@ -23,6 +24,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:unifiedpush/unifiedpush.dart';
 
 const _wifiSegments = {
 	AutoloadAttachmentsSetting.never: (null, 'Never'),
@@ -39,7 +41,96 @@ final filtersColor = MappedMutableSetting(
 	(filterError) => filterError != null ? Colors.red : null
 );
 
+final notificationsColor = MappedMutableSetting(
+	CustomMutableSetting(
+		reader: (context) => ImageboardRegistry.instance.notificationErrors,
+		watcher: (context) => context.watch<ImageboardRegistry>().notificationErrors,
+		didMutater: (context) async {}
+	),
+	(errors) => errors.isNotEmpty ? Colors.red : null
+);
+
 final behaviorSettings = [
+	SwitchSettingWidget(
+		icon: CupertinoIcons.bell,
+		description: 'Push Notifications',
+		helpText: kPushNotificationsHelp,
+		color: notificationsColor,
+		setting: const SettingWithFallback(Settings.usePushNotificationsSetting, false),
+		injectButton: (context, usePushNotifications, setUsePushNotifications) {
+			final errors = context.watch<ImageboardRegistry>().notificationErrors;
+			return Row(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					if (errors.isNotEmpty) CupertinoButton(
+						onPressed: () {
+							// TODO: Pick which one to show?
+							final pair = errors.values.first;
+							alertError(context, pair.$1, pair.$2);
+						},
+						child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)
+					),
+					if (Platform.isAndroid && usePushNotifications) CupertinoButton(
+						onPressed: () async {
+							try {
+								final currentDistributor = await UnifiedPush.getDistributor();
+								final distributors = await UnifiedPush.getDistributors();
+								if (!context.mounted) return;
+								final newDistributor = await showAdaptiveDialog<String>(
+									context: context,
+									barrierDismissible: true,
+									builder: (context) => AdaptiveAlertDialog(
+										title: const Text('UnifiedPush Distributor'),
+										content: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												const SizedBox(height: 16),
+												const Flexible(
+													child: Text('Select which service will be used to deliver your push notifications.')
+												),
+												CupertinoButton(
+													padding: EdgeInsets.zero,
+													onPressed: () => openBrowser(context, Uri.https('unifiedpush.org', '/users/distributors/')),
+													child: const Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															Text('More info', style: TextStyle(fontSize: 15)),
+															Icon(CupertinoIcons.chevron_right, size: 15)
+														]
+													)
+												)
+											]
+										),
+										actions: [
+											...distributors.map((distributor) => AdaptiveDialogAction(
+												isDefaultAction: distributor == currentDistributor,
+												onPressed: () => Navigator.pop(context, distributor),
+												child: Text(distributor == 'com.moffatman.chan' ? 'Firebase (requires Google services)' : distributor)
+											)),
+											AdaptiveDialogAction(
+												onPressed: () => Navigator.pop(context),
+												child: const Text('Cancel')
+											)
+										]
+									)
+								);
+								if (newDistributor != null) {
+									await Notifications.tryUnifiedPushDistributor(newDistributor);
+								}
+							}
+							catch (e, st) {
+								if (context.mounted) {
+									alertError(context, e, st);
+								}
+								Notifications.registerUnifiedPush();
+							}
+						},
+						child: const Icon(CupertinoIcons.wrench)
+					)
+				]
+			);
+		}
+	),
 	ImmutableButtonSettingWidget(
 		description: 'Filters',
 		color: filtersColor,

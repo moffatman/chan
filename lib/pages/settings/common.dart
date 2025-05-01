@@ -324,20 +324,25 @@ class SwitchSettingWidget extends StandardImmutableSettingWidget<bool> {
 		super.helpText,
 		super.helpTextBuilder,
 		super.disabled,
-		super.subsetting
+		super.subsetting,
+		super.color,
+		super.injectButton
 	});
 	@override
 	Widget buildImpl(BuildContext context) {
+		final injectButton = this.injectButton;
+		final color = this.color?.watch(context);
 		return Padding(
 			padding: const EdgeInsets.symmetric(vertical: 8),
 			child: Row(
 				children: [
-					_makeIcon(),
+					_makeIcon(color),
 					Expanded(
-						child: Text(description)
+						child: Text(description, style: TextStyle(color: color))
 					),
 					_makeSyncButton(setting.syncPaths),
 					_makeHelpButton(context),
+					if (injectButton != null) injectButton(context, setting.watch(context), makeWriter(context)),
 					AdaptiveSwitch(
 						value: setting.watch(context),
 						onChanged: makeWriter(context)
@@ -1029,7 +1034,7 @@ class PopupSubpageSettingWidget extends StandardSettingWidget {
 			color: color,
 			child: Row(
 				children: [
-					Icon(icon),
+					Icon(icon, color: color),
 					const SizedBox(width: 16),
 					Expanded(
 						child: Text(description, style: TextStyle(

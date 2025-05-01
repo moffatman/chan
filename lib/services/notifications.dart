@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:chan/main.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -81,6 +82,11 @@ class _UnifiedPushNotificationsToken implements _NotificationsToken {
 
 const _platform = MethodChannel('com.moffatman.chan/notifications');
 
+const kPushNotificationsHelp =
+	'Notifications for (You)s will be sent while the app is closed.\n'
+	'For this to work, the thread IDs you want to be notified about will be sent to a notification server.\n'
+	'No personal data will be retained on the server.';
+
 Future<void> promptForPushNotificationsIfNeeded(BuildContext context) async {
 	final settings = Settings.instance;
 	if (settings.usePushNotifications == null) {
@@ -88,7 +94,7 @@ Future<void> promptForPushNotificationsIfNeeded(BuildContext context) async {
 			context: context,
 			builder: (context) => AdaptiveAlertDialog(
 				title: const Text('Use push notifications?'),
-				content: const Text('Notifications for (You)s will be sent while the app is closed.\nFor this to work, the thread IDs you want to be notified about will be sent to a notification server.'),
+				content: const Text(kPushNotificationsHelp),
 				actions: [
 					AdaptiveDialogAction(
 						child: const Text('No'),
@@ -143,13 +149,12 @@ const _notificationSettingsApiRoot = 'https://push.chance.surf';
 const _kProtocolVersion = 1;
 
 class Notifications {
-	static (Object, StackTrace)? staticError;
-	(Object, StackTrace)? error;
 	static final Map<String, Notifications> _children = {};
 	/// This must not be .broadcast(), we need the buffering feature as we add items early.
 	final tapStream = StreamController<ThreadOrPostIdentifier>();
 	final foregroundStream = StreamController<PushNotification>.broadcast();
-	final Persistence persistence;
+	final Imageboard imageboard;
+	Persistence get persistence => imageboard.persistence;
 	ThreadWatcher? localWatcher;
 	final String siteType;
 	final String siteData;
@@ -174,7 +179,7 @@ class Notifications {
 
 	Notifications({
 		required ImageboardSite site,
-		required this.persistence
+		required this.imageboard
 	}) : siteType = site.siteType,
 		siteData = site.siteData;
 
@@ -359,8 +364,8 @@ class Notifications {
 
 	static Future<void> initializeStatic() async {
 		try {
+			Settings.instance.addListener(_didUpdateSettings);
 			_client.interceptors.add(LoggingInterceptor.instance);
-			staticError = null;
 			Settings.instance.filterListenable.addListener(_didUpdateFilter);
 			if (Platform.isAndroid) {
 				await FlutterLocalNotificationsPlugin().initialize(
@@ -412,30 +417,35 @@ class Notifications {
 		catch (e, st) {
 			print('Error initializing notifications: $e');
 			print(st);
-			staticError = (e, st);
+			ImageboardRegistry.instance.setNotificationError(null, (e, st));
 		}
 	}
 
-	static Future<void> didUpdateUsePushNotificationsSetting() async {
-		if (Persistence.settings.usePushNotifications == true) {
-			if (Platform.isIOS || Platform.isMacOS) {
-				await _apnsConnector?.requestNotificationPermissions();
+	static bool? _lastUsePushNotifications;
+	static Future<void> _didUpdateSettings() async {
+		final usePushNotifications = Persistence.settings.usePushNotifications;
+		if (usePushNotifications != _lastUsePushNotifications) {
+			_lastUsePushNotifications = usePushNotifications;
+			if (usePushNotifications == true) {
+				if (Platform.isIOS || Platform.isMacOS) {
+					await _apnsConnector?.requestNotificationPermissions();
+				}
+				else if (Platform.isAndroid) {
+					await registerUnifiedPush();
+					await FlutterLocalNotificationsPlugin().resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+				}
 			}
-			else if (Platform.isAndroid) {
-				await registerUnifiedPush();
-				await FlutterLocalNotificationsPlugin().resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+			else if (usePushNotifications == false) {
+				if (Platform.isIOS || Platform.isMacOS) {
+					await _apnsConnector?.unregister();
+				}
+				else if (Platform.isAndroid) {
+					await UnifiedPush.unregister();
+				}
 			}
+			// For true -> false transition
+			await _reinitializeChildren(allowDeleteAll: true);
 		}
-		else if (Persistence.settings.usePushNotifications == false) {
-			if (Platform.isIOS || Platform.isMacOS) {
-				await _apnsConnector?.unregister();
-			}
-			else if (Platform.isAndroid) {
-				await UnifiedPush.unregister();
-			}
-		}
-		// For true -> false transition
-		await _reinitializeChildren(allowDeleteAll: true);
 	}
 
 	static Future<void> _didUpdateFilter() async {
@@ -522,11 +532,11 @@ class Notifications {
 				_unrecognizedByUserId[id]?.forEach(_onMessageOpenedApp);
 				_unrecognizedByUserId[id]?.clear();
 			}
-			error = null;
+			ImageboardRegistry.instance.setNotificationError(imageboard, null);
 		}
 		catch (e, st) {
 			print('Error initializing notifications: $e');
-			error = (e, st);
+			ImageboardRegistry.instance.setNotificationError(imageboard, (e, st));
 		}
 	}
 

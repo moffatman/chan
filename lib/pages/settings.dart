@@ -367,7 +367,10 @@ final topLevelSettings = <PopupSubpageSettingWidget>[
 		settings: behaviorSettings,
 		description: 'Behavior Settings',
 		icon: CupertinoIcons.eye_slash,
-		color: filtersColor
+		color: MappedMutableSetting(
+			CombinedMutableSetting(filtersColor, notificationsColor),
+			(pair) => pair.$1 ?? pair.$2
+		)
 	),
 	PopupSubpageSettingWidget(
 		settings: dataSettings,

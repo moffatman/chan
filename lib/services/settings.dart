@@ -13,7 +13,6 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/network_logging.dart';
-import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/request_fixup.dart';
 import 'package:chan/services/streaming_mp4.dart';
@@ -2511,7 +2510,6 @@ class Settings extends ChangeNotifier {
 		_settings.usePushNotifications = setting;
 		_settings.save();
 		notifyListeners();
-		Notifications.didUpdateUsePushNotificationsSetting();
 	}
 
 	static const useEmbedsSetting = SavedSetting(SavedSettingsFields.useEmbeds);

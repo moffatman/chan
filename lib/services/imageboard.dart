@@ -88,7 +88,7 @@ class Imageboard extends ChangeNotifier {
 			site.imageboard = this;
 			_persistenceInitialized = true;
 			notifications = Notifications(
-				persistence: persistence,
+				imageboard: this,
 				site: site
 			);
 			notifications.initialize(allowDeleteAll: false);
@@ -529,13 +529,14 @@ class ImageboardRegistry extends ChangeNotifier {
 	
 	(Object, StackTrace)? setupError;
 	final Map<String, Imageboard> _sites = {};
+	final Map<Imageboard?, (Object, StackTrace)> notificationErrors = {};
 	int get count => _sites.length;
 	Iterable<Imageboard> get imageboardsIncludingUninitialized => _sites.values;
 	Iterable<Imageboard> get imageboards => _sites.values.where((s) => s.initialized);
 	Iterable<Imageboard> get imageboardsIncludingDev sync* {
 		yield* _sites.values.where((s) => s.initialized);
 		final dev_ = dev;
-		if (dev_ != null) {
+		if (dev_ != null && dev_.initialized) {
 			yield dev_;
 		}
 	}
@@ -695,6 +696,18 @@ class ImageboardRegistry extends ChangeNotifier {
 			return null;
 		}
 		return imageboards.tryMapOnce((i) => i.site.getRedirectGateway(uri, title));
+	}
+
+	void setNotificationError(Imageboard? imageboard, (Object, StackTrace)? pair) {
+		if (pair != notificationErrors[imageboard]) {
+			if (pair != null) {
+				notificationErrors[imageboard] = pair;
+			}
+			else {
+				notificationErrors.remove(imageboard);
+			}
+			notifyListeners();
+		}
 	}
 
 	bool isRedirectGateway(Uri? uri, String? title) => getRedirectGateway(uri, title) != null;

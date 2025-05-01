@@ -403,6 +403,7 @@ class _ChanAppState extends State<ChanApp> {
 			},
 			child: MultiProvider(
 				providers: [
+					ChangeNotifierProvider.value(value: ImageboardRegistry.instance),
 					ChangeNotifierProvider.value(value: Settings.instance),
 					ProxyProvider<Settings, SavedTheme>(
 						update: (context, settings, result) => settings.theme
@@ -2133,6 +2134,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				_onDevNotificationTapped(target.boardThreadOrPostIdentifier);
 			}));
 		}
+		final notificationErrors = context.watch<ImageboardRegistry>().notificationErrors;
 		final filterError = context.select<Settings, String?>((s) => s.filterError);
 		final androidDrawer = this.androidDrawer;
 		final persistentDrawer = this.persistentDrawer;
@@ -2222,7 +2224,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																GestureDetector(
 																	onLongPress: () => Settings.instance.runQuickAction(context),
 																	child: _buildTabletIcon(4, NotifyingIcon(
-																			icon: Icon(CupertinoIcons.settings, color: filterError != null ? Colors.red : null),
+																			icon: Icon(
+																				CupertinoIcons.settings,
+																				color: (notificationErrors.isNotEmpty || filterError != null) ? Colors.red : null
+																			),
 																			primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
 																			secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 																		), hideTabletLayoutLabels ? null : 'Settings'
@@ -2335,7 +2340,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									icon: GestureDetector(
 										onLongPress: () => Settings.instance.runQuickAction(context),
 										child: NotifyingIcon(
-											icon: Icon(CupertinoIcons.settings, size: 28, color: filterError != null ? Colors.red : null),
+											icon: Icon(
+												CupertinoIcons.settings,
+												size: 28,
+												color: (notificationErrors.isNotEmpty || filterError != null) ? Colors.red : null
+											),
 											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
 											secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 										)
