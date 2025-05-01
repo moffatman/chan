@@ -76,6 +76,7 @@ class AdaptiveActionSheet extends StatelessWidget {
 		return CupertinoActionSheet(
 			title: title,
 			message: message,
+			messageScrollThumbVisibility: true,
 			actions: actions,
 			cancelButton: cancelButton
 		);
