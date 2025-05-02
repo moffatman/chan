@@ -3607,7 +3607,6 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 			if (paint == null) {
 				if (lastPaint != null) {
 					// End of block
-					print('$y0 -> (${i + 1}): $lastPaint');
 					canvas.drawRect(Rect.fromLTRB(0, y0, size.width, (i + 1) * hd), lastPaint);
 					lastPaint = null;
 				}
@@ -3615,7 +3614,6 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 			}
 			if (lastPaint == null) {
 				// Start of block
-				print('$i start $paint');
 				y0 = i * hd;
 				lastPaint = paint;
 			}
@@ -3623,7 +3621,6 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 				// Continue of block, no-op
 			}
 			else {
-				print('$y0 -> (${i + 1}): $lastPaint -> $i start $paint');
 				// End of block, start of new block
 				final y = (i + 0.5) * hd;
 				canvas.drawRect(Rect.fromLTRB(0, y0, size.width, y), lastPaint);
