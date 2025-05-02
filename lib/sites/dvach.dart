@@ -1,5 +1,4 @@
 // ignore_for_file: argument_type_not_assignable
-import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 
@@ -194,12 +193,7 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin {
 			posts_: posts,
 			replyCount: response.data['posts_count'] - 1,
 			imageCount: response.data['files_count'] - posts.first.attachments.length,
-			isEndless: response.data['threads'].first['posts'].first['endless'] == 1,
-			// posts.last.time seems to not be exactly right
-			lastUpdatedTime: switch (response.headers.value(HttpHeaders.lastModifiedHeader)) {
-				String time => DateTimeConversion.fromHttpHeader(time)?.toLocal(),
-				null => null
-			}
+			isEndless: response.data['threads'].first['posts'].first['endless'] == 1
 		);
 	}
 

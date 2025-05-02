@@ -509,11 +509,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin {
 			isSticky: response.data['pinned'],
 			time: op.time,
 			attachments: op.attachments_,
-			isArchived: response.data['archived'] ?? false,
-			lastUpdatedTime: switch (response.headers.value(HttpHeaders.lastModifiedHeader)) {
-				String time => DateTimeConversion.fromHttpHeader(time)?.toLocal(),
-				null => null
-			}
+			isArchived: response.data['archived'] ?? false
 		);
 	}
 
