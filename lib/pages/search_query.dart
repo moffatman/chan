@@ -253,7 +253,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										builder: (context, threadState, _) {
 											return PostRow(
 												post: row.post!,
-												dim: threadState?.showInHistory ?? false,
+												dim: (threadState?.showInHistory ?? false) && threadState?.unseenPostIds.data.contains(row.post!.id) == false,
 												onThumbnailTap: (attachment) => _showGallery(context, attachment),
 												showCrossThreadLabel: false,
 												showBoardName: true,
