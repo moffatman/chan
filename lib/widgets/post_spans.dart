@@ -2688,7 +2688,7 @@ TextSpan buildPostInfoRow({
 				alignment: PlaceholderAlignment.middle
 			),
 			TextSpan(
-				text: '${post.archiveName} ',
+				text: ' ${post.archiveName} ',
 				style: TextStyle(
 					color: theme.primaryColor.withOpacity(0.75),
 					fontWeight: FontWeight.w600,
