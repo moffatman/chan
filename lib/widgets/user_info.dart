@@ -16,10 +16,12 @@ import 'package:provider/provider.dart';
 
 class UserInfoPanel extends StatefulWidget {
 	final String username;
+	final String? trip;
 	final String board;
 
 	const UserInfoPanel({
 		required this.username,
+		this.trip,
 		required this.board,
 		super.key
 	});
@@ -76,11 +78,26 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 										child: ImageboardIcon(size: 24)
 									),
 									Expanded(
-										child: Text(site.formatUsername(widget.username), style: const TextStyle(
-											fontSize: 20,
-											fontWeight: FontWeight.w600,
-											fontVariations: CommonFontVariations.w600
-										))
+										child: Text.rich(
+											TextSpan(
+												children: [
+													TextSpan(
+														text: site.formatUsername(widget.username),
+														style: const TextStyle(
+															fontSize: 20,
+															fontWeight: FontWeight.w600,
+															fontVariations: CommonFontVariations.w600
+														)
+													),
+													if (widget.trip case String trip) TextSpan(
+														text: trip,
+														style: const TextStyle(
+															fontSize: 20
+														)
+													)
+												]
+											)
+										)
 									),
 									Builder(
 										builder: (context) => AdaptiveIconButton(
@@ -149,13 +166,17 @@ class _UserInfoPanelState extends State<UserInfoPanel> {
 								)
 							),
 							AdaptiveFilledButton(
-								onPressed: (site.supportsSearch(widget.board).options.name || site.supportsSearch(null).options.name) ? () {
+								onPressed: (List<String> boards) {
 									openSearch(context: context, query: ImageboardArchiveSearchQuery(
 										imageboardKey: context.read<Imageboard>().key,
-										boards: site.supportsSearch(null).options.name ? [] : [widget.board],
-										name: site.formatUsername(widget.username)
+										boards: boards,
+										name: site.formatUsername(widget.username),
+										trip: widget.trip
 									));
-								} : null,
+								}.maybeBind1([<String>[], [widget.board]].tryFirstWhere((boards) {
+									final s = site.supportsSearch(boards.tryFirst);
+									return s.options.name || (widget.trip != null && s.options.trip);
+								})),
 								child: Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [

@@ -2744,8 +2744,8 @@ TextSpan buildPostInfoRow({
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
 					text: settings.filterProfanity(site.formatUsername(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (thisPostIsPostedByOP ? ' (OP)' : ''),
 					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: isYourPost ? theme.secondaryColor : (thisPostIsPostedByOP ? theme.secondaryColor.shiftHue(20).shiftSaturation(-0.3) : null)),
-					recognizer: (interactive && post.name != zone.imageboard.site.defaultUsername) ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
-						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name).map((p) => p.id).toList() ?? [];
+					recognizer: (interactive && (post.name != zone.imageboard.site.defaultUsername || post.trip != null)) ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
+						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name && p.trip == post.trip).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
 							alertError(context, 'Could not find any posts with name "${site.formatUsername(post.name)}". This is likely a problem with Chance...', null);
 						}
@@ -2755,8 +2755,25 @@ TextSpan buildPostInfoRow({
 								zone: zone,
 								onThumbnailTap: propagatedOnThumbnailTap,
 								clearStack: true,
-								header: (zone.imageboard.site.supportsUserInfo || zone.imageboard.site.supportsSearch(post.board).options.name || zone.imageboard.site.supportsSearch(null).options.name) ? UserInfoPanel(
+								header: (
+									zone.imageboard.site.supportsUserInfo ||
+									(
+										post.name != zone.imageboard.site.defaultUsername &&
+										(
+											zone.imageboard.site.supportsSearch(post.board).options.name ||
+											zone.imageboard.site.supportsSearch(null).options.name
+										)
+									) ||
+									(
+										post.trip != null &&
+										(
+											zone.imageboard.site.supportsSearch(post.board).options.trip ||
+											zone.imageboard.site.supportsSearch(null).options.trip
+										)
+									)
+								) ? UserInfoPanel(
 									username: post.name,
+									trip: post.trip,
 									board: post.board
 								) : null
 							));
