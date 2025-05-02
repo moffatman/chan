@@ -232,8 +232,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 	void initState() {
 		super.initState();
 		if (captchaTicketLifetime != null) {
-			_onCaptchaTicketTimerFire();
-			resetCaptchaTicketTimer();
+			// Allow initial stuff to happen
+			resetCaptchaTicketTimer(const Duration(seconds: 30));
 		}
 		_lastConnectivity = Settings.instance.connectivity;
 		_lastUseSpamFilterWorkarounds = Settings.instance.useSpamFilterWorkarounds;

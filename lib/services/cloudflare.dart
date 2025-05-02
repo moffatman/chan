@@ -382,9 +382,17 @@ class CloudflareInterceptor extends Interceptor {
 				return headlessCompleter.future;
 			}
 		}
-		if ((priority != RequestPriority.interactive) && DateTime.now().isBefore(_allowNonInteractiveWebviewWhen.timePasses)) {
-			// User recently rejected a non-interactive cloudflare login, reject it
-			throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
+		switch (priority) {
+			case RequestPriority.cosmetic:
+				// We gave it a shot with headless...
+				throw const CloudflareHandlerNotAllowedException();
+			case RequestPriority.functional:
+				if (DateTime.now().isBefore(_allowNonInteractiveWebviewWhen.timePasses)) {
+					// User recently rejected a non-interactive cloudflare login, reject it
+					throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
+				}
+			case RequestPriority.interactive:
+				// Allow popup
 		}
 		if (cancelToken?.isCancelled ?? false) {
 			throw CloudflareHandlerInterruptedException(gatewayName);
@@ -452,7 +460,7 @@ class CloudflareInterceptor extends Interceptor {
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
 		final redirectGateway = options.extra[kRedirectGateway] as ImageboardRedirectGateway?;
-		if ((options.cloudflare && options.priority.shouldPopupCloudflare) || redirectGateway != null) {
+		if (options.cloudflare || redirectGateway != null) {
 			try {
 				final requestData = await _requestDataAsBytes(options);
 				final data = await _useWebview(
