@@ -1413,7 +1413,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					: value.representsKnownStubChildren,
 				cancelToken
 			);
-			await widget.controller?._initialization;
+			await widget.controller?.whenDoneAutoScrolling;
 			originalList = newList;
 			sortedList = newList.toList();
 			_sortList();
@@ -1439,7 +1439,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				[ParentAndChildIdentifier.same(page)],
 				cancelToken
 			);
-			await widget.controller?._initialization;
+			await widget.controller?.whenDoneAutoScrolling;
 			originalList = newList;
 			sortedList = newList.toList();
 			_sortList();
@@ -1663,7 +1663,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			on TimeoutException {
 				// No popping
 			}
-			await widget.controller?._initialization;
+			await widget.controller?.whenDoneAutoScrolling;
 			if (mounted && (newList != null || error.value != null)) {
 				if (hapticFeedback) {
 					mediumHapticFeedback();
@@ -1695,7 +1695,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> acceptNewList(List<T> list) async {
-		await widget.controller?._initialization;
+		await widget.controller?.whenDoneAutoScrolling;
 		originalList = list;
 		sortedList = list.toList();
 		_sortList();
@@ -3624,7 +3624,6 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	bool _autoExtendEnabled = true;
 	bool _isDisposed = false;
 	(int, int)? _lastLaidOutRange;
-	Future<void> _initialization = Future.value();
 	RefreshableListController() {
 		slowScrolls.addListener(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
@@ -4355,11 +4354,23 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	ValueListenable<({String id, Future<void> future, CancelToken cancelToken})?> get updatingNow => state?.updatingNow ?? const StoppedValueListenable(null);
-
-	Future<void> lockInitialization(Future<void> future) async {
+	
+	Future<void> get whenDoneAutoScrolling {
+		final position = scrollController?.tryPosition;
+		if (position == null) {
+			return Future.value(null);
+		}
 		final completer = Completer<void>();
-		_initialization = completer.future;
-		await future.whenComplete(completer.complete);
+		void listener() {
+			// ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+			if (position.activity is! DrivenScrollActivity) {
+				completer.complete();
+				position.isScrollingNotifier.removeListener(listener);
+			}
+		}
+		position.isScrollingNotifier.addListener(listener);
+		listener();
+		return completer.future;
 	}
 }
 
