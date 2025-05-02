@@ -895,7 +895,7 @@ class BoardPageState extends State<BoardPage> {
 					return -1 * ((b.replyCount + 1) / bAge).compareTo((a.replyCount + 1) / aAge);
 				}
 			else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
-				(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
+				(a, b) => b.posts_.last.id.compareTo(a.posts_.last.id)
 			else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
 				(a, b) => b.imageCount.compareTo(a.imageCount)
 			else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)

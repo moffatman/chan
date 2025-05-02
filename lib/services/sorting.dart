@@ -54,7 +54,7 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 	}
 	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
 		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
-			return (b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread?.posts.last.time.toLocal() ?? d).compareTo(a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread?.posts.last.time.toLocal() ?? d);
+			return (b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread?.posts_.last.time.toLocal() ?? d).compareTo(a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread?.posts_.last.time.toLocal() ?? d);
 		});
 	}
 	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.alphabeticByTitle) {
@@ -93,7 +93,7 @@ Comparator<PersistentThreadState> getSavedThreadsSortMethod() {
 	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 	return switch (Persistence.settings.savedThreadsSortingMethod) {
 		ThreadSortingMethod.alphabeticByTitle => (a, b) => a.thread.compareTo(b.thread),
-		ThreadSortingMethod.lastPostTime => (a, b) => (b.thread?.posts.last.time.toLocal() ?? noDate).compareTo(a.thread?.posts.last.time.toLocal() ?? noDate),
+		ThreadSortingMethod.lastPostTime => (a, b) => (b.thread?.posts_.last.time.toLocal() ?? noDate).compareTo(a.thread?.posts_.last.time.toLocal() ?? noDate),
 		ThreadSortingMethod.threadPostTime => (a, b) => (b.thread?.time ?? noDate).compareTo(a.thread?.time ?? noDate),
 		ThreadSortingMethod.savedTime || _ => (a, b) => (b.savedTime ?? noDate).compareTo(a.savedTime ?? noDate)
 	};
@@ -103,7 +103,7 @@ Comparator<(PersistentThreadState, Thread)> getSavedThreadsSortMethodTuple() {
 	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 	return switch (Persistence.settings.savedThreadsSortingMethod) {
 		ThreadSortingMethod.alphabeticByTitle => (a, b) => a.$2.compareTo(b.$2),
-		ThreadSortingMethod.lastPostTime => (a, b) => b.$2.posts.last.time.toLocal().compareTo(a.$2.posts.last.time.toLocal()),
+		ThreadSortingMethod.lastPostTime => (a, b) => b.$2.posts_.last.time.toLocal().compareTo(a.$2.posts_.last.time.toLocal()),
 		ThreadSortingMethod.threadPostTime => (a, b) => b.$2.time.toLocal().compareTo(a.$2.time.toLocal()),
 		ThreadSortingMethod.savedTime || _ => (a, b) => (b.$1.savedTime ?? noDate).compareTo(a.$1.savedTime ?? noDate)
 	};

@@ -187,7 +187,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _onThreadStateListenableUpdate() => _threadStateListenableUpdateMutex.protect(() async {
 		final persistence = context.read<Persistence>();
-		final savedPostsLength = persistentState.thread?.posts.where((p) => persistence.getSavedPost(p) != null).length ?? 0;
+		final savedPostsLength = persistentState.thread?.posts_.where((p) => persistence.getSavedPost(p) != null).length ?? 0;
 		final hiddenMD5sLength = Persistence.settings.hiddenImageMD5s.length;
 		final currentSnapshot = _PersistentThreadStateSnapshot.of(persistentState);
 		if (currentSnapshot != _lastPersistentThreadStateSnapshot ||
@@ -469,7 +469,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final threadWatch = persistentState.threadWatch;
 		if (threadWatch != null && persistentState.thread != null) {
 			_checkForeground();
-			notifications.updateLastKnownId(threadWatch, persistentState.thread!.posts.last.id, foreground: _foreground);
+			notifications.updateLastKnownId(threadWatch, persistentState.thread!.posts_.last.id, foreground: _foreground);
 		}
 	}
 
@@ -1153,7 +1153,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final watch = tmpPersistentState.threadWatch;
 		if (watch != null && newThread.identifier == widget.thread && mounted) {
 			_checkForeground();
-			notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
+			notifications.updateLastKnownId(watch, newThread.posts_.last.id, foreground: _foreground);
 		}
 		await _listController.whenDoneAutoScrolling;
 		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site);
@@ -1301,7 +1301,7 @@ class ThreadPageState extends State<ThreadPage> {
 										await promptForPushNotificationsIfNeeded(context);
 									}
 									if (!ctx.mounted) return;
-									if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
+									if (persistentState.lastSeenPostId == persistentState.thread?.posts_.last.id) {
 										// If already at the bottom, pre-mark the created post as seen
 										persistentState.lastSeenPostId = receipt.id;
 										runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
@@ -2129,7 +2129,7 @@ class ThreadPageState extends State<ThreadPage> {
 											if (site.supportsPushNotifications) {
 												await promptForPushNotificationsIfNeeded(context);
 											}
-											if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
+											if (persistentState.lastSeenPostId == persistentState.thread?.posts_.last.id) {
 												// If already at the bottom, pre-mark the created post as seen
 												persistentState.lastSeenPostId = receipt.id;
 												runWhenIdle(const Duration(milliseconds: 500), persistentState.save);

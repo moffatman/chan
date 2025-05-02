@@ -912,7 +912,7 @@ class PostRow extends StatelessWidget {
 								}
 								notifications.subscribeToThread(
 									thread: parentZoneThreadState.identifier,
-									lastSeenId: parentZoneThreadState.thread?.posts.last.id ?? latestPost.id,
+									lastSeenId: parentZoneThreadState.thread?.posts_.last.id ?? latestPost.id,
 									localYousOnly: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.localYousOnly ?? true,
 									pushYousOnly: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.pushYousOnly ?? true,
 									foregroundMuted: (parentZoneThreadState.threadWatch ?? settings.defaultThreadWatch)?.foregroundMuted ?? false,

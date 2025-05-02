@@ -276,8 +276,8 @@ class ThreadWatcher extends ChangeNotifier {
 					watch.youIds = newThreadState.youIds;
 					notifications.didUpdateWatch(watch);
 				}
-				if (watch.lastSeenId < newThreadState.thread!.posts.last.id) {
-					notifications.updateLastKnownId(watch, newThreadState.thread!.posts.last.id);
+				if (watch.lastSeenId < newThreadState.thread!.posts_.last.id) {
+					notifications.updateLastKnownId(watch, newThreadState.thread!.posts_.last.id);
 				}
 			}
 		}
