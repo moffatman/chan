@@ -456,7 +456,7 @@ Future<File?> pickAttachment({
 									if (i < sources.length) {
 										final entry = sources[i];
 										return GestureDetector(
-											onLongPress: bind1(entry.onLongPress, context),
+											onLongPress: entry.onLongPress?.bind1(context),
 											onTap: () async {
 												loadingPick = true;
 												setPickerDialogState(() {});

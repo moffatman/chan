@@ -1232,7 +1232,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																			isSelected: post.replyCount > 0,
 																			onThumbnailTap: onThumbnailTap,
 																			propagateOnThumbnailTap: true,
-																			onDoubleTap: bind1(onNeedScrollToPost, post)
+																			onDoubleTap: onNeedScrollToPost?.bind1(post)
 																		),
 																		postsIdsToShow: post.replyIds,
 																		onThumbnailTap: onThumbnailTap

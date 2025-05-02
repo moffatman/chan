@@ -11,11 +11,13 @@ final lineSeparatorPattern = RegExp(r'\r?\n');
 final kInUnitTest = Platform.environment.containsKey('FLUTTER_TEST');
 
 /// Syntactic sugar
-T? tryIf<T>(T obj, bool Function(T v) f) {
-	if (f(obj)) {
-		return obj;
+extension If<T> on T {
+	T? tryIf(bool Function(T v) f) {
+		if (f(this)) {
+			return this;
+		}
+		return null;
 	}
-	return null;
 }
 
 extension SafeWhere<T> on Iterable<T> {
@@ -893,10 +895,25 @@ T dprint<T>(T obj, {String label = 'dprint'}) {
 	return obj;
 }
 
-VoidCallback? bind1<In, Out>(Out Function(In)? f, In v) => switch (f) {
-	Out Function(In) func => () => func(v),
-	null => null
-};
+extension Bind1<In, Out> on Out Function(In) {
+	Out Function() bind1(In v) => () => this(v);
+	Out Function()? maybeBind1(In? v) {
+		if (v == null) {
+			return null;
+		}
+		return () => this(v);
+	}
+}
+
+/// Wrapper for strict functions
+extension Maybe<T1 extends Object, T2> on T2 Function(T1) {
+	T2? maybe(T1? value) {
+		if (value == null) {
+			return null;
+		}
+		return this(value);
+	}
+}
 
 extension LooksForeign on String {
 	bool get looksForeign => codeUnits.any((i) => i >= 128);

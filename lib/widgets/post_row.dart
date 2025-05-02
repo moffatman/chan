@@ -415,7 +415,7 @@ class PostRow extends StatelessWidget {
 									child: CupertinoInkwell(
 										padding: EdgeInsets.zero,
 										minSize: 0,
-										onPressed: bind1(onThumbnailTap, attachment),
+										onPressed: onThumbnailTap?.bind1(attachment),
 										child: ConstrainedBox(
 											constraints: const BoxConstraints(
 												minHeight: 75
@@ -591,7 +591,7 @@ class PostRow extends StatelessWidget {
 												child: CupertinoInkwell(
 													padding: EdgeInsets.zero,
 													minSize: 0,
-													onPressed: bind1(onThumbnailTap, a),
+													onPressed: onThumbnailTap?.bind1(a),
 													child: AttachmentThumbnail(
 														attachment: a,
 														revealSpoilers: revealSpoilerImages,

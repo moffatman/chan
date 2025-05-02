@@ -1043,7 +1043,7 @@ class ChanTabs extends ChangeNotifier {
 			if (tab == null && threadId != null) {
 				// Maybe we can reuse a tab sitting at catalog for this board
 				bool pred(tab) => tab.imageboardKey == imageboardKey && tab.board == board && tab.thread == null;
-				final catalogTab = tab = tryIf(Persistence.tabs[Persistence.currentTabIndex], pred) ?? Persistence.tabs.tryFirstWhere(pred);
+				final catalogTab = Persistence.tabs[Persistence.currentTabIndex].tryIf(pred) ?? Persistence.tabs.tryFirstWhere(pred);
 				if (catalogTab != null) {
 					tab = catalogTab;
 					if (postId != null) {

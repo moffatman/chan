@@ -2171,7 +2171,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												)
 											),
 											for (final picker in getAttachmentSources(includeClipboard: false)) GestureDetector(
-												onLongPress: bind1(picker.onLongPress, this.context),
+												onLongPress: picker.onLongPress?.bind1(this.context),
 												child: AdaptiveIconButton(
 													onPressed: loading ? null : () async {
 														FocusNode? focusToRestore;
