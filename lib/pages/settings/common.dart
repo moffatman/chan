@@ -108,7 +108,7 @@ abstract class SettingWidget {
 		this.subsetting = false
 	});
 
-	Iterable<SettingWidget> search(List<String> query);
+	Iterable<SettingWidget> search(BuildContext context, List<String> query);
 
 	@protected
 	Widget buildImpl(BuildContext context);
@@ -154,7 +154,7 @@ class _IndentedGroup extends SettingWidget {
 	});
 
 	@override
-	Iterable<SettingWidget> search(List<String> query) => throw UnsupportedError('_IndentedGroup is only returned from search results');
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) => throw UnsupportedError('_IndentedGroup is only returned from search results');
 
 	@override
 	Widget buildImpl(BuildContext context) => Padding(
@@ -188,7 +188,7 @@ class CustomMutableSettingWidget<T> extends SettingWidget {
 	});
 
 	@override
-	Iterable<SettingWidget> search(List<String> query) sync* {
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
 		final desc = description.toLowerCase();
 		if (query.every((q) => desc.contains(q))) {
 			yield this;
@@ -232,7 +232,7 @@ abstract class StandardSettingWidget extends SettingWidget {
 	});
 
 	@override
-	Iterable<SettingWidget> search(List<String> query) sync* {
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
 		final desc = description.toLowerCase();
 		final help = helpText?.toLowerCase() ?? '';
 		if (query.every((q) {
@@ -388,7 +388,7 @@ class SegmentedSettingWidget<T extends Object> extends StandardImmutableSettingW
 	});
 	
 	@override
-	Iterable<SettingWidget> search(List<String> query) sync* {
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
 		final desc = description.toLowerCase();
 		final childs = children.values.map((c) => c.$2.toLowerCase()).toList();
 		if (query.every((q) {
@@ -1011,13 +1011,13 @@ class PopupSubpageSettingWidget extends StandardSettingWidget {
 	});
 
 	@override
-	Iterable<SettingWidget> search(List<String> query) sync* {
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
 		final desc = description.toLowerCase();
 		if (query.every((q) => desc.contains(q))) {
 			yield this;
 		}
 		else {
-			final children = settings.expand((s) => s.search(query)).toList();
+			final children = settings.expand((s) => s.search(context, query)).toList();
 			if (children.isNotEmpty) {
 				yield this;
 				yield _IndentedGroup(
@@ -1104,7 +1104,7 @@ class ImageboardScopedSettingWidget extends SettingWidget {
 	});
 
 	@override
-	Iterable<SettingWidget> search(List<String> query) sync* {
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
 		final description = this.description?.toLowerCase();
 		if (description != null) {
 			if (query.every((q) => description.contains(q))) {
@@ -1112,7 +1112,7 @@ class ImageboardScopedSettingWidget extends SettingWidget {
 			}
 		}
 		else {
-			yield* ImageboardRegistry.instance.imageboards.expand((i) => builder(i).search(query));
+			yield* ImageboardRegistry.instance.imageboards.expand((i) => builder(i).search(context, query));
 		}
 	}
 
@@ -1192,9 +1192,9 @@ class ImageboardScopedSettingGroup extends SettingWidget {
 	});
 
 	@override
-	Iterable<SettingWidget> search(List<String> query) sync* {
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
 		final t = title.toLowerCase();
-		if (query.every((q) => t.contains(q)) || settings.any((s) => s.search(query).isNotEmpty)) {
+		if (query.every((q) => t.contains(q)) || settings.any((s) => s.search(context, query).isNotEmpty)) {
 			yield this;
 		}
 	}
@@ -1270,9 +1270,11 @@ class SettingHiding extends SettingWidget {
 	);
 
 	@override
-	Iterable<SettingWidget> search(List<String> query) {
-		// Unconditionally reveal in search
-		return setting.search(query);
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
+		if (hidden.read(context)) {
+			return;
+		}
+		yield* setting.search(context, query);
 	}
 
 	@override

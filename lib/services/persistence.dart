@@ -224,13 +224,13 @@ class Persistence extends ChangeNotifier {
 	static late final CookieJar wifiCookies;
 	static late final CookieJar cellularCookies;
 	static CookieJar get currentCookies {
-		if (Settings.instance.isConnectedToWifi) {
+		if (Settings.instance.isConnectedToWifiForCookies) {
 			return wifiCookies;
 		}
 		return cellularCookies;
 	}
 	static CookieJar get nonCurrentCookies {
-		if (Settings.instance.isConnectedToWifi) {
+		if (Settings.instance.isConnectedToWifiForCookies) {
 			return cellularCookies;
 		}
 		return wifiCookies;
@@ -1336,7 +1336,7 @@ class Persistence extends ChangeNotifier {
 	}
 
 	static Future<void> clearCookies({required bool? fromWifi}) async {
-		final icon = switch (fromWifi ?? Settings.instance.isConnectedToWifi) {
+		final icon = switch (fromWifi ?? Settings.instance.isConnectedToWifiForCookies) {
 			true => CupertinoIcons.wifi,
 			false => CupertinoIcons.antenna_radiowaves_left_right
 		};

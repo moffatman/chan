@@ -659,19 +659,40 @@ final dataSettings = [
 		icon: CupertinoIcons.archivebox,
 		builder: (context) => const SettingsThreadsPanel()
 	),
-	SimpleButtonSettingWidget(
-		description: 'Clear Wi-Fi cookies',
-		icon: CupertinoIcons.wifi,
-		onPressed: (context) {
-			Persistence.clearCookies(fromWifi: true);
-		}
+	const SwitchSettingWidget(
+		description: 'Separate cookies for Wi-Fi and cellular data',
+		icon: Icons.cookie,
+		setting: Settings.separateWiFiAndCellularCookiesSetting
 	),
-	SimpleButtonSettingWidget(
-		description: 'Clear cellular cookies',
-		icon: CupertinoIcons.antenna_radiowaves_left_right,
-		onPressed: (context) {
-			Persistence.clearCookies(fromWifi: false);
-		}
+	SettingHiding(
+		hidden: Settings.separateWiFiAndCellularCookiesSetting,
+		setting: SimpleButtonSettingWidget(
+			description: 'Clear cookies',
+			icon: CupertinoIcons.trash,
+			onPressed: (context) {
+				Persistence.clearCookies(fromWifi: true);
+			}
+		)
+	),
+	SettingHiding(
+		hidden: const MappedSetting(Settings.separateWiFiAndCellularCookiesSetting, FieldMappers.invert, FieldMappers.invert),
+		setting: SimpleButtonSettingWidget(
+			description: 'Clear Wi-Fi cookies',
+			icon: CupertinoIcons.wifi,
+			onPressed: (context) {
+				Persistence.clearCookies(fromWifi: true);
+			}
+		)
+	),
+	SettingHiding(
+		hidden: const MappedSetting(Settings.separateWiFiAndCellularCookiesSetting, FieldMappers.invert, FieldMappers.invert),
+		setting: SimpleButtonSettingWidget(
+			description: 'Clear cellular cookies',
+			icon: CupertinoIcons.antenna_radiowaves_left_right,
+			onPressed: (context) {
+				Persistence.clearCookies(fromWifi: false);
+			}
+		)
 	),
 	ImmutableButtonSettingWidget(
 		description: 'User-Agent',

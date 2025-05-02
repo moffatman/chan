@@ -1231,6 +1231,8 @@ class SavedSettings extends HiveObject {
 	String? fontFamilyFallback;
 	@HiveField(201)
 	bool showYousInScrollbar;
+	@HiveField(202)
+	bool separateWiFiAndCellularCookies;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1434,6 +1436,7 @@ class SavedSettings extends HiveObject {
 		bool? onlyShowUnreadWatches,
 		this.fontFamilyFallback,
 		bool? showYousInScrollbar,
+		bool? separateWiFiAndCellularCookies,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1655,7 +1658,8 @@ class SavedSettings extends HiveObject {
 		openDrawerThreadsInNewTabs = openDrawerThreadsInNewTabs ?? false,
 		closeReplyBoxAfterSubmitting = closeReplyBoxAfterSubmitting ?? true,
 		onlyShowUnreadWatches = onlyShowUnreadWatches ?? false,
-		showYousInScrollbar = showYousInScrollbar ?? false {
+		showYousInScrollbar = showYousInScrollbar ?? false,
+		separateWiFiAndCellularCookies = separateWiFiAndCellularCookies ?? true {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2230,6 +2234,8 @@ class Settings extends ChangeNotifier {
 		ConnectivityResult.mobile || null => false,
 		_ => true
 	};
+	/// if ![separateWiFiAndCellularCookies], then we always use wi-fi cookies
+	bool get isConnectedToWifiForCookies => !separateWiFiAndCellularCookies || isConnectedToWifi;
 	Brightness? _systemBrightness;
 	set systemBrightness(Brightness? newBrightness) {
 		_systemBrightness = newBrightness;
@@ -2930,6 +2936,9 @@ class Settings extends ChangeNotifier {
 
 	static const showYousInScrollbarSetting = SavedSetting(SavedSettingsFields.showYousInScrollbar);
 	bool get showYousInScrollbar => showYousInScrollbarSetting(this);
+
+	static const separateWiFiAndCellularCookiesSetting = SavedSetting(SavedSettingsFields.separateWiFiAndCellularCookies);
+	bool get separateWiFiAndCellularCookies => separateWiFiAndCellularCookiesSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

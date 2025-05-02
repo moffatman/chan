@@ -679,7 +679,7 @@ class OutboxQueue extends ChangeNotifier {
 	DateTime allowedTimeWifi = DateTime.now();
 	DateTime allowedTimeCellular = DateTime.now();
 	DateTime get allowedTime {
-		if (Settings.instance.isConnectedToWifi) {
+		if (Settings.instance.isConnectedToWifiForCookies) {
 			return allowedTimeWifi;
 		}
 		else {
@@ -687,7 +687,7 @@ class OutboxQueue extends ChangeNotifier {
 		}
 	}
 	set allowedTime (DateTime newTime) {
-		if (Settings.instance.isConnectedToWifi) {
+		if (Settings.instance.isConnectedToWifiForCookies) {
 			allowedTimeWifi = newTime;
 		}
 		else {
@@ -698,7 +698,7 @@ class OutboxQueue extends ChangeNotifier {
 	DateTime captchaAllowedTimeWifi = DateTime.now();
 	DateTime captchaAllowedTimeCellular = DateTime.now();
 	DateTime get captchaAllowedTime {
-		if (Settings.instance.isConnectedToWifi) {
+		if (Settings.instance.isConnectedToWifiForCookies) {
 			return captchaAllowedTimeWifi;
 		}
 		else {
@@ -706,7 +706,7 @@ class OutboxQueue extends ChangeNotifier {
 		}
 	}
 	set captchaAllowedTime (DateTime newTime) {
-		if (Settings.instance.isConnectedToWifi) {
+		if (Settings.instance.isConnectedToWifiForCookies) {
 			captchaAllowedTimeWifi = newTime;
 		}
 		else {
@@ -720,7 +720,7 @@ class Outbox extends ChangeNotifier {
 	static final _instance = Outbox._();
 	static Outbox get instance => _instance;
 	Outbox._() {
-		_lastIsConnectedToWifi = Settings.instance.isConnectedToWifi;
+		_lastIsConnectedToWifi = Settings.instance.isConnectedToWifiForCookies;
 		// No unsubscribing because Outbox never dies
 		Settings.instance.addListener(_onSettingsUpdate);
 	}
@@ -732,9 +732,9 @@ class Outbox extends ChangeNotifier {
 	bool? _lastIsConnectedToWifi;
 
 	void _onSettingsUpdate() {
-		if (_lastIsConnectedToWifi != Settings.instance.isConnectedToWifi) {
-			_onConnectionChanged(Settings.instance.isConnectedToWifi);
-			_lastIsConnectedToWifi = Settings.instance.isConnectedToWifi;
+		if (_lastIsConnectedToWifi != Settings.instance.isConnectedToWifiForCookies) {
+			_onConnectionChanged(Settings.instance.isConnectedToWifiForCookies);
+			_lastIsConnectedToWifi = Settings.instance.isConnectedToWifiForCookies;
 		}
 	}
 

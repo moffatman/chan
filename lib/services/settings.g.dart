@@ -2399,6 +2399,18 @@ class SavedSettingsFields {
     fieldName: 'showYousInScrollbar',
     merger: PrimitiveMerger(),
   );
+  static bool getSeparateWiFiAndCellularCookies(SavedSettings x) =>
+      x.separateWiFiAndCellularCookies;
+  static void setSeparateWiFiAndCellularCookies(SavedSettings x, bool v) =>
+      x.separateWiFiAndCellularCookies = v;
+  static const separateWiFiAndCellularCookies =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getSeparateWiFiAndCellularCookies,
+    setter: setSeparateWiFiAndCellularCookies,
+    fieldNumber: 202,
+    fieldName: 'separateWiFiAndCellularCookies',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2600,7 +2612,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     198: SavedSettingsFields.androidGalleryPicker,
     199: SavedSettingsFields.onlyShowUnreadWatches,
     200: SavedSettingsFields.fontFamilyFallback,
-    201: SavedSettingsFields.showYousInScrollbar
+    201: SavedSettingsFields.showYousInScrollbar,
+    202: SavedSettingsFields.separateWiFiAndCellularCookies
   };
 
   @override
@@ -2816,13 +2829,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       onlyShowUnreadWatches: fields[199] as bool?,
       fontFamilyFallback: fields[200] as String?,
       showYousInScrollbar: fields[201] as bool?,
+      separateWiFiAndCellularCookies: fields[202] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(189)
+      ..writeByte(190)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3200,7 +3214,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(200)
       ..write(obj.fontFamilyFallback)
       ..writeByte(201)
-      ..write(obj.showYousInScrollbar);
+      ..write(obj.showYousInScrollbar)
+      ..writeByte(202)
+      ..write(obj.separateWiFiAndCellularCookies);
   }
 
   @override
