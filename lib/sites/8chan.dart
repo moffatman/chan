@@ -27,6 +27,11 @@ class Site8Chan extends SiteLynxchan {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
+		final captchaMode = persistence?.maybeGetBoard(board)?.captchaMode ?? 0;
+		if (captchaMode == 0 ||
+				(captchaMode == 1 && threadId != null)) {
+			return const NoCaptchaRequest();
+		}
 		return LynxchanCaptchaRequest(
 			board: board,
 			redirectGateway: _kRedirectGateway
@@ -60,7 +65,10 @@ class Site8Chan extends SiteLynxchan {
 				}
 			}
 			throw AdditionalCaptchaRequiredException(
-				captchaRequest: await getCaptchaRequest(post.board, post.threadId, cancelToken: cancelToken),
+				captchaRequest: LynxchanCaptchaRequest(
+					board: post.board,
+					redirectGateway: _kRedirectGateway
+				),
 				onSolved: (solution2, cancelToken2) async {
 					final response = await client.postUri(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
 						if (solution2 is LynxchanCaptchaSolution) 'captcha': solution2.answer
