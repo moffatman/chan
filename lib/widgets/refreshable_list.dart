@@ -3961,7 +3961,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		print('$contentId animating to $targetIndex (${_items[targetIndex].item.item}) (alignment: $alignment)');
 		final start = DateTime.now();
 		currentTargetIndex = targetIndex;
-		if (isItemHidden(_items[targetIndex].item).isHidden) {
+		if (revealIfHidden && isItemHidden(_items[targetIndex].item).isHidden) {
 			state?._refreshableTreeItems.unhideItem(_items[targetIndex].item, includingParents: true);
 		}
 		final initialContentId = contentId;

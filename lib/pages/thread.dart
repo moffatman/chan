@@ -2901,26 +2901,17 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), scrollToTop)],
 												[
 													('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
-														if (widget.useTree) {
-															final lastVisibleIndex = widget.listController.lastVisibleIndex;
-															if (lastVisibleIndex == -1) {
-																return;
-															}
-															int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
-																return entry.key > lastVisibleIndex &&
-																	(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.persistentState.unseenPostIds.data.contains(id.childId))) &&
-																	!entry.value.filterCollapsed;
-															})?.key ?? -1;
-															if (targetIndex != -1) {
-																while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
-																	// Align to parent if the target has been collapsed
-																	targetIndex++;
-																}
-																widget.listController.animateToIndex(targetIndex);
-															}
+														final lastVisibleIndex = widget.listController.lastVisibleIndex;
+														if (lastVisibleIndex == -1) {
+															return;
 														}
-														else {
-															widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0);
+														int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
+															return entry.key > lastVisibleIndex &&
+																(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.persistentState.unseenPostIds.data.contains(id.childId))) &&
+																!entry.value.filterCollapsed;
+														})?.key ?? -1;
+														if (targetIndex != -1) {
+															widget.listController.animateToIndex(targetIndex);
 														}
 													}),
 													('Bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
@@ -3091,10 +3082,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											!widget.listController.isItemHidden(entry.value).isDuplicate;
 									})?.key ?? -1;
 									if (targetIndex != -1) {
-										while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
-											// Align to parent if the target has been collapsed
-											targetIndex--;
-										}
 										widget.listController.animateToIndex(targetIndex);
 									}
 								}
