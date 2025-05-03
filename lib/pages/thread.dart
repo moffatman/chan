@@ -1378,17 +1378,21 @@ class ThreadPageState extends State<ThreadPage> {
 		final imageboard = context.watch<Imageboard>();
 		final site = imageboard.site;
 		final theme = context.watch<SavedTheme>();
-		String boardName = site.formatBoardNameWithoutTrailingSlash(widget.thread.board);
-		final titleParts = [
-			if (site.supportsMultipleBoards && !site.hasSharedIdSpace) boardName,
-			if ((persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title)?.nonEmptyOrNull case String threadTitle)
-				Settings.instance.filterProfanity(threadTitle)
-			else if ((persistentState.thread ?? site.getThreadFromCatalogCache(widget.thread))?.posts_.first.buildText() case String threadText)
-				Settings.instance.filterProfanity(threadText)
-			else
-				'/${widget.thread.id}'
-		];
-		String title = titleParts.join(' - ');
+		final titleText =
+			(persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title)?.nonEmptyOrNull
+			?? (persistentState.thread ?? site.getThreadFromCatalogCache(widget.thread))?.posts_.first.buildText().nonEmptyOrNull;
+		String title;
+		if (site.supportsMultipleBoards && !site.hasSharedIdSpace) {
+			if (titleText != null) {
+				title = '${site.formatBoardName(widget.thread.board)} - $titleText';
+			}
+			else {
+				title = '${site.formatBoardNameWithoutTrailingSlash(widget.thread.board)}/${widget.thread.id}';
+			}
+		}
+		else {
+			title = titleText ?? 'Thread ${widget.thread.id}';
+		}
 		if (persistentState.thread?.isDeleted ?? false) {
 			title = '(Deleted) $title';
 		}
