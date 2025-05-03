@@ -1607,11 +1607,18 @@ abstract class ImageboardSiteArchive {
 		});
 		return moreCatalog;
 	}
-	Thread? getThreadFromCatalogCache(ThreadIdentifier? identifier) {
+	Thread? getThreadFromCatalogCache(ThreadIdentifier? identifier, {DateTime? ifAfter}) {
 		if (identifier == null) {
 			return null;
 		}
-		return _catalogCache[identifier.board]?.cache[identifier.id];
+		final cache = _catalogCache[identifier.board];
+		if (cache == null) {
+			return null;
+		}
+		if (ifAfter != null && cache.time.isBefore(ifAfter)) {
+			return null;
+		}
+		return cache.cache[identifier.id];
 	}
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken});
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken});
@@ -1713,10 +1720,21 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				if (t0 != null && t0.archiveName == null && t0.isArchived) {
 					return true;
 				}
-				final t = await getThread(thread, priority: priority, cancelToken: cancelToken);
-				return t.isArchived;
+				final acceptCachedAfter = DateTime.now().subtract(const Duration(minutes: 1));
+				if (hasPagedCatalog) {
+					// Need to get the actual thread
+					final t = getThreadFromCatalogCache(thread, ifAfter: acceptCachedAfter) ?? await getThread(thread, priority: priority, cancelToken: cancelToken);
+					return t.isArchived;
+				}
+				else {
+					// 4chan started to put old thread JSONs behind cloudflare
+					// Hopefully they never do that to catalogs
+					final catalog = await getCatalog(thread.board, priority: priority, cancelToken: cancelToken, acceptCachedAfter: acceptCachedAfter);
+					return catalog.tryFirstWhere((t) => t.id == thread.id)?.isArchived ?? true;
+				}
 			}
-			on ThreadNotFoundException {
+			catch  (_) {
+				// Assume the worst
 				return true;
 			}
 		}();
