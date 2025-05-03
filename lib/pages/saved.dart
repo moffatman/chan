@@ -115,7 +115,8 @@ abstract class _SavedThreadsLoader {
 sealed class _SavedThreadsLoaderImpl<T> implements _SavedThreadsLoader {
 	final List<T> _list = [];
 	Future<T?> _initializeImpl(PersistentThreadState state);
-	void _afterInitializeImpl();
+	/// Sort the list (in reverse order, because removing at the end is faster)
+	void _sortImpl();
 	@override
 	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize() async {
 		final missing = <ImageboardScoped<ThreadIdentifier>>[];
@@ -136,13 +137,13 @@ sealed class _SavedThreadsLoaderImpl<T> implements _SavedThreadsLoader {
 				_list.add(entry);
 			}
 		}
-		_afterInitializeImpl();
+		_sortImpl();
 		return missing;
 	}
 	PersistentThreadState _takeSavedThreadImpl(T entry);
 	@override
 	Future<(PersistentThreadState, Thread)?> takeSavedThread() async {
-		T? entry = _list.tryRemoveFirst();
+		T? entry = _list.tryRemoveLast();
 		while (entry != null) {
 			final state = _takeSavedThreadImpl(entry);
 			final thread = await state.getThread();
@@ -172,8 +173,9 @@ class _SavedThreadsByTitleLoader extends _SavedThreadsLoaderImpl<(PersistentThre
 		return (state, title);
 	}
 	@override
-	void _afterInitializeImpl() {
-		_list.sort((a, b) => a.$2.compareTo(b.$2));
+	void _sortImpl() {
+		// Z before A
+		_list.sort((a, b) => b.$2.compareTo(a.$2));
 	}
 	@override
 	PersistentThreadState _takeSavedThreadImpl((PersistentThreadState, String) entry) => entry.$1;
@@ -203,7 +205,8 @@ class _SavedThreadsByLastPostTimeLoader extends _SavedThreadsLoaderImpl<(Persist
 		return (state, time);
 	}
 	@override
-	void _afterInitializeImpl() {
+	void _sortImpl() {
+		// Earliest posted first
 		_list.sort((a, b) => a.$2.compareTo(b.$2));
 	}
 	@override
@@ -215,7 +218,8 @@ class _SavedThreadsBySavedTimeLoader extends _SavedThreadsLoaderImpl<PersistentT
 	@override
 	Future<PersistentThreadState?> _initializeImpl(PersistentThreadState state) async => state;
 	@override
-	void _afterInitializeImpl() {
+	void _sortImpl() {
+		// Earliest saved first
 		_list.sort((a, b) => (a.savedTime ?? noDate).compareTo(b.savedTime ?? noDate));
 	}
 	@override
@@ -243,6 +247,7 @@ class _SavedThreadsByThreadPostTimeLoader implements _SavedThreadsLoader {
 			l.add(state);
 		}
 		for (final list in _lists.values) {
+			// Earliest posted first
 			list.sort((a, b) => a.id.compareTo(b.id));
 		}
 		return missing;
@@ -1177,6 +1182,7 @@ class _SavedPageState extends State<SavedPage> {
 									}
 								}
 								for (final list in _yourPostsLists.values) {
+									// Earliest posted first
 									list.sort((a, b) => a.postId.compareTo(b.postId));
 								}
 								// First chunk should include all with missing threads

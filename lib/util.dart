@@ -62,12 +62,18 @@ extension SafeWhere<T> on Iterable<T> {
 	}
 }
 
-extension SafeRemoveFirst<T> on List<T> {
+extension SafeRemove<T> on List<T> {
 	T? tryRemoveFirst() {
 		if (isEmpty) {
 			return null;
 		}
 		return removeAt(0);
+	}
+	T? tryRemoveLast() {
+		if (isEmpty) {
+			return null;
+		}
+		return removeLast();
 	}
 }
 
