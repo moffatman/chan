@@ -49,6 +49,13 @@ Future<String> _bodyAsString(dynamic data) async => switch (data) {
 };
 
 Future<({Uint8List data, String contentType})?> _requestDataAsBytes(RequestOptions options) async {
+	if (options.method.toUpperCase() == 'GET') {
+		// GET cannot include body. WebView will break if you include it
+		return null;
+	}
+	if (options.data == null) {
+		return null;
+	}
 	final Uint8List data;
 	final String contentType;
 	if (options.data is FormData) {
