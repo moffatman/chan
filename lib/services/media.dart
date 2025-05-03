@@ -790,7 +790,13 @@ class MediaConversion {
 							else if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
 								...['-vcodec', 'h264_videotoolbox']
 							else
-								...['-c:v', 'libx264', '-preset', 'medium']
+								...[
+									'-c:v', 'libx264',
+									'-preset', 'medium',
+									'-profile:v', 'high',
+									'-level', '4.1',
+									'-pix_fmt', 'yuv420p'
+								]
 						],
 						if (copyStreams && outputFileExtension != 'webm' && outputFileExtension != 'mp4') ...[
 							'-acodec', 'copy',
