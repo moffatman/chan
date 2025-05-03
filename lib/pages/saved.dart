@@ -579,7 +579,7 @@ class _SavedPageState extends State<SavedPage> {
 								builder: (context) => CupertinoButton(
 									padding: EdgeInsets.zero,
 									child: const Icon(CupertinoIcons.sort_down),
-									onPressed: () => selectWatchedThreadsSortMethod(context)
+									onPressed: () => selectWatchedThreadsSortMethod(context, onMutate: _watchedListController.update)
 								)
 							),
 							Builder(

@@ -1233,6 +1233,8 @@ class SavedSettings extends HiveObject {
 	bool showYousInScrollbar;
 	@HiveField(202)
 	bool separateWiFiAndCellularCookies;
+	@HiveField(203)
+	bool showActiveWatchesAboveZombieWatches;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1437,6 +1439,7 @@ class SavedSettings extends HiveObject {
 		this.fontFamilyFallback,
 		bool? showYousInScrollbar,
 		bool? separateWiFiAndCellularCookies,
+		bool? showActiveWatchesAboveZombieWatches,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1659,7 +1662,8 @@ class SavedSettings extends HiveObject {
 		closeReplyBoxAfterSubmitting = closeReplyBoxAfterSubmitting ?? true,
 		onlyShowUnreadWatches = onlyShowUnreadWatches ?? false,
 		showYousInScrollbar = showYousInScrollbar ?? false,
-		separateWiFiAndCellularCookies = separateWiFiAndCellularCookies ?? true {
+		separateWiFiAndCellularCookies = separateWiFiAndCellularCookies ?? true,
+		showActiveWatchesAboveZombieWatches = showActiveWatchesAboveZombieWatches ?? true {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2939,6 +2943,9 @@ class Settings extends ChangeNotifier {
 
 	static const separateWiFiAndCellularCookiesSetting = SavedSetting(SavedSettingsFields.separateWiFiAndCellularCookies);
 	bool get separateWiFiAndCellularCookies => separateWiFiAndCellularCookiesSetting(this);
+
+	static const showActiveWatchesAboveZombieWatchesSetting = SavedSetting(SavedSettingsFields.showActiveWatchesAboveZombieWatches);
+	bool get showActiveWatchesAboveZombieWatches => showActiveWatchesAboveZombieWatchesSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

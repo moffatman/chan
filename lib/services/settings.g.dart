@@ -2411,6 +2411,18 @@ class SavedSettingsFields {
     fieldName: 'separateWiFiAndCellularCookies',
     merger: PrimitiveMerger(),
   );
+  static bool getShowActiveWatchesAboveZombieWatches(SavedSettings x) =>
+      x.showActiveWatchesAboveZombieWatches;
+  static void setShowActiveWatchesAboveZombieWatches(SavedSettings x, bool v) =>
+      x.showActiveWatchesAboveZombieWatches = v;
+  static const showActiveWatchesAboveZombieWatches =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getShowActiveWatchesAboveZombieWatches,
+    setter: setShowActiveWatchesAboveZombieWatches,
+    fieldNumber: 203,
+    fieldName: 'showActiveWatchesAboveZombieWatches',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2613,7 +2625,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     199: SavedSettingsFields.onlyShowUnreadWatches,
     200: SavedSettingsFields.fontFamilyFallback,
     201: SavedSettingsFields.showYousInScrollbar,
-    202: SavedSettingsFields.separateWiFiAndCellularCookies
+    202: SavedSettingsFields.separateWiFiAndCellularCookies,
+    203: SavedSettingsFields.showActiveWatchesAboveZombieWatches
   };
 
   @override
@@ -2830,13 +2843,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       fontFamilyFallback: fields[200] as String?,
       showYousInScrollbar: fields[201] as bool?,
       separateWiFiAndCellularCookies: fields[202] as bool?,
+      showActiveWatchesAboveZombieWatches: fields[203] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(190)
+      ..writeByte(191)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3216,7 +3230,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(201)
       ..write(obj.showYousInScrollbar)
       ..writeByte(202)
-      ..write(obj.separateWiFiAndCellularCookies);
+      ..write(obj.separateWiFiAndCellularCookies)
+      ..writeByte(203)
+      ..write(obj.showActiveWatchesAboveZombieWatches);
   }
 
   @override

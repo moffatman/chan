@@ -7,27 +7,39 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive/modal_popup.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 
 Future<void> selectWatchedThreadsSortMethod(BuildContext context, {VoidCallback? onMutate}) => showAdaptiveModalPopup<DateTime>(
 	context: context,
 	builder: (context) => AdaptiveActionSheet(
 		title: const Text('Sort by...'),
-		actions: {
-			ThreadSortingMethod.savedTime: 'Order added',
-			ThreadSortingMethod.lastPostTime: 'Latest reply',
-			ThreadSortingMethod.lastReplyByYouTime: 'Latest reply by you',
-			ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
-			ThreadSortingMethod.threadPostTime: 'Latest thread'
-		}.entries.map((entry) => AdaptiveActionSheetAction(
-			child: Text(entry.value, style: entry.key == Persistence.settings.watchedThreadsSortingMethod ? CommonTextStyles.bold: null),
-			onPressed: () {
-				Settings.watchedThreadsSortingMethodSetting.value = entry.key;
-				Navigator.of(context, rootNavigator: true).pop();
-				onMutate?.call();
-			}
-		)).toList(),
+		actions: [
+			...{
+				ThreadSortingMethod.savedTime: 'Order added',
+				ThreadSortingMethod.lastPostTime: 'Latest reply',
+				ThreadSortingMethod.lastReplyByYouTime: 'Latest reply by you',
+				ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
+				ThreadSortingMethod.threadPostTime: 'Latest thread'
+			}.entries.map((entry) => AdaptiveActionSheetAction(
+				child: Text(entry.value, style: entry.key == Persistence.settings.watchedThreadsSortingMethod ? CommonTextStyles.bold: null),
+				onPressed: () {
+					Settings.watchedThreadsSortingMethodSetting.value = entry.key;
+					Navigator.of(context, rootNavigator: true).pop();
+					onMutate?.call();
+				}
+			)),
+			AdaptiveActionSheetAction(
+				onPressed: () {
+					Settings.showActiveWatchesAboveZombieWatchesSetting.value = !Settings.showActiveWatchesAboveZombieWatchesSetting.value;
+					Navigator.of(context, rootNavigator: true).pop();
+					onMutate?.call();
+				},
+				trailing: Settings.showActiveWatchesAboveZombieWatchesSetting.value
+					? const Icon(CupertinoIcons.checkmark_square) : const Icon(CupertinoIcons.square),
+				child: const Text('Live threads above archived threads')
+			)
+		],
 		cancelButton: AdaptiveActionSheetAction(
 			child: const Text('Cancel'),
 			onPressed: () => Navigator.of(context, rootNavigator: true).pop()
@@ -76,17 +88,19 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 			return b.item.watchTime.compareTo(a.item.watchTime);
 		});
 	}
-	mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
-		if (a.item.zombie == b.item.zombie) {
-			return 0;
-		}
-		else if (a.item.zombie) {
-			return 1;
-		}
-		else {
-			return -1;
-		}
-	});
+	if (Persistence.settings.showActiveWatchesAboveZombieWatches) {
+		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
+			if (a.item.zombie == b.item.zombie) {
+				return 0;
+			}
+			else if (a.item.zombie) {
+				return 1;
+			}
+			else {
+				return -1;
+			}
+		});
+	}
 }
 
 Comparator<PersistentThreadState> getSavedThreadsSortMethod() {

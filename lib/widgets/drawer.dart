@@ -384,8 +384,14 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					// Make sure they are spaced enough to work
 					final affectedPersistences = Set<Persistence>.identity();
 					const kSafeDistance = Duration(seconds: 1);
-					int zombieIndex = watches.indexWhere((w) => w.item.zombie);
-					if (zombieIndex == -1) {
+					int zombieIndex;
+					if (Persistence.settings.showActiveWatchesAboveZombieWatches) {
+						zombieIndex = watches.indexWhere((w) => w.item.zombie);
+						if (zombieIndex == -1) {
+							zombieIndex = watches.length;
+						}
+					}
+					else {
 						zombieIndex = watches.length;
 					}
 					if (zombieIndex > 0) {
