@@ -2605,7 +2605,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 						key: _animatedPaddingKey,
 						duration: const Duration(milliseconds: 200),
 						curve: Curves.ease,
-						padding: EdgeInsets.only(bottom: (widget.suggestedThread != null ? 50 : 0) + (_whiteCountAbove > 0 ? 50 : 0) + 50),
+						padding: EdgeInsets.only(bottom: (widget.suggestedThread != null ? 50 : 0) + 50),
 						child: SingleChildScrollView(
 							// The contents are not really rectangular and have an intentionally transparent background
 							hitTestBehavior: HitTestBehavior.deferToChild,
@@ -3031,72 +3031,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 									}
 								)
 							),
-							if (_whiteCountAbove > 0) CupertinoButton(
-								padding: EdgeInsets.zero,
-								child: Builder(
-									builder: (context) {
-										List<Widget> children = [
-											if (_redCountAbove > 0) Container(
-												decoration: BoxDecoration(
-													borderRadius: radiusStart,
-													color: theme.secondaryColor
-												),
-												padding: const EdgeInsets.all(8),
-												child: Text(
-													_redCountAbove.toString(),
-													textAlign: TextAlign.center
-												)
-											),
-											if (_whiteCountAbove > 0) Container(
-												decoration: BoxDecoration(
-													borderRadius: _redCountAbove <= 0 ? radiusAlone : radiusEnd,
-													color: theme.primaryColor
-												),
-												padding: const EdgeInsets.all(8),
-												child: Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Container(
-															constraints: BoxConstraints(
-																minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountAbove.toString().length)
-															),
-															child: Text(
-																_whiteCountAbove.toString(),
-																style: TextStyle(
-																	color: theme.backgroundColor
-																),
-																textAlign: TextAlign.center
-															)
-														),
-														Icon(CupertinoIcons.arrow_up, color: theme.backgroundColor, size: 19)
-													]
-												)
-											)
-										];
-										if (widget.reversed) {
-											children = children.reversed.toList();
-										}
-										return Padding(
-											padding: const EdgeInsets.only(top: 5, bottom: 8, left: 16, right: 16),
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: children
-											)
-										);
-									}
-								),
-								onPressed: () {
-									final firstVisibleIndex = widget.listController.firstVisibleIndex;
-									int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
-										return entry.key < firstVisibleIndex &&
-											(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.persistentState.unseenPostIds.data.contains(id.childId))) &&
-											!widget.listController.isItemHidden(entry.value).isDuplicate;
-									})?.key ?? -1;
-									if (targetIndex != -1) {
-										widget.listController.animateToIndex(targetIndex);
-									}
-								}
-							),
 							Builder(
 								builder: (context) {
 									final children = [
@@ -3273,6 +3207,72 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											),
 											const SizedBox(width: 8),
 										],
+										if (_whiteCountAbove > 0) CupertinoButton(
+											padding: EdgeInsets.zero,
+											child: Builder(
+												builder: (context) {
+													List<Widget> children = [
+														if (_redCountAbove > 0) Container(
+															decoration: BoxDecoration(
+																borderRadius: radiusStart,
+																color: theme.secondaryColor
+															),
+															padding: const EdgeInsets.all(8),
+															child: Text(
+																_redCountAbove.toString(),
+																textAlign: TextAlign.center
+															)
+														),
+														if (_whiteCountAbove > 0) Container(
+															decoration: BoxDecoration(
+																borderRadius: _redCountAbove <= 0 ? radiusAlone : radiusEnd,
+																color: theme.primaryColor
+															),
+															padding: const EdgeInsets.all(8),
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	Container(
+																		constraints: BoxConstraints(
+																			minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountAbove.toString().length)
+																		),
+																		child: Text(
+																			_whiteCountAbove.toString(),
+																			style: TextStyle(
+																				color: theme.backgroundColor
+																			),
+																			textAlign: TextAlign.center
+																		)
+																	),
+																	Icon(CupertinoIcons.arrow_up, color: theme.backgroundColor, size: 19)
+																]
+															)
+														)
+													];
+													if (widget.reversed) {
+														children = children.reversed.toList();
+													}
+													return Padding(
+														padding: const EdgeInsets.only(right: 8),
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															children: children
+														)
+													);
+												}
+											),
+											onPressed: () {
+												final firstVisibleIndex = widget.listController.firstVisibleIndex;
+												int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
+													return entry.key < firstVisibleIndex &&
+														(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.persistentState.unseenPostIds.data.contains(id.childId))) &&
+														!widget.listController.isItemHidden(entry.value).isDuplicate;
+												})?.key ?? -1;
+												if (targetIndex != -1) {
+													widget.listController.animateToIndex(targetIndex);
+												}
+											}
+										),
 										GestureDetector(
 											onLongPress: () {
 												final position = widget.listController.scrollController?.tryPosition;
