@@ -1,3 +1,4 @@
+import 'package:chan/services/strict_json.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
 import 'package:html/dom.dart' as dom;
@@ -5,28 +6,43 @@ import 'package:html/dom.dart' as dom;
 extension SiteErrorHandling on Dio {
 	Future<Response<T>> getThreadUri<T>(Uri uri, {Options? options, required RequestPriority priority, required ResponseType responseType, CancelToken? cancelToken}) async {
 		final extra = options?.extra;
-		final response = await getUri<T>(uri, options: options?.copyWith(
-			validateStatus: (_) => true,
-			extra: {
-				if (extra != null) ...extra,
-				kPriority: priority,
-			},
-			responseType: responseType
-		) ?? Options(
-			validateStatus: (_) => true,
-			extra: {
-				kPriority: priority
-			},
-			responseType: responseType
-		), cancelToken: cancelToken);
-		final status = response.statusCode;
-		if (status != null && status >= 200 && status < 400) {
-			return response;	
+		try {
+			final response = await getUri<T>(uri, options: options?.copyWith(
+				validateStatus: (_) => true,
+				extra: {
+					if (extra != null) ...extra,
+					kPriority: priority,
+				},
+				responseType: responseType
+			) ?? Options(
+				validateStatus: (_) => true,
+				extra: {
+					kPriority: priority
+				},
+				responseType: responseType
+			), cancelToken: cancelToken);
+			final status = response.statusCode;
+			if (status != null && status >= 200 && status < 400) {
+				return response;
+			}
+			if (status == 404) {
+				throw const ThreadNotFoundException();
+			}
+			throw HTTPStatusException.fromResponse(response);
 		}
-		if (status == 404) {
-			throw const ThreadNotFoundException();
+		catch (e) {
+			if (e is DioError) {
+				final err = e.error;
+				if (err is InvalidJsonException) {
+					final str = err.extractedError?.toLowerCase();
+					if (str != null && str.contains('404') && str.contains('not found')) {
+						// Should cover most common error pages
+						throw const ThreadNotFoundException();
+					}
+				}
+			}
+			rethrow;
 		}
-		throw HTTPStatusException.fromResponse(response);
 	}
 }
 

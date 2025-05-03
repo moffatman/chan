@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/strict_json.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -22,22 +23,37 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 		CancelToken? cancelToken
 	}) async {
 		final baseOptions = getThreadRequest(thread, variant: variant);
-		final response = await client.fetch(baseOptions.copyWith(
-			validateStatus: (_) => true,
-			extra: {
-				...baseOptions.extra,
-				kPriority: priority
-			},
-			cancelToken: cancelToken
-		));
-		final status = response.statusCode;
-		if (status != null && status >= 200 && status < 400) {
-			return await unsafeAsync(response.data, () => makeThread(thread, response, priority: priority, cancelToken: cancelToken));
+		try {
+			final response = await client.fetch(baseOptions.copyWith(
+				validateStatus: (_) => true,
+				extra: {
+					...baseOptions.extra,
+					kPriority: priority
+				},
+				cancelToken: cancelToken
+			));
+			final status = response.statusCode;
+			if (status != null && status >= 200 && status < 400) {
+				return await unsafeAsync(response.data, () => makeThread(thread, response, priority: priority, cancelToken: cancelToken));
+			}
+			if (status == 404) {
+				throw const ThreadNotFoundException();
+			}
+			throw HTTPStatusException.fromResponse(response);
 		}
-		if (status == 404) {
-			throw const ThreadNotFoundException();
+		catch (e) {
+			if (e is DioError) {
+				final err = e.error;
+				if (err is InvalidJsonException) {
+					final str = err.extractedError?.toLowerCase();
+					if (str != null && str.contains('404') && str.contains('not found')) {
+						// Should cover most common error pages
+						throw const ThreadNotFoundException();
+					}
+				}
+			}
+			rethrow;
 		}
-		throw HTTPStatusException.fromResponse(response);
 	}
 	@override
 	Future<Thread?> getThreadIfModifiedSince(ThreadIdentifier thread, DateTime lastModified, {
