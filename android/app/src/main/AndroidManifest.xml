@@ -63,6 +63,8 @@
                <data android:scheme="https" android:host="9ch.site"/>
                <!-- alogsspace -->
                <data android:scheme="https" android:host="alogs.space"/>
+               <!-- dcurbanmom -->
+               <data android:scheme="https" android:host="dcurbanmom.com"/>
                <!-- dvach -->
                <data android:scheme="https" android:host="2ch.hk"/>
                <!-- endchan -->
@@ -85,12 +87,16 @@
                <data android:scheme="https" android:host="kohlchan.net"/>
                <!-- lainchan  -->
                <data android:scheme="https" android:host="lainchan.org"/>
+               <!-- leftypol  -->
+               <data android:scheme="https" android:host="leftypol.org"/>
                <!-- looksmax -->
                <data android:scheme="https" android:host="looksmax.org"/>
                <!-- macrumors -->
                <data android:scheme="https" android:host="forums.macrumors.com"/>
                <!-- mintboard -->
                <data android:scheme="https" android:host="mintboard.org"/>
+               <!-- ourchan -->
+               <data android:scheme="https" android:host="ourchan.org"/>
                <!-- reddit -->
                <data android:scheme="https" android:host="reddit.com"/>
                <data android:scheme="https" android:host="*.reddit.com"/>
