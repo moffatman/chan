@@ -355,6 +355,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		// optimistic
 		_goodImageSource = initialGoodSource;
 		_isFullResolution = initialGoodSource != null;
+		// check *other* archives, this is supposed to be archived, but it refers to original site image server
+		_checkArchives = this.thread?.archiveName != null && Uri.tryParse(attachment.url)?.host == imageboard.site.imageUrl;
 		if (attachment.type == AttachmentType.image && attachment.soundSource == null) {
 			getCachedImageFile(attachment.url.toString()).then((file) {
 				if (file != null && _cachedFile == null && !_isDisposed) {
@@ -486,6 +488,44 @@ class AttachmentViewerController extends ChangeNotifier {
 			// Just assume it's right. Avoid a useless HEAD.
 			return attachmentUrl;
 		}
+		if (_checkArchives && attachment.threadId != null) {
+			final redirectUrls = <String, Uri>{};
+			final archivedThread = await site.getThreadFromArchive(ThreadIdentifier(
+				attachment.board,
+				attachment.threadId!
+			), customValidator: (thread) async {
+				final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
+					?? thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id));
+				if (newAttachment == null) {
+					throw AttachmentNotFoundException(attachment);
+				}
+				_useRandomUserAgent = newAttachment.useRandomUseragent;
+				final check = await site.client.head(newAttachment.url.toString(), options: Options(
+					validateStatus: (_) => true,
+					followRedirects: false,
+					headers: getHeaders(Uri.parse(newAttachment.url)),
+					extra: {
+						kPriority: priority
+					}
+				));
+				if ((check.statusCode ?? 400) >= 400) {
+					throw AttachmentNotArchivedException(attachment);
+				}
+				if (check.redirects.isNotEmpty) {
+					redirectUrls[newAttachment.url] = check.redirects.last.location;
+				}
+				else if (check.headers.value(HttpHeaders.locationHeader) case String location) {
+					redirectUrls[newAttachment.url] = Uri.parse(location);
+				}
+			}, priority: priority);
+			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
+				?? archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id))!;
+			_useRandomUserAgent = goodAttachment.useRandomUseragent;
+			return redirectUrls[goodAttachment.url] ?? Uri.parse(goodAttachment.url);
+		}
+		else {
+			_useRandomUserAgent = null;
+		}
 		Response result = await site.client.requestUri(attachmentUrl, options: Options(
 			method: attachmentUrl.path.endsWith('.m3u8') ? 'GET' : 'HEAD',
 			validateStatus: (_) => true,
@@ -528,44 +568,6 @@ class AttachmentViewerController extends ChangeNotifier {
 			if (result.headers.value(HttpHeaders.locationHeader) case String location) {
 				return Uri.parse(location);
 			}
-		}
-		if (_checkArchives && attachment.threadId != null) {
-			final redirectUrls = <String, Uri>{};
-			final archivedThread = await site.getThreadFromArchive(ThreadIdentifier(
-				attachment.board,
-				attachment.threadId!
-			), customValidator: (thread) async {
-				final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
-					?? thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id));
-				if (newAttachment == null) {
-					throw AttachmentNotFoundException(attachment);
-				}
-				_useRandomUserAgent = newAttachment.useRandomUseragent;
-				final check = await site.client.head(newAttachment.url.toString(), options: Options(
-					validateStatus: (_) => true,
-					followRedirects: false,
-					headers: getHeaders(Uri.parse(newAttachment.url)),
-					extra: {
-						kPriority: priority
-					}
-				));
-				if ((check.statusCode ?? 400) >= 400) {
-					throw AttachmentNotArchivedException(attachment);
-				}
-				if (check.redirects.isNotEmpty) {
-					redirectUrls[newAttachment.url] = check.redirects.last.location;
-				}
-				else if (check.headers.value(HttpHeaders.locationHeader) case String location) {
-					redirectUrls[newAttachment.url] = Uri.parse(location);
-				}
-			}, priority: priority);
-			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
-				?? archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id))!;
-			_useRandomUserAgent = goodAttachment.useRandomUseragent;
-			return redirectUrls[goodAttachment.url] ?? Uri.parse(goodAttachment.url);
-		}
-		else {
-			_useRandomUserAgent = null;
 		}
 		if (result.statusCode == 404) {
 			throw AttachmentNotFoundException(attachment);
