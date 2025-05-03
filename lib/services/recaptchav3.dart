@@ -3,7 +3,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
 
 Future<Recaptcha3Solution> solveRecaptchaV3(Recaptcha3Request request, {CancelToken? cancelToken}) async {
-	final token = await solveJavascriptChallenge(
+	final token = await solveJavascriptChallenge<String>(
 		url: Uri.parse(request.sourceUrl),
 		javascript: 'grecaptcha.execute("${request.key}"${request.action == null ? '' : ', {action: "${request.action}"}'})',
 		priority: RequestPriority.interactive,

@@ -1,5 +1,6 @@
 // ignore_for_file: file_names
 
+import 'package:chan/services/javascript_challenge.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lynxchan.dart';
@@ -73,6 +74,20 @@ class Site8Chan extends SiteLynxchan {
 						throw PostFailedException(response.data['data'] as String);
 					}
 				}
+			);
+		}
+		if (blockResponse.data['data']['validated'] == false) {
+			await solveJavascriptChallenge<void>(
+				url: Uri.parse(getWebUrlImpl(post.board, post.threadId)),
+				priority: RequestPriority.interactive,
+				name: '8chan validation',
+				javascript:
+					'''
+						new Promise(function (resolve, reject) {
+							resolve.stop = reject
+							bypassUtils.runValidation(resolve)
+						})
+					'''
 			);
 		}
 		return await super.submitPost(post, captchaSolution, cancelToken);

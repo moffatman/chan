@@ -3,7 +3,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
 
 /// [javascript] should be an expression. could resolve to a Promise.
-Future<String> solveJavascriptChallenge({
+Future<T> solveJavascriptChallenge<T>({
 	required Uri url,
 	required String javascript,
 	/// Will be called for a while until true
@@ -22,8 +22,11 @@ Future<String> solveJavascriptChallenge({
 			}
 			final result = await controller.callAsyncJavaScript(functionBody: 'return $javascript');
 			final v = result?.value;
-			if (v is String) {
+			if (v is T) {
 				return v;
+			}
+			else if (result?.error == null) {
+				throw Exception('Wrong JS type, expected $T, got $v');
 			}
 			else {
 				throw Exception('JS Error: ${result?.error}');

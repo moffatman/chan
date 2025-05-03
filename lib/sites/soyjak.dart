@@ -57,7 +57,7 @@ class SiteSoyjak extends SiteLainchan2 {
 
 	@override
 	Future<void> updatePostingFields(DraftPost post, Map<String, dynamic> fields, CancelToken? cancelToken) async {
-		fields['integrity-v2'] = await solveJavascriptChallenge(
+		fields['integrity-v2'] = await solveJavascriptChallenge<String>(
 			url: Uri.parse(getWebUrl(
 				board: post.board,
 				threadId: post.threadId
