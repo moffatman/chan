@@ -894,6 +894,20 @@ class BoardPageState extends State<BoardPage> {
 					final bAge = b.time.difference(ref).inSeconds;
 					return -1 * ((b.replyCount + 1) / bAge).compareTo((a.replyCount + 1) / aAge);
 				}
+			else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinuteWithNewThreadsAtTop)
+				(a, b) {
+					// If no replies, just put it at the top
+					if (a.replyCount == 0 && b.replyCount > 0) {
+						return -1;
+					}
+					if (b.replyCount == 0 && a.replyCount > 0) {
+						return 1;
+					}
+					final ref = _lastCatalogUpdateTime ??= DateTime.now();
+					final aAge = a.time.difference(ref).inSeconds;
+					final bAge = b.time.difference(ref).inSeconds;
+					return -1 * ((b.replyCount + 1) / bAge).compareTo((a.replyCount + 1) / aAge);
+				}
 			else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
 				(a, b) => b.posts_.last.id.compareTo(a.posts_.last.id)
 			else if (variant.sortingMethod == ThreadSortingMethod.imageCount)

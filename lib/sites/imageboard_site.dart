@@ -414,7 +414,11 @@ enum CatalogVariant {
 	@HiveField(41)
 	alphabeticByTitle,
 	@HiveField(42)
-	alphabeticByTitleReversed
+	alphabeticByTitleReversed,
+	@HiveField(43)
+	postsPerMinuteWithNewThreadsAtTop,
+	@HiveField(44)
+	postsPerMinuteWithNewThreadsAtTopReversed;
 }
 
 extension CatalogVariantMetadata on CatalogVariant {
@@ -447,6 +451,9 @@ extension CatalogVariantMetadata on CatalogVariant {
 			case CatalogVariant.alphabeticByTitle:
 			case CatalogVariant.alphabeticByTitleReversed:
 				return ThreadSortingMethod.alphabeticByTitle;
+			case CatalogVariant.postsPerMinuteWithNewThreadsAtTop:
+			case CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed:
+				return ThreadSortingMethod.postsPerMinuteWithNewThreadsAtTop;
 			default:
 				return null;
 		}
@@ -463,6 +470,7 @@ extension CatalogVariantMetadata on CatalogVariant {
 			case CatalogVariant.imageCountReversed:
 			case CatalogVariant.lastReplyByYouTimeReversed:
 			case CatalogVariant.alphabeticByTitleReversed:
+			case CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed:
 				return true;
 			default:
 				return false;
@@ -513,7 +521,9 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.hackerNewsJobs: CupertinoIcons.briefcase,
 		CatalogVariant.hackerNewsSecondChancePool: CupertinoIcons.arrow_2_circlepath,
 		CatalogVariant.alphabeticByTitle: CupertinoIcons.textformat,
-		CatalogVariant.alphabeticByTitleReversed: CupertinoIcons.textformat
+		CatalogVariant.alphabeticByTitleReversed: CupertinoIcons.textformat,
+		CatalogVariant.postsPerMinuteWithNewThreadsAtTop: CupertinoIcons.speedometer,
+		CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed: CupertinoIcons.speedometer,
 	}[this];
 	String get name => const {
 		CatalogVariant.unsorted: 'Bump order',
@@ -558,7 +568,9 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.hackerNewsJobs: 'Jobs',
 		CatalogVariant.hackerNewsSecondChancePool: 'Second Chance',
 		CatalogVariant.alphabeticByTitle: 'A-Z by title',
-		CatalogVariant.alphabeticByTitleReversed: 'Z-A by title'
+		CatalogVariant.alphabeticByTitleReversed: 'Z-A by title',
+		CatalogVariant.postsPerMinuteWithNewThreadsAtTop: 'Fastest threads (+new first)',
+		CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed: 'Slowest threads (+new last)',
 	}[this]!;
 	bool? get hasPagedCatalog {
 		switch (this) {
@@ -590,6 +602,8 @@ extension CatalogVariantMetadata on CatalogVariant {
 			case CatalogVariant.lastReplyByYouTimeReversed:
 			case CatalogVariant.alphabeticByTitle:
 			case CatalogVariant.alphabeticByTitleReversed:
+			case CatalogVariant.postsPerMinuteWithNewThreadsAtTop:
+			case CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed:
 				return '';
 			default:
 				return toString();
@@ -620,6 +634,8 @@ extension CatalogVariantMetadata on CatalogVariant {
 				return reverse ? CatalogVariant.lastReplyByYouTimeReversed : CatalogVariant.lastReplyByYouTime;
 			case ThreadSortingMethod.alphabeticByTitle:
 				return reverse ? CatalogVariant.alphabeticByTitleReversed : CatalogVariant.alphabeticByTitle;
+			case ThreadSortingMethod.postsPerMinuteWithNewThreadsAtTop:
+				return reverse ? CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed : CatalogVariant.postsPerMinuteWithNewThreadsAtTop;
 		}
 	}
 }
@@ -2002,6 +2018,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		CatalogVariantGroup(
 			name: 'Reply rate',
 			variants: [CatalogVariant.postsPerMinute, CatalogVariant.postsPerMinuteReversed],
+			hasPrimary: true
+		),
+		CatalogVariantGroup(
+			name: 'Reply rate (+new first)',
+			variants: [CatalogVariant.postsPerMinuteWithNewThreadsAtTop, CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed],
 			hasPrimary: true
 		),
 		CatalogVariantGroup(

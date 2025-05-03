@@ -509,6 +509,10 @@ class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
         return CatalogVariant.alphabeticByTitle;
       case 42:
         return CatalogVariant.alphabeticByTitleReversed;
+      case 43:
+        return CatalogVariant.postsPerMinuteWithNewThreadsAtTop;
+      case 44:
+        return CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed;
       default:
         return CatalogVariant.unsorted;
     }
@@ -645,6 +649,12 @@ class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
         break;
       case CatalogVariant.alphabeticByTitleReversed:
         writer.writeByte(42);
+        break;
+      case CatalogVariant.postsPerMinuteWithNewThreadsAtTop:
+        writer.writeByte(43);
+        break;
+      case CatalogVariant.postsPerMinuteWithNewThreadsAtTopReversed:
+        writer.writeByte(44);
         break;
     }
   }

@@ -162,7 +162,9 @@ enum ThreadSortingMethod {
 	@HiveField(8)
 	lastReplyByYouTime,
 	@HiveField(9)
-	alphabeticByTitle
+	alphabeticByTitle,
+	@HiveField(10)
+	postsPerMinuteWithNewThreadsAtTop;
 }
 
 Set<String> getDefaultSiteKeys() {

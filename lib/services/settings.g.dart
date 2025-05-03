@@ -3386,6 +3386,8 @@ class ThreadSortingMethodAdapter extends TypeAdapter<ThreadSortingMethod> {
         return ThreadSortingMethod.lastReplyByYouTime;
       case 9:
         return ThreadSortingMethod.alphabeticByTitle;
+      case 10:
+        return ThreadSortingMethod.postsPerMinuteWithNewThreadsAtTop;
       default:
         return ThreadSortingMethod.unsorted;
     }
@@ -3423,6 +3425,9 @@ class ThreadSortingMethodAdapter extends TypeAdapter<ThreadSortingMethod> {
         break;
       case ThreadSortingMethod.alphabeticByTitle:
         writer.writeByte(9);
+        break;
+      case ThreadSortingMethod.postsPerMinuteWithNewThreadsAtTop:
+        writer.writeByte(10);
         break;
     }
   }
