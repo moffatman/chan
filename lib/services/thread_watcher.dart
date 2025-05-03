@@ -37,7 +37,8 @@ abstract class Watch {
 }
 
 void _readHookThreadWatchFields(Map<int, dynamic> fields) {
-	fields.putIfAbsent(ThreadWatchFields.watchTime.fieldNumber, () => DateTime.now());
+	// The field may be in the map with value [false]. So putIfAbsent is not appropriate
+	fields[ThreadWatchFields.watchTime.fieldNumber] ??= DateTime.now();
 }
 
 @HiveType(typeId: 28, readHook: _readHookThreadWatchFields)
