@@ -293,11 +293,13 @@ class CloudflareInterceptor extends Interceptor {
 	};
 
 	static const _kDefaultGatewayName = 'Cloudflare';
+	static const kDefaultHeadlessTime = Duration(seconds: 5);
 
 	static final _webViewLock = Mutex();
 	static Future<T> _useWebview<T>({
 		required Future<T> Function(InAppWebViewController, Uri?) handler,
 		bool skipHeadless = false,
+		Duration headlessTime = kDefaultHeadlessTime,
 		InAppWebViewInitialData? initialData,
 		URLRequest? initialUrlRequest,
 		required String userAgent,
@@ -337,38 +339,40 @@ class CloudflareInterceptor extends Interceptor {
 		);
 		bool firstLoad = true;
 		InAppWebViewController? lastController;
-		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<T> callback, ValueChanged<Exception> errorCallback) => (controller, uri) async {
+		late ValueChanged<AsyncSnapshot<T>> callback;
+		void onLoadStop(InAppWebViewController controller, WebUri? uri) async {
 			lastController = controller;
 			await maybeApplyDarkModeBrowserJS(controller);
 			final title = await controller.getTitle() ?? '';
 			if (!ImageboardRegistry.instance.isRedirectGateway(uri, title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
 				await Persistence.saveCookiesFromWebView(uri!);
 				try {
-					callback(await handler(controller, uri));
+					final value = await handler(controller, uri);
+					callback(AsyncSnapshot.withData(ConnectionState.done, value));
 				}
-				on Exception catch (e, st) {
-					Future.error(e, st);
-					errorCallback(e);
+				catch (e, st) {
+					callback(AsyncSnapshot.withError(ConnectionState.done, e, st));
 				}
 				return;
 			}
 			final html = await controller.getHtml() ?? '';
 			if (_bodyMatchesBlock(html)) {
-				errorCallback(const CloudflareHandlerBlockedException());
+				callback(AsyncSnapshot.withError(ConnectionState.done, const CloudflareHandlerBlockedException(), StackTrace.current));
 			}
 			if (autoClickSelector != null && firstLoad) {
 				firstLoad = false;
 				await controller.evaluateJavascript(source: 'document.querySelector("$autoClickSelector").click()');
 			}
-		};
+		}
 		HeadlessInAppWebView? headlessWebView;
 		if (!skipHeadless) {
-			final headlessCompleter = Completer<T>();
+			final headlessCompleter = Completer<AsyncSnapshot<T>>();
+			callback = headlessCompleter.complete;
 			headlessWebView = HeadlessInAppWebView(
 				initialSettings: initialSettings,
 				initialUrlRequest: initialUrlRequest,
 				initialData: initialData,
-				onLoadStop: buildOnLoadStop(headlessCompleter.complete, headlessCompleter.completeError),
+				onLoadStop: onLoadStop,
 				onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 			);
 			await headlessWebView.run();
@@ -381,12 +385,18 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			await Future.any([
 				headlessCompleter.future,
-				Future.delayed(const Duration(seconds: 5)),
+				Future.delayed(headlessTime),
 				if (cancelToken?.whenCancel case Future<DioError> whenCancel) whenCancel
 			]);
 			if (headlessCompleter.isCompleted) {
 				headlessWebView.dispose();
-				return headlessCompleter.future;
+				final snapshot = await headlessCompleter.future;
+				if (snapshot.data case T data) {
+					return data;
+				}
+				else {
+					throw Error.throwWithStackTrace(snapshot.error!, snapshot.stackTrace ?? StackTrace.current);
+				}
 			}
 		}
 		switch (priority) {
@@ -411,7 +421,8 @@ class CloudflareInterceptor extends Interceptor {
 			navigator.popUntil((r) => r.settings != settings);
 		});
 		final stackTrace = StackTrace.current;
-		final ret = await navigator.push<T>(adaptivePageRoute(
+		callback = navigator.pop;
+		final ret = await navigator.push<AsyncSnapshot<T>>(adaptivePageRoute(
 			builder: (context) => AdaptiveScaffold(
 				bar: AdaptiveBar(
 					title: Text('$gatewayName Login'),
@@ -437,7 +448,7 @@ class CloudflareInterceptor extends Interceptor {
 						initialSettings: initialSettings,
 						initialUrlRequest: initialUrlRequest,
 						initialData: initialData,
-						onLoadStop: buildOnLoadStop(Navigator.of(context).pop, Navigator.of(context).pop),
+						onLoadStop: onLoadStop,
 						onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 					)
 				)
@@ -454,14 +465,14 @@ class CloudflareInterceptor extends Interceptor {
 			);
 			throw CloudflareHandlerInterruptedException(gatewayName);
 		}
-		else if (ret is Exception) {
-			throw ret;
+		else if (ret.hasError) {
+			Error.throwWithStackTrace(ret.error!, ret.stackTrace ?? StackTrace.current);
 		}
 		if (cookieUrl.host == _allowNonInteractiveWebviewWhen.hostPasses) {
 			// Cloudflare passed on the previously-blocked host
 			_allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
 		}
-		return ret;
+		return ret.data as T;
 	}));
 
 	@override
@@ -651,7 +662,8 @@ Future<T> useCloudflareClearedWebview<T>({
 	bool toast = true,
 	required String gatewayName,
 	CancelToken? cancelToken,
-	bool skipHeadless = false
+	bool skipHeadless = false,
+	Duration? headlessTime
 }) => CloudflareInterceptor._useWebview(
 	handler: handler,
 	cookieUrl: uri,
@@ -666,5 +678,6 @@ Future<T> useCloudflareClearedWebview<T>({
 	toast: toast,
 	gatewayName: gatewayName,
 	skipHeadless: skipHeadless,
+	headlessTime: headlessTime ?? CloudflareInterceptor.kDefaultHeadlessTime,
 	cancelToken: cancelToken
 );

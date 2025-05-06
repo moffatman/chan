@@ -10,6 +10,7 @@ Future<T> solveJavascriptChallenge<T>({
 	String waitJavascript = 'true',
 	required RequestPriority priority,
 	required String name,
+	Duration? headlessTime,
 	CancelToken? cancelToken
 }) async {
 	return await useCloudflareClearedWebview(
@@ -34,6 +35,7 @@ Future<T> solveJavascriptChallenge<T>({
 		},
 		uri: url,
 		priority: priority,
+		headlessTime: headlessTime,
 		gatewayName: name,
 		cancelToken: cancelToken
 	);

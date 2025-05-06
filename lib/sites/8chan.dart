@@ -88,6 +88,7 @@ class Site8Chan extends SiteLynxchan {
 			await solveJavascriptChallenge<void>(
 				url: Uri.parse(getWebUrlImpl(post.board, post.threadId)),
 				priority: RequestPriority.interactive,
+				headlessTime: const Duration(seconds: 20),
 				name: '8chan validation',
 				javascript:
 					'''
