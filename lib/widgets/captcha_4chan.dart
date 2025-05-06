@@ -428,17 +428,8 @@ Future<CloudGuessedCaptcha4ChanCustom> headlessSolveCaptcha4ChanCustom({
 	int? slide;
 
 	if (challenge.foregroundImage == null && challenge.backgroundImage == null) {
-		if (challenge.challenge == 'noop') {
-			solution = Chan4CustomCaptchaSolution(
-				challenge: 'noop',
-				response: '',
-				acquiredAt: challenge.acquiredAt,
-				lifetime: challenge.lifetime,
-				originalData: challenge.originalData,
-				cloudflare: challenge.cloudflare,
-				slide: null,
-				ip: null
-			);
+		if (challenge.instantSolution case Chan4CustomCaptchaSolution instantSolution) {
+			solution = instantSolution;
 			confident = true;
 		}
 		else {
@@ -663,6 +654,22 @@ class Captcha4ChanCustomChallenge {
 
 	bool isReusableFor(Chan4CustomCaptchaRequest request, Duration validityPeriod) {
 		return !_isDisposed && this.request == request && expiresAt.isAfter(DateTime.now().add(validityPeriod));
+	}
+
+	Chan4CustomCaptchaSolution? get instantSolution {
+		if (challenge == 'noop' && foregroundImage == null && backgroundImage == null) {
+			return Chan4CustomCaptchaSolution(
+				challenge: 'noop',
+				response: '',
+				acquiredAt: acquiredAt,
+				lifetime: lifetime,
+				originalData: originalData,
+				cloudflare: cloudflare,
+				slide: null,
+				ip: null
+			);
+		}
+		return null;
 	}
 
 	@override
@@ -908,17 +915,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			tryAgainAt = challenge?.tryAgainAt;
 			if (!mounted) return;
 			if (challenge!.foregroundImage == null && challenge!.backgroundImage == null) {
-				if (challenge!.challenge == 'noop') {
-					widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
-						challenge: 'noop',
-						response: '',
-						acquiredAt: challenge!.acquiredAt,
-						lifetime: challenge!.lifetime,
-						originalData: challenge!.originalData,
-						slide: null,
-						cloudflare: challenge!.cloudflare,
-						ip: null
-					));
+				if (challenge?.instantSolution case Chan4CustomCaptchaSolution solution) {
+					widget.onCaptchaSolved(solution);
 					challenge?.dispose();
 					challenge = null;
 					return;

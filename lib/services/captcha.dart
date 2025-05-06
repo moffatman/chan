@@ -159,6 +159,9 @@ Future<CaptchaSolution?> solveCaptcha({
 					}
 				}
 			}
+			if (initialChallenge?.instantSolution case Chan4CustomCaptchaSolution solution) {
+				return solution;
+			}
 			if (context?.mounted != true) {
 				initialCloudGuess?.challenge.dispose();
 			}
