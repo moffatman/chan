@@ -1,5 +1,6 @@
 // ignore_for_file: argument_type_not_assignable
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
@@ -464,6 +465,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if ((data['0']['posts'] as Iterable).isEmpty) {
 			throw FoolFuukaException('No results');
 		}
+		/// Actual number of matched results
+		final totalFound = data['meta']['total_found'] as int;
+		/// Maximum number the API will page through
+		final maxResults = (data['meta']['max_results'] as String?)?.tryParseInt ?? totalFound;
 		return ImageboardArchiveSearchResultPage(
 			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map((dynamic data) async {
 				if (data['op'] == '1') {
@@ -485,7 +490,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				}
 			}))).toList(),
 			page: page,
-			maxPage: (((data['meta']['max_results'] as String?)?.tryParseInt ?? data['meta']['total_found']) / 25).ceil(),
+			maxPage: (min(totalFound, maxResults) / 25).ceil(),
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: true,
 			canJumpToArbitraryPage: true,
