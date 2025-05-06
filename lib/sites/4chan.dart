@@ -823,6 +823,18 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		else {
 			final errSpan = document.querySelector('#errmsg');
 			if (errSpan != null) {
+				if (errSpan.text.contains('Duplicate file exists')) {
+					final link = errSpan.querySelectorAll('a').tryMapOnce((a) {
+						final href = a.attributes['href'];
+						if (href == null) {
+							return null;
+						}
+						return Uri.tryParse(getWebUrlImpl(post.board, post.threadId))?.resolve(href).toString();
+					});
+					if (link != null && (await decodeUrl(link))?.postIdentifier != null) {
+						throw DuplicateFileException(link);
+					}
+				}
 				if (errSpan.text.toLowerCase().contains('ban') || errSpan.text.toLowerCase().contains('warn')) {
 					throw BannedException(errSpan.text, _bannedUrl);
 				}

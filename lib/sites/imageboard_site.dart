@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -282,6 +283,23 @@ class AdditionalCaptchaRequiredException implements Exception {
 	});
 	@override
 	String toString() => 'Additional captcha needed';
+}
+
+class DuplicateFileException extends ExtendedException {
+	final String link;
+
+	const DuplicateFileException(this.link);
+
+	@override
+	Map<String, FutureOr<void> Function(BuildContext)> get remedies => {
+		'Go to post': (_) => fakeLinkStream.add(link)
+	};
+
+	@override
+	String toString() => 'Duplicate file exists';
+	
+	@override
+	bool get isReportable => false;
 }
 
 enum ImageboardAction {
