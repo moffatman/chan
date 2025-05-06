@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
@@ -16,6 +15,7 @@ import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/linkifier.dart';
+import 'package:chan/services/md5.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
@@ -39,7 +39,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/widget_decoration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/foundation.dart';
@@ -116,7 +115,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final FocusNode _textFocusNode;
 	late final ValueNotifier<QueuedPost?> postingPost;
 	bool get loading => postingPost.value != null;
-	(MediaScan, FileStat, Digest)? _attachmentScan;
+	(MediaScan, FileStat, String)? _attachmentScan;
 	File? attachment;
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
 	bool _showOptions = false;
@@ -928,7 +927,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				_attachmentProgress = null;
 			});
 			if (file != null) {
-				_attachmentScan = (await MediaScan.scan(file.uri), await file.stat(), await md5.bind(file.openRead()).first);
+				_attachmentScan = (await MediaScan.scan(file.uri), await file.stat(), await calculateMD5(file));
 				setState(() {
 					attachment = file;
 				});
@@ -1323,10 +1322,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			type: attachmentExt == 'webm' ?
 				AttachmentType.webm :
 				(attachmentExt == 'mp4' ? AttachmentType.mp4 : AttachmentType.image),
-			md5: switch (_attachmentScan?.$3) {
-				Digest digest => base64Encode(digest.bytes),
-				null => ''
-			},
+			md5: _attachmentScan?.$3 ?? '',
 			id: '${identityHashCode(attachment)}',
 			filename: attachment?.uri.pathSegments.last ?? '',
 			thumbnailUrl: '',
@@ -1474,7 +1470,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														child: Text('MD5', style: TextStyle(fontSize: 9))
 													),
 													const SizedBox(width: 2),
-													Text('${_attachmentScan?.$3.toString().substring(0, 6).toLowerCase()}', textAlign: TextAlign.center)
+													Text('${_attachmentScan?.$3.substring(0, 6)}', textAlign: TextAlign.center)
 												]
 											),
 											onPressed: () async {

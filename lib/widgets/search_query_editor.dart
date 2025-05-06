@@ -1,12 +1,10 @@
-import 'dart:convert';
-
 import 'package:chan/models/search.dart';
+import 'package:chan/services/md5.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
 
 
@@ -163,7 +161,7 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 												onPressed: () async {
 													final file = await pickAttachment(context: context);
 													if (file != null && context.mounted) {
-														controller.text = base64Encode((await md5.bind(file.openRead()).first).bytes);
+														controller.text = await calculateMD5(file);
 													}
 												}
 											),
