@@ -151,7 +151,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		numer = 0;
 		setState(() {});
 		if (filterDateStart != null) {
-			await Future.wait(firstPass.entries.toList(growable: false).map((e) async {
+			for (final future in firstPass.entries.toList(growable: false).map((e) async {
 				if (!mounted) return;
 				final startIndex = await e.value.binarySearchFirstIndexWhereAsync((ts) async {
 					final thread = await ts.getThread();
@@ -164,13 +164,16 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				else {
 					e.value.removeRange(0, startIndex);
 				}
+			})) {
+				await future;
+				if (!mounted) return;
 				setState(() {
 					numer++;
 				});
-			}));
+			}
 		}
 		if (filterDateEnd != null) {
-			await Future.wait(firstPass.entries.toList(growable: false).map((e) async {
+			for (final future in firstPass.entries.toList(growable: false).map((e) async {
 				if (!mounted || e.value.isEmpty) {
 					return;
 				}
@@ -185,17 +188,20 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				else {
 					e.value.removeRange(endIndex + 1, e.value.length);
 				}
+			})) {
+				await future;
+				if (!mounted) return;
 				setState(() {
 					numer++;
 				});
-			}));
+			}
 		}
 		numer = 0;
 		denom = firstPass.values.fold(0, (t, l) => t + l.length);
 		_scanningPhase = false;
 		setState(() {});
 		final query = RegExp(RegExp.escape(_query), caseSensitive: false);
-		await Future.wait(firstPass.values.expand((l) => l).map((threadState) async {
+		for (final future in firstPass.values.expand((l) => l).map((threadState) async {
 			if (!mounted) return;
 			final thread = await threadState.getThread();
 			if (!mounted) return;
@@ -244,11 +250,12 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				}
 			}
 			if (!mounted) return;
-			numer++;
-			setState(() {});
-		}));
-		if (!mounted) {
-			return;
+		})) {
+			await future;
+			if (!mounted) return;
+			setState(() {
+				numer++;
+			});
 		}
 		theseResults.sort((a, b) => (b.item.post?.time ?? b.item.thread.time).compareTo(a.item.post?.time ?? a.item.thread.time));
 		results = theseResults;
