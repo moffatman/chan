@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
@@ -2631,7 +2632,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			item.id.toString(),
 			if (widget.includeImageboardKeyAndBoardInSearchString) ...[
 				imageboardKey,
-				item.board
+				// Include the slashes
+				ImageboardRegistry.instance.getImageboard(imageboardKey)?.site.formatBoardName(item.board) ?? item.board
 			],
 			...defaultPatternFields.map((field) {
 				return item.getFilterFieldText(field) ?? '';
