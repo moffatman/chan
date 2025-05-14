@@ -410,7 +410,7 @@ class MediaConversion {
 		this.randomizeChecksum = false,
 		this.requireAudio = false,
 		this.targetBitrate
-	});
+	}) : assert(!(targetBitrate == 0 && maximumSizeInBytes != null), 'maximumSizeInBytes requires bitrate targeting');
 
 	static MediaConversion toMp4(Uri inputFile, {
 		Map<String, String> headers = const {},
@@ -422,6 +422,7 @@ class MediaConversion {
 		int? maximumDimension,
 		bool removeMetadata = false,
 		bool randomizeChecksum = false,
+		bool limitBitrate = true
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -431,6 +432,7 @@ class MediaConversion {
 			stripAudio: stripAudio,
 			maximumSizeInBytes: maximumSizeInBytes,
 			maximumDurationInSeconds: maximumDurationInSeconds,
+			targetBitrate: limitBitrate ? null : 0,
 			maximumDimension: maximumDimension,
 			removeMetadata: removeMetadata,
 			randomizeChecksum: randomizeChecksum,
@@ -714,7 +716,7 @@ class MediaConversion {
 						inputUri = VideoServer.instance.getUri(digest);
 						inputHeaders = {};
 					}
-					final bitrateString = '${(outputBitrate / 1000).floor()}K';
+					final bitrateString = outputBitrate == 0 ? null : '${(outputBitrate / 1000).floor()}K';
 					final args = [
 						'-hwaccel', 'auto',
 						if (inputHeaders.isNotEmpty && inputFile.scheme != 'file') ...[
@@ -743,8 +745,8 @@ class MediaConversion {
 						...extraOptions,
 						if (stripAudio) '-an',
 						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
-						else if (outputFileExtension != 'png') ...['-b:v', bitrateString],
-						if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') ...[
+						else if (outputFileExtension != 'png' && bitrateString != null) ...['-b:v', bitrateString],
+						if (bitrateString != null && (outputFileExtension == 'webm' || outputFileExtension == 'mp4')) ...[
 							'-minrate', bitrateString,
 							'-maxrate', bitrateString,
 						],
