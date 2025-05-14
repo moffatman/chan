@@ -1510,7 +1510,8 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							child: Hero(
 								tag: TaggedAttachment(
 									attachment: fakeAttachment,
-									semanticParentIds: [_textFieldController.hashCode]
+									semanticParentIds: [_textFieldController.hashCode],
+									imageboard: context.read<Imageboard>()
 								),
 								flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
 									return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;

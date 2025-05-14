@@ -355,7 +355,8 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (threadId == null) {
 			return false;
 		}
-		return context.read<Imageboard?>()?.persistence
+		final imageboard = widget.attachments.tryFirstWhere((a) => a.attachment == attachment)?.imageboard ?? context.read<Imageboard?>();
+		return imageboard?.persistence
 						.getThreadStateIfExists(ThreadIdentifier(attachment.board, threadId))
 						?.isAttachmentDownloaded(attachment) ?? false;
 	}
@@ -385,7 +386,8 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (threadId == null) {
 			return;
 		}
-		return context.read<Imageboard?>()?.persistence
+		final imageboard = widget.attachments.tryFirstWhere((a) => a.attachment == attachment)?.imageboard ?? context.read<Imageboard?>();
+		return imageboard?.persistence
 						.getThreadState(ThreadIdentifier(attachment.board, threadId), initiallyHideFromHistory: true)
 						.didDownloadAttachment(attachment);
 	}
@@ -396,7 +398,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				context: context,
 				attachment: attachment.attachment,
 				redrawGestureListenable: _slideListenable,
-				imageboard: context.read<Imageboard>(),
+				imageboard: attachment.imageboard,
 				isPrimary: attachment == currentAttachment,
 				overrideSource: widget.overrideSources[attachment.attachment],
 				initialGoodSource: widget.initialGoodSources[attachment.attachment],
@@ -1195,7 +1197,6 @@ class _GalleryPageState extends State<GalleryPage> {
 															padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
 															onPressed: () {
 																final post = zone.findThread(currentAttachment.attachment.threadId ?? zone.primaryThreadId)?.posts_.tryFirstWhere((p) => p.attachments.contains(currentAttachment.attachment));
-																final imageboard = context.read<Imageboard>();
 																final navigator = Navigator.of(context);
 																// Hack to pop until here
 																Route? currentRoute;
@@ -1224,7 +1225,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																final replyBoxZone = widget.replyBoxZone;
 																final child = ImageboardScope(
 																	imageboardKey: null,
-																	imageboard: imageboard,
+																	imageboard: zone.imageboard,
 																	child: PostsPage(
 																		zone: zone.childZoneFor(post?.id, onNeedScrollToPost: onNeedScrollToPost),
 																		header: PostRow(
@@ -1577,33 +1578,28 @@ Future<Attachment?> showGalleryPretagged({
 		}
 		return null;
 	}
-	final imageboard = context.read<Imageboard>();
 	final navigator = fullscreen ? Navigator.of(context, rootNavigator: true) : context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context);
 	await handleMutingBeforeShowingGallery();
 	final lastSelected = await navigator.push(TransparentRoute<Attachment>(
-		builder: (ctx) => ImageboardScope(
-			imageboardKey: null,
-			imageboard: imageboard,
-			child: GalleryPage(
-				attachments: attachments,
-				overrideSources: overrideSources,
-				initialGoodSources: initialGoodSources,
-				zone: zone,
-				threads: threads,
-				posts: posts,
-				onThreadSelected: onThreadSelected,
-				replyBoxZone: replyBoxZone,
-				initialAttachment: initialAttachment,
-				initiallyShowChrome: initiallyShowChrome,
-				initiallyShowGrid: initiallyShowGrid,
-				onChange: onChange,
-				allowChrome: allowChrome,
-				allowContextMenu: allowContextMenu,
-				allowScroll: allowScroll,
-				useHeroDestinationWidget: useHeroDestinationWidget,
-				heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover,
-				additionalContextMenuActionsBuilder: additionalContextMenuActionsBuilder,
-			)
+		builder: (ctx) => GalleryPage(
+			attachments: attachments,
+			overrideSources: overrideSources,
+			initialGoodSources: initialGoodSources,
+			zone: zone,
+			threads: threads,
+			posts: posts,
+			onThreadSelected: onThreadSelected,
+			replyBoxZone: replyBoxZone,
+			initialAttachment: initialAttachment,
+			initiallyShowChrome: initiallyShowChrome,
+			initiallyShowGrid: initiallyShowGrid,
+			onChange: onChange,
+			allowChrome: allowChrome,
+			allowContextMenu: allowContextMenu,
+			allowScroll: allowScroll,
+			useHeroDestinationWidget: useHeroDestinationWidget,
+			heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover,
+			additionalContextMenuActionsBuilder: additionalContextMenuActionsBuilder,
 		)
 	));
 	try {
@@ -1641,7 +1637,8 @@ Future<Attachment?> showGallery({
 	context: context,
 	attachments: attachments.map((attachment) => TaggedAttachment(
 		attachment: attachment,
-		semanticParentIds: semanticParentIds
+		semanticParentIds: semanticParentIds,
+		imageboard: context.read<Imageboard>()
 	)).toList(),
 	overrideSources: overrideSources,
 	initialGoodSources: initialGoodSources,
@@ -1652,7 +1649,8 @@ Future<Attachment?> showGallery({
 	replyBoxZone: replyBoxZone,
 	initialAttachment: initialAttachment == null ? null : TaggedAttachment(
 		attachment: initialAttachment,
-		semanticParentIds: semanticParentIds
+		semanticParentIds: semanticParentIds,
+		imageboard: context.read<Imageboard>()
 	),
 	initiallyShowChrome: initiallyShowChrome,
 	initiallyShowGrid: initiallyShowGrid,

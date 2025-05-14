@@ -342,7 +342,8 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 									onLoadError: options.onThumbnailLoadError,
 									hero: TaggedAttachment(
 										attachment: attachment,
-										semanticParentIds: stackIds
+										semanticParentIds: stackIds,
+										imageboard: zone.imageboard
 									),
 									fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 									shrinkHeight: !settings.squareThumbnails,

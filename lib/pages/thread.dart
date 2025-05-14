@@ -826,6 +826,7 @@ class ThreadPageState extends State<ThreadPage> {
 		TaggedAttachment? initialAttachment,
 		bool initiallyShowGrid = false
 	}) {
+		final imageboard = context.read<Imageboard>();
 		final commonParentIds = [widget.boardSemanticId, 0];
 		List<TaggedAttachment> attachments = _listController.items.expand((item) {
 			if (item.representsStubChildren || _listController.isItemHidden(item).isDuplicate) {
@@ -833,13 +834,15 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			return item.item.attachments.map((a) => TaggedAttachment(
 				attachment: a,
-				semanticParentIds: commonParentIds.followedBy(item.parentIds)
+				semanticParentIds: commonParentIds.followedBy(item.parentIds),
+				imageboard: imageboard
 			));
 		}).toList();
 		if (!attachments.contains(initialAttachment)) {
 			final hiddenAttachments = _listController.state?.filteredValues.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
 				attachment: a,
-				semanticParentIds: commonParentIds.followedBy(item.parentIds)
+				semanticParentIds: commonParentIds.followedBy(item.parentIds),
+				imageboard: imageboard
 			))).toList() ?? [];
 			if (hiddenAttachments.contains(initialAttachment)) {
 				attachments = hiddenAttachments;
@@ -911,7 +914,8 @@ class ThreadPageState extends State<ThreadPage> {
 				_showGallery(
 					initialAttachment: TaggedAttachment(
 						attachment: nextPostWithImage.item.attachments.first,
-						semanticParentIds: [widget.boardSemanticId, 0].followedBy(nextPostWithImage.parentIds)
+						semanticParentIds: [widget.boardSemanticId, 0].followedBy(nextPostWithImage.parentIds),
+						imageboard: context.read<Imageboard>()
 					),
 					initiallyShowGrid: initiallyShowGrid
 				);
@@ -1875,7 +1879,8 @@ class ThreadPageState extends State<ThreadPage> {
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: TaggedAttachment(
 																						attachment: attachment,
-																						semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																						semanticParentIds: context.read<PostSpanZoneData>().stackIds,
+																						imageboard: imageboard
 																					));
 																				},
 																				highlight: newPostIds.contains(post.id),
@@ -1889,7 +1894,8 @@ class ThreadPageState extends State<ThreadPage> {
 																			onThumbnailTap: (attachment) {
 																				_showGallery(initialAttachment: TaggedAttachment(
 																					attachment: attachment,
-																					semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																					semanticParentIds: context.read<PostSpanZoneData>().stackIds,
+																					imageboard: imageboard
 																				));
 																			},
 																			onTap: () async {
@@ -1948,7 +1954,8 @@ class ThreadPageState extends State<ThreadPage> {
 																					onThumbnailTap: (attachment) {
 																						_showGallery(initialAttachment: TaggedAttachment(
 																							attachment: attachment,
-																							semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																							semanticParentIds: context.read<PostSpanZoneData>().stackIds,
+																							imageboard: imageboard
 																						));
 																					},
 																					overrideReplyCount: Row(
@@ -2666,11 +2673,13 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														final imageboard = context.read<Imageboard>();
 														final attachments = widget.listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
 															attachment: a,
-															semanticParentIds: commonParentIds.followedBy(item.parentIds)
+															semanticParentIds: commonParentIds.followedBy(item.parentIds),
+															imageboard: imageboard
 														))).toList();
 														final initialAttachment = TaggedAttachment(
 															attachment: nextPostWithImage.item.attachments.first,
-															semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds)
+															semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds),
+															imageboard: imageboard
 														);
 														final found = <Attachment, TaggedAttachment>{};
 														for (final a in attachments) {

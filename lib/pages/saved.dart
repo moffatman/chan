@@ -1618,7 +1618,8 @@ class _SavedPageState extends State<SavedPage> {
 												child: Hero(
 													tag: TaggedAttachment(
 														attachment: item.item.attachment,
-														semanticParentIds: [-5, imageboardIds.putIfAbsent(item.imageboard.key, () => imageboardIds.length)]
+														semanticParentIds: [-5, imageboardIds.putIfAbsent(item.imageboard.key, () => imageboardIds.length)],
+														imageboard: item.imageboard
 													),
 													child: MediaThumbnail(
 														uri: item.item.file.uri,
@@ -1662,7 +1663,8 @@ class _SavedPageState extends State<SavedPage> {
 							final thisImageboardId = imageboardIds.putIfAbsent(selectedValue.imageboard.key, () => imageboardIds.length);
 							final attachment = TaggedAttachment(
 								attachment: selectedValue.item.attachment,
-								semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId]
+								semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId],
+								imageboard: selectedValue.imageboard
 							);
 							child = ImageboardScope(
 								imageboardKey: selectedValue.imageboard.key,
@@ -1673,7 +1675,8 @@ class _SavedPageState extends State<SavedPage> {
 											final thisImageboardId = imageboardIds.putIfAbsent(l.item.imageboard.key, () => imageboardIds.length);
 											return TaggedAttachment(
 												attachment: l.item.item.attachment,
-												semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId]
+												semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId],
+												imageboard: l.item.imageboard
 											);
 										}).toList(),
 										overrideSources: {

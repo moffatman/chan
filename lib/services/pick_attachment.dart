@@ -313,8 +313,8 @@ List<AttachmentPickingSource> getAttachmentSources({
 		name: 'Saved Attachments',
 		icon: Adaptive.icons.bookmark,
 		pick: (context) {
-			final savedAttachments = ImageboardRegistry.instance.imageboardsIncludingDev.expand((i) => i.persistence.savedAttachments.values).toList();
-			savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
+			final savedAttachments = ImageboardRegistry.instance.imageboardsIncludingDev.expand((i) => i.persistence.savedAttachments.values.map((a) => i.scope(a))).toList();
+			savedAttachments.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
 			final key = GlobalKey<OverscrollModalPageState>();
 			return Navigator.of(context).push<String>(TransparentRoute(
 				builder: (context) => OverscrollModalPage.sliver(
@@ -339,17 +339,24 @@ List<AttachmentPickingSource> getAttachmentSources({
 									final attachment = savedAttachments[i];
 									return GestureDetector(
 										onLongPress: () {
-											showGallery(
-												initialAttachment: attachment.attachment,
+											showGalleryPretagged(
+												initialAttachment: TaggedAttachment(
+													imageboard: attachment.imageboard,
+													semanticParentIds: [-999],
+													attachment: attachment.item.attachment
+												),
 												context: context,
-												attachments: savedAttachments.map((a) => a.attachment).toList(),
-												semanticParentIds: [-999],
+												attachments: savedAttachments.map((a) => TaggedAttachment(
+													imageboard: a.imageboard,
+													semanticParentIds: [-999],
+													attachment: a.item.attachment
+												)).toList(),
 												overrideSources: {
 													for (final l in savedAttachments)
-														l.attachment: l.file.uri
+														l.item.attachment: l.item.file.uri
 												},
 												onChange: (a) {
-													key.currentState!.animateToProportion(savedAttachments.indexWhere((s) => s.attachment == a) / savedAttachments.length);
+													key.currentState!.animateToProportion(savedAttachments.indexWhere((s) => s.item.attachment == a.attachment) / savedAttachments.length);
 												},
 												heroOtherEndIsBoxFitCover: false
 											);
@@ -357,17 +364,18 @@ List<AttachmentPickingSource> getAttachmentSources({
 										child: CupertinoInkwell(
 											padding: EdgeInsets.zero,
 											onPressed: () {
-												Navigator.of(context).pop(attachment.file.path);
+												Navigator.of(context).pop(attachment.item.file.path);
 											},
 											child: ClipRRect(
 												borderRadius: BorderRadius.circular(8),
 												child: Hero(
 													tag: TaggedAttachment(
-														attachment: attachment.attachment,
+														imageboard: attachment.imageboard,
+														attachment: attachment.item.attachment,
 														semanticParentIds: [-999]
 													),
 													child: MediaThumbnail(
-														uri: attachment.file.uri,
+														uri: attachment.item.file.uri,
 														fit: BoxFit.contain
 													),
 													flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
@@ -375,7 +383,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 													},
 													createRectTween: (startRect, endRect) {
 														if (startRect != null && endRect != null) {
-															if (attachment.attachment.type == AttachmentType.image) {
+															if (attachment.item.attachment.type == AttachmentType.image) {
 																// Need to deflate the original startRect because it has inbuilt layoutInsets
 																// This SavedAttachmentThumbnail will always fill its size
 																final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();

@@ -1290,6 +1290,7 @@ class AttachmentViewer extends StatelessWidget {
 	Attachment get attachment => controller.attachment;
 
 	Object get _tag => TaggedAttachment(
+		imageboard: controller.imageboard,
 		attachment: attachment,
 		semanticParentIds: semanticParentIds
 	);

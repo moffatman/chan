@@ -4,6 +4,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/attachment_cache.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
@@ -19,13 +20,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TaggedAttachment {
+	final Imageboard imageboard;
 	final Attachment attachment;
 	final Iterable<int> semanticParentIds;
 	final String _tag;
 	TaggedAttachment({
+		required this.imageboard,
 		required this.attachment,
 		required this.semanticParentIds
-	}) : _tag = '${semanticParentIds.join('/')}/${attachment.id}/${attachment.inlineWithinPostId}';
+	}) : _tag = '${imageboard.key}/${semanticParentIds.join('/')}/${attachment.id}/${attachment.inlineWithinPostId}';
 
 	@override
 	bool operator == (Object other) {

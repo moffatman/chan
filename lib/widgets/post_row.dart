@@ -427,7 +427,8 @@ class PostRow extends StatelessWidget {
 												onLoadError: onThumbnailLoadError,
 												hero: TaggedAttachment(
 													attachment: attachment,
-													semanticParentIds: parentZone.stackIds
+													semanticParentIds: parentZone.stackIds,
+													imageboard: imageboard
 												),
 												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 												shrinkHeight: !settings.squareThumbnails,
@@ -604,7 +605,8 @@ class PostRow extends StatelessWidget {
 														mayObscure: true,
 														hero: TaggedAttachment(
 															attachment: a,
-															semanticParentIds: parentZone.stackIds
+															semanticParentIds: parentZone.stackIds,
+															imageboard: imageboard
 														),
 														cornerIcon: AttachmentThumbnailCornerIcon(
 															backgroundColor: theme.backgroundColor,

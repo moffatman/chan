@@ -512,7 +512,8 @@ class ThreadRow extends StatelessWidget {
 										mayObscure: true,
 										hero: TaggedAttachment(
 											attachment: attachment,
-											semanticParentIds: semanticParentIds
+											semanticParentIds: semanticParentIds,
+											imageboard: imageboard
 										),
 										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 										shrinkHeight: !settings.squareThumbnails,
@@ -682,7 +683,8 @@ class ThreadRow extends StatelessWidget {
 										),
 										hero: TaggedAttachment(
 											attachment: attachment,
-											semanticParentIds: semanticParentIds
+											semanticParentIds: semanticParentIds,
+											imageboard: imageboard
 										)
 									)
 								),
