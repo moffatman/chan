@@ -173,9 +173,9 @@ class Thread extends HiveObject implements Filterable {
 			else {
 				return;
 			}
-			if ((newer.posts.length - older.posts.length) == (newer.uniqueIPCount! - older.uniqueIPCount!)) {
+			if ((newer.posts_.length - older.posts_.length) == (newer.uniqueIPCount! - older.uniqueIPCount!)) {
 				int ipNumber = older.uniqueIPCount! + 1;
-				for (final newPost in newer.posts.skip(older.posts.length)) {
+				for (final newPost in newer.posts_.skip(older.posts_.length)) {
 					newPost.ipNumber = ipNumber++;
 				}
 			}
