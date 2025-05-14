@@ -442,7 +442,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 			)
 		);
 		_query = controller.text;
-		if (anyChange) {
+		if (anyChange || (results?.isEmpty ?? true)) {
 			setState(() {
 				results = null;
 			});
