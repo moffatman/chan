@@ -1630,11 +1630,12 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 				thread = null;
 			}
 		}
+		_thread = thread;
 		if (thread != null) {
 			didUpdate();
 			Persistence._sharedThreadStateStream.add(this);
 		}
-		return _thread = thread ?? _thread;
+		return _thread;
 	}
 
 	Future<Thread?> getThread() async {
