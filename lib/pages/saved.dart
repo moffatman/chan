@@ -408,21 +408,7 @@ class _SavedPageState extends State<SavedPage> {
 						initialQuery: query,
 						initialSavedThreadsOnly: true,
 						selectedResult: selectedResult,
-						onResultSelected: (result) async {
-							if (result == null) {
-								widget.masterDetailKey.currentState!.setValue3(null);
-								return;
-							}
-							final thread = await result.imageboard.persistence.getThreadStateIfExists(result.item.thread)?.getThread();
-							if (thread == null) {
-								return;
-							}
-							final post = thread.posts.tryFirstWhere((p) => p.id == result.item.postId);
-							if (post == null) {
-								return;
-							}
-							widget.masterDetailKey.currentState!.setValue2(result.imageboard.scope(ThreadOrPostIdentifier.thread(result.item.thread, result.item.postId)));
-						}
+						onResultSelected: widget.masterDetailKey.currentState!.setValue2
 					);
 				}
 			),
@@ -449,7 +435,8 @@ class _SavedPageState extends State<SavedPage> {
 							if (thread == null) {
 								return;
 							}
-							final post = thread.posts.tryFirstWhere((p) => p.id == result.item.postId);
+							final postId = result.item.postId ?? result.item.threadId;
+							final post = thread.posts.tryFirstWhere((p) => p.id == postId);
 							if (post == null) {
 								return;
 							}
