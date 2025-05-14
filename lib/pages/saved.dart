@@ -1507,12 +1507,17 @@ class _SavedPageState extends State<SavedPage> {
 							final list = <ImageboardScoped<SavedAttachment>>[];
 							final missing = <ImageboardScoped<SavedAttachment>>[];
 							for (final imageboard in ImageboardRegistry.instance.imageboardsIncludingDev) {
-								for (final attachment in imageboard.persistence.savedAttachments.values) {
-									if (await attachment.file.exists()) {
-										list.add(imageboard.scope(attachment));
+								for (final entry in imageboard.persistence.savedAttachments.entries.toList()) {
+									if (!imageboard.persistence.savedAttachments.containsKey(entry.key)) {
+										// Some race condition, probably that guy saving/unsaving with his obscene number of attachments
+										continue;
+									}
+									// TODO: cache [exists] on the attachment
+									if (await entry.value.file.exists()) {
+										list.add(imageboard.scope(entry.value));
 									}
 									else {
-										missing.add(imageboard.scope(attachment));
+										missing.add(imageboard.scope(entry.value));
 									}
 								}
 							}
