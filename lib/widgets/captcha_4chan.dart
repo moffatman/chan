@@ -223,22 +223,27 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 	if (maxSlide <= 0) {
 		return 0;
 	}
-	/// Just keep using same buffer, avoid an allocation
-	final fgSortedColumn = Uint8List(fgHeight);
 	final toCheck = <({int x, int offset, int fgIdx})>[];
 	final y0fg = (fgHeight * 0.2).floor();
 	final y1fg = (fgHeight * 0.8).ceil();
+	/// Just keep using same buffer, avoid an allocation
+	final fgSortedColumn = Uint8List(y1fg - y0fg);
+	final fgClearColumns = <int>[];
 	for (int x = 2; x < fgWidth - 3; x++) {
 		for (int y = y0fg; y < y1fg; y++) {
 			final thisIndex = 4 * (x + (y * fgWidth));
 			final thisRed = fgBytes.getUint8(thisIndex);
-			fgSortedColumn[y] = thisRed;
+			fgSortedColumn[y - y0fg] = thisRed;
 		}
 		fgSortedColumn.sort();
+		bool isClearColumn = true;
 		for (int y = y0fg; y < y1fg; y++) {
 			final thisIndex = 4 * (x + (y * fgWidth));
 			final thisRed = fgBytes.getUint8(thisIndex);
 			final thisA = fgBytes.getUint8(thisIndex + 3);
+			if (thisA != 0) {
+				isClearColumn = false;
+			}
 			final rightIndex1 = thisIndex + 4;
 			final rightIndex2 = thisIndex + 8;
 			final rightIndex3 = thisIndex + 12;
@@ -282,26 +287,79 @@ Future<int> _alignImage(Captcha4ChanCustomChallenge challenge) async {
 				toCheck.add((x: x, offset: 4 * (x + (y * bgWidth)), fgIdx: downFgIdx));
 			}
 		}
+		if (isClearColumn) {
+			fgClearColumns.add(x);
+		}
 	}
 	final bgHeight = challenge.backgroundImage!.height;
 	final bgBytes = (await challenge.backgroundImage!.toByteData())!;
-	final bgSortedColumns = List.generate(bgWidth, (_) => List.filled(bgHeight, 0), growable: false);
 	final y0bg = (bgHeight * 0.2).floor();
 	final y1bg = (bgHeight * 0.8).ceil();
+	final bgSortedColumns = List.generate(bgWidth, (_) => List.filled(y1bg - y0bg, 0), growable: false);
 	for (int x = 0; x < bgWidth; x++) {
 		for (int y = y0bg; y < y1bg; y++) {
 			final thisIndex = 4 * (x + (y * bgWidth));
 			final thisRed = bgBytes.getUint8(thisIndex);
-			bgSortedColumns[x][y] = thisRed;
+			bgSortedColumns[x][y - y0bg] = thisRed;
 		}
 		bgSortedColumns[x].sort();
 	}
+	final bestDupes = List.filled(bgWidth, (mismatch: 2 << 50, sweep: -1));
+	for (int x0 = 0; x0 < bgWidth - 5; x0++) {
+		sweep_loop:
+		for (final sweep in const [5, 6, 7, 8, 9, 11, 13]) {
+			final x1 = x0 + sweep;
+			if (x1 >= bgWidth) {
+				continue;
+			}
+			int mismatch = 0;
+			final bestMismatch = bestDupes[x0].mismatch;
+			for (int y = 0; y < bgHeight; y++) {
+				final r0 = bgBytes.getUint8(4 * (x0 + (y * bgWidth)));
+				final r1 = bgBytes.getUint8(4 * (x1 + (y * bgWidth)));
+				mismatch += (r1 - r0).abs();
+				if (mismatch >= bestMismatch) {
+					continue sweep_loop;
+				}
+			}
+			bestDupes[x0] = (mismatch: mismatch, sweep: sweep);
+			if (mismatch == 0) {
+				// No point continuing to check
+				break;
+			}
+		}
+	}
+	final dupeThreshold = 5 * bgHeight; // avg. 5px value diff
+	final dupeCols = List.generate(bgWidth, (x) {
+		return bestDupes[x].mismatch < dupeThreshold && x > 0 && (bestDupes[x - 1].sweep == bestDupes[x].sweep);
+	});
+	final emptyCols = List.generate(bgWidth, (x) {
+		final mMin = bgSortedColumns[x].first;
+		final mMax = bgSortedColumns[x].last;
+		return
+			mMin > 103 // no black
+			|| (mMax - mMin) < 10; // <10 dynamic range in the column
+	});
 	// Some future optimization could be to ignore 1-2px horizontal lines here
 	final bgSize = 4 * bgWidth * bgHeight;
-	final halfBgHeight = bgHeight ~/ 2;
-	final mismatches = List.filled(maxSlide, 0.0);
+	final halfBgHeight = (y1bg - y0bg) ~/ 2;
+	final mismatches = List.filled(maxSlide, 0);
+	final dupePenalty = bgHeight * 250;
+	final emptyPenalty = (0.75 * dupePenalty).round();
 	for (int xSlide = 0; xSlide < maxSlide; xSlide++) {
-		double mismatch = 0;
+		int mismatch = 0;
+		for (final x0 in fgClearColumns) {
+			final x = x0 + xSlide;
+			if (x >= bgWidth) {
+				continue;
+			}
+			if (dupeCols[x]) {
+				mismatch += dupePenalty;
+			}
+			if (emptyCols[x]) {
+				mismatch += emptyPenalty;
+			}
+		}
 		final offset = 4 * xSlide;
 		for (int i = 0; i < toCheck.length; i++) {
 			final check = toCheck[i];
@@ -736,10 +794,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	List<double> _guessConfidences = List.generate(6, (i) => 1.0);
 	Chan4CustomCaptchaGuesses? _lastGuesses;
 	late Chan4CustomCaptchaGuess _lastGuess;
-	bool _greyOutPickers = true;
+	bool get _greyOutPickers => cancelToken != null;
 	final Map<Chan4CustomCaptchaLetterKey, _PickerStuff> _pickerStuff = {};
 	final List<_PickerStuff> _orphanPickerStuff = [];
-	double? _guessingProgress = 0.0;
 	bool _cloudGuessFailed = false;
 	String? _lastCloudGuess;
 	String? _ip;
@@ -751,38 +808,37 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	bool get useNewCaptchaForm => Settings.instance.useNewCaptchaForm && widget.request.possibleLetterCounts.isNotEmpty;
 
 	Future<void> _animateCloudGuess() async {
-		setState(() {
-			_guessingProgress = null;
-			_greyOutPickers = true;
-			cancelToken = CancelToken();
-		});
+		cancelToken?.cancel();
+		final thisCancelToken = cancelToken = CancelToken();
+		setState(() {});
 		try {
 			final image = await _screenshotImage();
 			final guess = await _cloudGuess(
 				site: widget.site,
 				image: image,
-				cancelToken: cancelToken
+				cancelToken: thisCancelToken
 			);
 			_ip = guess.ip ?? _ip;
 			_useCloudGuess(guess.answer);
 		}
 		catch (e, st) {
-			if (mounted) {
-				showToast(
-					context: context,
-					icon: CupertinoIcons.exclamationmark_triangle,
-					message: 'Cloud solver failed: ${e.toStringDio()}'
-				);
+			if (!thisCancelToken.isCancelled) {
+				if (mounted) {
+					showToast(
+						context: context,
+						icon: CupertinoIcons.exclamationmark_triangle,
+						message: 'Cloud solver failed: ${e.toStringDio()}'
+					);
+				}
+				Future.error(e, st);
+				_cloudGuessFailed = true;
 			}
-			Future.error(e, st);
-			_cloudGuessFailed = true;
+		}
+		if (cancelToken == thisCancelToken) {
+			cancelToken = null;
 		}
 		if (mounted) {
-			setState(() {
-				_guessingProgress = 1;
-				_greyOutPickers = false;
-				cancelToken = null;
-			});
+			setState(() {});
 		}
 	}
 
@@ -806,11 +862,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 	}
 
-	Future<void> _animateLocalGuess() async {
-		setState(() {
-			_guessingProgress = 0.0;
-			_greyOutPickers = true;
-		});
+	void _animateLocalGuess() {
 		try {
 			_lastGuesses = Chan4CustomCaptchaGuesses.dummy('000000', 10);
 			numLetters = _lastGuesses!.likelyNumLetters;
@@ -850,9 +902,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionNode.requestFocus();
 		}
-		setState(() {
-			_greyOutPickers = false;
-		});
 	}
 
 	Future<void> _animateGuess() async {
@@ -887,7 +936,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				}
 			}
 		}
-		await _animateLocalGuess();
+		_animateLocalGuess();
 	}
 
 	_PickerStuff _getPickerStuffForWidgetIndex(int i) {
@@ -1083,9 +1132,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionController.addListener(_onSolutionControllerUpdate);
 		}
-		else {
-			_greyOutPickers = false;
-		}
 		final guess = widget.initialCloudGuess;
 		if (widget.initialChallengeException != null) {
 			error = widget.initialChallengeException;
@@ -1100,10 +1146,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			tryAgainAt = guess.challenge.tryAgainAt;
 			Future.delayed(const Duration(milliseconds: 10), () {
 				_useCloudGuess(guess.solution.response);
-				setState(() {
-					_guessingProgress = 1;
-					_greyOutPickers = false;
-				});
 			});
 		}
 		else if (challenge != null) {
@@ -1264,26 +1306,20 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										fit: FlexFit.tight,
 										child: Padding(
 											padding: const EdgeInsets.symmetric(horizontal: 16),
-											child: IgnorePointer(
-												ignoring: _greyOutPickers,
-												child: Opacity(
-													opacity: _greyOutPickers ? 0.5 : 1.0,
-													child: Slider.adaptive(
-														value: backgroundSlide.toDouble(),
-														divisions: maxSlide,
-														max: maxSlide.toDouble(),
-														onChanged: (newOffset) {
-															setState(() {
-																backgroundSlide = newOffset.floor();
-															});
-														},
-														onChangeEnd: (newOffset) {
-															if (_solutionController.text.toUpperCase() == _lastGuess.guess.toUpperCase()) {
-																_animateGuess();
-															}
-														}
-													)
-												)
+											child: Slider.adaptive(
+												value: maxSlide - backgroundSlide.toDouble(),
+												divisions: maxSlide,
+												max: maxSlide.toDouble(),
+												onChanged: (newOffset) {
+													setState(() {
+														backgroundSlide = maxSlide - newOffset.floor();
+													});
+												},
+												onChangeEnd: (newOffset) {
+													if (_solutionController.text.toUpperCase() == _lastGuess.guess.toUpperCase()) {
+														_animateGuess();
+													}
+												}
 											)
 										)
 									),
@@ -1371,53 +1407,59 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									const SizedBox(height: 8),
 									SizedBox(
 										width: double.infinity,
-										child: AdaptiveSegmentedControl<int>(
-											fillWidth: true,
-											children: {
-												if (numLetters < possibleLetterCounts.first)
-													numLetters: (null, '$numLetters'),
-												for (final count in possibleLetterCounts)
-													count: (null, '$count'),
-												if (numLetters > possibleLetterCounts.last)
-													numLetters: (null, '$numLetters')
-											},
-											groupValue: numLetters,
-											onValueChanged: (x) {
-												if (x != numLetters) {
-													numLetters = x;
-													final selection = _solutionController.selection;
-													final oldGuess = _lastGuess;
-													_lastGuess = _lastGuesses?.forNumLetters(numLetters) ?? Chan4CustomCaptchaGuess.dummy('0' * numLetters);
-													String newGuessText = _lastGuess.guess;
-													_guessConfidences = _lastGuess.confidences.toList();
-													// We want keys to match up to same pickerStuff, not to widget-indexes
-													final tmp = _pickerStuff.keys.toSet();
-													for (final id in _lastGuess.keys.asMap().entries) {
-														if (_pickerStuff.containsKey(id.value)) {
-															// Same key in both guesses
-															tmp.remove(id.value);
-															final indexInOldGuess = oldGuess.keys.indexOf(id.value);
-															if (indexInOldGuess != -1) {
-																// Copy the old letter, in case the user modified it
-																newGuessText = newGuessText.replaceRange(id.key, id.key + 1, _solutionController.text[indexInOldGuess]);
+										child: IgnorePointer(
+											ignoring: _greyOutPickers,
+											child: Opacity(
+												opacity: _greyOutPickers ? 0.5 : 1.0,
+												child: AdaptiveSegmentedControl<int>(
+													fillWidth: true,
+													children: {
+														if (numLetters < possibleLetterCounts.first)
+															numLetters: (null, '$numLetters'),
+														for (final count in possibleLetterCounts)
+															count: (null, '$count'),
+														if (numLetters > possibleLetterCounts.last)
+															numLetters: (null, '$numLetters')
+													},
+													groupValue: numLetters,
+													onValueChanged: (x) {
+														if (x != numLetters) {
+															numLetters = x;
+															final selection = _solutionController.selection;
+															final oldGuess = _lastGuess;
+															_lastGuess = _lastGuesses?.forNumLetters(numLetters) ?? Chan4CustomCaptchaGuess.dummy('0' * numLetters);
+															String newGuessText = _lastGuess.guess;
+															_guessConfidences = _lastGuess.confidences.toList();
+															// We want keys to match up to same pickerStuff, not to widget-indexes
+															final tmp = _pickerStuff.keys.toSet();
+															for (final id in _lastGuess.keys.asMap().entries) {
+																if (_pickerStuff.containsKey(id.value)) {
+																	// Same key in both guesses
+																	tmp.remove(id.value);
+																	final indexInOldGuess = oldGuess.keys.indexOf(id.value);
+																	if (indexInOldGuess != -1) {
+																		// Copy the old letter, in case the user modified it
+																		newGuessText = newGuessText.replaceRange(id.key, id.key + 1, _solutionController.text[indexInOldGuess]);
+																	}
+																}
 															}
+															for (final orphanKey in tmp) {
+																// Old letter slot not in new guess
+																final orphan = _pickerStuff.remove(orphanKey);
+																if (orphan != null) {
+																	_orphanPickerStuff.add(orphan);
+																}
+															}
+															_solutionController.text = newGuessText;
+															_solutionController.selection = TextSelection(
+																baseOffset: min(numLetters - 1, selection.baseOffset),
+																extentOffset: min(numLetters, selection.extentOffset)
+															);
+															setState(() {});
 														}
 													}
-													for (final orphanKey in tmp) {
-														// Old letter slot not in new guess
-														final orphan = _pickerStuff.remove(orphanKey);
-														if (orphan != null) {
-															_orphanPickerStuff.add(orphan);
-														}
-													}
-													_solutionController.text = newGuessText;
-													_solutionController.selection = TextSelection(
-														baseOffset: min(numLetters - 1, selection.baseOffset),
-														extentOffset: min(numLetters, selection.extentOffset)
-													);
-													setState(() {});
-												}
-											}
+												)
+											)
 										)
 									)
 								],
@@ -1586,7 +1628,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 													ClipRRect(
 														borderRadius: BorderRadius.circular(8),
 														child: LinearProgressIndicator(
-															value: _guessingProgress,
+															value: _greyOutPickers ? null : 1,
 															minHeight: 50,
 															valueColor: AlwaysStoppedAnimation(theme.primaryColor),
 															backgroundColor: theme.primaryColor.withOpacity(0.3)
