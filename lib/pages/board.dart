@@ -838,6 +838,7 @@ class BoardPageState extends State<BoardPage> {
 						replyCountUnreliable: thread.replyCount < 0,
 						imageCountUnreliable: thread.imageCount < 0,
 						showBoardName: thread.board != board?.name,
+						showPageNumber: variant.sortingMethod != null,
 						onThumbnailTap: (initialAttachment) {
 							final attachments = _listController.items.expand((_) => _.item.attachments).toList();
 							// It might not be in the list if the thread has been filtered
