@@ -2310,7 +2310,7 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
 		}
 		else if (intWidth == 8) {
 			for (int i = 0; i < numDiffs; i++) {
-				diffs.add(reader.readUint32());
+				diffs.add(reader.readInt());
 			}
 		}
 		else {
