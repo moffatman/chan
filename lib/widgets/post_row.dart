@@ -168,7 +168,7 @@ class PostRow extends StatelessWidget {
 	final bool showSiteIcon;
 	final bool showBoardName;
 	final bool showYourPostBorder;
-	final bool highlight;
+	final double highlight;
 	final Widget? overrideReplyCount;
 	final bool showReplyCount;
 	final bool dim;
@@ -193,7 +193,7 @@ class PostRow extends StatelessWidget {
 		this.showSiteIcon = false,
 		this.showBoardName = false,
 		this.showYourPostBorder = true,
-		this.highlight = false,
+		this.highlight = 0.0,
 		this.baseOptions,
 		this.overrideReplyCount,
 		this.showReplyCount = true,
@@ -296,8 +296,8 @@ class PostRow extends StatelessWidget {
 		}
 		final backgroundColor = isSelected ?
 			theme.primaryColor.withOpacity(0.25) :
-			highlight ?
-				theme.primaryColor.withOpacity(settings.newPostHighlightBrightness) :
+			(highlight > 0) ?
+				theme.primaryColor.withOpacity(highlight * settings.newPostHighlightBrightness) :
 				Colors.transparent;
 		final listFilterReason = context.watch<RefreshableListFilterReason?>();
 		final isPostHiddenByThreadState = switch(parentZoneThreadState?.getPostHiding(latestPost.id)) {

@@ -170,9 +170,11 @@ class ThreadPageState extends State<ThreadPage> {
 	RequestPriority get _priority => _foreground ? RequestPriority.interactive : RequestPriority.functional;
 	PersistentBrowserTab? _parentTab;
 	final List<Function> _postUpdateCallbacks = [];
-	final Set<int> newPostIds = {}; // basically a copy of unseenPostIds?
+	final Map<int, double> _highlightPosts = {};
 	bool _searching = false;
 	bool _passedFirstLoad = false;
+	int? _firstSeenIndex;
+	int? _lastSeenIndex;
 	bool _showingWatchMenu = false;
 	final Map<Attachment, _AttachmentCachingStatus> _cached = {};
 	final List<Attachment> _cachingQueue = [];
@@ -185,6 +187,21 @@ class ThreadPageState extends State<ThreadPage> {
 	final _threadStateListenableUpdateMutex = Mutex();
 	late final StreamSubscription<Attachment> _cacheSubscription;
 
+	/// Return whether any were removed
+	bool _updateHighlightedPosts({required bool restoring}) {
+		final value = restoring ? 0.3 : 1.0;
+		bool anyRemoved = false;
+		_highlightPosts.removeWhere((id, v) {
+			final remove = !persistentState.unseenPostIds.data.contains(id);
+			anyRemoved |= remove;
+			return remove;
+		});
+		for (final newId in persistentState.unseenPostIds.data) {
+			_highlightPosts[newId] ??= value;
+		}
+		return anyRemoved;
+	}
+
 	Future<void> _onThreadStateListenableUpdate() => _threadStateListenableUpdateMutex.protect(() async {
 		final persistence = context.read<Persistence>();
 		final savedPostsLength = persistentState.thread?.posts_.where((p) => persistence.getSavedPost(p) != null).length ?? 0;
@@ -196,7 +213,7 @@ class ThreadPageState extends State<ThreadPage> {
 			if (currentSnapshot.thread?.identifier == _lastPersistentThreadStateSnapshot.thread?.identifier) {
 				// We need to catch newPostIds filled in via thread setter
 				// Since newPostIds is always subset of unseenPostIds, this is safe
-				newPostIds.addAll(persistentState.unseenPostIds.data);
+				_updateHighlightedPosts(restoring: false);
 			}
 			_listController.state?.forceRebuildId++;
 			await persistentState.thread?.preinit();
@@ -230,9 +247,7 @@ class ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread != null) {
 			zone.addThread(persistentState.thread!);
 		}
-		if (_postUpdateCallbacks.isNotEmpty) {
-			Future.microtask(_runPostUpdateCallbacks);
-		}
+		Future.microtask(_runPostUpdateCallbacks);
 	});
 
 	bool get useTree => persistentState.useTree ?? context.read<Persistence>().browserState.useTree ?? context.read<ImageboardSite>().useTree;
@@ -488,6 +503,7 @@ class ThreadPageState extends State<ThreadPage> {
 		_checkForeground();
 		if (persistentState.thread != null && !blocked && lastIndex != -1 && _foreground) {
 			final lastItem = _listController.getItem(lastIndex);
+			_lastSeenIndex = max(lastIndex, _lastSeenIndex ?? lastIndex);
 			final newLastSeen = lastItem.id;
 			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
 				persistentState.lastSeenPostId = newLastSeen;
@@ -495,6 +511,7 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			final firstIndex = _listController.firstVisibleIndex;
 			if (firstIndex != -1) {
+				_firstSeenIndex = min(firstIndex, _firstSeenIndex ?? firstIndex);
 				final firstItem = _listController.getItem(firstIndex);
 				if (persistentState.firstVisiblePostId != firstItem.item.id) {
 					runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
@@ -502,10 +519,12 @@ class ThreadPageState extends State<ThreadPage> {
 				persistentState.firstVisiblePostId = firstItem.item.id;
 				persistentState.firstVisiblePostAlignment = _listController.getItemAlignment(firstIndex);
 			}
-			if (firstIndex != -1 && lastIndex != -1 && firstIndex <= lastIndex) {
+			final i0 = _firstSeenIndex;
+			final i1 = _lastSeenIndex;
+			if (i0 != null && i1 != null && i0 <= i1) {
 				final items = _listController.items.toList();
-				final firstIndexClamped = firstIndex.clamp(0, items.length - 1);
-				final seenIds = items.sublist(firstIndexClamped, lastIndex.clamp(firstIndexClamped, items.length - 1) + 1).where((p) => !_listController.isItemHidden(p).isHidden).map((p) => p.item.id);
+				final i0Clamped = i0.clamp(0, items.length - 1);
+				final seenIds = items.sublist(i0Clamped, i1.clamp(i0Clamped, items.length - 1) + 1).where((p) => !_listController.isItemHidden(p).isHidden).map((p) => p.item.id);
 				final lengthBefore = persistentState.unseenPostIds.data.length;
 				persistentState.unseenPostIds.data.removeAll(seenIds);
 				if (lengthBefore != persistentState.unseenPostIds.data.length) {
@@ -513,6 +532,10 @@ class ThreadPageState extends State<ThreadPage> {
 					runWhenIdle(const Duration(milliseconds: 250), persistentState.save);
 				}
 			}
+		}
+		else if (blocked) {
+			_firstSeenIndex = null;
+			_lastSeenIndex = null;
 		}
 	}
 
@@ -603,7 +626,7 @@ class ThreadPageState extends State<ThreadPage> {
 		if (persistentState.unseenPostIds.data.remove(id)) {
 			// The post was offscreen, also remove it from newPostIds
 			// so the unread counter makes more sense when we scroll down to see it
-			newPostIds.remove(id);
+			_highlightPosts.remove(id);
 			runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 			_indicatorKey.currentState?._updateCounts();
 		}
@@ -676,7 +699,7 @@ class ThreadPageState extends State<ThreadPage> {
 				return _listController.isOnscreen(post);
 			},
 			onPostSeen: _onPostSeenFromZone,
-			highlightedPostIds: newPostIds,
+			shouldHighlightPost: _shouldHighlightPost,
 			glowOtherPost: (id, glow) {
 				if (glow) {
 					_glowingPostId = id;
@@ -718,7 +741,7 @@ class ThreadPageState extends State<ThreadPage> {
 			_listController.waitForItemBuild(0).then((_) => _updateCached(onscreenOnly: false));
 		}
 		_cacheSubscription = AttachmentCache.stream.listen(_onAttachmentCache);
-		newPostIds.addAll(persistentState.unseenPostIds.data);
+		_updateHighlightedPosts(restoring: true);
 		if (persistentState.disableUpdates) {
 			_checkForNewGeneral();
 			_loadReferencedThreads(setStateAfterwards: true);
@@ -759,7 +782,7 @@ class ThreadPageState extends State<ThreadPage> {
 				isPostOnscreen: oldZone.isPostOnscreen,
 				glowOtherPost: oldZone.glowOtherPost,
 				onPostSeen: oldZone.onPostSeen,
-				highlightedPostIds: newPostIds,
+				shouldHighlightPost: _shouldHighlightPost,
 				onNeedUpdateWithStubItems: oldZone.onNeedUpdateWithStubItems,
 				semanticRootIds: [widget.boardSemanticId, 0],
 				style: oldZone.style
@@ -774,8 +797,8 @@ class ThreadPageState extends State<ThreadPage> {
 			if (Settings.instance.autoCacheAttachments) {
 				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 			}
-			newPostIds.clear();
-			newPostIds.addAll(persistentState.unseenPostIds.data);
+			_highlightPosts.clear();
+			_updateHighlightedPosts(restoring: true);
 			if (persistentState.disableUpdates) {
 				_checkForNewGeneral();
 				_loadReferencedThreads(setStateAfterwards: true);
@@ -940,7 +963,7 @@ class ThreadPageState extends State<ThreadPage> {
 			final newInsert = zone.findPost(asArchived.id) == null;
 			thread.mergePosts(null, [asArchived], context.read<ImageboardSite>());
 			if (newInsert) {
-				newPostIds.add(asArchived.id);
+				_highlightPosts[asArchived.id] = 1.0;
 				persistentState.unseenPostIds.data.add(asArchived.id);
 			}
 			zone.addThread(thread);
@@ -1198,13 +1221,14 @@ class ThreadPageState extends State<ThreadPage> {
 		else if (firstLoad && tmpPersistentState == persistentState) {
 			shouldScroll = true;
 		}
-		final newPostIdsBefore = newPostIds.toSet();
-		// unseenPostIds is filled-up during PersistentThreadState thread setter
-		// This will clear out all the posts which were "seen" since last update
-		// and get the new posts from the new thread
-		newPostIds.clear();
-		newPostIds.addAll(tmpPersistentState.unseenPostIds.data);
-		if (loadedReferencedThreads || !setEquals(newPostIdsBefore, newPostIds)) {
+		if (firstLoad) {
+			// Don't highlight the first-loaded posts, it looks bad to have everything highlighted
+			for (final id in persistentState.unseenPostIds.data) {
+				_highlightPosts[id] = 0.0;
+			}
+		}
+		final anyPostsMarkedSeen = _updateHighlightedPosts(restoring: false);
+		if (loadedReferencedThreads || anyPostsMarkedSeen) {
 			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
 		}
 		// Don't show data if the thread switched
@@ -1229,6 +1253,8 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	void _runPostUpdateCallbacks() async {
+		_firstSeenIndex = null;
+		_lastSeenIndex = null;
 		await WidgetsBinding.instance.endOfFrame;
 		final tmp = _postUpdateCallbacks.toList();
 		_postUpdateCallbacks.clear();
@@ -1251,15 +1277,13 @@ class ThreadPageState extends State<ThreadPage> {
 			for (final post in thread.posts_)
 				post.id: post.isStub
 		};
-		if (!setEquals(persistentState.unseenPostIds.data, newPostIds)) {
-			newPostIds.clear();
-			newPostIds.addAll(persistentState.unseenPostIds.data);
+		if (_updateHighlightedPosts(restoring: false)) {
 			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
 		}
 		for (final p in newChildren) {
 			if (!p.isPageStub && oldIds[p.id] != p.isStub && !persistentState.youIds.contains(p.id)) {
 				persistentState.unseenPostIds.data.add(p.id);
-				newPostIds.add(p.id);
+				_highlightPosts[p.id] = 1.0;
 			}
 		}
 		final anyNew = thread.mergePosts(null, newChildren, site);
@@ -1374,6 +1398,10 @@ class ThreadPageState extends State<ThreadPage> {
 				);
 			}
 		};
+	}
+
+	double _shouldHighlightPost(int id) {
+		return _highlightPosts[id] ?? 0;
 	}
 
 	@override
@@ -1742,7 +1770,7 @@ class ThreadPageState extends State<ThreadPage> {
 																	key: _listKey,
 																	sortMethods: zone.postSortingMethods,
 																	id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																	disableUpdates: persistentState.disableUpdates && !(newPostIds.isNotEmpty || switch ((persistentState.treeSplitId, persistentState.thread?.posts_)) {
+																	disableUpdates: persistentState.disableUpdates && !(_highlightPosts.isNotEmpty || switch ((persistentState.treeSplitId, persistentState.thread?.posts_)) {
 																		(int treeSplitId, List<Post> posts) => treeSplitId < posts.fold(0, (m, p) => max(m, p.id)),
 																		_ => false
 																	}),
@@ -1848,7 +1876,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			if (options.source.manual) {
 																				await Future.delayed(const Duration(milliseconds: 650));
 																				// This is just to clear highlighted posts / resort tree on archived threads
-																				newPostIds.clear();
+																				_highlightPosts.clear();
 																				_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
 																				Future.microtask(() => setState(() {}));
 																			}
@@ -1883,7 +1911,7 @@ class ThreadPageState extends State<ThreadPage> {
 																						imageboard: imageboard
 																					));
 																				},
-																				highlight: newPostIds.contains(post.id),
+																				highlight: _shouldHighlightPost(post.id),
 																				onDoubleTap: _makeOnDoubleTap(post.id)
 																			)
 																		);
@@ -1907,7 +1935,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			baseOptions: PostSpanRenderOptions(
 																				highlightPattern: filterPattern
 																			),
-																			highlight: newPostIds.contains(post.id),
+																			highlight: _shouldHighlightPost(post.id),
 																			onDoubleTap: _makeOnDoubleTap(post.id)
 																		);
 																	},
@@ -1937,8 +1965,8 @@ class ThreadPageState extends State<ThreadPage> {
 																				]
 																			);
 																		}
-																		final newCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
-																		final unseenCount = collapsedChildIds.where((id) => persistentState.unseenPostIds.data.contains(id)).length;
+																		final newCount = collapsedChildIds.where(_highlightPosts.containsKey).length;
+																		final unseenCount = collapsedChildIds.where(persistentState.unseenPostIds.data.contains).length;
 																		final isDeletedStub = value != null && value.isDeleted && value.text.isEmpty && value.attachments.isEmpty;
 																		if (peekContentHeight != null && value != null) {
 																			final style = TextStyle(
@@ -1950,7 +1978,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				builder: (context) => PostRow(
 																					post: value,
 																					dim: !alreadyDim && (isDeletedStub || peekContentHeight.isFinite),
-																					highlight: newPostIds.contains(value.id),
+																					highlight: _shouldHighlightPost(value.id),
 																					onThumbnailTap: (attachment) {
 																						_showGallery(initialAttachment: TaggedAttachment(
 																							attachment: attachment,
@@ -1997,7 +2025,10 @@ class ThreadPageState extends State<ThreadPage> {
 																				width: double.infinity,
 																				padding: const EdgeInsets.all(8),
 																				// TODO: The below?
-																				color: ([value?.id, ...(stubChildIds?.map((x) => x.childId) ?? <int>[])]).any((x) => newPostIds.contains(x)) ? theme.primaryColorWithBrightness(0.1) : null,
+																				color: switch (([value?.id ?? -1, ...(stubChildIds?.map((x) => x.childId) ?? <int>[])]).fold(0.0, (t, i) => max(t, _shouldHighlightPost(i)))) {
+																					0.0 => null,
+																					double x => theme.primaryColorWithBrightness(0.1 * x)
+																				},
 																				child: Row(
 																					children: [
 																						if (value != null) Expanded(
@@ -2071,12 +2102,17 @@ class ThreadPageState extends State<ThreadPage> {
 																			listController: _listController,
 																			zone: zone,
 																			useTree: useTree,
-																			newPostIds: newPostIds,
+																			highlightPosts: _highlightPosts,
+																			glowPost: _glowPost,
 																			searching: _searching,
 																			passedFirstLoad: _passedFirstLoad,
 																			blocked: blocked,
 																			boardSemanticId: widget.boardSemanticId,
-																			forceThreadRebuild: () => setState(() {}),
+																			forceThreadRebuild: () {
+																				_firstSeenIndex = null;
+																				_lastSeenIndex = null;
+																				setState(() {});
+																			},
 																			developerModeButtons: [
 																				[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
 																					final allIds = (persistentState.thread?.posts_.map((i) => i.id) ?? _listController.items.map((i) => i.id));
@@ -2188,7 +2224,8 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final PostSpanZoneData zone;
 	final bool reversed;
 	final bool useTree;
-	final Set<int> newPostIds;
+	final Map<int, double> highlightPosts;
+	final ValueChanged<int> glowPost;
 	final bool searching;
 	final bool passedFirstLoad;
 	final bool blocked;
@@ -2210,7 +2247,8 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.zone,
 		this.reversed = false,
 		required this.useTree,
-		required this.newPostIds,
+		required this.highlightPosts,
+		required this.glowPost,
 		required this.searching,
 		required this.passedFirstLoad,
 		required this.blocked,
@@ -2831,14 +2869,17 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														widget.persistentState.postSortingMethod = choice.value;
 														widget.listController.state?.forceRebuildId++;
 														widget.persistentState.save();
+														widget.forceThreadRebuild();
 													}),
 													if (widget.useTree) ('Linear', const Icon(CupertinoIcons.list_bullet, size: 19), () => setState(() {
 														widget.persistentState.useTree = false;
 														widget.persistentState.save();
+														widget.forceThreadRebuild();
 													}))
 													else ('Tree', const Icon(CupertinoIcons.list_bullet_indent, size: 19), () => setState(() {
 														widget.persistentState.useTree = true;
 														widget.persistentState.save();
+														widget.forceThreadRebuild();
 													}))
 												],
 												[
@@ -2853,9 +2894,11 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														lastVisibleIndex++; // start at first offscreen post visible
 														final newlyUnseenPostIds = Iterable.generate(widget.listController.itemsLength - lastVisibleIndex, (i) => i + lastVisibleIndex).map((i) => widget.listController.getItem(i).item.id).toSet();
 														final unseenPostIds = threadState.unseenPostIds.data.toSet();
-														final newPostIds = widget.newPostIds.toSet();
+														final highlightPosts = Map.of(widget.highlightPosts);
 														final lastSeenPostId = threadState.lastSeenPostId;
-														widget.newPostIds.addAll(newlyUnseenPostIds);
+														for (final id in newlyUnseenPostIds) {
+															widget.highlightPosts[id] = 1.0;
+														}
 														threadState.unseenPostIds.data.addAll(newlyUnseenPostIds);
 														threadState.lastSeenPostId = lastVisibleItem.id;
 														threadState.didUpdate();
@@ -2869,8 +2912,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																context: context,
 																message: 'Marked Post ${lastVisibleItem.id} as last-seen',
 																onUndo: () async {
-																	widget.newPostIds.clear();
-																	widget.newPostIds.addAll(newPostIds);
+																	widget.highlightPosts.clear();
+																	widget.highlightPosts.addAll(highlightPosts);
 																	threadState.unseenPostIds.data.clear();
 																	threadState.unseenPostIds.data.addAll(unseenPostIds);
 																	threadState.lastSeenPostId = lastSeenPostId;
@@ -2884,12 +2927,12 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															);
 														}
 													}),
-													('Mark as read', const Icon(CupertinoIcons.xmark_circle, size: 19), _whiteCountAbove <= 0 && _whiteCountBelow <= 0 && widget.newPostIds.isEmpty ? null : () async {
+													('Mark as read', const Icon(CupertinoIcons.xmark_circle, size: 19), _whiteCountAbove <= 0 && _whiteCountBelow <= 0 && widget.persistentState.unseenPostIds.data.isEmpty && widget.highlightPosts.isEmpty ? null : () async {
 														final threadState = widget.persistentState;
 														final unseenPostIds = threadState.unseenPostIds.data.toSet();
-														final newPostIds = widget.newPostIds.toSet();
+														final highlightPosts = Map.of(widget.highlightPosts);
 														final lastSeenPostId = threadState.lastSeenPostId;
-														widget.newPostIds.clear();
+														widget.highlightPosts.clear();
 														threadState.unseenPostIds.data.clear();
 														threadState.lastSeenPostId = threadState.thread?.posts_.fold<int>(0, (m, p) => max(m, p.id));
 														threadState.didUpdate();
@@ -2903,7 +2946,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																context: context,
 																message: 'Marked as read',
 																onUndo: () async {
-																	widget.newPostIds.addAll(newPostIds);
+																	widget.highlightPosts.addAll(highlightPosts);
 																	threadState.unseenPostIds.data.addAll(unseenPostIds);
 																	threadState.lastSeenPostId = lastSeenPostId;
 																	threadState.didUpdate();
@@ -3278,6 +3321,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														!widget.listController.isItemHidden(entry.value).isDuplicate;
 												})?.key ?? -1;
 												if (targetIndex != -1) {
+													widget.glowPost(widget.listController.getItem(targetIndex).item.id);
 													widget.listController.animateToIndex(targetIndex);
 												}
 											}

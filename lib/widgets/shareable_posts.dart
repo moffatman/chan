@@ -134,7 +134,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					itemBuilder: (context, p) => PostRow(
 						post: p,
 						largeImageWidth: (p.id == primaryPostId && style.expandPrimaryImage) ? style.width : null,
-						highlight: p.id == primaryPostId && ((style.childDepth > 0 && p.replyIds.isNotEmpty) || (style.parentDepth > 0 && p.repliedToIds.isNotEmpty)),
+						highlight: (p.id == primaryPostId && ((style.childDepth > 0 && p.replyIds.isNotEmpty) || (style.parentDepth > 0 && p.repliedToIds.isNotEmpty))) ? 1 : 0,
 						baseOptions: options,
 						showBoardName: p.id == primaryPostId,
 						showSiteIcon: p.id == primaryPostId,
@@ -307,7 +307,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					post: post,
 					revealSpoilerImages: true,
 					forceAbsoluteTime: true,
-					highlight: parents.isNotEmpty || children.isNotEmpty,
+					highlight: (parents.isNotEmpty || children.isNotEmpty) ? 1 : 0,
 					largeImageWidth: style.expandPrimaryImage ? style.width : null,
 					shrinkWrap: true,
 					showBoardName: true,

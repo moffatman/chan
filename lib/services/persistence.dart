@@ -1659,6 +1659,14 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 					}
 				}
 			}
+			else if (newThread != null) {
+				// First load
+				for (final p in newThread.posts_) {
+					if (!p.isPageStub && !youIds.contains(p.id)) {
+						unseenPostIds.data.add(p.id);
+					}
+				}
+			}
 			Persistence.setCachedThread(imageboardKey, board, id, newThread);
 			_thread = newThread;
 			// Maybe only .upvotes changed?

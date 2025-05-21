@@ -356,7 +356,7 @@ class _PostsPageState extends State<PostsPage> {
 										map: postContexts,
 										child: PostRow(
 											post: reply.post!,
-											highlight: widget.zone.highlightedPostIds.contains(reply.post!.id),
+											highlight: widget.zone.shouldHighlightPost?.call(reply.post!.id) ?? 0.0,
 											propagateOnThumbnailTap: widget.onThumbnailTap != null,
 											onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
 											onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null

@@ -599,7 +599,7 @@ class ThreadRow extends StatelessWidget {
 																		post: post,
 																		baseOptions: baseOptions,
 																		shrinkWrap: true,
-																		highlight: true,
+																		highlight: 1,
 																		showPostNumber: true
 																	)
 																)
