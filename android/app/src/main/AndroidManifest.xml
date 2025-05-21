@@ -67,6 +67,7 @@
                <data android:scheme="https" android:host="dcurbanmom.com"/>
                <!-- dvach -->
                <data android:scheme="https" android:host="2ch.hk"/>
+               <data android:scheme="https" android:host="2ch.su"/>
                <!-- endchan -->
                <data android:scheme="https" android:host="endchan.org"/>
                <!-- erischan -->
