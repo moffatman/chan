@@ -330,7 +330,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				if (favsComparison != 0) {
 					return favsComparison;
 				}
-				return (b.item.popularity ?? 0) - (a.item.popularity ?? 0);
+				final popularityComparison = (b.item.popularity ?? 0) - (a.item.popularity ?? 0);
+				if (popularityComparison != 0) {
+					return popularityComparison;
+				}
+				return a.item.boardKey.s.compareTo(b.item.boardKey.s);
 			});
 			return filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
 		}
