@@ -1213,7 +1213,7 @@ class Persistence extends ChangeNotifier {
 
 	Iterable<ImageboardBoard> get boards => sharedBoardsBox.keys.where((k) {
 		final str = (k as String);
-		return str.length > (imageboardKey.length + 2)
+		return str.length > (imageboardKey.length + 1)
 			&& str[imageboardKey.length] == '/'
 			&& str.startsWith(imageboardKey);
 	}).map((k) => sharedBoardsBox.get(k)!);
