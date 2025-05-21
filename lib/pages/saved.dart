@@ -1685,6 +1685,7 @@ class _SavedPageState extends State<SavedPage> {
 										},
 										onChange: (a) {
 											final originalL = _savedAttachmentsController.items.tryFirstWhere((l) => l.item.item.attachment == a.attachment)?.item;
+											_savedAttachmentsController.animateToIfOffscreen((l) => l.item.attachment == a.attachment, alignment: 0.5);
 											widget.masterDetailKey.currentState?.setValue5(originalL, updateDetailPane: false);
 										},
 										allowScroll: true,
