@@ -1227,7 +1227,7 @@ class PostLinkSpan extends PostTerminalSpan {
 				if (check.data == true) {
 					snapshot = zone.getFutureForComputation(
 						id: 'noembed $url',
-						work: () => loadEmbedData(url)
+						work: () => loadEmbedData(url, highQuality: false)
 					);
 				}
 				else {

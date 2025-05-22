@@ -126,7 +126,17 @@ Future<EmbedData?> _loadInstagram(String id) async {
 	);
 }
 
-Future<EmbedData?> loadEmbedData(String url) async {
+String? _getHighQualityThumbnailUrl(String? url) {
+	if (url == null) {
+		return null;
+	}
+	if (url.endsWith('/hqdefault.jpg') && (url.contains('//i.ytimg.com') || url.contains('//img.youtube.com'))) {
+		return url.replaceFirst('/hqdefault.jpg', '/maxresdefault.jpg');
+	}
+	return url;
+}
+
+Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async {
 	if (url.startsWith('chance://site/')) {
 		try {
 			Map? data = JsonCache.instance.sites.value?[Uri.parse(url).pathSegments.tryFirst];
@@ -227,6 +237,9 @@ Future<EmbedData?> loadEmbedData(String url) async {
 			String? thumbnailUrl = data['thumbnail_url'] as String?;
 			if (thumbnailUrl?.startsWith('//') == true) {
 				thumbnailUrl = 'https:$thumbnailUrl';
+			}
+			if (highQuality) {
+				thumbnailUrl = _getHighQualityThumbnailUrl(thumbnailUrl);
 			}
 			return EmbedData(
 				title: data['title'] as String?,

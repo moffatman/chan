@@ -302,7 +302,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				return;
 			}
 			if (possibleEmbed != _lastFoundUrl && possibleEmbed != null) {
-				final embedData = await loadEmbedData(possibleEmbed);
+				final embedData = await loadEmbedData(possibleEmbed, highQuality: true);
 				if (_textFieldController.text != original) {
 					// Text changed
 					return;
