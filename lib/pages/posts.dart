@@ -358,7 +358,7 @@ class _PostsPageState extends State<PostsPage> {
 											post: reply.post!,
 											highlight: widget.zone.shouldHighlightPost?.call(reply.post!.id) ?? 0.0,
 											propagateOnThumbnailTap: widget.onThumbnailTap != null,
-											onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
+											onTap: widget.onTap?.bind1(reply.post!),
 											onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
 																		? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
 											onThumbnailTap: widget.onThumbnailTap ?? (attachment) {
