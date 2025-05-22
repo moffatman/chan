@@ -500,6 +500,7 @@ class ThreadRow extends StatelessWidget {
 							child: CupertinoInkwell(
 								padding: EdgeInsets.zero,
 								minSize: 0,
+								onPressed: onThumbnailTap?.bind1(attachment),
 								child: ConstrainedBox(
 									constraints: BoxConstraints(
 										minHeight: 75,
@@ -523,8 +524,7 @@ class ThreadRow extends StatelessWidget {
 											size: null
 										)
 									)
-								),
-								onPressed: () => onThumbnailTap?.call(attachment)
+								)
 							)
 						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
 					)
@@ -642,6 +642,7 @@ class ThreadRow extends StatelessWidget {
 						child: PopupAttachment(
 							attachment: attachment,
 							child: GestureDetector(
+								onTap: onThumbnailTap?.bind1(attachment),
 								child: ConstrainedBox(
 									constraints: BoxConstraints(
 										maxHeight: settings.useStaggeredCatalogGrid && attachment.type == AttachmentType.url ? settings.thumbnailSize : double.infinity
@@ -687,8 +688,7 @@ class ThreadRow extends StatelessWidget {
 											imageboard: imageboard
 										)
 									)
-								),
-								onTap: () => onThumbnailTap?.call(attachment)
+								)
 							)
 						)
 					),

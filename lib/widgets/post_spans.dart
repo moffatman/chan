@@ -331,6 +331,7 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 						child: CupertinoButton(
 							padding: EdgeInsets.zero,
 							minSize: 0,
+							onPressed: options.onThumbnailTap?.bind1(attachment),
 							child: ConstrainedBox(
 								constraints: const BoxConstraints(
 									minHeight: 75
@@ -356,10 +357,7 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 										size: null
 									)
 								)
-							),
-							onPressed: () {
-								options.onThumbnailTap?.call(attachment);
-							}
+							)
 						)
 					);
 				}).toList()
