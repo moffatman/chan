@@ -684,6 +684,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																		child: isNormalAttachment ? AttachmentThumbnail(
 																			gaplessPlayback: true,
 																			attachment: attachment.attachment,
+																			site: attachment.imageboard.site,
 																			width: _thumbnailSize,
 																			height: _thumbnailSize,
 																			fit: BoxFit.cover,
@@ -791,6 +792,7 @@ class _GalleryPageState extends State<GalleryPage> {
 															child: isNormalAttachment ? AttachmentThumbnail(
 																gaplessPlayback: true,
 																attachment: attachment.attachment,
+																site: attachment.imageboard.site,
 																hero: null,
 																width: maxCrossAxisExtent,
 																height: maxCrossAxisExtent,
@@ -1037,16 +1039,19 @@ class _GalleryPageState extends State<GalleryPage> {
 													)
 												),
 												AnimatedBuilder(
-													animation: context.watch<Persistence>().savedAttachmentsListenable,
+													animation: Listenable.merge(
+														widget.attachments.map((a) => a.imageboard.persistence.savedAttachmentsListenable).toSet()
+													),
 													builder: (context, child) {
-														final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment.attachment) != null;
+														final persistence = currentAttachment.imageboard.persistence;
+														final currentlySaved = persistence.getSavedAttachment(currentAttachment.attachment) != null;
 														return AdaptiveIconButton(
 															onPressed: currentController.canShare ? () async {
 																if (currentlySaved) {
-																	context.read<Persistence>().deleteSavedAttachment(currentAttachment.attachment);
+																	persistence.deleteSavedAttachment(currentAttachment.attachment);
 																}
 																else {
-																	context.read<Persistence>().saveAttachment(currentAttachment.attachment, currentController.getFile(), currentController.cacheExt);
+																	persistence.saveAttachment(currentAttachment.attachment, currentController.getFile(), currentController.cacheExt);
 																}
 															} : null,
 															icon: Icon(currentlySaved ? Adaptive.icons.bookmarkFilled : Adaptive.icons.bookmark)
