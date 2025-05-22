@@ -311,168 +311,171 @@ class CloudflareInterceptor extends Interceptor {
 		CancelToken? cancelToken
 	}) => runEphemerallyLocked(cookieUrl.topLevelHost, () => _webViewLock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
-		final manager = CookieManager.instance();
-		await manager.deleteAllCookies();
-		final cookies = await Persistence.currentCookies.loadForRequest(cookieUrl);
-		for (final cookie in cookies) {
-			if (cookie.value.isEmpty) {
-				continue;
-			}
-			await manager.setCookie(
-				url: WebUri.uri(cookieUrl),
-				domain: cookie.domain,
-				name: cookie.name,
-				value: cookie.value,
-				path: cookie.path ?? '/',
-				expiresDate: cookie.expires?.millisecondsSinceEpoch,
-				maxAge: cookie.maxAge,
-				isHttpOnly: cookie.httpOnly,
-				isSecure: cookie.secure,
-				sameSite: HTTPCookieSameSitePolicy.fromValue(cookie.sameSite?.name)
-			);
-		}
-		final initialSettings = InAppWebViewSettings(
-			userAgent: userAgent,
-			clearCache: true,
-			clearSessionCache: true,
-			transparentBackground: true
-		);
-		bool firstLoad = true;
-		InAppWebViewController? lastController;
-		late ValueChanged<AsyncSnapshot<T>> callback;
-		void onLoadStop(InAppWebViewController controller, WebUri? uri) async {
-			lastController = controller;
-			await maybeApplyDarkModeBrowserJS(controller);
-			final title = await controller.getTitle() ?? '';
-			if (!ImageboardRegistry.instance.isRedirectGateway(uri, title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
-				await Persistence.saveCookiesFromWebView(uri!);
-				try {
-					final value = await handler(controller, uri);
-					callback(AsyncSnapshot.withData(ConnectionState.done, value));
-				}
-				catch (e, st) {
-					callback(AsyncSnapshot.withError(ConnectionState.done, e, st));
-				}
-				return;
-			}
-			final html = await controller.getHtml() ?? '';
-			if (_bodyMatchesBlock(html)) {
-				callback(AsyncSnapshot.withError(ConnectionState.done, const CloudflareHandlerBlockedException(), StackTrace.current));
-			}
-			if (autoClickSelector != null && firstLoad) {
-				firstLoad = false;
-				await controller.evaluateJavascript(source: 'document.querySelector("$autoClickSelector").click()');
-			}
-		}
 		HeadlessInAppWebView? headlessWebView;
-		if (!skipHeadless) {
-			final headlessCompleter = Completer<AsyncSnapshot<T>>();
-			callback = headlessCompleter.complete;
-			headlessWebView = HeadlessInAppWebView(
-				initialSettings: initialSettings,
-				initialUrlRequest: initialUrlRequest,
-				initialData: initialData,
-				onLoadStop: onLoadStop,
-				onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
-			);
-			await headlessWebView.run();
-			if (toast) {
-				showToast(
-					context: ImageboardRegistry.instance.context!,
-					message: 'Authorizing $gatewayName\n${cookieUrl.host}',
-					icon: CupertinoIcons.cloud
+		try {
+			final manager = CookieManager.instance();
+			await manager.deleteAllCookies();
+			final cookies = await Persistence.currentCookies.loadForRequest(cookieUrl);
+			for (final cookie in cookies) {
+				if (cookie.value.isEmpty) {
+					continue;
+				}
+				await manager.setCookie(
+					url: WebUri.uri(cookieUrl),
+					domain: cookie.domain,
+					name: cookie.name,
+					value: cookie.value,
+					path: cookie.path ?? '/',
+					expiresDate: cookie.expires?.millisecondsSinceEpoch,
+					maxAge: cookie.maxAge,
+					isHttpOnly: cookie.httpOnly,
+					isSecure: cookie.secure,
+					sameSite: HTTPCookieSameSitePolicy.fromValue(cookie.sameSite?.name)
 				);
 			}
-			await Future.any([
-				headlessCompleter.future,
-				Future.delayed(headlessTime),
-				if (cancelToken?.whenCancel case Future<DioError> whenCancel) whenCancel
-			]);
-			if (headlessCompleter.isCompleted) {
-				headlessWebView.dispose();
-				final snapshot = await headlessCompleter.future;
-				if (snapshot.data case T data) {
-					return data;
+			final initialSettings = InAppWebViewSettings(
+				userAgent: userAgent,
+				clearCache: true,
+				clearSessionCache: true,
+				transparentBackground: true
+			);
+			bool firstLoad = true;
+			InAppWebViewController? lastController;
+			late ValueChanged<AsyncSnapshot<T>> callback;
+			void onLoadStop(InAppWebViewController controller, WebUri? uri) async {
+				lastController = controller;
+				await maybeApplyDarkModeBrowserJS(controller);
+				final title = await controller.getTitle() ?? '';
+				if (!ImageboardRegistry.instance.isRedirectGateway(uri, title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
+					await Persistence.saveCookiesFromWebView(uri!);
+					try {
+						final value = await handler(controller, uri);
+						callback(AsyncSnapshot.withData(ConnectionState.done, value));
+					}
+					catch (e, st) {
+						callback(AsyncSnapshot.withError(ConnectionState.done, e, st));
+					}
+					return;
 				}
-				else {
-					throw Error.throwWithStackTrace(snapshot.error!, snapshot.stackTrace ?? StackTrace.current);
+				final html = await controller.getHtml() ?? '';
+				if (_bodyMatchesBlock(html)) {
+					callback(AsyncSnapshot.withError(ConnectionState.done, const CloudflareHandlerBlockedException(), StackTrace.current));
+				}
+				if (autoClickSelector != null && firstLoad) {
+					firstLoad = false;
+					await controller.evaluateJavascript(source: 'document.querySelector("$autoClickSelector").click()');
 				}
 			}
-		}
-		switch (priority) {
-			case RequestPriority.cosmetic:
-				// We gave it a shot with headless...
-				throw const CloudflareHandlerNotAllowedException();
-			case RequestPriority.functional:
-				if (DateTime.now().isBefore(_allowNonInteractiveWebviewWhen.timePasses)) {
-					// User recently rejected a non-interactive cloudflare login, reject it
-					throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
+			if (!skipHeadless) {
+				final headlessCompleter = Completer<AsyncSnapshot<T>>();
+				callback = headlessCompleter.complete;
+				headlessWebView = HeadlessInAppWebView(
+					initialSettings: initialSettings,
+					initialUrlRequest: initialUrlRequest,
+					initialData: initialData,
+					onLoadStop: onLoadStop,
+					onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
+				);
+				await headlessWebView.run();
+				if (toast) {
+					showToast(
+						context: ImageboardRegistry.instance.context!,
+						message: 'Authorizing $gatewayName\n${cookieUrl.host}',
+						icon: CupertinoIcons.cloud
+					);
 				}
-			case RequestPriority.interactive:
-				// Allow popup
-		}
-		if (cancelToken?.isCancelled ?? false) {
-			throw CloudflareHandlerInterruptedException(gatewayName);
-		}
-		final navigator = Navigator.of(ImageboardRegistry.instance.context!);
-		final settings = RouteSettings(name: 'cloudflare${DateTime.now().millisecondsSinceEpoch}');
-		cancelToken?.whenCancel.then((_) {
-			// Close the popup if still open
-			navigator.popUntil((r) => r.settings != settings);
-		});
-		final stackTrace = StackTrace.current;
-		callback = navigator.pop;
-		final ret = await navigator.push<AsyncSnapshot<T>>(adaptivePageRoute(
-			builder: (context) => AdaptiveScaffold(
-				bar: AdaptiveBar(
-					title: Text('$gatewayName Login'),
-					actions: [
-						AdaptiveIconButton(
-							icon: const Icon(CupertinoIcons.exclamationmark_triangle),
-							onPressed: () async {
-								reportBug(CloudflareUserException(
-									originalUrl: cookieUrl,
-									currentUrl: (await lastController?.getUrl())?.uriValue,
-									cookies: cookies,
-									html: await lastController?.getHtml(),
-									title: await lastController?.getTitle()
-								), stackTrace);
-							}
+				await Future.any([
+					headlessCompleter.future,
+					Future.delayed(headlessTime),
+					if (cancelToken?.whenCancel case Future<DioError> whenCancel) whenCancel
+				]);
+				if (headlessCompleter.isCompleted) {
+					final snapshot = await headlessCompleter.future;
+					if (snapshot.data case T data) {
+						return data;
+					}
+					else {
+						throw Error.throwWithStackTrace(snapshot.error!, snapshot.stackTrace ?? StackTrace.current);
+					}
+				}
+			}
+			switch (priority) {
+				case RequestPriority.cosmetic:
+					// We gave it a shot with headless...
+					throw const CloudflareHandlerNotAllowedException();
+				case RequestPriority.functional:
+					if (DateTime.now().isBefore(_allowNonInteractiveWebviewWhen.timePasses)) {
+						// User recently rejected a non-interactive cloudflare login, reject it
+						throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
+					}
+				case RequestPriority.interactive:
+					// Allow popup
+			}
+			if (cancelToken?.isCancelled ?? false) {
+				throw CloudflareHandlerInterruptedException(gatewayName);
+			}
+			final navigator = Navigator.of(ImageboardRegistry.instance.context!);
+			final settings = RouteSettings(name: 'cloudflare${DateTime.now().millisecondsSinceEpoch}');
+			cancelToken?.whenCancel.then((_) {
+				// Close the popup if still open
+				navigator.popUntil((r) => r.settings != settings);
+			});
+			final stackTrace = StackTrace.current;
+			callback = navigator.pop;
+			final ret = await navigator.push<AsyncSnapshot<T>>(adaptivePageRoute(
+				builder: (context) => AdaptiveScaffold(
+					bar: AdaptiveBar(
+						title: Text('$gatewayName Login'),
+						actions: [
+							AdaptiveIconButton(
+								icon: const Icon(CupertinoIcons.exclamationmark_triangle),
+								onPressed: () async {
+									reportBug(CloudflareUserException(
+										originalUrl: cookieUrl,
+										currentUrl: (await lastController?.getUrl())?.uriValue,
+										cookies: cookies,
+										html: await lastController?.getHtml(),
+										title: await lastController?.getTitle()
+									), stackTrace);
+								}
+							)
+						]
+					),
+					disableAutoBarHiding: true,
+					body: SafeArea(
+						child: InAppWebView(
+							headlessWebView: headlessWebView,
+							initialSettings: initialSettings,
+							initialUrlRequest: initialUrlRequest,
+							initialData: initialData,
+							onLoadStop: onLoadStop,
+							onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 						)
-					]
-				),
-				disableAutoBarHiding: true,
-				body: SafeArea(
-					child: InAppWebView(
-						headlessWebView: headlessWebView,
-						initialSettings: initialSettings,
-						initialUrlRequest: initialUrlRequest,
-						initialData: initialData,
-						onLoadStop: onLoadStop,
-						onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 					)
-				)
-			),
-			settings: settings,
-			useFullWidthGestures: gatewayName == _kDefaultGatewayName // Normal cloudflare should be OK
-		));
-		headlessWebView?.dispose();
-		if (ret == null) {
-			// User closed the page manually, block non-interactive cloudflare challenges for a while
-			_allowNonInteractiveWebviewWhen = (
-				timePasses: DateTime.now().add(const Duration(minutes: 15)),
-				hostPasses: cookieUrl.host
-			);
-			throw CloudflareHandlerInterruptedException(gatewayName);
+				),
+				settings: settings,
+				useFullWidthGestures: gatewayName == _kDefaultGatewayName // Normal cloudflare should be OK
+			));
+			if (ret == null) {
+				// User closed the page manually, block non-interactive cloudflare challenges for a while
+				_allowNonInteractiveWebviewWhen = (
+					timePasses: DateTime.now().add(const Duration(minutes: 15)),
+					hostPasses: cookieUrl.host
+				);
+				throw CloudflareHandlerInterruptedException(gatewayName);
+			}
+			else if (ret.hasError) {
+				Error.throwWithStackTrace(ret.error!, ret.stackTrace ?? StackTrace.current);
+			}
+			if (cookieUrl.host == _allowNonInteractiveWebviewWhen.hostPasses) {
+				// Cloudflare passed on the previously-blocked host
+				_allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
+			}
+			return ret.data as T;
 		}
-		else if (ret.hasError) {
-			Error.throwWithStackTrace(ret.error!, ret.stackTrace ?? StackTrace.current);
+		finally {
+			headlessWebView?.dispose();
 		}
-		if (cookieUrl.host == _allowNonInteractiveWebviewWhen.hostPasses) {
-			// Cloudflare passed on the previously-blocked host
-			_allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
-		}
-		return ret.data as T;
 	}));
 
 	@override
