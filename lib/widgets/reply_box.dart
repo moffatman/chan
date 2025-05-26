@@ -125,7 +125,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _show = false;
 	bool get show => widget.fullyExpanded || (_show && !_willHideOnPanEnd);
 	String? _lastFoundUrl;
-	(String, int)? _proposedAttachmentUrl;
+	({String text, String imageUrl, int size})? _proposedAttachmentUrl;
 	bool spoiler = false;
 	List<ImageboardBoardFlag> _flags = [];
 	ImageboardBoardFlag? flag;
@@ -286,7 +286,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					return;
 				}
 				final byteCount = int.tryParse(response.headers.value(dio.Headers.contentLengthHeader) ?? '') ?? 0 /* chunked encoding? */;
-				_proposedAttachmentUrl = (rawUrl, byteCount);
+				_proposedAttachmentUrl = (text: rawUrl, imageUrl: rawUrl, size: byteCount);
 				if (mounted) setState(() {});
 				return;
 			}
@@ -309,7 +309,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				}
 				_lastFoundUrl = possibleEmbed;
 				if (embedData?.thumbnailUrl != null) {
-					_proposedAttachmentUrl = (embedData!.thumbnailUrl!, 0);
+					_proposedAttachmentUrl = (text: possibleEmbed, imageUrl: embedData!.thumbnailUrl!, size: 0);
 					if (mounted) setState(() {});
 					return;
 				}
@@ -2470,14 +2470,14 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 										children: [
 											if (_proposedAttachmentUrl != null) Padding(
 												padding: const EdgeInsets.all(8),
-												child: _proposedAttachmentUrl!.$2 > 4e6 /* 4 MB */ ? const SizedBox(
+												child: _proposedAttachmentUrl!.size > 4e6 /* 4 MB */ ? const SizedBox(
 													// Image is large, don't eagerly show it
 													width: 100,
 													child: Icon(CupertinoIcons.exclamationmark_shield)
 												) : ClipRRect(
 													borderRadius: const BorderRadius.all(Radius.circular(8)),
 													child: Image.network(
-														_proposedAttachmentUrl!.$1,
+														_proposedAttachmentUrl!.imageUrl,
 														width: 100
 													)
 												)
@@ -2488,7 +2488,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														children: [
 															const TextSpan(text: 'Attach file from link?\n'),
 															TextSpan(
-																text: (_proposedAttachmentUrl?.$1).toString(),
+																text: (_proposedAttachmentUrl?.text).toString(),
 																style: TextStyle(
 																	color: settings.theme.backgroundColor.withOpacity(0.7),
 																	fontSize: 14
@@ -2502,24 +2502,24 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														return;
 													}
 													try {
-														if (proposed.$2 > 4e6 /* 4 MB */) {
+														if (proposed.size > 4e6 /* 4 MB */) {
 															// Make sure they really want to download this big image
-															final ok = await confirm(context, 'Really download this ${formatFilesize(proposed.$2)} file?');
+															final ok = await confirm(context, 'Really download this ${formatFilesize(proposed.size)} file?');
 															if (!context.mounted || !ok) {
 																return;
 															}
 														}
 														final newFile = await downloadToShareCache(
 															context: context,
-															url: Uri.parse(proposed.$1)
+															url: Uri.parse(proposed.imageUrl)
 														);
 														if (newFile == null) {
 															return;
 														}
 														setAttachment(newFile);
-														_filenameController.text = proposed.$1.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
+														_filenameController.text = proposed.imageUrl.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
 														final original = _textFieldController.text;
-														final replaced = original.replaceFirst(proposed.$1, '');
+														final replaced = original.replaceFirst(proposed.text, '');
 														if (replaced.length != _textFieldController.text.length) {
 															_textFieldController.text = replaced;
 															if (context.mounted) {
@@ -2529,7 +2529,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																	message: 'Removed URL from text',
 																	easyButton: ('Restore', () {
 																		// To prevent "finding" the same URL again
-																		_lastFoundUrl = proposed.$1;
+																		_lastFoundUrl = proposed.text;
 																		_textFieldController.text = original;
 																	})
 																);
