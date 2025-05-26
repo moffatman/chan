@@ -134,7 +134,7 @@ abstract class SettingWidget {
 						child: Padding(
 							padding: padding,
 							child: Builder(
-								builder: (context) => buildImpl(context)
+								builder: buildImpl
 							)
 						)
 					)
