@@ -32,7 +32,7 @@ Future<bool> embedPossible(String url) async {
 	if (url.contains('imgur.com/') || url.contains('imgur.io/')) {
 		return false;
 	}
-	if (url.contains('youtube.com/shorts')) {
+	if (url.contains('youtube.com')) {
 		return true;
 	}
 	if (await ImageboardRegistry.instance.decodeUrl(url) != null) {
@@ -227,6 +227,8 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async 
 		if (youtubeShortsMatch != null) {
 			url = 'https://www.youtube.com/watch?v=${youtubeShortsMatch.group(1)}';
 		}
+		// noembed regex for some reason requires a subdomain
+		url = url.replaceFirst('//youtube.com/', '//www.youtube.com/');
 		final response = await Settings.instance.client.get('https://noembed.com/embed', queryParameters: {
 			'url': url
 		}, options: Options(
