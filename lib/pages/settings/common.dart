@@ -114,7 +114,13 @@ abstract class SettingWidget {
 	Widget buildImpl(BuildContext context);
 
 	@protected
-	double get leftPadding => 16;
+	EdgeInsets get padding => subsetting ? const EdgeInsets.symmetric(
+		vertical: 0,
+		horizontal: 32
+	) : const EdgeInsets.symmetric(
+		vertical: 8,
+		horizontal: 16
+	);
 
 	Widget build() {
 		return Builder(
@@ -126,15 +132,7 @@ abstract class SettingWidget {
 					child: Opacity(
 						opacity: disabled ? 0.5 : 1.0,
 						child: Padding(
-							padding: subsetting ? const EdgeInsets.symmetric(
-								vertical: 0,
-								horizontal: 32
-							) : EdgeInsets.only(
-								top: 8,
-								bottom: 8,
-								right: 16,
-								left: leftPadding
-							),
+							padding: padding,
 							child: Builder(
 								builder: (context) => buildImpl(context)
 							)
@@ -1116,9 +1114,9 @@ class ImageboardScopedSettingWidget extends SettingWidget {
 		}
 	}
 
-	/// The [builder] will provide the left padding
+	/// The [builder] will provide the padding
 	@override
-	double get leftPadding => 0;
+	EdgeInsets get padding => EdgeInsets.zero;
 
 	@override
 	Widget buildImpl(BuildContext context) {
@@ -1265,9 +1263,7 @@ class SettingHiding extends SettingWidget {
 	const SettingHiding({
 		required this.setting,
 		required this.hidden
-	}) : super(
-		subsetting: true
-	);
+	});
 
 	@override
 	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
@@ -1276,6 +1272,10 @@ class SettingHiding extends SettingWidget {
 		}
 		yield* setting.search(context, query);
 	}
+
+	/// The [setting] will provide the padding
+	@override
+	EdgeInsets get padding => EdgeInsets.zero;
 
 	@override
 	Widget buildImpl(BuildContext context) {
