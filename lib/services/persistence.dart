@@ -1659,7 +1659,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 					}
 				}
 			}
-			else if (newThread != null) {
+			else if (newThread != null && (lastSeenPostId ?? id) == id) {
 				// First load
 				for (final p in newThread.posts_) {
 					if (!p.isPageStub && !youIds.contains(p.id)) {
