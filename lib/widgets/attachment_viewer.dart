@@ -542,7 +542,11 @@ class AttachmentViewerController extends ChangeNotifier {
 			return result.redirects.last.location;
 		}
 		if (result.headers.value(HttpHeaders.locationHeader) case String location) {
-			return Uri.parse(location);
+			Uri url = Uri.parse(location);
+			if (url.host == 'b4k.co') {
+				url = url.replace(host: 'b4k.dev');
+			}
+			return url;
 		}
 		// handle issue with timestamps in url
 		bool corrected = false;
@@ -566,7 +570,11 @@ class AttachmentViewerController extends ChangeNotifier {
 				return result.redirects.last.location;
 			}
 			if (result.headers.value(HttpHeaders.locationHeader) case String location) {
-				return Uri.parse(location);
+				Uri url = Uri.parse(location);
+				if (url.host == 'b4k.co') {
+					url = url.replace(host: 'b4k.dev');
+				}
+				return url;
 			}
 		}
 		if (result.statusCode == 404) {
