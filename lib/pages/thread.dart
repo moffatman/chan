@@ -1324,7 +1324,7 @@ class ThreadPageState extends State<ThreadPage> {
 									_replyBoxKey.currentState?.draft = draft;
 									runWhenIdle(const Duration(seconds: 3), persistentState.save);
 								},
-								onReplyPosted: (receipt) async {
+								onReplyPosted: (board, receipt) async {
 									if (imageboard.site.supportsPushNotifications) {
 										await promptForPushNotificationsIfNeeded(context);
 									}
@@ -2172,7 +2172,7 @@ class ThreadPageState extends State<ThreadPage> {
 											persistentState.draft = draft;
 											runWhenIdle(const Duration(seconds: 3), persistentState.save);
 										},
-										onReplyPosted: (receipt) async {
+										onReplyPosted: (board, receipt) async {
 											if (site.supportsPushNotifications) {
 												await promptForPushNotificationsIfNeeded(context);
 											}

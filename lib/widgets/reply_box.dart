@@ -80,7 +80,7 @@ class ReplyBoxZone {
 class ReplyBox extends StatefulWidget {
 	final BoardKey board;
 	final int? threadId;
-	final ValueChanged<PostReceipt> onReplyPosted;
+	final void Function(String board, PostReceipt receipt) onReplyPosted;
 	final DraftPost? initialDraft;
 	final ValueChanged<DraftPost?> onDraftChanged;
 	final VoidCallback? onVisibilityChanged;
@@ -1157,7 +1157,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			if (state is QueueStateDone<PostReceipt>) {
 				post.removeListener(listener);
 				_submittingPosts.remove(post);
-				widget.onReplyPosted(state.result);
+				widget.onReplyPosted(post.post.board, state.result);
 				mediumHapticFeedback();
 				if (post == postingPost.value) {
 					_reset();

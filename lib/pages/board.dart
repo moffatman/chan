@@ -1094,12 +1094,12 @@ class BoardPageState extends State<BoardPage> {
 														onDraftChanged: (draft) {
 															widget.tab?.mutate((tab) => tab.draft = draft);
 														},
-														onReplyPosted: (receipt) async {
+														onReplyPosted: (board, receipt) async {
 															if (imageboard.site.supportsPushNotifications) {
 																await promptForPushNotificationsIfNeeded(ctx);
 															}
 															if (!ctx.mounted) return;
-															final newThread = ThreadIdentifier(board!.name, receipt.id);
+															final newThread = ThreadIdentifier(board, receipt.id);
 															_listController.update();
 															_onThreadSelected(newThread);
 															Navigator.of(ctx).pop();
@@ -1414,13 +1414,13 @@ class BoardPageState extends State<BoardPage> {
 										onDraftChanged: (draft) {
 											widget.tab?.mutate((tab) => tab.draft = draft);
 										},
-										onReplyPosted: (receipt) async {
+										onReplyPosted: (board, receipt) async {
 											if (imageboard?.site.supportsPushNotifications == true) {
 												await promptForPushNotificationsIfNeeded(context);
 											}
 											if (!mounted) return;
 											_listController.update();
-											_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
+											_onThreadSelected(ThreadIdentifier(board, receipt.id));
 										},
 										onVisibilityChanged: () => setState(() {}),
 									)
