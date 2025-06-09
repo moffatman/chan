@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/search_query.dart';
@@ -9,7 +7,6 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -123,42 +120,6 @@ List<ContextMenuAction> buildImageSearchActions(BuildContext context, Iterable<A
 					}
 				},
 				child: const Text('Search trace.moe')
-			),
-			ContextMenuAction(
-				trailingIcon: Icons.image_search,
-				onPressed: () async {
-					final attachment = await whichAttachment(context, withThumbnail);
-					if (!context.mounted || attachment == null) {
-						return;
-					}
-					final String b64Blob;
-					final String ext;
-					final file = (await getCachedImageFile(attachment._urlForSearch)) ?? (await getCachedImageFile(attachment._urlForSearch));
-					if (file != null) {
-						b64Blob = await base64.encoder.bind(file.openRead()).join('');
-						ext = file.path.split('.').last;
-					}
-					else {
-						final response = await (site?.client ?? Settings.instance.client).get(attachment._urlForSearch, options: Options(
-							responseType: ResponseType.stream
-						));
-						b64Blob = await base64.encoder.bind((response.data as ResponseBody).stream).join('');
-						ext = attachment._urlForSearch.split('.').last;
-					}
-					if (!context.mounted) {
-						return;
-					}
-					final resultHash = await modalLoad<String>(context, 'Searching lenso.ai...', (_) async {
-						final response = await Settings.instance.client.postUri(Uri.https('lenso.ai', '/api/upload'), data: FormData.fromMap({
-							'image': 'data:image/$ext;base64,$b64Blob'
-						}), options: Options(responseType: ResponseType.json));
-						return response.data['id'] as String;
-					}, wait: const Duration(milliseconds: 150), cancellable: true);
-					if (context.mounted) {
-						openBrowser(context, Uri.https('lenso.ai', '/en/results/$resultHash'));
-					}
-				},
-				child: const Text('Search lenso.ai')
 			),
 		]
 	];
