@@ -487,6 +487,13 @@ class SiteJForum extends ImageboardSite with ForumSite {
 			replyCountsUnreliable: true,
 			imageCountsUnreliable: true,
 			page: page,
+			count: document.querySelectorAll('.maintitle').tryMapOnce((e) {
+				final text = e.text;
+				if (!text.contains('Search Results:')) {
+					return null;
+				}
+				return RegExp(r'(\d+)').firstMatch(text)?.group(1)?.tryParseInt;
+			}),
 			canJumpToArbitraryPage: true,
 			maxPage: document.querySelector('.pagination')?.querySelectorAll('a').tryMap((a) => a.text.tryParseInt).last ?? 1,
 			posts: List.generate(postrows.length ~/ 3, (i) {

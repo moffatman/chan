@@ -943,6 +943,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 			page: page,
 			canJumpToArbitraryPage: true,
 			maxPage: int.tryParse(document.querySelectorAll('.pageNav-page').tryLast?.text.trim() ?? '') ?? 1,
+			count: null,
 			archive: this,
 			memo: {
 				_kXenforoSearchIdMemoKey: searchId

@@ -11,6 +11,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -330,7 +331,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							const Text('Results | ', style: CommonTextStyles.bold),
+							Text('${describeCount(result.data?.count, 'Result')} | ', style: CommonTextStyles.bold),
 							...describeQuery(widget.query)
 						]
 					)

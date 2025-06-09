@@ -1143,6 +1143,7 @@ class ImageboardArchiveSearchResultPage {
 	final List<ImageboardArchiveSearchResult> posts;
 	final bool replyCountsUnreliable;
 	final bool imageCountsUnreliable;
+	final int? count;
 	final int page;
 	final int? maxPage;
 	final bool canJumpToArbitraryPage;
@@ -1152,6 +1153,7 @@ class ImageboardArchiveSearchResultPage {
 		required this.posts,
 		required this.replyCountsUnreliable,
 		required this.imageCountsUnreliable,
+		required this.count,
 		required this.page,
 		required this.maxPage,
 		required this.archive,

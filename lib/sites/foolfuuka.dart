@@ -491,6 +491,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			}))).toList(),
 			page: page,
 			maxPage: (min(totalFound, maxResults) / 25).ceil(),
+			count: min(totalFound, maxResults),
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: true,
 			canJumpToArbitraryPage: true,

@@ -1,4 +1,6 @@
 // ignore_for_file: argument_type_not_assignable
+import 'dart:math';
+
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
@@ -618,6 +620,12 @@ class SiteHackerNews extends ImageboardSite {
 		return ImageboardArchiveSearchResultPage(
 			page: response.data['page'] + 1,
 			maxPage: response.data['nbPages'],
+			count: switch ((response.data['nbHits'], response.data['hitsPerPage'], response.data['nbPages'])) {
+				(int nbHits, int hitsPerPage, int nbPages) => min(nbHits, hitsPerPage * nbPages),
+				(_, int hitsPerPage, int nbPages) => hitsPerPage * nbPages,
+				(int nbHits, _, _) => nbHits,
+				_ => null
+			},
 			canJumpToArbitraryPage: true,
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: false,

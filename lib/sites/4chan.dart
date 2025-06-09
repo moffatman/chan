@@ -1335,6 +1335,10 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			imageCountsUnreliable: true,
 			page: page,
 			canJumpToArbitraryPage: true,
+			count: switch (document.querySelector('.boardBanner .boardTitle')?.text) {
+				String text => RegExp(r'(\d+) comments\W*$').firstMatch(text)?.group(1)?.tryParseInt,
+				_ => null
+			},
 			maxPage: int.parse(document.querySelectorAll('.pages a').last.text.trim()),
 			archive: this
 		);
