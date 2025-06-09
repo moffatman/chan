@@ -1807,6 +1807,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			child = value.representsStubChildren ? const SizedBox.shrink() : Builder(
 				builder: (context) => widget.filteredItemBuilder!(context, value.item, closeSearch, filterPattern)
 			);
+			if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
+				child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
+			}
 		}
 		else {
 			if (value.representsUnloadedPages.isNotEmpty) {
