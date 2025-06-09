@@ -317,6 +317,7 @@ class _SettingsPageState extends State<SettingsPage> {
 							AdaptiveSearchTextField(
 								placeholder: 'Search settings...',
 								controller: searchController,
+								autocorrect: false,
 								focusNode: searchFocusNode,
 								onChanged: (newQuery) {
 									setState(() {

@@ -345,6 +345,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																		_submitQuery();
 																	},
 																	enableIMEPersonalizedLearning: Settings.enableIMEPersonalizedLearningSetting.watch(context),
+																	autocorrect: false,
 																	smartQuotesType: SmartQuotesType.disabled,
 																	smartDashesType: SmartDashesType.disabled,
 																	suffixVisible: _searchFocused,

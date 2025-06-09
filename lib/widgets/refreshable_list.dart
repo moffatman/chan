@@ -2970,6 +2970,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																	},
 																	controller: _searchController,
 																	enableIMEPersonalizedLearning: Settings.enableIMEPersonalizedLearningSetting.watch(context),
+																	autocorrect: false,
 																	focusNode: _searchFocusNode,
 																	placeholder: widget.filterHint,
 																	smartQuotesType: SmartQuotesType.disabled,

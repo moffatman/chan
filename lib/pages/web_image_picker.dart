@@ -210,6 +210,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 					focusNode: urlFocusNode,
 					controller: urlController,
 					enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+					autocorrect: false,
 					smartDashesType: SmartDashesType.disabled,
 					smartQuotesType: SmartQuotesType.disabled,
 					onSubmitted: _search,

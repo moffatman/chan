@@ -220,6 +220,7 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 }
 
 class AdaptiveSearchTextField extends StatelessWidget {
+	final bool autocorrect;
 	final bool autofocus;
 	final TextEditingController? controller;
 	final bool enableIMEPersonalizedLearning;
@@ -235,6 +236,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 	final bool? suffixVisible;
 
 	const AdaptiveSearchTextField({
+		this.autocorrect = true,
 		this.autofocus = false,
 		this.controller,
 		this.enableIMEPersonalizedLearning = true,
@@ -261,6 +263,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 				)
 			);
 			return TextField(
+				autocorrect: autocorrect,
 				autofocus: autofocus,
 				decoration: InputDecoration(
 					fillColor: ChanceTheme.searchTextFieldColorOf(context),
@@ -300,6 +303,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 		}
 		final placeholderColor = ChanceTheme.primaryColorOf(context).withOpacity(0.75);
 		return CupertinoSearchTextField(
+			autocorrect: autocorrect,
 			autofocus: autofocus,
 			backgroundColor: ChanceTheme.searchTextFieldColorOf(context),
 			controller: controller,
