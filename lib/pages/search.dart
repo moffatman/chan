@@ -588,7 +588,7 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),
 		if (q.postTypeFilter == PostTypeFilter.onlyOPs) const _SearchQueryFilterTag('Threads'),
 		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Replies'),
-		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Stickies'),
+		if (q.postTypeFilter == PostTypeFilter.onlyStickies) const _SearchQueryFilterTag('Stickies'),
 		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.toISO8601Date}'),
 		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.toISO8601Date}'),
 		if (q.md5 != null) _SearchQueryFilterTag('MD5: ${q.md5}'),
