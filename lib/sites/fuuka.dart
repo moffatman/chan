@@ -182,7 +182,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		return Post(
 			board: board,
 			text: textNode.innerHtml,
-			name: name?.text ?? 'Anonymous',
+			name: name?.text.trim().nonEmptyOrNull ?? 'Anonymous',
 			time: DateTime.fromMillisecondsSinceEpoch(int.parse(element.querySelector('.posttime')!.attributes['title']!)),
 			id: postId ?? threadId,
 			threadId: threadId,
