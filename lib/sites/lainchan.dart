@@ -232,6 +232,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 	@protected
 	String getAttachmentId(int postId, String imageId, String source) => imageId;
 
+	/// [null] means use same as full quality image
+	/// [''] means it needs to be fetched from .html
+	/// else, it is the extension, including the '.'
 	@protected
 	String? get imageThumbnailExtension => '.png';
 
