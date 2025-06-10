@@ -5,6 +5,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/hcaptcha.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/recaptchav2.dart';
 import 'package:chan/services/recaptchav3.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -17,7 +18,6 @@ import 'package:chan/widgets/captcha_dvach_emoji.dart';
 import 'package:chan/widgets/captcha_jschan.dart';
 import 'package:chan/widgets/captcha_lynxchan.dart';
 import 'package:chan/widgets/captcha_mccaptcha.dart';
-import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/captcha_secucap.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/util.dart';
@@ -80,11 +80,7 @@ Future<CaptchaSolution?> solveCaptcha({
 	final settings = Settings.instance;
 	switch (request) {
 		case RecaptchaRequest():
-			return pushModal((onCaptchaSolved) => CaptchaNoJS(
-				site: site,
-				request: request,
-				onCaptchaSolved: onCaptchaSolved
-			));
+			return await solveRecaptchaV2(request, cancelToken: cancelToken);
 		case Recaptcha3Request():
 			return await solveRecaptchaV3(request, cancelToken: cancelToken);
 		case Chan4CustomCaptchaRequest():

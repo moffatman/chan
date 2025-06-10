@@ -683,10 +683,28 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		if (ban != null) {
 			throw PostFailedException(ban.text);
 		}
-		final captchaKeyElement = doc.querySelector('form [data-sitekey]');
-		if (captchaKeyElement != null) {
-			// The captcha here is not automatable
-			throw const WebAuthenticationRequiredException();
+		final captchaKey = doc.querySelector('form [data-sitekey]')?.attributes['data-sitekey'];
+		if (captchaKey != null) {
+			// Mainly for Wizchan
+			throw AdditionalCaptchaRequiredException(
+				captchaRequest: RecaptchaRequest(
+					key: captchaKey,
+					cloudflare: true,
+					sourceUrl: Uri.https(baseUrl, '/robots.txt').toString()
+				),
+				onSolved: (solution, cancelToken) async {
+					final response = await client.postUri(Uri.https(baseUrl, '/post.php'), data: FormData.fromMap({
+						'g-recaptcha-response': (solution as RecaptchaSolution).response,
+						'json_response': '1',
+						'whitelist': '1'
+					}), cancelToken: cancelToken);
+					if (response.data['error'] case String error) {
+						if (!error.contains('Success')) {
+							throw Exception(error);
+						}
+					}
+				}
+			);
 		}
 		// This doesn't work if user has quoted someone, but it shouldn't be needed
 		int? newPostId;
