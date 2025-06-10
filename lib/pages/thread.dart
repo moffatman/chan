@@ -190,6 +190,7 @@ class ThreadPageState extends State<ThreadPage> {
 	/// Return whether any were removed
 	bool _updateHighlightedPosts({required bool restoring}) {
 		final value = restoring ? 0.3 : 1.0;
+		final lastSeenId = persistentState.lastSeenPostId ?? 0;
 		bool anyRemoved = false;
 		_highlightPosts.removeWhere((id, v) {
 			final remove = !persistentState.unseenPostIds.data.contains(id);
@@ -197,7 +198,7 @@ class ThreadPageState extends State<ThreadPage> {
 			return remove;
 		});
 		for (final newId in persistentState.unseenPostIds.data) {
-			_highlightPosts[newId] ??= value;
+			_highlightPosts[newId] ??= (newId > lastSeenId) ? 1.0 : value;
 		}
 		return anyRemoved;
 	}
