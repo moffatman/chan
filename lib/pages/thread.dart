@@ -525,7 +525,9 @@ class ThreadPageState extends State<ThreadPage> {
 			if (i0 != null && i1 != null && i0 <= i1) {
 				final items = _listController.items.toList();
 				final i0Clamped = i0.clamp(0, items.length - 1);
-				final seenIds = items.sublist(i0Clamped, i1.clamp(i0Clamped, items.length - 1) + 1).where((p) => !_listController.isItemHidden(p).isHidden).map((p) => p.item.id);
+				final seenIds = items.sublist(i0Clamped, i1.clamp(i0Clamped, items.length - 1) + 1)
+														 .where((p) => !_listController.isItemHidden(p).isHidden)
+														 .expand((p) => [p.item.id, ...p.representsKnownStubChildren.map((s) => s.childId)]);
 				final lengthBefore = persistentState.unseenPostIds.data.length;
 				persistentState.unseenPostIds.data.removeAll(seenIds);
 				if (lengthBefore != persistentState.unseenPostIds.data.length) {
