@@ -287,13 +287,16 @@ class CloudflareInterceptor extends Interceptor {
 		return false;
 	}
 
-	static Future<_CloudflareResponse> Function(InAppWebViewController, Uri?) _buildHandler(Uri initialUrl) => (controller, uri) async {
+	static Future<_CloudflareResponse> Function(InAppWebViewController, Uri?, bool) _buildHandler(Uri initialUrl) => (controller, uri, isCancelledMedia) async {
 		if (uri?.looksLikeWebViewRedirect ?? false) {
 			final correctedUri = uri!.replace(
 				scheme: initialUrl.scheme,
 				host: initialUrl.host
 			);
 			return (content: null, uri: correctedUri);
+		}
+		if (isCancelledMedia) {
+			return (content: null, uri: uri);
 		}
 		final html = await controller.getHtml() ?? '';
 		final document = parse(html);
@@ -332,7 +335,7 @@ class CloudflareInterceptor extends Interceptor {
 
 	static final _webViewLock = Mutex();
 	static Future<T> _useWebview<T>({
-		required Future<T> Function(InAppWebViewController, Uri?) handler,
+		required Future<T> Function(InAppWebViewController, Uri?, bool isCancelledMedia) handler,
 		bool skipHeadless = false,
 		Duration headlessTime = kDefaultHeadlessTime,
 		InAppWebViewInitialData? initialData,
@@ -372,6 +375,8 @@ class CloudflareInterceptor extends Interceptor {
 				userAgent: userAgent,
 				clearCache: true,
 				clearSessionCache: true,
+				mediaPlaybackRequiresUserGesture: true,
+				mediaType: 'text/html',
 				transparentBackground: true
 			);
 			bool firstLoad = true;
@@ -386,10 +391,25 @@ class CloudflareInterceptor extends Interceptor {
 				callbackValue = value;
 				callback_(value);
 			}
-			void onReceivedError(InAppWebViewController controller, WebResourceRequest request, WebResourceError error) {
+			void onReceivedError(InAppWebViewController controller, WebResourceRequest request, WebResourceError error) async {
 				if (callbackValue == null && firstLoad) {
-					callback(AsyncSnapshot.withError(ConnectionState.done, error, StackTrace.current));
+					await Future.delayed(const Duration(seconds: 3));
+					// Maybe it recovered...?
+					if (callbackValue == null && firstLoad) {
+						callback(AsyncSnapshot.withError(ConnectionState.done, error, StackTrace.current));
+					}
 				}
+			}
+			Future<NavigationResponseAction?> onNavigationResponse(InAppWebViewController controller, NavigationResponse response) async {
+				final mime = (response.response?.mimeType ?? '');
+				if (mime.startsWith('video/') || mime.startsWith('image/')) {
+					() async {
+						await Persistence.saveCookiesFromWebView(response.response?.url ?? cookieUrl);
+						callback(AsyncSnapshot.withData(ConnectionState.done, await handler(controller, response.response?.url, true)));
+					}();
+					return NavigationResponseAction.CANCEL;
+				}
+				return NavigationResponseAction.ALLOW;
 			}
 			void onLoadStop(InAppWebViewController controller, WebUri? uri) async {
 				lastController = controller;
@@ -398,7 +418,7 @@ class CloudflareInterceptor extends Interceptor {
 				if (!ImageboardRegistry.instance.isRedirectGateway(uri, title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
 					await Persistence.saveCookiesFromWebView(uri!);
 					try {
-						final value = await handler(controller, uri);
+						final value = await handler(controller, uri, false);
 						callback(AsyncSnapshot.withData(ConnectionState.done, value));
 					}
 					catch (e, st) {
@@ -423,6 +443,7 @@ class CloudflareInterceptor extends Interceptor {
 					initialUrlRequest: initialUrlRequest,
 					initialData: initialData,
 					onLoadStop: onLoadStop,
+					onNavigationResponse: onNavigationResponse,
 					onReceivedError: onReceivedError,
 					onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 				);
@@ -499,6 +520,7 @@ class CloudflareInterceptor extends Interceptor {
 							initialUrlRequest: initialUrlRequest,
 							initialData: initialData,
 							onLoadStop: onLoadStop,
+							onNavigationResponse: onNavigationResponse,
 							onReceivedError: onReceivedError,
 							onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 						)
@@ -764,7 +786,13 @@ Future<T> useCloudflareClearedWebview<T>({
 	bool skipHeadless = false,
 	Duration? headlessTime
 }) => CloudflareInterceptor._useWebview(
-	handler: handler,
+	handler: (controller, uri, isCancelledMedia) async {
+		if (isCancelledMedia) {
+			// Not the point of useCloudflareClearedWebview
+			throw Exception('Unexpected CancelledMedia response for useCloudflareClearedWebview');
+		}
+		return handler(controller, uri);
+	},
 	cookieUrl: uri,
 	userAgent: userAgent ?? Settings.instance.userAgent,
 	initialUrlRequest: URLRequest(
