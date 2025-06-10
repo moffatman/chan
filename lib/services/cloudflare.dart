@@ -376,7 +376,21 @@ class CloudflareInterceptor extends Interceptor {
 			);
 			bool firstLoad = true;
 			InAppWebViewController? lastController;
-			late ValueChanged<AsyncSnapshot<T>> callback;
+			late ValueChanged<AsyncSnapshot<T>> callback_;
+			AsyncSnapshot<T>? callbackValue;
+			void callback(AsyncSnapshot<T> value) {
+				if (callbackValue != null) {
+					Future.error(Exception('Tried to callback with $value, but already had $callbackValue'), StackTrace.current);
+					return;
+				}
+				callbackValue = value;
+				callback_(value);
+			}
+			void onReceivedError(InAppWebViewController controller, WebResourceRequest request, WebResourceError error) {
+				if (callbackValue == null && firstLoad) {
+					callback(AsyncSnapshot.withError(ConnectionState.done, error, StackTrace.current));
+				}
+			}
 			void onLoadStop(InAppWebViewController controller, WebUri? uri) async {
 				lastController = controller;
 				await maybeApplyDarkModeBrowserJS(controller);
@@ -403,12 +417,13 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			if (!skipHeadless) {
 				final headlessCompleter = Completer<AsyncSnapshot<T>>();
-				callback = headlessCompleter.complete;
+				callback_ = headlessCompleter.complete;
 				headlessWebView = HeadlessInAppWebView(
 					initialSettings: initialSettings,
 					initialUrlRequest: initialUrlRequest,
 					initialData: initialData,
 					onLoadStop: onLoadStop,
+					onReceivedError: onReceivedError,
 					onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 				);
 				await headlessWebView.run();
@@ -456,7 +471,7 @@ class CloudflareInterceptor extends Interceptor {
 				navigator.popUntil((r) => r.settings != settings);
 			});
 			final stackTrace = StackTrace.current;
-			callback = navigator.pop;
+			callback_ = navigator.pop;
 			final ret = await navigator.push<AsyncSnapshot<T>>(adaptivePageRoute(
 				builder: (context) => AdaptiveScaffold(
 					bar: AdaptiveBar(
@@ -484,6 +499,7 @@ class CloudflareInterceptor extends Interceptor {
 							initialUrlRequest: initialUrlRequest,
 							initialData: initialData,
 							onLoadStop: onLoadStop,
+							onReceivedError: onReceivedError,
 							onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 						)
 					)
