@@ -69,17 +69,19 @@ class _CachingFile extends EasyListenable {
 	final Map<String, String> headers;
 	CancelToken? _cancelToken;
 	bool _interrupted = false;
+	final RequestPriority? priority;
 
 	_CachingFile({
 		required this.client,
 		required this.file,
 		required this.totalBytes,
 		required this.statusCode,
-		this.headers = const {}
+		this.headers = const {},
+		this.priority
 	});
 
 	@override
-	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, completer: $completer, lock: $lock, headers: $headers)';
+	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, completer: $completer, lock: $lock, headers: $headers, priority: $priority)';
 }
 
 typedef _RawRange = ({int start, int? inclusiveEnd});
@@ -189,7 +191,8 @@ class VideoServer {
 				},
 				extra: {
 					// Probably image/video bytes won't work
-					kRetryIfCloudflare: true
+					kRetryIfCloudflare: true,
+					kPriority: file.priority
 				},
 				responseType: ResponseType.stream
 			), cancelToken: file._cancelToken);
@@ -333,7 +336,14 @@ class VideoServer {
 				digest = _encodeDigest(subUri);
 				try {
 					await runEphemerallyLocked(digest, () async {
-						_caches[digest] ??= await _startCaching(sibling?.client ?? Settings.instance.client, subUri, sibling?.headers ?? {}, force: false, interruptible: false);
+						_caches[digest] ??= await _startCaching(
+							sibling?.client ?? Settings.instance.client,
+							subUri,
+							sibling?.headers ?? {},
+							force: false,
+							interruptible: false,
+							priority: sibling?.priority
+						);
 					});
 				}
 				on HttpException {
@@ -390,7 +400,8 @@ class VideoServer {
 
 	Future<_CachingFile> _startCaching(Dio client, Uri uri, Map<String, String> headers, {
 		required bool force,
-		required bool interruptible
+		required bool interruptible,
+		RequestPriority? priority
 	}) async {
 		final digest = _encodeDigest(uri);
 		final file = getFile(digest);
@@ -412,7 +423,8 @@ class VideoServer {
 					file: file,
 					totalBytes: headResponse.headers.value(Headers.contentLengthHeader)?.tryParseInt ?? -1,
 					statusCode: headResponse.statusCode ?? -1,
-					headers: headers
+					headers: headers,
+					priority: priority
 				);
 				if (!force && stat.size == cachingFile0.totalBytes && !uri.path.endsWith('m3u8')) {
 					// File is already downloaded and filesize matches
@@ -437,7 +449,8 @@ class VideoServer {
 				},
 				extra: {
 					// Probably image/video bytes won't work
-					kRetryIfCloudflare: true
+					kRetryIfCloudflare: true,
+					kPriority: priority
 				},
 				responseType: ResponseType.stream
 			), cancelToken: interruptibleToken);
@@ -450,7 +463,8 @@ class VideoServer {
 				file: file,
 				totalBytes: response.headers.value(Headers.contentLengthHeader)?.tryParseInt ?? -1,
 				statusCode: response.statusCode ?? -1,
-				headers: headers
+				headers: headers,
+				priority: priority
 			);
 			cachingFile._cancelToken = interruptibleToken;
 			if (!file.existsSync()) {
@@ -498,6 +512,7 @@ class VideoServer {
 
 	Future<String> startCachingDownload({
 		Dio? client,
+		RequestPriority? priority,
 		required Uri uri,
 		Map<String, String> headers = const {},
 		void Function(File file)? onCached,
@@ -511,7 +526,14 @@ class VideoServer {
 		await runEphemerallyLocked(digest, () async {
 			if (existing == null || (existing == true && (force || !getFile(digest).existsSync()))) {
 				_caches[digest]?.dispose();
-				final cachingFile = await _startCaching(client ?? Settings.instance.client, uri, headers, force: force, interruptible: interruptible);
+				final cachingFile = await _startCaching(
+					client ?? Settings.instance.client,
+					uri,
+					headers,
+					force: force,
+					interruptible: interruptible,
+					priority: priority
+				);
 				void listener() {
 					onProgressChanged?.call(cachingFile.currentBytes, cachingFile.totalBytes);
 				}

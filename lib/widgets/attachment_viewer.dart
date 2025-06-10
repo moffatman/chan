@@ -758,6 +758,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						final progressNotifier = ValueNotifier<double?>(null);
 						final hash = await VideoServer.instance.startCachingDownload(
 							client: imageboard.site.client,
+							priority: background ? RequestPriority.functional : RequestPriority.interactive,
 							uri: url,
 							headers: await getHeadersWithCookies(url),
 							onCached: _onCacheCompleted,
