@@ -792,8 +792,12 @@ final appearanceSettings = [
 				setting: Settings.showNoBeforeIdOnPostsSetting
 			),
 			const SwitchSettingWidget(
-				description: 'Include line break',
-				setting: Settings.showLineBreakInPostInfoRowSetting
+				description: 'Include line break 1',
+				setting: Settings.showLineBreak1InPostInfoRowSetting
+			),
+			const SwitchSettingWidget(
+				description: 'Include line break 2',
+				setting: Settings.showLineBreak2InPostInfoRowSetting
 			),
 			const SwitchSettingWidget(
 				description: 'Highlight dubs (etc)',
@@ -852,8 +856,11 @@ final appearanceSettings = [
 												case PostDisplayField.postNumber:
 													disabled = !settings.showPostNumberOnPosts;
 													break;
-												case PostDisplayField.lineBreak:
-													disabled = !settings.showLineBreakInPostInfoRow;
+												case PostDisplayField.lineBreak1:
+													disabled = !settings.showLineBreak1InPostInfoRow;
+													break;
+												case PostDisplayField.lineBreak2:
+													disabled = !settings.showLineBreak2InPostInfoRow;
 													break;
 												case PostDisplayField.posterId:
 												case PostDisplayField.postId:

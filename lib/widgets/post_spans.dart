@@ -2893,10 +2893,12 @@ TextSpan buildPostInfoRow({
 				),
 				const TextSpan(text: ' ')
 			]
-			else if (field == PostDisplayField.lineBreak && settings.showLineBreakInPostInfoRow) lineBreak,
+			else if (field == PostDisplayField.lineBreak1 && settings.showLineBreak1InPostInfoRow) lineBreak
+			else if (field == PostDisplayField.lineBreak2 && settings.showLineBreak2InPostInfoRow) lineBreak,
 	];
 	if (children.last == lineBreak &&
-	    settings.postDisplayFieldOrder.last != PostDisplayField.lineBreak) {
+	    settings.postDisplayFieldOrder.last != PostDisplayField.lineBreak1 &&
+			settings.postDisplayFieldOrder.last != PostDisplayField.lineBreak2) {
 		// "Optional line-break" use case
 		// The line-break is positioned before some optional fields
 		// If the optional fields aren't there, get rid of the blank line by removing
@@ -3026,10 +3028,12 @@ TextSpan buildDraftInfoRow({
 				),
 				const TextSpan(text: ' ')
 			]
-			else if (field == PostDisplayField.lineBreak && settings.showLineBreakInPostInfoRow) lineBreak,
+			else if (field == PostDisplayField.lineBreak1 && settings.showLineBreak1InPostInfoRow) lineBreak
+			else if (field == PostDisplayField.lineBreak2 && settings.showLineBreak2InPostInfoRow) lineBreak,
 	];
 	if (children.last == lineBreak &&
-	    settings.postDisplayFieldOrder.last != PostDisplayField.lineBreak) {
+	    settings.postDisplayFieldOrder.last != PostDisplayField.lineBreak1 &&
+			settings.postDisplayFieldOrder.last != PostDisplayField.lineBreak2) {
 		// "Optional line-break" use case
 		// The line-break is positioned before some optional fields
 		// If the optional fields aren't there, get rid of the blank line by removing

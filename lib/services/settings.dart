@@ -622,7 +622,9 @@ enum PostDisplayField {
 	@HiveField(10)
 	postNumber,
 	@HiveField(11)
-	lineBreak
+	lineBreak1,
+	@HiveField(12)
+	lineBreak2
 }
 
 extension PostDisplayFieldName on PostDisplayField {
@@ -650,8 +652,10 @@ extension PostDisplayFieldName on PostDisplayField {
 				return 'IP Address #';
 			case PostDisplayField.postNumber:
 				return 'Post #';
-			case PostDisplayField.lineBreak:
-				return 'Line break';
+			case PostDisplayField.lineBreak1:
+				return 'Line break 1';
+			case PostDisplayField.lineBreak2:
+				return 'Line break 2';
 		}
 	}
 }
@@ -1142,7 +1146,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(154)
 	DrawerMode drawerMode;
 	@HiveField(155)
-	bool showLineBreakInPostInfoRow;
+	bool showLineBreak1InPostInfoRow;
 	@HiveField(156)
 	bool? useCloudCaptchaSolver;
 	@HiveField(157)
@@ -1239,6 +1243,8 @@ class SavedSettings extends HiveObject {
 	bool separateWiFiAndCellularCookies;
 	@HiveField(203)
 	bool showActiveWatchesAboveZombieWatches;
+	@HiveField(204)
+	bool showLineBreak2InPostInfoRow;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1395,7 +1401,7 @@ class SavedSettings extends HiveObject {
 		int? hoverPopupDelayMilliseconds,
 		MouseModeQuoteLinkBehavior? mouseModeQuoteLinkBehavior,
 		DrawerMode? drawerMode,
-		bool? showLineBreakInPostInfoRow,
+		bool? showLineBreak1InPostInfoRow,
 		this.useCloudCaptchaSolver,
 		this.useHeadlessCloudCaptchaSolver,
 		bool? removeMetadataOnUploadedFiles,
@@ -1444,6 +1450,7 @@ class SavedSettings extends HiveObject {
 		bool? showYousInScrollbar,
 		bool? separateWiFiAndCellularCookies,
 		bool? showActiveWatchesAboveZombieWatches,
+		bool? showLineBreak2InPostInfoRow,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1520,9 +1527,10 @@ class SavedSettings extends HiveObject {
 			PostDisplayField.posterId,
 			PostDisplayField.attachmentInfo,
 			PostDisplayField.pass,
-			PostDisplayField.lineBreak,
+			PostDisplayField.lineBreak1,
 			PostDisplayField.flag,
 			PostDisplayField.countryName,
+			PostDisplayField.lineBreak2,
 			PostDisplayField.absoluteTime,
 			PostDisplayField.relativeTime,
 			PostDisplayField.postId
@@ -1621,7 +1629,7 @@ class SavedSettings extends HiveObject {
 		hoverPopupDelayMilliseconds = hoverPopupDelayMilliseconds ?? 0,
 		mouseModeQuoteLinkBehavior = mouseModeQuoteLinkBehavior ?? MouseModeQuoteLinkBehavior.expandInline,
 		drawerMode = drawerMode ?? DrawerMode.tabs,
-		showLineBreakInPostInfoRow = showLineBreakInPostInfoRow ?? false,
+		showLineBreak1InPostInfoRow = showLineBreak1InPostInfoRow ?? false,
 		removeMetadataOnUploadedFiles = removeMetadataOnUploadedFiles ?? true,
 		randomizeChecksumOnUploadedFiles = randomizeChecksumOnUploadedFiles ?? false,
 		recentWebImageSearches = recentWebImageSearches ?? [],
@@ -1667,7 +1675,8 @@ class SavedSettings extends HiveObject {
 		onlyShowUnreadWatches = onlyShowUnreadWatches ?? false,
 		showYousInScrollbar = showYousInScrollbar ?? false,
 		separateWiFiAndCellularCookies = separateWiFiAndCellularCookies ?? true,
-		showActiveWatchesAboveZombieWatches = showActiveWatchesAboveZombieWatches ?? true {
+		showActiveWatchesAboveZombieWatches = showActiveWatchesAboveZombieWatches ?? true,
+		showLineBreak2InPostInfoRow = showLineBreak2InPostInfoRow ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1708,8 +1717,11 @@ class SavedSettings extends HiveObject {
 			}
 			this.appliedMigrations.add('uif');
 		}
-		if (!this.postDisplayFieldOrder.contains(PostDisplayField.lineBreak)) {
-			this.postDisplayFieldOrder.insert(min(this.postDisplayFieldOrder.length - 1, 6), PostDisplayField.lineBreak);
+		if (!this.postDisplayFieldOrder.contains(PostDisplayField.lineBreak1)) {
+			this.postDisplayFieldOrder.insert(min(this.postDisplayFieldOrder.length - 1, 6), PostDisplayField.lineBreak1);
+		}
+		if (!this.postDisplayFieldOrder.contains(PostDisplayField.lineBreak2)) {
+			this.postDisplayFieldOrder.insert(min(this.postDisplayFieldOrder.length - 1, 6), PostDisplayField.lineBreak2);
 		}
 		if (!this.appliedMigrations.contains('mk')) {
 			// mk means media-kit
@@ -2789,8 +2801,11 @@ class Settings extends ChangeNotifier {
 		// Don't notify on purpose
 	}
 
-	static const showLineBreakInPostInfoRowSetting = SavedSetting(SavedSettingsFields.showLineBreakInPostInfoRow);
-	bool get showLineBreakInPostInfoRow => showLineBreakInPostInfoRowSetting(this);
+	static const showLineBreak1InPostInfoRowSetting = SavedSetting(SavedSettingsFields.showLineBreak1InPostInfoRow);
+	bool get showLineBreak1InPostInfoRow => showLineBreak1InPostInfoRowSetting(this);
+
+	static const showLineBreak2InPostInfoRowSetting = SavedSetting(SavedSettingsFields.showLineBreak2InPostInfoRow);
+	bool get showLineBreak2InPostInfoRow => showLineBreak2InPostInfoRowSetting(this);
 
 	static const useCloudCaptchaSolverSetting = SavedSetting(SavedSettingsFields.useCloudCaptchaSolver);
 	bool? get useCloudCaptchaSolver => useCloudCaptchaSolverSetting(this);

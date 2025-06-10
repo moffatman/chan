@@ -1863,16 +1863,16 @@ class SavedSettingsFields {
     fieldName: 'drawerMode',
     merger: PrimitiveMerger(),
   );
-  static bool getShowLineBreakInPostInfoRow(SavedSettings x) =>
-      x.showLineBreakInPostInfoRow;
-  static void setShowLineBreakInPostInfoRow(SavedSettings x, bool v) =>
-      x.showLineBreakInPostInfoRow = v;
-  static const showLineBreakInPostInfoRow =
+  static bool getShowLineBreak1InPostInfoRow(SavedSettings x) =>
+      x.showLineBreak1InPostInfoRow;
+  static void setShowLineBreak1InPostInfoRow(SavedSettings x, bool v) =>
+      x.showLineBreak1InPostInfoRow = v;
+  static const showLineBreak1InPostInfoRow =
       HiveFieldAdapter<SavedSettings, bool>(
-    getter: getShowLineBreakInPostInfoRow,
-    setter: setShowLineBreakInPostInfoRow,
+    getter: getShowLineBreak1InPostInfoRow,
+    setter: setShowLineBreak1InPostInfoRow,
     fieldNumber: 155,
-    fieldName: 'showLineBreakInPostInfoRow',
+    fieldName: 'showLineBreak1InPostInfoRow',
     merger: PrimitiveMerger(),
   );
   static bool? getUseCloudCaptchaSolver(SavedSettings x) =>
@@ -2423,6 +2423,18 @@ class SavedSettingsFields {
     fieldName: 'showActiveWatchesAboveZombieWatches',
     merger: PrimitiveMerger(),
   );
+  static bool getShowLineBreak2InPostInfoRow(SavedSettings x) =>
+      x.showLineBreak2InPostInfoRow;
+  static void setShowLineBreak2InPostInfoRow(SavedSettings x, bool v) =>
+      x.showLineBreak2InPostInfoRow = v;
+  static const showLineBreak2InPostInfoRow =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getShowLineBreak2InPostInfoRow,
+    setter: setShowLineBreak2InPostInfoRow,
+    fieldNumber: 204,
+    fieldName: 'showLineBreak2InPostInfoRow',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2578,7 +2590,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     152: SavedSettingsFields.hoverPopupDelayMilliseconds,
     153: SavedSettingsFields.mouseModeQuoteLinkBehavior,
     154: SavedSettingsFields.drawerMode,
-    155: SavedSettingsFields.showLineBreakInPostInfoRow,
+    155: SavedSettingsFields.showLineBreak1InPostInfoRow,
     156: SavedSettingsFields.useCloudCaptchaSolver,
     157: SavedSettingsFields.useHeadlessCloudCaptchaSolver,
     158: SavedSettingsFields.removeMetadataOnUploadedFiles,
@@ -2626,7 +2638,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     200: SavedSettingsFields.fontFamilyFallback,
     201: SavedSettingsFields.showYousInScrollbar,
     202: SavedSettingsFields.separateWiFiAndCellularCookies,
-    203: SavedSettingsFields.showActiveWatchesAboveZombieWatches
+    203: SavedSettingsFields.showActiveWatchesAboveZombieWatches,
+    204: SavedSettingsFields.showLineBreak2InPostInfoRow
   };
 
   @override
@@ -2795,7 +2808,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       hoverPopupDelayMilliseconds: fields[152] as int?,
       mouseModeQuoteLinkBehavior: fields[153] as MouseModeQuoteLinkBehavior?,
       drawerMode: fields[154] as DrawerMode?,
-      showLineBreakInPostInfoRow: fields[155] as bool?,
+      showLineBreak1InPostInfoRow: fields[155] as bool?,
       useCloudCaptchaSolver: fields[156] as bool?,
       useHeadlessCloudCaptchaSolver: fields[157] as bool?,
       removeMetadataOnUploadedFiles: fields[158] as bool?,
@@ -2844,13 +2857,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showYousInScrollbar: fields[201] as bool?,
       separateWiFiAndCellularCookies: fields[202] as bool?,
       showActiveWatchesAboveZombieWatches: fields[203] as bool?,
+      showLineBreak2InPostInfoRow: fields[204] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(191)
+      ..writeByte(192)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3136,7 +3150,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(154)
       ..write(obj.drawerMode)
       ..writeByte(155)
-      ..write(obj.showLineBreakInPostInfoRow)
+      ..write(obj.showLineBreak1InPostInfoRow)
       ..writeByte(156)
       ..write(obj.useCloudCaptchaSolver)
       ..writeByte(157)
@@ -3232,7 +3246,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(202)
       ..write(obj.separateWiFiAndCellularCookies)
       ..writeByte(203)
-      ..write(obj.showActiveWatchesAboveZombieWatches);
+      ..write(obj.showActiveWatchesAboveZombieWatches)
+      ..writeByte(204)
+      ..write(obj.showLineBreak2InPostInfoRow);
   }
 
   @override
@@ -3481,7 +3497,9 @@ class PostDisplayFieldAdapter extends TypeAdapter<PostDisplayField> {
       case 10:
         return PostDisplayField.postNumber;
       case 11:
-        return PostDisplayField.lineBreak;
+        return PostDisplayField.lineBreak1;
+      case 12:
+        return PostDisplayField.lineBreak2;
       default:
         return PostDisplayField.name;
     }
@@ -3523,8 +3541,11 @@ class PostDisplayFieldAdapter extends TypeAdapter<PostDisplayField> {
       case PostDisplayField.postNumber:
         writer.writeByte(10);
         break;
-      case PostDisplayField.lineBreak:
+      case PostDisplayField.lineBreak1:
         writer.writeByte(11);
+        break;
+      case PostDisplayField.lineBreak2:
+        writer.writeByte(12);
         break;
     }
   }
