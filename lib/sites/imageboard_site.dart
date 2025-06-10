@@ -1572,6 +1572,7 @@ abstract class ImageboardSiteArchive {
 		));
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(CloudflareInterceptor());
+		client.interceptors.add(RetryIfCloudflareInterceptor(client));
 		client.interceptors.add(StrictJsonInterceptor());
 		if (!kInUnitTest) {
 			client.interceptors.add(LoggingInterceptor.instance);

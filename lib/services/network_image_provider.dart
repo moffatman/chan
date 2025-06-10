@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
@@ -27,7 +28,8 @@ class CNetworkImageProvider extends ExtendedNetworkImageProvider {
 			headers: headers,
 			extra: {
 				// We can't really get the image bytes after clearing cloudflare, don't try it
-				kPriority: RequestPriority.cosmetic
+				kPriority: RequestPriority.cosmetic,
+				kRetryIfCloudflare: true
 			}
 		), onReceiveProgress: chunkEvents == null ? null : (count, total) {
 			chunkEvents.add(ImageChunkEvent(

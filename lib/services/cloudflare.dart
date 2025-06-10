@@ -17,14 +17,17 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart';
+import 'package:html/dom.dart' as dom;
 import 'package:mutex/mutex.dart';
 
 const kCloudflare = 'cloudflare';
+const kRetryIfCloudflare = 'retry_cloudflare';
 const kToastCloudflare = 'toast_cloudflare';
 const kRedirectGateway = 'redirect_gateway';
 
 extension CloudflareWanted on RequestOptions {
 	bool get cloudflare => extra[kCloudflare] == true;
+	bool get retryIfCloudflare => extra[kRetryIfCloudflare] == true;
 	bool get toast => extra[kToastCloudflare] != false;
 	RequestPriority get priority => (extra[kPriority] as RequestPriority?) ?? RequestPriority.functional;
 }
@@ -136,6 +139,12 @@ class CloudflareHandlerBlockedException implements Exception {
 			// ignore
 		}
 	}
+	if (type == ResponseType.bytes) {
+		return (data: utf8.encode(data), isJson: false);
+	}
+	if (type == ResponseType.stream) {
+		return (data: ResponseBody.fromString(data, 200), isJson: false);
+	}
 	return (data: data, isJson: false);
 }
 
@@ -240,6 +249,14 @@ class CloudflareInterceptor extends Interceptor {
 
 	static bool _responseMatches(Response response) {
 		if ([403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
+			if (response.headers.value('server') == 'cloudflare' && response.headers.value('cf-mitigated') == 'challenge') {
+				// Hopefully this catches the streamed ones
+				return true;
+			}
+			if (response.data is ResponseBody) {
+				// Can't really inspect it
+				return false;
+			}
 			final document = parse(response.data);
 			final title = document.querySelector('title')?.text ?? '';
 			return _titleMatches(title);
@@ -261,12 +278,14 @@ class CloudflareInterceptor extends Interceptor {
 
 	static Future<bool> _responseMatchesBlock(Response response) async {
 		if ([403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
-			_bodyMatchesBlock(await _bodyAsString(response.data));
+			if (response.data is ResponseBody) {
+				// Can't really inspect it
+				return false;
+			}
+			return _bodyMatchesBlock(await _bodyAsString(response.data));
 		}
 		return false;
 	}
-
-	static final _bodyStartsWithOpeningCurlyBrace = RegExp(r'<body[^>]*>{');
 
 	static Future<_CloudflareResponse> Function(InAppWebViewController, Uri?) _buildHandler(Uri initialUrl) => (controller, uri) async {
 		if (uri?.looksLikeWebViewRedirect ?? false) {
@@ -277,19 +296,35 @@ class CloudflareInterceptor extends Interceptor {
 			return (content: null, uri: correctedUri);
 		}
 		final html = await controller.getHtml() ?? '';
-		if (html.contains('<pre')) {
-			// Raw JSON response, but web-view has put it within a <pre>
-			final document = parse(html);
-			return (content: document.querySelector('pre')!.text, uri: uri);
+		final document = parse(html);
+		final headNodes = document.head?.nodes.toList() ?? [];
+		headNodes.removeWhere((node) {
+			if (node is dom.Element && node.localName == 'style' && node.innerHtml == kDarkModeCss) {
+				// We injected it
+				return true;
+			}
+			if (node is dom.Element && node.localName == 'meta' && node.attributes['name'] == 'color-scheme') {
+				// This one shows up sometimes on iOS
+				return true;
+			}
+			if (node is dom.Element && node.localName == 'meta' && node.attributes['charset'] == 'utf-8') {
+				// This one shows up on Android
+				return true;
+			}
+			return false;
+		});
+		if (headNodes.isEmpty) {
+			// This is a dummy page
+			if (document.body?.nodes.tryFirst case dom.Element e) {
+				if (e.localName == 'pre') {
+					return (content: e.text, uri: uri);
+				}
+			}
+			if (document.body?.innerHtml case String content) {
+				return (content: content, uri: uri);
+			}
 		}
-		else if (_bodyStartsWithOpeningCurlyBrace.hasMatch(html) && html.contains('}</body>')) {
-			// Raw JSON response, but web-view has put it within a <body>
-			final document = parse(html);
-			return (content: document.body!.text, uri: uri);
-		}
-		else {
-			return (content: html, uri: uri);
-		}
+		return (content: html, uri: uri);
 	};
 
 	static const _kDefaultGatewayName = 'Cloudflare';
@@ -526,15 +561,16 @@ class CloudflareInterceptor extends Interceptor {
 
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		if (await _responseMatchesBlock(response)) {
-			handler.reject(DioError(
-				requestOptions: response.requestOptions,
-				response: response,
-				error: const CloudflareHandlerBlockedException()
-			));
-			return;
-		}
-		if (_responseMatches(response)) {
+		try {
+			if (await _responseMatchesBlock(response)) {
+				handler.reject(DioError(
+					requestOptions: response.requestOptions,
+					response: response,
+					error: const CloudflareHandlerBlockedException()
+				));
+				return;
+			}
+			if (_responseMatches(response)) {
 			if (!response.requestOptions.priority.shouldPopupCloudflare) {
 				handler.reject(DioError(
 					requestOptions: response.requestOptions,
@@ -543,7 +579,6 @@ class CloudflareInterceptor extends Interceptor {
 				));
 				return;
 			}
-			try {
 				final _CloudflareResponse data;
 				final gateway = ImageboardRegistry.instance.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri), response.htmlTitle);
 				if (gateway != null) {
@@ -591,31 +626,32 @@ class CloudflareInterceptor extends Interceptor {
 					return;
 				}
 			}
-			catch (e) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: e
-				));
-				return;
-			}
+		}
+		catch (e) {
+			handler.reject(DioError(
+				requestOptions: response.requestOptions,
+				response: response,
+				error: e
+			));
+			return;
 		}
 		handler.next(response);
 	}
 
 	@override
 	void onError(DioError err, ErrorInterceptorHandler handler) async {
-		if (err.type == DioErrorType.response &&
-		    err.response != null &&
-				await _responseMatchesBlock(err.response!)) {
-			handler.reject(DioError(
-				requestOptions: err.requestOptions,
-				response: err.response,
-				error: const CloudflareHandlerBlockedException()
-			));
-			return;
-		}
-		if (err.type == DioErrorType.response &&
+		try {
+			if (err.type == DioErrorType.response &&
+					err.response != null &&
+					await _responseMatchesBlock(err.response!)) {
+				handler.reject(DioError(
+					requestOptions: err.requestOptions,
+					response: err.response,
+					error: const CloudflareHandlerBlockedException()
+				));
+				return;
+			}
+			if (err.type == DioErrorType.response &&
 		    err.response != null &&
 				_responseMatches(err.response!)) {
 			if (!err.requestOptions.priority.shouldPopupCloudflare) {
@@ -626,7 +662,6 @@ class CloudflareInterceptor extends Interceptor {
 				));
 				return;
 			}
-			try {
 				final data = await _useWebview(
 					handler: _buildHandler(err.requestOptions.uri),
 					cookieUrl: err.requestOptions.uri,
@@ -644,16 +679,61 @@ class CloudflareInterceptor extends Interceptor {
 					return;
 				}
 			}
-			catch (e) {
-				handler.reject(DioError(
-					requestOptions: err.requestOptions,
-					response: err.response,
-					error: e
-				));
-				return;
-			}
+		}
+		catch (e) {
+			handler.reject(DioError(
+				requestOptions: err.requestOptions,
+				response: err.response,
+				error: e
+			));
+			return;
 		}
 		handler.next(err);
+	}
+}
+
+/// For requests that probably can't use cloudflare-cleared data
+/// E.g. because null bytes are dropped in webview
+class RetryIfCloudflareInterceptor extends Interceptor {
+	final Dio client;
+	RetryIfCloudflareInterceptor(this.client);
+	@override
+	void onResponse(Response response, ResponseInterceptorHandler handler) async {
+		if (response.cloudflare && response.requestOptions.retryIfCloudflare) {
+			try {
+				final response2 = await client.requestUri(
+					response.requestOptions.uri,
+					data: response.requestOptions.data,
+					cancelToken: response.requestOptions.cancelToken,
+					options: Options(
+						headers: response.requestOptions.headers,
+						extra: {
+							...response.requestOptions.extra,
+							kRetryIfCloudflare: false
+						},
+						responseType: response.requestOptions.responseType,
+						contentType: response.requestOptions.contentType,
+						validateStatus: response.requestOptions.validateStatus
+					)
+				);
+				handler.next(response2);
+			}
+			catch (e, st) {
+				if (e is DioError) {
+					handler.reject(e);
+				}
+				else {
+					handler.reject(DioError(
+						requestOptions: response.requestOptions,
+						response: response,
+						error: e
+					)..stackTrace = st);
+				}
+			}
+		}
+		else {
+			handler.next(response);
+		}
 	}
 }
 

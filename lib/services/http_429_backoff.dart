@@ -84,6 +84,8 @@ class HTTP429BackoffInterceptor extends Interceptor {
 							...response.requestOptions.extra,
 							_kExtraRetriesKey: currentRetries + 1
 						},
+						responseType: response.requestOptions.responseType,
+						contentType: response.requestOptions.contentType,
 						validateStatus: response.requestOptions.validateStatus
 					)
 				);

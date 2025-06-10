@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:chan/services/bad_certificate.dart';
-import 'package:chan/services/http_429_backoff.dart';
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -59,6 +59,7 @@ class StreamingMP4ConvertingFile implements StreamingMP4ConversionResult {
 }
 
 class _CachingFile extends EasyListenable {
+	final Dio client;
 	final File file;
 	int totalBytes;
 	final int statusCode;
@@ -66,11 +67,11 @@ class _CachingFile extends EasyListenable {
 	final completer = Completer<void>();
 	final lock = Mutex();
 	final Map<String, String> headers;
-	/// For interruptible requests, it must have its own client
-	HttpClient? _client;
+	CancelToken? _cancelToken;
 	bool _interrupted = false;
 
 	_CachingFile({
+		required this.client,
 		required this.file,
 		required this.totalBytes,
 		required this.statusCode,
@@ -91,79 +92,11 @@ extension _Normalize on _RawRange {
 	);
 }
 
-extension _Retry429 on HttpClient {
-	static const _kMaxRetries = 5;
-	void _checkGiveUp(Uri uri, DateTime? start) {
-		final time = VideoServer.instance._earlyGiveUp[uri];
-		if (time == null || start == null) {
-			return;
-		}
-		if (start.isBefore(time)) {
-			throw Exception('Gave up after ${time.difference(time)}');
-		}
-	}
-	Future<HttpClientResponse> headUrl429(Uri uri, {Map<String, String> headers = const {}, int currentRetries = 0, DateTime? start}) async {
-		try {
-			_checkGiveUp(uri, start ??= DateTime.now());
-			if (currentRetries == 0) {
-				await http429Queue.start(uri);
-				_checkGiveUp(uri, start);
-			}
-			final headRequest = await headUrl(uri);
-			for (final header in headers.entries) {
-				headRequest.headers.set(header.key, header.value);
-			}
-			final headResponse = await headRequest.close();
-			if (headResponse.statusCode == 429 && currentRetries < (_kMaxRetries)) {
-				headResponse.drain(); // HEAD should have no body, but just to be safe
-				final delay = get429Delay(headResponse.headers.value('retry-after'), currentRetries);
-				print('[_Retry429] Waiting $delay due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
-				await http429Queue.delay(uri, delay);
-				return await headUrl429(uri, headers: headers, currentRetries: currentRetries + 1, start: start);
-			}
-			return headResponse;
-		}
-		finally {
-			if (currentRetries == 0) {
-				await http429Queue.end(uri);
-			}
-		}
-	}
-	Future<HttpClientResponse> getUrl429(Uri uri, {Map<String, String> headers = const {}, int currentRetries = 0, DateTime? start}) async {
-		try {
-			_checkGiveUp(uri, start ??= DateTime.now());
-			if (currentRetries == 0) {
-				await http429Queue.start(uri);
-				_checkGiveUp(uri, start);
-			}
-			final HttpClientRequest httpRequest = await getUrl(uri);
-			for (final header in headers.entries) {
-				httpRequest.headers.set(header.key, header.value);
-			}
-			final response = await httpRequest.close();
-			if (response.statusCode == 429 && currentRetries < _kMaxRetries) {
-				response.drain(); // trash it
-				final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
-				print('[_Retry429] Waiting $delay due to server-side rate-limiting (url: $uri, currentRetries: $currentRetries)');
-				await http429Queue.delay(uri, delay);
-				return await getUrl429(uri, headers: headers, currentRetries: currentRetries + 1, start: start);
-			}
-			return response;
-		}
-		finally {
-			if (currentRetries == 0) {
-				await http429Queue.end(uri);
-			}
-		}
-	}
-}
-
 class VideoServer {
-	final _client = (HttpClient()..badCertificateCallback = badCertificateCallback);
 	static VideoServer? _server;
 	final Directory webmRoot;
 	final Directory httpRoot;
-	final Map<String, HttpClient?> _earlyClients = {};
+	final Map<String, CancelToken?> _earlyTokens = {};
 	final Map<String, _CachingFile> _caches = {};
 	final Map<String, Set<_CachingFile>> _children = {};
 	final Map<Uri, DateTime> _earlyGiveUp = {};
@@ -244,30 +177,34 @@ class VideoServer {
 		}
 	}
 
-	Future<void> _serveProxy(HttpRequest request, String digest) async {
+	Future<void> _serveProxy(_CachingFile file, HttpRequest request, String digest) async {
 		final uri = _decodeDigest(digest);
 		try {
-			final upstream = await _client.getUrl(uri);
-			final headers = _caches[digest]?.headers ?? {};
-			for (final header in headers.entries) {
-				upstream.headers.set(header.key, header.value);
-			}
 			final range = request.headers[HttpHeaders.rangeHeader]?.tryFirst;
-			if (range != null) {
-				upstream.headers.set(HttpHeaders.rangeHeader, range);
-			}
-			final upstreamResponse = await upstream.close();
-			request.response.contentLength = upstreamResponse.contentLength;
+			final upstream = await file.client.getUri(uri, options: Options(
+				headers: {
+					..._caches[digest]?.headers ?? {},
+					if (range != null)
+						HttpHeaders.rangeHeader: range
+				},
+				extra: {
+					// Probably image/video bytes won't work
+					kRetryIfCloudflare: true
+				},
+				responseType: ResponseType.stream
+			), cancelToken: file._cancelToken);
+			final upstreamResponse = upstream.data as ResponseBody;
+			request.response.contentLength = upstream.headers.value(Headers.contentLengthHeader)?.tryParseInt ?? -1;
 			if (request.response.contentLength > insignificantByteThreshold) {
 				// This is not the intent of _serveProxy, it needs to be adjusted
 				// Report it to Crashlytics
 				Future.error(Exception('Too large proxy serve (${formatFilesize(request.response.contentLength)}) of $uri'), StackTrace.current);
 			}
-			request.response.statusCode = upstreamResponse.statusCode;
+			request.response.statusCode = upstream.statusCode ?? -1;
 			upstreamResponse.headers.forEach((key, values) {
 				request.response.headers.set(key, values.first);
 			});
-			await request.response.addStream(upstreamResponse);
+			await request.response.addStream(upstreamResponse.stream);
 			await request.response.close();
 		}
 		on HttpException {
@@ -361,7 +298,7 @@ class VideoServer {
 		if (_caches[digest]?.completer.isCompleted == false) {
 			return null;
 		}
-		if (_caches[digest] == null && _earlyClients.containsKey(digest)) {
+		if (_caches[digest] == null && _earlyTokens.containsKey(digest)) {
 			return null;
 		}
 		return getFile(digest);
@@ -391,11 +328,12 @@ class VideoServer {
 			else {
 				// The subpath is a sibling file to the root
 				final rootUri = _decodeDigest(rootDigest);
+				final sibling = _caches[rootDigest];
 				final subUri = rootUri.resolve('./$subpath');
 				digest = _encodeDigest(subUri);
 				try {
 					await runEphemerallyLocked(digest, () async {
-						_caches[digest] ??= await _startCaching(subUri, _caches[rootDigest]?.headers ?? {}, force: false, interruptible: false);
+						_caches[digest] ??= await _startCaching(sibling?.client ?? Settings.instance.client, subUri, sibling?.headers ?? {}, force: false, interruptible: false);
 					});
 				}
 				on HttpException {
@@ -414,7 +352,7 @@ class VideoServer {
 				if (range != null && range.start > (currentlyDownloading!.currentBytes + 102400) && range.inclusiveEnd == null) {
 					// This is likely a request for the end of the file
 					// Serve it in parallel to allow playback to start
-					_serveProxy(request, digest);
+					_serveProxy(currentlyDownloading, request, digest);
 				}
 				else {
 					// Join and wait for the main download
@@ -450,7 +388,7 @@ class VideoServer {
 		return Uri.parse(utf8.decode(base64Url.decode(digest)));
 	}
 
-	Future<_CachingFile> _startCaching(Uri uri, Map<String, String> headers, {
+	Future<_CachingFile> _startCaching(Dio client, Uri uri, Map<String, String> headers, {
 		required bool force,
 		required bool interruptible
 	}) async {
@@ -458,21 +396,22 @@ class VideoServer {
 		final file = getFile(digest);
 		final stat = await file.stat();
 		_CachingFile? cachingFile0;
-		HttpClient? interruptibleClient = interruptible ? (HttpClient()..badCertificateCallback = badCertificateCallback) : null;
-		_earlyClients[digest] = interruptibleClient;
+		CancelToken? interruptibleToken = interruptible ? CancelToken() : null;
+		_earlyTokens[digest] = interruptibleToken;
 		try {
-			final client = interruptibleClient ?? _client;
 			if (stat.type == FileSystemEntityType.file) {
 				// First HEAD, to see if we have the right size file cached
-				final headResponse = await client.headUrl429(uri, headers: headers);
-				headResponse.drain(); // HEAD should have no body, but just to be safe
-				if (headResponse.statusCode >= 400) {
-					throw HTTPStatusException(uri, headResponse.statusCode);
+				final headResponse = await client.headUri(uri, options: Options(
+					headers: headers
+				), cancelToken: interruptibleToken);
+				if ((headResponse.statusCode ?? 500) >= 400) {
+					throw HTTPStatusException.fromResponse(headResponse);
 				}
 				cachingFile0= _CachingFile(
+					client: client,
 					file: file,
-					totalBytes: headResponse.contentLength,
-					statusCode: headResponse.statusCode,
+					totalBytes: headResponse.headers.value(Headers.contentLengthHeader)?.tryParseInt ?? -1,
+					statusCode: headResponse.statusCode ?? -1,
 					headers: headers
 				);
 				if (!force && stat.size == cachingFile0.totalBytes && !uri.path.endsWith('m3u8')) {
@@ -490,29 +429,37 @@ class VideoServer {
 				}
 			}
 			// Now GET the file for real
-			final response = await client.getUrl429(uri, headers: {
-				...headers,
-				if ((cachingFile0?.currentBytes ?? 0) != 0)
-					'Range': 'bytes=${cachingFile0?.currentBytes}-'
-			});
-			if (response.statusCode >= 400) {
-				response.drain(); // throw it away
-				throw HTTPStatusException(uri, response.statusCode);
+			final response = await client.getUri(uri, options: Options(
+				headers: {
+					...headers,
+					if ((cachingFile0?.currentBytes ?? 0) != 0)
+						'Range': 'bytes=${cachingFile0?.currentBytes}-'
+				},
+				extra: {
+					// Probably image/video bytes won't work
+					kRetryIfCloudflare: true
+				},
+				responseType: ResponseType.stream
+			), cancelToken: interruptibleToken);
+			if ((response.statusCode ?? 500) >= 400) {
+				(response.data as ResponseBody).stream.drain(); // throw it away
+				throw HTTPStatusException.fromResponse(response);
 			}
 			final cachingFile = cachingFile0 ?? _CachingFile(
+				client: client,
 				file: file,
-				totalBytes: response.contentLength,
-				statusCode: response.statusCode,
+				totalBytes: response.headers.value(Headers.contentLengthHeader)?.tryParseInt ?? -1,
+				statusCode: response.statusCode ?? -1,
 				headers: headers
 			);
-			cachingFile._client = interruptibleClient;
+			cachingFile._cancelToken = interruptibleToken;
 			if (!file.existsSync()) {
 				await file.create(recursive: true);
 			}
 			final handle = await file.open(mode:cachingFile.currentBytes == 0 ? FileMode.writeOnly : FileMode.writeOnlyAppend);
 			() async {
 				try {
-					await for (final chunk in response) {
+					await for (final chunk in (response.data as ResponseBody).stream) {
 						await cachingFile.lock.protect(() async {
 							await handle.writeFrom(chunk);
 							await handle.flush();
@@ -521,14 +468,12 @@ class VideoServer {
 						});
 					}
 					await handle.close();
-					cachingFile._client?.close();
-					cachingFile._client = null;
+					cachingFile._cancelToken = null;
 					cachingFile.completer.complete();
 				}
 				catch (e, st) {
 					handle.close(); // Don't await
-					cachingFile._client?.close();
-					cachingFile._client = null;
+					cachingFile._cancelToken = null;
 					cachingFile.completer.completeError(e, st);
 					if (!(cachingFile._interrupted && e is HttpException)) {
 						print('Deleting file');
@@ -547,11 +492,12 @@ class VideoServer {
 			return cachingFile;
 		}
 		finally {
-			_earlyClients.remove(digest);
+			_earlyTokens.remove(digest);
 		}
 	}
 
 	Future<String> startCachingDownload({
+		Dio? client,
 		required Uri uri,
 		Map<String, String> headers = const {},
 		void Function(File file)? onCached,
@@ -565,7 +511,7 @@ class VideoServer {
 		await runEphemerallyLocked(digest, () async {
 			if (existing == null || (existing == true && (force || !getFile(digest).existsSync()))) {
 				_caches[digest]?.dispose();
-				final cachingFile = await _startCaching(uri, headers, force: force, interruptible: interruptible);
+				final cachingFile = await _startCaching(client ?? Settings.instance.client, uri, headers, force: force, interruptible: interruptible);
 				void listener() {
 					onProgressChanged?.call(cachingFile.currentBytes, cachingFile.totalBytes);
 				}
@@ -610,6 +556,7 @@ class VideoServer {
 	}
 
 	Future<File> cachingDownload({
+		required Dio client,
 		required Uri uri,
 		Map<String, String> headers = const {},
 		void Function(int currentBytes, int totalBytes)? onProgressChanged,
@@ -617,6 +564,7 @@ class VideoServer {
 		bool interruptible = false
 	}) async {
 		final digest = await startCachingDownload(
+			client: client,
 			uri: uri,
 			headers: headers,
 			onProgressChanged: onProgressChanged,
@@ -639,10 +587,10 @@ class VideoServer {
 		interruptEarlyDownloadFromUri(url);
 		final cachingFile = _caches[digest];
 		if (cachingFile == null) {
-			_earlyClients[digest]?.close(force: true);
+			_earlyTokens[digest]?.cancel();
 			return;
 		}
-		if (cachingFile._client == null) {
+		if (cachingFile._cancelToken == null) {
 			// Not interruptible
 			return;
 		}
@@ -651,7 +599,7 @@ class VideoServer {
 			return;
 		}
 		cachingFile._interrupted = true;
-		cachingFile._client?.close(force: true);
+		cachingFile._cancelToken?.cancel();
 		_caches.remove(digest);
 	}
 
@@ -724,6 +672,7 @@ Future<String> getCachedPath(String uri) async {
 }
 
 class StreamingMP4Conversion {
+	final Dio client;
 	final Uri inputFile;
 	final Map<String, String> headers;
 	final Uri? soundSource;
@@ -734,7 +683,7 @@ class StreamingMP4Conversion {
 	final _joinedCompleter = Completer<File>();
 	String? _cachingServerDigest;
 
-	StreamingMP4Conversion(this.inputFile, {
+	StreamingMP4Conversion(this.client, this.inputFile, {
 		this.headers = const {},
 		this.soundSource
 	});
@@ -810,6 +759,7 @@ class StreamingMP4Conversion {
 		if (inputExtension == 'm3u8' && soundSource == null) {
 			await VideoServer.instance.ensureRunning();
 			final digest = _cachingServerDigest = await VideoServer.instance.startCachingDownload(
+				client: client,
 				uri: inputFile,
 				headers: headers,
 				force: force

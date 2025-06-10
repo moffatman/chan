@@ -661,6 +661,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						uri: soundSource
 					);
 					final soundFile = await VideoServer.instance.cachingDownload(
+						client: imageboard.site.client,
 						uri: soundSource,
 						interruptible: true,
 						force: force,
@@ -756,6 +757,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					else {
 						final progressNotifier = ValueNotifier<double?>(null);
 						final hash = await VideoServer.instance.startCachingDownload(
+							client: imageboard.site.client,
 							uri: url,
 							headers: await getHeadersWithCookies(url),
 							onCached: _onCacheCompleted,
@@ -788,7 +790,12 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				else {
 					_ongoingConversion?.cancelIfActive();
-					_ongoingConversion = StreamingMP4Conversion(url, headers: await getHeadersWithCookies(url), soundSource: soundSource);
+					_ongoingConversion = StreamingMP4Conversion(
+						imageboard.site.client,
+						url,
+						headers: await getHeadersWithCookies(url),
+						soundSource: soundSource
+					);
 					final result = await _ongoingConversion!.start(force: force);
 					if (_isDisposed) return;
 					_conversionDisposers.add(_ongoingConversion!.dispose);

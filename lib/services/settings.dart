@@ -10,6 +10,7 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/network_logging.dart';
@@ -94,7 +95,8 @@ class ChanceLinkifier extends Linkifier {
   }
 }
 
-const contentSettingsApiRoot = 'https://api.chance.surf/preferences';
+//const contentSettingsApiRoot = 'https://api.chance.surf/preferences';
+const contentSettingsApiRoot = 'http://192.168.2.185:5123/chan-329813/us-central1/preferences';
 final _punctuationRegex = RegExp('(\\W+|s\\W)');
 final _badWords = Set.from(ProfanityFilter().wordsToFilterOutList);
 const kTestchanKey = 'testchan';
@@ -3107,13 +3109,15 @@ class Settings extends ChangeNotifier {
 
 	Settings._() {
 		mouseSettings = MouseSettings._(this);
-		if (!kInUnitTest) {
-			client.interceptors.add(LoggingInterceptor.instance);
-		}
+		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(SeparatedCookieManager());
 		client.interceptors.add(CloudflareInterceptor());
+		client.interceptors.add(RetryIfCloudflareInterceptor(client));
 		client.interceptors.add(StrictJsonInterceptor());
+		if (!kInUnitTest) {
+			client.interceptors.add(LoggingInterceptor.instance);
+		}
 		client.httpClientAdapter = BadCertificateHttpClientAdapter();
 		muteAudio.value = _settings.muteAudio;
 		_tryToSetupFilter();
