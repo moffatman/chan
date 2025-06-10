@@ -34,6 +34,28 @@ class OverlayNotification {
 
 	bool get isMuted => imageboard.notifications.getThreadWatch(notification.target.thread)?.foregroundMuted ?? false;
 
+	String get threadDescription {
+		final thread = imageboard.persistence.getThreadStateIfExists(notification.target.thread)?.thread ?? imageboard.site.getThreadFromCatalogCache(notification.target.thread);
+		String? text = thread?.title?.nonEmptyOrNull ?? thread?.posts_.tryFirst?.buildText();
+		if (text == null) {
+			return '${imageboard.site.formatBoardNameWithoutTrailingSlash(notification.target.board)}/${notification.target.threadId}';
+		}
+		text = text.replaceAll('\n', ' ');
+		const maxLength = 53;
+		if (text.length > maxLength) {
+			const cutoff = maxLength - 3;
+			final snappedCutoff = text.lastIndexOf(' ', cutoff);
+			if (snappedCutoff > (maxLength * 0.75)) {
+				// Some reasonable cutoff (and not -1 either)
+				text = '${text.substring(0, snappedCutoff)}...';
+			}
+			else {
+				text = '${text.substring(0, cutoff)}...';
+			}
+		}
+		return '${imageboard.site.formatBoardName(notification.target.board)} - $text';
+	}
+
 	@override
 	String toString() => 'OverlayNotification(imageboard: $imageboard, notification: $notification)';
 }
@@ -210,7 +232,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 }
 
 class NotificationContent extends StatelessWidget {
-	final PushNotification notification;
+	final OverlayNotification notification;
 	final double topRightCornerInsetWidth;
 
 	const NotificationContent({
@@ -221,36 +243,33 @@ class NotificationContent extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final notification = this.notification;
-		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.target.thread);
+		final notif = notification.notification;
+		final threadState = context.read<Persistence>().getThreadStateIfExists(notif.target.thread);
 		Thread? thread;
 		Post? post;
 		bool isYou = false;
-		if (notification.target.isThread) {
+		if (notif.target.isThread) {
 			thread = threadState?.thread;
 		}
 		else {
-			post = threadState?.thread?.posts.tryFirstWhere((p) => p.id == notification.target.postId);
+			post = threadState?.thread?.posts.tryFirstWhere((p) => p.id == notif.target.postId);
 		}
 		if (threadState != null) {
-			isYou = threadState.youIds.contains(notification.target.postId);
+			isYou = threadState.youIds.contains(notif.target.postId);
 		}
 		final String title;
-		if (notification is BoardWatchNotification) {
-			title = 'New ${notification.target.isThread ? 'thread' : 'post'} matching "${notification.filter}" on /${notification.target.board}/';
+		if (notif is BoardWatchNotification) {
+			title = 'New ${notif.target.isThread ? 'thread' : 'post'} in ${notification.imageboard.site.formatBoardName(notif.target.board)} matching ${notif.filter}';
 		}
-		else if (notification is ThreadWatchPageNotification) {
-			title = switch (notification.page) {
-				> 0 => 'Thread /${notification.target.board}/${notification.target.threadId} reached page ${notification.page}',
-				0 => 'Thread /${notification.target.board}/${notification.target.threadId} was archived',
-				_ => 'Thread /${notification.target.board}/${notification.target.threadId} was deleted'
+		else if (notif is ThreadWatchPageNotification) {
+			title = switch (notif.page) {
+				> 0 => 'Watched thread reached page ${notif.page}: ${notification.threadDescription}',
+				0 => 'Watched thread was archived: ${notification.threadDescription}',
+				_ => 'Watched thread was deleted: ${notification.threadDescription}'
 			};
 		}
-		else if (post == null) {
-			title = 'New post in /${notification.target.board}/${notification.target.threadId}';
-		}
 		else {
-			title = 'New ${isYou ? 'reply' : 'post'} in /${notification.target.board}/${notification.target.threadId}';
+			title = 'New ${isYou ? 'reply' : 'post'} in ${notification.threadDescription}';
 		}
 		final child = Column(
 			mainAxisSize: MainAxisSize.min,
@@ -284,8 +303,8 @@ class NotificationContent extends StatelessWidget {
 								create: (context) => PostSpanRootZoneData(
 									imageboard: context.read<Imageboard>(),
 									thread: threadState?.thread ?? Thread(
-										board: notification.target.board,
-										id: notification.target.threadId,
+										board: notification.notification.target.board,
+										id: notification.notification.target.threadId,
 										isDeleted: false,
 										isArchived: false,
 										title: '',
@@ -377,7 +396,7 @@ class TopNotification extends StatelessWidget {
 												minHeight: 80
 											),
 											child: NotificationContent(
-												notification: notification.notification,
+												notification: notification,
 											)
 										)
 									)
@@ -483,7 +502,7 @@ class CornerNotification extends StatelessWidget {
 													maxHeight: 200
 												),
 												child: NotificationContent(
-													notification: notification.notification,
+													notification: notification,
 													topRightCornerInsetWidth: 50
 												)
 											)
