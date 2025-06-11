@@ -1811,7 +1811,7 @@ class ThreadPageState extends State<ThreadPage> {
 																					_highlightPosts[item.id] == _kHighlightZero &&
 																					// It was collapsed without being seen
 																					persistentState.unseenPostIds.data.contains(item.id) &&
-																					_listController.isItemHidden(item) == TreeItemCollapseType.childCollapsed
+																					_listController.isItemHidden(item).isCollapsed
 																				) {
 																					_highlightPosts[item.id] = _kHighlightPartial;
 																				}
@@ -1820,7 +1820,7 @@ class ThreadPageState extends State<ThreadPage> {
 																					(_highlightPosts[item.id] ?? _kHighlightZero) > _kHighlightZero &&
 																					// It was collapsed after being seen
 																					!persistentState.unseenPostIds.data.contains(item.id) &&
-																					_listController.isItemHidden(item) == TreeItemCollapseType.childCollapsed
+																					_listController.isItemHidden(item).isCollapsed
 																				) {
 																					_highlightPosts.remove(item.id);
 																				}

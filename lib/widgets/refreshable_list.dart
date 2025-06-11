@@ -527,6 +527,16 @@ extension Convenience on TreeItemCollapseType? {
 				return false;
 		}
 	}
+
+	bool get isCollapsed {
+		switch (this) {
+			case TreeItemCollapseType.collapsed:
+			case TreeItemCollapseType.childCollapsed:
+				return true;
+			default:
+				return false;
+		}
+	}
 }
 
 class _RefreshableTreeItemsCacheKey {
