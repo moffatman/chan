@@ -2435,6 +2435,30 @@ class SavedSettingsFields {
     fieldName: 'showLineBreak2InPostInfoRow',
     merger: PrimitiveMerger(),
   );
+  static bool getReverseSavedThreadsSorting(SavedSettings x) =>
+      x.reverseSavedThreadsSorting;
+  static void setReverseSavedThreadsSorting(SavedSettings x, bool v) =>
+      x.reverseSavedThreadsSorting = v;
+  static const reverseSavedThreadsSorting =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getReverseSavedThreadsSorting,
+    setter: setReverseSavedThreadsSorting,
+    fieldNumber: 205,
+    fieldName: 'reverseSavedThreadsSorting',
+    merger: PrimitiveMerger(),
+  );
+  static bool getReverseWatchedThreadsSorting(SavedSettings x) =>
+      x.reverseWatchedThreadsSorting;
+  static void setReverseWatchedThreadsSorting(SavedSettings x, bool v) =>
+      x.reverseWatchedThreadsSorting = v;
+  static const reverseWatchedThreadsSorting =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getReverseWatchedThreadsSorting,
+    setter: setReverseWatchedThreadsSorting,
+    fieldNumber: 206,
+    fieldName: 'reverseWatchedThreadsSorting',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2639,7 +2663,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     201: SavedSettingsFields.showYousInScrollbar,
     202: SavedSettingsFields.separateWiFiAndCellularCookies,
     203: SavedSettingsFields.showActiveWatchesAboveZombieWatches,
-    204: SavedSettingsFields.showLineBreak2InPostInfoRow
+    204: SavedSettingsFields.showLineBreak2InPostInfoRow,
+    205: SavedSettingsFields.reverseSavedThreadsSorting,
+    206: SavedSettingsFields.reverseWatchedThreadsSorting
   };
 
   @override
@@ -2858,13 +2884,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       separateWiFiAndCellularCookies: fields[202] as bool?,
       showActiveWatchesAboveZombieWatches: fields[203] as bool?,
       showLineBreak2InPostInfoRow: fields[204] as bool?,
+      reverseSavedThreadsSorting: fields[205] as bool?,
+      reverseWatchedThreadsSorting: fields[206] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(192)
+      ..writeByte(194)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3248,7 +3276,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(203)
       ..write(obj.showActiveWatchesAboveZombieWatches)
       ..writeByte(204)
-      ..write(obj.showLineBreak2InPostInfoRow);
+      ..write(obj.showLineBreak2InPostInfoRow)
+      ..writeByte(205)
+      ..write(obj.reverseSavedThreadsSorting)
+      ..writeByte(206)
+      ..write(obj.reverseWatchedThreadsSorting);
   }
 
   @override

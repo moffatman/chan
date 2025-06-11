@@ -757,7 +757,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 											origin: context.globalSemanticBounds!,
 											actions: [
 												TabMenuAction(
-													icon: CupertinoIcons.sort_down,
+													icon: settings.reverseWatchedThreadsSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down,
 													title: 'Sort...',
 													onPressed: () => selectWatchedThreadsSortMethod(context)
 												),
@@ -786,7 +786,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 											origin: context.globalSemanticBounds!,
 											actions: [
 												TabMenuAction(
-													icon: CupertinoIcons.sort_down,
+													icon: settings.reverseSavedThreadsSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down,
 													title: 'Sort...',
 													onPressed: () => selectSavedThreadsSortMethod(context)
 												),

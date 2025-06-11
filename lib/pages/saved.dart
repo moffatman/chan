@@ -108,7 +108,7 @@ typedef SavedPageMasterDetailPanesState = MultiMasterDetailPage5State<Imageboard
 }
 
 abstract class _SavedThreadsLoader {
-	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize();
+	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize(bool reverse);
 	Future<(PersistentThreadState, Thread)?> takeSavedThread();
 }
 
@@ -116,9 +116,9 @@ sealed class _SavedThreadsLoaderImpl<T> implements _SavedThreadsLoader {
 	final List<T> _list = [];
 	Future<T?> _initializeImpl(PersistentThreadState state);
 	/// Sort the list (in reverse order, because removing at the end is faster)
-	void _sortImpl();
+	void _sortImpl(bool reverse);
 	@override
-	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize() async {
+	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize(bool reverse) async {
 		final missing = <ImageboardScoped<ThreadIdentifier>>[];
 		for (final state in Persistence.sharedThreadStateBox.values) {
 			if (state.savedTime == null) {
@@ -137,7 +137,7 @@ sealed class _SavedThreadsLoaderImpl<T> implements _SavedThreadsLoader {
 				_list.add(entry);
 			}
 		}
-		_sortImpl();
+		_sortImpl(reverse);
 		return missing;
 	}
 	PersistentThreadState _takeSavedThreadImpl(T entry);
@@ -173,9 +173,15 @@ class _SavedThreadsByTitleLoader extends _SavedThreadsLoaderImpl<(PersistentThre
 		return (state, title);
 	}
 	@override
-	void _sortImpl() {
-		// Z before A
-		_list.sort((a, b) => b.$2.compareTo(a.$2));
+	void _sortImpl(bool reverse) {
+		if (reverse) {
+			// A before Z
+			_list.sort((a, b) => a.$2.compareTo(b.$2));
+		}
+		else {
+			// Z before A
+			_list.sort((a, b) => b.$2.compareTo(a.$2));
+		}
 	}
 	@override
 	PersistentThreadState _takeSavedThreadImpl((PersistentThreadState, String) entry) => entry.$1;
@@ -205,9 +211,15 @@ class _SavedThreadsByLastPostTimeLoader extends _SavedThreadsLoaderImpl<(Persist
 		return (state, time);
 	}
 	@override
-	void _sortImpl() {
-		// Earliest posted first
-		_list.sort((a, b) => a.$2.compareTo(b.$2));
+	void _sortImpl(bool reverse) {
+		if (reverse) {
+			// Latest posted first
+			_list.sort((a, b) => b.$2.compareTo(a.$2));
+		}
+		else {
+			// Earliest posted first
+			_list.sort((a, b) => a.$2.compareTo(b.$2));
+		}
 	}
 	@override
 	PersistentThreadState _takeSavedThreadImpl((PersistentThreadState, DateTime) entry) => entry.$1;
@@ -218,9 +230,15 @@ class _SavedThreadsBySavedTimeLoader extends _SavedThreadsLoaderImpl<PersistentT
 	@override
 	Future<PersistentThreadState?> _initializeImpl(PersistentThreadState state) async => state;
 	@override
-	void _sortImpl() {
-		// Earliest saved first
-		_list.sort((a, b) => (a.savedTime ?? noDate).compareTo(b.savedTime ?? noDate));
+	void _sortImpl(bool reverse) {
+		if (reverse) {
+			// Latest saved first
+			_list.sort((a, b) => (b.savedTime ?? noDate).compareTo(a.savedTime ?? noDate));
+		}
+		else {
+			// Earliest saved first
+			_list.sort((a, b) => (a.savedTime ?? noDate).compareTo(b.savedTime ?? noDate));
+		}
 	}
 	@override
 	PersistentThreadState _takeSavedThreadImpl(PersistentThreadState entry) => entry;
@@ -228,8 +246,10 @@ class _SavedThreadsBySavedTimeLoader extends _SavedThreadsLoaderImpl<PersistentT
 
 class _SavedThreadsByThreadPostTimeLoader implements _SavedThreadsLoader {
 	final Map<(Imageboard, String), List<PersistentThreadState>> _lists = {};
+	late bool _reverse;
 	@override
-	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize() async {
+	Future<List<ImageboardScoped<ThreadIdentifier>>> initialize(bool reverse) async {
+		_reverse = reverse;
 		final missing = <ImageboardScoped<ThreadIdentifier>>[];
 		for (final state in Persistence.sharedThreadStateBox.values) {
 			if (state.savedTime == null) {
@@ -247,8 +267,14 @@ class _SavedThreadsByThreadPostTimeLoader implements _SavedThreadsLoader {
 			l.add(state);
 		}
 		for (final list in _lists.values) {
-			// Earliest posted first
-			list.sort((a, b) => a.id.compareTo(b.id));
+			if (reverse) {
+				// Latest posted first
+				list.sort((a, b) => b.id.compareTo(a.id));
+			}
+			else {
+				// Earliest posted first
+				list.sort((a, b) => a.id.compareTo(b.id));
+			}
 		}
 		return missing;
 	}
@@ -269,7 +295,7 @@ class _SavedThreadsByThreadPostTimeLoader implements _SavedThreadsLoader {
 		}
 		(PersistentThreadState, Thread)? latestHead;
 		for (final head in heads) {
-			if (latestHead == null || head.$2.time.isAfter(latestHead.$2.time)) {
+			if (latestHead == null || (_reverse ? head.$2.time.isBefore(latestHead.$2.time) : head.$2.time.isAfter(latestHead.$2.time))) {
 				latestHead = head;
 			}
 		}
@@ -570,7 +596,7 @@ class _SavedPageState extends State<SavedPage> {
 							Builder(
 								builder: (context) => CupertinoButton(
 									padding: EdgeInsets.zero,
-									child: const Icon(CupertinoIcons.sort_down),
+									child: Icon(Settings.reverseWatchedThreadsSortingSetting.watch(context) ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
 									onPressed: () => selectWatchedThreadsSortMethod(context, onMutate: _watchedListController.update)
 								)
 							),
@@ -887,16 +913,18 @@ class _SavedPageState extends State<SavedPage> {
 									child: const Icon(CupertinoIcons.delete)
 								)
 							),
-							CupertinoButton(
-								padding: EdgeInsets.zero,
-								child: const Icon(CupertinoIcons.sort_down),
-								onPressed: () async {
-									final before = Settings.instance.savedThreadsSortingMethod;
-									await selectSavedThreadsSortMethod(context);
-									if (Settings.instance.savedThreadsSortingMethod != before) {
-										await _threadListController.update();
+							Builder(
+								builder: (context) => CupertinoButton(
+									padding: EdgeInsets.zero,
+									child: Icon(Settings.reverseSavedThreadsSortingSetting.watch(context) ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
+									onPressed: () async {
+										final before = (Settings.instance.savedThreadsSortingMethod, Settings.instance.reverseSavedThreadsSorting);
+										await selectSavedThreadsSortMethod(context);
+										if ((Settings.instance.savedThreadsSortingMethod, Settings.instance.reverseSavedThreadsSorting) != before) {
+											await _threadListController.update();
+										}
 									}
-								}
+								)
 							)
 						]
 					),
@@ -975,7 +1003,7 @@ class _SavedPageState extends State<SavedPage> {
 									ThreadSortingMethod.threadPostTime => _SavedThreadsByThreadPostTimeLoader(),
 									ThreadSortingMethod other => throw UnsupportedError('Not supported method to sort saved threads: $other')
 								};
-								final missing = await loader.initialize();
+								final missing = await loader.initialize(settings.reverseSavedThreadsSorting);
 								_missingSavedThreads.value = missing;
 								final ret = <(PersistentThreadState, Thread)>[];
 								for (int i = 0; i < _savedThreadsChunkSize; i++) {
@@ -1282,10 +1310,18 @@ class _SavedPageState extends State<SavedPage> {
 									child: const Icon(CupertinoIcons.delete)
 								)
 							),
-							CupertinoButton(
-								padding: EdgeInsets.zero,
-								child: const Icon(CupertinoIcons.sort_down),
-								onPressed: () => selectSavedThreadsSortMethod(context)
+							Builder(
+								builder: (context) => CupertinoButton(
+									padding: EdgeInsets.zero,
+									child: Icon(Settings.reverseSavedThreadsSortingSetting.watch(context) ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
+									onPressed: () async {
+										final before = (Settings.instance.savedThreadsSortingMethod, Settings.instance.reverseSavedThreadsSorting);
+										await selectSavedThreadsSortMethod(context);
+										if ((Settings.instance.savedThreadsSortingMethod, Settings.instance.reverseSavedThreadsSorting) != before) {
+											await _postListController.update();
+										}
+									}
+								)
 							)
 						]
 					),
@@ -1302,6 +1338,8 @@ class _SavedPageState extends State<SavedPage> {
 						)
 					),
 					masterBuilder: (context, selected, setter) {
+						Settings.savedThreadsSortingMethodSetting.watch(context);
+						Settings.reverseSavedThreadsSortingSetting.watch(context);
 						return RefreshableList<ImageboardScoped<(SavedPost, Thread)>>(
 							aboveFooter: ValueListenableBuilder(
 								valueListenable: _missingSavedPostsThreads,

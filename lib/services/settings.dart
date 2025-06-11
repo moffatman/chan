@@ -1245,6 +1245,10 @@ class SavedSettings extends HiveObject {
 	bool showActiveWatchesAboveZombieWatches;
 	@HiveField(204)
 	bool showLineBreak2InPostInfoRow;
+	@HiveField(205)
+	bool reverseSavedThreadsSorting;
+	@HiveField(206)
+	bool reverseWatchedThreadsSorting;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1451,6 +1455,8 @@ class SavedSettings extends HiveObject {
 		bool? separateWiFiAndCellularCookies,
 		bool? showActiveWatchesAboveZombieWatches,
 		bool? showLineBreak2InPostInfoRow,
+		bool? reverseSavedThreadsSorting,
+		bool? reverseWatchedThreadsSorting,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1676,7 +1682,9 @@ class SavedSettings extends HiveObject {
 		showYousInScrollbar = showYousInScrollbar ?? false,
 		separateWiFiAndCellularCookies = separateWiFiAndCellularCookies ?? true,
 		showActiveWatchesAboveZombieWatches = showActiveWatchesAboveZombieWatches ?? true,
-		showLineBreak2InPostInfoRow = showLineBreak2InPostInfoRow ?? false {
+		showLineBreak2InPostInfoRow = showLineBreak2InPostInfoRow ?? false,
+		reverseSavedThreadsSorting = reverseSavedThreadsSorting ?? false,
+		reverseWatchedThreadsSorting = reverseWatchedThreadsSorting ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2965,6 +2973,14 @@ class Settings extends ChangeNotifier {
 
 	static const showActiveWatchesAboveZombieWatchesSetting = SavedSetting(SavedSettingsFields.showActiveWatchesAboveZombieWatches);
 	bool get showActiveWatchesAboveZombieWatches => showActiveWatchesAboveZombieWatchesSetting(this);
+
+	static const reverseSavedThreadsSortingSetting = SavedSetting(SavedSettingsFields.reverseSavedThreadsSorting);
+	bool get reverseSavedThreadsSorting => reverseSavedThreadsSortingSetting(this);
+	set reverseSavedThreadsSorting(bool setting) => reverseSavedThreadsSortingSetting.set(this, setting);
+
+	static const reverseWatchedThreadsSortingSetting = SavedSetting(SavedSettingsFields.reverseWatchedThreadsSorting);
+	bool get reverseWatchedThreadsSorting => reverseWatchedThreadsSortingSetting(this);
+	set reverseWatchedThreadsSorting(bool setting) => reverseWatchedThreadsSortingSetting.set(this, setting);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

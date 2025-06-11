@@ -22,8 +22,17 @@ Future<void> selectWatchedThreadsSortMethod(BuildContext context, {VoidCallback?
 				ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
 				ThreadSortingMethod.threadPostTime: 'Latest thread'
 			}.entries.map((entry) => AdaptiveActionSheetAction(
-				child: Text(entry.value, style: entry.key == Persistence.settings.watchedThreadsSortingMethod ? CommonTextStyles.bold: null),
+				child: Text(
+					'${entry.value}${entry.key == Persistence.settings.watchedThreadsSortingMethod && Persistence.settings.reverseWatchedThreadsSorting ? ' (reversed)' : ''}',
+					style: entry.key == Persistence.settings.watchedThreadsSortingMethod ? CommonTextStyles.bold: null
+				),
 				onPressed: () {
+					if (Settings.watchedThreadsSortingMethodSetting.value == entry.key) {
+						Settings.reverseWatchedThreadsSortingSetting.value = !Settings.reverseWatchedThreadsSortingSetting.value;
+					}
+					else {
+						Settings.reverseWatchedThreadsSortingSetting.value = false;
+					}
 					Settings.watchedThreadsSortingMethodSetting.value = entry.key;
 					Navigator.of(context, rootNavigator: true).pop();
 					onMutate?.call();
@@ -88,6 +97,11 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 			return b.item.watchTime.compareTo(a.item.watchTime);
 		});
 	}
+	if (Persistence.settings.reverseWatchedThreadsSorting) {
+		final list = watches.toList();
+		watches.clear();
+		watches.addAll(list.reversed);
+	}
 	if (Persistence.settings.showActiveWatchesAboveZombieWatches) {
 		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
 			if (a.item.zombie == b.item.zombie) {
@@ -105,22 +119,30 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 
 Comparator<PersistentThreadState> getSavedThreadsSortMethod() {
 	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
-	return switch (Persistence.settings.savedThreadsSortingMethod) {
+	final Comparator<PersistentThreadState> method = switch (Persistence.settings.savedThreadsSortingMethod) {
 		ThreadSortingMethod.alphabeticByTitle => (a, b) => a.thread.compareTo(b.thread),
 		ThreadSortingMethod.lastPostTime => (a, b) => (b.thread?.posts_.last.time.toLocal() ?? noDate).compareTo(a.thread?.posts_.last.time.toLocal() ?? noDate),
 		ThreadSortingMethod.threadPostTime => (a, b) => (b.thread?.time ?? noDate).compareTo(a.thread?.time ?? noDate),
 		ThreadSortingMethod.savedTime || _ => (a, b) => (b.savedTime ?? noDate).compareTo(a.savedTime ?? noDate)
 	};
+	if (Persistence.settings.reverseSavedThreadsSorting) {
+		return (a, b) => method(b, a);
+	}
+	return method;
 }
 
 Comparator<(PersistentThreadState, Thread)> getSavedThreadsSortMethodTuple() {
 	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
-	return switch (Persistence.settings.savedThreadsSortingMethod) {
+	final Comparator<(PersistentThreadState, Thread)> method = switch (Persistence.settings.savedThreadsSortingMethod) {
 		ThreadSortingMethod.alphabeticByTitle => (a, b) => a.$2.compareTo(b.$2),
 		ThreadSortingMethod.lastPostTime => (a, b) => b.$2.posts_.last.time.toLocal().compareTo(a.$2.posts_.last.time.toLocal()),
 		ThreadSortingMethod.threadPostTime => (a, b) => b.$2.time.toLocal().compareTo(a.$2.time.toLocal()),
 		ThreadSortingMethod.savedTime || _ => (a, b) => (b.$1.savedTime ?? noDate).compareTo(a.$1.savedTime ?? noDate)
 	};
+	if (Persistence.settings.reverseSavedThreadsSorting) {
+		return (a, b) => method(b, a);
+	}
+	return method;
 }
 
 Future<void> selectSavedThreadsSortMethod(BuildContext context) => showAdaptiveModalPopup(
@@ -134,8 +156,17 @@ Future<void> selectSavedThreadsSortMethod(BuildContext context) => showAdaptiveM
 			ThreadSortingMethod.alphabeticByTitle: 'Alphabetically',
 			ThreadSortingMethod.threadPostTime: 'Latest thread'
 		}.entries.map((entry) => AdaptiveActionSheetAction(
-			child: Text(entry.value, style: entry.key == Persistence.settings.savedThreadsSortingMethod ? CommonTextStyles.bold : null),
+			child: Text(
+				'${entry.value}${entry.key == Persistence.settings.savedThreadsSortingMethod && Persistence.settings.reverseSavedThreadsSorting ? ' (reversed)' : ''}',
+				style: entry.key == Persistence.settings.savedThreadsSortingMethod ? CommonTextStyles.bold : null
+			),
 			onPressed: () {
+				if (Persistence.settings.savedThreadsSortingMethod == entry.key) {
+					Settings.reverseSavedThreadsSortingSetting.value = !Settings.reverseSavedThreadsSortingSetting.value;
+				}
+				else {
+					Settings.reverseSavedThreadsSortingSetting.value = false;
+				}
 				Settings.savedThreadsSortingMethodSetting.value = entry.key;
 				Navigator.of(context, rootNavigator: true).pop();
 			}
@@ -148,7 +179,7 @@ Future<void> selectSavedThreadsSortMethod(BuildContext context) => showAdaptiveM
 );
 
 Comparator<ImageboardScoped<SavedPost>> getSavedPostsSortMethod() {
-	return switch (Persistence.settings.savedThreadsSortingMethod) {
+	final Comparator<ImageboardScoped<SavedPost>> method = switch (Persistence.settings.savedThreadsSortingMethod) {
 		ThreadSortingMethod.lastPostTime => (a, b) => b.item.post.time.toLocal().compareTo(a.item.post.time.toLocal()),
 		ThreadSortingMethod.threadPostTime => (a, b) {
 						final ta = a.imageboard.persistence.getThreadStateIfExists(a.item.post.threadIdentifier)?.thread;
@@ -157,12 +188,20 @@ Comparator<ImageboardScoped<SavedPost>> getSavedPostsSortMethod() {
 					},
 		ThreadSortingMethod.savedTime || _ => (a, b) => b.item.savedTime.compareTo(a.item.savedTime)
 	};
+	if (Persistence.settings.reverseSavedThreadsSorting) {
+		return (a, b) => method(b, a);
+	}
+	return method;
 }
 
 Comparator<ImageboardScoped<(SavedPost, Thread)>> getSavedPostsSortMethodTuple() {
-	return switch (Persistence.settings.savedThreadsSortingMethod) {
+	final Comparator<ImageboardScoped<(SavedPost, Thread)>> method = switch (Persistence.settings.savedThreadsSortingMethod) {
 		ThreadSortingMethod.lastPostTime => (a, b) => b.item.$1.post.time.toLocal().compareTo(a.item.$1.post.time.toLocal()),
 		ThreadSortingMethod.threadPostTime => (a, b) => b.item.$2.time.toLocal().compareTo(b.item.$2.time.toLocal()),
 		ThreadSortingMethod.savedTime || _ => (a, b) => b.item.$1.savedTime.compareTo(a.item.$1.savedTime)
 	};
+	if (Persistence.settings.reverseSavedThreadsSorting) {
+		return (a, b) => method(b, a);
+	}
+	return method;
 }
