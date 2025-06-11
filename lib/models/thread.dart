@@ -206,19 +206,24 @@ class Thread extends HiveObject implements Filterable {
 				) {
 					anyChanges = true;
 					posts_.removeAt(indexToReplace);
-					posts_.insert(indexToReplace, newChild);
 					newChild.replyIds = postToReplace.replyIds;
 					if (postToReplace.isDeleted && !newChild.isDeleted) {
 						// Restoring from pre-deletion version
-						// Give it an archiveName so it's prioritized in future mergings
-						newChild.archiveName = 'Cached';
-						// But still set isDeleted so it looks visually correct
-						newChild.isDeleted = true;
+						// Make a copy so that filtering WeakMaps will see it as new
+						posts_.insert(indexToReplace, newChild.copyWith(
+							// Give it an archiveName so it's prioritized in future mergings
+							archiveName: const NullWrapper('Cached'),
+							// But still set isDeleted so it looks visually correct
+							isDeleted: true
+						));
 						if (postToReplace.id == id) {
 							// Try to fix up Thread
 							attachments = newChild.attachments_;
 							isDeleted = true;
 						}
+					}
+					else {
+						posts_.insert(indexToReplace, newChild);
 					}
 				}
 				else {

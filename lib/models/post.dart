@@ -259,7 +259,7 @@ class Post implements Filterable {
 	bool hasOmittedReplies;
 	@override
 	@HiveField(21, isOptimized: true, defaultValue: false)
-	bool isDeleted;
+	final bool isDeleted;
 	@HiveField(22, isOptimized: true)
 	int? ipNumber;
 	@HiveField(23, isOptimized: true)
@@ -288,6 +288,7 @@ class Post implements Filterable {
 		this.hasOmittedReplies = false,
 		this.isDeleted = false,
 		this.ipNumber,
+		this.archiveName,
 		this.email
 	}) : board = intern(board), name = intern(name), attachments_ = attachments_.isEmpty ? const [] : List.of(attachments_, growable: false);
 
@@ -437,6 +438,35 @@ class Post implements Filterable {
 			other.archiveName == archiveName &&
 			other.email == email;
 	}
+
+	Post copyWith({
+		bool? isDeleted,
+		/// To clarify whether to override with null or not
+		NullWrapper<String>? archiveName
+	}) => Post(
+		board: board,
+		text: text,
+		name: name,
+		time: time,
+		threadId: threadId,
+		id: id,
+		flag: flag,
+		posterId: posterId,
+		spanFormat: spanFormat,
+		extraMetadata: extraMetadata,
+		attachmentDeleted: attachmentDeleted,
+		trip: trip,
+		passSinceYear: passSinceYear,
+		capcode: capcode,
+		attachments_: attachments_,
+		upvotes: upvotes,
+		parentId: parentId,
+		hasOmittedReplies: hasOmittedReplies,
+		isDeleted: isDeleted ?? this.isDeleted,
+		ipNumber: ipNumber,
+		archiveName: archiveName != null ? archiveName.value : this.archiveName,
+		email: email,
+	).._span = _span..replyIds = replyIds; // [text] hasn't changed
 
 	@override
 	int get hashCode => Object.hash(board, id);

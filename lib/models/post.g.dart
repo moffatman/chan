@@ -153,10 +153,8 @@ class PostFields {
     merger: PrimitiveMerger(),
   );
   static bool getIsDeleted(Post x) => x.isDeleted;
-  static void setIsDeleted(Post x, bool v) => x.isDeleted = v;
-  static const isDeleted = HiveFieldAdapter<Post, bool>(
+  static const isDeleted = ReadOnlyHiveFieldAdapter<Post, bool>(
     getter: getIsDeleted,
-    setter: setIsDeleted,
     fieldNumber: 21,
     fieldName: 'isDeleted',
     merger: PrimitiveMerger(),
@@ -264,8 +262,9 @@ class PostAdapter extends TypeAdapter<Post> {
       hasOmittedReplies: fields[20] == null ? false : fields[20] as bool,
       isDeleted: fields[21] == null ? false : fields[21] as bool,
       ipNumber: fields[22] as int?,
+      archiveName: fields[23] as String?,
       email: fields[24] as String?,
-    )..archiveName = fields[23] as String?;
+    );
   }
 
   @override

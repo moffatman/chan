@@ -1664,7 +1664,10 @@ abstract class ImageboardSiteArchive {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
 	int placeOrphanPost(List<Post> posts, Post post) {
 		final index = posts.indexWhere((p) => p.id > post.id);
-		post.isDeleted = true;
+		// Make a copy so that filtering WeakMaps will see it as new
+		post = post.copyWith(
+			isDeleted: true
+		);
 		if (index == -1) {
 			posts.add(post);
 			return posts.length - 1;
