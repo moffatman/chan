@@ -1806,9 +1806,19 @@ class ThreadPageState extends State<ThreadPage> {
 																					// It was initially not highlighted to avoid whole thread highlighted
 																					_highlightPosts[item.id] == _kHighlightZero &&
 																					// It was collapsed without being seen
+																					persistentState.unseenPostIds.data.contains(item.id) &&
 																					_listController.isItemHidden(item) == TreeItemCollapseType.childCollapsed
 																				) {
 																					_highlightPosts[item.id] = _kHighlightPartial;
+																				}
+																				else if (
+																					// It was highlighted already
+																					(_highlightPosts[item.id] ?? _kHighlightZero) > _kHighlightZero &&
+																					// It was collapsed after being seen
+																					!persistentState.unseenPostIds.data.contains(item.id) &&
+																					_listController.isItemHidden(item) == TreeItemCollapseType.childCollapsed
+																				) {
+																					_highlightPosts.remove(item.id);
 																				}
 																			}
 																		});
