@@ -212,6 +212,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final savedPostsLength = persistentState.thread?.posts_.where((p) => persistence.getSavedPost(p) != null).length ?? 0;
 		final hiddenMD5sLength = Persistence.settings.hiddenImageMD5s.length;
 		final currentSnapshot = _PersistentThreadStateSnapshot.of(persistentState);
+		bool forcePostUpdateCallbacks = false;
 		if (currentSnapshot != _lastPersistentThreadStateSnapshot ||
 				savedPostsLength != lastSavedPostsLength ||
 				hiddenMD5sLength != lastHiddenMD5sLength) {
@@ -223,6 +224,7 @@ class ThreadPageState extends State<ThreadPage> {
 			_listController.state?.forceRebuildId++;
 			await persistentState.thread?.preinit();
 			setState(() {});
+			forcePostUpdateCallbacks = true;
 		}
 		if (persistentState.thread != _lastPersistentThreadStateSnapshot.thread) {
 			final tmpPersistentState = persistentState;
@@ -252,7 +254,9 @@ class ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread != null) {
 			zone.addThread(persistentState.thread!);
 		}
-		Future.microtask(_runPostUpdateCallbacks);
+		if (forcePostUpdateCallbacks || _postUpdateCallbacks.isNotEmpty) {
+			Future.microtask(_runPostUpdateCallbacks);
+		}
 	});
 
 	bool get useTree => persistentState.useTree ?? context.read<Persistence>().browserState.useTree ?? context.read<ImageboardSite>().useTree;
