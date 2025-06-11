@@ -1013,6 +1013,10 @@ enum RefreshableListUpdateSource {
 		RefreshableListUpdateSource.top || RefreshableListUpdateSource.bottom => true,
 		_ => false
 	};
+	bool get automatic => switch (this) {
+		RefreshableListUpdateSource.timer || RefreshableListUpdateSource.animation => true,
+		_ => false
+	};
 }
 
 class RefreshableListUpdateOptions {
@@ -1613,6 +1617,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							source: source,
 							cancelToken: cancelToken
 						)), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
+						if (
+							widget.listExtender != null &&
+							source.automatic &&
+							newList != null &&
+							(originalList?.beginsWith(newList) ?? false)
+						) {
+							// Don't lose extensions from non-interactive update
+							newList = originalList;
+						}
 					}
 				}
 				if (!mounted) return;
