@@ -5,6 +5,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
 class Site8Chan extends SiteLynxchan {
@@ -117,6 +118,17 @@ class Site8Chan extends SiteLynxchan {
 
 	@override
 	bool get supportsPinkQuotes => true;
+
+	@override
+	List<ImageboardSnippet> getBoardSnippets(String board) => const [
+		greentextSnippet,
+		ImageboardSnippet.simple(
+			icon: CupertinoIcons.eye_slash,
+			name: 'Spoiler',
+			start: '[spoiler]',
+			end: '[/spoiler]'
+		)
+	];
 
 	@override
 	bool operator == (Object other) =>
