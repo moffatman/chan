@@ -187,9 +187,13 @@ class ThreadPageState extends State<ThreadPage> {
 	final _threadStateListenableUpdateMutex = Mutex();
 	late final StreamSubscription<Attachment> _cacheSubscription;
 
+	static const _kHighlightZero = 0.0;
+	static const _kHighlightPartial = 0.3;
+	static const _kHighlightFull = 1.0;
+
 	/// Return whether any were removed
 	bool _updateHighlightedPosts({required bool restoring}) {
-		final value = restoring ? 0.3 : 1.0;
+		final value = restoring ? _kHighlightPartial : _kHighlightFull;
 		final lastSeenId = persistentState.lastSeenPostId ?? 0;
 		bool anyRemoved = false;
 		_highlightPosts.removeWhere((id, v) {
@@ -198,7 +202,7 @@ class ThreadPageState extends State<ThreadPage> {
 			return remove;
 		});
 		for (final newId in persistentState.unseenPostIds.data) {
-			_highlightPosts[newId] ??= (newId > lastSeenId) ? 1.0 : value;
+			_highlightPosts[newId] ??= (newId > lastSeenId) ? _kHighlightFull : value;
 		}
 		return anyRemoved;
 	}
@@ -966,7 +970,7 @@ class ThreadPageState extends State<ThreadPage> {
 			final newInsert = zone.findPost(asArchived.id) == null;
 			thread.mergePosts(null, [asArchived], context.read<ImageboardSite>());
 			if (newInsert) {
-				_highlightPosts[asArchived.id] = 1.0;
+				_highlightPosts[asArchived.id] = _kHighlightFull;
 				persistentState.unseenPostIds.data.add(asArchived.id);
 			}
 			zone.addThread(thread);
@@ -1231,7 +1235,7 @@ class ThreadPageState extends State<ThreadPage> {
 		if (firstLoad) {
 			// Don't highlight the first-loaded posts, it looks bad to have everything highlighted
 			for (final id in persistentState.unseenPostIds.data) {
-				_highlightPosts[id] = 0.0;
+				_highlightPosts[id] = _kHighlightZero;
 			}
 		}
 		final anyPostsMarkedSeen = _updateHighlightedPosts(restoring: false);
@@ -1290,7 +1294,7 @@ class ThreadPageState extends State<ThreadPage> {
 		for (final p in newChildren) {
 			if (!p.isPageStub && oldIds[p.id] != p.isStub && !persistentState.youIds.contains(p.id)) {
 				persistentState.unseenPostIds.data.add(p.id);
-				_highlightPosts[p.id] = 1.0;
+				_highlightPosts[p.id] = _kHighlightFull;
 			}
 		}
 		final anyNew = thread.mergePosts(null, newChildren, site);
@@ -1408,7 +1412,7 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	double _shouldHighlightPost(int id) {
-		return _highlightPosts[id] ?? 0;
+		return _highlightPosts[id] ?? _kHighlightZero;
 	}
 
 	@override
@@ -1800,11 +1804,11 @@ class ThreadPageState extends State<ThreadPage> {
 																			for (final item in _listController.items) {
 																				if (
 																					// It was initially not highlighted to avoid whole thread highlighted
-																					_highlightPosts[item.id] == 0 &&
+																					_highlightPosts[item.id] == _kHighlightZero &&
 																					// It was collapsed without being seen
 																					_listController.isItemHidden(item) == TreeItemCollapseType.childCollapsed
 																				) {
-																					_highlightPosts[item.id] = 0.3;
+																					_highlightPosts[item.id] = _kHighlightPartial;
 																				}
 																			}
 																		});
@@ -1987,7 +1991,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				]
 																			);
 																		}
-																		final newCount = collapsedChildIds.where((id) => (_highlightPosts[id] ?? 0) > 0).length;
+																		final newCount = collapsedChildIds.where((id) => (_highlightPosts[id] ?? _kHighlightZero) > _kHighlightZero).length;
 																		final unseenCount = collapsedChildIds.where(persistentState.unseenPostIds.data.contains).length;
 																		final isDeletedStub = value != null && value.isDeleted && value.text.isEmpty && value.attachments.isEmpty;
 																		if (peekContentHeight != null && value != null) {
@@ -2919,7 +2923,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														final highlightPosts = Map.of(widget.highlightPosts);
 														final lastSeenPostId = threadState.lastSeenPostId;
 														for (final id in newlyUnseenPostIds) {
-															widget.highlightPosts[id] = 1.0;
+															widget.highlightPosts[id] = ThreadPageState._kHighlightFull;
 														}
 														threadState.unseenPostIds.data.addAll(newlyUnseenPostIds);
 														threadState.lastSeenPostId = lastVisibleItem.id;
