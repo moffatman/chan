@@ -1561,8 +1561,8 @@ abstract class ImageboardSiteArchive {
 	ImageboardSiteArchive({
 		required this.overrideUserAgent
 	}) {
-		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(CloudflareBlockingInterceptor());
+		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(SeparatedCookieManager());
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {

@@ -3140,6 +3140,7 @@ class Settings extends ChangeNotifier {
 
 	Settings._() {
 		mouseSettings = MouseSettings._(this);
+		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(SeparatedCookieManager());
