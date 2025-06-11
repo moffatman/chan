@@ -1972,7 +1972,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				]
 																			);
 																		}
-																		final newCount = collapsedChildIds.where(_highlightPosts.containsKey).length;
+																		final newCount = collapsedChildIds.where((id) => (_highlightPosts[id] ?? 0) > 0).length;
 																		final unseenCount = collapsedChildIds.where(persistentState.unseenPostIds.data.contains).length;
 																		final isDeletedStub = value != null && value.isDeleted && value.text.isEmpty && value.attachments.isEmpty;
 																		if (peekContentHeight != null && value != null) {
