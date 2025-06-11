@@ -1786,7 +1786,10 @@ class ThreadPageState extends State<ThreadPage> {
 															Visibility.maintain(
 																visible: !blocked,
 																child: RefreshableList<Post>(
-																	filterableAdapter: (t) => (imageboard.key, t),
+																	filterableAdapter: (p) => p.isThread ? switch (persistentState.thread) {
+																		Thread t => (imageboard.key, t),
+																		null => (imageboard.key, p)
+																	} : (imageboard.key, p),
 																	initialFilter: widget.initialSearch,
 																	onFilterChanged: (filter) {
 																		_searching = filter != null;

@@ -1181,7 +1181,7 @@ class _SavedPageState extends State<SavedPage> {
 							),
 							useFiltersFromContext: false,
 							includeImageboardKeyAndBoardInSearchString: true,
-							filterableAdapter: (t) => (t.imageboard.key, t.post),
+							filterableAdapter: (t) => (t.imageboard.key, t.post.isThread ? t.thread : t.post),
 							controller: _yourPostsListController,
 							listUpdater: (options) async {
 								_yourPostsLists = {};
@@ -1365,7 +1365,7 @@ class _SavedPageState extends State<SavedPage> {
 							),
 							useFiltersFromContext: false,
 							includeImageboardKeyAndBoardInSearchString: true,
-							filterableAdapter: (t) => (t.imageboard.key, t.item.$1.post),
+							filterableAdapter: (t) => (t.imageboard.key, t.item.$1.post.isThread ? t.item.$2 : t.item.$1.post),
 							controller: _postListController,
 							listUpdater: (options) async {
 								final savedPosts = ImageboardRegistry.instance.imageboardsIncludingDev.expand((i) => i.persistence.savedPosts.values.map(i.scope)).toList();

@@ -2665,7 +2665,8 @@ TextSpan buildPostInfoRow({
 	bool interactive = true,
 	bool showPostNumber = true,
 	bool forceAbsoluteTime = false,
-	ValueChanged<Attachment>? propagatedOnThumbnailTap
+	ValueChanged<Attachment>? propagatedOnThumbnailTap,
+	RegExp? highlightPattern
 }) {
 	final thread = zone.findThread(post.threadId);
 	final (postIdNonRepeatingSegment, postIdRepeatingSegment) = splitPostId(post.id, site);
@@ -2716,10 +2717,12 @@ TextSpan buildPostInfoRow({
 			),
 			const TextSpan(text: ' '),
 		],
-		if (thisPostIsOP && (thread?.title?.isNotEmpty ?? false)) TextSpan(
-			text: '${(zone.translatedTitle(post.threadId)?.data ?? thread?.title)}\n',
-			style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.titleColor, fontSize: 17)
-		),
+		if (thisPostIsOP && (thread?.title?.isNotEmpty ?? false)) PostTextSpan(
+			'${(zone.translatedTitle(post.threadId)?.data ?? thread?.title)}\n',
+		).build(context, post, zone, settings, theme, PostSpanRenderOptions(
+			baseTextStyle: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.titleColor, fontSize: 17),
+			highlightPattern: highlightPattern
+		)),
 		for (final field in settings.postDisplayFieldOrder)
 			if (thread != null && showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
 				text: post.id == post.threadId ? '#1 ' : '#${_calculatePostNumber(site, thread, post)} ',
