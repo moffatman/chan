@@ -282,16 +282,17 @@ class _SavedThreadsByThreadPostTimeLoader implements _SavedThreadsLoader {
 	Future<(PersistentThreadState, Thread)?> takeSavedThread() async {
 		final heads = <(PersistentThreadState, Thread)>[];
 		for (final entry in _lists.entries) {
-			if (entry.value.isEmpty) {
-				continue;
+			while (entry.value.isNotEmpty) {
+				final state = entry.value.last;
+				final thread = await state.getThread();
+				if (thread == null) {
+					// Something missing. but we don't have to handle it here
+					entry.value.removeLast();
+					continue;
+				}
+				heads.add((state, thread));
+				break;
 			}
-			final state = entry.value.last;
-			final thread = await state.getThread();
-			if (thread == null) {
-				// Something missing. but we don't have to handle it here
-				continue;
-			}
-			heads.add((state, thread));
 		}
 		(PersistentThreadState, Thread)? latestHead;
 		for (final head in heads) {
@@ -373,30 +374,33 @@ class _SavedPageState extends State<SavedPage> {
 	Future<PostThreadCombo?> _takeYourPost() async {
 		final heads = <PostThreadCombo>[];
 		for (final entry in _yourPostsLists.entries) {
-			if (entry.value.isEmpty) {
-				continue;
+			while (entry.value.isNotEmpty) {
+				final last = entry.value.last;
+				final state = entry.key.$1.persistence.getThreadStateIfExists(last.thread);
+				if (state == null) {
+					// Something weird...
+					entry.value.removeLast();
+					continue;
+				}
+				final thread = await state.getThread();
+				if (thread == null) {
+					// Something missing. but we don't have to handle it here
+					entry.value.removeLast();
+					continue;
+				}
+				final post = thread.posts_.tryFirstWhere((p) => p.id == last.postId);
+				if (post == null) {
+					// Weird situation... just skip it
+					entry.value.removeLast();
+					continue;
+				}
+				heads.add(PostThreadCombo(
+					imageboard: entry.key.$1,
+					thread: thread,
+					post: post
+				));
+				break;
 			}
-			final last = entry.value.last;
-			final state = entry.key.$1.persistence.getThreadStateIfExists(last.thread);
-			if (state == null) {
-				// Something weird...
-				continue;
-			}
-			final thread = await state.getThread();
-			if (thread == null) {
-				// Something missing. but we don't have to handle it here
-				continue;
-			}
-			final post = thread.posts_.tryFirstWhere((p) => p.id == last.postId);
-			if (post == null) {
-				// Weird situation... just skip it
-				continue;
-			}
-			heads.add(PostThreadCombo(
-				imageboard: entry.key.$1,
-				thread: thread,
-				post: post
-			));
 		}
 		PostThreadCombo? latestHead;
 		for (final head in heads) {
