@@ -643,6 +643,15 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
+	Future<void> _waitForProperListBuild() async {
+		await _listController.waitForItemBuild(0);
+		await _listController.updatingNow.waitUntil((v) => v == null);
+		if (_listController.itemsLength > 1 && _listController.getItemEndAlignment(0) < 1) {
+			// Wait for new visible items to build
+			await _listController.waitForItemBuild(1);
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -746,10 +755,10 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 		if (Settings.instance.autoCacheAttachments) {
-			_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
+			_waitForProperListBuild().then((_) => _cacheAttachments(automatic: true));
 		}
 		else {
-			_listController.waitForItemBuild(0).then((_) => _updateCached(onscreenOnly: false));
+			_waitForProperListBuild().then((_) => _updateCached(onscreenOnly: false));
 		}
 		_cacheSubscription = AttachmentCache.stream.listen(_onAttachmentCache);
 		_updateHighlightedPosts(restoring: true);
@@ -806,7 +815,7 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			_scrollIfWarranted();
 			if (Settings.instance.autoCacheAttachments) {
-				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
+				_waitForProperListBuild().then((_) => _cacheAttachments(automatic: true));
 			}
 			_highlightPosts.clear();
 			_updateHighlightedPosts(restoring: true);
@@ -1255,12 +1264,12 @@ class ThreadPageState extends State<ThreadPage> {
 		if (shouldScroll) {
 			_scrollIfWarranted(const Duration(milliseconds: 500))
 				.then((_) async {
-					await _listController.waitForItemBuild(0);
+					await _waitForProperListBuild();
 					_runPostUpdateCallbacks();
 				});
 		}
 		else {
-			_listController.waitForItemBuild(0).then((_) => _runPostUpdateCallbacks());
+			_waitForProperListBuild().then((_) => _runPostUpdateCallbacks());
 		}
 		_passedFirstLoad = true;
 		setState(() {});
@@ -1276,6 +1285,7 @@ class ThreadPageState extends State<ThreadPage> {
 		for (final cb in tmp) {
 			cb();
 		}
+		Future.microtask(_onSlowScroll);
 	}
 
 	Future<List<Post>> _updateWithStubItems(List<ParentAndChildIdentifier> ids, {CancelToken? cancelToken}) async {

@@ -4129,6 +4129,19 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		final itemStart = _items[index].cachedOffset ?? viewportStart;
 		return (itemStart - viewportStart) / (scrollController!.position.viewportDimension - ((_items[index].cachedHeight ?? 0) + topOffset + bottomOffset));
 	}
+	double getItemEndAlignment(int index) {
+		if (!scrollControllerPositionLooksGood) {
+			// A guess at alignment
+			return 1;
+		}
+		final viewportStart = scrollController!.position.pixels + topOffset;
+		final viewportEnd = scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset;
+		final itemEnd = switch ((_items[index].cachedOffset, _items[index].cachedHeight)) {
+			(double offset, double height) => offset + height,
+			_ => viewportEnd
+		};
+		return (itemEnd - viewportStart) / (scrollController!.position.viewportDimension - (topOffset + bottomOffset));
+	}
 	({T item, double? alignment})? findItem(bool Function(T val) f) {
 		final index = _items.indexWhere((x) => f(x.item.item));
 		if (index == -1) {
@@ -4206,6 +4219,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			if (_items.isNotEmpty &&
 					_items.first.cachedHeight != null &&
 					_items.first.cachedHeight! > (scrollController!.position.pixels + scrollController!.position.viewportDimension)) {
+				print('dumb return 0');
 				return 0;
 			}
 			final threshold = scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset;
@@ -4214,6 +4228,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				(i.cachedOffset != null) &&
 				i.cachedOffset! < threshold;
 			final range = _lastLaidOutRange;
+			print('range=$range, threshold=$threshold, _items=$_items');
 			if (range != null && range.$2 < _items.length) {
 				for (int i = range.$2; i >= range.$1; i--) {
 					if (test(_items[i])) {
