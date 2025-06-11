@@ -3327,7 +3327,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																				textAlign: TextAlign.center
 																			)
 																		),
-																		Icon(CupertinoIcons.arrow_up, color: theme.backgroundColor, size: 19)
+																		Icon(CupertinoIcons.arrow_up, color: theme.backgroundColor, size: MediaQuery.textScalerOf(context).scale(19))
 																	]
 																)
 															)
