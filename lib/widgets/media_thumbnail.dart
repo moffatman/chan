@@ -1,4 +1,5 @@
 import 'package:chan/services/media.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/thumbnail_image_provider.dart';
 import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
@@ -64,6 +65,12 @@ class _MediaThumbnailState extends State<MediaThumbnail> {
 					final seconds = (scan!.duration?.inSeconds ?? 0) - (minutes * 60);
 					if ((seconds + minutes) > 0) {
 						label = Text('${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}', style: TextStyle(fontSize: widget.fontSize));
+						if (Settings.instance.materialStyle) {
+							label = Material(
+								type: MaterialType.transparency,
+								child: label
+							);
+						}
 					}
 				}
 				final image = Image(
