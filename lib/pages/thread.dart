@@ -1793,6 +1793,21 @@ class ThreadPageState extends State<ThreadPage> {
 																	initialCollapsedItems: persistentState.collapsedItems,
 																	initialPrimarySubtreeParents: persistentState.primarySubtreeParents,
 																	onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {
+																		Future.microtask(() {
+																			if (!mounted) {
+																				return;
+																			}
+																			for (final item in _listController.items) {
+																				if (
+																					// It was initially not highlighted to avoid whole thread highlighted
+																					_highlightPosts[item.id] == 0 &&
+																					// It was collapsed without being seen
+																					_listController.isItemHidden(item) == TreeItemCollapseType.childCollapsed
+																				) {
+																					_highlightPosts[item.id] = 0.3;
+																				}
+																			}
+																		});
 																		persistentState.collapsedItems = newCollapsedItems.toList();
 																		persistentState.primarySubtreeParents = newPrimarySubtreeParents;
 																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
