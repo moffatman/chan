@@ -312,7 +312,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'search_del': 'no',
 				if (query.subject != null) 'search_subject': query.subject,
 				if (query.name != null) 'search_username': query.name,
-				if (query.trip != null) 'search_tripcode': query.trip
+				if (query.trip != null) 'search_tripcode': query.trip,
+				if (query.md5 != null) 'search_media_hash': query.md5
 		}), options: Options(
 			responseType: ResponseType.plain,
 			extra: {
