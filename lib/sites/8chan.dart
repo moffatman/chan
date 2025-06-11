@@ -116,6 +116,9 @@ class Site8Chan extends SiteLynxchan {
 	String get siteData => baseUrl;
 
 	@override
+	bool get supportsPinkQuotes => true;
+
+	@override
 	bool operator == (Object other) =>
 		identical(other, this) ||
 		other is Site8Chan &&
