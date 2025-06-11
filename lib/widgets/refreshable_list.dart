@@ -4219,7 +4219,6 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			if (_items.isNotEmpty &&
 					_items.first.cachedHeight != null &&
 					_items.first.cachedHeight! > (scrollController!.position.pixels + scrollController!.position.viewportDimension)) {
-				print('dumb return 0');
 				return 0;
 			}
 			final threshold = scrollController!.position.pixels + scrollController!.position.viewportDimension - bottomOffset;
@@ -4228,7 +4227,6 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				(i.cachedOffset != null) &&
 				i.cachedOffset! < threshold;
 			final range = _lastLaidOutRange;
-			print('range=$range, threshold=$threshold, _items=$_items');
 			if (range != null && range.$2 < _items.length) {
 				for (int i = range.$2; i >= range.$1; i--) {
 					if (test(_items[i])) {
