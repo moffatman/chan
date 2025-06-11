@@ -188,7 +188,7 @@ class ThreadPageState extends State<ThreadPage> {
 	late final StreamSubscription<Attachment> _cacheSubscription;
 
 	static const _kHighlightZero = 0.0;
-	static const _kHighlightPartial = 0.3;
+	static const _kHighlightPartial = 0.35;
 	static const _kHighlightFull = 1.0;
 
 	/// Return whether any were removed
