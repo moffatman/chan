@@ -1822,12 +1822,13 @@ extension ProtectedAccess on ScrollController {
 	bool get activityIsDriven => tryPosition?.activity is DrivenScrollActivity;
 }
 
-Future<bool> confirm(BuildContext context, String message, {String actionName = 'OK'}) async {
+Future<bool> confirm(BuildContext context, String message, {String actionName = 'OK', String? content}) async {
 	return (await showAdaptiveDialog<bool>(
 		context: context,
 		barrierDismissible: true,
 		builder: (context) => AdaptiveAlertDialog(
 			title: Text(message),
+			content: content != null ? Text(content) : null,
 			actions: [
 				AdaptiveDialogAction(
 					isDefaultAction: true,

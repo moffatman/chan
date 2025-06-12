@@ -527,6 +527,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	Future<void> _downloadAll({bool saveAs = false}) async {
 		final List<TaggedAttachment> toDownload;
 		final String? dir;
+		bool force = false;
 		if (saveAs) {
 			dir = await pickDirectory();
 			if (!mounted || dir == null) {
@@ -537,30 +538,30 @@ class _GalleryPageState extends State<GalleryPage> {
 		else {
 			dir = null;
 			toDownload = widget.attachments.where((a) => !_getController(a).isDownloaded).toList();
+			if (toDownload.isEmpty) {
+				force = await confirm(
+					context,
+					widget.attachments.length == 1
+							? 'Redownload?'
+							: 'Redownload all?',
+					content:
+						widget.attachments.length == 1
+							? 'The attachment has already been saved'
+							: 'All ${toDownload.length} attachments have already been saved'
+				);
+				if (!mounted || !force) {
+					return;
+				}
+				toDownload.addAll(widget.attachments);
+			}
 		}
-		final shouldDownload = await showAdaptiveDialog<bool>(
-			context: context,
-			barrierDismissible: true,
-			builder: (context) => AdaptiveAlertDialog(
-				title: const Text('Download all?'),
-				content: Text("${describeCount(toDownload.length, 'attachment')} will be saved to ${dir ?? 'your library'}"),
-				actions: [
-					AdaptiveDialogAction(
-						isDefaultAction: true,
-						child: const Text('Download'),
-						onPressed: () {
-							Navigator.of(context).pop(true);
-						},
-					),
-					AdaptiveDialogAction(
-						child: const Text('Cancel'),
-						onPressed: () {
-							Navigator.of(context).pop(false);
-						}
-					)
-				]
-			)
-		) ?? false;
+		final shouldDownload = force || await confirm(
+			context,
+			widget.attachments.length == 1
+					? 'Download?' : 'Download all?',
+			content: '${describeCount(toDownload.length, 'attachment')} will be saved to ${dir ?? 'your library'}',
+			actionName: 'Download'
+		);
 		if (!mounted || !shouldDownload) {
 			return;
 		}
@@ -571,7 +572,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				if (controller.cancelToken.isCancelled) return failed;
 				try {
 					await _getController(attachment).preloadFullAttachment();
-					await _getController(attachment).download(dir: dir);
+					await _getController(attachment).download(dir: dir, force: force);
 					downloaded++;
 				}
 				catch (e, st) {
