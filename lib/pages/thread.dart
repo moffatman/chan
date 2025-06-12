@@ -1938,7 +1938,7 @@ class ThreadPageState extends State<ThreadPage> {
 																		return (await _getUpdatedThread(options.cancelToken)).posts;
 																	},
 																	controller: _listController,
-																	itemBuilder: (context, post) {
+																	itemBuilder: (context, post, options) {
 																		return AnimatedBuilder(
 																			animation: _glowingPostsAnimation,
 																			builder: (context, child) {
@@ -1964,32 +1964,19 @@ class ThreadPageState extends State<ThreadPage> {
 																						imageboard: imageboard
 																					));
 																				},
+																				hideThumbnails: options.hideThumbnails,
+																				baseOptions: PostSpanRenderOptions(
+																					highlightPattern: options.queryPattern
+																				),
 																				highlight: _shouldHighlightPost(post.id),
+																				onTap: options.queryPattern != null ? () async {
+																					_listController.closeSearch();
+																					await Future.delayed(const Duration(milliseconds: 250));
+																					await _listController.animateTo((val) => val.id == post.id);
+																					await _glowPost(post.id);
+																				} : null,
 																				onDoubleTap: _makeOnDoubleTap(post.id)
 																			)
-																		);
-																	},
-																	filteredItemBuilder: (context, post, resetPage, filterPattern) {
-																		return PostRow(
-																			post: post,
-																			onThumbnailTap: (attachment) {
-																				_showGallery(initialAttachment: TaggedAttachment(
-																					attachment: attachment,
-																					semanticParentIds: context.read<PostSpanZoneData>().stackIds,
-																					imageboard: imageboard
-																				));
-																			},
-																			onTap: () async {
-																				resetPage();
-																				await Future.delayed(const Duration(milliseconds: 250));
-																				await _listController.animateTo((val) => val.id == post.id);
-																				await _glowPost(post.id);
-																			},
-																			baseOptions: PostSpanRenderOptions(
-																				highlightPattern: filterPattern
-																			),
-																			highlight: _shouldHighlightPost(post.id),
-																			onDoubleTap: _makeOnDoubleTap(post.id)
 																		);
 																	},
 																	collapsedItemBuilder: ({

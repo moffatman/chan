@@ -460,7 +460,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	@override
 	Widget build(BuildContext context) {
 		final queryPattern = RegExp(RegExp.escape(_query), caseSensitive: false);
-		Widget itemBuilder(BuildContext context, ImageboardScoped<HistorySearchResult> row, {RegExp? highlight}) {
+		Widget itemBuilder(BuildContext context, ImageboardScoped<HistorySearchResult> row, RefreshableListItemOptions options) {
 		if (row.item.post != null) {
 			return ImageboardScope(
 				imageboardKey: null,
@@ -514,8 +514,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 							row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
 							widget.onResultSelected(row.imageboard.scope(row.item.identifier));
 						},
+						hideThumbnails: options.hideThumbnails,
 						baseOptions: PostSpanRenderOptions(
-							highlightPattern: highlight ?? (_query.isEmpty ? null : queryPattern)
+							highlightPattern: options.queryPattern ?? (_query.isEmpty ? null : queryPattern)
 						),
 					)
 				)
@@ -560,6 +561,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 							isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
 							showBoardName: true,
 							showSiteIcon: ImageboardRegistry.instance.count > 1,
+							hideThumbnails: options.hideThumbnails,
 							baseOptions: PostSpanRenderOptions(
 								highlightPattern: _query.isEmpty ? null : queryPattern
 							),
@@ -672,8 +674,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					filterableAdapter: (i) => (i.imageboard.key, (i.item.post?.isThread ?? false) ? i.item.thread : (i.item.post ?? i.item.thread)),
 					initialList: results,
 					disableUpdates: true,
-					itemBuilder: itemBuilder,
-					filteredItemBuilder: (context, row, resetPage, filter) => itemBuilder(context, row, highlight: filter),
+					itemBuilder: itemBuilder
 				)
 			)
 		);

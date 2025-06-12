@@ -367,6 +367,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool collapse = filter.outputType.collapse;
 			bool hideReplies = filter.outputType.hideReplies;
 			bool hideReplyChains = filter.outputType.hideReplyChains;
+			bool hideThumbnails = filter.outputType.hideThumbnails;
 			const labelStyle = CommonTextStyles.bold;
 			return showAdaptiveModalPopup<(bool, CustomFilter?)>(
 				context: context,
@@ -812,6 +813,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														hideReplies = false;
 													}
 												}),
+												('Hide thumbnails', hideThumbnails, (v) => hideThumbnails = v)
 											].map((t) => AdaptiveListTile(
 												title: Text(t.$1),
 												trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
@@ -917,7 +919,8 @@ class _FilterEditorState extends State<FilterEditor> {
 											autoSave: autoSave,
 											autoWatch: autoWatch,
 											notify: notify,
-											collapse: collapse
+											collapse: collapse,
+											hideThumbnails: hideThumbnails
 										),
 										label: labelController.text
 									)));
@@ -979,6 +982,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'`;collapse` Automatically collapse matching posts in tree mode\n'
 													'`;hideReplies` Hide replies to matching posts too\n'
 													'`;hideReplyChains` Hide replies and their replies (...) to matching posts too\n'
+													'`;hideThumbnails` Hide image and video thumbnails\n'
 													'`;show` Show matches (use it to override later filters)\n'
 													'`;file:only` Only apply to posts with files\n'
 													'`;file:no` Only apply to posts without files\n'
@@ -1080,6 +1084,9 @@ class _FilterEditorState extends State<FilterEditor> {
 							if (filter.value.outputType.hideReplyChains) ...[
 								const Icon(CupertinoIcons.reply_all),
 								const Icon(CupertinoIcons.repeat)
+							],
+							if (filter.value.outputType.hideThumbnails) ...[
+								const Icon(CupertinoIcons.photo)
 							]
 						];
 						return AdaptiveListTile(

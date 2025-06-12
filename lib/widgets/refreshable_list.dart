@@ -333,6 +333,7 @@ class _TreeNode<T extends Object> {
 
 class RefreshableListItem<T extends Object> {
 	T item;
+	RefreshableListItemOptions options;
 	final bool representsUnknownStubChildren;
 	final List<ParentAndChildIdentifier> representsKnownStubChildren;
 	final List<int> representsUnloadedPages;
@@ -349,6 +350,7 @@ class RefreshableListItem<T extends Object> {
 
 	RefreshableListItem({
 		required this.item,
+		required this.options,
 		required RefreshableListState state,
 		this.highlighted = false,
 		this.pinned = false,
@@ -390,6 +392,7 @@ class RefreshableListItem<T extends Object> {
 		identical(this, other) ||
 		(other is RefreshableListItem<T>) &&
 		(other.item == item) &&
+		(other.options == options) &&
 		(other.id == id) &&
 		(other.representsUnknownStubChildren == representsUnknownStubChildren) &&
 		listEquals(other.representsKnownStubChildren, representsKnownStubChildren) &&
@@ -404,7 +407,7 @@ class RefreshableListItem<T extends Object> {
 		(other._state == _state);
 
 	@override
-	int get hashCode => Object.hash(item, representsUnknownStubChildren, representsKnownStubChildren.length, representsUnloadedPages.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth, _state);
+	int get hashCode => Object.hash(item, options, representsUnknownStubChildren, representsKnownStubChildren.length, representsUnloadedPages.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth, _state);
 
 	RefreshableListItem<T> copyWith({
 		List<int>? parentIds,
@@ -413,6 +416,7 @@ class RefreshableListItem<T extends Object> {
 		int? depth,
 	}) => RefreshableListItem(
 		item: item,
+		options: options,
 		id: id,
 		highlighted: highlighted,
 		pinned: pinned,
@@ -1057,8 +1061,31 @@ typedef _Tree<T extends Object> = ({
 	Set<int> automaticallyTopLevelCollapsed
 });
 
+class RefreshableListItemOptions {
+	final bool hideThumbnails;
+	final RegExp? queryPattern;
+
+	const RefreshableListItemOptions({
+		this.hideThumbnails = false,
+		this.queryPattern
+	});
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is RefreshableListItemOptions &&
+		other.hideThumbnails == hideThumbnails &&
+		other.queryPattern == queryPattern;
+	
+	@override
+	int get hashCode => Object.hash(hideThumbnails, queryPattern);
+
+	@override
+	String toString() => 'RefreshableListItemOptions(hideThumbnails: $hideThumbnails, queryPattern: $queryPattern)';
+}
+
 class RefreshableList<T extends Object> extends StatefulWidget {
-	final Widget Function(BuildContext context, T value) itemBuilder;
+	final Widget Function(BuildContext context, T value, RefreshableListItemOptions options) itemBuilder;
 	final Widget Function({
 		required BuildContext context,
 		required T? value,
@@ -1075,7 +1102,6 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final String rebuildId;
 	final RefreshableListController<T>? controller;
 	final String? filterHint;
-	final Widget Function(BuildContext context, T value, VoidCallback resetPage, RegExp filterPattern)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
 	final Map<Type, (String, Future<void> Function())> remedies;
 	final bool disableUpdates;
@@ -1120,7 +1146,6 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.rebuildId = '',
 		this.controller,
 		this.filterHint,
-		this.filteredItemBuilder,
 		this.autoUpdateDuration,
 		this.remedies = const {},
 		this.initialList,
@@ -1773,7 +1798,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return range != null && itemIndex < range.$2 && itemIndex > range.$1;
 	}
 
-	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy, RegExp? filterPattern) {
+	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy) {
 		if (widget.staggeredGridDelegate != null) {
 			// It can't be done, layout breaks down
 			dummy = false;
@@ -1826,236 +1851,240 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (widget.treeAdapter != null && (useTree || value.representsStubChildren || value.representsUnloadedPages.isNotEmpty) && !isHidden.isHidden) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems<T>, CancelToken?>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
-		if (filterPattern != null && widget.filteredItemBuilder != null) {
-			child = value.representsStubChildren ? const SizedBox.shrink() : Builder(
-				builder: (context) => widget.filteredItemBuilder!(context, value.item, closeSearch, filterPattern)
+		if (value.representsUnloadedPages.isNotEmpty) {
+			final grey = Settings.instance.theme.primaryColorWithBrightness(0.5);
+			final single = value.representsUnloadedPages.trySingle;
+			if (single != null) {
+				child = CupertinoButton(
+					padding: const EdgeInsets.all(8),
+					onPressed: () => _loadPage(value, value.representsUnloadedPages.first),
+					child: Row(
+						mainAxisAlignment: MainAxisAlignment.center,
+						children: [
+							const Icon(CupertinoIcons.doc),
+							const SizedBox(width: 8),
+							Flexible(
+								child: Text(
+									'Page ${value.representsUnloadedPages.first.abs()}',
+									textAlign: TextAlign.center
+								)
+							),
+							const SizedBox(width: 8),
+							const Icon(CupertinoIcons.arrow_up_down)
+						]
+					)
+				);
+			}
+			else {
+				child = CupertinoButton(
+					padding: const EdgeInsets.all(8),
+					onPressed: () async {
+						if (value.representsUnloadedPages.length == 3) {
+							_loadPage(value, value.representsUnloadedPages[1]);
+						}
+						final page = await showAdaptiveDialog<int>(
+							context: context,
+							barrierDismissible: true,
+							builder: (context) => AdaptiveAlertDialog(
+								title: const Text('Select Page'),
+								content: SizedBox(
+									height: 300,
+									child: ListView.separated(
+										itemCount: value.representsUnloadedPages.length,
+										itemBuilder: (context, i) {
+											final page = value.representsUnloadedPages[i];
+											return CupertinoButton(
+												padding: const EdgeInsets.all(4),
+												child: Text('Load Page ${-page}'),
+												onPressed: () => Navigator.pop(context, page)
+											);
+										},
+										separatorBuilder: (context, i) => const ChanceDivider(),
+									)
+								),
+								actions: [
+									AdaptiveDialogAction(
+										onPressed: () => Navigator.pop(context),
+										child: const Text('Cancel')
+									)
+								]
+							)
+						);
+						if (page != null) {
+							_loadPage(value, page);
+						}
+					},
+					child: Row(
+						mainAxisAlignment: MainAxisAlignment.center,
+						children: [
+							Icon(CupertinoIcons.doc, color: grey),
+							const SizedBox(width: 8),
+							Flexible(
+								child: Text(
+									'Pages ${value.representsUnloadedPages[0].abs()}-${value.representsUnloadedPages[value.representsUnloadedPages.length - 1].abs()}',
+									textAlign: TextAlign.center,
+									style: TextStyle(
+										color: grey
+									)
+								)
+							),
+							const SizedBox(width: 8),
+							Icon(CupertinoIcons.arrow_up_down, color: grey)
+						]
+					)
+				);
+			}
+			child = Stack(
+				children: [
+					if (loadingOmittedItems != null) const LinearProgressIndicator(),
+					child
+				]
 			);
-			if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
-				child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
+		}
+		else if (value.representsStubChildren) {
+			child = widget.collapsedItemBuilder?.call(
+				context: context,
+				value: null,
+				collapsedChildIds: value.representsKnownStubChildren.map((x) => x.childId).toSet(),
+				loading: loadingOmittedItems != null,
+				peekContentHeight: null,
+				stubChildIds: value.representsKnownStubChildren,
+				alreadyDim: false
+			) ?? Container(
+				height: 30,
+				alignment: Alignment.center,
+				child: Text('${value.representsKnownStubChildren.length} more replies...')
+			);
+		}
+		else if (isHidden != TreeItemCollapseType.mutuallyChildCollapsed) {
+			child = Builder(
+				builder: (context) => widget.itemBuilder(context, value.item, value.options)
+			);
+			collapsed = widget.collapsedItemBuilder?.call(
+				context: context,
+				value: value.item,
+				collapsedChildIds: value.treeDescendantIds,
+				loading: loadingOmittedItems != null,
+				peekContentHeight: (widget.treeAdapter?.collapsedItemsShowBody ?? false) ? double.infinity : null,
+				stubChildIds: null,
+				alreadyDim: value.filterCollapsed
+			);
+			if (value.filterCollapsed && collapsed != null) {
+				collapsed = Opacity(
+					opacity: 0.5,
+					child: collapsed
+				);
 			}
 		}
 		else {
-			if (value.representsUnloadedPages.isNotEmpty) {
-				final grey = Settings.instance.theme.primaryColorWithBrightness(0.5);
-				final single = value.representsUnloadedPages.trySingle;
-				if (single != null) {
-					child = CupertinoButton(
-						padding: const EdgeInsets.all(8),
-						onPressed: () => _loadPage(value, value.representsUnloadedPages.first),
-						child: Row(
-							mainAxisAlignment: MainAxisAlignment.center,
-							children: [
-								const Icon(CupertinoIcons.doc),
-								const SizedBox(width: 8),
-								Flexible(
-									child: Text(
-										'Page ${value.representsUnloadedPages.first.abs()}',
-										textAlign: TextAlign.center
-									)
-								),
-								const SizedBox(width: 8),
-								const Icon(CupertinoIcons.arrow_up_down)
-							]
-						)
-					);
+			child = const SizedBox(width: double.infinity);
+		}
+		if (widget.treeAdapter != null && useTree) {
+			if (isHidden.isHidden) {
+				// Avoid possible heavy build+layout cost for hidden items
+				child = const SizedBox(width: double.infinity);
+			}
+			else if (isHidden == TreeItemCollapseType.mutuallyCollapsed ||
+								isHidden == TreeItemCollapseType.topLevelCollapsed ||
+								isHidden == TreeItemCollapseType.parentOfNewInsert) {
+				final Set<int> collapsedChildIds;
+				if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
+					collapsedChildIds = _refreshableTreeItems.newlyInsertedItems.entries.where((e) {
+						if (e.key.length < (value.parentIds.length + 2)) {
+							return false;
+						}
+						for (int i = 0; i < value.parentIds.length; i++) {
+							if (e.key[i] != value.parentIds[i]) {
+								return false;
+							}
+						}
+						return e.key[value.parentIds.length] == value.id;
+					}).map((x) => x.key.last).toSet();
 				}
 				else {
-					child = CupertinoButton(
-						padding: const EdgeInsets.all(8),
-						onPressed: () async {
-							if (value.representsUnloadedPages.length == 3) {
-								_loadPage(value, value.representsUnloadedPages[1]);
-							}
-							final page = await showAdaptiveDialog<int>(
-								context: context,
-								barrierDismissible: true,
-								builder: (context) => AdaptiveAlertDialog(
-									title: const Text('Select Page'),
-									content: SizedBox(
-										height: 300,
-										child: ListView.separated(
-											itemCount: value.representsUnloadedPages.length,
-											itemBuilder: (context, i) {
-												final page = value.representsUnloadedPages[i];
-												return CupertinoButton(
-													padding: const EdgeInsets.all(4),
-													child: Text('Load Page ${-page}'),
-													onPressed: () => Navigator.pop(context, page)
-												);
-											},
-											separatorBuilder: (context, i) => const ChanceDivider(),
-										)
-									),
-									actions: [
-										AdaptiveDialogAction(
-											onPressed: () => Navigator.pop(context),
-											child: const Text('Cancel')
-										)
-									]
-								)
-							);
-							if (page != null) {
-								_loadPage(value, page);
-							}
-						},
-						child: Row(
-							mainAxisAlignment: MainAxisAlignment.center,
-							children: [
-								Icon(CupertinoIcons.doc, color: grey),
-								const SizedBox(width: 8),
-								Flexible(
-									child: Text(
-										'Pages ${value.representsUnloadedPages[0].abs()}-${value.representsUnloadedPages[value.representsUnloadedPages.length - 1].abs()}',
-										textAlign: TextAlign.center,
-										style: TextStyle(
-											color: grey
-										)
-									)
-								),
-								const SizedBox(width: 8),
-								Icon(CupertinoIcons.arrow_up_down, color: grey)
-							]
-						)
-					);
+					collapsedChildIds = value.treeDescendantIds;
 				}
-				child = Stack(
+				child = widget.collapsedItemBuilder?.call(
+					context: context,
+					value: value.item,
+					collapsedChildIds: collapsedChildIds,
+					loading: loadingOmittedItems != null,
+					peekContentHeight: isHidden == TreeItemCollapseType.mutuallyCollapsed ? 90 : double.infinity,
+					stubChildIds: null,
+					alreadyDim: false
+				) ?? Stack(
+					alignment: Alignment.bottomRight,
 					children: [
-						if (loadingOmittedItems != null) const LinearProgressIndicator(),
-						child
+						child,
+						CupertinoButton(
+							padding: EdgeInsets.zero,
+							onPressed: isHidden != TreeItemCollapseType.parentOfNewInsert ? null : () {
+								_refreshableTreeItems.revealNewInsertsBelow(value);
+							},
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									const Icon(CupertinoIcons.chevron_down, size: 20),
+									Text(collapsedChildIds.toString())
+								]
+							)
+						)
 					]
 				);
 			}
-			else if (value.representsStubChildren) {
-				child = widget.collapsedItemBuilder?.call(
-					context: context,
-					value: null,
-					collapsedChildIds: value.representsKnownStubChildren.map((x) => x.childId).toSet(),
-					loading: loadingOmittedItems != null,
-					peekContentHeight: null,
-					stubChildIds: value.representsKnownStubChildren,
-					alreadyDim: false
-				) ?? Container(
-					height: 30,
-					alignment: Alignment.center,
-					child: Text('${value.representsKnownStubChildren.length} more replies...')
-				);
-			}
-			else if (isHidden != TreeItemCollapseType.mutuallyChildCollapsed) {
-				child = Builder(
-					builder: (context) => widget.itemBuilder(context, value.item)
-				);
-				collapsed = widget.collapsedItemBuilder?.call(
-					context: context,
-					value: value.item,
-					collapsedChildIds: value.treeDescendantIds,
-					loading: loadingOmittedItems != null,
-					peekContentHeight: (widget.treeAdapter?.collapsedItemsShowBody ?? false) ? double.infinity : null,
-					stubChildIds: null,
-					alreadyDim: value.filterCollapsed
-				);
-				if (value.filterCollapsed && collapsed != null) {
-					collapsed = Opacity(
-						opacity: 0.5,
-						child: collapsed
-					);
-				}
-			}
 			else {
-				child = const SizedBox(width: double.infinity);
+				child = AnimatedCrossFade(
+					key: ValueKey(value._key),
+					duration: _treeAnimationDuration,
+					sizeCurve: Curves.ease,
+					firstCurve: Curves.ease,
+					//secondCurve: Curves.ease,
+					firstChild: child,
+					secondChild: (!isHidden.isHidden && !value.representsStubChildren) ? (collapsed ?? const SizedBox(
+						height: 30,
+						width: double.infinity,
+						child: Text('Something hidden')
+					)) : const SizedBox(
+						height: 0,
+						width: double.infinity
+					),
+					crossFadeState: isHidden == null ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+				);
 			}
-			if (widget.treeAdapter != null && useTree) {
-				if (isHidden.isHidden) {
-					// Avoid possible heavy build+layout cost for hidden items
-					child = const SizedBox(width: double.infinity);
-				}
-				else if (isHidden == TreeItemCollapseType.mutuallyCollapsed ||
-				         isHidden == TreeItemCollapseType.topLevelCollapsed ||
-								 isHidden == TreeItemCollapseType.parentOfNewInsert) {
-					final Set<int> collapsedChildIds;
-					if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
-						collapsedChildIds = _refreshableTreeItems.newlyInsertedItems.entries.where((e) {
-							if (e.key.length < (value.parentIds.length + 2)) {
-								return false;
+			if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
+				child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
+			}
+			if (isHidden != TreeItemCollapseType.mutuallyChildCollapsed) {
+				child = AnimatedSize(
+					duration: _treeAnimationDuration,
+					alignment: Alignment.topCenter,
+					curve: Curves.ease,
+					child: child
+				);
+				child = DefaultGestureDetector(
+					behavior: HitTestBehavior.translucent,
+					onTap: loadingOmittedItems?.cancel ?? () async {
+						if (!value.representsStubChildren) {
+							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
+								context.read<_RefreshableTreeItems<T>>().swapSubtreeTo(value);
+								Future.delayed(_treeAnimationDuration, () => controller._alignToItemIfPartiallyAboveFold(value));
 							}
-							for (int i = 0; i < value.parentIds.length; i++) {
-								if (e.key[i] != value.parentIds[i]) {
-									return false;
+							else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
+								context.read<_RefreshableTreeItems<T>>().revealNewInsertsBelow(value);
+								// At the same time, trigger any loading
+								final stubParent = controller.items.tryFirstWhere((otherItem) {
+									return otherItem.item == value.item &&
+											otherItem.id == value.id &&
+											otherItem.parentIds == value.parentIds &&
+											otherItem.representsStubChildren;
+								});
+								if (stubParent != null) {
+									_loadOmittedItems(stubParent);
 								}
 							}
-							return e.key[value.parentIds.length] == value.id;
-						}).map((x) => x.key.last).toSet();
-					}
-					else {
-						collapsedChildIds = value.treeDescendantIds;
-					}
-					child = widget.collapsedItemBuilder?.call(
-						context: context,
-						value: value.item,
-						collapsedChildIds: collapsedChildIds,
-						loading: loadingOmittedItems != null,
-						peekContentHeight: isHidden == TreeItemCollapseType.mutuallyCollapsed ? 90 : double.infinity,
-						stubChildIds: null,
-						alreadyDim: false
-					) ?? Stack(
-						alignment: Alignment.bottomRight,
-						children: [
-							child,
-							CupertinoButton(
-								padding: EdgeInsets.zero,
-								onPressed: isHidden != TreeItemCollapseType.parentOfNewInsert ? null : () {
-									_refreshableTreeItems.revealNewInsertsBelow(value);
-								},
-								child: Row(
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										const Icon(CupertinoIcons.chevron_down, size: 20),
-										Text(collapsedChildIds.toString())
-									]
-								)
-							)
-						]
-					);
-				}
-				else {
-					child = AnimatedCrossFade(
-						key: ValueKey(value._key),
-						duration: _treeAnimationDuration,
-						sizeCurve: Curves.ease,
-						firstCurve: Curves.ease,
-						//secondCurve: Curves.ease,
-						firstChild: child,
-						secondChild: (!isHidden.isHidden && !value.representsStubChildren) ? (collapsed ?? const SizedBox(
-							height: 30,
-							width: double.infinity,
-							child: Text('Something hidden')
-						)) : const SizedBox(
-							height: 0,
-							width: double.infinity
-						),
-						crossFadeState: isHidden == null ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-					);
-				}
-				if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
-					child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
-				}
-				if (isHidden != TreeItemCollapseType.mutuallyChildCollapsed) {
-					child = AnimatedSize(
-						duration: _treeAnimationDuration,
-						alignment: Alignment.topCenter,
-						curve: Curves.ease,
-						child: child
-					);
-					child = DefaultGestureDetector(
-						behavior: HitTestBehavior.translucent,
-						onTap: loadingOmittedItems?.cancel ?? () async {
-							if (!value.representsStubChildren) {
-								if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
-									context.read<_RefreshableTreeItems<T>>().swapSubtreeTo(value);
-									Future.delayed(_treeAnimationDuration, () => controller._alignToItemIfPartiallyAboveFold(value));
-								}
-								else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
-									context.read<_RefreshableTreeItems<T>>().revealNewInsertsBelow(value);
-									// At the same time, trigger any loading
+							else if (isHidden != null) {
+								context.read<_RefreshableTreeItems<T>>().unhideItem(value);
+								if (isHidden == TreeItemCollapseType.topLevelCollapsed) {
 									final stubParent = controller.items.tryFirstWhere((otherItem) {
 										return otherItem.item == value.item &&
 												otherItem.id == value.id &&
@@ -2066,40 +2095,26 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 										_loadOmittedItems(stubParent);
 									}
 								}
-								else if (isHidden != null) {
-									context.read<_RefreshableTreeItems<T>>().unhideItem(value);
-									if (isHidden == TreeItemCollapseType.topLevelCollapsed) {
-										final stubParent = controller.items.tryFirstWhere((otherItem) {
-											return otherItem.item == value.item &&
-													otherItem.id == value.id &&
-													otherItem.parentIds == value.parentIds &&
-													otherItem.representsStubChildren;
-										});
-										if (stubParent != null) {
-											_loadOmittedItems(stubParent);
-										}
-									}
-								}
-								else if (value.treeDescendantIds.isNotEmpty || !(widget.treeAdapter?.collapsedItemsShowBody ?? false)) {
-									context.read<_RefreshableTreeItems<T>>().hideItem(value);
-									controller._alignToItemIfPartiallyAboveFold(value);
-								}
 							}
-							else {
-								_loadOmittedItems(value);
+							else if (value.treeDescendantIds.isNotEmpty || !(widget.treeAdapter?.collapsedItemsShowBody ?? false)) {
+								context.read<_RefreshableTreeItems<T>>().hideItem(value);
+								controller._alignToItemIfPartiallyAboveFold(value);
 							}
-						},
-						child: child
-					);
-				}
-			}
-			else if (widget.treeAdapter != null && value.representsStubChildren) {
-				child = GestureDetector(
-					behavior: HitTestBehavior.translucent,
-					onTap: loadingOmittedItems?.cancel ?? () => _loadOmittedItems(value),
+						}
+						else {
+							_loadOmittedItems(value);
+						}
+					},
 					child: child
 				);
 			}
+		}
+		else if (widget.treeAdapter != null && value.representsStubChildren) {
+			child = GestureDetector(
+				behavior: HitTestBehavior.translucent,
+				onTap: loadingOmittedItems?.cancel ?? () => _loadOmittedItems(value),
+				child: child
+			);
 		}
 		if (value.highlighted) {
 			child = ClipRect(
@@ -2154,6 +2169,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		return groups.map((g) => RefreshableListItem(
 			item: g.first.item, // arbitrary
+			options: const RefreshableListItemOptions(), // arbitrary
 			id: g.first.id, // arbitrary
 			state: this,
 			representsUnloadedPages: g.map((i) => i.id).toList()
@@ -2222,6 +2238,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						}
 					}
 					lastTree.linear[i].item = linear[i].item;
+				}
+				else if (linear[i].options != lastTree.linear[i].options) {
+					// Same item but different options
+					patchedAnyItems = true;
+					for (final item in lastTree.tree.tree) {
+						if (item.id == linear[i].id) {
+							item.options = linear[i].options;
+						}
+					}
+					lastTree.linear[i].options = linear[i].options;
 				}
 			}
 			if (matching) {
@@ -2686,6 +2712,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			List<RefreshableListItem<T>> values = [];
 			filteredValues = <RefreshableListItem<T>>[];
 			final filter = Filter.of(context);
+			final hideThumbnailsOptions = RefreshableListItemOptions(
+				hideThumbnails: true,
+				queryPattern: queryPattern
+			);
+			final normalOptions = RefreshableListItemOptions(
+				hideThumbnails: false,
+				queryPattern: queryPattern
+			);
 			for (final item in sortedList) {
 				final pair = filterableAdapter?.call(item);
 				if (pair != null) {
@@ -2694,11 +2728,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 					final result = widget.useFiltersFromContext && filterableAdapter != null ? filter.filter(pair.$1, pair.$2) : null;
 					if (result != null) {
+						final options = result.type.hideThumbnails ? hideThumbnailsOptions : normalOptions;
 						bool pinned = false;
 						if (result.type.pinToTop && widget.allowReordering) {
 							pinned = true;
 							pinnedValues.add(RefreshableListItem(
 								item: item,
+								options: options,
 								id: pair.$2.id,
 								highlighted: result.type.highlight,
 								pinned: true,
@@ -2715,6 +2751,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (result.type.hide) {
 							filteredValues.add(RefreshableListItem(
 								item: item,
+								options: options,
 								id: pair.$2.id,
 								filterReason: result.reason,
 								state: this
@@ -2723,6 +2760,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						else if (!pinned) {
 							values.add(RefreshableListItem(
 								item: item,
+								options: options,
 								id: pair.$2.id,
 								highlighted: result.type.highlight,
 								filterCollapsed: result.type.collapse,
@@ -2734,6 +2772,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 				values.add(RefreshableListItem(
 					item: item,
+					options: normalOptions,
 					id: pair?.$2.id ?? widget.treeAdapter?.getId(item) ?? 0,
 					state: this
 				));
@@ -2800,6 +2839,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							// Show the entry for the bottom of the partially loaded page
 							values.add(RefreshableListItem(
 								id: deferredUnloadedPage.id,
+								options: const RefreshableListItemOptions(),
 								item: deferredUnloadedPage.item,
 								state: this,
 								representsUnloadedPages: [deferredUnloadedPage.id]
@@ -2810,6 +2850,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					if (adapter.getIsStub(item.item)) {
 						stubItem ??= RefreshableListItem(
 							item: item.item, // Arbitrary
+							options: const RefreshableListItemOptions(), // Arbitrary
 							id: item.id, // Arbitrary
 							representsKnownStubChildren: [],
 							state: this
@@ -2827,6 +2868,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (adapter.getHasOmittedReplies(item.item)) {
 							stubItem ??= RefreshableListItem(
 								item: item.item, // Arbitrary
+								options: const RefreshableListItemOptions(), // Arbitrary
 								id: item.id, // Arbitrary
 								representsKnownStubChildren: [],
 								state: this
@@ -3061,7 +3103,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																controller._unregisterItem(i, context);
 															},
 															child: Builder(
-																builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i), queryPattern)
+																builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i))
 															)
 														);
 													},
@@ -3088,7 +3130,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																controller._unregisterItem(i, context);
 															},
 															child: Builder(
-																builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i), queryPattern)
+																builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i))
 															)
 														);
 													},
@@ -3114,7 +3156,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																controller._unregisterItem(childIndex, context);
 															},
 															child: Builder(
-																builder: (context) => _itemBuilder(context, values[childIndex], _useDummyFor(childIndex), queryPattern)
+																builder: (context) => _itemBuilder(context, values[childIndex], _useDummyFor(childIndex))
 															)
 														);
 													},
@@ -3218,7 +3260,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															children: [
 																Provider.value(
 																	value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
-																	builder: (context, _) => _itemBuilder(context, filteredValues[i], false, queryPattern)
+																	builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
 																),
 																Align(
 																	alignment: Alignment.topRight,
@@ -3252,7 +3294,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															children: [
 																Provider.value(
 																	value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
-																	builder: (context, _) => _itemBuilder(context, filteredValues[i], false, queryPattern)
+																	builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
 																),
 																Align(
 																	alignment: Alignment.topRight,
@@ -3299,7 +3341,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																		padding: const EdgeInsets.all(8),
 																		child: Provider.value(
 																			value: RefreshableListFilterReason(filteredValues[childIndex].filterReason ?? 'Unknown'),
-																			builder: (context, _) => _itemBuilder(context, filteredValues[childIndex], false, queryPattern)
+																			builder: (context, _) => _itemBuilder(context, filteredValues[childIndex], false)
 																		)
 																	)
 																]
@@ -3758,6 +3800,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	void unfocusSearch() {
 		state?._unfocusSearch();
 	}
+	void closeSearch() => state?.closeSearch();
 	void reportPrimaryScrollController(ScrollController? controller) {
 		if (scrollController != controller) {
 			scrollController?.removeListener(_onScrollControllerNotification);

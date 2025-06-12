@@ -115,7 +115,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 		final imageboard = context.read<Imageboard>();
 		final zone = context.read<PostSpanZoneData>();
 		final theme = context.read<SavedTheme>();
-		final options = PostSpanRenderOptions(
+		final baseOptions = PostSpanRenderOptions(
 			imageShareMode: true,
 			revealYourPosts: style.revealYourPosts
 		);
@@ -131,11 +131,11 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					initialList: zone.findThread(zone.primaryThreadId)!.posts,
 					id: 'shareable',
 					filterableAdapter: (p) => (zone.imageboard.key, p),
-					itemBuilder: (context, p) => PostRow(
+					itemBuilder: (context, p, options) => PostRow(
 						post: p,
 						largeImageWidth: (p.id == primaryPostId && style.expandPrimaryImage) ? style.width : null,
 						highlight: (p.id == primaryPostId && ((style.childDepth > 0 && p.replyIds.isNotEmpty) || (style.parentDepth > 0 && p.repliedToIds.isNotEmpty))) ? 1 : 0,
-						baseOptions: options,
+						baseOptions: baseOptions,
 						showBoardName: p.id == primaryPostId,
 						showSiteIcon: p.id == primaryPostId,
 						revealYourPosts: style.revealYourPosts,
@@ -158,7 +158,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 								builder: (context) => PostRow(
 									post: value,
 									dim: !alreadyDim && peekContentHeight.isFinite,
-									baseOptions: options,
+									baseOptions: baseOptions,
 									showBoardName: value.id == primaryPostId,
 									showSiteIcon: value.id == primaryPostId,
 									revealYourPosts: style.revealYourPosts,
@@ -313,7 +313,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					showBoardName: true,
 					showSiteIcon: true,
 					showReplyCount: widget.style.showReplyCounts,
-					baseOptions: options,
+					baseOptions: baseOptions,
 					revealYourPosts: style.revealYourPosts
 				)
 			);
@@ -339,7 +339,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									revealSpoilerImages: true,
 									forceAbsoluteTime: true,
 									shrinkWrap: true,
-									baseOptions: options,
+									baseOptions: baseOptions,
 									showReplyCount: widget.style.showReplyCounts,
 									revealYourPosts: style.revealYourPosts
 								)
@@ -359,7 +359,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									forceAbsoluteTime: true,
 									shrinkWrap: true,
 									showReplyCount: widget.style.showReplyCounts,
-									baseOptions: options,
+									baseOptions: baseOptions,
 									revealYourPosts: style.revealYourPosts
 								)
 							)

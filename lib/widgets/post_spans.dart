@@ -74,6 +74,7 @@ class PostSpanRenderOptions {
 	final bool propagateOnThumbnailTap;
 	final void Function(Object?, StackTrace?)? onThumbnailLoadError;
 	final bool revealSpoilerImages;
+	final bool hideThumbnails;
 	final bool showEmbeds;
 	const PostSpanRenderOptions({
 		this.recognizer,
@@ -99,6 +100,7 @@ class PostSpanRenderOptions {
 		this.propagateOnThumbnailTap = false,
 		this.onThumbnailLoadError,
 		this.revealSpoilerImages = false,
+		this.hideThumbnails = false,
 		this.showEmbeds = true
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
@@ -124,6 +126,7 @@ class PostSpanRenderOptions {
 		bool? propagateOnThumbnailTap,
 		void Function(Object?, StackTrace?)? onThumbnailLoadError,
 		bool? revealSpoilerImages,
+		bool? hideThumbnails,
 		bool? showEmbeds
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer ?? this.recognizer,
@@ -149,6 +152,7 @@ class PostSpanRenderOptions {
 		propagateOnThumbnailTap: propagateOnThumbnailTap ?? this.propagateOnThumbnailTap,
 		onThumbnailLoadError: onThumbnailLoadError ?? this.onThumbnailLoadError,
 		revealSpoilerImages: revealSpoilerImages ?? this.revealSpoilerImages,
+		hideThumbnails: hideThumbnails ?? this.hideThumbnails,
 		showEmbeds: showEmbeds ?? this.showEmbeds
 	);
 }
@@ -351,6 +355,7 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 									width: zone.imageboard.site.hasLargeInlineAttachments ? 250 : null,
 									height: zone.imageboard.site.hasLargeInlineAttachments ? 250 : null,
 									mayObscure: true,
+									hide: options.hideThumbnails,
 									cornerIcon: AttachmentThumbnailCornerIcon(
 										backgroundColor: theme.backgroundColor,
 										borderColor: theme.primaryColorWithBrightness(0.2),

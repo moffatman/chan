@@ -208,7 +208,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 								}).toList(),
 								maxCrossAxisExtent: maxCrossAxisExtent
 							),
-							itemBuilder: (context, attachment) => GestureDetector(
+							itemBuilder: (context, attachment, options) => GestureDetector(
 								onDoubleTap: () {
 									Navigator.pop(context, attachment);
 								},

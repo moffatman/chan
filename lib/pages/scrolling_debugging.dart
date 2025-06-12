@@ -49,7 +49,7 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 							filterableAdapter: null,
 							id: 'debuggingList',
 							controller: controller,
-							itemBuilder: (context, item) => ExpensiveWidget(id: item.id),
+							itemBuilder: (context, item, options) => ExpensiveWidget(id: item.id),
 							initialList: list,
 							listUpdater: (options) async {
 								Future.delayed(const Duration(milliseconds: 400)).then((_) {

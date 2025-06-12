@@ -178,6 +178,7 @@ class PostRow extends StatelessWidget {
 	final bool revealSpoilerImages;
 	final PostQuoteLinkSpan? expandedInlineWithin;
 	final bool forceAbsoluteTime;
+	final bool hideThumbnails;
 
 	const PostRow({
 		required this.post,
@@ -204,6 +205,7 @@ class PostRow extends StatelessWidget {
 		this.revealSpoilerImages = false,
 		this.expandedInlineWithin,
 		this.forceAbsoluteTime = false,
+		this.hideThumbnails = false,
 		Key? key
 	}) : super(key: key);
 
@@ -367,6 +369,7 @@ class PostRow extends StatelessWidget {
 											onThumbnailLoadError: onThumbnailLoadError,
 											revealSpoilerImages: revealSpoilerImages,
 											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
+											hideThumbnails: hideThumbnails,
 											postInject: showReplyCount ? (overrideReplyCount != null ? WidgetSpan(
 												alignment: PlaceholderAlignment.top,
 												child: Visibility(
@@ -433,6 +436,7 @@ class PostRow extends StatelessWidget {
 												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 												shrinkHeight: !settings.squareThumbnails,
 												mayObscure: true,
+												hide: hideThumbnails,
 												cornerIcon: AttachmentThumbnailCornerIcon(
 													backgroundColor: theme.backgroundColor,
 													borderColor: theme.primaryColorWithBrightness(0.2),
@@ -609,6 +613,7 @@ class PostRow extends StatelessWidget {
 															semanticParentIds: parentZone.stackIds,
 															imageboard: imageboard
 														),
+														hide: hideThumbnails,
 														cornerIcon: AttachmentThumbnailCornerIcon(
 															backgroundColor: theme.backgroundColor,
 															borderColor: theme.primaryColorWithBrightness(0.2),

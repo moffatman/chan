@@ -28,7 +28,7 @@ class _FooterDebuggingPageState extends State<FooterDebuggingPage> {
 				id: 'debuggingList',
 				filterableAdapter: null,
 				controller: controller,
-				itemBuilder: (context, item) => SizedBox(height: 150, child: Text(item.id.toString())),
+				itemBuilder: (context, item, options) => SizedBox(height: 150, child: Text(item.id.toString())),
 				listUpdater: (options) async {
 					//await Future.delayed(const Duration(seconds: 1));
 					return List.generate(++i, (i) => EmptyFilterable(i));

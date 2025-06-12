@@ -498,7 +498,7 @@ class BoardPageState extends State<BoardPage> {
 		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant) ?? CatalogVariant.unsorted;
 		final openInNewTabZone = context.read<OpenInNewTabZone?>();
 		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.boardKey] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
-		Widget itemBuilder(BuildContext context, Thread thread, {RegExp? highlightPattern}) {
+		Widget itemBuilder(BuildContext context, Thread thread, RefreshableListItemOptions options) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isYou = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.youIds.contains(thread.id) ?? false);
 			final watch = context.select<Persistence, ThreadWatch?>((p) => p.getThreadStateIfExists(thread.identifier)?.threadWatch);
@@ -839,6 +839,7 @@ class BoardPageState extends State<BoardPage> {
 						imageCountUnreliable: thread.imageCount < 0,
 						showBoardName: thread.board != board?.name,
 						showPageNumber: variant.sortingMethod != null,
+						hideThumbnails: options.hideThumbnails,
 						onThumbnailTap: (initialAttachment) {
 							final attachments = _listController.items.expand((_) => _.item.attachments).toList();
 							// It might not be in the list if the thread has been filtered
@@ -864,7 +865,7 @@ class BoardPageState extends State<BoardPage> {
 							);
 						},
 						baseOptions: PostSpanRenderOptions(
-							highlightPattern: highlightPattern
+							highlightPattern: options.queryPattern
 						)
 					),
 					onTap: () => _onThreadSelected(thread.identifier)
@@ -1264,8 +1265,7 @@ class BoardPageState extends State<BoardPage> {
 													}),
 													disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
 													id: '${site.name} /${board!.name}/${variant.dataId}',
-													itemBuilder: (context, thread) => itemBuilder(context, thread),
-													filteredItemBuilder: (context, thread, resetPage, filterPattern) => itemBuilder(context, thread, highlightPattern: filterPattern),
+													itemBuilder: (context, thread, options) => itemBuilder(context, thread, options),
 													filterHint: 'Search in board',
 													filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
 														name: supportsSearch.name,

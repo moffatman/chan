@@ -30,6 +30,7 @@ class FilterResultType {
 	final bool collapse;
 	final bool hideReplies;
 	final bool hideReplyChains;
+	final bool hideThumbnails;
 
 	const FilterResultType({
 		this.hide = false,
@@ -40,7 +41,8 @@ class FilterResultType {
 		this.notify = false,
 		this.collapse = false,
 		this.hideReplies = false,
-		this.hideReplyChains = false
+		this.hideReplyChains = false,
+		this.hideThumbnails = false
 	});
 
 	static const FilterResultType empty = FilterResultType();
@@ -55,7 +57,8 @@ class FilterResultType {
 		if (notify) 'notify',
 		if (collapse) 'collapse',
 		if (hideReplies) 'hideReplies',
-		if (hideReplyChains) 'hideReplyChains'
+		if (hideReplyChains) 'hideReplyChains',
+		if (hideThumbnails) 'hideThumbnails'
 	].join(', ')})';
 
 	@override
@@ -70,10 +73,11 @@ class FilterResultType {
 		other.notify == notify &&
 		other.collapse == collapse &&
 		other.hideReplies == hideReplies &&
-		other.hideReplyChains == hideReplyChains;
+		other.hideReplyChains == hideReplyChains &&
+		other.hideThumbnails == hideThumbnails;
 
 	@override
-	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, autoWatch, notify, collapse, hideReplies, hideReplyChains);
+	int get hashCode => Object.hash(hide, highlight, pinToTop, autoSave, autoWatch, notify, collapse, hideReplies, hideReplyChains, hideThumbnails);
 }
 
 class FilterResult {
@@ -309,6 +313,7 @@ class CustomFilter implements Filter {
 			bool collapse = false;
 			bool hideReplies = false;
 			bool hideReplyChains = false;
+			bool hideThumbnails = false;
 			while (true) {
 				final s = match.group(i);
 				if (s == null) {
@@ -360,6 +365,10 @@ class CustomFilter implements Filter {
 				}
 				else if (s == 'hideReplyChains') {
 					hideReplyChains = true;
+				}
+				else if (s == 'hideThumbnails') {
+					hideThumbnails = true;
+					hide = false;
 				}
 				else if (s.startsWith('type:')) {
 					filter.patternFields = s.split(_separatorPattern).skip(1).toList();
@@ -459,7 +468,8 @@ class CustomFilter implements Filter {
 				notify: notify,
 				collapse: collapse,
 				hideReplies: hideReplies,
-				hideReplyChains: hideReplyChains
+				hideReplyChains: hideReplyChains,
+				hideThumbnails: hideThumbnails
 			);
 			return filter;
 		}
@@ -518,6 +528,9 @@ class CustomFilter implements Filter {
 		}
 		if (outputType.hideReplyChains) {
 			out.write(';hideReplyChains');
+		}
+		if (outputType.hideThumbnails) {
+			out.write(';hideThumbnails');
 		}
 		if (outputType == FilterResultType.empty ||
 		    outputType == const FilterResultType(hideReplies: true) ||

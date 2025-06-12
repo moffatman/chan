@@ -729,7 +729,7 @@ class _SavedPageState extends State<SavedPage> {
 									)
 								)
 							),
-							itemBuilder: (itemContext, watch) {
+							itemBuilder: (itemContext, watch, options) {
 								final isSelected = selected(itemContext, watch.imageboard.scope(watch.item.$1));
 								final openInNewTabZone = context.read<OpenInNewTabZone?>();
 								return ImageboardScope(
@@ -848,6 +848,10 @@ class _SavedPageState extends State<SavedPage> {
 															showSiteIcon: true,
 															showPageNumber: true,
 															forceShowInHistory: true,
+															hideThumbnails: options.hideThumbnails,
+															baseOptions: PostSpanRenderOptions(
+																highlightPattern: options.queryPattern
+															),
 															dimReadThreads: watch.item.$1.zombie,
 															invertCountersIfUnread: true,
 															onThumbnailLoadError: (error, stackTrace) {
@@ -1046,7 +1050,7 @@ class _SavedPageState extends State<SavedPage> {
 							staggeredGridDelegate: (settings.useCatalogGrid && settings.useStaggeredCatalogGrid) ? SliverStaggeredGridDelegateWithMaxCrossAxisExtent(
 								maxCrossAxisExtent: settings.catalogGridWidth
 							) : null,
-							itemBuilder: (itemContext, pair) {
+							itemBuilder: (itemContext, pair, options) {
 								final state = pair.$1;
 								final isSelected = selectedThread(itemContext, state.imageboard!.scope(ThreadOrPostIdentifier.thread(state.identifier)));
 								final openInNewTabZone = context.read<OpenInNewTabZone?>();
@@ -1096,6 +1100,10 @@ class _SavedPageState extends State<SavedPage> {
 													showBoardName: true,
 													showSiteIcon: true,
 													forceShowInHistory: true,
+													hideThumbnails: options.hideThumbnails,
+													baseOptions: PostSpanRenderOptions(
+														highlightPattern: options.queryPattern
+													),
 													onThumbnailLoadError: (error, stackTrace) {
 														state.imageboard?.threadWatcher.fixBrokenThread(state.identifier);
 													},
@@ -1240,7 +1248,7 @@ class _SavedPageState extends State<SavedPage> {
 							disableUpdates: !TickerMode.of(context),
 							minUpdateDuration: Duration.zero,
 							sortMethods: [(a, b) => b.post.time.toLocal().compareTo(a.post.time.toLocal())],
-							itemBuilder: (context, item) => ImageboardScope(
+							itemBuilder: (context, item, options) => ImageboardScope(
 								imageboardKey: item.imageboard.key,
 								child: ChangeNotifierProvider<PostSpanZoneData>(
 									create: (context) => PostSpanRootZoneData(
@@ -1257,6 +1265,10 @@ class _SavedPageState extends State<SavedPage> {
 											showBoardName: true,
 											showSiteIcon: true,
 											showYourPostBorder: false,
+											hideThumbnails: options.hideThumbnails,
+											baseOptions: PostSpanRenderOptions(
+												highlightPattern: options.queryPattern
+											),
 											onThumbnailLoadError: (e, st) async {
 												await item.imageboard.threadWatcher.fixBrokenThread(item.thread.identifier);
 											},
@@ -1392,7 +1404,7 @@ class _SavedPageState extends State<SavedPage> {
 							disableUpdates: !TickerMode.of(context),
 							minUpdateDuration: Duration.zero,
 							sortMethods: [getSavedPostsSortMethodTuple()],
-							itemBuilder: (context, savedPost) {
+							itemBuilder: (context, savedPost, options) {
 								final threadState = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.$1.post.threadIdentifier);
 								return ImageboardScope(
 									imageboardKey: savedPost.imageboard.key,
@@ -1410,6 +1422,10 @@ class _SavedPageState extends State<SavedPage> {
 												onTap: () => setter(savedPost.imageboard.scope(savedPost.item.$1)),
 												showBoardName: true,
 												showSiteIcon: true,
+												hideThumbnails: options.hideThumbnails,
+												baseOptions: PostSpanRenderOptions(
+													highlightPattern: options.queryPattern
+												),
 												onThumbnailLoadError: (e, st) async {
 													final firstThread = threadState?.thread ?? savedPost.item.$2;
 													await savedPost.imageboard.threadWatcher.fixBrokenThread(savedPost.item.$1.post.threadIdentifier);
@@ -1576,7 +1592,7 @@ class _SavedPageState extends State<SavedPage> {
 						useFiltersFromContext: false,
 						includeImageboardKeyAndBoardInSearchString: true,
 						filterableAdapter: null,
-						itemBuilder: (context, item) => Builder(
+						itemBuilder: (context, item, options) => Builder(
 							builder: (context) {
 								makeController() => AttachmentViewerController(
 									attachment: item.item.attachment,

@@ -285,6 +285,7 @@ class ThreadRow extends StatelessWidget {
 	final bool showPageNumber;
 	final bool? forceShowInHistory;
 	final bool invertCountersIfUnread;
+	final bool hideThumbnails;
 
 	const ThreadRow({
 		required this.thread,
@@ -303,6 +304,7 @@ class ThreadRow extends StatelessWidget {
 		this.showPageNumber = false,
 		this.forceShowInHistory,
 		this.invertCountersIfUnread = false,
+		this.hideThumbnails = false,
 		Key? key
 	}) : super(key: key);
 
@@ -518,6 +520,7 @@ class ThreadRow extends StatelessWidget {
 										),
 										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 										shrinkHeight: !settings.squareThumbnails,
+										hide: hideThumbnails,
 										cornerIcon: AttachmentThumbnailCornerIcon(
 											backgroundColor: backgroundColor,
 											borderColor: borderColor,
@@ -567,6 +570,7 @@ class ThreadRow extends StatelessWidget {
 													},
 													charactersPerLine: (approxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 													postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1)	? null : countersPlaceholder,
+													hideThumbnails: hideThumbnails,
 													ensureTrailingNewline: true
 												)
 											)
@@ -655,6 +659,7 @@ class ThreadRow extends StatelessWidget {
 										thread: latestThread.identifier,
 										onLoadError: onThumbnailLoadError,
 										mayObscure: true,
+										hide: hideThumbnails,
 										cornerIcon: AttachmentThumbnailCornerIcon(
 											backgroundColor: backgroundColor,
 											borderColor: borderColor,
@@ -710,6 +715,7 @@ class ThreadRow extends StatelessWidget {
 									double approxHeight => 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
 									null => null
 								},
+								hideThumbnails: hideThumbnails,
 								charactersPerLine: (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 							)),
 							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) countersPlaceholder,

@@ -13,6 +13,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
@@ -243,7 +244,7 @@ class HistoryPageState extends State<HistoryPage> {
 								minUpdateDuration: Duration.zero,
 								id: 'history',
 								sortMethods: const [],
-								itemBuilder: (itemContext, state) {
+								itemBuilder: (itemContext, state, options) {
 									final isSelected = selectedThread(itemContext, state.imageboard!.scope(state.identifier.threadOrPostIdentifier));
 									final openInNewTabZone = context.read<OpenInNewTabZone?>();
 									return ContextMenu(
@@ -316,6 +317,10 @@ class HistoryPageState extends State<HistoryPage> {
 														semanticParentIds: const [-3],
 														showSiteIcon: ImageboardRegistry.instance.count > 1,
 														showBoardName: true,
+														hideThumbnails: options.hideThumbnails,
+														baseOptions: PostSpanRenderOptions(
+															highlightPattern: options.queryPattern
+														),
 														onThumbnailTap: (initialAttachment) {
 															final attachments = _listController.items.expand((_) => _.item.thread!.attachments).toList();
 															showGallery(

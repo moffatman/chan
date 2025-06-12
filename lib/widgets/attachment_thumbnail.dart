@@ -139,6 +139,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final bool mayObscure;
 	final AttachmentThumbnailCornerIcon? cornerIcon;
 	final bool expand;
+	final bool hide;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -157,6 +158,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.overrideFullQuality,
 		this.cornerIcon,
 		this.expand = false,
+		this.hide = false,
 		required this.mayObscure,
 		Key? key
 	}) : super(key: key);
@@ -288,7 +290,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		_KeyedAfterPaint? makeAfterPaint({IconData? alreadyShowingBigIcon}) =>
 			_makeKeyedAfterPaint(attachment: attachment, cornerIcon: cornerIcon, alreadyShowingBigIcon: alreadyShowingBigIcon, primaryColor: primaryColor);
 		Widget child;
-		if (settings.loadThumbnails) {
+		if (settings.loadThumbnails && !hide) {
 			final afterPaint = makeAfterPaint();
 			child = ExtendedImage(
 				image: image,

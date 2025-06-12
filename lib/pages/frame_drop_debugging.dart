@@ -38,7 +38,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 				return List.generate(150, (i) => thread);
 			},
 			id: 'debugging frame drops',
-			itemBuilder: (context, thread) {
+			itemBuilder: (context, thread, options) {
 				final browserState = persistence.browserState;
 				return ContextMenu(
 					actions: [

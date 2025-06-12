@@ -49,7 +49,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 	Widget build(BuildContext context) {
 		return RefreshableList<_DebuggingItem>(
 			controller: controller,
-			itemBuilder: (context, item) => SizedBox(
+			itemBuilder: (context, item, options) => SizedBox(
 				width: double.infinity,
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
