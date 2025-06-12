@@ -20,7 +20,7 @@ final unescape = HtmlUnescape();
 
 String makeRandomBase64String(int length) {
 	// base64 grows 3 bytes -> 4 chars. So we will always have enough here to cut off at desired length.
-	return base64Url.encode(List.generate(length, (i) => random.nextInt(256))).substring(length);
+	return base64Url.encode(List.generate(length, (i) => random.nextInt(256))).substring(0, length);
 }
 
 String makeRandomUserAgent() {
