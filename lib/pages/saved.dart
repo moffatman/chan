@@ -1657,7 +1657,7 @@ class _SavedPageState extends State<SavedPage> {
 														controller.dispose();
 													}
 												),
-												...buildImageSearchActions(context, [item.item.attachment]),
+												...buildImageSearchActions(context, item.imageboard.site, [item.item.attachment]),
 												_makeFindSavedAttachmentInThreadAction(
 													attachment: item.item.attachment,
 													poppedOut: false,

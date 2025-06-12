@@ -991,7 +991,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													key: _imageSearchButtonKey,
 													onPressed: () async {
 														final actions = [
-															...buildImageSearchActions(context, [currentAttachment.attachment]),
+															...buildImageSearchActions(context, currentAttachment.imageboard.site, [currentAttachment.attachment]),
 															ContextMenuAction(
 																child: const Text('Share link'),
 																trailingIcon: CupertinoIcons.link,

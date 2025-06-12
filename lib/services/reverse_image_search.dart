@@ -19,8 +19,7 @@ extension on Attachment {
 	}
 }
 
-List<ContextMenuAction> buildImageSearchActions(BuildContext context, Iterable<Attachment> possibleAttachments) {
-	final site = context.read<ImageboardSite?>();
+List<ContextMenuAction> buildImageSearchActions(BuildContext context, ImageboardSite? site, Iterable<Attachment> possibleAttachments) {
 	final withMD5 = possibleAttachments.where((a) => a.type.isImageSearchable && a.md5.isNotEmpty).toList(growable: false);
 	final withThumbnail = possibleAttachments.where((a) => a.type.isImageSearchable && a.thumbnailUrl.isNotEmpty).toList(growable: false);
 	return [
