@@ -95,8 +95,7 @@ class ChanceLinkifier extends Linkifier {
   }
 }
 
-//const contentSettingsApiRoot = 'https://api.chance.surf/preferences';
-const contentSettingsApiRoot = 'http://192.168.2.185:5123/chan-329813/us-central1/preferences';
+const contentSettingsApiRoot = 'https://api.chance.surf/preferences';
 final _punctuationRegex = RegExp('(\\W+|s\\W)');
 final _badWords = Set.from(ProfanityFilter().wordsToFilterOutList);
 const kTestchanKey = 'testchan';
