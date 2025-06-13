@@ -79,6 +79,7 @@ class HTTP429BackoffInterceptor extends Interceptor {
 					data: response.requestOptions.data,
 					cancelToken: response.requestOptions.cancelToken,
 					options: Options(
+						method: response.requestOptions.method,
 						headers: response.requestOptions.headers,
 						extra: {
 							...response.requestOptions.extra,
