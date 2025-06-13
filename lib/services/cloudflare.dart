@@ -165,7 +165,14 @@ extension on _CloudflareResponse {
 				if (uri != null && uri != options.uri) RedirectRecord(302, 'GET', uri!)
 			],
 			headers: Headers.fromMap({
-				if (resp.isJson) Headers.contentTypeHeader: [Headers.jsonContentType]
+				if (resp.isJson) Headers.contentTypeHeader: [Headers.jsonContentType],
+				if (uri != null && uri != options.uri) 'location': [
+					if (uri?.host == options.uri.host)
+						// Relative path
+						uri!.path
+					else
+						uri.toString()
+				]
 			}),
 			statusCode: content == null ? 302 : 200,
 			extra: {
@@ -737,10 +744,16 @@ class RetryIfCloudflareInterceptor extends Interceptor {
 	RetryIfCloudflareInterceptor(this.client);
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		if (response.cloudflare && response.requestOptions.retryIfCloudflare) {
+		if (
+			response.cloudflare &&
+			(
+				response.requestOptions.retryIfCloudflare ||
+				(response.requestOptions.followRedirects && response.statusCode == 302)
+			)
+		) {
 			try {
 				final response2 = await client.requestUri(
-					response.requestOptions.uri,
+					response.redirects.tryLast?.location ?? response.requestOptions.uri,
 					data: response.requestOptions.data,
 					cancelToken: response.requestOptions.cancelToken,
 					options: Options(
@@ -755,6 +768,7 @@ class RetryIfCloudflareInterceptor extends Interceptor {
 						validateStatus: response.requestOptions.validateStatus
 					)
 				);
+				response2.redirects.insertAll(0, response.redirects);
 				handler.next(response2);
 			}
 			catch (e, st) {
