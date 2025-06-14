@@ -346,28 +346,32 @@ String formatTime(DateTime time, {bool forceFullDate = false, bool withSecondsPr
 	}
 }
 
-String formatRelativeTime(DateTime time) {
-	final diff = time.difference(DateTime.now()).abs();
-	String timeDiff = '';
+String formatTimeDiff(Duration diff) {
+	assert(diff >= Duration.zero);
 	if (diff.inDays > 365) {
-		timeDiff = '${diff.inDays ~/ 365}y';
+		return '${diff.inDays ~/ 365}y';
 	}
 	else if (diff.inDays > 30) {
-		timeDiff = '${diff.inDays ~/ 30}mo';
+		return '${diff.inDays ~/ 30}mo';
 	}
 	else if (diff.inDays > 0) {
-		timeDiff = '${diff.inDays}d';
+		return '${diff.inDays}d';
 	}
 	else if (diff.inHours > 0) {
-		timeDiff = '${diff.inHours}h';
+		return '${diff.inHours}h';
 	}
 	else if (diff.inMinutes > 0) {
-		timeDiff = '${diff.inMinutes}m';
+		return '${diff.inMinutes}m';
 	}
 	else {
-		timeDiff = '${(diff.inMilliseconds / 1000).round()}s';
+		return '${(diff.inMilliseconds / 1000).round()}s';
 	}
-	if (time.isAfter(DateTime.now())) {
+}
+
+String formatRelativeTime(DateTime time) {
+	final now = DateTime.now();
+	String timeDiff = formatTimeDiff(time.difference(now).abs());
+	if (time.isAfter(now)) {
 		timeDiff = 'in $timeDiff';
 	}
 	return timeDiff;

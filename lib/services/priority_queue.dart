@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:mutex/mutex.dart';
 
 class _PriorityQueueEntry<Key> {
@@ -35,6 +37,19 @@ class _PriorityQueueGroup<Key, GroupKey> {
 	}
 
 	Future<void> delay(Key key, Duration delay) async {
+		if (delay > const Duration(minutes: 1)) {
+			alert(
+				ImageboardRegistry.instance.context!,
+				'Rate-Limited!',
+				'Received an extremely long delay request (${formatTimeDiff(delay)}) trying to access:\n$key\n\n$groupKey has probably added new restrictions.',
+				actions: {
+					'Try clearing': () {
+						delayUntil = DateTime.now();
+						Future.microtask(_process);
+					}
+				}
+			);
+		}
 		final completer = await _lock.protect(() async {
 			delayUntil = DateTime.now().add(delay);
 			final entry = _stack.tryFirstWhere((e) => e.key == key);
