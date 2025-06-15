@@ -362,7 +362,7 @@ class _ChanAppState extends State<ChanApp> {
 					.tryMap((b) => imageboard.persistence.maybeGetBoard(b.s)?.icon)
 			]) {
 				if (url != null) {
-					precacheImage(CNetworkImageProvider(url.toString(), client: imageboard.site.client), context, onError: (e, st) {
+					precacheImage(CNetworkImageProvider(url.toString(), cache: true, client: imageboard.site.client), context, onError: (e, st) {
 						// Do nothing
 					});
 				}
