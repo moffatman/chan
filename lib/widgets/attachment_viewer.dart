@@ -713,12 +713,19 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (_isDisposed) return;
 				notifyListeners();
 				if (background && attachment.type == AttachmentType.image) {
-					await CNetworkImageProvider(
+					final completer = Completer<void>();
+					precacheImage(CNetworkImageProvider(
 						url.toString(),
 						client: site.client,
 						cache: true,
 						headers: getHeaders(url)
-					).getNetworkImageData();
+					), ImageboardRegistry.instance.context!, onError: completer.completeError).then((_) {
+						// This is called after both failure and success
+						if (!completer.isCompleted) {
+							completer.complete();
+						}
+					});
+					await completer.future;
 					final file = await getCachedImageFile(url.toString());
 					if (file != null && _cachedFile?.path != file.path) {
 						_onCacheCompleted(file);
