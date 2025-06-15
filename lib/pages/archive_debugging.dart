@@ -16,6 +16,8 @@ class WrappedArchive extends ImageboardSite {
 	final ImageboardSiteArchive archive;
 	WrappedArchive(this.archive) : super(
     archives: const [],
+    imageHeaders: const {},
+    videoHeaders: const {},
     overrideUserAgent: archive.overrideUserAgent
   );
 

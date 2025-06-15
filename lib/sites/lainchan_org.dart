@@ -12,6 +12,8 @@ class SiteLainchanOrg extends SiteLainchan {
 		required super.name,
 		required super.overrideUserAgent,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		super.faviconPath,
 		super.defaultUsername,
 		super.basePath,

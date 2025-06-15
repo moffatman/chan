@@ -45,6 +45,8 @@ class FakeImageboardSite extends ImageboardSite {
     required this.imageUrl
   }) : super(
     archives: const [],
+		imageHeaders: const {},
+		videoHeaders: const {},
     overrideUserAgent: null
   );
   @override

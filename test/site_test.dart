@@ -79,7 +79,12 @@ void main() {
 				time: DateTime.now(),
 				attachments: op.attachments_
 			);
-			final reddit = SiteReddit(overrideUserAgent: null, archives: []);
+			final reddit = SiteReddit(
+				overrideUserAgent: null,
+				archives: [],
+				imageHeaders: const {},
+				videoHeaders: const {}
+			);
 			expect(threadv2.mergePosts(threadv1, threadv1.posts, reddit), isTrue);
 			expect(threadv2.posts[1].text, post2v1.text);
 			expect(threadv2.posts[1].name, post2v1.name);

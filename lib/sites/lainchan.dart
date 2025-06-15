@@ -50,6 +50,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		this.maxUploadSizeBytes,
 		required super.overrideUserAgent,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		this.faviconPath = '/favicon.ico',
 		this.basePath = '',
 		this.defaultUsername = 'Anonymous'

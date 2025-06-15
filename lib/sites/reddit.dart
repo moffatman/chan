@@ -239,7 +239,9 @@ class SiteReddit extends ImageboardSite {
 
 	SiteReddit({
 		required super.overrideUserAgent,
-		required super.archives
+		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders
 	});
 	@override
 	String get baseUrl => 'reddit.com';

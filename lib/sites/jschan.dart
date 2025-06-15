@@ -35,6 +35,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 		required this.faviconPath,
 		required super.overrideUserAgent,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		required this.postingCaptcha,
 		required this.deletingCaptcha
 	});

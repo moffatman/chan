@@ -16,6 +16,8 @@ class Site8Chan extends SiteLynxchan {
 		required super.defaultUsername,
 		required super.overrideUserAgent,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		required super.hasLinkCookieAuth,
 		required super.hasPagedCatalog
 	});

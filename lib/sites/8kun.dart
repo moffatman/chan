@@ -27,6 +27,8 @@ class Site8Kun extends SiteLainchan2 {
 		required super.boardsWithHtmlOnlyFlags,
 		required super.boardsWithMemeFlags,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		super.faviconPath,
 		super.boardsPath,
 		super.boards,

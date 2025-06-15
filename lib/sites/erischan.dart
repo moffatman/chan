@@ -11,7 +11,9 @@ class SiteErischan extends SiteLainchan2 {
 		required super.overrideUserAgent,
 		required super.boardsWithHtmlOnlyFlags,
 		required super.boardsWithMemeFlags,
-		required super.archives
+		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders
 	}) : super(
 		basePath: '',
 		defaultUsername: '',

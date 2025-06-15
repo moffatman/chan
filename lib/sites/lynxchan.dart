@@ -93,6 +93,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin {
 		required this.defaultUsername,
 		required super.overrideUserAgent,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		required this.hasLinkCookieAuth,
 		required this.hasPagedCatalog
 	});

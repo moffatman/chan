@@ -7,6 +7,8 @@ class SiteWizchan extends SiteLainchanOrg {
 		required super.name,
 		required super.overrideUserAgent,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		super.faviconPath,
 		super.defaultUsername = 'Anonymage'
 	});

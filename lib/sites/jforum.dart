@@ -42,6 +42,8 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		required this.postsPerPage,
 		required this.searchResultsPerPage,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		required super.overrideUserAgent
 	});
 

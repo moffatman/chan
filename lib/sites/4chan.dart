@@ -1074,6 +1074,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		required this.hCaptchaKey,
 		required super.overrideUserAgent,
 		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders,
 		required this.captchaUserAgents,
 		required this.searchUrl,
 		required this.boardFlags,

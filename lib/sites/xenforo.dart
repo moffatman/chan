@@ -47,7 +47,9 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		required this.faviconPath,
 		required this.postsPerPage,
 		required super.overrideUserAgent,
-		required super.archives
+		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders
 	});
 
 	static final _trimNewlinePattern = RegExp(r'\n*(.*)\n*');

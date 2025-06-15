@@ -50,7 +50,9 @@ class SiteKarachan extends ImageboardSite {
 		required this.captchaKey,
 		this.defaultUsername = 'Anonymous',
 		required super.overrideUserAgent,
-		required super.archives
+		required super.archives,
+		required super.imageHeaders,
+		required super.videoHeaders
 	}) {
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {

@@ -1683,13 +1683,21 @@ abstract class ImageboardSiteArchive {
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
 	final List<ImageboardSiteArchive> archives;
+	final Map<String, String> imageHeaders;
+	final Map<String, String> videoHeaders;
 	ImageboardSite({
 		required this.archives,
+		required this.imageHeaders,
+		required this.videoHeaders,
 		required super.overrideUserAgent
 	});
+	/// Get headers to use to download an Attachment
 	Map<String, String> getHeaders(Uri url) {
+		final type = AttachmentType.fromFilename(FileBasename.get(url.path));
 		return {
-			'user-agent': userAgent
+			'user-agent': userAgent,
+			if (type.isVideo) ...videoHeaders
+			else if (type == AttachmentType.image) ...imageHeaders
 		};
 	}
 	String get baseUrl;
@@ -2271,6 +2279,8 @@ ImageboardSiteArchive makeArchive(dynamic archive) {
 ImageboardSite makeSite(dynamic data) {
 	final overrideUserAgent = data['overrideUserAgent'] as String?;
 	final archives = (data['archives'] as List? ?? []).map<ImageboardSiteArchive>(makeArchive).toList(growable: false);
+	final imageHeaders = (data['imageHeaders'] as Map?)?.cast<String, String>() ?? {};
+	final videoHeaders = (data['videoHeaders'] as Map?)?.cast<String, String>() ?? {};
 	final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
 		title: b['title'],
 		name: b['name'],
@@ -2283,7 +2293,9 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			maxUploadSizeBytes: data['maxUploadSizeBytes'],
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'soyjak') {
@@ -2292,6 +2304,8 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders,
 			boardsWithCaptcha: (data['boardsWithCaptcha'] as List?)?.cast<String>(),
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2305,7 +2319,9 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'wizchan') {
@@ -2313,7 +2329,9 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'lainchan_org') {
@@ -2323,7 +2341,9 @@ ImageboardSite makeSite(dynamic data) {
 			faviconPath: data['faviconPath'] ?? '/favicon.ico',
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'dvach') {
@@ -2331,7 +2351,9 @@ ImageboardSite makeSite(dynamic data) {
 			name: data['name'],
 			baseUrl: data['baseUrl'],
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'futaba') {
@@ -2340,19 +2362,25 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			maxUploadSizeBytes: data['maxUploadSizeBytes'],
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'reddit') {
 		return SiteReddit(
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'hackernews') {
 		return SiteHackerNews(
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'erischan') {
@@ -2362,7 +2390,9 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == '4chan') {
@@ -2403,7 +2433,9 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())),
 			searchUrl: data['searchUrl'] ?? '',
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'lynxchan') {
@@ -2413,6 +2445,8 @@ ImageboardSite makeSite(dynamic data) {
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders,
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
 			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false,
 			hasPagedCatalog: data['hasPagedCatalog'] ?? true
@@ -2425,6 +2459,8 @@ ImageboardSite makeSite(dynamic data) {
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders,
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
 			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false,
 			hasPagedCatalog: data['hasPagedCatalog'] ?? true
@@ -2441,6 +2477,8 @@ ImageboardSite makeSite(dynamic data) {
 			defaultUsername: data['defaultUsername'],
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders,
 			boards: boards,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2463,6 +2501,8 @@ ImageboardSite makeSite(dynamic data) {
 			defaultUsername: data['defaultUsername'],
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders,
 			boards: boards,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2480,7 +2520,9 @@ ImageboardSite makeSite(dynamic data) {
 			faviconPath: data['faviconPath'],
 			postsPerPage: data['postsPerPage'],
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'karachan') {
@@ -2490,7 +2532,9 @@ ImageboardSite makeSite(dynamic data) {
 			captchaKey: data['captchaKey'] ?? '',
 			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'jschan') {
@@ -2502,7 +2546,9 @@ ImageboardSite makeSite(dynamic data) {
 			postingCaptcha: data['postingCaptcha'] ?? 'grid',
 			deletingCaptcha: data['deletingCaptcha'] ?? 'grid',
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else if (data['type'] == 'jforum') {
@@ -2516,7 +2562,9 @@ ImageboardSite makeSite(dynamic data) {
 			postsPerPage: data['postsPerPage'] ?? 15,
 			searchResultsPerPage: data['searchResultsPerPage'] ?? 25,
 			overrideUserAgent: overrideUserAgent,
-			archives: archives
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders
 		);
 	}
 	else {
