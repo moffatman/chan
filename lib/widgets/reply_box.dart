@@ -2518,21 +2518,23 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														}
 														setAttachment(newFile);
 														_filenameController.text = proposed.imageUrl.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
-														final original = _textFieldController.text;
-														final replaced = original.replaceFirst(proposed.text, '');
-														if (replaced.length != _textFieldController.text.length) {
-															_textFieldController.text = replaced;
-															if (context.mounted) {
-																showToast(
-																	context: context,
-																	icon: CupertinoIcons.link,
-																	message: 'Removed URL from text',
-																	easyButton: ('Restore', () {
-																		// To prevent "finding" the same URL again
-																		_lastFoundUrl = proposed.text;
-																		_textFieldController.text = original;
-																	})
-																);
+														if (proposed.text == proposed.imageUrl) {
+															final original = _textFieldController.text;
+															final replaced = original.replaceFirst(proposed.text, '');
+															if (replaced.length != _textFieldController.text.length) {
+																_textFieldController.text = replaced;
+																if (context.mounted) {
+																	showToast(
+																		context: context,
+																		icon: CupertinoIcons.link,
+																		message: 'Removed URL from text',
+																		easyButton: ('Restore', () {
+																			// To prevent "finding" the same URL again
+																			_lastFoundUrl = proposed.text;
+																			_textFieldController.text = original;
+																		})
+																	);
+																}
 															}
 														}
 														_proposedAttachmentUrl = null;
