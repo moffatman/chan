@@ -154,7 +154,7 @@ Future<void> reportPost({
 		}
 	}
 	catch (e, st) {
-		if (e is! ReportFailedException) {
+		if (e is! ReportFailedException && e is! BannedException) {
 			Future.error(e, st); // Report to crashlytics
 		}
 		if (context.mounted) {

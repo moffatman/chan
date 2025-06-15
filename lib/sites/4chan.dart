@@ -965,6 +965,12 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			final responseDocument = parse(response.data);
 			final message = responseDocument.querySelector('font')?.text;
 			if (message == null || !message.contains('submitted')) {
+				if (message != null) {
+					final lower = message.toLowerCase();
+					if (lower.contains('ban') || lower.contains('warn')) {
+						throw BannedException(message, _bannedUrl);
+					}
+				}
 				throw ReportFailedException(message ?? 'Could not find response text');
 			}
 		}
