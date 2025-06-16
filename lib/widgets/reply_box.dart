@@ -2650,7 +2650,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 	void dispose() {
 		super.dispose();
 		if (_show) {
-			_chanTabs?.didCloseReplyBox();
+			Future.microtask(() => _chanTabs?.didCloseReplyBox());
 		}
 		if (postingPost.value != null) {
 			// Since we didn't clear out the reply field yet. Just send a fake draft above.
