@@ -9,6 +9,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 	final int secondary;
 	final double topOffset;
 	final bool sideBySide;
+	final double sideBySideRightPadding;
 
 	const StationaryNotifyingIcon({
 		required this.icon,
@@ -16,6 +17,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 		this.secondary = 0,
 		this.topOffset = 0,
 		this.sideBySide = false,
+		this.sideBySideRightPadding = 0,
 		Key? key
 	}) : super(key: key);
 
@@ -120,8 +122,9 @@ class StationaryNotifyingIcon extends StatelessWidget {
 				mainAxisSize: MainAxisSize.min,
 				children: [
 					icon,
-					const SizedBox(width: 2),
-					child
+					if (primary > 0 || secondary > 0) const SizedBox(width: 2),
+					child,
+					if (primary > 0 || secondary > 0) SizedBox(width: sideBySideRightPadding)
 				]
 			);
 		}
@@ -147,11 +150,13 @@ class NotifyingIcon extends StatelessWidget {
 	final ValueListenable<int>? secondaryCount;
 	final double topOffset;
 	final bool sideBySide;
+	final double sideBySideRightPadding;
 	const NotifyingIcon({
 		required this.icon,
 		this.primaryCount,
 		this.secondaryCount,
 		this.topOffset = 0,
+		this.sideBySideRightPadding = 0,
 		this.sideBySide = false,
 		Key? key
 	}) : super(key: key);
@@ -167,14 +172,16 @@ class NotifyingIcon extends StatelessWidget {
 				primary: 0,
 				secondary: secondary,
 				topOffset: topOffset,
-				sideBySide: sideBySide
+				sideBySide: sideBySide,
+				sideBySideRightPadding: sideBySideRightPadding
 			)
 		): ValueListenableBuilder(
 			valueListenable: primaryCount,
 			builder: (BuildContext context, int primary, Widget? child) => (secondaryCount == null) ? StationaryNotifyingIcon(
 				icon: icon,
 				primary: primary,
-				sideBySide: sideBySide
+				sideBySide: sideBySide,
+				sideBySideRightPadding: sideBySideRightPadding
 			) : ValueListenableBuilder(
 				valueListenable: secondaryCount,
 				builder: (BuildContext context, int secondary, Widget? child) => StationaryNotifyingIcon(
@@ -182,7 +189,8 @@ class NotifyingIcon extends StatelessWidget {
 					primary: primary,
 					secondary: secondary,
 					topOffset: topOffset,
-					sideBySide: sideBySide
+					sideBySide: sideBySide,
+					sideBySideRightPadding: sideBySideRightPadding
 				)
 			)
 		);

@@ -1703,6 +1703,7 @@ class ThreadPageState extends State<ThreadPage> {
 									),
 									if (site.supportsPosting) NotifyingIcon(
 										sideBySide: true,
+										sideBySideRightPadding: settings.materialStyle ? 16 : 0,
 										primaryCount: MappingValueListenable(
 											parent: Outbox.instance,
 											mapper: (o) =>

@@ -1066,6 +1066,7 @@ class BoardPageState extends State<BoardPage> {
 					),
 					if (imageboard?.site.supportsPosting ?? false) NotifyingIcon(
 						sideBySide: true,
+						sideBySideRightPadding: settings.materialStyle ? 16 : 0,
 						primaryCount: MappingValueListenable(
 							parent: Outbox.instance,
 							mapper: (o) =>
