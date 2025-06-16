@@ -136,8 +136,6 @@ class ReplyBoxState extends State<ReplyBox> {
 	(String, MediaConversion?)? _attachmentProgress;
 	static List<String> _previouslyUsedNames = [];
 	static List<String> _previouslyUsedOptions = [];
-	late final Timer _focusTimer;
-	(DateTime, FocusNode)? _lastNearbyFocus;
 	bool _disableLoginSystem = false;
 	bool get hasLoginSystem => context.read<ImageboardSite>().loginSystem?.getSavedLoginFields() != null;
 	final Map<ImageboardSnippet, TextEditingController> _snippetControllers = {};
@@ -388,17 +386,6 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		_tryUsingInitialFile(widget.initialDraft);
 		widget.onInitState?.call(this);
-		_focusTimer = Timer.periodic(const Duration(milliseconds: 200), (_) => _pollFocus());
-	}
-
-	void _pollFocus() {
-		if (!_show) {
-			return;
-		}
-		final nearbyFocus = FocusScope.of(context).focusedChild;
-		if (nearbyFocus != null) {
-			_lastNearbyFocus = (DateTime.now(), nearbyFocus);
-		}
 	}
 
 	@override
@@ -2171,10 +2158,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												onLongPress: picker.onLongPress?.bind1(this.context),
 												child: AdaptiveIconButton(
 													onPressed: loading ? null : () async {
-														FocusNode? focusToRestore;
-														if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
-															focusToRestore = _lastNearbyFocus?.$2;
-														}
+														final focusToRestore = FocusScope.of(this.context).focusedChild;
 														_attachmentProgress = ('Picking', null);
 														setState(() {});
 														// Local [context] is not safe. It will die when we go to 'Picking'
@@ -2683,7 +2667,6 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		for (final controller in _snippetControllers.values) {
 			controller.dispose();
 		}
-		_focusTimer.cancel();
 	}
 }
 
