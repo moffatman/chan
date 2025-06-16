@@ -570,11 +570,6 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			responseType: ResponseType.json
 		);
 
-	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
-		throw Exception('Not implemented');
-	}
-
 	static const _kArchivePageSize = 100;
 	Future<List<Thread>> _getArchive(String board, int? after, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/archive'), options: Options(

@@ -315,7 +315,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
 		throw UnimplementedError();
 	}
 

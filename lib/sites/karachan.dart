@@ -408,11 +408,6 @@ class SiteKarachan extends ImageboardSite {
 		};
 	}
 
-	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-		throw UnimplementedError();
-	}
-
 	static final _fileInfoPattern = RegExp(r'\((\d+(?:\.\d+)?)([KMB]), (\d+)x(\d+)(?: [^ ]+)?, (.+?)(?: \[i] \[g\])?\)');
 
 	@override

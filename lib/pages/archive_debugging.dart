@@ -53,13 +53,8 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-    return archive.getPost(board, id, priority: priority, cancelToken: cancelToken);
-  }
-
-  @override
   Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-    return archive.getPost(board, id, priority: priority, cancelToken: cancelToken);
+    return archive.getPostFromArchive(board, id, priority: priority, cancelToken: cancelToken);
   }
 
   @override

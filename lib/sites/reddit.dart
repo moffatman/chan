@@ -1261,8 +1261,8 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-		// TODO: implement getPost
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
+		// TODO: implement getPostFromArchive
 		throw UnimplementedError();
 	}
 

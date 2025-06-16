@@ -69,12 +69,6 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin {
 		}).toList();
 	}
 
-
-	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-		throw UnimplementedError();
-	}
-
 	List<Attachment> _makeAttachments(String board, int threadId, Map<String, dynamic> data) {
 		return ((data['files'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? []).map((file) {
 			final url = Uri.https(baseUrl, file['path']);

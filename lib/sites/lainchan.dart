@@ -435,11 +435,6 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		);
 	}
 
-	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-		throw Exception('Not implemented');
-	}
-
 	@protected
 	String get res => 'res';
 

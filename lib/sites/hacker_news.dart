@@ -497,7 +497,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final item = await _getAlgolia(id, priority: priority, cancelToken: cancelToken);
 		return _makePost(item);
 	}

@@ -337,11 +337,6 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
-		throw UnimplementedError();
-	}
-
-	@override
 	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant})
 		=> RequestOptions(
 			path: '/${thread.board}/thread/${thread.id}.json',

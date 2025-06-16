@@ -212,11 +212,6 @@ class SiteFutaba extends ImageboardSite {
 		}
 	}
 
-	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-		throw UnimplementedError();
-	}
-
 	Post _makePost(dom.Element element, String board, int threadId, List<Post> precedingPosts) {
 		// Futaba has implicit quotes, need to find the text in previous posts in thread.
 		final blockquote = element.querySelector('blockquote')!;

@@ -317,7 +317,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		_postThreadIdCache.putIfAbsent(board, () => {}).putIfAbsent(postId, () => threadId);
 	}
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {		
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {		
 		return await _makePost(await _getPostJson(board, id, priority: priority, cancelToken: cancelToken), priority: priority, cancelToken: cancelToken);
 	}
 	Future<Thread> getThreadContainingPost(String board, int id) async {

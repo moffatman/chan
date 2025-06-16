@@ -455,11 +455,6 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin {
 		}
 	}
 
-	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-		throw UnimplementedError();
-	}
-
 	Post _makePost(String board, int threadId, int id, Map<String, dynamic> obj) => unsafe(obj, () {
 		return Post(
 			board: board,

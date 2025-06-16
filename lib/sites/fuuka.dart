@@ -192,7 +192,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 	@override
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {		
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {		
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/post/$id'), options: Options(
 			extra: {
 				kPriority: priority

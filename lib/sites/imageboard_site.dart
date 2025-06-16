@@ -1580,7 +1580,7 @@ abstract class ImageboardSiteArchive {
 		client.httpClientAdapter = BadCertificateHttpClientAdapter();
 	}
 	String get name;
-	Future<Post> getPost(String board, int id, {required RequestPriority priority, CancelToken? cancelToken});
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken});
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	@protected
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
@@ -1716,14 +1716,15 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		DioError dioError => dioError.error is CloudflareHandlerNotAllowedException,
 		_ => false
 	};
-	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority}) async {
+	@override
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final Map<ImageboardSiteArchive, Object> errors = {};
 		for (final archive in archives) {
 			if (persistence?.browserState.disabledArchiveNames.contains(archive.name) ?? false) {
 				continue;
 			}
 			try {
-				final post = await archive.getPost(board, id, priority: RequestPriority.cosmetic);
+				final post = await archive.getPostFromArchive(board, id, priority: RequestPriority.cosmetic, cancelToken: cancelToken);
 				post.archiveName = archive.name;
 				return post;
 			}
@@ -1739,7 +1740,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				// No need to check disabledArchiveNames, they can't fail to begin with
 				if (_isCloudflareNotAllowedException(error.value)) {
 					try {
-						final post = await error.key.getPost(board, id, priority: priority);
+						final post = await error.key.getPostFromArchive(board, id, priority: priority, cancelToken: cancelToken);
 						post.archiveName = error.key.name;
 						return post;
 					}
