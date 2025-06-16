@@ -172,25 +172,31 @@ class ThreadWatcher extends ChangeNotifier {
 		setInitialCounts();
 	}
 
+	Future<void> _updateThreadCounts(PersistentThreadState threadState, ThreadWatch watch, Thread thread) async {
+		if (thread.posts_.last.id == threadState.lastSeenPostId && threadState.unseenPostIds.data.isEmpty) {
+			// Fast path - all posts seen. Avoid the preinit.
+			cachedUnseenYous[watch.threadIdentifier] = 0;
+			if (!watch.localYousOnly) {
+				cachedUnseen[watch.threadIdentifier] = 0;
+			}
+		}
+		else {
+			await thread.preinit();
+			cachedUnseenYous[watch.threadIdentifier] = threadState.unseenReplyIdsToYouCount() ?? 0;
+			if (!watch.localYousOnly) {
+				cachedUnseen[watch.threadIdentifier] = threadState.unseenReplyCount() ?? 0;
+			}
+		}
+	}
+
 	/// Exposed to allow re-initialize after importing
 	Future<void> setInitialCounts() async {
 		// Could be concurrently-modified
 		for (final watch in persistence.browserState.threadWatches.values.toList()) {
 			final ts = persistence.getThreadStateIfExists(watch.threadIdentifier);
 			final thread = await ts?.ensureThreadLoaded(preinit: false);
-			if (thread?.posts_.last.id == ts?.lastSeenPostId && (ts?.unseenPostIds.data.isEmpty ?? false)) {
-				// Fast path - all posts seen. Avoid the preinit.
-				cachedUnseenYous[watch.threadIdentifier] = 0;
-				if (!watch.localYousOnly) {
-					cachedUnseen[watch.threadIdentifier] = 0;
-				}
-			}
-			else {
-				await thread?.preinit();
-				cachedUnseenYous[watch.threadIdentifier] = ts?.unseenReplyIdsToYouCount() ?? 0;
-				if (!watch.localYousOnly) {
-					cachedUnseen[watch.threadIdentifier] = ts?.unseenReplyCount() ?? 0;
-				}
+			if (ts != null && thread != null) {
+				await _updateThreadCounts(ts, watch, thread);
 			}
 		}
 		for (final tab in Persistence.tabs.toList()) {
@@ -258,27 +264,24 @@ class ThreadWatcher extends ChangeNotifier {
 		if (newThreadState.imageboardKey != imageboardKey) {
 			return;
 		}
-		if (newThreadState.thread != null) {
+		if (newThreadState.thread case Thread thread) {
 			if (_unseenStickyThreads.contains(newThreadState.identifier)) {
 				_unseenStickyThreads.remove(newThreadState.identifier);
 				_updateCounts();
 			}
 			final watch = persistence.browserState.threadWatches[newThreadState.identifier];
 			if (watch != null) {
-				cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
-				if (!watch.localYousOnly) {
-					cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;
-				}
+				await _updateThreadCounts(newThreadState, watch, thread);
 				_updateCounts();
-				if ((newThreadState.thread!.isArchived || newThreadState.thread!.isLocked) && !watch.zombie) {
+				if ((thread.isArchived || thread.isLocked) && !watch.zombie) {
 					await notifications.zombifyThreadWatch(watch, false);
 				}
 				if (!listEquals(watch.youIds, newThreadState.youIds)) {
 					watch.youIds = newThreadState.youIds;
 					notifications.didUpdateWatch(watch);
 				}
-				if (watch.lastSeenId < newThreadState.thread!.posts_.last.id) {
-					notifications.updateLastKnownId(watch, newThreadState.thread!.posts_.last.id);
+				if (watch.lastSeenId < thread.posts_.last.id) {
+					notifications.updateLastKnownId(watch, thread.posts_.last.id);
 				}
 			}
 		}
