@@ -3361,78 +3361,70 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													)
 												)
 										],
-										if (widget.aboveFooter != null) ...[
-											SliverToBoxAdapter(
-												child: widget.aboveFooter
-											)
-										],
-										if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
-											top: false,
-											sliver: SliverToBoxAdapter(
-												child: widget.footer
-											)
-										)
-										else if (widget.footer != null && !widget.disableUpdates) SliverToBoxAdapter(
-											child: RepaintBoundary(
-												child: GestureDetector(
-													behavior: HitTestBehavior.opaque,
-													onTap: (!widget.canTapFooter || (updatingNow.value != null)) ? null : () {
-														lightHapticFeedback();
-														Future.delayed(const Duration(milliseconds: 17), () {
-															controller.scrollController?.animateTo(
-																controller.scrollController!.position.maxScrollExtent,
-																duration: const Duration(milliseconds: 250),
-																curve: Curves.ease
-															);
-														});
-														_footerShakeAnimation.forward(from: 0);
-														_updateOrExtendWithHapticFeedback();
-													},
-													child: AnimatedBuilder(
-														animation: shakeAnimation,
-														builder: (context, child) => Transform.scale(
-															scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
-															child: child
-														),
-														child: widget.footer
+										SliverList(
+											delegate: SliverChildListDelegate([
+												if (widget.aboveFooter != null) widget.aboveFooter!,
+												if (widget.footer != null && widget.disableUpdates) SafeArea(
+													top: false,
+													child: widget.footer!
+												)
+												else if (widget.footer != null && !widget.disableUpdates) RepaintBoundary(
+													child: GestureDetector(
+														behavior: HitTestBehavior.opaque,
+														onTap: (!widget.canTapFooter || (updatingNow.value != null)) ? null : () {
+															lightHapticFeedback();
+															Future.delayed(const Duration(milliseconds: 17), () {
+																controller.scrollController?.animateTo(
+																	controller.scrollController!.position.maxScrollExtent,
+																	duration: const Duration(milliseconds: 250),
+																	curve: Curves.ease
+																);
+															});
+															_footerShakeAnimation.forward(from: 0);
+															_updateOrExtendWithHapticFeedback();
+														},
+														child: AnimatedBuilder(
+															animation: shakeAnimation,
+															builder: (context, child) => Transform.scale(
+																scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
+																child: child
+															),
+															child: widget.footer
+														)
 													)
 												)
-											)
-										)
-										else if (widget.disableUpdates || widget.disableBottomUpdates) const SliverSafeArea(
-											top: false,
-											sliver: SliverToBoxAdapter(
-												child: SizedBox.shrink()
-											)
-										),
-										if (!widget.disableUpdates && !widget.disableBottomUpdates) SliverSafeArea(
-											top: false,
-											sliver: SliverToBoxAdapter(
-												child: RepaintBoundary(
-													child: ValueListenableBuilder(
-														valueListenable: error,
-														builder: (context, error, _) {
-															final errorType = error?.$1.runtimeType;
-															return ValueListenableBuilder(
-																valueListenable: updatingNow,
-																builder: (context, updatingNow, _) => RefreshableListFooter(
-																	key: _footerKey,
-																	updater: _updateOrExtendWithHapticFeedback,
-																	updatingNow: updatingNow != null,
-																	lastUpdateTime: lastUpdateTime,
-																	nextUpdateTime: nextUpdateTime,
-																	error: error,
-																	remedy: widget.remedies[errorType],
-																	overscrollFactor: controller.overscrollFactor,
-																	pointerDownNow: () {
-																		return _pointerDownCount > 0;
-																	}
-																)
-															);
-														}
+												else if (widget.disableUpdates || widget.disableBottomUpdates) const SafeArea(
+													top: false,
+													child: SizedBox.shrink()
+												),
+												if (!widget.disableUpdates && !widget.disableBottomUpdates) SafeArea(
+													top: false,
+													child: RepaintBoundary(
+														child: ValueListenableBuilder(
+															valueListenable: error,
+															builder: (context, error, _) {
+																final errorType = error?.$1.runtimeType;
+																return ValueListenableBuilder(
+																	valueListenable: updatingNow,
+																	builder: (context, updatingNow, _) => RefreshableListFooter(
+																		key: _footerKey,
+																		updater: _updateOrExtendWithHapticFeedback,
+																		updatingNow: updatingNow != null,
+																		lastUpdateTime: lastUpdateTime,
+																		nextUpdateTime: nextUpdateTime,
+																		error: error,
+																		remedy: widget.remedies[errorType],
+																		overscrollFactor: controller.overscrollFactor,
+																		pointerDownNow: () {
+																			return _pointerDownCount > 0;
+																		}
+																	)
+																);
+															}
+														)
 													)
 												)
-											)
+											])
 										)
 									]
 								)
