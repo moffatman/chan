@@ -1186,6 +1186,7 @@ class ChanTabs extends ChangeNotifier {
 	void didCloseReplyBox() {
 		if (mainTabIndex == 0 && !_homePageState._showTabPopup.value && _didHideTabPopupFromReplyBox) {
 			_homePageState._onShouldShowTabPopup(true);
+			_didHideTabPopupFromReplyBox = false;
 		}
 	}
 }
