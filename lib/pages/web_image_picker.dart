@@ -430,6 +430,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										if (await webViewController?.getUrl() case WebUri url) {
 											final cookies = await CookieManager.instance().getCookies(url: url);
 											headers['cookie'] = cookies.map((c) => '${c.name}=${c.value}').join('; ');
+											headers['referer'] = 'https://${url.authority}/';
 										}
 										final returnedResults = await webViewController?.evaluateJavascript(
 											source: '''[...document.querySelectorAll('img, video'), ...[...document.querySelectorAll('iframe')].flatMap(iframe => {
