@@ -76,6 +76,13 @@ class HistorySearchPage extends StatefulWidget {
 
 class _HistorySearchPageState extends State<HistorySearchPage> {
 	String _query = '';
+	bool _exactMatch = false;
+	RegExp get _queryRegex {
+		if (_exactMatch) {
+			return RegExp(RegExp.escape(_query), caseSensitive: false);
+		}
+		return RegExp('(?:${RegExp.escape(_query).replaceAll(' ', ')|(?:')})', caseSensitive: false);
+	}
 	int numer = 0;
 	int denom = 1;
 	bool _scanningPhase = false;
@@ -200,7 +207,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		denom = firstPass.values.fold(0, (t, l) => t + l.length);
 		_scanningPhase = false;
 		setState(() {});
-		final query = RegExp(RegExp.escape(_query), caseSensitive: false);
+		final queryParts =
+				_exactMatch
+					? [RegExp(RegExp.escape(_query), caseSensitive: false)]
+					: _query.split(' ').map((q) => RegExp(RegExp.escape(q), caseSensitive: false));
 		for (final future in firstPass.values.expand((l) => l).map((threadState) async {
 			if (!mounted) return;
 			final thread = await threadState.getThread();
@@ -212,8 +222,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					}
 					if (
 						_query.isNotEmpty &&
-						!post.buildText().contains(query) &&
-						!(post.threadId == post.id && thread.title?.contains(query) == true)
+						!queryParts.every((query) => post.buildText().contains(query)) &&
+						!(post.threadId == post.id && queryParts.every((query) => thread.title?.contains(query) == true))
 					) {
 						continue;
 					}
@@ -276,13 +286,38 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 							mainAxisSize: MainAxisSize.min,
 							children: [
 								const SizedBox(height: 16),
-								SizedBox(
-									width: 200,
-									child: AdaptiveTextField(
-										controller: controller,
-										placeholder: 'Query',
-										onChanged: (_) => anyChange = true
-									)
+								Row(
+									mainAxisAlignment: MainAxisAlignment.center,
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										SizedBox(
+											width: 200,
+											child: AdaptiveTextField(
+												controller: controller,
+												placeholder: 'Query',
+												onChanged: (_) => anyChange = true
+											)
+										),
+										const SizedBox(width: 8),
+										AdaptiveIconButton(
+											padding: EdgeInsets.zero,
+											minSize: 0,
+											icon: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(
+														_exactMatch ?CupertinoIcons.checkmark_square : CupertinoIcons.square
+													),
+													const Text('Exact')
+												]
+											),
+											onPressed: () {
+												_exactMatch = !_exactMatch;
+												anyChange = true;
+												setDialogState(() {});
+											}
+										)
+									]
 								),
 								const SizedBox(height: 16),
 								Row(
@@ -459,7 +494,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final queryPattern = RegExp(RegExp.escape(_query), caseSensitive: false);
+		final queryPattern = _queryRegex;
 		Widget itemBuilder(BuildContext context, ImageboardScoped<HistorySearchResult> row, RefreshableListItemOptions options) {
 		if (row.item.post != null) {
 			return ImageboardScope(
