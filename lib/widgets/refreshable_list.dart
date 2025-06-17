@@ -3415,6 +3415,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																		error: error,
 																		remedy: widget.remedies[errorType],
 																		overscrollFactor: controller.overscrollFactor,
+																		isScrollable: controller.isScrollable,
 																		pointerDownNow: () {
 																			return _pointerDownCount > 0;
 																		}
@@ -3502,6 +3503,7 @@ class RefreshableListFooter extends StatelessWidget {
 	final DateTime? nextUpdateTime;
 	final (String, Future<void> Function())? remedy;
 	final ValueListenable<double>? overscrollFactor;
+	final ValueListenable<bool>? isScrollable;
 	final bool Function() pointerDownNow;
 	const RefreshableListFooter({
 		required this.updater,
@@ -3511,6 +3513,7 @@ class RefreshableListFooter extends StatelessWidget {
 		this.error,
 		this.remedy,
 		this.overscrollFactor,
+		this.isScrollable,
 		required this.pointerDownNow,
 		Key? key
 	}) : super(key: key);
@@ -3562,78 +3565,81 @@ class RefreshableListFooter extends StatelessWidget {
 									maxHeight: 100,
 									alignment: Alignment.topCenter,
 									child: ValueListenableBuilder(
-										valueListenable: overscrollFactor!,
-										builder: (context, double value, child) => TweenAnimationBuilder(
-											tween: Tween<double>(begin: 0, end: value),
-											duration: const Duration(milliseconds: 50),
-											curve: Curves.ease,
-											builder: (context, double smoothedValue, child) => Stack(
-												alignment: Alignment.topCenter,
-												clipBehavior: Clip.none,
-												children: [
-													Positioned(
-														top: 0,
-														child: Container(
-															padding: const EdgeInsets.only(top: 32),
-															constraints: const BoxConstraints(
-																maxWidth: 100
-															),
-															child: ClipRRect(
-																borderRadius: const BorderRadius.all(Radius.circular(8)),
-																child: Stack(
-																	children: [
-																		if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder<double>(
-																			enabled: true,
-																			interval: const Duration(seconds: 1),
-																			function: () {
-																				final now = DateTime.now();
-																				return updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds;
-																			},
-																			builder: (context, value) {
-																				return LinearProgressIndicator(
-																					value: value,
-																					color: theme.primaryColor.withOpacity(0.5),
-																					backgroundColor: primaryColorWithBrightness10,
-																					minHeight: 8
-																				);
-																			}
-																		) else LinearProgressIndicator(
-																			value: 0,
-																			color: theme.primaryColor.withOpacity(0.5),
-																			backgroundColor: primaryColorWithBrightness10,
-																			minHeight: 8
-																		),
-																		LinearProgressIndicator(
-																			value: (updatingNow) ? null : (pointerDownNow() ? smoothedValue : 0),
-																			backgroundColor: Colors.transparent,
-																			color: theme.primaryColor,
-																			minHeight: 8
-																		)
-																	]
+										valueListenable: isScrollable ?? const ConstantValueListenable(false),
+										builder: (context, bool isScrollableValue, child) => ValueListenableBuilder(
+											valueListenable: overscrollFactor!,
+											builder: (context, double value, child) => TweenAnimationBuilder(
+												tween: Tween<double>(begin: 0, end: value),
+												duration: const Duration(milliseconds: 50),
+												curve: Curves.ease,
+												builder: (context, double smoothedValue, child) => Stack(
+													alignment: Alignment.topCenter,
+													clipBehavior: Clip.none,
+													children: [
+														Positioned(
+															top: 0,
+															child: Container(
+																padding: const EdgeInsets.only(top: 32),
+																constraints: const BoxConstraints(
+																	maxWidth: 100
+																),
+																child: ClipRRect(
+																	borderRadius: const BorderRadius.all(Radius.circular(8)),
+																	child: Stack(
+																		children: [
+																			if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder<double>(
+																				enabled: !isScrollableValue || smoothedValue > 0,
+																				interval: const Duration(seconds: 1),
+																				function: () {
+																					final now = DateTime.now();
+																					return updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds;
+																				},
+																				builder: (context, value) {
+																					return LinearProgressIndicator(
+																						value: value,
+																						color: theme.primaryColor.withOpacity(0.5),
+																						backgroundColor: primaryColorWithBrightness10,
+																						minHeight: 8
+																					);
+																				}
+																			) else LinearProgressIndicator(
+																				value: 0,
+																				color: theme.primaryColor.withOpacity(0.5),
+																				backgroundColor: primaryColorWithBrightness10,
+																				minHeight: 8
+																			),
+																			LinearProgressIndicator(
+																				value: (updatingNow) ? null : (pointerDownNow() ? smoothedValue : 0),
+																				backgroundColor: Colors.transparent,
+																				color: theme.primaryColor,
+																				minHeight: 8
+																			)
+																		]
+																	)
 																)
 															)
+														),
+														if ((nextUpdateTime?.isAfter(DateTime.now()) ?? false) &&
+																(lastUpdateTime?.isBefore(DateTime.now().subtract(const Duration(seconds: 1))) ?? false) &&
+																!updatingNow) Positioned(
+															top: 50,
+															child: TimedRebuilder(
+																enabled: nextUpdateTime != null && lastUpdateTime != null && (!isScrollableValue || smoothedValue > 0),
+																interval: const Duration(seconds: 1),
+																function: () {
+																	return formatRelativeTime(nextUpdateTime ?? DateTime(3000));
+																},
+																builder: (context, relativeTime) {
+																	return GreedySizeCachingBox(
+																		child: Text('Next update $relativeTime', style: TextStyle(
+																			color: primaryColorWithBrightness50
+																		))
+																	);
+																}
+															)
 														)
-													),
-													if ((nextUpdateTime?.isAfter(DateTime.now()) ?? false) &&
-													    (lastUpdateTime?.isBefore(DateTime.now().subtract(const Duration(seconds: 1))) ?? false) &&
-															!updatingNow) Positioned(
-														top: 50,
-														child: TimedRebuilder(
-															enabled: nextUpdateTime != null && lastUpdateTime != null,
-															interval: const Duration(seconds: 1),
-															function: () {
-																return formatRelativeTime(nextUpdateTime ?? DateTime(3000));
-															},
-															builder: (context, relativeTime) {
-																return GreedySizeCachingBox(
-																	child: Text('Next update $relativeTime', style: TextStyle(
-																		color: primaryColorWithBrightness50
-																	))
-																);
-															}
-														)
-													)
-												]
+													]
+												)
 											)
 										)
 									)
@@ -3681,6 +3687,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	RefreshableListItem<T> getItem(int i) => _items[i].item;
 	ScrollController? scrollController;
 	late final ValueNotifier<double> overscrollFactor = ValueNotifier<double>(0);
+	late final ValueNotifier<bool> isScrollable = ValueNotifier<bool>(true);
 	final slowScrolls = BufferedListenable(const Duration(milliseconds: 100));
 	double topOffset = 0;
 	double bottomOffset = 0;
@@ -3776,6 +3783,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		if (scrollControllerPositionLooksGood) {
 			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
 			overscrollFactor.value = (overscrollAmount / _overscrollTriggerThreshold).clamp(0, 1);
+			isScrollable.value = scrollController!.position.maxScrollExtent > 0;
 		}
 	}
 	void attach(RefreshableListState<T> list) {
@@ -3808,6 +3816,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		slowScrolls.removeListener(_onSlowScroll);
 		slowScrolls.dispose();
 		overscrollFactor.dispose();
+		isScrollable.dispose();
 	}
 	void newContentId(String contentId) {
 		if (this.contentId != null && this.contentId != contentId) {

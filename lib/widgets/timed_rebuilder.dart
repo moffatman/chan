@@ -36,6 +36,15 @@ class _TimedRebuilderState<T> extends State<TimedRebuilder<T>> {
 	}
 
 	@override
+	void didUpdateWidget(TimedRebuilder<T> oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.enabled && !oldWidget.enabled) {
+			// We might have skipped last update
+			notifier.value = widget.function();
+		}
+	}
+
+	@override
 	void dispose() {
 		super.dispose();
 		timer.cancel();
