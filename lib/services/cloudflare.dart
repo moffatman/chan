@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:io';
 
 import 'package:chan/services/dark_mode_browser.dart';
 import 'package:chan/services/imageboard.dart';
@@ -422,6 +423,19 @@ class CloudflareInterceptor extends Interceptor {
 				lastController = controller;
 				await maybeApplyDarkModeBrowserJS(controller);
 				final title = await controller.getTitle() ?? '';
+				// Android WebView in-band error page check
+				if (Platform.isAndroid && (
+					title == 'Web page not available' ||
+					title == 'Webpage not available' ||
+					cookieUrl.toString().contains(title))
+				) {
+					final html = await controller.getHtml() ?? '';
+					if (html.contains('<!-- Upside down Android -->') && html.contains('<!-- Error description or suggestions -->')) {
+						final error = (parse(html).body?.text ?? title).trim();
+						callback(AsyncSnapshot.withError(ConnectionState.done, Exception(error), StackTrace.current));
+						return;
+					}
+				}
 				if (!ImageboardRegistry.instance.isRedirectGateway(uri, title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
 					await Persistence.saveCookiesFromWebView(uri!);
 					try {
