@@ -10,10 +10,13 @@ import 'package:flutter/widgets.dart';
 
 class CNetworkImageProvider extends ExtendedNetworkImageProvider {
 	final Dio? client;
+	final RequestPriority priority;
+
   CNetworkImageProvider(super.url, {
 		required this.client,
 		super.cache,
-		super.headers
+		super.headers,
+		this.priority = RequestPriority.cosmetic
 	});
 
 	@override
@@ -27,8 +30,7 @@ class CNetworkImageProvider extends ExtendedNetworkImageProvider {
 			responseType: ResponseType.bytes,
 			headers: headers,
 			extra: {
-				// We can't really get the image bytes after clearing cloudflare, don't try it
-				kPriority: RequestPriority.cosmetic,
+				kPriority: priority,
 				kRetryIfCloudflare: true
 			}
 		), onReceiveProgress: chunkEvents == null ? null : (count, total) {

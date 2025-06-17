@@ -1,4 +1,5 @@
 import 'package:chan/services/network_image_provider.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/widgets.dart';
@@ -16,6 +17,7 @@ class CNetworkImage extends StatelessWidget {
 	final double? height;
 	final int? cacheWidth;
 	final int? cacheHeight;
+	final RequestPriority priority;
 
 	const CNetworkImage({
 		required this.url,
@@ -30,6 +32,7 @@ class CNetworkImage extends StatelessWidget {
 		this.height,
 		this.cacheWidth,
 		this.cacheHeight,
+		this.priority = RequestPriority.cosmetic,
 		super.key
 	});
 
@@ -41,7 +44,8 @@ class CNetworkImage extends StatelessWidget {
 					url,
 					client: client,
 					headers: headers,
-					cache: cache
+					cache: cache,
+					priority: priority
 				),
 				cacheWidth: cacheWidth,
 				cacheHeight: cacheHeight

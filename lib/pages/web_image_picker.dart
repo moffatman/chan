@@ -516,7 +516,16 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													headers: headers,
 													client: null,
 													cache: true,
-													fit: BoxFit.contain
+													fit: BoxFit.contain,
+													priority: RequestPriority.functional,
+													loadStateChanged: (state) {
+														if (state.extendedImageLoadState == LoadState.loading) {
+															return const Center(
+																child: CircularProgressIndicator.adaptive()
+															);
+														}
+														return null;
+													},
 												);
 												Uint8List? data;
 												if (image.src.startsWith('data:')) {
