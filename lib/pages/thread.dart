@@ -3364,6 +3364,12 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
 														return entry.key < firstVisibleIndex &&
 															(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.persistentState.unseenPostIds.data.contains(id.childId))) &&
+															!widget.listController.isItemHidden(entry.value).isDuplicate &&
+															// First try to find a non-stub
+															!entry.value.representsStubChildren;
+													})?.key ?? widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
+														return entry.key < firstVisibleIndex &&
+															(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.persistentState.unseenPostIds.data.contains(id.childId))) &&
 															!widget.listController.isItemHidden(entry.value).isDuplicate;
 													})?.key ?? -1;
 													if (targetIndex != -1) {

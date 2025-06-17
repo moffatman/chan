@@ -791,12 +791,15 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void unhideItem(RefreshableListItem<T> item, {bool includingParents = false}) {
+	Future<void> unhideItem(RefreshableListItem<T> item, {bool includingParents = false}) async {
 		final x = [
 			...item.parentIds,
 			item.id
 		];
-		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id) || (includingParents && item._key.isDescendantOf(key)));
+		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
+		if (includingParents) {
+			_cache.removeWhere((key, value) => key.parentIds.contains(item.parentIds.tryFirst));
+		}
 		final manuallyCollapsedItemsLengthBefore = manuallyCollapsedItems.length;
 		manuallyCollapsedItems.removeWhere(includingParents ? x.beginsWith : (w) => listEquals(w, x));
 		if (manuallyCollapsedItemsLengthBefore != manuallyCollapsedItems.length) {
@@ -833,8 +836,14 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			}
 			return true;
 		});
-		state._onTreeCollapseOrExpand.call(item, false);
 		notifyListeners();
+		if (includingParents) {
+			final root = state.controller._items.tryFirstWhere((i) => i.item.id == item.parentIds.tryFirst)?.item;
+			await state._onTreeCollapseOrExpand.call(root ?? item, false);
+		}
+		else {
+			await state._onTreeCollapseOrExpand.call(item, false);
+		}
 	}
 
 	void swapSubtreeTo(RefreshableListItem<T> item) {
@@ -4035,7 +4044,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		final start = DateTime.now();
 		currentTargetIndex = targetIndex;
 		if (revealIfHidden && isItemHidden(_items[targetIndex].item).isHidden) {
-			state?._refreshableTreeItems.unhideItem(_items[targetIndex].item, includingParents: true);
+			await state?._refreshableTreeItems.unhideItem(_items[targetIndex].item, includingParents: true);
 		}
 		final initialContentId = contentId;
 		if (_estimateOffset(targetIndex) == null) {
