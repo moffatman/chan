@@ -1538,13 +1538,20 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
-	void _mergeTrees({required bool rebuild}) {
+	Future<void> _mergeTrees({required bool rebuild}) async {
 		final newTreeSplitId = controller._items.fold<int>(0, (m, i) => max(m, i.item.representsKnownStubChildren.fold<int>(i.item.id, (n, j) => max(n, j.childId))));
 		_lastTreeOrder = null; // Reorder OK
 		_treeSplitId = newTreeSplitId;
 		widget.onTreeSplitIdChanged?.call(newTreeSplitId);
 		if (rebuild) {
-			setState(() {});
+			try {
+				controller._lockSliverListAtEnd();
+				setState(() {});
+				await SchedulerBinding.instance.endOfFrame;
+			}
+			finally {
+				controller._unlockSliverList();
+			}
 		}
 	}
 
@@ -1594,7 +1601,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				minUpdateDuration = overrideMinUpdateDuration ?? minUpdateDuration;
 				final lastItem = controller._items.tryLast?.item;
 				if (mergeTrees) {
-					_mergeTrees(rebuild: false);
+					await _mergeTrees(rebuild: true);
 				}
 				if (extend && treeAdapter != null && lastItem != null && lastItem.representsStubChildren) {
 					_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, lastItem.id, cancelToken);
@@ -4033,6 +4040,16 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
 		}
 	}
+	void _lockSliverListAtIndex(int index) {
+		assert(index >= 0);
+		// This is not supported on flutter master
+	}
+	void _lockSliverListAtEnd() {
+		// This is not supported on flutter master
+	}
+	void _unlockSliverList() {
+		// This is not supported on flutter master
+	}
 	Future<void> _animateToIndex(int targetIndex, {
 		required double alignment,
 		required Duration duration,
@@ -4040,135 +4057,144 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		required double startPixels,
 		required bool revealIfHidden
 	}) async {
-		print('$contentId animating to $targetIndex (${_items[targetIndex].item.item}) (alignment: $alignment)');
-		final start = DateTime.now();
-		currentTargetIndex = targetIndex;
-		if (revealIfHidden && isItemHidden(_items[targetIndex].item).isHidden) {
-			await state?._refreshableTreeItems.unhideItem(_items[targetIndex].item, includingParents: true);
-		}
-		final initialContentId = contentId;
-		if (_estimateOffset(targetIndex) == null) {
-			// Or it will hang
-			final minDuration = const Duration(seconds: 5) * _items.length;
-			if (minDuration < duration) {
-				duration = minDuration;
+		try {
+			print('$contentId animating to $targetIndex (${_items[targetIndex].item.item}) (alignment: $alignment)');
+			final start = DateTime.now();
+			currentTargetIndex = targetIndex;
+			if (revealIfHidden && isItemHidden(_items[targetIndex].item).isHidden) {
+				if (targetIndex < firstVisibleIndex) {
+					_lockSliverListAtIndex(_items.indexWhere((i) => !isItemHidden(i.item).isHidden, targetIndex));
+				}
+				await state?._refreshableTreeItems.unhideItem(_items[targetIndex].item, includingParents: true);
 			}
-		}
-		Future<bool> attemptResolve() async {
-			if (scrollController!.position.outOfRange) {
-				scrollController!.position.jumpTo(scrollController!.position.maxScrollExtent);
+			final initialContentId = contentId;
+			if (_estimateOffset(targetIndex) == null) {
+				// Or it will hang
+				final minDuration = const Duration(seconds: 5) * _items.length;
+				if (minDuration < duration) {
+					duration = minDuration;
+				}
 			}
-			final completer = Completer<void>();
-			final originalEstimate = _estimateOffset(targetIndex);
-			double estimate = switch (originalEstimate) {
-				double e => e - topOffset,
-				null => switch (scrollController!.position.maxScrollExtent) {
-					double.infinity => 200 * _items.length, // make it sane
-					double ok => ok
-				} * (targetIndex / max(1, _items.length - 1))
-			};
-			if (_items.last.cachedOffset != null) {
-				// prevent overscroll
-				estimate = min(estimate, scrollController!.position.maxScrollExtent);
-			}
-			estimate = max(0, estimate);
-			if (startPixels == estimate) {
-				return true;
-			}
-			_itemCacheCallbacks.putIfAbsent((targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
-			final cc = curve.recurve(
-				start: startPixels,
-				current: scrollController!.position.pixels,
-				end: estimate
-			);
-			if ((estimate - scrollController!.position.pixels < 50)) {
-				await _tryCachingItem(targetIndex);
-			}
-			final delay = Duration(milliseconds: max(50, (duration * ((estimate - scrollController!.position.pixels) / (startPixels - estimate)).abs()).inMilliseconds));
-			scrollController!.animateTo(
-				estimate,
-				duration: delay,
-				curve: cc
-			);
-			await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 50)), Future.delayed(duration ~/ 4)])]);
-			return (_items[targetIndex].cachedOffset != null);
-		}
-		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
-			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 7 && targetIndex == currentTargetIndex) {
-				// Keep trying
-			}
-			if (initialContentId != contentId) {
-				print('List was hijacked ($initialContentId -> $contentId)');
-				return;
-			}
-			if (currentTargetIndex != targetIndex) {
-				print('animateTo was hijacked ($targetIndex -> $currentTargetIndex)');
-				return;
-			}
-		}
-		if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
-			throw TimeoutException('Scrolling timed out');
-		}
-		if (_isDisposed) {
-			return;
-		}
-		double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset;
-		final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset - bottomOffset;
-		if (targetIndex == _items.length - 1) {
-			// add offset to reveal the full footer
-			atAlignment0 += 110;
-		}
-		else if (targetIndex == 0 && state?.widget.filterableAdapter != null && alignment >= 0) {
-			// subtract offset to reveal the search bar
-			atAlignment0 = 0;
-		}
-		else {
-			atAlignment0 += 1;
-		}
-		final finalDestinationUnclamped = atAlignment0 - (alignmentSlidingWindow * alignment);
-		if (finalDestinationUnclamped > scrollController!.position.maxScrollExtent &&
-		    (_items.last.cachedHeight == null || _items.last.cachedOffset == null)) {
-			// Need to actually figure out the height
-			final penultimateDuration = duration * ((scrollController!.position.maxScrollExtent - scrollController!.position.pixels) / (startPixels - scrollController!.position.maxScrollExtent)).abs();
-			await scrollController!.animateTo(
-				scrollController!.position.maxScrollExtent,
-				duration: penultimateDuration > const Duration(milliseconds: 50) ? penultimateDuration : const Duration(milliseconds: 50),
-				curve: curve.recurve(
+			Future<bool> attemptResolve() async {
+				if (scrollController!.position.outOfRange) {
+					scrollController!.position.jumpTo(scrollController!.position.maxScrollExtent);
+				}
+				final completer = Completer<void>();
+				final originalEstimate = _estimateOffset(targetIndex);
+				double estimate = switch (originalEstimate) {
+					double e => e - topOffset,
+					null => switch (scrollController!.position.maxScrollExtent) {
+						double.infinity => 200 * _items.length, // make it sane
+						double ok => ok
+					} * (targetIndex / max(1, _items.length - 1))
+				};
+				if (_items.last.cachedOffset != null) {
+					// prevent overscroll
+					estimate = min(estimate, scrollController!.position.maxScrollExtent);
+				}
+				estimate = max(0, estimate);
+				if (startPixels == estimate) {
+					return true;
+				}
+				_itemCacheCallbacks.putIfAbsent((targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
+				final cc = curve.recurve(
 					start: startPixels,
 					current: scrollController!.position.pixels,
-					end: scrollController!.position.maxScrollExtent
-				)
-			);
-		}
+					end: estimate
+				);
+				if ((estimate - scrollController!.position.pixels < 50)) {
+					await _tryCachingItem(targetIndex);
+				}
+				final delay = Duration(milliseconds: max(50, (duration * ((estimate - scrollController!.position.pixels) / (startPixels - estimate)).abs()).inMilliseconds));
+				scrollController!.animateTo(
+					estimate,
+					duration: delay,
+					curve: cc
+				);
+				await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 50)), Future.delayed(duration ~/ 4)])]);
+				return (_items[targetIndex].cachedOffset != null);
+			}
+			if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
+				while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 7 && targetIndex == currentTargetIndex) {
+					// Keep trying
+				}
+				if (initialContentId != contentId) {
+					print('List was hijacked ($initialContentId -> $contentId)');
+					return;
+				}
+				if (currentTargetIndex != targetIndex) {
+					print('animateTo was hijacked ($targetIndex -> $currentTargetIndex)');
+					return;
+				}
+			}
+			if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
+				throw TimeoutException('Scrolling timed out');
+			}
+			if (_isDisposed) {
+				return;
+			}
+			double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset;
+			final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset - bottomOffset;
+			if (targetIndex == _items.length - 1) {
+				// add offset to reveal the full footer
+				atAlignment0 += 110;
+			}
+			else if (targetIndex == 0 && state?.widget.filterableAdapter != null && alignment >= 0) {
+				// subtract offset to reveal the search bar
+				atAlignment0 = 0;
+			}
+			else {
+				atAlignment0 += 1;
+			}
+			final finalDestinationUnclamped = atAlignment0 - (alignmentSlidingWindow * alignment);
+			if (finalDestinationUnclamped > scrollController!.position.maxScrollExtent &&
+					(_items.last.cachedHeight == null || _items.last.cachedOffset == null)) {
+				// Need to actually figure out the height
+				final penultimateDuration = duration * ((scrollController!.position.maxScrollExtent - scrollController!.position.pixels) / (startPixels - scrollController!.position.maxScrollExtent)).abs();
+				await scrollController!.animateTo(
+					scrollController!.position.maxScrollExtent,
+					duration: penultimateDuration > const Duration(milliseconds: 50) ? penultimateDuration : const Duration(milliseconds: 50),
+					curve: curve.recurve(
+						start: startPixels,
+						current: scrollController!.position.pixels,
+						end: scrollController!.position.maxScrollExtent
+					)
+				);
+			}
 
-		// The scrollController's maxScrollExtent is not trustworthy
-		double maxScrollExtent;
-		if (_items.last.cachedHeight != null && _items.last.cachedOffset != null) {
-			final footerHeight = state?.widget.footer != null ? 40 : 0; // Lazy estimate
-			maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset;
+			// The scrollController's maxScrollExtent is not trustworthy
+			double maxScrollExtent;
+			if (_items.last.cachedHeight != null && _items.last.cachedOffset != null) {
+				final footerHeight = state?.widget.footer != null ? 40 : 0; // Lazy estimate
+				maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset;
+			}
+			else {
+				maxScrollExtent = scrollController!.position.maxScrollExtent - (state?.updatingNow.value != null ? 64 : 0);
+			}
+			// Give up and fallback
+			if (maxScrollExtent <= 0) {
+				maxScrollExtent = scrollController!.position.maxScrollExtent;
+			}
+			final finalDestination = finalDestinationUnclamped.clamp(0.0, maxScrollExtent);
+			if (scrollController!.position.pixels != finalDestination) {
+				final finalDuration = duration * ((finalDestination - scrollController!.position.pixels) / (startPixels - finalDestination)).abs();
+				await scrollController!.animateTo(
+					finalDestination,
+					duration: finalDuration > const Duration(milliseconds: 50) ? finalDuration : const Duration(milliseconds: 50),
+					curve: curve.recurve(
+						start: startPixels,
+						current: scrollController!.position.pixels,
+						end: finalDestination
+					)
+				);
+			}
+			await SchedulerBinding.instance.endOfFrame;
+			await scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
 		}
-		else {
-			maxScrollExtent = scrollController!.position.maxScrollExtent - (state?.updatingNow.value != null ? 64 : 0);
+		finally {
+			currentTargetIndex = null;
+			_unlockSliverList();
 		}
-		// Give up and fallback
-		if (maxScrollExtent <= 0) {
-			maxScrollExtent = scrollController!.position.maxScrollExtent;
-		}
-		final finalDestination = finalDestinationUnclamped.clamp(0.0, maxScrollExtent);
-		if (scrollController!.position.pixels != finalDestination) {
-			final finalDuration = duration * ((finalDestination - scrollController!.position.pixels) / (startPixels - finalDestination)).abs();
-			await scrollController!.animateTo(
-				finalDestination,
-				duration: finalDuration > const Duration(milliseconds: 50) ? finalDuration : const Duration(milliseconds: 50),
-				curve: curve.recurve(
-					start: startPixels,
-					current: scrollController!.position.pixels,
-					end: finalDestination
-				)
-			);
-		}
-		await SchedulerBinding.instance.endOfFrame;
-		await scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
 	}
 	void cancelCurrentAnimation() {
 		currentTargetIndex = null;

@@ -510,7 +510,13 @@ class ThreadPageState extends State<ThreadPage> {
 	void _onSlowScroll() {
 		final lastIndex = _listController.lastVisibleIndex;
 		_checkForeground();
-		if (persistentState.thread != null && !blocked && lastIndex != -1 && _foreground) {
+		if (
+			persistentState.thread != null &&
+			!blocked && lastIndex != -1 && _foreground &&
+			// Not auto-scrolling
+			!(_listController.scrollController?.activityIsDriven ?? false) &&
+			_listController.currentTargetIndex == null
+		) {
 			final lastItem = _listController.getItem(lastIndex);
 			_lastSeenIndex = max(lastIndex, _lastSeenIndex ?? lastIndex);
 			final newLastSeen = lastItem.id;
@@ -1840,6 +1846,8 @@ class ThreadPageState extends State<ThreadPage> {
 																				}
 																			}
 																		});
+																		_firstSeenIndex = null;
+																		_lastSeenIndex = null;
 																		persistentState.collapsedItems = newCollapsedItems.toList();
 																		persistentState.primarySubtreeParents = newPrimarySubtreeParents;
 																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
@@ -2154,6 +2162,10 @@ class ThreadPageState extends State<ThreadPage> {
 																				_lastSeenIndex = null;
 																				setState(() {});
 																			},
+																			resetLayoutIndexes: () {
+																				_firstSeenIndex = null;
+																				_lastSeenIndex = null;
+																			},
 																			developerModeButtons: [
 																				[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
 																					final allIds = (persistentState.thread?.posts_.map((i) => i.id) ?? _listController.items.map((i) => i.id));
@@ -2279,6 +2291,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final SuggestedNewThread? suggestedThread;
 	final GlobalKey<ReplyBoxState> replyBoxKey;
 	final VoidCallback forceThreadRebuild;
+	final VoidCallback resetLayoutIndexes;
 	
 	const _ThreadPositionIndicator({
 		required this.persistentState,
@@ -2301,6 +2314,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.suggestedThread,
 		required this.replyBoxKey,
 		required this.forceThreadRebuild,
+		required this.resetLayoutIndexes,
 		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
@@ -3373,6 +3387,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															!widget.listController.isItemHidden(entry.value).isDuplicate;
 													})?.key ?? -1;
 													if (targetIndex != -1) {
+														widget.resetLayoutIndexes();
 														widget.glowPost(widget.listController.getItem(targetIndex).item.id);
 														widget.listController.animateToIndex(targetIndex);
 													}
