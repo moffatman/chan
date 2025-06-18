@@ -4061,15 +4061,17 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
 		}
 	}
+	RenderSliverList? get _renderSliverList =>
+			state?._sliverListKey.currentContext?.findRenderObject() as RenderSliverList?;
 	void _lockSliverListAtIndex(int index) {
 		assert(index >= 0);
-		// This is not supported on flutter master
+		_renderSliverList?.lockIndex = index * 2; // Remember, the separators
 	}
 	void _lockSliverListAtEnd() {
-		// This is not supported on flutter master
+		_renderSliverList?.lockIndex = RenderSliverList.kLockIndexLockToEnd;
 	}
 	void _unlockSliverList() {
-		// This is not supported on flutter master
+		_renderSliverList?.lockIndex = -1;
 	}
 	Future<void> _animateToIndex(int targetIndex, {
 		required double alignment,
