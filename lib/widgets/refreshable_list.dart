@@ -4840,14 +4840,17 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		state?._rebuild();
 	}
+
+	RenderSliverList? get _renderSliverList =>
+			state?._sliverListKey.currentContext?.findRenderObject() as RenderSliverList?;
 	void _lockSliverListAtKey(Key key) {
-		// This is not supported on flutter master
+		_renderSliverList?.lockKey = key;
 	}
 	void _lockSliverListAtEnd() {
-		// This is not supported on flutter master
+		_renderSliverList?.lockKey = RenderSliverList.kLockKeyLockToEnd;
 	}
 	void _unlockSliverList() {
-		// This is not supported on flutter master
+		_renderSliverList?.lockKey = null;
 	}
 	Future<void> _animateToIndex(int targetIndex, {
 		required double alignment,
