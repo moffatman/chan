@@ -754,7 +754,7 @@ class PostRow extends StatelessWidget {
 			);
 		}
 		final replyBoxZone = context.watch<ReplyBoxZone?>();
-		final imageSearchActions = buildImageSearchActions(context, site, latestPost.attachments);
+		final imageSearchActions = buildImageSearchActions(context, imageboard, latestPost.attachments);
 		return ContextMenu(
 			backgroundColor: theme.backgroundColor,
 			enableLongPress: !withinSelectable,

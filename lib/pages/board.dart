@@ -737,7 +737,7 @@ class BoardPageState extends State<BoardPage> {
 							}
 						}
 					),
-					...buildImageSearchActions(context, site, thread.attachments),
+					...buildImageSearchActions(context, imageboard, thread.attachments),
 					ContextMenuAction(
 						trailingIcon: Adaptive.icons.share,
 						child: const Text('Share...'),
