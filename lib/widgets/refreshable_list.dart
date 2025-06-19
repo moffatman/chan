@@ -798,7 +798,8 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		];
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
 		if (includingParents) {
-			_cache.removeWhere((key, value) => key.parentIds.contains(item.parentIds.tryFirst));
+			final pid = item.parentIds.tryFirst;
+			_cache.removeWhere((key, value) => key.parentIds.contains(pid) || key.thisId == pid);
 		}
 		final manuallyCollapsedItemsLengthBefore = manuallyCollapsedItems.length;
 		manuallyCollapsedItems.removeWhere(includingParents ? x.beginsWith : (w) => listEquals(w, x));
