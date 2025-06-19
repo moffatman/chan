@@ -131,6 +131,14 @@ class CloudflareHandlerBlockedException implements Exception {
 	String toString() => 'Cloudflare clearance was blocked by the server';
 }
 
+class CloudflareWebResourceRequestFailed implements Exception {
+	final WebResourceRequest request;
+	final WebResourceError error;
+	CloudflareWebResourceRequestFailed(this.request, this.error);
+	@override
+	String toString() => 'Cloudflare handler request failed\nRequest:$request\nError:$error';
+}
+
 ({dynamic data, bool isJson}) _decode(ResponseType type, String data) {
 	if (type == ResponseType.json && (data.startsWith('{') || data.startsWith('['))) {
 		try {
@@ -400,11 +408,11 @@ class CloudflareInterceptor extends Interceptor {
 				callback_(value);
 			}
 			void onReceivedError(InAppWebViewController controller, WebResourceRequest request, WebResourceError error) async {
-				if (callbackValue == null && firstLoad) {
+				if (callbackValue == null && firstLoad && (request.isForMainFrame ?? false)) {
 					await Future.delayed(const Duration(seconds: 3));
 					// Maybe it recovered...?
 					if (callbackValue == null && firstLoad) {
-						callback(AsyncSnapshot.withError(ConnectionState.done, error, StackTrace.current));
+						callback(AsyncSnapshot.withError(ConnectionState.done, CloudflareWebResourceRequestFailed(request, error), StackTrace.current));
 					}
 				}
 			}
