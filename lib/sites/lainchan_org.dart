@@ -59,6 +59,8 @@ class SiteLainchanOrg extends SiteLainchan {
 		(other.name == name) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername);
 

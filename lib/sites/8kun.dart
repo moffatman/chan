@@ -141,6 +141,8 @@ class Site8Kun extends SiteLainchan2 {
 		(other.name == name) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername) &&
 		(other.boardsPath == boardsPath) &&

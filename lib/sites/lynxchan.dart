@@ -566,6 +566,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin {
 		other.baseUrl == baseUrl &&
 		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders) &&
 		listEquals(other.boards, boards) &&
 		other.defaultUsername == defaultUsername &&
 		other.hasLinkCookieAuth == hasLinkCookieAuth &&

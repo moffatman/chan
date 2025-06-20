@@ -593,7 +593,9 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		other.threadsPerPage == threadsPerPage &&
 		other.postsPerPage == postsPerPage &&
 		other.overrideUserAgent == overrideUserAgent &&
-		listEquals(other.archives, archives);
+		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders);
 	@override
 	int get hashCode => Object.hash(baseUrl, name, basePath);
 }

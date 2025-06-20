@@ -547,7 +547,9 @@ class SiteKarachan extends ImageboardSite {
 		other.captchaKey == captchaKey &&
 		other.defaultUsername == defaultUsername &&
 		other.overrideUserAgent == overrideUserAgent &&
-		listEquals(other.archives, archives);
+		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders);
 	
 	@override
 	int get hashCode => Object.hash(baseUrl, name, captchaKey, defaultUsername, overrideUserAgent);

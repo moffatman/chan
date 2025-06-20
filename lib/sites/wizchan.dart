@@ -28,7 +28,9 @@ class SiteWizchan extends SiteLainchanOrg {
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives);
+		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders);
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, overrideUserAgent, Object.hashAll(archives));

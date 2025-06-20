@@ -1046,7 +1046,9 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		other.faviconPath == faviconPath &&
 		other.postsPerPage == postsPerPage &&
 		other.overrideUserAgent == overrideUserAgent &&
-		listEquals(other.archives, archives);
+		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders);
 	
 	@override
 	int get hashCode => Object.hash(name, baseUrl, basePath, faviconPath, postsPerPage, overrideUserAgent);

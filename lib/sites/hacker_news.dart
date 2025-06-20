@@ -717,7 +717,9 @@ class SiteHackerNews extends ImageboardSite {
 		(other is SiteHackerNews) &&
 		(other.catalogThreadsPerPage == catalogThreadsPerPage) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives);
+		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders);
 
 	@override
 	int get hashCode => Object.hash(catalogThreadsPerPage, overrideUserAgent, Object.hashAll(archives));

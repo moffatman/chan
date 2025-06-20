@@ -436,6 +436,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 		other.faviconPath == faviconPath &&
 		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders) &&
 		postingCaptcha == other.postingCaptcha &&
 		deletingCaptcha == other.deletingCaptcha;
 	

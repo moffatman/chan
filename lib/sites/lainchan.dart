@@ -834,6 +834,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername);
 

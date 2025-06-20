@@ -1603,7 +1603,9 @@ class SiteReddit extends ImageboardSite {
 		identical(this, other) ||
 		(other is SiteReddit) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives);
+		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders);
 
 	@override
 	int get hashCode => Object.hash(overrideUserAgent, Object.hashAll(archives));

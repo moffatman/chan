@@ -1158,6 +1158,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		(other.baseUrl == baseUrl) &&
 		(other.staticUrl == staticUrl) &&
 		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders) &&
 		mapEquals(other.captchaUserAgents, captchaUserAgents) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
 		(other.searchUrl == searchUrl) &&

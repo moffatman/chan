@@ -38,6 +38,8 @@ class SiteErischan extends SiteLainchan2 {
 		other.name == name &&
 		other.overrideUserAgent == overrideUserAgent &&
 		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders) &&
 		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&
 		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags);
 	

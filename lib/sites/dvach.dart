@@ -353,7 +353,9 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin {
 		(other.name == name) &&
 		(other.baseUrl == baseUrl) &&
 		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives);
+		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders);
 
 	@override
 	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives));
