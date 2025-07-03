@@ -17,6 +17,8 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_stat_clover" />
+        <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
+        <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTask"
@@ -28,8 +30,6 @@
             <meta-data
                 android:name="flutterEmbedding"
                 android:value="2" />
-            <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
-            <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
             <intent-filter>
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
