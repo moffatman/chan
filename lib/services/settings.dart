@@ -5,12 +5,12 @@ import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/web_image_picker.dart';
-import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/http_429_backoff.dart';
+import 'package:chan/services/http_client.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/network_logging.dart';
@@ -3149,7 +3149,7 @@ class Settings extends ChangeNotifier {
 		if (!kInUnitTest) {
 			client.interceptors.add(LoggingInterceptor.instance);
 		}
-		client.httpClientAdapter = BadCertificateHttpClientAdapter();
+		client.httpClientAdapter = MyHttpClientAdapter();
 		muteAudio.value = _settings.muteAudio;
 		_tryToSetupFilter();
 		JsonCache.instance.embedRegexes.addListener(_onEmbedRegexesUpdate);

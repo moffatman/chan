@@ -10,10 +10,10 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
-import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/http_429_backoff.dart';
+import 'package:chan/services/http_client.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
@@ -1577,7 +1577,7 @@ abstract class ImageboardSiteArchive {
 		if (!kInUnitTest) {
 			client.interceptors.add(LoggingInterceptor.instance);
 		}
-		client.httpClientAdapter = BadCertificateHttpClientAdapter();
+		client.httpClientAdapter = MyHttpClientAdapter();
 	}
 	String get name;
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken});

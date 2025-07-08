@@ -118,6 +118,7 @@ dependencies:
   ffi: ^2.0.2
   archive: ^3.6.1
   isolate_pool_2: ^1.0.7
+  dio_http2_adapter: ^2.0.0
 
 dev_dependencies:
   hive_generator: ^2.0.0
@@ -265,6 +266,10 @@ dependency_overrides:
     git:
       url: https://github.com/moffatman/charset_converter.git
       ref: master
+  dio_http2_adapter:
+    git:
+      url: https://github.com/moffatman/dio.git
+      path: plugins/http2_adapter
   analyzer: ^6.7.0
   dart_style: ^2.3.6
   js: ^0.7.1 # Needed to run with current connectivity_plus tag
