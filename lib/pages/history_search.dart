@@ -220,17 +220,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					if (post.isStub || post.isPageStub) {
 						continue;
 					}
-					if (
-						_query.isNotEmpty &&
-						!queryParts.every((query) => post.buildText().contains(query)) &&
-						!(post.threadId == post.id && queryParts.every((query) => thread.title?.contains(query) == true))
-					) {
-						continue;
-					}
 					if (_filterIsThread != null && _filterIsThread != (post.id == thread.id)) {
-						continue;
-					}
-					if (_filterContainsLink != null && _filterContainsLink != post.containsLink) {
 						continue;
 					}
 					if (_filterHasAttachment != null && _filterHasAttachment != post.attachments.isNotEmpty) {
@@ -249,6 +239,16 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 						}
 					}
 					if (_filterYourPostsOnly == _FilterYourPostsOnly.repliesToYourPosts && !threadState.youIds.any(post.repliedToIds.contains)) {
+						continue;
+					}
+					if (
+						_query.isNotEmpty &&
+						!queryParts.every((query) => post.buildText().contains(query)) &&
+						!(post.threadId == post.id && queryParts.every((query) => thread.title?.contains(query) == true))
+					) {
+						continue;
+					}
+					if (_filterContainsLink != null && _filterContainsLink != post.containsLink) {
 						continue;
 					}
 					if (post.id == thread.id) {
