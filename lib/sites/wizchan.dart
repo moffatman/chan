@@ -1,5 +1,4 @@
 import 'package:chan/sites/lainchan_org.dart';
-import 'package:flutter/foundation.dart';
 
 class SiteWizchan extends SiteLainchanOrg {
 	SiteWizchan({
@@ -9,6 +8,7 @@ class SiteWizchan extends SiteLainchanOrg {
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,
+		required super.turnstileSiteKey,
 		super.faviconPath,
 		super.defaultUsername = 'Anonymage'
 	});
@@ -23,15 +23,8 @@ class SiteWizchan extends SiteLainchanOrg {
 	bool operator ==(Object other) =>
 		identical(this, other) ||
 		(other is SiteWizchan) &&
-		(other.baseUrl == baseUrl) &&
-		(other.name == name) &&
-		(other.faviconPath == faviconPath) &&
-		(other.defaultUsername == defaultUsername) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders);
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, faviconPath, defaultUsername, overrideUserAgent, Object.hashAll(archives));
+	int get hashCode => baseUrl.hashCode;
 }

@@ -2,7 +2,6 @@ import 'package:chan/models/board.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 
 class SiteLainchanOrg extends SiteLainchan {
@@ -14,6 +13,7 @@ class SiteLainchanOrg extends SiteLainchan {
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,
+		required super.turnstileSiteKey,
 		super.faviconPath,
 		super.defaultUsername,
 		super.basePath,
@@ -53,19 +53,11 @@ class SiteLainchanOrg extends SiteLainchan {
 	bool operator ==(Object other) =>
 		identical(this, other) ||
 		(other is SiteLainchanOrg) &&
-		(other.baseUrl == baseUrl) &&
-		(other.basePath == basePath) &&
 		(other.boardsPath == boardsPath) &&
-		(other.name == name) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders) &&
-		(other.faviconPath == faviconPath) &&
-		(other.defaultUsername == defaultUsername);
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, boardsPath, name, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername);
+	int get hashCode => baseUrl.hashCode;
 
 	@override
 	bool get supportsPushNotifications => false;

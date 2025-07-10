@@ -16,7 +16,6 @@ import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -716,11 +715,8 @@ class SiteHackerNews extends ImageboardSite {
 		identical(this, other) ||
 		(other is SiteHackerNews) &&
 		(other.catalogThreadsPerPage == catalogThreadsPerPage) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders);
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(catalogThreadsPerPage, overrideUserAgent, Object.hashAll(archives));
+	int get hashCode => baseUrl.hashCode;
 }

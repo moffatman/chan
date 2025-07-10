@@ -487,6 +487,23 @@ enum NullSafeOptional {
 	true_
 }
 
+class Wrapper<T> {
+	final T value;
+	const Wrapper(this.value);
+
+	@override
+	String toString() => 'Wrapper($value)';
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is Wrapper &&
+		other.value == value;
+
+	@override
+	int get hashCode => value.hashCode;
+}
+
 class NullWrapper<T extends Object> {
 	final T? value;
 	const NullWrapper(this.value);

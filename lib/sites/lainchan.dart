@@ -40,6 +40,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 	final String? faviconPath;
 	@override
 	final String defaultUsername;
+	final String? turnstileSiteKey;
 
 	@override
 	late final SiteLainchanLoginSystem loginSystem = SiteLainchanLoginSystem(this);
@@ -52,6 +53,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,
+		required this.turnstileSiteKey,
 		this.faviconPath = '/favicon.ico',
 		this.basePath = '',
 		this.defaultUsername = 'Anonymous'
@@ -629,6 +631,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 				fields['captcha_text'] = captchaSolution.answer;
 			}
 		}
+		else if (captchaSolution is CloudflareTurnstileCaptchaSolution) {
+			fields['cf-turnstile-response'] = captchaSolution.token;
+		}
 		await updatePostingFields(post, fields, cancelToken);
 		final response = await client.postUri(
 			Uri.https(sysUrl, '$basePath/post.php'),
@@ -679,6 +684,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		final ban = doc.querySelector('.ban');
 		if (ban != null) {
 			throw PostFailedException(ban.text);
+		}
+		if ((doc.querySelector('title')?.text, doc.querySelector('h2')?.text) case ('Error', String error)) {
+			throw PostFailedException(error);
 		}
 		final captchaKey = doc.querySelector('form [data-sitekey]')?.attributes['data-sitekey'];
 		if (captchaKey != null) {
@@ -776,6 +784,12 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
+		if (turnstileSiteKey case String siteKey) {
+			return CloudflareTurnstileCaptchaRequest(
+				siteKey: siteKey,
+				hostPage: Uri.parse(getWebUrlImpl(board, threadId))
+			);
+		}
 		return const NoCaptchaRequest();
 	}
 
@@ -832,15 +846,13 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 		(other.basePath == basePath) &&
 		(other.name == name) &&
 		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders) &&
 		(other.faviconPath == faviconPath) &&
-		(other.defaultUsername == defaultUsername);
+		(other.defaultUsername == defaultUsername) &&
+		(other.turnstileSiteKey == turnstileSiteKey) &&
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, name, maxUploadSizeBytes, overrideUserAgent, Object.hashAll(archives), faviconPath, defaultUsername);
+	int get hashCode => baseUrl.hashCode;
 	
 	@override
 	Uri? get iconUrl {

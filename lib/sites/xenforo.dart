@@ -17,7 +17,6 @@ import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 
@@ -1045,11 +1044,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		other.basePath == basePath &&
 		other.faviconPath == faviconPath &&
 		other.postsPerPage == postsPerPage &&
-		other.overrideUserAgent == overrideUserAgent &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders);
+		super==(other);
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, basePath, faviconPath, postsPerPage, overrideUserAgent);
+	int get hashCode => baseUrl.hashCode;
 }

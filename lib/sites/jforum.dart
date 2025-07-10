@@ -12,7 +12,6 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -592,10 +591,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		other.faviconPath == faviconPath &&
 		other.threadsPerPage == threadsPerPage &&
 		other.postsPerPage == postsPerPage &&
-		other.overrideUserAgent == overrideUserAgent &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders);
+		super==(other);
 	@override
-	int get hashCode => Object.hash(baseUrl, name, basePath);
+	int get hashCode => baseUrl.hashCode;
 }

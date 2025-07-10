@@ -16,7 +16,6 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -546,11 +545,8 @@ class SiteKarachan extends ImageboardSite {
 		other.name == name &&
 		other.captchaKey == captchaKey &&
 		other.defaultUsername == defaultUsername &&
-		other.overrideUserAgent == overrideUserAgent &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders);
+		super==(other);
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, captchaKey, defaultUsername, overrideUserAgent);
+	int get hashCode => baseUrl.hashCode;
 }

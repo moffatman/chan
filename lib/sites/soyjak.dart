@@ -19,7 +19,8 @@ class SiteSoyjak extends SiteLainchan2 {
 		required super.boardsWithMemeFlags,
 		required super.archives,
 		required super.imageHeaders,
-		required super.videoHeaders
+		required super.videoHeaders,
+		required super.turnstileSiteKey
 	}) : super(
 		basePath: '',
 		formBypass: {},
@@ -99,18 +100,9 @@ class SiteSoyjak extends SiteLainchan2 {
 	bool operator ==(Object other) =>
 		identical(this, other) ||
 		(other is SiteSoyjak) &&
-		(other.baseUrl == baseUrl) &&
-		(other.name == name) &&
 		(other.captchaQuestion == captchaQuestion) &&
 		listEquals(other.boardsWithCaptcha, boardsWithCaptcha) &&
-		(other.faviconPath == faviconPath) &&
-		(other.defaultUsername == defaultUsername) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders) &&
-		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&
-		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags);
+		super==(other);
 
 	@override
 	int get hashCode => baseUrl.hashCode;

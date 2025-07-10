@@ -6,7 +6,6 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 
 class Site8Chan extends SiteLynxchan {
   Site8Chan({
@@ -136,17 +135,8 @@ class Site8Chan extends SiteLynxchan {
 	bool operator == (Object other) =>
 		identical(other, this) ||
 		other is Site8Chan &&
-		other.name == name &&
-		other.baseUrl == baseUrl &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders) &&
-		listEquals(other.boards, boards) &&
-		other.defaultUsername == defaultUsername &&
-		other.hasLinkCookieAuth == hasLinkCookieAuth &&
-		other.hasPagedCatalog == hasPagedCatalog;
+		super==(other);
 	
 	@override
-	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives), Object.hashAll(boards ?? []), defaultUsername, hasLinkCookieAuth, hasPagedCatalog);
+	int get hashCode => baseUrl.hashCode;
 }

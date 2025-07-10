@@ -29,6 +29,7 @@ class Site8Kun extends SiteLainchan2 {
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,
+		required super.turnstileSiteKey,
 		super.faviconPath,
 		super.boardsPath,
 		super.boards,
@@ -134,26 +135,10 @@ class Site8Kun extends SiteLainchan2 {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is Site8Kun) &&
-		(other.baseUrl == baseUrl) &&
-		(other.basePath == basePath) &&
 		(other.sysUrl == sysUrl) &&
 		(other.imageUrl == imageUrl) &&
-		(other.name == name) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders) &&
-		(other.faviconPath == faviconPath) &&
-		(other.defaultUsername == defaultUsername) &&
-		(other.boardsPath == boardsPath) &&
-		mapEquals(other.formBypass, formBypass) &&
-		(other.imageThumbnailExtension == imageThumbnailExtension) &&
-		(other.boardsPath == boardsPath) &&
-		(other.faviconPath == faviconPath) &&
-		listEquals(other.boards, boards) &&
-		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&
-		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags);
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath, sysUrl, imageUrl);
+	int get hashCode => baseUrl.hashCode;
 }

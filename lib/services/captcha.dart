@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/cloudflare_turnstile.dart';
 import 'package:chan/services/hcaptcha.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/recaptchav2.dart';
@@ -83,6 +84,8 @@ Future<CaptchaSolution?> solveCaptcha({
 			return await solveRecaptchaV2(request, cancelToken: cancelToken);
 		case Recaptcha3Request():
 			return await solveRecaptchaV3(request, cancelToken: cancelToken);
+		case CloudflareTurnstileCaptchaRequest():
+			return await solveCloudflareTurnstile(request, cancelToken: cancelToken);
 		case Chan4CustomCaptchaRequest():
 			final priority = switch (forceHeadless) {
 				true => RequestPriority.cosmetic,

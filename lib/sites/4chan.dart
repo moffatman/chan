@@ -1157,11 +1157,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		(other.sysUrl == sysUrl) &&
 		(other.baseUrl == baseUrl) &&
 		(other.staticUrl == staticUrl) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders) &&
 		mapEquals(other.captchaUserAgents, captchaUserAgents) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
 		(other.searchUrl == searchUrl) &&
 		listEquals(other.possibleCaptchaLetterCounts, possibleCaptchaLetterCounts) &&
 		listEquals(other.captchaLetters, captchaLetters) &&
@@ -1173,10 +1169,11 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		(other.spamFilterCaptchaDelayGreen == spamFilterCaptchaDelayGreen) &&
 		(other.spamFilterCaptchaDelayYellow == spamFilterCaptchaDelayYellow) &&
 		(other.spamFilterCaptchaDelayRed == spamFilterCaptchaDelayRed) &&
-		(other.stickyCloudflare == stickyCloudflare);
+		(other.stickyCloudflare == stickyCloudflare) &&
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, apiUrl);
+	int get hashCode => baseUrl.hashCode;
 	
 	@override
 	Uri? get iconUrl => Uri.https(baseUrl, '/favicon.ico');

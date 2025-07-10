@@ -13,7 +13,6 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -434,13 +433,10 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 		other.name == name &&
 		other.defaultUsername == defaultUsername &&
 		other.faviconPath == faviconPath &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders) &&
 		postingCaptcha == other.postingCaptcha &&
-		deletingCaptcha == other.deletingCaptcha;
+		deletingCaptcha == other.deletingCaptcha &&
+		super==(other);
 	
 	@override
-	int get hashCode => Object.hash(baseUrl, name, defaultUsername, faviconPath, overrideUserAgent, postingCaptcha, deletingCaptcha);
+	int get hashCode => baseUrl.hashCode;
 }

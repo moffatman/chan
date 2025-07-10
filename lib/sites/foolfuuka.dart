@@ -550,10 +550,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		(other.baseUrl == baseUrl) &&
 		(other.staticUrl == staticUrl) &&
 		(other.useRandomUseragent == useRandomUseragent) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
 		listEquals(other.boards, boards) &&
-		(other.hasAttachmentRateLimit == hasAttachmentRateLimit);
+		(other.hasAttachmentRateLimit == hasAttachmentRateLimit) &&
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, staticUrl, useRandomUseragent, overrideUserAgent, Object.hashAll(boards ?? []), hasAttachmentRateLimit);
+	int get hashCode => baseUrl.hashCode;
 }

@@ -113,6 +113,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		required super.videoHeaders,
 		required this.boardsWithHtmlOnlyFlags,
 		required this.boardsWithMemeFlags,
+		required super.turnstileSiteKey,
 		super.faviconPath,
 		super.boardsPath,
 		this.boards,
@@ -242,24 +243,14 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is SiteLainchan2) &&
-		(other.baseUrl == baseUrl) &&
-		(other.basePath == basePath) &&
-		(other.name == name) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders) &&
-		(other.faviconPath == faviconPath) &&
-		(other.defaultUsername == defaultUsername) &&
-		(other.boardsPath == boardsPath) &&
 		mapEquals(other.formBypass, formBypass) &&
 		(other.imageThumbnailExtension == imageThumbnailExtension) &&
-		(other.boardsPath == boardsPath) &&
-		(other.faviconPath == faviconPath) &&
 		listEquals(other.boards, boards) &&
 		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&
-		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags);
+		listEquals(other.boardsWithMemeFlags, boardsWithMemeFlags) &&
+		(other.res == res) &&
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, basePath);
+	int get hashCode => baseUrl.hashCode;
 }

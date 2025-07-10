@@ -1602,11 +1602,8 @@ class SiteReddit extends ImageboardSite {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is SiteReddit) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders);
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(overrideUserAgent, Object.hashAll(archives));
+	int get hashCode => baseUrl.hashCode;
 }

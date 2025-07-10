@@ -13,7 +13,6 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart';
@@ -352,13 +351,10 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin {
 		(other is SiteDvach) &&
 		(other.name == name) &&
 		(other.baseUrl == baseUrl) &&
-		(other.overrideUserAgent == overrideUserAgent) &&
-		listEquals(other.archives, archives) &&
-		mapEquals(other.imageHeaders, imageHeaders) &&
-		mapEquals(other.videoHeaders, videoHeaders);
+		super==(other);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, overrideUserAgent, Object.hashAll(archives));
+	int get hashCode => baseUrl.hashCode;
 
 	@override
 	late final SiteDvachPasscodeLoginSystem loginSystem = SiteDvachPasscodeLoginSystem(this);

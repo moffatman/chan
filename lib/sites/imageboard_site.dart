@@ -880,6 +880,17 @@ class SimpleTextCaptchaRequest extends CaptchaRequest {
 	String toString() => 'SimpleTextCaptchaRequest(question: $question, acquiredAt: $acquiredAt)';
 }
 
+class CloudflareTurnstileCaptchaRequest extends CaptchaRequest {
+	final String siteKey;
+	final Uri hostPage;
+	const CloudflareTurnstileCaptchaRequest({
+		required this.siteKey,
+		required this.hostPage
+	});
+	@override
+	String toString() => 'CloudflareTurnstileCaptchaRequest(siteKey: $siteKey, hostPage: $hostPage)';
+}
+
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
 	final DateTime acquiredAt;
@@ -1114,6 +1125,20 @@ class SimpleTextCaptchaSolution extends CaptchaSolution {
 	});
 	@override
 	String toString() => 'SimpleTextCaptchaSolution(answer: $answer, lifetime: $lifetime)';
+}
+
+class CloudflareTurnstileCaptchaSolution extends CaptchaSolution {
+	/// From google
+	static const kLifetime = Duration(minutes: 5);
+	final String token;
+	@override
+	DateTime? get expiresAt => acquiredAt.add(kLifetime);
+	CloudflareTurnstileCaptchaSolution({
+		required super.acquiredAt,
+		required this.token
+	});
+	@override
+	String toString() => 'CloudflareTurnstileCaptchaSolution(token: $token)';
 }
 
 class ImageboardArchiveSearchResult {
@@ -1580,6 +1605,7 @@ abstract class ImageboardSiteArchive {
 		client.httpClientAdapter = MyHttpClientAdapter();
 	}
 	String get name;
+	String get baseUrl;
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken});
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	@protected
@@ -1679,6 +1705,15 @@ abstract class ImageboardSiteArchive {
 	}
 	bool get hasPagedCatalog => false;
 	bool get isArchive => this is! ImageboardSite;
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is ImageboardSiteArchive &&
+		other.overrideUserAgent == overrideUserAgent;
+	
+	@override
+	int get hashCode => baseUrl.hashCode;
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
@@ -1700,7 +1735,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			else if (type == AttachmentType.image) ...imageHeaders
 		};
 	}
-	String get baseUrl;
 	String? get imageUrl => null;
 	Uri? get iconUrl;
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken});
@@ -2202,6 +2236,18 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? title) => null;
 	bool get supportsPinkQuotes => false;
 	bool get supportsBlueQuotes => false;
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is ImageboardSite &&
+		listEquals(other.archives, archives) &&
+		mapEquals(other.imageHeaders, imageHeaders) &&
+		mapEquals(other.videoHeaders, videoHeaders) &&
+		super==(other);
+	
+	@override
+	int get hashCode => baseUrl.hashCode;
 }
 
 abstract class ImageboardSiteLoginSystem {
@@ -2296,7 +2342,8 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
-			videoHeaders: videoHeaders
+			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey']
 		);
 	}
 	else if (data['type'] == 'soyjak') {
@@ -2307,6 +2354,7 @@ ImageboardSite makeSite(dynamic data) {
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey'],
 			boardsWithCaptcha: (data['boardsWithCaptcha'] as List?)?.cast<String>(),
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2322,7 +2370,8 @@ ImageboardSite makeSite(dynamic data) {
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives,
 			imageHeaders: imageHeaders,
-			videoHeaders: videoHeaders
+			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey']
 		);
 	}
 	else if (data['type'] == 'wizchan') {
@@ -2332,7 +2381,8 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
-			videoHeaders: videoHeaders
+			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey']
 		);
 	}
 	else if (data['type'] == 'lainchan_org') {
@@ -2344,7 +2394,8 @@ ImageboardSite makeSite(dynamic data) {
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
-			videoHeaders: videoHeaders
+			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey']
 		);
 	}
 	else if (data['type'] == 'dvach') {
@@ -2393,7 +2444,8 @@ ImageboardSite makeSite(dynamic data) {
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives,
 			imageHeaders: imageHeaders,
-			videoHeaders: videoHeaders
+			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey']
 		);
 	}
 	else if (data['type'] == '4chan') {
@@ -2480,6 +2532,7 @@ ImageboardSite makeSite(dynamic data) {
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey'],
 			boards: boards,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2504,6 +2557,7 @@ ImageboardSite makeSite(dynamic data) {
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey'],
 			boards: boards,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),

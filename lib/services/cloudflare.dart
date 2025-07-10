@@ -277,7 +277,7 @@ class CloudflareInterceptor extends Interceptor {
 			final title = document.querySelector('title')?.text ?? '';
 			return _titleMatches(title);
 		}
-		if (ImageboardRegistry.instance.isRedirectGateway(response.redirects.tryLast?.location, response.htmlTitle)) {
+		if (ImageboardRegistry.instance.isRedirectGateway(response.realUri, response.htmlTitle)) {
 			return true;
 		}
 		return false;
@@ -350,8 +350,8 @@ class CloudflareInterceptor extends Interceptor {
 	static const kDefaultHeadlessTime = Duration(seconds: 5);
 
 	static final _webViewLock = Mutex();
-	static Future<T> _useWebview<T>({
-		required Future<T> Function(InAppWebViewController, Uri?, bool isCancelledMedia) handler,
+	static Future<T> _useWebview<T extends Object>({
+		required Future<T?> Function(InAppWebViewController, Uri?, bool isCancelledMedia) handler,
 		bool skipHeadless = false,
 		Duration headlessTime = kDefaultHeadlessTime,
 		InAppWebViewInitialData? initialData,
@@ -395,7 +395,7 @@ class CloudflareInterceptor extends Interceptor {
 				mediaType: 'text/html',
 				transparentBackground: true
 			);
-			bool firstLoad = true;
+			final firstLoad = Completer<void>();
 			InAppWebViewController? lastController;
 			late ValueChanged<AsyncSnapshot<T>> callback_;
 			AsyncSnapshot<T>? callbackValue;
@@ -408,10 +408,10 @@ class CloudflareInterceptor extends Interceptor {
 				callback_(value);
 			}
 			void onReceivedError(InAppWebViewController controller, WebResourceRequest request, WebResourceError error) async {
-				if (callbackValue == null && firstLoad && (request.isForMainFrame ?? false)) {
+				if (callbackValue == null && !firstLoad.isCompleted && (request.isForMainFrame ?? false)) {
 					await Future.delayed(const Duration(seconds: 3));
 					// Maybe it recovered...?
-					if (callbackValue == null && firstLoad) {
+					if (callbackValue == null && !firstLoad.isCompleted) {
 						callback(AsyncSnapshot.withError(ConnectionState.done, CloudflareWebResourceRequestFailed(request, error), StackTrace.current));
 					}
 				}
@@ -421,7 +421,10 @@ class CloudflareInterceptor extends Interceptor {
 				if (mime.startsWith('video/') || mime.startsWith('image/')) {
 					() async {
 						await Persistence.saveCookiesFromWebView(response.response?.url ?? cookieUrl);
-						callback(AsyncSnapshot.withData(ConnectionState.done, await handler(controller, response.response?.url, true)));
+						final result = await handler(controller, response.response?.url, true);
+						if (result != null) {
+							callback(AsyncSnapshot.withData(ConnectionState.done, result));
+						}
 					}();
 					return NavigationResponseAction.CANCEL;
 				}
@@ -430,6 +433,8 @@ class CloudflareInterceptor extends Interceptor {
 			void onLoadStop(InAppWebViewController controller, WebUri? uri) async {
 				lastController = controller;
 				await maybeApplyDarkModeBrowserJS(controller);
+				final isFirstLoad = !firstLoad.isCompleted;
+				firstLoad.complete();
 				final title = await controller.getTitle() ?? '';
 				// Android WebView in-band error page check
 				if (Platform.isAndroid && (
@@ -448,55 +453,56 @@ class CloudflareInterceptor extends Interceptor {
 					await Persistence.saveCookiesFromWebView(uri!);
 					try {
 						final value = await handler(controller, uri, false);
-						callback(AsyncSnapshot.withData(ConnectionState.done, value));
+						if (value != null) {
+							callback(AsyncSnapshot.withData(ConnectionState.done, value));
+							return;
+						}
 					}
 					catch (e, st) {
 						callback(AsyncSnapshot.withError(ConnectionState.done, e, st));
+						return;
 					}
-					return;
 				}
 				final html = await controller.getHtml() ?? '';
 				if (_bodyMatchesBlock(html)) {
 					callback(AsyncSnapshot.withError(ConnectionState.done, const CloudflareHandlerBlockedException(), StackTrace.current));
 				}
-				if (autoClickSelector != null && firstLoad) {
-					firstLoad = false;
+				if (autoClickSelector != null && isFirstLoad) {
 					await controller.evaluateJavascript(source: 'document.querySelector("$autoClickSelector").click()');
 				}
 			}
-			if (!skipHeadless) {
-				final headlessCompleter = Completer<AsyncSnapshot<T>>();
-				callback_ = headlessCompleter.complete;
-				headlessWebView = HeadlessInAppWebView(
-					initialSettings: initialSettings,
-					initialUrlRequest: initialUrlRequest,
-					initialData: initialData,
-					onLoadStop: onLoadStop,
-					onNavigationResponse: onNavigationResponse,
-					onReceivedError: onReceivedError,
-					onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
+			final headlessCompleter = Completer<AsyncSnapshot<T>>();
+			callback_ = headlessCompleter.complete;
+			headlessWebView = HeadlessInAppWebView(
+				initialSettings: initialSettings,
+				initialUrlRequest: initialUrlRequest,
+				initialData: initialData,
+				onLoadStop: onLoadStop,
+				onNavigationResponse: onNavigationResponse,
+				onReceivedError: onReceivedError,
+				onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
+			);
+			await headlessWebView.run();
+			if (!skipHeadless && toast) {
+				showToast(
+					context: ImageboardRegistry.instance.context!,
+					message: 'Authorizing $gatewayName\n${cookieUrl.host}',
+					icon: CupertinoIcons.cloud
 				);
-				await headlessWebView.run();
-				if (toast) {
-					showToast(
-						context: ImageboardRegistry.instance.context!,
-						message: 'Authorizing $gatewayName\n${cookieUrl.host}',
-						icon: CupertinoIcons.cloud
-					);
+			}
+			await Future.any([
+				headlessCompleter.future,
+				Future.delayed(headlessTime),
+				if (skipHeadless) firstLoad.future.then((_) => Future.delayed(const Duration(milliseconds: 150))),
+				if (cancelToken?.whenCancel case Future<DioError> whenCancel) whenCancel
+			]);
+			if (headlessCompleter.isCompleted) {
+				final snapshot = await headlessCompleter.future;
+				if (snapshot.data case T data) {
+					return data;
 				}
-				await Future.any([
-					headlessCompleter.future,
-					Future.delayed(headlessTime),
-					if (cancelToken?.whenCancel case Future<DioError> whenCancel) whenCancel
-				]);
-				if (headlessCompleter.isCompleted) {
-					final snapshot = await headlessCompleter.future;
-					if (snapshot.data case T data) {
-						return data;
-					}
-					else {
-						throw Error.throwWithStackTrace(snapshot.error!, snapshot.stackTrace ?? StackTrace.current);
-					}
+				else {
+					throw Error.throwWithStackTrace(snapshot.error!, snapshot.stackTrace ?? StackTrace.current);
 				}
 			}
 			switch (priority) {
@@ -822,13 +828,13 @@ Future<T> useCloudflareClearedWebview<T>({
 	CancelToken? cancelToken,
 	bool skipHeadless = false,
 	Duration? headlessTime
-}) => CloudflareInterceptor._useWebview(
+}) async => (await CloudflareInterceptor._useWebview<Wrapper<T>>(
 	handler: (controller, uri, isCancelledMedia) async {
 		if (isCancelledMedia) {
 			// Not the point of useCloudflareClearedWebview
-			throw Exception('Unexpected CancelledMedia response for useCloudflareClearedWebview');
+			return null;
 		}
-		return handler(controller, uri);
+		return Wrapper(await handler(controller, uri));
 	},
 	cookieUrl: uri,
 	userAgent: userAgent ?? Settings.instance.userAgent,
@@ -844,4 +850,4 @@ Future<T> useCloudflareClearedWebview<T>({
 	skipHeadless: skipHeadless,
 	headlessTime: headlessTime ?? CloudflareInterceptor.kDefaultHeadlessTime,
 	cancelToken: cancelToken
-);
+)).value;
