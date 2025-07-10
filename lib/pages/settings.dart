@@ -38,22 +38,23 @@ class _SettingsPageState extends State<SettingsPage> {
 	late final TextEditingController searchController;
 	late final FocusNode searchFocusNode;
 	String query = '';
-	late Future<List<Thread>> stickyFuture;
+	late Future<List<Thread>> stickyFuture = makeStickyFuture();
+
+	Future<List<Thread>> makeStickyFuture() async {
+		final imageboard = context.read<Imageboard>();
+		final list = (await imageboard.site.getCatalog('chance', priority: RequestPriority.interactive)).where((t) => t.isSticky).toList();
+		for (final thread in list) {
+			await thread.preinit(catalog: true);
+			await imageboard.persistence.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
+		}
+		return list;
+	}
 
 	@override
 	void initState() {
 		super.initState();
 		searchController = TextEditingController();
 		searchFocusNode = FocusNode();
-		stickyFuture = () async {
-			final imageboard = context.read<Imageboard>();
-			final list = (await imageboard.site.getCatalog('chance', priority: RequestPriority.interactive)).where((t) => t.isSticky).toList();
-			for (final thread in list) {
-				await thread.preinit(catalog: true);
-				await imageboard.persistence.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
-			}
-			return list;
-		}();
 	}
 
 	@override
@@ -138,19 +139,22 @@ class _SettingsPageState extends State<SettingsPage> {
 					future: stickyFuture,
 					initialData: context.read<ThreadWatcher>().peekLastCatalog(BoardKey('chance'))?.where((c) => c.isSticky).toList(),
 					builder: (context, snapshot) {
+						if (snapshot.hasError) {
+							return ErrorMessageCard(
+								snapshot.error.toString(),
+								remedies: {
+									'Retry': () {
+										stickyFuture = makeStickyFuture();
+										setState(() {});
+									}
+								}
+							);
+						}
 						if (!snapshot.hasData) {
 							return const SizedBox(
 								height: 200,
 								child: Center(
 									child: CircularProgressIndicator.adaptive()
-								)
-							);
-						}
-						else if (snapshot.hasError) {
-							return SizedBox(
-								height: 200,
-								child: Center(
-									child: Text(snapshot.error.toString())
 								)
 							);
 						}
