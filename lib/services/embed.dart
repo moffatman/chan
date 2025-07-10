@@ -126,14 +126,14 @@ Future<EmbedData?> _loadInstagram(String id) async {
 	);
 }
 
-String? _getHighQualityThumbnailUrl(String? url) {
+String? _getPossibleHigherQualityThumbnailUrl(String? url) {
 	if (url == null) {
 		return null;
 	}
 	if (url.endsWith('/hqdefault.jpg') && (url.contains('//i.ytimg.com') || url.contains('//img.youtube.com'))) {
 		return url.replaceFirst('/hqdefault.jpg', '/maxresdefault.jpg');
 	}
-	return url;
+	return null;
 }
 
 Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async {
@@ -241,7 +241,16 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async 
 				thumbnailUrl = 'https:$thumbnailUrl';
 			}
 			if (highQuality) {
-				thumbnailUrl = _getHighQualityThumbnailUrl(thumbnailUrl);
+				final hqUrl = _getPossibleHigherQualityThumbnailUrl(thumbnailUrl);
+				if (hqUrl != null) {
+					// HQ URL may not really be available
+					final response = await Settings.instance.client.head(hqUrl, options: Options(
+						validateStatus: (x) => true
+					));
+					if ((response.statusCode ?? 500) < 400) {
+						thumbnailUrl = hqUrl;
+					}
+				}
 			}
 			return EmbedData(
 				title: data['title'] as String?,
