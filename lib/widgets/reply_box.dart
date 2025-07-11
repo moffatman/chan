@@ -2300,330 +2300,342 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					removeBottom: !show
 				),
 				child: MaybeScrollbar(
-					child: ListView(
-						primary: false,
-						shrinkWrap: true,
-						// This will override default AlwaysScrollable
-						physics: ScrollConfiguration.of(context).getScrollPhysics(context),
-						children: [
-							Align(
-								alignment: Alignment.centerRight,
-								child: AnimatedSize(
-									duration: const Duration(milliseconds: 300),
-									child: AnimatedBuilder(
-										animation: Outbox.instance,
-										builder: (context, _) {
-											final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)];
-											Widget build(BuildContext context) {
-												final ourCount = _submittingPosts.length + (postingPost.value != null ? 1 : 0);
-												final activeCount = Outbox.instance.activeCount;
-												final othersCount = queue?.list.where((e) => !e.state.isIdle && e.thread != thread).length ?? 0;
-												final DateTime time;
-												final now = DateTime.now();
-												if (queue != null && queue.captchaAllowedTime.isAfter(now)) {
-													time = queue.captchaAllowedTime;
-												}
-												else if (queue != null && queue.allowedTime.isAfter(now)) {
-													time = queue.allowedTime;
-												}
-												else {
-													time = now;
-												}
-												final shouldShow =
-													// There are outbox things in other threads
-													(activeCount > ourCount) ||
-													// There is a meaningful cooldown and nothing else is showing it
-													((time.difference(now) > const Duration(seconds: 5)) && _submittingPosts.isEmpty && postingPost.value == null);
-												if (!(show && shouldShow)) {
-													return const SizedBox(width: double.infinity);
-												}
-												return Container(
-													width: double.infinity,
-													decoration: BoxDecoration(
-														border: Border(
-															top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))
+					child: ConstrainedBox(
+						constraints: BoxConstraints(
+							maxHeight:
+								((widget.threadId == null) ?
+									150 + (settings.materialStyle ? 14 : 0) :
+									100 + (settings.materialStyle ? 8 : 0))
+								+ 32 // Button row
+								+ 8 // Padding
+								+ MediaQuery.paddingOf(context).bottom
+								+ settings.replyBoxHeightOffset
+						),
+						child: ListView(
+							primary: false,
+							shrinkWrap: true,
+							// This will override default AlwaysScrollable
+							physics: ScrollConfiguration.of(context).getScrollPhysics(context),
+							children: [
+								Align(
+									alignment: Alignment.centerRight,
+									child: AnimatedSize(
+										duration: const Duration(milliseconds: 300),
+										child: AnimatedBuilder(
+											animation: Outbox.instance,
+											builder: (context, _) {
+												final queue = Outbox.instance.queues[(context.watch<Imageboard>().key, widget.board, widget.threadId == null ? ImageboardAction.postThread : ImageboardAction.postReply)];
+												Widget build(BuildContext context) {
+													final ourCount = _submittingPosts.length + (postingPost.value != null ? 1 : 0);
+													final activeCount = Outbox.instance.activeCount;
+													final othersCount = queue?.list.where((e) => !e.state.isIdle && e.thread != thread).length ?? 0;
+													final DateTime time;
+													final now = DateTime.now();
+													if (queue != null && queue.captchaAllowedTime.isAfter(now)) {
+														time = queue.captchaAllowedTime;
+													}
+													else if (queue != null && queue.allowedTime.isAfter(now)) {
+														time = queue.allowedTime;
+													}
+													else {
+														time = now;
+													}
+													final shouldShow =
+														// There are outbox things in other threads
+														(activeCount > ourCount) ||
+														// There is a meaningful cooldown and nothing else is showing it
+														((time.difference(now) > const Duration(seconds: 5)) && _submittingPosts.isEmpty && postingPost.value == null);
+													if (!(show && shouldShow)) {
+														return const SizedBox(width: double.infinity);
+													}
+													return Container(
+														width: double.infinity,
+														decoration: BoxDecoration(
+															border: Border(
+																top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))
+															),
+															color: ChanceTheme.barColorOf(context)
 														),
-														color: ChanceTheme.barColorOf(context)
-													),
-													child: AdaptiveButton(
-														onPressed: () async {
-															final selected = await showOutboxModalForThread(
-																context: context,
-																imageboardKey: context.read<Imageboard?>()?.key,
-																board: widget.board.s,
-																threadId: widget.threadId,
-																canPopWithDraft: true
-															);
-															if (selected != null) {
-																_onDraftTap(selected.post, selected.deleteOriginal);
-															}
-														},
-														child: Row(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																if (time != now) TimedRebuilder<String?>(
-																	interval: const Duration(seconds: 1),
-																	function: () {
-																		final delta = time.difference(DateTime.now());
-																		if (delta.isNegative) {
-																			return null;
+														child: AdaptiveButton(
+															onPressed: () async {
+																final selected = await showOutboxModalForThread(
+																	context: context,
+																	imageboardKey: context.read<Imageboard?>()?.key,
+																	board: widget.board.s,
+																	threadId: widget.threadId,
+																	canPopWithDraft: true
+																);
+																if (selected != null) {
+																	_onDraftTap(selected.post, selected.deleteOriginal);
+																}
+															},
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	if (time != now) TimedRebuilder<String?>(
+																		interval: const Duration(seconds: 1),
+																		function: () {
+																			final delta = time.difference(DateTime.now());
+																			if (delta.isNegative) {
+																				return null;
+																			}
+																			return formatDuration(delta);
+																		},
+																		builder: (context, str) {
+																			if (str == null) {
+																				return const SizedBox.shrink();
+																			}
+																			return Row(
+																				children: [
+																					const Icon(CupertinoIcons.clock, size: 18),
+																					const SizedBox(width: 8),
+																					Text(str, style: CommonTextStyles.tabularFigures)
+																				]
+																			);
 																		}
-																		return formatDuration(delta);
-																	},
-																	builder: (context, str) {
-																		if (str == null) {
-																			return const SizedBox.shrink();
-																		}
-																		return Row(
-																			children: [
-																				const Icon(CupertinoIcons.clock, size: 18),
-																				const SizedBox(width: 8),
-																				Text(str, style: CommonTextStyles.tabularFigures)
-																			]
-																		);
-																	}
-																),
-																if (time != now && activeCount > ourCount) const SizedBox(width: 16),
-																if (activeCount > ourCount) ...[
-																	const Icon(CupertinoIcons.tray_arrow_up, size: 18),
-																	const SizedBox(width: 8),
-																	Text(
-																		[
-																			describeCount(activeCount - ourCount, 'reply in outbox', plural: 'replies in outbox'),
-																			if (othersCount > 0) '($othersCount queued on ${context.watch<ImageboardSite>().formatBoardName(widget.board.s)})'
-																		].join(' ')
-																	)
+																	),
+																	if (time != now && activeCount > ourCount) const SizedBox(width: 16),
+																	if (activeCount > ourCount) ...[
+																		const Icon(CupertinoIcons.tray_arrow_up, size: 18),
+																		const SizedBox(width: 8),
+																		Text(
+																			[
+																				describeCount(activeCount - ourCount, 'reply in outbox', plural: 'replies in outbox'),
+																				if (othersCount > 0) '($othersCount queued on ${context.watch<ImageboardSite>().formatBoardName(widget.board.s)})'
+																			].join(' ')
+																		)
+																	]
 																]
-															]
+															)
 														)
-													)
+													);
+												}
+												if (queue == null) {
+													return build(context);
+												}
+												return AnimatedBuilder(
+													animation: queue,
+													builder: (context, _) => build(context)
 												);
 											}
-											if (queue == null) {
-												return build(context);
-											}
-											return AnimatedBuilder(
-												animation: queue,
-												builder: (context, _) => build(context)
-											);
-										}
+										)
 									)
-								)
-							),
-							Expander(
-								expanded: _showSubmittingPosts,
-								bottomSafe: true,
-								child: AnimatedSize(
-									duration: const Duration(milliseconds: 300),
-									alignment: Alignment.topCenter,
-									child: show ? Column(
-										mainAxisSize: MainAxisSize.min,
-										children: _submittingPosts.map((p) => QueueEntryWidget(
-											entry: p,
-											replyBoxMode: true,
-											onMove: () => _onDraftTap(p, true),
-											onCopy: () => _onDraftTap(p, false),
-										)).toList()
-									) : const SizedBox(width: double.infinity)
-								)
-							),
-							Expander(
-								expanded: showAttachmentOptions && show,
-								bottomSafe: true,
-								child: Focus(
-									descendantsAreFocusable: showAttachmentOptions && show,
-									child: _buildAttachmentOptions(context)
-								)
-							),
-							Expander(
-								expanded: showOptions && show,
-								bottomSafe: true,
-								child: Focus(
-									descendantsAreFocusable: showOptions && show,
-									child: _buildOptions(context)
-								)
-							),
-							Expander(
-								expanded: show && _proposedAttachmentUrl != null,
-								bottomSafe: true,
-								child: Container(
-									padding: const EdgeInsets.all(8),
-									height: 64,
-									child: _proposedAttachmentUrl == null ? const SizedBox() : Row(
-										mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-										children: [
-											if (_proposedAttachmentUrl != null) Padding(
-												padding: const EdgeInsets.all(8),
-												child: _proposedAttachmentUrl!.size > 4e6 /* 4 MB */ ? const SizedBox(
-													// Image is large, don't eagerly show it
-													width: 100,
-													child: Icon(CupertinoIcons.exclamationmark_shield)
-												) : ClipRRect(
-													borderRadius: const BorderRadius.all(Radius.circular(8)),
-													child: Image.network(
-														_proposedAttachmentUrl!.imageUrl,
-														width: 100
+								),
+								Expander(
+									expanded: _showSubmittingPosts,
+									bottomSafe: true,
+									child: AnimatedSize(
+										duration: const Duration(milliseconds: 300),
+										alignment: Alignment.topCenter,
+										child: show ? Column(
+											mainAxisSize: MainAxisSize.min,
+											children: _submittingPosts.map((p) => QueueEntryWidget(
+												entry: p,
+												replyBoxMode: true,
+												onMove: () => _onDraftTap(p, true),
+												onCopy: () => _onDraftTap(p, false),
+											)).toList()
+										) : const SizedBox(width: double.infinity)
+									)
+								),
+								Expander(
+									expanded: showAttachmentOptions && show,
+									bottomSafe: true,
+									child: Focus(
+										descendantsAreFocusable: showAttachmentOptions && show,
+										child: _buildAttachmentOptions(context)
+									)
+								),
+								Expander(
+									expanded: showOptions && show,
+									bottomSafe: true,
+									child: Focus(
+										descendantsAreFocusable: showOptions && show,
+										child: _buildOptions(context)
+									)
+								),
+								Expander(
+									expanded: show && _proposedAttachmentUrl != null,
+									bottomSafe: true,
+									child: Container(
+										padding: const EdgeInsets.all(8),
+										height: 64,
+										child: _proposedAttachmentUrl == null ? const SizedBox() : Row(
+											mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+											children: [
+												if (_proposedAttachmentUrl != null) Padding(
+													padding: const EdgeInsets.all(8),
+													child: _proposedAttachmentUrl!.size > 4e6 /* 4 MB */ ? const SizedBox(
+														// Image is large, don't eagerly show it
+														width: 100,
+														child: Icon(CupertinoIcons.exclamationmark_shield)
+													) : ClipRRect(
+														borderRadius: const BorderRadius.all(Radius.circular(8)),
+														child: Image.network(
+															_proposedAttachmentUrl!.imageUrl,
+															width: 100
+														)
 													)
+												),
+												Flexible(child: AdaptiveFilledButton(
+													padding: const EdgeInsets.all(4),
+													child: Text.rich(TextSpan(
+															children: [
+																const TextSpan(text: 'Attach file from link?\n'),
+																TextSpan(
+																	text: (_proposedAttachmentUrl?.text).toString(),
+																	style: TextStyle(
+																		color: settings.theme.backgroundColor.withOpacity(0.7),
+																		fontSize: 14
+																	)
+																)
+															]
+													), textAlign: TextAlign.center),
+													onPressed: () async {
+														final proposed = _proposedAttachmentUrl;
+														if (proposed == null) {
+															return;
+														}
+														try {
+															if (proposed.size > 4e6 /* 4 MB */) {
+																// Make sure they really want to download this big image
+																final ok = await confirm(context, 'Really download this ${formatFilesize(proposed.size)} file?');
+																if (!context.mounted || !ok) {
+																	return;
+																}
+															}
+															final newFile = await downloadToShareCache(
+																context: context,
+																url: Uri.parse(proposed.imageUrl)
+															);
+															if (newFile == null) {
+																return;
+															}
+															setAttachment(newFile);
+															_filenameController.text = proposed.imageUrl.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
+															if (proposed.text == proposed.imageUrl) {
+																final original = _textFieldController.text;
+																final replaced = original.replaceFirst(proposed.text, '');
+																if (replaced.length != _textFieldController.text.length) {
+																	_textFieldController.text = replaced;
+																	if (context.mounted) {
+																		showToast(
+																			context: context,
+																			icon: CupertinoIcons.link,
+																			message: 'Removed URL from text',
+																			easyButton: ('Restore', () {
+																				// To prevent "finding" the same URL again
+																				_lastFoundUrl = proposed.text;
+																				_textFieldController.text = original;
+																			})
+																		);
+																	}
+																}
+															}
+															_proposedAttachmentUrl = null;
+															setState(() {});
+														}
+														catch (e, st) {
+															print(e);
+															print(st);
+															if (context.mounted) {
+																alertError(context, e, st);
+															}
+														}
+													}
+												)),
+												AdaptiveIconButton(
+													icon: const Icon(CupertinoIcons.xmark),
+													onPressed: () {
+														setState(() {
+															_proposedAttachmentUrl = null;
+														});
+													}
+												)
+											]
+										)
+									)
+								),
+								Expander(
+									expanded: show,
+									bottomSafe: !show,
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											GestureDetector(
+												behavior: HitTestBehavior.translucent,
+												supportedDevices: const {
+													PointerDeviceKind.mouse,
+													PointerDeviceKind.stylus,
+													PointerDeviceKind.invertedStylus,
+													PointerDeviceKind.touch,
+													PointerDeviceKind.unknown
+												},
+												onVerticalDragStart: (event) {
+													_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
+													_panStartDy = event.globalPosition.dy;
+												},
+												onVerticalDragUpdate: (event) {
+													final view = PlatformDispatcher.instance.views.first;
+													final r = view.devicePixelRatio;
+													setState(() {
+														_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
+														if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= -50)) {
+															// touch not above keyboard
+															if (100 + settings.replyBoxHeightOffset > _maxReplyBoxHeight) {
+																settings.replyBoxHeightOffset = _maxReplyBoxHeight - 100;
+															}
+															else {
+																settings.replyBoxHeightOffset = min(_maxReplyBoxHeight, max(-50, settings.replyBoxHeightOffset - event.delta.dy));
+															}
+														}
+													});
+												},
+												onVerticalDragEnd: (event) {
+													if (_willHideOnPanEnd) {
+														Future.delayed(const Duration(milliseconds: 350), () {
+															settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
+														});
+														lightHapticFeedback();
+														hideReplyBox();
+														_willHideOnPanEnd = false;
+													}
+													else {
+														settings.finalizeReplyBoxHeightOffset();
+													}
+												},
+												child: Container(
+													decoration: BoxDecoration(
+														border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
+													),
+													height: 40,
+													child: _buildButtons(context),
 												)
 											),
-											Flexible(child: AdaptiveFilledButton(
-												padding: const EdgeInsets.all(4),
-												child: Text.rich(TextSpan(
+											Flexible(
+												child: Container(
+													color: ChanceTheme.backgroundColorOf(context),
+													child: Stack(
 														children: [
-															const TextSpan(text: 'Attach file from link?\n'),
-															TextSpan(
-																text: (_proposedAttachmentUrl?.text).toString(),
-																style: TextStyle(
-																	color: settings.theme.backgroundColor.withOpacity(0.7),
-																	fontSize: 14
+															_buildTextField(context),
+															if (loading) Positioned.fill(
+																child: Container(
+																	alignment: Alignment.bottomCenter,
+																	child: LinearProgressIndicator(
+																		valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+																		backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
+																	)
 																)
 															)
 														]
-												), textAlign: TextAlign.center),
-												onPressed: () async {
-													final proposed = _proposedAttachmentUrl;
-													if (proposed == null) {
-														return;
-													}
-													try {
-														if (proposed.size > 4e6 /* 4 MB */) {
-															// Make sure they really want to download this big image
-															final ok = await confirm(context, 'Really download this ${formatFilesize(proposed.size)} file?');
-															if (!context.mounted || !ok) {
-																return;
-															}
-														}
-														final newFile = await downloadToShareCache(
-															context: context,
-															url: Uri.parse(proposed.imageUrl)
-														);
-														if (newFile == null) {
-															return;
-														}
-														setAttachment(newFile);
-														_filenameController.text = proposed.imageUrl.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
-														if (proposed.text == proposed.imageUrl) {
-															final original = _textFieldController.text;
-															final replaced = original.replaceFirst(proposed.text, '');
-															if (replaced.length != _textFieldController.text.length) {
-																_textFieldController.text = replaced;
-																if (context.mounted) {
-																	showToast(
-																		context: context,
-																		icon: CupertinoIcons.link,
-																		message: 'Removed URL from text',
-																		easyButton: ('Restore', () {
-																			// To prevent "finding" the same URL again
-																			_lastFoundUrl = proposed.text;
-																			_textFieldController.text = original;
-																		})
-																	);
-																}
-															}
-														}
-														_proposedAttachmentUrl = null;
-														setState(() {});
-													}
-													catch (e, st) {
-														print(e);
-														print(st);
-														if (context.mounted) {
-															alertError(context, e, st);
-														}
-													}
-												}
-											)),
-											AdaptiveIconButton(
-												icon: const Icon(CupertinoIcons.xmark),
-												onPressed: () {
-													setState(() {
-														_proposedAttachmentUrl = null;
-													});
-												}
+													)
+												)
 											)
 										]
 									)
 								)
-							),
-							Expander(
-								expanded: show,
-								bottomSafe: !show,
-								child: Column(
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										GestureDetector(
-											behavior: HitTestBehavior.translucent,
-											supportedDevices: const {
-												PointerDeviceKind.mouse,
-												PointerDeviceKind.stylus,
-												PointerDeviceKind.invertedStylus,
-												PointerDeviceKind.touch,
-												PointerDeviceKind.unknown
-											},
-											onVerticalDragStart: (event) {
-												_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
-												_panStartDy = event.globalPosition.dy;
-											},
-											onVerticalDragUpdate: (event) {
-												final view = PlatformDispatcher.instance.views.first;
-												final r = view.devicePixelRatio;
-												setState(() {
-													_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
-													if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= -50)) {
-														// touch not above keyboard
-														if (100 + settings.replyBoxHeightOffset > _maxReplyBoxHeight) {
-															settings.replyBoxHeightOffset = _maxReplyBoxHeight - 100;
-														}
-														else {
-															settings.replyBoxHeightOffset = min(_maxReplyBoxHeight, max(-50, settings.replyBoxHeightOffset - event.delta.dy));
-														}
-													}
-												});
-											},
-											onVerticalDragEnd: (event) {
-												if (_willHideOnPanEnd) {
-													Future.delayed(const Duration(milliseconds: 350), () {
-														settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
-													});
-													lightHapticFeedback();
-													hideReplyBox();
-													_willHideOnPanEnd = false;
-												}
-												else {
-													settings.finalizeReplyBoxHeightOffset();
-												}
-											},
-											child: Container(
-												decoration: BoxDecoration(
-													border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
-												),
-												height: 40,
-												child: _buildButtons(context),
-											)
-										),
-										Flexible(
-											child: Container(
-												color: ChanceTheme.backgroundColorOf(context),
-												child: Stack(
-													children: [
-														_buildTextField(context),
-														if (loading) Positioned.fill(
-															child: Container(
-																alignment: Alignment.bottomCenter,
-																child: LinearProgressIndicator(
-																	valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-																	backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
-																)
-															)
-														)
-													]
-												)
-											)
-										)
-									]
-								)
-							)
-						]
+							]
+						)
 					)
 				)
 			)
