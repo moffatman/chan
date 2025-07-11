@@ -2305,10 +2305,11 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							maxHeight:
 								((widget.threadId == null) ?
 									150 + (settings.materialStyle ? 14 : 0) :
-									100 + (settings.materialStyle ? 8 : 0))
+									108)
 								+ 32 // Button row
 								+ 8 // Padding
 								+ MediaQuery.paddingOf(context).bottom
+								+ MediaQuery.viewInsetsOf(context).bottom
 								+ settings.replyBoxHeightOffset
 						),
 						child: ListView(
