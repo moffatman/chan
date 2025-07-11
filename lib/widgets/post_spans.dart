@@ -19,6 +19,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/translation.dart';
@@ -1664,6 +1665,36 @@ class PostPopupSpan extends PostSpanWithChild {
 	buildText(Post? post, {bool forQuoteComparison = false}) => '$title\n${child.buildText(post, forQuoteComparison: forQuoteComparison)}';
 }
 
+class IntrinsicColumnWidthWithMaxWidth extends IntrinsicColumnWidth {
+	final double maxWidth;
+
+  const IntrinsicColumnWidthWithMaxWidth({
+		this.maxWidth = double.infinity,
+		double? flex
+	}) : super(flex: flex);
+
+  @override
+  double minIntrinsicWidth(Iterable<RenderBox> cells, double containerWidth) {
+    double result = 0.0;
+    for (final RenderBox cell in cells) {
+      result = math.max(result, cell.getMinIntrinsicWidth(double.infinity));
+    }
+    return result;
+  }
+
+  @override
+  double maxIntrinsicWidth(Iterable<RenderBox> cells, double containerWidth) {
+    double result = 0.0;
+    for (final RenderBox cell in cells) {
+      result = math.max(result, math.min(maxWidth, cell.getMaxIntrinsicWidth(double.infinity)));
+    }
+    return result;
+  }
+
+  @override
+  String toString() => 'IntrinsicColumnWidthWithMaxWidth(maxWidth: $maxWidth)';
+}
+
 class PostTableSpan extends PostSpan {
 	final List<List<PostSpan>> rows;
 	const PostTableSpan(this.rows);
@@ -1672,12 +1703,17 @@ class PostTableSpan extends PostSpan {
 		if (options.showRawSource) {
 			return TextSpan(text: buildText(post));
 		}
+		// We want cell to fill width (subtract PostRow padding)
+		final maxWidth = estimateWidth(context) - 32;
 		return WidgetSpan(
 			child: SingleChildScrollView(
 				scrollDirection: Axis.horizontal,
 				physics: const BouncingScrollPhysics(),
 				child: Table(
-					defaultColumnWidth: const IntrinsicColumnWidth(flex: null),
+					defaultColumnWidth: IntrinsicColumnWidthWithMaxWidth(
+						flex: null,
+						maxWidth: maxWidth
+					),
 					border: TableBorder.all(
 						color: theme.primaryColor
 					),
