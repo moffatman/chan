@@ -2975,7 +2975,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							controller.cancelCurrentAnimation();
 							final footerBox = _footerKey.currentContext?.findRenderObject() as RenderBox?;
 							final footerBottom = footerBox?.localToGlobal(footerBox.paintBounds.bottomRight).dy ?? double.infinity;
-							if (e.position.dy >= footerBottom) {
+							if (e.position.dy >= footerBottom && !widget.disableUpdates) {
 								_footerShakeAnimation.forward(from: 0);
 								_updateOrExtendWithHapticFeedback();
 							}
@@ -3047,7 +3047,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																	},
 																	onSubmitted: (_) {
 																		final isHardwareKeyboard = MediaQueryData.fromView(View.of(context)).viewInsets.bottom <= 100;
-																		_updateOrExtendWithHapticFeedback();
+																		if (!widget.disableUpdates) {
+																			_updateOrExtendWithHapticFeedback();
+																		}
 																		if (isHardwareKeyboard) {
 																			// Stay focused, usually it will clear to close keyboard (show more items)
 																			Future.microtask(_focusSearch);
