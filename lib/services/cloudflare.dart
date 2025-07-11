@@ -434,7 +434,9 @@ class CloudflareInterceptor extends Interceptor {
 				lastController = controller;
 				await maybeApplyDarkModeBrowserJS(controller);
 				final isFirstLoad = !firstLoad.isCompleted;
-				firstLoad.complete();
+				if (isFirstLoad) {
+					firstLoad.complete();
+				}
 				final title = await controller.getTitle() ?? '';
 				// Android WebView in-band error page check
 				if (Platform.isAndroid && (
