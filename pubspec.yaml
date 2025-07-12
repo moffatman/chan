@@ -178,7 +178,7 @@ dependency_overrides:
   flutter_launcher_icons:
     git:
       url: https://github.com/fluttercommunity/flutter_launcher_icons.git
-      ref: feat/monochrome-icons-support
+      ref: master
   heic_to_jpg:
     git:
       url: https://github.com/moffatman/flutter_heic_to_jpg.git
