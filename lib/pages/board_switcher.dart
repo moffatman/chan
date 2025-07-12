@@ -572,6 +572,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								_focusNode.requestFocus();
 							},
 							onChanged: (String newSearchString) {
+								// Jump to start, or else we might end up deeply overscrolled (blurred)
+								scrollController.jumpTo(0);
 								_updateTypeaheadBoards(newSearchString);
 								setState(() {
 									searchString = newSearchString;
