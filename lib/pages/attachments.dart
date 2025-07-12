@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
@@ -15,7 +16,9 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/reply_box.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -26,11 +29,15 @@ import 'package:provider/provider.dart';
 
 class AttachmentsPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
+	final PostSpanZoneData zone;
+	final ReplyBoxZone replyBoxZone;
 	final TaggedAttachment? initialAttachment;
 	final ValueChanged<TaggedAttachment>? onChange;
 	final PersistentThreadState threadState;
 	const AttachmentsPage({
 		required this.attachments,
+		required this.zone,
+		required this.replyBoxZone,
 		this.initialAttachment,
 		this.onChange,
 		required this.threadState,
@@ -246,9 +253,21 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 										if (!context.mounted) {
 											return;
 										}
+										final navigator = Navigator.of(context);
 										await showGalleryPretagged(
 											context: context,
 											attachments: widget.attachments,
+											zone: widget.zone,
+											replyBoxZone: ReplyBoxZone(
+												onTapPostId: (int threadId, int id) {
+													navigator.pop(); // Pop the AttachmentsPage
+													widget.replyBoxZone.onTapPostId(threadId, id);
+												},
+												onQuoteText: (String text, {required PostIdentifier? backlink}) {
+													navigator.pop(); // Pop the AttachmentsPage
+													widget.replyBoxZone.onQuoteText(text, backlink: backlink);
+												}
+											),
 											initialGoodSources: {
 												for (final controller in _controllers.values)
 													if (controller.goodImageSource != null)

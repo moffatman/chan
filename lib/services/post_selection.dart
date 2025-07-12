@@ -90,17 +90,31 @@ SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 				if (zone.imageboard.site.supportsPosting) ...[
 					ContextMenuButtonItem(
 						onPressed: () {
+							final navigator = Navigator.of(contextMenuContext, rootNavigator: true);
+							Route? currentRoute;
+							navigator.popUntil((r) {
+								currentRoute = r;
+								return true;
+							});
 							replyBoxZone.onQuoteText(getSelection()?.plainText ?? '', backlink: post.identifier);
 							selectableRegionState.hideToolbar();
-							Navigator.of(contextMenuContext, rootNavigator: true).pop();
+							// Pop only if we haven't already popped (it might be handled in onQuoteText)
+							navigator.popUntil((r) => r != currentRoute);
 						},
 						label: 'Quotelink'
 					),
 					ContextMenuButtonItem(
 						onPressed: () {
+							final navigator = Navigator.of(contextMenuContext, rootNavigator: true);
+							Route? currentRoute;
+							navigator.popUntil((r) {
+								currentRoute = r;
+								return true;
+							});
 							replyBoxZone.onQuoteText(getSelection()?.plainText ?? '', backlink: null);
 							selectableRegionState.hideToolbar();
-							Navigator.of(contextMenuContext, rootNavigator: true).pop();
+							// Pop only if we haven't already popped (it might be handled in onQuoteText)
+							navigator.popUntil((r) => r != currentRoute);
 						},
 						label: 'Quote'
 					)

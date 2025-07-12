@@ -2150,6 +2150,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			threadIdentifier: widget.thread,
 																			listController: _listController,
 																			zone: zone,
+																			replyBoxZone: _replyBoxZone,
 																			useTree: useTree,
 																			highlightPosts: _highlightPosts,
 																			glowPost: _glowPost,
@@ -2275,6 +2276,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final ThreadIdentifier threadIdentifier;
 	final RefreshableListController<Post> listController;
 	final PostSpanZoneData zone;
+	final ReplyBoxZone replyBoxZone;
 	final bool reversed;
 	final bool useTree;
 	final Map<int, double> highlightPosts;
@@ -2299,6 +2301,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.threadIdentifier,
 		required this.listController,
 		required this.zone,
+		required this.replyBoxZone,
 		this.reversed = false,
 		required this.useTree,
 		required this.highlightPosts,
@@ -2786,6 +2789,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																imageboard: imageboard,
 																child: AttachmentsPage(
 																	attachments: attachments,
+																	zone: widget.zone,
+																	replyBoxZone: widget.replyBoxZone,
 																	initialAttachment: initialAttachment,
 																	threadState: widget.persistentState
 																	//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
