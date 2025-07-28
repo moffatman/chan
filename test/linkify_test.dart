@@ -147,5 +147,14 @@ void main() {
 			expect(link.url, 'https://balanceonbloor.ca');
 			expect(link.name, 'Let’s work collaboratively to address emergency response delays');
 		});
+
+		test('newline before link', () {
+			// https://www.reddit.com/r/toronto/comments/1mb2s3z/are_city_parks_cleaner_or_is_it_just_me/n5j5sul/
+			final r = SiteReddit.makeSpan('', 0, '[label](\nhttps://www2.example.com)');
+			expect(r.children, hasLength(1));
+			final link = r.children[0] as PostLinkSpan;
+			expect(link.url, 'https://www2.example.com');
+			expect(link.name, 'label');
+		});
 	});
 }
