@@ -333,7 +333,7 @@ packages:
     description:
       path: dio
       ref: develop
-      resolved-ref: f6c149a1a18a912754fb4771d2f42eeafa699897
+      resolved-ref: ce434e0e515764341a27372b76747e604221a093
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "4.0.6"
@@ -350,7 +350,7 @@ packages:
     description:
       path: "plugins/http2_adapter"
       ref: HEAD
-      resolved-ref: f6c149a1a18a912754fb4771d2f42eeafa699897
+      resolved-ref: ce434e0e515764341a27372b76747e604221a093
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "2.0.0"
@@ -618,12 +618,11 @@ packages:
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
-      path: "."
-      ref: "feat/monochrome-icons-support"
-      resolved-ref: bc9192d79de439e66b55185eae70e1af533ae6ef
-      url: "https://github.com/OutdatedGuy/flutter_launcher_icons.git"
-    source: git
-    version: "0.13.1"
+      name: flutter_launcher_icons
+      sha256: "10f13781741a2e3972126fae08393d3c4e01fa4cd7473326b94b72cf594195e7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.14.4"
   flutter_lints:
     dependency: "direct dev"
     description:
