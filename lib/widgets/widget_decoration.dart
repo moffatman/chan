@@ -133,3 +133,37 @@ class RenderWidgetDecoration extends RenderBox with SlottedContainerRenderObject
 		return _child!.getDryLayout(constraints);
 	}
 }
+
+/// Build [child] with dimensions resulting from [prototype]
+class PrototypeLayoutWidget extends StatelessWidget {
+	final Widget prototype;
+	final Widget child;
+
+	const PrototypeLayoutWidget({
+		required this.prototype,
+		required this.child,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return WidgetDecoration(
+			decoration: child,
+			position: DecorationPosition.foreground,
+			child: Focus(
+				descendantsAreFocusable: false,
+				child: HeroMode(
+					enabled: false,
+					child: IgnorePointer(
+						child: ExcludeSemantics(
+							child: Opacity(
+								opacity: 0,
+								child: prototype
+							)
+						)
+					)
+				)
+			)
+		);
+	}
+}
