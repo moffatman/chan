@@ -96,6 +96,21 @@ class ImageboardArchiveSearchQuery {
 		);
 	}
 
+	void copyFrom(ImageboardArchiveSearchQuery other) {
+		query = other.query;
+		mediaFilter = other.mediaFilter;
+		postTypeFilter = other.postTypeFilter;
+		startDate = other.startDate;
+		endDate = other.endDate;
+		boards = [...other.boards];
+		md5 = other.md5;
+		deletionStatusFilter = other.deletionStatusFilter;
+		imageboardKey = other.imageboardKey;
+		name = other.name;
+		trip = other.trip;
+		subject = other.subject;
+	}
+
 	@override
 	bool operator==(Object other) => (other is ImageboardArchiveSearchQuery)
 																	 && (other.query == query)

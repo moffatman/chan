@@ -341,8 +341,9 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						icon: const Icon(CupertinoIcons.pencil),
 						onPressed: () async {
 							bool changed = false;
+							final original = widget.query.clone();
 							final controller = TextEditingController(text: widget.query.query);
-							await showAdaptiveModalPopup(
+							final search = await showAdaptiveModalPopup<bool>(
 								context: context,
 								builder: (context) => StatefulBuilder(
 									builder: (context, setState) => AdaptiveActionSheet(
@@ -380,11 +381,13 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 													controller: controller,
 													onChanged: (v) {
 														widget.query.query = v;
+														changed = true;
+														setState(() {});
 													},
 													onSubmitted: (v) {
 														widget.query.query = v;
 														changed = true;
-														Navigator.pop(context);
+														Navigator.pop(context, true);
 													}
 												),
 												SearchQueryEditor(
@@ -395,7 +398,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 													},
 													onSubmitted: () {
 														changed = true;
-														Navigator.pop(context);
+														Navigator.pop(context, true);
 													},
 													knownWidth: 300
 												)
@@ -403,16 +406,25 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										),
 										actions: [
 											AdaptiveActionSheetAction(
-												onPressed: () => Navigator.pop(context),
-												child: const Text('Close')
+												isDefaultAction: true,
+												onPressed: changed ? () => Navigator.pop(context, true) : null,
+												child: const Text('Search')
+											),
+											AdaptiveActionSheetAction(
+												onPressed: () => Navigator.pop(context, false),
+												child: const Text('Cancel')
 											)
 										]
 									)
 								)
 							);
 							controller.dispose();
-							if (changed && mounted) {
+							if ((search ?? false) && mounted) {
+								page = null; // Reset to first page
 								_runQuery();
+							}
+							else {
+								widget.query.copyFrom(original);
 							}
 						}
 					)
