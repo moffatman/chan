@@ -2303,7 +2303,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											animation: _tabs.browseCountListenable,
 											builder: (context, child) => StationaryNotifyingIcon(
 												icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
-												primary: 0,
+												primary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != _tabs.browseTabIndex || _tabs.mainTabIndex > 0).map((x) => x.value.unseenYous.value).reduce((a, b) => a + b),
 												secondary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != _tabs.browseTabIndex || _tabs.mainTabIndex > 0).map((x) => x.value.unseen.value).reduce((a, b) => a + b)
 											)
 										)

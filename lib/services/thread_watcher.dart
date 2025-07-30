@@ -206,6 +206,7 @@ class ThreadWatcher extends ChangeNotifier {
 				if (threadState != null && threadState.unseenPostIds.data.isNotEmpty) {
 					await threadState.ensureThreadLoaded(preinit: false);
 					tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
+					tab.unseenYous.value = threadState.unseenReplyIdsToYouCount() ?? tab.unseenYous.value;
 				}
 			}
 		}
@@ -423,7 +424,10 @@ class ThreadWatcher extends ChangeNotifier {
 				final thread = await threadState?.ensureThreadLoaded(preinit: false);
 				if (threadState != null && thread?.isArchived != true && thread?.isDeleted != true && threadState.threadWatch?.zombie != true) {
 					await _updateThread(threadState);
-					tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
+					if (threadState.unseenPostIds.data.isNotEmpty) {
+						tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
+						tab.unseenYous.value = threadState.unseenReplyIdsToYouCount() ?? tab.unseenYous.value;
+					}
 				}
 			}
 		}

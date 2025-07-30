@@ -186,6 +186,7 @@ class TabWidgetBuilder extends StatelessWidget {
 					initialSearch: tab.initialSearch,
 					builder: (context, data) {
 						Future.microtask(() => tab.unseen.value = data.unseenCount);
+						Future.microtask(() => tab.unseenYous.value = data.unseenYouCount);
 						Widget primaryIcon = data.primaryIcon;
 						if (tab.incognito) {
 							primaryIcon = Stack(

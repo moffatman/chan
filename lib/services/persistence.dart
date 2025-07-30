@@ -2024,6 +2024,8 @@ class PersistentBrowserTab extends EasyListenable {
 	final masterDetailKey = GlobalKey<MultiMasterDetailPage1State<ThreadIdentifier>>(debugLabel: 'PersistentBrowserTab.masterDetailKey');
 	// Do not persist
 	final unseen = ValueNotifier(0);
+	// Do not persist
+	final unseenYous = ValueNotifier(0);
 	@HiveField(5)
 	String? deprecatedDraftOptions;
 	@HiveField(6)
