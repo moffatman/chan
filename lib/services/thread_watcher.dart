@@ -313,13 +313,17 @@ class ThreadWatcher extends ChangeNotifier {
 							for (final post in oldThread.posts_)
 								post.id: post.isStub
 						};
+						bool needToSave = false;
 						for (final p in newChildren) {
 							if (!p.isPageStub && oldIds[p.id] != p.isStub && !threadState.youIds.contains(p.id)) {
-								threadState.unseenPostIds.data.add(p.id);
+								needToSave |= threadState.unseenPostIds.data.add(p.id);
 							}
 						}
 						if (oldThread.mergePosts(null, newChildren, site)) {
 							await threadState.didMutateThread();
+						}
+						if (needToSave) {
+							await threadState.save();
 						}
 					}
 				}

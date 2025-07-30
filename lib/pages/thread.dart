@@ -1311,9 +1311,10 @@ class ThreadPageState extends State<ThreadPage> {
 		if (_updateHighlightedPosts(restoring: false)) {
 			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
 		}
+		bool needToSave = false;
 		for (final p in newChildren) {
 			if (!p.isPageStub && oldIds[p.id] != p.isStub && !persistentState.youIds.contains(p.id)) {
-				persistentState.unseenPostIds.data.add(p.id);
+				needToSave |= persistentState.unseenPostIds.data.add(p.id);
 				_highlightPosts[p.id] = _kHighlightFull;
 			}
 		}
@@ -1325,6 +1326,9 @@ class ThreadPageState extends State<ThreadPage> {
 		zone.addThread(thread);
 		if (anyNew) {
 			persistentState.didMutateThread();
+		}
+		if (needToSave) {
+			persistentState.save();
 		}
 		return thread.posts;
 	}
@@ -2986,6 +2990,17 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																}
 															);
 														}
+													}),
+													('Mark as unread', const Icon(CupertinoIcons.xmark_circle_fill, size: 19), () {
+														final ids = widget.persistentState.thread?.posts_.map((p) => p.id).toSet() ?? {};
+														for (final id in ids) {
+															widget.highlightPosts[id] = 1.0;
+														}
+														widget.persistentState.unseenPostIds.data.addAll(ids);
+														widget.persistentState.didUpdate();
+														widget.persistentState.save();
+														setState(() {});
+														widget.forceThreadRebuild();
 													}),
 													('Mark as read', const Icon(CupertinoIcons.xmark_circle, size: 19), _whiteCountAbove <= 0 && _whiteCountBelow <= 0 && widget.persistentState.unseenPostIds.data.isEmpty && widget.highlightPosts.isEmpty ? null : () async {
 														final threadState = widget.persistentState;

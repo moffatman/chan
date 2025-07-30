@@ -1648,6 +1648,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	set thread(Thread? newThread) {
 		final oldThread = _thread;
 		if (newThread != oldThread) {
+			bool needToSave = false;
 			if (oldThread != null && newThread != null) {
 				final oldIds = {
 					for (final post in oldThread.posts_)
@@ -1655,7 +1656,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 				};
 				for (final p in newThread.posts_) {
 					if (!p.isPageStub && oldIds[p.id] != p.isStub && !youIds.contains(p.id)) {
-						unseenPostIds.data.add(p.id);
+						needToSave |= unseenPostIds.data.add(p.id);
 					}
 				}
 			}
@@ -1663,7 +1664,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 				// First load
 				for (final p in newThread.posts_) {
 					if (!p.isPageStub && !youIds.contains(p.id)) {
-						unseenPostIds.data.add(p.id);
+						needToSave |= unseenPostIds.data.add(p.id);
 					}
 				}
 			}
@@ -1675,9 +1676,14 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 				_youIds = null;
 				_invalidate();
 			}
-			didUpdate();
-			Persistence._sharedThreadStateListenable.didUpdate();
-			Persistence._sharedThreadStateStream.add(this);
+			if (needToSave) {
+				save();
+			}
+			else {
+				didUpdate();
+				Persistence._sharedThreadStateListenable.didUpdate();
+				Persistence._sharedThreadStateStream.add(this);
+			}
 		}
 	}
 
