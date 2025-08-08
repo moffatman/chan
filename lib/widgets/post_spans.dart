@@ -2588,11 +2588,7 @@ extension _EllipsizedFilename on _AttachmentMetadata {
 			4 => 20,
 			int _ => 16
 		};
-		if (filename.length <= (allowedLength + 1)) {
-			return null;
-		}
-		final half = allowedLength ~/ 2;
-		return '${filename.substring(0, half)}…${filename.substring(filename.length - half)}';
+		return filename.ellipsizeIfLonger(allowedLength);
 	}
 }
 

@@ -1,6 +1,7 @@
 import 'package:chan/models/intern.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/soundposts.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -182,10 +183,7 @@ class Attachment {
 	}
 
 	String? get ellipsizedFilename {
-		if (filename.length <= 53) {
-			return null;
-		}
-		return '${filename.substring(0, 25)}...${filename.substring(filename.length - 25)}';
+		return filename.ellipsizeIfLonger(50, ellipsis: '...');
 	}
 
 	String get globalId => '${board}_$id';

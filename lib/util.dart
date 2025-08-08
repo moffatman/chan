@@ -1012,3 +1012,18 @@ class ConstantValueListenable<T> implements ValueListenable<T> {
 	@override
 	void removeListener(VoidCallback listener) {}
 }
+
+extension Ellipsize on String {
+	String? ellipsizeIfLonger(int allowedLength, {String ellipsis = '…'}) {
+		if (length <= (allowedLength + ellipsis.length)) {
+			return null;
+		}
+		final half = allowedLength ~/ 2;
+		if (codeUnits.any((f) => f >= 0xD800 && f <= 0xE000)) {
+			// Unicode path
+			final runes = this.runes.toList(growable: false);
+			return '${String.fromCharCodes(runes, 0, half)}$ellipsis${String.fromCharCodes(runes, runes.length - half)}';
+		}
+		return '${substring(0, half)}$ellipsis${substring(length - half)}';
+	}
+}
