@@ -56,7 +56,7 @@ class StrictJsonInterceptor extends Interceptor {
 					uri: response.requestOptions.uri,
 					statusCode: response.statusCode
 				)
-			));
+			), true);
 			return;
 		}
 		handler.next(response);

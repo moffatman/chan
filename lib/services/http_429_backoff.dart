@@ -61,7 +61,7 @@ class HTTP429BackoffInterceptor extends Interceptor {
 			handler.reject(DioError(
 				requestOptions: options,
 				error: e
-			)..stackTrace = st);
+			)..stackTrace = st, true);
 		}
 	}
 
@@ -101,14 +101,14 @@ class HTTP429BackoffInterceptor extends Interceptor {
 		}
 		catch (e, st) {
 			if (e is DioError) {
-				handler.reject(e);
+				handler.reject(e, true);
 			}
 			else {
 				handler.reject(DioError(
 					requestOptions: response.requestOptions,
 					response: response,
 					error: e
-				)..stackTrace = st);
+				)..stackTrace = st, true);
 			}
 		}
 	}
@@ -144,14 +144,14 @@ class HTTP429BackoffInterceptor extends Interceptor {
 				}
 				catch (e, st) {
 					if (e is DioError) {
-						handler.reject(e);
+						handler.reject(e, true);
 					}
 					else {
 						handler.reject(DioError(
 							requestOptions: err.requestOptions,
 							response: err.response,
 							error: e
-						)..stackTrace = st);
+						)..stackTrace = st, true);
 					}
 				}
 				return;

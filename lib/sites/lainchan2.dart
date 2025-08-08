@@ -84,7 +84,7 @@ class FormBypassInterceptor extends Interceptor {
 			handler.reject(DioError(
 				requestOptions: response.requestOptions,
 				error: e
-			));
+			), true);
 		}
 	}
 }

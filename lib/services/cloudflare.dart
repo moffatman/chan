@@ -627,7 +627,7 @@ class CloudflareInterceptor extends Interceptor {
 				handler.reject(DioError(
 					requestOptions: options,
 					error: e
-				));
+				), true);
 				return;
 			}
 		}
@@ -642,7 +642,7 @@ class CloudflareInterceptor extends Interceptor {
 					requestOptions: response.requestOptions,
 					response: response,
 					error: const CloudflareHandlerBlockedException()
-				));
+				), true);
 				return;
 			}
 			if (_responseMatches(response)) {
@@ -651,7 +651,7 @@ class CloudflareInterceptor extends Interceptor {
 					requestOptions: response.requestOptions,
 					response: response,
 					error: const CloudflareHandlerNotAllowedException()
-				));
+				), true);
 				return;
 			}
 				final _CloudflareResponse data;
@@ -707,7 +707,7 @@ class CloudflareInterceptor extends Interceptor {
 				requestOptions: response.requestOptions,
 				response: response,
 				error: e
-			));
+			), true);
 			return;
 		}
 		handler.next(response);
@@ -723,7 +723,7 @@ class CloudflareInterceptor extends Interceptor {
 					requestOptions: err.requestOptions,
 					response: err.response,
 					error: const CloudflareHandlerBlockedException()
-				));
+				), true);
 				return;
 			}
 			if (err.type == DioErrorType.response &&
@@ -734,7 +734,7 @@ class CloudflareInterceptor extends Interceptor {
 					requestOptions: err.requestOptions,
 					response: err.response,
 					error: const CloudflareHandlerNotAllowedException()
-				));
+				), true);
 				return;
 			}
 				final data = await _useWebview(
@@ -760,7 +760,7 @@ class CloudflareInterceptor extends Interceptor {
 				requestOptions: err.requestOptions,
 				response: err.response,
 				error: e
-			));
+			), true);
 			return;
 		}
 		handler.next(err);
@@ -803,14 +803,14 @@ class RetryIfCloudflareInterceptor extends Interceptor {
 			}
 			catch (e, st) {
 				if (e is DioError) {
-					handler.reject(e);
+					handler.reject(e, true);
 				}
 				else {
 					handler.reject(DioError(
 						requestOptions: response.requestOptions,
 						response: response,
 						error: e
-					)..stackTrace = st);
+					)..stackTrace = st, true);
 				}
 			}
 		}
