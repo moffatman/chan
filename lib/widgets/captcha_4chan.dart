@@ -860,6 +860,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionNode.requestFocus();
 		}
+		setState(() {}); // numLetters may have changed
 	}
 
 	void _animateLocalGuess() {
@@ -892,6 +893,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				extentOffset: min(numLetters, selection.extentOffset)
 			);
 			_guessConfidences = newGuess.confidences.toList();
+			setState(() {}); // numLetters may have changed
 		}
 		catch (e, st) {
 			print(e);
