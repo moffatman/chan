@@ -44,7 +44,7 @@ class BlobRevision extends HiveObject {
 class BlobSync {
 	Future<int> push({
 		required String path,
-		required Stream<List<int>> encryptedStream,
+		required Stream<List<int>> Function() encryptedStreamBuilder,
 		required int length,
 		required String mac,
 		required int currentRev
@@ -54,7 +54,7 @@ class BlobSync {
 			'$_blobSyncApiRoot/blob/$userId/$path',
 			data: FormData.fromMap({
 				'data': MultipartFile(
-					encryptedStream,
+					encryptedStreamBuilder,
 					length
 				),
 				'lastRev': currentRev
@@ -92,7 +92,7 @@ class BlobSync {
 		required int currentRev
 	}) => push(
 		path: path,
-		encryptedStream: Stream.value(encryptedBuffer),
+		encryptedStreamBuilder: () => Stream.value(encryptedBuffer),
 		length: encryptedBuffer.length,
 		mac: mac,
 		currentRev: currentRev
