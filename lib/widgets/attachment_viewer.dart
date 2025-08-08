@@ -413,6 +413,9 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onPlayerLog(PlayerLog log) {
+		if (_isDisposed) {
+			return;
+		}
 		if (log.level == 'error') {
 			_playerErrorStream.add(log.text);
 		}
