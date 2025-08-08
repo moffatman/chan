@@ -1,13 +1,13 @@
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9$@:%_\+.~#?&/=,!;()'\u007F-\u009F\u00A1-\uFFFF]*)?)",
+  r"(https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9$@:%_\+.~#?&/=,!;()'\u007F-\u009F\u00A1-\uFFFF]*)?",
   caseSensitive: false,
   dotAll: true,
 );
 
 final _looseUrlRegexWithBackslash = RegExp(
-  r"^(.*?)((https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9$@:%_\+.~#?&/=,!;()'\\\u007F-\u009F\u00A1-\uFFFF]*)?)",
+  r"(https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9$@:%_\+.~#?&/=,!;()'\\\u007F-\u009F\u00A1-\uFFFF]*)?",
   caseSensitive: false,
   dotAll: true,
 );
@@ -49,6 +49,21 @@ const _validTlds = {
 
 final _escapeSymbolPattern = RegExp(r'''\\([!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~])''');
 
+extension _LastChar on String {
+  String? get firstChar {
+    if (isEmpty) {
+      return null;
+    }
+    return this[0];
+  }
+  String? get lastChar {
+    if (isEmpty) {
+      return null;
+    }
+    return this[length - 1];
+  }
+}
+
 class LooseUrlLinkifier extends Linkifier {
   final bool unescapeBackslashes;
   /// Skip "$link" (avoid HTML attribute values)
@@ -74,124 +89,123 @@ class LooseUrlLinkifier extends Linkifier {
 
     for (final element in elements) {
       if (element is TextElement) {
-        final match = (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).firstMatch(element.text);
+        final matches = (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).allMatches(element.text);
+        int lastMatchEnd = 0;
 
-        if (match == null
-            || (match.group(4)?.contains('..') ?? false)
-            || !_validTlds.contains((match.group(4) ?? '').split('.').last.toLowerCase())
-            || redditSafeMode && (
+        for (final match in matches) {
+          final domain = match.group(2);
+          if ((domain?.contains('..') ?? false) || !_validTlds.contains((domain ?? '').split('.').last.toLowerCase())) {
+            // Invalid domain name
+            continue;
+          }
+          if (redditSafeMode) {
+            final before = match.start > 0 ? element.text.substring(0, match.start) : null;
+            final after = match.end < element.text.length ? element.text.substring(match.end) : null;
+            if (before != null && after != null) {
+              if (before.lastChar == '"' && after.firstChar == '"') {
                 // "$link"
-                (
-                  (match.group(1)?.endsWith('"') ?? false)
-                  && match.end < element.text.length
-                  && element.text[match.end] == '"'
-                )
+                continue;
+              }
+              if (before.lastChar == '>' && after.startsWith('</a>')) {
                 // >$link</a>
-                || (
-                  (match.group(1)?.endsWith('>') ?? false)
-                  && match.end < (element.text.length - 3)
-                  && element.text.substring(match.end, match.end + 4) == '</a>'
-                )
+                continue;
+              }
+              if (before.contains('[') && after.startsWith('](')) {
                 // [$link](
-                || (
-                  (match.group(1)?.contains('[') ?? false)
-                  && match.end < (element.text.length - 1)
-                  && element.text.substring(match.end, match.end + 2) == ']('
-                )
-                // ]($link)
-                || (
-                  (match.group(1)?.trimRight().endsWith('](') ?? false)
-                  && (
-                    (match.group(2)?.contains(')') ?? false)
-                    ||
-                      (match.end < (element.text.length)
-                      && element.text[match.end] == ')')
-                  )
-                )
+                continue;
+              }
+              if (
+                before.contains('[')
+                && !before.contains(']')
+                && !(match.group(0)?.contains('/') ?? false) // not a full URL
+                && switch (after.indexOf(']')) {
+                  -1 => false, // No closing bracket
+                  // The closing bracket is not for a separate link
+                  int index => after.indexOf('[') < index
+                }
+              ) {
                 // [... $host](
                 // Sometimes people note the site in a markdown URL label
-                || (
-                  (match.group(1)?.contains('[') ?? false)
-                  && !(match.group(1)?.contains(']') ?? false)
-                  && !(match.group(2)?.contains('/') ?? false) // not a full URL
-                  && switch (element.text.indexOf(']', match.end)) {
-                    -1 => false, // No closing bracket
-                    // The closing bracket is not for a separate link
-                    int index => element.text.indexOf('[', match.end) < index
-                  }
-                )
-                /// ``` $host ```
-                || (
-                  '```'.allMatches(match.group(1)!).length % 2 == 1
-                )
-              )
-        ) {
-          list.add(element);
-        } else {
-          final text = element.text.substring(0, match.start) + element.text.substring(match.end);
-
-          if (match.group(1)?.isNotEmpty == true) {
-            list.add(TextElement(match.group(1)!));
-          }
-
-          if (match.group(2)?.isNotEmpty == true) {
-            String originalUrl = _handleBackslashes(match.group(2)!);
-            String end = '';
-
-            /// (... $link)
+                continue;
+              }
+            }
             if (
-                  originalUrl.endsWith(')')
-                  && (match.group(1)?.lastIndexOf('(') ?? -1) > (match.group(1)?.lastIndexOf(')') ?? -1)
-            ) {
-              end = ')$end';
-              originalUrl = originalUrl.substring(0, originalUrl.length - 1);
-            }
-
-            if (options.excludeLastPeriod) {
-              int c = 0;
-              for (; c < originalUrl.length - 1; c++) {
-                if (originalUrl[originalUrl.length - (c + 1)] != '.') {
-                  break;
-                }
+                // TODO: Optimize
+                (before?.trimRight().endsWith('](') ?? false)
+                && (
+                  (match.group(0)?.contains(')') ?? false)
+                  || after?.firstChar == ')'
+                )
+              ) {
+                // ]($link)
+                continue;
               }
-              if (c > 0) {
-                end = ('.' * c) + end;
-                originalUrl = originalUrl.substring(0, originalUrl.length - c);
-              }
-            }
-
-            String url = originalUrl;
-
-            if (!originalUrl.startsWith(_protocolIdentifierRegex)) {
-              originalUrl = (options.defaultToHttps ? "https://" : "http://") +
-                  originalUrl;
-            }
-
-            if ((options.humanize) || (options.removeWww)) {
-              if (options.humanize) {
-                // Don't use "s?", still show http:// if that's the explicit protocol
-                url = url.replaceFirst(RegExp(r'https://'), '');
-              }
-              if (options.removeWww) {
-                url = url.replaceFirst(RegExp(r'www\.'), '');
-              }
-
-              list.add(UrlElement(
-                originalUrl,
-                url,
-              ));
-            } else {
-              list.add(UrlElement(originalUrl));
-            }
-
-            if (end.isNotEmpty) {
-              list.add(TextElement(end));
+            if ('```'.allMatches(before ?? '').length % 2 == 1) {
+              /// ``` $host ```
+              continue;
             }
           }
 
-          if (text.isNotEmpty) {
-            list.addAll(parse([TextElement(text)], options));
+          if (match.start > lastMatchEnd) {
+            list.add(TextElement(element.text.substring(lastMatchEnd, match.start)));
           }
+          lastMatchEnd = match.end;
+
+          String originalUrl = _handleBackslashes(match.group(0)!);
+          String end = '';
+
+          /// (... $link)
+          if (
+                originalUrl.endsWith(')')
+                && (element.text.lastIndexOf('(', match.start) > element.text.lastIndexOf(')', match.start))
+          ) {
+            end = ')$end';
+            originalUrl = originalUrl.substring(0, originalUrl.length - 1);
+          }
+
+          if (options.excludeLastPeriod) {
+            int c = 0;
+            for (; c < originalUrl.length - 1; c++) {
+              if (originalUrl[originalUrl.length - (c + 1)] != '.') {
+                break;
+              }
+            }
+            if (c > 0) {
+              end = ('.' * c) + end;
+              originalUrl = originalUrl.substring(0, originalUrl.length - c);
+            }
+          }
+
+          String url = originalUrl;
+
+          if (!originalUrl.startsWith(_protocolIdentifierRegex)) {
+            originalUrl = (options.defaultToHttps ? "https://" : "http://") +
+                originalUrl;
+          }
+
+          if ((options.humanize) || (options.removeWww)) {
+            if (options.humanize) {
+              // Don't use "s?", still show http:// if that's the explicit protocol
+              url = url.replaceFirst(RegExp(r'https://'), '');
+            }
+            if (options.removeWww) {
+              url = url.replaceFirst(RegExp(r'www\.'), '');
+            }
+
+            list.add(UrlElement(
+              originalUrl,
+              url,
+            ));
+          } else {
+            list.add(UrlElement(originalUrl));
+          }
+
+          if (end.isNotEmpty) {
+            list.add(TextElement(end));
+          }
+        }
+        if (lastMatchEnd < element.text.length) {
+          list.add(TextElement(element.text.substring(lastMatchEnd)));
         }
       } else {
         list.add(element);

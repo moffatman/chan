@@ -4,7 +4,20 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:test/test.dart';
 
 void main() {
-	group('LooseUrlLinkifier', () {
+	group('Site4Chan', () {
+		test('weird link', () {
+			// The dots in the beginning text broke the old linkify regex
+			final r = Site4Chan.parsePlaintext('soldiers...and child. https://www.walkfree.org/global-slavery-index/map/');
+			expect(r, hasLength(2));
+			final text = r[0] as PostTextSpan;
+			expect(text.text, 'soldiers...and child. ');
+			final link = r[1] as PostLinkSpan;
+			expect(link.name, 'www.walkfree.org/global-slavery-index/map/');
+			expect(link.url, 'https://www.walkfree.org/global-slavery-index/map/');
+		});
+	});
+
+	group('SiteReddit', () {
 		test('raw link', () {
 			final r = SiteReddit.makeSpan('', 0, 'https://www.example.com/image.jpg');
 			final link = r.children.single as PostLinkSpan;
