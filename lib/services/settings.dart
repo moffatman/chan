@@ -785,7 +785,9 @@ enum DrawerMode {
 	@HiveField(1)
 	watchedThreads,
 	@HiveField(2)
-	savedThreads;
+	savedThreads,
+	@HiveField(3)
+	history;
 }
 
 class _LaunchCountMerger extends FieldMerger<int> {
@@ -1734,6 +1736,14 @@ class SavedSettings extends HiveObject {
 			// mk means media-kit
 			this.webmTranscoding = WebmTranscodingSetting.never;
 			this.appliedMigrations.add('mk');
+		}
+		if (!this.appliedMigrations.contains('tua')) {
+			// tua means trident user-agent
+			if (userAgent?.contains('Trident/7.0;') ?? false) {
+				// This one is needed for HTTP1 but breaks with HTTP2
+				userAgent = null;
+			}
+			this.appliedMigrations.add('tua');
 		}
 	}
 

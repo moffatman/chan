@@ -70,6 +70,7 @@ class _PersistentThreadStateSnapshot {
 	final bool? useTree;
 	final PostSortingMethod? postSortingMethod;
 	final int overrideShowPostIdsLength;
+	final bool? showInHistory;
 
 	_PersistentThreadStateSnapshot.empty() :
 		thread = null,
@@ -82,7 +83,8 @@ class _PersistentThreadStateSnapshot {
 		hiddenPosterIdsLength = 0,
 		useTree = null,
 		postSortingMethod = PostSortingMethod.none,
-		overrideShowPostIdsLength = 0;
+		overrideShowPostIdsLength = 0,
+		showInHistory = true;
 
 	_PersistentThreadStateSnapshot.of(PersistentThreadState s) :
 		thread = s.thread,
@@ -95,7 +97,8 @@ class _PersistentThreadStateSnapshot {
 		hiddenPosterIdsLength = s.hiddenPosterIds.length,
 		useTree = s.useTree,
 		postSortingMethod = s.postSortingMethod,
-		overrideShowPostIdsLength = s.overrideShowPostIds.length;
+		overrideShowPostIdsLength = s.overrideShowPostIds.length,
+		showInHistory = s.showInHistory;
 	
 	@override
 	bool operator == (Object o) =>
@@ -111,10 +114,11 @@ class _PersistentThreadStateSnapshot {
 		(o.hiddenPosterIdsLength == hiddenPosterIdsLength) &&
 		(o.useTree == useTree) &&
 		(o.postSortingMethod == postSortingMethod) &&
-		(o.overrideShowPostIdsLength == overrideShowPostIdsLength);
+		(o.overrideShowPostIdsLength == overrideShowPostIdsLength) &&
+		(o.showInHistory == showInHistory);
 	
 	@override
-	int get hashCode => Object.hash(thread, hiddenPostIdsLength, postsMarkedAsYouLength, savedTime, receiptsLength, markedReceiptsLength, treeHiddenIdsLength, hiddenPostIdsLength, useTree, postSortingMethod, overrideShowPostIdsLength);
+	int get hashCode => thread?.identifier.hashCode ?? 0;
 }
 
 extension _DisableUpdates on PersistentThreadState {

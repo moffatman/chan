@@ -3947,6 +3947,8 @@ class DrawerModeAdapter extends TypeAdapter<DrawerMode> {
         return DrawerMode.watchedThreads;
       case 2:
         return DrawerMode.savedThreads;
+      case 3:
+        return DrawerMode.history;
       default:
         return DrawerMode.tabs;
     }
@@ -3963,6 +3965,9 @@ class DrawerModeAdapter extends TypeAdapter<DrawerMode> {
         break;
       case DrawerMode.savedThreads:
         writer.writeByte(2);
+        break;
+      case DrawerMode.history:
+        writer.writeByte(3);
         break;
     }
   }

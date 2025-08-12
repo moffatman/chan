@@ -2,15 +2,17 @@ import 'dart:math' as math;
 
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/sorting.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/widgets/adaptive/dialog.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/tab_menu.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mutex/mutex.dart';
+import 'package:provider/provider.dart';
 
 extension ShouldCountAsUnread on ImageboardScoped<ThreadWatch> {
 	PersistentThreadState? get threadState => imageboard.persistence.getThreadStateIfExists(item.threadIdentifier);
@@ -248,4 +250,106 @@ Future<void> unsaveAllSavedPosts(BuildContext context, {VoidCallback? onMutate})
 			onMutate?.call();
 		}
 	);
+}
+
+Future<void> showDeleteHistoryPopup(BuildContext context) async {
+	final settings = context.read<Settings>();
+	final toDelete = await showAdaptiveDialog<List<PersistentThreadState>>(
+		context: context,
+		barrierDismissible: true,
+		builder: (context) => StatefulBuilder(
+			builder: (context, setDialogState) {
+				final openTabThreadBoxKeys = Persistence.tabs.map((t) => '${t.imageboardKey}/${t.thread?.board}/${t.thread?.id}').toSet();
+				final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (settings.includeThreadsYouRepliedToWhenDeletingHistory || i.youIds.isEmpty) && !openTabThreadBoxKeys.contains(i.boxKey)).toList();
+				final thisSessionStates = states.where((s) => !s.lastOpenedTime.isBefore(Persistence.appLaunchTime)).toList();
+				final now = DateTime.now();
+				final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1).toList();
+				final lastWeekStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 7).toList();
+				return AdaptiveAlertDialog(
+					title: const Text('Clear history'),
+					content: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							const Text('Saved, watched, or opened threads will not be included'),
+							const SizedBox(height: 16),
+							Row(
+								children: [
+									const Expanded(
+										child: Text('Include threads with your posts')
+									),
+									AdaptiveSwitch(
+										value: settings.includeThreadsYouRepliedToWhenDeletingHistory,
+										onChanged: (v) {
+											setDialogState(() {
+												Settings.includeThreadsYouRepliedToWhenDeletingHistorySetting.value = v;
+											});
+										}
+									)
+								]
+							)
+						]
+					),
+					actions: [
+						AdaptiveDialogAction(
+							onPressed: () async {
+								Navigator.pop(context, thisSessionStates);
+							},
+							isDestructiveAction: true,
+							child: Text('This session (${thisSessionStates.length})')
+						),
+						AdaptiveDialogAction(
+							onPressed: () async {
+								Navigator.pop(context, lastDayStates);
+							},
+							isDestructiveAction: true,
+							child: Text('Today (${lastDayStates.length})')
+						),
+						AdaptiveDialogAction(
+							onPressed: () async {
+								Navigator.pop(context, lastWeekStates);
+							},
+							isDestructiveAction: true,
+							child: Text('This week (${lastWeekStates.length})')
+						),
+						AdaptiveDialogAction(
+							onPressed: () async {
+								Navigator.pop(context, states);
+							},
+							isDestructiveAction: true,
+							child: Text('All time (${states.length})')
+						),
+						AdaptiveDialogAction(
+							onPressed: () => Navigator.pop(context),
+							child: const Text('Cancel')
+						)
+					]
+				);
+			}
+		)
+	);
+	if (toDelete != null) {
+		final watches = <ImageboardScoped<ThreadWatch>>[];
+		for (final state in toDelete) {
+			final watch = state.threadWatch;
+			final imageboard = state.imageboard;
+			if (watch != null && imageboard != null) {
+				watches.add(imageboard.scope(watch));
+			}
+			await state.delete();
+		}
+		if (context.mounted) {
+			showUndoToast(
+				context: context,
+				message: 'Deleted ${describeCount(toDelete.length, 'thread')}',
+				onUndo: () async {
+					for (final state in toDelete) {
+						await Persistence.sharedThreadStateBox.put(state.boxKey, state);
+					}
+					for (final watch in watches) {
+						await watch.imageboard.notifications.insertWatch(watch.item);
+					}
+				}
+			);
+		}
+	}
 }

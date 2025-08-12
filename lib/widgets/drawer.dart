@@ -5,6 +5,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/sorting.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_collection_actions.dart' as thread_actions;
+import 'package:chan/services/thread_collection_actions.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
@@ -327,12 +328,13 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 	void initState() {
 		super.initState();
 		_tabController = TabController(
-			length: 3,
+			length: 4,
 			vsync: this,
 			initialIndex: switch(Settings.instance.drawerMode) {
 					DrawerMode.tabs => 0,
 					DrawerMode.watchedThreads => 1,
-					_ => 2
+					DrawerMode.history => 2,
+					DrawerMode.savedThreads => 3
 				}
 		);
 		_scrollController = ScrollController(debugLabel: '_ChanceDrawerState._scrollController');
@@ -538,6 +540,63 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 				menuAxisDirection: AxisDirection.right
 			);
 		}
+		else if (settings.drawerMode == DrawerMode.history) {
+			List<PersistentThreadState> states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && (s.showInHistory ?? false)).toList();
+			states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
+			states = states.take(100).toList();
+			for (final state in states) {
+				// Hacky way to kick off the loading
+				if (!_ensuredThreads.contains(state)) {
+					state.ensureThreadLoaded(catalog: true).then((_) => state.save());
+					_ensuredThreads.add(key: state, value: true);
+				}
+			}
+			list = DrawerList<PersistentThreadState>(
+				list: states,
+				builder: (state, builder) => ThreadWidgetBuilder(
+					imageboard: state.imageboard,
+					persistence: null,
+					boardName: state.board,
+					thread: state.identifier,
+					builder: builder
+				),
+				onReorder: null,
+				onClose: (i) {
+					final state = states[i];
+					state.showInHistory = false;
+					state.save();
+					setState(() {});
+					return (
+						message: 'Thread hidden',
+						onUndo: () async {
+							state.showInHistory = true;
+							await state.save();
+							setState(() {});
+						}
+					);
+				},
+				isSelected: (i) => tabs.mainTabIndex == 0 && tabs.currentForegroundThread == states[i].imageboard?.scope(states[i].identifier),
+				onSelect: (i) async {
+					final state = states[i];
+					if (tabs.mainTabIndex != 0) {
+						tabs.mainTabIndex = 0;
+					}
+					if (settings.openDrawerThreadsInNewTabs) {
+						tabs.goToPost(
+							imageboardKey: state.imageboard!.key,
+							board: state.board,
+							threadId: state.threadId,
+							openNewTabIfNeeded: true
+						);
+					}
+					else {
+						tabs.setCurrentBrowserThread(state.imageboard!.scope(state.identifier), showAnimationsForward: false);
+					}
+					_afterUse();
+				},
+				menuAxisDirection: AxisDirection.right
+			);
+		}
 		else {
 			List<PersistentThreadState> states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
 			states.sort(getSavedThreadsSortMethod());
@@ -684,7 +743,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 												_afterUse();
 											},
 											child: Icon(
-												Settings.recordThreadsInHistorySetting.watch(context) ? Icons.history : Icons.history_toggle_off,
+												CupertinoIcons.archivebox,
 												color: tabs.mainTabIndex == 2 ? backgroundColor : primaryColor
 											)
 										)
@@ -732,6 +791,9 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 									)
 								),
 								Tab(
+									icon: Icon(settings.recordThreadsInHistory ? Icons.history : Icons.history_toggle_off)
+								),
+								Tab(
 									icon: Icon(Adaptive.icons.bookmark)
 								)
 							],
@@ -739,6 +801,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 								final newMode = switch(index) {
 									0 => DrawerMode.tabs,
 									1 => DrawerMode.watchedThreads,
+									2 => DrawerMode.history,
 									_ => DrawerMode.savedThreads
 								};
 								if (settings.drawerMode == newMode) {
@@ -775,6 +838,35 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 													}
 												),
 												...thread_actions.getWatchedThreadsActions(context, onMutate: () => setState(() {}))
+											]
+										);
+									}
+									else if (newMode == DrawerMode.history) {
+										showTabMenu(
+											context: context,
+											direction: AxisDirection.down,
+											titles: Axis.horizontal,
+											origin: context.globalSemanticBounds!,
+											actions: [
+												TabMenuAction(
+													icon: settings.recordThreadsInHistory ? CupertinoIcons.stop : CupertinoIcons.play,
+													title: settings.recordThreadsInHistory ? 'Stop history' : 'Resume history',
+													onPressed: () {
+														Settings.recordThreadsInHistorySetting.value = !settings.recordThreadsInHistory;
+														showUndoToast(
+															context: context,
+															message: settings.recordThreadsInHistory ? 'History resumed' : 'History stopped',
+															onUndo: () {
+																Settings.recordThreadsInHistorySetting.value = !settings.recordThreadsInHistory;
+															}
+														);
+													}
+												),
+												TabMenuAction(
+													icon: CupertinoIcons.delete,
+													title: 'Clear history...',
+													onPressed: () => showDeleteHistoryPopup(context)
+												)
 											]
 										);
 									}
