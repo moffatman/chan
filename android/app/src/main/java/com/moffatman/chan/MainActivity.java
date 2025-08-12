@@ -213,10 +213,16 @@ public class MainActivity extends FlutterFragmentActivity {
                             if (dotPos == -1) {
                                 result.error("FilenameProblem", "Supplied filename has no file extension", null);
                             }
-                            DocumentFile file = dir.createFile(
-                                    MimeTypeMap.getSingleton().getMimeTypeFromExtension(destinationName.substring(dotPos + 1)),
-                                    destinationName.substring(0, dotPos)
-                            );
+                            String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(destinationName.substring(dotPos + 1));
+                            String nameWithoutExtension = destinationName.substring(0, dotPos);
+                            DocumentFile file = dir.createFile(mimeType, nameWithoutExtension);
+                            // Android fails to create a unique filename if
+                            // there is already ['name.ext', 'name (1).ext', ..., 'name (32).ext']
+                            for (int i = 33; file == null; i += 32) {
+                                // Although this creates ['name (33).ext', 'name (33) (1).ext', ... 'name (65).ext'],
+                                // it's better than a crash
+                                file = dir.createFile(mimeType, String.format("%s (%d)", nameWithoutExtension, i));
+                            }
                             ParcelFileDescriptor destinationFileDescriptor = getContentResolver().openFileDescriptor(file.getUri(), "w");
                             File sourceFile = new File(sourcePath);
                             FileOutputStream destinationWriteStream = new FileOutputStream(destinationFileDescriptor.getFileDescriptor());
