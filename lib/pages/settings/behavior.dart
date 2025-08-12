@@ -470,6 +470,7 @@ final behaviorSettings = [
 			15: (null, '15s'),
 			30: (null, '30s'),
 			60: (null, '60s'),
+			120: (null, '120s'),
 			1 << 50: (null, 'Off')
 		},
 		setting: Settings.currentThreadAutoUpdatePeriodSecondsSetting
@@ -482,6 +483,7 @@ final behaviorSettings = [
 			60: (null, '60s'),
 			120: (null, '120s'),
 			180: (null, '180s'),
+			300: (null, '300s'),
 			1 << 50: (null, 'Off')
 		},
 		setting: Settings.backgroundThreadAutoUpdatePeriodSecondsSetting
