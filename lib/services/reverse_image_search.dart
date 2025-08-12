@@ -55,6 +55,18 @@ List<ContextMenuAction> buildImageSearchActions(BuildContext context, Imageboard
 				onPressed: () async {
 					final attachment = await whichAttachment(context, withThumbnail);
 					if (context.mounted && attachment != null) {
+						openBrowser(context, Uri.https('lens.google.com', '/uploadbyurl', {
+							'url': attachment._urlForSearch
+						}));
+					}
+				},
+				child: const Text('Search Google Lens')
+			),
+			ContextMenuAction(
+				trailingIcon: Icons.image_search,
+				onPressed: () async {
+					final attachment = await whichAttachment(context, withThumbnail);
+					if (context.mounted && attachment != null) {
 						openBrowser(context, Uri.https('yandex.com', '/images/search', {
 							'rpt': 'imageview',
 							'url': attachment._urlForSearch
