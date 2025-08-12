@@ -1027,3 +1027,19 @@ extension Ellipsize on String {
 		return '${substring(0, half)}$ellipsis${substring(length - half)}';
 	}
 }
+
+extension ModalValue<T> on Iterable<T> {
+	T? get modalValue {
+		final map = <T, int>{};
+		T? ret;
+		int bestCount = 0;
+		for (final item in this) {
+			final count = map.update(item, (c) => c + 1, ifAbsent: () => 1);
+			if (count > bestCount) {
+				bestCount = count;
+				ret = item;
+			}
+		}
+		return ret;
+	}
+}

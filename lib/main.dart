@@ -1958,7 +1958,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						),
 						onPressed: () {
 							lightHapticFeedback();
-							_tabs.addNewTab(activate: true);
+							_tabs.addNewTab(activate: true, withImageboardKey: _tabs.currentForegroundThread?.imageboard.key);
 						}
 					)
 				);

@@ -101,7 +101,7 @@ class BoardSwitcherPage extends StatefulWidget {
 class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late final FocusNode _focusNode;
 	late List<Imageboard> allImageboards;
-	int currentImageboardIndex = 0;
+	int currentImageboardIndex = -1;
 	Imageboard get currentImageboard => allImageboards[currentImageboardIndex];
 	late List<ImageboardScoped<ImageboardBoard>> boards;
 	static final typeaheads = <Imageboard, Trie<List<ImageboardBoard>>>{};
@@ -176,9 +176,15 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_backgroundColor = ValueNotifier<Color?>(null);
 		_focusNode = FocusNode();
 		allImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
-		currentImageboardIndex = allImageboards.indexOf(ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey) ?? allImageboards.first);
+		if (ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey) case Imageboard initialImageboard) {
+			currentImageboardIndex = allImageboards.indexOf(initialImageboard);
+		}
 		if (currentImageboardIndex == -1) {
-			currentImageboardIndex = 0;
+			final mostUsedImageboardKey = Persistence.settings.tabs.map((t) => t.imageboardKey).modalValue;
+			currentImageboardIndex = allImageboards.indexWhere((i) => i.key == mostUsedImageboardKey);
+			if (currentImageboardIndex == -1) {
+				currentImageboardIndex = 0;
+			}
 		}
 		_maybeRefreshBoards();
 		_fetchBoards();

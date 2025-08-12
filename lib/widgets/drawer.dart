@@ -288,7 +288,7 @@ class DrawerList<T extends Object> {
 					onTap: () {
 						lightHapticFeedback();
 						settings.drawerMode = DrawerMode.tabs;
-						tabs.addNewTab(activate: true);
+						tabs.addNewTab(activate: true, withImageboardKey: tabs.currentForegroundThread?.imageboard.key);
 						afterUse();
 					},
 					tileColor: ChanceTheme.barColorOf(context),
