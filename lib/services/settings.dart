@@ -3048,7 +3048,6 @@ class Settings extends ChangeNotifier {
 			}
 			return md5;
 		}));
-		didUpdateImageFilter();
 	}
 
 	Future<void> didEdit() async {

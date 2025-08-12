@@ -163,10 +163,10 @@ final behaviorSettings = [
 	MutableButtonSettingWidget(
 		description: 'Image filter',
 		icon: Icons.hide_image_outlined,
-		setting: CustomImmutableSetting(
+		setting: CustomMutableSetting(
 			reader: (context) => context.read<Settings>().settings.hiddenImageMD5s,
 			watcher: (context) => context.watch<Settings>().settings.hiddenImageMD5s,
-			writer: (context, newValue) async => context.read<Settings>().setHiddenImageMD5s(newValue)
+			didMutater: (context) async => context.read<Settings>().didUpdateImageFilter()
 		),
 		onPressed: (context, hiddenImageMD5s, didSet) async {
 			final md5sBefore = hiddenImageMD5s.toSet();
