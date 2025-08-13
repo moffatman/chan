@@ -13,6 +13,7 @@ import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/jforum.dart';
 import 'package:chan/sites/lainchan2.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:test/test.dart';
 import 'package:chan/util.dart';
@@ -161,7 +162,7 @@ void main() async {
       });
       try {
         final digestFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 1000));
         expect(requests.length, equals(1));
         requests[0].response.bufferOutput = false;
         requests[0].response.contentLength = 10000;
@@ -268,8 +269,8 @@ void main() async {
           await digestFuture0;
           throw Exception('Did not get expected exception');
         }
-        on HTTPStatusException catch (e) {
-          expect(e.code, 404);
+        on DioError catch (e) {
+          expect(e.error, 'Http status error [404]');
         }
         final digestFuture1 = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
         await Future.delayed(const Duration(milliseconds: 100));
