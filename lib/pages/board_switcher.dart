@@ -106,6 +106,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late List<ImageboardScoped<ImageboardBoard>> boards;
 	static final typeaheads = <Imageboard, Trie<List<ImageboardBoard>>>{};
 	static final typeaheadLoadings = <Imageboard, Set<String>>{};
+	static final typeaheadLoadingsNotifier = EasyListenable();
 	static final boardsRefreshed = <Imageboard>{};
 	String searchString = '';
 	late final ScrollController scrollController;
@@ -244,6 +245,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 		final imageboard = currentImageboard;
 		typeaheadLoading.add(query);
+		typeaheadLoadingsNotifier.didUpdate();
 		try {
 			final newTypeaheadBoards = await imageboard.site.getBoardsForQuery(query);
 			if (currentImageboard != imageboard) {
@@ -260,6 +262,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 		finally {
 			typeaheadLoading.remove(query);
+			typeaheadLoadingsNotifier.didUpdate();
 		}
 	}
 
@@ -792,6 +795,29 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							builder: (context, color, child) => Container(
 								color: color
 							)
+						),
+						Builder(
+							builder: (context) {
+								final height = MediaQuery.paddingOf(context).top + 4;
+								final theme = context.watch<SavedTheme>();
+								return ValueListenableBuilder(
+									valueListenable: MappingValueListenable(
+										parent: typeaheadLoadingsNotifier,
+										mapper: (_) => typeaheadLoadings.values.any((t) => t.isNotEmpty)
+									),
+									builder: (context, show, _) => Container(
+										height: height,
+										width: double.infinity,
+										alignment: Alignment.topCenter,
+										child: LinearProgressIndicator(
+											value: show ? null : 0,
+											backgroundColor: theme.backgroundColor,
+											color: theme.primaryColorWithBrightness(0.4),
+											minHeight: height
+										)
+									)
+								);
+							}
 						),
 						(filteredBoards.isEmpty) ? const Center(
 							child: Text('No matching boards')
