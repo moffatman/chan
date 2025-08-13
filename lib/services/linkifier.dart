@@ -1,3 +1,4 @@
+import 'package:chan/util.dart';
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
@@ -94,7 +95,7 @@ class LooseUrlLinkifier extends Linkifier {
 
         for (final match in matches) {
           final domain = match.group(2);
-          if ((domain?.contains('..') ?? false) || !_validTlds.contains((domain ?? '').split('.').last.toLowerCase())) {
+          if ((domain?.contains('..') ?? false) || !_validTlds.contains((domain ?? '').afterLast('.').toLowerCase())) {
             // Invalid domain name
             continue;
           }

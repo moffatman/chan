@@ -94,7 +94,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 							board: board,
 							threadId: threadId,
 							id: _attachmentLinkIdPattern.firstMatch(src)?.group(1) ?? src,
-							ext: '.${alt.split('.').last}',
+							ext: '.${alt.afterLast('.')}',
 							filename: alt,
 							url: src,
 							thumbnailUrl: generateThumbnailerForUrl(Uri.parse(src)).toString(),
@@ -272,8 +272,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 							board: board,
 							threadId: threadId,
 							id: src,
-							ext: '.${src.split('.').last}',
-							filename: src.split('/').last,
+							ext: '.${src.afterLast('.')}',
+							filename: src.afterLast('/'),
 							url: src,
 							thumbnailUrl: generateThumbnailerForUrl(Uri.parse(src)).toString(),
 							md5: '',
@@ -682,8 +682,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 						threadId: threadId,
 						type: AttachmentType.image,
 						id: img.attributes['src']!,
-						ext: '.${img.attributes['src']!.split('.').last}',
-						filename: img.attributes['alt'] ?? img.attributes['src']!.split('/').last,
+						ext: '.${img.attributes['src']!.afterLast('.')}',
+						filename: img.attributes['alt'] ?? img.attributes['src']!.afterLast('/'),
 						url: parentHref ?? url,
 						thumbnailUrl: generateThumbnailerForUrl(Uri.parse(url)).toString(),
 						md5: '',
@@ -844,7 +844,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 			};
 			fields['keywords'] = query.query;
 			if (query.boards.isNotEmpty) {
-				fields['constraints'] = '{"search_type":"post","c":{"nodes":[${query.boards.first.split('.').last}],"child_nodes":1}}';
+				fields['constraints'] = '{"search_type":"post","c":{"nodes":[${query.boards.first.afterLast('.')}],"child_nodes":1}}';
 			}
 			fields.addAll(commonFields);
 			pageOneResponse = await client.postUri(
@@ -880,7 +880,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 				'page': page.toString(),
 				if (query.boards.isNotEmpty) ...{
 					'c[child_nodes]': '1',
-					'c[nodes][0]': query.boards.first.split('.').last
+					'c[nodes][0]': query.boards.first.afterLast('.')
 				},
 				...commonFields
 			}), options: Options(
@@ -981,9 +981,9 @@ class SiteXenforo extends ImageboardSite with ForumSite {
   }
 
 	@override
-	String formatBoardName(String name) => '/${name.split('.').first}/';
+	String formatBoardName(String name) => '/${name.beforeFirst('.')}/';
 	@override
-	String formatBoardNameWithoutTrailingSlash(String name) => '/${name.split('.').first}';
+	String formatBoardNameWithoutTrailingSlash(String name) => '/${name.beforeFirst('.')}';
 
 	@override
 	String formatUsername(String name) {

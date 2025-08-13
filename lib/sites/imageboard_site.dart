@@ -1465,7 +1465,7 @@ class DraftPost {
 	
 	ThreadIdentifier? get thread => threadId == null ? null : ThreadIdentifier(board, threadId!);
 
-	String? get fileExt => file?.split('.').last.toLowerCase();
+	String? get fileExt => file?.afterLast('.').toLowerCase();
 
 	String? get overrideFilename {
 		final override = overrideFilenameWithoutExtension;

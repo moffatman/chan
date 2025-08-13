@@ -162,7 +162,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 				'fileSha256': fileSha256,
 				'fileMime': lookupMimeType(file),
 				'fileSpoiler': (post.spoiler ?? false) ? 'spoiler': '',
-				'fileName': post.overrideFilename ?? file.split('/').last,
+				'fileName': post.overrideFilename ?? file.afterLast('/'),
 				if (!fileAlreadyUploaded) 'files': await MultipartFile.fromFile(file, filename: post.overrideFilename)
 			}
 		}), options: Options(
@@ -382,8 +382,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 				type: AttachmentType.fromFilename(f['path']),
 				board: board,
 				id: f['path'],
-				ext: '.${(f['path'] as String).split('.').last}',
-				filename: f['originalName'] ?? (f['path'] as String).split('/').last,
+				ext: '.${(f['path'] as String).afterLast('.')}',
+				filename: f['originalName'] ?? (f['path'] as String).afterLast('/'),
 				url: Uri.https(imageUrl, f['path']).toString(),
 				thumbnailUrl: Uri.https(imageUrl, f['thumb']).toString(),
 				md5: '',
@@ -471,7 +471,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 				board: board,
 				// Lynxchan dedupes images. Prepend some uniqueness here to avoid Hero problems later.
 				id: '$id-${e.key}-${e.value['path']}',
-				ext: '.${(e.value['path'] as String).split('.').last}',
+				ext: '.${(e.value['path'] as String).afterLast('.')}',
 				filename: e.value['originalName'],
 				url: Uri.https(imageUrl, e.value['path']).toString(),
 				thumbnailUrl: Uri.https(imageUrl, e.value['thumb']).toString(),

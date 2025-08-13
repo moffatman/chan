@@ -741,7 +741,7 @@ class StreamingMP4Conversion {
 	}
 
 	Future<StreamingMP4ConversionResult> start({bool force = false}) async {
-		final inputExtension = inputFile.path.split('.').last.toLowerCase();
+		final inputExtension = inputFile.path.afterLast('.').toLowerCase();
 		if (inputExtension == 'gif' && soundSource != null) {
 			// Two stages, to avoid network + performance hit of ffmpeg looping unconvered input gif
 			final conversion1 = _streamingConversion = MediaConversion.toWebm(inputFile, headers: headers, stripAudio: false, targetBitrate: 400000);

@@ -116,7 +116,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool get loading => postingPost.value != null;
 	(MediaScan, FileStat, String)? _attachmentScan;
 	File? attachment;
-	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
+	String? get attachmentExt => attachment?.path.afterLast('.').toLowerCase();
 	bool _showOptions = false;
 	bool get showOptions => _showOptions && !loading;
 	bool _showAttachmentOptions = false;
@@ -564,7 +564,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		required MediaConversion transcode,
 		required bool showToastIfOnlyRandomizingChecksum
 	}) async {
-		final ext = source.path.split('.').last.toLowerCase();
+		final ext = source.path.afterLast('.').toLowerCase();
 		final solutions = [
 			if (ext != transcode.outputFileExtension &&
 					!(ext == 'jpeg' && transcode.outputFileExtension == 'jpg') &&
@@ -715,7 +715,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				File? image;
 				File? video;
 				await for (final child in Directory(file.path).list()) {
-					final childExt = child.path.split('.').last.toLowerCase();
+					final childExt = child.path.afterLast('.').toLowerCase();
 					if (childExt == 'mov') {
 						video = File(child.path);
 					}
@@ -760,7 +760,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					}
 				}
 			}
-			String ext = file.uri.pathSegments.last.split('.').last.toLowerCase();
+			String ext = file.uri.pathSegments.last.afterLast('.').toLowerCase();
 			if (ext == 'jpg' || ext == 'jpeg' || ext == 'heic') {
 				file = await FlutterExifRotation.rotateImage(path: file.path);
 				file = await _moveFileOutOfDocumentsDir(file);
@@ -1829,7 +1829,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								return;
 							}
 							setAttachment(newFile);
-							_filenameController.text = proposed.imageUrl.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
+							_filenameController.text = proposed.imageUrl.afterLast('/').split('.').reversed.skip(1).toList().reversed.join('.');
 							if (proposed.text == proposed.imageUrl) {
 								final original = _textFieldController.text;
 								final replaced = original.replaceFirst(proposed.text, '');
@@ -2001,7 +2001,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 													}
 													String filename = Uri.parse(content.uri).pathSegments.last;
 													if (!filename.contains('.')) {
-														filename += '.${content.mimeType.split('/').last}';
+														filename += '.${content.mimeType.afterLast('/')}';
 													}
 													final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}/$filename');
 													await f.create(recursive: true);

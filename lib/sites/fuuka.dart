@@ -147,7 +147,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				},
 				url: url.ensurePrefix('https:'),
 				thumbnailUrl: element.querySelector('.thumb')!.attributes['src']!.ensurePrefix('https:'),
-				md5: element.parent!.querySelectorAll('a').firstWhere((x) => x.text == 'View same').attributes['href']!.split('/').last,
+				md5: element.parent!.querySelectorAll('a').firstWhere((x) => x.text == 'View same').attributes['href']!.afterLast('/'),
 				spoiler: false,
 				width: int.parse(fileDetailsMatch.group(3)!),
 				height: int.parse(fileDetailsMatch.group(4)!),

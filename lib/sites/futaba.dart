@@ -271,13 +271,13 @@ class SiteFutaba extends ImageboardSite {
 			}
 		}
 		if (filename != null && filesize != null && fileUrl != null && fileThumbnailUrl != null) {
-			final ext = fileUrl.split('.').last;
+			final ext = fileUrl.afterLast('.');
 			final type = ext == 'webm' ? AttachmentType.webm : (ext == 'mp4' ? AttachmentType.mp4 : AttachmentType.image);
 			attachment = Attachment(
 				type: type,
 				board: board,
 				threadId: threadId,
-				id: fileUrl.split('/').last.split('.').first,
+				id: fileUrl.afterLast('/').beforeFirst('.'),
 				ext: '.$ext',
 				filename: filename,
 				url: Uri.https(boardDomain(board), fileUrl).toString(),

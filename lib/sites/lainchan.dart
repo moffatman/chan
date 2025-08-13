@@ -440,7 +440,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 				title: null,
 				rows: document.querySelectorAll('ol li').map((e) => ImageboardPollRow(
 					name: e.querySelector('span')!.text,
-					votes: int.parse(e.querySelector('label')!.text.substring(1).split(' ').first)
+					votes: int.parse(e.querySelector('label')!.text.substring(1).beforeFirst(' '))
 				)).toList()
 			);
 		}

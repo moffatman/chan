@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mime/mime.dart';
@@ -21,7 +22,7 @@ Future<bool> doesClipboardContainImage() async {
 Future<File?> getClipboardImageAsFile(BuildContext context) async {
 	final image = await _platform.invokeMethod('getClipboardImage');
 	if (image case Uint8List bytes) {
-		String? ext = lookupMimeType('', headerBytes: bytes)?.split('/').last;
+		String? ext = lookupMimeType('', headerBytes: bytes)?.afterLast('/');
 		if (ext == 'jpeg') {
 			ext = 'jpg';
 		}
@@ -37,7 +38,7 @@ Future<File?> getClipboardImageAsFile(BuildContext context) async {
 		if (url == null || url.host.isEmpty) {
 			return null;
 		}
-		if (!supportedFileExtensions.contains('.${url.path.split('.').last}')) {
+		if (!supportedFileExtensions.contains('.${url.path.afterLast('.')}')) {
 			return null;
 		}
 		if (url.scheme.isEmpty) {

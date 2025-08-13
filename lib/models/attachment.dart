@@ -25,7 +25,7 @@ enum AttachmentType {
 	@HiveField(6)
 	swf;
 	static AttachmentType fromFilename(String filename) {
-		final ext = filename.split('.').last.toLowerCase();
+		final ext = filename.afterLast('.').toLowerCase();
 		switch (ext) {
 			case 'webm':
 				return AttachmentType.webm;

@@ -1062,7 +1062,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	String _downloadFilename(bool convertForCompatibility) {
 		String filename;
 		if (Settings.instance.downloadUsingServerSideFilenames) {
-			filename = attachment.id.split('/').last;
+			filename = attachment.id.afterLast('/');
 		}
 		else {
 			filename = attachment.filename;

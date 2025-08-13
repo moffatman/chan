@@ -1281,7 +1281,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 				final fullUrl = 'https:${thumb.attributes['href']!}'
 					// is2.4chan.org seems to have broken SSL
 					.replaceFirst('is2.4chan.org', imageUrl);
-				final ext = '.${fullUrl.split('.').last}';
+				final ext = '.${fullUrl.afterLast('.')}';
 				final metadata = RegExp(r'\(\s+([\d\.]+)(Mi|Ki)?B,\s+(\d+)x(\d+)\s+\)').firstMatch(file.querySelector('.fileText')!.text)!;
 				int multiplier = 1;
 				final fileSizePrefix = metadata.group(2)!.toLowerCase();
@@ -1292,7 +1292,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 				}
 				attachment = Attachment(
 					board: board,
-					id: fullUrl.split('/').last.split('.').first,
+					id: fullUrl.afterLast('/').beforeFirst('.'),
 					type: _getAttachmentType(ext),
 					ext: ext,
 					filename: file.querySelectorAll('.fileText a').last.text.trim(),

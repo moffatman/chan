@@ -222,7 +222,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		final document = parse(response.data);
 		return document.querySelectorAll('.forum-list').tryMap((forum) {
 			final link = forum.querySelector('.forumlink a');
-			final boardCode = link?.attributes['href']?.split('/').last.split('.').first;
+			final boardCode = link?.attributes['href']?.afterLast('/').beforeFirst('.');
 			final description = forum.querySelector('.genmed')?.text.trim();
 			final postCount = forum.querySelectorAll('.gensmall').tryLast?.text.trim().tryParseInt;
 			if (link == null || boardCode == null || description == null || postCount == null) {
@@ -264,7 +264,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 	static final _catalogReplyCountPattern = RegExp(r'Replies: (\d+)');
 
 	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority, CancelToken? cancelToken}) async {
-		final boardCode = board.split('.').first;
+		final boardCode = board.beforeFirst('.');
 		final response = await client.getUri(Uri.https(baseUrl, '$basePath/forums/show/${page == 1 ? '' : '${(page - 1) * threadsPerPage}/'}$boardCode.page'), options: Options(
 			responseType: ResponseType.plain,
 			extra: {
@@ -277,7 +277,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 			final int replyCount = _catalogReplyCountPattern.firstMatch(replyCountStr ?? '')?.group(1)?.tryParseInt ?? 0;
 			final subject = e.querySelector('span.subject-line a')!;
 			final firstPost = e.querySelector('.first-post')!;
-			final id = int.parse(subject.attributes['href']!.split('/').last.split('.').first);
+			final id = int.parse(subject.attributes['href']!.afterLast('/').beforeFirst('.'));
 			final time = _parseTime(firstPost.text)!;
 			final lastPostTime = e.querySelector('.last-message')?.nodes.first.text;
 			return Thread(
@@ -339,7 +339,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 			if (href == null || !href.startsWith('$basePath/forums/show/')) {
 				return null;
 			}
-			return '${href.split('/').last.split('.').first}.${a.text}';
+			return '${href.afterLast('/').beforeFirst('.')}.${a.text}';
 		})!;
 		int currentPageNumber = 1;
 		int lastPageNumber = 1;
@@ -457,7 +457,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 
 	@override
 	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
-		final boardCode = board.split('.').first;
+		final boardCode = board.beforeFirst('.');
 		if (threadId == null) {
 			return 'https://$baseUrl$basePath/forums/show/$boardCode.page';
 		}
@@ -486,7 +486,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 			'search_keywords': query.query,
 			'match_type': 'all',
 			'search_forum': switch (query.boards) {
-				[String board] => board.split('.').first,
+				[String board] => board.beforeFirst('.'),
 				_ => ''
 			},
 			'sort_by': 'relevance',
@@ -528,12 +528,12 @@ class SiteJForum extends ImageboardSite with ForumSite {
 						continue;
 					}
 					if (href.startsWith('$basePath/forums/show/')) {
-						board = '${href.split('/').last.split('.').first}.${a.text}';
+						board = '${href.afterLast('/').beforeFirst('.')}.${a.text}';
 					}
 					if (href.startsWith('$basePath/posts/preList/')) {
 						final parts = href.split('/');
 						threadId = int.parse(parts[parts.length - 2]);
-						id = int.parse(parts.last.split('.').first);
+						id = int.parse(parts.last.beforeFirst('.'));
 					}
 					if (href.startsWith('$basePath/user/profile/')) {
 						name = a.text;
@@ -555,9 +555,9 @@ class SiteJForum extends ImageboardSite with ForumSite {
 	}
 
 	@override
-	String formatBoardName(String name) => name.split('.').last;
+	String formatBoardName(String name) => name.afterLast('.');
 	@override
-	String formatBoardNameWithoutTrailingSlash(String name) => name.split('.').last;
+	String formatBoardNameWithoutTrailingSlash(String name) => name.afterLast('.');
 
 	@override
 	bool get showImageCount => false;

@@ -545,7 +545,7 @@ class MediaConversion {
 			// This is a local file
 			subdir = base64.encode(md5.convert(utf8.encode(inputFile.pathSegments.take(inputFile.pathSegments.length - 1).join('_'))).bytes);
 		}
-		else if (!filename.split('.').first.contains(_digitPattern)) {
+		else if (!filename.beforeFirst('.').contains(_digitPattern)) {
 			// This is a remote file
 			// No numbers in the filename
 			// Probably the other pathSegments are the unique parts
@@ -567,7 +567,7 @@ class MediaConversion {
 		bool isOriginalFile = false;
 		File file = getDestination();
 		if (!(await file.exists())) {
-			if (inputFile.scheme == 'file' && inputFile.path.split('.').last == outputFileExtension) {
+			if (inputFile.scheme == 'file' && inputFile.path.afterLast('.') == outputFileExtension) {
 				isOriginalFile = true;
 				file = File(inputFile.toStringFFMPEG());
 			}

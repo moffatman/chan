@@ -12,6 +12,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -678,7 +679,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											)
 										));
 										if (pickedBytes != null) {
-											String? ext = lookupMimeType('', headerBytes: pickedBytes)?.split('/').last;
+											String? ext = lookupMimeType('', headerBytes: pickedBytes)?.afterLast('/');
 											if (ext == 'jpeg') {
 												ext = 'jpg';
 											}

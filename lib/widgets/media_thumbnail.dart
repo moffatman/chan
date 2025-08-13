@@ -1,5 +1,6 @@
 import 'package:chan/services/media.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/thumbnail_image_provider.dart';
 import 'package:chan/widgets/widget_decoration.dart';
 import 'package:flutter/cupertino.dart';
@@ -25,7 +26,7 @@ class MediaThumbnail extends StatefulWidget {
 class _MediaThumbnailState extends State<MediaThumbnail> {
 	MediaScan? scan;
 
-	String get ext => widget.uri.path.split('.').last.toLowerCase();
+	String get ext => widget.uri.path.afterLast('.').toLowerCase();
 
 	bool get isVideo => {
 		'webm', 'mp4', 'mov', 'm4v', 'mkv', 'mpeg', 'avi', '3gp', 'm2ts'

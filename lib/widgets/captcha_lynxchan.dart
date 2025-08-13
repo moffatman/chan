@@ -102,7 +102,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		if (redirectPath != null && redirectPath.startsWith('/.global/captchas/')) {
 			final fromCookie = idFromResponseCookies ?? idFromRequestCookies;
 			// ID may be truncated. Best to get it from cookie
-			id = fromCookie ?? redirectPath.split('/').last;
+			id = fromCookie ?? redirectPath.afterLast('/');
 			imagePath = redirectPath;
 		}
 		else if (idResponse.data is String) {

@@ -272,7 +272,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 				final fileMatch = _fileInfoPattern.firstMatch(fileInfoText ?? '');
 				if (relativeThumbSrc != null && fileMatch != null) {
 					final imageUri = uri.resolve(fileThumb.attributes['href']!);
-					final ext = imageUri.pathSegments.last.split('.').last;
+					final ext = imageUri.pathSegments.last.afterLast('.');
 					attachments.add(Attachment(
 						type: switch (ext) {
 							'webm' => AttachmentType.webm,
@@ -342,7 +342,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 			posts_: posts,
 			replyCount: switch (element.querySelector('span.summary')) {
 				null => posts.length - 1, // on thread page or no omitted in catalog
-				dom.Element e => (posts.length - 1) + int.parse(e.text.trim().split(' ').first) // Text like "250 omitted replies"
+				dom.Element e => (posts.length - 1) + int.parse(e.text.trim().beforeFirst(' ')) // Text like "250 omitted replies"
 			},
 			imageCount: 0,
 			title: element.querySelector('.postInfo .subject')?.text.nonEmptyOrNull,

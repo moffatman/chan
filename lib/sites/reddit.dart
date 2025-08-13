@@ -658,7 +658,7 @@ class SiteReddit extends ImageboardSite {
 		final uri = Uri.parse(url);
 		try {
 			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io' || uri.host == 'i.imgur.com' || uri.host == 'i.imgur.io') && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
-				final hash = uri.pathSegments.single.split('.').first;
+				final hash = uri.pathSegments.single.beforeFirst('.');
 				final response = await client.getUri(Uri.https('api.imgur.com', '/3/image/$hash'), options: Options(
 					headers: {
 						'Authorization': 'Client-ID 714791ea4513f83'
@@ -676,7 +676,7 @@ class SiteReddit extends ImageboardSite {
 							return 'm.${m.group(1)}';
 						}),
 						type: AttachmentType.image,
-						ext: '.${link.split('.').last}'
+						ext: '.${link.afterLast('.')}'
 					)];
 				}
 			}
@@ -701,7 +701,7 @@ class SiteReddit extends ImageboardSite {
 								return 'm.${m.group(1)}';
 							}),
 							type: AttachmentType.image,
-							ext: '.${link.split('.').last}'
+							ext: '.${link.afterLast('.')}'
 						)];
 					}).toList();
 				}
@@ -806,7 +806,7 @@ class SiteReddit extends ImageboardSite {
 			url: url,
 			thumbnailUrl: null,
 			type: isDirectLink ? AttachmentType.image : AttachmentType.url,
-			ext: isDirectLink ? '.${url.split('.').last}' : ''
+			ext: isDirectLink ? '.${url.afterLast('.')}' : ''
 		)];
 	}
 
@@ -833,7 +833,7 @@ class SiteReddit extends ImageboardSite {
 						));
 					}
 					else if (item['m'] != null) {
-						final ext = '.${item['m'].split('/').last}';
+						final ext = '.${item['m'].afterLast('/')}';
 						attachments.add(Attachment(
 							type: AttachmentType.image,
 							board: data['subreddit'],

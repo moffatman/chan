@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/services.dart';
 
 final _pattern = RegExp(r'([^/]+).[ot]tf');
@@ -34,7 +35,7 @@ Future<void> initializeFonts() async {
 		if (fontFamilyName != null &&
 		    (fontFamilyName.endsWith('.ttf') || fontFamilyName.endsWith('.otf'))) {
 			// If fontFamily ends with .ttf or .otf, load it from documents dir
-			final family = fontFamilyName.split('.').first;
+			final family = fontFamilyName.beforeFirst('.');
 			final file = Persistence.documentsDirectory.dir(Persistence.fontsDir).file(fontFamilyName);
 			if (!file.existsSync()) {
 				throw FileSystemException('Font file not found', file.path);
@@ -54,7 +55,7 @@ Future<void> initializeFonts() async {
 		if (fontFamilyFallbackName != null &&
 		    (fontFamilyFallbackName.endsWith('.ttf') || fontFamilyFallbackName.endsWith('.otf'))) {
 			// If fontFamily ends with .ttf or .otf, load it from documents dir
-			final family = fontFamilyFallbackName.split('.').first;
+			final family = fontFamilyFallbackName.beforeFirst('.');
 			final file = Persistence.documentsDirectory.dir(Persistence.fontsDir).file(fontFamilyFallbackName);
 			if (!file.existsSync()) {
 				throw FileSystemException('Font file not found', file.path);
