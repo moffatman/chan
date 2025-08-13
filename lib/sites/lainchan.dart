@@ -341,7 +341,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		final embed = postData['embed'] as String?;
 		if (embed != null && embed.isNotEmpty) {
 			final elem = parseFragment(embed);
-			final href = elem.querySelector('a')?.attributes['href'];
+			final href = elem.querySelector('a')?.attributes['href'] ?? elem.querySelector('iframe')?.attributes['src'];
 			if (href != null) {
 				ret.add(Attachment(
 					type: AttachmentType.url,
