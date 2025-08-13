@@ -117,6 +117,67 @@ void sortWatchedThreads(List<ImageboardScoped<ThreadWatch>> watches) {
 	}
 }
 
+void sortUnscopedWatchedThreads(Imageboard imageboard, List<ThreadWatch> watches) {
+	final d = DateTime(2000);
+	if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.lastReplyByYouTime) {
+		mergeSort<ThreadWatch>(watches, compare: (a, b) {
+			final ta = imageboard.persistence.getThreadStateIfExists(a.threadIdentifier);
+			final tb = imageboard.persistence.getThreadStateIfExists(b.threadIdentifier);
+			Post? pa;
+			Post? pb;
+			if (ta?.youIds.isNotEmpty == true) {
+				pa = ta!.thread?.posts_.tryFirstWhere((p) => p.id == ta.youIds.last);
+			}
+			if (tb?.youIds.isNotEmpty == true) {
+				pb = tb!.thread?.posts_.tryFirstWhere((p) => p.id == tb.youIds.last);
+			}
+			return (pb?.time ?? d).compareTo(pa?.time ?? d);
+		});
+	}
+	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
+		mergeSort<ThreadWatch>(watches, compare: (a, b) {
+			return (imageboard.persistence.getThreadStateIfExists(b.threadIdentifier)?.thread?.posts_.last.time.toLocal() ?? d).compareTo(imageboard.persistence.getThreadStateIfExists(a.threadIdentifier)?.thread?.posts_.last.time.toLocal() ?? d);
+		});
+	}
+	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.alphabeticByTitle) {
+		mergeSort<ThreadWatch>(watches, compare: (a, b) {
+			final ta = imageboard.persistence.getThreadStateIfExists(a.threadIdentifier)?.thread;
+			final tb = imageboard.persistence.getThreadStateIfExists(b.threadIdentifier)?.thread;
+			return ta.compareTo(tb);
+		});
+	}
+	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.threadPostTime) {
+		mergeSort<ThreadWatch>(watches, compare: (a, b) {
+			final ta = imageboard.persistence.getThreadStateIfExists(a.threadIdentifier)?.thread;
+			final tb = imageboard.persistence.getThreadStateIfExists(b.threadIdentifier)?.thread;
+			return (tb?.time ?? d).compareTo(ta?.time ?? d);
+		});
+	}
+	else if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
+		mergeSort<ThreadWatch>(watches, compare: (a, b) {
+			return b.watchTime.compareTo(a.watchTime);
+		});
+	}
+	if (Persistence.settings.reverseWatchedThreadsSorting) {
+		final list = watches.toList();
+		watches.clear();
+		watches.addAll(list.reversed);
+	}
+	if (Persistence.settings.showActiveWatchesAboveZombieWatches) {
+		mergeSort<ThreadWatch>(watches, compare: (a, b) {
+			if (a.zombie == b.zombie) {
+				return 0;
+			}
+			else if (a.zombie) {
+				return 1;
+			}
+			else {
+				return -1;
+			}
+		});
+	}
+}
+
 Comparator<PersistentThreadState> getSavedThreadsSortMethod() {
 	final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 	final Comparator<PersistentThreadState> method = switch (Persistence.settings.savedThreadsSortingMethod) {

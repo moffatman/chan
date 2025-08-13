@@ -2,6 +2,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/licenses.dart';
+import 'package:chan/pages/popup_drawer.dart';
 import 'package:chan/pages/settings/appearance.dart';
 import 'package:chan/pages/settings/behavior.dart';
 import 'package:chan/pages/settings/common.dart';
@@ -12,13 +13,18 @@ import 'package:chan/pages/staggered_grid_debugging.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/pages/tree_debugging.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/sorting.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/version.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/drawer.dart';
 import 'package:chan/widgets/thread_row.dart';
+import 'package:chan/widgets/thread_widget_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -191,64 +197,138 @@ class _SettingsPageState extends State<SettingsPage> {
 						children.add(Center(
 							child: Padding(
 								padding: const EdgeInsets.symmetric(horizontal: 16),
-								child: AdaptiveThinButton(
-									child: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											const Icon(CupertinoIcons.chat_bubble_2),
-											const SizedBox(width: 16),
-											const Expanded(
-												child: Text('More discussion')
-											),
-											ValueListenableBuilder(
-												valueListenable: context.watch<ThreadWatcher>().unseenCount,
-												builder: (context, unseenCount, _) {
-													final nonStickyUnseenCount = unseenCount - (snapshot.data?.map((t) {
+								child: Row(
+									children: [
+										Expanded(
+											child: AdaptiveThinButton(
+												child: const Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(CupertinoIcons.chat_bubble_2),
+														SizedBox(width: 16),
+														Expanded(
+															child: Text('More discussion')
+														),
+														SizedBox(width: 8),
+														Icon(CupertinoIcons.chevron_forward)
+													]
+												),
+												onPressed: () => Navigator.push(context, adaptivePageRoute(
+													builder: (context) => BoardPage(
+														initialBoard: ImageboardBoard(
+															name: 'chance',
+															title: 'Chance - Imageboard Browser',
+															isWorksafe: true,
+															maxWebmDurationSeconds: 120,
+															webmAudioAllowed: false,
+															maxImageSizeBytes: 8000000,
+															maxWebmSizeBytes: 8000000
+														),
+														allowChangingBoard: false,
+														semanticId: -1
+													)
+												))
+											)
+										),
+										ValueListenableBuilder(
+											valueListenable: Combining2ValueListenable(
+												child1: MappingValueListenable(
+													parent: context.watch<ThreadWatcher>().unseenCount,
+													mapper: (unseenCount) => unseenCount.value - (snapshot.data?.map((t) {
 														return imageboard.persistence.getThreadStateIfExists(t.identifier)?.unseenReplyCount() ?? 0;
-													}).fold<int>(0, (a, b) => a + b) ?? 0);
-													if (nonStickyUnseenCount <= 0) {
-														return const SizedBox.shrink();
-													}
-													return Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															const Icon(CupertinoIcons.reply_all, size: 17),
-															Text(' +$nonStickyUnseenCount')
-														]
-													);
-												}
-											),
-											ValueListenableBuilder(
-												valueListenable: context.watch<ThreadWatcher>().unseenYouCount,
-												builder: (context, unseenYouCount, _) {
-													final nonStickyUnseenYouCount = unseenYouCount - (snapshot.data?.map((t) {
+													}).fold<int>(0, (a, b) => a + b) ?? 0)
+												),
+												child2: MappingValueListenable(
+													parent: context.watch<ThreadWatcher>().unseenYouCount,
+													mapper: (unseenYouCount) => unseenYouCount.value - (snapshot.data?.map((t) {
 														return imageboard.persistence.getThreadStateIfExists(t.identifier)?.unseenReplyIdsToYouCount() ?? 0;
-													}).fold<int>(0, (a, b) => a + b) ?? 0);
-													if (nonStickyUnseenYouCount <= 0) {
-														return const SizedBox.shrink();
-													}
-													return Text(' +$nonStickyUnseenYouCount', style: TextStyle(color: settings.theme.secondaryColor));
+													}).fold<int>(0, (a, b) => a + b) ?? 0)
+												),
+												combine: (nonStickyUnseenCount, nonStickyUnseenYouCount) => (
+													nonStickyUnseenCount: nonStickyUnseenCount,
+													nonStickyUnseenYouCount: nonStickyUnseenYouCount
+												)
+											),
+											builder: (context, data, _) {
+												if (data.nonStickyUnseenCount <= 0 && data.nonStickyUnseenYouCount <= 0) {
+													return const SizedBox.shrink();
 												}
-											),
-											const SizedBox(width: 8),
-											const Icon(CupertinoIcons.chevron_forward)
-										]
-									),
-									onPressed: () => Navigator.push(context, adaptivePageRoute(
-										builder: (context) => BoardPage(
-											initialBoard: ImageboardBoard(
-												name: 'chance',
-												title: 'Chance - Imageboard Browser',
-												isWorksafe: true,
-												maxWebmDurationSeconds: 120,
-												webmAudioAllowed: false,
-												maxImageSizeBytes: 8000000,
-												maxWebmSizeBytes: 8000000
-											),
-											allowChangingBoard: false,
-											semanticId: -1
+												return Padding(
+													padding: const EdgeInsets.only(left: 8),
+													child: AdaptiveThinButton(
+														onPressed: () async {
+															final watches = imageboard.persistence.browserState.threadWatches.values.toList();
+															sortUnscopedWatchedThreads(imageboard, watches);
+															/// !shouldCountAsUnread
+															watches.removeWhere((item) {
+																final threadState = imageboard.persistence.getThreadStateIfExists(item.threadIdentifier);
+																if (item.localYousOnly) {
+																	return (threadState?.unseenReplyIdsToYouCount() ?? 0) == 0;
+																}
+																return (threadState?.unseenReplyCount() ?? 0) == 0;
+															});
+															final selection = await Navigator.push<ThreadIdentifier>(context, TransparentRoute(
+																builder: (context) {
+																	final list = DrawerList<ThreadWatch>(
+																		list: watches,
+																		builder: (watch, builder) {
+																			if (!Persistence.isThreadCached(imageboard.key, watch.board, watch.threadId)) {
+																				return const SizedBox(width: double.infinity);
+																			}
+																			return ThreadWidgetBuilder(
+																				imageboard: imageboard,
+																				persistence: null,
+																				boardName: watch.board,
+																				thread: watch.threadIdentifier,
+																				builder: builder
+																			);
+																		},
+																		onRefresh: imageboard.threadWatcherController?.update,
+																		// Don't bother with onReorder
+																		onClose: (i) {
+																			final watch = watches[i];
+																			imageboard.notifications.unsubscribeFromThread(watch.threadIdentifier);
+																			setState(() {});
+																			return (
+																				message: 'Unwatched thread',
+																				onUndo: () async {
+																					await imageboard.notifications.insertWatch(watch);
+																					setState(() {});
+																				}
+																			);
+																		},
+																		isSelected: (i) => false,
+																		onSelect: (i) async {
+																			final watch = watches[i];
+																			Navigator.pop(context, watch.threadIdentifier);
+																		},
+																		menuAxisDirection: AxisDirection.right
+																	);
+																	return PopupDrawerPage(list: list);
+																}
+															));
+															if (selection != null && context.mounted) {
+																Navigator.push(context, adaptivePageRoute(
+																	builder: (context) => ThreadPage(
+																		thread: selection,
+																		boardSemanticId: -1,
+																	)
+																));
+															}
+														},
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																const Icon(CupertinoIcons.bell),
+																if (data.nonStickyUnseenCount > 0) Text(' +${data.nonStickyUnseenCount}'),
+																if (data.nonStickyUnseenYouCount > 0) Text(' +${data.nonStickyUnseenYouCount}', style: TextStyle(color: settings.theme.secondaryColor))
+															]
+														)
+													)
+												);
+											}
 										)
-									))
+									]
 								)
 							)
 						));
