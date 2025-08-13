@@ -182,7 +182,7 @@ void showToast({
 	}
 	final theme = context.read<SavedTheme>();
 	FToast().init(context).showToast(
-		positionedToastBuilder: (context, child) => Positioned(
+		positionedToastBuilder: (BuildContext context, Widget child, ToastGravity? gravity) => Positioned(
 			bottom: 114 + padding.bottom,
 			left: 24 + padding.left,
 			right: 24 + padding.right,
