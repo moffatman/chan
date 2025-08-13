@@ -1512,6 +1512,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _onShouldShowTabPopup(bool newShowTabPopup) {
+		if (newShowTabPopup && !_showTabPopup.value) {
+			// Force show nav bars
+			ScrollTracker.instance.slowScrollDirection.value = VerticalDirection.up;
+		}
 		_showTabPopup.value = newShowTabPopup;
 	}
 
