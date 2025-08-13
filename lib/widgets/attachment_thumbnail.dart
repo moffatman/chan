@@ -190,22 +190,14 @@ class AttachmentThumbnail extends StatelessWidget {
 		) : child;
 	}
 
-	@override
-	Widget build(BuildContext context) {
-		final settings = context.watch<Settings>();
+	Widget _build({
+		required BuildContext context,
+		required Settings settings,
+		required double effectiveWidth,
+		required double effectiveHeight,
+		required bool forceFullQuality
+	}) {
 		final spoiler = attachment.spoiler && !revealSpoilers;
-		double effectiveWidth = width ?? settings.thumbnailSize;
-		double effectiveHeight = height ?? settings.thumbnailSize;
-		if (shrinkHeight && fit == BoxFit.contain && attachment.width != null && attachment.height != null) {
-			if (attachment.aspectRatio > 1) {
-				effectiveHeight = effectiveWidth / attachment.aspectRatio;
-			}
-		}
-		if (rotate90DegreesClockwise) {
-			final tmp = effectiveWidth;
-			effectiveWidth = effectiveHeight;
-			effectiveHeight = tmp;
-		}
 		final s = site ?? context.watch<ImageboardSite?>();
 		if (s == null) {
 			return SizedBox(
@@ -218,7 +210,10 @@ class AttachmentThumbnail extends StatelessWidget {
 		}
 		bool resize = false;
 		String url = attachment.thumbnailUrl;
-		if ((overrideFullQuality ?? (settings.fullQualityThumbnails && !attachment.isRateLimited)) && attachment.type == AttachmentType.image) {
+		if ((
+			forceFullQuality ||
+			(overrideFullQuality ?? (settings.fullQualityThumbnails && !attachment.isRateLimited))
+		) && attachment.type == AttachmentType.image) {
 			resize = true;
 			url = attachment.url;
 		}
@@ -266,7 +261,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			final targetLongestSide = fit != BoxFit.cover;
 			// maintain minimum pixels on shortest side
 			final targetHeight = (targetLongestSide && (attachment.aspectRatio < 1)) || 
-													 (!targetLongestSide && (attachment.aspectRatio > 1));
+													(!targetLongestSide && (attachment.aspectRatio > 1));
 			image = ExtendedResizeImage(
 				image,
 				maxBytes: null,
@@ -386,6 +381,48 @@ class AttachmentThumbnail extends StatelessWidget {
 			);
 		}
 		return _maybeHero(context, child);
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		final settings = context.watch<Settings>();
+		double effectiveWidth = width ?? settings.thumbnailSize;
+		double effectiveHeight = height ?? settings.thumbnailSize;
+		if (shrinkHeight && fit == BoxFit.contain && attachment.width != null && attachment.height != null) {
+			if (attachment.aspectRatio > 1) {
+				effectiveHeight = effectiveWidth / attachment.aspectRatio;
+			}
+		}
+		if (rotate90DegreesClockwise) {
+			final tmp = effectiveWidth;
+			effectiveWidth = effectiveHeight;
+			effectiveHeight = tmp;
+		}
+		if (effectiveWidth <= 125 && effectiveHeight <= 125) {
+			// Don't even try to monitor for HQ caching
+			return _build(
+				context: context,
+				settings: settings,
+				effectiveWidth: effectiveWidth,
+				effectiveHeight: effectiveHeight,
+				forceFullQuality: false
+			);
+		}
+		return StreamBuilder(
+			stream: AttachmentCache.stream.where((e) => e.url == attachment.url),
+			builder: (context, _) => FutureBuilder(
+				future: AttachmentCache.optimisticallyFindFile(attachment),
+				builder: (context, snapshot) {
+					return _build(
+						context: context,
+						settings: settings,
+						effectiveWidth: effectiveWidth,
+						effectiveHeight: effectiveHeight,
+						forceFullQuality: snapshot.hasData
+					);
+				}
+			)
+		);
 	}
 }
 
