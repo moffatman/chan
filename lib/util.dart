@@ -77,6 +77,49 @@ extension SafeRemove<T> on List<T> {
 	}
 }
 
+extension IndexOfOr<T> on List<T> {
+	int indexOfOrLength(T needle, [int start = 0]) {
+		final idx = indexOf(needle, start);
+		if (idx == -1) {
+			return length;
+		}
+		return idx;
+	}
+	int lastIndexOfOrZero(T needle, [int? start]) {
+		final idx = lastIndexOf(needle, start);
+		if (idx == -1) {
+			return 0;
+		}
+		return idx;
+	}
+}
+
+extension IndexOfOrStr on String {
+	int indexOfOrLength(String needle, [int start = 0]) {
+		final idx = indexOf(needle, start);
+		if (idx == -1) {
+			return length;
+		}
+		return idx;
+	}
+	int lastIndexOfOrZero(String needle, [int? start]) {
+		final idx = lastIndexOf(needle, start);
+		if (idx == -1) {
+			return 0;
+		}
+		return idx;
+	}
+}
+
+extension EasySplit on String {
+	String beforeFirst(String delimiter) {
+		return substring(0, indexOfOrLength(delimiter));
+	}
+	String afterLast(String delimiter) {
+		return substring(lastIndexOfOrZero(delimiter));
+	}
+}
+
 extension MapOnce<T> on Iterable<T> {
 	U? tryMapOnce<U extends Object>(U? Function(T v) f) {
 		for (final item in this) {

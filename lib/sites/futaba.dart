@@ -66,6 +66,7 @@ class SiteFutaba extends ImageboardSite {
 	final String name;
 	@override
 	final String baseUrl;
+	final String? _baseBaseUrl;
 
 	final int maxUploadSizeBytes;
 
@@ -77,7 +78,7 @@ class SiteFutaba extends ImageboardSite {
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders
-	});
+	}) : _baseBaseUrl = RegExp(r'[^.]+\.[^.]+$').firstMatch(baseUrl)?.group(0);
 
 	String boardDomain(String board) => persistence?.maybeGetBoard(board)?.subdomain ?? baseUrl;
 
@@ -137,12 +138,19 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		final baseBaseUrl = RegExp(r'[^.]+\.[^.]+$').firstMatch(baseUrl)?.group(0);
-		final pattern = RegExp(r'https?:\/\/(.*\.)?' + (baseBaseUrl ?? baseUrl).replaceAll('.', r'\.') + r'\/([^\/]+)\/((res\/(\d+)\.html?(#sd(\d+))?.*)|(index\.html?))?$');
-		final match = pattern.firstMatch(url);
-		if (match != null) {
-			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(2)!), int.tryParse(match.group(5) ?? ''), int.tryParse(match.group(7) ?? ''));
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		if (!url.host.endsWith(_baseBaseUrl ?? baseUrl)) {
+			return null;
+		}
+		final p = url.pathSegments.where((s) => s.isNotEmpty).toList();
+		switch (p) {
+			case [String board]:
+			case [String board, 'index.html']:
+				return BoardThreadOrPostIdentifier(board);
+			case [String board, 'res', String threadIdPart]:
+				if (threadIdPart.beforeFirst('.').tryParseInt case int threadId) {
+					return BoardThreadOrPostIdentifier(board, threadId, url.fragment.extractPrefixedInt('sd'));
+				}
 		}
 		return null;
 	}

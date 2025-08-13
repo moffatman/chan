@@ -2,20 +2,26 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/compress_html.dart';
+import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/json_cache.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/priority_queue.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/sites/lainchan.dart';
+import 'package:chan/sites/jforum.dart';
+import 'package:chan/sites/lainchan2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:test/test.dart';
 import 'package:chan/util.dart';
 
 bool id(bool x) => x;
 
-void main() {
+void main() async {
+  await Persistence.initializeForTesting();
+  final sites = await JsonCache.instance.sites.updater();
   group('BinarySearch', () {
     test('firstwhere', () {
       for (int length = 1; length < 90; length++) {
@@ -53,15 +59,84 @@ void main() {
     });
   });
 
+  group('decodeUrl and toWebUrl', () {
+    for (final siteEntry in sites.entries) {
+      test(siteEntry.key, () async {
+        final imageboard = Imageboard(key: siteEntry.key, siteData: siteEntry.value);
+        await imageboard.initialize(forTesting: true);
+        final site = imageboard.site;
+        for (final b in [
+          if (!site.supportsMultipleBoards) ''
+          else if (site is SiteJForum) ...[
+            '1.a',
+            '2.fdsa',
+            '3.λ'
+          ]
+          else ...[
+            'a',
+            'fdsa',
+            'λ'
+          ]
+        ]) {
+          for (final id in [
+            if (site.supportsMultipleBoards) BoardThreadOrPostIdentifier(b),
+            BoardThreadOrPostIdentifier(b, 1234 + b.hashCode),
+            // Hacker news would need network lookup to find the OP
+            if (site.supportsMultipleBoards) BoardThreadOrPostIdentifier(b, 2345 + b.hashCode, 6789),
+            if (site.isPaged) BoardThreadOrPostIdentifier(b, 2345 + b.hashCode, -10)
+          ]) {
+            // Hack around network request need by attempting to prepopulate data
+            await imageboard.persistence.setBoard(id.board, ImageboardBoard(
+              name: id.board,
+              title: 'Fake board "${id.board}"',
+              isWorksafe: false,
+              webmAudioAllowed: false
+            ));
+            await Persistence.sharedThreadStateBox.put(
+              '${imageboard.key}/${ImageboardBoard.getKey(id.board)}/${id.threadId ?? 0}',
+              PersistentThreadState(
+                imageboardKey: imageboard.key,
+                board: id.board,
+                id: id.threadId ?? 0,
+                showInHistory: true
+              )
+            );
+            final url = site.getWebUrl(board: id.board, threadId: id.threadId, postId: id.postId);
+            expect(await site.decodeUrl(Uri.parse(url)), id);
+            for (final archive in site.archives) {
+              final url = archive.getWebUrl(board: id.board, threadId: id.threadId, postId: id.postId);
+              expect(await archive.decodeUrl(Uri.parse(url)), id);
+            }
+          }
+        }
+      });
+    }
+  });
+
   group('Lainchan RegExes', () {
-    test('decodeUrl', () {
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/'), null);
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/'), BoardThreadOrPostIdentifier('board'));
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/0.json'), null);
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/res/1234.html'), BoardThreadOrPostIdentifier('board', 1234));
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/res/1234.json'), null);
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/res/1234.html#q1235'), BoardThreadOrPostIdentifier('board', 1234, 1235));
-      expect(SiteLainchan.decodeGenericUrl('example.com', 'res', 'https://example.com/board/res/1234.html#q1235&also=yes'), BoardThreadOrPostIdentifier('board', 1234, 1235));
+    test('decodeUrl', () async {
+      final site = SiteLainchan2(
+        baseUrl: 'example.com',
+        name: 'example',
+        overrideUserAgent: null,
+        archives: const [],
+        imageHeaders: const {},
+        videoHeaders: const {},
+        turnstileSiteKey: null,
+        basePath: '',
+        formBypass: const {},
+        imageThumbnailExtension: null,
+        boardsWithHtmlOnlyFlags: const [],
+        boardsWithMemeFlags: const [],
+        res: 'res'
+      );
+      expect(await site.decodeUrl(Uri.https('example.com', '/')), null);
+      expect(await site.decodeUrl(Uri.https('example.com', '/board/')), BoardThreadOrPostIdentifier('board'));
+      expect(await site.decodeUrl(Uri.https('example.com', '/board/0.json')), null);
+      expect(await site.decodeUrl(Uri.https('example.com', '/board/res/1234.html')), BoardThreadOrPostIdentifier('board', 1234));
+      expect(await site.decodeUrl(Uri.https('example.com', '/board/res/1234.json')), null);
+      expect(await site.decodeUrl(Uri.https('example.com', '/board/res/1234.html').replace(fragment: 'q1235')), BoardThreadOrPostIdentifier('board', 1234, 1235));
+      expect(await site.decodeUrl(Uri.https('example.com', '/board/res/1234.html', {'also': 'yes'}).replace(fragment: 'q1235')), BoardThreadOrPostIdentifier('board', 1234, 1235));
     });
   });
 

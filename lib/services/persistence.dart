@@ -430,7 +430,7 @@ class Persistence extends ChangeNotifier {
 	@visibleForTesting
 	static Future<void> initializeHive({bool forTesting = false}) async {
 		if (forTesting) {
-			Hive.init(null);
+			Hive.init(Directory.systemTemp.path);
 		}
 		else {
 			await Hive.initFlutter();
@@ -487,9 +487,16 @@ class Persistence extends ChangeNotifier {
 	}
 
 	static Future<void> initializeForTesting() async {
-		settings = SavedSettings();
 		wifiCookies = DefaultCookieJar();
 		cellularCookies = DefaultCookieJar();
+		await initializeHive(forTesting: true);
+		sharedThreadStateBox = await Hive.openBox(sharedThreadStatesBoxName, backend: StorageBackendMemory(null, null));
+		sharedThreadsBox = await Hive.openLazyBox(sharedThreadsBoxName, backend: StorageBackendMemory(null, null));
+		sharedBoardsBox = await Hive.openBox(sharedBoardsBoxName, backend: StorageBackendMemory(null, null));
+		final settingsBox = await Hive.openBox<SavedSettings>(settingsBoxName, backend: StorageBackendMemory(null, null));
+		settings = settingsBox.get(settingsBoxKey, defaultValue: SavedSettings(
+			useInternalBrowser: true
+		))!;
 	}
 
 	/// We used to store cookies in temp dir. Move them to documents dir.

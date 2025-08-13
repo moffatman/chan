@@ -23,7 +23,7 @@ import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:mime/mime.dart';
 
-class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin {
+class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, DecodeGenericUrlMixin {
 	@override
 	final String name;
 	@override
@@ -206,9 +206,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		return SiteLainchan.decodeGenericUrl(baseUrl, 'res', url);
-	}
+	@protected
+	String get res => 'res';
 
 	@override
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {

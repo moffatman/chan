@@ -151,18 +151,35 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		return PostNodeSpan(visit(body.nodes).toList(growable: false));
 	}
 
-	//late final _relativeBoardPattern = RegExp(basePath + r'/forums/([^/]+)');
+	/// Board is a weak concept in JForum. Sometimes we need to find it.
+	Future<String> _lookupBoard(int threadId) async {
+		// Maybe we already have the thread
+		if (persistence?.imageboardKey case String imageboardKey) {
+			final prefix = '$imageboardKey/';
+			final suffix = '/$threadId';
+			for (final key in Persistence.sharedThreadStateBox.keys.followedBy(Persistence.sharedThreadsBox.keys)) {
+				// key looks like '$imageboardKey/$board/$threadId'
+				if (key is! String) {
+					continue;
+				}
+				if (key.startsWith(prefix) && key.endsWith(suffix)) {
+					return key.split('/')[1];
+				}
+			}
+		}
+		// May need to fetch the thread to fill in the board
+		return (await getThread(ThreadIdentifier('', threadId), priority: RequestPriority.functional)).board;
+	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		final uri = Uri.parse(url);
-		if (uri.host != baseUrl) {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		if (url.host != baseUrl) {
 			return null;
 		}
-		if (!uri.path.startsWith(basePath)) {
+		if (!url.path.startsWith(basePath)) {
 			return null;
 		}
-		final path = uri.path.substring(basePath.length);
+		final path = url.path.substring(basePath.length);
 		if (RegExp(r'^/forums/show/(\d+)\.page').firstMatch(path) case Match match) {
 			final prefix = '${match.group(1)}.';
 			final board = persistence?.boards.tryFirstWhere((b) => b.name.startsWith(prefix));
@@ -172,23 +189,21 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		}
 		if (RegExp(r'^/posts/list/(?:(\d+)\/)?(\d+)\.page').firstMatch(path) case Match match) {
 			final threadId = int.parse(match.group(2)!);
-			// Need to fetch the thread to fill in the board
-			final thread = await getThread(ThreadIdentifier('', threadId), priority: RequestPriority.functional);
-			if (uri.fragment.tryParseInt case int postId) {
-				return BoardThreadOrPostIdentifier(thread.board, threadId, postId);
+			final board = await _lookupBoard(threadId);
+			if (url.fragment.tryParseInt case int postId) {
+				return BoardThreadOrPostIdentifier(board, threadId, postId);
 			}
 			if (match.group(1)?.tryParseInt case int postOffset) {
 				final page = (postOffset ~/ postsPerPage) + 1;
-				BoardThreadOrPostIdentifier(thread.board, threadId, -page);
+				return BoardThreadOrPostIdentifier(board, threadId, -page);
 			}
-			return thread.identifier.boardThreadOrPostIdentifier;
+			return BoardThreadOrPostIdentifier(board, threadId);
 		}
 		if (RegExp(r'^/posts/preList/(\d+)/(\d+)\.page').firstMatch(path) case Match match) {
 			final threadId = int.parse(match.group(1)!);
 			final postId = int.parse(match.group(2)!);
-			// Need to fetch the thread to fill in the board
-			final thread = await getThread(ThreadIdentifier('', threadId), priority: RequestPriority.functional);
-			return BoardThreadOrPostIdentifier(thread.board, threadId, postId);
+			final board = await _lookupBoard(threadId);
+			return BoardThreadOrPostIdentifier(board, threadId, postId);
 		}
 		return null;
 	}
@@ -448,6 +463,9 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		}
 		if (postId == null) {
 			return 'https://$baseUrl$basePath/posts/list/$threadId.page';
+		}
+		if (postId.isNegative) {
+			return 'https://$baseUrl$basePath/posts/list/${postsPerPage * ((-postId) - 1)}/$threadId.page';
 		}
 		return 'https://$baseUrl$basePath/posts/preList/$threadId/$postId.page';
 	}

@@ -1,6 +1,7 @@
 // ignore_for_file: argument_type_not_assignable
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/flag.dart';
@@ -12,6 +13,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/helpers/http_304.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -29,10 +31,49 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:string_similarity/string_similarity.dart';
 
-class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
+mixin DecodeGenericUrlMixin {
+	String get baseUrl;
+	@protected
+	String get res;
+	@protected
+	String get basePath => '';
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		if (url.host != baseUrl) {
+			return null;
+		}
+		final p = url.pathSegments.where((s) => s.isNotEmpty).toList();
+		if (basePath.isNotEmpty) {
+			for (final part in basePath.split('/').where((s) => s.isNotEmpty)) {
+				if (p.tryFirst != part) {
+					return null;
+				}
+				p.removeAt(0);
+			}
+		}
+		if (p.length == 3 && p[1] == res) {
+			// "See last X replies" will have p[2] like 1234+50.html
+			final plusDelimeter = p[2].indexOfOrLength('+');
+			final dotDelimeter = p[2].indexOfOrLength('.htm');
+			final threadId = int.tryParse(p[2].substring(0, min(plusDelimeter, dotDelimeter)));
+			if (threadId != null) {
+				return BoardThreadOrPostIdentifier(p[0], threadId, const ['', 'q', 'p'].tryMapOnce(url.fragment.extractPrefixedInt));
+			}
+		}
+		if (p.length == 2 && (p[1] == 'index.html' || p[1] == 'catalog.html')) {
+			return BoardThreadOrPostIdentifier(p[0]);
+		}
+		if (p.length == 1) {
+			return BoardThreadOrPostIdentifier(p[0]);
+		}
+		return null;
+	}
+}
+
+class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, DecodeGenericUrlMixin {
 	@override
 	final String baseUrl;
 	String get sysUrl => baseUrl;
+	@override
 	final String basePath;
 	@override
 	final String name;
@@ -825,18 +866,6 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin {
 	String get siteType => 'lainchan';
 	@override
 	String get siteData => baseUrl;
-
-	static BoardThreadOrPostIdentifier? decodeGenericUrl(String baseUrl, String res, String url) {
-		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/((' + res + r'\/(\d+)\.html(#[qp](\d+))?.*)|(index\.html))?$');
-		final match = pattern.firstMatch(url);
-		if (match != null) {
-			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(1)!), int.tryParse(match.group(4) ?? ''), int.tryParse(match.group(6) ?? ''));
-		}
-		return null;
-	}
-	
-	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => decodeGenericUrl(baseUrl, res, url);
 
 	@override
 	bool operator ==(Object other) =>

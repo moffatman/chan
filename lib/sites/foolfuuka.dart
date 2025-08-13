@@ -512,11 +512,18 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		final pattern = RegExp(r'https?:\/\/' + baseUrl + r'\/([^\/]+)\/thread\/(\d+)(\/?#[pq]?(\d+))?');
-		final match = pattern.firstMatch(url);
-		if (match != null) {
-			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(1)!), int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		if (url.host != baseUrl) {
+			return null;
+		}
+		final p = url.pathSegments.where((s) => s.isNotEmpty).toList();
+		switch (p) {
+			case [String board]:
+				return BoardThreadOrPostIdentifier(board);
+			case [String board, 'thread', String threadIdStr]:
+				if (threadIdStr.tryParseInt case int threadId) {
+					return BoardThreadOrPostIdentifier(board, threadId, const ['', 'p', 'q'].tryMapOnce(url.fragment.extractPrefixedInt));
+				}
 		}
 		return null;
 	}

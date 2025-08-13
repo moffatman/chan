@@ -1687,7 +1687,15 @@ abstract class ImageboardSiteArchive {
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken});
 	@protected
 	String getWebUrlImpl(String board, [int? threadId, int? postId]);
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
+	String getWebUrl({
+		required String board,
+		int? threadId,
+		int? postId,
+		String? archiveName
+	}) {
+		return getWebUrlImpl(board, threadId, postId);
+	}
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url);
 	int placeOrphanPost(List<Post> posts, Post post) {
 		final index = posts.indexWhere((p) => p.id > post.id);
 		// Make a copy so that filtering WeakMaps will see it as new
@@ -2202,6 +2210,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		}
 	}
 	Future<ImageboardUserInfo> getUserInfo(String username) async => throw UnimplementedError();
+	@override
 	String getWebUrl({
 		required String board,
 		int? threadId,

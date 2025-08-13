@@ -389,15 +389,20 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		final parsed = Uri.tryParse(url);
-		if (parsed != null) {
-			if (parsed.host == baseUrl && parsed.path == '/item' && parsed.queryParameters.containsKey('id')) {
-				int id = int.parse(parsed.queryParameters['id']!);
-				return BoardThreadOrPostIdentifier('', await _cachedOpIds.putIfAbsentAsync(id, () async {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		if (url.host == baseUrl && url.path == '/item') {
+			final id = url.queryParameters['id']?.tryParseInt;
+			if (id != null) {
+				final threadId = await _cachedOpIds.putIfAbsentAsync(id, () async {
+					// Try to avoid network request by checking disk
+					if (persistence?.getThreadStateIfExists(ThreadIdentifier('', id)) != null) {
+						// Must be OP
+						return id;
+					}
 					final object = await _getAlgolia(id, priority: RequestPriority.interactive);
 					return object is _HNComment ? object.story : id;
-				}), id);
+				});
+				return BoardThreadOrPostIdentifier('', threadId, id == threadId ? null : id);
 			}
 		}
 		return null;

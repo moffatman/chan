@@ -79,10 +79,21 @@ class Imageboard extends ChangeNotifier {
 	}
 
 	Future<void> initialize({
-		List<String> threadWatcherWatchForStickyOnBoards = const []
+		List<String> threadWatcherWatchForStickyOnBoards = const [],
+		bool forTesting = false
 	}) async {
 		try {
-			_site = makeSite(siteData);
+			final site = _site = makeSite(siteData);
+			if (forTesting) {
+				site.client.interceptors.insert(0, dio.InterceptorsWrapper(
+					onRequest: (options, handler) {
+						handler.reject(dio.DioError(
+							requestOptions: options,
+							error: Exception('Not allowed to use network during test')
+						));
+					}
+				));
+			}
 			persistence = Persistence(key);
 			await persistence.initialize();
 			site.imageboard = this;
@@ -93,18 +104,20 @@ class Imageboard extends ChangeNotifier {
 			);
 			notifications.initialize(allowDeleteAll: false);
 			_notificationsInitialized = true;
-			threadWatcher = ThreadWatcher(
-				imageboardKey: key,
-				site: site,
-				persistence: persistence,
-				notifications: notifications,
-				watchForStickyOnBoards: threadWatcherWatchForStickyOnBoards,
-				controller: threadWatcherController ?? ImageboardRegistry.threadWatcherController
-			);
-			notifications.localWatcher = threadWatcher;
-			_threadWatcherInitialized = true;
-			if (persistence.boards.isEmpty) {
-				await setupBoards();
+			if (!forTesting) {
+				threadWatcher = ThreadWatcher(
+					imageboardKey: key,
+					site: site,
+					persistence: persistence,
+					notifications: notifications,
+					watchForStickyOnBoards: threadWatcherWatchForStickyOnBoards,
+					controller: threadWatcherController ?? ImageboardRegistry.threadWatcherController
+				);
+				notifications.localWatcher = threadWatcher;
+				_threadWatcherInitialized = true;
+				if (persistence.boards.isEmpty) {
+					await setupBoards();
+				}
 			}
 			site.initState();
 			initialized = true;
@@ -652,7 +665,7 @@ class ImageboardRegistry extends ChangeNotifier {
 		await Future.wait(futures);
 	}
 
-	Future<(Imageboard, BoardThreadOrPostIdentifier, String?)?> decodeUrl(String url) async {
+	Future<(Imageboard, BoardThreadOrPostIdentifier, String?)?> decodeUrl(Uri url) async {
 		for (final imageboard in ImageboardRegistry.instance.imageboardsIncludingDev) {
 			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url);
 			String? usedArchive;

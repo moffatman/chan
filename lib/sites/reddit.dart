@@ -579,40 +579,53 @@ class SiteReddit extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	static final _shareLinkPattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.(?:(?:com\/r\/[^\/\n]+\/s\/[^\/\n?]+)|(?:app\.link\/[^\/\n]+))');
-	static final _linkPattern = RegExp(r'^https?:\/\/(.*\.)?reddit\.com\/r\/([^\/\n]+)(\/comments\/([^\/\n]+)(\/[^\/\n]+\/([^?\/\n]+))?)?');
+	bool _isShareLink(Uri url) {
+		if (url.host == 'reddit.app.link') {
+			return true;
+		}
+		if (
+			url.host.endsWith(baseUrl)
+			&& url.pathSegments.length >= 3
+			&& url.pathSegments[0] == 'r'
+			&& url.pathSegments[2] == 's'
+		) {
+			return true;
+		}
+		return false;
+	}
+
+	static final _linkPattern = RegExp(r'^\/r\/([^\/\n]+)(?:\/comments\/([^\/\n]+)(?:\/[^\/\n]+\/([^?\/\n]+))?)?');
 	static final _redditProtocolPattern = RegExp(r'reddit:\/\/([^ ]+)');
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		if (_shareLinkPattern.hasMatch(url)) {
-			final response = await client.get(url);
-			String? redirected = response.redirects.tryLast?.location.toString();
-			if (redirected != null && !_shareLinkPattern.hasMatch(redirected)) {
-				if (redirected.startsWith('/')) {
-					redirected = 'https://$baseUrl$redirected';
-				}
-				return await decodeUrl(redirected);
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		if (_isShareLink(url)) {
+			final response = await client.getUri(url);
+			Uri? redirected = response.redirects.tryLast?.location;
+			if (redirected != null && !_isShareLink(redirected)) {
+				return await decodeUrl(Uri.https(baseUrl).resolve(redirected.toString()));
 			}
 			if (response.data is String) {
 				// Look for "reddit:///r/subreddit/..." in the JavaScript redirect page
 				final redditProtocolMatch = _redditProtocolPattern.firstMatch(response.data);
 				if (redditProtocolMatch != null) {
-					return await decodeUrl('https://$baseUrl${redditProtocolMatch.group(1)}');
+					return await decodeUrl(Uri.https(baseUrl, redditProtocolMatch.group(1)!));
 				}
 			}
 		}
-		final match = _linkPattern.firstMatch(url);
-		if (match != null) {
-			int? threadId;
-			int? postId;
-			if (match.group(4) != null) {
-				threadId = fromRedditId(match.group(4)!);
-				if (match.group(6) != null) {
-					postId = fromRedditId(match.group(6)!.split('?').first);
+		if (url.host.endsWith(baseUrl)) {
+			final match = _linkPattern.firstMatch(url.path);
+			if (match != null) {
+				int? threadId;
+				int? postId;
+				if (match.group(2) case String threadIdStr) {
+					threadId = fromRedditId(threadIdStr);
+					if (match.group(3) case String postIdStr) {
+						postId = fromRedditId(postIdStr.split('?').first);
+					}
 				}
+				return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(1)!), threadId, postId);
 			}
-			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(2)!), threadId, postId);
 		}
 		return null;
 	}

@@ -13,10 +13,11 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
-class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
+class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGenericUrlMixin {
 	@override
 	final String baseUrl;
 	@override
@@ -148,9 +149,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		return SiteLainchan.decodeGenericUrl(baseUrl, 'thread', url);
-	}
+	@protected
+	String get res => 'thread';
 
 	Exception _makeException(Map data) {
 		return Exception('${data['title']}: ${[

@@ -377,10 +377,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		return PostNodeSpan(visit(body.nodes).toList(growable: false));
 	}
 
-	late final _relativeBoardPattern  = RegExp(basePath + r'/forums/([^/]+)');
-	late final _boardPattern  = RegExp(r'^https?://(?:[^.]+\.)*' + RegExp.escape(baseUrl) + _relativeBoardPattern.pattern);
-	late final _threadPattern = RegExp(r'^https?://(?:[^.]+\.)*' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/(?:page-(\d+))?(?:#post-(\d+))?');
-	late final _postPattern = RegExp(r'^https?://(?:[^.]+\.)*' + RegExp.escape(baseUrl + basePath) + r'/threads/([^/]+\.)?(\d+)/post-(\d+)');
+	late final _relativeBoardPattern  = RegExp(RegExp.escape(basePath) + r'/forums/([^/]+)');
 
 	/// Board is a weak concept in Xenforo. Sometimes we need to find it.
 	Future<String?> _lookupBoard(int threadId) async {
@@ -411,41 +408,54 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		}
 		else {
 			// Full URL
-			final boardMatch = _boardPattern.firstMatch(boardLink);
-			if (boardMatch != null) {
-				return boardMatch.group(1)!;
+			final boardUrl = Uri.parse(boardLink);
+			if (boardUrl.host == baseUrl) {
+				final boardMatch = _relativeBoardPattern.firstMatch(boardUrl.path);
+				if (boardMatch != null) {
+					return boardMatch.group(1)!;
+				}
 			}
 		}
 		return null;
 	}
 
   @override
-  Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		final boardMatch = _boardPattern.firstMatch(url);
-		if (boardMatch != null) {
-			return BoardThreadOrPostIdentifier(boardMatch.group(1)!);
+  Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		if (url.host != baseUrl) {
+			return null;
 		}
-		final threadMatch = _threadPattern.firstMatch(url);
-		if (threadMatch != null) {
-			final threadId = int.parse(threadMatch.group(2)!);
-			final postNumber = int.tryParse(threadMatch.group(4) ?? '');
-			final pageNumber = switch (int.tryParse(threadMatch.group(3) ?? '')) {
-				// Pages have negative IDs
-				int p => -p,
-				null => null
-			};
-			final board = await _lookupBoard(threadId);
-			if (board != null) {
-				return BoardThreadOrPostIdentifier(board, threadId, postNumber ?? pageNumber);
+		final p = url.pathSegments.where((s) => s.isNotEmpty).toList();
+		if (basePath.isNotEmpty) {
+			for (final part in basePath.split('/').where((s) => s.isNotEmpty)) {
+				if (p.tryFirst != part) {
+					return null;
+				}
+				p.removeAt(0);
 			}
 		}
-		final postMatch = _postPattern.firstMatch(url);
-		if (postMatch != null) {
-			final threadId = int.parse(postMatch.group(2)!);
-			final postNumber = int.parse(postMatch.group(4)!);
-			final board = await _lookupBoard(threadId);
-			if (board != null) {
-				return BoardThreadOrPostIdentifier(board, threadId, postNumber);
+		if (p.length >= 2 && p[0] == 'forums') {
+			return BoardThreadOrPostIdentifier(p[1]);
+		}
+
+		if (p.length >= 2 && p[0] == 'threads') {
+			if (p[1].afterLast('.').tryParseInt case int threadId) {
+				int? pageNumber;
+				int? postNumber;
+				if (p.length == 2) {
+					postNumber = url.fragment.extractPrefixedInt('post-');
+				}
+				else {
+					pageNumber = switch (p[2].extractPrefixedInt('page-')) {
+						// Pages have negative IDs
+						int p => -p,
+						null => null
+					};
+					postNumber = p[2].extractPrefixedInt('post-') ?? url.fragment.extractPrefixedInt('post-');
+				}
+				final board = await _lookupBoard(threadId);
+				if (board != null) {
+					return BoardThreadOrPostIdentifier(board, threadId, postNumber ?? pageNumber);
+				}
 			}
 		}
 		return null;
@@ -768,6 +778,9 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		}
 		if (postId == null) {
 			return Uri.https(baseUrl, '$basePath/threads/$threadId').toString();
+		}
+		if (postId.isNegative) {
+			return Uri.https(baseUrl, '$basePath/threads/$threadId/page-${-postId}').toString();
 		}
 		return Uri.https(baseUrl, '$basePath/threads/$threadId/post-$postId').toString();
   }

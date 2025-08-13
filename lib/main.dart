@@ -1405,18 +1405,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			// ignore this, it is handled elsewhere
 		}
 		else {
-			final devDest = await devImageboard?.site.decodeUrl(link);
-			if (devDest != null) {
-				_onDevNotificationTapped(devDest);
-				return;
+			if (Uri.tryParse(link) case Uri url) {
+				final devDest = await devImageboard?.site.decodeUrl(url);
+				if (devDest != null) {
+					_onDevNotificationTapped(devDest);
+					return;
+				}
+				if (!mounted) return;
+				final dest = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url), wait: const Duration(milliseconds: 50));
+				if (dest != null) {
+					_onNotificationTapped(dest.$1, dest.$2, initiallyUseArchive: dest.$3);
+					return;
+				}
+				if (!mounted) return;
 			}
-			if (!mounted) return;
-			final dest = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(link), wait: const Duration(milliseconds: 50));
-			if (dest != null) {
-				_onNotificationTapped(dest.$1, dest.$2, initiallyUseArchive: dest.$3);
-				return;
-			}
-			if (!mounted) return;
 			final open = await showAdaptiveDialog<bool>(
 				context: context,
 				barrierDismissible: true,

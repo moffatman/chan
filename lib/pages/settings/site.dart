@@ -312,7 +312,7 @@ final siteSettings = [
 														return entry.key;
 													}
 												}
-												final target = (await site.decodeUrl(url))?.threadIdentifier;
+												final target = (await site.decodeUrl(Uri.parse(url)))?.threadIdentifier;
 												if (target != null) {
 													final thread = await site.getThread(target, priority: RequestPriority.interactive);
 													if (thread.posts_.any((p) => p.text.toLowerCase().contains(text))) {

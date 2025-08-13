@@ -19,7 +19,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
-class SiteKarachan extends ImageboardSite {
+class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 	@override
 	final String baseUrl;
 	@override
@@ -180,9 +180,8 @@ class SiteKarachan extends ImageboardSite {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		return SiteLainchan.decodeGenericUrl(baseUrl, 'res', url);
-	}
+	@protected
+	String get res => 'res';
 
 	@override
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {

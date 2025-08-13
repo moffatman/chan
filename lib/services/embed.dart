@@ -35,7 +35,7 @@ Future<bool> embedPossible(String url) async {
 	if (url.contains('youtube.com')) {
 		return true;
 	}
-	if (await ImageboardRegistry.instance.decodeUrl(url) != null) {
+	if (await ImageboardRegistry.instance.decodeUrl(Uri.parse(url)) != null) {
 		return true;
 	}
 	return embedRegexes.matches(url);
@@ -188,7 +188,7 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async 
 		if (instagramMatch != null) {
 			return _loadInstagram(instagramMatch.group(1)!);
 		}
-		final target = await ImageboardRegistry.instance.decodeUrl(url);
+		final target = await ImageboardRegistry.instance.decodeUrl(Uri.parse(url));
 		if (target != null && target.$2.threadId != null) {
 			Thread? thread = await target.$1.persistence.getThreadStateIfExists(target.$2.threadIdentifier!)?.getThread();
 			try {

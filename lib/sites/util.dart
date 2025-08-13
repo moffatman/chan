@@ -88,3 +88,12 @@ extension TrimNodeList on List<dom.Node> {
 		}
 	}
 }
+
+extension ExtractPrefixedInt on String {
+	int? extractPrefixedInt(String prefix) {
+		if (startsWith(prefix)) {
+			return int.tryParse(substring(prefix.length));
+		}
+		return null;
+	}
+}

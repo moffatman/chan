@@ -26,7 +26,7 @@ class DvachException implements Exception {
 	String toString() => 'Dvach error ($code): $message';
 }
 
-class SiteDvach extends ImageboardSite with Http304CachingThreadMixin {
+class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGenericUrlMixin {
 	@override
 	final String baseUrl;
 	@override
@@ -273,7 +273,8 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => SiteLainchan.decodeGenericUrl(baseUrl, 'res', url);
+	@protected
+	String get res => 'res';
 
 	@override
 	List<ImageboardSnippet> getBoardSnippets(String board) => const [

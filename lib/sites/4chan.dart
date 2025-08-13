@@ -15,6 +15,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/helpers/http_304.dart';
+import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/util.dart';
@@ -91,6 +92,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 	final String name;
 	@override
 	final String baseUrl;
+	final String? _alternateBaseUrl;
 	final String staticUrl;
 	final String sysUrl;
 	final String apiUrl;
@@ -824,10 +826,10 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 						if (href == null) {
 							return null;
 						}
-						return Uri.tryParse(getWebUrlImpl(post.board, post.threadId))?.resolve(href).toString();
+						return Uri.tryParse(getWebUrlImpl(post.board, post.threadId))?.resolve(href);
 					});
 					if (link != null && (await decodeUrl(link))?.postIdentifier != null) {
-						throw DuplicateFileException(link);
+						throw DuplicateFileException(link.toString());
 					}
 				}
 				if (errSpan.text.toLowerCase().contains('ban') || errSpan.text.toLowerCase().contains('warn')) {
@@ -1091,28 +1093,24 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		required this.spamFilterCaptchaDelayYellow,
 		required this.spamFilterCaptchaDelayRed,
 		required this.stickyCloudflare,
-	});
+	}) : _alternateBaseUrl = baseUrl.contains('chan') ? baseUrl.replaceFirst('chan', 'channel') : null;
 
 	@override
 	String get siteType => '4chan';
 	@override
 	String get siteData => apiUrl;
-
-	BoardThreadOrPostIdentifier? _decodeUrl(String base, String url) {
-		final pattern = RegExp(r'https?:\/\/' + base.replaceAll('.', r'\.') + r'\/([^\/]+)\/(thread\/(\d+)(\/?#[pq](\d+))?)?');
-		final match = pattern.firstMatch(url);
-		if (match != null) {
-			return BoardThreadOrPostIdentifier(Uri.decodeComponent(match.group(1)!), int.tryParse(match.group(3) ?? ''), int.tryParse(match.group(5) ?? ''));
-		}
-		return null;
-	}
 	
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
-		if (baseUrl.contains('chan')) {
-			return _decodeUrl(baseUrl, url) ?? _decodeUrl(baseUrl.replaceFirst('chan', 'channel'), url);
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		if (url.host == baseUrl || url.host == _alternateBaseUrl) {
+			switch (url.pathSegments) {
+				case [String board, 'thread', String threadId]:
+					return BoardThreadOrPostIdentifier(board, threadId.tryParseInt, const ['p', 'q'].tryMapOnce(url.fragment.extractPrefixedInt));
+				case [String board, ...]:
+					return BoardThreadOrPostIdentifier(board);
+			}
 		}
-		return _decodeUrl(baseUrl, url);
+		return null;
 	}
 	
 	final Map<String, AsyncMemoizer<List<ImageboardBoardFlag>>> _boardFlags = {};
