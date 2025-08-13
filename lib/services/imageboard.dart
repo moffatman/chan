@@ -211,7 +211,7 @@ class Imageboard extends ChangeNotifier {
 		// Using listenForThreadChanges so it works on incognito tabs too
 		final listenable = persistence.listenForThreadChanges(threadIdentifier);
 		final forcedCheckFuture = () async {
-			await Future.delayed(const Duration(seconds: 12));
+			await Future.delayed(const Duration(seconds: 15));
 			if (!postShowedUpCompleter.isCompleted) {
 				while (!postShowedUpCompleter.isCompleted) {
 					try {
