@@ -85,13 +85,6 @@ extension IndexOfOr<T> on List<T> {
 		}
 		return idx;
 	}
-	int lastIndexOfOrZero(T needle, [int? start]) {
-		final idx = lastIndexOf(needle, start);
-		if (idx == -1) {
-			return 0;
-		}
-		return idx;
-	}
 }
 
 extension IndexOfOrStr on String {
@@ -102,13 +95,6 @@ extension IndexOfOrStr on String {
 		}
 		return idx;
 	}
-	int lastIndexOfOrZero(String needle, [int? start]) {
-		final idx = lastIndexOf(needle, start);
-		if (idx == -1) {
-			return 0;
-		}
-		return idx;
-	}
 }
 
 extension EasySplit on String {
@@ -116,7 +102,7 @@ extension EasySplit on String {
 		return substring(0, indexOfOrLength(delimiter));
 	}
 	String afterLast(String delimiter) {
-		return substring(lastIndexOfOrZero(delimiter));
+		return substring(lastIndexOf(delimiter) + 1);
 	}
 }
 
