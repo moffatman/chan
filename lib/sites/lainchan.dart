@@ -179,6 +179,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 						else if (node.classes.contains('s')) {
 							yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 						}
+						else if (node.classes.contains('heading')) {
+							yield PostBoldSpan(PostSecondaryColorSpan(PostNodeSpan(visit(node.nodes).toList(growable: false))));
+						}
 						else {
 							yield PostTextSpan(node.text);
 						}
