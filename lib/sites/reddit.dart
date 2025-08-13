@@ -833,7 +833,7 @@ class SiteReddit extends ImageboardSite {
 						));
 					}
 					else if (item['m'] != null) {
-						final ext = '.${item['m'].afterLast('/')}';
+						final ext = '.${(item['m'] as String).afterLast('/')}';
 						attachments.add(Attachment(
 							type: AttachmentType.image,
 							board: data['subreddit'],
