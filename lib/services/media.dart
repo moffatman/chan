@@ -422,8 +422,7 @@ class MediaConversion {
 		double? maximumDurationInSeconds,
 		int? maximumDimension,
 		bool removeMetadata = false,
-		bool randomizeChecksum = false,
-		bool limitBitrate = true
+		bool randomizeChecksum = false
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -433,7 +432,6 @@ class MediaConversion {
 			stripAudio: stripAudio,
 			maximumSizeInBytes: maximumSizeInBytes,
 			maximumDurationInSeconds: maximumDurationInSeconds,
-			targetBitrate: limitBitrate ? null : 0,
 			maximumDimension: maximumDimension,
 			removeMetadata: removeMetadata,
 			randomizeChecksum: randomizeChecksum,
@@ -639,7 +637,14 @@ class MediaConversion {
 					await convertedFile.delete();
 				}
 				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers);
-				int outputBitrate = targetBitrate ?? scan.bitrate ?? 2000000;
+				int outputBitrate = targetBitrate ?? switch(scan.bitrate) {
+					int inputBitrate => switch ((scan.codec, outputFileExtension)) {
+						// Higher efficiency formats down to h264, increase target bitrate
+						('vp9' || 'hevc', 'mp4') => (1.5 * inputBitrate).round(),
+						_ => inputBitrate
+					},
+					null => 2000000
+				};
 				int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
 				if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') {
 					if (maximumDurationInSeconds != null) {
@@ -836,6 +841,8 @@ class MediaConversion {
 							_isVideoToolboxSupported &&
 							!_hasVideoToolboxFailed &&
 							results.output.contains('Error while opening encoder')) {
+						print('Falling back to libx264');
+						print(results.output);
 						_hasVideoToolboxFailed = true;
 						return await start();
 					}
