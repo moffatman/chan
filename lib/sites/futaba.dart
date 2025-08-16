@@ -146,6 +146,7 @@ class SiteFutaba extends ImageboardSite {
 		switch (p) {
 			case [String board]:
 			case [String board, 'index.html']:
+			case [String board, 'futaba.htm']:
 				return BoardThreadOrPostIdentifier(board);
 			case [String board, 'res', String threadIdPart]:
 				if (threadIdPart.beforeFirst('.').tryParseInt case int threadId) {
