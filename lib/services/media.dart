@@ -529,7 +529,11 @@ class MediaConversion {
 	static MediaConversion extractThumbnail(Uri inputFile, {Map<String, String>? headers}) {
 		return MediaConversion(
 			inputFile: inputFile,
-			outputFileExtension: 'jpg',
+			outputFileExtension: switch (inputFile.path.afterLast('.')) {
+				// Due to transparency, better to map png to png
+				'png' => 'png',
+				_ => 'jpg'
+			},
 			maximumDimension: 250,
 			extraOptions: ['-frames:v', '1'],
 			cacheKey: 'thumb',
