@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:chan/models/flag.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -128,8 +130,10 @@ class _IDColor {
 
 _IDColor _calculateIdColor(String id) {
 	int hash = 0;
-	for (final codeUnit in id.codeUnits) {
-		hash = ((hash << 5) - hash) + codeUnit;
+	final codeUnits = id.codeUnits;
+	for (int i = 0; i < max(7, codeUnits.length); i++) {
+		// Hash shorter than 7 letters will not use full color range. Just wrap the text
+		hash = ((hash << 5) - hash) + codeUnits[i % codeUnits.length];
 	}
 	final background = Color.fromARGB(255, (hash >> 24) & 0xFF, (hash >> 16) & 0xFF, (hash >> 8) & 0xFF);
 	return _IDColor(
