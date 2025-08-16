@@ -2945,7 +2945,7 @@ TextSpan buildPostInfoRow({
 		// the line break.
 		children.removeLast();
 	}
-	if (site.supportsPostUpvotes) {
+	if (site.supportsPostUpvotes || post.upvotes != null) {
 		children.addAll([
 			WidgetSpan(
 				child: Icon(CupertinoIcons.arrow_up, size: 15, color: theme.primaryColorWithBrightness(0.5)),

@@ -296,6 +296,7 @@ class SiteFutaba extends ImageboardSite {
 			spanFormat: PostSpanFormat.futaba,
 			text: blockquote.innerHtml,
 			name: element.querySelector('.cnm')!.text,
+			upvotes: element.querySelector('.sod')?.text.afterLast('x').tryParseInt,
 			time: DateTime(
 				2000 + int.parse(timeMatch.group(1)!),
 				int.parse(timeMatch.group(2)!),
