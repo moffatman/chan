@@ -63,7 +63,7 @@ class FakeImageboard extends Imageboard {
   final ImageboardSite site;
   FakeImageboard({
     required this.site
-  }) : super(key: 'fake', siteData: null);
+  }) : super(key: 'fake', siteData: {});
 }
 
 Attachment makeFakeAttachment(Uri uri) => Attachment(

@@ -62,9 +62,9 @@ Future<({Uint8List data, String contentType})?> _requestDataAsBytes(RequestOptio
 	}
 	final Uint8List data;
 	final String contentType;
-	if (options.data is FormData) {
-		contentType = 'multipart/form-data; boundary=${options.data.boundary}';
-		data = Uint8List.fromList(await (options.data as FormData).finalize().fold<List<int>>([], (a, b) => a + b));
+	if (options.data case FormData fd) {
+		contentType = 'multipart/form-data; boundary=${fd.boundary}';
+		data = Uint8List.fromList(await fd.finalize().fold<List<int>>([], (a, b) => a + b));
 	}
 	else if (options.data case String str) {
 		data = utf8.encode(str);

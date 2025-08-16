@@ -181,38 +181,39 @@ class MediaScan {
 				if (result.output.isEmpty) {
 					throw MediaScanException(file, 0, 'No output from ffprobe');
 				}
-				final data = jsonDecode(result.output);
-				final seconds = double.tryParse(data['format']?['duration'] as String? ?? '');
+				final data = jsonDecode(result.output) as Map;
+				final format = data['format'] as Map? ?? {};
+				final seconds = (format['duration'] as String?)?.tryParseDouble;
 				int width = 0;
 				int height = 0;
 				double? videoFramerate;
-				Map? metadata = data['format']?['tags'] as Map?;
-				for (final stream in (data['streams'] as List<dynamic>)) {
+				Map? metadata = format['tags'] as Map?;
+				final streams = (data['streams'] as List).cast<Map>();
+				for (final stream in streams) {
 					width = max(width, stream['width'] as int? ?? 0);
 					height = max(height, stream['height'] as int? ?? 0);
 					if (stream['codec_type'] == 'video') {
 						final avgFramerateFractionString = stream['avg_frame_rate'] as String?;
 						final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
 						if (match != null) {
-							videoFramerate = int.parse(match.group(1)!) / int.parse(match.group(2)!);
+							videoFramerate = match.group(1)!.parseInt / match.group(2)!.parseInt;
 						}
-						final rotation = (((stream['side_data_list'] as List?)?.tryFirst as Map?)?['rotation'] as num?)?.toDouble();
-						if (rotation != null) {
-							(metadata ??= {})[kMetadataFieldRotation] = rotation;
+						if (stream case {'side_data_list': [{'rotation': num rotation}, ...]}) {
+							(metadata ??= {})[kMetadataFieldRotation] = rotation.toDouble();
 						}
 					}
 				}
 				final scan = MediaScan(
-					hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
+					hasAudio: streams.any((s) => s['codec_type'] == 'audio'),
 					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
-					bitrate: int.tryParse(data['format']?['bit_rate'] as String? ?? ''),
+					bitrate: (format['bit_rate'] as String?)?.tryParseInt,
 					width: width == 0 ? null : width,
 					height: height == 0 ? null : height,
-					codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'] as String?,
+					codec: (streams.tryFirstWhere((s) => s['codec_type'] == 'video'))?['codec_name'] as String?,
 					videoFramerate: videoFramerate,
-					sizeInBytes: int.tryParse(data['format']?['size'] as String? ?? ''),
+					sizeInBytes: (format['size'] as String?)?.tryParseInt,
 					metadata: metadata,
-					format: (data['format'] as Map?)?['format_name'] as String?
+					format: format['format_name'] as String?
 				);
 				if (file.scheme != 'file') {
 					_webScans[file] = scan;
@@ -355,7 +356,7 @@ class MediaScan {
 	bool get hasMetadata {
 		final map = metadata;
 		return map != null &&
-		       map.keys.any((k) => !_kUnremoveableMetadataFields.contains(k.toLowerCase()));
+		       map.keys.any((k) => k is! String || !_kUnremoveableMetadataFields.contains(k.toLowerCase()));
 	}
 
 	@override

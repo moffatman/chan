@@ -1,4 +1,3 @@
-// ignore_for_file: argument_type_not_assignable
 import 'dart:convert';
 import 'dart:math';
 
@@ -38,29 +37,34 @@ class FoolFuukaException implements Exception {
 
 class FoolFuukaArchive extends ImageboardSiteArchive {
 	List<ImageboardBoard>? boards;
+	@override
 	final String baseUrl;
 	final String staticUrl;
 	@override
 	final String name;
 	final bool useRandomUseragent;
 	final bool hasAttachmentRateLimit;
-	ImageboardFlag? _makeFlag(dynamic data) {
-		if ((data['poster_country'] as String?)?.isNotEmpty ?? false) {
+	ImageboardFlag? _makeFlag(Map data) {
+		if (data['poster_country'] case String posterCountry when posterCountry.isNotEmpty) {
 			return ImageboardFlag(
-				name: data['poster_country_name'] ?? const {
+				name: (data['poster_country_name'] as String?) ?? const {
 					'XE': 'England',
 					'XS': 'Scotland',
 					'XW': 'Wales'
-				}[data['poster_country']] ?? 'Unknown',
-				imageUrl: Uri.https(staticUrl, '/image/country/${data['poster_country'].toLowerCase()}.gif').toString(),
+				}[posterCountry] ?? 'Unknown',
+				imageUrl: Uri.https(staticUrl, '/image/country/${posterCountry.toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
 		}
-		else if ((data['troll_country_name'] as String?)?.isNotEmpty ?? false) {
+		else if (data case {
+			'troll_country_name': String trollCountryName,
+			'troll_country_code': String trollCountryCode,
+			'board': {'shortname': String board}
+		} when trollCountryName.isNotEmpty) {
 			return ImageboardFlag(
-				name: data['troll_country_name'],
-				imageUrl: Uri.https(staticUrl, '/image/flags/${data['board']?['shortname']}/${data['troll_country_code'].toLowerCase()}.gif').toString(),
+				name: trollCountryName,
+				imageUrl: Uri.https(staticUrl, '/image/flags/$board/${trollCountryCode.toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
@@ -145,10 +149,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					}
 					else if (node.classes.contains('fortune')) {
 						final css = {
-							for (final pair in (node.attributes['style']?.split(';') ?? [])) pair.split(':').first.trim(): pair.split(':').last.trim()
+							for (final pair in (node.attributes['style']?.split(';') ?? <String>[])) pair.split(':').first.trim(): pair.split(':').last.trim()
 						};
-						if (css['color'] != null) {
-							elements.add(PostColorSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml), colorToHex(css['color'])));
+						if (css['color'] case String color) {
+							elements.add(PostColorSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml), colorToHex(color)));
 						}
 						else {
 							elements.add(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml));
@@ -180,11 +184,27 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		return PostNodeSpan(elements.toList(growable: false));
 	}
-	Attachment? _makeAttachment(dynamic data) {
-		if (data['media'] != null) {
-			final serverFilenameParts = (data['media']['media_orig'] as String).split('.');
-			Uri url = Uri.parse(data['media']['media_link'] ?? data['media']['remote_media_link']);
-			Uri thumbnailUrl = Uri.parse(data['media']['thumb_link']);
+	Attachment? _makeAttachment(Map data) {
+		if (data case {
+			'board': {'shortname': String board},
+			'thread_num': String threadNum,
+			'media': Map media && {
+				'media_orig': String mediaOrig,
+				'thumb_link': String thumbLink,
+				'media_filename': String filename,
+				'safe_media_hash': String md5,
+				'media_w': String width,
+				'media_h': String height,
+				'media_size': String size,
+			} && ({
+				'media_link': String link
+			} || {
+				'remote_media_link': String link
+			})
+		}) {
+			final serverFilenameParts = mediaOrig.split('.');
+			Uri url = Uri.parse(link);
+			Uri thumbnailUrl = Uri.parse(thumbLink);
 			if (url.host.isEmpty) {
 				url = Uri.https(baseUrl, url.toString());
 			}
@@ -196,9 +216,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				thumbnailUrl = Uri.https(baseUrl, thumbnailUrl.toString());
 			}
 			return Attachment(
-				board: data['board']['shortname'],
+				board: board,
 				id: serverFilenameParts.first,
-				filename: data['media']['media_filename'],
+				filename: filename,
 				ext: '.${serverFilenameParts.last}',
 				type: switch (serverFilenameParts.last) {
 					'webm' || 'web' => AttachmentType.webm,
@@ -207,12 +227,12 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				},
 				url: url.toString(),
 				thumbnailUrl: thumbnailUrl.toString(),
-				md5: data['media']['safe_media_hash'],
-				spoiler: data['media']['spoiler'] == '1',
-				width: int.parse(data['media']['media_w']),
-				height: int.parse(data['media']['media_h']),
-				threadId: int.tryParse(data['thread_num']),
-				sizeInBytes: int.tryParse(data['media']['media_size']),
+				md5: md5,
+				spoiler: media['spoiler'] == '1',
+				width: width.parseInt,
+				height: height.parseInt,
+				threadId: threadNum.tryParseInt,
+				sizeInBytes: size.tryParseInt,
 				useRandomUseragent: useRandomUseragent,
 				isRateLimited: hasAttachmentRateLimit
 			);
@@ -222,14 +242,14 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 
 	static final _postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]{1,18})/');
 
-	Future<Post> _makePost(dynamic data, {bool resolveIds = true, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final board = data['board']['shortname'] as String;
-		final int threadId = int.parse(data['thread_num']);
-		final int id = int.parse(data['num']);
+	Future<Post> _makePost(Map data, {bool resolveIds = true, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final board = (data['board'] as Map)['shortname'] as String;
+		final int threadId = int.parse(data['thread_num'] as String);
+		final int id = int.parse(data['num'] as String);
 		_precachePostThreadId(board, id, threadId);
 		final Map<String, int> linkedPostThreadIds = {};
 		if (resolveIds) {
-			for (final match in _postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
+			for (final match in _postLinkMatcher.allMatches((data['comment_processed'] as String?) ?? '')) {
 				final board = match.group(1)!;
 				final postId = int.parse(match.group(2)!);
 				final threadId = await _getPostThreadId(board, postId, priority: priority, cancelToken: cancelToken);
@@ -239,10 +259,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			}
 		}
 		int? passSinceYear;
-		if (data['exif'] != null) {
+		if (data['exif'] case String exifStr) {
 			try {
-				final exifData = jsonDecode(data['exif']);
-				passSinceYear = int.tryParse(exifData['since4pass']);
+				final exifData = jsonDecode(exifStr) as Map;
+				passSinceYear = (exifData['since4pass'] as String?)?.tryParseInt;
 			}
 			catch (e) {
 				// Malformed EXIF JSON
@@ -251,22 +271,22 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		final a = _makeAttachment(data);
 		return Post(
 			board: board,
-			text: data['comment_processed'] ?? '',
-			name: data['name'] ?? '',
-			trip: data['trip'],
-			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
+			text: (data['comment_processed'] as String?) ?? '',
+			name: (data['name'] as String?) ?? '',
+			trip: data['trip'] as String?,
+			time: DateTime.fromMillisecondsSinceEpoch((data['timestamp'] as int) * 1000),
 			id: id,
 			threadId: threadId,
 			attachments_: a == null ? [] : [a],
 			spanFormat: PostSpanFormat.foolFuuka,
 			flag: _makeFlag(data),
-			posterId: data['poster_hash'],
+			posterId: data['poster_hash'] as String?,
 			extraMetadata: linkedPostThreadIds,
 			passSinceYear: passSinceYear,
 			isDeleted: data['deleted'] == '1'
 		);
 	}
-	Future<dynamic> _getPostJson(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<Map> _getPostJson(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == board)) {
 			throw BoardNotFoundException(board);
 		}
@@ -289,18 +309,18 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			}
 			throw HTTPStatusException.fromResponse(response);
 		}
-		if (response.data['error'] != null) {
-			if (response.data['error'] == 'Post not found.') {
+		if (response.data case {'error': String error}) {
+			if (error == 'Post not found.') {
 				throw PostNotFoundException(board, id);
 			}
-			throw FoolFuukaException(response.data['error']);
+			throw FoolFuukaException(error);
 		}
-		return response.data;
+		return response.data as Map;
 	}
 	final _postThreadIdCache = <String, Map<int, int?>>{};
 	Future<int?> __getPostThreadId(String board, int postId, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
-			return int.parse((await _getPostJson(board, postId, priority: priority, cancelToken: cancelToken))['thread_num']);
+			return ((await _getPostJson(board, postId, priority: priority, cancelToken: cancelToken))['thread_num'] as String?)?.tryParseInt;
 		}
 		on PostNotFoundException {
 			return null;
@@ -323,12 +343,13 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<Thread> getThreadContainingPost(String board, int id) async {
 		throw Exception('Unimplemented');
 	}
-	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final op = data[thread.id.toString()]['op'];
-		final replies = switch (data[thread.id.toString()]['posts']) {
-			List x => x,
-			Map m => m.entries.where((e) => int.tryParse(e.key) != null).map((e) => e.value),
-			_ => []
+	Future<Thread> _makeThread(ThreadIdentifier thread, Map data, {int? currentPage, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final threadData = data[thread.id.toString()] as Map;
+		final op = threadData['op'] as Map;
+		final replies = switch (threadData['posts']) {
+			List x => x.cast<Map>(),
+			Map m => m.entries.where((e) => (e.key as String?)?.tryParseInt != null).map((e) => e.value).cast<Map>(),
+			_ => <Map>[]
 		};
 		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, priority: priority, cancelToken: cancelToken)))).toList();
 		final title = op['title'] as String?;
@@ -336,7 +357,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return Thread(
 			board: thread.board,
 			isDeleted: op['deleted'] == '1',
-			replyCount: op['nreplies'] ?? (posts.length - 1),
+			replyCount: (op['nreplies'] as int?) ?? (posts.length - 1),
 			imageCount: posts.skip(1).expand((post) => post.attachments).length,
 			isArchived: false,
 			posts_: posts,
@@ -346,7 +367,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			isSticky: op['sticky'] == 1,
 			isLocked: op['locked'] == 1,
 			time: posts.first.time,
-			uniqueIPCount: int.tryParse(op['unique_ips'] ?? ''),
+			uniqueIPCount: (op['unique_ips'] as String?)?.tryParseInt,
 			currentPage: currentPage
 		);
 	}
@@ -364,15 +385,15 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			priority: priority,
 			cancelToken: cancelToken
 		);
-		final data = response.data;
-		if (data['error'] != null) {
-			throw Exception(data['error']);
+		final data = response.data as Map;
+		if (data['error'] case String error) {
+			throw Exception(error);
 		}
 		return await _makeThread(thread, data, priority: priority, cancelToken: cancelToken);
 	}
 
 	Future<List<Thread>> _getCatalog(String board, int pageNumber, {required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/index', {
+		final response = await client.getUri<Map>(Uri.https(baseUrl, '/_/api/chan/index', {
 			'board': board,
 			'page': pageNumber.toString()
 		}), options: Options(
@@ -383,12 +404,12 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			),
 			cancelToken: cancelToken
 		);
-		return Future.wait((response.data as Map<dynamic, dynamic>).keys.where((threadIdStr) {
-			return response.data[threadIdStr]['op'] != null;
+		return Future.wait(response.data!.keys.where((threadIdStr) {
+			return (response.data![threadIdStr] as Map?)?['op'] != null;
 		}).map((threadIdStr) => _makeThread(ThreadIdentifier(
 			board,
-			int.parse(threadIdStr)
-		), response.data, currentPage: pageNumber, priority: priority, cancelToken: cancelToken)).toList());
+			int.parse(threadIdStr as String)
+		), response.data!, currentPage: pageNumber, priority: priority, cancelToken: cancelToken)).toList());
 	}
 
 	@override
@@ -408,11 +429,11 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
-		final boardData = (response.data['archives'] as Map).values;
+		final boardData = ((response.data as Map)['archives'] as Map).values.cast<Map>();
 		return boardData.map((archive) {
 			return ImageboardBoard(
-				name: archive['shortname'],
-				title: archive['name'],
+				name: archive['shortname'] as String,
+				title: archive['name'] as String,
 				isWorksafe: !(archive['is_nsfw'] as bool),
 				webmAudioAllowed: false
 			);
@@ -430,6 +451,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);
 		}
+		// Don't put <Map> here. We will fail in DioMixin.assureResponse if the page gives us HTML error
 		final response = await client.getUri(
 			Uri.https(baseUrl, '/_/api/chan/search', {
 				'text': query.query,
@@ -458,24 +480,29 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
-		final data = response.data;
-		if (data['error'] != null) {
-			throw FoolFuukaException(data['error']);
+		final data = response.data! as Map;
+		if (data['error'] case String error) {
+			throw FoolFuukaException(error);
 		}
-		if ((data['0']['posts'] as Iterable).isEmpty) {
+		final posts = ((data['0'] as Map?)?['posts'] as Iterable).cast<Map>();
+		if (posts.isEmpty) {
 			throw FoolFuukaException('No results');
 		}
 		/// Actual number of matched results
-		final totalFound = data['meta']['total_found'] as int;
+		final totalFound = (data['meta'] as Map)['total_found'] as int;
 		/// Maximum number the API will page through
-		final maxResults = (data['meta']['max_results'] as String?)?.tryParseInt ?? totalFound;
+		final maxResults = ((data['meta'] as Map)['max_results'] as String?)?.tryParseInt ?? totalFound;
 		return ImageboardArchiveSearchResultPage(
-			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map((dynamic data) async {
-				if (data['op'] == '1') {
+			posts: (await Future.wait(posts.map((Map data) async {
+				if (data case {
+					'op': '1',
+					'board': {'shortname': String board},
+					'num': String id
+				}) {
 					return ImageboardArchiveSearchResult.thread(
 						await _makeThread(ThreadIdentifier(
-							data['board']['shortname'],
-							int.parse(data['num'])
+							board,
+							id.parseInt
 						), {
 							data['num']: {
 								'op': data

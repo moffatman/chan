@@ -1,4 +1,3 @@
-// ignore_for_file: argument_type_not_assignable
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -286,10 +285,10 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 	@protected
 	String? get imageThumbnailExtension => '.png';
 
-	List<Attachment> _makeAttachments(String board, int threadId, dynamic postData) {
+	List<Attachment> _makeAttachments(String board, int threadId, Map postData) {
 		final ret = <Attachment>[];
-		Attachment? makeAttachment(dynamic data, String source) {
-			final id = data['tim'];
+		Attachment? makeAttachment(Map data, String source) {
+			final id = data['tim'] as String;
 			final ext = data['ext'] as String;
 			AttachmentType type = AttachmentType.image;
 			if (ext == 'deleted') {
@@ -308,9 +307,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 				type = AttachmentType.pdf;
 			}
 			return Attachment(
-				id: getAttachmentId(postData['no'], id, source),
+				id: getAttachmentId(postData['no'] as int, id, source),
 				type: type,
-				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
+				filename: unescape.convert(data['filename'] as String? ?? '') + ext,
 				ext: ext,
 				board: board,
 				url: getAttachmentUrl(board, '$id$ext').toString(),
@@ -322,18 +321,18 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 						String thumb => 'https://$baseUrl$basePath/$board/thumb/$thumb',
 					}
 				},
-				md5: data['md5'] ?? '',
+				md5: data['md5'] as String? ?? '',
 				spoiler: data['spoiler'] == 1,
-				width: data['w'],
-				height: data['h'],
+				width: data['w'] as int?,
+				height: data['h'] as int?,
 				threadId: threadId,
-				sizeInBytes: data['fsize']
+				sizeInBytes: data['fsize'] as int?
 			);
 		}
 		if ((postData['tim'] as String?)?.isNotEmpty ?? false) {
 			ret.maybeAdd(makeAttachment(postData, 'postData'));
 			if (postData['extra_files'] != null) {
-				for (final (i, extraFile) in (postData['extra_files'] as List<dynamic>).cast<Map<String, dynamic>>().indexed) {
+				for (final (i, extraFile) in (postData['extra_files'] as List).cast<Map>().indexed) {
 					ret.maybeAdd(makeAttachment(extraFile, 'extraFile$i'));
 				}
 			}
@@ -363,17 +362,17 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			}
 		}
 		if (postData['files'] case List files) {
-			ret.addAll(files.indexed.tryMap((f) => makeAttachment(f.$2, 'file${f.$1}')));
+			ret.addAll(files.cast<Map>().indexed.tryMap((f) => makeAttachment(f.$2, 'file${f.$1}')));
 		}
 		return ret;
 	}
 
 	@protected
-	ImageboardFlag? makeFlag(dynamic data) {
-		if (data['country'] != null && data['country_name'] != null) {
+	ImageboardFlag? makeFlag(Map data) {
+		if (data case {'country': String country, 'country_name': String countryName}) {
 			return ImageboardFlag(
-				name: data['country_name'],
-				imageUrl: Uri.https(baseUrl, '$basePath/static/flags/${data['country'].toLowerCase()}.png').toString(),
+				name: countryName,
+				imageUrl: Uri.https(baseUrl, '$basePath/static/flags/${country.toLowerCase()}.png').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
@@ -383,7 +382,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 
 	Future<ImageboardPoll?> _getPoll1(ThreadIdentifier thread, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
-			final response = await client.postUri(Uri.https(sysUrl, '$basePath/poll.php'), data: {
+			final response = await client.postUri<String>(Uri.https(sysUrl, '$basePath/poll.php'), data: {
 				'query_poll': '1',
 				'id': thread.id.toString(),
 				'board': thread.board
@@ -394,7 +393,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 					kPriority: priority
 				}
 			), cancelToken: cancelToken);
-			final data = jsonDecode((response.data as String).trim());
+			final data = jsonDecode(response.data!.trim()) as Map;
 			final colors = (data['colors'] as List?)?.cast<String>();
 			final question = (data['question'] as List).cast<Map>();
 			final rows = <ImageboardPollRow>[];
@@ -402,8 +401,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 				final entry = question[i].entries.trySingle;
 				if (entry != null) {
 					rows.add(ImageboardPollRow(
-						name: entry.key,
-						votes: entry.value,
+						name: entry.key as String,
+						votes: entry.value as int,
 						color: switch (colors?[i]) {
 							String hex => colorToHex(hex),
 							null => null
@@ -454,7 +453,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 	static final _pollFormPattern1 = RegExp(r'<div [^>]+class="pollform">.*<\\/div>(?:<br\\/>)?');
 	static final _pollFormPattern2 = RegExp('<iframe [^>]+class="poll" src="/poll.php\\?id=(\\d+).*</iframe>(?:<br\\/>)?');
 
-	Post _makePost(String board, int threadId, dynamic data) {
+	Post _makePost(String board, int threadId, Map data) {
 		final id = data['no'] as int;
 		final String text;
 		if (id == threadId) {
@@ -467,32 +466,34 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		return Post(
 			board: board,
 			text: text,
-			name: data['name'] ?? '',
-			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
+			name: data['name'] as String? ?? '',
+			time: DateTime.fromMillisecondsSinceEpoch((data['time'] as int) * 1000),
 			id: id,
 			threadId: threadId,
 			attachments_: _makeAttachments(board, threadId, data),
 			attachmentDeleted: data['filedeleted'] == 1 || data['ext'] == 'deleted',
 			spanFormat: PostSpanFormat.lainchan,
-			posterId: data['id'],
+			posterId: data['id'] as String?,
 			flag: makeFlag(data),
-			capcode: data['capcode'],
-			email: data['email']
+			capcode: data['capcode'] as String?,
+			email: data['email'] as String?
 		);
 	}
 
+	@override
 	@protected
 	String get res => 'res';
 
 	@override
-	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {
 		if (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false) {
 			throw const ThreadNotFoundException();
 		}
-		final firstPost = response.data['posts'][0];
+		final data = response.data as Map;
+		final firstPost = (data['posts'] as List)[0] as Map;
 		final firstPostText = firstPost['com'] as String? ?? '';
 		final ImageboardPoll? poll;
 		if (_pollFormPattern2.firstMatch(firstPostText)?.group(1)?.tryParseInt case int id) {
@@ -504,7 +505,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		else {
 			poll = null;
 		}
-		final List<Post> posts = (response.data['posts'] as List? ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
+		final List<Post> posts = (data['posts'] as List? ?? []).cast<Map>().map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
 		return Thread(
 			board: thread.board,
 			id: thread.id,
@@ -512,7 +513,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			title: (firstPost['sub'] as String?)?.unescapeHtml,
 			attachmentDeleted: posts[0].attachmentDeleted,
 			attachments: posts[0].attachments_,
-			time: DateTime.fromMillisecondsSinceEpoch(firstPost['time'] * 1000),
+			time: DateTime.fromMillisecondsSinceEpoch((firstPost['time'] as int) * 1000),
 			replyCount: posts.length - 1,
 			imageCount: posts.skip(1).expand((p) => p.attachments).length,
 			posts_: posts,
@@ -545,21 +546,21 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			}
 		}
 		final List<Thread> threads = [];
-		for (final page in response.data as List) {
-			for (final threadData in (page['threads'] as List? ?? [])) {
-				final threadAsPost = _makePost(board, threadData['no'], threadData);
+		for (final page in (response.data as List).cast<Map>()) {
+			for (final threadData in (page['threads'] as List? ?? []).cast<Map>()) {
+				final threadAsPost = _makePost(board, threadData['no'] as int, threadData);
 				final currentPage = page['page'] as int?;
 				final thread = Thread(
 					board: board,
-					id: threadData['no'],
+					id: threadAsPost.threadId,
 					title: (threadData['sub'] as String?)?.unescapeHtml,
 					posts_: [threadAsPost],
 					attachmentDeleted: threadAsPost.attachmentDeleted,
 					attachments: threadAsPost.attachments_,
-					replyCount: threadData['replies'],
-					imageCount: (threadData['images'] + (threadData['omitted_images'] as int? ?? 0)),
+					replyCount: threadData['replies'] as int,
+					imageCount: ((threadData['images'] as int) + (threadData['omitted_images'] as int? ?? 0)),
 					isSticky: threadData['sticky'] == 1,
-					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
+					time: DateTime.fromMillisecondsSinceEpoch((threadData['time'] as int) * 1000),
 					currentPage: currentPage == null ? null : currentPage + 1
 					// Not fetching poll here, it will take too long. Just get it when the thread is opened
 				);
@@ -571,15 +572,15 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '$basePath/boards.json'), options: Options(
+		final response = await client.getUri<Map>(Uri.https(baseUrl, '$basePath/boards.json'), options: Options(
 			responseType: ResponseType.json,
 			extra: {
 				kPriority: priority
 			}
 		), cancelToken: cancelToken);
-		return (response.data['boards'] as List<dynamic>).map((board) => ImageboardBoard(
-			name: board['board'],
-			title: board['title'],
+		return (response.data!['boards'] as List).cast<Map>().map((board) => ImageboardBoard(
+			name: board['board'] as String,
+			title: board['title'] as String,
 			isWorksafe: board['ws_board'] == 1,
 			webmAudioAllowed: board['webm_audio'] == 1,
 			maxImageSizeBytes: maxUploadSizeBytes,
@@ -608,8 +609,12 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			cancelToken: cancelToken
 		);
 		final pageDoc = parse(page.data);
+		final inputs =
+				pageDoc.querySelector('form[name="post"]')
+				?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea')
+				?? [];
 		final Map<String, dynamic> fields = {
-			for (final field in pageDoc.querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
+			for (final field in inputs)
 				field.attributes['name'] as String: field.attributes['value'] ?? field.text
 		};
 		if (pageDoc.querySelector('input[name="simple_spam"]')?.parentNode?.parentNode?.firstChild?.text?.nonEmptyOrNull case String simpleSpamQuestion) {
@@ -742,12 +747,12 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 					sourceUrl: Uri.https(baseUrl, '/robots.txt').toString()
 				),
 				onSolved: (solution, cancelToken) async {
-					final response = await client.postUri(Uri.https(baseUrl, '/post.php'), data: FormData.fromMap({
+					final response = await client.postUri<Map>(Uri.https(baseUrl, '/post.php'), data: FormData.fromMap({
 						'g-recaptcha-response': (solution as RecaptchaSolution).response,
 						'json_response': '1',
 						'whitelist': '1'
 					}), cancelToken: cancelToken);
-					if (response.data['error'] case String error) {
+					if (response.data?['error'] case String error) {
 						if (!error.contains('Success')) {
 							throw Exception(error);
 						}

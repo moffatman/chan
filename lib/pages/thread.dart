@@ -173,7 +173,7 @@ class ThreadPageState extends State<ThreadPage> {
 	bool _foreground = false;
 	RequestPriority get _priority => _foreground ? RequestPriority.interactive : RequestPriority.functional;
 	PersistentBrowserTab? _parentTab;
-	final List<Function> _postUpdateCallbacks = [];
+	final List<VoidCallback> _postUpdateCallbacks = [];
 	final Map<int, double> _highlightPosts = {};
 	bool _searching = false;
 	bool _passedFirstLoad = false;

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -74,11 +75,13 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 		if (idResponse.statusCode != 200) {
 			throw CaptchaDvachException('Got status code ${idResponse.statusCode}');
 		}
-		if (idResponse.data['error'] != null) {
-			throw CaptchaDvachException(idResponse.data['error']['message'] as String);
+		if (idResponse.data case {'error': {'message': String error}}) {
+			throw CaptchaDvachException(error);
 		}
-		final id = idResponse.data['id'] as String;
-		final inputType = idResponse.data['input'] as String;
+		final (id, inputType) = switch(idResponse.data) {
+			{'id': String id, 'input': String input} => (id, input),
+			_ => throw PatternException(idResponse.data)
+		};
 		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/show', {
 			'id': id
 		}), options: Options(

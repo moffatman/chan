@@ -1,5 +1,3 @@
-// ignore_for_file: argument_type_not_assignable
-
 import 'package:chan/models/attachment.dart';
 
 import 'package:chan/models/board.dart';
@@ -7,6 +5,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/helpers/http_304.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
@@ -43,34 +42,34 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGen
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/index.json'), options: Options(
+		final response = await client.getUri<Map>(Uri.https(baseUrl, '/index.json'), options: Options(
 			responseType: ResponseType.json,
 			extra: {
 				kPriority: priority
 			}
 		), cancelToken: cancelToken);
-		return (response.data['boards'] as List).map((board) {
+		return (response.data!['boards'] as List).cast<Map>().map((board) {
 			final maxFileSizeBytes = switch (board['max_files_size']) {
 				int kb => 1024 * kb,
 				_ => null
 			};
 			return ImageboardBoard(
-				name: board['id'],
-				title: board['name'],
+				name: board['id'] as String,
+				title: board['name'] as String,
 				isWorksafe: board['category'] != 'Взрослым',
 				webmAudioAllowed: true,
-				threadCommentLimit: board['bump_limit'],
-				maxCommentCharacters: board['max_comment'],
+				threadCommentLimit: board['bump_limit'] as int?,
+				maxCommentCharacters: board['max_comment'] as int?,
 				maxImageSizeBytes: maxFileSizeBytes,
 				maxWebmSizeBytes: maxFileSizeBytes,
-				pageCount: board['max_pages']
+				pageCount: board['max_pages'] as int?
 			);
 		}).toList();
 	}
 
-	List<Attachment> _makeAttachments(String board, int threadId, Map<String, dynamic> data) {
-		return ((data['files'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? []).map((file) {
-			final url = Uri.https(baseUrl, file['path']);
+	List<Attachment> _makeAttachments(String board, int threadId, Map data) {
+		return ((data['files'] as List?)?.cast<Map>() ?? []).map((file) {
+			final url = Uri.https(baseUrl, file['path'] as String);
 			AttachmentType type = AttachmentType.image;
 			if (url.path.endsWith('.webm')) {
 				type = AttachmentType.webm;
@@ -87,20 +86,20 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGen
 				threadId: threadId,
 				id: url.pathSegments.last.beforeFirst('.'),
 				ext: '.${url.pathSegments.last.afterLast('.')}',
-				filename: file['fullname'],
+				filename: file['fullname'] as String,
 				url: url.toString(),
-				thumbnailUrl: Uri.https(baseUrl, file['thumbnail']).toString(),
-				md5: file['md5'],
-				width: file['width'],
-				height: file['height'],
-				sizeInBytes: file['size'] * 1024
+				thumbnailUrl: Uri.https(baseUrl, file['thumbnail'] as String).toString(),
+				md5: file['md5'] as String,
+				width: file['width'] as int?,
+				height: file['height'] as int?,
+				sizeInBytes: (file['size'] as int) * 1024
 			);
 		}).toList();
 	}
 
 	static final _iconFlagPattern = RegExp(r'<img.*src="(.*\/([^.]+)\.[^."]+)"');
 
-	Post _makePost(String board, int threadId, Map<String, dynamic> data) {
+	Post _makePost(String board, int threadId, Map data) {
 		String? posterId = data['op'] == 1 ? 'OP' : null;
 		final name = StringBuffer();
 		final nameDoc = parseFragment(data['name'] ?? '');
@@ -115,14 +114,14 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGen
 		return Post(
 			board: board,
 			threadId: threadId,
-			id: data['num'],
-			text: data['comment'],
+			id: data['num'] as int,
+			text: data['comment'] as String,
 			name: name.toString().trim(),
 			posterId: posterId,
-			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
+			time: DateTime.fromMillisecondsSinceEpoch((data['timestamp'] as int) * 1000),
 			spanFormat: PostSpanFormat.lainchan,
 			attachments_: _makeAttachments(board, threadId, data),
-			flag: switch (_iconFlagPattern.firstMatch(data['icon'] ?? '')) {
+			flag: switch (_iconFlagPattern.firstMatch((data['icon'] as String?) ?? '')) {
 				null => null,
 				RegExpMatch flagMatch => ImageboardFlag(
 					imageHeight: 12,
@@ -149,20 +148,23 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGen
 		else if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
-		final threadsPerPage = response.data['board']['threads_per_page'] as int?;
-		return (response.data['threads'] as List<dynamic>).cast<Map<String, dynamic>>().asMap().entries.map((e) {
-			final op = _makePost(board, e.value['num'], e.value);
+		final threadsPerPage = switch (response.data) {
+			{'board': {'threads_per_page': int x}} => x,
+			_ => null
+		};
+		return ((response.data as Map)['threads'] as List).cast<Map>().asMap().entries.map((e) {
+			final op = _makePost(board, e.value['num'] as int, e.value);
 			return Thread(
 				posts_: [op],
 				id: op.id,
 				board: board,
-				title: e.value['subject'],
+				title: e.value['subject'] as String?,
 				isSticky: e.value['sticky'] != 0,
 				time: op.time,
 				attachments: op.attachments_,
 				currentPage: threadsPerPage == null ? null : ((e.key ~/ threadsPerPage) + 1),
-				replyCount: e.value['posts_count'] - 1,
-				imageCount: e.value['files_count'] - op.attachments.length,
+				replyCount: (e.value['posts_count'] as int) - 1,
+				imageCount: (e.value['files_count'] as int) - op.attachments.length,
 				isEndless: e.value['endless'] == 1,
 				lastUpdatedTime: switch (e.value['lasthit']) {
 					int s => DateTime.fromMillisecondsSinceEpoch(s * 1000),
@@ -173,23 +175,31 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGen
 	}
 
 	@override
-	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {
-		final posts = (response.data['threads'].first['posts'] as List<dynamic>).map((data) => _makePost(thread.board, thread.id, data)).toList();
-		return Thread(
-			board: thread.board,
-			id: thread.id,
-			title: response.data['threads'].first['posts'].first['subject'],
-			isSticky: response.data['threads'].first['posts'].first['sticky'] != 0,
-			time: posts.first.time,
-			attachments: posts.first.attachments_,
-			posts_: posts,
-			replyCount: response.data['posts_count'] - 1,
-			imageCount: response.data['files_count'] - posts.first.attachments.length,
-			isEndless: response.data['threads'].first['posts'].first['endless'] == 1
-		);
+		if (response.data case {
+			'threads': [{'posts': List postDatasRaw}, ...],
+			'posts_count': int postsCount,
+			'files_count': int filesCount
+		}) {
+			final postDatas = postDatasRaw.cast<Map>();
+			final posts = postDatas.map((data) => _makePost(thread.board, thread.id, data)).toList();
+			return Thread(
+				board: thread.board,
+				id: thread.id,
+				title: postDatas.first['subject'] as String?,
+				isSticky: postDatas.first['sticky'] != 0,
+				time: posts.first.time,
+				attachments: posts.first.attachments_,
+				posts_: posts,
+				replyCount: postsCount - 1,
+				imageCount: filesCount - posts.first.attachments.length,
+				isEndless: postDatas.first['endless'] == 1
+			);
+		}
+		throw PatternException(response.data, 'SiteDvach.makeThread');
 	}
 
 	@override
@@ -231,7 +241,7 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGen
 			if (file != null) 'file[]': await MultipartFile.fromFile(file, filename: post.overrideFilename),
 			if (post.threadId != null) 'thread': post.threadId.toString()
 		};
-		final response = await client.postUri(
+		final response = await client.postUri<Map>(
 			Uri.https(baseUrl, '/user/posting'),
 			data: FormData.fromMap(fields),
 			options: Options(
@@ -246,13 +256,13 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGen
 			),
 			cancelToken: cancelToken
 		);
-		if (response.data['error'] != null) {
-			throw DvachException(response.data['error']['code'], response.data['error']['message']);
+		if (response.data case {'error': {'code': int code, 'message': String message}}) {
+			throw DvachException(code, message);
 		}
 		return PostReceipt(
 			post: post,
 			password: '',
-			id: response.data['num'],
+			id: response.data!['num'] as int,
 			name: post.name ?? '',
 			options: post.options ?? '',
 			time: DateTime.now(),

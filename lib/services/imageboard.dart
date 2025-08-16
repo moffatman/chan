@@ -34,7 +34,7 @@ class ImageboardNotFoundException implements Exception {
 }
 
 class Imageboard extends ChangeNotifier {
-	dynamic siteData;
+	Map siteData;
 	ImageboardSite? _site;
 	ImageboardSite get site => _site!;
 	late final Persistence persistence;
@@ -57,7 +57,7 @@ class Imageboard extends ChangeNotifier {
 		this.threadWatcherController
 	});
 	
-	void updateSiteData(dynamic siteData) {
+	void updateSiteData(Map siteData) {
 		try {
 			final newSite = makeSite(siteData);
 			if (newSite != _site) {

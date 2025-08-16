@@ -50,7 +50,7 @@ class BlobSync {
 		required int currentRev
 	}) async {
 		final userId = Persistence.settings.userId;
-		final response = await Dio().post(
+		final response = await Dio().post<Map>(
 			'$_blobSyncApiRoot/blob/$userId/$path',
 			data: FormData.fromMap({
 				'data': MultipartFile(
@@ -64,10 +64,10 @@ class BlobSync {
 			)
 		);
 		if (response.statusCode == 409) {
-			throw CurrentBlobOutOfDateException(path, response.data['lastRev'] as int);
+			throw CurrentBlobOutOfDateException(path, response.data!['lastRev'] as int);
 		}
 		if (response.statusCode != 200) {
-			final error = (response.data as Map?)?['error'] as String?;
+			final error = response.data?['error'] as String?;
 			if (error != null) {
 				throw BlobSyncServerException(path, error);
 			}
@@ -75,7 +75,7 @@ class BlobSync {
 				throw BlobSyncServerException(path, 'HTTP Error ${response.statusCode}');
 			}
 		}
-		return response.data['rev'] as int;
+		return response.data!['rev'] as int;
 	}
 
 	void listenToTheirVersion({

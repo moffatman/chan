@@ -1,4 +1,3 @@
-// ignore_for_file: argument_type_not_assignable
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -943,7 +942,7 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	final String challenge;
 	final String response;
 	final int? slide;
-	final Map<String, dynamic> originalData;
+	final Map originalData;
 	final Duration lifetime;
 	Chan4CustomCaptchaSolution({
 		required this.challenge,
@@ -2139,7 +2138,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<Map<int, String>> queryPreferredArchive(String board, List<int> threadIds, {CancelToken? cancelToken}) async {
 		final sorted = threadIds.toList()..sort();
 		final diffs = List.generate(sorted.length - 1, (i) => sorted[i + 1] - sorted[i]);
-		final response = await client.get('$_preferredArchiveApiRoot/ops', queryParameters: {
+		final response = await client.get<Map>('$_preferredArchiveApiRoot/ops', queryParameters: {
 			'siteType': siteType,
 			'siteData': siteData,
 			'board': board,
@@ -2147,7 +2146,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			'diffs': base64Url.encode(gzip.encode(utf8.encode(diffs.join(','))))
 		}, cancelToken: cancelToken);
 		return {
-			for (final entry in (response.data as Map).entries) int.parse(entry.key as String): entry.value as String
+			for (final entry in response.data!.entries) int.parse(entry.key as String): entry.value as String
 		};
 	}
 	@protected
@@ -2299,29 +2298,29 @@ abstract class ImageboardSiteLoginSystem {
 	}
 }
 
-ImageboardSiteArchive makeArchive(dynamic archive) {
+ImageboardSiteArchive makeArchive(Map archive) {
 	final overrideUserAgent = archive['overrideUserAgent'] as String?;
-	final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
-		title: b['title'],
-		name: b['name'],
-		isWorksafe: b['isWorksafe'],
+	final boards = (archive['boards'] as List?)?.cast<Map>().map((b) => ImageboardBoard(
+		title: b['title'] as String,
+		name: b['name'] as String,
+		isWorksafe: b['isWorksafe'] as bool,
 		webmAudioAllowed: false
 	)).toList();
 	if (archive['type'] == 'foolfuuka') {
 		return FoolFuukaArchive(
-			name: archive['name'],
-			baseUrl: archive['baseUrl'],
-			staticUrl: archive['staticUrl'],
+			name: archive['name'] as String,
+			baseUrl: archive['baseUrl'] as String,
+			staticUrl: archive['staticUrl'] as String,
 			boards: boards,
-			useRandomUseragent: archive['useRandomUseragent'] ?? false,
-			hasAttachmentRateLimit: archive['hasAttachmentRateLimit'] ?? false,
+			useRandomUseragent: archive['useRandomUseragent'] as bool? ?? false,
+			hasAttachmentRateLimit: archive['hasAttachmentRateLimit'] as bool? ?? false,
 			overrideUserAgent: overrideUserAgent
 		);
 	}
 	else if (archive['type'] == 'fuuka') {
 		return FuukaArchive(
-			name: archive['name'],
-			baseUrl: archive['baseUrl'],
+			name: archive['name'] as String,
+			baseUrl: archive['baseUrl'] as String,
 			boards: boards,
 			overrideUserAgent: overrideUserAgent
 		);
@@ -2332,85 +2331,85 @@ ImageboardSiteArchive makeArchive(dynamic archive) {
 	}
 }
 
-ImageboardSite makeSite(dynamic data) {
+ImageboardSite makeSite(Map data) {
 	final overrideUserAgent = data['overrideUserAgent'] as String?;
-	final archives = (data['archives'] as List? ?? []).map<ImageboardSiteArchive>(makeArchive).toList(growable: false);
+	final archives = (data['archives'] as List? ?? []).cast<Map>().map<ImageboardSiteArchive>(makeArchive).toList(growable: false);
 	final imageHeaders = (data['imageHeaders'] as Map?)?.cast<String, String>() ?? {};
 	final videoHeaders = (data['videoHeaders'] as Map?)?.cast<String, String>() ?? {};
-	final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
-		title: b['title'],
-		name: b['name'],
-		isWorksafe: b['isWorksafe'],
+	final boards = (data['boards'] as List?)?.cast<Map>().map((b) => ImageboardBoard(
+		title: b['title'] as String,
+		name: b['name'] as String,
+		isWorksafe: b['isWorksafe'] as bool,
 		webmAudioAllowed: true
 	)).toList();
 	if (data['type'] == 'lainchan') {
 		return SiteLainchan(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
-			maxUploadSizeBytes: data['maxUploadSizeBytes'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
+			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey']
+			turnstileSiteKey: data['turnstileSiteKey'] as String?
 		);
 	}
 	else if (data['type'] == 'soyjak') {
 		return SiteSoyjak(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey'],
+			turnstileSiteKey: data['turnstileSiteKey'] as String?,
 			boardsWithCaptcha: (data['boardsWithCaptcha'] as List?)?.cast<String>(),
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
-			captchaQuestion: data['captchaQuestion']
+			captchaQuestion: data['captchaQuestion'] as String?
 		);
 	}
 	else if (data['type'] == 'frenschan') {
 		return SiteFrenschan(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
 			overrideUserAgent: overrideUserAgent,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey']
+			turnstileSiteKey: data['turnstileSiteKey'] as String?
 		);
 	}
 	else if (data['type'] == 'wizchan') {
 		return SiteWizchan(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey']
+			turnstileSiteKey: data['turnstileSiteKey'] as String?
 		);
 	}
 	else if (data['type'] == 'lainchan_org') {
 		return SiteLainchanOrg(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
-			faviconPath: data['faviconPath'] ?? '/favicon.ico',
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
+			faviconPath: data['faviconPath'] as String? ?? '/favicon.ico',
+			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey']
+			turnstileSiteKey: data['turnstileSiteKey'] as String?
 		);
 	}
 	else if (data['type'] == 'dvach') {
 		return SiteDvach(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
@@ -2419,9 +2418,9 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'futaba') {
 		return SiteFutaba(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
-			maxUploadSizeBytes: data['maxUploadSizeBytes'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
+			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
@@ -2446,29 +2445,29 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'erischan') {
 		return SiteErischan(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
 			overrideUserAgent: overrideUserAgent,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey']
+			turnstileSiteKey: data['turnstileSiteKey'] as String?
 		);
 	}
 	else if (data['type'] == '4chan') {
 		final captchaTicketLifetime = data['captchaTicketLifetime'] as int?;
 		final reportCooldown = data ['reportCooldown'] as int?;
 		return Site4Chan(
-			name: data['name'],
-			imageUrl: data['imageUrl'],
-			captchaKey: data['captchaKey'],
-			hCaptchaKey: data['hCaptchaKey'],
-			apiUrl: data['apiUrl'],
-			sysUrl: data['sysUrl'],
-			baseUrl: data['baseUrl'],
-			staticUrl: data['staticUrl'],
+			name: data['name'] as String,
+			imageUrl: data['imageUrl'] as String,
+			captchaKey: data['captchaKey'] as String,
+			hCaptchaKey: data['hCaptchaKey'] as String?,
+			apiUrl: data['apiUrl'] as String,
+			sysUrl: data['sysUrl'] as String,
+			baseUrl: data['baseUrl'] as String,
+			staticUrl: data['staticUrl'] as String,
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
 			possibleCaptchaLetterCounts: (data['possibleCaptchaLetterCounts'] as List?)?.cast<int>() ?? [],
 			captchaLetters:
@@ -2487,14 +2486,14 @@ ImageboardSite makeSite(dynamic data) {
 			postingHeaders: (data['postingHeaders'] as Map?)?.cast<String, String>() ?? {},
 			captchaTicketLifetime: captchaTicketLifetime == null ? null : Duration(seconds: captchaTicketLifetime),
 			reportCooldown: Duration(seconds: reportCooldown ?? 20),
-			spamFilterCaptchaDelayGreen: Duration(milliseconds: data['spamFilterCaptchaDelayGreen'] ?? 1000),
-			spamFilterCaptchaDelayYellow: Duration(milliseconds: data['spamFilterCaptchaDelayYellow'] ?? 5000),
-			spamFilterCaptchaDelayRed: Duration(milliseconds: data['spamFilterCaptchaDelayRed'] ?? 12000),
-			stickyCloudflare: data['stickyCloudflare'] ?? false,
-			subjectCharacterLimit: data['subjectCharacterLimit'],
+			spamFilterCaptchaDelayGreen: Duration(milliseconds: data['spamFilterCaptchaDelayGreen'] as int? ?? 1000),
+			spamFilterCaptchaDelayYellow: Duration(milliseconds: data['spamFilterCaptchaDelayYellow'] as int? ?? 5000),
+			spamFilterCaptchaDelayRed: Duration(milliseconds: data['spamFilterCaptchaDelayRed'] as int? ?? 12000),
+			stickyCloudflare: data['stickyCloudflare'] as bool? ?? false,
+			subjectCharacterLimit: data['subjectCharacterLimit'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())),
-			searchUrl: data['searchUrl'] ?? '',
+			searchUrl: data['searchUrl'] as String? ?? '',
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2502,46 +2501,46 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'lynxchan') {
 		return SiteLynxchan(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false,
-			hasPagedCatalog: data['hasPagedCatalog'] ?? true
+			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
+			hasLinkCookieAuth: data['hasLinkCookieAuth'] as bool? ?? false,
+			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true
 		);
 	}
 	else if (data['type'] == '8chan') {
 		return Site8Chan(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			hasLinkCookieAuth: data['hasLinkCookieAuth'] ?? false,
-			hasPagedCatalog: data['hasPagedCatalog'] ?? true
+			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
+			hasLinkCookieAuth: data['hasLinkCookieAuth'] as bool? ?? false,
+			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true
 		);
 	}
 	else if (data['type'] == 'lainchan2') {
 		return SiteLainchan2(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
-			basePath: data['basePath'] ?? '',
-			imageThumbnailExtension: data['imageThumbnailExtension'],
-			faviconPath: data['faviconPath'],
-			boardsPath: data['boardsPath'],
-			defaultUsername: data['defaultUsername'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
+			basePath: data['basePath'] as String? ?? '',
+			imageThumbnailExtension: data['imageThumbnailExtension'] as String?,
+			faviconPath: data['faviconPath'] as String?,
+			boardsPath: data['boardsPath'] as String,
+			defaultUsername: data['defaultUsername'] as String,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey'],
+			turnstileSiteKey: data['turnstileSiteKey'] as String?,
 			boards: boards,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2553,20 +2552,20 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == '8kun') {
 		return Site8Kun(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
-			basePath: data['basePath'] ?? '',
-			sysUrl: data['sysUrl'],
-			imageUrl: data['imageUrl'],
-			imageThumbnailExtension: data['imageThumbnailExtension'],
-			faviconPath: data['faviconPath'],
-			boardsPath: data['boardsPath'],
-			defaultUsername: data['defaultUsername'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
+			basePath: data['basePath'] as String? ?? '',
+			sysUrl: data['sysUrl'] as String,
+			imageUrl: data['imageUrl'] as String,
+			imageThumbnailExtension: data['imageThumbnailExtension'] as String?,
+			faviconPath: data['faviconPath'] as String?,
+			boardsPath: data['boardsPath'] as String,
+			defaultUsername: data['defaultUsername'] as String,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey'],
+			turnstileSiteKey: data['turnstileSiteKey'] as String?,
 			boards: boards,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2578,11 +2577,11 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'xenforo') {
 		return SiteXenforo(
-			name: data['name'],
-			baseUrl: data['baseUrl'],
-			basePath: data['basePath'],
-			faviconPath: data['faviconPath'],
-			postsPerPage: data['postsPerPage'],
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
+			basePath: data['basePath'] as String,
+			faviconPath: data['faviconPath'] as String,
+			postsPerPage: data['postsPerPage'] as int,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
@@ -2591,10 +2590,10 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'karachan') {
 		return SiteKarachan(
-			baseUrl: data['baseUrl'],
-			name: data['name'],
-			captchaKey: data['captchaKey'] ?? '',
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
+			baseUrl: data['baseUrl'] as String,
+			name: data['name'] as String,
+			captchaKey: data['captchaKey'] as String? ?? '',
+			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
@@ -2603,12 +2602,12 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'jschan') {
 		return SiteJsChan(
-			baseUrl: data['baseUrl'],
-			name: data['name'],
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			faviconPath: data['faviconPath'],
-			postingCaptcha: data['postingCaptcha'] ?? 'grid',
-			deletingCaptcha: data['deletingCaptcha'] ?? 'grid',
+			baseUrl: data['baseUrl'] as String,
+			name: data['name'] as String,
+			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
+			faviconPath: data['faviconPath'] as String,
+			postingCaptcha: data['postingCaptcha'] as String? ?? 'grid',
+			deletingCaptcha: data['deletingCaptcha'] as String? ?? 'grid',
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
@@ -2617,14 +2616,14 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'jforum') {
 		return SiteJForum(
-			baseUrl: data['baseUrl'],
-			name: data['name'],
-			basePath: data['basePath'],
-			defaultUsername: data['defaultUsername'] ?? 'Anonymous',
-			faviconPath: data['faviconPath'],
-			threadsPerPage: data['threadsPerPage'] ?? 25,
-			postsPerPage: data['postsPerPage'] ?? 15,
-			searchResultsPerPage: data['searchResultsPerPage'] ?? 25,
+			baseUrl: data['baseUrl'] as String,
+			name: data['name'] as String,
+			basePath: data['basePath'] as String,
+			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
+			faviconPath: data['faviconPath'] as String,
+			threadsPerPage: data['threadsPerPage'] as int? ?? 25,
+			postsPerPage: data['postsPerPage'] as int? ?? 15,
+			searchResultsPerPage: data['searchResultsPerPage'] as int? ?? 25,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
@@ -2633,6 +2632,6 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else {
 		print(data);
-		throw UnknownSiteTypeException(data['type']);
+		throw UnknownSiteTypeException(data['type'] as String);
 	}
 }

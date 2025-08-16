@@ -114,15 +114,21 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	if (challengeResponse.statusCode != 200) {
 		throw Captcha4ChanCustomChallengeException('Got status code ${challengeResponse.statusCode}', challengeResponse.cloudflare);
 	}
-	dynamic data = challengeResponse.data;
-	if (data is String) {
-		final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(data);
+	final Map data;
+	if (challengeResponse.data case Map map) {
+		data = map;
+	}
+	else if (challengeResponse.data case String str) {
+		final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(str);
 		if (match == null) {
 			throw Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system', challengeResponse.cloudflare, additionalFiles: {
-				'challenge.txt': utf8.encode(data)
+				'challenge.txt': utf8.encode(str)
 			});
 		}
-		data = jsonDecode(match.group(1)!)['twister'];
+		data = (jsonDecode(match.group(1)!) as Map)['twister'] as Map;
+	}
+	else {
+		throw Exception('challengeResponse.data had wrong type: ${challengeResponse.data}');
 	}
 	final ticket = data['ticket'];
 	if (ticket is Object) {
@@ -209,7 +215,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 			backgroundImage: backgroundImage,
 			backgroundWidth: (data['bg_width'] as num?)?.toInt(),
 			cloudflare: challengeResponse.cloudflare,
-			originalData: (data as Map).cast<String, dynamic>()
+			originalData: data
 		);
 	});
 }
@@ -412,7 +418,7 @@ Future<_CloudGuess> _cloudGuess({
 		throw Exception('Could not encode captcha image');
 	}
 	final bytes = pngData.buffer.asUint8List();
-	final response = await site.client.postUri(Uri.https('captcha.chance.surf', '/solve'), 
+	final response = await site.client.postUri<String>(Uri.https('captcha.chance.surf', '/solve'), 
 		data: bytes,
 		options: Options(
 			responseType: ResponseType.plain,
@@ -425,7 +431,7 @@ Future<_CloudGuess> _cloudGuess({
 		),
 		cancelToken: cancelToken
 	).timeout(const Duration(seconds: 8));
-	final answer = response.data as String;
+	final answer = response.data!;
 	if (answer.length > 10) {
 		// Answer shouldn't be that long
 		throw FormatException('Something seems wrong with cloud solver response', answer);
@@ -694,7 +700,7 @@ class Captcha4ChanCustomChallenge {
 	final ui.Image? backgroundImage;
 	final int? backgroundWidth;
 	final bool cloudflare;
-	final Map<String, dynamic> originalData;
+	final Map originalData;
 	bool _isDisposed = false;
 
 	Captcha4ChanCustomChallenge({

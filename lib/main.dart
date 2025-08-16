@@ -1042,7 +1042,7 @@ class ChanTabs extends ChangeNotifier {
 		if (openNewTabIfNeeded) {
 			if (tab == null && threadId != null) {
 				// Maybe we can reuse a tab sitting at catalog for this board
-				bool pred(tab) => tab.imageboardKey == imageboardKey && tab.board == board && tab.thread == null;
+				bool pred(PersistentBrowserTab tab) => tab.imageboardKey == imageboardKey && tab.board == board && tab.thread == null;
 				final catalogTab = Persistence.tabs[Persistence.currentTabIndex].tryIf(pred) ?? Persistence.tabs.tryFirstWhere(pred);
 				if (catalogTab != null) {
 					tab = catalogTab;

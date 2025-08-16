@@ -107,10 +107,10 @@ List<ContextMenuAction> buildImageSearchActions(BuildContext context, Imageboard
 						return;
 					}
 					final queryHash = await modalLoad<String>(context, 'Searching TinEye...', (_) async {
-						final response = await Settings.instance.client.postUri(Uri.https('tineye.com', '/api/v1/result_json/'), data: FormData.fromMap({
+						final response = await Settings.instance.client.postUri<Map>(Uri.https('tineye.com', '/api/v1/result_json/'), data: FormData.fromMap({
 							'url': attachment._urlForSearch
 						}), options: Options(responseType: ResponseType.json));
-						return response.data['query_hash'] as String;
+						return response.data!['query_hash'] as String;
 					}, wait: const Duration(milliseconds: 150), cancellable: true);
 					if (context.mounted) {
 						openBrowser(context, Uri.https('tineye.com', '/search/$queryHash'));

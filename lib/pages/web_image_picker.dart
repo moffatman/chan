@@ -474,7 +474,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											})'''
 										) as List;
 										// Have to copy it as the List is unmodifiable
-										final results = returnedResults.map<_WebImageResult>((r) => (
+										final results = returnedResults.cast<Map>().map<_WebImageResult>((r) => (
 											src: r['src'] as String,
 											width: (r['width'] as num).toInt(),
 											height: (r['height'] as num).toInt(),

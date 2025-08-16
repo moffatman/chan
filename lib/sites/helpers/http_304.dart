@@ -12,7 +12,7 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 	@protected
 	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant});
 	@protected
-	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	});

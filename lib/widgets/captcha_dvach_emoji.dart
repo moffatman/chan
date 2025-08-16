@@ -98,12 +98,12 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 		if (idResponse.statusCode != 200) {
 			throw CaptchaDvachEmojiException('Got status code ${idResponse.statusCode}');
 		}
-		if (idResponse.data['error'] != null) {
-			throw CaptchaDvachEmojiException(idResponse.data['error']['message'] as String);
+		if (idResponse.data case {'error': {'message': String error}}) {
+			throw CaptchaDvachEmojiException(error);
 		}
 		final chal = CaptchaDvachEmojiChallenge(
 			acquiredAt: DateTime.now(),
-			id: idResponse.data['id'] as String,
+			id: (idResponse.data as Map)['id'] as String,
 			lifetime: widget.request.challengeLifetime
 		);
 		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/emoji/show', {
@@ -147,13 +147,13 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 				imageStack.add(challenge!.$2.keyboardImages[emojiNumber].clone());
 				clicking = true;
 			});
-			final response = await widget.site.client.postUri(Uri.https(widget.site.baseUrl, '/api/captcha/emoji/click'), data: {
+			final response = await widget.site.client.postUri<Map>(Uri.https(widget.site.baseUrl, '/api/captcha/emoji/click'), data: {
 				'captchaTokenID': challenge!.$1.id,
 				'emojiNumber': emojiNumber
 			}, options: Options(
 				responseType: ResponseType.json
 			));
-			if (response.data['success'] case String success) {
+			if (response.data!['success'] case String success) {
 				// Done
 				widget.onCaptchaSolved(DvachEmojiCaptchaSolution(
 					id: success,
@@ -163,7 +163,7 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 			}
 			else {
 				final oldPage = challenge!.$2;
-				challenge = (challenge!.$1, await _makePage(response.data as Map));
+				challenge = (challenge!.$1, await _makePage(response.data!));
 				oldPage.dispose();
 			}
 		}

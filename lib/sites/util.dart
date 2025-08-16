@@ -4,10 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:html/dom.dart' as dom;
 
 extension SiteErrorHandling on Dio {
-	Future<Response<T>> getThreadUri<T>(Uri uri, {Options? options, required RequestPriority priority, required ResponseType responseType, CancelToken? cancelToken}) async {
+	/// No <T> because it will break statusCode processing
+	Future<Response> getThreadUri(Uri uri, {Options? options, required RequestPriority priority, required ResponseType responseType, CancelToken? cancelToken}) async {
 		final extra = options?.extra;
 		try {
-			final response = await getUri<T>(uri, options: options?.copyWith(
+			final response = await getUri(uri, options: options?.copyWith(
 				validateStatus: (_) => true,
 				extra: {
 					if (extra != null) ...extra,

@@ -48,11 +48,11 @@ Future<void> initializeHandoff() async {
 		return;
 	}
 	_platform.setMethodCallHandler((call) async {
-		if (call.method == 'receivedHandoffUrl') {
-			final url = call.arguments['url'];
-			if (url is String) {
-				fakeLinkStream.add(url);
-			}
+		if (call case MethodCall(
+			method: 'receivedHandoffUrl',
+			arguments: {'url': String url}
+		)) {
+			fakeLinkStream.add(url);
 		}
 	});
 }

@@ -76,7 +76,7 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 		if (challengeResponse.statusCode != 200) {
 			throw CaptchaSecurimageException('Got status code ${challengeResponse.statusCode}');
 		}
-		final data = challengeResponse.data;
+		final data = challengeResponse.data as Map;
 		if (data['error'] case String error) {
 			throw CaptchaSecurimageException(error);
 		}

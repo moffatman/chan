@@ -484,7 +484,7 @@ class Notifications {
 	}
 
 	Future<void> deleteAllNotificationsFromServer() async {
-		final response = await _client.patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
+		final response = await _client.patch<Map>('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 			'token2': (await _getToken())?.toMap(),
 			'siteType': siteType,
 			'siteData': siteData,
@@ -492,7 +492,7 @@ class Notifications {
 			'hiddenImageMD5s': '',
 			'protocolVersion': _kProtocolVersion
 		}), options: Options(responseType: ResponseType.json));
-		final digest = response.data['digest'] as String;
+		final digest = response.data!['digest'] as String;
 		final emptyDigest = base64Encode(md5.convert(''.codeUnits).bytes);
 		if (digest != emptyDigest) {
 			print('Need to resync notifications $id');
@@ -506,7 +506,7 @@ class Notifications {
 		_children[id] = this;
 		try {
 			if (Persistence.settings.usePushNotifications == true) {
-				final response = await _client.patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
+				final response = await _client.patch<Map>('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 					'token2': (await _getToken())?.toMap(),
 					'siteType': siteType,
 					'siteData': siteData,
@@ -514,7 +514,7 @@ class Notifications {
 					'hiddenImageMD5s': Persistence.settings.hiddenImageMD5s.join('\n'),
 					'protocolVersion': _kProtocolVersion
 				}), options: Options(responseType: ResponseType.json));
-				final digest = response.data['digest'] as String;
+				final digest = response.data!['digest'] as String;
 				if (digest != _calculateDigest()) {
 					print('Need to resync notifications $id ($digest -> ${_calculateDigest()})');
 					await _client.put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
@@ -772,14 +772,14 @@ class Notifications {
 	}
 
 	Future<bool> _delete(Watch watch) async {
-		final response = await _client.delete(
+		final response = await _client.delete<Map>(
 			'$_notificationSettingsApiRoot/user/$id/watch',
 			data: jsonEncode(watch.toMap(persistence)),
 			options: Options(
 				responseType: ResponseType.json
 			)
 		);
-		return response.data['existed'] as bool? ?? false;
+		return response.data?['existed'] as bool? ?? false;
 	}
 
 	void dispose() {

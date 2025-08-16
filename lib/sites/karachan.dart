@@ -185,7 +185,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 
 	@override
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
-		final response = await client.postUri(
+		final response = await client.postUri<String>(
 			Uri.https(baseUrl, '/imgboard.php'),
 			data: FormData.fromMap({
 				'delete': 'Usuń',
@@ -213,7 +213,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 		if (response.data is! String) {
 			throw Exception('Bad response: ${response.data}');
 		}
-		final data = jsonDecode(response.data as String);
+		final data = jsonDecode(response.data!) as Map;
 		if ((data['realDeleted'] ?? '[]') == '[]') {
 			// Didn't delete
 			final msg = parseFragment(data['msg']).text ?? 'unknown';
@@ -451,7 +451,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final file = post.file;
 		final password = makeRandomBase64String(8);
-		final response = await client.postUri(
+		final response = await client.postUri<String>(
 			Uri.https(baseUrl, '/imgboard.php'),
 			data: FormData.fromMap({
 				'mode': 'regist',
@@ -482,7 +482,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 		if (response.data is! String) {
 			throw Exception('Bad response: ${response.data}');
 		}
-		final data = jsonDecode(response.data as String);
+		final data = jsonDecode(response.data!) as Map;
 		final postid = data['postid'] as int?;
 		if (postid == null) {
 			throw Exception('${data['title']}: ${parseFragment(data['msg']).text}');

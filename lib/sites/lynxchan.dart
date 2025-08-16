@@ -1,4 +1,3 @@
-// ignore_for_file: argument_type_not_assignable
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
@@ -99,22 +98,24 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		required this.hasPagedCatalog
 	});
 
-	ImageboardFlag? _makeFlag(Map<String, dynamic> data) {
-		if (data['flag'] != null) {
+	ImageboardFlag? _makeFlag(Map data) {
+		if (data case {'flag': String flag, 'flagName': String flagName}) {
 			return ImageboardFlag(
-				name: data['flagName'],
-				imageUrl: Uri.https(baseUrl, data['flag']).toString(),
+				name: flagName,
+				imageUrl: Uri.https(baseUrl, flag).toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
 		}
-		else if ((data['flagCode'] as String?)?.startsWith('-') ?? false) {
-			return ImageboardFlag(
-				name: '',
-				imageUrl: Uri.https(baseUrl, '/.static/flags/${data['flagCode'].split('-')[1]}.png').toString(),
-				imageWidth: 16,
-				imageHeight: 11
-			);
+		else if (data['flagCode'] case String flagCode) {
+			if (flagCode.startsWith('-')) {
+				return ImageboardFlag(
+					name: '',
+					imageUrl: Uri.https(baseUrl, '/.static/flags/${flagCode.split('-')[1]}.png').toString(),
+					imageWidth: 16,
+					imageHeight: 11
+				);
+			}
 		}
 		return null;
 	}
@@ -134,11 +135,11 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			if (filePresentResponse.data case bool x) {
 				fileAlreadyUploaded = x;
 			}
-			else {
-				if (filePresentResponse.data['status'] != 'ok') {
-					throw PostFailedException('Error checking if file was already uploaded: ${filePresentResponse.data['error'] ?? filePresentResponse.data}');
+			else if (filePresentResponse.data case Map map) {
+				if (map['status'] != 'ok') {
+					throw PostFailedException('Error checking if file was already uploaded: ${map['error'] ?? map}');
 				}
-				fileAlreadyUploaded = filePresentResponse.data['data'] as bool;
+				fileAlreadyUploaded = map['data'] as bool;
 			}
 		}
 		final flag = post.flag;
@@ -191,11 +192,12 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			}
 			throw PostFailedException(document.querySelector('title')?.text ?? 'Unknown error');
 		}
-		if (response.data['status'] != 'ok') {
-			throw PostFailedException(response.data['error'] ?? response.data.toString());
+		final data = response.data as Map;
+		if (data['status'] != 'ok') {
+			throw PostFailedException(data['error'] as String? ?? data.toString());
 		}
 		return PostReceipt(
-			id: response.data['data'],
+			id: data['data'] as int,
 			password: password,
 			name: post.name ?? '',
 			options: post.options ?? '',
@@ -211,7 +213,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 
 	@override
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
-		final response = await client.postUri(Uri.https(baseUrl, '/contentActions.js', {
+		final response = await client.postUri<Map>(Uri.https(baseUrl, '/contentActions.js', {
 			'json': '1'
 		}), data: {
 			'action': 'delete',
@@ -225,8 +227,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
-		if (response.data['status'] != 'ok') {
-			throw DeletionFailedException(response.data['data'] ?? response.data);
+		if (response.data?['status'] != 'ok') {
+			throw DeletionFailedException(response.data?['data'] as String? ?? response.data.toString());
 		}
 	}
 
@@ -309,7 +311,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		);
 	}
 
-	void _updateBoardInformation(String boardName, Map<String, dynamic> data) {
+	void _updateBoardInformation(String boardName, Map data) {
 		try {
 			final board = (persistence?.maybeGetBoard(boardName))!;
 			board.maxCommentCharacters = data['maxMessageLength'] as int?;
@@ -342,8 +344,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			// Not updated recently
 			return;
 		}
-		final response = await client.getUri(Uri.https(baseUrl, '/$boardName/1.json'));
-		_updateBoardInformation(boardName, response.data);
+		final response = await client.getUri<Map>(Uri.https(baseUrl, '/$boardName/1.json'));
+		_updateBoardInformation(boardName, response.data!);
 	}
 
 	Future<List<Thread>> _getCatalogPage(String board, int page, {required RequestPriority priority, CancelToken? cancelToken}) async {
@@ -357,8 +359,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
 		}
-		_updateBoardInformation(board, response.data);
-		return (response.data['threads'] as List).cast<Map>().map(wrapUnsafe((o) => _makeThreadFromCatalog(board, o.cast<String, dynamic>())..currentPage = page)).toList();
+		final data = response.data as Map;
+		_updateBoardInformation(board, data);
+		return (data['threads'] as List).cast<Map>().map(wrapUnsafe((o) => _makeThreadFromCatalog(board, o)..currentPage = page)).toList();
 	}
 
 	static int? _tryParseInt(dynamic s) => switch (s) {
@@ -367,43 +370,46 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		_ => null
 	};
 
-	Thread _makeThreadFromCatalog(String board, Map<String, dynamic> obj) {
+	Thread _makeThreadFromCatalog(String board, Map obj) {
 		final op = Post(
 			board: board,
-			text: obj['markdown'],
-			name: obj['name'] ?? defaultUsername,
+			text: obj['markdown'] as String,
+			name: obj['name'] as String? ?? defaultUsername,
 			flag: wrapUnsafe(_makeFlag)(obj),
-			capcode: obj['signedRole'],
-			time: DateTime.parse(obj['creation']),
-			threadId: obj['threadId'],
-			id: obj['threadId'],
+			capcode: obj['signedRole'] as String?,
+			time: DateTime.parse(obj['creation'] as String),
+			threadId: obj['threadId'] as int,
+			id: obj['threadId'] as int,
 			spanFormat: PostSpanFormat.lynxchan,
-			attachments_: (obj['files'] as List?)?.map((f) => Attachment(
-				type: AttachmentType.fromFilename(f['path']),
-				board: board,
-				id: f['path'],
-				ext: '.${(f['path'] as String).afterLast('.')}',
-				filename: f['originalName'] ?? (f['path'] as String).afterLast('/'),
-				url: Uri.https(imageUrl, f['path']).toString(),
-				thumbnailUrl: Uri.https(imageUrl, f['thumb']).toString(),
-				md5: '',
-				width: _tryParseInt(f['width']),
-				height: _tryParseInt(f['height']),
-				threadId: obj['threadId'],
-				sizeInBytes: f['size']
-			)).toList() ?? const []
+			attachments_: (obj['files'] as List?)?.cast<Map>().map((f) {
+				final path = f['path'] as String;
+				return Attachment(
+					type: AttachmentType.fromFilename(path),
+					board: board,
+					id: path,
+					ext: '.${path.afterLast('.')}',
+					filename: f['originalName'] as String? ?? path.afterLast('/'),
+					url: Uri.https(imageUrl, path).toString(),
+					thumbnailUrl: Uri.https(imageUrl, f['thumb'] as String).toString(),
+					md5: '',
+					width: _tryParseInt(f['width']),
+					height: _tryParseInt(f['height']),
+					threadId: obj['threadId'] as int?,
+					sizeInBytes: f['size'] as int?
+				);
+			}).toList() ?? const []
 		);
 		return Thread(
 			posts_: [op],
-			replyCount: obj['postCount'] ?? ((obj['omittedPosts'] ?? obj['ommitedPosts'] ?? 0) + ((obj['posts'] as List?)?.length ?? 0)),
-			imageCount: obj['fileCount'] ?? ((obj['omittedFiles'] ?? 0) + ((obj['posts'] as List?)?.fold<int>(0, (c, p) => c + (p['files'] as List).length) ?? 0)),
+			replyCount: obj['postCount'] as int? ?? ((obj['omittedPosts'] as int? ?? obj['ommitedPosts'] as int? ?? 0) + ((obj['posts'] as List?)?.length ?? 0)),
+			imageCount: obj['fileCount'] as int? ?? ((obj['omittedFiles'] as int? ?? 0) + ((obj['posts'] as List?)?.cast<Map>().fold<int>(0, (c, p) => c + (p['files'] as List).length) ?? 0)),
 			id: op.id,
 			board: board,
 			title: (obj['subject'] as String?)?.unescapeHtml,
-			isSticky: obj['pinned'],
-			time: DateTime.parse(obj['creation']),
+			isSticky: obj['pinned'] as bool,
+			time: DateTime.parse(obj['creation'] as String),
 			attachments: op.attachments_,
-			currentPage: obj['page']
+			currentPage: obj['page'] as int?
 		);
 	}
 
@@ -423,7 +429,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			throw BoardNotFoundException(board);
 		}
 		_maybeUpdateBoardInformation(board); // Don't await
-		return (response.data as List).cast<Map>().map((o) => _makeThreadFromCatalog(board, o.cast<String, dynamic>())).toList();
+		return (response.data as List).cast<Map>().map((o) => _makeThreadFromCatalog(board, o)).toList();
 	}
 
 	/// catalog.json may be missing important details, but always has threadId + page
@@ -454,46 +460,50 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		}
 	}
 
-	Post _makePost(String board, int threadId, int id, Map<String, dynamic> obj) => unsafe(obj, () {
+	Post _makePost(String board, int threadId, int id, Map obj) => unsafe(obj, () {
 		return Post(
 			board: board,
-			text: obj['markdown'],
-			name: obj['name'],
+			text: obj['markdown'] as String,
+			name: obj['name'] as String,
 			flag: wrapUnsafe(_makeFlag)(obj),
-			capcode: obj['signedRole'],
-			time: DateTime.parse(obj['creation']),
+			capcode: obj['signedRole'] as String?,
+			time: DateTime.parse(obj['creation'] as String),
 			threadId: threadId,
-			posterId: obj['id'],
+			posterId: obj['id'] as String?,
 			id: id,
 			spanFormat: PostSpanFormat.lynxchan,
-			attachments_: (obj['files'] as List).asMap().entries.map(wrapUnsafe((e) => Attachment(
-				type: AttachmentType.fromFilename(e.value['path']),
-				board: board,
-				// Lynxchan dedupes images. Prepend some uniqueness here to avoid Hero problems later.
-				id: '$id-${e.key}-${e.value['path']}',
-				ext: '.${(e.value['path'] as String).afterLast('.')}',
-				filename: e.value['originalName'],
-				url: Uri.https(imageUrl, e.value['path']).toString(),
-				thumbnailUrl: Uri.https(imageUrl, e.value['thumb']).toString(),
-				md5: '',
-				width: _tryParseInt(e.value['width']),
-				height: _tryParseInt(e.value['height']),
-				threadId: obj['threadId'],
-				sizeInBytes: e.value['size']
-			))).toList()
+			attachments_: (obj['files'] as List).cast<Map>().asMap().entries.map(wrapUnsafe((e) {
+				final path = e.value['path'] as String;
+				return Attachment(
+					type: AttachmentType.fromFilename(path),
+					board: board,
+					// Lynxchan dedupes images. Prepend some uniqueness here to avoid Hero problems later.
+					id: '$id-${e.key}-$path',
+					ext: '.${path.afterLast('.')}',
+					filename: e.value['originalName'] as String,
+					url: Uri.https(imageUrl, path).toString(),
+					thumbnailUrl: Uri.https(imageUrl, e.value['thumb'] as String).toString(),
+					md5: '',
+					width: _tryParseInt(e.value['width']),
+					height: _tryParseInt(e.value['height']),
+					threadId: obj['threadId'] as int?,
+					sizeInBytes: e.value['size'] as int?
+				);
+			})).toList()
 		);
 	});
 
 	@override
-	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {
+		final data = response.data as Map;
 		_maybeUpdateBoardInformation(thread.board); // Don't await
-		final op = _makePost(thread.board, thread.id, thread.id, response.data);
+		final op = _makePost(thread.board, thread.id, thread.id, data);
 		final posts = [
 			op,
-			...(response.data['posts'] as List).map((obj) => _makePost(thread.board, thread.id, obj['postId'], obj))
+			...(data['posts'] as List).cast<Map>().map((obj) => _makePost(thread.board, thread.id, obj['postId'] as int, obj))
 		];
 		return Thread(
 			posts_: posts,
@@ -501,11 +511,11 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			imageCount: posts.fold<int>(0, (c, p) => c + p.attachments.length) - op.attachments.length,
 			id: thread.id,
 			board: thread.board,
-			title: (response.data['subject'] as String?)?.unescapeHtml,
-			isSticky: response.data['pinned'],
+			title: (data['subject'] as String?)?.unescapeHtml,
+			isSticky: data['pinned'] as bool,
 			time: op.time,
 			attachments: op.attachments_,
-			isArchived: response.data['archived'] ?? false
+			isArchived: data['archived'] as bool? ?? false
 		);
 	}
 

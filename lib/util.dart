@@ -488,7 +488,7 @@ class StoppedValueListenable<T> implements ValueListenable<T> {
 	void removeListener(VoidCallback listener) { }	
 }
 
-final Map<Function, ({Timer timer, Completer<void> completer})> _functionIdleTimers = {};
+final Map<FutureOr Function(), ({Timer timer, Completer<void> completer})> _functionIdleTimers = {};
 Future<void> runWhenIdle(Duration duration, FutureOr Function() function) {
 	final completer = _functionIdleTimers[function]?.completer ?? Completer();
 	_functionIdleTimers[function]?.timer.cancel();
@@ -746,8 +746,10 @@ extension WaitUntilValue<T> on ValueNotifier<T> {
 	}
 }
 
-extension TryParse on String {
+extension ParseNum on String {
+	int get parseInt => int.parse(this);
 	int? get tryParseInt => int.tryParse(this);
+	double get parseDouble => double.parse(this);
 	double? get tryParseDouble => double.tryParse(this);
 }
 

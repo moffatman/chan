@@ -1,4 +1,3 @@
-// ignore_for_file: argument_type_not_assignable
 import 'dart:convert';
 import 'dart:math';
 
@@ -600,17 +599,17 @@ class SiteReddit extends ImageboardSite {
 	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
 		if (_isShareLink(url)) {
-			final response = await client.getUri(url);
+			final response = await client.getUri<String>(url, options: Options(
+				responseType: ResponseType.plain
+			));
 			Uri? redirected = response.redirects.tryLast?.location;
 			if (redirected != null && !_isShareLink(redirected)) {
 				return await decodeUrl(Uri.https(baseUrl).resolve(redirected.toString()));
 			}
-			if (response.data is String) {
-				// Look for "reddit:///r/subreddit/..." in the JavaScript redirect page
-				final redditProtocolMatch = _redditProtocolPattern.firstMatch(response.data);
-				if (redditProtocolMatch != null) {
-					return await decodeUrl(Uri.https(baseUrl, redditProtocolMatch.group(1)!));
-				}
+			// Look for "reddit:///r/subreddit/..." in the JavaScript redirect page
+			final redditProtocolMatch = _redditProtocolPattern.firstMatch(response.data ?? '');
+			if (redditProtocolMatch != null) {
+				return await decodeUrl(Uri.https(baseUrl, redditProtocolMatch.group(1)!));
 			}
 		}
 		if (url.host.endsWith(baseUrl)) {
@@ -630,9 +629,9 @@ class SiteReddit extends ImageboardSite {
 		return null;
 	}
 
-	ImageboardBoard _makeBoard(Map<String, dynamic> data) => ImageboardBoard(
-		name: data['display_name'],
-		title: data['public_description'],
+	ImageboardBoard _makeBoard(Map data) => ImageboardBoard(
+		name: data['display_name'] as String,
+		title: data['public_description'] as String,
 		isWorksafe: data['over18'] == false,
 		webmAudioAllowed: true,
 		icon: switch (data['icon_img']) {
@@ -640,17 +639,17 @@ class SiteReddit extends ImageboardSite {
 			String x => Uri.parse(x),
 			_ => null
 		},
-		popularity: data['subscribers']
+		popularity: data['subscribers'] as int?
 	);
 
 	Future<String> _getRedgifsToken() async {
-		final response = await client.getUri(Uri.https('api.redgifs.com', '/v2/auth/temporary'), options: Options(
+		final response = await client.getUri<Map>(Uri.https('api.redgifs.com', '/v2/auth/temporary'), options: Options(
 			extra: {
 				kPriority: RequestPriority.cosmetic
 			},
 			responseType: ResponseType.json
 		));
-		return response.data['token'] as String;
+		return response.data!['token'] as String;
 	}
 
 	/// Resolve image hosting sites to hotlinks
@@ -659,7 +658,7 @@ class SiteReddit extends ImageboardSite {
 		try {
 			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io' || uri.host == 'i.imgur.com' || uri.host == 'i.imgur.io') && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
 				final hash = uri.pathSegments.single.beforeFirst('.');
-				final response = await client.getUri(Uri.https('api.imgur.com', '/3/image/$hash'), options: Options(
+				final response = await client.getUri<Map>(Uri.https('api.imgur.com', '/3/image/$hash'), options: Options(
 					headers: {
 						'Authorization': 'Client-ID 714791ea4513f83'
 					},
@@ -668,8 +667,7 @@ class SiteReddit extends ImageboardSite {
 					},
 					responseType: ResponseType.json
 				), cancelToken: cancelToken);
-				final link = response.data['data']?['link'] as String?;
-				if (link != null) {
+				if (response.data case {'data': {'link': String link}}) {
 					return [(
 						url: link,
 						thumbnailUrl: link.replaceFirstMapped(RegExp(r'\.([^.]+)$'), (m) {
@@ -682,7 +680,7 @@ class SiteReddit extends ImageboardSite {
 			}
 			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io') && (uri.pathSegments.length == 2) && (uri.pathSegments.first == 'a')) {
 				final hash = uri.pathSegments[1];
-				final response = await client.getUri(Uri.https('api.imgur.com', '/3/album/$hash/images'), options: Options(
+				final response = await client.getUri<Map>(Uri.https('api.imgur.com', '/3/album/$hash/images'), options: Options(
 					headers: {
 						'Authorization': 'Client-ID 714791ea4513f83'
 					},
@@ -691,9 +689,8 @@ class SiteReddit extends ImageboardSite {
 					},
 					responseType: ResponseType.json
 				), cancelToken: cancelToken);
-				final imageData = response.data['data'] as List<dynamic>?;
-				if (imageData != null && imageData.isNotEmpty) {
-					return imageData.expand((image) {
+				if (response.data!['data'] case List imageData when imageData.isNotEmpty) {
+					return imageData.cast<Map>().expand((image) {
 						final link = image['link'] as String;
 						return [(
 							url: link,
@@ -729,16 +726,13 @@ class SiteReddit extends ImageboardSite {
 						return _resolveUrl(redirectResponse.realUri.toString());
 					}
 				}
-				else {
-					final link = response.data['gfyItem']?['mp4Url'] as String?;
-					if (link != null) {
-						return [(
-							url: link,
-							thumbnailUrl: response.data['gfyItem']?['miniPosterUrl'] as String?,
-							type: AttachmentType.mp4,
-							ext: '.mp4'
-						)];
-					}
+				else if (response.data case {'gfyItem': Map gfyItem && {'mp4Url': String link}}) {
+					return [(
+						url: link,
+						thumbnailUrl: gfyItem['miniPosterUrl'] as String?,
+						type: AttachmentType.mp4,
+						ext: '.mp4'
+					)];
 				}
 			}
 			else if (uri.host == 'i.reddituploads.com') {
@@ -752,7 +746,7 @@ class SiteReddit extends ImageboardSite {
 			else if (uri.host.endsWith('redgifs.com') && uri.pathSegments.length == 2 && uri.pathSegments[0] == 'watch' && persistence != null) {
 				final id = uri.pathSegments[1];
 				String redGifsToken = '';
-				Response? response;
+				Response<Map>? response;
 				try {
 					redGifsToken = await persistence!.browserState.loginFields.putIfAbsentAsync(_loginFieldRedGifsTokenKey, _getRedgifsToken);
 					response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
@@ -766,35 +760,30 @@ class SiteReddit extends ImageboardSite {
 					), cancelToken: cancelToken);
 				}
 				catch (e) {
-					if (e is DioError) {
-						if (e.response?.statusCode == 401 && redGifsToken.isNotEmpty) {
-							// Token expired?
-							redGifsToken = persistence!.browserState.loginFields[_loginFieldRedGifsTokenKey] = await _getRedgifsToken();
-							response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
-								headers: {
-									'Authorization': 'Bearer $redGifsToken'
-								},
-								extra: {
-									kPriority: RequestPriority.cosmetic
-								},
-								responseType: ResponseType.json
-							), cancelToken: cancelToken);
-						}
+					if (e is DioError && e.response?.statusCode == 401 && redGifsToken.isNotEmpty) {
+						// Token expired?
+						redGifsToken = persistence!.browserState.loginFields[_loginFieldRedGifsTokenKey] = await _getRedgifsToken();
+						response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
+							headers: {
+								'Authorization': 'Bearer $redGifsToken'
+							},
+							extra: {
+								kPriority: RequestPriority.cosmetic
+							},
+							responseType: ResponseType.json
+						), cancelToken: cancelToken);
 					}
 					else {
 						rethrow;
 					}
 				}
-				if (response != null) {
-					final url = response.data['gif']?['urls']?['hd'] ?? response.data['gif']?['urls']?['sd'];
-					if (url != null) {
-						return [(
-							url: url as String,
-							thumbnailUrl: response.data['gif']?['urls']?['thumbnail'] as String?,
-							type: AttachmentType.mp4,
-							ext: '.mp4'
-						)];
-					}
+				if (response.data case {'gif': {'urls': Map urls && ({'hd': String url} || {'sd': String url})}}) {
+					return [(
+						url: url,
+						thumbnailUrl: urls['thumbnailUrl'] as String?,
+						type: AttachmentType.mp4,
+						ext: '.mp4'
+					)];
 				}
 			}
 		}
@@ -810,103 +799,131 @@ class SiteReddit extends ImageboardSite {
 		)];
 	}
 
-	Future<Thread> _makeThread(dynamic data, {CancelToken? cancelToken}) async {
-		final id = fromRedditId(data['id'])!;
+	Future<Thread> _makeThread(Map data, {CancelToken? cancelToken}) async {
+		final id = fromRedditId(data['id'] as String)!;
 		final attachments = <Attachment>[];
-		Future<void> dumpAttachments(dynamic data) async {
-			if (data['media_metadata'] != null) {
-				for (final item in (data['media_metadata'] as Map).values) {
+		Future<void> dumpAttachments(Map data) async {
+			if (data['media_metadata'] case Map mediaMetadata) {
+				for (final item in mediaMetadata.values.cast<Map>()) {
 					if (item['m'] == null && item['e'] == 'RedditVideo') {
 						attachments.add(Attachment(
 							type: AttachmentType.mp4,
-							board: data['subreddit'],
+							board: data['subreddit'] as String,
 							threadId: id,
-							id: item['id'],
+							id: item['id'] as String,
 							ext: '.mp4',
 							filename: '${item['id']}.mp4',
-							url: unescape.convert(item['hlsUrl']),
+							url: unescape.convert(item['hlsUrl'] as String),
 							thumbnailUrl: '',
 							md5: '',
-							width: item['x'],
-							height: item['y'],
+							width: item['x'] as int?,
+							height: item['y'] as int?,
 							sizeInBytes: null
 						));
 					}
-					else if (item['m'] != null) {
-						final ext = '.${(item['m'] as String).afterLast('/')}';
+					else if (item case {
+						'id': String itemId,
+						'm': String m,
+						's': Map s && ({'u': String url} || {'gif': String url}),
+						'p': List p
+					}) {
+						final ext = '.${m.afterLast('/')}';
 						attachments.add(Attachment(
 							type: AttachmentType.image,
-							board: data['subreddit'],
+							board: data['subreddit'] as String,
 							threadId: id,
-							id: item['id'],
+							id: itemId,
 							ext: ext,
-							filename: item['id'] + ext,
-							url: unescape.convert(item['s']['u'] ?? item['s']['gif']),
-							thumbnailUrl: unescape.convert((item['p'] as List).cast<Map>().tryFirst?['u'] ?? item['s']['u']),
+							filename: itemId + ext,
+							url: unescape.convert(url),
+							thumbnailUrl: switch (p) {
+								[{'u': String u}, ...] => unescape.convert(u),
+								_ => ''
+							},
 							md5: '',
-							width: item['s']['x'],
-							height: item['s']['y'],
+							width: s['x'] as int?,
+							height: s['y'] as int?,
 							sizeInBytes: null
 						));
 					}
 				}
 			}
-			else if (data['secure_media']?['reddit_video'] != null) {
+			else if (data case {
+				'subreddit': String subreddit,
+				'name': String name,
+				'secure_media': {'reddit_video': Map redditVideo && {'hls_url': String hlsUrl}}
+			}) {
 				attachments.add(Attachment(
 					type: AttachmentType.mp4,
-					board: data['subreddit'],
+					board: subreddit,
 					threadId: id,
-					id: data['name'],
+					id: name,
 					ext: '.mp4',
 					filename: 'video.mp4',
-					url: unescape.convert(data['secure_media']['reddit_video']['hls_url']),
-					thumbnailUrl: unescape.convert(data['preview']?['images']?[0]?['resolutions']?[0]?['url'] ?? ''),
+					url: unescape.convert(hlsUrl),
+					thumbnailUrl: switch (data['preview']) {
+						{'images': [{'resolutions': [{'url': String url}, ...]}, ...]} => unescape.convert(url),
+						_ => ''
+					},
 					md5: '',
-					width: data['secure_media']['reddit_video']['width'],
-					height: data['secure_media']['reddit_video']['height'],
+					width: redditVideo['width'] as int?,
+					height: redditVideo['height'] as int?,
 					sizeInBytes: null
 				));
 			}
-			else if (data['preview'] != null) {
-				if (data['preview']?['reddit_video_preview']?['hls_url'] != null) {
+			else if (data case {
+				'subreddit': String subreddit,
+				'name': String name,
+				'preview': Map preview
+			}) {
+				if (preview case {
+					'reddit_video_preview': Map redditVideoPreview && {'hls_url': String hlsUrl}
+				}) {
 					attachments.add(Attachment(
 						type: AttachmentType.mp4,
-						board: data['subreddit'],
+						board: subreddit,
 						threadId: id,
-						id: data['name'],
+						id: name,
 						ext: '.mp4',
 						filename: 'video.mp4',
-						url: unescape.convert(data['preview']['reddit_video_preview']['hls_url']),
-						thumbnailUrl: unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']),
+						url: unescape.convert(hlsUrl),
+						thumbnailUrl: switch (preview) {
+							{'images': [{'resolutions': [{'url': String url}, ...]}, ...]} => unescape.convert(url),
+							_ => ''
+						},
 						md5: '',
-						width: data['preview']['reddit_video_preview']['width'],
-						height: data['preview']['reddit_video_preview']['height'],
+						width: redditVideoPreview['width'] as int?,
+						height: redditVideoPreview['height'] as int?,
 						sizeInBytes: null
 					));
 				}
-				else {
-					final urls = await _resolveUrl(data['url'], cancelToken: cancelToken);
+				else if (data case {'url': String url}) {
+					final urls = await _resolveUrl(url, cancelToken: cancelToken);
+					final image0 = (preview['images'] as List?)?.tryFirst as Map?;
 					attachments.addAll(urls.indexed.map((url) => Attachment(
 						type: url.$2.type,
-						board: data['subreddit'],
+						board: subreddit,
 						threadId: id,
-						id: '${data['name']}_${url.$1}',
+						id: '${name}_${url.$1}',
 						ext: url.$2.ext,
 						filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
 						url: url.$2.url,
-						width: data['preview']['images'][0]['source']?['width'],
-						height: data['preview']['images'][0]['source']?['height'],
+						width: (image0?['source'] as Map?)?['width'] as int?,
+						height: (image0?['source'] as Map?)?['height'] as int?,
 						md5: '',
 						sizeInBytes: null,
-						thumbnailUrl: url.$2.thumbnailUrl ?? ((data['preview']['images'][0]['resolutions'] as List).isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString())
+						thumbnailUrl: url.$2.thumbnailUrl ?? switch (image0) {
+							{'resolutions': [{'url': String url}, ...]} => unescape.convert(url),
+							_ => generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString()
+						}
 					)));
 				}
 			}
-			else if (!(data['is_self'] as bool? ?? false) && data['url'] != null) {
-				final urls = await _resolveUrl(data['url'], cancelToken: cancelToken);
+			else if (data['is_self'] != true && data['url'] != null) {
+				final urls = await _resolveUrl(data['url'] as String, cancelToken: cancelToken);
 				attachments.addAll(urls.indexed.map((url) => Attachment(
 					type: url.$2.type,
-					board: data['subreddit'],
+					board: data['subreddit'] as String,
 					threadId: id,
 					id: '${data['name']}_${url.$1}',
 					ext: url.$2.ext,
@@ -919,17 +936,13 @@ class SiteReddit extends ImageboardSite {
 					sizeInBytes: null
 				)));
 			}
-			final galleryItems = (data['gallery_data'] as Map?)?['items'] as List?;
-			final Map<String, (int, String?)> galleryMap;
-			if (galleryItems != null) {
-				galleryMap = {
-					for (final (i, item) in galleryItems.indexed)
+			final galleryMap = switch (data) {
+				{'gallery_data': {'items': List galleryItems}} => {
+					for (final (i, item) in galleryItems.cast<Map>().indexed)
 						item['media_id'] as String: (i, item['caption'] as String?)
-				};
-			}
-			else {
-				galleryMap = {};
-			}
+				},
+				_ => <String, (int, String?)>{}
+			};
 			const infiniteIndex = 1 << 50;
 			mergeSort(attachments, compare: (a, b) {
 				final idxA = galleryMap[a.id]?.$1 ?? infiniteIndex;
@@ -968,7 +981,7 @@ class SiteReddit extends ImageboardSite {
 				text += '\n\n${data['selftext']}';
 			}
 		}
-		final crosspostParent = (data['crosspost_parent_list'] as List?)?.tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']) as Map?;
+		final crosspostParent = (data['crosspost_parent_list'] as List?)?.cast<Map>().tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']);
 		if (crosspostParent != null) {
 			await dumpAttachments(crosspostParent);
 			text = '<crosspostparent board="${crosspostParent['subreddit']}" id="${crosspostParent['id']}"></crosspostparent>\n$text';
@@ -976,35 +989,35 @@ class SiteReddit extends ImageboardSite {
 		if (attachments.isEmpty) {
 			await dumpAttachments(data);
 		}
-		final author = data['author'];
+		final author = data['author'] as String;
 		final authorIsDeleted = author == _kDeleted;
 		final textIsDeleted = text == _kRemoved || text == _kDeleted;
 		final asPost = Post(
-			board: data['subreddit'],
+			board: data['subreddit'] as String,
 			name: authorIsDeleted ? '' : author,
-			flag: _makeFlag(data['author_flair_richtext'], data),
-			time: DateTime.fromMillisecondsSinceEpoch(data['created'].toInt() * 1000),
+			flag: _makeFlag(data['author_flair_richtext'] as List?, data),
+			time: DateTime.fromMillisecondsSinceEpoch((data['created'] as num).toInt() * 1000),
 			threadId: id,
 			id: id,
 			text: textIsDeleted ? '' : text,
 			spanFormat: PostSpanFormat.reddit,
 			isDeleted: authorIsDeleted || textIsDeleted,
 			attachments_: data['is_self'] == true ? [] : attachments,
-			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'],
-			capcode: data['distinguished']
+			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'] as int?,
+			capcode: data['distinguished'] as String?
 		);
 		_updateTimeEstimateData(asPost.id, asPost.time);
 		return Thread(
-			board: data['subreddit'],
-			title: unescape.convert(data['title']).trim(),
-			isSticky: data['stickied'],
+			board: data['subreddit'] as String,
+			title: unescape.convert(data['title'] as String).trim().nonEmptyOrNull,
+			isSticky: data['stickied'] as bool,
 			time: asPost.time,
 			posts_: [asPost],
 			attachments: asPost.attachments_,
-			replyCount: data['num_comments'],
+			replyCount: data['num_comments'] as int,
 			imageCount: 0,
 			isDeleted: asPost.isDeleted,
-			flair: _makeFlag(data['link_flair_richtext'], data) ?? (
+			flair: _makeFlag(data['link_flair_richtext'] as List?, data) ?? (
 				data['link_flair_text'] == null ? null : ImageboardFlag.text((data['link_flair_text'] as String).unescapeHtml)
 			),
 			id: id,
@@ -1017,8 +1030,8 @@ class SiteReddit extends ImageboardSite {
 				Map m => ImageboardPoll(
 					title: null,
 					rows: (m['options'] as List).cast<Map>().map((o) => ImageboardPollRow(
-						name: o['text'],
-						votes: o['vote_count'] ?? 0 // Just show the choices if the poll isn't done yet
+						name: o['text'] as String,
+						votes: o['vote_count'] as int? ?? 0 // Just show the choices if the poll isn't done yet
 					)).toList(growable: false)
 				),
 				_ => null
@@ -1048,13 +1061,13 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/subreddits/popular.json'), options: Options(
+		final response = await client.getUri<Map>(Uri.https(baseUrl, '/subreddits/popular.json'), options: Options(
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
-		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
+		return ((response.data!['data'] as Map)['children'] as List).cast<Map>().map((c) => _makeBoard(c['data'] as Map)).toList();
 	}
 
 	@override
@@ -1062,11 +1075,11 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
-		final response = await client.getUri(Uri.https('api.$baseUrl', '/subreddits/search', {
+		final response = await client.getUri<Map>(Uri.https('api.$baseUrl', '/subreddits/search', {
 			'q': query,
 			'typeahead_active': 'true'
 		}), options: Options(responseType: ResponseType.json));
-		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
+		return ((response.data!['data'] as Map)['children'] as List).cast<Map>().map((c) => _makeBoard(c['data'] as Map)).toList();
 	}
 
 	@override
@@ -1089,13 +1102,13 @@ class SiteReddit extends ImageboardSite {
 				);
 			}
 			else {
-				final response = await client.getUri(Uri.https(baseUrl, '/r/$board/about.json'), options: Options(
+				final response = await client.getUri<Map>(Uri.https(baseUrl, '/r/$board/about.json'), options: Options(
 					extra: {
 						kPriority: priority
 					},
 					responseType: ResponseType.json
 				), cancelToken: cancelToken);
-				newBoard = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
+				newBoard = _makeBoard(response.data!['data'] as Map)..additionalDataTime = DateTime.now();
 			}
 			await persistence?.setBoard(board, newBoard);
 			persistence?.didUpdateBrowserState();
@@ -1129,14 +1142,14 @@ class SiteReddit extends ImageboardSite {
 			Future.error(e, st);
 		}
 		final suffix = _getCatalogSuffix(variant);
-		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', suffix.$2), options: Options(
+		final response = await client.getUri<Map>(Uri.https(baseUrl, '/r/$board${suffix.$1}', suffix.$2), options: Options(
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
-		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
-			final t = await _makeThread(d['data'], cancelToken: cancelToken);
+		return await Future.wait(((response.data!['data'] as Map)['children'] as List).cast<Map>().map((d) async {
+			final t = await _makeThread(d['data'] as Map, cancelToken: cancelToken);
 			t.currentPage = 1;
 			return t;
 	}));
@@ -1149,7 +1162,7 @@ class SiteReddit extends ImageboardSite {
 		final newPosts = <int, Post>{};
 		final Set<int> newPostsWithReplies = {};
 		if (childIdsToGet.isNotEmpty) {
-			final response = await client.getUri(Uri.https(baseUrl, '/api/morechildren', {
+			final response = await client.getUri<Map>(Uri.https(baseUrl, '/api/morechildren', {
 				'link_id': 't3_${toRedditId(thread.id)}',
 				'children': 'c1:${childIdsToGet.map((cid) => 't1_${toRedditId(cid.childId)}').join(',')}',
 				'api_type': 'json',
@@ -1161,15 +1174,19 @@ class SiteReddit extends ImageboardSite {
 				},
 				responseType: ResponseType.json
 			), cancelToken: cancelToken);
-			final things = response.data['json']['data']['things'] as List;
+			final things = switch(response.data) {
+				{'json': {'data': {'things': List things}}} => things.cast<Map>(),
+				_ => throw PatternException(response.data, 'Bad morechildren resp')
+			};
 			for (final thing in things) {
-				final parentId = fromRedditId(thing['data']['parent'].split('_')[1]);
-				if (thing['kind'] == 'more' || thing['data']['id'] == 't1__') {
+				final data = thing['data'] as Map;
+				final parentId = fromRedditId((data['parent'] as String).split('_')[1]);
+				if (thing['kind'] == 'more' || data['id'] == 't1__') {
 					newPosts[parentId]?.hasOmittedReplies = true;
 				}
 				else {
-					final id = fromRedditId(thing['data']['id'].split('_')[1])!;
-					final doc = parseFragment(HtmlUnescape().convert(thing['data']['content']));
+					final id = fromRedditId((data['id'] as String).split('_')[1])!;
+					final doc = parseFragment(HtmlUnescape().convert(data['content'] as String));
 					ImageboardMultiFlag? flag;
 					final flair = doc.querySelector('.flairrichtext');
 					if (flair != null) {
@@ -1185,8 +1202,8 @@ class SiteReddit extends ImageboardSite {
 							}).toList()
 						);
 					}
-					final html = unescape.convert(thing['data']['contentHTML']);
-					final text = (thing['data']['contentText'] as String).replaceAllMapped(RegExp(r'!\[img\]\(([^)]+)\)'), (match) {
+					final html = unescape.convert(data['contentHTML'] as String);
+					final text = (data['contentText'] as String).replaceAllMapped(RegExp(r'!\[img\]\(([^)]+)\)'), (match) {
 						final regex = r'href="([^"]+' + match.group(1)! + r'[^"]+)"';
 						final matchInHtml = RegExp(regex).firstMatch(html)?.group(1);
 						if (matchInHtml != null) {
@@ -1256,7 +1273,7 @@ class SiteReddit extends ImageboardSite {
 	@override
 	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final suffix = _getCatalogSuffix(variant);
-		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', {
+		final response = await client.getUri<Map>(Uri.https(baseUrl, '/r/$board${suffix.$1}', {
 			'after': 't3_${toRedditId(after.id)}',
 			...suffix.$2
 		}), options: Options(
@@ -1266,8 +1283,12 @@ class SiteReddit extends ImageboardSite {
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
 		final newPage = (after.currentPage ?? 1) + 1;
-		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
-			final t = await _makeThread(d['data'], cancelToken: cancelToken);
+		final children = switch (response.data) {
+			{'data': {'children': List children}} => children,
+			_ => throw PatternException(response.data)
+		};
+		return await Future.wait(children.cast<Map>().map((d) async {
+			final t = await _makeThread(d['data'] as Map, cancelToken: cancelToken);
 			t.currentPage = newPage;
 			return t;
 		}));
@@ -1279,22 +1300,22 @@ class SiteReddit extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	Flag? _makeFlag(List<dynamic>? data, Map<String, dynamic> parentData) {
+	Flag? _makeFlag(List? data, Map parentData) {
 		if (data == null || data.isEmpty) {
 			return null;
 		}
 		final parts = <ImageboardFlag>[];
-		for (final part in data) {
+		for (final part in data.cast<Map>()) {
 			if (part['e'] == 'text') {
-				final emoteMatch = _emotePattern.firstMatch(part['t'] ?? '');
+				final emoteMatch = _emotePattern.firstMatch(part['t'] as String? ?? '');
 				if (emoteMatch != null) {
-					final emote = parentData['media_metadata']?[emoteMatch.group(1)];
+					final emote = (parentData['media_metadata'] as Map?)?[emoteMatch.group(1)];
 					// Tbh this usually doesn't work because Reddit only returns emote
 					// metadata that was also used in the text. But best effort...
 					if (emote is Map) {
 						parts.add(ImageboardFlag(
 							name: '',
-							imageUrl: emote['u'],
+							imageUrl: emote['u'] as String,
 							imageWidth: (emote['x'] as int? ?? 16).toDouble(),
 							imageHeight: (emote['y'] as int? ?? 16).toDouble()
 						));
@@ -1312,7 +1333,7 @@ class SiteReddit extends ImageboardSite {
 				parts.add(ImageboardFlag(
 					imageHeight: 16,
 					imageWidth: 16,
-					imageUrl: part['u'],
+					imageUrl: part['u'] as String,
 					name: text
 				));
 			}
@@ -1322,16 +1343,17 @@ class SiteReddit extends ImageboardSite {
 
 	static final _emotePattern = RegExp(r'!\[img\]\((emote|[^)]+)\)');
 
-	Post _makePost(Map<String, dynamic> child, {int? parentId, required ThreadIdentifier thread}) {
-		final id = fromRedditId(child['id'])!;
-		final text = unescape.convert(child['body']).replaceAllMapped(_emotePattern, (match) {
-			final metadata = child['media_metadata']?[match.group(1)];
+	Post _makePost(Map child, {int? parentId, required ThreadIdentifier thread}) {
+		final id = fromRedditId(child['id'] as String)!;
+		final text = unescape.convert(child['body'] as String).replaceAllMapped(_emotePattern, (match) {
+			final metadata = (child['media_metadata'] as Map?)?[match.group(1)] as Map?;
 			if (metadata == null) {
 				return match.group(0)!;
 			}
-			return '<img src="${metadata['s']['u']}" width="${metadata['s']['x']}" height="${metadata['s']['y']}">';
+			final s = metadata['s'] as Map;
+			return '<img src="${s['u']}" width="${s['x']}" height="${s['y']}">';
 		});
-		final author = child['author'];
+		final author = child['author'] as String;
 		final authorIsDeleted = author == _kDeleted;
 		final textIsDeleted = text == _kRemoved || text == _kDeleted;
 		return Post(
@@ -1339,15 +1361,15 @@ class SiteReddit extends ImageboardSite {
 			text: textIsDeleted ? '' : text,
 			name: authorIsDeleted ? '' : author,
 			isDeleted: authorIsDeleted || textIsDeleted,
-			flag: _makeFlag(child['author_flair_richtext'], child),
-			time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
+			flag: _makeFlag(child['author_flair_richtext'] as List?, child),
+			time: DateTime.fromMillisecondsSinceEpoch((child['created'] as num).toInt() * 1000),
 			threadId: thread.id,
 			id: id,
 			spanFormat: PostSpanFormat.reddit,
 			attachments_: const [],
 			parentId: parentId,
-			upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
-			capcode: child['distinguished']
+			upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'] as int?,
+			capcode: child['distinguished'] as String?
 		);
 	}
 
@@ -1356,16 +1378,24 @@ class SiteReddit extends ImageboardSite {
 		final response = await client.getThreadUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
 		}), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
-		final ret = await _makeThread(response.data[0]['data']['children'][0]['data'], cancelToken: cancelToken);
+		final (opData, repliesData) = switch(response.data) {
+			[
+				{'data': {'children': [{'data': Map data}, ...]}},
+				{'data': {'children': List children}},
+				...
+			] => (data, children),
+			_ => throw PatternException(response.data)
+		};
+		final ret = await _makeThread(opData, cancelToken: cancelToken);
 		addChildren(int parentId, List<dynamic> childData, Post? parent) {
-			for (final childContainer in childData) {
-				final child = childContainer['data'];
+			for (final childContainer in childData.cast<Map>()) {
+				final child = childContainer['data'] as Map;
 				if (childContainer['kind'] == 't1') {
 					final post = _makePost(child, parentId: parentId, thread: thread);
 					ret.posts_.add(post);
 					_updateTimeEstimateData(post.id, post.time);
-					if (child['replies'] != '') {
-						addChildren(post.id, child['replies']['data']['children'], post);
+					if (child['replies'] case {'data': {'children': List children}}) {
+						addChildren(post.id, children, post);
 					}
 				}
 				else if (childContainer['kind'] == 'more') {
@@ -1373,7 +1403,7 @@ class SiteReddit extends ImageboardSite {
 						parent?.hasOmittedReplies = true;
 					}
 					for (final childId in child['children'] as List) {
-						final id = fromRedditId(childId)!;
+						final id = fromRedditId(childId as String)!;
 						ret.posts_.add(Post(
 							board: thread.board,
 							text: '',
@@ -1393,7 +1423,7 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 		}
-		addChildren(thread.id, response.data[1]['data']['children'], null);
+		addChildren(thread.id, repliesData, null);
 		return ret;
 	}
 
@@ -1417,9 +1447,9 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final Response response;
+		final Response<Map> response;
 		if (query.name != null) {
-			response = await client.getUri(Uri.https(baseUrl, '/user/${query.name}.json', {
+			response = await client.getUri<Map>(Uri.https(baseUrl, '/user/${query.name}.json', {
 				if (lastResult != null)
 					if (page > lastResult.page)
 						'after': lastResult.posts.last.redditApiId
@@ -1433,7 +1463,7 @@ class SiteReddit extends ImageboardSite {
 			), cancelToken: cancelToken);
 		}
 		else {
-			response = await client.getUri(Uri.https(baseUrl, query.boards.isEmpty ? '/search.json' : '/r/${query.boards.first}/search.json', {
+			response = await client.getUri<Map>(Uri.https(baseUrl, query.boards.isEmpty ? '/search.json' : '/r/${query.boards.first}/search.json', {
 				'q': [
 					query.query
 				].join(' '),
@@ -1450,6 +1480,7 @@ class SiteReddit extends ImageboardSite {
 				responseType: ResponseType.json
 			), cancelToken: cancelToken);
 		}
+		final data = response.data!['data'] as Map;
 		return ImageboardArchiveSearchResultPage(
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: false,
@@ -1457,15 +1488,15 @@ class SiteReddit extends ImageboardSite {
 			canJumpToArbitraryPage: false,
 			count: null,
 			maxPage: // No next-page hint AND
-			         response.data['data']['after'] == null &&
+			         data['after'] == null &&
 							 // We arrived at this page going forward
 							 (page > (lastResult?.page ?? 0)) ? page : null,
-			posts: await Future.wait((response.data['data']['children'] as List<dynamic>).map((c) async {
-				if (c['kind'] == 't3') {
-					return ImageboardArchiveSearchResult.thread(await _makeThread(c['data'], cancelToken: cancelToken));
+			posts: await Future.wait((data['children'] as List).cast<Map>().map((c) async {
+				if (c case {'kind': 't3', 'data': Map data}) {
+					return ImageboardArchiveSearchResult.thread(await _makeThread(data, cancelToken: cancelToken));
 				}
-				else if (c['kind'] == 't1') {
-					return ImageboardArchiveSearchResult.post(_makePost(c['data'], thread: ThreadIdentifier(c['data']['subreddit'], fromRedditId((c['data']['link_id'] as String).split('_').last)!)));
+				else if (c case {'kind': 't1', 'data': Map data && {'subreddit': String subreddit, 'link_id': String linkId}}) {
+					return ImageboardArchiveSearchResult.post(_makePost(data, thread: ThreadIdentifier(subreddit, fromRedditId(linkId.split('_').last)!)));
 				}
 				else {
 					throw FormatException('Unrecognized search result [kind]', c['kind']);
@@ -1591,15 +1622,16 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<ImageboardUserInfo> getUserInfo(String username) async {
-		final aboutResponse = await client.getUri(Uri.https(baseUrl, '/user/$username/about.json'), options: Options(responseType: ResponseType.json));
+		final aboutResponse = await client.getUri<Map>(Uri.https(baseUrl, '/user/$username/about.json'), options: Options(responseType: ResponseType.json));
+		final data = aboutResponse.data!['data'] as Map;
 		return ImageboardUserInfo(
 			username: username,
-			avatar: Uri.parse(unescape.convert(aboutResponse.data['data']['icon_img'])),
+			avatar: Uri.parse(unescape.convert(data['icon_img'] as String)),
 			webUrl: Uri.https(baseUrl, '/user/$username'),
-			createdAt: DateTime.fromMillisecondsSinceEpoch((aboutResponse.data['data']['created'] as num).toInt() * 1000),
-			totalKarma: aboutResponse.data['data']['total_karma'],
-			commentKarma: aboutResponse.data['data']['comment_karma'],
-			linkKarma: aboutResponse.data['data']['link_karma']
+			createdAt: DateTime.fromMillisecondsSinceEpoch((data['created'] as num).toInt() * 1000),
+			totalKarma: data['total_karma'] as int,
+			commentKarma: data['comment_karma'] as int?,
+			linkKarma: data['link_karma'] as int?
 		);
 	}
 

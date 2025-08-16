@@ -73,7 +73,7 @@ class _CaptchaMcCaptchaState extends State<CaptchaMcCaptcha> {
 		if (challengeResponse.statusCode != 200) {
 			throw CaptchaMcCaptchaException('Got status code ${challengeResponse.statusCode}');
 		}
-		final data = jsonDecode(challengeResponse.data as String);
+		final data = jsonDecode(challengeResponse.data as String) as Map;
 		final b64str = data['base64Image'] as String;
 		const kHint = ';base64,';
 		return CaptchaMcCaptchaChallenge(

@@ -123,12 +123,15 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 				imagePath = uri.path;
 			}
 		}
-		else {
-			if (idResponse.data['error'] != null) {
-				throw CaptchaLynxchanException(idResponse.data['error']['message'] as String);
+		else if (idResponse.data case Map data) {
+			if (data case {'error': {'message': String error}}) {
+				throw CaptchaLynxchanException(error);
 			}
-			id = idResponse.data['data'] as String;
+			id = data['data'] as String;
 			imagePath = '/.global/captchas/${id.substring(0, 24)}';
+		}
+		else {
+			throw Exception('idResponse.data had wrong type: ${idResponse.data}');
 		}
 		final imageResponse = await widget.site.client.get('https://${widget.site.baseUrl}$imagePath', options: Options(
 			responseType: ResponseType.bytes,

@@ -160,13 +160,13 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/index2.html'), options: Options(
+		final response = await client.getUri<List<int>>(Uri.https(baseUrl, '/index2.html'), options: Options(
 			responseType: ResponseType.bytes,
 			extra: {
 				kPriority: priority
 			}
 		), cancelToken: cancelToken);
-		final document = await parse(Uint8List.fromList(response.data as List<int>));
+		final document = await parse(Uint8List.fromList(response.data!));
 		return document.querySelectorAll('td a').where((e) {
 			return e.attributes['href']?.endsWith('futaba.htm') ?? false;
 		}).map((e) {

@@ -50,16 +50,16 @@ class TranslationException implements Exception {
 
 Future<String> translateHtml(String html, {required String toLanguage}) async {
 	final compressed = compressHTML(html);
-	final response = await Settings.instance.client.get(_translationApiRoot, queryParameters: {
+	final response = await Settings.instance.client.get<Map>(_translationApiRoot, queryParameters: {
 		'html': compressed.html,
 		'to': toLanguage
 	}, options: Options(
 		responseType: ResponseType.json
 	));
-	if (response.data['error'] case String error) {
+	if (response.data?['error'] case String error) {
 		throw TranslationException(error);
 	}
-	return compressed.decompressTranslation(response.data['html'] as String);
+	return compressed.decompressTranslation(response.data!['html'] as String);
 }
 
 Future<List<String>> batchTranslate(List<String> input, {required String toLanguage}) async {

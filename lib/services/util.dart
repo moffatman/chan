@@ -188,6 +188,26 @@ class UnsafeParseException<S, T> extends ExtendedException {
 	String toString() => 'UnsafeParseException<$S, $T>(error: $error)';
 }
 
+class PatternException extends ExtendedException {
+	final Object? object;
+	final String error;
+
+	PatternException(this.object, [this.error = 'Data in wrong shape']) {
+		try {
+			additionalFiles['object.json'] = utf8.encode(Hive.encodeJson(object));
+		}
+		catch (e, st) {
+			additionalFiles['object.json.error.txt'] = utf8.encode('$e\n\n$st');
+			additionalFiles['object.txt'] = utf8.encode(object.toString());
+		}
+	}
+
+	@override
+	bool get isReportable => true;
+	@override
+	String toString() => 'PatternException(error: $error)';
+}
+
 T unsafe<S, T>(S input, T Function() f) {
 	try {
 		return f();

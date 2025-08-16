@@ -36,10 +36,10 @@ class JsonCache {
 			if (Platform.isIOS && isDevelopmentBuild) {
 				platform += '-dev';
 			}
-			final response = await Settings.instance.client.get('$contentSettingsApiRoot/sites', queryParameters: {
+			final response = await Settings.instance.client.get<Map>('$contentSettingsApiRoot/sites', queryParameters: {
 				'platform': platform
 			}, options: Options(responseType: ResponseType.json));
-			return (response.data['data'] as Map).cast<String, Map>();
+			return (response.data!['data'] as Map).cast<String, Map>();
 		},
 		caster: (data) => (data as Map).cast<String, Map>(),
 		defaultValue: null // force download
@@ -53,7 +53,7 @@ class JsonCache {
 				responseType: ResponseType.plain
 			));
 			final data = jsonDecode(response.data as String) as List;
-			return List<String>.from(data.expand((x) => (x['patterns'] as List<dynamic>).cast<String>()));
+			return List<String>.from(data.cast<Map>().expand((x) => (x['patterns'] as List).cast<String>()));
 		},
 		caster: (list) => (list as List).cast<String>(),
 		updateOdds: 0.1 // Update on 10% of launches

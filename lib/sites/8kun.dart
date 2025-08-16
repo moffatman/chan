@@ -59,7 +59,7 @@ class Site8Kun extends SiteLainchan2 {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
-		return (jsonDecode(response.data as String)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
+		return ((jsonDecode(response.data as String) as Map)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
 			name: board.key,
 			title: board.value['title'] as String,
 			isWorksafe: board.value['sfw'] == 1,
@@ -93,7 +93,7 @@ class Site8Kun extends SiteLainchan2 {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
-		return (jsonDecode(response.data as String)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
+		return ((jsonDecode(response.data as String) as Map)['boards'] as Map).cast<String, Map>().entries.map((board) => ImageboardBoard(
 			name: board.key,
 			title: board.value['title'] as String,
 			isWorksafe: board.value['sfw'] == 1,
@@ -114,8 +114,8 @@ class Site8Kun extends SiteLainchan2 {
 
 	@override
 	@protected
-	ImageboardFlag? makeFlag(dynamic data) {
-		if ((data['country'], data['country_name']) case (String code, String name)) {
+	ImageboardFlag? makeFlag(Map data) {
+		if (data case {'country': String code, 'country_name': String name}) {
 			return ImageboardFlag(
 				name: name,
 				imageUrl: Uri.https(imageUrl, '$basePath/static/flags/${code.toLowerCase()}.png').toString(),

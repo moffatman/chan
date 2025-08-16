@@ -1,4 +1,3 @@
-// ignore_for_file: argument_type_not_assignable
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
@@ -192,8 +191,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 			cancelToken: cancelToken
 		);
 		String? title;
-		if (response.data is Map) {
-			title = response.data['title'] as String?;
+		if (response.data case Map map) {
+			title = map['title'] as String?;
 		}
 		else if (response.data is String) {
 			title = parse(response.data).querySelector('title')?.text;
@@ -203,8 +202,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 			throw HTTPStatusException.fromResponse(response);
 		}
 		if (title != 'Success') {
-			if (response.data is Map) {
-				throw _makeException(response.data);
+			if (response.data case Map map) {
+				throw _makeException(map);
 			}
 			// HTML <title>
 			throw DeletionFailedException(title);
@@ -220,7 +219,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 		int page = 1;
 		int maxPage = 1;
 		while (page <= maxPage) {
-			final response = await client.getUri(Uri.https(baseUrl, '/boards.json', {'page': page.toString()}), options: Options(
+			final response = await client.getUri<Map>(Uri.https(baseUrl, '/boards.json', {'page': page.toString()}), options: Options(
 				responseType: ResponseType.json,
 				headers: {
 					'accept': '*/*',
@@ -232,15 +231,15 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 				}
 			), cancelToken: cancelToken);
 			page++;
-			maxPage = response.data['maxPage'] as int;
-			list.addAll((response.data['boards'] as List).where((board) => board['webring'] != true).map((board) => ImageboardBoard(
-				name: board['_id'],
-				title: board['settings']['name'],
-				isWorksafe: board['settings']['sfw'],
+			maxPage = response.data!['maxPage'] as int;
+			list.addAll((response.data!['boards'] as List).cast<Map>().where((board) => board['webring'] != true).map((board) => ImageboardBoard(
+				name: board['_id'] as String,
+				title: (board['settings'] as Map)['name'] as String,
+				isWorksafe: (board['settings'] as Map)['sfw'] as bool,
 				webmAudioAllowed: true,
 				maxImageSizeBytes: 16000000,
 				maxWebmSizeBytes: 16000000,
-				popularity: board['sequence_value']
+				popularity: board['sequence_value'] as int?
 			)));
 			// The server has some bad caching, you will keep getting the same page if you don't wait
 			if (cancelToken != null) {
@@ -271,14 +270,15 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread, {CancelToken? cancelToken}) async => _getCaptcha(deletingCaptcha);
 
 	Post _makePost(Map post) {
-		final threadId = post['thread'] ?? post['postId'] /* op */;
+		final postId = post['postId'] as int;
+		final threadId = post['thread'] as int? ?? postId /* op */;
 		return Post(
-			id: post['postId'],
+			id: postId,
 			threadId: threadId,
-			board: post['board'],
-			text: post['message'] ?? '',
-			name: post['name'],
-			time: DateTime.fromMillisecondsSinceEpoch(post['u']),
+			board: post['board'] as String,
+			text: post['message'] as String? ?? '',
+			name: post['name'] as String,
+			time: DateTime.fromMillisecondsSinceEpoch(post['u'] as int),
 			spanFormat: PostSpanFormat.jsChan,
 			attachments_: (post['files'] as List).cast<Map>().map((file) {
 				final sizeParts = (file['geometryString'] as String?)?.split('x');
@@ -291,17 +291,17 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 						'.mp3' => AttachmentType.mp3,
 						_ => AttachmentType.image
 					},
-					md5: file['hash'],
-					ext: file['extension'],
-					board: post['board'],
-					id: file['filename'],
-					filename: file['originalFilename'],
+					md5: file['hash'] as String,
+					ext: file['extension'] as String,
+					board: post['board'] as String,
+					id: file['filename'] as String,
+					filename: file['originalFilename'] as String,
 					url: Uri.https(baseUrl, '/file/${file['hash']}${file['extension']}').toString(),
 					thumbnailUrl: Uri.https(baseUrl, '/file/thumb/${file['hash']}${file['thumbextension']}').toString(),
 					width: width,
 					height: height,
 					threadId: threadId,
-					sizeInBytes: file['size']
+					sizeInBytes: file['size'] as int?
 				);
 			}).toList()
 		);
@@ -312,8 +312,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 		return Thread(
 			board: op.board,
 			id: op.threadId,
-			replyCount: thread['replyposts'],
-			imageCount: thread['replyfiles'],
+			replyCount: thread['replyposts'] as int,
+			imageCount: thread['replyfiles'] as int,
 			title: (thread['subject'] as String?)?.nonEmptyOrNull,
 			isSticky: thread['sticky'] != 0,
 			time: op.time,
@@ -327,12 +327,12 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
+		final response = await client.getUri<List>(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
 			extra: {
 				kPriority: priority
 			}
 		), cancelToken: cancelToken);
-		return (response.data as List).cast<Map>().map(_makeThread).toList();
+		return response.data!.cast<Map>().map(_makeThread).toList();
 	}
 
 	@override
@@ -344,10 +344,10 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 		);
 
 	@override
-	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
-	}) async => _makeThread(response.data);
+	}) async => _makeThread(response.data as Map);
 
 	@override
 	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
@@ -376,7 +376,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final password = makeRandomBase64String(28);
 		final file = post.file;
-		final response = await client.postUri(
+		final response = await client.postUri<Map>(
 			Uri.https(baseUrl, '/forms/board/${post.board}/post'),
 			data: FormData.fromMap({
 				'thread': post.threadId?.toString(),
@@ -411,7 +411,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 		if (response.data is! Map) {
 			throw HTTPStatusException.fromResponse(response);
 		}
-		final postId = response.data['postId'] as int?;
+		final postId = response.data?['postId'] as int?;
 		if (postId != null) {
 			return PostReceipt(
 				id: postId,
@@ -422,7 +422,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 				post: post
 			);
 		}
-		throw _makeException(response.data);
+		throw _makeException(response.data!);
 	}
 
 	@override

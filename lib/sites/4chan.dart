@@ -1,4 +1,4 @@
-// ignore_for_file: file_names, argument_type_not_assignable, invalid_assignment
+// ignore_for_file: file_names
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -364,10 +364,10 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 					}
 					else if (node.classes.contains('fortune')) {
 						final css = {
-							for (final pair in (node.attributes['style']?.split(';') ?? [])) pair.split(':').first: pair.split(':').last
+							for (final pair in (node.attributes['style']?.split(';') ?? <String>[])) pair.split(':').first: pair.split(':').last
 						};
-						if (css['color'] != null) {
-							elements.add(PostColorSpan(makeSpan(board, threadId, node.innerHtml), colorToHex(css['color'])));
+						if (css['color'] case String color) {
+							elements.add(PostColorSpan(makeSpan(board, threadId, node.innerHtml), colorToHex(color)));
 						}
 						else {
 							elements.add(makeSpan(board, threadId, node.innerHtml));
@@ -438,27 +438,27 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		return PostNodeSpan(elements.toList(growable: false));
 	}
 
-	ImageboardFlag? _makeFlag(dynamic data, String board) => unsafe(data, () {
-		if (data['country'] != null) {
+	ImageboardFlag? _makeFlag(Map data, String board) => unsafe(data, () {
+		if (data case {'country': String country, 'country_name': String countryName}) {
 			return ImageboardFlag(
-				name: unescape.convert(data['country_name']),
-				imageUrl: Uri.https(staticUrl, '/image/country/${data['country'].toLowerCase()}.gif').toString(),
+				name: unescape.convert(countryName),
+				imageUrl: Uri.https(staticUrl, '/image/country/${country.toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
 		}
-		else if (data['troll_country'] != null) {
+		else if (data case {'troll_country': String trollCountry, 'country_name': String countryName}) {
 			return ImageboardFlag(
-				name: unescape.convert(data['country_name']),
-				imageUrl: Uri.https(staticUrl, '/image/country/troll/${data['troll_country'].toLowerCase()}.gif').toString(),
+				name: unescape.convert(countryName),
+				imageUrl: Uri.https(staticUrl, '/image/country/troll/${trollCountry.toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
 		}
-		else if (data['board_flag'] != null) {
+		else if (data case {'board_flag': String boardFlag, 'flag_name': String flagName}) {
 			return ImageboardFlag(
-				name: unescape.convert(data['flag_name']),
-				imageUrl: Uri.https(staticUrl, '/image/flags/$board/${data['board_flag'].toLowerCase()}.gif').toString(),
+				name: unescape.convert(flagName),
+				imageUrl: Uri.https(staticUrl, '/image/flags/$board/${boardFlag.toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
@@ -466,23 +466,23 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		return null;
 	});
 
-	Post _makePost(String board, int threadId, dynamic data) => unsafe(data, () {
+	Post _makePost(String board, int threadId, Map data) => unsafe(data, () {
 		final a = _makeAttachment(board, threadId, data);
 		return Post(
 			board: board,
-			text: data['com'] ?? '',
-			name: unescape.convert(data['name'] ?? ''),
-			trip: data['trip'],
-			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
-			id: data['no'],
+			text: data['com'] as String? ?? '',
+			name: unescape.convert(data['name'] as String? ?? ''),
+			trip: data['trip'] as String?,
+			time: DateTime.fromMillisecondsSinceEpoch((data['time'] as int) * 1000),
+			id: data['no'] as int,
 			threadId: threadId,
 			attachments_: a == null ? const [] : [a].toList(growable: false),
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.chan4,
 			flag: _makeFlag(data, board),
-			posterId: data['id'],
-			passSinceYear: data['since4pass'],
-			capcode: data['capcode']
+			posterId: data['id'] as String?,
+			passSinceYear: data['since4pass'] as int?,
+			capcode: data['capcode'] as String?
 		);
 	});
 	static AttachmentType _getAttachmentType(String ext) => switch (ext) {
@@ -492,12 +492,12 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		'.swf' => AttachmentType.swf,
 		_ => AttachmentType.image
 	};
-	Attachment? _makeAttachment(String board, int threadId, dynamic data) => unsafe(data, () {
+	Attachment? _makeAttachment(String board, int threadId, Map data) => unsafe(data, () {
 		if (data['tim'] != null) {
-			final int id = data['tim'];
-			final String ext = data['ext'];
-			final type = _getAttachmentType(data['ext']);
-			final filename = unescape.convert(data['filename'] ?? '') + (data['ext'] ?? '');
+			final id = data['tim'] as int;
+			final ext = data['ext'] as String;
+			final type = _getAttachmentType(ext);
+			final filename = unescape.convert(data['filename'] as String? ?? '') + ext;
 			return Attachment(
 				id: id.toString(),
 				type: type,
@@ -512,12 +512,12 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 					AttachmentType.swf => '',
 					_ => Uri.https(imageUrl, '/$board/${id}s.jpg').toString()
 				},
-				md5: data['md5'],
+				md5: data['md5'] as String,
 				spoiler: data['spoiler'] == 1,
-				width: data['w'],
-				height: data['h'],
+				width: data['w'] as int?,
+				height: data['h'] as int?,
 				threadId: threadId,
-				sizeInBytes: data['fsize']
+				sizeInBytes: data['fsize'] as int?
 			);
 		}
 		return null;
@@ -525,31 +525,32 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 
 
 	@override
-	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {
 		final data = response.data as Map;
-		final String? title = data['posts']?[0]?['sub'];
-		final a = _makeAttachment(thread.board, thread.id, data['posts'][0]);
+		final op = ((data['posts'] as List)[0] as Map);
+		final title = op['sub'] as String?;
+		final a = _makeAttachment(thread.board, thread.id, op);
 		final output = Thread(
 			board: thread.board,
 			isDeleted: false,
-			replyCount: data['posts'][0]['replies'],
-			imageCount: data['posts'][0]['images'],
-			isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
-			isLocked: data['posts'][0]['closed'] == 1,
-			posts_: (data['posts'] ?? []).map<Post>((postData) {
-				return _makePost(thread.board, thread.id, postData);
+			replyCount: op['replies'] as int,
+			imageCount: op['images'] as int,
+			isArchived: op['archived'] == 1,
+			isLocked: op['closed'] == 1,
+			posts_: (data['posts'] as List? ?? []).map<Post>((postData) {
+				return _makePost(thread.board, thread.id, postData as Map);
 			}).toList(),
-			id: data['posts'][0]['no'],
+			id: op['no'] as int,
 			attachments: a == null ? [] : [a],
-			attachmentDeleted: data['posts'][0]['filedeleted'] == 1,
+			attachmentDeleted: op['filedeleted'] == 1,
 			title: (title == null) ? null : unescape.convert(title),
-			isSticky: data['posts'][0]['sticky'] == 1,
-			time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
-			uniqueIPCount: data['posts'][0]['unique_ips'],
-			customSpoilerId: data['posts'][0]['custom_spoiler']
+			isSticky: op['sticky'] == 1,
+			time: DateTime.fromMillisecondsSinceEpoch((op['time'] as int) * 1000),
+			uniqueIPCount: op['unique_ips'] as int?,
+			customSpoilerId: op['custom_spoiler'] as int?
 		);
 		if (output.posts_.length == output.uniqueIPCount) {
 			for (int i = 0; i < output.posts_.length; i++) {
@@ -612,7 +613,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			final id = int.parse(tr.children.first.text);
 			final cachedJson = cache[id];
 			if (cachedJson != null) {
-				return _makeThread(board, jsonDecode(cachedJson), isArchived: true);
+				return _makeThread(board, jsonDecode(cachedJson) as Map, isArchived: true);
 			}
 			final excerptNode = tr.children[1];
 			String? subject;
@@ -647,24 +648,24 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 		}).toList();
 	}
 
-	Thread _makeThread(String board, dynamic threadData, {int? currentPage, bool isArchived = false}) => unsafe(threadData, () {
-		final String? title = threadData['sub'];
-		final int threadId = threadData['no'];
+	Thread _makeThread(String board, Map threadData, {int? currentPage, bool isArchived = false}) => unsafe(threadData, () {
+		final title = threadData['sub'] as String?;
+		final threadId = threadData['no'] as int;
 		final Post threadAsPost = _makePost(board, threadId, threadData);
-		final List<Post> lastReplies = ((threadData['last_replies'] ?? []) as List<dynamic>).map((postData) => _makePost(board, threadId, postData)).toList();
+		final List<Post> lastReplies = ((threadData['last_replies'] ?? []) as List).map((postData) => _makePost(board, threadId, postData as Map)).toList();
 		final a = _makeAttachment(board, threadId, threadData);
 		return Thread(
 			board: board,
 			id: threadId,
-			replyCount: threadData['replies'],
-			imageCount: threadData['images'],
+			replyCount: threadData['replies'] as int,
+			imageCount: threadData['images'] as int,
 			attachments: a == null ? [] : [a],
 			posts_: [threadAsPost, ...lastReplies],
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: threadData['sticky'] == 1,
 			isArchived: isArchived,
 			isLocked: threadData['closed'] == 1,
-			time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
+			time: DateTime.fromMillisecondsSinceEpoch((threadData['time'] as int) * 1000),
 			currentPage: currentPage
 		);
 	});
@@ -689,9 +690,9 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			}
 		}
 		final List<Thread> threads = [];
-		for (final page in response.data as List) {
+		for (final page in (response.data as List).cast<Map>()) {
 			for (final threadData in page['threads'] as List) {
-				threads.add(_makeThread(board, threadData, currentPage: page['page']));
+				threads.add(_makeThread(board, threadData as Map, currentPage: page['page'] as int?));
 			}
 		}
 		return threads;
@@ -704,22 +705,23 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
-		return (response.data['boards'] as List<dynamic>).map(wrapUnsafe((board) {
+		return ((response.data as Map)['boards'] as List).cast<Map>().map(wrapUnsafe((board) {
+			final cooldowns = board['cooldowns'] as Map? ?? {};
 			return ImageboardBoard(
-				name: board['board'],
-				title: board['title'],
+				name: board['board'] as String,
+				title: board['title'] as String,
 				isWorksafe: board['ws_board'] == 1,
 				webmAudioAllowed: board['webm_audio'] == 1,
-				maxCommentCharacters: board['max_comment_chars'],
-				maxImageSizeBytes: board['max_filesize'],
-				maxWebmSizeBytes: board['max_webm_filesize'],
-				maxWebmDurationSeconds: board['max_webm_duration'],
-				threadCommentLimit: board['bump_limit'],
-				threadImageLimit: board['image_limit'],
-				pageCount: board['pages'],
-				threadCooldown: board['cooldowns']?['threads'],
-				replyCooldown: board['cooldowns']?['replies'],
-				imageCooldown: board['cooldowns']?['images'],
+				maxCommentCharacters: board['max_comment_chars'] as int?,
+				maxImageSizeBytes: board['max_filesize'] as int?,
+				maxWebmSizeBytes: board['max_webm_filesize'] as int?,
+				maxWebmDurationSeconds: board['max_webm_duration'] as int?,
+				threadCommentLimit: board['bump_limit'] as int?,
+				threadImageLimit: board['image_limit'] as int?,
+				pageCount: board['pages'] as int?,
+				threadCooldown: cooldowns['threads'] as int?,
+				replyCooldown: cooldowns['replies'] as int?,
+				imageCooldown: cooldowns['images'] as int?,
 				spoilers: board['spoilers'] == 1
 			);
 		})).toList();

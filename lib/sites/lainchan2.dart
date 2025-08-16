@@ -130,7 +130,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	}
 
 	@override
-	Future<Thread> makeThread(ThreadIdentifier thread, Response<dynamic> response, {
+	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {

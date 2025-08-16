@@ -42,19 +42,20 @@ class Site8Chan extends SiteLynxchan {
 
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		final blockResponse = await client.postUri(Uri.https(baseUrl, '/blockBypass.js', {'json': '1'}), options: Options(
+		final blockResponse = await client.postUri<Map>(Uri.https(baseUrl, '/blockBypass.js', {'json': '1'}), options: Options(
 			responseType: ResponseType.json,
 			extra: {
 				kPriority: RequestPriority.interactive
 			}
 		), cancelToken: cancelToken);
-		if (blockResponse.data['status'] == 'error') {
-			throw PostFailedException(blockResponse.data['data'] as String);
+		final data = blockResponse.data!;
+		if (data case {'status': 'error', 'data': String error}) {
+			throw PostFailedException(error);
 		}
-		if (blockResponse.data['data']['valid'] != true) {
+		if ((data['data'] as Map)['valid'] != true) {
 			if (captchaSolution is LynxchanCaptchaSolution) {
 				// Register the existing captcha
-				final submit1Response = await client.postUri(Uri.https(baseUrl, '/solveCaptcha.js', {'json': '1'}), data: {
+				final submit1Response = await client.postUri<Map>(Uri.https(baseUrl, '/solveCaptcha.js', {'json': '1'}), data: {
 					'captchaId': captchaSolution.id,
 					'answer': captchaSolution.answer
 				}, options: Options(
@@ -62,8 +63,8 @@ class Site8Chan extends SiteLynxchan {
 						kPriority: RequestPriority.interactive
 					}
 				), cancelToken: cancelToken);
-				if (submit1Response.data['status'] == 'error') {
-					throw PostFailedException(submit1Response.data['data'] as String);
+				if (submit1Response.data case {'status': 'error', 'data': String error}) {
+					throw PostFailedException(error);
 				}
 			}
 			throw AdditionalCaptchaRequiredException(
@@ -72,7 +73,7 @@ class Site8Chan extends SiteLynxchan {
 					redirectGateway: _kRedirectGateway
 				),
 				onSolved: (solution2, cancelToken2) async {
-					final response = await client.postUri(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
+					final response = await client.postUri<Map>(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
 						if (solution2 is LynxchanCaptchaSolution) 'captcha': solution2.answer
 					}, options: Options(
 						responseType: ResponseType.json,
@@ -80,13 +81,13 @@ class Site8Chan extends SiteLynxchan {
 							kPriority: RequestPriority.interactive
 						}
 					), cancelToken: cancelToken2);
-					if (response.data['status'] == 'error') {
-						throw PostFailedException(response.data['data'] as String);
+					if (response.data case {'status': 'error', 'data': String error}) {
+						throw PostFailedException(error);
 					}
 				}
 			);
 		}
-		if (blockResponse.data['data']['validated'] == false) {
+		if (data case {'data': {'validated': false}}) {
 			await solveJavascriptChallenge<void>(
 				url: Uri.parse(getWebUrlImpl(post.board, post.threadId)),
 				priority: RequestPriority.interactive,

@@ -1,4 +1,3 @@
-// ignore_for_file: argument_type_not_assignable
 import 'dart:math';
 
 import 'package:chan/models/search.dart';
@@ -231,26 +230,29 @@ class SiteHackerNews extends ImageboardSite {
 			case 'job':
 			case 'poll':
 				return _HNStory(
-					by: d['author'] ?? '',
+					by: d['author'] as String? ?? '',
 					descendants: children.fold<int>(0, (count, child) => count + _countDescendants(child)), 
-					id: d['id'],
+					id: d['id'] as int,
 					children: children,
 					pollOptions: (d['options'] as List?)?.cast<Map>().map((option) => _HNPollOption(
-						text: option['text'],
-						votes: option['points']
+						text: option['text'] as String,
+						votes: option['points'] as int
 					)).toList() ?? [],
-					score: d['points'],
-					text: d['text'],
-					time: DateTime.fromMillisecondsSinceEpoch(d['created_at_i'] * 1000),
-					title: d['title'],
+					score: d['points'] as int?,
+					text: d['text'] as String?,
+					time: DateTime.fromMillisecondsSinceEpoch((d['created_at_i'] as int) * 1000),
+					title: d['title'] as String?,
 					type: {
 						'story': _HNStoryType.normal,
 						'job': _HNStoryType.job,
 						'poll': _HNStoryType.poll
 					}[d['type']]!,
-					url: d['url'] != null ? Uri.parse(d['url']) : null,
-					dead: d['dead'] ?? false,
-					deleted: d['deleted'] ?? false
+					url: switch (d['url']) {
+						String u => Uri.parse(u),
+						_ => null
+					},
+					dead: d['dead'] as bool? ?? false,
+					deleted: d['deleted'] as bool? ?? false
 				);
 			case 'comment':
 				if (d['story_id'] == null) {
@@ -258,16 +260,16 @@ class SiteHackerNews extends ImageboardSite {
 					return null;
 				}
 				return _HNComment(
-					by: d['author'] ?? '',
-					id: d['id'],
+					by: d['author'] as String? ?? '',
+					id: d['id'] as int,
 					children: children,
-					parent: d['parent_id'],
-					score: d['points'],
-					story: d['story_id'],
-					text: d['text'] ?? '',
-					time: DateTime.fromMillisecondsSinceEpoch(d['created_at_i'] * 1000),
-					dead: d['dead'] ?? false,
-					deleted: d['deleted'] ?? false
+					parent: d['parent_id'] as int,
+					score: d['points'] as int?,
+					story: d['story_id'] as int,
+					text: d['text'] as String? ?? '',
+					time: DateTime.fromMillisecondsSinceEpoch((d['created_at_i'] as int) * 1000),
+					dead: d['dead'] as bool? ?? false,
+					deleted: d['deleted'] as bool? ?? false
 				);
 			default:
 				throw Exception('Unknown HN object type "${d['type']}?"');
@@ -276,11 +278,11 @@ class SiteHackerNews extends ImageboardSite {
 
 	Future<_HNObject> _getAlgolia(int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getThreadUri(Uri.https('hn.algolia.com', '/api/v1/items/$id'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
-		return (await _makeHNObjectAlgolia(response.data, cancelToken: cancelToken))!;
+		return (await _makeHNObjectAlgolia(response.data as Map, cancelToken: cancelToken))!;
 	}
 
 	Future<Thread?> _getThreadForCatalog(int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.get('https://hacker-news.firebaseio.com/v0/item/$id.json', options: Options(
+		final response = await client.get<Map>('https://hacker-news.firebaseio.com/v0/item/$id.json', options: Options(
 			extra: {
 				kPriority: priority
 			}
@@ -289,7 +291,7 @@ class SiteHackerNews extends ImageboardSite {
 			// Missing for some reason
 			return null;
 		}
-		final d = response.data as Map;
+		final d = response.data!;
 		String text;
 		switch (d['type']) {
 			case 'story':
@@ -299,42 +301,45 @@ class SiteHackerNews extends ImageboardSite {
 				text = d['text'] as String? ?? d['url'] as String? ?? '';
 				break;
 			case 'poll':
-				final responses = await Future.wait<Map>(d['parts'].map((int part) async {
-					return (await client.get('https://hacker-news.firebaseio.com/v0/item/$part.json', options: Options(
+				final responses = await Future.wait<Map>((d['parts'] as List).cast<int>().map((part) async {
+					return (await client.get<Map>('https://hacker-news.firebaseio.com/v0/item/$part.json', options: Options(
 						extra: {
 							kPriority: priority
 						}
-					))).data;
+					))).data!;
 				}));
 				text = '${d['text']}<ul>${responses.map((r) => '<li>${r['text']} - ${r['score']}</li>').join('\n')}</ul>';
 				break;
 			default:
 				throw Exception('Unexpected HN item type "${d['type']}"');
 		}
-		final Uri? url = d['url'] == null ? null : Uri.parse(d['url'] ?? '');
+		final Uri? url = switch (d['url']) {
+			String u => Uri.parse(u),
+			_ => null
+		};
 		final op = Post(
 			board: '',
 			text: text,
-			name: d['by'],
-			time: DateTime.fromMillisecondsSinceEpoch(d['time'] * 1000),
+			name: d['by'] as String,
+			time: DateTime.fromMillisecondsSinceEpoch((d['time'] as int) * 1000),
 			threadId: id,
 			id: id,
 			spanFormat: PostSpanFormat.hackerNews,
 			attachments_: [
 				if (url != null) _makeAttachment(id, url)
 			],
-			upvotes: d['score']
+			upvotes: d['score'] as int?
 		);
 		return Thread(
 			posts_: [op],
 			imageCount: 0,
 			id: id,
 			board: '',
-			title: d['title'],
+			title: d['title'] as String?,
 			isSticky: false,
 			time: op.time,
 			attachments: op.attachments_,
-			replyCount: d['descendants'] ?? 0,
+			replyCount: d['descendants'] as int? ?? 0,
 			isArchived: DateTime.now().difference(op.time) > const Duration(days: 14)
 		);
 	}
@@ -459,12 +464,12 @@ class SiteHackerNews extends ImageboardSite {
 				CatalogVariant.hackerNewsShow: 'showstories',
 				CatalogVariant.hackerNewsJobs: 'jobstories',
 			}[variant]!;
-			final response = await client.get('https://hacker-news.firebaseio.com/v0/$name.json', options: Options(
+			final response = await client.get<List<int>>('https://hacker-news.firebaseio.com/v0/$name.json', options: Options(
 				extra: {
 					kPriority: priority
 				}
 			), cancelToken: cancelToken);
-			data = (response.data as List).cast<int>();
+			data = response.data!;
 		}
 		_lastCatalogIds[variant] = data;
 		return (await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, priority: priority, cancelToken: cancelToken)))).tryMap((e) => e).toList();
@@ -613,7 +618,7 @@ class SiteHackerNews extends ImageboardSite {
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.get('https://hn.algolia.com/api/v1/search', queryParameters: {
+		final response = await client.get<Map>('https://hn.algolia.com/api/v1/search', queryParameters: {
 			'query': query.query,
 			'page': page - 1,
 			if (query.name != null) 'tags': 'author_${query.name}'
@@ -623,10 +628,11 @@ class SiteHackerNews extends ImageboardSite {
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
+		final data = response.data!;
 		return ImageboardArchiveSearchResultPage(
-			page: response.data['page'] + 1,
-			maxPage: response.data['nbPages'],
-			count: switch ((response.data['nbHits'], response.data['hitsPerPage'], response.data['nbPages'])) {
+			page: (data['page'] as int) + 1,
+			maxPage: data['nbPages'] as int?,
+			count: switch ((data['nbHits'], data['hitsPerPage'], data['nbPages'])) {
 				(int nbHits, int hitsPerPage, int nbPages) => min(nbHits, hitsPerPage * nbPages),
 				(_, int hitsPerPage, int nbPages) => hitsPerPage * nbPages,
 				(int nbHits, _, _) => nbHits,
@@ -636,15 +642,15 @@ class SiteHackerNews extends ImageboardSite {
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: false,
 			archive: this,
-			posts: (response.data['hits'] as List).map((hit) {
-				final id = int.parse(hit['objectID']);
+			posts: (data['hits'] as List).cast<Map>().map((hit) {
+				final id = int.parse(hit['objectID'] as String);
 				if (hit['comment_text'] != null) {
 					return ImageboardArchiveSearchResult.post(Post(
 						board: '',
-						text: hit['comment_text'],
-						name: hit['author'],
-						time: DateTime.fromMillisecondsSinceEpoch(hit['created_at_i'] * 1000),
-						threadId: hit['story_id'],
+						text: hit['comment_text'] as String,
+						name: hit['author'] as String,
+						time: DateTime.fromMillisecondsSinceEpoch((hit['created_at_i'] as int) * 1000),
+						threadId: hit['story_id'] as int,
 						id: id,
 						spanFormat: PostSpanFormat.hackerNews,
 						attachments_: []
@@ -652,23 +658,23 @@ class SiteHackerNews extends ImageboardSite {
 				}
 				final op = Post(
 					board: '',
-					text: hit['story_text'] ?? '',
-					name: hit['author'],
-					time: DateTime.fromMillisecondsSinceEpoch(hit['created_at_i'] * 1000),
+					text: hit['story_text'] as String? ?? '',
+					name: hit['author'] as String,
+					time: DateTime.fromMillisecondsSinceEpoch((hit['created_at_i'] as int) * 1000),
 					threadId: id,
 					id: id,
 					spanFormat: PostSpanFormat.hackerNews,
 					attachments_: [
-						if (hit['url'] != null) _makeAttachment(id, Uri.parse(hit['url']!))
+						if (hit['url'] case String u) _makeAttachment(id, Uri.parse(u))
 					]
 				);
 				return ImageboardArchiveSearchResult.thread(Thread(
 					posts_: [op],
-					replyCount: hit['num_comments'],
+					replyCount: hit['num_comments'] as int,
 					imageCount: 0,
 					id: op.id,
 					board: '',
-					title: hit['title'],
+					title: hit['title'] as String?,
 					isSticky: false,
 					time: op.time,
 					attachments: op.attachments_,
@@ -696,17 +702,17 @@ class SiteHackerNews extends ImageboardSite {
 
 	@override
 	Future<ImageboardUserInfo> getUserInfo(String username) async {
-		final response = await client.get('https://hn.algolia.com/api/v1/users/$username', options: Options(responseType: ResponseType.json));
-		if (response.data['error'] != null) {
-			throw Exception(response.data['error']);
+		final response = await client.get<Map>('https://hn.algolia.com/api/v1/users/$username', options: Options(responseType: ResponseType.json));
+		if (response.data?['error'] case String error) {
+			throw Exception(error);
 		}
 		return ImageboardUserInfo(
 			username: username,
 			webUrl: Uri.https('news.ycombinator.com', '/user', {
 				'id': username
 			}),
-			createdAt: DateTime.tryParse(response.data['created_at'] ?? ''),
-			totalKarma: response.data['karma']
+			createdAt: DateTime.tryParse(response.data!['created_at'] as String? ?? ''),
+			totalKarma: response.data!['karma'] as int
 		);
 	}
 
