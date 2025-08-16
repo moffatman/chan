@@ -399,10 +399,11 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 				);
 			}).toList() ?? const []
 		);
+		final replies = (obj['posts'] as List?)?.cast<Map>().map((obj) => _makePost(board, op.id, obj['postId'] as int, obj)).toList() ?? [];
 		return Thread(
-			posts_: [op],
-			replyCount: obj['postCount'] as int? ?? ((obj['omittedPosts'] as int? ?? obj['ommitedPosts'] as int? ?? 0) + ((obj['posts'] as List?)?.length ?? 0)),
-			imageCount: obj['fileCount'] as int? ?? ((obj['omittedFiles'] as int? ?? 0) + ((obj['posts'] as List?)?.cast<Map>().fold<int>(0, (c, p) => c + (p['files'] as List).length) ?? 0)),
+			posts_: [op, ...replies],
+			replyCount: obj['postCount'] as int? ?? ((obj['omittedPosts'] as int? ?? obj['ommitedPosts'] as int? ?? 0) + replies.length),
+			imageCount: obj['fileCount'] as int? ?? ((obj['omittedFiles'] as int? ?? 0) + (replies.fold<int>(0, (c, p) => c + p.attachments_.length))),
 			id: op.id,
 			board: board,
 			title: (obj['subject'] as String?)?.unescapeHtml,
