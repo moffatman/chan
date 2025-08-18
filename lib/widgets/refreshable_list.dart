@@ -3569,6 +3569,7 @@ class RefreshableListFooter extends StatelessWidget {
 								),
 							),
 							if (!updatingNow && remedy != null) ...[
+								const SizedBox(height: 16),
 								AdaptiveFilledButton(
 									child: Text(remedy!.$1),
 									onPressed: () async {
