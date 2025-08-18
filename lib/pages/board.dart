@@ -35,6 +35,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/pull_tab.dart';
+import 'package:chan/widgets/segmented.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/sliver_staggered_grid.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -917,6 +918,7 @@ class BoardPageState extends State<BoardPage> {
 			else if (variant.sortingMethod == ThreadSortingMethod.alphabeticByTitle)
 				(a, b) => a.compareTo(b)
 		];
+		final radius = settings.materialStyle ? const Radius.circular(4) : const Radius.circular(8);
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			bar: AdaptiveBar(
@@ -1288,6 +1290,7 @@ class BoardPageState extends State<BoardPage> {
 																			return const SizedBox.shrink();
 																		}
 																		final theme = context.watch<SavedTheme>();
+																		final primaryColorWithBrightness60 = theme.primaryColorWithBrightness(0.6);
 																		final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
 																		scrollAnimationDuration() => Settings.instance.showAnimations ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
 																		scrollToTop() => _listController.animateToIndex(0, duration: scrollAnimationDuration());
@@ -1301,7 +1304,7 @@ class BoardPageState extends State<BoardPage> {
 																						padding: const EdgeInsets.all(8),
 																						color: primaryColorWithBrightness80,
 																						onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
-																						child: Icon(CupertinoIcons.square_grid_2x2, size: 24, color: theme.backgroundColor)
+																						child: Icon(CupertinoIcons.square_grid_2x2, size: 20, color: theme.backgroundColor)
 																					),
 																					const SizedBox(width: 8),
 																				],
@@ -1345,54 +1348,82 @@ class BoardPageState extends State<BoardPage> {
 																							}
 																						}
 																					},
-																					child: AdaptiveFilledButton(
-																						onPressed: () async {
-																							lightHapticFeedback();
-																							if (_searching) {
-																								_listController.state?.closeSearch();
-																							}
-																							else {
-																								try {
-																									await scrollToTop();
-																									_page = _listController.items.first.item.currentPage ?? 1;
-																								}
-																								on TimeoutException {
-																									// Sometimes this happens. Don't do anything
-																								}
-																							}
-																						},
-																						color: primaryColorWithBrightness80,
-																						padding: const EdgeInsets.all(8),
-																						child: Row(
-																							mainAxisSize: MainAxisSize.min,
-																							children: _searching ? [
-																								Icon(CupertinoIcons.search, color: theme.backgroundColor),
-																								const SizedBox(width: 8),
-																								Icon(CupertinoIcons.xmark, color: theme.backgroundColor)
-																							] : [
-																								if (sortMethods.isEmpty)
-																									Icon(CupertinoIcons.doc, color: theme.backgroundColor),
-																								ConstrainedBox(
-																									constraints: BoxConstraints(
-																										minWidth: MediaQuery.textScalerOf(context).scale(24)
-																									),
-																									child: AnimatedBuilder(
-																										animation: _listController.slowScrolls,
-																										builder: (context, _) {
-																											_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
-																											return Text(
-																												(sortMethods.isEmpty ? _page : (_listController.itemsLength - (_listController.lastVisibleIndex + 1))).toString(),
-																												textAlign: TextAlign.center,
-																												style: TextStyle(
-																													color: theme.backgroundColor,
-																													fontFeatures: const [FontFeature.tabularFigures()]
-																												)
-																											);
+																					child: SegmentedWidget(
+																						radius: radius,
+																						segments: [
+																							if (_searching) ...[
+																								SegmentedWidgetSegment(
+																									color: primaryColorWithBrightness60,
+																									child: Row(
+																										mainAxisSize: MainAxisSize.min,
+																										children: [
+																											Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19),
+																											AnimatedBuilder(
+																												animation: _listController,
+																												builder: (context, _) {
+																													if (_listController.state?.searching != true) {
+																														// No actual filter entered yet
+																														return const SizedBox.shrink();
+																													}
+																													return Padding(
+																														padding: const EdgeInsets.only(left: 8),
+																														child: Text(describeCount(_listController.itemsLength, 'result'), style: TextStyle(
+																															color: theme.backgroundColor
+																														))
+																													);
+																												}
+																											)
+																										]
+																									)
+																								),
+																								SegmentedWidgetSegment(
+																									color: theme.primaryColor,
+																									onPressed: _listController.state?.closeSearch,
+																									child: Text('Close', style: TextStyle(color: theme.backgroundColor))
+																								)
+																							]
+																							else ...[
+																								SegmentedWidgetSegment(
+																									color: primaryColorWithBrightness80,
+																									onPressed: () async {
+																										lightHapticFeedback();
+																										try {
+																											await scrollToTop();
+																											_page = _listController.items.first.item.currentPage ?? 1;
 																										}
+																										on TimeoutException {
+																											// Sometimes this happens. Don't do anything
+																										}
+																									},
+																									child: Row(
+																										mainAxisSize: MainAxisSize.min,
+																										children: [
+																											if (sortMethods.isEmpty)
+																												Icon(CupertinoIcons.doc, color: theme.backgroundColor, size: 19),
+																											ConstrainedBox(
+																												constraints: BoxConstraints(
+																													minWidth: MediaQuery.textScalerOf(context).scale(19)
+																												),
+																												child: AnimatedBuilder(
+																													animation: _listController.slowScrolls,
+																													builder: (context, _) {
+																														_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
+																														return Text(
+																															(sortMethods.isEmpty ? _page : (_listController.itemsLength - (_listController.lastVisibleIndex + 1))).toString(),
+																															textAlign: TextAlign.center,
+																															style: TextStyle(
+																																color: theme.backgroundColor,
+																																fontFeatures: const [FontFeature.tabularFigures()]
+																															)
+																														);
+																													}
+																												)
+																											)
+																										]
 																									)
 																								)
 																							]
-																						)
+																						]
 																					)
 																				)
 																			]

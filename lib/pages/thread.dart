@@ -39,6 +39,7 @@ import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
+import 'package:chan/widgets/segmented.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
@@ -2667,9 +2668,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final theme = context.watch<SavedTheme>();
 		final useMaterial = ChanceTheme.materialOf(context);
 		final radius = useMaterial ? const Radius.circular(4) : const Radius.circular(8);
-		final radiusAlone = BorderRadius.all(radius);
-		final radiusStart = widget.reversed ? BorderRadius.only(topRight: radius, bottomRight: radius) : BorderRadius.only(topLeft: radius, bottomLeft: radius);
-		final radiusEnd = widget.reversed ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : BorderRadius.only(topRight: radius, bottomRight: radius);
 		final scrollAnimationDuration = Settings.showAnimationsSetting.watch(context) ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
 		scrollToTop() => widget.listController.animateToIndex(0, duration: scrollAnimationDuration);
 		scrollToBottom() {
@@ -3100,24 +3098,41 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 					crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
 					children: [
 						if (widget.searching)
-							CupertinoButton(
-								padding: EdgeInsets.zero,
-								onPressed: widget.listController.state?.closeSearch,
-								child: Container(
-									decoration: BoxDecoration(
-										borderRadius: radiusAlone,
-										color: theme.primaryColor
-									),
-									margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-									padding: const EdgeInsets.all(8),
-									child: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19),
-											const SizedBox(width: 8),
-											Icon(CupertinoIcons.xmark, color: theme.backgroundColor, size: 19)
-										]
-									)
+							Padding(
+								padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+								child: SegmentedWidget(
+									radius: radius,
+									segments: [
+										SegmentedWidgetSegment(
+											color: theme.primaryColorWithBrightness(0.6),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19),
+													AnimatedBuilder(
+														animation: widget.listController,
+														builder: (context, _) {
+															if (widget.listController.state?.searching != true) {
+																// No actual filter entered yet
+																return const SizedBox.shrink();
+															}
+															return Padding(
+																padding: const EdgeInsets.only(left: 8),
+																child: Text(describeCount(widget.listController.itemsLength, 'result'), style: TextStyle(
+																	color: theme.backgroundColor
+																))
+															);
+														}
+													)
+												]
+											)
+										),
+										SegmentedWidgetSegment(
+											color: theme.primaryColor,
+											onPressed: widget.listController.state?.closeSearch,
+											child: Text('Close', style: TextStyle(color: theme.backgroundColor))
+										)
+									]
 								)
 							)
 						else ...[
@@ -3231,6 +3246,50 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											Icon(CupertinoIcons.lock, color: theme.primaryColor.withOpacity(0.5)),
 											const SizedBox(width: 8)
 										],
+										if (widget.listController.state?.error case ValueListenable<(Object, StackTrace)?> listenable when !widget.blocked && widget.listController.itemsLength > 0) ValueListenableBuilder(
+											valueListenable: listenable,
+											builder: (context, error, _) {
+												if (error == null) {
+													return const SizedBox.shrink();
+												}
+												final remedy = widget.listController.state?.widget.remedies[error.$1.runtimeType];
+												return Padding(
+													padding: const EdgeInsets.only(right: 8),
+													child: SegmentedWidget(
+														radius: radius,
+														segments: [
+															SegmentedWidgetSegment(
+																color: theme.primaryColorWithBrightness(0.6),
+																onPressed: () => alertError(context, error.$1, error.$2, barrierDismissible: true),
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		Icon(CupertinoIcons.exclamationmark_triangle, size: 19, color: theme.backgroundColor),
+																		const SizedBox(width: 4),
+																		Text(switch (error.$1) {
+																			ThreadNotFoundException() => '404',
+																			Object obj => obj.toStringDio()
+																		}, style: TextStyle(
+																			color: theme.backgroundColor
+																		))
+																	]
+																)
+															),
+															if (remedy != null) SegmentedWidgetSegment(
+																color: theme.secondaryColor,
+																onPressed: () async {
+																	await remedy.$2();
+																	await widget.listController.update();
+																},
+																child: Text(remedy.$1, style: TextStyle(
+																	color: theme.primaryColor
+																))
+															)
+														]
+													)
+												);
+											}
+										),
 										if (!widget.blocked && (widget.listController.state?.treeBuildingFailed ?? false)) ...[
 											CupertinoButton(
 												color: Colors.red,
@@ -3347,24 +3406,16 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												padding: EdgeInsets.zero,
 												child: Builder(
 													builder: (context) {
-														List<Widget> children = [
-															if (_redCountAbove > 0) Container(
-																decoration: BoxDecoration(
-																	borderRadius: radiusStart,
-																	color: theme.secondaryColor
-																),
-																padding: const EdgeInsets.all(8),
+														final segments = [
+															if (_redCountAbove > 0) SegmentedWidgetSegment(
+																color: theme.secondaryColor,
 																child: Text(
 																	_redCountAbove.toString(),
 																	textAlign: TextAlign.center
 																)
 															),
-															if (_whiteCountAbove > 0) Container(
-																decoration: BoxDecoration(
-																	borderRadius: _redCountAbove <= 0 ? radiusAlone : radiusEnd,
-																	color: theme.primaryColor
-																),
-																padding: const EdgeInsets.all(8),
+															if (_whiteCountAbove > 0) SegmentedWidgetSegment(
+																color: theme.primaryColor,
 																child: Row(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
@@ -3385,14 +3436,11 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																)
 															)
 														];
-														if (widget.reversed) {
-															children = children.reversed.toList();
-														}
 														return Padding(
 															padding: const EdgeInsets.only(right: 8),
-															child: Row(
-																mainAxisSize: MainAxisSize.min,
-																children: children
+															child: SegmentedWidget(
+																radius: radius,
+																segments: widget.reversed ? segments.reversed.toList() : segments
 															)
 														);
 													}
@@ -3462,24 +3510,16 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												padding: EdgeInsets.zero,
 												child: Builder(
 													builder: (context) {
-														final indicatorParts = [
-															if (_redCountBelow > 0) Container(
-																decoration: BoxDecoration(
-																	borderRadius: radiusStart,
-																	color: theme.secondaryColor
-																),
-																padding: const EdgeInsets.all(8),
+														final segments = [
+															if (_redCountBelow > 0) SegmentedWidgetSegment(
+																color: theme.secondaryColor,
 																child: Text(
 																	_redCountBelow.toString(),
 																	textAlign: TextAlign.center
 																)
 															),
-															if (_whiteCountBelow == 0 || _greyCount > 0) Container(
-																decoration: BoxDecoration(
-																	borderRadius: (_redCountBelow > 0) ? (_whiteCountBelow > 0 ? null : radiusEnd) : (_whiteCountBelow > 0 ? radiusStart : radiusAlone),
-																	color: theme.primaryColorWithBrightness(0.6)
-																),
-																padding: const EdgeInsets.all(8),
+															if (_whiteCountBelow == 0 || _greyCount > 0) SegmentedWidgetSegment(
+																color: theme.primaryColorWithBrightness(0.6),
 																child: Container(
 																	constraints: BoxConstraints(
 																		minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _greyCount.toString().length)
@@ -3493,12 +3533,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																	)
 																)
 															),
-															if (_whiteCountBelow > 0) Container(
-																decoration: BoxDecoration(
-																	borderRadius: (_redCountBelow <= 0 && _greyCount <= 0) ? radiusAlone : radiusEnd,
-																	color: theme.primaryColor
-																),
-																padding: const EdgeInsets.all(8),
+															if (_whiteCountBelow > 0) SegmentedWidgetSegment(
+																color: theme.primaryColor,
 																child: Container(
 																	constraints: BoxConstraints(
 																		minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountBelow.toString().length)
@@ -3513,9 +3549,9 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																)
 															)
 														];
-														return Row(
-															mainAxisSize: MainAxisSize.min,
-															children: widget.reversed ? indicatorParts.reversed.toList() : indicatorParts
+														return SegmentedWidget(
+															radius: radius,
+															segments: widget.reversed ? segments.reversed.toList() : segments
 														);
 													}
 												),

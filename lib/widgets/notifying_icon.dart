@@ -1,4 +1,5 @@
 import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/segmented.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -71,47 +72,45 @@ class StationaryNotifyingIcon extends StatelessWidget {
 					)
 				)
 			]
-		) : Row(
-			children: [
-				if (primary > 0) Container(
-					decoration: BoxDecoration(
-						color: ChanceTheme.secondaryColorOf(context),
-						borderRadius: (secondary > 0) ? const BorderRadius.only(topLeft: r, bottomLeft: r) : const BorderRadius.all(r)
-					),
-					constraints: const BoxConstraints(
-						minWidth: 20
-					),
-					height: 20,
-					alignment: Alignment.center,
-					padding: const EdgeInsets.all(2),
-					child: AutoSizeText(
-						primary.toString(),
-						maxLines: 1,
-						minFontSize: 0,
-						textAlign: TextAlign.center,
-						style: TextStyle(
-							color: (ChanceTheme.secondaryColorOf(context).computeLuminance() > 0.5) ? Colors.black : Colors.white
+		) : SegmentedWidget(
+			radius: r,
+			padding: const EdgeInsets.all(2),
+			segments: [
+				if (primary > 0) SegmentedWidgetSegment(
+					color: ChanceTheme.secondaryColorOf(context),
+					child: Container(
+						constraints: const BoxConstraints(
+							minWidth: 16
+						),
+						height: 16,
+						alignment: Alignment.center,
+						child: AutoSizeText(
+							primary.toString(),
+							maxLines: 1,
+							minFontSize: 0,
+							textAlign: TextAlign.center,
+							style: TextStyle(
+								color: (ChanceTheme.secondaryColorOf(context).computeLuminance() > 0.5) ? Colors.black : Colors.white
+							)
 						)
 					)
 				),
-				if (secondary > 0) Container(
-					decoration: BoxDecoration(
-						color: ChanceTheme.primaryColorOf(context),
-						borderRadius: (primary > 0) ? const BorderRadius.only(topRight: r, bottomRight: r) : const BorderRadius.all(r)
-					),
-					constraints: const BoxConstraints(
-						minWidth: 20
-					),
-					height: 20,
-					alignment: Alignment.center,
-					padding: const EdgeInsets.all(2),
-					child: AutoSizeText(
-						secondary.toString(),
-						maxLines: 1,
-						minFontSize: 0,
-						textAlign: TextAlign.center,
-						style: TextStyle(
-							color: ChanceTheme.backgroundColorOf(context)
+				if (secondary > 0) SegmentedWidgetSegment(
+					color: ChanceTheme.primaryColorOf(context),
+					child: Container(
+						constraints: const BoxConstraints(
+							minWidth: 16
+						),
+						height: 16,
+						alignment: Alignment.center,
+						child: AutoSizeText(
+							secondary.toString(),
+							maxLines: 1,
+							minFontSize: 0,
+							textAlign: TextAlign.center,
+							style: TextStyle(
+								color: ChanceTheme.backgroundColorOf(context)
+							)
 						)
 					)
 				)
