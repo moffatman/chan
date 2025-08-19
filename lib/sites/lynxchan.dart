@@ -124,23 +124,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final password = makeRandomBase64String(8);
 		String? fileSha256;
-		bool fileAlreadyUploaded = false;
 		final file = post.file;
 		if (file != null) {
-			fileSha256 = sha256.convert(await File(file).readAsBytes()).bytes.map((b) => b.toRadixString(16)).join();
-			final filePresentResponse = await client.getUri(Uri.https(baseUrl, '/checkFileIdentifier.js', {
-				'json': '1',
-				'identifier': fileSha256
-			}), cancelToken: cancelToken, options: Options(responseType: ResponseType.json));
-			if (filePresentResponse.data case bool x) {
-				fileAlreadyUploaded = x;
-			}
-			else if (filePresentResponse.data case Map map) {
-				if (map['status'] != 'ok') {
-					throw PostFailedException('Error checking if file was already uploaded: ${map['error'] ?? map}');
-				}
-				fileAlreadyUploaded = map['data'] as bool;
-			}
+			fileSha256 = sha256.convert(await File(file).readAsBytes()).bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 		}
 		final flag = post.flag;
 		final response = await client.postUri(Uri.https(baseUrl, post.threadId == null ? '/newThread.js' : '/replyThread.js', {
@@ -164,7 +150,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 				'fileMime': lookupMimeType(file),
 				'fileSpoiler': (post.spoiler ?? false) ? 'spoiler': '',
 				'fileName': post.overrideFilename ?? file.afterLast('/'),
-				if (!fileAlreadyUploaded) 'files': await MultipartFile.fromFile(file, filename: post.overrideFilename)
+				'files': await MultipartFile.fromFile(file, filename: post.overrideFilename)
 			}
 		}), options: Options(
 			validateStatus: (x) => true,

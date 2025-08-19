@@ -373,7 +373,7 @@ InlineSpan _importFieldValue<T>(T value) => switch (value) {
 				)
 			)
 		),
-		TextSpan(text: ' #${color.red.toRadixString(16)}${color.green.toRadixString(16)}${color.blue.toRadixString(16)}')
+		TextSpan(text: ' #${color.red.toRadixString(16).padLeft(2, '0')}${color.green.toRadixString(16).padLeft(2, '0')}${color.blue.toRadixString(16).padLeft(2, '0')}')
 	]),
 	dynamic x => TextSpan(text: x.toString())
 };
