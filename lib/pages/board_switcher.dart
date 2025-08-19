@@ -5,6 +5,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
@@ -118,6 +119,25 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late TextEditingController _textEditingController;
 	late StreamSubscription<BoxEvent> _boardsBoxSubscription;
 	final Map<ImageboardScoped<ImageboardBoard?>, BuildContext> _contexts = {};
+
+	static const _kRowHeight = 64.0;
+	static const _kMaxCrossAxisExtent = 125.0;
+	static const _kMainAxisSpacing = 4.0;
+	static const _kChildAspectRatio = 1.2;
+	static const _kCrossAxisSpacing = 4.0;
+
+	int get _maxOnScreenBoardIndex {
+		final screenHeight = scrollController.tryPosition?.context.storageContext.globalPaintBounds?.size.height ?? context.mediaQuery.size.height;
+		if (Settings.instance.useBoardSwitcherList) {
+			return (screenHeight / _kRowHeight).ceil();
+		}
+		final screenWidth = scrollController.tryPosition?.context.storageContext.globalPaintBounds?.size.width ?? context.mediaQuery.size.width;
+		final crossAxisCount = (screenWidth / (_kMaxCrossAxisExtent + _kCrossAxisSpacing)).floor();
+		final rowHeight = ((screenWidth / crossAxisCount) / _kChildAspectRatio) + _kMainAxisSpacing;
+		final onScreenRowsCount = (screenHeight / rowHeight).ceil();
+		return (onScreenRowsCount * crossAxisCount) - 1;
+	}
+
 
 	bool isPhoneSoftwareKeyboard() {
 		return MediaQueryData.fromView(View.of(context)).viewInsets.bottom > 100;
@@ -803,7 +823,20 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								return ValueListenableBuilder(
 									valueListenable: MappingValueListenable(
 										parent: typeaheadLoadingsNotifier,
-										mapper: (_) => typeaheadLoadings.values.any((t) => t.isNotEmpty)
+										mapper: (_) {
+											if (typeaheadLoadings.values.every((t) => t.isEmpty)) {
+												// Nothing loading
+												return false;
+											}
+											final maxIndex = _maxOnScreenBoardIndex;
+											for (int i = 0; i < filteredBoards.length; i++) {
+												if (filteredBoards[i].imageboard != currentImageboard) {
+													return i < maxIndex;
+												}
+											}
+											// Check if screen is full already
+											return filteredBoards.length < maxIndex;
+										}
 									),
 									builder: (context, show, _) => Container(
 										height: height,
@@ -868,7 +901,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												padding: EdgeInsets.zero,
 												child: Container(
 													padding: const EdgeInsets.all(4),
-													height: 64,
+													height: _kRowHeight,
 													decoration: BoxDecoration(
 														borderRadius: const BorderRadius.all(Radius.circular(4)),
 														color: board.isWorksafe ? Colors.blue.withOpacity(isSelected ? 0.3 : 0.1) : Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
@@ -954,7 +987,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											padding: EdgeInsets.zero,
 											child: Container(
 												padding: const EdgeInsets.all(4),
-												height: 64,
+												height: _kRowHeight,
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(4)),
 													color: Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
@@ -1005,10 +1038,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								physics: const AlwaysScrollableScrollPhysics(),
 								controller: scrollController,
 								padding: const EdgeInsets.only(top: 4, bottom: 4) + MediaQuery.paddingOf(context),
-								maxCrossAxisExtent: 125,
-								mainAxisSpacing: 4,
-								childAspectRatio: 1.2,
-								crossAxisSpacing: 4,
+								maxCrossAxisExtent: _kMaxCrossAxisExtent,
+								mainAxisSpacing: _kMainAxisSpacing,
+								childAspectRatio: _kChildAspectRatio,
+								crossAxisSpacing: _kCrossAxisSpacing,
 								children: filteredBoards.map((item) {
 									final imageboard = item.imageboard;
 									final board = item.item;

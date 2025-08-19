@@ -7,7 +7,7 @@ import 'package:chan/util.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
-extension _ReadMediaQuery on BuildContext {
+extension ReadMediaQuery on BuildContext {
 	MediaQueryData get mediaQuery {
 		return getInheritedWidgetOfExactType<MediaQuery>()!.data;
 	}
