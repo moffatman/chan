@@ -180,7 +180,11 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		}
 		final data = response.data as Map;
 		if (data['status'] != 'ok') {
-			throw PostFailedException(data['error'] as String? ?? data.toString());
+			final error = data['error'] as String? ?? data.toString();
+			if (RegExp(r'Flood detected, wait (\d+) more seconds.').firstMatch(error)?.group(1)?.tryParseInt case int seconds) {
+				throw PostCooldownException(error, DateTime.now().add(Duration(seconds: seconds)));
+			}
+			throw PostFailedException(error);
 		}
 		return PostReceipt(
 			id: data['data'] as int,
