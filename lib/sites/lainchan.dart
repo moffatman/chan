@@ -596,7 +596,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
-		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16).padLeft(2, '0')).join();
+		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
 		final referer = _getWebUrl(post.board, threadId: post.threadId, mod: loginSystem.isLoggedIn(Persistence.currentCookies));
 		final page = await client.get(
 			referer,
