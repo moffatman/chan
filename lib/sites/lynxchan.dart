@@ -135,7 +135,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 			if (post.name?.isNotEmpty ?? false) 'name': post.name,
 			if (post.options?.isNotEmpty ?? false)'email': post.options,
 			'message': post.text,
-			'subject': post.subject,
+			if (post.subject?.isNotEmpty ?? false) 'subject': post.subject,
 			'password': password,
 			'boardUri': post.board,
 			if (post.threadId != null) 'threadId': post.threadId.toString(),
