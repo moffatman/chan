@@ -2459,6 +2459,16 @@ class SavedSettingsFields {
     fieldName: 'reverseWatchedThreadsSorting',
     merger: PrimitiveMerger(),
   );
+  static double getThumbnailOpacity(SavedSettings x) => x.thumbnailOpacity;
+  static void setThumbnailOpacity(SavedSettings x, double v) =>
+      x.thumbnailOpacity = v;
+  static const thumbnailOpacity = HiveFieldAdapter<SavedSettings, double>(
+    getter: getThumbnailOpacity,
+    setter: setThumbnailOpacity,
+    fieldNumber: 207,
+    fieldName: 'thumbnailOpacity',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2665,7 +2675,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     203: SavedSettingsFields.showActiveWatchesAboveZombieWatches,
     204: SavedSettingsFields.showLineBreak2InPostInfoRow,
     205: SavedSettingsFields.reverseSavedThreadsSorting,
-    206: SavedSettingsFields.reverseWatchedThreadsSorting
+    206: SavedSettingsFields.reverseWatchedThreadsSorting,
+    207: SavedSettingsFields.thumbnailOpacity
   };
 
   @override
@@ -2886,13 +2897,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showLineBreak2InPostInfoRow: fields[204] as bool?,
       reverseSavedThreadsSorting: fields[205] as bool?,
       reverseWatchedThreadsSorting: fields[206] as bool?,
+      thumbnailOpacity: fields[207] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(194)
+      ..writeByte(195)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3280,7 +3292,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(205)
       ..write(obj.reverseSavedThreadsSorting)
       ..writeByte(206)
-      ..write(obj.reverseWatchedThreadsSorting);
+      ..write(obj.reverseWatchedThreadsSorting)
+      ..writeByte(207)
+      ..write(obj.thumbnailOpacity);
   }
 
   @override
@@ -3624,6 +3638,8 @@ class SettingsQuickActionAdapter extends TypeAdapter<SettingsQuickAction> {
         return SettingsQuickAction.toggleImages;
       case 7:
         return SettingsQuickAction.togglePixelatedThumbnails;
+      case 8:
+        return SettingsQuickAction.toggleDimmedThumbnails;
       default:
         return SettingsQuickAction.toggleTheme;
     }
@@ -3655,6 +3671,9 @@ class SettingsQuickActionAdapter extends TypeAdapter<SettingsQuickAction> {
         break;
       case SettingsQuickAction.togglePixelatedThumbnails:
         writer.writeByte(7);
+        break;
+      case SettingsQuickAction.toggleDimmedThumbnails:
+        writer.writeByte(8);
         break;
     }
   }

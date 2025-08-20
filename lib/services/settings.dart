@@ -676,7 +676,9 @@ enum SettingsQuickAction {
 	@HiveField(6)
 	toggleImages,
 	@HiveField(7)
-	togglePixelatedThumbnails
+	togglePixelatedThumbnails,
+	@HiveField(8)
+	toggleDimmedThumbnails
 }
 
 @HiveType(typeId: 32)
@@ -708,6 +710,8 @@ extension SettingsQuickActionName on SettingsQuickAction? {
 				return 'Toggle images';
 			case SettingsQuickAction.togglePixelatedThumbnails:
 				return 'Toggle pixelated thumbnails';
+			case SettingsQuickAction.toggleDimmedThumbnails:
+				return 'Toggle dimmed thumbnails';
 			case null:
 				return 'Do nothing';
 		}
@@ -1250,6 +1254,8 @@ class SavedSettings extends HiveObject {
 	bool reverseSavedThreadsSorting;
 	@HiveField(206)
 	bool reverseWatchedThreadsSorting;
+	@HiveField(207)
+	double thumbnailOpacity;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1458,6 +1464,7 @@ class SavedSettings extends HiveObject {
 		bool? showLineBreak2InPostInfoRow,
 		bool? reverseSavedThreadsSorting,
 		bool? reverseWatchedThreadsSorting,
+		double? thumbnailOpacity,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1685,7 +1692,8 @@ class SavedSettings extends HiveObject {
 		showActiveWatchesAboveZombieWatches = showActiveWatchesAboveZombieWatches ?? true,
 		showLineBreak2InPostInfoRow = showLineBreak2InPostInfoRow ?? false,
 		reverseSavedThreadsSorting = reverseSavedThreadsSorting ?? false,
-		reverseWatchedThreadsSorting = reverseWatchedThreadsSorting ?? false {
+		reverseWatchedThreadsSorting = reverseWatchedThreadsSorting ?? false,
+		thumbnailOpacity = thumbnailOpacity ?? -0.5 {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2991,6 +2999,9 @@ class Settings extends ChangeNotifier {
 	bool get reverseWatchedThreadsSorting => reverseWatchedThreadsSortingSetting(this);
 	set reverseWatchedThreadsSorting(bool setting) => reverseWatchedThreadsSortingSetting.set(this, setting);
 
+	static const thumbnailOpacitySetting = SavedSetting(SavedSettingsFields.thumbnailOpacity);
+	double get thumbnailOpacity => thumbnailOpacitySetting(this);
+
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
 		_appResumeCallbacks.add(task);
@@ -3133,6 +3144,14 @@ class Settings extends ChangeNotifier {
 					context: context,
 					icon: thumbnailPixelation.isNegative ? Adaptive.icons.photo : CupertinoIcons.square,
 					message: thumbnailPixelation.isNegative ? 'Disabled pixelated thumbnails' : 'Enabled pixelated thumbnails'
+				);
+			case SettingsQuickAction.toggleDimmedThumbnails:
+				thumbnailOpacitySetting.value = -1 * thumbnailOpacity;
+				didEdit();
+				showToast(
+					context: context,
+					icon: CupertinoIcons.paintbrush,
+					message: thumbnailOpacity.isNegative ? 'Dimmed thumbnails disabled' : 'Dimmed thumbnails enabled'
 				);
 				break;
 			case null:

@@ -367,6 +367,12 @@ class AttachmentThumbnail extends StatelessWidget {
 					)
 				);
 			}
+			if (!settings.thumbnailOpacity.isNegative && mayObscure) {
+				child = Opacity(
+					opacity: settings.thumbnailOpacity,
+					child: child
+				);
+			}
 		}
 		else {
 			final icon = attachment.icon ?? Adaptive.icons.photo;

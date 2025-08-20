@@ -709,6 +709,24 @@ final appearanceSettings = [
 			(enabled) => Settings.instance.thumbnailPixelation.abs() * (enabled ? 1 : -1)
 		)
 	),
+	SliderSettingWidget(
+		description: 'Dim image thumbnails',
+		icon: CupertinoIcons.square_righthalf_fill,
+		setting: const MappedSetting(
+			Settings.thumbnailOpacitySetting,
+			FieldMappers.doubleAbs,
+			FieldMappers.doubleAbs
+		),
+		min: 0,
+		max: 1,
+		step: 0.01,
+		textFormatter: (s) => 'Opacity: ${(s.abs() * 100).round()}%',
+		enabledSetting: MappedSetting(
+			Settings.thumbnailOpacitySetting,
+			(opacity) => opacity > 0,
+			(enabled) => Settings.instance.thumbnailOpacity.abs() * (enabled ? 1 : -1)
+		)
+	),
 	const SwitchSettingWidget(
 		description: 'Square thumbnails',
 		icon: CupertinoIcons.square,
