@@ -110,7 +110,10 @@ List<ContextMenuAction> buildImageSearchActions(BuildContext context, Imageboard
 						final response = await Settings.instance.client.postUri<Map>(Uri.https('tineye.com', '/api/v1/result_json/'), data: FormData.fromMap({
 							'url': attachment._urlForSearch
 						}), options: Options(responseType: ResponseType.json));
-						return response.data!['query_hash'] as String;
+						if (response.data case {'query_hash': String qh}) {
+							return qh;
+						}
+						throw Exception('Error from TinEye: ${response.data}');
 					}, wait: const Duration(milliseconds: 150), cancellable: true);
 					if (context.mounted) {
 						openBrowser(context, Uri.https('tineye.com', '/search/$queryHash'));
