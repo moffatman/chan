@@ -278,6 +278,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 			board: post['board'] as String,
 			text: post['message'] as String? ?? '',
 			name: post['name'] as String,
+			posterId: post['userId'] as String?,
 			time: DateTime.fromMillisecondsSinceEpoch(post['u'] as int),
 			spanFormat: PostSpanFormat.jsChan,
 			attachments_: (post['files'] as List).cast<Map>().map((file) {
