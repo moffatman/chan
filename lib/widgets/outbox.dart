@@ -235,7 +235,7 @@ class QueueEntryWidget extends StatelessWidget {
 																		});
 																	},
 																	child: TimedRebuilder<String>(
-																		interval: const Duration(seconds: 1),
+																		interval: () => const Duration(seconds: 1),
 																		function: () => formatDuration(pair.$1.difference(DateTime.now())),
 																		builder: (context, s) => Text(s, style: CommonTextStyles.tabularFigures)
 																	)
@@ -255,7 +255,7 @@ class QueueEntryWidget extends StatelessWidget {
 																	});
 																},
 																child: TimedRebuilder<String>(
-																	interval: const Duration(seconds: 1),
+																	interval: () => const Duration(seconds: 1),
 																	function: () => formatDuration(wait!.until.difference(DateTime.now())),
 																	builder: (context, s) => Text(s, style: CommonTextStyles.tabularFigures)
 																)

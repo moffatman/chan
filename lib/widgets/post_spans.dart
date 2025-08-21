@@ -2900,9 +2900,7 @@ TextSpan buildPostInfoRow({
 			 	if (!settings.showAbsoluteTimeOnPosts && forceAbsoluteTime) TextSpan(
 					text: '${formatTime(post.time.toLocal(), forceFullDate: true, withSecondsPrecision: site.hasSecondsPrecision)} '
 				)
-				else TextSpan(
-					text: '${formatRelativeTime(post.time.toLocal())} ago '
-				)
+				else RelativeTimeSpan(post.time.toLocal(), suffix: ' ago ')
 			else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
 				if (showSiteIcon) WidgetSpan(
 					alignment: PlaceholderAlignment.middle,
@@ -3050,9 +3048,7 @@ TextSpan buildDraftInfoRow({
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts && time != null) TextSpan(
 				text: '${formatTime(time, withSecondsPrecision: imageboard.site.hasSecondsPrecision)} '
 			)
-			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts && time != null) TextSpan(
-				text: '${formatRelativeTime(time)} ago '
-			)
+			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts && time != null) RelativeTimeSpan(time, suffix: ' ago ')
 			else if (field == PostDisplayField.postId && postIdNonRepeatingSegment.isNotEmpty) ...[
 				TextSpan(
 					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}$postIdNonRepeatingSegment',

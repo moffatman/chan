@@ -1815,8 +1815,7 @@ class LocalWatcherControls extends StatelessWidget {
 									if (w.nextUpdate != null && w.lastUpdate != null) ClipRRect(
 										borderRadius: const BorderRadius.all(Radius.circular(8)),
 										child: TimedRebuilder(
-											enabled: TickerMode.of(context),
-											interval: const Duration(seconds: 1),
+											interval: () => const Duration(seconds: 1),
 											function: () {
 												final now = DateTime.now();
 												return w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds;

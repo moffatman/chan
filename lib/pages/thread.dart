@@ -3329,7 +3329,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																				builder: (s) => Text(s, style: TextStyle(color: theme.backgroundColor))
 																			),
 																			if (pair != null) TimedRebuilder(
-																				interval: const Duration(seconds: 1),
+																				interval: () => const Duration(seconds: 1),
 																				function: () => formatDuration(pair.deadline.difference(DateTime.now()).clampAboveZero),
 																				builder: (context, delta) => Text(
 																					' ($delta)',

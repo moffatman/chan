@@ -181,8 +181,7 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 										GreedySizeCachingBox(
 											alignment: Alignment.centerRight,
 											child: TimedRebuilder(
-												enabled: true,
-												interval: const Duration(seconds: 1),
+												interval: () => const Duration(seconds: 1),
 												function: () {
 													return challenge!.expiresAt.difference(DateTime.now()).inSeconds;
 												},

@@ -3609,7 +3609,7 @@ class RefreshableListFooter extends StatelessWidget {
 																		children: [
 																			if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder<double>(
 																				enabled: !isScrollableValue || smoothedValue > 0,
-																				interval: const Duration(seconds: 1),
+																				interval: () => const Duration(seconds: 1),
 																				function: () {
 																					final now = DateTime.now();
 																					return updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds;
@@ -3645,7 +3645,7 @@ class RefreshableListFooter extends StatelessWidget {
 															top: 50,
 															child: TimedRebuilder(
 																enabled: nextUpdateTime != null && lastUpdateTime != null && (!isScrollableValue || smoothedValue > 0),
-																interval: const Duration(seconds: 1),
+																interval: () => const Duration(seconds: 1),
 																function: () {
 																	return formatRelativeTime(nextUpdateTime ?? DateTime(3000));
 																},

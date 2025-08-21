@@ -134,7 +134,12 @@ TextSpan buildThreadCounters({
 					IconSpan(icon: CupertinoIcons.clock, color: otherMetadataColor, size: 18),
 					space
 				],
-				TextSpan(text: latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
+				if (latestThread.time.year < 2000) TextSpan(text: '—', style: TextStyle(color: otherMetadataColor))
+				else RelativeTimeSpan(latestThread.time, style: TextStyle(
+					color: otherMetadataColor,
+					fontSize: 18,
+					fontFeatures: const [FontFeature.tabularFigures()]
+				)),
 			]
 		),
 		if (site.supportsThreadUpvotes) TextSpan(
@@ -150,7 +155,14 @@ TextSpan buildThreadCounters({
 					IconSpan(icon: CupertinoIcons.reply, size: 18, color: replyCountColor),
 					space,
 				],
-				if (showReplyTimeInsteadOfReplyCount) TextSpan(text: formatRelativeTime(thread.lastUpdatedTime ?? thread.posts_.tryLast?.time ?? thread.time), style: TextStyle(color: replyCountColor))
+				if (showReplyTimeInsteadOfReplyCount) RelativeTimeSpan(
+					thread.lastUpdatedTime ?? thread.posts_.tryLast?.time ?? thread.time,
+					style: TextStyle(
+						color: replyCountColor,
+						fontSize: 18,
+						fontFeatures: const [FontFeature.tabularFigures()]
+					)
+				)
 				else if (replyCountUnreliable && latestThread == thread) const TextSpan(text: '—')
 				else TextSpan(text: (latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
 				if (unseenReplyCount > 0) TextSpan(text: '+$unseenReplyCount'),

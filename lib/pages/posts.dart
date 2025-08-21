@@ -262,7 +262,7 @@ class _PostsPageState extends State<PostsPage> {
 										)
 									),
 									secondChild: reply.post == null ? (reply.spamFiltered != null ? TimedRebuilder<Duration>(
-										interval: const Duration(seconds: 1),
+										interval: () => const Duration(seconds: 1),
 										function: () {
 											final enoughTime = reply.spamFiltered?.time?.add(const Duration(seconds: 15));
 											if (enoughTime == null) {

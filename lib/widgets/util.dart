@@ -25,6 +25,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/css_colors.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -363,9 +364,12 @@ String formatTimeDiff(Duration diff) {
 	else if (diff.inMinutes > 0) {
 		return '${diff.inMinutes}m';
 	}
-	else {
-		return '${(diff.inMilliseconds / 1000).round()}s';
+	final seconds = (diff.inMilliseconds / 1000).round();
+	// Rounded up
+	if (seconds >= 60) {
+		return '1m';
 	}
+	return '${seconds}s';
 }
 
 String formatRelativeTime(DateTime time) {
@@ -2697,4 +2701,25 @@ class _HiddenCancelButtonState extends State<HiddenCancelButton> {
 		super.dispose();
 		_timer?.cancel();
 	}
+}
+
+class RelativeTimeSpan extends WidgetSpan {
+	RelativeTimeSpan(DateTime time, {
+		String suffix = '',
+		TextStyle style = const TextStyle(
+			fontSize: 16,
+			fontFeatures: [ui.FontFeature.tabularFigures()]
+		)
+	}) : super(
+		alignment: ui.PlaceholderAlignment.baseline,
+		baseline: ui.TextBaseline.alphabetic,
+		child: TimedRebuilder(
+			interval: () => switch (DateTime.now().difference(time).inSeconds) {
+				< 60 => const Duration(seconds: 1),
+				_ => const Duration(minutes: 1)
+			},
+			function: () => formatRelativeTime(time),
+			builder: (context, str) => Text('$str$suffix', style: style)
+		)
+	);
 }

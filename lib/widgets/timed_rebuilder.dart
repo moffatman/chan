@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 class TimedRebuilder<T> extends StatefulWidget {
-	final Duration interval;
+	final Duration Function() interval;
 	final Widget Function(BuildContext, T) builder;
 	final bool enabled;
 	final T Function() function;
@@ -21,33 +21,55 @@ class TimedRebuilder<T> extends StatefulWidget {
 }
 
 class _TimedRebuilderState<T> extends State<TimedRebuilder<T>> {
-	late final Timer timer;
+	Timer? timer;
 	late final ValueNotifier<T> notifier;
+
+	Timer _makeTimer() => Timer(widget.interval(), () {
+		if (mounted) {
+			notifier.value = widget.function();
+			if (widget.enabled) {
+				timer = _makeTimer();
+			}
+		}
+	});
 
 	@override
 	void initState() {
 		super.initState();
 		notifier = ValueNotifier(widget.function());
-		timer = Timer.periodic(widget.interval, (_) {
-			if (mounted && widget.enabled) {
-				notifier.value = widget.function();
-			}
-		});
+		if (widget.enabled) {
+			timer = _makeTimer();
+		}
+	}
+	
+	@override
+	void didChangeDependencies() {
+		super.didChangeDependencies();
+		if (TickerMode.of(context)) {
+			timer ??= _makeTimer();
+		}
+		else {
+			timer?.cancel();
+			timer = null;
+		}
 	}
 
 	@override
 	void didUpdateWidget(TimedRebuilder<T> oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (widget.enabled && !oldWidget.enabled) {
-			// We might have skipped last update
-			notifier.value = widget.function();
+			timer = _makeTimer();
+		}
+		else if (!widget.enabled && oldWidget.enabled) {
+			timer?.cancel();
+			timer = null;
 		}
 	}
 
 	@override
 	void dispose() {
 		super.dispose();
-		timer.cancel();
+		timer?.cancel();
 	}
 
 	@override

@@ -1355,7 +1355,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									mainAxisSize: MainAxisSize.min,
 									children: [
 										if (time != now) TimedRebuilder<String?>(
-											interval: const Duration(seconds: 1),
+											interval: () => const Duration(seconds: 1),
 											function: () {
 												final delta = time.difference(DateTime.now());
 												if (delta.isNegative) {
@@ -2102,7 +2102,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																					GreedySizeCachingBox(
 																						alignment: Alignment.centerRight,
 																						child: TimedRebuilder(
-																							interval: const Duration(seconds: 1),
+																							interval: () => const Duration(seconds: 1),
 																							function: () => formatDuration(time.difference(DateTime.now()).clampAboveZero),
 																							builder: (context, delta) => Text(
 																								'($delta)',

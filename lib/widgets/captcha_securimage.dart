@@ -171,8 +171,7 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 										GreedySizeCachingBox(
 											alignment: Alignment.centerRight,
 											child: TimedRebuilder(
-												enabled: true,
-												interval: const Duration(seconds: 1),
+												interval: () => const Duration(seconds: 1),
 												function: () {
 													return challenge!.expiresAt.difference(DateTime.now()).inSeconds;
 												},

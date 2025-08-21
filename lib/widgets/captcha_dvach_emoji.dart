@@ -249,8 +249,7 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 														GreedySizeCachingBox(
 															alignment: Alignment.centerRight,
 															child: TimedRebuilder(
-																enabled: true,
-																interval: const Duration(seconds: 1),
+																interval: () => const Duration(seconds: 1),
 																function: () {
 																	return challenge!.$1.expiresAt.difference(DateTime.now()).inSeconds;
 																},

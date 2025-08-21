@@ -280,8 +280,7 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 										GreedySizeCachingBox(
 											alignment: Alignment.centerRight,
 											child: TimedRebuilder(
-												enabled: true,
-												interval: const Duration(seconds: 1),
+												interval: () => const Duration(seconds: 1),
 												function: () {
 													return challenge!.expiresAt.difference(DateTime.now()).inSeconds;
 												},
