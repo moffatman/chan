@@ -486,6 +486,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 
 	@override
 	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
+		ThreadVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {

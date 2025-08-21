@@ -13,6 +13,7 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant});
 	@protected
 	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
+		ThreadVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	});
@@ -34,7 +35,14 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 			));
 			final status = response.statusCode;
 			if (status != null && status >= 200 && status < 400) {
-				return await unsafeAsync(response.data, () => makeThread(thread, response, priority: priority, cancelToken: cancelToken));
+				return await unsafeAsync(response.data, () async {
+					final t = await makeThread(thread, response, variant: variant, priority: priority, cancelToken: cancelToken);
+					// posts.last.time sometimes is off by 1 second. probably due to server-side processing latencies
+					// best to use the exact value reported in Last-Modified
+					t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
+					return t;
+
+				});
 			}
 			if (status == 404) {
 				throw const ThreadNotFoundException();
@@ -80,7 +88,7 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 		}
 		if (status != null && status >= 200 && status < 400) {
 			return await unsafeAsync(response.data, () async {
-				final t = await makeThread(thread, response, priority: priority, cancelToken: cancelToken);
+				final t = await makeThread(thread, response, variant: variant, priority: priority, cancelToken: cancelToken);
 				// posts.last.time sometimes is off by 1 second. probably due to server-side processing latencies
 				// best to use the exact value reported in Last-Modified
 				t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();

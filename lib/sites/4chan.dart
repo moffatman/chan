@@ -526,6 +526,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 
 	@override
 	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
+		ThreadVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {

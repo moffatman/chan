@@ -345,6 +345,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 
 	@override
 	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
+		ThreadVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async => _makeThread(response.data as Map);

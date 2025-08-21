@@ -131,10 +131,11 @@ class SiteLainchan2 extends SiteLainchanOrg {
 
 	@override
 	Future<Thread> makeThread(ThreadIdentifier thread, Response response, {
+		ThreadVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {
-		final broken = await super.makeThread(thread, response, priority: priority, cancelToken: cancelToken);
+		final broken = await super.makeThread(thread, response, variant: variant, priority: priority, cancelToken: cancelToken);
 		if (imageThumbnailExtension != '' && !boardsWithHtmlOnlyFlags.contains(thread.board)) {
 			return broken;
 		}
