@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
@@ -29,13 +30,14 @@ Future<bool> embedPossible(String url) async {
 	if (url.contains('/x.com/')) {
 		return true;
 	}
-	if (url.contains('imgur.com/') || url.contains('imgur.io/')) {
-		return false;
-	}
 	if (url.contains('youtube.com')) {
 		return true;
 	}
-	if (await ImageboardRegistry.instance.decodeUrl(Uri.parse(url)) != null) {
+	final uri = Uri.parse(url);
+	if (await ImageboardRegistry.instance.decodeUrl(uri) != null) {
+		return true;
+	}
+	if (ImageboardRegistry.instance.embedPossible(uri)) {
 		return true;
 	}
 	return embedRegexes.matches(url);
@@ -62,6 +64,7 @@ class EmbedData {
 	final String? thumbnailUrl;
 	final Widget? thumbnailWidget;
 	final (Imageboard imageboard, BoardThreadOrPostIdentifier target, String? useArchive)? imageboardTarget;
+	final ImageboardScoped<List<Attachment>>? attachments;
 
 	const EmbedData({
 		required this.title,
@@ -69,11 +72,12 @@ class EmbedData {
 		required this.author,
 		required this.thumbnailUrl,
 		this.thumbnailWidget,
-		this.imageboardTarget
+		this.imageboardTarget,
+		this.attachments
 	});
 
 	@override
-	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl, thumbnailWidget: $thumbnailWidget, imageboardTarget: $imageboardTarget)';
+	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl, thumbnailWidget: $thumbnailWidget, imageboardTarget: $imageboardTarget, attachments: $attachments)';
 }
 
 final _twitterPattern = RegExp(r'(?:x|twitter)\.com/[^/]+/status/(\d+)');
@@ -189,7 +193,8 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async 
 		if (instagramMatch != null) {
 			return _loadInstagram(instagramMatch.group(1)!);
 		}
-		final target = await ImageboardRegistry.instance.decodeUrl(Uri.parse(url));
+		final uri = Uri.parse(url);
+		final target = await ImageboardRegistry.instance.decodeUrl(uri);
 		if (target != null && target.$2.threadId != null) {
 			Thread? thread = await target.$1.persistence.getThreadStateIfExists(target.$2.threadIdentifier!)?.getThread();
 			try {
@@ -222,6 +227,16 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async 
 				author: target.$1.site.formatUsername(post.name),
 				thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
 				imageboardTarget: target
+			);
+		}
+		final attachments = await ImageboardRegistry.instance.loadEmbedData(uri);
+		if (attachments != null) {
+			return EmbedData(
+				title: uri.host,
+				provider: attachments.imageboard.site.name,
+				author: null,
+				thumbnailUrl: highQuality ? attachments.item.first.url : attachments.item.first.thumbnailUrl.nonEmptyOrNull,
+				attachments: attachments
 			);
 		}
 		final youtubeShortsMatch = _youtubeShortsRegex.firstMatch(url);

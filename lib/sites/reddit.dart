@@ -653,8 +653,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	/// Resolve image hosting sites to hotlinks
-	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl(String url, {CancelToken? cancelToken}) async {
-		final uri = Uri.parse(url);
+	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>?> _resolveUrl0(Uri uri, {CancelToken? cancelToken}) async {
 		try {
 			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io' || uri.host == 'i.imgur.com' || uri.host == 'i.imgur.io') && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
 				final hash = uri.pathSegments.single.beforeFirst('.');
@@ -716,14 +715,14 @@ class SiteReddit extends ImageboardSite {
 				), cancelToken: cancelToken);
 				if (response.statusCode == 404) {
 					// Sometimes gfycat redirects to redgifs
-					final redirectResponse = await client.head(url, options: Options(
+					final redirectResponse = await client.headUri(uri, options: Options(
 						extra: {
 							kPriority: RequestPriority.cosmetic
 						},
 						responseType: ResponseType.json
 					), cancelToken: cancelToken);
 					if (!redirectResponse.realUri.host.contains('gfycat')) {
-						return _resolveUrl(redirectResponse.realUri.toString());
+						return _resolveUrl0(redirectResponse.realUri);
 					}
 				}
 				else if (response.data case {'gfyItem': Map gfyItem && {'mp4Url': String link}}) {
@@ -737,7 +736,7 @@ class SiteReddit extends ImageboardSite {
 			}
 			else if (uri.host == 'i.reddituploads.com') {
 				return [(
-					url: url,
+					url: uri.toString(),
 					thumbnailUrl: null,
 					type: AttachmentType.image,
 					ext: '.jpeg'
@@ -790,13 +789,61 @@ class SiteReddit extends ImageboardSite {
 		catch (e, st) {
 			Future.error(e, st);
 		}
-		bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.endsWith(e));
+		return null;
+	}
+
+	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl1(Uri uri, {CancelToken? cancelToken}) async {
+		final results = await _resolveUrl0(uri, cancelToken: cancelToken);
+		if (results != null) {
+			return results;
+		}
+		// fallback to direct link
+		bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => uri.path.endsWith(e));
 		return [(
-			url: url,
+			url: uri.toString(),
 			thumbnailUrl: null,
 			type: isDirectLink ? AttachmentType.image : AttachmentType.url,
-			ext: isDirectLink ? '.${url.afterLast('.')}' : ''
+			ext: isDirectLink ? '.${uri.path.afterLast('.')}' : ''
 		)];
+	}
+
+	@override
+	bool embedPossible(Uri url) {
+		if ((url.host == 'imgur.com' || url.host == 'imgur.io' || url.host == 'i.imgur.com' || url.host == 'i.imgur.io') && (url.pathSegments.trySingle?.length ?? 0) > 2) {
+			return true;
+		}
+		if ((url.host == 'imgur.com' || url.host == 'imgur.io') && (url.pathSegments.length == 2) && (url.pathSegments.first == 'a')) {
+			return true;
+		}
+		if (url.host == 'gfycat.com' && (url.pathSegments.trySingle?.length ?? 0) > 2) {
+			return true;
+		}
+		if (url.host == 'i.reddituploads.com') {
+			return true;
+		}
+		if (url.host.endsWith('redgifs.com') && url.pathSegments.length == 2 && url.pathSegments[0] == 'watch' && persistence != null) {
+			return true;
+		}
+		return false;
+	}
+
+	@override
+	Future<List<Attachment>> loadEmbedData(Uri url, {CancelToken? cancelToken}) async {
+		final datas = await _resolveUrl0(url, cancelToken: cancelToken);
+		return datas?.map((data) => Attachment(
+			type: data.type,
+			board: '',
+			id: data.url,
+			ext: data.ext,
+			filename: FileBasename.get(data.url),
+			url: data.url,
+			thumbnailUrl: data.thumbnailUrl ?? '',
+			md5: '',
+			width: null,
+			height: null,
+			threadId: null,
+			sizeInBytes: null
+		)).toList() ?? [];
 	}
 
 	Future<Thread> _makeThread(Map data, {CancelToken? cancelToken}) async {
@@ -898,7 +945,7 @@ class SiteReddit extends ImageboardSite {
 					));
 				}
 				else if (data case {'url': String url}) {
-					final urls = await _resolveUrl(url, cancelToken: cancelToken);
+					final urls = await _resolveUrl1(Uri.parse(url), cancelToken: cancelToken);
 					final image0 = (preview['images'] as List?)?.tryFirst as Map?;
 					attachments.addAll(urls.indexed.map((url) => Attachment(
 						type: url.$2.type,
@@ -920,7 +967,7 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 			else if (data['is_self'] != true && data['url'] != null) {
-				final urls = await _resolveUrl(data['url'] as String, cancelToken: cancelToken);
+				final urls = await _resolveUrl1(Uri.parse(data['url'] as String), cancelToken: cancelToken);
 				attachments.addAll(urls.indexed.map((url) => Attachment(
 					type: url.$2.type,
 					board: data['subreddit'] as String,

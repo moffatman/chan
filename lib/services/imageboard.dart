@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
@@ -21,6 +22,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mutex/mutex.dart';
@@ -666,7 +668,7 @@ class ImageboardRegistry extends ChangeNotifier {
 	}
 
 	Future<(Imageboard, BoardThreadOrPostIdentifier, String?)?> decodeUrl(Uri url) async {
-		for (final imageboard in ImageboardRegistry.instance.imageboardsIncludingDev) {
+		for (final imageboard in imageboardsIncludingDev) {
 			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url);
 			String? usedArchive;
 			for (final archive in imageboard.site.archives) {
@@ -678,6 +680,20 @@ class ImageboardRegistry extends ChangeNotifier {
 			}
 			if (dest != null) {
 				return (imageboard, dest, usedArchive);
+			}
+		}
+		return null;
+	}
+
+	bool embedPossible(Uri url) {
+		return imageboardsIncludingDev.any((i) => i.site.embedPossible(url));
+	}
+
+	Future<ImageboardScoped<List<Attachment>>?> loadEmbedData(Uri url, {CancelToken? cancelToken}) async {
+		for (final imageboard in imageboardsIncludingDev) {
+			final ret = await imageboard.site.loadEmbedData(url);
+			if (ret.isNotEmpty) {
+				return imageboard.scope(ret);
 			}
 		}
 		return null;

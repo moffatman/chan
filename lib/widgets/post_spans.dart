@@ -1259,6 +1259,33 @@ class PostLinkSpan extends PostTerminalSpan {
 						return PostBoardLinkSpan(imageboardTarget.$2.board).build(context, post, zone, settings, theme, options);
 					}
 				}
+				final attachments = snapshot.data?.attachments;
+				if (attachments != null) {
+					final stackIds = zone.stackIds.toList();
+					if (stackIds.isNotEmpty) {
+						stackIds.removeLast();
+					}
+					return PostAttachmentsSpan(
+						attachments.item
+					).build(context, post, zone, settings, theme, options.copyWith(
+						onThumbnailTap: (attachment) async {
+							await showGalleryPretagged(
+								context: context,
+								attachments: attachments.item.map((a) => TaggedAttachment(
+									attachment: a,
+									imageboard: attachments.imageboard,
+									semanticParentIds: stackIds
+								)).toList(),
+								initialAttachment: TaggedAttachment(
+									attachment: attachment,
+									imageboard: attachments.imageboard,
+									semanticParentIds: stackIds
+								),
+								heroOtherEndIsBoxFitCover: settings.squareThumbnails
+							);
+						}
+					));
+				}
 				Widget buildEmbed({
 					required Widget left,
 					required Widget center,

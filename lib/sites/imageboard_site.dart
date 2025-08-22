@@ -2273,6 +2273,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? title) => null;
 	bool get supportsPinkQuotes => false;
 	bool get supportsBlueQuotes => false;
+	bool embedPossible(Uri url) => false;
+	Future<List<Attachment>> loadEmbedData(Uri url, {CancelToken? cancelToken}) async {
+		return [];
+	}
 
 	@override
 	bool operator == (Object other) =>
