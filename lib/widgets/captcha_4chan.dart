@@ -7,6 +7,7 @@ import 'package:chan/services/captcha.dart';
 import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/hcaptcha.dart';
+import 'package:chan/services/html_error.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
@@ -121,9 +122,13 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	else if (challengeResponse.data case String str) {
 		final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(str);
 		if (match == null) {
-			throw Captcha4ChanCustomChallengeException('Response doesn\'t match, 4chan must have changed their captcha system', challengeResponse.cloudflare, additionalFiles: {
-				'challenge.txt': utf8.encode(str)
-			});
+			throw Captcha4ChanCustomChallengeException(
+				extractHtmlError(str) ?? 'Response doesn\'t match, 4chan must have changed their captcha system',
+				challengeResponse.cloudflare,
+				additionalFiles: {
+					'challenge.txt': utf8.encode(str)
+				}
+			);
 		}
 		data = (jsonDecode(match.group(1)!) as Map)['twister'] as Map;
 	}
