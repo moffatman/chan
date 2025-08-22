@@ -242,7 +242,7 @@ class CloudflareUserException extends ExtendedException {
 /// can be injected by a later interceptor
 class CloudflareBlockingInterceptor extends Interceptor {
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) => runEphemerallyLocked(options.uri.topLevelHost, () async {
+	void onRequest(RequestOptions options, RequestInterceptorHandler handler) => runEphemerallyLocked(options.uri.topLevelHost, (wasLocked) async {
 		handler.next(options);
 	});
 }
@@ -363,7 +363,7 @@ class CloudflareInterceptor extends Interceptor {
 		String? autoClickSelector,
 		String gatewayName = _kDefaultGatewayName,
 		CancelToken? cancelToken
-	}) => runEphemerallyLocked(cookieUrl.topLevelHost, () => _webViewLock.protect(() async {
+	}) => _webViewLock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
 		HeadlessInAppWebView? headlessWebView;
 		try {
@@ -586,7 +586,39 @@ class CloudflareInterceptor extends Interceptor {
 		finally {
 			headlessWebView?.dispose();
 		}
-	}));
+	});
+
+	static Future<_CloudflareResponse> _useWebviewForCloudflare({
+		required Future<_CloudflareResponse?> Function(InAppWebViewController, Uri?, bool isCancelledMedia) handler,
+		bool skipHeadless = false,
+		InAppWebViewInitialData? initialData,
+		URLRequest? initialUrlRequest,
+		required String userAgent,
+		required Uri cookieUrl,
+		required RequestPriority priority,
+		bool toast = true,
+		String? autoClickSelector,
+		String gatewayName = _kDefaultGatewayName,
+		CancelToken? cancelToken
+	}) => runEphemerallyLocked(cookieUrl.topLevelHost, (wasLocked) async {
+		if (wasLocked) {
+			// I hope someone cleared it already, re-kick the request from the beginning
+			return (uri: cookieUrl, content: null);
+		}
+		return await _useWebview(
+			handler: handler,
+			skipHeadless: skipHeadless,
+			initialData: initialData,
+			initialUrlRequest: initialUrlRequest,
+			userAgent: userAgent,
+			cookieUrl: cookieUrl,
+			priority: priority,
+			toast: toast,
+			autoClickSelector: autoClickSelector,
+			gatewayName: gatewayName,
+			cancelToken: cancelToken
+		);
+	});
 
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
@@ -594,7 +626,7 @@ class CloudflareInterceptor extends Interceptor {
 		if (options.cloudflare || redirectGateway != null) {
 			try {
 				final requestData = await _requestDataAsBytes(options);
-				final data = await _useWebview(
+				final data = await _useWebviewForCloudflare(
 					handler: _buildHandler(options.uri),
 					cookieUrl: options.uri,
 					userAgent: options.headers['user-agent'] as String? ?? Settings.instance.userAgent,
@@ -660,7 +692,7 @@ class CloudflareInterceptor extends Interceptor {
 					// Start the request again
 					// We need to ensure cookies are preserved in all navigation sequences
 					final requestData = await _requestDataAsBytes(response.requestOptions);
-					data = await _useWebview(
+					data = await _useWebviewForCloudflare(
 						handler: _buildHandler(response.requestOptions.uri),
 						cookieUrl: response.requestOptions.uri,
 						userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
@@ -683,7 +715,7 @@ class CloudflareInterceptor extends Interceptor {
 					);
 				 }
 				 else {
-					data = await _useWebview(
+					data = await _useWebviewForCloudflare(
 						handler: _buildHandler(response.requestOptions.uri),
 						cookieUrl: response.requestOptions.uri,
 						userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
@@ -737,7 +769,7 @@ class CloudflareInterceptor extends Interceptor {
 				), true);
 				return;
 			}
-				final data = await _useWebview(
+				final data = await _useWebviewForCloudflare(
 					handler: _buildHandler(err.requestOptions.uri),
 					cookieUrl: err.requestOptions.uri,
 					userAgent: err.requestOptions.headers['user-agent'] as String? ?? Settings.instance.userAgent,

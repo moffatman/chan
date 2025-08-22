@@ -1611,7 +1611,7 @@ abstract class ImageboardSiteArchive {
 	@protected
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
-		return runEphemerallyLocked('getCatalog($name,$board)', () async {
+		return runEphemerallyLocked('getCatalog($name,$board)', (_) async {
 			final entry = _catalogCache[board]?[variant?.dataId];
 			if (acceptCachedAfter != null && entry != null && entry.time.isAfter(acceptCachedAfter)) {
 				return entry.cache.values.toList(); // Order is wrong but shouldn't matter
@@ -1670,7 +1670,7 @@ abstract class ImageboardSiteArchive {
 		};
 	}
 	Future<Map<int, int>> getCatalogPageMap(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
-		return runEphemerallyLocked('getCatalogPageMap($name,$board)', () async {
+		return runEphemerallyLocked('getCatalogPageMap($name,$board)', (_) async {
 			if (acceptCachedAfter != null) {
 				final entry = _catalogPageMapCache[board]?[variant?.dataId];
 				if (entry != null && entry.time.isAfter(acceptCachedAfter)) {

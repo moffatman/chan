@@ -823,12 +823,13 @@ extension DateTimeConversion on DateTime {
 }
 
 final Map<String, Mutex> _ephemeralLocks = {};
-Future<T> runEphemerallyLocked<T>(String key, Future<T> Function() criticalSection) async {
+Future<T> runEphemerallyLocked<T>(String key, Future<T> Function(bool) criticalSection) async {
 	final lock = _ephemeralLocks.putIfAbsent(key, () {
 		return Mutex();
 	});
 	try {
-		return await lock.protect(criticalSection);
+		final wasLocked = lock.isLocked;
+		return await lock.protect(() => criticalSection(wasLocked));
 	}
 	finally {
 		if (!(_ephemeralLocks[key]?.isLocked ?? false)) {

@@ -335,7 +335,7 @@ class VideoServer {
 				final subUri = rootUri.resolve('./$subpath');
 				digest = _encodeDigest(subUri);
 				try {
-					await runEphemerallyLocked(digest, () async {
+					await runEphemerallyLocked(digest, (_) async {
 						_caches[digest] ??= await _startCaching(
 							sibling?.client ?? Settings.instance.client,
 							subUri,
@@ -523,7 +523,7 @@ class VideoServer {
 		await ensureRunning();
 		final digest = _encodeDigest(uri);
 		final existing = _caches[digest]?.completer.isCompleted;
-		await runEphemerallyLocked(digest, () async {
+		await runEphemerallyLocked(digest, (_) async {
 			if (existing == null || (existing == true && (force || !getFile(digest).existsSync()))) {
 				_caches[digest]?.dispose();
 				final cachingFile = await _startCaching(
