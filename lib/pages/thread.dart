@@ -3266,12 +3266,15 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																	children: [
 																		Icon(CupertinoIcons.exclamationmark_triangle, size: 19, color: theme.backgroundColor),
 																		const SizedBox(width: 4),
-																		Text(switch (error.$1) {
-																			ThreadNotFoundException() => '404',
-																			Object obj => obj.toStringDio()
-																		}, style: TextStyle(
-																			color: theme.backgroundColor
-																		))
+																		ConstrainedBox(
+																			constraints: const BoxConstraints(maxWidth: 200),
+																			child: Text(switch (error.$1) {
+																				ThreadNotFoundException() => '404',
+																				Object obj => obj.toStringDio()
+																			}, style: TextStyle(
+																				color: theme.backgroundColor
+																			), maxLines: 1, overflow: TextOverflow.ellipsis)
+																		)
 																	]
 																)
 															),
@@ -3569,10 +3572,14 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 									];
 									return Padding(
 										padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											crossAxisAlignment: CrossAxisAlignment.center,
-											children: widget.reversed ? children.reversed.toList() : children
+										child: SingleChildScrollView(
+											scrollDirection: Axis.horizontal,
+											reverse: true,
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												crossAxisAlignment: CrossAxisAlignment.center,
+												children: widget.reversed ? children.reversed.toList() : children
+											)
 										)
 									);
 								}
