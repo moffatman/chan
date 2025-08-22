@@ -87,7 +87,7 @@ class _QuoteLinkLinkifier extends Linkifier {
 }
 
 
-class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
+class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304CachingCatalogMixin {
 	@override
 	final String name;
 	@override
@@ -591,6 +591,12 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 				return Future.error(HTTPStatusException.fromResponse(response));
 			}
 		}
+		return await _makeArchive(board, response, after, cancelToken: cancelToken);
+	}
+
+	Future<List<Thread>> _makeArchive(String board, Response response, int? after, {
+		CancelToken? cancelToken
+	}) async {
 		final document = parse(response.data);
 		final trs = document.querySelector('#arc-list tbody')!.querySelectorAll('tr').toList();
 		final ids = trs.map((tr) => int.parse(tr.children.first.text)).toList();
@@ -672,23 +678,25 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin {
 	});
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+	RequestOptions getCatalogRequest(String board, {CatalogVariant? variant}) {
 		if (variant == CatalogVariant.chan4NativeArchive) {
-			return _getArchive(board, null, priority: priority, cancelToken: cancelToken);
+			return RequestOptions(
+				path: '/$board/archive',
+				baseUrl: 'https://$baseUrl',
+				responseType: ResponseType.plain
+			);
 		}
-		final response = await client.getUri(Uri.https(apiUrl, '/$board/catalog.json'), options: Options(
-			validateStatus: (x) => true,
-			extra: {
-				kPriority: priority
-			}
-		), cancelToken: cancelToken);
-		if (response.statusCode != 200) {
-			if (response.statusCode == 404) {
-				return Future.error(BoardNotFoundException(board));
-			}
-			else {
-				return Future.error(HTTPStatusException.fromResponse(response));
-			}
+		return RequestOptions(
+			path: '/$board/catalog.json',
+			baseUrl: 'https://$apiUrl',
+			responseType: ResponseType.json
+		);
+	}
+
+	@override
+	Future<List<Thread>> makeCatalog(String board, Response response, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		if (variant == CatalogVariant.chan4NativeArchive) {
+			return _makeArchive(board, response, null, cancelToken: cancelToken);
 		}
 		final List<Thread> threads = [];
 		for (final page in (response.data as List).cast<Map>()) {

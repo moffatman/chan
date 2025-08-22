@@ -30,6 +30,7 @@ import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/hacker_news.dart';
+import 'package:chan/sites/helpers/http_304.dart';
 import 'package:chan/sites/jforum.dart';
 import 'package:chan/sites/jschan.dart';
 import 'package:chan/sites/karachan.dart';
@@ -1578,8 +1579,8 @@ abstract class ImageboardSiteArchive {
 		/// 15 seconds should be well long enough for initial TCP handshake
 		connectTimeout: 15000
 	));
-	final Map<String, ({Map<int, Thread> cache, DateTime time})> _catalogCache = {};
-	final Map<String, ({Map<int, int> cache, DateTime time})> _catalogPageMapCache = {};
+	final Map<String, Map<String?, ({Map<int, Thread> cache, List<int> order, DateTime time})>> _catalogCache = {};
+	final Map<String, Map<String?, ({Map<int, int> cache, DateTime time})>> _catalogPageMapCache = {};
 	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
 	final String? overrideUserAgent;
 	ImageboardSiteArchive({
@@ -1611,14 +1612,26 @@ abstract class ImageboardSiteArchive {
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
 		return runEphemerallyLocked('getCatalog($name,$board)', () async {
-			if (acceptCachedAfter != null) {
-				final entry = _catalogCache[board];
-				if (entry != null && entry.time.isAfter(acceptCachedAfter)) {
-					return entry.cache.values.toList(); // Order is wrong but shouldn't matter
+			final entry = _catalogCache[board]?[variant?.dataId];
+			if (acceptCachedAfter != null && entry != null && entry.time.isAfter(acceptCachedAfter)) {
+				return entry.cache.values.toList(); // Order is wrong but shouldn't matter
+			}
+			List<Thread>? catalog;
+			if (entry != null) {
+				final lastModified = entry.cache.values.lastUpdatedTime;
+				if (lastModified != null) {
+					final freshCatalog = await getCatalogIfModifiedSince(board, lastModified, variant: variant, priority: priority, cancelToken: cancelToken);
+					if (freshCatalog != null) {
+						catalog = freshCatalog;
+					}
+					else {
+						// Reconstruct it
+						catalog = entry.order.tryMap((id) => entry.cache[id]).toList();
+					}
 				}
 			}
-			final catalog = await getCatalogImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
-			final oldCache = _catalogCache[board]?.cache ?? {};
+			catalog ??= await getCatalogImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
+			final oldCache = _catalogCache[board]?[variant?.dataId]?.cache ?? {};
 			final newCache = <int, Thread>{};
 			for (final newThread in catalog) {
 				oldCache.remove(newThread.id);
@@ -1628,10 +1641,21 @@ abstract class ImageboardSiteArchive {
 				// Not in new catalog, it must have been archived
 				oldThread.isArchived = true;
 			}
-			_catalogCache[board] = (cache: newCache, time: DateTime.now());
+			(_catalogCache[board] ??= {})[variant?.dataId] = (cache: newCache, order: catalog.map((t) => t.id).toList(), time: DateTime.now());
 			return catalog;
 		});
 	}
+	/// By default, always fetch the catalog
+	Future<List<Thread>?> getCatalogIfModifiedSince(String board, DateTime lastModified, {
+		CatalogVariant? variant,
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async => getCatalogImpl(
+		board,
+		variant: variant,
+		priority: priority,
+		cancelToken: cancelToken
+	);
 	@protected
 	Future<Map<int, int>> getCatalogPageMapImpl(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
 		if (hasPagedCatalog) {
@@ -1648,13 +1672,13 @@ abstract class ImageboardSiteArchive {
 	Future<Map<int, int>> getCatalogPageMap(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
 		return runEphemerallyLocked('getCatalogPageMap($name,$board)', () async {
 			if (acceptCachedAfter != null) {
-				final entry = _catalogPageMapCache[board];
+				final entry = _catalogPageMapCache[board]?[variant?.dataId];
 				if (entry != null && entry.time.isAfter(acceptCachedAfter)) {
 					return entry.cache;
 				}
 			}
 			final fresh = await getCatalogPageMapImpl(board, variant: variant, priority: priority, acceptCachedAfter: acceptCachedAfter, cancelToken: cancelToken);
-			_catalogPageMapCache[board] = (cache: fresh, time: DateTime.now());
+			(_catalogPageMapCache[board] ??= {})[variant?.dataId] = (cache: fresh, time: DateTime.now());
 			return fresh;
 		});
 	}
@@ -1663,24 +1687,29 @@ abstract class ImageboardSiteArchive {
 	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async => [];
 	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, priority: priority, cancelToken: cancelToken);
-		(_catalogCache[board] ??= (cache: {}, time: DateTime.now())).cache.addAll({
+		final entry = (_catalogCache[board] ??= {})[variant?.dataId] ??= (cache: {}, order: [], time: DateTime.now());
+		entry.cache.addAll({
 			for (final t in moreCatalog)
 				t.id: t
 		});
+		entry.order.addAll(moreCatalog.map((t) => t.id));
 		return moreCatalog;
 	}
 	Thread? getThreadFromCatalogCache(ThreadIdentifier? identifier, {DateTime? ifAfter}) {
 		if (identifier == null) {
 			return null;
 		}
-		final cache = _catalogCache[identifier.board];
-		if (cache == null) {
+		final caches = _catalogCache[identifier.board];
+		if (caches == null) {
 			return null;
 		}
-		if (ifAfter != null && cache.time.isBefore(ifAfter)) {
-			return null;
+		for (final cache in caches.values) {
+			if (ifAfter != null && cache.time.isBefore(ifAfter)) {
+				continue;
+			}
+			return cache.cache[identifier.id];
 		}
-		return cache.cache[identifier.id];
+		return null;
 	}
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken});
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken});

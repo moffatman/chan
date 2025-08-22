@@ -68,7 +68,7 @@ mixin DecodeGenericUrlMixin {
 	}
 }
 
-class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, DecodeGenericUrlMixin {
+class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http304CachingCatalogMixin, DecodeGenericUrlMixin {
 	@override
 	final String baseUrl;
 	String get sysUrl => baseUrl;
@@ -531,21 +531,15 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		);
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '$basePath/$board/catalog.json'), options: Options(
-			validateStatus: (x) => true,
-			extra: {
-				kPriority: priority
-			}
-		), cancelToken: cancelToken);
-		if (response.statusCode != 200) {
-			if (response.statusCode == 404) {
-				return Future.error(BoardNotFoundException(board));
-			}
-			else {
-				return Future.error(HTTPStatusException.fromResponse(response));
-			}
-		}
+	RequestOptions getCatalogRequest(String board, {CatalogVariant? variant})
+		=> RequestOptions(
+			baseUrl: 'https://$baseUrl',
+			path: '$basePath/$board/catalog.json',
+			responseType: ResponseType.json
+		);
+
+	@override
+	Future<List<Thread>> makeCatalog(String board, Response response, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final List<Thread> threads = [];
 		for (final page in (response.data as List).cast<Map>()) {
 			for (final threadData in (page['threads'] as List? ?? []).cast<Map>()) {

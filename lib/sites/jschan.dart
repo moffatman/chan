@@ -16,7 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
-class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGenericUrlMixin {
+class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304CachingCatalogMixin, DecodeGenericUrlMixin {
 	@override
 	final String baseUrl;
 	@override
@@ -327,13 +327,16 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, DecodeGe
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri<List>(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
-			extra: {
-				kPriority: priority
-			}
-		), cancelToken: cancelToken);
-		return response.data!.cast<Map>().map(_makeThread).toList();
+	RequestOptions getCatalogRequest(String board, {CatalogVariant? variant})
+		=> RequestOptions(
+			baseUrl: 'https://$baseUrl',
+			path: '/$board/catalog.json',
+			responseType: ResponseType.json
+		);
+
+	@override
+	Future<List<Thread>> makeCatalog(String board, Response response, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		return (response.data as List).cast<Map>().map(_makeThread).toList();
 	}
 
 	@override

@@ -25,7 +25,7 @@ class DvachException implements Exception {
 	String toString() => 'Dvach error ($code): $message';
 }
 
-class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGenericUrlMixin {
+class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304CachingCatalogMixin, DecodeGenericUrlMixin {
 	@override
 	final String baseUrl;
 	@override
@@ -134,20 +134,14 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, DecodeGen
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
-			validateStatus: (s) => true,
-			extra: {
-				kPriority: priority
-			},
+	RequestOptions getCatalogRequest(String board, {CatalogVariant? variant})
+		=> RequestOptions(
+			path: '/$board/catalog.json',
+			baseUrl: 'https://$baseUrl',
 			responseType: ResponseType.json
-		), cancelToken: cancelToken);
-		if (response.statusCode == 404) {
-			throw BoardNotFoundException(board);
-		}
-		else if (response.statusCode != 200) {
-			throw HTTPStatusException.fromResponse(response);
-		}
+		);
+	@override
+	Future<List<Thread>> makeCatalog(String board, Response response, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final threadsPerPage = switch (response.data) {
 			{'board': {'threads_per_page': int x}} => x,
 			_ => null

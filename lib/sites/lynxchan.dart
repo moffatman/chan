@@ -22,7 +22,7 @@ import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:mime/mime.dart';
 
-class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, DecodeGenericUrlMixin {
+class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http304CachingCatalogMixin, DecodeGenericUrlMixin {
 	@override
 	final String name;
 	@override
@@ -404,23 +404,23 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Decode
 		);
 	}
 
+	@override
+	RequestOptions getCatalogRequest(String board, {CatalogVariant? variant})
+		=> RequestOptions(
+			baseUrl: 'https://$baseUrl',
+			path: hasPagedCatalog ? '/$board/1.json' : '/$board/catalog.json',
+			responseType: ResponseType.json
+		);
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<List<Thread>> makeCatalog(String board, Response response, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (hasPagedCatalog) {
-			return await _getCatalogPage(board, 1, priority: priority, cancelToken: cancelToken);
-		}
-		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
-			validateStatus: (status) => status == 200 || status == 404,
-			extra: {
-				kPriority: priority
-			}
-		), cancelToken: cancelToken);
-		if (response.statusCode == 404) {
-			throw BoardNotFoundException(board);
+			final data = response.data as Map;
+			_updateBoardInformation(board, data);
+			return (data['threads'] as List).cast<Map>().map(wrapUnsafe((o) => _makeThreadFromCatalog(board, o)..currentPage = 1)).toList();
 		}
 		_maybeUpdateBoardInformation(board); // Don't await
-		return (response.data as List).cast<Map>().map((o) => _makeThreadFromCatalog(board, o)).toList();
+		return (response.data as List).cast<Map>().map(wrapUnsafe((o) => _makeThreadFromCatalog(board, o))).toList();
 	}
 
 	/// catalog.json may be missing important details, but always has threadId + page
