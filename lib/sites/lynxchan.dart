@@ -361,6 +361,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	};
 
 	Thread _makeThreadFromCatalog(String board, Map obj) {
+		final threadId = obj['threadId'] as int;
 		final op = Post(
 			board: board,
 			text: obj['markdown'] as String,
@@ -369,25 +370,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			capcode: obj['signedRole'] as String?,
 			time: DateTime.parse(obj['creation'] as String),
 			threadId: obj['threadId'] as int,
-			id: obj['threadId'] as int,
+			id: threadId,
 			spanFormat: PostSpanFormat.lynxchan,
-			attachments_: (obj['files'] as List?)?.cast<Map>().map((f) {
-				final path = f['path'] as String;
-				return Attachment(
-					type: AttachmentType.fromFilename(path),
-					board: board,
-					id: path,
-					ext: '.${path.afterLast('.')}',
-					filename: f['originalName'] as String? ?? path.afterLast('/'),
-					url: Uri.https(imageUrl, path).toString(),
-					thumbnailUrl: Uri.https(imageUrl, f['thumb'] as String).toString(),
-					md5: '',
-					width: _tryParseInt(f['width']),
-					height: _tryParseInt(f['height']),
-					threadId: obj['threadId'] as int?,
-					sizeInBytes: f['size'] as int?
-				);
-			}).toList() ?? const []
+			attachments_: (obj['files'] as List?)?.cast<Map>().map((f) => _makeAttachment(board, threadId, f)).toList() ?? const []
 		);
 		final replies = (obj['posts'] as List?)?.cast<Map>().map((obj) => _makePost(board, op.id, obj['postId'] as int, obj)).toList() ?? [];
 		return Thread(
@@ -400,6 +385,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			isSticky: obj['pinned'] as bool,
 			time: DateTime.parse(obj['creation'] as String),
 			attachments: op.attachments_,
+			customSpoilerId: _getCustomSpoilerId(board, obj),
 			currentPage: obj['page'] as int?
 		);
 	}
@@ -451,6 +437,60 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		}
 	}
 
+	/// Lynxchan has board-specific spoiler images, but not on all boards.
+	/// Use the customSpoilerId field to encode whether board-specific URL should be used.
+	static const _kBoardCustomSpoilerId = 1;
+
+	int? _getCustomSpoilerId(String board, Map data) {
+		final boardCustomSpoilerThumb = '/$board/custom.spoiler';
+		for (final post in [data, ...(data['posts'] as List? ?? [])].cast<Map>()) {
+			for (final file in (post['files'] as List? ?? []).cast<Map>()) {
+				if (file['thumb'] == boardCustomSpoilerThumb) {
+					return _kBoardCustomSpoilerId;
+				}
+			}
+		}
+		return null;
+	}
+
+	@override
+	Uri? getSpoilerImageUrl(Attachment attachment, {Thread? thread}) {
+		if (thread?.customSpoilerId == _kBoardCustomSpoilerId) {
+			return Uri.https(imageUrl, '/${thread?.board}/custom.spoiler');
+		}
+		else {
+			return Uri.https(imageUrl, '/spoiler.png');
+		}
+	}
+
+	Attachment _makeAttachment(String board, int threadId, Map f, {String? overrideId}) => unsafe(f, () {
+		final path = f['path'] as String;
+		final thumbPath = f['thumb'] as String;
+		final spoiler = thumbPath.startsWith('/spoiler.') || thumbPath == '/$board/custom.spoiler';
+		String thumbnailUrl = Uri.https(imageUrl, thumbPath).toString();
+		if (spoiler) {
+			final hash = RegExp(r'^\/.media\/([0-9a-f]+)\.[^.]+$').firstMatch(path)?.group(1);
+			if (hash != null) {
+				thumbnailUrl = 'https://$imageUrl/.media/t_$hash';
+			}
+		}
+		return Attachment(
+			type: AttachmentType.fromFilename(path),
+			board: board,
+			id: overrideId ?? path,
+			ext: '.${path.afterLast('.')}',
+			filename: f['originalName'] as String? ?? path.afterLast('/'),
+			url: Uri.https(imageUrl, path).toString(),
+			thumbnailUrl: thumbnailUrl,
+			spoiler: spoiler,
+			md5: '',
+			width: _tryParseInt(f['width']),
+			height: _tryParseInt(f['height']),
+			threadId: threadId,
+			sizeInBytes: f['size'] as int?
+		);
+	});
+
 	Post _makePost(String board, int threadId, int id, Map obj) => unsafe(obj, () {
 		return Post(
 			board: board,
@@ -464,22 +504,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			id: id,
 			spanFormat: PostSpanFormat.lynxchan,
 			attachments_: (obj['files'] as List).cast<Map>().asMap().entries.map(wrapUnsafe((e) {
+				// Lynxchan dedupes images. Prepend some uniqueness here to avoid Hero problems later.
 				final path = e.value['path'] as String;
-				return Attachment(
-					type: AttachmentType.fromFilename(path),
-					board: board,
-					// Lynxchan dedupes images. Prepend some uniqueness here to avoid Hero problems later.
-					id: '$id-${e.key}-$path',
-					ext: '.${path.afterLast('.')}',
-					filename: e.value['originalName'] as String,
-					url: Uri.https(imageUrl, path).toString(),
-					thumbnailUrl: Uri.https(imageUrl, e.value['thumb'] as String).toString(),
-					md5: '',
-					width: _tryParseInt(e.value['width']),
-					height: _tryParseInt(e.value['height']),
-					threadId: obj['threadId'] as int?,
-					sizeInBytes: e.value['size'] as int?
-				);
+				return _makeAttachment(board, threadId, e.value, overrideId: '$id-${e.key}-$path');
 			})).toList()
 		);
 	});
@@ -507,6 +534,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			isSticky: data['pinned'] as bool,
 			time: op.time,
 			attachments: op.attachments_,
+			customSpoilerId: _getCustomSpoilerId(thread.board, data),
 			isArchived: data['archived'] as bool? ?? false
 		);
 	}

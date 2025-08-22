@@ -192,7 +192,7 @@ class Attachment {
 	String toString() => 'Attachment(board: $board, id: $id, ext: $ext, filename: $filename, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, md5: $md5, spoiler: $spoiler, width: $width, height: $height, threadId: $threadId, sizeInBytes: $sizeInBytes)';
 
 	@override
-	bool operator==(Object other) => identical(this, other) || (other is Attachment) && (other.url == url) && (other.thumbnailUrl == thumbnailUrl) && (other.type == type) && (other.id == id);
+	bool operator==(Object other) => identical(this, other) || (other is Attachment) && (other.url == url) && (other.thumbnailUrl == thumbnailUrl) && (other.type == type) && (other.id == id) && (other.spoiler == spoiler);
 
 	@override
 	int get hashCode => Object.hash(url, thumbnailUrl, type, id);
