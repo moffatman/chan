@@ -1581,7 +1581,7 @@ class AttachmentViewer extends StatelessWidget {
 											child: ErrorMessageCard(e.toStringDio(), remedies: {
 													'Retry': () => controller.reloadFullAttachment(),
 													'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url), useGalleryIfPossible: false),
-													...generateBugRemedies(e, st, context),
+													...generateBugRemedies(e, st, context, afterFix: controller.reloadFullAttachment),
 													if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
 												}
 											)
@@ -2003,7 +2003,7 @@ class AttachmentViewer extends StatelessWidget {
 								child: ErrorMessageCard(e.toStringDio(), remedies: {
 									'Retry': () => controller.reloadFullAttachment(),
 									'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url), useGalleryIfPossible: false),
-									...generateBugRemedies(e, st, context),
+									...generateBugRemedies(e, st, context, afterFix: controller.reloadFullAttachment),
 									if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
 								})
 							),

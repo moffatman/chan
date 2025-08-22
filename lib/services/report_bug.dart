@@ -50,11 +50,14 @@ Future<void> reportBug(Object error, StackTrace stackTrace) async {
 	}
 }
 
-Map<String, FutureOr<void> Function()> generateBugRemedies(Object e, StackTrace? st, BuildContext context) {
+Map<String, FutureOr<void> Function()> generateBugRemedies(Object e, StackTrace? st, BuildContext context, {FutureOr<void> Function()? afterFix}) {
 	final ex = ExtendedException.extract(e);
 	final exRemedies = ex?.remedies ?? const {};
 	return {
 		if (st != null && (ex?.isReportable ?? true)) 'Report bug': () => reportBug(e, st),
-		...exRemedies.map((k, v) => MapEntry(k, () => v(context)))
+		...exRemedies.map((k, v) => MapEntry(k, () async {
+			await v(context);
+			await afterFix?.call();
+		}))
 	};
 }

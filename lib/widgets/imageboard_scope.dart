@@ -58,7 +58,7 @@ class ImageboardScope extends StatelessWidget {
 					return Center(
 						child: ErrorMessageCard('Error fetching boards for imageboard $imageboardKey:\n${b.boardFetchError!.$1.toStringDio()}', remedies: {
 							'Retry': b.setupBoards,
-							...generateBugRemedies(b.boardFetchError!.$1, b.boardFetchError!.$2, context)
+							...generateBugRemedies(b.boardFetchError!.$1, b.boardFetchError!.$2, context, afterFix: b.setupBoards)
 						})
 					);
 				}

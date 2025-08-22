@@ -53,7 +53,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		_runQuery();
 	}
 
-	void _runQuery() async {
+	Future<void> _runQuery() async {
 		final lastResult = result.data;
 		result = const AsyncSnapshot.waiting();
 		setState(() {});
@@ -212,7 +212,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			return Center(
 				child: ErrorMessageCard(result.error!.toStringDio(), remedies: {
 					'Retry': _runQuery,
-					...generateBugRemedies(result.error!, result.stackTrace!, context)
+					...generateBugRemedies(result.error!, result.stackTrace!, context, afterFix: _runQuery)
 				})
 			);
 		}
