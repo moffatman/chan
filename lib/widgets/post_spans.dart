@@ -322,15 +322,15 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 		if (options.showRawSource) {
 			return TextSpan(text: buildText(post));
 		}
+		final stackIds = zone.stackIds.toList();
+		if (stackIds.isNotEmpty) {
+			stackIds.removeLast();
+		}
 		return WidgetSpan(
 			child: Wrap(
 				spacing: 16,
 				runSpacing: 16,
 				children: attachments.map((attachment) {
-					final stackIds = zone.stackIds.toList();
-					if (stackIds.isNotEmpty) {
-						stackIds.removeLast();
-					}
 					return PopupAttachment(
 						attachment: attachment,
 						child: CupertinoButton(
