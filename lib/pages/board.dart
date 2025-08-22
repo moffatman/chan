@@ -489,6 +489,47 @@ class BoardPageState extends State<BoardPage> {
 		}
 	}
 
+	Future<void> _onReplyButtonPressed() async {
+		if ((context.read<MasterDetailLocation?>()?.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+			final imageboard = context.read<Imageboard>();
+			await showAdaptiveModalPopup(
+				context: context,
+				builder: (ctx) => ImageboardScope(
+					imageboardKey: null,
+					imageboard: imageboard,
+					child: Padding(
+						padding: MediaQuery.viewInsetsOf(ctx),
+						child: Container(
+							color: ChanceTheme.backgroundColorOf(ctx),
+							child: ReplyBox(
+								fullyExpanded: true,
+								board: board!.boardKey,
+								initialDraft: widget.tab?.draft,
+								onDraftChanged: (draft) {
+									widget.tab?.mutate((tab) => tab.draft = draft);
+								},
+								onReplyPosted: (board, receipt) async {
+									if (imageboard.site.supportsPushNotifications) {
+										await promptForPushNotificationsIfNeeded(ctx);
+									}
+									if (!ctx.mounted) return;
+									final newThread = ThreadIdentifier(board, receipt.id);
+									_listController.update();
+									_onThreadSelected(newThread);
+									Navigator.of(ctx).pop();
+								}
+							)
+						)
+					)
+				)
+			);
+		}
+		else {
+			_replyBoxKey.currentState?.toggleReplyBox();
+			setState(() {});
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final imageboard = context.watch<Imageboard?>();
@@ -1066,7 +1107,7 @@ class BoardPageState extends State<BoardPage> {
 							)
 						)
 					),
-					if (imageboard?.site.supportsPosting ?? false) NotifyingIcon(
+					if (!settings.replyButtonAtBottom && (imageboard?.site.supportsPosting ?? false)) NotifyingIcon(
 						sideBySide: true,
 						sideBySideRightPadding: settings.materialStyle ? 16 : 0,
 						primaryCount: MappingValueListenable(
@@ -1080,45 +1121,7 @@ class BoardPageState extends State<BoardPage> {
 						),
 						icon: AdaptiveIconButton(
 							icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
-							onPressed: () {
-								if ((context.read<MasterDetailLocation?>()?.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-									showAdaptiveModalPopup(
-										context: context,
-										builder: (ctx) => ImageboardScope(
-											imageboardKey: null,
-											imageboard: imageboard!,
-											child: Padding(
-												padding: MediaQuery.viewInsetsOf(ctx),
-												child: Container(
-													color: ChanceTheme.backgroundColorOf(ctx),
-													child: ReplyBox(
-														fullyExpanded: true,
-														board: board!.boardKey,
-														initialDraft: widget.tab?.draft,
-														onDraftChanged: (draft) {
-															widget.tab?.mutate((tab) => tab.draft = draft);
-														},
-														onReplyPosted: (board, receipt) async {
-															if (imageboard.site.supportsPushNotifications) {
-																await promptForPushNotificationsIfNeeded(ctx);
-															}
-															if (!ctx.mounted) return;
-															final newThread = ThreadIdentifier(board, receipt.id);
-															_listController.update();
-															_onThreadSelected(newThread);
-															Navigator.of(ctx).pop();
-														}
-													)
-												)
-											)
-										)
-									);
-								}
-								else {
-									_replyBoxKey.currentState?.toggleReplyBox();
-									setState(() {});
-								}
-							}
+							onPressed: _onReplyButtonPressed
 						)
 					)
 				]
@@ -1305,6 +1308,49 @@ class BoardPageState extends State<BoardPage> {
 																						color: primaryColorWithBrightness80,
 																						onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
 																						child: Icon(CupertinoIcons.square_grid_2x2, size: 20, color: theme.backgroundColor)
+																					),
+																					const SizedBox(width: 8),
+																				],
+																				if (settings.replyButtonAtBottom && (imageboard?.site.supportsPosting ?? false)) ...[
+																					ValueListenableBuilder(
+																						valueListenable: Combining2ValueListenable(
+																							child1: MappingValueListenable(
+																								parent: Outbox.instance,
+																								mapper: (o) =>
+																									o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+																							),
+																							child2: MappingValueListenable(
+																								parent: Outbox.instance,
+																								mapper: (o) => o.submittableCount - o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+																							),
+																							combine: (v1, v2) => (thisBoard: v1, otherBoards: v2)
+																						),
+																						builder: (context, counts, _) => SegmentedWidget(
+																							radius: radius,
+																							segments: [
+																								if (counts.otherBoards > 0 && !(_replyBoxKey.currentState?.show ?? false)) SegmentedWidgetSegment(
+																									color: primaryColorWithBrightness80,
+																									child: Text('${counts.otherBoards}', style: TextStyle(
+																										color: theme.backgroundColor
+																									))
+																								),
+																								if (counts.thisBoard > 0 && !(_replyBoxKey.currentState?.show ?? false)) SegmentedWidgetSegment(
+																									color: theme.secondaryColor,
+																									child: Text('${counts.thisBoard}', style: TextStyle(
+																										color: (theme.secondaryColor.computeLuminance() > 0.5) ? Colors.black : Colors.white
+																									))
+																								),
+																								SegmentedWidgetSegment(
+																									color: primaryColorWithBrightness80,
+																									onPressed: _onReplyButtonPressed,
+																									child: Icon(
+																										(_replyBoxKey.currentState?.show ?? false) ? CupertinoIcons.pencil_slash : CupertinoIcons.pencil,
+																										size: 20,
+																										color: theme.backgroundColor
+																									)
+																								)
+																							]
+																						)
 																					),
 																					const SizedBox(width: 8),
 																				],

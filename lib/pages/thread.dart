@@ -1716,7 +1716,7 @@ class ThreadPageState extends State<ThreadPage> {
 											}
 										)
 									),
-									if (site.supportsPosting) NotifyingIcon(
+									if (!settings.replyButtonAtBottom && site.supportsPosting) NotifyingIcon(
 										sideBySide: true,
 										sideBySideRightPadding: settings.materialStyle ? 16 : 0,
 										primaryCount: MappingValueListenable(
@@ -2212,7 +2212,8 @@ class ThreadPageState extends State<ThreadPage> {
 																					});
 																				}
 																			),
-																			replyBoxKey: _replyBoxKey
+																			replyBoxKey: _replyBoxKey,
+																			popOutReplyBox: _popOutReplyBox
 																		)
 																	)
 																)
@@ -2303,6 +2304,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final GlobalKey<ReplyBoxState> replyBoxKey;
 	final VoidCallback forceThreadRebuild;
 	final VoidCallback resetLayoutIndexes;
+	final Future<void> Function(ValueChanged<ReplyBoxState>? onInitState) popOutReplyBox;
 	
 	const _ThreadPositionIndicator({
 		required this.persistentState,
@@ -2327,6 +2329,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.replyBoxKey,
 		required this.forceThreadRebuild,
 		required this.resetLayoutIndexes,
+		required this.popOutReplyBox,
 		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
@@ -2688,6 +2691,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value.isCached && e.key.sizeInBytes == null);
 		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
 		final showGalleryGridButton = Settings.showGalleryGridButtonSetting.watch(context);
+		final replyButtonAtBottom = Settings.replyButtonAtBottomSetting.watch(context);
 		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.where((a) => a.type != AttachmentType.url).length);
 		final postSortingMethod = widget.persistentState.effectivePostSortingMethod;
 		final poll = widget.thread?.poll;
@@ -3399,6 +3403,57 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												)
 											),
 											const SizedBox(width: 8),
+										],
+										if (replyButtonAtBottom && site.supportsPosting) ...[
+											ValueListenableBuilder(
+												valueListenable: Combining2ValueListenable(
+													child1: MappingValueListenable(
+														parent: Outbox.instance,
+														mapper: (o) =>
+															o.queuedPostsFor(widget.persistentState.imageboardKey, widget.threadIdentifier.board, widget.threadIdentifier.id).where((e) => e.state.isSubmittable).length
+													),
+													child2: MappingValueListenable(
+														parent: Outbox.instance,
+														mapper: (o) => o.submittableCount - o.queuedPostsFor(widget.persistentState.imageboardKey, widget.threadIdentifier.board, widget.threadIdentifier.id).where((e) => e.state.isSubmittable).length
+													),
+													combine: (v1, v2) => (thisThread: v1, otherThreads: v2)
+												),
+												builder: (context, counts, _) => SegmentedWidget(
+													radius: radius,
+													segments: [
+														if (counts.otherThreads > 0 && !(widget.replyBoxKey.currentState?.show ?? false)) SegmentedWidgetSegment(
+															color: theme.primaryColorWithBrightness(0.8),
+															child: Text('${counts.otherThreads}', style: TextStyle(
+																color: theme.backgroundColor
+															))
+														),
+														if (counts.thisThread > 0 && !(widget.replyBoxKey.currentState?.show ?? false)) SegmentedWidgetSegment(
+															color: theme.secondaryColor,
+															child: Text('${counts.thisThread}', style: TextStyle(
+																color: (theme.secondaryColor.computeLuminance() > 0.5) ? Colors.black : Colors.white
+															))
+														),
+														SegmentedWidgetSegment(
+															color: widget.persistentState.disableUpdates ? theme.primaryColorWithBrightness(0.6) : theme.primaryColor,
+															onPressed: () {
+																if ((context.read<MasterDetailLocation?>()?.isVeryConstrained ?? false) && widget.replyBoxKey.currentState?.show != true) {
+																	widget.popOutReplyBox(null);
+																}
+																else {
+																	widget.replyBoxKey.currentState?.toggleReplyBox();
+																}
+																setState(() {});
+															},
+															child: Icon(
+																(widget.replyBoxKey.currentState?.show ?? false) ? CupertinoIcons.arrowshape_turn_up_left_fill : CupertinoIcons.reply,
+																size: 20,
+																color: theme.backgroundColor
+															)
+														)
+													]
+												)
+											),
+											const SizedBox(width: 8)
 										],
 										if (_whiteCountAbove > 0) GestureDetector(
 											onLongPress: () {

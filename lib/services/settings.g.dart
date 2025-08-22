@@ -2469,6 +2469,16 @@ class SavedSettingsFields {
     fieldName: 'thumbnailOpacity',
     merger: PrimitiveMerger(),
   );
+  static bool getReplyButtonAtBottom(SavedSettings x) => x.replyButtonAtBottom;
+  static void setReplyButtonAtBottom(SavedSettings x, bool v) =>
+      x.replyButtonAtBottom = v;
+  static const replyButtonAtBottom = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getReplyButtonAtBottom,
+    setter: setReplyButtonAtBottom,
+    fieldNumber: 208,
+    fieldName: 'replyButtonAtBottom',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2676,7 +2686,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     204: SavedSettingsFields.showLineBreak2InPostInfoRow,
     205: SavedSettingsFields.reverseSavedThreadsSorting,
     206: SavedSettingsFields.reverseWatchedThreadsSorting,
-    207: SavedSettingsFields.thumbnailOpacity
+    207: SavedSettingsFields.thumbnailOpacity,
+    208: SavedSettingsFields.replyButtonAtBottom
   };
 
   @override
@@ -2898,13 +2909,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       reverseSavedThreadsSorting: fields[205] as bool?,
       reverseWatchedThreadsSorting: fields[206] as bool?,
       thumbnailOpacity: fields[207] as double?,
+      replyButtonAtBottom: fields[208] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(195)
+      ..writeByte(196)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3294,7 +3306,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(206)
       ..write(obj.reverseWatchedThreadsSorting)
       ..writeByte(207)
-      ..write(obj.thumbnailOpacity);
+      ..write(obj.thumbnailOpacity)
+      ..writeByte(208)
+      ..write(obj.replyButtonAtBottom);
   }
 
   @override

@@ -1540,5 +1540,10 @@ final appearanceSettings = [
 			forwards: (maxExtent, width) => (width / math.max(1, maxExtent)).ceil(),
 			reverse: (columns, width) => (width / columns).ceilToDouble()
 		)
-	)
+	),
+	const SwitchSettingWidget(
+		description: 'Reply button at bottom of screen',
+		icon: CupertinoIcons.reply,
+		setting: Settings.replyButtonAtBottomSetting
+	),
 ];

@@ -1256,6 +1256,8 @@ class SavedSettings extends HiveObject {
 	bool reverseWatchedThreadsSorting;
 	@HiveField(207)
 	double thumbnailOpacity;
+	@HiveField(208)
+	bool replyButtonAtBottom;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1465,6 +1467,7 @@ class SavedSettings extends HiveObject {
 		bool? reverseSavedThreadsSorting,
 		bool? reverseWatchedThreadsSorting,
 		double? thumbnailOpacity,
+		bool? replyButtonAtBottom,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1693,7 +1696,8 @@ class SavedSettings extends HiveObject {
 		showLineBreak2InPostInfoRow = showLineBreak2InPostInfoRow ?? false,
 		reverseSavedThreadsSorting = reverseSavedThreadsSorting ?? false,
 		reverseWatchedThreadsSorting = reverseWatchedThreadsSorting ?? false,
-		thumbnailOpacity = thumbnailOpacity ?? -0.5 {
+		thumbnailOpacity = thumbnailOpacity ?? -0.5,
+		replyButtonAtBottom = replyButtonAtBottom ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -3001,6 +3005,9 @@ class Settings extends ChangeNotifier {
 
 	static const thumbnailOpacitySetting = SavedSetting(SavedSettingsFields.thumbnailOpacity);
 	double get thumbnailOpacity => thumbnailOpacitySetting(this);
+
+	static const replyButtonAtBottomSetting = SavedSetting(SavedSettingsFields.replyButtonAtBottom);
+	bool get replyButtonAtBottom => replyButtonAtBottomSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
