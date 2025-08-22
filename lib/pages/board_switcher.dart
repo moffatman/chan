@@ -38,12 +38,17 @@ extension _Nullify on ImageboardScoped<ImageboardBoard> {
 	);
 }
 
+enum _ExactMatchType {
+	match,
+	finalizedMatch
+}
+
 class _Board {
 	final Imageboard imageboard;
 	final ImageboardBoard item;
 	final int typeaheadIndex;
 	final int matchIndex;
-	final bool exactMatch;
+	final _ExactMatchType? exactMatch;
 	final int favsIndex;
 	final int imageboardPriorityIndex;
 
@@ -288,9 +293,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	List<ImageboardScoped<ImageboardBoard>> getFilteredBoards() {
 		final settings = Settings.instance;
-		final keywords = searchString.toLowerCase().split(' ').where((s) => s.isNotEmpty).toList();
+		final keywords = searchString.toLowerCase().split(' ').where((s) => s.isNotEmpty).map((s) => (str: s, fin: true)).toList();
+		if (keywords.tryLast?.str case String str when !searchString.endsWith(' ')) {
+			keywords.last = (str: str, fin: false);
+		}
 		final matchingOtherImageboards = {
-			for (final keyword in keywords)
+			for (final (str: keyword, fin: _) in keywords)
 				keyword: allImageboards.where((i) => i != currentImageboard && i.site.name.toLowerCase().contains(keyword)).toSet()
 		};
 		final imageboards = allImageboards.toList();
@@ -310,9 +318,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				return null;
 			}
 			final target = board.item.name.isEmpty ? board.imageboard.site.name : board.item.boardKey.s;
-			bool exactMatch = false;
+			_ExactMatchType? exactMatch;
 			int bestMatchIndex = -1;
-			for (final keyword in keywords) {
+			for (final (str: keyword, fin:isEnd) in keywords) {
 				final matchIndex = target.indexOf(keyword);
 				if (
 					!(
@@ -328,7 +336,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				}
 				if (matchIndex == 0 && target.length == keyword.length) {
 					bestMatchIndex = 0;
-					exactMatch = true;
+					exactMatch = isEnd ? _ExactMatchType.finalizedMatch : _ExactMatchType.match;
 				}
 				else if (bestMatchIndex == -1 || (matchIndex != -1 && matchIndex < bestMatchIndex)) {
 					bestMatchIndex = matchIndex;
@@ -375,14 +383,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			for (int i = 0; i < keywords.length; i++) {
 				// Only consider names once per-keyword in tree
 				final existingNames1 = existingNames0.toSet();
-				for (final (depth, boards) in typeahead.descend(keywords[i])) {
+				for (final (depth, boards) in typeahead.descend(keywords[i].str)) {
 					outer:
 					for (final board in boards) {
 						if (existingNames1.contains(board.boardKey)) {
 							continue;
 						}
 						existingNames1.add(board.boardKey);
-						final matchIndex = board.boardKey.s.indexOf(keywords[i]);
+						final matchIndex = board.boardKey.s.indexOf(keywords[i].str);
 						if (matchIndex == -1 && keywords.length == 1) {
 							// This drops all the "relevant" boards that don't actually match
 							continue;
@@ -392,11 +400,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								i != j
 								&& !(
 									// Name match
-									board.boardKey.s.contains(keywords[j]) ||
+									board.boardKey.s.contains(keywords[j].str) ||
 									// Title match
-									(board.title.toLowerCase().contains(keywords[j])) ||
+									(board.title.toLowerCase().contains(keywords[j].str)) ||
 									// Site name match
-									(matchingOtherImageboards[keywords[j]]?.contains(currentImageboard) ?? false)
+									(matchingOtherImageboards[keywords[j].str]?.contains(currentImageboard) ?? false)
 								)
 							) {
 								continue outer;
@@ -405,7 +413,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 						filteredBoards.add(_Board(currentImageboard.scope(board),
 							typeaheadIndex: 1 + depth,
 							matchIndex: matchIndex,
-							exactMatch: matchIndex == 0 && board.boardKey.s.length == keywords[i].length,
+							exactMatch: switch ((matchIndex, board.boardKey.s.length == keywords[i].str.length, keywords[i].fin)) {
+								(0, true, false) => _ExactMatchType.match,
+								(0, true, true) => _ExactMatchType.finalizedMatch,
+								_ => null
+							},
 							// Don't treat it as a favourite
 							favsIndex: favsOrder.length,
 							imageboardPriorityIndex: 0 // currentImageboard
@@ -416,8 +428,16 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				existingNames0.addAll(existingNames1);
 			}
 			filteredBoards.sort((a, b) {
-				final exactMatchA = a.exactMatch && a.imageboard == currentImageboard && a.typeaheadIndex == 0;
-				final exactMatchB = b.exactMatch && b.imageboard == currentImageboard && b.typeaheadIndex == 0;
+				final exactMatchA = a.typeaheadIndex == 0 && switch (a.exactMatch) {
+					_ExactMatchType.finalizedMatch => true,
+					_ExactMatchType.match => a.imageboard == currentImageboard,
+					null => false
+				};
+				final exactMatchB = b.typeaheadIndex == 0 && switch (b.exactMatch) {
+					_ExactMatchType.finalizedMatch => true,
+					_ExactMatchType.match => b.imageboard == currentImageboard,
+					null => false
+				};
 				if (exactMatchA && !exactMatchB) {
 					return -1;
 				}
@@ -475,7 +495,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					return [currentImageboard.scope(fakeBoard)];
 				}
 				final exactMatchBoardIndex = filteredBoards.indexWhere(
-					(b) => b.matchIndex == 0 && b.item.boardKey.s.length == keywords.first.length && b.imageboardPriorityIndex == 0);
+					(b) => b.matchIndex == 0 && b.item.boardKey.s.length == keywords.first.str.length && b.imageboardPriorityIndex == 0);
 				if (exactMatchBoardIndex == -1) {
 					ret.insert(1, currentImageboard.scope(fakeBoard));
 				}
