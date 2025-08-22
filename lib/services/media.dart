@@ -726,7 +726,7 @@ class MediaConversion {
 					Map<String, String> inputHeaders = headers;
 					if (soundSource != null && inputFile.toStringFFMPEG().startsWith('http')) {
 						// Proxy cache the video file, FFMPEG will try to read it repeatedly if looping
-						final digest = await VideoServer.instance.startCachingDownload(uri: inputUri);
+						final digest = await VideoServer.instance.startCachingDownload(uri: inputUri, headers: headers);
 						inputUri = VideoServer.instance.getUri(digest);
 						inputHeaders = {};
 					}
