@@ -56,6 +56,10 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
 				options.headers.update(HttpHeaders.cookieHeader, (existing) {
+					if (existing is String && existing.contains(_kCookie)) {
+						// Don't re-add on re-entrant request
+						return existing;
+					}
 					return '$existing; $_kCookie';
 				}, ifAbsent: () => _kCookie);
 				handler.next(options);
