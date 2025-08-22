@@ -569,16 +569,20 @@ class MediaConversion {
 	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints() async {
 		bool isOriginalFile = false;
 		File file = getDestination();
-		if (!(await file.exists())) {
+		FileStat stat = await file.stat();
+		if (stat.type == FileSystemEntityType.notFound) {
 			if (inputFile.scheme == 'file' && inputFile.path.afterLast('.') == outputFileExtension) {
 				isOriginalFile = true;
 				file = File(inputFile.toStringFFMPEG());
+				stat = await file.stat();
+				if (stat.type == FileSystemEntityType.notFound) {
+					return null;
+				}
 			}
 			else {
 				return null;
 			}
 		}
-		final stat = await file.stat();
 		MediaScan? scan;
 		try {
 			scan = await MediaScan.scan(file.uri, headers: headers);
