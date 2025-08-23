@@ -344,7 +344,6 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 								child: AttachmentThumbnail(
 									attachment: attachment,
 									revealSpoilers: options.revealSpoilerImages,
-									thread: zone.primaryThread,
 									onLoadError: options.onThumbnailLoadError,
 									hero: TaggedAttachment(
 										attachment: attachment,

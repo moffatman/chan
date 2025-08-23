@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
-import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/attachment_cache.dart';
 import 'package:chan/services/imageboard.dart';
@@ -121,7 +120,6 @@ _KeyedAfterPaint? _makeKeyedAfterPaint({
 }
 
 class AttachmentThumbnail extends StatelessWidget {
-	final ThreadIdentifier? thread;
 	final Attachment attachment;
 	final double? width;
 	final double? height;
@@ -143,7 +141,6 @@ class AttachmentThumbnail extends StatelessWidget {
 
 	const AttachmentThumbnail({
 		required this.attachment,
-		this.thread,
 		this.width,
 		this.height,
 		this.fit = BoxFit.contain,

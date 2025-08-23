@@ -523,7 +523,6 @@ class ThreadRow extends StatelessWidget {
 									child: AttachmentThumbnail(
 										onLoadError: onThumbnailLoadError,
 										attachment: attachment,
-										thread: latestThread.identifier,
 										mayObscure: true,
 										hero: TaggedAttachment(
 											attachment: attachment,
@@ -668,7 +667,6 @@ class ThreadRow extends StatelessWidget {
 										attachment: attachment,
 										expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
 										height: style == ThreadRowStyle.staggeredGrid ? settings.catalogGridHeight / 2 : null,
-										thread: latestThread.identifier,
 										onLoadError: onThumbnailLoadError,
 										mayObscure: true,
 										hide: hideThumbnails,

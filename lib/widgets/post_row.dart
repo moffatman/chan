@@ -426,7 +426,6 @@ class PostRow extends StatelessWidget {
 											child: AttachmentThumbnail(
 												attachment: attachment,
 												revealSpoilers: revealSpoilerImages,
-												thread: latestPost.threadIdentifier,
 												onLoadError: onThumbnailLoadError,
 												hero: TaggedAttachment(
 													attachment: attachment,
@@ -602,7 +601,6 @@ class PostRow extends StatelessWidget {
 														attachment: a,
 														revealSpoilers: revealSpoilerImages,
 														onLoadError: onThumbnailLoadError,
-														thread: latestPost.threadIdentifier,
 														width: largeImageWidth,
 														height: largeImageWidth,
 														shrinkHeight: true,
