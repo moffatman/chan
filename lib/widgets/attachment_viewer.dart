@@ -239,6 +239,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	// Private usage
 	bool _isFullResolution = false;
 	(Object, StackTrace)? _error;
+	ui.Image? _thumbnail;
 	VideoController? _videoPlayerController;
 	bool _hasAudio = false;
 	Uri? _goodImageSource;
@@ -1418,7 +1419,7 @@ class AttachmentViewer extends StatelessWidget {
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
 		Uri source = controller.overrideSource ?? Uri.parse(attachment.thumbnailUrl);
 		final goodSource = controller.goodImageSource;
-		if (goodSource != null && ((!goodSource.path.endsWith('.gif') || passedFirstBuild) || source.toString().length < 6)) {
+		if (goodSource != null && (passedFirstBuild || controller._cachedFile != null || source.toString().length < 6)) {
 			source = goodSource;
 		}
 		final theme = context.watch<SavedTheme>();
@@ -1549,13 +1550,14 @@ class AttachmentViewer extends StatelessWidget {
 							if (controller.cacheCompleted) {
 								loadingValue = 1;
 							}
-							if (loadstate.extendedImageLoadState == LoadState.completed || (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null)) {
-								// If we got image download completion, we can check if it's cached
-								loadingValue = switch (loadstate.extendedImageLoadState) {
-									LoadState.completed => 1,
-									_ => loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!
-								};
-								if ((source != Uri.parse(attachment.thumbnailUrl)) && loadingValue == 1) {
+							else {
+								final image = loadstate.extendedImageInfo?.image;
+								if (source.toString() == attachment.thumbnailUrl) {
+									controller._thumbnail = image;
+								}
+								final progress = loadstate.loadingProgress;
+								if (progress == null && image != null && image != controller._thumbnail) {
+									loadingValue = 1;
 									tryUpdatingAttachment();
 									getCachedImageFile(source.toString()).then((file) {
 										if (file != null) {
@@ -1563,14 +1565,12 @@ class AttachmentViewer extends StatelessWidget {
 										}
 									});
 								}
-							}
-							else if ((loadstate.extendedImageInfo?.image.width ?? 0) >= (attachment.width ?? 1) && (source != Uri.parse(attachment.thumbnailUrl))) {
-								// If the displayed image looks like the full image, we can check cache
-								getCachedImageFile(source.toString()).then((file) {
-									if (file != null) {
-										controller._onCacheCompleted(file);
-									}
-								});
+								else {
+									loadingValue = switch (loadstate.loadingProgress) {
+										ImageChunkEvent p => p.cumulativeBytesLoaded / (p.expectedTotalBytes ?? 10e6),
+										null => null
+									};
+								}
 							}
 							Widget buildContent(BuildContext context, Widget? _) {
 								Widget child = const SizedBox.shrink();

@@ -151,7 +151,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		if (value == _displayedEndValue) {
 			return;
 		}
-		if (value > (1 - _continuousSweepAngle) && ((value % 1.0) < _endValue)) {
+		if (value > (1 - _continuousSweepAngle) && (value < _endValue)) {
 			// Need to clear origin
 			await _transitionToContinuous(reqNo: reqNo);
 			if (!mounted) return;
