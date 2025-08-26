@@ -1217,6 +1217,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	Timer? autoUpdateTimer;
 	GlobalKey _scrollViewKey = GlobalKey(debugLabel: 'RefreshableListState._scrollViewKey');
 	GlobalKey _sliverListKey = GlobalKey(debugLabel: 'RefreshableListState._sliverListKey');
+	GlobalKey _sliverGridKey = GlobalKey(debugLabel: 'RefreshableListState._sliverGridKey');
+	GlobalKey _sliverStaggeredGridKey = GlobalKey(debugLabel: 'RefreshableListState._sliverStaggeredGridKey');
 	GlobalKey _footerKey = GlobalKey(debugLabel: 'RefreshableListState._footerKey');
 	int _pointerDownCount = 0;
 	bool _showFilteredValues = false;
@@ -1304,6 +1306,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			controller.newContentId(widget.id);
 			_scrollViewKey = GlobalKey(debugLabel: 'RefreshableListState._scrollViewKey');
 			_sliverListKey = GlobalKey(debugLabel: 'RefreshableListState._sliverListKey');
+			_sliverGridKey = GlobalKey(debugLabel: 'RefreshableListState._sliverGridKey');
+			_sliverStaggeredGridKey = GlobalKey(debugLabel: 'RefreshableListState._sliverStaggeredGridKey');
 			_footerKey = GlobalKey(debugLabel: 'RefreshableListState._footerKey');
 			closeSearch();
 			originalList = widget.initialList;
@@ -3114,9 +3118,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 										),
 										if (values.isNotEmpty)
 											if (widget.staggeredGridDelegate != null) SliverStaggeredGrid(
-												key: PageStorageKey('staggered grid for ${widget.id}'),
+												key: _sliverStaggeredGridKey,
 												gridDelegate: widget.staggeredGridDelegate!,
-												id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}${identityHashCode(values)}',
+												id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}${Object.hashAll(values)}',
 												delegate: SliverDontRebuildChildBuilderDelegate(
 													(context, i) {
 														return BuildContextRegistrant(
@@ -3136,13 +3140,28 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}',
 													didFinishLayout: controller.didFinishLayout,
 													childCount: values.length,
+													findChildIndexCallback: (key) {
+														if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
+															if (key.value.thisId == 0) {
+																// Items not really keyed
+																return null;
+															}
+															final idx = values.indexWhere(
+																(other) => identical(key.value, other._key)
+															);
+															if (idx >= 0) {
+																return idx;
+															}
+														}
+														return null;
+													},
 													addRepaintBoundaries: false,
 													addAutomaticKeepAlives: false,
 													fastHeightEstimate: _fastHeightEstimate
 												)
 											)
 											else if (widget.gridDelegate != null) SliverGrid(
-												key: PageStorageKey('grid for ${widget.id}'),
+												key: _sliverGridKey,
 												gridDelegate: widget.gridDelegate!,
 												delegate: SliverDontRebuildChildBuilderDelegate(
 													(context, i) {
@@ -3163,6 +3182,21 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}',
 													didFinishLayout: controller.didFinishLayout,
 													childCount: values.length,
+													findChildIndexCallback: (key) {
+														if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
+															if (key.value.thisId == 0) {
+																// Items not really keyed
+																return null;
+															}
+															final idx = values.indexWhere(
+																(other) => identical(key.value, other._key)
+															);
+															if (idx >= 0) {
+																return idx;
+															}
+														}
+														return null;
+													},
 													addRepaintBoundaries: false,
 													addAutomaticKeepAlives: false,
 													fastHeightEstimate: _fastHeightEstimate
