@@ -77,6 +77,15 @@ class ShareablePostsStyleFields {
     fieldName: 'showReplyCounts',
     merger: PrimitiveMerger(),
   );
+  static bool getHighlightPrimaryPost(ShareablePostsStyle x) =>
+      x.highlightPrimaryPost;
+  static const highlightPrimaryPost =
+      ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
+    getter: getHighlightPrimaryPost,
+    fieldNumber: 9,
+    fieldName: 'highlightPrimaryPost',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ShareablePostsStyleAdapter extends TypeAdapter<ShareablePostsStyle> {
@@ -98,7 +107,8 @@ class ShareablePostsStyleAdapter extends TypeAdapter<ShareablePostsStyle> {
     5: ShareablePostsStyleFields.expandPrimaryImage,
     6: ShareablePostsStyleFields.revealYourPosts,
     7: ShareablePostsStyleFields.includeFooter,
-    8: ShareablePostsStyleFields.showReplyCounts
+    8: ShareablePostsStyleFields.showReplyCounts,
+    9: ShareablePostsStyleFields.highlightPrimaryPost
   };
 
   @override
@@ -117,13 +127,14 @@ class ShareablePostsStyleAdapter extends TypeAdapter<ShareablePostsStyle> {
       revealYourPosts: fields[6] == null ? true : fields[6] as bool,
       includeFooter: fields[7] == null ? true : fields[7] as bool,
       showReplyCounts: fields[8] == null ? true : fields[8] as bool,
+      highlightPrimaryPost: fields[9] == null ? true : fields[9] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, ShareablePostsStyle obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.useTree)
       ..writeByte(1)
@@ -141,7 +152,9 @@ class ShareablePostsStyleAdapter extends TypeAdapter<ShareablePostsStyle> {
       ..writeByte(7)
       ..write(obj.includeFooter)
       ..writeByte(8)
-      ..write(obj.showReplyCounts);
+      ..write(obj.showReplyCounts)
+      ..writeByte(9)
+      ..write(obj.highlightPrimaryPost);
   }
 
   @override

@@ -45,6 +45,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 	bool revealYourPosts = lastStyle.revealYourPosts;
 	bool includeFooter = lastStyle.includeFooter;
 	bool showReplyCounts = lastStyle.showReplyCounts;
+	bool highlightPrimaryPost = lastStyle.highlightPrimaryPost;
 	if (!useTree && childDepth > 1) {
 		childDepth = 1;
 	}
@@ -219,6 +220,22 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 							)
 						),
 						const SizedBox(height: 8),
+						Row(
+							children: [
+								const Icon(CupertinoIcons.brightness),
+								const SizedBox(width: 8),
+								const Expanded(
+									child: Text('Highlight primary post', textAlign: TextAlign.left)
+								),
+								AdaptiveSwitch(
+									value: highlightPrimaryPost,
+									onChanged: (parentDepth == 0 || post.repliedToIds.isEmpty) && (childDepth == 0 || post.replyIds.isEmpty) ? null : (x) => setDialogState(() {
+										highlightPrimaryPost = x;
+									})
+								)
+							]
+						),
+						const SizedBox(height: 8),
 						const Text('Image max width'),
 						const SizedBox(height: 8),
 						Row(
@@ -268,7 +285,8 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 			expandPrimaryImage: expandPrimaryImage,
 			revealYourPosts: revealYourPosts,
 			includeFooter: includeFooter,
-			showReplyCounts: showReplyCounts
+			showReplyCounts: showReplyCounts,
+			highlightPrimaryPost: highlightPrimaryPost
 		);
 	}
 	return null;

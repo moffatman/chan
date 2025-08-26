@@ -54,6 +54,8 @@ class ShareablePostsStyle {
 	final bool includeFooter;
 	@HiveField(8, defaultValue: true)
 	final bool showReplyCounts;
+	@HiveField(9, defaultValue: true)
+	final bool highlightPrimaryPost;
 
 	const ShareablePostsStyle({
 		this.useTree = false,
@@ -64,7 +66,8 @@ class ShareablePostsStyle {
 		this.expandPrimaryImage = false,
 		this.revealYourPosts = true,
 		this.includeFooter = true,
-		this.showReplyCounts = true
+		this.showReplyCounts = true,
+		this.highlightPrimaryPost = true
 	});
 
 	@override
@@ -79,10 +82,11 @@ class ShareablePostsStyle {
 		other.expandPrimaryImage == expandPrimaryImage &&
 		other.revealYourPosts == revealYourPosts &&
 		other.includeFooter == includeFooter &&
-		other.showReplyCounts == showReplyCounts;
+		other.showReplyCounts == showReplyCounts &&
+		other.highlightPrimaryPost == highlightPrimaryPost;
 	
 	@override
-	int get hashCode => Object.hash(useTree, parentDepth, childDepth, width, overrideThemeKey, expandPrimaryImage, revealYourPosts, includeFooter, showReplyCounts);
+	int get hashCode => Object.hash(useTree, parentDepth, childDepth, width, overrideThemeKey, expandPrimaryImage, revealYourPosts, includeFooter, showReplyCounts, highlightPrimaryPost);
 }
 
 class ShareablePosts extends StatefulWidget {
@@ -134,7 +138,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					itemBuilder: (context, p, options) => PostRow(
 						post: p,
 						largeImageWidth: (p.id == primaryPostId && style.expandPrimaryImage) ? style.width : null,
-						highlight: (p.id == primaryPostId && ((style.childDepth > 0 && p.replyIds.isNotEmpty) || (style.parentDepth > 0 && p.repliedToIds.isNotEmpty))) ? 1 : 0,
+						highlight: (style.highlightPrimaryPost && p.id == primaryPostId && ((style.childDepth > 0 && p.replyIds.isNotEmpty) || (style.parentDepth > 0 && p.repliedToIds.isNotEmpty))) ? 1 : 0,
 						baseOptions: baseOptions,
 						showBoardName: p.id == primaryPostId,
 						showSiteIcon: p.id == primaryPostId,
@@ -307,7 +311,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					post: post,
 					revealSpoilerImages: true,
 					forceAbsoluteTime: true,
-					highlight: (parents.isNotEmpty || children.isNotEmpty) ? 1 : 0,
+					highlight: (style.highlightPrimaryPost && (parents.isNotEmpty || children.isNotEmpty)) ? 1 : 0,
 					largeImageWidth: style.expandPrimaryImage ? style.width : null,
 					shrinkWrap: true,
 					showBoardName: true,
