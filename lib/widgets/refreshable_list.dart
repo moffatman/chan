@@ -1074,10 +1074,12 @@ typedef _Tree<T extends Object> = ({
 class RefreshableListItemOptions {
 	final bool hideThumbnails;
 	final RegExp? queryPattern;
+	final bool inFilterFooter;
 
 	const RefreshableListItemOptions({
 		this.hideThumbnails = false,
-		this.queryPattern
+		this.queryPattern,
+		this.inFilterFooter = false
 	});
 
 	@override
@@ -1085,13 +1087,14 @@ class RefreshableListItemOptions {
 		identical(this, other) ||
 		other is RefreshableListItemOptions &&
 		other.hideThumbnails == hideThumbnails &&
-		other.queryPattern == queryPattern;
+		other.queryPattern == queryPattern &&
+		other.inFilterFooter == inFilterFooter;
 	
 	@override
-	int get hashCode => Object.hash(hideThumbnails, queryPattern);
+	int get hashCode => Object.hash(hideThumbnails, queryPattern, inFilterFooter);
 
 	@override
-	String toString() => 'RefreshableListItemOptions(hideThumbnails: $hideThumbnails, queryPattern: $queryPattern)';
+	String toString() => 'RefreshableListItemOptions(hideThumbnails: $hideThumbnails, queryPattern: $queryPattern, inFilterFooter: $inFilterFooter)';
 }
 
 class RefreshableList<T extends Object> extends StatefulWidget {
@@ -2729,10 +2732,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			List<RefreshableListItem<T>> values = [];
 			filteredValues = <RefreshableListItem<T>>[];
 			final filter = Filter.of(context);
-			final hideThumbnailsOptions = RefreshableListItemOptions(
-				hideThumbnails: true,
-				queryPattern: queryPattern
-			);
 			final normalOptions = RefreshableListItemOptions(
 				hideThumbnails: false,
 				queryPattern: queryPattern
@@ -2745,7 +2744,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 					final result = widget.useFiltersFromContext && filterableAdapter != null ? filter.filter(pair.$1, pair.$2) : null;
 					if (result != null) {
-						final options = result.type.hideThumbnails ? hideThumbnailsOptions : normalOptions;
+						final options = switch ((result.type.hideThumbnails, result.type.hide)) {
+							(false, false) => normalOptions,
+							(bool hideThumbnails, bool hide) => RefreshableListItemOptions(
+								queryPattern: queryPattern,
+								hideThumbnails: hideThumbnails,
+								inFilterFooter: hide
+							)
+						};
 						bool pinned = false;
 						if (result.type.pinToTop && widget.allowReordering) {
 							pinned = true;
