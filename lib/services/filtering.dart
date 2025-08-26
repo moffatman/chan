@@ -6,6 +6,7 @@ import 'package:weak_map/weak_map.dart';
 
 const allPatternFields = ['text', 'subject', 'name', 'filename', 'dimensions', 'postID', 'posterID', 'flag', 'capcode', 'trip', 'email'];
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
+final newGeneralPattern = RegExp(r'(?<=^| )\/([^/ ]+)\/(?=$| )');
 
 class AutoWatchType {
 	final bool? push;
@@ -293,7 +294,7 @@ class CustomFilter implements Filter {
 			final filter = CustomFilter(
 				configuration: configuration,
 				disabled: configuration.startsWith('#'),
-				label: match.group(1)!,
+				label: match.group(1)!.replaceAll('%2F', '/'),
 				// Initialize these things so they aren't const
 				boards: {},
 				boardsBySite: {},
@@ -486,7 +487,7 @@ class CustomFilter implements Filter {
 		if (disabled) {
 			out.write('#');
 		}
-		out.write(label);
+		out.write(label.replaceAll('/', '%2F'));
 		out.write('/');
 		out.write(pattern.pattern);
 		out.write('/');

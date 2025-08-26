@@ -53,6 +53,37 @@ class _PostHidingDialog extends StatefulWidget {
 class _PostHidingDialogState extends State<_PostHidingDialog> {
 	@override
 	Widget build(BuildContext context) {
+		final imageboard = context.watch<Imageboard>();
+		final settings = context.watch<Settings>();
+		final theme = context.watch<SavedTheme>();
+		/// Assume this can't change from another source while the dialog is open
+		final lines = settings.filterConfiguration.split(lineSeparatorPattern);
+		String? nameFilter;
+		String? tripFilter;
+		String? textFilter;
+		if (widget.post.name.isNotEmpty && widget.post.name != imageboard.site.defaultUsername) {
+			nameFilter = CustomFilter(
+				pattern: RegExp('^${RegExp.escape(widget.post.name)}\$', caseSensitive: false),
+				label: 'Name "${widget.post.name}"',
+				patternFields: ['name'],
+				sites: {imageboard.key}
+			).toStringConfiguration();
+		}
+		if (widget.post.trip case String trip when trip.isNotEmpty) {
+			tripFilter = CustomFilter(
+				pattern: RegExp('^${RegExp.escape(trip)}\$'),
+				label: 'Trip "$trip"',
+				patternFields: ['trip'],
+				sites: {imageboard.key}
+			).toStringConfiguration();
+		}
+		final nonQuoteText = widget.post.buildText(forQuoteComparison: true).trim();
+		if (!nonQuoteText.contains('\n') && nonQuoteText.isNotEmpty) {
+			textFilter = CustomFilter(
+				pattern: RegExp(RegExp.escape(nonQuoteText), caseSensitive: false),
+				patternFields: ['text']
+			).toStringConfiguration();
+		}
 		return AdaptiveAlertDialog(
 			title: const Text('Post Hiding'),
 			content: Column(
@@ -103,6 +134,70 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 											widget.threadState.unHidePosterId(widget.post.posterId!);
 											widget.threadState.save();
 										}
+										setState(() {});
+									}
+								)
+							]
+						)
+					),
+					for (final filter in [
+						if (nameFilter case final nameFilter?) (
+							desc: 'Hide by name',
+							data: widget.post.name,
+							filter: nameFilter
+						),
+						if (tripFilter case final tripFilter?) (
+							desc: 'Hide by trip',
+							data: widget.post.trip ?? '',
+							filter: tripFilter
+						),
+						if (textFilter case final textFilter?) (
+							desc: 'Hide by text',
+							data: nonQuoteText,
+							filter: textFilter
+						)
+					]) Padding(
+						padding: const EdgeInsets.all(16),
+						child: Row(
+							crossAxisAlignment: CrossAxisAlignment.start,
+							children: [
+								Expanded(
+									child: RichText(
+										text: TextSpan(
+											children: [
+												TextSpan(text: filter.desc),
+												const TextSpan(text: ' '),
+												WidgetSpan(
+													child: Container(
+														decoration: BoxDecoration(
+															color: theme.barColor,
+															borderRadius: const BorderRadius.all(Radius.circular(3))
+														),
+														padding: const EdgeInsets.only(left: 4, right: 4),
+														child: Text(filter.data, style: const TextStyle(fontSize: 17), textAlign: TextAlign.left)
+													)
+												)
+											],
+											style: const TextStyle(fontSize: 17)
+										)
+									)
+								),
+								Checkbox.adaptive(
+									value: lines.contains(filter.filter),
+									onChanged: (value) {
+										if (value!) {
+											final disabledIdx = lines.indexOf('#${filter.filter}');
+											if (disabledIdx != -1) {
+												lines[disabledIdx] = filter.filter;
+											}
+											else {
+												lines.add(filter.filter);
+											}
+										}
+										else {
+											lines.remove(filter.filter);
+										}
+										settings.filterConfiguration = lines.join('\n');
 										setState(() {});
 									}
 								)
@@ -936,7 +1031,16 @@ class PostRow extends StatelessWidget {
 						child: const Text('Unhide post'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
+							final original = parentZoneThreadState.getPostHiding(latestPost.id);
 							parentZoneThreadState.setPostHiding(latestPost.id, PostHidingState.none);
+							showUndoToast(
+								context: context,
+								message: 'Post unhidden',
+								onUndo: () {
+									parentZoneThreadState.setPostHiding(latestPost.id, original);
+									parentZoneThreadState.save();
+								}
+							);
 							parentZoneThreadState.save();
 						}
 					)
@@ -945,7 +1049,16 @@ class PostRow extends StatelessWidget {
 							child: const Text('Hide post'),
 							trailingIcon: CupertinoIcons.eye_slash,
 							onPressed: () {
+								final original = parentZoneThreadState.getPostHiding(latestPost.id);
 								parentZoneThreadState.setPostHiding(latestPost.id, PostHidingState.hidden);
+								showUndoToast(
+									context: context,
+									message: 'Post hidden',
+									onUndo: () {
+										parentZoneThreadState.setPostHiding(latestPost.id, original);
+										parentZoneThreadState.save();
+									}
+								);
 								parentZoneThreadState.save();
 							}
 						),
@@ -953,7 +1066,16 @@ class PostRow extends StatelessWidget {
 							child: const Text('Hide post and replies'),
 							trailingIcon: CupertinoIcons.eye_slash,
 							onPressed: () {
+								final original = parentZoneThreadState.getPostHiding(latestPost.id);
 								parentZoneThreadState.setPostHiding(latestPost.id, PostHidingState.treeHidden);
+								showUndoToast(
+									context: context,
+									message: 'Post and replies hidden',
+									onUndo: () {
+										parentZoneThreadState.setPostHiding(latestPost.id, original);
+										parentZoneThreadState.save();
+									}
+								);
 								parentZoneThreadState.save();
 							}
 						),

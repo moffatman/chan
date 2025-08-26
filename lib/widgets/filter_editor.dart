@@ -276,6 +276,616 @@ Future<void> editBoardSet({
 	boards.addAll(boardList);
 }
 
+Future<Wrapper<CustomFilter?>?> editFilter(BuildContext context, CustomFilter? originalFilter, {
+	CustomFilter? blankFilter
+}) {
+	final filter = originalFilter ?? blankFilter ?? CustomFilter(
+		configuration: '',
+		pattern: RegExp('', caseSensitive: false)
+	);
+	final patternController = TextEditingController(text: filter.pattern.pattern);
+	final useListEditor = _splitByTopLevelPipe(filter.pattern.pattern).isNotEmpty;
+	bool isCaseSensitive = filter.pattern.isCaseSensitive;
+	bool isSingleLine = !filter.pattern.isMultiLine;
+	final labelController = TextEditingController(text: filter.label);
+	final patternFields = filter.patternFields.toList();
+	bool? hasFile = filter.hasFile;
+	bool? threadsOnly = filter.threadsOnly;
+	bool? deletedOnly = filter.deletedOnly;
+	bool? repliesToOP = filter.repliesToOP;
+	final Set<String> boards = {
+		...filter.boards,
+		...filter.boardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
+	};
+	final Set<String> excludeBoards = {
+		...filter.excludeBoards,
+		...filter.excludeBoardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
+	};
+	final Set<String> sites = filter.sites.toSet();
+	final Set<String> excludeSites = filter.excludeSites.toSet();
+	int? minRepliedTo = filter.minRepliedTo;
+	int? maxRepliedTo = filter.maxRepliedTo;
+	int? minReplyCount = filter.minReplyCount;
+	int? maxReplyCount = filter.maxReplyCount;
+	bool hide = filter.outputType.hide;
+	bool highlight = filter.outputType.highlight;
+	bool pinToTop = filter.outputType.pinToTop;
+	bool autoSave = filter.outputType.autoSave;
+	AutoWatchType? autoWatch = filter.outputType.autoWatch;
+	bool notify = filter.outputType.notify;
+	bool collapse = filter.outputType.collapse;
+	bool hideReplies = filter.outputType.hideReplies;
+	bool hideReplyChains = filter.outputType.hideReplyChains;
+	bool hideThumbnails = filter.outputType.hideThumbnails;
+	const labelStyle = CommonTextStyles.bold;
+	return showAdaptiveModalPopup<Wrapper<CustomFilter?>>(
+		context: context,
+		builder: (context) => StatefulBuilder(
+			builder: (context, setInnerState) => AdaptiveActionSheet(
+				title: const Text('Edit filter'),
+				message: DefaultTextStyle(
+					style: DefaultTextStyle.of(context).style,
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						crossAxisAlignment: CrossAxisAlignment.center,
+						children: [
+							const Text('Label', style: labelStyle),
+							Padding(
+								padding: const EdgeInsets.all(16),
+								child: SizedBox(
+									width: 300,
+									child: AdaptiveTextField(
+										controller: labelController,
+										smartDashesType: SmartDashesType.disabled,
+										smartQuotesType: SmartQuotesType.disabled
+									)
+								)
+							),
+							const Text('Pattern', style: labelStyle),
+							Padding(
+								padding: const EdgeInsets.all(16),
+								child: SizedBox(
+									width: 300,
+									child: AdaptiveTextField(
+										controller: patternController,
+										autocorrect: false,
+										enableIMEPersonalizedLearning: false,
+										smartDashesType: SmartDashesType.disabled,
+										smartQuotesType: SmartQuotesType.disabled,
+										enableSuggestions: false
+									)
+								)
+							),
+							if (useListEditor) ...[
+								AdaptiveFilledButton(
+									padding: const EdgeInsets.all(16),
+									onPressed: () async {
+										final list = _splitByTopLevelPipe(patternController.text);
+										await editStringList(
+											context: context,
+											list: list,
+											name: 'pattern',
+											title: 'Edit patterns',
+											startEditsWithAllSelected: false
+										);
+										patternController.text = list.join('|');
+										setInnerState(() {});
+									},
+									child: const Text('Edit pattern as list')
+								),
+								const SizedBox(height: 32),
+							],
+							AdaptiveListSection(
+								children: [
+									AdaptiveListTile(
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										title: const Text('Case-sensitive'),
+										trailing: isCaseSensitive ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+										onTap: () {
+											isCaseSensitive = !isCaseSensitive;
+											setInnerState(() {});
+										}
+									),
+									AdaptiveListTile(
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										title: const Text('Single-line'),
+										trailing: isSingleLine ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+										onTap: () {
+											isSingleLine = !isSingleLine;
+											setInnerState(() {});
+										}
+									)
+								]
+							),
+							const SizedBox(height: 16),
+							const Text('Search in fields', style: labelStyle),
+							const SizedBox(height: 16),
+							AdaptiveListSection(
+								children: [
+									for (final field in allPatternFields) AdaptiveListTile(
+										title: Text(const{
+											'text': 'Text',
+											'subject': 'Subject',
+											'name': 'Name',
+											'filename': 'Filename',
+											'dimensions': 'File dimensions',
+											'postID': 'Post ID',
+											'posterID': 'Poster ID',
+											'flag': 'Flag',
+											'capcode': 'Capcode',
+											'trip': 'Trip',
+											'email': 'Email'
+										}[field] ?? field),
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										trailing: patternFields.contains(field) ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+										onTap:() {
+											if (patternFields.contains(field)) {
+												patternFields.remove(field);
+											}
+											else {
+												patternFields.add(field);
+											}
+											setInnerState(() {});
+										}
+									)
+								]
+							),
+							const SizedBox(height: 32),
+							AdaptiveListSection(
+								children: [
+									for (final field in [null, false, true]) AdaptiveListTile(
+										title: Text(const{
+											null: 'All posts',
+											false: 'Without images',
+											true: 'With images'
+										}[field]!),
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										trailing: hasFile == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+										onTap:() {
+											setInnerState(() {
+												hasFile = field;
+											});
+										}
+									)
+								]
+							),
+							const SizedBox(height: 32),
+							AdaptiveListSection(
+								children: [
+									for (final field in [null, true, false]) AdaptiveListTile(
+										title: Text(const{
+											null: 'All posts',
+											true: 'Threads only',
+											false: 'Replies only'
+										}[field]!),
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										trailing: threadsOnly == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+										onTap:() {
+											setInnerState(() {
+												threadsOnly = field;
+											});
+										}
+									)
+								]
+							),
+							const SizedBox(height: 32),
+							AdaptiveListSection(
+								children: [
+									for (final field in [null, true, false]) AdaptiveListTile(
+										title: Text(const{
+											null: 'All posts',
+											true: 'Deleted only',
+											false: 'Non-deleted only'
+										}[field]!),
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										trailing: deletedOnly == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+										onTap:() {
+											setInnerState(() {
+												deletedOnly = field;
+											});
+										}
+									)
+								]
+							),
+							const SizedBox(height: 32),
+							AdaptiveListSection(
+								children: [
+									for (final field in [null, true, false]) AdaptiveListTile(
+										title: Text(const{
+											null: 'All posts',
+											true: 'Replying to OP only',
+											false: 'Not replying to OP only'
+										}[field]!),
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										trailing: repliesToOP == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+										onTap:() {
+											setInnerState(() {
+												repliesToOP = field;
+											});
+										}
+									)
+								]
+							),
+							const SizedBox(height: 32),
+							AdaptiveFilledButton(
+								padding: const EdgeInsets.all(16),
+								onPressed: () async {
+									await editBoardSet(
+										context: context,
+										boards: boards,
+										title: 'Edit boards'
+									);
+									setInnerState(() {});
+								},
+								child: Text(boards.isEmpty ? 'All boards' : 'Only on ${boards.map((b) => '/$b/').join(', ')}')
+							),
+							const SizedBox(height: 16),
+							AdaptiveFilledButton(
+								padding: const EdgeInsets.all(16),
+								onPressed: () async {
+									await editBoardSet(
+										context: context,
+										boards: excludeBoards,
+										title: 'Edit excluded boards'
+									);
+									setInnerState(() {});
+								},
+								child: Text(excludeBoards.isEmpty ? 'No excluded boards' : 'Exclude ${excludeBoards.map((b) => '/$b/').join(', ')}')
+							),
+							const SizedBox(height: 32),
+							AdaptiveFilledButton(
+								padding: const EdgeInsets.all(16),
+								onPressed: () async {
+									await editSiteSet(
+										context: context,
+										siteKeys: sites,
+										title: 'Edit sites'
+									);
+									setInnerState(() {});
+								},
+								child: Text(sites.isEmpty ? 'All sites' : 'Only on ${sites.join(', ')}')
+							),
+							const SizedBox(height: 16),
+							AdaptiveFilledButton(
+								padding: const EdgeInsets.all(16),
+								onPressed: () async {
+									await editSiteSet(
+										context: context,
+										siteKeys: excludeSites,
+										title: 'Edit excluded sites'
+									);
+									setInnerState(() {});
+								},
+								child: Text(excludeSites.isEmpty ? 'No excluded sites' : 'Exclude ${excludeSites.join(', ')}')
+							),
+							const SizedBox(height: 16),
+							AdaptiveFilledButton(
+								padding: const EdgeInsets.all(16),
+								onPressed: () async {
+									final minController = TextEditingController(text: minRepliedTo?.toString());
+									final maxController = TextEditingController(text: maxRepliedTo?.toString());
+									await showAdaptiveDialog(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											title: const Text('Set replied-to posts count criteria'),
+											actions: [
+												AdaptiveDialogAction(
+													child: const Text('Close'),
+													onPressed: () => Navigator.pop(context)
+												)
+											],
+											content: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													const SizedBox(height: 16),
+													const Text('Minimum'),
+													AdaptiveTextField(
+														autofocus: true,
+														keyboardType: TextInputType.number,
+														controller: minController,
+														onSubmitted: (s) {
+															Navigator.pop(context);
+														}
+													),
+													const Text('Maximum'),
+													AdaptiveTextField(
+														autofocus: true,
+														keyboardType: TextInputType.number,
+														controller: maxController,
+														onSubmitted: (s) {
+															Navigator.pop(context);
+														}
+													)
+												]
+											)
+										)
+									);
+									minRepliedTo = int.tryParse(minController.text);
+									maxRepliedTo = int.tryParse(maxController.text);
+									minController.dispose();
+									maxController.dispose();
+									setInnerState(() {});
+								},
+								child: Text(switch ((minRepliedTo, maxRepliedTo)) {
+									(null, null) => 'No replied-to criteria',
+									(int min, null) => 'With at least $min replied-to posts',
+									(null, int max) => 'With at most $max replied-to posts',
+									(int min, int max) =>
+										min == max
+											? 'With exactly $min replied-to posts'
+											: 'With between $min and $max replied-to posts'
+								})
+							),
+							const SizedBox(height: 16),
+							AdaptiveFilledButton(
+								padding: const EdgeInsets.all(16),
+								onPressed: () async {
+									final controller = TextEditingController(text: minReplyCount?.toString());
+									await showAdaptiveDialog(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											title: const Text('Set minimum reply count'),
+											actions: [
+												AdaptiveDialogAction(
+													child: const Text('Clear'),
+													onPressed: () {
+														controller.text = '';
+														Navigator.pop(context);
+													}
+												),
+												AdaptiveDialogAction(
+													child: const Text('Close'),
+													onPressed: () => Navigator.pop(context)
+												)
+											],
+											content: Padding(
+												padding: const EdgeInsets.only(top: 16),
+												child: AdaptiveTextField(
+													autofocus: true,
+													keyboardType: TextInputType.number,
+													controller: controller,
+													onSubmitted: (s) {
+														Navigator.pop(context);
+													}
+												)
+											)
+										)
+									);
+									minReplyCount = int.tryParse(controller.text);
+									controller.dispose();
+									setInnerState(() {});
+								},
+								child: Text(minReplyCount == null ? 'No min-replies criteria' : 'With at least $minReplyCount replies')
+							),
+							const SizedBox(height: 16),
+							AdaptiveFilledButton(
+								padding: const EdgeInsets.all(16),
+								onPressed: () async {
+									final controller = TextEditingController(text: maxReplyCount?.toString());
+									await showAdaptiveDialog(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => AdaptiveAlertDialog(
+											title: const Text('Set maximum reply count'),
+											actions: [
+												AdaptiveDialogAction(
+													child: const Text('Clear'),
+													onPressed: () {
+														controller.text = '';
+														Navigator.pop(context);
+													}
+												),
+												AdaptiveDialogAction(
+													child: const Text('Close'),
+													onPressed: () => Navigator.pop(context)
+												)
+											],
+											content: Padding(
+												padding: const EdgeInsets.only(top: 16),
+												child: AdaptiveTextField(
+													autofocus: true,
+													keyboardType: TextInputType.number,
+													controller: controller,
+													onSubmitted: (s) {
+														Navigator.pop(context);
+													}
+												)
+											)
+										)
+									);
+									maxReplyCount = int.tryParse(controller.text);
+									controller.dispose();
+									setInnerState(() {});
+								},
+								child: Text(maxReplyCount == null ? 'No max-replies criteria' : 'With at most $maxReplyCount replies')
+							),
+							const SizedBox(height: 16),
+							const Text('Action', style: labelStyle),
+							Container(
+								padding: const EdgeInsets.all(16),
+								alignment: Alignment.center,
+								child: AdaptiveListSection(
+									children: [
+										AdaptiveListTile(
+											title: const Text('Hide'),
+											trailing: hide ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+											backgroundColor: ChanceTheme.barColorOf(context),
+											backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+											onTap: () {
+												if (!hide) {
+													hide = true;
+													highlight = false;
+													pinToTop = false;
+													autoSave = false;
+													autoWatch = null;
+													notify = false;
+													collapse = false;
+												}
+												else {
+													hide = false;
+												}
+												setInnerState(() {});
+											}
+										)
+									]
+								)
+							),
+							Container(
+								padding: const EdgeInsets.all(16),
+								alignment: Alignment.center,
+								child: AdaptiveListSection(
+									children: <(String, bool, ValueChanged<bool>)>[
+										('Highlight', highlight, (v) => highlight = v),
+										('Pin-to-top', pinToTop, (v) => pinToTop = v),
+										('Auto-save', autoSave, (v) => autoSave = v),
+										('Auto-watch', autoWatch != null, (v) => autoWatch = (v ? const AutoWatchType(push: null) : null)),
+										('Notify', notify, (v) => notify = v),
+										('Collapse (tree mode)', collapse, (v) => collapse = v),
+										('Hide replies', hideReplies, (v) {
+											hideReplies = v;
+											if (v && hideReplyChains) {
+												hideReplyChains = false;
+											}
+										}),
+										('Hide reply chains', hideReplyChains, (v) {
+											hideReplyChains = v;
+											if (v && hideReplies) {
+												hideReplies = false;
+											}
+										}),
+										('Hide thumbnails', hideThumbnails, (v) => hideThumbnails = v)
+									].map((t) => AdaptiveListTile(
+										title: Text(t.$1),
+										trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+										backgroundColor: ChanceTheme.barColorOf(context),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+										onTap: () {
+											t.$3(!t.$2);
+											if (highlight || pinToTop || autoSave || autoWatch != null || notify || collapse) {
+												hide = false;
+											}
+											setInnerState(() {});
+										},
+									)).toList()
+								)
+							),
+							Opacity(
+								opacity: autoWatch == null ? 0.5 : 1.0,
+								child: IgnorePointer(
+									ignoring: autoWatch == null,
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											const Text('Auto-watch notifications'),
+											Container(
+												padding: const EdgeInsets.all(16),
+												alignment: Alignment.center,
+												child: AdaptiveChoiceControl<NullSafeOptional>(
+													children: {
+														NullSafeOptional.false_: (null, 'Push off'),
+														NullSafeOptional.null_: (null, 'Default (push ${(Settings.instance.defaultThreadWatch?.push ?? true) ? 'on' : 'off'})'),
+														NullSafeOptional.true_: (null, 'Push on')
+													},
+													knownWidth: 0,
+													groupValue: (autoWatch?.push).value,
+													onValueChanged: (v) {
+														autoWatch = AutoWatchType(
+															push: v.value
+														);
+														setInnerState(() {});
+													}
+												)
+											)
+										]
+									)
+								)
+							)
+						]
+					)
+				),
+				actions: [
+					if (originalFilter != null) AdaptiveActionSheetAction(
+						isDestructiveAction: true,
+						onPressed: () => Navigator.pop(context, const Wrapper<CustomFilter?>(null)),
+						child: const Text('Delete')
+					),
+					AdaptiveActionSheetAction(
+						onPressed: () {
+							final boards2 = <String>{};
+							final boardsBySite = <String, Set<String>>{};
+							for (final board in boards) {
+								final slashIndex = board.indexOf('/');
+								if (slashIndex != -1) {
+									(boardsBySite[board.substring(0, slashIndex)] ??= {}).add(board.substring(slashIndex + 1));
+								}
+								else {
+									boards2.add(board);
+								}
+							}
+							final excludeBoards2 = <String>{};
+							final excludeBoardsBySite = <String, Set<String>>{};
+							for (final board in excludeBoards) {
+								final slashIndex = board.indexOf('/');
+								if (slashIndex != -1) {
+									(excludeBoardsBySite[board.substring(0, slashIndex)] ??= {}).add(board.substring(slashIndex + 1));
+								}
+								else {
+									excludeBoards2.add(board);
+								}
+							}
+							Navigator.pop(context, Wrapper<CustomFilter?>(CustomFilter(
+								pattern: RegExp(patternController.text, caseSensitive: isCaseSensitive, multiLine: !isSingleLine),
+								patternFields: patternFields,
+								boards: boards2,
+								boardsBySite: boardsBySite,
+								excludeBoards: excludeBoards2,
+								excludeBoardsBySite: excludeBoardsBySite,
+								sites: sites,
+								excludeSites: excludeSites,
+								hasFile: hasFile,
+								threadsOnly: threadsOnly,
+								deletedOnly: deletedOnly,
+								repliesToOP: repliesToOP,
+								minRepliedTo: minRepliedTo,
+								maxRepliedTo: maxRepliedTo,
+								minReplyCount: minReplyCount,
+								maxReplyCount: maxReplyCount,
+								outputType: FilterResultType(
+									hide: hide,
+									hideReplies: hideReplies,
+									hideReplyChains: hideReplyChains,
+									highlight: highlight,
+									pinToTop: pinToTop,
+									autoSave: autoSave,
+									autoWatch: autoWatch,
+									notify: notify,
+									collapse: collapse,
+									hideThumbnails: hideThumbnails
+								),
+								label: labelController.text
+							)));
+						},
+						child: originalFilter == null ? const Text('Add') : const Text('Save')
+					)
+				],
+				cancelButton: AdaptiveActionSheetAction(
+					onPressed: () => Navigator.pop(context),
+					child: const Text('Cancel')
+				)
+			)
+		)
+	);
+}
+
 class _FilterEditorState extends State<FilterEditor> {
 	late final TextEditingController regexController;
 	late final FocusNode regexFocusNode;
@@ -329,613 +939,6 @@ class _FilterEditorState extends State<FilterEditor> {
 				return v.excludeBoards.contains(widget.forBoard!) || (v.boards.isNotEmpty && !v.boards.contains(widget.forBoard!));
 			});
 		}
-		Future<(bool, CustomFilter?)?> editFilter(CustomFilter? originalFilter) {
-			final filter = originalFilter ?? widget.blankFilter ?? CustomFilter(
-				configuration: '',
-				pattern: RegExp('', caseSensitive: false)
-			);
-			final patternController = TextEditingController(text: filter.pattern.pattern);
-			final useListEditor = _splitByTopLevelPipe(filter.pattern.pattern).isNotEmpty;
-			bool isCaseSensitive = filter.pattern.isCaseSensitive;
-			bool isSingleLine = !filter.pattern.isMultiLine;
-			final labelController = TextEditingController(text: filter.label);
-			final patternFields = filter.patternFields.toList();
-			bool? hasFile = filter.hasFile;
-			bool? threadsOnly = filter.threadsOnly;
-			bool? deletedOnly = filter.deletedOnly;
-			bool? repliesToOP = filter.repliesToOP;
-			final Set<String> boards = {
-				...filter.boards,
-				...filter.boardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
-			};
-			final Set<String> excludeBoards = {
-				...filter.excludeBoards,
-				...filter.excludeBoardsBySite.entries.expand((e) => e.value.map((v) => '${e.key}/$v'))
-			};
-			final Set<String> sites = filter.sites.toSet();
-			final Set<String> excludeSites = filter.excludeSites.toSet();
-			int? minRepliedTo = filter.minRepliedTo;
-			int? maxRepliedTo = filter.maxRepliedTo;
-			int? minReplyCount = filter.minReplyCount;
-			int? maxReplyCount = filter.maxReplyCount;
-			bool hide = filter.outputType.hide;
-			bool highlight = filter.outputType.highlight;
-			bool pinToTop = filter.outputType.pinToTop;
-			bool autoSave = filter.outputType.autoSave;
-			AutoWatchType? autoWatch = filter.outputType.autoWatch;
-			bool notify = filter.outputType.notify;
-			bool collapse = filter.outputType.collapse;
-			bool hideReplies = filter.outputType.hideReplies;
-			bool hideReplyChains = filter.outputType.hideReplyChains;
-			bool hideThumbnails = filter.outputType.hideThumbnails;
-			const labelStyle = CommonTextStyles.bold;
-			return showAdaptiveModalPopup<(bool, CustomFilter?)>(
-				context: context,
-				builder: (context) => StatefulBuilder(
-					builder: (context, setInnerState) => AdaptiveActionSheet(
-						title: const Text('Edit filter'),
-						message: DefaultTextStyle(
-							style: DefaultTextStyle.of(context).style,
-							child: Column(
-								mainAxisSize: MainAxisSize.min,
-								crossAxisAlignment: CrossAxisAlignment.center,
-								children: [
-									const Text('Label', style: labelStyle),
-									Padding(
-										padding: const EdgeInsets.all(16),
-										child: SizedBox(
-											width: 300,
-											child: AdaptiveTextField(
-												controller: labelController,
-												smartDashesType: SmartDashesType.disabled,
-												smartQuotesType: SmartQuotesType.disabled
-											)
-										)
-									),
-									const Text('Pattern', style: labelStyle),
-									Padding(
-										padding: const EdgeInsets.all(16),
-										child: SizedBox(
-											width: 300,
-											child: AdaptiveTextField(
-												controller: patternController,
-												autocorrect: false,
-												enableIMEPersonalizedLearning: false,
-												smartDashesType: SmartDashesType.disabled,
-												smartQuotesType: SmartQuotesType.disabled,
-												enableSuggestions: false
-											)
-										)
-									),
-									if (useListEditor) ...[
-										AdaptiveFilledButton(
-											padding: const EdgeInsets.all(16),
-											onPressed: () async {
-												final list = _splitByTopLevelPipe(patternController.text);
-												await editStringList(
-													context: context,
-													list: list,
-													name: 'pattern',
-													title: 'Edit patterns',
-													startEditsWithAllSelected: false
-												);
-												patternController.text = list.join('|');
-												setInnerState(() {});
-											},
-											child: const Text('Edit pattern as list')
-										),
-										const SizedBox(height: 32),
-									],
-									AdaptiveListSection(
-										children: [
-											AdaptiveListTile(
-												backgroundColor: ChanceTheme.barColorOf(context),
-												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-												title: const Text('Case-sensitive'),
-												trailing: isCaseSensitive ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-												onTap: () {
-													isCaseSensitive = !isCaseSensitive;
-													setInnerState(() {});
-												}
-											),
-											AdaptiveListTile(
-												backgroundColor: ChanceTheme.barColorOf(context),
-												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-												title: const Text('Single-line'),
-												trailing: isSingleLine ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-												onTap: () {
-													isSingleLine = !isSingleLine;
-													setInnerState(() {});
-												}
-											)
-										]
-									),
-									const SizedBox(height: 16),
-									const Text('Search in fields', style: labelStyle),
-									const SizedBox(height: 16),
-									AdaptiveListSection(
-										children: [
-											for (final field in allPatternFields) AdaptiveListTile(
-												title: Text(const{
-													'text': 'Text',
-													'subject': 'Subject',
-													'name': 'Name',
-													'filename': 'Filename',
-													'dimensions': 'File dimensions',
-													'postID': 'Post ID',
-													'posterID': 'Poster ID',
-													'flag': 'Flag',
-													'capcode': 'Capcode',
-													'trip': 'Trip',
-													'email': 'Email'
-												}[field] ?? field),
-												backgroundColor: ChanceTheme.barColorOf(context),
-												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-												trailing: patternFields.contains(field) ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-												onTap:() {
-													if (patternFields.contains(field)) {
-														patternFields.remove(field);
-													}
-													else {
-														patternFields.add(field);
-													}
-													setInnerState(() {});
-												}
-											)
-										]
-									),
-									const SizedBox(height: 32),
-									AdaptiveListSection(
-										children: [
-											for (final field in [null, false, true]) AdaptiveListTile(
-												title: Text(const{
-													null: 'All posts',
-													false: 'Without images',
-													true: 'With images'
-												}[field]!),
-												backgroundColor: ChanceTheme.barColorOf(context),
-												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-												trailing: hasFile == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-												onTap:() {
-													setInnerState(() {
-														hasFile = field;
-													});
-												}
-											)
-										]
-									),
-									const SizedBox(height: 32),
-									AdaptiveListSection(
-										children: [
-											for (final field in [null, true, false]) AdaptiveListTile(
-												title: Text(const{
-													null: 'All posts',
-													true: 'Threads only',
-													false: 'Replies only'
-												}[field]!),
-												backgroundColor: ChanceTheme.barColorOf(context),
-												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-												trailing: threadsOnly == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-												onTap:() {
-													setInnerState(() {
-														threadsOnly = field;
-													});
-												}
-											)
-										]
-									),
-									const SizedBox(height: 32),
-									AdaptiveListSection(
-										children: [
-											for (final field in [null, true, false]) AdaptiveListTile(
-												title: Text(const{
-													null: 'All posts',
-													true: 'Deleted only',
-													false: 'Non-deleted only'
-												}[field]!),
-												backgroundColor: ChanceTheme.barColorOf(context),
-												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-												trailing: deletedOnly == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-												onTap:() {
-													setInnerState(() {
-														deletedOnly = field;
-													});
-												}
-											)
-										]
-									),
-									const SizedBox(height: 32),
-									AdaptiveListSection(
-										children: [
-											for (final field in [null, true, false]) AdaptiveListTile(
-												title: Text(const{
-													null: 'All posts',
-													true: 'Replying to OP only',
-													false: 'Not replying to OP only'
-												}[field]!),
-												backgroundColor: ChanceTheme.barColorOf(context),
-												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-												trailing: repliesToOP == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-												onTap:() {
-													setInnerState(() {
-														repliesToOP = field;
-													});
-												}
-											)
-										]
-									),
-									const SizedBox(height: 32),
-									AdaptiveFilledButton(
-										padding: const EdgeInsets.all(16),
-										onPressed: () async {
-											await editBoardSet(
-												context: context,
-												boards: boards,
-												title: 'Edit boards'
-											);
-											setInnerState(() {});
-										},
-										child: Text(boards.isEmpty ? 'All boards' : 'Only on ${boards.map((b) => '/$b/').join(', ')}')
-									),
-									const SizedBox(height: 16),
-									AdaptiveFilledButton(
-										padding: const EdgeInsets.all(16),
-										onPressed: () async {
-											await editBoardSet(
-												context: context,
-												boards: excludeBoards,
-												title: 'Edit excluded boards'
-											);
-											setInnerState(() {});
-										},
-										child: Text(excludeBoards.isEmpty ? 'No excluded boards' : 'Exclude ${excludeBoards.map((b) => '/$b/').join(', ')}')
-									),
-									const SizedBox(height: 32),
-									AdaptiveFilledButton(
-										padding: const EdgeInsets.all(16),
-										onPressed: () async {
-											await editSiteSet(
-												context: context,
-												siteKeys: sites,
-												title: 'Edit sites'
-											);
-											setInnerState(() {});
-										},
-										child: Text(sites.isEmpty ? 'All sites' : 'Only on ${sites.join(', ')}')
-									),
-									const SizedBox(height: 16),
-									AdaptiveFilledButton(
-										padding: const EdgeInsets.all(16),
-										onPressed: () async {
-											await editSiteSet(
-												context: context,
-												siteKeys: excludeSites,
-												title: 'Edit excluded sites'
-											);
-											setInnerState(() {});
-										},
-										child: Text(excludeSites.isEmpty ? 'No excluded sites' : 'Exclude ${excludeSites.join(', ')}')
-									),
-									const SizedBox(height: 16),
-									AdaptiveFilledButton(
-										padding: const EdgeInsets.all(16),
-										onPressed: () async {
-											final minController = TextEditingController(text: minRepliedTo?.toString());
-											final maxController = TextEditingController(text: maxRepliedTo?.toString());
-											await showAdaptiveDialog(
-												context: context,
-												barrierDismissible: true,
-												builder: (context) => AdaptiveAlertDialog(
-													title: const Text('Set replied-to posts count criteria'),
-													actions: [
-														AdaptiveDialogAction(
-															child: const Text('Close'),
-															onPressed: () => Navigator.pop(context)
-														)
-													],
-													content: Column(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															const SizedBox(height: 16),
-															const Text('Minimum'),
-															AdaptiveTextField(
-																autofocus: true,
-																keyboardType: TextInputType.number,
-																controller: minController,
-																onSubmitted: (s) {
-																	Navigator.pop(context);
-																}
-															),
-															const Text('Maximum'),
-															AdaptiveTextField(
-																autofocus: true,
-																keyboardType: TextInputType.number,
-																controller: maxController,
-																onSubmitted: (s) {
-																	Navigator.pop(context);
-																}
-															)
-														]
-													)
-												)
-											);
-											minRepliedTo = int.tryParse(minController.text);
-											maxRepliedTo = int.tryParse(maxController.text);
-											minController.dispose();
-											maxController.dispose();
-											setInnerState(() {});
-										},
-										child: Text(switch ((minRepliedTo, maxRepliedTo)) {
-											(null, null) => 'No replied-to criteria',
-											(int min, null) => 'With at least $min replied-to posts',
-											(null, int max) => 'With at most $max replied-to posts',
-											(int min, int max) =>
-												min == max
-													? 'With exactly $min replied-to posts'
-													: 'With between $min and $max replied-to posts'
-										})
-									),
-									const SizedBox(height: 16),
-									AdaptiveFilledButton(
-										padding: const EdgeInsets.all(16),
-										onPressed: () async {
-											final controller = TextEditingController(text: minReplyCount?.toString());
-											await showAdaptiveDialog(
-												context: context,
-												barrierDismissible: true,
-												builder: (context) => AdaptiveAlertDialog(
-													title: const Text('Set minimum reply count'),
-													actions: [
-														AdaptiveDialogAction(
-															child: const Text('Clear'),
-															onPressed: () {
-																controller.text = '';
-																Navigator.pop(context);
-															}
-														),
-														AdaptiveDialogAction(
-															child: const Text('Close'),
-															onPressed: () => Navigator.pop(context)
-														)
-													],
-													content: Padding(
-														padding: const EdgeInsets.only(top: 16),
-														child: AdaptiveTextField(
-															autofocus: true,
-															keyboardType: TextInputType.number,
-															controller: controller,
-															onSubmitted: (s) {
-																Navigator.pop(context);
-															}
-														)
-													)
-												)
-											);
-											minReplyCount = int.tryParse(controller.text);
-											controller.dispose();
-											setInnerState(() {});
-										},
-										child: Text(minReplyCount == null ? 'No min-replies criteria' : 'With at least $minReplyCount replies')
-									),
-									const SizedBox(height: 16),
-									AdaptiveFilledButton(
-										padding: const EdgeInsets.all(16),
-										onPressed: () async {
-											final controller = TextEditingController(text: maxReplyCount?.toString());
-											await showAdaptiveDialog(
-												context: context,
-												barrierDismissible: true,
-												builder: (context) => AdaptiveAlertDialog(
-													title: const Text('Set maximum reply count'),
-													actions: [
-														AdaptiveDialogAction(
-															child: const Text('Clear'),
-															onPressed: () {
-																controller.text = '';
-																Navigator.pop(context);
-															}
-														),
-														AdaptiveDialogAction(
-															child: const Text('Close'),
-															onPressed: () => Navigator.pop(context)
-														)
-													],
-													content: Padding(
-														padding: const EdgeInsets.only(top: 16),
-														child: AdaptiveTextField(
-															autofocus: true,
-															keyboardType: TextInputType.number,
-															controller: controller,
-															onSubmitted: (s) {
-																Navigator.pop(context);
-															}
-														)
-													)
-												)
-											);
-											maxReplyCount = int.tryParse(controller.text);
-											controller.dispose();
-											setInnerState(() {});
-										},
-										child: Text(maxReplyCount == null ? 'No max-replies criteria' : 'With at most $maxReplyCount replies')
-									),
-									const SizedBox(height: 16),
-									const Text('Action', style: labelStyle),
-									Container(
-										padding: const EdgeInsets.all(16),
-										alignment: Alignment.center,
-										child: AdaptiveListSection(
-											children: [
-												AdaptiveListTile(
-													title: const Text('Hide'),
-													trailing: hide ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-													backgroundColor: ChanceTheme.barColorOf(context),
-													backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-													onTap: () {
-														if (!hide) {
-															hide = true;
-															highlight = false;
-															pinToTop = false;
-															autoSave = false;
-															autoWatch = null;
-															notify = false;
-															collapse = false;
-														}
-														else {
-															hide = false;
-														}
-														setInnerState(() {});
-													}
-												)
-											]
-										)
-									),
-									Container(
-										padding: const EdgeInsets.all(16),
-										alignment: Alignment.center,
-										child: AdaptiveListSection(
-											children: <(String, bool, ValueChanged<bool>)>[
-												('Highlight', highlight, (v) => highlight = v),
-												('Pin-to-top', pinToTop, (v) => pinToTop = v),
-												('Auto-save', autoSave, (v) => autoSave = v),
-												('Auto-watch', autoWatch != null, (v) => autoWatch = (v ? const AutoWatchType(push: null) : null)),
-												('Notify', notify, (v) => notify = v),
-												('Collapse (tree mode)', collapse, (v) => collapse = v),
-												('Hide replies', hideReplies, (v) {
-													hideReplies = v;
-													if (v && hideReplyChains) {
-														hideReplyChains = false;
-													}
-												}),
-												('Hide reply chains', hideReplyChains, (v) {
-													hideReplyChains = v;
-													if (v && hideReplies) {
-														hideReplies = false;
-													}
-												}),
-												('Hide thumbnails', hideThumbnails, (v) => hideThumbnails = v)
-											].map((t) => AdaptiveListTile(
-												title: Text(t.$1),
-												trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
-												backgroundColor: ChanceTheme.barColorOf(context),
-												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-												onTap: () {
-													t.$3(!t.$2);
-													if (highlight || pinToTop || autoSave || autoWatch != null || notify || collapse) {
-														hide = false;
-													}
-													setInnerState(() {});
-												},
-											)).toList()
-										)
-									),
-									Opacity(
-										opacity: autoWatch == null ? 0.5 : 1.0,
-										child: IgnorePointer(
-											ignoring: autoWatch == null,
-											child: Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													const Text('Auto-watch notifications'),
-													Container(
-														padding: const EdgeInsets.all(16),
-														alignment: Alignment.center,
-														child: AdaptiveChoiceControl<NullSafeOptional>(
-															children: {
-																NullSafeOptional.false_: (null, 'Push off'),
-																NullSafeOptional.null_: (null, 'Default (push ${(Settings.instance.defaultThreadWatch?.push ?? true) ? 'on' : 'off'})'),
-																NullSafeOptional.true_: (null, 'Push on')
-															},
-															knownWidth: 0,
-															groupValue: (autoWatch?.push).value,
-															onValueChanged: (v) {
-																autoWatch = AutoWatchType(
-																	push: v.value
-																);
-																setInnerState(() {});
-															}
-														)
-													)
-												]
-											)
-										)
-									)
-								]
-							)
-						),
-						actions: [
-							if (originalFilter != null) AdaptiveActionSheetAction(
-								isDestructiveAction: true,
-								onPressed: () => Navigator.pop(context, const (true, null)),
-								child: const Text('Delete')
-							),
-							AdaptiveActionSheetAction(
-								onPressed: () {
-									final boards2 = <String>{};
-									final boardsBySite = <String, Set<String>>{};
-									for (final board in boards) {
-										final slashIndex = board.indexOf('/');
-										if (slashIndex != -1) {
-											(boardsBySite[board.substring(0, slashIndex)] ??= {}).add(board.substring(slashIndex + 1));
-										}
-										else {
-											boards2.add(board);
-										}
-									}
-									final excludeBoards2 = <String>{};
-									final excludeBoardsBySite = <String, Set<String>>{};
-									for (final board in excludeBoards) {
-										final slashIndex = board.indexOf('/');
-										if (slashIndex != -1) {
-											(excludeBoardsBySite[board.substring(0, slashIndex)] ??= {}).add(board.substring(slashIndex + 1));
-										}
-										else {
-											excludeBoards2.add(board);
-										}
-									}
-									Navigator.pop(context, (false, CustomFilter(
-										pattern: RegExp(patternController.text, caseSensitive: isCaseSensitive, multiLine: !isSingleLine),
-										patternFields: patternFields,
-										boards: boards2,
-										boardsBySite: boardsBySite,
-										excludeBoards: excludeBoards2,
-										excludeBoardsBySite: excludeBoardsBySite,
-										sites: sites,
-										excludeSites: excludeSites,
-										hasFile: hasFile,
-										threadsOnly: threadsOnly,
-										deletedOnly: deletedOnly,
-										repliesToOP: repliesToOP,
-										minRepliedTo: minRepliedTo,
-										maxRepliedTo: maxRepliedTo,
-										minReplyCount: minReplyCount,
-										maxReplyCount: maxReplyCount,
-										outputType: FilterResultType(
-											hide: hide,
-											hideReplies: hideReplies,
-											hideReplyChains: hideReplyChains,
-											highlight: highlight,
-											pinToTop: pinToTop,
-											autoSave: autoSave,
-											autoWatch: autoWatch,
-											notify: notify,
-											collapse: collapse,
-											hideThumbnails: hideThumbnails
-										),
-										label: labelController.text
-									)));
-								},
-								child: originalFilter == null ? const Text('Add') : const Text('Save')
-							)
-						],
-						cancelButton: AdaptiveActionSheetAction(
-							onPressed: () => Navigator.pop(context),
-							child: const Text('Cancel')
-						)
-					)
-				)
-			);
-		}
 		Widget child;
 		if (widget.showRegex) {
 			child = Column(
@@ -964,6 +967,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'Example: `/sneed/i` will match `SNEED`\n'
 													'Add `s` after the regex to make it single-line. ^ and \$ will match the start and end of text instead of each line\n'
 													'You can write text before the opening slash to give the filter a label: `Funposting/bane/i`\n'
+													'To include the slash character `/` in the label, use `%2F` instead\n'
 													'The first filter in the list to match an item will take precedence over other matching filters\n'
 													'\n'
 													'Qualifiers may be added after the regex:\n'
@@ -1061,11 +1065,11 @@ class _FilterEditorState extends State<FilterEditor> {
 						backgroundColor: ChanceTheme.barColorOf(context),
 						backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 						onTap: () async {
-							final newFilter = await editFilter(null);
-							if (newFilter?.$2 != null) {
+							final newFilter = await editFilter(context, null, blankFilter: widget.blankFilter);
+							if (newFilter?.value case final newFilter?) {
 								final old = settings.filterConfiguration;
 								// Add at the top
-								settings.filterConfiguration = '${newFilter!.$2!.toStringConfiguration()}\n$old';
+								settings.filterConfiguration = '${newFilter.toStringConfiguration()}\n$old';
 								regexController.text = settings.filterConfiguration;
 							}
 						}
@@ -1166,10 +1170,10 @@ class _FilterEditorState extends State<FilterEditor> {
 								)
 							),
 							onTap: () async {
-								final newFilter = await editFilter(filter.value);
+								final newFilter = await editFilter(context, filter.value, blankFilter: widget.blankFilter);
 								if (newFilter != null) {
 									final lines = settings.filterConfiguration.split(lineSeparatorPattern);
-									if (newFilter.$1) {
+									if (newFilter.value == null) {
 										final removed = lines.removeAt(filter.key);
 										if (context.mounted) {
 											showUndoToast(
@@ -1184,7 +1188,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										}
 									}
 									else {
-										lines[filter.key] = newFilter.$2!.toStringConfiguration();
+										lines[filter.key] = newFilter.value!.toStringConfiguration();
 									}
 									settings.filterConfiguration = lines.join('\n');
 									regexController.text = settings.filterConfiguration;
@@ -1208,9 +1212,9 @@ class _FilterEditorState extends State<FilterEditor> {
 						backgroundColor: ChanceTheme.barColorOf(context),
 						backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 						onTap: () async {
-							final newFilter = await editFilter(null);
-							if (newFilter?.$2 != null) {
-								settings.filterConfiguration += '\n${newFilter!.$2!.toStringConfiguration()}';
+							final newFilter = await editFilter(context, null, blankFilter: widget.blankFilter);
+							if (newFilter?.value case final newFilter?) {
+								settings.filterConfiguration += '\n${newFilter.toStringConfiguration()}';
 								regexController.text = settings.filterConfiguration;
 							}
 						}

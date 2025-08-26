@@ -1051,7 +1051,6 @@ class ThreadPageState extends State<ThreadPage> {
 		setState(() {});
 	}
 
-	static final _newGeneralPattern = RegExp(r'(?<=^| )\/([^/ ]+)\/(?=$| )');
 	Future<void> _checkForNewGeneral() async {
 		if (widget.onWantChangeThread == null) {
 			// Not possible to switch thread
@@ -1064,7 +1063,7 @@ class ThreadPageState extends State<ThreadPage> {
 		  // No reason to check yet
 			return;
 		}
-		final match = _newGeneralPattern.firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.name} ${persistentState.thread?.posts_.tryFirst?.text}');
+		final match = newGeneralPattern.firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.name} ${persistentState.thread?.posts_.tryFirst?.text}');
 		if (match == null) {
 			// no /general/ found
 			return;
@@ -1086,7 +1085,7 @@ class ThreadPageState extends State<ThreadPage> {
 		ThreadIdentifier candidate = widget.thread;
 		for (final thread in catalog) {
 			if (thread.id > candidate.id) {
-				final threadPattern = _newGeneralPattern.firstMatch('${thread.title} ${thread.posts_.tryFirst?.name} ${thread.posts_.tryFirst?.text}')?.group(0)?.toLowerCase();
+				final threadPattern = newGeneralPattern.firstMatch('${thread.title} ${thread.posts_.tryFirst?.name} ${thread.posts_.tryFirst?.text}')?.group(0)?.toLowerCase();
 				if (threadPattern == pattern) {
 					candidate = thread.identifier;
 				}

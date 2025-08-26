@@ -77,6 +77,47 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 	@override
 	Widget build(BuildContext context) {
 		final imageboard = context.watch<Imageboard>();
+		final settings = context.watch<Settings>();
+		final theme = context.watch<SavedTheme>();
+		/// Assume this can't change from another source while the dialog is open
+		final lines = settings.filterConfiguration.split(lineSeparatorPattern);
+		String? nameFilter;
+		String? tripFilter;
+		String? subjectFilter;
+		String? generalFilter;
+		if (widget.thread.posts_.tryFirst?.name case String name when name.isNotEmpty && name != imageboard.site.defaultUsername) {
+			nameFilter = CustomFilter(
+				pattern: RegExp('^${RegExp.escape(name)}\$', caseSensitive: false),
+				label: 'Name "$name"',
+				patternFields: ['name'],
+				sites: {imageboard.key}
+			).toStringConfiguration();
+		}
+		if (widget.thread.posts_.tryFirst?.trip case String trip when trip.isNotEmpty) {
+			tripFilter = CustomFilter(
+				pattern: RegExp('^${RegExp.escape(trip)}\$'),
+				label: 'Trip "$trip"',
+				patternFields: ['trip'],
+				sites: {imageboard.key}
+			).toStringConfiguration();
+		}
+		if (widget.thread.title case String title when title.isNotEmpty) {
+			subjectFilter = CustomFilter(
+				pattern: RegExp('^${RegExp.escape(title)}\$', caseSensitive: false),
+				label: 'Subject "$title"',
+				boardsBySite: {imageboard.key: {widget.thread.board}},
+				patternFields: ['subject']
+			).toStringConfiguration();
+		}
+		final general = newGeneralPattern.firstMatch('${widget.thread.title} ${widget.thread.posts_.tryFirst?.name} ${widget.thread.posts_.tryFirst?.text}')?.group(0)?.toLowerCase();
+		if (general != null) {
+			generalFilter = CustomFilter(
+				pattern: RegExp(RegExp.escape(general), caseSensitive: false),
+				label: 'General $general',
+				boardsBySite: {imageboard.key: {widget.thread.board}},
+				patternFields: ['subject', 'text', 'name']
+			).toStringConfiguration();
+		}
 		return AdaptiveAlertDialog(
 			title: const Text('Thread Hiding'),
 			content: Column(
@@ -102,6 +143,74 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 							imageboard.persistence.didUpdateBrowserState();
 							setState(() {});
 						},
+					),
+					for (final filter in [
+						if (nameFilter case final nameFilter?) (
+							desc: 'Hide by name',
+							data: widget.thread.posts_.tryFirst?.name ?? '',
+							filter: nameFilter
+						),
+						if (tripFilter case final tripFilter?) (
+							desc: 'Hide by trip',
+							data: widget.thread.posts_.tryFirst?.trip ?? '',
+							filter: tripFilter
+						),
+						if (generalFilter case final generalFilter?) (
+							desc: 'Hide general',
+							data: general ?? '',
+							filter: generalFilter
+						),
+						if (subjectFilter case final subjectFilter?) (
+							desc: 'Hide by subject',
+							data: widget.thread.title ?? '',
+							filter: subjectFilter
+						)
+					]) Padding(
+						padding: const EdgeInsets.all(16),
+						child: Row(
+							children: [
+								Expanded(
+									child: RichText(
+										text: TextSpan(
+											children: [
+												TextSpan(text: filter.desc),
+												const TextSpan(text: ' '),
+												WidgetSpan(
+													child: Container(
+														decoration: BoxDecoration(
+															color: theme.barColor,
+															borderRadius: const BorderRadius.all(Radius.circular(3))
+														),
+														padding: const EdgeInsets.only(left: 4, right: 4),
+														child: Text(filter.data, style: const TextStyle(fontSize: 17))
+													)
+												)
+											],
+											style: const TextStyle(fontSize: 17)
+										)
+									)
+								),
+								Checkbox.adaptive(
+									value: lines.contains(filter.filter),
+									onChanged: (value) {
+										if (value!) {
+											final disabledIdx = lines.indexOf('#${filter.filter}');
+											if (disabledIdx != -1) {
+												lines[disabledIdx] = filter.filter;
+											}
+											else {
+												lines.add(filter.filter);
+											}
+										}
+										else {
+											lines.remove(filter.filter);
+										}
+										settings.filterConfiguration = lines.join('\n');
+										setState(() {});
+									}
+								)
+							]
+						)
 					),
 					if (widget.thread.attachments.isNotEmpty)
 						if (!Settings.applyImageFilterToThreadsSetting.watch(context)) ...[
@@ -726,8 +835,19 @@ class BoardPageState extends State<BoardPage> {
 						child: const Text('Unhide thread'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							context.read<Persistence>().browserState.setThreadHiding(thread.identifier, null);
-							context.read<Persistence>().didUpdateBrowserState();
+							final original = isThreadHidden;
+							final persistence = context.read<Persistence>();
+							persistence.browserState.setThreadHiding(thread.identifier, null);
+							showUndoToast(
+								context: context,
+								message: 'Thread unhidden',
+								onUndo: () {
+									persistence.browserState.setThreadHiding(thread.identifier, original);
+									persistence.didUpdateBrowserState();
+									setState(() {});
+								}
+							);
+							persistence.didUpdateBrowserState();
 							setState(() {});
 						}
 					)
@@ -735,8 +855,19 @@ class BoardPageState extends State<BoardPage> {
 						child: const Text('Hide thread'),
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
-							context.read<Persistence>().browserState.setThreadHiding(thread.identifier, true);
-							context.read<Persistence>().didUpdateBrowserState();
+							final original = isThreadHidden;
+							final persistence = context.read<Persistence>();
+							persistence.browserState.setThreadHiding(thread.identifier, true);
+							showUndoToast(
+								context: context,
+								message: 'Thread hidden',
+								onUndo: () {
+									persistence.browserState.setThreadHiding(thread.identifier, original);
+									persistence.didUpdateBrowserState();
+									setState(() {});
+								}
+							);
+							persistence.didUpdateBrowserState();
 							setState(() {});
 						}
 					),
