@@ -1213,11 +1213,14 @@ class ThreadPageState extends State<ThreadPage> {
 			notifications.updateLastKnownId(watch, newThread.posts_.last.id, foreground: _foreground);
 		}
 		await _listController.whenDoneAutoScrolling;
-		newThread.mergePosts(
-			tmpPersistentState.thread,
-			tmpPersistentState.thread?.posts ?? site.getThreadFromCatalogCache(newThread.identifier)?.posts ?? [],
-			site
-		);
+		if (tmpPersistentState.thread != null || newThread.archiveName == null) {
+			// Don't try to merge catalogCache onto archived thread, it will think weAreOldThread
+			newThread.mergePosts(
+				tmpPersistentState.thread,
+				tmpPersistentState.thread?.posts ?? site.getThreadFromCatalogCache(newThread.identifier)?.posts ?? [],
+				site
+			);
+		}
 		final loadedReferencedThreads = await _loadReferencedThreads(cancelToken: cancelToken);
 		_checkForNewGeneral();
 		if (newThread != tmpPersistentState.thread) {
