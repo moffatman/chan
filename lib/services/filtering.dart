@@ -712,7 +712,7 @@ class MD5Filter implements Filter {
 		if (!applyToThreads && item.isThread) {
 			return null;
 		}
-		return md5s.contains(item.getFilterFieldText('md5')) ?
+		return item.md5s.any(md5s.contains) ?
 			FilterResult(
 				FilterResultType(
 					hide: true,

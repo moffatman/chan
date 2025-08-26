@@ -318,7 +318,7 @@ class Post implements Filterable {
 			case 'flag':
 				return flag?.name;
 			case 'md5':
-				return attachments.map((a) => a.md5).join(' ');
+				return md5s.join(' ');
 			case 'capcode':
 				return capcode;
 			case 'trip':
@@ -354,7 +354,7 @@ class Post implements Filterable {
 		].toList(growable: false);
 	}
 	@override
-	Iterable<String> get md5s => attachments.map((a) => a.md5);
+	Iterable<String> get md5s => attachments_.map((a) => a.md5); // inlineAttachments will never really have MD5s
 	Iterable<Attachment> get _inlineAttachments sync* {
 		for (final s in span.traverse(this)) {
 			if (s is PostAttachmentsSpan) {

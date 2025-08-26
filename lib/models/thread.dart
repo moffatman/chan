@@ -383,7 +383,7 @@ class Thread extends HiveObject implements Filterable {
 			case 'flag':
 				return posts_.first.flag?.name;
 			case 'md5':
-				return attachments.map((a) => a.md5).join(' ');
+				return md5s.join(' ');
 			case 'capcode':
 				return posts_.first.capcode;
 			case 'trip':
