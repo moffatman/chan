@@ -87,7 +87,7 @@ Future<({Uint8List data, String contentType})?> _requestDataAsBytes(RequestOptio
 extension _Cloudflare on RequestPriority {
 	bool get shouldPopupCloudflare => switch(this) {
 		RequestPriority.interactive || RequestPriority.functional => true,
-		RequestPriority.cosmetic => false
+		RequestPriority.cosmetic || RequestPriority.lowest => false
 	};
 }
 
@@ -508,6 +508,7 @@ class CloudflareInterceptor extends Interceptor {
 				}
 			}
 			switch (priority) {
+				case RequestPriority.lowest:
 				case RequestPriority.cosmetic:
 					// We gave it a shot with headless...
 					throw const CloudflareHandlerNotAllowedException();

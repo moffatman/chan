@@ -59,10 +59,16 @@ part 'imageboard_site.g.dart';
 
 const _preferredArchiveApiRoot = 'https://push.chance.surf';
 const kPriority = 'priority';
+/// Must be in order least to greatest
 enum RequestPriority {
-	interactive,
+	/// No 429 or cloudflare popup
+	lowest,
+	/// 429 allowed, no cloudflare popup
+	cosmetic,
+	/// 429 allowed, cloudflare popup allowed but might be timed out if cancelled
 	functional,
-	cosmetic
+	/// 429 and cloudflare allowed
+	interactive
 }
 
 class PostNotFoundException extends ExtendedException {
@@ -1781,9 +1787,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');
 	}
 
-	static bool _isCloudflareNotAllowedException(Object e) => switch (e) {
-		CloudflareHandlerNotAllowedException() => true,
-		DioError dioError => dioError.error is CloudflareHandlerNotAllowedException,
+	static bool _isReAttemptable(RequestPriority priority, dynamic e) => switch (e) {
+		CloudflareHandlerNotAllowedException() => priority.index > RequestPriority.cosmetic.index,
+		Http429Exception() => priority.index > RequestPriority.lowest.index,
+		DioError dioError => _isReAttemptable(priority, dioError.error),
 		_ => false
 	};
 	@override
@@ -1794,7 +1801,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				continue;
 			}
 			try {
-				final post = await archive.getPostFromArchive(board, id, priority: RequestPriority.cosmetic, cancelToken: cancelToken);
+				final post = await archive.getPostFromArchive(board, id, priority: RequestPriority.lowest, cancelToken: cancelToken);
 				post.archiveName = archive.name;
 				return post;
 			}
@@ -1804,20 +1811,18 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				}
 			}
 		}
-		if (priority != RequestPriority.cosmetic) {
-			// Try again, allowing cloudflare clearance
-			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
-				// No need to check disabledArchiveNames, they can't fail to begin with
-				if (_isCloudflareNotAllowedException(error.value)) {
-					try {
-						final post = await error.key.getPostFromArchive(board, id, priority: priority, cancelToken: cancelToken);
-						post.archiveName = error.key.name;
-						return post;
-					}
-					catch (e) {
-						if (e is! BoardNotFoundException) {
-							errors[error.key] = e;
-						}
+		// Maybe try again with higher priority
+		for (final error in errors.entries.toList(growable: false)) { // concurrent modification
+			// No need to check disabledArchiveNames, they can't fail to begin with
+			if (_isReAttemptable(priority, error.value)) {
+				try {
+					final post = await error.key.getPostFromArchive(board, id, priority: priority, cancelToken: cancelToken);
+					post.archiveName = error.key.name;
+					return post;
+				}
+				catch (e) {
+					if (e is! BoardNotFoundException) {
+						errors[error.key] = e;
 					}
 				}
 			}
@@ -1921,7 +1926,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					return null;
 				}
 				try {
-					final thread_ = await archive.getThread(thread, priority: RequestPriority.cosmetic, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
+					final thread_ = await archive.getThread(thread, priority: RequestPriority.lowest, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
 					if (completer.isCompleted) return null;
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
@@ -1956,33 +1961,31 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				// Do nothing, the thread was already returned
 				return null;
 			}
-			if (priority != RequestPriority.cosmetic) {
-				// Try again, allowing cloudflare clearance
-				for (final error in errors.entries.toList(growable: false)) { // concurrent modification
-					if (_isCloudflareNotAllowedException(error.value)) {
+			// Maybe try again with higher priority
+			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
+				if (_isReAttemptable(priority, error.value)) {
+					try {
+						final thread_ = await error.key.getThread(thread, priority: priority, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
+						thread_.archiveName = error.key.name;
+						fallback = thread_;
 						try {
-							final thread_ = await error.key.getThread(thread, priority: priority, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
-							thread_.archiveName = error.key.name;
-							fallback = thread_;
-							try {
-								await validator(thread_);
-							}
-							catch (e) {
-								if (
-									(e is AttachmentNotArchivedException || e is AttachmentNotFoundException) &&
-									identical(fallback, thread_)
-								) {
-									fallback = null;
-								}
-								rethrow;
-							}
-							completer.complete(thread_);
-							return;
+							await validator(thread_);
 						}
 						catch (e) {
-							// Update to new error
-							errors[error.key] = e;
+							if (
+								(e is AttachmentNotArchivedException || e is AttachmentNotFoundException) &&
+								identical(fallback, thread_)
+							) {
+								fallback = null;
+							}
+							rethrow;
 						}
+						completer.complete(thread_);
+						return;
+					}
+					catch (e) {
+						// Update to new error
+						errors[error.key] = e;
 					}
 				}
 			}
@@ -2010,7 +2013,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				continue;
 			}
 			try {
-				return await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.cosmetic, cancelToken: cancelToken);
+				return await archive.search(query, page: page, lastResult: lastResult, priority: RequestPriority.lowest, cancelToken: cancelToken);
 			}
 			catch (e, st) {
 				if (e is! BoardNotFoundException) {
@@ -2021,21 +2024,19 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				}
 			}
 		}
-		if (priority != RequestPriority.cosmetic) {
-			// Try again, allowing cloudflare clearance
-			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
-				// No need to check disabledArchiveNames, they can't fail to begin with
-				if (_isCloudflareNotAllowedException(error.value)) {
-					try {
-						return await error.key.search(query, page: page, lastResult: lastResult, priority: priority, cancelToken: cancelToken);
-					}
-					catch (e, st) {
-						if (e is! BoardNotFoundException) {
-							print('Error2 from ${error.key.name}');
-							print(e.toStringDio());
-							print(st);
-							errors[error.key] = e;
-						}
+		// Maybe try again with higher priority
+		for (final error in errors.entries.toList(growable: false)) { // concurrent modification
+			// No need to check disabledArchiveNames, they can't fail to begin with
+			if (_isReAttemptable(priority, error.value)) {
+				try {
+					return await error.key.search(query, page: page, lastResult: lastResult, priority: priority, cancelToken: cancelToken);
+				}
+				catch (e, st) {
+					if (e is! BoardNotFoundException) {
+						print('Error2 from ${error.key.name}');
+						print(e.toStringDio());
+						print(st);
+						errors[error.key] = e;
 					}
 				}
 			}

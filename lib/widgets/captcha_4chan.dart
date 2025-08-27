@@ -149,7 +149,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	}
 	if (data['mpcd'] == true) {
 		// hCaptcha block
-		if (priority == RequestPriority.cosmetic) {
+		if (priority == RequestPriority.cosmetic || priority == RequestPriority.lowest) {
 			throw const HeadlessSolveNotPossibleException();
 		}
 		if (hCaptchaSolution != null) {
