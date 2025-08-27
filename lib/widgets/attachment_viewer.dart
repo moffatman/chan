@@ -1567,7 +1567,10 @@ class AttachmentViewer extends StatelessWidget {
 								}
 								else {
 									loadingValue = switch (loadstate.loadingProgress) {
-										ImageChunkEvent p => p.cumulativeBytesLoaded / (p.expectedTotalBytes ?? 10e6),
+										ImageChunkEvent p => p.cumulativeBytesLoaded / (p.expectedTotalBytes ?? attachment.sizeInBytes ?? switch ((attachment.width, attachment.height)) {
+											(int w, int h) => w * h * 0.3,
+											_ => 1e6
+										}),
 										null => null
 									};
 								}
