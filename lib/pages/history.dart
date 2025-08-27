@@ -164,7 +164,7 @@ class HistoryPageState extends State<HistoryPage> {
 													if (context.mounted) {
 														showUndoToast(
 															context: context,
-															message: 'Thread hidden',
+															message: 'Thread hidden from history',
 															onUndo: () async {
 																state.showInHistory = true;
 																await state.save();
@@ -188,7 +188,7 @@ class HistoryPageState extends State<HistoryPage> {
 													if (context.mounted) {
 														showUndoToast(
 															context: context,
-															message: 'Removed thread',
+															message: 'Thread deleted from history',
 															onUndo: () async {
 																await Persistence.sharedThreadStateBox.put(state.boxKey, state);
 																if (watch != null) {

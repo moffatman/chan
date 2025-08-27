@@ -1,3 +1,4 @@
+import 'package:chan/main.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
@@ -6,10 +7,12 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -115,6 +118,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		else {
 			_runQuery();
 		}
+	}
+
+	static void _sort(List<ImageboardScoped<HistorySearchResult>> list) {
+		list.sort((a, b) => (b.item.post?.time ?? b.item.thread.time).compareTo(a.item.post?.time ?? a.item.thread.time));
 	}
 
 	Future<void> _runQuery() async {
@@ -267,7 +274,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				numer++;
 			});
 		}
-		theseResults.sort((a, b) => (b.item.post?.time ?? b.item.thread.time).compareTo(a.item.post?.time ?? a.item.thread.time));
+		_sort(theseResults);
 		results = theseResults;
 		setState(() {});
 	}
@@ -495,6 +502,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	@override
 	Widget build(BuildContext context) {
 		final queryPattern = _queryRegex;
+		final openInNewTabZone = context.watch<OpenInNewTabZone?>();
 		Widget itemBuilder(BuildContext context, ImageboardScoped<HistorySearchResult> row, RefreshableListItemOptions options) {
 		if (row.item.post != null) {
 			return ImageboardScope(
@@ -558,48 +566,127 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 			);
 		}
 		else {
+			final state = row.imageboard.persistence.getThreadStateIfExists(row.item.thread.identifier);
 			return ImageboardScope(
 				imageboardKey: null,
 				imageboard: row.imageboard,
 				child: Builder(
-					builder: (context) => CupertinoButton(
-						padding: EdgeInsets.zero,
-						onPressed: () {
-							row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
-							widget.onResultSelected(row.imageboard.scope(row.item.identifier));
-						},
-						child: ThreadRow(
-							thread: row.item.thread,
-							onThumbnailTap: (attachment) {
-								final attachments = {
-									for (final w in _listController.items)
-										for (final attachment in w.item.item.post?.attachments ?? w.item.item.thread.attachments)
-											attachment: w.item
-								};
-								showGallery(
-									context: context,
-									attachments: attachments.keys.toList(),
-									initialAttachment: attachment,
-									semanticParentIds: [-11],
-									threads: {
-										for (final item in attachments.entries)
-											item.key: item.value.imageboard.scope(item.value.item.thread)
-									},
-									posts: {
-										for (final item in attachments.entries)
-											if (item.value.item.post case Post post)
-												item.key: item.value.imageboard.scope(post)
-									},
-									heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
-								);
-							},
-							isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
-							showBoardName: true,
-							showSiteIcon: ImageboardRegistry.instance.count > 1,
-							hideThumbnails: options.hideThumbnails,
-							baseOptions: PostSpanRenderOptions(
-								highlightPattern: _query.isEmpty ? null : queryPattern
+					builder: (context) => ContextMenu(
+						maxHeight: 125,
+						actions: [
+							if (openInNewTabZone != null) ContextMenuAction(
+								child: const Text('Open in new tab'),
+								trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+								onPressed: () {
+									openInNewTabZone.onWantOpenThreadInNewTab(row.imageboard.key, row.item.thread.identifier);
+								}
 							),
+							if (state != null && state.showInHistory != false) ContextMenuAction(
+								child: const Text('Hide'),
+								onPressed: () async {
+									state.showInHistory = false;
+									await state.save();
+									final newResults = results!.toList();
+									newResults.remove(row);
+									setState(() {
+										results = newResults;
+									});
+									if (context.mounted) {
+										showUndoToast(
+											context: context,
+											message: 'Thread hidden from history',
+											onUndo: () async {
+												state.showInHistory = true;
+												await state.save();
+												final restoredResults = results!.toList();
+												restoredResults.add(row);
+												_sort(restoredResults);
+												setState(() {
+													results = restoredResults;
+												});
+											}
+										);
+									}
+								},
+								trailingIcon: CupertinoIcons.eye_slash,
+								isDestructiveAction: true
+							),
+							if (state != null) ContextMenuAction(
+								child: const Text('Delete'),
+								onPressed: () async {
+									final watch = state.threadWatch;
+									if (watch != null) {
+										await state.imageboard?.notifications.removeWatch(watch);
+									}
+									await state.delete();
+									final newResults = results!.toList();
+									newResults.remove(row);
+									setState(() {
+										results = newResults;
+									});
+									if (context.mounted) {
+										showUndoToast(
+											context: context,
+											message: 'Thread deleted from history',
+											onUndo: () async {
+												await Persistence.sharedThreadStateBox.put(state.boxKey, state);
+												if (watch != null) {
+													await state.imageboard?.notifications.insertWatch(watch);
+												}
+												final restoredResults = results!.toList();
+												restoredResults.add(row);
+												_sort(restoredResults);
+												setState(() {
+													results = restoredResults;
+												});
+											}
+										);
+									}
+								},
+								trailingIcon: CupertinoIcons.trash,
+								isDestructiveAction: true
+							)
+						],
+						contextMenuBuilderBuilder: makeGeneralContextMenuBuilder,
+						child: CupertinoButton(
+							padding: EdgeInsets.zero,
+							onPressed: () {
+								row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
+								widget.onResultSelected(row.imageboard.scope(row.item.identifier));
+							},
+							child: ThreadRow(
+								thread: row.item.thread,
+								onThumbnailTap: (attachment) {
+									final attachments = {
+										for (final w in _listController.items)
+											for (final attachment in w.item.item.post?.attachments ?? w.item.item.thread.attachments)
+												attachment: w.item
+									};
+									showGallery(
+										context: context,
+										attachments: attachments.keys.toList(),
+										initialAttachment: attachment,
+										semanticParentIds: [-11],
+										threads: {
+											for (final item in attachments.entries)
+												item.key: item.value.imageboard.scope(item.value.item.thread)
+										},
+										posts: {
+											for (final item in attachments.entries)
+												if (item.value.item.post case Post post)
+													item.key: item.value.imageboard.scope(post)
+										},
+										heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
+									);
+								},
+								isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
+								showBoardName: true,
+								showSiteIcon: ImageboardRegistry.instance.count > 1,
+								hideThumbnails: options.hideThumbnails,
+								baseOptions: PostSpanRenderOptions(
+									highlightPattern: _query.isEmpty ? null : queryPattern
+								),
+							)
 						)
 					)
 				)
