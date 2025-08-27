@@ -101,7 +101,6 @@ class VideoServer {
 	final Map<String, CancelToken?> _earlyTokens = {};
 	final Map<String, _CachingFile> _caches = {};
 	final Map<String, Set<_CachingFile>> _children = {};
-	final Map<Uri, DateTime> _earlyGiveUp = {};
 	HttpServer? _httpServer;
 	bool _stopped = false;
 	final bool bufferOutput;
@@ -601,7 +600,7 @@ class VideoServer {
 		if (uri == null) {
 			return;
 		}
-		_earlyGiveUp[uri] = DateTime.now();
+		_earlyTokens[_encodeDigest(uri)]?.cancel();
 	}
 
 	Future<void> interruptOngoingDownloadFromUri(Uri url) async {
