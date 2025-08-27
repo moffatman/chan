@@ -209,7 +209,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			'action': 'delete',
 			'password': receipt.password,
 			'confirmation': 'true',
-			'meta-${thread.id}-${receipt.id}': 'true',
+			'${thread.board}-${thread.id}-${receipt.id}': 'true',
 			if (imageOnly) 'deleteUploads': 'true'
 		}, options: Options(
 			extra: {
@@ -217,9 +217,11 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
-		if (response.data?['status'] != 'ok') {
-			throw DeletionFailedException(response.data?['data'] as String? ?? response.data.toString());
+		if (response.data case {'status': 'ok', 'data': {'removedThreads': int removedThreads, 'removedPosts': int removedPosts}} when removedThreads + removedPosts > 0) {
+			// OK
+			return;
 		}
+		throw DeletionFailedException(response.data?['data']?.toString() ?? response.data.toString());
 	}
 
 	@override
