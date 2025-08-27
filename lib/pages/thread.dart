@@ -1171,7 +1171,7 @@ class ThreadPageState extends State<ThreadPage> {
 		else {
 			try {
 				final lastUpdatedTime = oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time;
-				if (oldThread != null && lastUpdatedTime != null) {
+				if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null) {
 					final maybeNewThread = await site.getThreadIfModifiedSince(
 						widget.thread,
 						lastUpdatedTime,

@@ -296,7 +296,7 @@ class ThreadWatcher extends ChangeNotifier {
 	Future<bool> _updateThread(PersistentThreadState threadState, [CancelToken? cancelToken])
 		=> _updateThreadDebouncer.debounce(threadState, cancelToken);
 	Future<bool> __updateThread(PersistentThreadState threadState, CancelToken? cancelToken) async {
-		Thread? newThread;
+		Thread newThread;
 		try {
 			final oldThread = await threadState.getThread();
 			if (site.isPaged) {
@@ -328,10 +328,8 @@ class ThreadWatcher extends ChangeNotifier {
 					}
 				}
 			}
-			if ((
-				newThread,
-				oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time
-			) case (null, DateTime lastUpdatedTime)) {
+			final lastUpdatedTime = oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time;
+			if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null) {
 				final maybeNewThread = await site.getThreadIfModifiedSince(
 					threadState.identifier,
 					lastUpdatedTime,
@@ -343,17 +341,19 @@ class ThreadWatcher extends ChangeNotifier {
 					await site.updatePageNumber(maybeNewThread, true, priority: RequestPriority.functional, cancelToken: cancelToken);
 					newThread = maybeNewThread;
 				}
-				else if (oldThread != null) {
+				else {
 					await site.updatePageNumber(oldThread, false, priority: RequestPriority.functional, cancelToken: cancelToken);
 					newThread = oldThread;
 				}
 			}
-			newThread ??= await site.getThread(
-				threadState.identifier,
-				priority: RequestPriority.functional,
-				variant: threadState.variant,
-				cancelToken: cancelToken
-			);
+			else {
+				newThread = await site.getThread(
+					threadState.identifier,
+					priority: RequestPriority.functional,
+					variant: threadState.variant,
+					cancelToken: cancelToken
+				);
+			}
 		}
 		on ThreadNotFoundException {
 			final watch = persistence.browserState.threadWatches[threadState.identifier];

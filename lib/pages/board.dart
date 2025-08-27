@@ -704,7 +704,9 @@ class BoardPageState extends State<BoardPage> {
 						trailingIcon: Adaptive.icons.bookmark,
 						onPressed: () {
 							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
-							threadState.thread ??= thread;
+							if (!threadState.isThreadCached) {
+								threadState.thread = thread;
+							}
 							threadState.savedTime = DateTime.now();
 							threadState.save();
 							context.read<Persistence>().didUpdateBrowserState();
@@ -751,7 +753,9 @@ class BoardPageState extends State<BoardPage> {
 							if (!markedReceipt) {
 								threadState.postsMarkedAsYou.add(thread.id);
 							}
-							threadState.thread ??= thread;
+							if (!threadState.isThreadCached) {
+								threadState.thread = thread;
+							}
 							threadState.didUpdateYourPosts();
 							threadState.save();
 							if (settings.watchThreadAutomaticallyWhenReplying) {
@@ -1320,7 +1324,9 @@ class BoardPageState extends State<BoardPage> {
 														}
 														final threadState = persistence.getThreadState(thread.identifier);
 														threadState.savedTime = DateTime.now();
-														threadState.thread ??= thread;
+														if (!threadState.isThreadCached) {
+															threadState.thread = thread;
+														}
 														persistence.browserState.autosavedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
 														await threadState.save();
 														await persistence.didUpdateBrowserState();
@@ -1333,7 +1339,9 @@ class BoardPageState extends State<BoardPage> {
 															return;
 														}
 														final threadState = imageboard.persistence.getThreadState(thread.identifier);
-														threadState.thread ??= thread;
+														if (!threadState.isThreadCached) {
+															threadState.thread = thread;
+														}
 														imageboard.notifications.subscribeToThread(
 															thread: thread.identifier,
 															lastSeenId: thread.posts_.last.id,
