@@ -57,18 +57,19 @@ TextSpan buildThreadCounters({
 	int unseenReplyCount = 0;
 	int unseenYouCount = 0;
 	int unseenImageCount = 0;
+	final readable = invert ? theme.backgroundColor : theme.primaryColor;
 	final grey = theme.primaryColorWithBrightness(invert ? 0.4 : 0.6);
-	Color? replyCountColor;
-	Color? imageCountColor;
-	Color? pageCountColor;
-	Color? otherMetadataColor;
+	Color replyCountColor = readable;
+	Color imageCountColor = readable;
+	Color pageCountColor = readable;
+	Color otherMetadataColor = readable;
 	final threadSeen = threadState?.lastSeenPostId != null && (forceShowInHistory ?? (threadState?.showInHistory ?? false));
 	bool showReplyTimeInsteadOfReplyCount = false;
 	if (threadSeen && (site.isPaged || thread.isEndless)) {
 		// image count stuff intentionally not covered here...
 		unseenReplyCount = threadState?.unseenReplyCount() ?? 0;
 		unseenImageCount = threadState?.unseenImageCount() ?? 0;
-		imageCountColor = unseenImageCount <= 0 ? grey : null;
+		imageCountColor = unseenImageCount <= 0 ? grey : readable;
 		unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
 		final catalogLastTime = thread.lastUpdatedTime ?? thread.posts_.tryLast?.time;
 		final stateLastTime = threadState?.thread?.lastUpdatedTime ?? threadState?.thread?.posts_.tryLast?.time;
@@ -95,9 +96,9 @@ TextSpan buildThreadCounters({
 		if (unseenReplyCount > 0) {
 			unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.fold<int>(0, (t, p) => t + p.attachments.length + (p.attachmentDeleted ? 1 : 0)) ?? 0));
 		}
-		replyCountColor = unseenReplyCount <= 0 ? grey : null;
-		imageCountColor = unseenImageCount <= 0 ? grey : null;
-		otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
+		replyCountColor = unseenReplyCount <= 0 ? grey : readable;
+		imageCountColor = unseenImageCount <= 0 ? grey : readable;
+		otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : readable;
 	}
 	else if (!showUnseenColors) {
 		replyCountColor = grey;
