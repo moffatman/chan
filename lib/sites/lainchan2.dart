@@ -156,7 +156,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 			broken.attachments.tryFirstWhere((a2) => a.id == a2.id)?.thumbnailUrl = a.thumbnailUrl;
 		}
 		for (final flag in document.querySelectorAll('.post > p > label > img.flag')) {
-			final postId = int.tryParse(flag.parent?.parent?.parent?.id.split('_').last ?? '');
+			final postId = flag.parent?.parent?.parent?.id.split('_').last.tryParseInt;
 			if (postId == null) {
 				continue;
 			}

@@ -95,11 +95,11 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 					else if (node.localName == 'a' && node.classes.contains('quotelink')) {
 						final match = _quoteLinkHrefPattern.firstMatch(node.attributes['href'] ?? '');
 						if (match != null) {
-							final threadId = int.parse(match.group(2)!);
+							final threadId = match.group(2)!.parseInt;
 							yield PostQuoteLinkSpan(
 								board: match.group(1)!,
 								threadId: threadId,
-								postId: int.tryParse(match.group(3) ?? '') ?? threadId
+								postId: match.group(3)?.tryParseInt ?? threadId
 							);
 						}
 						else if (node.classes.contains('unexisting-quotelink')) {

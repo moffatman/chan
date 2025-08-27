@@ -142,7 +142,7 @@ class VideoServer {
 	static _RawRange? _parseRange(HttpHeaders headers) {
 		final match = _bytesRangePattern.firstMatch(headers[HttpHeaders.rangeHeader]?.first ?? '');
 		if (match != null) {
-			return (start: int.parse(match.group(1)!), inclusiveEnd: int.tryParse(match.group(2) ?? ''));
+			return (start: match.group(1)!.parseInt, inclusiveEnd: match.group(2)?.tryParseInt);
 		}
 		return null;
 	}

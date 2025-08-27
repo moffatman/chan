@@ -206,9 +206,9 @@ class Notifications {
 				return;
 			}
 			final PushNotification notification;
-			final target = ThreadOrPostIdentifier(data['board']!, int.parse(data['threadId']!), int.tryParse(data['postId'] ?? ''));
+			final target = ThreadOrPostIdentifier(data['board']!, data['threadId']!.parseInt, data['postId']?.tryParseInt);
 			if (data['type'] == 'thread') {
-				final page = int.tryParse(data['page'] ?? '');
+				final page = data['page']?.tryParseInt;
 				if (page != null) {
 					notification = ThreadWatchPageNotification(target: target, page: page);
 				}
@@ -250,8 +250,8 @@ class Notifications {
 		if (data['type'] == 'thread' || data['type'] == 'threadPage' || data['type'] == 'board') {
 			child.tapStream.add(ThreadOrPostIdentifier(
 				data['board']!,
-				int.parse(data['threadId']!),
-				int.tryParse(data['postId'] ?? '')
+				data['threadId']!.parseInt,
+				data['postId']?.tryParseInt
 			));
 		}
 	}
@@ -285,7 +285,7 @@ class Notifications {
 		}
 		else {
 			FlutterLocalNotificationsPlugin().show(
-				int.tryParse(data['postId'] ?? '') ?? int.parse(data['threadId']!),
+				data['postId']?.tryParseInt ?? data['threadId']!.parseInt,
 				notification['title'] as String?,
 				notification['body'] as String?,
 				NotificationDetails(

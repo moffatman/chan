@@ -549,8 +549,8 @@ class SiteReddit extends ImageboardSite {
 						else {
 							yield PostInlineImageSpan(
 								src: src,
-								width: int.tryParse(node.attributes['height'] ?? '') ?? 16,
-								height: int.tryParse(node.attributes['width'] ?? '') ?? 16
+								width: node.attributes['height']?.tryParseInt ?? 16,
+								height: node.attributes['width']?.tryParseInt ?? 16
 							);
 						}
 					}
@@ -1273,7 +1273,7 @@ class SiteReddit extends ImageboardSite {
 						id: id,
 						spanFormat: PostSpanFormat.reddit,
 						attachments_: const [],
-						upvotes: int.tryParse(doc.querySelector('.score.unvoted')?.attributes['title'] ?? '')
+						upvotes: doc.querySelector('.score.unvoted')?.attributes['title']?.tryParseInt
 					);
 					_updateTimeEstimateData(post.id, post.time);
 					newPosts[id] = post;

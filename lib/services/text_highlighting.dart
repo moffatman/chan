@@ -60,7 +60,7 @@ TextSpan buildHighlightedCommentTextSpan({
 			targetExists = true;
 		}
 		else {
-			targetExists = zone.findPost(int.tryParse(match.group(2) ?? '') ?? 0) != null;
+			targetExists = zone.findPost(match.group(2)?.tryParseInt ?? 0) != null;
 		}
 		ranges.add((range, targetExists ? quotelinkStyle : deadQuotelinkStyle));
 	}

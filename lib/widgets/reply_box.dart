@@ -290,7 +290,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					// Text changed
 					return;
 				}
-				final byteCount = int.tryParse(response.headers.value(dio.Headers.contentLengthHeader) ?? '') ?? 0 /* chunked encoding? */;
+				final byteCount = response.headers.value(dio.Headers.contentLengthHeader)?.tryParseInt ?? 0 /* chunked encoding? */;
 				_proposedAttachmentUrl = (text: rawUrl, imageUrl: rawUrl, size: byteCount);
 				if (mounted) setState(() {});
 				return;

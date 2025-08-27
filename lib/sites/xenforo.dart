@@ -99,8 +99,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 							url: src,
 							thumbnailUrl: generateThumbnailerForUrl(Uri.parse(src)).toString(),
 							md5: '',
-							width: int.tryParse(img.attributes['width'] ?? ''),
-							height: int.tryParse(img.attributes['height'] ?? ''),
+							width: img.attributes['width']?.tryParseInt,
+							height: img.attributes['height']?.tryParseInt,
 							inlineWithinPostId: postId, // to avoid duplicate Heros when quoted
 							sizeInBytes: null
 						));
@@ -217,7 +217,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 						final quoteContent = node.querySelector('.bbCodeBlock-expandContent');
 						if (quoteContent != null) {
 							final quote = PostQuoteSpan(PostNodeSpan(visit(parseFragment(quoteContent.innerHtml.trim()).nodes).toList()));
-							final source = int.tryParse(node.attributes['data-source']?.split(':').last ?? '');
+							final source = node.attributes['data-source']?.split(':').last.tryParseInt;
 							if (source != null) {
 								yield PostQuoteLinkWithContextSpan(
 									quoteLink: PostQuoteLinkSpan(
@@ -277,8 +277,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 							url: src,
 							thumbnailUrl: generateThumbnailerForUrl(Uri.parse(src)).toString(),
 							md5: '',
-							width: int.tryParse(video.attributes['width'] ?? ''),
-							height: int.tryParse(video.attributes['height'] ?? ''),
+							width: video.attributes['width']?.tryParseInt,
+							height: video.attributes['height']?.tryParseInt,
 							inlineWithinPostId: postId, // to avoid duplicate Heros when quoted
 							sizeInBytes: null
 						));
@@ -576,7 +576,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 					// Placeholder entry for last new post. Then we can tell if the thread is modified or not.
 					if (lastPostTime != null) Post(
 						board: board,
-						id: -(int.tryParse(e.querySelectorAll('.structItem-pageJump a').tryLast?.text ?? '') ?? 1),
+						id: -(e.querySelectorAll('.structItem-pageJump a').tryLast?.text.tryParseInt ?? 1),
 						text: '',
 						name: _parseUsernameFromLink(e.querySelector('.structItem-cell--latest a.username')),
 						time: _parseTime(lastPostTime),
@@ -644,8 +644,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 
 	List<Post> _getPostsFromThreadPage(String board, int threadId, dom.Document document) {
 		final pageNavPages = document.querySelector('.pageNav-main')?.querySelectorAll('.pageNav-page') ?? [];
-		final currentPageNumber = int.tryParse(pageNavPages.tryFirstWhere((e) => e.classes.contains('pageNav-page--current'))?.text ?? '') ?? 1;
-		final lastPageNumber = int.tryParse(pageNavPages.tryLast?.text ?? '') ?? 1;
+		final currentPageNumber = pageNavPages.tryFirstWhere((e) => e.classes.contains('pageNav-page--current'))?.text.tryParseInt ?? 1;
+		final lastPageNumber = pageNavPages.tryLast?.text.tryParseInt ?? 1;
 		final opName = _parseUsernameFromLink(document.querySelector('.p-description .username'));
 		Post generateStub(int pageNumber) => Post(
 			board: board,
@@ -687,8 +687,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 						url: parentHref ?? url,
 						thumbnailUrl: generateThumbnailerForUrl(Uri.parse(url)).toString(),
 						md5: '',
-						width: int.tryParse(img.attributes['width'] ?? ''),
-						height: int.tryParse(img.attributes['height'] ?? ''),
+						width: img.attributes['width']?.tryParseInt,
+						height: img.attributes['height']?.tryParseInt,
 						sizeInBytes: null
 					);
 				}).toList(growable: false)
@@ -900,7 +900,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 				final board = _relativeBoardPattern.firstMatch(cells.last.querySelector('a')!.attributes['href']!)!.group(1)!;
 				final linkMatch = _searchLinkPattern.firstMatch(e.querySelector('.contentRow-title a')!.attributes['href']!)!;
 				final threadId = int.parse(linkMatch.group(1)!);
-				final replyCount = int.tryParse(_searchReplyCountPattern.firstMatch(cells[3].text.trim())?.group(1) ?? '') ?? 0;
+				final replyCount = _searchReplyCountPattern.firstMatch(cells[3].text.trim())?.group(1)?.tryParseInt ?? 0;
 				if (isThread) {
 					return ImageboardArchiveSearchResult.thread(Thread(
 						board: board,
@@ -956,7 +956,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 			imageCountsUnreliable: false,
 			page: page,
 			canJumpToArbitraryPage: true,
-			maxPage: int.tryParse(document.querySelectorAll('.pageNav-page').tryLast?.text.trim() ?? '') ?? 1,
+			maxPage: document.querySelectorAll('.pageNav-page').tryLast?.text.trim().tryParseInt ?? 1,
 			count: null,
 			archive: this,
 			memo: {
@@ -1022,7 +1022,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 			},
 			totalKarma: document.querySelectorAll('.memberHeader-stats dl').tryMapOnce((e) {
 				if (e.querySelector('dt')?.text.toLowerCase() == 'reaction score') {
-					return int.tryParse(e.querySelector('dd')?.text.trim() ?? '');
+					return e.querySelector('dd')?.text.trim().tryParseInt;
 				}
 				return null;
 			}) ?? 0

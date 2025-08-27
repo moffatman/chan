@@ -1364,7 +1364,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					imageboardKey: uri.host,
 					board: uri.pathSegments[0],
 					threadId: int.parse(uri.pathSegments[2]),
-					postId: int.tryParse(uri.queryParameters['postId'] ?? ''),
+					postId: uri.queryParameters['postId']?.tryParseInt,
 					openNewTabIfNeeded: true
 				);
 			}

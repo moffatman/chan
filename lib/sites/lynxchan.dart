@@ -253,7 +253,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				title: match.group(2)!,
 				isWorksafe: col1.querySelector('.indicatorSfw') != null,
 				webmAudioAllowed: true,
-				popularity: int.tryParse(cell.querySelector('.labelPostCount')?.text ?? '')
+				popularity: cell.querySelector('.labelPostCount')?.text.tryParseInt
 			));
 		}
 		if (list.isEmpty) {
@@ -268,7 +268,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 					title: match.group(2)!,
 					isWorksafe: col1.querySelector('.indicatorSfw') != null,
 					webmAudioAllowed: true,
-					popularity: int.tryParse(cell.querySelector('.labelPostCount')?.text ?? '')
+					popularity: cell.querySelector('.labelPostCount')?.text.tryParseInt
 				));
 			}
 		}

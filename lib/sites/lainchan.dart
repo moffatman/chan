@@ -213,8 +213,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 						final dimensionMatch = _inlineImageWithDimensionsInNamePattern.firstMatch(src);
 						yield PostInlineImageSpan(
 							src: src,
-							width: int.tryParse(dimensionMatch?.group(1) ?? '') ?? 16,
-							height: int.tryParse(dimensionMatch?.group(2) ?? '') ?? 16
+							width: dimensionMatch?.group(1)?.tryParseInt ?? 16,
+							height: dimensionMatch?.group(2)?.tryParseInt ?? 16
 						);
 					}
 					else if (node.localName == 'small') {

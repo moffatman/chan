@@ -74,7 +74,7 @@ class _QuoteLinkLinkifier extends Linkifier {
 					if (match.start > 0) {
 						list.addAll(parse([TextElement(text.substring(0, match.start))], options));
 					}
-					list.add(_QuoteLinkElement(int.tryParse(match.group(1) ?? '') ?? 0));
+					list.add(_QuoteLinkElement(match.group(1)?.tryParseInt ?? 0));
 					text = text.substring(match.end);
 				}
       } else {
@@ -850,7 +850,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				if (response.cloudflare && message.toLowerCase().contains('our system thinks your post is spam')) {
 					message += '\n--\nNote from Chance: This occurs often when encountering Cloudflare. The post will likely be accepted if you try resubmitting it.';
 				}
-				final cooldown = int.tryParse(_cooldownRegex.firstMatch(message)?.group(1) ?? '');
+				final cooldown = _cooldownRegex.firstMatch(message)?.group(1)?.tryParseInt;
 				if (cooldown != null) {
 					throw PostCooldownException(message, DateTime.now().add(Duration(seconds: cooldown)));
 				}
@@ -1059,7 +1059,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 					if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 						return const NoCaptchaRequest();
 					}
-					return await getCaptchaRequest(captchaMatch?.group(1) ?? post.board, int.tryParse(captchaMatch?.group(2) ?? '') ?? 1, cancelToken: cancelToken);
+					return await getCaptchaRequest(captchaMatch?.group(1) ?? post.board, captchaMatch?.group(2)?.tryParseInt ?? 1, cancelToken: cancelToken);
 				},
 				post: post,
 				choices: choices,

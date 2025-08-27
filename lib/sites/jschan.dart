@@ -67,11 +67,11 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 					else if (node.localName == 'a' && node.classes.contains('quote')) {
 						final match = _quoteLinkHrefPattern.firstMatch(node.attributes['href'] ?? '');
 						if (match != null) {
-							final threadId = int.parse(match.group(2)!);
+							final threadId = match.group(2)!.parseInt;
 							yield PostQuoteLinkSpan(
 								board: match.group(1)!,
 								threadId: threadId,
-								postId: int.tryParse(match.group(3) ?? '') ?? threadId
+								postId: match.group(3)?.tryParseInt ?? threadId
 							);
 						}
 						else {
@@ -283,8 +283,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 			spanFormat: PostSpanFormat.jsChan,
 			attachments_: (post['files'] as List).cast<Map>().map((file) {
 				final sizeParts = (file['geometryString'] as String?)?.split('x');
-				final width = int.tryParse(sizeParts?[0] ?? '');
-				final height = int.tryParse(sizeParts?[1] ?? '');
+				final width = sizeParts?[0].tryParseInt;
+				final height = sizeParts?[1].tryParseInt;
 				return Attachment(
 					type: switch (file['extension']) {
 						'.webm' => AttachmentType.webm,

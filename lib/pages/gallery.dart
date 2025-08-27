@@ -1437,7 +1437,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																		if (!context.mounted) {
 																			return;
 																		}
-																		final index = int.tryParse(str ?? '');
+																		final index = str?.tryParseInt;
 																		if (index != null) {
 																			_animateToPage((index - 1).clamp(0, widget.attachments.length - 1), milliseconds: 0, overrideRateLimit: true);
 																		}

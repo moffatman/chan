@@ -443,7 +443,7 @@ Future<_CloudGuess> _cloudGuess({
 	}
 	return (
 		answer: answer,
-		confidence: double.tryParse(response.headers.value('Chance-Confidence') ?? '') ?? 0,
+		confidence: response.headers.value('Chance-Confidence')?.tryParseDouble ?? 0,
 		ip: response.headers.value('Chance-X-Forwarded-For')
 	);
 }

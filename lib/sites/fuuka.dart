@@ -160,8 +160,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 	Future<Post> _makePost(dom.Element element, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final thisLinkMatches = _threadLinkMatcher.firstMatch(element.querySelector('.js')!.attributes['href']!)!;
 		final board = thisLinkMatches.group(1)!;
-		final threadId = int.parse(thisLinkMatches.group(2)!);
-		final postId = int.tryParse(thisLinkMatches.group(4) ?? '');
+		final threadId = thisLinkMatches.group(2)!.parseInt;
+		final postId = thisLinkMatches.group(4)?.tryParseInt;
 		final textNode = element.querySelector('p')!;
 		final Map<String, int> linkedPostThreadIds = {};
 		for (final link in textNode.querySelectorAll('a')) {
