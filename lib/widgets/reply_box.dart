@@ -261,6 +261,14 @@ class ReplyBoxState extends State<ReplyBox> {
 		runWhenIdle(const Duration(milliseconds: 50), _scanForUrl);
 	}
 
+	void _onFilenameChanged() {
+		if (_filenameController.selection.isValid && _filenameController.text.isNotEmpty && Settings.instance.randomizeFilenames && !_overrideRandomizeFilenames) {
+			setState(() {
+				_overrideRandomizeFilenames = true;
+			});
+		}
+	}
+
 	Future<void> _scanForUrl() async {
 		final original = _textFieldController.text;
 		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier()], options: const LinkifyOptions(
@@ -371,6 +379,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(_didUpdateDraft);
+		_filenameController.addListener(_onFilenameChanged);
 		context.read<ImageboardSite>().getBoardFlags(widget.board.s).then((flags) {
 			if (!mounted) return;
 			setState(() {
@@ -1459,13 +1468,6 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												child: AdaptiveTextField(
 													enabled: !loading,
 													controller: _filenameController,
-													onTap: () {
-														if (settings.randomizeFilenames && !_overrideRandomizeFilenames) {
-															setState(() {
-																_overrideRandomizeFilenames = true;
-															});
-														}
-													},
 													placeholder: attachment == null ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
 													maxLines: 1,
 													textCapitalization: TextCapitalization.none,
@@ -1489,6 +1491,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 													attachment = null;
 													_attachmentScan = null;
 													_showAttachmentOptions = false;
+													_overrideRandomizeFilenames = false;
 													_filenameController.clear();
 												});
 												_didUpdateDraft();
