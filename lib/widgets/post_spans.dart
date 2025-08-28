@@ -2080,23 +2080,19 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		}
 	}
 
-	final Map<String, (BuildContext, VoidCallback)> _lineTapCallbacks = {};
+	final Map<String, Map<BuildContext, VoidCallback>> _lineTapCallbacks = {};
 	void _registerLineTapTarget(String id, BuildContext context, VoidCallback callback) {
-		_lineTapCallbacks[id] = (context, callback);
+		(_lineTapCallbacks[id] ??= {})[context] = callback;
 	}
 	void _unregisterLineTapTarget(String id, BuildContext context) {
-		if (_lineTapCallbacks[id]?.$1 == context) {
-			_lineTapCallbacks.remove(id);
-		}
+		_lineTapCallbacks[id]?.remove(context);
 	}
-	final Map<String, (BuildContext, bool Function(), VoidCallback)> _conditionalLineTapCallbacks = {};
+	final Map<String, Map<BuildContext, (bool Function(), VoidCallback)>> _conditionalLineTapCallbacks = {};
 	void _registerConditionalLineTapTarget(String id, BuildContext context, bool Function() condition, VoidCallback callback) {
-		_conditionalLineTapCallbacks[id] = (context, condition, callback);
+		(_conditionalLineTapCallbacks[id] ??= {})[context] = (condition, callback);
 	}
 	void _unregisterConditionalLineTapTarget(String id, BuildContext? context) {
-		if (_conditionalLineTapCallbacks[id]?.$1 == context) {
-			_conditionalLineTapCallbacks.remove(id);
-		}
+		_conditionalLineTapCallbacks[id]?.remove(context);
 	}
 
 	bool _onTap(Offset position, bool runCallback) {
@@ -2107,55 +2103,59 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 				closest = (deltaY, condition, f);
 			}
 		}
-		for (final pair in _lineTapCallbacks.values) {
-			final RenderBox? box;
-			try {
-				box = pair.$1.findRenderObject() as RenderBox?;
-			}
-			catch (e) {
-				continue;
-			}
-			if (box != null) {
-				final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
-				if (y0 > position.dy) {
-					checkClosest(y0 - position.dy, yes, pair.$2);
+		for (final map in _lineTapCallbacks.values) {
+			for (final entry in map.entries) {
+				final RenderBox? box;
+				try {
+					box = entry.key.findRenderObject() as RenderBox?;
+				}
+				catch (e) {
 					continue;
 				}
-				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
-				if (position.dy < y1) {
-					if (runCallback) {
-						pair.$2();
+				if (box != null) {
+					final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
+					if (y0 > position.dy) {
+						checkClosest(y0 - position.dy, yes, entry.value);
+						continue;
 					}
-					return true;
-				}
-				else {
-					checkClosest(position.dy - y1, yes, pair.$2);
+					final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
+					if (position.dy < y1) {
+						if (runCallback) {
+							entry.value();
+						}
+						return true;
+					}
+					else {
+						checkClosest(position.dy - y1, yes, entry.value);
+					}
 				}
 			}
 		}
-		for (final pair in _conditionalLineTapCallbacks.values) {
-			final RenderBox? box;
-			try {
-				box = pair.$1.findRenderObject() as RenderBox?;
-			}
-			catch (e) {
-				continue;
-			}
-			if (box != null) {
-				final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
-				if (y0 > position.dy) {
-					checkClosest(y0 - position.dy, pair.$2, pair.$2);
+		for (final map in _conditionalLineTapCallbacks.values) {
+			for (final entry in map.entries) {
+				final RenderBox? box;
+				try {
+					box = entry.key.findRenderObject() as RenderBox?;
+				}
+				catch (e) {
 					continue;
 				}
-				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
-				if (position.dy < y1 && pair.$2()) {
-					if (runCallback) {
-						pair.$3();
+				if (box != null) {
+					final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
+					if (y0 > position.dy) {
+						checkClosest(y0 - position.dy, entry.value.$1, entry.value.$2);
+						continue;
 					}
-					return true;
-				}
-				else {
-					checkClosest(position.dy - y1, pair.$2, pair.$3);
+					final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
+					if (position.dy < y1 && entry.value.$1()) {
+						if (runCallback) {
+							entry.value.$2();
+						}
+						return true;
+					}
+					else {
+						checkClosest(position.dy - y1, entry.value.$1, entry.value.$2);
+					}
 				}
 			}
 		}
