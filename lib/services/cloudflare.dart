@@ -23,13 +23,11 @@ import 'package:mutex/mutex.dart';
 
 const kCloudflare = 'cloudflare';
 const kRetryIfCloudflare = 'retry_cloudflare';
-const kToastCloudflare = 'toast_cloudflare';
 const kRedirectGateway = 'redirect_gateway';
 
 extension CloudflareWanted on RequestOptions {
 	bool get cloudflare => extra[kCloudflare] == true;
 	bool get retryIfCloudflare => extra[kRetryIfCloudflare] == true;
-	bool get toast => extra[kToastCloudflare] != false;
 	RequestPriority get priority => (extra[kPriority] as RequestPriority?) ?? RequestPriority.functional;
 }
 extension CloudflareHandled on Response {
@@ -359,7 +357,6 @@ class CloudflareInterceptor extends Interceptor {
 		required String userAgent,
 		required Uri cookieUrl,
 		required RequestPriority priority,
-		bool toast = true,
 		String? autoClickSelector,
 		String gatewayName = _kDefaultGatewayName,
 		CancelToken? cancelToken
@@ -399,6 +396,14 @@ class CloudflareInterceptor extends Interceptor {
 			InAppWebViewController? lastController;
 			late ValueChanged<AsyncSnapshot<T>> callback_;
 			AsyncSnapshot<T>? callbackValue;
+			final lastResource = Completer<void>();
+			Timer? lastResourceTimer;
+			void resetResourceTimer() {
+				if (!lastResource.isCompleted) {
+					lastResourceTimer?.cancel();
+					lastResourceTimer = Timer(const Duration(milliseconds: 1500), lastResource.complete);
+				}
+			}
 			void callback(AsyncSnapshot<T> value) {
 				if (callbackValue != null) {
 					Future.error(Exception('Tried to callback with $value, but already had $callbackValue'), StackTrace.current);
@@ -417,6 +422,7 @@ class CloudflareInterceptor extends Interceptor {
 				}
 			}
 			Future<NavigationResponseAction?> onNavigationResponse(InAppWebViewController controller, NavigationResponse response) async {
+				resetResourceTimer();
 				final mime = (response.response?.mimeType ?? '');
 				if (mime.startsWith('video/') || mime.startsWith('image/')) {
 					() async {
@@ -431,6 +437,7 @@ class CloudflareInterceptor extends Interceptor {
 				return NavigationResponseAction.ALLOW;
 			}
 			void onLoadStop(InAppWebViewController controller, WebUri? uri) async {
+				resetResourceTimer();
 				lastController = controller;
 				await maybeApplyDarkModeBrowserJS(controller);
 				final isFirstLoad = !firstLoad.isCompleted;
@@ -473,6 +480,9 @@ class CloudflareInterceptor extends Interceptor {
 					await controller.evaluateJavascript(source: 'document.querySelector("$autoClickSelector").click()');
 				}
 			}
+			void onLoadResource(InAppWebViewController controller, LoadedResource resource) {
+				resetResourceTimer();
+			}
 			final headlessCompleter = Completer<AsyncSnapshot<T>>();
 			callback_ = headlessCompleter.complete;
 			headlessWebView = HeadlessInAppWebView(
@@ -481,21 +491,31 @@ class CloudflareInterceptor extends Interceptor {
 				initialData: initialData,
 				onLoadStop: onLoadStop,
 				onNavigationResponse: onNavigationResponse,
+				onLoadResource: onLoadResource,
 				onReceivedError: onReceivedError,
 				onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 			);
 			await headlessWebView.run();
-			if (!skipHeadless && toast) {
-				showToast(
-					context: ImageboardRegistry.instance.context!,
-					message: 'Authorizing $gatewayName\n${cookieUrl.host}',
-					icon: CupertinoIcons.cloud
-				);
+			if (!skipHeadless) {
+				// Show toast after firstLoad, with a bit of time to clear in case we never get challenged
+				() async {
+					await firstLoad.future;
+					await Future.delayed(const Duration(milliseconds: 150));
+					if (!headlessCompleter.isCompleted) {
+						showToast(
+							context: ImageboardRegistry.instance.context!,
+							message: 'Authorizing $gatewayName\n${cookieUrl.host}',
+							icon: CupertinoIcons.cloud
+						);
+					}
+				}();
 			}
 			await Future.any([
 				headlessCompleter.future,
 				Future.delayed(headlessTime),
-				if (skipHeadless) firstLoad.future.then((_) => Future.delayed(const Duration(milliseconds: 150))),
+				if (skipHeadless) firstLoad.future.then((_) => Future.delayed(const Duration(milliseconds: 150)))
+				// On Cloudflare, show the page after first load has all resources settle down
+				else if (gatewayName == _kDefaultGatewayName) lastResource.future,
 				if (cancelToken?.whenCancel case Future<DioError> whenCancel) whenCancel
 			]);
 			if (headlessCompleter.isCompleted) {
@@ -558,6 +578,7 @@ class CloudflareInterceptor extends Interceptor {
 							initialUrlRequest: initialUrlRequest,
 							initialData: initialData,
 							onLoadStop: onLoadStop,
+							onLoadResource: onLoadResource,
 							onNavigationResponse: onNavigationResponse,
 							onReceivedError: onReceivedError,
 							onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
@@ -597,7 +618,6 @@ class CloudflareInterceptor extends Interceptor {
 		required String userAgent,
 		required Uri cookieUrl,
 		required RequestPriority priority,
-		bool toast = true,
 		String? autoClickSelector,
 		String gatewayName = _kDefaultGatewayName,
 		CancelToken? cancelToken
@@ -614,7 +634,6 @@ class CloudflareInterceptor extends Interceptor {
 			userAgent: userAgent,
 			cookieUrl: cookieUrl,
 			priority: priority,
-			toast: toast,
 			autoClickSelector: autoClickSelector,
 			gatewayName: gatewayName,
 			cancelToken: cancelToken
@@ -647,8 +666,7 @@ class CloudflareInterceptor extends Interceptor {
 					priority: options.priority,
 					cancelToken: options.cancelToken,
 					autoClickSelector: redirectGateway?.autoClickSelector,
-					gatewayName: redirectGateway?.name ?? _kDefaultGatewayName,
-					toast: options.toast && redirectGateway == null // Not forced
+					gatewayName: redirectGateway?.name ?? _kDefaultGatewayName
 				);
 				final newResponse = data.response(options);
 				if (newResponse != null) {
@@ -858,7 +876,6 @@ Future<T> useCloudflareClearedWebview<T>({
 	required Uri uri,
 	String? userAgent,
 	required RequestPriority priority,
-	bool toast = true,
 	required String gatewayName,
 	CancelToken? cancelToken,
 	bool skipHeadless = false,
@@ -880,7 +897,6 @@ Future<T> useCloudflareClearedWebview<T>({
 		body: null
 	),
 	priority: priority,
-	toast: toast,
 	gatewayName: gatewayName,
 	skipHeadless: skipHeadless,
 	headlessTime: headlessTime ?? CloudflareInterceptor.kDefaultHeadlessTime,

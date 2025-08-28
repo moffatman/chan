@@ -108,8 +108,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 			kPriority: priority,
 			// They started to add various clever JavaScript cookies in the page
 			// Forcing kCloudflare=true to make sure it gets evaluated
-			kCloudflare: true,
-			kToastCloudflare: false
+			kCloudflare: true
 		}
 	), cancelToken: cancelToken);
 	if (challengeResponse.statusCode != 200) {
