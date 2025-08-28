@@ -496,7 +496,7 @@ class CloudflareInterceptor extends Interceptor {
 				onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 			);
 			await headlessWebView.run();
-			if (!skipHeadless) {
+			if (!skipHeadless && priority.shouldPopupCloudflare) {
 				// Show toast after firstLoad, with a bit of time to clear in case we never get challenged
 				() async {
 					await firstLoad.future;
