@@ -273,6 +273,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	})? _soundSourceDownload;
 	bool _forceBrowserForExternalUrl = false;
 	final Thread? _thread;
+	bool _renderedFirstFrame = false;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -867,6 +868,8 @@ class AttachmentViewerController extends ChangeNotifier {
 							}
 							_recordUrlTime(url, attachment.type, DateTime.now().difference(startTime));
 							_scheduleHidingOfLoadingProgress();
+							_renderedFirstFrame = true;
+							notifyListeners();
 						});
 					_hideVideoPlayerController = false;
 					if (_isDisposed || controller != _videoPlayerController) {
@@ -1343,7 +1346,7 @@ class AttachmentViewer extends StatelessWidget {
 			child: AnimatedSwitcher(
 				duration: const Duration(milliseconds: 300),
 				child: active ? TweenAnimationBuilder<double>(
-					tween: Tween(begin: 0, end: controller.cacheCompleted ? 0 : 1),
+					tween: Tween(begin: 0, end: (controller.cacheCompleted || controller._renderedFirstFrame) ? 0 : 1),
 					duration: const Duration(milliseconds: 250),
 					curve: Curves.ease,
 					builder: (context, v, child) => Transform.scale(
@@ -1354,7 +1357,7 @@ class AttachmentViewer extends StatelessWidget {
 						key: useRealKey ? controller.loadingSpinnerKey : null,
 						value: value
 					)
-				) : (controller.cacheCompleted ? const SizedBox.shrink() : Icon(
+				) : ((controller.cacheCompleted || controller._renderedFirstFrame) ? const SizedBox.shrink() : Icon(
 					CupertinoIcons.arrow_down_circle,
 					size: 60,
 					color: ChanceTheme.primaryColorOf(context)
