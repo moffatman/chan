@@ -97,7 +97,7 @@ dependencies:
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0
   firebase_core: ^3.5.0
-  unifiedpush: ^5.0.2
+  unifiedpush: ^6.0.2
   flutter_apns_only: ^1.6.0
   flutter_local_notifications: ^17.2.1+2
   path_provider: ^2.0.10
@@ -108,7 +108,7 @@ dependencies:
   flutter:
     sdk: flutter
   firebase_crashlytics: ^4.1.2
-  charset_converter: ^2.2.0
+  charset_converter: ^2.3.0
   markdown: ^7.2.1
   string_similarity: ^2.0.0
   weak_map: ^2.1.0
@@ -177,7 +177,7 @@ flutter:
 dependency_overrides:
   heic_to_jpg:
     git:
-      url: https://github.com/moffatman/flutter_heic_to_jpg.git
+      url: https://github.com/Hurricane472/flutter_heic_to_jpg.git
       ref: main
   extended_image:
     git:
@@ -260,12 +260,15 @@ dependency_overrides:
       path: pkgs/html
   charset_converter:
     git:
-      url: https://github.com/moffatman/charset_converter.git
+      url: https://github.com/Hurricane472/charset_converter.git
       ref: master
   dio_http2_adapter:
     git:
       url: https://github.com/moffatman/dio.git
       path: plugins/http2_adapter
+  unifiedpush_android:
+    git:
+      url: https://github.com/Hurricane472/unifiedpush_android.git
   analyzer: ^6.7.0
   dart_style: ^2.3.6
   js: ^0.7.1 # Needed to run with current connectivity_plus tag
