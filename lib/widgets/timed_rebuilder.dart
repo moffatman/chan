@@ -45,10 +45,14 @@ class _TimedRebuilderState<T> extends State<TimedRebuilder<T>> {
 	@override
 	void didChangeDependencies() {
 		super.didChangeDependencies();
-		if (TickerMode.of(context)) {
-			timer ??= _makeTimer();
+		final tickerMode = TickerMode.of(context);
+		if (tickerMode && widget.enabled && timer == null) {
+			// Update and reactivate
+			notifier.value = widget.function();
+			timer = _makeTimer();
 		}
-		else {
+		else if (!tickerMode && timer != null) {
+			// Deactivate
 			timer?.cancel();
 			timer = null;
 		}
@@ -58,9 +62,13 @@ class _TimedRebuilderState<T> extends State<TimedRebuilder<T>> {
 	void didUpdateWidget(TimedRebuilder<T> oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (widget.enabled && !oldWidget.enabled) {
+			// Update and reactivate
+			notifier.value = widget.function();
+			timer?.cancel();
 			timer = _makeTimer();
 		}
 		else if (!widget.enabled && oldWidget.enabled) {
+			// Deactivate
 			timer?.cancel();
 			timer = null;
 		}
