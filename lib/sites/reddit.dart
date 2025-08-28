@@ -20,7 +20,6 @@ import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape_small.dart';
@@ -248,76 +247,15 @@ class SiteReddit extends ImageboardSite {
 	static const _kDeleted = '[deleted]';
 	static const _kRemoved = '[removed]';
 
-	static const _base36Enc = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
-
-	static const _base36Dec = {
-		'0': 0,
-		'1': 1,
-		'2': 2,
-		'3': 3,
-		'4': 4,
-		'5': 5,
-		'6': 6,
-		'7': 7,
-		'8': 8,
-		'9': 9,
-		'a': 10,
-		'b': 11,
-		'c': 12,
-		'd': 13,
-		'e': 14,
-		'f': 15,
-		'g': 16,
-		'h': 17,
-		'i': 18,
-		'j': 19,
-		'k': 20,
-		'l': 21,
-		'm': 22,
-		'n': 23,
-		'o': 24,
-		'p': 25,
-		'q': 26,
-		'r': 27,
-		's': 28,
-		't': 29,
-		'u': 30,
-		'v': 31,
-		'w': 32,
-		'x': 33,
-		'y': 34,
-		'z': 35
-	};
-
 	static String toRedditId(int id) {
 		if (id < 0) {
 			throw FormatException('id cannot be negative', id);
 		}
-		else if (id == 0) {
-			return '0';
-		}
-		final s = <String>[];
-		while (id != 0) {
-			s.add(_base36Enc[id % 36]);
-			id ~/= 36;
-		}
-		return s.reversed.join('');
+		return id.toRadixString(36);
 	}
 
 	static int? fromRedditId(String id) {
-		int ret = 0;
-		int multiplier = 1;
-		final chars = id.characters.toList();
-		for (int i = chars.length - 1; i >= 0; i--) {
-			final val = _base36Dec[chars[i]];
-			if (val == null) {
-				// Invalid character
-				return null;
-			}
-			ret += val * multiplier;
-			multiplier *= 36;
-		}
-		return ret;
+		return int.parse(id, radix: 36);
 	}
 
 	static final _inlineImagePattern = RegExp(r'https:\/\/(?:preview|i)\.redd\.it\/[^\r\n\t\f\v\) ]+');
