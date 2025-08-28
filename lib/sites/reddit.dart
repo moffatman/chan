@@ -1064,6 +1064,7 @@ class SiteReddit extends ImageboardSite {
 			replyCount: data['num_comments'] as int,
 			imageCount: 0,
 			isDeleted: asPost.isDeleted,
+			isNsfw: data['over_18'] == true,
 			flair: _makeFlag(data['link_flair_richtext'] as List?, data) ?? (
 				data['link_flair_text'] == null ? null : ImageboardFlag.text((data['link_flair_text'] as String).unescapeHtml)
 			),

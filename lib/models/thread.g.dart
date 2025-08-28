@@ -194,6 +194,15 @@ class ThreadFields {
     fieldName: 'isLocked',
     merger: PrimitiveMerger(),
   );
+  static bool getIsNsfw(Thread x) => x.isNsfw;
+  static void setIsNsfw(Thread x, bool v) => x.isNsfw = v;
+  static const isNsfw = HiveFieldAdapter<Thread, bool>(
+    getter: getIsNsfw,
+    setter: setIsNsfw,
+    fieldNumber: 23,
+    fieldName: 'isNsfw',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ThreadAdapter extends TypeAdapter<Thread> {
@@ -227,7 +236,8 @@ class ThreadAdapter extends TypeAdapter<Thread> {
     19: ThreadFields.poll,
     20: ThreadFields.isEndless,
     21: ThreadFields.lastUpdatedTime,
-    22: ThreadFields.isLocked
+    22: ThreadFields.isLocked,
+    23: ThreadFields.isNsfw
   };
 
   @override
@@ -273,6 +283,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       isEndless: fields[20] == null ? false : fields[20] as bool,
       lastUpdatedTime: fields[21] as DateTime?,
       isLocked: fields[22] == null ? false : fields[22] as bool,
+      isNsfw: fields[23] == null ? false : fields[23] as bool,
     );
   }
 
@@ -301,6 +312,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       if (obj.isEndless) 20: obj.isEndless,
       if (obj.lastUpdatedTime != null) 21: obj.lastUpdatedTime,
       if (obj.isLocked) 22: obj.isLocked,
+      if (obj.isNsfw) 23: obj.isNsfw,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

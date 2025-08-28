@@ -41,6 +41,7 @@ import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/segmented.dart';
 import 'package:chan/widgets/shareable_posts.dart';
+import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
@@ -1541,6 +1542,10 @@ class ThreadPageState extends State<ThreadPage> {
 													child: ImageboardIcon(
 														boardName: widget.thread.board
 													)
+												),
+												if (persistentState.thread?.isNsfw ?? false) const Padding(
+													padding: EdgeInsets.only(right: 6),
+													child: NSFWLabel()
 												),
 												Flexible(
 													child: AutoSizeText(

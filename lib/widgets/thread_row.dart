@@ -106,7 +106,7 @@ TextSpan buildThreadCounters({
 		otherMetadataColor = grey;
 	}
 	const space = TextSpan(text: ' ');
-	final parts = <TextSpan>[
+	final parts = <InlineSpan>[
 		if (threadState?.youIds.contains(thread.id) ?? false) TextSpan(
 			text: '(You)',
 			style: TextStyle(
@@ -115,6 +115,7 @@ TextSpan buildThreadCounters({
 				color: theme.secondaryColor
 			)
 		),
+		if (thread.isNsfw) const NSFWSpan(),
 		if (thread.isSticky) IconSpan(icon: CupertinoIcons.pin, color: otherMetadataColor, size: 18),
 		if (thread.isLocked) IconSpan(icon: CupertinoIcons.lock, color: otherMetadataColor, size: 18),
 		if (latestThread.isArchived) IconSpan(icon: CupertinoIcons.archivebox, color: grey, size: 18),

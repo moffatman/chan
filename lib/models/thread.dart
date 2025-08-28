@@ -79,6 +79,8 @@ class Thread extends HiveObject implements Filterable {
 	DateTime? lastUpdatedTime;
 	@HiveField(22, isOptimized: true, defaultValue: false)
 	bool isLocked;
+	@HiveField(23, isOptimized: true, defaultValue: false)
+	bool isNsfw;
 	Thread({
 		required this.posts_,
 		this.isArchived = false,
@@ -101,7 +103,8 @@ class Thread extends HiveObject implements Filterable {
 		this.archiveName,
 		this.isEndless = false,
 		this.lastUpdatedTime,
-		this.isLocked = false
+		this.isLocked = false,
+		this.isNsfw = false
 	}) : board = intern(board), attachments = attachments.isEmpty ? const [] : List.of(attachments, growable: false);
 	
 	bool _initialized = false;
@@ -324,7 +327,8 @@ class Thread extends HiveObject implements Filterable {
 		listEquals(other.attachments, attachments) &&
 		listEquals(other.posts_, posts_) &&
 		other.poll == poll &&
-		other.lastUpdatedTime == lastUpdatedTime;
+		other.lastUpdatedTime == lastUpdatedTime &&
+		other.isNsfw == isNsfw;
 	
 	bool isIdenticalForFilteringPurposes(Thread? other) {
 		if (other == null) {
@@ -342,7 +346,8 @@ class Thread extends HiveObject implements Filterable {
 			other.isSticky == isSticky &&
 			other.replyCount == replyCount &&
 			listEquals(other.attachments, attachments) &&
-			other.poll == poll
+			other.poll == poll &&
+			other.isNsfw == isNsfw
 		)) {
 			return false;
 		}

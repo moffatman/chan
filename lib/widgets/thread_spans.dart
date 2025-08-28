@@ -170,3 +170,29 @@ class IDSpan extends WidgetSpan {
 		alignment: PlaceholderAlignment.middle
 	);
 }
+
+class NSFWLabel extends StatelessWidget {
+	const NSFWLabel({
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return const DecoratedBox(
+			decoration: BoxDecoration(
+				borderRadius: BorderRadius.all(Radius.circular(4)),
+				border: Border.fromBorderSide(BorderSide(color: Colors.red))
+			),
+			child: Padding(
+				padding: EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+				child: Text('NSFW', style: TextStyle(color: Colors.red, fontSize: 14))
+			)
+		);
+	}
+}
+
+class NSFWSpan extends WidgetSpan {
+	const NSFWSpan() : super(
+		child: const NSFWLabel()
+	);
+}
