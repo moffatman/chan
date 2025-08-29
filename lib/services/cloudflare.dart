@@ -697,14 +697,14 @@ class CloudflareInterceptor extends Interceptor {
 				return;
 			}
 			if (_responseMatches(response)) {
-			if (!response.requestOptions.priority.shouldPopupCloudflare) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: const CloudflareHandlerNotAllowedException()
-				), true);
-				return;
-			}
+				if (!response.requestOptions.priority.shouldPopupCloudflare) {
+					handler.reject(DioError(
+						requestOptions: response.requestOptions,
+						response: response,
+						error: const CloudflareHandlerNotAllowedException()
+					), true);
+					return;
+				}
 				final _CloudflareResponse data;
 				final gateway = ImageboardRegistry.instance.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri), response.htmlTitle);
 				if (gateway != null) {
