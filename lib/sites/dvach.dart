@@ -257,7 +257,10 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		return PostReceipt(
 			post: post,
 			password: '',
-			id: response.data!['num'] as int,
+			id: switch (response.data) {
+				{'num': int id} || {'thread': int id} => id,
+				_ => throw PatternException(response.data)
+			},
 			name: post.name ?? '',
 			options: post.options ?? '',
 			time: DateTime.now(),
