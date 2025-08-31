@@ -333,7 +333,7 @@ packages:
     description:
       path: dio
       ref: develop
-      resolved-ref: f25f2640c9676836966f7d98cfc8380bd7f891b3
+      resolved-ref: cb962247927d6398806e6f59d2a215c4325f6a1c
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "4.0.6"
@@ -349,8 +349,8 @@ packages:
     dependency: "direct main"
     description:
       path: "plugins/http2_adapter"
-      ref: HEAD
-      resolved-ref: f25f2640c9676836966f7d98cfc8380bd7f891b3
+      ref: develop
+      resolved-ref: cb962247927d6398806e6f59d2a215c4325f6a1c
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "2.0.0"
