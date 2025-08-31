@@ -1602,7 +1602,7 @@ class AttachmentViewer extends StatelessWidget {
 									);
 								}
 								final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect?.shift(
-									controller.gestureKey.currentState?.extendedImageSlidePageState?.backOffsetAnimation?.value ?? Offset.zero
+									controller.gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero
 								);
 								child = Transform.scale(
 									scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
