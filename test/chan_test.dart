@@ -120,6 +120,7 @@ void main() async {
       final site = SiteLainchan2(
         baseUrl: 'example.com',
         name: 'example',
+        imageUrl: null,
         overrideUserAgent: null,
         archives: const [],
         imageHeaders: const {},

@@ -12,6 +12,7 @@ class SiteSoyjak extends SiteLainchan2 {
 	SiteSoyjak({
 		required super.baseUrl,
 		required super.name,
+		required super.imageUrl,
 		this.captchaQuestion,
 		this.boardsWithCaptcha,
 		required super.overrideUserAgent,

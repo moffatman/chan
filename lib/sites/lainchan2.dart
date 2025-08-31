@@ -104,6 +104,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	SiteLainchan2({
 		required super.baseUrl,
 		required super.basePath,
+		required super.imageUrl,
 		required super.name,
 		required this.formBypass,
 		required this.imageThumbnailExtension,

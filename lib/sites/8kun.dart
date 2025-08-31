@@ -12,14 +12,12 @@ import 'package:flutter/foundation.dart';
 class Site8Kun extends SiteLainchan2 {
 	@override
 	final String sysUrl;
-	@override
-	final String imageUrl;
 
 	Site8Kun({
 		required super.baseUrl,
 		required super.basePath,
 		required this.sysUrl,
-		required this.imageUrl,
+		required super.imageUrl,
 		required super.name,
 		required super.formBypass,
 		required super.imageThumbnailExtension,
@@ -37,10 +35,10 @@ class Site8Kun extends SiteLainchan2 {
 	});
 
 	@override
-	Uri getAttachmentUrl(String board, String filename) => Uri.https(imageUrl, '/file_store/$filename');
+	Uri getAttachmentUrl(String board, String filename) => Uri.https(imageUrl ?? baseUrl, '/file_store/$filename');
 
 	@override
-	Uri getThumbnailUrl(String board, String filename) => Uri.https(imageUrl, '/file_store/thumb/$filename');
+	Uri getThumbnailUrl(String board, String filename) => Uri.https(imageUrl ?? baseUrl, '/file_store/thumb/$filename');
 
 	/// 8kun reuses same image ID for reports. So need to make it unique within thread
 	@override
@@ -118,7 +116,7 @@ class Site8Kun extends SiteLainchan2 {
 		if (data case {'country': String code, 'country_name': String name}) {
 			return ImageboardFlag(
 				name: name,
-				imageUrl: Uri.https(imageUrl, '$basePath/static/flags/${code.toLowerCase()}.png').toString(),
+				imageUrl: Uri.https(imageUrl ?? baseUrl, '$basePath/static/flags/${code.toLowerCase()}.png').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);

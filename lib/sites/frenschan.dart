@@ -6,6 +6,7 @@ class SiteFrenschan extends SiteLainchan2 {
 	SiteFrenschan({
 		required super.baseUrl,
 		required super.name,
+		required super.imageUrl,
 		required super.overrideUserAgent,
 		required super.boardsWithHtmlOnlyFlags,
 		required super.boardsWithMemeFlags,

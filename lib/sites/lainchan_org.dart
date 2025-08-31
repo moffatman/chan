@@ -9,6 +9,7 @@ class SiteLainchanOrg extends SiteLainchan {
 	SiteLainchanOrg({
 		required super.baseUrl,
 		required super.name,
+		required super.imageUrl,
 		required super.overrideUserAgent,
 		required super.archives,
 		required super.imageHeaders,

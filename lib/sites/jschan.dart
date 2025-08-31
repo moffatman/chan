@@ -20,6 +20,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 	@override
 	final String baseUrl;
 	@override
+	final String? imageUrl;
+	@override
 	final String name;
 	@override
 	final String defaultUsername;
@@ -30,6 +32,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 	SiteJsChan({
 		required this.baseUrl,
 		required this.name,
+		required this.imageUrl,
 		this.defaultUsername = 'Anonymous',
 		required this.faviconPath,
 		required super.overrideUserAgent,
@@ -436,6 +439,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 		other is SiteJsChan &&
 		other.baseUrl == baseUrl &&
 		other.name == name &&
+		other.imageUrl == imageUrl &&
 		other.defaultUsername == defaultUsername &&
 		other.faviconPath == faviconPath &&
 		postingCaptcha == other.postingCaptcha &&

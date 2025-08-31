@@ -73,6 +73,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	final String baseUrl;
 	String get sysUrl => baseUrl;
 	@override
+	final String? imageUrl;
+	@override
 	final String basePath;
 	@override
 	final String name;
@@ -88,6 +90,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	SiteLainchan({
 		required this.baseUrl,
 		required this.name,
+		required this.imageUrl,
 		this.maxUploadSizeBytes,
 		required super.overrideUserAgent,
 		required super.archives,
@@ -877,6 +880,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		(other.baseUrl == baseUrl) &&
 		(other.basePath == basePath) &&
 		(other.name == name) &&
+		(other.imageUrl == imageUrl) &&
 		(other.maxUploadSizeBytes == maxUploadSizeBytes) &&
 		(other.faviconPath == faviconPath) &&
 		(other.defaultUsername == defaultUsername) &&

@@ -2380,6 +2380,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteLainchan(
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
 			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
@@ -2392,6 +2393,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteSoyjak(
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
@@ -2407,6 +2409,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteFrenschan(
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2420,6 +2423,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteWizchan(
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
@@ -2431,6 +2435,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteLainchanOrg(
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
 			faviconPath: data['faviconPath'] as String? ?? '/favicon.ico',
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			overrideUserAgent: overrideUserAgent,
@@ -2481,6 +2486,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteErischan(
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
@@ -2566,6 +2572,7 @@ ImageboardSite makeSite(Map data) {
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
 			basePath: data['basePath'] as String? ?? '',
+			imageUrl: data['imageUrl'] as String?,
 			imageThumbnailExtension: data['imageThumbnailExtension'] as String?,
 			faviconPath: data['faviconPath'] as String?,
 			boardsPath: data['boardsPath'] as String,
@@ -2590,7 +2597,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			basePath: data['basePath'] as String? ?? '',
 			sysUrl: data['sysUrl'] as String,
-			imageUrl: data['imageUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
 			imageThumbnailExtension: data['imageThumbnailExtension'] as String?,
 			faviconPath: data['faviconPath'] as String?,
 			boardsPath: data['boardsPath'] as String,
@@ -2638,6 +2645,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteJsChan(
 			baseUrl: data['baseUrl'] as String,
 			name: data['name'] as String,
+			imageUrl: data['imageUrl'] as String?,
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			faviconPath: data['faviconPath'] as String,
 			postingCaptcha: data['postingCaptcha'] as String? ?? 'grid',
