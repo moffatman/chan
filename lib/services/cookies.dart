@@ -4,7 +4,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 
-const kDisableCookies = 'disableCookies';
+const kExcludeCookies = 'excludeCookies';
 const _kLastCookie = 'lastCookie';
 
 class SeparatedCookieManager extends Interceptor {
@@ -14,32 +14,33 @@ class SeparatedCookieManager extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
 		try {
-      if (options.extra[kDisableCookies] == null) {
-        final cookies = await cookieJar.loadForRequest(options.uri);
-        final cookie = getCookies(cookies);
-        if (cookie.isNotEmpty) {
-          if (
-            (options.headers[HttpHeaders.cookieHeader], options.extra[_kLastCookie])
-            case
-            (String cookies, String lastCookie)
-          ) {
-            // We are re-entrant. Someone must have copied our options. Remove the last application.
-            if (cookies == lastCookie) {
-              options.headers.remove(HttpHeaders.cookieHeader);
-            }
-            else {
-              options.headers[HttpHeaders.cookieHeader] = cookies.replaceAll('; $lastCookie', '');
-            }
-          }
-          options.headers.update(
-            HttpHeaders.cookieHeader,
-            (cookies) => '$cookies; $cookie',
-            ifAbsent: () => cookie
-          );
-          options.extra[_kLastCookie] = cookie;
-        }
+      final cookies = await cookieJar.loadForRequest(options.uri);
+      if (options.extra[kExcludeCookies] case List toRemove) {
+        cookies.removeWhere((c) => toRemove.contains(c.name));
       }
-			handler.next(options);
+      final cookie = getCookies(cookies);
+      if (cookie.isNotEmpty) {
+        if (
+          (options.headers[HttpHeaders.cookieHeader], options.extra[_kLastCookie])
+          case
+          (String cookies, String lastCookie)
+        ) {
+          // We are re-entrant. Someone must have copied our options. Remove the last application.
+          if (cookies == lastCookie) {
+            options.headers.remove(HttpHeaders.cookieHeader);
+          }
+          else {
+            options.headers[HttpHeaders.cookieHeader] = cookies.replaceAll('; $lastCookie', '');
+          }
+        }
+        options.headers.update(
+          HttpHeaders.cookieHeader,
+          (cookies) => '$cookies; $cookie',
+          ifAbsent: () => cookie
+        );
+        options.extra[_kLastCookie] = cookie;
+      }
+      handler.next(options);
 		}
 		catch (e, st) {
 			handler.reject(DioError(
@@ -52,9 +53,7 @@ class SeparatedCookieManager extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) async {
 		try {
-      if (response.requestOptions.extra[kDisableCookies] == null) {
-			  await _saveCookies(response);
-      }
+      await _saveCookies(response);
 			handler.next(response);
 		}
 		catch (e, st) {
@@ -69,9 +68,7 @@ class SeparatedCookieManager extends Interceptor {
   void onError(DioError err, ErrorInterceptorHandler handler) async {
     if (err.response != null) {
 			try {
-        if (err.requestOptions.extra[kDisableCookies] == null) {
-      	  await _saveCookies(err.response!);
-        }
+        await _saveCookies(err.response!);
 				handler.next(err);
 			}
 			catch(e, st) {

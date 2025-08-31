@@ -69,7 +69,7 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 			responseType: ResponseType.bytes,
 			extra: {
 				kPriority: RequestPriority.interactive,
-				kDisableCookies: true
+				kExcludeCookies: ['captchaid']
 			}
 		));
 		if (response.statusCode != 200) {
@@ -167,9 +167,9 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 			return Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
+					Text(widget.request.question),
+					const SizedBox(height: 16),
 					if (widget.request.type == 'grid') ...[
-						const Text('Select the solid/filled icons'),
-						const SizedBox(height: 16),
 						Flexible(
 							child: ConstrainedBox(
 								constraints: const BoxConstraints(
@@ -222,8 +222,6 @@ class _CaptchaJsChanState extends State<CaptchaJsChan> {
 						),
 					]
 					else if (widget.request.type == 'text') ...[
-						const Text('Enter the text in the image below'),
-						const SizedBox(height: 16),
 						Flexible(
 							child: ConstrainedBox(
 								constraints: const BoxConstraints(

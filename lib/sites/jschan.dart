@@ -28,6 +28,9 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 	final String faviconPath;
 	final String postingCaptcha;
 	final String deletingCaptcha;
+	final String bypassCaptcha;
+	final String? gridCaptchaQuestion;
+	final String? textCaptchaQuestion;
 
 	SiteJsChan({
 		required this.baseUrl,
@@ -40,7 +43,10 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 		required super.imageHeaders,
 		required super.videoHeaders,
 		required this.postingCaptcha,
-		required this.deletingCaptcha
+		required this.deletingCaptcha,
+		required this.bypassCaptcha,
+		required this.gridCaptchaQuestion,
+		required this.textCaptchaQuestion
 	});
 
 	static final _quoteLinkHrefPattern = RegExp(r'/([^/]+)/thread/(\d+)\.html(?:#(\d+))?$');
@@ -204,7 +210,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 			print(response.data);
 			throw HTTPStatusException.fromResponse(response);
 		}
-		if (title != 'Success') {
+		if (title != 'Success' && title != 'Sucesso') {
 			if (response.data case Map map) {
 				throw _makeException(map);
 			}
@@ -263,7 +269,12 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 			final parts = type.split(':');
 			return HCaptchaRequest(hostPage: Uri.https(baseUrl, '/robots.txt'), siteKey: parts[1]);
 		}
-		return JsChanCaptchaRequest(challengeUrl: Uri.https(baseUrl, '/captcha'), type: type);
+		return JsChanCaptchaRequest(challengeUrl: Uri.https(baseUrl, '/captcha'), type: type, question: switch (type) {
+			'grid' => gridCaptchaQuestion ?? 'Select the solid/filled icons',
+			'text' => textCaptchaQuestion ?? 'Enter the text in the image below',
+			'none' => 'Verification not required',
+			String other => 'Error: Unknown captcha type $other'
+		});
 	}
 
 	@override
@@ -430,6 +441,22 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 				post: post
 			);
 		}
+		if (response.data case {'message': String message, 'link': {'href': String href}} when message.contains('bypass')) {
+			throw AdditionalCaptchaRequiredException(captchaRequest: _getCaptcha(bypassCaptcha), onSolved: (captchaSolution2, cancelToken) async {
+				await client.postUri(Uri.https(baseUrl, '/forms/blockbypass'), data: {
+					if (captchaSolution2 is JsChanGridCaptchaSolution) 'captcha': captchaSolution2.selected.toList()..sort()
+					else if (captchaSolution2 is JsChanTextCaptchaSolution) 'captcha': captchaSolution2.text
+				}, options: Options(
+					followRedirects: false, // To catch the 302 cookie
+					contentType: Headers.formUrlEncodedContentType,
+					headers: {
+						'origin': 'https://$baseUrl',
+						'referer': Uri.parse(getWebUrlImpl(post.board, post.threadId)).resolve(href).toString(),
+						if (captchaSolution2 is JsChanCaptchaSolution) 'cookie': 'captchaid=${captchaSolution2.id}'
+					}
+				), cancelToken: cancelToken);
+			});
+		}
 		throw _makeException(response.data!);
 	}
 
@@ -444,6 +471,9 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 		other.faviconPath == faviconPath &&
 		postingCaptcha == other.postingCaptcha &&
 		deletingCaptcha == other.deletingCaptcha &&
+		bypassCaptcha == other.bypassCaptcha &&
+		gridCaptchaQuestion == other.gridCaptchaQuestion &&
+		textCaptchaQuestion == other.textCaptchaQuestion &&
 		super==(other);
 	
 	@override

@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/web_image_picker.dart';
+import 'package:chan/services/basedflare.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/default_user_agent.dart';
@@ -3178,6 +3179,7 @@ class Settings extends ChangeNotifier {
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(SeparatedCookieManager());
+		client.interceptors.add(BasedFlareInterceptor(client));
 		client.interceptors.add(CloudflareInterceptor());
 		client.interceptors.add(RetryIfCloudflareInterceptor(client));
 		client.interceptors.add(StrictJsonInterceptor());

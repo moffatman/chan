@@ -9,6 +9,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/services/basedflare.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/http_429_backoff.dart';
@@ -856,12 +857,14 @@ class McCaptchaRequest extends CaptchaRequest {
 class JsChanCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
 	final String type;
+	final String question;
 	const JsChanCaptchaRequest({
 		required this.challengeUrl,
-		required this.type
+		required this.type,
+		required this.question
 	});
 	@override
-	String toString() => 'JsChanCaptchaRequest(challengeUrl: $challengeUrl, type: $type)';
+	String toString() => 'JsChanCaptchaRequest(challengeUrl: $challengeUrl, type: $type, question: $question)';
 }
 
 class HCaptchaRequest extends CaptchaRequest {
@@ -1602,6 +1605,7 @@ abstract class ImageboardSiteArchive {
 			}
 		));
 		client.interceptors.add(FixupInterceptor());
+		client.interceptors.add(BasedFlareInterceptor(client));
 		client.interceptors.add(CloudflareInterceptor());
 		client.interceptors.add(RetryIfCloudflareInterceptor(client));
 		client.interceptors.add(StrictJsonInterceptor());
@@ -2650,6 +2654,9 @@ ImageboardSite makeSite(Map data) {
 			faviconPath: data['faviconPath'] as String,
 			postingCaptcha: data['postingCaptcha'] as String? ?? 'grid',
 			deletingCaptcha: data['deletingCaptcha'] as String? ?? 'grid',
+			bypassCaptcha: data['bypassCaptcha'] as String? ?? 'grid',
+			gridCaptchaQuestion: data['gridCaptchaQuestion'] as String?,
+			textCaptchaQuestion: data['textCaptchaQuestion'] as String?,
 			overrideUserAgent: overrideUserAgent,
 			archives: archives,
 			imageHeaders: imageHeaders,
