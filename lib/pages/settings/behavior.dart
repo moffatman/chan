@@ -300,7 +300,7 @@ final behaviorSettings = [
 		setting: Settings.maximumImageUploadDimensionSetting,
 		builder: (maximumImageUploadDimension) => Text(maximumImageUploadDimension == null ? 'No limit' : '$maximumImageUploadDimension px'),
 		onPressed: (context, dimension, setDimension) async {
-			final controller = TextEditingController(text: dimension.toString());
+			final controller = TextEditingController(text: dimension?.toString());
 			await showAdaptiveDialog(
 				context: context,
 				barrierDismissible: true,
