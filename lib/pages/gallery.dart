@@ -1204,12 +1204,7 @@ class _GalleryPageState extends State<GalleryPage> {
 															onPressed: () {
 																final post = zone.findThread(currentAttachment.attachment.threadId ?? zone.primaryThreadId)?.posts_.tryFirstWhere((p) => p.attachments.contains(currentAttachment.attachment));
 																final navigator = Navigator.of(context);
-																// Hack to pop until here
-																Route? currentRoute;
-																navigator.popUntil((r) {
-																	currentRoute = r;
-																	return true;
-																});
+																final currentRoute = navigator.currentRoute;
 																void onThumbnailTap(Attachment attachment) {
 																	navigator.popUntil((r) => r == currentRoute);
 																	final index = widget.attachments.indexWhere((a) => a.attachment == attachment);

@@ -760,7 +760,10 @@ class ThreadPageState extends State<ThreadPage> {
 		    persistentState.lastSeenPostId != null &&
 				(persistentState.thread?.posts_.length ?? 0) > 20) {
 			_useAllDummies = true;
-			_scrollIfWarranted(const Duration(milliseconds: 500));
+			_scrollIfWarranted(switch (Navigator.of(context).currentRoute) {
+				TransitionRoute tr => tr.transitionDuration,
+				_ => const Duration(milliseconds: 500)
+			});
 		}
 		else {
 			_scrollIfWarranted();
@@ -860,6 +863,7 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _scrollIfWarranted([Duration delayBeforeScroll = Duration.zero]) async {
+		print('_scrollIfWarranted $delayBeforeScroll');
 		final int? explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
 		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && context.read<ImageboardSite>().useTree && persistentState.firstVisiblePostId == null))) {
 			await _blockAndScrollToPostIfNeeded(delayBeforeScroll: delayBeforeScroll);

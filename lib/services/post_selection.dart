@@ -118,11 +118,7 @@ SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 					ContextMenuButtonItem(
 						onPressed: () {
 							final navigator = Navigator.of(contextMenuContext, rootNavigator: true);
-							Route? currentRoute;
-							navigator.popUntil((r) {
-								currentRoute = r;
-								return true;
-							});
+							final currentRoute = navigator.currentRoute;
 							replyBoxZone.onQuoteText(getSelection()?.plainText ?? '', backlink: post.identifier);
 							selectableRegionState.hideToolbar();
 							// Pop only if we haven't already popped (it might be handled in onQuoteText)
@@ -133,11 +129,7 @@ SelectableRegionContextMenuBuilder makePostContextMenuBuilder({
 					ContextMenuButtonItem(
 						onPressed: () {
 							final navigator = Navigator.of(contextMenuContext, rootNavigator: true);
-							Route? currentRoute;
-							navigator.popUntil((r) {
-								currentRoute = r;
-								return true;
-							});
+							final currentRoute = navigator.currentRoute;
 							replyBoxZone.onQuoteText(getSelection()?.plainText ?? '', backlink: null);
 							selectableRegionState.hideToolbar();
 							// Pop only if we haven't already popped (it might be handled in onQuoteText)

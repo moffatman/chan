@@ -2723,3 +2723,14 @@ class RelativeTimeSpan extends WidgetSpan {
 		)
 	);
 }
+
+extension CurrentRoute on NavigatorState {
+	Route? get currentRoute {
+		Route? currentRoute;
+		popUntil((r) {
+			currentRoute = r;
+			return true;
+		});
+		return currentRoute;
+	}
+}
