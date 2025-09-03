@@ -62,6 +62,8 @@ class ImageboardArchiveSearchQuery {
 	String? trip;
 	@HiveField(11)
 	String? subject;
+	@HiveField(12)
+	String? filename;
 	ImageboardArchiveSearchQuery({
 		this.query = '',
 		this.mediaFilter = MediaFilter.none,
@@ -74,7 +76,8 @@ class ImageboardArchiveSearchQuery {
 		required this.imageboardKey,
 		this.name,
 		this.trip,
-		this.subject
+		this.subject,
+		this.filename
 	}) : boards = boards ?? [];
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
@@ -92,7 +95,8 @@ class ImageboardArchiveSearchQuery {
 			imageboardKey: imageboardKey,
 			name: name,
 			trip: trip,
-			subject: subject
+			subject: subject,
+			filename: filename
 		);
 	}
 
@@ -109,6 +113,7 @@ class ImageboardArchiveSearchQuery {
 		name = other.name;
 		trip = other.trip;
 		subject = other.subject;
+		filename = other.filename;
 	}
 
 	@override
@@ -124,8 +129,9 @@ class ImageboardArchiveSearchQuery {
 																	 && (other.imageboardKey == imageboardKey)
 																	 && (other.name == name)
 																	 && (other.trip == trip)
-																	 && (other.subject == subject);
+																	 && (other.subject == subject)
+																	 && (other.filename == filename);
 
 	@override
-	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, Object.hashAll(boards), md5, deletionStatusFilter, imageboardKey, name, trip, subject);
+	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, Object.hashAll(boards), md5, deletionStatusFilter, imageboardKey, name, trip, subject, filename);
 }

@@ -138,6 +138,17 @@ class ImageboardArchiveSearchQueryFields {
     fieldName: 'subject',
     merger: PrimitiveMerger(),
   );
+  static String? getFilename(ImageboardArchiveSearchQuery x) => x.filename;
+  static void setFilename(ImageboardArchiveSearchQuery x, String? v) =>
+      x.filename = v;
+  static const filename =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, String?>(
+    getter: getFilename,
+    setter: setFilename,
+    fieldNumber: 12,
+    fieldName: 'filename',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ImageboardArchiveSearchQueryAdapter
@@ -164,7 +175,8 @@ class ImageboardArchiveSearchQueryAdapter
     8: ImageboardArchiveSearchQueryFields.imageboardKey,
     9: ImageboardArchiveSearchQueryFields.name,
     10: ImageboardArchiveSearchQueryFields.trip,
-    11: ImageboardArchiveSearchQueryFields.subject
+    11: ImageboardArchiveSearchQueryFields.subject,
+    12: ImageboardArchiveSearchQueryFields.filename
   };
 
   @override
@@ -188,13 +200,14 @@ class ImageboardArchiveSearchQueryAdapter
       name: fields[9] as String?,
       trip: fields[10] as String?,
       subject: fields[11] as String?,
+      filename: fields[12] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ImageboardArchiveSearchQuery obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.query)
       ..writeByte(1)
@@ -218,7 +231,9 @@ class ImageboardArchiveSearchQueryAdapter
       ..writeByte(10)
       ..write(obj.trip)
       ..writeByte(11)
-      ..write(obj.subject);
+      ..write(obj.subject)
+      ..writeByte(12)
+      ..write(obj.filename);
   }
 
   @override

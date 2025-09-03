@@ -314,7 +314,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 				if (query.subject != null) 'search_subject': query.subject,
 				if (query.name != null) 'search_username': query.name,
 				if (query.trip != null) 'search_tripcode': query.trip,
-				if (query.md5 != null) 'search_media_hash': query.md5
+				if (query.md5 != null) 'search_media_hash': query.md5,
+				if (query.filename != null) 'search_filename': query.filename
 		}), options: Options(
 			responseType: ResponseType.plain,
 			extra: {

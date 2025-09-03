@@ -70,6 +70,7 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 	late final TextEditingController _subjectFieldController;
 	late final TextEditingController _nameFieldController;
 	late final TextEditingController _tripFieldController;
+	late final TextEditingController _filenameFieldController;
 
 	@override
 	void initState() {
@@ -78,6 +79,7 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 		_subjectFieldController = TextEditingController(text: widget.query.subject);
 		_nameFieldController = TextEditingController(text: widget.query.name);
 		_tripFieldController = TextEditingController(text: widget.query.trip);
+		_filenameFieldController = TextEditingController(text: widget.query.filename);
 	}
 
 	@override
@@ -88,6 +90,7 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 			_subjectFieldController.text = widget.query.subject ?? '';
 			_nameFieldController.text = widget.query.name ?? '';
 			_tripFieldController.text = widget.query.trip ?? '';
+			_filenameFieldController.text = widget.query.filename ?? '';
 			_lastQuery = widget.query;
 		}
 	}
@@ -252,7 +255,7 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 						]
 					),
 				],
-				if (options.name || options.subject || options.trip) Wrap(
+				if (options.name || options.subject || options.trip || options.filename) Wrap(
 					alignment: WrapAlignment.center,
 					runAlignment: WrapAlignment.center,
 					children: [
@@ -271,6 +274,11 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 								name: 'Trip',
 								cb: (String s) => query.trip = s,
 								controller: _tripFieldController
+							),
+							if (options.filename) (
+								name: 'Filename',
+								cb: (String s) => query.filename = s,
+								controller: _filenameFieldController
 							)
 						]) Container(
 							width: 200,
@@ -312,5 +320,6 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 		_subjectFieldController.dispose();
 		_nameFieldController.dispose();
 		_tripFieldController.dispose();
+		_filenameFieldController.dispose();
 	}
 }

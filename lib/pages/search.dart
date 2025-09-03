@@ -14,6 +14,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/search_query_editor.dart';
+import 'package:chan/widgets/segmented.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -589,30 +590,40 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.postTypeFilter == PostTypeFilter.onlyOPs) const _SearchQueryFilterTag('Threads'),
 		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Replies'),
 		if (q.postTypeFilter == PostTypeFilter.onlyStickies) const _SearchQueryFilterTag('Stickies'),
-		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.toISO8601Date}'),
-		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.toISO8601Date}'),
-		if (q.md5 != null) _SearchQueryFilterTag('MD5: ${q.md5}'),
+		if (q.startDate != null) _SearchQueryFilterTag('After', q.startDate!.toISO8601Date),
+		if (q.endDate != null) _SearchQueryFilterTag('Before', q.endDate!.toISO8601Date),
+		if (q.md5 != null) _SearchQueryFilterTag('MD5', q.md5),
 		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash)),
 		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash_slash)),
-		if (q.subject?.isNotEmpty ?? false) _SearchQueryFilterTag('Subject: ${q.subject}'),
-		if (q.name?.isNotEmpty ?? false) _SearchQueryFilterTag('Name: ${q.name}'),
-		if (q.trip?.isNotEmpty ?? false) _SearchQueryFilterTag('Trip: ${q.trip}')
+		if (q.subject?.isNotEmpty ?? false) _SearchQueryFilterTag('Subject', q.subject),
+		if (q.name?.isNotEmpty ?? false) _SearchQueryFilterTag('Name', q.name),
+		if (q.trip?.isNotEmpty ?? false) _SearchQueryFilterTag('Trip', q.trip),
+		if (q.filename?.isNotEmpty ?? false) _SearchQueryFilterTag('Filename', q.filename)
 	];
 }
 
 class _SearchQueryFilterTag extends StatelessWidget {
-	final String filterDescription;
-	const _SearchQueryFilterTag(this.filterDescription);
+	final String field;
+	final String? value;
+	const _SearchQueryFilterTag(this.field, [this.value]);
 	@override
 	Widget build(BuildContext context) {
-		return Container(
-			margin: const EdgeInsets.only(left: 4, right: 4),
-			padding: const EdgeInsets.all(4),
-			decoration: BoxDecoration(
-				color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
-				borderRadius: const BorderRadius.all(Radius.circular(4))
-			),
-			child: Text(filterDescription)
+		return Padding(
+			padding: const EdgeInsets.symmetric(horizontal: 4),
+			child: SegmentedWidget(
+				radius: const Radius.circular(4),
+				padding: const EdgeInsets.all(4),
+				segments: [
+					SegmentedWidgetSegment(
+						color: ChanceTheme.primaryColorOf(context).withOpacity(value != null ? 0.15 : 0.3),
+						child: Text(field)
+					),
+					if (value case final value?) SegmentedWidgetSegment(
+						color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
+						child: Text(value)
+					)
+				]
+			)
 		);
 	}
 }

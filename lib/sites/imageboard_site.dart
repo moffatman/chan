@@ -1325,6 +1325,7 @@ class ImageboardSearchOptions {
 	final bool trip;
 	final bool isDeleted;
 	final bool withMedia;
+	final bool filename;
 	final Set<PostTypeFilter> supportedPostTypeFilters;
 
 	const ImageboardSearchOptions({
@@ -1336,6 +1337,7 @@ class ImageboardSearchOptions {
 		this.trip = false,
 		this.isDeleted = false,
 		this.withMedia = false,
+		this.filename = false,
 		this.supportedPostTypeFilters = const {PostTypeFilter.none}
 	});
 
@@ -1350,11 +1352,12 @@ class ImageboardSearchOptions {
 		other.trip == trip &&
 		other.isDeleted == isDeleted &&
 		other.withMedia == withMedia &&
+		other.filename == filename &&
 		setEquals(other.supportedPostTypeFilters, supportedPostTypeFilters);
 	@override
-	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, Object.hashAllUnordered(supportedPostTypeFilters));
+	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, filename, Object.hashAllUnordered(supportedPostTypeFilters));
 
-	bool get hasOptions => name || imageMD5 || supportedPostTypeFilters.length > 1 || date || subject || trip || isDeleted || withMedia;
+	bool get hasOptions => name || imageMD5 || supportedPostTypeFilters.length > 1 || date || subject || trip || isDeleted || withMedia || filename;
 }
 
 class ImageboardSearchMetadata {
@@ -2085,7 +2088,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					isDeleted: true,
 					withMedia: true,
 					subject: true,
-					trip: true
+					trip: true,
+					filename: true
 				)
 			);
 		}

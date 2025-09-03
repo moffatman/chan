@@ -466,7 +466,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'deleted': 'not-deleted',
 				if (query.subject != null) 'subject': query.subject,
 				if (query.name != null) 'username': query.name,
-				if (query.trip != null) 'tripcode': query.trip
+				if (query.trip != null) 'tripcode': query.trip,
+				if (query.filename != null) 'filename': query.filename
  			}),
 			options: Options(
 				validateStatus: (x) => true,
