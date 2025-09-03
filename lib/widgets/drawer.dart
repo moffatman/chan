@@ -693,6 +693,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 													padding: const EdgeInsets.all(8),
 													onPressed: () {
 														lightHapticFeedback();
+														tabs.willActivatePane(4);
 														tabs.mainTabIndex = 4;
 														_afterUse();
 													},
@@ -714,6 +715,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 										color: tabs.mainTabIndex == 3 ? selectedButtonColor : unselectedButtonColor,
 										onPressed: () {
 											lightHapticFeedback();
+											tabs.willActivatePane(3);
 											tabs.mainTabIndex = 3;
 											_afterUse();
 										},
@@ -739,6 +741,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 											color: tabs.mainTabIndex == 2 ? selectedButtonColor : unselectedButtonColor,
 											onPressed: () {
 												lightHapticFeedback();
+												tabs.willActivatePane(2);
 												tabs.mainTabIndex = 2;
 												_afterUse();
 											},
@@ -757,6 +760,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 										color: tabs.mainTabIndex == 1 ? selectedButtonColor : unselectedButtonColor,
 										onPressed: () {
 											lightHapticFeedback();
+											tabs.willActivatePane(1);
 											tabs.mainTabIndex = 1;
 											_afterUse();
 										},

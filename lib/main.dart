@@ -647,6 +647,7 @@ class ChanTabs extends ChangeNotifier {
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 	late final OwnedChangeNotifierSubscription _settingsSubscription;
 	bool _didHideTabPopupFromReplyBox = false;
+	final _willPopZones = <int, WillPopZone>{};
 
 	ChanTabs._(this._homePageState) {
 		Persistence.globalTabMutator.addListener(_onGlobalTabMutatorUpdate);
@@ -1189,6 +1190,19 @@ class ChanTabs extends ChangeNotifier {
 			_didHideTabPopupFromReplyBox = false;
 		}
 	}
+
+	Future<void> willActivatePane(int index) async {
+		if (index == _lastIndex) {
+			if (index == 4) {
+				_settingsNavigatorKey.currentState?.maybePop();
+			}
+			else {
+				_willPopZones[index]?.maybePop?.call();
+			}
+		} else if (index == 2) {
+			await _historyPageKey.currentState?.updateList();
+		}
+	}
 }
 
 class _ChanHomePageState extends State<ChanHomePage> {
@@ -1198,7 +1212,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	({Notifications notifications, StreamSubscription<ThreadOrPostIdentifier> subscription})? _devNotificationsSubscription;
 	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
 	final devTab = PersistentBrowserTab();
-	final _willPopZones = <int, WillPopZone>{};
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
 	final Map<String, ({Notifications notifications, StreamSubscription<ThreadOrPostIdentifier> subscription})> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
@@ -1746,7 +1759,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}
 		}
 		return Provider.value(
-			value: _willPopZones.putIfAbsent(index, () => WillPopZone()),
+			value: _tabs._willPopZones.putIfAbsent(index, () => WillPopZone()),
 			child: KeyedSubtree(
 				key: _keys.putIfAbsent(index, () => GlobalKey(debugLabel: '_keys[$index]')),
 				child: child
@@ -1897,18 +1910,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										_showTabPopup.value = false;
 									}
 								}
+								_tabs.mainTabIndex = 0;
 							}
-							else if (index == _tabs._lastIndex) {
-								if (index == 4) {
-									_tabs._settingsNavigatorKey.currentState?.maybePop();
-								}
-								else {
-									_willPopZones[index]?.maybePop?.call();
-								}
-							} else if (index == 2) {
-								await _tabs._historyPageKey.currentState?.updateList();
+							else {
+								await _tabs.willActivatePane(index);
+								_tabs.mainTabIndex = index;
 							}
-							_tabs.mainTabIndex = max(0, index);
 						}
 					)
 				);
@@ -2072,7 +2079,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else if (_tabs.mainTabIndex == 4 && (await _tabs._settingsNavigatorKey.currentState?.maybePop() ?? false)) {
 			// Popped something in Settings page
 		}
-		else if (await _willPopZones[_tabs.mainTabIndex]?.maybePop?.call() ?? false) {
+		else if (await _tabs._willPopZones[_tabs.mainTabIndex]?.maybePop?.call() ?? false) {
 			// Popped something generically
 		}
 		else if (await _tabs._tabNavigatorKeys[_tabs.mainTabIndex]?.currentState?.maybePop() ?? false) {
@@ -2156,7 +2163,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								// Likely a text field is focused
 								return;
 							}
-							_willPopZones[_tabs.mainTabIndex]?.maybePop?.call();
+							_tabs._willPopZones[_tabs.mainTabIndex]?.maybePop?.call();
 							return null;
 						}
 					)
@@ -2409,13 +2416,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								if (index == _tabs._lastIndex && index == 0) {
 									_showTabPopup.value = !_showTabPopup.value;
 								}
-								else if (index == _tabs._lastIndex) {
-									if (index == 4) {
-										_tabs._settingsNavigatorKey.currentState?.maybePop();
-									}
-									else {
-										_willPopZones[index]?.maybePop?.call();
-									}
+								else {
+									_tabs.willActivatePane(index);
 								}
 								_tabs._lastIndex = index;
 							}
