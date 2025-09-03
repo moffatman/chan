@@ -42,7 +42,11 @@ class ThreadWidgetBuilder extends StatelessWidget {
 		const blankIcon = Icon(CupertinoIcons.rectangle_stack);
 		Widget primaryIcon = blankIcon;
 		Widget? secondaryIcon;
-		int unseenCount = 0;
+		int unseenCount = switch (imageboard?.site.getThreadFromCatalogCache(thread)) {
+			// This is useful if the thread is opened in background tab -- not loaded yet
+			Thread thread => thread.replyCount + 1,
+			null => 0
+		};
 		int unseenYouCount = 0;
 		String longTitle = '';
 		PersistentThreadState? threadState;
