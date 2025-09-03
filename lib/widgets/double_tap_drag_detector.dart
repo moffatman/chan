@@ -35,7 +35,7 @@ class _DoubleTapDragDetectorState extends State<DoubleTapDragDetector> {
 	}
 	
 	void _onCancel() {
-		widget.onSingleTap?.call();
+		Future.microtask(widget.onSingleTap ?? () {});
 	}
 
 	void _onUpdate(DoubleTapDragUpdateDetails details) {
