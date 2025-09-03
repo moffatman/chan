@@ -961,6 +961,31 @@ class PostRow extends StatelessWidget {
 										}
 									}
 								}
+								if (site.supportsUserInfo && post.name.isNotEmpty && post.name != site.defaultUsername) {
+									final toUnmark = <int>{};
+									for (final otherPost in parentZone.findThread(post.threadId)?.posts ?? <Post>[]) {
+										if (otherPost.id != post.id && otherPost.name == post.name && parentZoneThreadState.youIds.contains(otherPost.id)) {
+											toUnmark.add(otherPost.id);
+										}
+									}
+									if (toUnmark.isNotEmpty && context.mounted) {
+										final confirmed = await confirm(
+											context,
+											toUnmark.length == 1
+												? 'There is one other marked post in this thread with the same username (${post.name}). Unmark it as (You) too?'
+												: 'There are ${toUnmark.length} other marked posts in this thread with the same username (${post.name}). Unmark them as (You) too?',
+											actionName: 'Unmark'
+										);
+										if (confirmed) {
+											parentZoneThreadState.postsMarkedAsYou.removeWhere(toUnmark.contains);
+											for (final r in parentZoneThreadState.receipts) {
+												if (toUnmark.remove(r.id)) {
+													r.markAsYou = false;
+												}
+											}
+										}
+									}
+								}
 								parentZoneThreadState.didUpdateYourPosts();
 								parentZoneThreadState.save();
 							}
@@ -993,6 +1018,34 @@ class PostRow extends StatelessWidget {
 										toMark.length == 1
 											? 'There is one other unmarked post in this thread with the same ID ($posterId). Mark it as (You) too?'
 											: 'There are ${toMark.length} other unmarked posts in this thread with the same ID ($posterId). Mark them as (You) too?',
+										actionName: 'Mark'
+									);
+									if (confirmed) {
+										for (final id in toMark) {
+											final existingReceipt = parentZoneThreadState.receipts.tryFirstWhere((r) => r.id == id);
+											if (existingReceipt != null) {
+												existingReceipt.markAsYou = true;
+											}
+											else {
+												parentZoneThreadState.postsMarkedAsYou.add(id);
+											}
+										}
+									}
+								}
+							}
+							if (site.supportsUserInfo && post.name.isNotEmpty && post.name != site.defaultUsername) {
+								final toMark = <int>{};
+								for (final otherPost in parentZone.findThread(post.threadId)?.posts ?? <Post>[]) {
+									if (otherPost.id != post.id && otherPost.name == post.name && !parentZoneThreadState.youIds.contains(otherPost.id)) {
+										toMark.add(otherPost.id);
+									}
+								}
+								if (toMark.isNotEmpty && context.mounted) {
+									final confirmed = await confirm(
+										context,
+										toMark.length == 1
+											? 'There is one other unmarked post in this thread with the same username (${post.name}). Mark it as (You) too?'
+											: 'There are ${toMark.length} other unmarked posts in this thread with the same username (${post.name}). Mark them as (You) too?',
 										actionName: 'Mark'
 									);
 									if (confirmed) {
