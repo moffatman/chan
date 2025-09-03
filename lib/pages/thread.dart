@@ -3256,6 +3256,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											if (widget.persistentState.thread?.archiveName case String archiveName)
 												Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withOpacity(0.5))),
 											const SizedBox(width: 8)
+										]
+										else if (!widget.blocked && (widget.persistentState.thread?.isDeleted ?? false)) ...[
+											Icon(CupertinoIcons.trash, color: theme.primaryColor.withOpacity(0.5)),
+											const SizedBox(width: 8)
 										],
 										if (!widget.blocked && (widget.persistentState.thread?.isLocked ?? false)) ...[
 											Icon(CupertinoIcons.lock, color: theme.primaryColor.withOpacity(0.5)),
