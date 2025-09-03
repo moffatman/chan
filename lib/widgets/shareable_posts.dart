@@ -143,6 +143,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						showBoardName: p.id == primaryPostId,
 						showSiteIcon: p.id == primaryPostId,
 						revealYourPosts: style.revealYourPosts,
+						showYourPostBorder: style.revealYourPosts,
 						revealSpoilerImages: true,
 						forceAbsoluteTime: true,
 						showReplyCount: widget.style.showReplyCounts
@@ -166,6 +167,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									showBoardName: value.id == primaryPostId,
 									showSiteIcon: value.id == primaryPostId,
 									revealYourPosts: style.revealYourPosts,
+									showYourPostBorder: style.revealYourPosts,
 									revealSpoilerImages: true,
 									forceAbsoluteTime: true,
 									showReplyCount: widget.style.showReplyCounts,
@@ -318,7 +320,8 @@ class _ShareablePostsState extends State<ShareablePosts> {
 					showSiteIcon: true,
 					showReplyCount: widget.style.showReplyCounts,
 					baseOptions: baseOptions,
-					revealYourPosts: style.revealYourPosts
+					revealYourPosts: style.revealYourPosts,
+					showYourPostBorder: style.revealYourPosts,
 				)
 			);
 			child = (parents.isEmpty && children.isEmpty) ? ConstrainedBox(
@@ -345,7 +348,8 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									shrinkWrap: true,
 									baseOptions: baseOptions,
 									showReplyCount: widget.style.showReplyCounts,
-									revealYourPosts: style.revealYourPosts
+									revealYourPosts: style.revealYourPosts,
+									showYourPostBorder: style.revealYourPosts
 								)
 							)
 						),
@@ -364,7 +368,8 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									shrinkWrap: true,
 									showReplyCount: widget.style.showReplyCounts,
 									baseOptions: baseOptions,
-									revealYourPosts: style.revealYourPosts
+									revealYourPosts: style.revealYourPosts,
+									showYourPostBorder: style.revealYourPosts,
 								)
 							)
 						),

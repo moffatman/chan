@@ -362,15 +362,17 @@ class PostRow extends StatelessWidget {
 		final List<Attachment> smallAttachments = largeImageWidth == null ? latestPost.attachments_ : [];
 		final withinSelectable = SelectionContainer.maybeOf(context) != null;
 		final isDeletedStub = post.isDeleted && post.text.isEmpty && post.attachments.isEmpty;
-		if (isYourPost && showYourPostBorder) {
-			border = Border(
-				left: BorderSide(color: theme.secondaryColor, width: 10)
-			);
-		}
-		else if (parentZoneThreadState?.replyIdsToYou()?.contains(post.id) ?? false) {
-			border = Border(
-				left: BorderSide(color: theme.secondaryColor.towardsBlack(0.5), width: 10)
-			);
+		if (showYourPostBorder) {
+			if (isYourPost) {
+				border = Border(
+					left: BorderSide(color: theme.secondaryColor, width: 10)
+				);
+			}
+			else if ((parentZoneThreadState?.replyIdsToYou()?.contains(post.id) ?? false)) {
+				border = Border(
+					left: BorderSide(color: theme.secondaryColor.towardsBlack(0.5), width: 10)
+				);
+			}
 		}
 		final replyIds = latestPost.replyIds.toList();
 		replyIds.removeWhere((id) {
