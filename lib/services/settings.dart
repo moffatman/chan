@@ -3179,6 +3179,12 @@ class Settings extends ChangeNotifier {
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(SeparatedCookieManager());
+		client.interceptors.add(InterceptorsWrapper(
+			onRequest: (options, handler) {
+				options.headers['user-agent'] ??= userAgent;
+				handler.next(options);
+			}
+		));
 		client.interceptors.add(BasedFlareInterceptor(client));
 		client.interceptors.add(CloudflareInterceptor());
 		client.interceptors.add(RetryIfCloudflareInterceptor(client));

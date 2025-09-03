@@ -5,6 +5,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/version.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
@@ -38,7 +39,9 @@ class JsonCache {
 			}
 			final response = await Settings.instance.client.get<Map>('$contentSettingsApiRoot/sites', queryParameters: {
 				'platform': platform
-			}, options: Options(responseType: ResponseType.json));
+			}, options: Options(responseType: ResponseType.json, headers: {
+				HttpHeaders.userAgentHeader: 'Chance/$kChanceVersion'
+			}));
 			return (response.data!['data'] as Map).cast<String, Map>();
 		},
 		caster: (data) => (data as Map).cast<String, Map>(),
