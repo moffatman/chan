@@ -641,6 +641,7 @@ class MediaConversion {
 					await convertedFile.delete();
 				}
 				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers);
+				final isVideoOutput = {'mp4', 'webm', 'm3u8'}.contains(outputFileExtension);
 				int outputBitrate = targetBitrate ?? switch(scan.bitrate) {
 					int inputBitrate => switch ((scan.codec, outputFileExtension)) {
 						// Higher efficiency formats down to h264, increase target bitrate
@@ -650,30 +651,33 @@ class MediaConversion {
 					null => 2000000
 				};
 				int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
-				if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') {
-					if (maximumDurationInSeconds != null) {
-						outputDurationInMilliseconds = min((maximumDurationInSeconds! * 1000).round(), outputDurationInMilliseconds!);
-					}
-					if (maximumSizeInBytes != null) {
-						outputBitrate = min(outputBitrate, ((7.2 - (_additionalScaleDownFactor / 6)) * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
-					}
+				if (isVideoOutput && maximumDurationInSeconds != null) {
+					outputDurationInMilliseconds = min((maximumDurationInSeconds! * 1000).round(), outputDurationInMilliseconds!);
 				}
 				(int, int)? newSize;
 				if (scan.width != null && scan.height != null) {
-					if (outputFileExtension != 'jpg' && outputFileExtension != 'png' && maximumSizeInBytes != null) {
-						double scaleDownFactorSq = (outputBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
-						if (scaleDownFactorSq < 1) {
-							final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-							final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-							newSize = (newWidth, newHeight);
+					if (maximumSizeInBytes != null) {
+						if (isVideoOutput) {
+							final maximumBitrate = ((7.2 - (_additionalScaleDownFactor / 6)) * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round();
+							if (maximumBitrate < outputBitrate) {
+								// Limit bitrate
+								outputBitrate = maximumBitrate;
+								// May need further scaling down
+								final scaleDownFactorSq = (maximumBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
+								if (scaleDownFactorSq < 1) {
+									final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
+									final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
+									newSize = (newWidth, newHeight);
+								}
+							}
 						}
-					}
-					else if (maximumSizeInBytes != null) {
-						double scaleDownFactor = ((scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 3))) + _additionalScaleDownFactor;
-						if (scaleDownFactor > 1) {
-							final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
-							final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
-							newSize = (newWidth, newHeight);
+						else {
+							final scaleDownFactor = ((scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 3))) * _additionalScaleDownFactor;
+							if (scaleDownFactor > 1) {
+								final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
+								final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
+								newSize = (newWidth, newHeight);
+							}
 						}
 					}
 					if (maximumDimension != null) {
@@ -730,7 +734,7 @@ class MediaConversion {
 						inputUri = VideoServer.instance.getUri(digest);
 						inputHeaders = {};
 					}
-					final bitrateString = outputBitrate == 0 ? null : '${(outputBitrate / 1000).floor()}K';
+					final bitrateString = copyStreams || outputBitrate == 0 ? null : '${(outputBitrate / 1000).floor()}K';
 					final args = [
 						'-hwaccel', 'auto',
 						if (inputHeaders.isNotEmpty && inputFile.scheme != 'file') ...[
@@ -760,7 +764,7 @@ class MediaConversion {
 						if (stripAudio) '-an',
 						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
 						else if (outputFileExtension != 'png' && bitrateString != null) ...['-b:v', bitrateString],
-						if (bitrateString != null && (outputFileExtension == 'webm' || outputFileExtension == 'mp4')) ...[
+						if (bitrateString != null && isVideoOutput) ...[
 							'-minrate', bitrateString,
 							'-maxrate', bitrateString,
 						],
@@ -814,7 +818,7 @@ class MediaConversion {
 									'-pix_fmt', 'yuv420p'
 								]
 						],
-						if (copyStreams && outputFileExtension != 'webm' && outputFileExtension != 'mp4') ...[
+						if (copyStreams && !isVideoOutput) ...[
 							'-acodec', 'copy',
 							'-vcodec', 'copy',
 							'-c', 'copy'
