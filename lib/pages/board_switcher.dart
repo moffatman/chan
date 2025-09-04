@@ -91,12 +91,14 @@ class BoardSwitcherPage extends StatefulWidget {
 	final String? initialImageboardKey;
 	final bool currentlyPickingFavourites;
 	final bool allowPickingWholeSites;
+	final bool allowDevsite;
 
 	const BoardSwitcherPage({
 		this.currentlyPickingFavourites = false,
 		this.filterImageboards,
 		this.initialImageboardKey,
 		this.allowPickingWholeSites = false,
+		this.allowDevsite = false,
 		Key? key
 	}) : super(key: key);
 
@@ -182,6 +184,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					}
 				}
 			}
+			if(widget.allowDevsite) {
+				boards.add(ImageboardRegistry.instance.dev!.scope(kDevBoard));
+			}
 		}
 	}
 
@@ -201,7 +206,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		scrollController = ScrollController();
 		_backgroundColor = ValueNotifier<Color?>(null);
 		_focusNode = FocusNode();
-		allImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
+		allImageboards = (widget.allowDevsite ? ImageboardRegistry.instance.imageboardsIncludingDev : ImageboardRegistry.instance.imageboards).where((i) => widget.filterImageboards?.call(i) ?? true).toList();
+		print(allImageboards);
 		if (ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey) case Imageboard initialImageboard) {
 			currentImageboardIndex = allImageboards.indexOf(initialImageboard);
 		}
@@ -225,7 +231,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	void _onImageboardRegistryUpdate() {
-		final newAllImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
+		final newAllImageboards = (widget.allowDevsite ? ImageboardRegistry.instance.imageboardsIncludingDev : ImageboardRegistry.instance.imageboards).where((i) => widget.filterImageboards?.call(i) ?? true).toList();
 		currentImageboardIndex = max(0, newAllImageboards.indexOf(currentImageboard));
 		allImageboards = newAllImageboards;
 		_fetchBoards();

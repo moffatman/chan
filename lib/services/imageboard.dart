@@ -532,6 +532,15 @@ class Imageboard extends ChangeNotifier {
 }
 
 const _devImageboardKey = 'devsite';
+final kDevBoard = ImageboardBoard(
+	name: 'chance',
+	title: 'Chance - Imageboard Browser',
+	isWorksafe: true,
+	maxWebmDurationSeconds: 120,
+	webmAudioAllowed: false,
+	maxImageSizeBytes: 8000000,
+	maxWebmSizeBytes: 8000000
+);
 
 class ImageboardRegistry extends ChangeNotifier {
 	static ImageboardRegistry? _instance;
@@ -569,7 +578,7 @@ class ImageboardRegistry extends ChangeNotifier {
 			threadWatcherController: ThreadWatcherController(interval: const Duration(minutes: 10))
 		);
 		await tmpDev.initialize(
-			threadWatcherWatchForStickyOnBoards: ['chance']
+			threadWatcherWatchForStickyOnBoards: [kDevBoard.name]
 		);
 		notifyListeners();
 	}

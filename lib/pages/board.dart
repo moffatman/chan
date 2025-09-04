@@ -1380,7 +1380,7 @@ class BoardPageState extends State<BoardPage> {
 															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 														}
 														_lastCatalogUpdateTime = DateTime.now();
-														if (settings.hideOldStickiedThreads && board?.name != 'chance') {
+														if (settings.hideOldStickiedThreads && board?.name != kDevBoard.name) {
 															final threshold = _lastCatalogUpdateTime!.subtract(_oldThreadThreshold);
 															list.removeWhere((thread) {
 																return thread.isSticky && thread.time.isBefore(threshold);

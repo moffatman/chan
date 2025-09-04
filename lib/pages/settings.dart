@@ -1,4 +1,3 @@
-import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/licenses.dart';
@@ -48,7 +47,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
 	Future<List<Thread>> makeStickyFuture() async {
 		final imageboard = context.read<Imageboard>();
-		final list = (await imageboard.site.getCatalog('chance', priority: RequestPriority.interactive)).where((t) => t.isSticky).toList();
+		final list = (await imageboard.site.getCatalog(kDevBoard.name, priority: RequestPriority.interactive)).where((t) => t.isSticky).toList();
 		for (final thread in list) {
 			await thread.preinit(catalog: true);
 			await imageboard.persistence.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
@@ -143,7 +142,7 @@ class _SettingsPageState extends State<SettingsPage> {
 				alignment: Alignment.topCenter,
 				child: FutureBuilder<List<Thread>>(
 					future: stickyFuture,
-					initialData: context.read<ThreadWatcher>().peekLastCatalog(BoardKey('chance'))?.where((c) => c.isSticky).toList(),
+					initialData: context.read<ThreadWatcher>().peekLastCatalog(kDevBoard.boardKey)?.where((c) => c.isSticky).toList(),
 					builder: (context, snapshot) {
 						if (snapshot.hasError) {
 							return ErrorMessageCard(
@@ -215,15 +214,7 @@ class _SettingsPageState extends State<SettingsPage> {
 												),
 												onPressed: () => Navigator.push(context, adaptivePageRoute(
 													builder: (context) => BoardPage(
-														initialBoard: ImageboardBoard(
-															name: 'chance',
-															title: 'Chance - Imageboard Browser',
-															isWorksafe: true,
-															maxWebmDurationSeconds: 120,
-															webmAudioAllowed: false,
-															maxImageSizeBytes: 8000000,
-															maxWebmSizeBytes: 8000000
-														),
+														initialBoard: kDevBoard,
 														allowChangingBoard: false,
 														semanticId: -1
 													)

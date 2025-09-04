@@ -254,7 +254,8 @@ Future<void> editBoardSet({
 							final controller = TextEditingController();
 							final newItem = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 								builder: (ctx) => const BoardSwitcherPage(
-									allowPickingWholeSites: false
+									allowPickingWholeSites: false,
+									allowDevsite: true
 								)
 							));
 							if (newItem != null) {
