@@ -689,6 +689,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				responseType: ResponseType.plain,
 				validateStatus: (x) => true,
 				headers: {
+					'Origin': 'https://$baseUrl',
 					// lainchan has some greek letter boards
 					'Referer': Uri.encodeFull(referer)
 				},
