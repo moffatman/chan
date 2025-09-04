@@ -226,6 +226,11 @@ extension _AspectRatio on PlayerState {
 	}
 }
 
+enum _LongPressMode {
+	zoom,
+	scrub
+}
+
 class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
 	final BuildContext context;
@@ -249,6 +254,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	final _conversionDisposers = <VoidCallback>[];
 	bool _checkArchives = false;
 	final _showLoadingProgress = ValueNotifier<bool>(false);
+	_LongPressMode? _longPressMode;
 	final _longPressFactor = BufferedValueNotifier<double>(const Duration(milliseconds: 50), 0);
 	int _millisecondsBeforeLongPress = 0;
 	bool _currentlyWithinLongPress = false;
@@ -1419,6 +1425,96 @@ class AttachmentViewer extends StatelessWidget {
 		);
 	}
 
+	GestureConfig _createGestureConfig() => GestureConfig(
+		inPageView: true,
+		gestureDetailsIsChanged: (details) {
+			if (details?.totalScale != null) {
+				onScaleChanged?.call(details!.totalScale!);
+			}
+		},
+		maxScale: 5 * max(attachment.aspectRatio, 1/attachment.aspectRatio)
+	);
+
+	Widget _buildDoubleTapDragDetector({
+		required Widget child,
+	}) {
+		void onDoubleTap(ExtendedImageGestureState state) {
+			final old = state.gestureDetails!;
+			if ((old.totalScale ?? 1) > 1) {
+				state.gestureDetails = GestureDetails(
+					offset: Offset.zero,
+					totalScale: 1,
+					actionType: ActionType.zoom
+				);
+			}
+			else {
+				double autozoomScale = 2.0;
+				if (attachment.width != null && attachment.height != null) {
+					double screenAspectRatio = MediaQuery.sizeOf(state.context).width / MediaQuery.sizeOf(state.context).height;
+					double attachmentAspectRatio = attachment.width! / attachment.height!;
+					double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
+					autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
+				}
+				autozoomScale = min(autozoomScale, 5);
+				final center = Offset(MediaQuery.sizeOf(state.context).width / 2, MediaQuery.sizeOf(state.context).height / 2);
+				state.gestureDetails = GestureDetails(
+					offset: (state.pointerDownPosition! * autozoomScale - center).scale(-1, -1),
+					totalScale: autozoomScale,
+					actionType: ActionType.zoom
+				);
+			}
+		}
+		return DoubleTapDragDetector(
+			shouldStart: () => controller.isFullResolution && allowGestures,
+			onSingleTap: onTap,
+			onDoubleTapDrag: (details) {
+				if (controller.gestureKey.currentState == null) {
+					return;
+				}
+				final state = controller.gestureKey.currentState!;
+				final scaleBefore = state.gestureDetails!.totalScale!;
+				final offsetBefore = state.gestureDetails!.offset!;
+				final logicalAnchor = controller._doubleTapDragAnchor ??= ((details.localPosition - offsetBefore) / scaleBefore);
+				if (controller._longPressMode == null) {
+					if (details.offsetFromOrigin.distance > 24) {
+						if (details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
+							controller._longPressMode = _LongPressMode.scrub;
+							controller._onLongPressStart();
+						}
+						else {
+							controller._longPressMode = _LongPressMode.zoom;
+						}
+					}
+				}
+				if (controller._longPressMode == _LongPressMode.zoom) {
+					final anchorBefore = (logicalAnchor * scaleBefore) + offsetBefore;
+					final scaleAfter = (state.gestureDetails!.totalScale! * (1 + (0.005 * details.localDelta.dy))).clamp(1.0, 5.0);
+					final offsetAfter = anchorBefore - (logicalAnchor * scaleAfter);
+					state.gestureDetails = GestureDetails(
+						offset: offsetAfter,
+						totalScale: scaleAfter,
+						actionType: ActionType.zoom
+					);
+				}
+				else if (controller._longPressMode == _LongPressMode.scrub) {
+					final factor = details.offsetFromOrigin.dx / (MediaQuery.sizeOf(controller.context).width / 2);
+					controller._onLongPressUpdate(factor);
+				}
+			},
+			onDoubleTapDragEnd: (details) {
+				if (details.localOffsetFromOrigin.distance < 1 && controller.gestureKey.currentState != null) {
+					onDoubleTap(controller.gestureKey.currentState!);
+				}
+				if (controller._longPressMode == _LongPressMode.scrub) {
+					controller._onLongPressEnd();
+				}
+				controller._doubleTapDragAnchor = null;
+				controller._longPressMode = null;
+			},
+			child: child
+		);
+	}
+
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
 		Uri source = controller.overrideSource ?? Uri.parse(attachment.thumbnailUrl);
 		final goodSource = controller.goodImageSource;
@@ -1457,32 +1553,6 @@ class AttachmentViewer extends StatelessWidget {
 				maxBytes: 800 << 10,
 				width: maxWidth!.ceil()
 			);
-		}
-		void onDoubleTap(ExtendedImageGestureState state) {
-			final old = state.gestureDetails!;
-			if ((old.totalScale ?? 1) > 1) {
-				state.gestureDetails = GestureDetails(
-					offset: Offset.zero,
-					totalScale: 1,
-					actionType: ActionType.zoom
-				);
-			}
-			else {
-				double autozoomScale = 2.0;
-				if (attachment.width != null && attachment.height != null) {
-					double screenAspectRatio = MediaQuery.sizeOf(context).width / MediaQuery.sizeOf(context).height;
-					double attachmentAspectRatio = attachment.width! / attachment.height!;
-					double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
-					autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
-				}
-				autozoomScale = min(autozoomScale, 5);
-				final center = Offset(MediaQuery.sizeOf(context).width / 2, MediaQuery.sizeOf(context).height / 2);
-				state.gestureDetails = GestureDetails(
-					offset: (state.pointerDownPosition! * autozoomScale - center).scale(-1, -1),
-					totalScale: autozoomScale,
-					actionType: ActionType.zoom
-				);
-			}
 		}
 		buildChild({required bool inContextMenu}) => ValueListenableBuilder(
 			valueListenable: controller.showLoadingProgress,
@@ -1651,47 +1721,12 @@ class AttachmentViewer extends StatelessWidget {
 						}
 						return null;
 					},
-					initGestureConfigHandler: (state) {
-						return GestureConfig(
-							inPageView: true,
-							gestureDetailsIsChanged: (details) {
-								if (details?.totalScale != null) {
-									onScaleChanged?.call(details!.totalScale!);
-								}
-							},
-							maxScale: 5 * max(attachment.aspectRatio, 1/attachment.aspectRatio)
-						);
-					},
+					initGestureConfigHandler: (state) => _createGestureConfig(),
 					heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null
 				)
 			)
 		);
-		return DoubleTapDragDetector(
-			shouldStart: () => controller.isFullResolution && allowGestures,
-			onSingleTap: onTap,
-			onDoubleTapDrag: (details) {
-				if (controller.gestureKey.currentState == null) {
-					return;
-				}
-				final state = controller.gestureKey.currentState!;
-				final scaleBefore = state.gestureDetails!.totalScale!;
-				final offsetBefore = state.gestureDetails!.offset!;
-				final logicalAnchor = controller._doubleTapDragAnchor ??= ((details.localPosition - offsetBefore) / scaleBefore);
-				final anchorBefore = (logicalAnchor * scaleBefore) + offsetBefore;
-				final scaleAfter = (state.gestureDetails!.totalScale! * (1 + (0.005 * details.localDelta.dy))).clamp(1.0, 5.0);
-				final offsetAfter = anchorBefore - (logicalAnchor * scaleAfter);
-				state.gestureDetails = GestureDetails(
-					offset: offsetAfter,
-					totalScale: scaleAfter,
-					actionType: ActionType.zoom
-				);
-			},
-			onDoubleTapDragEnd: (details) {
-				if (details.localOffsetFromOrigin.distance < 1 && controller.gestureKey.currentState != null) {
-					onDoubleTap(controller.gestureKey.currentState!);
-				}
-				controller._doubleTapDragAnchor = null;
-			},
+		return _buildDoubleTapDragDetector(
 			child: !allowContextMenu ? buildChild(inContextMenu: false) : ContextMenu(
 				actions: [
 					ContextMenuAction(
@@ -1806,250 +1841,263 @@ class AttachmentViewer extends StatelessWidget {
 	Widget _buildVideo(BuildContext context, Size? size) {
 		final rotate90DegreesClockwise = _rotate90DegreesClockwise(context);
 		final soundSourceDownload = controller._soundSourceDownload;
-		return ExtendedImageSlidePageHandler(
-			heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null,
-			child: SizedBox.fromSize(
-				size: size,
-				child: GestureDetector(
-					behavior: HitTestBehavior.translucent,
-					onLongPressStart: (x) => controller._onLongPressStart(),
-					onLongPressMoveUpdate: (details) {
-						final double factor;
-						if (rotate90DegreesClockwise) {
-							factor = details.offsetFromOrigin.dy / (MediaQuery.sizeOf(context).height / 2);
-						}
-						else {
-							factor = details.offsetFromOrigin.dx / (MediaQuery.sizeOf(context).width / 2);
-						}
-						controller._onLongPressUpdate(factor);
-					},
-					onLongPressEnd: (x) => controller._onLongPressEnd(),
-					child: Stack(
-						children: [
-							const Positioned.fill(
-								// Needed to enable tapping to reveal chrome via an ancestor GestureDetector
-								child: AbsorbPointer()
-							),
-							if (controller.overrideSource == null) Positioned.fill(
-								child: FittedBox(
-									child: Padding(
-										// Sometimes it's very slightly off from the video.
-										// This errs to have it too small rather than too large.
-										padding: videoThumbnailMicroPadding ? const EdgeInsets.all(1) : EdgeInsets.zero,
-										child: AttachmentThumbnail(
-											attachment: attachment,
-											width: attachment.width?.toDouble(),
-											height: attachment.height?.toDouble(),
-											rotate90DegreesClockwise: rotate90DegreesClockwise,
-											gaplessPlayback: true,
-											revealSpoilers: true,
-											site: controller.site,
-											mayObscure: false
-										)
-									)
-								)
-							),
-							if (attachment.type == AttachmentType.mp3) Positioned.fill(
-								child: Center(
-									child: RotatedBox(
-										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
-										child: Container(
-											padding: const EdgeInsets.all(8),
-											decoration: const BoxDecoration(
-												color: Colors.black54,
-												borderRadius: BorderRadius.all(Radius.circular(8))
-											),
-											child: IntrinsicWidth(
-												child: Column(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														const SizedBox(height: 10),
-														const Row(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																SizedBox(width: 64),
-																Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
-																Text(
-																	'Audio only',
-																	style: TextStyle(
-																		fontSize: 32,
-																		color: Colors.white
-																	)
-																),
-																SizedBox(width: 64)
-															]
-														),
-														const SizedBox(height: 10),
-														VideoControls(controller: controller, showMuteButton: false),
-														const SizedBox(height: 10)
-													]
+		return Stack(
+			children: [
+				ExtendedImageGestureWidget(
+					heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null,
+					key: controller.gestureKey,
+					width: attachment.width ?? 100,
+					height: attachment.height ?? 100,
+					initGestureConfigHandler: () => _createGestureConfig(),
+					child: SizedBox.fromSize(
+						size: size,
+						child: _buildDoubleTapDragDetector(
+							child: Stack(
+								children: [
+									const Positioned.fill(
+										// Needed to enable tapping to reveal chrome via an ancestor GestureDetector
+										child: AbsorbPointer()
+									),
+									if (controller.overrideSource == null) Positioned.fill(
+										child: FittedBox(
+											child: Padding(
+												// Sometimes it's very slightly off from the video.
+												// This errs to have it too small rather than too large.
+												padding: videoThumbnailMicroPadding ? const EdgeInsets.all(1) : EdgeInsets.zero,
+												child: AttachmentThumbnail(
+													attachment: attachment,
+													width: attachment.width?.toDouble(),
+													height: attachment.height?.toDouble(),
+													rotate90DegreesClockwise: rotate90DegreesClockwise,
+													gaplessPlayback: true,
+													revealSpoilers: true,
+													site: controller.site,
+													mayObscure: false
 												)
 											)
 										)
-									)
-								)
-							),
-							if (controller.videoPlayerController != null && (controller.isPrimary || !onlyRenderVideoWhenPrimary)) IgnorePointer(
-								child: Center(
-									child: RotatedBox(
-										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
-										child: AspectRatio(
-											aspectRatio: aspectRatio,
-											child: Video(
-												controller: controller.videoPlayerController!,
-												fill: Colors.transparent,
-												controls: null
-											)
-										)
-									)
-								)
-							),
-							if (controller.videoPlayerController != null && allowGestures) Positioned.fill(
-								child: Flex(
-									direction: rotate90DegreesClockwise ? Axis.vertical : Axis.horizontal,
-									children: [
-										Expanded(
-											child: GestureDetector(
-												onDoubleTap: controller.seekBackward
-											)
-										),
-										Expanded(
-											child: GestureDetector(
-												onDoubleTap: controller.seekForward
-											)
-										)
-									],
-								)
-							),
-							ValueListenableBuilder(
-								valueListenable: controller.showLoadingProgress,
-								builder: (context, showLoadingProgress, _) => (showLoadingProgress && controller._soundSourceDownload == null) ? ValueListenableBuilder(
-									valueListenable: controller.videoLoadingProgress,
-									builder: (context, double? loadingProgress, child) => _centeredLoader(
-										active: controller.isFullResolution,
-										value: loadingProgress,
-										useRealKey: true
-									)
-								) : const SizedBox.shrink()
-							),
-							if (soundSourceDownload != null) Positioned.fill(
-								child: Center(
-									child: RotatedBox(
-										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
-										child: Container(
-											margin: const EdgeInsets.all(16),
-											padding: const EdgeInsets.all(24),
-											decoration: const BoxDecoration(
-												color: Colors.black87,
-												borderRadius: BorderRadius.all(Radius.circular(10))
-											),
-											child: IntrinsicWidth(
-												child: Column(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														const SizedBox(height: 10),
-														const Row(
+									),
+									if (attachment.type == AttachmentType.mp3) Positioned.fill(
+										child: Center(
+											child: RotatedBox(
+												quarterTurns: rotate90DegreesClockwise ? 1 : 0,
+												child: Container(
+													padding: const EdgeInsets.all(8),
+													decoration: const BoxDecoration(
+														color: Colors.black54,
+														borderRadius: BorderRadius.all(Radius.circular(8))
+													),
+													child: IntrinsicWidth(
+														child: Column(
 															mainAxisSize: MainAxisSize.min,
 															children: [
-																Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
-																SizedBox(width: 8),
-																Text(
-																	'Downloading sound',
-																	style: TextStyle(
-																		fontSize: 32,
-																		color: Colors.white
-																	)
-																)
-															]
-														),
-														Text('from ${soundSourceDownload.uri.host}', style: const TextStyle(
-															fontSize: 24
-														)),
-														const SizedBox(height: 16),
-														ValueListenableBuilder(
-															valueListenable: soundSourceDownload.currentBytes,
-															builder: (context, currentBytes, _) => SizedBox(
-																width: 350,
-																child: Column(
+																const SizedBox(height: 10),
+																const Row(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
-																		LinearProgressIndicator(
-																			value: switch (soundSourceDownload.totalBytes) {
-																				int totalBytes => currentBytes / totalBytes,
-																				null => null
-																			},
-																			backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context)
+																		SizedBox(width: 64),
+																		Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
+																		Text(
+																			'Audio only',
+																			style: TextStyle(
+																				fontSize: 32,
+																				color: Colors.white
+																			)
 																		),
-																		const SizedBox(height: 16),
-																		Row(
-																			mainAxisSize: MainAxisSize.min,
-																			crossAxisAlignment: CrossAxisAlignment.start,
-																			children: [
-																				AdaptiveFilledButton(
-																					onPressed: () => VideoServer.instance.interruptOngoingDownloadFromUri(soundSourceDownload.uri),
-																					child: const Text('Cancel')
-																				),
-																				const Spacer(),
-																				if (soundSourceDownload.totalBytes case int totalBytes) Text('${formatFilesize(currentBytes)} / ${formatFilesize(totalBytes)}')
-																			]
+																		SizedBox(width: 64)
+																	]
+																),
+																const SizedBox(height: 10),
+																VideoControls(controller: controller, showMuteButton: false),
+																const SizedBox(height: 10)
+															]
+														)
+													)
+												)
+											)
+										)
+									),
+									if (controller.videoPlayerController != null && (controller.isPrimary || !onlyRenderVideoWhenPrimary)) IgnorePointer(
+										child: Center(
+											child: RotatedBox(
+												quarterTurns: rotate90DegreesClockwise ? 1 : 0,
+												child: AspectRatio(
+													aspectRatio: aspectRatio,
+													child: Video(
+														controller: controller.videoPlayerController!,
+														fill: Colors.transparent,
+														controls: null
+													)
+												)
+											)
+										)
+									),
+									ValueListenableBuilder(
+										valueListenable: controller.showLoadingProgress,
+										builder: (context, showLoadingProgress, _) => (showLoadingProgress && controller._soundSourceDownload == null) ? ValueListenableBuilder(
+											valueListenable: controller.videoLoadingProgress,
+											builder: (context, double? loadingProgress, child) => _centeredLoader(
+												active: controller.isFullResolution,
+												value: loadingProgress,
+												useRealKey: true
+											)
+										) : const SizedBox.shrink()
+									),
+									if (soundSourceDownload != null) Positioned.fill(
+										child: Center(
+											child: RotatedBox(
+												quarterTurns: rotate90DegreesClockwise ? 1 : 0,
+												child: Container(
+													margin: const EdgeInsets.all(16),
+													padding: const EdgeInsets.all(24),
+													decoration: const BoxDecoration(
+														color: Colors.black87,
+														borderRadius: BorderRadius.all(Radius.circular(10))
+													),
+													child: IntrinsicWidth(
+														child: Column(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																const SizedBox(height: 10),
+																const Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
+																		SizedBox(width: 8),
+																		Text(
+																			'Downloading sound',
+																			style: TextStyle(
+																				fontSize: 32,
+																				color: Colors.white
+																			)
 																		)
 																	]
-																)
-															)
-														),
-														const SizedBox(height: 10)
-													]
+																),
+																Text('from ${soundSourceDownload.uri.host}', style: const TextStyle(
+																	fontSize: 24
+																)),
+																const SizedBox(height: 16),
+																ValueListenableBuilder(
+																	valueListenable: soundSourceDownload.currentBytes,
+																	builder: (context, currentBytes, _) => SizedBox(
+																		width: 350,
+																		child: Column(
+																			mainAxisSize: MainAxisSize.min,
+																			children: [
+																				LinearProgressIndicator(
+																					value: switch (soundSourceDownload.totalBytes) {
+																						int totalBytes => currentBytes / totalBytes,
+																						null => null
+																					},
+																					backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context)
+																				),
+																				const SizedBox(height: 16),
+																				Row(
+																					mainAxisSize: MainAxisSize.min,
+																					crossAxisAlignment: CrossAxisAlignment.start,
+																					children: [
+																						AdaptiveFilledButton(
+																							onPressed: () => VideoServer.instance.interruptOngoingDownloadFromUri(soundSourceDownload.uri),
+																							child: const Text('Cancel')
+																						),
+																						const Spacer(),
+																						if (soundSourceDownload.totalBytes case int totalBytes) Text('${formatFilesize(currentBytes)} / ${formatFilesize(totalBytes)}')
+																					]
+																				)
+																			]
+																		)
+																	)
+																),
+																const SizedBox(height: 10)
+															]
+														)
+													)
 												)
 											)
 										)
+									),
+									if (controller.error case (Object e, StackTrace st)) Center(
+										child: ErrorMessageCard(e.toStringDio(), remedies: {
+											'Retry': () => controller.reloadFullAttachment(),
+											'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url), useGalleryIfPossible: false),
+											...generateBugRemedies(e, st, context, afterFix: controller.reloadFullAttachment),
+											if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
+										})
+									),
+									AnimatedSwitcher(
+										duration: const Duration(milliseconds: 250),
+										child: (controller.overlayText != null) ? Center(
+											child: RotatedBox(
+												quarterTurns: rotate90DegreesClockwise ? 1 : 0,
+												child: Container(
+													padding: const EdgeInsets.all(8),
+													margin: const EdgeInsets.only(
+														top: 12,
+														bottom: 12
+													),
+													decoration: const BoxDecoration(
+														color: Colors.black54,
+														borderRadius: BorderRadius.all(Radius.circular(8))
+													),
+													child: IntrinsicWidth(
+														child: Column(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																Text(
+																	controller.overlayText!,
+																	style: const TextStyle(
+																		fontSize: 32,
+																		color: Colors.white
+																	)
+																)
+															]
+														)
+													)
+												)
+											)
+										) : const SizedBox.shrink()
 									)
+								]
+							)
+						)
+					)
+				),
+				if (controller.videoPlayerController != null && allowGestures) Positioned.fill(
+					child: Flex(
+						direction: rotate90DegreesClockwise ? Axis.vertical : Axis.horizontal,
+						children: [
+							Expanded(
+								child: GestureDetector(
+									onLongPressStart: (x) => controller._videoPlayerController?.player.setRate(2),
+									onLongPressEnd: (x) => controller._videoPlayerController?.player.setRate(1)
 								)
 							),
-							if (controller.error case (Object e, StackTrace st)) Center(
-								child: ErrorMessageCard(e.toStringDio(), remedies: {
-									'Retry': () => controller.reloadFullAttachment(),
-									'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url), useGalleryIfPossible: false),
-									...generateBugRemedies(e, st, context, afterFix: controller.reloadFullAttachment),
-									if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
-								})
+							Expanded(
+								flex: 3,
+								child: GestureDetector(
+									onLongPressStart: (x) {
+										controller._playingBeforeLongPress = controller._videoPlayerController?.player.state.playing ?? false;
+										if (controller._playingBeforeLongPress) {
+											controller._videoPlayerController?.player.pause();
+										}
+									},
+									onLongPressEnd: (x) {
+										if (controller._playingBeforeLongPress) {
+											controller._videoPlayerController?.player.play();
+										}
+									}
+								)
 							),
-							AnimatedSwitcher(
-								duration: const Duration(milliseconds: 250),
-								child: (controller.overlayText != null) ? Center(
-									child: RotatedBox(
-										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
-										child: Container(
-											padding: const EdgeInsets.all(8),
-											margin: const EdgeInsets.only(
-												top: 12,
-												bottom: 12
-											),
-											decoration: const BoxDecoration(
-												color: Colors.black54,
-												borderRadius: BorderRadius.all(Radius.circular(8))
-											),
-											child: IntrinsicWidth(
-												child: Column(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Text(
-															controller.overlayText!,
-															style: const TextStyle(
-																fontSize: 32,
-																color: Colors.white
-															)
-														)
-													]
-												)
-											)
-										)
-									)
-								) : const SizedBox.shrink()
+							Expanded(
+								child: GestureDetector(
+									onLongPressStart: (x) => controller._videoPlayerController?.player.setRate(2),
+									onLongPressEnd: (x) => controller._videoPlayerController?.player.setRate(1)
+								)
 							)
-						]
+						],
 					)
 				)
-			)
+			]
 		);
 	}
 
