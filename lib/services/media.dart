@@ -724,7 +724,7 @@ class MediaConversion {
 						}
 					}
 					if (randomizeChecksum) {
-						vfs.add('noise=alls=10:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
+						vfs.add('noise=alls=1:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
 					}
 					Uri inputUri = inputFile;
 					Map<String, String> inputHeaders = headers;
