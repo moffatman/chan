@@ -1369,7 +1369,7 @@ class BoardPageState extends State<BoardPage> {
 													) : null,
 													controller: _listController,
 													listUpdater: (options) async {
-														final list = await site.getCatalog(
+														List<Thread> list = await site.getCatalog(
 															board!.name,
 															variant: variant,
 															priority: RequestPriority.interactive,
@@ -1381,6 +1381,7 @@ class BoardPageState extends State<BoardPage> {
 														}
 														_lastCatalogUpdateTime = DateTime.now();
 														if (settings.hideOldStickiedThreads && board?.name != kDevBoard.name) {
+															list = list.toList(); // Copy to mutate
 															final threshold = _lastCatalogUpdateTime!.subtract(_oldThreadThreshold);
 															list.removeWhere((thread) {
 																return thread.isSticky && thread.time.isBefore(threshold);
