@@ -8,6 +8,56 @@ import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+extension _Helper on ImageboardSite {
+	Future<T?> _helper<T>({
+		required RequestOptions baseOptions,
+		required DateTime? lastModified,
+		required Future<T> Function(Response) func,
+		required Exception on404,
+		required RequestPriority priority,
+		required CancelToken? cancelToken
+	}) async {
+		try {
+			final response = await client.fetch(baseOptions.copyWith(
+				validateStatus: (_) => true,
+				extra: {
+					...baseOptions.extra,
+					kPriority: priority
+				},
+				headers: {
+					...baseOptions.headers,
+					if (lastModified != null) HttpHeaders.ifModifiedSinceHeader: lastModified.toHttpHeader
+				},
+				cancelToken: cancelToken
+			));
+			final status = response.statusCode;
+			if (status == 304) {
+				return null;
+			}
+			if (status != null && status >= 200 && status < 400) {
+				return await unsafeAsync(response.data, () => func(response));
+			}
+			if (status == 404) {
+				throw on404;
+			}
+			throw HTTPStatusException.fromResponse(response);
+		}
+		catch (e) {
+			if (e is DioError) {
+				final err = e.error;
+				if (err is InvalidJsonException) {
+					final str = err.extractedError?.toLowerCase();
+					if (str != null && str.contains('404') && str.contains('not found')) {
+						// Should cover most common error pages
+						throw on404;
+					}
+				}
+			}
+			rethrow;
+		}
+	}
+}
+
 mixin Http304CachingThreadMixin on ImageboardSite {
 	@protected
 	RequestOptions getThreadRequest(ThreadIdentifier thread, {ThreadVariant? variant});
@@ -22,83 +72,39 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 		ThreadVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
-	}) async {
-		final baseOptions = getThreadRequest(thread, variant: variant);
-		try {
-			final response = await client.fetch(baseOptions.copyWith(
-				validateStatus: (_) => true,
-				extra: {
-					...baseOptions.extra,
-					kPriority: priority
-				},
-				cancelToken: cancelToken
-			));
-			final status = response.statusCode;
-			if (status != null && status >= 200 && status < 400) {
-				return await unsafeAsync(response.data, () async {
-					final t = await makeThread(thread, response, variant: variant, priority: priority, cancelToken: cancelToken);
-					// posts.last.time sometimes is off by 1 second. probably due to server-side processing latencies
-					// best to use the exact value reported in Last-Modified
-					t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
-					return t;
-				});
-			}
-			if (status == 404) {
-				throw const ThreadNotFoundException();
-			}
-			throw HTTPStatusException.fromResponse(response);
-		}
-		catch (e) {
-			if (e is DioError) {
-				final err = e.error;
-				if (err is InvalidJsonException) {
-					final str = err.extractedError?.toLowerCase();
-					if (str != null && str.contains('404') && str.contains('not found')) {
-						// Should cover most common error pages
-						throw const ThreadNotFoundException();
-					}
-				}
-			}
-			rethrow;
-		}
-	}
+	}) async => (await _helper(
+		baseOptions: getThreadRequest(thread, variant: variant),
+		lastModified: null,
+		func: (response) async {
+			final t = await makeThread(thread, response, variant: variant, priority: priority, cancelToken: cancelToken);
+			// posts.last.time sometimes is off by 1 second. probably due to server-side processing latencies
+			// best to use the exact value reported in Last-Modified
+			t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
+			return t;
+		},
+		on404: const ThreadNotFoundException(),
+		priority: priority,
+		cancelToken: cancelToken
+	))!;
 	@override
 	Future<Thread?> getThreadIfModifiedSince(ThreadIdentifier thread, DateTime lastModified, {
 		ThreadVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
-	}) async {
-		final baseOptions = getThreadRequest(thread, variant: variant);
-		final response = await client.fetch(baseOptions.copyWith(
-			validateStatus: (_) => true,
-			extra: {
-				...baseOptions.extra,
-				kPriority: priority
-			},
-			headers: {
-				...baseOptions.headers,
-				HttpHeaders.ifModifiedSinceHeader: lastModified.toHttpHeader
-			},
-			cancelToken: cancelToken
-		));
-		final status = response.statusCode;
-		if (status == 304) {
-			return null;
-		}
-		if (status != null && status >= 200 && status < 400) {
-			return await unsafeAsync(response.data, () async {
-				final t = await makeThread(thread, response, variant: variant, priority: priority, cancelToken: cancelToken);
-				// posts.last.time sometimes is off by 1 second. probably due to server-side processing latencies
-				// best to use the exact value reported in Last-Modified
-				t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
-				return t;
-			});
-		}
-		if (status == 404) {
-			throw const ThreadNotFoundException();
-		}
-		throw HTTPStatusException.fromResponse(response);
-	}
+	}) => _helper(
+		baseOptions: getThreadRequest(thread, variant: variant),
+		lastModified: lastModified,
+		func: (response) async {
+			final t = await makeThread(thread, response, variant: variant, priority: priority, cancelToken: cancelToken);
+			// posts.last.time sometimes is off by 1 second. probably due to server-side processing latencies
+			// best to use the exact value reported in Last-Modified
+			t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
+			return t;
+		},
+		on404: const ThreadNotFoundException(),
+		priority: priority,
+		cancelToken: cancelToken
+	);
 }
 
 mixin Http304CachingCatalogMixin on ImageboardSite {
@@ -116,77 +122,33 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 		CatalogVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
-	}) async {
-		final baseOptions = getCatalogRequest(board, variant: variant);
-		try {
-			final response = await client.fetch(baseOptions.copyWith(
-				validateStatus: (_) => true,
-				extra: {
-					...baseOptions.extra,
-					kPriority: priority
-				},
-				cancelToken: cancelToken
-			));
-			final status = response.statusCode;
-			if (status != null && status >= 200 && status < 400) {
-				return await unsafeAsync(response.data, () async {
-					final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
-					return Catalog.fromResponse(response, c);
-				});
-			}
-			if (status == 404) {
-				throw BoardNotFoundException(board);
-			}
-			throw HTTPStatusException.fromResponse(response);
-		}
-		catch (e) {
-			if (e is DioError) {
-				final err = e.error;
-				if (err is InvalidJsonException) {
-					final str = err.extractedError?.toLowerCase();
-					if (str != null && str.contains('404') && str.contains('not found')) {
-						// Should cover most common error pages
-						throw BoardNotFoundException(board);
-					}
-				}
-			}
-			rethrow;
-		}
-	}
+	}) async => (await _helper(
+		baseOptions: getCatalogRequest(board, variant: variant),
+		lastModified: null,
+		func: (response) async {
+			final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
+			return Catalog.fromResponse(response, c);
+		},
+		on404: BoardNotFoundException(board),
+		priority: priority,
+		cancelToken: cancelToken
+	))!;
 	@override
 	Future<Catalog?> getCatalogIfModifiedSince(String board, DateTime lastModified, {
 		CatalogVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
-	}) async {
-		final baseOptions = getCatalogRequest(board, variant: variant);
-		final response = await client.fetch(baseOptions.copyWith(
-			validateStatus: (_) => true,
-			extra: {
-				...baseOptions.extra,
-				kPriority: priority
-			},
-			headers: {
-				...baseOptions.headers,
-				HttpHeaders.ifModifiedSinceHeader: lastModified.toHttpHeader
-			},
-			cancelToken: cancelToken
-		));
-		final status = response.statusCode;
-		if (status == 304) {
-			return null;
-		}
-		if (status != null && status >= 200 && status < 400) {
-			return await unsafeAsync(response.data, () async {
-				final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
-				return Catalog.fromResponse(response, c);
-			});
-		}
-		if (status == 404) {
-			throw BoardNotFoundException(board);
-		}
-		throw HTTPStatusException.fromResponse(response);
-	}
+	}) => _helper(
+		baseOptions: getCatalogRequest(board, variant: variant),
+		lastModified: lastModified,
+		func: (response) async {
+			final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
+			return Catalog.fromResponse(response, c);
+		},
+		on404: BoardNotFoundException(board),
+		priority: priority,
+		cancelToken: cancelToken
+	);
 	@protected
 	RequestOptions? getCatalogPageMapRequest(String board, {CatalogVariant? variant}) {
 		if (hasPagedCatalog) {
@@ -218,40 +180,17 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				lastModified: null
 			);
 		}
-		try {
-			final response = await client.fetch(baseOptions.copyWith(
-				validateStatus: (_) => true,
-				extra: {
-					...baseOptions.extra,
-					kPriority: priority
-				},
-				cancelToken: cancelToken
-			));
-			final status = response.statusCode;
-			if (status != null && status >= 200 && status < 400) {
-				return await unsafeAsync(response.data, () async {
-					final pageMap = await makeCatalogPageMap(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
-					return CatalogPageMap.fromResponse(response, pageMap);
-				});
-			}
-			if (status == 404) {
-				throw BoardNotFoundException(board);
-			}
-			throw HTTPStatusException.fromResponse(response);
-		}
-		catch (e) {
-			if (e is DioError) {
-				final err = e.error;
-				if (err is InvalidJsonException) {
-					final str = err.extractedError?.toLowerCase();
-					if (str != null && str.contains('404') && str.contains('not found')) {
-						// Should cover most common error pages
-						throw BoardNotFoundException(board);
-					}
-				}
-			}
-			rethrow;
-		}
+		return (await _helper(
+			baseOptions: baseOptions,
+			lastModified: null,
+			func: (response) async {
+				final pageMap = await makeCatalogPageMap(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
+				return CatalogPageMap.fromResponse(response, pageMap);
+			},
+			on404: BoardNotFoundException(board),
+			priority: priority,
+			cancelToken: cancelToken
+		))!;
 	}
 	@protected
 	@override
@@ -264,31 +203,16 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				lastModified: null
 			);
 		}
-		final response = await client.fetch(baseOptions.copyWith(
-			validateStatus: (_) => true,
-			extra: {
-				...baseOptions.extra,
-				kPriority: priority
-			},
-			headers: {
-				...baseOptions.headers,
-				if (lastModified != null) HttpHeaders.ifModifiedSinceHeader: lastModified.toHttpHeader
-			},
-			cancelToken: cancelToken
-		));
-		final status = response.statusCode;
-		if (status == 304) {
-			return null;
-		}
-		if (status != null && status >= 200 && status < 400) {
-			return await unsafeAsync(response.data, () async {
+		return await _helper(
+			baseOptions: baseOptions,
+			lastModified: lastModified,
+			func: (response) async {
 				final pageMap = await makeCatalogPageMap(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
 				return CatalogPageMap.fromResponse(response, pageMap);
-			});
-		}
-		if (status == 404) {
-			throw BoardNotFoundException(board);
-		}
-		throw HTTPStatusException.fromResponse(response);
+			},
+			on404: BoardNotFoundException(board),
+			priority: priority,
+			cancelToken: cancelToken
+		);
 	}
 }
