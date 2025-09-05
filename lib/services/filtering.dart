@@ -828,7 +828,7 @@ FilterGroup<CustomFilter> makeFilter(String configuration) {
 	return FilterGroup(filters);
 }
 
-class FilterZone extends StatelessWidget {
+class FilterZone extends StatefulWidget {
 	final Filter filter;
 	final Widget child;
 
@@ -839,10 +839,51 @@ class FilterZone extends StatelessWidget {
 	}) : super(key: key);
 
 	@override
+	createState() => _FilterZoneState();
+}
+
+class _FilterZoneState extends State<FilterZone> {
+	Filter _filter = const DummyFilter();
+	Filter _lastFilterFromContext = const DummyFilter();
+	FilterCache _cachedFilter = FilterCache(const DummyFilter());
+	FilterCache _makeCachedFilter() => switch (widget.filter) {
+		FilterCache cachedAlready => cachedAlready,
+		Filter raw => FilterCache(raw)
+	};
+	
+	@override
+	void initState() {
+		super.initState();
+		_cachedFilter = _makeCachedFilter();
+		_filter = _cachedFilter; // This should be overwritten in didChangeDependencies
+	}
+
+	@override
+	void didChangeDependencies() {
+		super.didChangeDependencies();
+		final filterFromContext = Filter.of(context);
+		if (filterFromContext != _lastFilterFromContext) {
+			_lastFilterFromContext = filterFromContext;
+			// Maintain _cachedFilter
+			_filter = FilterCache(FilterGroup([_cachedFilter, _lastFilterFromContext]));
+		}
+	}
+
+	@override
+	void didUpdateWidget(FilterZone oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.filter != oldWidget.filter) {
+			_cachedFilter = _makeCachedFilter();
+			// Maintain _lastFilterFromContext
+			_filter = FilterCache(FilterGroup([_cachedFilter, _lastFilterFromContext]));
+		}
+	}
+
+	@override
 	Widget build(BuildContext context) {
 		return Provider<Filter>.value(
-			value: FilterCache(FilterGroup([FilterCache(filter), Filter.of(context)])),
-			child: child
+			value: _filter,
+			child: widget.child
 		);
 	}
 }
