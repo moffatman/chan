@@ -2421,7 +2421,7 @@ abstract class ImageboardSiteLoginSystem {
 	}
 }
 
-ImageboardSiteArchive makeArchive(Map archive) {
+ImageboardSiteArchive? makeArchive(Map archive) {
 	final overrideUserAgent = archive['overrideUserAgent'] as String?;
 	final boards = (archive['boards'] as List?)?.cast<Map>().map((b) => ImageboardBoard(
 		title: b['title'] as String,
@@ -2456,7 +2456,11 @@ ImageboardSiteArchive makeArchive(Map archive) {
 
 ImageboardSite makeSite(Map data) {
 	final overrideUserAgent = data['overrideUserAgent'] as String?;
-	final archives = (data['archives'] as List? ?? []).cast<Map>().map<ImageboardSiteArchive>(makeArchive).toList(growable: false);
+	final archives = [
+		...(data['archives'] as List? ?? []).cast<Map>().tryMap<ImageboardSiteArchive>(makeArchive),
+		// archives2 exists because old versions will crash with unsupported archives in 'archives' list
+		...(data['archives2'] as List? ?? []).cast<Map>().tryMap<ImageboardSiteArchive>(makeArchive)
+	].toList(growable: false);
 	final imageHeaders = (data['imageHeaders'] as Map?)?.cast<String, String>() ?? {};
 	final videoHeaders = (data['videoHeaders'] as Map?)?.cast<String, String>() ?? {};
 	final boards = (data['boards'] as List?)?.cast<Map>().map((b) => ImageboardBoard(
