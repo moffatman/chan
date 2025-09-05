@@ -85,6 +85,8 @@ class MediaScan {
 	static const kMetadataFieldRotation = '_rotation';
 	@HiveField(9, defaultValue: null)
 	final String? format;
+	@HiveField(10, defaultValue: null)
+	final String? pixFmt;
 
 	MediaScan({
 		required this.hasAudio,
@@ -96,7 +98,8 @@ class MediaScan {
 		required this.videoFramerate,
 		required this.sizeInBytes,
 		required this.metadata,
-		required this.format
+		required this.format,
+		required this.pixFmt
 	});
 
 	static final _ffprobeLock = Mutex();
@@ -211,6 +214,7 @@ class MediaScan {
 					height: height == 0 ? null : height,
 					codec: (streams.tryFirstWhere((s) => s['codec_type'] == 'video'))?['codec_name'] as String?,
 					videoFramerate: videoFramerate,
+					pixFmt: (streams.tryFirstWhere((s) => s['codec_type'] == 'video'))?['pix_fmt'] as String?,
 					sizeInBytes: (format['size'] as String?)?.tryParseInt,
 					metadata: metadata,
 					format: format['format_name'] as String?
@@ -702,9 +706,10 @@ class MediaConversion {
 					}
 				}
 				final results = await pool.withResource(() async {
-					final vfs = <String>[];
+					final contentFilters = <String>[];
+					final sizeFilters = <String>[];
 					if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams && (!_isVideoToolboxSupported || _hasVideoToolboxFailed)) {
-						vfs.add('crop=trunc(iw/2)*2:trunc(ih/2)*2');
+						sizeFilters.add('crop=trunc(iw/2)*2:trunc(ih/2)*2');
 					}
 					if (!copyStreams && newSize != null) {
 						final rotation = scan.metadata?[MediaScan.kMetadataFieldRotation] as double?;
@@ -717,14 +722,14 @@ class MediaConversion {
 							invertSize = false;
 						}
 						if (invertSize) {
-							vfs.add('scale=${newSize.$2}:${newSize.$1}');
+							sizeFilters.add('scale=${newSize.$2}:${newSize.$1}');
 						}
 						else {
-							vfs.add('scale=${newSize.$1}:${newSize.$2}');
+							sizeFilters.add('scale=${newSize.$1}:${newSize.$2}');
 						}
 					}
 					if (randomizeChecksum) {
-						vfs.add('noise=alls=1:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
+						contentFilters.add('noise=alls=1:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
 					}
 					Uri inputUri = inputFile;
 					Map<String, String> inputHeaders = headers;
@@ -791,8 +796,10 @@ class MediaConversion {
 								'-threads', sqrt(Platform.numberOfProcessors).ceil().toString()
 							]
 						],
-						if (outputFileExtension == 'jpg' || outputFileExtension == 'png') ...['-pix_fmt', 'rgba'],
-						if (outputFileExtension == 'png') ...['-pred', 'mixed'],
+						if (outputFileExtension == 'png') ...[
+							'-pix_fmt', 'rgba',
+							'-pred', 'mixed'
+						],
 						if (outputFileExtension == 'm3u8') ...[
 							'-f', 'hls',
 							'-hls_playlist_type', 'event',
@@ -825,7 +832,17 @@ class MediaConversion {
 						],
 						if (maximumDurationInSeconds != null) ...['-t', (maximumDurationInSeconds! * _durationArgumentFactor).toString()],
 						if (removeMetadata) ...['-map_metadata', '-1'],
-						if (vfs.isNotEmpty) ...['-vf', vfs.join(',')],
+						if (sizeFilters.isNotEmpty || contentFilters.isNotEmpty)
+							// For some reason Android png output with transparency is broken
+							if (Platform.isAndroid && outputFileExtension == 'png' && (scan.pixFmt?.contains('a') ?? false)) ...[
+								'-filter_complex',
+								'[0:v]${['alphaextract', ...sizeFilters].join(',')}[mask];\n'
+								'[0:v]${[...contentFilters, ...sizeFilters].join(',')}[image];\n'
+								'[image][mask]alphamerge'
+							]
+							else ...[
+								'-vf', [...contentFilters, ...sizeFilters].join(',')
+							],
 						convertedFile.path
 					];
 					print(args);
