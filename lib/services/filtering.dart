@@ -970,6 +970,9 @@ class OldStickiedThreadsFilter implements Filter {
 		if (!item.isThread) {
 			return null;
 		}
+		if (!item.isSticky) {
+			return null;
+		}
 		if (item.time.isAfter(threshold)) {
 			return null;
 		}
