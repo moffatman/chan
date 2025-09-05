@@ -186,7 +186,7 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 					final str = err.extractedError?.toLowerCase();
 					if (str != null && str.contains('404') && str.contains('not found')) {
 						// Should cover most common error pages
-						throw const ThreadNotFoundException();
+						throw BoardNotFoundException(board);
 					}
 				}
 			}
