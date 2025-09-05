@@ -376,8 +376,11 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		return await _getCatalogPage(board, 1, priority: priority, cancelToken: cancelToken);
+	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		return Catalog(
+			threads: await _getCatalogPage(board, 1, priority: priority, cancelToken: cancelToken),
+			lastModified: null // No 304 handling
+		);
 	}
 
 	@override
@@ -386,7 +389,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 	}
 
 	@override
-	Future<Map<int, int>> getCatalogPageMapImpl(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
+	Future<CatalogPageMap> getCatalogPageMapImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getUri(
 			Uri.https(baseUrl, '/$board/catalog.html'),
 			options: Options(
@@ -403,11 +406,14 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 		}
 		final document = parse(response.data);
 		const kThreadsPage = 10;
-		return {
-			for (final (i, e) in document.querySelectorAll('.thread').indexed)
-				if (e.id.split('-').last.tryParseInt case int id)
-					id: (i ~/ kThreadsPage) + 1
-		};
+		return CatalogPageMap(
+			pageMap: {
+				for (final (i, e) in document.querySelectorAll('.thread').indexed)
+					if (e.id.split('-').last.tryParseInt case int id)
+						id: (i ~/ kThreadsPage) + 1
+			},
+			lastModified: null // No 304 handling
+		);
 	}
 
 	static final _fileInfoPattern = RegExp(r'\((\d+(?:\.\d+)?)([KMB]), (\d+)x(\d+)(?: [^ ]+)?, (.+?)(?: \[i] \[g\])?\)');

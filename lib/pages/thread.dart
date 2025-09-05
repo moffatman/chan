@@ -1088,7 +1088,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final catalog = await imageboard.site.getCatalog(widget.thread.board, priority: _priority, acceptCachedAfter: DateTime.now().subtract(const Duration(seconds: 30)));
 		if (!mounted) return;
 		ThreadIdentifier candidate = widget.thread;
-		for (final thread in catalog) {
+		for (final thread in catalog.threads) {
 			if (thread.id > candidate.id) {
 				final threadPattern = newGeneralPattern.firstMatch('${thread.title} ${thread.posts_.tryFirst?.name} ${thread.posts_.tryFirst?.text}')?.group(0)?.toLowerCase();
 				if (threadPattern == pattern) {

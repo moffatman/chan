@@ -204,9 +204,12 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final doc0 = await _getCatalogPage(board, 'futaba', priority: priority, cancelToken: cancelToken);
-		return doc0.querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = 0).toList();
+		return Catalog(
+			threads: doc0.querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = 0).toList(),
+			lastModified: null // No 304 handling
+		);
 	}
 
 	@override

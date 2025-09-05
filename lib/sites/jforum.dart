@@ -319,8 +319,11 @@ class SiteJForum extends ImageboardSite with ForumSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) {
-		return _getCatalogPage(board, 1, priority: priority);
+	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		return Catalog(
+			threads: await _getCatalogPage(board, 1, priority: priority),
+			lastModified: null // No 304 handling
+		);
 	}
 
 	@override

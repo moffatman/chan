@@ -1120,7 +1120,7 @@ class SiteReddit extends ImageboardSite {
 		}[variant] ?? ('.json', <String, String>{});
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
 			await _updateBoardIfNeeded(board, priority: priority, cancelToken: cancelToken);
 		}
@@ -1134,11 +1134,15 @@ class SiteReddit extends ImageboardSite {
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
-		return await Future.wait(((response.data!['data'] as Map)['children'] as List).cast<Map>().map((d) async {
+		final threads = await Future.wait(((response.data!['data'] as Map)['children'] as List).cast<Map>().map((d) async {
 			final t = await _makeThread(d['data'] as Map, cancelToken: cancelToken);
 			t.currentPage = 1;
 			return t;
-	}));
+		}));
+		return Catalog(
+			threads: threads,
+			lastModified: null // No 304 handling
+		);
 	}
 
 	@override

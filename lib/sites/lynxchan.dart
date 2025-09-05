@@ -415,16 +415,18 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 
 	/// catalog.json may be missing important details, but always has threadId + page
 	@override
-	Future<Map<int, int>> getCatalogPageMapImpl(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
-			validateStatus: (status) => status == 200 || status == 404,
-			extra: {
-				kPriority: priority
-			}
-		), cancelToken: cancelToken);
-		if (response.statusCode == 404) {
-			throw BoardNotFoundException(board);
-		}
+	RequestOptions? getCatalogPageMapRequest(String board, {CatalogVariant? variant})
+		=> RequestOptions(
+			baseUrl: 'https://$baseUrl',
+			path: '/$board/catalog.json',
+			responseType: ResponseType.json
+		);
+	@override
+	Future<Map<int, int>> makeCatalogPageMap(String board, Response response, {
+		required CatalogVariant? variant,
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
 		return {
 			for (final obj in (response.data as List).cast<Map>())
 				obj['threadId'] as int: obj['page'] as int

@@ -765,7 +765,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		await Future.delayed(const Duration(milliseconds: 500));
 		for (int i = 0; newPostId == null && i < 20; i++) {
 			if (threadId == null) {
-				for (final thread in (await getCatalog(post.board, priority: RequestPriority.interactive)).reversed) {
+				for (final thread in (await getCatalog(post.board, priority: RequestPriority.interactive)).threads.reversed) {
 					if (thread.title == post.subject && (thread.posts[0].buildText().similarityTo(post.text) > 0.9) && (thread.time.compareTo(now) >= 0)) {
 						newPostId = thread.id;
 					}

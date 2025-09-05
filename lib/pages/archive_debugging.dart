@@ -43,7 +43,7 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) {
+  Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) {
     return archive.getCatalogImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
   }
 

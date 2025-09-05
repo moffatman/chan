@@ -439,7 +439,7 @@ class ThreadWatcher extends ChangeNotifier {
 		_unseenStickyThreads.clear();
 		for (final rawBoard in watchForStickyOnBoards) {
 			final board = ImageboardBoard.getKey(rawBoard);
-			_lastCatalogs[board] ??= await site.getCatalog(board.s, priority: RequestPriority.functional);
+			_lastCatalogs[board] ??= (await site.getCatalog(board.s, priority: RequestPriority.functional)).threads;
 			_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
 			// Update sticky threads for (you)s
 			final stickyThreadStates = _lastCatalogs[board]!.where((t) => t.isSticky).map((t) => persistence.getThreadStateIfExists(t.identifier)).where((s) => s != null).map((s) => s!).toList();
@@ -472,7 +472,7 @@ class ThreadWatcher extends ChangeNotifier {
 					continue;
 				}
 				final board = ImageboardBoard.getKey(rawBoard);
-				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board.s, priority: RequestPriority.functional);
+				final catalog = _lastCatalogs[board] ??= (await site.getCatalog(board.s, priority: RequestPriority.functional)).threads;
 				for (final thread in catalog) {
 					final result = Settings.instance.globalFilter.filter(imageboardKey, thread);
 					if (result?.type.autoSave ?? false) {

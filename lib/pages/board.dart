@@ -1369,12 +1369,12 @@ class BoardPageState extends State<BoardPage> {
 													) : null,
 													controller: _listController,
 													listUpdater: (options) async {
-														List<Thread> list = await site.getCatalog(
+														List<Thread> list = (await site.getCatalog(
 															board!.name,
 															variant: variant,
 															priority: RequestPriority.interactive,
 															cancelToken: options.cancelToken
-														);
+														)).threads;
 														for (final thread in list) {
 															await thread.preinit(catalog: true);
 															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
