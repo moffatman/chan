@@ -207,7 +207,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_backgroundColor = ValueNotifier<Color?>(null);
 		_focusNode = FocusNode();
 		allImageboards = (widget.allowDevsite ? ImageboardRegistry.instance.imageboardsIncludingDev : ImageboardRegistry.instance.imageboards).where((i) => widget.filterImageboards?.call(i) ?? true).toList();
-		print(allImageboards);
 		if (ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey) case Imageboard initialImageboard) {
 			currentImageboardIndex = allImageboards.indexOf(initialImageboard);
 		}
