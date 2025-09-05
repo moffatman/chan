@@ -51,8 +51,10 @@ class Thread extends HiveObject implements Filterable {
 	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	@HiveField(8)
 	final String? title;
+	@override
 	@HiveField(9)
 	bool isSticky;
+	@override
 	@HiveField(10)
 	final DateTime time;
 	@HiveField(11, isOptimized: true, merger: PrimitiveMerger())

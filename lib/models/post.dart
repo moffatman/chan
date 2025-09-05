@@ -115,6 +115,7 @@ class Post implements Filterable {
 	final String text;
 	@HiveField(2)
 	final String name;
+	@override
 	@HiveField(3)
 	final DateTime time;
 	@override
@@ -404,6 +405,9 @@ class Post implements Filterable {
 
 	/// For indicating unloaded page
 	bool get isPageStub => spanFormat == PostSpanFormat.pageStub;
+
+	@override
+	bool get isSticky => false;
 
 	@override
 	bool operator ==(Object other) =>

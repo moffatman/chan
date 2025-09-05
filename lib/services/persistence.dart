@@ -1778,6 +1778,10 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	Iterable<String> get md5s => thread?.md5s ?? [];
 	@override
 	bool get isDeleted => thread?.isDeleted ?? false;
+	@override
+	bool get isSticky => thread?.isSticky ?? false;
+	@override
+	DateTime get time => thread?.time ?? lastOpenedTime;
 
 	void _maybeUpdateWatch() {
 		final threadWatch = this.threadWatch;
@@ -1787,17 +1791,17 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}
 
 	Filter _makeThreadFilter() => FilterCache(ThreadFilter(
-		hideIds: hiddenPostIds,
-		showIds: overrideShowPostIds,
+		hideIds: hiddenPostIds.toList(growable: false),
+		showIds: overrideShowPostIds.toList(growable: false),
 		repliedToIds: const [],
-		posterIds: hiddenPosterIds
+		posterIds: hiddenPosterIds.toList(growable: false)
 	));
 	late Filter threadFilter = _makeThreadFilter();
 	MetaFilter _makeMetaFilter() => MetaFilter(
 		parent: Settings.instance.globalFilter,
 		imageboardKey: imageboardKey,
-		initialTreeToxicRepliedToIds: treeHiddenPostIds,
-		list: thread?.posts
+		initialTreeToxicRepliedToIds: treeHiddenPostIds.toList(growable: false),
+		list: thread?.posts.toList(growable: false)
 	);
 	late MetaFilter metaFilter = _makeMetaFilter();
 	void setPostHiding(int id, PostHidingState state) {
@@ -2235,8 +2239,8 @@ class PersistentBrowserState {
 	final Map<BoardKey, Filter> _catalogFilters = {};
 	Filter getCatalogFilter(BoardKey board) {
 		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(
-			hideIds: hiddenIds[board] ?? [],
-			showIds: overrideShowIds[board] ?? []
+			hideIds: hiddenIds[board]?.toList(growable: false) ?? [],
+			showIds: overrideShowIds[board]?.toList(growable: false) ?? []
 		)));
 	}
 	

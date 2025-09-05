@@ -218,6 +218,12 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	Iterable<String> get md5s => [];
 
 	@override
+	bool get isSticky => false;
+
+	@override
+	DateTime get time => DateTime.now();
+
+	@override
 	String? getFilterFieldText(String fieldName) {
 		switch (fieldName) {
 			case 'subject':

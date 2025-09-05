@@ -1279,7 +1279,14 @@ class BoardPageState extends State<BoardPage> {
 					key: _threadPullTabHandlerKey,
 					onPull: _onThreadSelected,
 					child: FilterZone(
-						filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.boardKey)),
+						filter: FilterGroup([
+							context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.boardKey)),
+							if (settings.hideOldStickiedThreads) OldStickiedThreadsFilter(
+								excludeBoards: {kDevBoard.name},
+								// Round to nearest day to avoid constant filter rebuild
+								threshold: DateTime.now().subtract(_oldThreadThreshold).startOfDay
+							)
+						]),
 						child: PopScope(
 							canPop: !(_replyBoxKey.currentState?.show ?? false),
 							onPopInvokedWithResult: (didPop, result) {
@@ -1369,7 +1376,7 @@ class BoardPageState extends State<BoardPage> {
 													) : null,
 													controller: _listController,
 													listUpdater: (options) async {
-														List<Thread> list = (await site.getCatalog(
+														final list = (await site.getCatalog(
 															board!.name,
 															variant: variant,
 															priority: RequestPriority.interactive,
@@ -1380,13 +1387,6 @@ class BoardPageState extends State<BoardPage> {
 															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 														}
 														_lastCatalogUpdateTime = DateTime.now();
-														if (settings.hideOldStickiedThreads && board?.name != kDevBoard.name) {
-															list = list.toList(); // Copy to mutate
-															final threshold = _lastCatalogUpdateTime!.subtract(_oldThreadThreshold);
-															list.removeWhere((thread) {
-																return thread.isSticky && thread.time.isBefore(threshold);
-															});
-														}
 														Future.delayed(const Duration(milliseconds: 100), () {
 															if (!mounted) return;
 															if (_loadCompleter?.isCompleted == false) {

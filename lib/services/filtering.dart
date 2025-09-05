@@ -101,6 +101,8 @@ abstract class Filterable {
 	Iterable<String> get md5s;
 	int get replyCount;
 	bool get isDeleted;
+	bool get isSticky;
+	DateTime get time;
 }
 
 class EmptyFilterable implements Filterable {
@@ -133,6 +135,12 @@ class EmptyFilterable implements Filterable {
 
 	@override
 	bool get isDeleted => false;
+
+	@override
+	bool get isSticky => false;
+
+	@override
+	DateTime get time => DateTime(2000);
 }
 
 abstract class Filter {
@@ -786,6 +794,9 @@ class DummyFilter implements Filter {
 
 	@override
 	int get hashCode => 0;
+
+	@override
+	String toString() => 'DummyFilter()';
 }
 
 class FilterException implements Exception {
@@ -902,4 +913,44 @@ class MetaFilter implements Filter {
 	
 	@override
 	int get hashCode => identityHashCode(this);
+}
+
+class OldStickiedThreadsFilter implements Filter {
+	final Set<String> excludeBoards;
+	final DateTime threshold;
+
+	OldStickiedThreadsFilter({
+		required this.excludeBoards,
+		required this.threshold
+	});
+
+	@override
+	FilterResult? filter(String imageboardKey, Filterable item) {
+		if (!item.isThread) {
+			return null;
+		}
+		if (item.time.isAfter(threshold)) {
+			return null;
+		}
+		if (excludeBoards.contains(item.board)) {
+			return null;
+		}
+		return FilterResult(const FilterResultType(hide: true), 'Old sticky');
+	}
+
+	@override
+	bool get supportsMetaFilter => false;
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other)
+		|| other is OldStickiedThreadsFilter
+		&& setEquals(other.excludeBoards, excludeBoards)
+		&& other.threshold == threshold;
+	
+	@override
+	int get hashCode => Object.hash(excludeBoards, threshold);
+
+	@override
+	String toString() => 'OldStickiedThreadsFilter(excludeBoards: $excludeBoards, threshold: $threshold)';
 }
