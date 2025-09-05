@@ -644,7 +644,12 @@ class Trie<T extends Object> {
 		for (int i = 0; i < codeUnits.length - 1; i++) {
       node = (node[codeUnits[i]] ??= _TrieNode()).children;
     }
-		node[codeUnits.last] = _TrieNode(value);
+		final oldNode = node[codeUnits.last];
+		final newNode = node[codeUnits.last] = _TrieNode(value);
+		if (oldNode != null) {
+			// Copy old children over
+			newNode.children.addAll(oldNode.children);
+		}
 	}
 	Iterable<(int, T)> _descend(List<int> codeUnits, Map<int, _TrieNode<T>> map, int depth) sync* {
 		if (codeUnits.isEmpty) {
@@ -674,6 +679,9 @@ class Trie<T extends Object> {
 		return node[codeUnits.last]?.value != null;
 	}
 	void clear() => _root.clear();
+
+	@override
+	String toString() => 'Trie<$T>(_root: $_root)';
 }
 
 void insertIntoSortedList<T>({
