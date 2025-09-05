@@ -2306,26 +2306,14 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				DateTime.now().subtract(const Duration(minutes: 2))
 			)
 		};
-		if (!hasPagedCatalog) {
-			// We get all the threads in one call
-			final catalog = await getCatalog(
-				thread.board,
-				acceptCachedAfter: acceptCachedAfter,
-				priority: priority,
-				cancelToken: cancelToken
-			);
-			thread.currentPage = catalog.threads.tryFirstWhere((t) => t.id == thread.id)?.currentPage ?? thread.currentPage;
-		}
-		else {
-			// Need to use specialized method (or fail with empty map)
-			final map = await getCatalogPageMap(
-				thread.board,
-				acceptCachedAfter: acceptCachedAfter,
-				priority: priority,
-				cancelToken: cancelToken
-			);
-			thread.currentPage = map.pageMap[thread.id] ?? thread.currentPage;
-		}
+		// getCatalogPageMap will not bloat the thread cache
+		final map = await getCatalogPageMap(
+			thread.board,
+			acceptCachedAfter: acceptCachedAfter,
+			priority: priority,
+			cancelToken: cancelToken
+		);
+		thread.currentPage = map.pageMap[thread.id] ?? thread.currentPage;
 	}
 	Future<ImageboardUserInfo> getUserInfo(String username) async => throw UnimplementedError();
 	@override
