@@ -1812,7 +1812,7 @@ class LocalWatcherControls extends StatelessWidget {
 								children: [
 									const Text('Local Watcher'),
 									const SizedBox(height: 8),
-									if (w.nextUpdate != null && w.lastUpdate != null) ClipRRect(
+									if (w.updatingNow || (w.nextUpdate != null && w.lastUpdate != null)) ClipRRect(
 										borderRadius: const BorderRadius.all(Radius.circular(8)),
 										child: TimedRebuilder(
 											interval: () => const Duration(seconds: 1),
