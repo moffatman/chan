@@ -1579,6 +1579,12 @@ Future<Attachment?> showGalleryPretagged({
 		}
 		return null;
 	}
+	// On Android, focus can remain after closing the keyboard
+	// When gallery pops later, it will pop up the keyboard if we don't unfocus here.
+	final keyboardOpen = MediaQueryData.fromView(View.of(context)).viewInsets.bottom > 100;
+	if (!keyboardOpen) {
+		FocusScope.of(context).focusedChild?.unfocus();
+	}
 	final navigator = fullscreen ? Navigator.of(context, rootNavigator: true) : context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context);
 	await handleMutingBeforeShowingGallery();
 	final lastSelected = await navigator.push(TransparentRoute<Attachment>(
