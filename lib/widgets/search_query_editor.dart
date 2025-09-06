@@ -254,49 +254,69 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 							)
 						]
 					),
+					const SizedBox(height: 16),
 				],
-				if (options.name || options.subject || options.trip || options.filename) Wrap(
-					alignment: WrapAlignment.center,
-					runAlignment: WrapAlignment.center,
-					children: [
-						for (final field in [
-							if (options.subject) (
-								name: 'Subject',
-								cb: (String s) => query.subject = s,
-								controller: _subjectFieldController
-							),
-							if (options.name) (
-								name: 'Name',
-								cb: (String s) => query.name = s,
-								controller: _nameFieldController
-							),
-							if (options.trip) (
-								name: 'Trip',
-								cb: (String s) => query.trip = s,
-								controller: _tripFieldController
-							),
-							if (options.filename) (
-								name: 'Filename',
-								cb: (String s) => query.filename = s,
-								controller: _filenameFieldController
+				if (options.oldestFirst) ...[
+					AdaptiveChoiceControl<bool>(
+						knownWidth: widget.knownWidth,
+						children: const {
+							false: (null, 'Newest first'),
+							true: (null, 'Oldest first')
+						},
+						groupValue: query.oldestFirst,
+						onValueChanged: (newValue) {
+							query.oldestFirst = newValue;
+							widget.onChanged();
+						}
+					),
+					const SizedBox(height: 16),
+				],
+				if (options.name || options.subject || options.trip || options.filename) ...[
+					Wrap(
+						alignment: WrapAlignment.center,
+						runAlignment: WrapAlignment.center,
+						runSpacing: 16,
+						children: [
+							for (final field in [
+								if (options.subject) (
+									name: 'Subject',
+									cb: (String s) => query.subject = s,
+									controller: _subjectFieldController
+								),
+								if (options.name) (
+									name: 'Name',
+									cb: (String s) => query.name = s,
+									controller: _nameFieldController
+								),
+								if (options.trip) (
+									name: 'Trip',
+									cb: (String s) => query.trip = s,
+									controller: _tripFieldController
+								),
+								if (options.filename) (
+									name: 'Filename',
+									cb: (String s) => query.filename = s,
+									controller: _filenameFieldController
+								)
+							]) Container(
+								width: 200,
+								padding: const EdgeInsets.symmetric(horizontal: 16),
+								child: Column(
+									crossAxisAlignment: CrossAxisAlignment.start,
+									children: [
+										Text(field.name),
+										const SizedBox(height: 4),
+										AdaptiveTextField(
+											controller: field.controller,
+											onChanged: field.cb
+										)
+									]
+								)
 							)
-						]) Container(
-							width: 200,
-							padding: const EdgeInsets.all(16),
-							child: Column(
-								crossAxisAlignment: CrossAxisAlignment.start,
-								children: [
-									Text(field.name),
-									const SizedBox(height: 4),
-									AdaptiveTextField(
-										controller: field.controller,
-										onChanged: field.cb
-									)
-								]
-							)
-						)
-					]
-				),
+						]
+					),
+					const SizedBox(height: 16)
+				],
 				if (options.imageMD5 && query.md5 != null) Container(
 					padding: const EdgeInsets.only(top: 16),
 					alignment: Alignment.center,

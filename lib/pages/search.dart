@@ -598,7 +598,8 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.subject?.isNotEmpty ?? false) _SearchQueryFilterTag('Subject', q.subject),
 		if (q.name?.isNotEmpty ?? false) _SearchQueryFilterTag('Name', q.name),
 		if (q.trip?.isNotEmpty ?? false) _SearchQueryFilterTag('Trip', q.trip),
-		if (q.filename?.isNotEmpty ?? false) _SearchQueryFilterTag('Filename', q.filename)
+		if (q.filename?.isNotEmpty ?? false) _SearchQueryFilterTag('Filename', q.filename),
+		if (q.oldestFirst) const _SearchQueryFilterTag('Oldest first')
 	];
 }
 

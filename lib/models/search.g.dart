@@ -149,6 +149,17 @@ class ImageboardArchiveSearchQueryFields {
     fieldName: 'filename',
     merger: PrimitiveMerger(),
   );
+  static bool getOldestFirst(ImageboardArchiveSearchQuery x) => x.oldestFirst;
+  static void setOldestFirst(ImageboardArchiveSearchQuery x, bool v) =>
+      x.oldestFirst = v;
+  static const oldestFirst =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, bool>(
+    getter: getOldestFirst,
+    setter: setOldestFirst,
+    fieldNumber: 13,
+    fieldName: 'oldestFirst',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ImageboardArchiveSearchQueryAdapter
@@ -176,7 +187,8 @@ class ImageboardArchiveSearchQueryAdapter
     9: ImageboardArchiveSearchQueryFields.name,
     10: ImageboardArchiveSearchQueryFields.trip,
     11: ImageboardArchiveSearchQueryFields.subject,
-    12: ImageboardArchiveSearchQueryFields.filename
+    12: ImageboardArchiveSearchQueryFields.filename,
+    13: ImageboardArchiveSearchQueryFields.oldestFirst
   };
 
   @override
@@ -201,13 +213,14 @@ class ImageboardArchiveSearchQueryAdapter
       trip: fields[10] as String?,
       subject: fields[11] as String?,
       filename: fields[12] as String?,
+      oldestFirst: fields[13] == null ? false : fields[13] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, ImageboardArchiveSearchQuery obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.query)
       ..writeByte(1)
@@ -233,7 +246,9 @@ class ImageboardArchiveSearchQueryAdapter
       ..writeByte(11)
       ..write(obj.subject)
       ..writeByte(12)
-      ..write(obj.filename);
+      ..write(obj.filename)
+      ..writeByte(13)
+      ..write(obj.oldestFirst);
   }
 
   @override

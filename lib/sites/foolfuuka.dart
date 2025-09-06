@@ -470,7 +470,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				if (query.subject != null) 'subject': query.subject,
 				if (query.name != null) 'username': query.name,
 				if (query.trip != null) 'tripcode': query.trip,
-				if (query.filename != null) 'filename': query.filename
+				if (query.filename != null) 'filename': query.filename,
+				if (query.oldestFirst) 'order': 'asc'
  			}),
 			options: Options(
 				validateStatus: (x) => true,

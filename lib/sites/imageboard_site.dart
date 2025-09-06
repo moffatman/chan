@@ -1325,6 +1325,7 @@ class ImageboardSearchOptions {
 	final bool isDeleted;
 	final bool withMedia;
 	final bool filename;
+	final bool oldestFirst;
 	final Set<PostTypeFilter> supportedPostTypeFilters;
 
 	const ImageboardSearchOptions({
@@ -1337,6 +1338,7 @@ class ImageboardSearchOptions {
 		this.isDeleted = false,
 		this.withMedia = false,
 		this.filename = false,
+		this.oldestFirst = false,
 		this.supportedPostTypeFilters = const {PostTypeFilter.none}
 	});
 
@@ -1352,11 +1354,12 @@ class ImageboardSearchOptions {
 		other.isDeleted == isDeleted &&
 		other.withMedia == withMedia &&
 		other.filename == filename &&
+		other.oldestFirst == oldestFirst &&
 		setEquals(other.supportedPostTypeFilters, supportedPostTypeFilters);
 	@override
-	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, filename, Object.hashAllUnordered(supportedPostTypeFilters));
+	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, filename, oldestFirst, Object.hashAllUnordered(supportedPostTypeFilters));
 
-	bool get hasOptions => name || imageMD5 || supportedPostTypeFilters.length > 1 || date || subject || trip || isDeleted || withMedia || filename;
+	bool get hasOptions => name || imageMD5 || supportedPostTypeFilters.length > 1 || date || subject || trip || isDeleted || withMedia || filename || oldestFirst;
 }
 
 class ImageboardSearchMetadata {
@@ -2170,7 +2173,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					withMedia: true,
 					subject: true,
 					trip: true,
-					filename: true
+					filename: true,
+					oldestFirst: true
 				)
 			);
 		}
