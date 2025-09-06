@@ -863,7 +863,6 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _scrollIfWarranted([Duration delayBeforeScroll = Duration.zero]) async {
-		print('_scrollIfWarranted $delayBeforeScroll');
 		final int? explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
 		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && context.read<ImageboardSite>().useTree && persistentState.firstVisiblePostId == null))) {
 			await _blockAndScrollToPostIfNeeded(delayBeforeScroll: delayBeforeScroll);
