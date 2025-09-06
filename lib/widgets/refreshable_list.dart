@@ -4209,7 +4209,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			// The scrollController's maxScrollExtent is not trustworthy
 			double maxScrollExtent;
 			if (_items.last.cachedHeight != null && _items.last.cachedOffset != null) {
-				final footerHeight = state?.widget.footer != null ? 40 : 0; // Lazy estimate
+				final footerHeight = state?.widget.footer != null ? 56 : 0; // Lazy estimate
 				maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset;
 			}
 			else {
