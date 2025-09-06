@@ -29,11 +29,11 @@ class FuukaException implements Exception {
 	String toString() => 'Fuuka Error: $error';
 }
 
-final _threadLinkMatcher = RegExp(r'\/([a-zA-Z]+)\/thread\/S?(\d+)(#p(\d+))?$');
-final _postLinkMatcher = RegExp(r'\/([a-zA-Z]+)\/post\/S?(\d+)$');
-final _crossBoardLinkMatcher = RegExp(r'^>>>\/([A-Za-z]+)\/(\d+)$');
+final _threadLinkMatcher = RegExp(r'\/([a-zA-Z0-9]+)\/thread\/S?(\d+)(#p(\d+))?$');
+final _postLinkMatcher = RegExp(r'\/([a-zA-Z0-9]+)\/post\/S?(\d+)$');
+final _crossBoardLinkMatcher = RegExp(r'^>>>\/([A-Za-z0-9]+)\/(\d+)$');
 final _quoteLinkMatcher = RegExp(r'^#p(\d+)$');
-final _attachmentUrlMatcher = RegExp(r'\/data\/([A-Za-z]+)\/img\/\d+\/\d+\/(\d+)(\..+)$');
+final _attachmentUrlMatcher = RegExp(r'\/data\/([A-Za-z0-9]+)\/img\/\d+\/\d+\/(\d+)(\..+)$');
 final _attachmentDetailsMatcher = RegExp(r'File: ([^ ]+) ([KMG]?B), (\d+)x(\d+), (.+)');
 final _threadIdMatcher = RegExp(r'^p(\d+)$');
 
