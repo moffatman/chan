@@ -1701,7 +1701,17 @@ abstract class ImageboardSiteArchive {
 				// Not in new catalog, it must have been archived
 				oldThread.isArchived = true;
 			}
-			(_catalogCache[board] ??= {})[variant?.dataId] = (cache: newCache, order: catalog.threads.map((t) => t.id).toList(), time: DateTime.now(), lastModified: catalog.lastModified);
+			final time = DateTime.now();
+			(_catalogCache[board] ??= {})[variant?.dataId] = (cache: newCache, order: catalog.threads.map((t) => t.id).toList(), time: time, lastModified: catalog.lastModified);
+			Timer(const Duration(minutes: 10), () {
+				if (_catalogCache[board]?[variant?.dataId]?.time == time) {
+					// Stale now, should be cleared
+					_catalogCache[board]?.remove(variant?.dataId);
+					if (_catalogCache[board]?.isEmpty ?? false) {
+						_catalogCache.remove(board);
+					}
+				}
+			});
 			return catalog;
 		});
 	}
@@ -1775,7 +1785,17 @@ abstract class ImageboardSiteArchive {
 				pageMap = freshPageMap ?? entry?.cache;
 			}
 			pageMap ??= await getCatalogPageMapImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
-			(_catalogPageMapCache[board] ??= {})[variant?.dataId] = (cache: pageMap, time: DateTime.now());
+			final time = DateTime.now();
+			(_catalogPageMapCache[board] ??= {})[variant?.dataId] = (cache: pageMap, time: time);
+			Timer(const Duration(minutes: 10), () {
+				if (_catalogPageMapCache[board]?[variant?.dataId]?.time == time) {
+					// Stale now, should be cleared
+					_catalogPageMapCache[board]?.remove(variant?.dataId);
+					if (_catalogPageMapCache[board]?.isEmpty ?? false) {
+						_catalogPageMapCache.remove(board);
+					}
+				}
+			});
 			return pageMap;
 		});
 	}
@@ -2248,6 +2268,18 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
 		_catalogCache.addAll(oldSite._catalogCache);
 		_catalogPageMapCache.addAll(oldSite._catalogPageMapCache);
+		// The timers from oldSite will only remove from oldSite's caches
+		final time = DateTime.now();
+		Timer(const Duration(minutes: 10), () {
+			_catalogCache.removeWhere((_, map) {
+				map.removeWhere((_, x) => x.time.isBefore(time));
+				return map.isEmpty;
+			});
+			_catalogPageMapCache.removeWhere((_, map) {
+				map.removeWhere((_, x) => x.time.isBefore(time));
+				return map.isEmpty;
+			});
+		});
 		final oldLoggedIn = oldSite.loginSystem?.loggedIn;
 		if (oldLoggedIn != null) {
 			loginSystem?.loggedIn = oldLoggedIn;
