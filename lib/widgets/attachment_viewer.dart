@@ -2328,6 +2328,7 @@ class AttachmentViewer extends StatelessWidget {
 								children: [
 									Expanded(
 										child: GestureDetector(
+											longPressDuration: const Duration(milliseconds: 300),
 											onLongPressStart: controller._onLongPressEdgeStart,
 											onLongPressMoveUpdate: (x) => controller._onLongPressEdgeMoveUpdate(_rotate90DegreesClockwise ? -x.offsetFromOrigin.dx : x.offsetFromOrigin.dy),
 											onLongPressEnd: controller._onLongPressEdgeEnd
@@ -2336,6 +2337,7 @@ class AttachmentViewer extends StatelessWidget {
 									Expanded(
 										flex: 3,
 										child: GestureDetector(
+											longPressDuration: const Duration(milliseconds: 300),
 											onLongPressStart: (x) {
 												lightHapticFeedback();
 												controller._playingBeforeLongPress = controller._videoPlayerController?.player.state.playing ?? false;
@@ -2353,6 +2355,7 @@ class AttachmentViewer extends StatelessWidget {
 									),
 									Expanded(
 										child: GestureDetector(
+											longPressDuration: const Duration(milliseconds: 300),
 											onLongPressStart: controller._onLongPressEdgeStart,
 											onLongPressMoveUpdate: (x) => controller._onLongPressEdgeMoveUpdate(_rotate90DegreesClockwise ? -x.offsetFromOrigin.dx : x.offsetFromOrigin.dy),
 											onLongPressEnd: controller._onLongPressEdgeEnd
