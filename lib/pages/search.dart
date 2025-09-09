@@ -585,8 +585,7 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) ...q.boards.map((boardName) {
 			final formattedBoardName = imageboard?.site.formatBoardName(boardName);
 			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/');
-		})
-		else const SizedBox(width: 8),
+		}),
 		if (q.query.isNotEmpty) Text(q.query),
 		if (q.mediaFilter == MediaFilter.onlyWithMedia) const _SearchQueryFilterTag('With images'),
 		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),
