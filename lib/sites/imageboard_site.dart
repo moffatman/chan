@@ -2001,7 +2001,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			final archive = archives.tryFirstWhere((a) => a.name == archiveName);
 			if (archive != null) {
 				try {
-					final thread_ = await archive.getThread(thread, priority: priority, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
+					final cancelToken2 = CancelToken();
+					cancelToken?.whenCancel.then(cancelToken2.cancel);
+					Future.delayed(const Duration(seconds: 15), cancelToken2.cancel);
+					final thread_ = await archive.getThread(thread, priority: priority, cancelToken: cancelToken2);
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
 					fallback = thread_;
@@ -2037,7 +2040,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					return null;
 				}
 				try {
-					final thread_ = await archive.getThread(thread, priority: RequestPriority.lowest, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
+					final cancelToken2 = CancelToken();
+					cancelToken?.whenCancel.then(cancelToken2.cancel);
+					Future.delayed(const Duration(seconds: 15), cancelToken2.cancel);
+					final thread_ = await archive.getThread(thread, priority: RequestPriority.lowest, cancelToken: cancelToken2);
 					if (completer.isCompleted) return null;
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
@@ -2076,7 +2082,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
 				if (_isReAttemptable(priority, error.value)) {
 					try {
-						final thread_ = await error.key.getThread(thread, priority: priority, cancelToken: cancelToken).timeout(const Duration(seconds: 15));
+						final cancelToken2 = CancelToken();
+						cancelToken?.whenCancel.then(cancelToken2.cancel);
+						Future.delayed(const Duration(seconds: 15), cancelToken2.cancel);
+						final thread_ = await error.key.getThread(thread, priority: priority, cancelToken: cancelToken2);
 						thread_.archiveName = error.key.name;
 						fallback = thread_;
 						try {
