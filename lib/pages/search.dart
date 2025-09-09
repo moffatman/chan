@@ -578,13 +578,16 @@ class _SearchComposePageState extends State<SearchComposePage> {
 List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 	final imageboard = ImageboardRegistry.instance.getImageboard(q.imageboardKey);
 	return [
-		if (q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
+		if (q.imageboardKey != null) Padding(
+			padding: const EdgeInsets.only(left: 4),
+			child: ImageboardIcon(imageboardKey: q.imageboardKey)
+		),
 		if (q.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) ...q.boards.map((boardName) {
 			final formattedBoardName = imageboard?.site.formatBoardName(boardName);
 			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/');
 		})
 		else const SizedBox(width: 8),
-		Text(q.query),
+		if (q.query.isNotEmpty) Text(q.query),
 		if (q.mediaFilter == MediaFilter.onlyWithMedia) const _SearchQueryFilterTag('With images'),
 		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),
 		if (q.postTypeFilter == PostTypeFilter.onlyOPs) const _SearchQueryFilterTag('Threads'),
@@ -600,7 +603,7 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.trip?.isNotEmpty ?? false) _SearchQueryFilterTag('Trip', q.trip),
 		if (q.filename?.isNotEmpty ?? false) _SearchQueryFilterTag('Filename', q.filename),
 		if (q.oldestFirst) const _SearchQueryFilterTag('Oldest first')
-	];
+	].expand((w) => [const SizedBox(width: 4), w]).skip(1).toList();
 }
 
 class _SearchQueryFilterTag extends StatelessWidget {
@@ -609,22 +612,19 @@ class _SearchQueryFilterTag extends StatelessWidget {
 	const _SearchQueryFilterTag(this.field, [this.value]);
 	@override
 	Widget build(BuildContext context) {
-		return Padding(
-			padding: const EdgeInsets.symmetric(horizontal: 4),
-			child: SegmentedWidget(
-				radius: const Radius.circular(4),
-				padding: const EdgeInsets.all(4),
-				segments: [
-					SegmentedWidgetSegment(
-						color: ChanceTheme.primaryColorOf(context).withOpacity(value != null ? 0.15 : 0.3),
-						child: Text(field)
-					),
-					if (value case final value?) SegmentedWidgetSegment(
-						color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
-						child: Text(value)
-					)
-				]
-			)
+		return SegmentedWidget(
+			radius: const Radius.circular(4),
+			padding: const EdgeInsets.all(4),
+			segments: [
+				SegmentedWidgetSegment(
+					color: ChanceTheme.primaryColorOf(context).withOpacity(value != null ? 0.15 : 0.3),
+					child: Text(field)
+				),
+				if (value case final value?) SegmentedWidgetSegment(
+					color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
+					child: Text(value)
+				)
+			]
 		);
 	}
 }

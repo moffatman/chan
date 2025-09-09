@@ -324,15 +324,32 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final theme = context.watch<SavedTheme>();
 		return AdaptiveScaffold(
 			bar: AdaptiveBar(
 				title: FittedBox(
 					fit: BoxFit.contain,
 					child: Row(
-						mainAxisSize: MainAxisSize.min,
 						children: [
-							Text('${describeCount(result.data?.count, 'Result')} | ', style: CommonTextStyles.bold),
-							...describeQuery(widget.query)
+							Container(
+								decoration: BoxDecoration(
+									color: theme.primaryColorWithBrightness(0.2),
+									borderRadius: const BorderRadius.all(Radius.circular(4))
+								),
+								padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+								child: Text(describeCount(result.data?.count, 'Result'), style: CommonTextStyles.bold)
+							),
+							const SizedBox(width: 8),
+							Container(
+								decoration: BoxDecoration(
+									color: theme.primaryColorWithBrightness(0.2),
+									borderRadius: const BorderRadius.all(Radius.circular(4))
+								),
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: describeQuery(widget.query)
+								)
+							)
 						]
 					)
 				),
