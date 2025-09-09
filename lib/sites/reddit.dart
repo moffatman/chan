@@ -1438,7 +1438,7 @@ class SiteReddit extends ImageboardSite {
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final Response<Map> response;
-		if (query.name != null) {
+		if (query.name != null && query.query.isEmpty && query.boards.isEmpty) {
 			response = await client.getUri<Map>(Uri.https(baseUrl, '/user/${query.name}.json', {
 				if (lastResult != null)
 					if (page > lastResult.page)
@@ -1453,9 +1453,11 @@ class SiteReddit extends ImageboardSite {
 			), cancelToken: cancelToken);
 		}
 		else {
-			response = await client.getUri<Map>(Uri.https(baseUrl, query.boards.isEmpty ? '/search.json' : '/r/${query.boards.first}/search.json', {
+			response = await client.getUri<Map>(Uri.https(baseUrl, '/search.json', {
 				'q': [
-					query.query
+					query.query,
+					if (query.name != null) 'author:${query.name}',
+					...query.boards.map((b) => 'subreddit:$b')
 				].join(' '),
 				'restrict_sr': 'true',
 				if (lastResult != null)
