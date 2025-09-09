@@ -578,10 +578,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 	final imageboard = ImageboardRegistry.instance.getImageboard(q.imageboardKey);
 	return [
-		if (q.imageboardKey != null) Padding(
-			padding: const EdgeInsets.only(left: 4),
-			child: ImageboardIcon(imageboardKey: q.imageboardKey)
-		),
+		if (q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
 		if (q.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) ...q.boards.map((boardName) {
 			final formattedBoardName = imageboard?.site.formatBoardName(boardName);
 			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/');
@@ -602,7 +599,7 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.trip?.isNotEmpty ?? false) _SearchQueryFilterTag('Trip', q.trip),
 		if (q.filename?.isNotEmpty ?? false) _SearchQueryFilterTag('Filename', q.filename),
 		if (q.oldestFirst) const _SearchQueryFilterTag('Oldest first')
-	].expand((w) => [const SizedBox(width: 4), w]).skip(1).toList();
+	].expand((w) => [const SizedBox(width: 4), w]).toList();
 }
 
 class _SearchQueryFilterTag extends StatelessWidget {
