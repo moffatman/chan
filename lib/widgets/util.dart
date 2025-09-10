@@ -249,7 +249,7 @@ class ModalLoadController {
 	}
 }
 
-Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(ModalLoadController controller) work, {Duration wait = Duration.zero, bool cancellable = false}) async {
+Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(ModalLoadController controller) work, {Duration wait = Duration.zero, bool cancellable = false, bool hideable = false}) async {
 	final rootNavigator = Navigator.of(context, rootNavigator: true);
 	final controller = ModalLoadController();
 	bool popped = false;
@@ -277,8 +277,20 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 									]
 								)
 							),
+							if (hideable || cancellable) const SizedBox(height: 8),
+							if (hideable) CupertinoButton(
+								padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 8),
+								minSize: 0,
+								onPressed: () {
+									if (!popped && context.mounted) {
+										popped = true;
+										Navigator.pop(context);
+									}
+								},
+								child: const Text('Hide')
+							),
 							if (cancellable) CupertinoButton(
-								padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+								padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 8),
 								minSize: 0,
 								onPressed: controller.cancelToken.isCancelled ? null : () {
 									controller.cancelToken.cancel();
