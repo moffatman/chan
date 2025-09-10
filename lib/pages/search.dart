@@ -578,12 +578,30 @@ class _SearchComposePageState extends State<SearchComposePage> {
 List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 	final imageboard = ImageboardRegistry.instance.getImageboard(q.imageboardKey);
 	return [
-		if (q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
-		if (q.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) ...q.boards.map((boardName) {
+		if (q.imageboardKey case final imageboardKey? when imageboard?.site.supportsMultipleBoards ?? true)
+			_RawSearchQueryFilterTag(
+				Row(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						const SizedBox(width: 2),
+						ImageboardIcon(imageboardKey: imageboardKey),
+						const SizedBox(width: 4),
+						Text(
+							q.boards.isNotEmpty
+									? q.boards.map((b) => imageboard?.site.formatBoardName(b) ?? '/$b/').join(', ')
+									: imageboard?.site.name ?? imageboardKey
+						),
+						const SizedBox(width: 2)
+					]
+				),
+				null,
+				true
+			)
+		else if (imageboard?.site.supportsMultipleBoards ?? true) ...q.boards.map((boardName) {
 			final formattedBoardName = imageboard?.site.formatBoardName(boardName);
-			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/');
+			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/', null, true);
 		}),
-		if (q.query.isNotEmpty) Text(q.query),
+		if (q.query.isNotEmpty) _SearchQueryFilterTag('Text', q.query),
 		if (q.mediaFilter == MediaFilter.onlyWithMedia) const _SearchQueryFilterTag('With images'),
 		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),
 		if (q.postTypeFilter == PostTypeFilter.onlyOPs) const _SearchQueryFilterTag('Threads'),
@@ -592,20 +610,27 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.startDate != null) _SearchQueryFilterTag('After', q.startDate!.toISO8601Date),
 		if (q.endDate != null) _SearchQueryFilterTag('Before', q.endDate!.toISO8601Date),
 		if (q.md5 != null) _SearchQueryFilterTag('MD5', q.md5),
-		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash)),
-		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash_slash)),
+		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) const _RawSearchQueryFilterTag(Padding(
+			padding: EdgeInsets.all(2),
+			child: Icon(CupertinoIcons.trash, size: 16)
+		)),
+		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) const _RawSearchQueryFilterTag(Padding(
+			padding: EdgeInsets.all(2),
+			child: Icon(CupertinoIcons.trash_slash, size: 16)
+		)),
 		if (q.subject?.isNotEmpty ?? false) _SearchQueryFilterTag('Subject', q.subject),
 		if (q.name?.isNotEmpty ?? false) _SearchQueryFilterTag('Name', q.name),
 		if (q.trip?.isNotEmpty ?? false) _SearchQueryFilterTag('Trip', q.trip),
 		if (q.filename?.isNotEmpty ?? false) _SearchQueryFilterTag('Filename', q.filename),
 		if (q.oldestFirst) const _SearchQueryFilterTag('Oldest first')
-	].expand((w) => [const SizedBox(width: 4), w]).toList();
+	].expand((w) => [const SizedBox(width: 4), w]).skip(1).toList();
 }
 
-class _SearchQueryFilterTag extends StatelessWidget {
-	final String field;
-	final String? value;
-	const _SearchQueryFilterTag(this.field, [this.value]);
+class _RawSearchQueryFilterTag extends StatelessWidget {
+	final Widget field;
+	final Widget? value;
+	final bool invert;
+	const _RawSearchQueryFilterTag(this.field, [this.value, this.invert = false]);
 	@override
 	Widget build(BuildContext context) {
 		return SegmentedWidget(
@@ -613,14 +638,28 @@ class _SearchQueryFilterTag extends StatelessWidget {
 			padding: const EdgeInsets.all(4),
 			segments: [
 				SegmentedWidgetSegment(
-					color: ChanceTheme.primaryColorOf(context).withOpacity(value != null ? 0.15 : 0.3),
-					child: Text(field)
+					color: ChanceTheme.primaryColorOf(context).withOpacity(invert ? 0.3 : 0.15),
+					child: field
 				),
 				if (value case final value?) SegmentedWidgetSegment(
-					color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
-					child: Text(value)
+					color: ChanceTheme.primaryColorOf(context).withOpacity(invert ? 0.15 : 0.3),
+					child: value
 				)
 			]
 		);
+	}
+}
+
+class _SearchQueryFilterTag extends StatelessWidget {
+	final String field;
+	final String? value;
+	final bool invert;
+	const _SearchQueryFilterTag(this.field, [this.value, this.invert = false]);
+	@override
+	Widget build(BuildContext context) {
+		return _RawSearchQueryFilterTag(Text(field), switch (value) {
+			String v => Text(v),
+			null => null
+		}, invert);
 	}
 }

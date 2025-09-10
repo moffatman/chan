@@ -327,31 +327,29 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		final theme = context.watch<SavedTheme>();
 		return AdaptiveScaffold(
 			bar: AdaptiveBar(
-				title: FittedBox(
-					fit: BoxFit.contain,
-					child: Row(
-						children: [
-							Container(
-								decoration: BoxDecoration(
-									color: theme.primaryColorWithBrightness(0.2),
-									borderRadius: const BorderRadius.all(Radius.circular(4))
-								),
-								padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-								child: Text(describeCount(result.data?.count, 'Result'), style: CommonTextStyles.bold)
+				title: Row(
+					mainAxisAlignment: MainAxisAlignment.center,
+					children: [
+						Container(
+							decoration: BoxDecoration(
+								color: theme.primaryColor,
+								borderRadius: const BorderRadius.all(Radius.circular(4))
 							),
-							const SizedBox(width: 8),
-							Container(
-								decoration: BoxDecoration(
-									color: theme.primaryColorWithBrightness(0.2),
-									borderRadius: const BorderRadius.all(Radius.circular(4))
-								),
+							padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+							child: Text(describeCount(result.data?.count, 'Result'), style: CommonTextStyles.bold.copyWith(
+								color: theme.backgroundColor
+							))
+						),
+						Flexible(
+							child: SingleChildScrollView(
+								scrollDirection: Axis.horizontal,
+								padding: const EdgeInsets.only(left: 8),
 								child: Row(
-									mainAxisSize: MainAxisSize.min,
 									children: describeQuery(widget.query)
 								)
 							)
-						]
-					)
+						)
+					]
 				),
 				actions: [
 					AdaptiveIconButton(
