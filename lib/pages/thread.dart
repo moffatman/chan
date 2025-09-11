@@ -504,7 +504,7 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	void _checkForeground() {
-		_foreground = switch (context.read<MasterDetailHint?>()) {
+		_foreground = switch (context.ifMounted?.read<MasterDetailHint?>()) {
 			null =>
 				// Dev board in settings
 				context.read<ChanTabs?>()?.mainTabIndex == 4,
