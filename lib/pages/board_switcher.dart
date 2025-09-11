@@ -260,7 +260,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	void _onScroll() {
-		if (_focusNode.hasFocus && isPhoneSoftwareKeyboard()) {
+		if (_focusNode.hasFocus && isPhoneSoftwareKeyboard() && ((scrollController.tryPosition?.extentAfter ?? 0) > 100)) {
 			_focusNode.unfocus();
 		}
 		_backgroundColor.value = context.read<SavedTheme>().backgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
