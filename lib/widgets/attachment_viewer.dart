@@ -1849,6 +1849,7 @@ class AttachmentViewer extends StatelessWidget {
 					key: controller.gestureKey,
 					width: attachment.width ?? 100,
 					height: attachment.height ?? 100,
+					fit: fit,
 					initGestureConfigHandler: () => _createGestureConfig(),
 					child: SizedBox.fromSize(
 						size: size,
