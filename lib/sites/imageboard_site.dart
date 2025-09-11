@@ -1664,6 +1664,13 @@ class CatalogPageMap {
 	String toString() => 'CatalogPageMap(pageMap: $pageMap, lastModified: $lastModified)';
 }
 
+bool isExceptionReAttemptable(RequestPriority priority, dynamic e) => switch (e) {
+	CloudflareHandlerNotAllowedException() => priority.index > RequestPriority.cosmetic.index,
+	Http429Exception() => priority.index > RequestPriority.lowest.index,
+	DioError dioError => isExceptionReAttemptable(priority, dioError.error),
+	_ => false
+};
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio(BaseOptions(
 		/// Avoid hanging for 2 minutes+ with default value
@@ -1937,12 +1944,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');
 	}
 
-	static bool _isReAttemptable(RequestPriority priority, dynamic e) => switch (e) {
-		CloudflareHandlerNotAllowedException() => priority.index > RequestPriority.cosmetic.index,
-		Http429Exception() => priority.index > RequestPriority.lowest.index,
-		DioError dioError => _isReAttemptable(priority, dioError.error),
-		_ => false
-	};
 	@override
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		final Map<ImageboardSiteArchive, Object> errors = {};
@@ -1964,7 +1965,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		// Maybe try again with higher priority
 		for (final error in errors.entries.toList(growable: false)) { // concurrent modification
 			// No need to check disabledArchiveNames, they can't fail to begin with
-			if (_isReAttemptable(priority, error.value)) {
+			if (isExceptionReAttemptable(priority, error.value)) {
 				try {
 					final post = await error.key.getPostFromArchive(board, id, priority: priority, cancelToken: cancelToken);
 					post.archiveName = error.key.name;
@@ -2120,7 +2121,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			}
 			// Maybe try again with higher priority
 			for (final error in errors.entries.toList(growable: false)) { // concurrent modification
-				if (_isReAttemptable(priority, error.value)) {
+				if (isExceptionReAttemptable(priority, error.value)) {
 					try {
 						final cancelToken2 = CancelToken();
 						cancelToken?.whenCancel.then(cancelToken2.cancel);
@@ -2187,7 +2188,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		// Maybe try again with higher priority
 		for (final error in errors.entries.toList(growable: false)) { // concurrent modification
 			// No need to check disabledArchiveNames, they can't fail to begin with
-			if (_isReAttemptable(priority, error.value)) {
+			if (isExceptionReAttemptable(priority, error.value)) {
 				try {
 					return await error.key.search(query, page: page, lastResult: lastResult, priority: priority, cancelToken: cancelToken);
 				}

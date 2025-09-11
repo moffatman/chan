@@ -623,7 +623,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (_isDisposed) {
 			return;
 		}
-		if (error != null && !force) {
+		final priority = background ? RequestPriority.functional : RequestPriority.interactive;
+		if (error != null && !(force || isExceptionReAttemptable(priority, error?.$1))) {
 			// Don't keep retrying
 			return;
 		}
@@ -713,7 +714,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			final startTime = DateTime.now();
 			if (soundSource == null && attachment.type == AttachmentType.image) {
-				final url = _goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive, force: force);
+				final url = _goodImageSource = await _getGoodSource(priority: priority, force: force);
 				if (force) {
 					await clearDiskCachedImage(url.toString());
 				}
@@ -744,7 +745,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 			}
 			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
-				final url = _goodImageSource = await _getGoodSource(priority: background ? RequestPriority.functional : RequestPriority.interactive, force: force);
+				final url = _goodImageSource = await _getGoodSource(priority: priority, force: force);
 				if (force) {
 					await VideoServer.instance.interruptOngoingDownloadFromUri(url);
 					await VideoServer.instance.cleanupCachedDownloadTreeFromUri(url);
@@ -776,7 +777,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						final progressNotifier = ValueNotifier<double?>(null);
 						final hash = await VideoServer.instance.startCachingDownload(
 							client: imageboard.site.client,
-							priority: background ? RequestPriority.functional : RequestPriority.interactive,
+							priority: priority,
 							uri: url,
 							headers: await getHeadersWithCookies(url),
 							onCached: _onCacheCompleted,
