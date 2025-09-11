@@ -1116,7 +1116,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final RefreshableListController<T>? controller;
 	final String? filterHint;
 	final Duration? autoUpdateDuration;
-	final Map<Type, (String, Future<void> Function())> remedies;
+	final Map<Type, (String, FutureOr<void> Function())> remedies;
 	final bool disableUpdates;
 	final bool disableBottomUpdates;
 	final Widget? header;
@@ -3560,7 +3560,7 @@ class RefreshableListFooter extends StatelessWidget {
 	final bool updatingNow;
 	final DateTime? lastUpdateTime;
 	final DateTime? nextUpdateTime;
-	final (String, Future<void> Function())? remedy;
+	final (String, FutureOr<void> Function())? remedy;
 	final ValueListenable<double>? overscrollFactor;
 	final ValueListenable<bool>? isScrollable;
 	final bool Function() pointerDownNow;

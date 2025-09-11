@@ -124,11 +124,12 @@ Future<void> alert(BuildContext context, String title, String message, {
 
 Future<void> alertError(BuildContext context, Object error, StackTrace? stackTrace, {
 	Map<String, FutureOr<void> Function()> actions = const {},
-	bool barrierDismissible = false
+	bool barrierDismissible = false,
+	FutureOr<void> Function()? afterFix
 }) {
 	return alert(context, 'Error', error.toStringDio(), actions: {
 		...actions,
-		...generateBugRemedies(error, stackTrace, context)
+		...generateBugRemedies(error, stackTrace, context, afterFix: afterFix)
 	}, barrierDismissible: barrierDismissible);
 }
 
@@ -359,7 +360,7 @@ String formatTime(DateTime time, {bool forceFullDate = false, bool withSecondsPr
 	}
 }
 
-String formatTimeDiff(Duration diff) {
+String formatTimeDiff(Duration diff, {bool milliseconds = false}) {
 	assert(diff >= Duration.zero);
 	if (diff.inDays > 365) {
 		return '${diff.inDays ~/ 365}y';
@@ -375,6 +376,9 @@ String formatTimeDiff(Duration diff) {
 	}
 	else if (diff.inMinutes > 0) {
 		return '${diff.inMinutes}m';
+	}
+	if (milliseconds && diff.inSeconds == 0) {
+		return '${diff.inMilliseconds}ms';
 	}
 	final seconds = (diff.inMilliseconds / 1000).round();
 	// Rounded up

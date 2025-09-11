@@ -12,6 +12,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/services/basedflare.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
+import 'package:chan/services/extendable_timeout_exception.dart';
 import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/http_client.dart';
 import 'package:chan/services/imageboard.dart';
@@ -252,9 +253,47 @@ class DeletionFailedException implements Exception {
 	String toString() => 'Deleting failed: $reason';
 }
 
-class ImageboardArchiveException implements Exception {
+class ImageboardArchiveException extends ExtendedException {
 	Map<ImageboardSiteArchive, Object> archiveErrors;
-	ImageboardArchiveException(this.archiveErrors);
+	@override
+	final Map<String, FutureOr<void> Function(BuildContext)> remedies;
+	@override
+	final bool isReportable;
+
+	static Map<String, FutureOr<void> Function(BuildContext)> _makeRemedies(Map<ImageboardSiteArchive, Object> archiveErrors) {
+		final remedies = <String, FutureOr<void> Function(BuildContext)>{};
+		final ees = <ExtendedException, List<ImageboardSiteArchive>>{};
+		for (final entry in archiveErrors.entries) {
+			if (ExtendedException.extract(entry.value) case final ee?) {
+				ees.update(ee, (l) => l..add(entry.key), ifAbsent: () => [entry.key]);
+			}
+		}
+		for (final entry in ees.entries) {
+			if (entry.value.trySingle case final archive?) {
+				// Only 1 site had this problem
+				for (final remedy in entry.key.remedies.entries) {
+					remedies['${remedy.key} (${archive.name})'] = remedy.value;
+				}
+			}
+			else {
+				// Multiple sites had this problem
+				remedies.addAll(entry.key.remedies);
+			}
+		}
+		return remedies;
+	}
+
+	ImageboardArchiveException(this.archiveErrors)
+		: isReportable = !archiveErrors.values.every((e) => ExtendedException.extract(e)?.isReportable == false),
+			remedies = _makeRemedies(archiveErrors),
+			super(
+				additionalFiles: {
+					for (final entry in archiveErrors.entries)
+						if (ExtendedException.extract(entry.value) case final ee?)
+							for (final file in ee.additionalFiles.entries)
+								'${entry.key.name.replaceAll(' ', '_')}.${file.key}': file.value
+				}
+			);
 	@override
 	String toString() => archiveErrors.entries.map((e) => '${e.key.name}: ${e.value.toStringDio()}').join('\n');
 }
@@ -1997,13 +2036,14 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			}
 		};
 		final completer = Completer<Thread>();
+		final timeout = ExtendableTimeoutException.forKey(thread, const Duration(seconds: 15));
 		if (archiveName != null) {
 			final archive = archives.tryFirstWhere((a) => a.name == archiveName);
 			if (archive != null) {
 				try {
 					final cancelToken2 = CancelToken();
 					cancelToken?.whenCancel.then(cancelToken2.cancel);
-					Future.delayed(const Duration(seconds: 15), cancelToken2.cancel);
+					Future.delayed(timeout.duration, () => cancelToken2.cancel(timeout));
 					final thread_ = await archive.getThread(thread, priority: priority, cancelToken: cancelToken2);
 					thread_.archiveName = archive.name;
 					thread_.isArchived = await isReallyArchived;
@@ -2042,7 +2082,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				try {
 					final cancelToken2 = CancelToken();
 					cancelToken?.whenCancel.then(cancelToken2.cancel);
-					Future.delayed(const Duration(seconds: 15), cancelToken2.cancel);
+					Future.delayed(timeout.duration, () => cancelToken2.cancel(timeout));
 					final thread_ = await archive.getThread(thread, priority: RequestPriority.lowest, cancelToken: cancelToken2);
 					if (completer.isCompleted) return null;
 					thread_.archiveName = archive.name;
@@ -2084,7 +2124,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					try {
 						final cancelToken2 = CancelToken();
 						cancelToken?.whenCancel.then(cancelToken2.cancel);
-						Future.delayed(const Duration(seconds: 15), cancelToken2.cancel);
+						Future.delayed(timeout.duration, () => cancelToken2.cancel(timeout));
 						final thread_ = await error.key.getThread(thread, priority: priority, cancelToken: cancelToken2);
 						thread_.archiveName = error.key.name;
 						fallback = thread_;

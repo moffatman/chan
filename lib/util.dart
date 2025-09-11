@@ -362,7 +362,7 @@ extension ToStringDio on Object {
 					Object obj => '$obj\nURL: ${err.requestOptions.uri}'
 				}
 			},
-			DioErrorType.cancel => 'Request cancelled: ${err.requestOptions.uri}',
+			DioErrorType.cancel => 'Request cancelled: ${err.requestOptions.uri}, reason: ${err.error}',
 			DioErrorType.other => '${err.error}\nURL: ${err.requestOptions.uri}'
 		},
 		_ => toString()

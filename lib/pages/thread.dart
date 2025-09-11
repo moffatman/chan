@@ -3270,7 +3270,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												if (error == null) {
 													return const SizedBox.shrink();
 												}
-												final remedy = widget.listController.state?.widget.remedies[error.$1.runtimeType];
+												final remedy = widget.listController.state?.widget.remedies[error.$1.runtimeType] ?? switch (ExtendedException.extract(error.$1)?.remedies.entries.first) {
+													final remedy? => (remedy.key, () => remedy.value(context)),
+													null => null
+												};
 												return Padding(
 													padding: const EdgeInsets.only(right: 8),
 													child: SegmentedWidget(
@@ -3278,7 +3281,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														segments: [
 															SegmentedWidgetSegment(
 																color: theme.primaryColorWithBrightness(0.6),
-																onPressed: () => alertError(context, error.$1, error.$2, barrierDismissible: true),
+																onPressed: () => alertError(context, error.$1, error.$2, barrierDismissible: true, afterFix: widget.listController.update),
 																child: Row(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
