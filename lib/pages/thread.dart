@@ -1908,22 +1908,22 @@ class ThreadPageState extends State<ThreadPage> {
 																			child: Row(
 																				children: [
 																					const Spacer(),
-																					const Icon(CupertinoIcons.reply),
+																					const Icon(CupertinoIcons.reply, applyTextScaling: true),
 																					const SizedBox(width: 8),
 																					_limitCounter(persistentState.thread!.replyCount, context.read<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
 																					const Spacer(),
-																					Icon(Adaptive.icons.photo),
+																					Icon(Adaptive.icons.photo, applyTextScaling: true),
 																					const SizedBox(width: 8),
 																					_limitCounter(persistentState.thread!.imageCount, context.read<Persistence>().getBoard(widget.thread.board).threadImageLimit),
 																					const Spacer(),
 																					if (persistentState.thread!.uniqueIPCount != null) ...[
-																						const Icon(CupertinoIcons.person),
+																						const Icon(CupertinoIcons.person, applyTextScaling: true),
 																						const SizedBox(width: 8),
 																						Text('${persistentState.thread!.uniqueIPCount}'),
 																						const Spacer(),
 																					],
 																					if (persistentState.thread!.currentPage != null) ...[
-																						const Icon(CupertinoIcons.doc),
+																						const Icon(CupertinoIcons.doc, applyTextScaling: true),
 																						const SizedBox(width: 8),
 																						_limitCounter(persistentState.thread!.currentPage!, context.read<Persistence>().getBoard(widget.thread.board).pageCount),
 																						const Spacer()
@@ -1934,7 +1934,7 @@ class ThreadPageState extends State<ThreadPage> {
 																							onTap: _switchToLive,
 																							child: Row(
 																								children: [
-																									Icon(persistentState.thread!.isDeleted ? CupertinoIcons.trash : CupertinoIcons.archivebox),
+																									Icon(persistentState.thread!.isDeleted ? CupertinoIcons.trash : CupertinoIcons.archivebox, applyTextScaling: true),
 																									const SizedBox(width: 8),
 																									Text(persistentState.thread!.archiveName ?? (persistentState.thread!.isDeleted ? 'Deleted' : 'Archived'))
 																								]
@@ -2020,7 +2020,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			return Row(
 																				mainAxisAlignment: MainAxisAlignment.center,
 																				children: [
-																					const Icon(CupertinoIcons.doc),
+																					const Icon(CupertinoIcons.doc, applyTextScaling: true),
 																					const SizedBox(width: 8),
 																					Flexible(
 																						child: Text(
@@ -2029,7 +2029,7 @@ class ThreadPageState extends State<ThreadPage> {
 																						)
 																					),
 																					const SizedBox(width: 8),
-																					const Icon(CupertinoIcons.arrow_up_down)
+																					const Icon(CupertinoIcons.arrow_up_down, applyTextScaling: true)
 																				]
 																			);
 																		}
@@ -2059,7 +2059,7 @@ class ThreadPageState extends State<ThreadPage> {
 																						children: [
 																							RotatedBox(
 																								quarterTurns: 1,
-																								child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: theme.secondaryColor)
+																								child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: theme.secondaryColor, applyTextScaling: true)
 																							),
 																							if (collapsedChildIds.isNotEmpty) Text(
 																								' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
@@ -2136,7 +2136,7 @@ class ThreadPageState extends State<ThreadPage> {
 																							'($newCount new) ',
 																							style: style
 																						),
-																						Icon(CupertinoIcons.chevron_down, size: MediaQuery.textScalerOf(context).scale(18))
+																						const Icon(CupertinoIcons.chevron_down, size: 18, applyTextScaling: true)
 																					]
 																				)
 																			)
@@ -2187,7 +2187,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				_lastSeenIndex = null;
 																			},
 																			developerModeButtons: [
-																				[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
+																				[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down, applyTextScaling: true), () {
 																					final allIds = (persistentState.thread?.posts_.map((i) => i.id) ?? _listController.items.map((i) => i.id));
 																					final id = _listController.lastVisibleItem?.id;
 																					if (id != null) {
@@ -2753,7 +2753,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										mainAxisSize: MainAxisSize.min,
 										children: [
 											for (final buttons in [
-												[(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
+												[(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19, applyTextScaling: true), youIds.isEmpty ? null : () {
 														WeakNavigator.push(context, PostsPage(
 															zone: widget.zone,
 															postsIdsToShow: youIds,
@@ -2764,7 +2764,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														)
 													);
 												})],
-												[(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _youIds.isEmpty ? null : () {
+												[(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19, applyTextScaling: true), _youIds.isEmpty ? null : () {
 														WeakNavigator.push(context, PostsPage(
 															zone: widget.zone,
 															postsIdsToShow: _youIds,
@@ -2779,7 +2779,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													describeCount(realImageCount, 'image'),
 													const RotatedBox(
 														quarterTurns: 1,
-														child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
+														child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19, applyTextScaling: true)
 													),
 													() async {
 														const commonParentIds = [-101];
@@ -2826,13 +2826,13 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													}
 												), (
 													uncachedCount == 0 ? '' : 'Preload $uncachedCount${uncachedMB == 0 ? '' : ' (${uncachedMBIsUncertain ? '>' : ''}${uncachedMB.ceil()} MB)'}',
-													const Icon(CupertinoIcons.cloud_download, size: 19),
+													const Icon(CupertinoIcons.cloud_download, size: 19, applyTextScaling: true),
 													(widget.attachmentsCachingQueue.isEmpty && widget.cachedAttachments.values.any((v) => !v.isCached)) ? widget.startCaching : null
 												)],
-												[('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch)],
-												if (site.archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), null)]
+												[('Search', const Icon(CupertinoIcons.search, size: 19, applyTextScaling: true), widget.listController.focusSearch)],
+												if (site.archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19, applyTextScaling: true), null)]
 												else [
-													if (site.archives.length > 1) ('', const Icon(CupertinoIcons.gear, size: 19), () async {
+													if (site.archives.length > 1) ('', const Icon(CupertinoIcons.gear, size: 19, applyTextScaling: true), () async {
 														final archives = await modalLoad(context, 'Scanning archives...', (controller) async {
 															return (await Future.wait(
 																site.archives.map(
@@ -2882,27 +2882,27 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															widget.listController.blockAndUpdate();
 														}
 													}),
-													if (widget.persistentState.useArchive) ('Live', const ImageboardIcon(), () {
+													if (widget.persistentState.useArchive) ('Live', const ImageboardIcon(applyTextScaling: true), () {
 														widget.persistentState.useArchive = false;
 														widget.persistentState.save();
 														setState(() {});
 														widget.listController.blockAndUpdate();
 													})
-													else ('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
+													else ('Archive', const Icon(CupertinoIcons.archivebox, size: 19, applyTextScaling: true), () async {
 														widget.persistentState.useArchive = true;
 														widget.persistentState.save();
 														setState(() {});
 														widget.listController.blockAndUpdate();
 													})
 												],
-												if (widget.persistentState.autoTranslate) [('Original', const Icon(Icons.translate, size: 19), () {
+												if (widget.persistentState.autoTranslate) [('Original', const Icon(Icons.translate, size: 19, applyTextScaling: true), () {
 													widget.persistentState.autoTranslate = false;
 													widget.persistentState.translatedPosts.clear();
 													widget.zone.clearTranslatedPosts();
 													widget.persistentState.save();
 													setState(() {});
 												})]
-												else [('Translate', const Icon(Icons.translate, size: 19), () async {
+												else [('Translate', const Icon(Icons.translate, size: 19, applyTextScaling: true), () async {
 													widget.persistentState.autoTranslate = true;
 													for (final post in widget.persistentState.thread?.posts ?? <Post>[]) {
 														if (widget.zone.translatedPost(post.id) == null) {
@@ -2918,7 +2918,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													setState(() {});
 												})],
 												[
-													('${postSortingMethod == PostSortingMethod.none ? 'Sort' : postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19), () async {
+													('${postSortingMethod == PostSortingMethod.none ? 'Sort' : postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19, applyTextScaling: true), () async {
 														final defaultMethod = widget.persistentState.imageboard?.persistence.browserState.postSortingMethodPerBoard[widget.persistentState.boardKey] ?? widget.persistentState.imageboard?.persistence.browserState.postSortingMethod ?? PostSortingMethod.none;
 														final choice = await showAdaptiveModalPopup<NullWrapper<PostSortingMethod>>(
 															context: context,
@@ -2956,14 +2956,14 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														widget.persistentState.save();
 														widget.forceThreadRebuild();
 													}))
-													else ('Tree', const Icon(CupertinoIcons.list_bullet_indent, size: 19), () => setState(() {
+													else ('Tree', const Icon(CupertinoIcons.list_bullet_indent, size: 19, applyTextScaling: true), () => setState(() {
 														widget.persistentState.useTree = true;
 														widget.persistentState.save();
 														widget.forceThreadRebuild();
 													}))
 												],
 												[
-													if (!widget.useTree) ('Mark as last-seen', const Icon(CupertinoIcons.asterisk_circle, size: 19), _greyCount == 0 ? null : () async {
+													if (!widget.useTree) ('Mark as last-seen', const Icon(CupertinoIcons.asterisk_circle, size: 19, applyTextScaling: true), _greyCount == 0 ? null : () async {
 														final threadState = widget.persistentState;
 														final lastVisibleItem = widget.listController.lastVisibleItem;
 														int lastVisibleIndex = widget.listController.lastVisibleIndex;
@@ -3007,7 +3007,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															);
 														}
 													}),
-													('Mark as unread', const Icon(CupertinoIcons.xmark_circle_fill, size: 19), () {
+													('Mark as unread', const Icon(CupertinoIcons.xmark_circle_fill, size: 19, applyTextScaling: true), () {
 														final ids = widget.persistentState.thread?.posts_.map((p) => p.id).toSet() ?? {};
 														for (final id in ids) {
 															widget.highlightPosts[id] = 1.0;
@@ -3018,7 +3018,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														setState(() {});
 														widget.forceThreadRebuild();
 													}),
-													('Mark as read', const Icon(CupertinoIcons.xmark_circle, size: 19), _whiteCountAbove <= 0 && _whiteCountBelow <= 0 && widget.persistentState.unseenPostIds.data.isEmpty && widget.highlightPosts.isEmpty ? null : () async {
+													('Mark as read', const Icon(CupertinoIcons.xmark_circle, size: 19, applyTextScaling: true), _whiteCountAbove <= 0 && _whiteCountBelow <= 0 && widget.persistentState.unseenPostIds.data.isEmpty && widget.highlightPosts.isEmpty ? null : () async {
 														final threadState = widget.persistentState;
 														final unseenPostIds = threadState.unseenPostIds.data.toSet();
 														final highlightPosts = Map.of(widget.highlightPosts);
@@ -3050,11 +3050,11 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															);
 														}
 													}),
-													('Update', const Icon(CupertinoIcons.refresh, size: 19), widget.listController.update)
+													('Update', const Icon(CupertinoIcons.refresh, size: 19, applyTextScaling: true), widget.listController.update)
 												],
-												[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), scrollToTop)],
+												[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19, applyTextScaling: true), scrollToTop)],
 												[
-													('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
+													('New posts', const Icon(CupertinoIcons.arrow_down, size: 19, applyTextScaling: true), _whiteCountBelow <= 0 ? null : () {
 														final lastVisibleIndex = widget.listController.lastVisibleIndex;
 														if (lastVisibleIndex == -1) {
 															return;
@@ -3068,7 +3068,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															widget.listController.animateToIndex(targetIndex);
 														}
 													}),
-													('Bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
+													('Bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19, applyTextScaling: true), scrollToBottom)
 												],
 												if (developerMode) ...widget.developerModeButtons
 											]) Padding(
@@ -3122,7 +3122,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											child: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
-													Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19),
+													Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19, applyTextScaling: true),
 													AnimatedBuilder(
 														animation: widget.listController,
 														builder: (context, _) {
@@ -3161,7 +3161,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												},
 												padding: EdgeInsets.zero,
 												minSize: 0,
-												child: const Icon(CupertinoIcons.xmark, size: 19)
+												child: const Icon(CupertinoIcons.xmark, size: 19, applyTextScaling: true)
 											),
 											const SizedBox(width: 4),
 											AdaptiveFilledButton(
@@ -3176,7 +3176,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													children: [
 														Text('New ${widget.suggestedThread?.label} thread'),
 														const SizedBox(width: 4),
-														const Icon(CupertinoIcons.arrow_right, size: 18),
+														const Icon(CupertinoIcons.arrow_right, size: 18, applyTextScaling: true),
 													]
 												)
 											)
@@ -3208,7 +3208,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													mainAxisSize: MainAxisSize.min,
 													crossAxisAlignment: CrossAxisAlignment.center,
 													children: [
-														Icon(Adaptive.icons.photo, size: 19),
+														Icon(Adaptive.icons.photo, size: 19, applyTextScaling: true),
 														ConstrainedBox(
 															constraints: BoxConstraints(
 																minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * cachingButtonLabel.length)
@@ -3236,7 +3236,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														children: [
 															HiddenCancelButton(
 																cancelToken: pair.cancelToken,
-																icon: const Icon(CupertinoIcons.xmark, size: 19),
+																icon: const Icon(CupertinoIcons.xmark, size: 19, applyTextScaling: true),
 																alignment: Alignment.centerLeft
 															),
 															const SizedBox(
@@ -3251,17 +3251,17 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											)
 										),
 										if (!widget.blocked && widget.persistentState.useArchive) ...[
-											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.5)),
+											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.5), applyTextScaling: true),
 											if (widget.persistentState.thread?.archiveName case String archiveName)
 												Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withOpacity(0.5))),
 											const SizedBox(width: 8)
 										]
 										else if (!widget.blocked && (widget.persistentState.thread?.isDeleted ?? false)) ...[
-											Icon(CupertinoIcons.trash, color: theme.primaryColor.withOpacity(0.5)),
+											Icon(CupertinoIcons.trash, color: theme.primaryColor.withOpacity(0.5), applyTextScaling: true),
 											const SizedBox(width: 8)
 										],
 										if (!widget.blocked && (widget.persistentState.thread?.isLocked ?? false)) ...[
-											Icon(CupertinoIcons.lock, color: theme.primaryColor.withOpacity(0.5)),
+											Icon(CupertinoIcons.lock, color: theme.primaryColor.withOpacity(0.5), applyTextScaling: true),
 											const SizedBox(width: 8)
 										],
 										if (widget.listController.state?.error case ValueListenable<(Object, StackTrace)?> listenable when !widget.blocked && widget.listController.itemsLength > 0) ValueListenableBuilder(
@@ -3285,7 +3285,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																child: Row(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
-																		Icon(CupertinoIcons.exclamationmark_triangle, size: 19, color: theme.backgroundColor),
+																		Icon(CupertinoIcons.exclamationmark_triangle, size: 19, color: theme.backgroundColor, applyTextScaling: true),
 																		const SizedBox(width: 4),
 																		ConstrainedBox(
 																			constraints: const BoxConstraints(maxWidth: 200),
@@ -3320,7 +3320,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												padding: const EdgeInsets.all(8),
 												minSize: 0,
 												onPressed: () => alertError(context, 'Tree too complex!\nLarge reply chains mean this thread can not be shown in tree mode.', null),
-												child: Icon(CupertinoIcons.exclamationmark, color: theme.backgroundColor, size: 19)
+												child: Icon(CupertinoIcons.exclamationmark, color: theme.backgroundColor, size: 19, applyTextScaling: true)
 											),
 											const SizedBox(width: 8)
 										],
@@ -3345,7 +3345,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																	curve: Curves.ease,
 																	child: Row(
 																		children: [
-																			Icon(CupertinoIcons.reply, color: theme.backgroundColor, size: 19),
+																			Icon(CupertinoIcons.reply, color: theme.backgroundColor, size: 19, applyTextScaling: true),
 																			const SizedBox(width: 4),
 																			DebouncedBuilder(
 																				value: pair?.label ?? postingPost.statusText,
@@ -3399,7 +3399,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												onPressed: () => WeakNavigator.push(context, OverscrollModalPage(
 													child: PollWidget(poll: poll)
 												)),
-												child: Icon(Icons.bar_chart, size: 19, color: theme.backgroundColor)
+												child: Icon(Icons.bar_chart, size: 19, color: theme.backgroundColor, applyTextScaling: true)
 											),
 											const SizedBox(width: 8),
 										],
@@ -3411,7 +3411,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													mainAxisSize: MainAxisSize.min,
 													crossAxisAlignment: CrossAxisAlignment.center,
 													children: [
-														Icon(CupertinoIcons.square_grid_2x2, size: 19, color: theme.backgroundColor),
+														Icon(CupertinoIcons.square_grid_2x2, size: 19, color: theme.backgroundColor, applyTextScaling: true),
 														const SizedBox(width: 4),
 														Text(describeCount(realImageCount, 'image'), style: TextStyle(
 															color: theme.backgroundColor
@@ -3464,7 +3464,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															child: Icon(
 																(widget.replyBoxKey.currentState?.show ?? false) ? CupertinoIcons.arrowshape_turn_up_left_fill : CupertinoIcons.reply,
 																size: 20,
-																color: theme.backgroundColor
+																color: theme.backgroundColor,
+																applyTextScaling: true
 															)
 														)
 													]
@@ -3506,7 +3507,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																				textAlign: TextAlign.center
 																			)
 																		),
-																		Icon(CupertinoIcons.arrow_up, color: theme.backgroundColor, size: MediaQuery.textScalerOf(context).scale(19))
+																		Icon(CupertinoIcons.arrow_up, color: theme.backgroundColor, size: 19, applyTextScaling: true)
 																	]
 																)
 															)

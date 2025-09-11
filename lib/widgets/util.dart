@@ -2735,7 +2735,7 @@ class RelativeTimeSpan extends WidgetSpan {
 				_ => const Duration(minutes: 1)
 			},
 			function: () => formatRelativeTime(time),
-			builder: (context, str) => Text('$str$suffix', style: style)
+			builder: (context, str) => Text('$str$suffix', style: style, textScaler: TextScaler.noScaling)
 		)
 	);
 }

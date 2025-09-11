@@ -584,7 +584,7 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 					mainAxisSize: MainAxisSize.min,
 					children: [
 						const SizedBox(width: 2),
-						ImageboardIcon(imageboardKey: imageboardKey),
+						ImageboardIcon(imageboardKey: imageboardKey, applyTextScaling: true),
 						const SizedBox(width: 4),
 						Text(
 							q.boards.isNotEmpty
@@ -612,11 +612,11 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.md5 != null) _SearchQueryFilterTag('MD5', q.md5),
 		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) const _RawSearchQueryFilterTag(Padding(
 			padding: EdgeInsets.all(2),
-			child: Icon(CupertinoIcons.trash, size: 16)
+			child: Icon(CupertinoIcons.trash, size: 16, applyTextScaling: true)
 		)),
 		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) const _RawSearchQueryFilterTag(Padding(
 			padding: EdgeInsets.all(2),
-			child: Icon(CupertinoIcons.trash_slash, size: 16)
+			child: Icon(CupertinoIcons.trash_slash, size: 16, applyTextScaling: true)
 		)),
 		if (q.subject?.isNotEmpty ?? false) _SearchQueryFilterTag('Subject', q.subject),
 		if (q.name?.isNotEmpty ?? false) _SearchQueryFilterTag('Name', q.name),

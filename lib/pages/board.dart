@@ -1447,7 +1447,7 @@ class BoardPageState extends State<BoardPage> {
 																						padding: const EdgeInsets.all(8),
 																						color: primaryColorWithBrightness80,
 																						onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
-																						child: Icon(CupertinoIcons.square_grid_2x2, size: 20, color: theme.backgroundColor)
+																						child: Icon(CupertinoIcons.square_grid_2x2, size: 20, color: theme.backgroundColor, applyTextScaling: true)
 																					),
 																					const SizedBox(width: 8),
 																				],
@@ -1486,7 +1486,8 @@ class BoardPageState extends State<BoardPage> {
 																									child: Icon(
 																										(_replyBoxKey.currentState?.show ?? false) ? CupertinoIcons.pencil_slash : CupertinoIcons.pencil,
 																										size: 20,
-																										color: theme.backgroundColor
+																										color: theme.backgroundColor,
+																										applyTextScaling: true
 																									)
 																								)
 																							]
@@ -1543,7 +1544,7 @@ class BoardPageState extends State<BoardPage> {
 																									child: Row(
 																										mainAxisSize: MainAxisSize.min,
 																										children: [
-																											Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19),
+																											Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19, applyTextScaling: true),
 																											AnimatedBuilder(
 																												animation: _listController,
 																												builder: (context, _) {
@@ -1585,7 +1586,7 @@ class BoardPageState extends State<BoardPage> {
 																										mainAxisSize: MainAxisSize.min,
 																										children: [
 																											if (sortMethods.isEmpty)
-																												Icon(CupertinoIcons.doc, color: theme.backgroundColor, size: 19),
+																												Icon(CupertinoIcons.doc, color: theme.backgroundColor, size: 19, applyTextScaling: true),
 																											ConstrainedBox(
 																												constraints: BoxConstraints(
 																													minWidth: MediaQuery.textScalerOf(context).scale(19)

@@ -10,12 +10,14 @@ class ImageboardIcon extends StatelessWidget {
 	final String? imageboardKey;
 	final String? boardName;
 	final double size;
+	final bool applyTextScaling;
 
 	const ImageboardIcon({
 		this.site,
 		this.imageboardKey,
 		this.boardName,
 		this.size = 16,
+		this.applyTextScaling = false,
 		Key? key
 	}) : super(key: key);
 
@@ -29,6 +31,7 @@ class ImageboardIcon extends StatelessWidget {
 			}
 		}
 		final site = this.site ?? imageboard?.site;
+		final size = applyTextScaling ? MediaQuery.textScalerOf(context).scale(this.size) : this.size;
 		if (site == null) {
 			return Icon(CupertinoIcons.exclamationmark_triangle_fill, size: size);
 		}

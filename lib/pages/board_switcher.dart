@@ -601,7 +601,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									},
 									minSize: 0,
 									padding: EdgeInsets.zero,
-									icon: Icon(CupertinoIcons.xmark_circle_fill, size: MediaQuery.textScalerOf(context).scale(20))
+									icon: const Icon(CupertinoIcons.xmark_circle_fill, size: 20, applyTextScaling: true)
 								)
 							),
 							onTap: () {
