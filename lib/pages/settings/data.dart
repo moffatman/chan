@@ -793,6 +793,10 @@ final dataSettings = [
 				if (!context.mounted) {
 					return;
 				}
+				await alert(context, 'Warning', 'This is NOT a backup. You won\'t be able to restore it if you reinstall the app. It\'s for your personal curiosity only.', barrierDismissible: false);
+				if (!context.mounted) {
+					return;
+				}
 				if (Platform.isAndroid) {
 					await saveFileAs(
 						sourcePath: file.path,
