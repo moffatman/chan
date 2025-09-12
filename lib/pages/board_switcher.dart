@@ -254,16 +254,25 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	double _getOverscroll() {
-		final overscrollTop = scrollController.position.minScrollExtent - scrollController.position.pixels;
-		final overscrollBottom = scrollController.position.pixels - scrollController.position.maxScrollExtent;
+		final position = scrollController.tryPosition;
+		if (position == null) {
+			return 0;
+		}
+		final overscrollTop = position.minScrollExtent - position.pixels;
+		final overscrollBottom = position.pixels - position.maxScrollExtent;
 		return max(overscrollTop, overscrollBottom);
 	}
 
-	void _onScroll() {
-		if (_focusNode.hasFocus && isPhoneSoftwareKeyboard() && ((scrollController.tryPosition?.extentAfter ?? 0) > 100)) {
+	void _onScroll() async {
+		if (_focusNode.hasFocus && isPhoneSoftwareKeyboard() && ((scrollController.tryPosition?.extentAfter ?? 0) > (MediaQueryData.fromView(View.of(context)).viewInsets.bottom + 100))) {
 			_focusNode.unfocus();
 		}
-		_backgroundColor.value = context.read<SavedTheme>().backgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
+		final backgroundColor = context.read<SavedTheme>().backgroundColor;
+		final overscroll1 = _getOverscroll();
+		await Future.delayed(const Duration(milliseconds: 50));
+		if (mounted) {
+			_backgroundColor.value = backgroundColor.withOpacity(1.0 - max(0, min(overscroll1, _getOverscroll()) / 50).clamp(0, 1));
+		}
 	}
 
 	Future<void> _updateTypeaheadBoards(String rawQuery) async {
@@ -886,6 +895,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								padding: const EdgeInsets.only(top: 4, bottom: 4) + MediaQuery.paddingOf(context),
 								separatorBuilder: (context, i) => const SizedBox(height: 2),
 								itemCount: filteredBoards.length,
+								findChildIndexCallback: (key) {
+									if (key case ValueKey(value: int index)) {
+										return index;
+									}
+									return null;
+								},
 								itemBuilder: (context, i) {
 									final board = filteredBoards[i].item;
 									final imageboard = filteredBoards[i].imageboard;
@@ -1054,20 +1069,31 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										);
 									}
 									return BuildContextMapRegistrant(
+										key: ValueKey(i),
 										map: _contexts,
 										value: filteredBoards[i],
 										child: child
 									);
 								}
-							) : GridView.extent(
+							) : GridView.builder(
 								physics: const AlwaysScrollableScrollPhysics(),
 								controller: scrollController,
 								padding: const EdgeInsets.only(top: 4, bottom: 4) + MediaQuery.paddingOf(context),
-								maxCrossAxisExtent: _kMaxCrossAxisExtent,
-								mainAxisSpacing: _kMainAxisSpacing,
-								childAspectRatio: _kChildAspectRatio,
-								crossAxisSpacing: _kCrossAxisSpacing,
-								children: filteredBoards.map((item) {
+								gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+									maxCrossAxisExtent: _kMaxCrossAxisExtent,
+									mainAxisSpacing: _kMainAxisSpacing,
+									childAspectRatio: _kChildAspectRatio,
+									crossAxisSpacing: _kCrossAxisSpacing
+								),
+								itemCount: filteredBoards.length,
+								findChildIndexCallback: (key) {
+									if (key case ValueKey(value: int index)) {
+										return index;
+									}
+									return null;
+								},
+								itemBuilder: (context, i) {
+									final item = filteredBoards[i];
 									final imageboard = item.imageboard;
 									final board = item.item;
 									final isSelected = _showSelectedItem && item == filteredBoards[effectiveSelectedIndex];
@@ -1222,11 +1248,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										);
 									}
 									return BuildContextMapRegistrant(
+										key: ValueKey(i),
 										map: _contexts,
 										value: item,
 										child: child
 									);
-								}).toList()
+								}
 							)
 						),
 						if (widget.currentlyPickingFavourites) Positioned.fill(
