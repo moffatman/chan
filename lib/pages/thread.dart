@@ -3270,7 +3270,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												if (error == null) {
 													return const SizedBox.shrink();
 												}
-												final remedy = widget.listController.state?.widget.remedies[error.$1.runtimeType] ?? switch (ExtendedException.extract(error.$1)?.remedies.entries.first) {
+												final remedy = widget.listController.state?.widget.remedies[error.$1.runtimeType] ?? switch (ExtendedException.extract(error.$1)?.remedies.entries.tryFirst) {
 													final remedy? => (remedy.key, () => remedy.value(context)),
 													null => null
 												};
