@@ -1175,7 +1175,7 @@ class ThreadPageState extends State<ThreadPage> {
 		else {
 			try {
 				final lastUpdatedTime = oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time;
-				if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null) {
+				if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null && oldThread.archiveName == null) {
 					final maybeNewThread = await site.getThreadIfModifiedSince(
 						widget.thread,
 						lastUpdatedTime,
@@ -3250,7 +3250,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												}
 											)
 										),
-										if (!widget.blocked && widget.persistentState.useArchive) ...[
+										if (!widget.blocked && (widget.persistentState.thread?.archiveName != null || (widget.persistentState.thread?.isArchived ?? widget.persistentState.useArchive))) ...[
 											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.5), applyTextScaling: true),
 											if (widget.persistentState.thread?.archiveName case String archiveName)
 												Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withOpacity(0.5))),
