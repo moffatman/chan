@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/media.dart';
@@ -472,13 +473,23 @@ class VideoServer {
 			final handle = await file.open(mode:cachingFile.currentBytes == 0 ? FileMode.writeOnly : FileMode.writeOnlyAppend);
 			() async {
 				try {
+					const minChunkSize = 64 * 1024; // 64 KB
+					final buffer = BytesBuilder();
+					Future<void> flush() => cachingFile.lock.protect(() async {
+						final chunk = buffer.takeBytes();
+						await handle.writeFrom(chunk);
+						await handle.flush();
+						cachingFile.currentBytes += chunk.length;
+						cachingFile.didUpdate();
+					});
 					await for (final chunk in (response.data as ResponseBody).stream) {
-						await cachingFile.lock.protect(() async {
-							await handle.writeFrom(chunk);
-							await handle.flush();
-							cachingFile.currentBytes += chunk.length;
-							cachingFile.didUpdate();
-						});
+						buffer.add(chunk);
+						if (buffer.length > minChunkSize) {
+							await flush();
+						}
+					}
+					if (buffer.isNotEmpty) {
+						await flush();
 					}
 					await handle.close();
 					cachingFile._cancelToken = null;
