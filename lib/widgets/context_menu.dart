@@ -22,7 +22,7 @@ import 'package:provider/provider.dart';
 class ContextMenuAction {
 	final Widget child;
 	final IconData trailingIcon;
-	final FutureOr<void> Function() onPressed;
+	final FutureOr<void> Function()? onPressed;
 	final bool isDestructiveAction;
 	final Key? key;
 	ContextMenuAction({
@@ -96,6 +96,7 @@ class _ContextMenuState extends State<ContextMenu> {
 			useRootNavigator: true,
 			items: widget.actions.map((action) => PopupMenuItem(
 				value: action,
+				enabled: action.onPressed != null,
 				key: action.key,
 				child: Row(
 					mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -115,7 +116,7 @@ class _ContextMenuState extends State<ContextMenu> {
 				null => RelativeRect.fromLTRB(l, t, s.width - l, s.height - t)
 			}
 		);
-		action?.onPressed();
+		action?.onPressed?.call();
 	}
 
 	Widget _buildMaterial() {
@@ -154,10 +155,10 @@ class _ContextMenuState extends State<ContextMenu> {
 		final actions = widget.actions.map((action) => CupertinoContextMenuAction2(
 			trailingIcon: action.trailingIcon,
 			key: action.key,
-			onPressed: () async {
+			onPressed: action.onPressed == null ? null : () async {
 				try {
 					navigator?.pop();
-					await action.onPressed();
+					await action.onPressed!();
 				}
 				catch (e, st) {
 					print(e);
@@ -272,10 +273,10 @@ class _ContextMenuState extends State<ContextMenu> {
 													return CupertinoButton(
 														key: action.key,
 														padding: const EdgeInsets.all(16),
-														onPressed: () async {
+														onPressed: action.onPressed == null ? null : () async {
 															_overlayEntry?.remove();
 															try {
-																await action.onPressed();
+																await action.onPressed!();
 															}
 															catch (e, st) {
 																if (context.mounted) {

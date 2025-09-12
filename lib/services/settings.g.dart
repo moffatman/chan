@@ -2479,6 +2479,29 @@ class SavedSettingsFields {
     fieldName: 'replyButtonAtBottom',
     merger: PrimitiveMerger(),
   );
+  static bool getVideoContextMenuInGallery(SavedSettings x) =>
+      x.videoContextMenuInGallery;
+  static void setVideoContextMenuInGallery(SavedSettings x, bool v) =>
+      x.videoContextMenuInGallery = v;
+  static const videoContextMenuInGallery =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getVideoContextMenuInGallery,
+    setter: setVideoContextMenuInGallery,
+    fieldNumber: 209,
+    fieldName: 'videoContextMenuInGallery',
+    merger: PrimitiveMerger(),
+  );
+  static bool getDoubleTapToSeekVideo(SavedSettings x) =>
+      x.doubleTapToSeekVideo;
+  static void setDoubleTapToSeekVideo(SavedSettings x, bool v) =>
+      x.doubleTapToSeekVideo = v;
+  static const doubleTapToSeekVideo = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getDoubleTapToSeekVideo,
+    setter: setDoubleTapToSeekVideo,
+    fieldNumber: 210,
+    fieldName: 'doubleTapToSeekVideo',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2687,7 +2710,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     205: SavedSettingsFields.reverseSavedThreadsSorting,
     206: SavedSettingsFields.reverseWatchedThreadsSorting,
     207: SavedSettingsFields.thumbnailOpacity,
-    208: SavedSettingsFields.replyButtonAtBottom
+    208: SavedSettingsFields.replyButtonAtBottom,
+    209: SavedSettingsFields.videoContextMenuInGallery,
+    210: SavedSettingsFields.doubleTapToSeekVideo
   };
 
   @override
@@ -2910,13 +2935,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       reverseWatchedThreadsSorting: fields[206] as bool?,
       thumbnailOpacity: fields[207] as double?,
       replyButtonAtBottom: fields[208] as bool?,
+      videoContextMenuInGallery: fields[209] as bool?,
+      doubleTapToSeekVideo: fields[210] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(196)
+      ..writeByte(198)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3308,7 +3335,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(207)
       ..write(obj.thumbnailOpacity)
       ..writeByte(208)
-      ..write(obj.replyButtonAtBottom);
+      ..write(obj.replyButtonAtBottom)
+      ..writeByte(209)
+      ..write(obj.videoContextMenuInGallery)
+      ..writeByte(210)
+      ..write(obj.doubleTapToSeekVideo);
   }
 
   @override

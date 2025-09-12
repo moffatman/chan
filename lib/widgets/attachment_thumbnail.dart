@@ -169,7 +169,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			},
 			createRectTween: (startRect, endRect) {
 				if (startRect != null && endRect != null) {
-					if (attachment.type == AttachmentType.image) {
+					if (attachment.type == AttachmentType.image || attachment.type.isVideo) {
 						// Need to deflate the original startRect because it has inbuilt layoutInsets
 						// This AttachmentThumbnail will always fill its size
 						final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();

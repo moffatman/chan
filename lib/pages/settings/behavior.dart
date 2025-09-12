@@ -628,6 +628,24 @@ final behaviorSettings = [
 			didEdit();
 		}
 	),
+	const SegmentedSettingWidget<bool>(
+		description: 'Long-press on videos to...',
+		icon: CupertinoIcons.play,
+		setting: Settings.videoContextMenuInGallerySetting,
+		children: {
+			false: (null, 'pause or speed up'),
+			true: (null, 'open context menu')
+		}
+	),
+	const SegmentedSettingWidget<bool>(
+		description: 'Double-tap on videos to..',
+		icon: CupertinoIcons.backward,
+		setting: Settings.doubleTapToSeekVideoSetting,
+		children: {
+			false: (null, 'zoom in'),
+			true: (null, 'seek forward or back')
+		}
+	),
 	SliderSettingWidget(
 		description: 'Dynamic IP workaround',
 		icon: CupertinoIcons.globe,

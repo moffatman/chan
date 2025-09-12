@@ -1259,6 +1259,10 @@ class SavedSettings extends HiveObject {
 	double thumbnailOpacity;
 	@HiveField(208)
 	bool replyButtonAtBottom;
+	@HiveField(209)
+	bool videoContextMenuInGallery;
+	@HiveField(210)
+	bool doubleTapToSeekVideo;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1469,6 +1473,8 @@ class SavedSettings extends HiveObject {
 		bool? reverseWatchedThreadsSorting,
 		double? thumbnailOpacity,
 		bool? replyButtonAtBottom,
+		bool? videoContextMenuInGallery,
+		bool? doubleTapToSeekVideo,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1698,7 +1704,9 @@ class SavedSettings extends HiveObject {
 		reverseSavedThreadsSorting = reverseSavedThreadsSorting ?? false,
 		reverseWatchedThreadsSorting = reverseWatchedThreadsSorting ?? false,
 		thumbnailOpacity = thumbnailOpacity ?? -0.5,
-		replyButtonAtBottom = replyButtonAtBottom ?? false {
+		replyButtonAtBottom = replyButtonAtBottom ?? false,
+		videoContextMenuInGallery = videoContextMenuInGallery ?? false,
+		doubleTapToSeekVideo = doubleTapToSeekVideo ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -3009,6 +3017,12 @@ class Settings extends ChangeNotifier {
 
 	static const replyButtonAtBottomSetting = SavedSetting(SavedSettingsFields.replyButtonAtBottom);
 	bool get replyButtonAtBottom => replyButtonAtBottomSetting(this);
+
+	static const videoContextMenuInGallerySetting = SavedSetting(SavedSettingsFields.videoContextMenuInGallery);
+	bool get videoContextMenuInGallery => videoContextMenuInGallerySetting(this);
+
+	static const doubleTapToSeekVideoSetting = SavedSetting(SavedSettingsFields.doubleTapToSeekVideo);
+	bool get doubleTapToSeekVideo => doubleTapToSeekVideoSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

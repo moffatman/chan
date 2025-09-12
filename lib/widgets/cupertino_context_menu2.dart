@@ -110,9 +110,9 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
       cursor: widget.onPressed != null && kIsWeb ? SystemMouseCursors.click : MouseCursor.defer,
       child: GestureDetector(
         key: _globalKey,
-        onTapDown: onTapDown,
-        onTapUp: onTapUp,
-        onTapCancel: onTapCancel,
+        onTapDown: widget.onPressed != null ? onTapDown : null,
+        onTapUp: widget.onPressed != null ? onTapUp : null,
+        onTapCancel: widget.onPressed != null ? onTapCancel : null,
         onTap: widget.onPressed,
         behavior: HitTestBehavior.opaque,
         child: Semantics(
@@ -129,21 +129,24 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
               left: 15.5,
               right: 17.5,
             ),
-            child: DefaultTextStyle(
-              style: _textStyle,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Flexible(
-                    child: widget.child,
-                  ),
-                  if (widget.trailingIcon != null)
-                    Icon(
-                      widget.trailingIcon,
-                      color: _textStyle.color,
-                      size: 21.0,
+            child: Opacity(
+              opacity: widget.onPressed != null ? 1.0 : 0.5,
+              child: DefaultTextStyle(
+                style: _textStyle,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Flexible(
+                      child: widget.child,
                     ),
-                ],
+                    if (widget.trailingIcon != null)
+                      Icon(
+                        widget.trailingIcon,
+                        color: _textStyle.color,
+                        size: 21.0,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -147,10 +147,10 @@ class AdaptiveActionSheetAction<T> extends StatelessWidget {
 
 extension ToActionSheetActions on List<ContextMenuAction> {
 	List<AdaptiveActionSheetAction> toActionSheetActions(BuildContext context) => map((action) => AdaptiveActionSheetAction(
-		onPressed: () async {
+		onPressed: action.onPressed == null ? null : () async {
 			Navigator.of(context).pop();
 			try {
-				await action.onPressed();
+				await action.onPressed!();
 			}
 			catch (e, st) {
 				if (context.mounted) {
