@@ -102,14 +102,24 @@ class LoggingInterceptor extends Interceptor {
 				file.writeln(response.data);
 			}
 			else {
-				final resp = response.data.toString();
-				if (resp.length > 1500) {
-					file.write(resp.substring(0, 750));
-					file.writeln('...');
-					file.writeln(resp.substring(resp.length - 750));
+				if (response.data case List<int> bytes) {
+					if (bytes.length > 500) {
+						file.writeln([...bytes.sublist(0, 250), '...', ...bytes.sublist(bytes.length - 250)]);
+					}
+					else {
+						file.writeln(bytes.toString());
+					}
 				}
 				else {
-					file.writeln(resp);
+					final resp = response.data.toString();
+					if (resp.length > 1500) {
+						file.write(resp.substring(0, 750));
+						file.writeln('...');
+						file.writeln(resp.substring(resp.length - 750));
+					}
+					else {
+						file.writeln(resp);
+					}
 				}
 			}
 			await file.flush();
