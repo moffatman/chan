@@ -1236,7 +1236,11 @@ class ThreadPageState extends State<ThreadPage> {
 				if (persistentState.autoTranslate) {
 					// Translate new posts
 					() async {
-						for (final post in newThread.posts) {
+						final posts = newThread.posts.toList();
+						for (final method in zone.postSortingMethods) {
+							mergeSort(posts, compare: method);
+						}
+						for (final post in posts) {
 							if (zone.translatedPost(post.id) == null) {
 								await zone.translatePost(post);
 							}
@@ -2904,7 +2908,11 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												})]
 												else [('Translate', const Icon(Icons.translate, size: 19, applyTextScaling: true), () async {
 													widget.persistentState.autoTranslate = true;
-													for (final post in widget.persistentState.thread?.posts ?? <Post>[]) {
+													final posts = widget.persistentState.thread?.posts.toList() ?? <Post>[];
+													for (final method in widget.zone.postSortingMethods) {
+														mergeSort(posts, compare: method);
+													}
+													for (final post in posts) {
 														if (widget.zone.translatedPost(post.id) == null) {
 															try {
 																await widget.zone.translatePost(post);
