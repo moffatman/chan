@@ -248,6 +248,15 @@ class AttachmentThumbnail extends StatelessWidget {
 			headers: {
 				...s.getHeaders(Uri.parse(url)),
 				if (attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+			},
+			afterFirstLoad: () {
+				if (url == attachment.url) {
+					// Thie a is a full-quality thumbnail
+					if (!forceFullQuality) {
+						// Forced thumbnails are already known to be cached, don't report it
+						AttachmentCache.onCached(attachment, this);
+					}
+				}
 			}
 		);
 		final pixelation = settings.thumbnailPixelation;
@@ -342,10 +351,6 @@ class AttachmentThumbnail extends StatelessWidget {
 						);
 					}
 					else if (loadstate.extendedImageLoadState == LoadState.completed) {
-						if (url == attachment.url) {
-							// Thie a is a full-quality thumbnail
-							AttachmentCache.onCached(attachment);
-						}
 						attachment.width ??= loadstate.extendedImageInfo?.image.width;
 						attachment.height ??= loadstate.extendedImageInfo?.image.height;
 					}
@@ -412,7 +417,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			);
 		}
 		return StreamBuilder(
-			stream: AttachmentCache.stream.where((e) => e.url == attachment.url),
+			stream: AttachmentCache.stream.where((e) => e.$1.url == attachment.url && e.$2 != this),
 			builder: (context, _) => FutureBuilder(
 				future: AttachmentCache.optimisticallyFindFile(attachment),
 				builder: (context, snapshot) {

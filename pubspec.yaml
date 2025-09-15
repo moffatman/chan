@@ -187,6 +187,7 @@ dependency_overrides:
   extended_image_library:
     git:
       url: https://github.com/moffatman/extended_image_library.git
+      ref: master
   dio:
     git:
       url: https://github.com/moffatman/dio.git

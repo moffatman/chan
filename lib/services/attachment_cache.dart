@@ -6,10 +6,10 @@ import 'package:chan/services/streaming_mp4.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 
 class AttachmentCache {
-	static final _streamController = StreamController<Attachment>.broadcast();
-	static Stream<Attachment> get stream => _streamController.stream;
-	static onCached(Attachment attachment) {
-		_streamController.add(attachment);
+	static final _streamController = StreamController<(Attachment, Object)>.broadcast();
+	static Stream<(Attachment, Object)> get stream => _streamController.stream;
+	static onCached(Attachment attachment, Object source) {
+		_streamController.add((attachment, source));
 	}
 	static Future<File?> optimisticallyFindFile(Attachment attachment) async {
 		if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.url) {

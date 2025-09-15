@@ -383,8 +383,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
-      resolved-ref: e42bca69dd440538397de1219be3384b94d9aa19
+      ref: master
+      resolved-ref: cdf627c7882566bf8efaf28787a3dede1bb4d766
       url: "https://github.com/moffatman/extended_image_library.git"
     source: git
     version: "4.0.5"

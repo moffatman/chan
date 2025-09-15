@@ -191,7 +191,7 @@ class ThreadPageState extends State<ThreadPage> {
 	int? _glowingPostId;
 	final _scrollLock = Mutex();
 	final _threadStateListenableUpdateMutex = Mutex();
-	late final StreamSubscription<Attachment> _cacheSubscription;
+	late final StreamSubscription<(Attachment, Object)> _cacheSubscription;
 
 	static const _kHighlightZero = 0.0;
 	static const _kHighlightPartial = 0.35;
@@ -639,9 +639,9 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	void _onAttachmentCache(Attachment attachment) {
-		if (persistentState.thread?.posts_.any((p) => p.attachments.contains(attachment)) ?? false) {
-			_checkAttachmentCache(attachment);
+	void _onAttachmentCache((Attachment, Object) obj) {
+		if (persistentState.thread?.posts_.any((p) => p.attachments.contains(obj.$1)) ?? false) {
+			_checkAttachmentCache(obj.$1);
 		}
 	}
 

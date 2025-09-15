@@ -961,7 +961,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	void _onCacheCompleted(File file, {bool notify = true}) {
 		_cachedFile = file;
 		attachment.sizeInBytes ??= file.statSync().size;
-		AttachmentCache.onCached(attachment);
+		AttachmentCache.onCached(attachment, this);
 		if (_isDisposed) return;
 		_scheduleHidingOfLoadingProgress();
 		if (notify) {

@@ -11,13 +11,21 @@ import 'package:flutter/widgets.dart';
 class CNetworkImageProvider extends ExtendedNetworkImageProvider {
 	final Dio? client;
 	final RequestPriority priority;
+	final VoidCallback? afterFirstLoad;
 
   CNetworkImageProvider(super.url, {
 		required this.client,
 		super.cache,
 		super.headers,
+		this.afterFirstLoad,
 		this.priority = RequestPriority.cosmetic
 	});
+
+	@override
+	void didWriteCache() {
+		super.didWriteCache();
+		afterFirstLoad?.call();
+	}
 
 	@override
 	Future<Uint8List?> loadNetwork(
