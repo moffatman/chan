@@ -289,6 +289,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 		return Post(
 			id: postId,
 			threadId: threadId,
+			capcode: (post['capcode'] as String?)?.replaceFirst('## ', ''),
 			board: post['board'] as String,
 			text: post['message'] as String? ?? '',
 			name: post['name'] as String,

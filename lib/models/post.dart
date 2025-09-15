@@ -425,6 +425,7 @@ class Post implements Filterable {
 		other.attachmentDeleted == attachmentDeleted &&
 		other.archiveName == archiveName &&
 		other.email == email &&
+		other.capcode == capcode &&
 		mapEquals(other.extraMetadata, extraMetadata);
 	
 	bool isIdenticalForFilteringPurposes(Post other) {
