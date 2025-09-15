@@ -184,6 +184,12 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 						else if (node.classes.contains('heading')) {
 							yield PostBoldSpan(PostSecondaryColorSpan(PostNodeSpan(visit(node.nodes).toList(growable: false))));
 						}
+						else if (node.attributes['style'] case String style) {
+							yield PostCssSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)), style);
+						}
+						else if (node.classes.contains('glow')) {
+							yield PostCssSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)), 'text-shadow: 0px 0px 40px #00fe20, 0px 0px 2px #00fe20');
+						}
 						else {
 							yield PostTextSpan(node.text);
 						}
@@ -260,6 +266,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 								i++;
 							}
 						}
+					}
+					else if (node.localName == 'code') {
+						yield PostMonospaceSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
 					else {
 						yield PostTextSpan(node.outerHtml);

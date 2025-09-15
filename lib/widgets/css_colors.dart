@@ -140,6 +140,7 @@ const kCssColors = {
   'teal': 0xff008080,
   'thistle': 0xffd8bfd8,
   'tomato': 0xffff6347,
+  'transparent': 0x00000000,
   'turquoise': 0xff40e0d0,
   'violet': 0xffee82ee,
   'wheat': 0xfff5deb3,

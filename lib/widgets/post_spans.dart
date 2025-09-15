@@ -1649,6 +1649,16 @@ class PostStrikethroughSpan extends PostSpanWithChild {
 	}
 }
 
+class PostMonospaceSpan extends PostSpanWithChild {
+	const PostMonospaceSpan(super.child);
+	@override
+	build(context, post, zone, settings, theme, options) {
+		return child.build(context, post, zone, settings, theme, options.copyWith(
+			baseTextStyle: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle)
+		));
+	}
+}
+
 
 class PostPopupSpan extends PostSpanWithChild {
 	final String title;
@@ -1860,10 +1870,20 @@ class PostCssSpan extends PostSpanWithChild {
 
 	const PostCssSpan(super.child, this.css);
 
+	static double? _strToPx(String str) {
+		if (str.endsWith('px')) {
+			return str.substring(0, str.length - 2).tryParseDouble;
+		}
+		// Could implement more later
+		return str.tryParseDouble;
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		final unrecognizedParts = <String>[];
 		TextStyle style = options.baseTextStyle;
+		bool foundBackgroundClipText = false;
+		bool foundTextFillColorTransparent = false;
 		for (final part in css.split(';')) {
 			if (part.trim().isEmpty) {
 				continue;
@@ -1875,11 +1895,37 @@ class PostCssSpan extends PostSpanWithChild {
 			}
 			final key = kv[0].trim();
 			final value = kv[1].trim();
-			if (key == 'background-color' && value.startsWith('#')) {
-				style = style.copyWith(backgroundColor: colorToHex(value));
+			if ((key == 'background-color' || key == 'background')) {
+				final color = colorToHex(value);
+				if (color != null) {
+					style = style.copyWith(backgroundColor: color);
+					continue;
+				}
 			}
-			else if (key == 'color' && value.startsWith('#')) {
-				style = style.copyWith(color: colorToHex(value));
+			if (key == 'color') {
+				final color = colorToHex(value);
+				if (color != null) {
+					style = style.copyWith(color: color);
+					continue;
+				}
+			}
+			if (key == 'background' && value.startsWith('linear-gradient(to left,')) {
+				final match = RegExp(r'^linear-gradient\(to left, (.+)\)$').firstMatch(value);
+				if (match == null) {
+					unrecognizedParts.add(part);
+					continue;
+				}
+				final colors = match.group(1)?.split(', ').tryMap(colorToHex).toList();
+				if (colors == null || colors.length < 2) {
+					unrecognizedParts.add(part);
+					continue;
+				}
+				style = style.copyWith(background: Paint()..shader = ui.Gradient.linear(
+					const Offset(1, 0.5),
+					const Offset(0, 0.5),
+					colors,
+					List.generate(colors.length, (i) => i / (colors.length - 1))
+				));
 			}
 			else if (key == 'font-weight' && value == 'bold') {
 				style = style.copyWith(fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold);
@@ -1887,12 +1933,52 @@ class PostCssSpan extends PostSpanWithChild {
 			else if (key == 'font-family') {
 				style = style.copyWith(fontFamily: value);
 			}
+			else if (key == 'text-shadow') {
+				final shadows = <Shadow>[];
+				for (final shadow in value.split(',')) {
+					final match = RegExp(r'^(\d+)px (\d+)px (?:(\d+)px )([^ ]+)$').firstMatch(shadow.trim());
+					if (match == null) {
+						unrecognizedParts.add(part);
+						continue;
+					}
+					final offsetXStr = match.group(1);
+					final offsetYStr = match.group(2);
+					final blurRadiusStr = match.group(3);
+					final colorStr = match.group(4);
+					if (offsetXStr == null || offsetYStr == null || colorStr == null) {
+						continue;
+					}
+					final offsetX = _strToPx(offsetXStr);
+					final offsetY = _strToPx(offsetYStr);
+					final blurRadius = _strToPx(blurRadiusStr ?? '');
+					final color = colorToHex(colorStr);
+					if (offsetX == null || offsetY == null || color == null) {
+						continue;
+					}
+					shadows.add(Shadow(
+						offset: Offset(offsetX, offsetY),
+						color: color,
+						blurRadius: blurRadius ?? 0
+					));
+				}
+				style = style.copyWith(shadows: shadows);
+			}
+			else if (key == '-webkit-background-clip' && value == 'text') {
+				foundBackgroundClipText = true;
+			}
+			else if (key == '-webkit-text-fill-color' && value == 'transparent') {
+				foundTextFillColorTransparent = true;
+			}
 			else if (key == 'animation' || key == 'padding' || key == 'border-radius') {
 				// Ignore
 			}
 			else {
 				unrecognizedParts.add(part);
 			}
+		}
+
+		if (foundBackgroundClipText && foundTextFillColorTransparent) {
+			style = style.copyWith(background: Paint()..color = style.backgroundColor ?? Colors.white, foreground: style.background);
 		}
 
 		if (unrecognizedParts.isEmpty) {
