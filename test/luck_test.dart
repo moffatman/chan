@@ -11,12 +11,17 @@ void main() {
 			final bins = <int, int>{};
 			for (int j = 0; j < total; j++) {
 				final codeUnits = (random.nextInt(100000) + 1000).toString().codeUnits;
-				final last = codeUnits.last;
 				int i;
-				for (i = 1; codeUnits[codeUnits.length - i] == last && i < codeUnits.length; i++) {
-					// Go through each matching digits
+				if (codeUnits.length == 1) {
+					i = 1;
 				}
-				i--; // we exit loop on i == too far by one
+				else {
+					final last = codeUnits.last;
+					for (i = 1; codeUnits[codeUnits.length - i] == last && i < codeUnits.length; i++) {
+						// Go through each matching digits
+					}
+					i--; // we exit loop on i == too far by one
+				}
 				bins.update(i, (x) => x + 1, ifAbsent: () => 1);
 			}
 			print(calculateLuck(data: (total, bins)));
