@@ -269,6 +269,11 @@ dependency_overrides:
       url: https://github.com/moffatman/dio.git
       path: plugins/http2_adapter
       ref: develop
+  http2:
+    git:
+      url: https://github.com/moffatman/http.git
+      path: pkgs/http2
+      ref: master
   analyzer: ^6.7.0
   dart_style: ^2.3.6
   js: ^0.7.1 # Needed to run with current connectivity_plus tag
