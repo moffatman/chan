@@ -464,12 +464,12 @@ class SiteHackerNews extends ImageboardSite {
 				CatalogVariant.hackerNewsShow: 'showstories',
 				CatalogVariant.hackerNewsJobs: 'jobstories',
 			}[variant]!;
-			final response = await client.get<List<int>>('https://hacker-news.firebaseio.com/v0/$name.json', options: Options(
+			final response = await client.get<List>('https://hacker-news.firebaseio.com/v0/$name.json', options: Options(
 				extra: {
 					kPriority: priority
 				}
 			), cancelToken: cancelToken);
-			data = response.data!;
+			data = response.data!.cast<int>();
 		}
 		_lastCatalogIds[variant] = data;
 		final threads = (await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, priority: priority, cancelToken: cancelToken)))).tryMap((e) => e).toList();
