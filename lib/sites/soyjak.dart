@@ -78,8 +78,8 @@ class SiteSoyjak extends SiteLainchan2 {
 	Uri get authPage => Uri.https(baseUrl, '/challenge-check.html');
 
 	@override
-	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? title) {
-		if (title == 'McChallenge') {
+	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? Function() title) {
+		if (title() == 'McChallenge') {
 			return const ImageboardRedirectGateway(
 				name: 'McChallenge',
 				alwaysNeedsManualSolving: true

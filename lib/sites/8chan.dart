@@ -106,7 +106,7 @@ class Site8Chan extends SiteLynxchan {
 	}
 
 	@override
-	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? title) {
+	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? Function() title) {
 		if ((uri.host == baseUrl || uri.host == '') && uri.path == '/.static/pages/disclaimer.html') {
 			return _kRedirectGateway;
 		}

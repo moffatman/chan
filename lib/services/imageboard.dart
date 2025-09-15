@@ -729,9 +729,13 @@ class ImageboardRegistry extends ChangeNotifier {
 		}
 	}
 
-	ImageboardRedirectGateway? getRedirectGateway(Uri? uri, String? title) {
+	ImageboardRedirectGateway? getRedirectGateway(Uri? uri, String? Function() title) {
 		if (uri == null) {
 			return null;
+		}
+		final primary = imageboards.tryFirstWhere((i) => i.site.baseUrl == uri.host);
+		if (primary != null) {
+			return primary.site.getRedirectGateway(uri, title);
 		}
 		return imageboards.tryMapOnce((i) => i.site.getRedirectGateway(uri, title));
 	}
@@ -748,7 +752,7 @@ class ImageboardRegistry extends ChangeNotifier {
 		}
 	}
 
-	bool isRedirectGateway(Uri? uri, String? title) => getRedirectGateway(uri, title) != null;
+	bool isRedirectGateway(Uri? uri, String? Function() title) => getRedirectGateway(uri, title) != null;
 }
 
 class ImageboardScoped<T> {

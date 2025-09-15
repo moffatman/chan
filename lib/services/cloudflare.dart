@@ -275,7 +275,7 @@ class CloudflareInterceptor extends Interceptor {
 			final title = document.querySelector('title')?.text ?? '';
 			return _titleMatches(title);
 		}
-		if (ImageboardRegistry.instance.isRedirectGateway(response.realUri, response.htmlTitle)) {
+		if (ImageboardRegistry.instance.isRedirectGateway(response.realUri, () => response.htmlTitle)) {
 			return true;
 		}
 		return false;
@@ -458,7 +458,7 @@ class CloudflareInterceptor extends Interceptor {
 						return;
 					}
 				}
-				if (!ImageboardRegistry.instance.isRedirectGateway(uri, title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
+				if (!ImageboardRegistry.instance.isRedirectGateway(uri, () => title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
 					await Persistence.saveCookiesFromWebView(uri!);
 					try {
 						final value = await handler(controller, uri, false);
@@ -706,7 +706,7 @@ class CloudflareInterceptor extends Interceptor {
 					return;
 				}
 				final _CloudflareResponse data;
-				final gateway = ImageboardRegistry.instance.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri), response.htmlTitle);
+				final gateway = ImageboardRegistry.instance.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri), () => response.htmlTitle);
 				if (gateway != null) {
 					// Start the request again
 					// We need to ensure cookies are preserved in all navigation sequences
