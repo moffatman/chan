@@ -1365,6 +1365,7 @@ class ImageboardSearchOptions {
 	final bool withMedia;
 	final bool filename;
 	final bool oldestFirst;
+	final bool countryCode;
 	final Set<PostTypeFilter> supportedPostTypeFilters;
 
 	const ImageboardSearchOptions({
@@ -1378,6 +1379,7 @@ class ImageboardSearchOptions {
 		this.withMedia = false,
 		this.filename = false,
 		this.oldestFirst = false,
+		this.countryCode = false,
 		this.supportedPostTypeFilters = const {PostTypeFilter.none}
 	});
 
@@ -1394,11 +1396,12 @@ class ImageboardSearchOptions {
 		other.withMedia == withMedia &&
 		other.filename == filename &&
 		other.oldestFirst == oldestFirst &&
+		other.countryCode == countryCode &&
 		setEquals(other.supportedPostTypeFilters, supportedPostTypeFilters);
 	@override
-	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, filename, oldestFirst, Object.hashAllUnordered(supportedPostTypeFilters));
+	int get hashCode => Object.hash(text, name, date, subject, trip, isDeleted, withMedia, filename, oldestFirst, countryCode, Object.hashAllUnordered(supportedPostTypeFilters));
 
-	bool get hasOptions => name || imageMD5 || supportedPostTypeFilters.length > 1 || date || subject || trip || isDeleted || withMedia || filename || oldestFirst;
+	bool get hasOptions => name || imageMD5 || supportedPostTypeFilters.length > 1 || date || subject || trip || isDeleted || withMedia || filename || oldestFirst || countryCode;
 }
 
 class ImageboardSearchMetadata {
@@ -2213,6 +2216,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	ImageboardSiteLoginSystem? get loginSystem => null;
 	List<ImageboardEmote> getEmotes() => [];
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async => [];
+	bool doesBoardHaveCountryFlags(String board) => false;
 	String get siteType;
 	String get siteData;
 	String get defaultUsername;
@@ -2228,7 +2232,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		if (board != null && archives.isNotEmpty) {
 			return ImageboardSearchMetadata(
 				name: '$name archives',
-				options: const ImageboardSearchOptions(
+				options: ImageboardSearchOptions(
 					text: true,
 					name: true,
 					date: true,
@@ -2244,7 +2248,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					subject: true,
 					trip: true,
 					filename: true,
-					oldestFirst: true
+					oldestFirst: true,
+					countryCode: doesBoardHaveCountryFlags(board)
 				)
 			);
 		}
@@ -2700,6 +2705,7 @@ ImageboardSite makeSite(Map data) {
 			subjectCharacterLimit: data['subjectCharacterLimit'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())),
+			boardsWithCountryFlags: (data['boardsWithCountryFlags'] as List?)?.cast<String>() ?? [],
 			searchUrl: data['searchUrl'] as String? ?? '',
 			archives: archives,
 			imageHeaders: imageHeaders,

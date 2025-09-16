@@ -9,6 +9,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
+import 'package:chan/pages/picker.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/embed.dart';
@@ -1249,60 +1250,36 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 
 	void _pickFlag() async {
 		final site = context.read<ImageboardSite>();
-		final pickedFlag = await Navigator.of(context).push<ImageboardBoardFlag>(TransparentRoute(
-			builder: (context) => OverscrollModalPage(
-				child: Container(
-					width: MediaQuery.sizeOf(context).width,
-					color: ChanceTheme.backgroundColorOf(context),
-					padding: const EdgeInsets.all(16),
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						crossAxisAlignment: CrossAxisAlignment.center,
-						children: [
-							const Text('Select flag'),
-							const SizedBox(height: 16),
-							ListView.builder(
-								itemCount: _flags.length,
-								itemBuilder: (context, i) {
-									final flag = _flags[i];
-									return AdaptiveIconButton(
-										onPressed: () {
-											Navigator.of(context).pop(flag);
-										},
-										icon: Row(
-											children: [
-												if (flag.code == '0') const SizedBox(width: 16)
-												else CNetworkImage(
-													url: flag.imageUrl,
-													client: site.client,
-													fit: BoxFit.contain,
-													cache: true
-												),
-												const SizedBox(width: 8),
-												Text(flag.name)
-											]
-										)
-									);
-								},
-								shrinkWrap: true,
-								physics: const NeverScrollableScrollPhysics(),
-							)
-						]
-					)
-				)
-			)
-		));
-		if (pickedFlag != null) {
-			if (pickedFlag.code == '0') {
-				setState(() {
-					flag = null;
-				});
-			}
-			else {
-				setState(() {
-					flag = pickedFlag;
-				});
-			}
+		final flags = _flags.cast<ImageboardBoardFlag?>().toList();
+		final zeroFlagIndex = _flags.indexWhere((f) => f.code == '0');
+		String zeroFlagName = 'Geographic Location';
+		if (zeroFlagIndex != -1) {
+			zeroFlagName = flags[zeroFlagIndex]?.name ?? zeroFlagName;
+			flags[zeroFlagIndex] = null;
+		}
+		final pickedFlag = await pick<ImageboardBoardFlag?>(
+			context: context,
+			items: flags,
+			getName: (flag) => flag?.name ?? zeroFlagName,
+			itemBuilder: (flag) => Row(
+				children: [
+					if (flag == null) const SizedBox(width: 16)
+					else CNetworkImage(
+						url: flag.imageUrl,
+						client: site.client,
+						fit: BoxFit.contain,
+						cache: true
+					),
+					const SizedBox(width: 8),
+					Text(flag?.name ?? zeroFlagName)
+				]
+			),
+			selectedItem: flag
+		);
+		if (mounted) {
+			setState(() {
+				flag = pickedFlag;
+			});
 		}
 	}
 

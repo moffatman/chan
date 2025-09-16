@@ -1,4 +1,6 @@
 import 'package:chan/models/search.dart';
+import 'package:chan/pages/picker.dart';
+import 'package:chan/services/countries.dart';
 import 'package:chan/services/md5.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -317,6 +319,32 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 					),
 					const SizedBox(height: 16)
 				],
+				if (options.countryCode) Container(
+					padding: const EdgeInsets.only(top: 16),
+					alignment: Alignment.center,
+					child: AdaptiveThinButton(
+						onPressed: () async {
+							final picked = await pick<CountryFlag?>(
+								context: context,
+								items: [null, ...kCountries.values],
+								getName: (country) => country?.name ?? 'none',
+								getCode: (country) => country?.code ?? 'none',
+								itemBuilder: (country) => Text(country == null ? '🏳️ None' : '${country.emoji} ${country.name}'),
+								selectedItem: kCountries[query.countryCode]
+							);
+							setState(() {
+								query.countryCode = picked?.code;
+							});
+						},
+						child: Text(switch (query.countryCode) {
+							String countryCode => switch (kCountries[countryCode]) {
+								CountryFlag flag => '${flag.emoji} ${flag.name}',
+								null => 'Unknown Country ($countryCode)'
+							},
+							null => 'Pick Country'
+						})
+					)
+				),
 				if (options.imageMD5 && query.md5 != null) Container(
 					padding: const EdgeInsets.only(top: 16),
 					alignment: Alignment.center,

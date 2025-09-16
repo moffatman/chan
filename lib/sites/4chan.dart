@@ -101,6 +101,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	final String imageUrl;
 	final String captchaKey;
 	final Map<String, String> captchaUserAgents;
+	final List<String> boardsWithCountryFlags;
 	final List<int> possibleCaptchaLetterCounts;
 	final List<String> captchaLetters;
 	final Map<String, String> captchaLettersRemap;
@@ -1093,6 +1094,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		required this.captchaUserAgents,
 		required this.searchUrl,
 		required this.boardFlags,
+		required this.boardsWithCountryFlags,
 		required this.possibleCaptchaLetterCounts,
 		required this.captchaLetters,
 		required this.captchaLettersRemap,
@@ -1166,6 +1168,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		(other.sysUrl == sysUrl) &&
 		(other.baseUrl == baseUrl) &&
 		(other.staticUrl == staticUrl) &&
+		(other.boardsWithCountryFlags == boardsWithCountryFlags) &&
 		mapEquals(other.captchaUserAgents, captchaUserAgents) &&
 		(other.searchUrl == searchUrl) &&
 		listEquals(other.possibleCaptchaLetterCounts, possibleCaptchaLetterCounts) &&
@@ -1395,6 +1398,9 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 
 	@override
 	bool get hasLinkCookieAuth => true;
+
+	@override
+	bool doesBoardHaveCountryFlags(String board) => boardsWithCountryFlags.contains(board);
 
 	@override
 	void migrateFromPrevious(Site4Chan oldSite) {

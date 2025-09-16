@@ -66,6 +66,8 @@ class ImageboardArchiveSearchQuery {
 	String? filename;
 	@HiveField(13, defaultValue: false)
 	bool oldestFirst;
+	@HiveField(14)
+	String? countryCode;
 	ImageboardArchiveSearchQuery({
 		this.query = '',
 		this.mediaFilter = MediaFilter.none,
@@ -80,7 +82,8 @@ class ImageboardArchiveSearchQuery {
 		this.trip,
 		this.subject,
 		this.filename,
-		this.oldestFirst = false
+		this.oldestFirst = false,
+		this.countryCode
 	}) : boards = boards ?? [];
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
@@ -100,7 +103,8 @@ class ImageboardArchiveSearchQuery {
 			trip: trip,
 			subject: subject,
 			filename: filename,
-			oldestFirst: oldestFirst
+			oldestFirst: oldestFirst,
+			countryCode: countryCode
 		);
 	}
 
@@ -119,6 +123,7 @@ class ImageboardArchiveSearchQuery {
 		subject = other.subject;
 		filename = other.filename;
 		oldestFirst = other.oldestFirst;
+		countryCode = other.countryCode;
 	}
 
 	@override
@@ -136,8 +141,9 @@ class ImageboardArchiveSearchQuery {
 																	 && (other.trip == trip)
 																	 && (other.subject == subject)
 																	 && (other.filename == filename)
-																	 && (other.oldestFirst == oldestFirst);
+																	 && (other.oldestFirst == oldestFirst)
+																	 && (other.countryCode == countryCode);
 
 	@override
-	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, Object.hashAll(boards), md5, deletionStatusFilter, imageboardKey, name, trip, subject, filename, oldestFirst);
+	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, Object.hashAll(boards), md5, deletionStatusFilter, imageboardKey, name, trip, subject, filename, oldestFirst, countryCode);
 }

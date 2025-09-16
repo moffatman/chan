@@ -471,6 +471,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				if (query.name != null) 'username': query.name,
 				if (query.trip != null) 'tripcode': query.trip,
 				if (query.filename != null) 'filename': query.filename,
+				if (query.countryCode != null) 'country': query.countryCode,
 				if (query.oldestFirst) 'order': 'asc'
  			}),
 			options: Options(

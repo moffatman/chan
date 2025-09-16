@@ -160,6 +160,18 @@ class ImageboardArchiveSearchQueryFields {
     fieldName: 'oldestFirst',
     merger: PrimitiveMerger(),
   );
+  static String? getCountryCode(ImageboardArchiveSearchQuery x) =>
+      x.countryCode;
+  static void setCountryCode(ImageboardArchiveSearchQuery x, String? v) =>
+      x.countryCode = v;
+  static const countryCode =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, String?>(
+    getter: getCountryCode,
+    setter: setCountryCode,
+    fieldNumber: 14,
+    fieldName: 'countryCode',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ImageboardArchiveSearchQueryAdapter
@@ -188,7 +200,8 @@ class ImageboardArchiveSearchQueryAdapter
     10: ImageboardArchiveSearchQueryFields.trip,
     11: ImageboardArchiveSearchQueryFields.subject,
     12: ImageboardArchiveSearchQueryFields.filename,
-    13: ImageboardArchiveSearchQueryFields.oldestFirst
+    13: ImageboardArchiveSearchQueryFields.oldestFirst,
+    14: ImageboardArchiveSearchQueryFields.countryCode
   };
 
   @override
@@ -214,13 +227,14 @@ class ImageboardArchiveSearchQueryAdapter
       subject: fields[11] as String?,
       filename: fields[12] as String?,
       oldestFirst: fields[13] == null ? false : fields[13] as bool,
+      countryCode: fields[14] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ImageboardArchiveSearchQuery obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.query)
       ..writeByte(1)
@@ -248,7 +262,9 @@ class ImageboardArchiveSearchQueryAdapter
       ..writeByte(12)
       ..write(obj.filename)
       ..writeByte(13)
-      ..write(obj.oldestFirst);
+      ..write(obj.oldestFirst)
+      ..writeByte(14)
+      ..write(obj.countryCode);
   }
 
   @override

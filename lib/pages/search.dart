@@ -4,6 +4,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/countries.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -622,6 +623,18 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.name?.isNotEmpty ?? false) _SearchQueryFilterTag('Name', q.name),
 		if (q.trip?.isNotEmpty ?? false) _SearchQueryFilterTag('Trip', q.trip),
 		if (q.filename?.isNotEmpty ?? false) _SearchQueryFilterTag('Filename', q.filename),
+		if (q.countryCode != null) switch (kCountries[q.countryCode]) {
+			CountryFlag flag => _RawSearchQueryFilterTag(const Text('Country'), Text.rich(
+				TextSpan(
+					children: [
+						// Emoji is too tall, it will break the formatting
+						TextSpan(text: flag.emoji, style: const TextStyle(height: 1)),
+						TextSpan(text: ' ${flag.name}')
+					]
+				)
+			)),
+			null => _SearchQueryFilterTag('Country', 'Unknown (${q.countryCode})')
+		},
 		if (q.oldestFirst) const _SearchQueryFilterTag('Oldest first')
 	].expand((w) => [const SizedBox(width: 4), w]).skip(1).toList();
 }
