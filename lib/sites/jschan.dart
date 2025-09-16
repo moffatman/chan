@@ -97,7 +97,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 					else if (node.localName == 'span' && node.classes.contains('greentext')) {
 						yield PostQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
-					else if (node.localName == 'span' && node.classes.contains('pinktext')) {
+					else if (node.localName == 'span' && node.classes.contains('pinktext') || node.classes.contains('dice')) {
 						yield PostPinkQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
 					else if (node.localName == 'span' && node.classes.contains('detected')) {
@@ -121,8 +121,14 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 					else if (node.localName == 'span' && node.classes.contains('title')) {
 						yield PostSecondaryColorSpan(PostBoldSpan(PostNodeSpan(visit(node.nodes).toList(growable: false))));
 					}
-					else if (node.localName == 'span' && node.classes.contains('mono')) {
-						yield PostCodeSpan(node.text);
+					else if (node.localName == 'span' && node.classes.contains('mono') || node.classes.contains('code')) {
+						yield PostCodeSpan(node.text.trimRight());
+					}
+					else if (node.localName == 'span' && node.classes.contains('big')) {
+						yield PostBigTextSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
+					else if (node.attributes['style'] case String style when node.localName == 'span' && style.isNotEmpty) {
+						yield PostCssSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)), style);
 					}
 					else if (node.localName == 'ol' || node.localName == 'ul') {
 						int i = 1;
@@ -143,6 +149,13 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 								i++;
 							}
 						}
+					}
+					else if (node.attributes['src'] case String src when node.localName == 'img') {
+						yield PostInlineImageSpan(
+							src: src,
+							width: node.attributes['width']?.parseInt ?? 16,
+							height: node.attributes['height']?.parseInt ?? 16
+						);
 					}
 					else {
 						yield* Site4Chan.parsePlaintext(node.outerHtml);
