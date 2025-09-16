@@ -840,7 +840,7 @@ packages:
     description:
       path: "pkgs/http2"
       ref: master
-      resolved-ref: "349b285f9b25c01e90389533ee7043e2eaffab7d"
+      resolved-ref: "58a22ac9ec78e3f58809a475050caa90361704f9"
       url: "https://github.com/moffatman/http.git"
     source: git
     version: "2.3.1"
