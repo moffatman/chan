@@ -614,7 +614,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								)
 							),
 							onTap: () {
-								scrollController.jumpTo(scrollController.position.pixels);
+								if (scrollController.hasOnePosition) {
+									scrollController.jumpTo(scrollController.position.pixels);
+								}
 								if (!_showSelectedItem) {
 									Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
 								}
@@ -636,7 +638,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							},
 							onChanged: (String newSearchString) {
 								// Jump to start, or else we might end up deeply overscrolled (blurred)
-								scrollController.jumpTo(0);
+								if (scrollController.hasOnePosition) {
+									scrollController.jumpTo(0);
+								}
 								_updateTypeaheadBoards(newSearchString);
 								setState(() {
 									searchString = newSearchString;
