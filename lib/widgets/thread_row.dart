@@ -365,7 +365,7 @@ class ThreadRow extends StatelessWidget {
 		final watch = threadState?.threadWatch;
 		final dimThisThread = dimReadThreads && !isSelected && threadSeen && (watch == null || !hasUnseenReplies);
 		final approxWidth = style.isGrid ? settings.catalogGridWidth : estimateWidth(context);
-		final inContextMenuHack = context.watch<ContextMenuHint?>() != null;
+		final inContextMenuHack = context.watch<ContextMenuHint?>()?.mode == ContextMenuHintMode.withinPreview;
 		double? approxHeight = style.isGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight;
 		if (approxHeight != null) {
 			approxHeight *= (inContextMenuHack ? 5 : 1);
