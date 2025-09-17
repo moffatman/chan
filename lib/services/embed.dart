@@ -199,13 +199,13 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async 
 			Thread? thread = await target.$1.persistence.getThreadStateIfExists(target.$2.threadIdentifier!)?.getThread();
 			try {
 				if (target.$3 == null) {
-					thread = await target.$1.site.getThread(target.$2.threadIdentifier!, priority: RequestPriority.cosmetic);
+					thread = await target.$1.site.getThread(target.$2.threadIdentifier!, priority: RequestPriority.lowest);
 				}
 			}
 			on ThreadNotFoundException {
 				// Maybe dead?
 			}
-			thread ??= await target.$1.site.getThreadFromArchive(target.$2.threadIdentifier!, priority: RequestPriority.cosmetic);
+			thread ??= await target.$1.site.getThreadFromArchive(target.$2.threadIdentifier!, priority: RequestPriority.lowest, archiveName: target.$3);
 			final post = thread.posts_.tryFirstWhere((p) => p.id == target.$2.postId) ?? thread.posts_.first;
 			if (post.id == post.threadId) {
 				return EmbedData(
