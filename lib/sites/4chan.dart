@@ -285,7 +285,6 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	static final _mathPattern = RegExp(r'\[math\](.+?)\[\/math\]');
 	static final _eqnPattern = RegExp(r'\[eqn\](.+?)\[\/eqn\]');
 	static final _catalogSearchPattern = RegExp(r'^catalog#s=(.+)$');
-	static final _trailingBrPattern = RegExp(r'<br>$');
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data, {bool fromSearch = false}) {
 		final fromSearchThread = fromSearch ? ThreadIdentifier(board, threadId) : null;
@@ -417,7 +416,22 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 					elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
 				}
 				else if (node.localName == 'pre') {
-					elements.add(PostCodeSpan(unescape.convert(node.innerHtml.replaceFirst(_trailingBrPattern, '').replaceAll('<br>', '\n'))));
+					final buffer = StringBuffer();
+					// To strip all html syntax but maintain whitespace
+					void dfs(dom.Node node) {
+						if (node is dom.Element) {
+							if (node.localName == 'br') {
+								buffer.writeln();
+							}
+							else {
+								node.nodes.forEach(dfs);
+							}
+						} else if (node is dom.Text) {
+							buffer.write(node.text);
+						}
+					}
+					dfs(node);
+					elements.add(PostCodeSpan(buffer.toString().trimRight()));
 				}
 				else if (node.localName == 'b' || node.localName == 'strong') {
 					final child = PostBoldSpan(makeSpan(board, threadId, node.innerHtml));
