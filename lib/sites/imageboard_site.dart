@@ -40,7 +40,6 @@ import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/soyjak.dart';
-import 'package:chan/sites/crbachan.dart';
 import 'package:chan/sites/lainchan2.dart';
 import 'package:chan/sites/wizchan.dart';
 import 'package:chan/sites/xenforo.dart';
@@ -2579,7 +2578,7 @@ ImageboardSite makeSite(Map data) {
 		);
 	}
 	else if (data['type'] == 'crbachan') {
-		return SiteCRBA(
+		return SiteLainchan2(
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
 			imageUrl: data['imageUrl'] as String?,
