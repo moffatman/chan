@@ -105,6 +105,8 @@
                <!-- soyjak -->
                <data android:scheme="https" android:host="soyjak.st"/>
                <data android:scheme="https" android:host="*.soyjak.st"/>
+			   <!-- crbachan -->
+               <data android:scheme="https" android:host="ib.crba.dedyn.io"/>
                <!-- sportschan -->
                <data android:scheme="https" android:host="sportschan.org"/>
                <!-- thecoli -->
