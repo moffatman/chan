@@ -40,6 +40,7 @@ import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/soyjak.dart';
+import 'package:chan/sites/crbachan.dart';
 import 'package:chan/sites/lainchan2.dart';
 import 'package:chan/sites/wizchan.dart';
 import 'package:chan/sites/xenforo.dart';
@@ -2575,6 +2576,20 @@ ImageboardSite makeSite(Map data) {
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			captchaQuestion: data['captchaQuestion'] as String?
+		);
+	}
+	else if (data['type'] == 'crbachan') {
+		return SiteCRBA(
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
+			overrideUserAgent: overrideUserAgent,
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey'] as String?,
+			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
+			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 		);
 	}
 	else if (data['type'] == 'frenschan') {
