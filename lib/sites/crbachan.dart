@@ -26,7 +26,7 @@ class SiteCRBA extends SiteLainchan2 {
 	);
 
 	@override
-	String get siteType => 'CRBAchan';
+	String get siteType => 'crbachan';
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
