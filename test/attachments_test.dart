@@ -86,7 +86,7 @@ void main() async {
 	test('HTTP 429 queueing', () async {
 		final root = await Directory.current.createTemp('caching_server_');
 		final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-		VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
+		VideoServer.initializeStatic(root, root, bufferOutput: false);
 		try {
 			Completer<HttpRequest> completer = Completer();
 			fakeServer.listen((request) {
@@ -187,7 +187,7 @@ void main() async {
 	test('HTTP 429 priority', () async {
 		final root = await Directory.current.createTemp('caching_server_');
 		final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-		VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
+		VideoServer.initializeStatic(root, root, bufferOutput: false);
 		try {
 			Completer<HttpRequest> completer = Completer();
 			fakeServer.listen((request) {
@@ -276,7 +276,7 @@ void main() async {
 	test('HTTP 429 cancellation', () async {
 		final root = await Directory.current.createTemp('caching_server_');
 		final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-		VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
+		VideoServer.initializeStatic(root, root, bufferOutput: false);
 		try {
 			Completer<HttpRequest> completer = Completer();
 			fakeServer.listen((request) {

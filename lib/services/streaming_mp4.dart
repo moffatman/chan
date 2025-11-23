@@ -105,20 +105,18 @@ class VideoServer {
 	HttpServer? _httpServer;
 	bool _stopped = false;
 	final bool bufferOutput;
-	final int port;
+	int port = 0;
 	final int insignificantByteThreshold;
 	final _lock = Mutex();
 
 	static void initializeStatic(Directory webmRoot, Directory httpRoot, {
 		bool bufferOutput = true,
-		int port = 4070,
 		int insignificantByteThreshold = 80 << 10 // 80 KB
 	}) {
 		_server = VideoServer(
 			webmRoot: webmRoot,
 			httpRoot: httpRoot,
 			bufferOutput: bufferOutput,
-			port: port,
 			insignificantByteThreshold: insignificantByteThreshold
 		);
 	}
@@ -134,7 +132,6 @@ class VideoServer {
 		required this.webmRoot,
 		required this.httpRoot,
 		required this.bufferOutput,
-		required this.port,
 		required this.insignificantByteThreshold
 	});
 
@@ -665,6 +662,7 @@ class VideoServer {
 	Future<void> ensureRunning() => _lock.protect(() async {
 		if (_httpServer == null) {
 			final h = _httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, port, shared: true);
+			port = h.port;
 			h.listen(_handleRequest, cancelOnError: false, onDone: () => _lock.protect(() async {
 				if (h == _httpServer) {
 					_httpServer = null;
