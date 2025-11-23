@@ -273,7 +273,7 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 							smartDashesType: SmartDashesType.disabled,
 							smartQuotesType: SmartQuotesType.disabled,
 							autocorrect: false,
-							placeholder: 'Board...',
+							placeholder: 'Search...',
 							textAlign: TextAlign.center,
 							focusNode: _focusNode,
 							enableSuggestions: false,
