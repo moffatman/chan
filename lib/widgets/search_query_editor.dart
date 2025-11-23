@@ -48,7 +48,7 @@ extension _ConvertToPrivate on MediaFilter {
 class SearchQueryEditor extends StatefulWidget {
 	final ImageboardArchiveSearchQuery query;
 	final VoidCallback onChanged;
-	final VoidCallback onSubmitted;
+	final VoidCallback? onSubmitted;
 	final VoidCallback? onPickerShow;
 	final VoidCallback? onPickerHide;
 	final double? knownWidth;
@@ -350,7 +350,7 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 					alignment: Alignment.center,
 					child: Text('MD5: ${query.md5}')
 				),
-				Container(
+				if (widget.onSubmitted != null) Container(
 					padding: const EdgeInsets.only(top: 16),
 					alignment: Alignment.center,
 					child: AdaptiveFilledButton(

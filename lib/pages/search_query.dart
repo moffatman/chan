@@ -411,10 +411,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 														changed = true;
 														setState(() {});
 													},
-													onSubmitted: () {
-														changed = true;
-														Navigator.pop(context, true);
-													},
+													onSubmitted: null,
 													knownWidth: 300
 												)
 											]
