@@ -1239,7 +1239,13 @@ class PostLinkSpan extends PostTerminalSpan {
 				snapshot = null;
 			}
 			if (snapshot != null) {
-				final imageboardTarget = snapshot.data?.imageboardTarget;
+				EmbedData? data = snapshot.data;
+				if (data?.attachments?.imageboard.key == zone.imageboard.key && (data?.attachments?.item.every((a) => post?.attachments.any((b) => b.url == a.url) ?? false) ?? false)) {
+					// Don't re-embed same attachments twice next to the real thumbnail
+					// Just show the URL
+					data = null;
+				}
+				final imageboardTarget = data?.imageboardTarget;
 				if (imageboardTarget != null && imageboardTarget.$1.key == zone.imageboard.key) {
 					final thread = imageboardTarget.$2.threadIdentifier;
 					if (thread != null) {
@@ -1256,7 +1262,7 @@ class PostLinkSpan extends PostTerminalSpan {
 						return PostBoardLinkSpan(imageboardTarget.$2.board).build(context, post, zone, settings, theme, options);
 					}
 				}
-				final attachments = snapshot.data?.attachments;
+				final attachments = data?.attachments;
 				if (attachments != null) {
 					final stackIds = zone.stackIds.toList();
 					if (stackIds.isNotEmpty) {
@@ -1338,20 +1344,20 @@ class PostLinkSpan extends PostTerminalSpan {
 						center: Flexible(child: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaler: TextScaler.noScaling))
 					);
 				}
-				String? byline = snapshot.data?.provider;
-				if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
-					byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
+				String? byline = data?.provider;
+				if (data?.author != null && !(data?.title != null && data!.title!.contains(data.author!))) {
+					byline = byline == null ? data?.author : '${data?.author} - $byline';
 				}
-				if (snapshot.data?.thumbnailWidget != null || snapshot.data?.thumbnailUrl != null || snapshot.data?.imageboardTarget != null) {
+				if (data?.thumbnailWidget != null || data?.thumbnailUrl != null || data?.imageboardTarget != null) {
 					final lines = [
-						if (name != null && !url.contains(name!) && (snapshot.data?.title?.contains(name!) != true)) name!,
-						if (snapshot.data?.title?.isNotEmpty ?? false) snapshot.data!.title!
+						if (name != null && !url.contains(name!) && (data?.title?.contains(name!) != true)) name!,
+						if (data?.title?.isNotEmpty ?? false) data!.title!
 						else if (name == null || url.contains(name!)) url
 					];
-					Widget? tapChildChild = snapshot.data?.thumbnailWidget;
-					if (tapChildChild == null && snapshot.data?.thumbnailUrl != null) {
+					Widget? tapChildChild = data?.thumbnailWidget;
+					if (tapChildChild == null && data?.thumbnailUrl != null) {
 						ImageProvider image = CNetworkImageProvider(
-							snapshot.data!.thumbnailUrl!,
+							data!.thumbnailUrl!,
 							client: zone.imageboard.site.client,
 							cache: true,
 						);
@@ -1395,10 +1401,10 @@ class PostLinkSpan extends PostTerminalSpan {
 							);
 						}
 					}
-					if (tapChildChild == null && snapshot.data?.imageboardTarget != null) {
+					if (tapChildChild == null && data?.imageboardTarget != null) {
 						tapChildChild = ImageboardIcon(
-							imageboardKey: snapshot.data?.imageboardTarget?.$1.key,
-							boardName: snapshot.data?.imageboardTarget?.$2.board
+							imageboardKey: data?.imageboardTarget?.$1.key,
+							boardName: data?.imageboardTarget?.$2.board
 						);
 					}
 					tapChild = buildEmbed(
