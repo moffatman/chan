@@ -729,6 +729,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					precacheImage(CNetworkImageProvider(
 						url.toString(),
 						client: site.client,
+						priority: priority,
 						cache: true,
 						headers: getHeaders(url)
 					), ImageboardRegistry.instance.context!, onError: completer.completeError).then((_) {
@@ -1671,6 +1672,7 @@ class AttachmentViewer extends StatelessWidget {
 			source.toString(),
 			client: controller.site.client,
 			cache: true,
+			priority: controller.isPrimary ? RequestPriority.interactive : RequestPriority.functional,
 			headers: controller.getHeaders(source)
 		);
 		if (source.scheme == 'file') {
