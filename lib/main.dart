@@ -1979,26 +1979,35 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
-	Widget _buildTabList(Axis axis) {
+	Widget _buildTabList(Axis axis, ValueListenable<bool> isShowing) {
 		final usingHomeBoard = Settings.instance.usingHomeBoard;
-		buildTabIcon(int i) => TabWidgetBuilder(
-			tab: Persistence.tabs[i],
-			builder: (context, data) => DecoratedBox(
-				decoration: BoxDecoration(
-					color: usingHomeBoard && i == 0 ?
-						ChanceTheme.primaryColorWithBrightness30Of(context) :
-						(data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null),
-				),
-				child: _buildTabletIcon(
-					i * -1,
-					StationaryNotifyingIcon(
-						icon: data.primaryIcon,
-						primary: data.unseenYouCount,
-						secondary: data.unseenCount
+		buildTabIcon(int i) => ValueListenableBuilder(
+			valueListenable: isShowing,
+			builder: (context, showing, child) {
+				return TickerMode(
+					enabled: showing,
+					child: child!
+				);
+			},
+			child: TabWidgetBuilder(
+				tab: Persistence.tabs[i],
+				builder: (context, data) => DecoratedBox(
+					decoration: BoxDecoration(
+						color: usingHomeBoard && i == 0 ?
+							ChanceTheme.primaryColorWithBrightness30Of(context) :
+							(data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null),
 					),
-					data.shortTitle,
-					axis: axis,
-					preLabelInjection: data.secondaryIcon
+					child: _buildTabletIcon(
+						i * -1,
+						StationaryNotifyingIcon(
+							icon: data.primaryIcon,
+							primary: data.unseenYouCount,
+							secondary: data.unseenCount
+						),
+						data.shortTitle,
+						axis: axis,
+						preLabelInjection: data.secondaryIcon
+					)
 				)
 			)
 		);
@@ -2211,7 +2220,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																Expanded(
 																	child: AnimatedBuilder(
 																		animation: _tabs.activeBrowserTab,
-																		builder: (context, _) => _buildTabList(Axis.vertical)
+																		builder: (context, _) => _buildTabList(Axis.vertical, const ConstantValueListenable(true))
 																	)
 																),
 																_buildNewTabIcon(
@@ -2491,7 +2500,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 															Expanded(
 																child: AnimatedBuilder(
 																	animation: _tabs.activeBrowserTab,
-																	builder: (context, _) => _buildTabList(Axis.horizontal)
+																	builder: (context, _) => _buildTabList(Axis.horizontal, _showTabPopup)
 																)
 															),
 															_buildNewTabIcon(axis: Axis.horizontal)
