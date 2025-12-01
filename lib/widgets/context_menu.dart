@@ -53,6 +53,9 @@ class ContextMenuHint {
 		other.mode == mode;
 	@override
 	int get hashCode => Object.hash(_state, mode);
+
+	@override
+	String toString() => 'ContextMenuHint(_state: $_state, mode: $mode)';
 }
 
 class ContextMenu extends StatefulWidget {
@@ -180,7 +183,7 @@ class _ContextMenuState extends State<ContextMenu> {
 		Widget previewBuilder(BuildContext context) => MultiProvider(
 			providers: [
 				// At least one provider is required
-				Provider<ContextMenuHint>.value(value: ContextMenuHint._(this, widget.enableLongPress ? ContextMenuHintMode.longPressEnabled : ContextMenuHintMode.withinPreview)),
+				Provider<ContextMenuHint>.value(value: ContextMenuHint._(this, ContextMenuHintMode.withinPreview)),
 				if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
 				if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
 				if (site != null) Provider<ImageboardSite>.value(value: site),

@@ -364,12 +364,10 @@ class ThreadRow extends StatelessWidget {
 		final otherMetadataColor = hasUnseenReplies ? null : grey;
 		final watch = threadState?.threadWatch;
 		final dimThisThread = dimReadThreads && !isSelected && threadSeen && (watch == null || !hasUnseenReplies);
-		final approxWidth = style.isGrid ? settings.catalogGridWidth : estimateWidth(context);
+		final screenWidth = estimateWidth(context);
+		final approxWidth = style.isGrid ? screenWidth / (screenWidth / settings.catalogGridWidth).ceil() : screenWidth;
 		final inContextMenuHack = context.watch<ContextMenuHint?>()?.mode == ContextMenuHintMode.withinPreview;
-		double? approxHeight = style.isGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight;
-		if (approxHeight != null) {
-			approxHeight *= (inContextMenuHack ? 5 : 1);
-		}
+		double? approxHeight = inContextMenuHack ? null : (style.isGrid ? settings.catalogGridHeight : settings.maxCatalogRowHeight);
 		final invertCounters = invertCountersIfUnread && switch (watch?.localYousOnly) {
 			null => false, // no watch
 			true => (threadState?.unseenReplyIdsToYouCount() ?? 0) > 0,
@@ -504,6 +502,32 @@ class ThreadRow extends StatelessWidget {
 				}
 			}
 		}
+		int? maxSpanLines;
+		int? charactersPerLine;
+		if (approxHeight != null) {
+			charactersPerLine = (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil();
+			final approxImageHeight = switch (style.isGrid) {
+				true => switch (settings.catalogGridModeTextAboveAttachment) {
+					true => 0, // Image behind
+					false => switch (settings._contentFocusedAttachmentSizing) {
+						_ContentFocusedMultiChildWidgetAttachmentSizing.fixed => applyBoxFit(BoxFit.cover, switch ((latestThread.attachments.tryFirst?.width, latestThread.attachments.tryFirst?.height)) {
+							(int w, int h) => Size(w.toDouble(), h.toDouble()),
+							_ => const Size(1, 1)
+					 }, Size(approxWidth, approxHeight / 2)).destination.height,
+						_ContentFocusedMultiChildWidgetAttachmentSizing.atLeastHalf => approxHeight / 2, // Text lays out first, can never be more than half
+						_ContentFocusedMultiChildWidgetAttachmentSizing.upToHalf => max(50, applyBoxFit(BoxFit.contain, switch ((latestThread.attachments.tryFirst?.width, latestThread.attachments.tryFirst?.height)) {
+							(int w, int h) => Size(w.toDouble(), h.toDouble()),
+							_ => const Size(1, 1)
+					 }, Size(approxWidth, approxHeight - 80)).destination.height)
+					}
+				},
+				false => 0 // Image to the side
+			};
+			final oneLineHeight = (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2);
+			final totalLines = 1 + ((approxHeight - approxImageHeight) / oneLineHeight).lazyCeil();
+			final headerLines = (headerRow.fold(0, (s, e) => s + e.toPlainText().length) / charactersPerLine).lazyCeil();
+			maxSpanLines = totalLines - headerLines;
+		}
 		List<Widget> rowChildren() => [
 			const SizedBox(width: 8),
 			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) Padding(
@@ -577,11 +601,8 @@ class ThreadRow extends StatelessWidget {
 											op.span.build(
 												context, op, context.watch<PostSpanZoneData>(), settings, theme,
 												(baseOptions ?? const PostSpanRenderOptions()).copyWith(
-													maxLines: switch (approxHeight) {
-														double approxHeight => 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
-														null => null
-													},
-													charactersPerLine: (approxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
+													maxLines: maxSpanLines,
+													charactersPerLine: charactersPerLine,
 													postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1)	? null : countersPlaceholder,
 													hideThumbnails: hideThumbnails,
 													ensureTrailingNewline: true
@@ -712,8 +733,8 @@ class ThreadRow extends StatelessWidget {
 					if (!settings.catalogGridModeCropThumbnails && settings.catalogGridModeTextAboveAttachment && !settings.useFullWidthForCatalogCounters && !settings.catalogGridModeAttachmentInBackground) countersPlaceholderWidget
 				]
 			);
-			final txt = Padding(
-				padding: const EdgeInsets.all(8),
+			final txt = Container(
+				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 				child: ChangeNotifierProvider<PostSpanZoneData>(
 					create: (ctx) => PostSpanRootZoneData(
 						thread: latestThread,
@@ -723,12 +744,9 @@ class ThreadRow extends StatelessWidget {
 					builder: (ctx, _) {
 						final others = [
 							if (site.classicCatalogStyle && op.text.isNotEmpty) op.span.build(ctx, op, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-								maxLines: switch (approxHeight) {
-									double approxHeight => 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (headerRow.isNotEmpty ? 1 : 0),
-									null => null
-								},
+								maxLines: maxSpanLines,
 								hideThumbnails: hideThumbnails,
-								charactersPerLine: (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
+								charactersPerLine: charactersPerLine,
 							)),
 							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) countersPlaceholder,
 							if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText && style == ThreadRowStyle.grid) TextSpan(text: '\n' * 25)
@@ -799,13 +817,7 @@ class ThreadRow extends StatelessWidget {
 				}
 				return _ContentFocusedMultiChildWidget(
 					textAboveAttachment: settings.catalogGridModeTextAboveAttachment,
-					attachmentSizing: switch (settings.catalogGridModeShowMoreImageIfLessText) {
-						true => switch (settings.catalogGridModeCropThumbnails) {
-							true => _ContentFocusedMultiChildWidgetAttachmentSizing.atLeastHalf,
-							false => _ContentFocusedMultiChildWidgetAttachmentSizing.upToHalf
-						},
-						false => _ContentFocusedMultiChildWidgetAttachmentSizing.fixed
-					},
+					attachmentSizing: settings._contentFocusedAttachmentSizing,
 					attachment: ConstrainedBox(
 						constraints: BoxConstraints(
 							maxHeight: MediaQuery.sizeOf(context).height / 2,
@@ -935,6 +947,16 @@ enum _ContentFocusedMultiChildWidgetAttachmentSizing {
 	fixed,
 	upToHalf,
 	atLeastHalf
+}
+
+extension _ContentFocusedAttachmentSizing on Settings {
+	_ContentFocusedMultiChildWidgetAttachmentSizing get _contentFocusedAttachmentSizing => switch (catalogGridModeShowMoreImageIfLessText) {
+		true => switch (catalogGridModeCropThumbnails) {
+			true => _ContentFocusedMultiChildWidgetAttachmentSizing.atLeastHalf,
+			false => _ContentFocusedMultiChildWidgetAttachmentSizing.upToHalf
+		},
+		false => _ContentFocusedMultiChildWidgetAttachmentSizing.fixed
+	};
 }
 
 class _ContentFocusedMultiChildWidget extends SlottedMultiChildRenderObjectWidget<_ContentFocusedMultiChildLayoutId, RenderBox> {

@@ -221,7 +221,7 @@ class PostNodeSpan extends PostSpan {
 		}
 		final ownLineOptions = effectiveOptions.copyWith(ownLine: true);
 		int lines = 0;
-		double lineGuess = 0;
+		double lineGuess = 0.001;
 		for (int i = 0; i < effectiveChildren.length && lines < options.maxLines; i++) {
 			if ((i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) && (i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan)) {
 				renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, ownLineOptions));
@@ -231,7 +231,7 @@ class PostNodeSpan extends PostSpan {
 			}
 			if (effectiveChildren[i] is PostLineBreakSpan) {
 				lines += lineGuess.ceil();
-				lineGuess = 0;
+				lineGuess = 0.001;
 			}
 			else {
 				lineGuess += effectiveChildren[i].buildText(post).length / options.charactersPerLine;
