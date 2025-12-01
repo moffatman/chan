@@ -1327,6 +1327,14 @@ class ThreadPageState extends State<ThreadPage> {
 			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
 		}
 		bool needToSave = false;
+		// For Xenforo, we might find out the stub item is cross-thread later
+		newChildren.removeWhere((c) {
+			if (c.threadId != thread.id) {
+				zone.insertCrossThreadPost(c);
+				return true;
+			}
+			return false;
+		});
 		for (final p in newChildren) {
 			if (!p.isPageStub && oldIds[p.id] != p.isStub && !persistentState.youIds.contains(p.id)) {
 				needToSave |= persistentState.unseenPostIds.data.add(p.id);

@@ -767,18 +767,16 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	}
 	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		int? actualThreadId = threadId;
+		Post? thisPostLoaded = zone.crossThreadPostFromArchive(board, postId);
+		if (board == zone.board) {
+			thisPostLoaded ??= zone.findPost(postId);
+		}
+		if (thisPostLoaded != null) {
+			actualThreadId = thisPostLoaded.threadId;
+		}
 		if (threadId == null) {
 			// Dead links do not know their thread
-			Post? thisPostLoaded = zone.crossThreadPostFromArchive(board, postId);
-			if (board == zone.board) {
-				thisPostLoaded ??= zone.findPost(postId);
-			}
-			if (thisPostLoaded != null) {
-				actualThreadId = thisPostLoaded.threadId;
-			}
-			else {
-				return _buildDeadLink(context, zone, settings, theme, options);
-			}
+			return _buildDeadLink(context, zone, settings, theme, options);
 		}
 
 		if (actualThreadId != null && (ImageboardBoard.getKey(board) != ImageboardBoard.getKey(zone.board) || zone.findThread(actualThreadId) == null || (actualThreadId != zone.primaryThreadId && actualThreadId == postId))) {
@@ -2543,6 +2541,11 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	Post? crossThreadPostFromArchive(String board, int id) {
 		return _crossThreadPostsFromArchive[(board, id)];
+	}
+
+	void insertCrossThreadPost(Post post) {
+		_crossThreadPostsFromArchive[(post.board, post.id)] = post;
+		notifyListeners();
 	}
 
 	@override

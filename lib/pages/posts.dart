@@ -150,13 +150,6 @@ class _PostsPageState extends State<PostsPage> {
 			else if (matchingDraft != null) {
 				replies.add(_PostsPageItem.spamFiltered(matchingDraft));
 			}
-			else if (context.read<ImageboardSite?>()?.isPaged ?? false) {
-				// It must be on another page
-				replies.add(_PostsPageItem.secondaryStub(ParentAndChildIdentifier(
-					parentId: widget.zone.primaryThreadId,
-					childId: id
-				)));
-			}
 			else {
 				final archivedPost = widget.zone.crossThreadPostFromArchive(widget.zone.board, id);
 				if (archivedPost != null) {
@@ -164,6 +157,13 @@ class _PostsPageState extends State<PostsPage> {
 						attachmentsToPostIds[attachment] = id;
 					}
 					replies.add(_PostsPageItem.post(archivedPost));
+				}
+				else if (context.read<ImageboardSite?>()?.isPaged ?? false) {
+					// It must be on another page
+					replies.add(_PostsPageItem.secondaryStub(ParentAndChildIdentifier(
+						parentId: widget.zone.primaryThreadId,
+						childId: id
+					)));
 				}
 			}
 		}

@@ -770,8 +770,9 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 			),
 			cancelToken: cancelToken
 		);
+		final resolved = (await decodeUrl(response.realUri))?.threadIdentifier ?? thread;
 		final document = parse(response.data);
-		return _getPostsFromThreadPage(thread.board, thread.id, document);
+		return _getPostsFromThreadPage(resolved.board, resolved.id, document);
 	}
 
   @override
