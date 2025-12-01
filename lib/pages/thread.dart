@@ -3422,6 +3422,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										if (showGalleryGridButton && realImageCount > 1) ...[
 											AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),
+												minSize: 0,
 												onPressed: widget.openGalleryGrid,
 												child: Row(
 													mainAxisSize: MainAxisSize.min,

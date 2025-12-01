@@ -1445,6 +1445,7 @@ class BoardPageState extends State<BoardPage> {
 																				if (settings.showGalleryGridButton && realImageCount > 1) ...[
 																					AdaptiveFilledButton(
 																						padding: const EdgeInsets.all(8),
+																						minSize: 0,
 																						color: primaryColorWithBrightness80,
 																						onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
 																						child: Icon(CupertinoIcons.square_grid_2x2, size: 20, color: theme.backgroundColor, applyTextScaling: true)

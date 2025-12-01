@@ -74,6 +74,7 @@ class AdaptiveFilledButton<T> extends StatelessWidget {
 			onPressed: onPressed,
 			padding: padding,
 			color: color ?? ChanceTheme.primaryColorOf(context),
+			foregroundColor: ChanceTheme.backgroundColorOf(context),
 			borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(8.0)),
 			minSize: minSize,
 			alignment: alignment,
