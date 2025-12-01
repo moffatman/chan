@@ -18,7 +18,8 @@ class Site8Chan extends SiteLynxchan {
 		required super.imageHeaders,
 		required super.videoHeaders,
 		required super.hasLinkCookieAuth,
-		required super.hasPagedCatalog
+		required super.hasPagedCatalog,
+		required super.allowsArbitraryBoards
 	});
 
 	static const _kRedirectGateway = ImageboardRedirectGateway(

@@ -32,6 +32,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	final List<ImageboardBoard>? boards;
 	@override
 	final bool hasLinkCookieAuth;
+	@override
+	final bool allowsArbitraryBoards;
 
 	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?res\/(\d+).html#(\d+)');
 
@@ -95,7 +97,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		required super.imageHeaders,
 		required super.videoHeaders,
 		required this.hasLinkCookieAuth,
-		required this.hasPagedCatalog
+		required this.hasPagedCatalog,
+		required this.allowsArbitraryBoards
 	});
 
 	ImageboardFlag? _makeFlag(Map data) {

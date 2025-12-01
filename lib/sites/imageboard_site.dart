@@ -2723,7 +2723,8 @@ ImageboardSite makeSite(Map data) {
 			videoHeaders: videoHeaders,
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			hasLinkCookieAuth: data['hasLinkCookieAuth'] as bool? ?? false,
-			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true
+			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true,
+			allowsArbitraryBoards: data['allowsArbitraryBoards'] as bool? ?? false
 		);
 	}
 	else if (data['type'] == '8chan') {
@@ -2737,7 +2738,8 @@ ImageboardSite makeSite(Map data) {
 			videoHeaders: videoHeaders,
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			hasLinkCookieAuth: data['hasLinkCookieAuth'] as bool? ?? false,
-			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true
+			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true,
+			allowsArbitraryBoards: data['allowsArbitraryBoards'] as bool? ?? false
 		);
 	}
 	else if (data['type'] == 'lainchan2') {
