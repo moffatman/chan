@@ -305,7 +305,7 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 								if (filteredItems.isNotEmpty) {
 									final selected = filteredItems[effectiveSelectedIndex];
 									lightHapticFeedback();
-									Navigator.pop(context, Wrapper<T?>(selected));
+									Navigator.pop(context, Wrapper<T>(selected));
 								}
 								_focusNode.requestFocus();
 							},
@@ -381,18 +381,21 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 												),
 												child: Row(
 													children: [
+														const SizedBox(width: 16),
+														Expanded(
+															child: widget.itemBuilder(item)
+														),
 														if (item == widget.selectedItem) const Padding(
 															padding: EdgeInsets.symmetric(horizontal: 8),
 															child: Icon(CupertinoIcons.check_mark, size: 20)
-														)
-														else const SizedBox(width: 36),
-														widget.itemBuilder(item)
+														),
+														const SizedBox(width: 8)
 													]
 												)
 											),
 											onPressed: () {
 												lightHapticFeedback();
-												Navigator.pop(context, Wrapper<T?>(item));
+												Navigator.pop(context, Wrapper<T>(item));
 											}
 										)
 									);

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/pages/picker.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
@@ -110,7 +111,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late final FocusNode _focusNode;
 	late List<Imageboard> allImageboards;
 	int currentImageboardIndex = -1;
-	Imageboard get currentImageboard => allImageboards[currentImageboardIndex];
+	Imageboard? get currentImageboard => currentImageboardIndex < 0 ? null : allImageboards[currentImageboardIndex];
 	late List<ImageboardScoped<ImageboardBoard>> boards;
 	static final typeaheads = <Imageboard, Trie<List<ImageboardBoard>>>{};
 	static final typeaheadLoadings = <Imageboard, Set<String>>{};
@@ -151,8 +152,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	void _fetchBoards() {
-		if (widget.currentlyPickingFavourites) {
-			boards = currentImageboard.persistence.boards.map(currentImageboard.scope).toList();
+		if (currentImageboard case final ib? when widget.currentlyPickingFavourites) {
+			boards = ib.persistence.boards.map(ib.scope).toList();
 		}
 		else {
 			boards = [];
@@ -192,7 +193,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	Future<void> _maybeRefreshBoards() async {
 		final imageboard = currentImageboard;
-		if (boardsRefreshed.contains(imageboard)) {
+		if (imageboard == null || boardsRefreshed.contains(imageboard)) {
 			// Don't refresh again
 			return;
 		}
@@ -210,13 +211,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey) case Imageboard initialImageboard) {
 			currentImageboardIndex = allImageboards.indexOf(initialImageboard);
 		}
-		if (currentImageboardIndex == -1) {
-			final mostUsedImageboardKey = Persistence.settings.tabs.map((t) => t.imageboardKey).modalValue;
-			currentImageboardIndex = allImageboards.indexWhere((i) => i.key == mostUsedImageboardKey);
-			if (currentImageboardIndex == -1) {
-				currentImageboardIndex = 0;
-			}
-		}
 		_maybeRefreshBoards();
 		_fetchBoards();
 		scrollController.addListener(_onScroll);
@@ -231,7 +225,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	void _onImageboardRegistryUpdate() {
 		final newAllImageboards = (widget.allowDevsite ? ImageboardRegistry.instance.imageboardsIncludingDev : ImageboardRegistry.instance.imageboards).where((i) => widget.filterImageboards?.call(i) ?? true).toList();
-		currentImageboardIndex = max(0, newAllImageboards.indexOf(currentImageboard));
+		if (currentImageboard case final ib?) {
+			currentImageboardIndex = max(0, newAllImageboards.indexOf(ib));
+		}
 		allImageboards = newAllImageboards;
 		_fetchBoards();
 		setState(() {});
@@ -277,12 +273,15 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	Future<void> _updateTypeaheadBoards(String rawQuery) async {
 		final query = rawQuery.toLowerCase();
-		final typeaheadLoading = typeaheadLoadings[currentImageboard] ??= {};
-		final typeahead = typeaheads[currentImageboard] ??= Trie();
+		final imageboard = currentImageboard;
+		if (imageboard == null) {
+			return;
+		}
+		final typeaheadLoading = typeaheadLoadings[imageboard] ??= {};
+		final typeahead = typeaheads[imageboard] ??= Trie();
 		if (query.isEmpty || typeaheadLoading.contains(query) || typeahead.contains(query)) {
 			return;
 		}
-		final imageboard = currentImageboard;
 		typeaheadLoading.add(query);
 		typeaheadLoadingsNotifier.didUpdate();
 		try {
@@ -316,17 +315,33 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				keyword: allImageboards.where((i) => i != currentImageboard && i.site.name.toLowerCase().contains(keyword)).toSet()
 		};
 		final imageboards = allImageboards.toList();
-		imageboards.remove(currentImageboard);
-		imageboards.insert(0, currentImageboard);
+		if (currentImageboard case final ib?) {
+			imageboards.remove(ib);
+			imageboards.insert(0, ib);
+		}
 		final favsList = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
 		final favsOrder = {
 			for (final pair in favsList.asMap().entries)
 				pair.value.imageboard.scope(pair.value.item): pair.key
 		};
-		final imageboardPriority = {
+		final imageboardPriority = currentImageboard == null ? <Imageboard, int>{} : {
 			for (final i in imageboards.asMap().entries)
 				i.value: i.key
 		};
+		final boardUsage = <(String, BoardKey), int>{};
+		for (final st in Persistence.sharedThreadStateBox.values) {
+			if (st.showInHistory == false) {
+				continue;
+			}
+			final key = (st.imageboardKey, st.boardKey);
+			boardUsage.update(key, (x) => x + 1, ifAbsent: () => 1);
+		}
+		for (final tab in Persistence.tabs) {
+			if ((tab.imageboardKey, tab.board) case (String ib, String board)) {
+				final key = (ib, ImageboardBoard.getKey(board));
+				boardUsage.update(key, (x) => x + 1, ifAbsent: () => 1);
+			}
+		}
 		List<_Board> filteredBoards = boards.tryMap((board) {
 			if (!settings.showBoard(board.item)) {
 				return null;
@@ -381,6 +396,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				if (favsComparison != 0) {
 					return favsComparison;
 				}
+				final usageComparison = (boardUsage[(b.imageboard.key, b.item.boardKey)] ?? 0) - (boardUsage[(a.imageboard.key, a.item.boardKey)] ?? 0);
+				if (usageComparison != 0) {
+					return usageComparison;
+				}
 				final popularityComparison = (b.item.popularity ?? 0) - (a.item.popularity ?? 0);
 				if (popularityComparison != 0) {
 					return popularityComparison;
@@ -390,56 +409,58 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			return filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
 		}
 		else {
-			final existingNames0 =
-					filteredBoards.where((b) => b.imageboard == currentImageboard)
-					.map((b) => b.item.boardKey).toSet();
-			final typeahead = typeaheads[currentImageboard] ??= Trie();
-			for (int i = 0; i < keywords.length; i++) {
-				// Only consider names once per-keyword in tree
-				final existingNames1 = existingNames0.toSet();
-				for (final (depth, boards) in typeahead.descend(keywords[i].str)) {
-					outer:
-					for (final board in boards) {
-						if (existingNames1.contains(board.boardKey)) {
-							continue;
-						}
-						existingNames1.add(board.boardKey);
-						final matchIndex = board.boardKey.s.indexOf(keywords[i].str);
-						if (matchIndex == -1 && keywords.length == 1) {
-							// This drops all the "relevant" boards that don't actually match
-							continue;
-						}
-						for (int j = 0; j < keywords.length; j++) {
-							if (
-								i != j
-								&& !(
-									// Name match
-									board.boardKey.s.contains(keywords[j].str) ||
-									// Title match
-									(board.title.toLowerCase().contains(keywords[j].str)) ||
-									// Site name match
-									(matchingOtherImageboards[keywords[j].str]?.contains(currentImageboard) ?? false)
-								)
-							) {
-								continue outer;
+			if (currentImageboard case final currentImageboard?) {
+				final existingNames0 =
+						filteredBoards.where((b) => b.imageboard == currentImageboard)
+						.map((b) => b.item.boardKey).toSet();
+				final typeahead = typeaheads[currentImageboard] ??= Trie();
+				for (int i = 0; i < keywords.length; i++) {
+					// Only consider names once per-keyword in tree
+					final existingNames1 = existingNames0.toSet();
+					for (final (depth, boards) in typeahead.descend(keywords[i].str)) {
+						outer:
+						for (final board in boards) {
+							if (existingNames1.contains(board.boardKey)) {
+								continue;
 							}
+							existingNames1.add(board.boardKey);
+							final matchIndex = board.boardKey.s.indexOf(keywords[i].str);
+							if (matchIndex == -1 && keywords.length == 1) {
+								// This drops all the "relevant" boards that don't actually match
+								continue;
+							}
+							for (int j = 0; j < keywords.length; j++) {
+								if (
+									i != j
+									&& !(
+										// Name match
+										board.boardKey.s.contains(keywords[j].str) ||
+										// Title match
+										(board.title.toLowerCase().contains(keywords[j].str)) ||
+										// Site name match
+										(matchingOtherImageboards[keywords[j].str]?.contains(currentImageboard) ?? false)
+									)
+								) {
+									continue outer;
+								}
+							}
+							filteredBoards.add(_Board(currentImageboard.scope(board),
+								typeaheadIndex: 1 + depth,
+								matchIndex: matchIndex,
+								exactMatch: switch ((matchIndex, board.boardKey.s.length == keywords[i].str.length, keywords[i].fin)) {
+									(0, true, false) => _ExactMatchType.match,
+									(0, true, true) => _ExactMatchType.finalizedMatch,
+									_ => null
+								},
+								// Don't treat it as a favourite
+								favsIndex: favsOrder.length,
+								imageboardPriorityIndex: 0 // currentImageboard
+							));
 						}
-						filteredBoards.add(_Board(currentImageboard.scope(board),
-							typeaheadIndex: 1 + depth,
-							matchIndex: matchIndex,
-							exactMatch: switch ((matchIndex, board.boardKey.s.length == keywords[i].str.length, keywords[i].fin)) {
-								(0, true, false) => _ExactMatchType.match,
-								(0, true, true) => _ExactMatchType.finalizedMatch,
-								_ => null
-							},
-							// Don't treat it as a favourite
-							favsIndex: favsOrder.length,
-							imageboardPriorityIndex: 0 // currentImageboard
-						));
 					}
+					// Only include names once over all keywords
+					existingNames0.addAll(existingNames1);
 				}
-				// Only include names once over all keywords
-				existingNames0.addAll(existingNames1);
 			}
 			filteredBoards.sort((a, b) {
 				final exactMatchA = a.typeaheadIndex == 0 && switch (a.exactMatch) {
@@ -494,6 +515,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			});
 			final ret = filteredBoards.map((b) => b.imageboard.scope(b.item)).toList();
 			if (
+				currentImageboard case final currentImageboard? when
 				!settings.onlyShowFavouriteBoardsInSwitcher
 				&& currentImageboard.site.allowsArbitraryBoards
 				// Presumably there are no boards with spaces
@@ -663,7 +685,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											mainAxisSize: MainAxisSize.min,
 											crossAxisAlignment: CrossAxisAlignment.stretch,
 											children: [
-												Padding(
+												if (currentImageboard case final currentImageboard?) Padding(
 													padding: const EdgeInsets.symmetric(horizontal: 16),
 													child: AdaptiveThinButton(
 														padding: const EdgeInsets.all(8),
@@ -822,7 +844,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									]
 								)
 							);
-							currentImageboard.persistence.didUpdateBrowserState();
+							currentImageboard?.persistence.didUpdateBrowserState();
 							setState(() {});
 						}
 					)
@@ -1322,7 +1344,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													children: [
 														AdaptiveIconButton(
 															minSize: 0,
-															onPressed: (currentImageboardIndex == 0) ? null : () {
+															onPressed: (currentImageboardIndex <= 0) ? null : () {
 																setState(() {
 																	currentImageboardIndex--;
 																});
@@ -1332,15 +1354,45 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														),
 														const SizedBox(width: 8),
 														Expanded(
-															child: Row(
-																mainAxisAlignment: MainAxisAlignment.center,
-																children: [
-																	ImageboardIcon(imageboardKey: currentImageboard.key),
-																	const SizedBox(width: 8),
-																	Flexible(
-																		child: AutoSizeText(currentImageboard.site.name, textAlign: TextAlign.center, maxLines: 1)
-																	)
-																]
+															child: AdaptiveIconButton(
+																minSize: 0,
+																onPressed: () async {
+																	final newImageboard = await pick(
+																		context: context,
+																		items: allImageboards,
+																		getName: (imageboard) => imageboard.site.name,
+																		itemBuilder: (imageboard) => Row(
+																			mainAxisSize: MainAxisSize.min,
+																			children: [
+																				ImageboardIcon(site: imageboard.site, size: 24),
+																				const SizedBox(width: 16),
+																				Text(imageboard.site.name)
+																			]
+																		),
+																		selectedItem: currentImageboard,
+																		getCode: (imageboard) => imageboard.site.baseUrl
+																	);
+																	if (newImageboard != null) {
+																		setState(() {
+																			currentImageboardIndex = allImageboards.indexOf(newImageboard);
+																		});
+																	}
+																},
+																icon: Row(
+																	mainAxisAlignment: MainAxisAlignment.center,
+																	children: [
+																		if (currentImageboard case final currentImageboard?) ...[
+																			ImageboardIcon(imageboardKey: currentImageboard.key),
+																			const SizedBox(width: 8),
+																			Flexible(
+																				child: AutoSizeText(currentImageboard.site.name, textAlign: TextAlign.center, maxLines: 1)
+																			)
+																		]
+																		else const Flexible(
+																			child: AutoSizeText('Pick site...', textAlign: TextAlign.center, maxLines: 1)
+																		)
+																	]
+																)
 															)
 														),
 														const SizedBox(width: 8),
