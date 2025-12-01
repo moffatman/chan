@@ -643,8 +643,16 @@ class _GalleryPageState extends State<GalleryPage> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (currentController.videoPlayerController != null) VideoControls(
-								controller: currentController
+							AnimatedBuilder(
+								animation: currentController,
+								builder: (context, _) {
+									if (currentController.videoPlayerController != null) {
+										return VideoControls(
+											controller: currentController
+										);
+									}
+									return const SizedBox.shrink();
+								}
 							),
 							SizedBox(
 								height: _thumbnailSize + 8,
