@@ -531,17 +531,25 @@ class SiteReddit extends ImageboardSite {
 		return false;
 	}
 
+	bool _isCommentsLink(Uri url) {
+		return
+			url.host.endsWith(baseUrl)
+			&& url.pathSegments.length >= 4
+			&& url.pathSegments[0] == 'comments'
+			&& url.pathSegments[2] == 'comment';
+	}
+
 	static final _linkPattern = RegExp(r'^\/r\/([^\/\n]+)(?:\/comments\/([^\/\n]+)(?:\/[^\/\n]+\/([^?\/\n]+))?)?');
 	static final _redditProtocolPattern = RegExp(r'reddit:\/\/([^ ]+)');
 
 	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
-		if (_isShareLink(url)) {
+		if (_isShareLink(url) || _isCommentsLink(url)) {
 			final response = await client.getUri<String>(url, options: Options(
 				responseType: ResponseType.plain
 			));
 			Uri? redirected = response.redirects.tryLast?.location;
-			if (redirected != null && !_isShareLink(redirected)) {
+			if (redirected != null && !_isShareLink(redirected) && !_isCommentsLink(redirected)) {
 				return await decodeUrl(Uri.https(baseUrl).resolve(redirected.toString()));
 			}
 			// Look for "reddit:///r/subreddit/..." in the JavaScript redirect page
