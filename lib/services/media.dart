@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:chan/services/html_error.dart';
+import 'package:chan/services/md5.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/util.dart';
@@ -380,6 +381,7 @@ class MediaConversion {
 	final String cacheKey;
 	final Map<String, String> headers;
 	int _additionalScaleDownFactor = 1;
+	int _randomizeChecksumNoiseFactor = 1;
 	int _durationArgumentFactor = 1;
 	final Uri? soundSource;
 	final bool requiresSubdirectory;
@@ -729,7 +731,7 @@ class MediaConversion {
 						}
 					}
 					if (randomizeChecksum) {
-						contentFilters.add('noise=alls=1:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
+						contentFilters.add('noise=alls=$_randomizeChecksumNoiseFactor:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
 					}
 					Uri inputUri = inputFile;
 					Map<String, String> inputHeaders = headers;
@@ -885,7 +887,7 @@ class MediaConversion {
 							return await start();
 						}
 					}
-					else if (soundSource != null && (outputDurationInMilliseconds ?? 0) > 0) {
+					if (soundSource != null && (outputDurationInMilliseconds ?? 0) > 0) {
 						// Sometimes soundpost is cut off short for some unknown reason
 						final duration = (await MediaScan.scan(convertedFile.uri)).duration;
 						if (duration != null && (duration.inMilliseconds / outputDurationInMilliseconds!) < 0.3) {
@@ -899,6 +901,18 @@ class MediaConversion {
 							else {
 								// Give up, just return it
 							}
+						}
+					}
+					if (randomizeChecksum && inputFile.isScheme('file')) {
+						final originalMD5 = await calculateMD5(File.fromUri(inputFile));
+						final newMD5 = await calculateMD5(convertedFile);
+						if (newMD5 == originalMD5 && _randomizeChecksumNoiseFactor <= 32) {
+							_randomizeChecksumNoiseFactor *= 2;
+							await convertedFile.delete();
+							return await start();
+						}
+						else {
+							// Give up, just return it
 						}
 					}
 					return MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly);
