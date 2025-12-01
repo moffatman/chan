@@ -43,6 +43,7 @@ enum AttachmentType {
 		}
 	}
 	bool get isVideo => this == AttachmentType.webm || this == AttachmentType.mp4;
+	bool get isZoomable => isVideo || this == AttachmentType.image;
 	bool get isImageSearchable => isVideo || this == AttachmentType.image;
 	bool get isNonMedia => this == AttachmentType.url || this == AttachmentType.pdf || this == AttachmentType.swf;
 	String get noun => switch (this) {

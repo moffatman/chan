@@ -1495,7 +1495,7 @@ class AttachmentViewer extends StatelessWidget {
 			}
 		}
 		return DoubleTapDragDetector(
-			shouldStart: () => controller.isFullResolution && allowGestures,
+			shouldStart: () => attachment.type.isZoomable && controller.isFullResolution && allowGestures,
 			onSingleTap: onTap,
 			onDoubleTapDrag: (details) {
 				if (controller.gestureKey.currentState == null) {
@@ -1546,7 +1546,7 @@ class AttachmentViewer extends StatelessWidget {
 	}
 
 	bool _canScaleImage(GestureDetails? gestureDetails) {
-		return allowGestures && controller.error == null;
+		return controller.attachment.type.isZoomable && allowGestures && controller.error == null;
 	}
 
 	Widget _buildContextMenu(BuildContext context, Widget Function({required bool inContextMenu}) buildChild) {
@@ -1872,279 +1872,302 @@ class AttachmentViewer extends StatelessWidget {
 	Widget _buildVideo(BuildContext context, Size? size) {
 		final rotate90DegreesClockwise = _rotate90DegreesClockwise(context);
 		final soundSourceDownload = controller._soundSourceDownload;
-		Widget buildChild({required bool inContextMenu}) => AbsorbPointer(
-			absorbing: !allowGestures,
-			child: Stack(
-				children: [
-					Positioned.fill(
-						child: ExtendedImageGestureWidget(
-							heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null,
-							key: inContextMenu ? null : controller.gestureKey,
-							layoutInsets: inContextMenu ? EdgeInsets.zero : layoutInsets,
-							fit: fit,
-							canScaleImage: _canScaleImage,
-							initGestureConfigHandler: () => _createGestureConfig(),
-							child: _buildDoubleTapDragDetector(
-								child: Stack(
-									alignment: Alignment.center,
-									children: [
-										const Positioned.fill(
-											// Needed to enable tapping to reveal chrome via an ancestor GestureDetector
-											child: AbsorbPointer()
-										),
-										if (controller.overrideSource == null) Positioned.fill(
-											child: Padding(
-												// Sometimes it's very slightly off from the video.
-												// This errs to have it too small rather than too large.
-												padding: videoThumbnailMicroPadding ? const EdgeInsets.all(1) : EdgeInsets.zero,
-												child: AttachmentThumbnail(
-													attachment: attachment,
-													width: attachment.width?.toDouble(),
-													height: attachment.height?.toDouble(),
-													rotate90DegreesClockwise: rotate90DegreesClockwise,
-													gaplessPlayback: true,
-													revealSpoilers: true,
-													site: controller.site,
-													mayObscure: false
-												)
-											)
-										),
-										if (attachment.type == AttachmentType.mp3) Positioned.fill(
-											child: Center(
-												child: RotatedBox(
-													quarterTurns: rotate90DegreesClockwise ? 1 : 0,
-													child: Container(
-														padding: const EdgeInsets.all(8),
-														decoration: const BoxDecoration(
-															color: Colors.black54,
-															borderRadius: BorderRadius.all(Radius.circular(8))
-														),
-														child: IntrinsicWidth(
-															child: Column(
-																mainAxisSize: MainAxisSize.min,
-																children: [
-																	const SizedBox(height: 10),
-																	const Row(
-																		mainAxisSize: MainAxisSize.min,
-																		children: [
-																			SizedBox(width: 64),
-																			Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
-																			Text(
-																				'Audio only',
-																				style: TextStyle(
-																					fontSize: 32,
-																					color: Colors.white
-																				)
-																			),
-																			SizedBox(width: 64)
-																		]
-																	),
-																	const SizedBox(height: 10),
-																	VideoControls(controller: controller, showMuteButton: false),
-																	const SizedBox(height: 10)
-																]
-															)
-														)
-													)
-												)
-											)
-										),
-										if (controller.videoPlayerController != null && (controller.isPrimary || !onlyRenderVideoWhenPrimary)) IgnorePointer(
-											child: Center(
-												child: RotatedBox(
-													quarterTurns: rotate90DegreesClockwise ? 1 : 0,
-													child: AspectRatio(
-														aspectRatio: aspectRatio,
-														child: Video(
-															controller: controller.videoPlayerController!,
-															fill: Colors.transparent,
-															controls: null
-														)
-													)
-												)
-											)
-										),
-										ValueListenableBuilder(
-											valueListenable: controller.showLoadingProgress,
-											builder: (context, showLoadingProgress, _) => (showLoadingProgress && controller._soundSourceDownload == null) ? ValueListenableBuilder(
-												valueListenable: controller.videoLoadingProgress,
-												builder: (context, double? loadingProgress, child) => _centeredLoader(
-													active: controller.isFullResolution,
-													value: loadingProgress,
-													useRealKey: !inContextMenu
-												)
-											) : const SizedBox.shrink()
-										),
-										if (soundSourceDownload != null) Positioned.fill(
-											child: Center(
-												child: RotatedBox(
-													quarterTurns: rotate90DegreesClockwise ? 1 : 0,
-													child: Container(
-														margin: const EdgeInsets.all(16),
-														padding: const EdgeInsets.all(24),
-														decoration: const BoxDecoration(
-															color: Colors.black87,
-															borderRadius: BorderRadius.all(Radius.circular(10))
-														),
-														child: IntrinsicWidth(
-															child: Column(
-																mainAxisSize: MainAxisSize.min,
-																children: [
-																	const SizedBox(height: 10),
-																	const Row(
-																		mainAxisSize: MainAxisSize.min,
-																		children: [
-																			Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
-																			SizedBox(width: 8),
-																			Text(
-																				'Downloading sound',
-																				style: TextStyle(
-																					fontSize: 32,
-																					color: Colors.white
-																				)
-																			)
-																		]
-																	),
-																	Text('from ${soundSourceDownload.uri.host}', style: const TextStyle(
-																		fontSize: 24
-																	)),
-																	const SizedBox(height: 16),
-																	ValueListenableBuilder(
-																		valueListenable: soundSourceDownload.currentBytes,
-																		builder: (context, currentBytes, _) => SizedBox(
-																			width: 350,
-																			child: Column(
-																				mainAxisSize: MainAxisSize.min,
-																				children: [
-																					LinearProgressIndicator(
-																						value: switch (soundSourceDownload.totalBytes) {
-																							int totalBytes => currentBytes / totalBytes,
-																							null => null
-																						},
-																						backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context)
-																					),
-																					const SizedBox(height: 16),
-																					Row(
-																						mainAxisSize: MainAxisSize.min,
-																						crossAxisAlignment: CrossAxisAlignment.start,
-																						children: [
-																							AdaptiveFilledButton(
-																								onPressed: () => VideoServer.instance.interruptOngoingDownloadFromUri(soundSourceDownload.uri),
-																								child: const Text('Cancel')
-																							),
-																							const Spacer(),
-																							if (soundSourceDownload.totalBytes case int totalBytes) Text('${formatFilesize(currentBytes)} / ${formatFilesize(totalBytes)}')
-																						]
-																					)
-																				]
-																			)
-																		)
-																	),
-																	const SizedBox(height: 10)
-																]
-															)
-														)
-													)
-												)
-											)
-										),
-										AnimatedSwitcher(
-											duration: const Duration(milliseconds: 250),
-											child: (controller.overlayText != null) ? Center(
-												child: RotatedBox(
-													quarterTurns: rotate90DegreesClockwise ? 1 : 0,
-													child: Container(
-														padding: const EdgeInsets.all(8),
-														margin: const EdgeInsets.only(
-															top: 12,
-															bottom: 12
-														),
-														decoration: const BoxDecoration(
-															color: Colors.black54,
-															borderRadius: BorderRadius.all(Radius.circular(8))
-														),
-														child: IntrinsicWidth(
-															child: Column(
-																mainAxisSize: MainAxisSize.min,
-																children: [
-																	Text(
-																		controller.overlayText!,
-																		style: const TextStyle(
-																			fontSize: 32,
-																			color: Colors.white
-																		)
-																	)
-																]
-															)
-														)
-													)
-												)
-											) : const SizedBox.shrink()
-										)
-									]
+		Widget buildChild({required bool inContextMenu}) {
+			Widget centerWithPage({required Widget child}) => Positioned.fill(
+				child: AnimatedBuilder(
+					animation: controller.redrawGestureListenable ?? const AlwaysStoppedAnimation(null),
+					builder: (context, _) => Padding(
+						padding: inContextMenu ? EdgeInsets.zero : layoutInsets,
+						child: Transform.translate(
+							offset: controller.gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
+							child: Transform.scale(
+								scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1),
+								child: Center(
+									child: child
 								)
 							)
-					)),
-					if (controller.error case (Object e, StackTrace st)) AnimatedBuilder(
-						animation: controller.redrawGestureListenable ?? const AlwaysStoppedAnimation(null),
-						builder: (context, _) => Positioned.fill(
-							child: Padding(
-								padding: inContextMenu ? EdgeInsets.zero : layoutInsets,
-								child: Transform.translate(
-									offset: controller.gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
-									child: Transform.scale(
-										scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1),
-										child: Center(
-											child: ErrorMessageCard(e.toStringDio(), remedies: {
-												'Retry': () => controller.reloadFullAttachment(),
-												'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url), useGalleryIfPossible: false),
-												...generateBugRemedies(e, st, context, afterFix: controller.reloadFullAttachment),
-												if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
-											})
-										)
-									)
-								)
-							)
-						)
-					),
-					if (controller.videoPlayerController != null && allowGestures && !Settings.instance.videoContextMenuInGallery) Positioned.fill(
-						child: Flex(
-							direction: rotate90DegreesClockwise ? Axis.vertical : Axis.horizontal,
-							children: [
-								Expanded(
-									child: GestureDetector(
-										onLongPressStart: (x) => controller._videoPlayerController?.player.setRate(2),
-										onLongPressEnd: (x) => controller._videoPlayerController?.player.setRate(1)
-									)
-								),
-								Expanded(
-									flex: 3,
-									child: GestureDetector(
-										onLongPressStart: (x) {
-											controller._playingBeforeLongPress = controller._videoPlayerController?.player.state.playing ?? false;
-											if (controller._playingBeforeLongPress) {
-												controller._videoPlayerController?.player.pause();
-											}
-										},
-										onLongPressEnd: (x) {
-											if (controller._playingBeforeLongPress) {
-												controller._videoPlayerController?.player.play();
-											}
-										}
-									)
-								),
-								Expanded(
-									child: GestureDetector(
-										onLongPressStart: (x) => controller._videoPlayerController?.player.setRate(2),
-										onLongPressEnd: (x) => controller._videoPlayerController?.player.setRate(1)
-									)
-								)
-							],
 						)
 					)
-				]
-			)
-		);
+				)
+			);
+			return AbsorbPointer(
+				absorbing: !allowGestures,
+				child: Stack(
+					alignment: Alignment.center,
+					children: [
+						Positioned.fill(
+							child: AnimatedBuilder(
+								animation: controller,
+								builder: (context, _) {
+									if (controller.cacheCompleted || controller.overrideSource == null) {
+										// Needed to enable tapping to reveal chrome via an ancestor GestureDetector
+										return const AbsorbPointer();
+									}
+									// For reddit videos or random hotlinked stuff
+									return Center(
+										child: AspectRatio(
+											aspectRatio: controller.attachment.aspectRatio,
+											child: Container(
+												color: Settings.instance.theme.barColor
+											)
+										)
+									);
+								}
+							)
+						),
+						Positioned.fill(
+							child: ExtendedImageGestureWidget(
+								heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null,
+								key: inContextMenu ? null : controller.gestureKey,
+								layoutInsets: inContextMenu ? EdgeInsets.zero : layoutInsets,
+								fit: fit,
+								canScaleImage: _canScaleImage,
+								initGestureConfigHandler: () => _createGestureConfig(),
+								child: _buildDoubleTapDragDetector(
+									child: RotatedBox(
+										quarterTurns: rotate90DegreesClockwise ? 1 : 0,
+										child: Stack(
+											alignment: Alignment.center,
+											children: [
+												if (controller.overrideSource == null) Padding(
+													// Sometimes it's very slightly off from the video.
+													// This errs to have it too small rather than too large.
+													padding: videoThumbnailMicroPadding ? const EdgeInsets.all(1) : EdgeInsets.zero,
+													child: AttachmentThumbnail(
+														attachment: attachment,
+														width: attachment.width?.toDouble(),
+														height: attachment.height?.toDouble(),
+														rotate90DegreesClockwise: rotate90DegreesClockwise,
+														gaplessPlayback: true,
+														revealSpoilers: true,
+														site: controller.site,
+														mayObscure: false
+													)
+												),
+												ValueListenableBuilder(
+													valueListenable: controller.videoPlayerController?.notifier ?? const ConstantValueListenable<PlatformVideoController?>(null),
+													builder: (context, pvc, placeholder) {
+														return ValueListenableBuilder(
+															valueListenable: Combining2ValueListenable(
+																child1: pvc?.id ?? const ConstantValueListenable<int?>(null),
+																child2: pvc?.rect ?? const ConstantValueListenable<Rect?>(null),
+																combine: (id, rect) => (id, rect)
+															),
+															builder: (context, data, placeholder) {
+																final (id, rect) = data;
+																if (id == null || rect == null || (rect.width <= 1 && rect.height <= 1)) {
+																	return placeholder!;
+																}
+																return SizedBox(
+																	width: rect.width,
+																	height: rect.height,
+																	child: Texture(
+																		textureId: id
+																	)
+																);
+															},
+															child: placeholder
+														);
+													},
+													child: const SizedBox.shrink()
+												)
+											]
+										))
+								)
+						)),
+						if (attachment.type == AttachmentType.mp3) centerWithPage(
+							child: Container(
+								padding: const EdgeInsets.all(8),
+								decoration: const BoxDecoration(
+									color: Colors.black54,
+									borderRadius: BorderRadius.all(Radius.circular(8))
+								),
+								child: IntrinsicWidth(
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											const SizedBox(height: 10),
+											const Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													SizedBox(width: 64),
+													Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
+													Text(
+														'Audio only',
+														style: TextStyle(
+															fontSize: 32,
+															color: Colors.white
+														)
+													),
+													SizedBox(width: 64)
+												]
+											),
+											const SizedBox(height: 10),
+											VideoControls(controller: controller, showMuteButton: false),
+											const SizedBox(height: 10)
+										]
+									)
+								)
+							)
+						),
+						centerWithPage(
+							child: ValueListenableBuilder(
+								valueListenable: controller.showLoadingProgress,
+								builder: (context, showLoadingProgress, _) => (showLoadingProgress && controller._soundSourceDownload == null) ? ValueListenableBuilder(
+									valueListenable: controller.videoLoadingProgress,
+									builder: (context, double? loadingProgress, child) => _centeredLoader(
+										active: controller.isFullResolution,
+										value: loadingProgress,
+										useRealKey: !inContextMenu
+									)
+								) : const SizedBox.shrink()
+							)
+						),
+						if (soundSourceDownload != null) centerWithPage(
+							child: Container(
+								margin: const EdgeInsets.all(16),
+								padding: const EdgeInsets.all(24),
+								decoration: const BoxDecoration(
+									color: Colors.black87,
+									borderRadius: BorderRadius.all(Radius.circular(10))
+								),
+								child: IntrinsicWidth(
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											const SizedBox(height: 10),
+											const Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
+													SizedBox(width: 8),
+													Text(
+														'Downloading sound',
+														style: TextStyle(
+															fontSize: 32,
+															color: Colors.white
+														)
+													)
+												]
+											),
+											Text('from ${soundSourceDownload.uri.host}', style: const TextStyle(
+												fontSize: 24
+											)),
+											const SizedBox(height: 16),
+											ValueListenableBuilder(
+												valueListenable: soundSourceDownload.currentBytes,
+												builder: (context, currentBytes, _) => SizedBox(
+													width: 350,
+													child: Column(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															LinearProgressIndicator(
+																value: switch (soundSourceDownload.totalBytes) {
+																	int totalBytes => currentBytes / totalBytes,
+																	null => null
+																},
+																backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context)
+															),
+															const SizedBox(height: 16),
+															Row(
+																mainAxisSize: MainAxisSize.min,
+																crossAxisAlignment: CrossAxisAlignment.start,
+																children: [
+																	AdaptiveFilledButton(
+																		onPressed: () => VideoServer.instance.interruptOngoingDownloadFromUri(soundSourceDownload.uri),
+																		child: const Text('Cancel')
+																	),
+																	const Spacer(),
+																	if (soundSourceDownload.totalBytes case int totalBytes) Text('${formatFilesize(currentBytes)} / ${formatFilesize(totalBytes)}')
+																]
+															)
+														]
+													)
+												)
+											),
+											const SizedBox(height: 10)
+										]
+									)
+								)
+							)
+						),
+						centerWithPage(
+							child: AnimatedSwitcher(
+								duration: const Duration(milliseconds: 250),
+								child: (controller.overlayText != null) ? Container(
+									padding: const EdgeInsets.all(8),
+									margin: const EdgeInsets.only(
+										top: 12,
+										bottom: 12
+									),
+									decoration: const BoxDecoration(
+										color: Colors.black54,
+										borderRadius: BorderRadius.all(Radius.circular(8))
+									),
+									child: IntrinsicWidth(
+										child: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												Text(
+													controller.overlayText!,
+													style: const TextStyle(
+														fontSize: 32,
+														color: Colors.white
+													)
+												)
+											]
+										)
+									)
+								) : const SizedBox.shrink()
+							)
+						),
+						if (controller.error case (Object e, StackTrace st)) centerWithPage(
+							child: ErrorMessageCard(e.toStringDio(), remedies: {
+								'Retry': () => controller.reloadFullAttachment(),
+								'Open browser': () => openBrowser(context, controller._goodImageSource ?? Uri.parse(controller.attachment.url), useGalleryIfPossible: false),
+								...generateBugRemedies(e, st, context, afterFix: controller.reloadFullAttachment),
+								if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
+							})
+						),
+						if (controller.videoPlayerController != null && allowGestures && !Settings.instance.videoContextMenuInGallery) Positioned.fill(
+							child: Flex(
+								direction: rotate90DegreesClockwise ? Axis.vertical : Axis.horizontal,
+								children: [
+									Expanded(
+										child: GestureDetector(
+											onLongPressStart: (x) => controller._videoPlayerController?.player.setRate(2),
+											onLongPressEnd: (x) => controller._videoPlayerController?.player.setRate(1)
+										)
+									),
+									Expanded(
+										flex: 3,
+										child: GestureDetector(
+											onLongPressStart: (x) {
+												controller._playingBeforeLongPress = controller._videoPlayerController?.player.state.playing ?? false;
+												if (controller._playingBeforeLongPress) {
+													controller._videoPlayerController?.player.pause();
+												}
+											},
+											onLongPressEnd: (x) {
+												if (controller._playingBeforeLongPress) {
+													controller._videoPlayerController?.player.play();
+												}
+											}
+										)
+									),
+									Expanded(
+										child: GestureDetector(
+											onLongPressStart: (x) => controller._videoPlayerController?.player.setRate(2),
+											onLongPressEnd: (x) => controller._videoPlayerController?.player.setRate(1)
+										)
+									)
+								],
+							)
+						)
+					]
+				)
+			);
+		}
 		if (!(allowContextMenu && Settings.instance.videoContextMenuInGallery)) {
 			return buildChild(inContextMenu: false);
 		}
