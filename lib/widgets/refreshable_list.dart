@@ -1854,7 +1854,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					decoration: BoxDecoration(
 						border: Border(left: BorderSide(
 							width: 5,
-							color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withOpacity(0.7)
+							color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withValues(alpha: 0.7)
 						))
 					),
 					child: child
@@ -2143,7 +2143,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (value.highlighted) {
 			child = ClipRect(
 				child: ColorFiltered(
-					colorFilter: ColorFilter.mode(ChanceTheme.secondaryColorOf(context).withOpacity(0.2), BlendMode.srcOver),
+					colorFilter: ColorFilter.mode(ChanceTheme.secondaryColorOf(context).withValues(alpha: 0.2), BlendMode.srcOver),
 					child: child
 				)
 			);
@@ -2151,7 +2151,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (value.pinned) {
 			child = ClipRect(
 				child: ColorFiltered(
-					colorFilter: ColorFilter.mode(ChanceTheme.secondaryColorOf(context).withOpacity(0.05), BlendMode.srcOver),
+					colorFilter: ColorFilter.mode(ChanceTheme.secondaryColorOf(context).withValues(alpha: 0.05), BlendMode.srcOver),
 					child: child
 				)
 			);
@@ -2163,7 +2163,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				decoration: BoxDecoration(
 					border: Border(left: BorderSide(
 						width: 5,
-						color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withOpacity(0.7)
+						color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withValues(alpha: 0.7)
 					))
 				),
 				child: child
@@ -3077,7 +3077,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														),
 														if (_searchTapped) CupertinoButton(
 															padding: const EdgeInsets.only(left: 8),
-															minSize: 0,
+															minimumSize: Size.zero,
 															onPressed: closeSearch,
 															child: const Text('Cancel')
 														)
@@ -3593,7 +3593,7 @@ class RefreshableListFooter extends StatelessWidget {
 						children: [
 							if (error != null) Container(
 								padding: const EdgeInsets.all(16),
-								color: Colors.orange.withOpacity(0.5),
+								color: Colors.orange.withValues(alpha: 0.5),
 								child: Row(
 									mainAxisAlignment: MainAxisAlignment.center,
 									children: [
@@ -3657,14 +3657,14 @@ class RefreshableListFooter extends StatelessWidget {
 																				builder: (context, value) {
 																					return LinearProgressIndicator(
 																						value: value,
-																						color: theme.primaryColor.withOpacity(0.5),
+																						color: theme.primaryColor.withValues(alpha: 0.5),
 																						backgroundColor: primaryColorWithBrightness10,
 																						minHeight: 8
 																					);
 																				}
 																			) else LinearProgressIndicator(
 																				value: 0,
-																				color: theme.primaryColor.withOpacity(0.5),
+																				color: theme.primaryColor.withValues(alpha: 0.5),
 																				backgroundColor: primaryColorWithBrightness10,
 																				minHeight: 8
 																			),

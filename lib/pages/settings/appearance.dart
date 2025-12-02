@@ -178,7 +178,7 @@ Widget _buildFakePostRow() {
 BoxDecoration? _threadAndPostRowDecorationOf(BuildContext context) {
 	final dividerColor = ChanceTheme.primaryColorOf(context);
 	return Material.maybeOf(context) != null ? BoxDecoration(
-		border: Border.all(color: dividerColor.withOpacity(0.5))
+		border: Border.all(color: dividerColor.withValues(alpha: 0.5))
 	) : null;
 }
 
@@ -891,7 +891,7 @@ final appearanceSettings = [
 												child: Container(
 													decoration: BoxDecoration(
 														borderRadius: const BorderRadius.all(Radius.circular(4)),
-														color: ChanceTheme.primaryColorOf(context).withOpacity(0.1)
+														color: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.1)
 													),
 													margin: const EdgeInsets.symmetric(vertical: 2),
 													padding: const EdgeInsets.all(8),
@@ -943,7 +943,7 @@ final appearanceSettings = [
 		},
 		injectButton: (context, useGrid, setUseGrid) => (ImageboardRegistry.instance.count > 1) ? Builder(
 			builder: (context) => AdaptiveIconButton(
-				minSize: 0,
+				minimumSize: Size.zero,
 				onPressed: () => Navigator.push(context, adaptivePageRoute(
 					builder: (context) => SettingListPage(
 						title: 'Per-Site Catalog Layout',

@@ -2313,7 +2313,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						tabBar: ChanceCupertinoTabBar(
 							visible: !androidDrawer,
 							height: androidDrawer ? 0 : 50,
-							inactiveColor: ChanceTheme.primaryColorOf(context).withOpacity(0.4),
+							inactiveColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.4),
 							items: [
 								BottomNavigationBarItem(
 									icon: GestureDetector(

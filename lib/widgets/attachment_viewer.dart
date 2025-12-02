@@ -1723,7 +1723,7 @@ class AttachmentViewer extends StatelessWidget {
 								final builder2 = ui.ParagraphBuilder(ui.ParagraphStyle())..pushStyle(ui.TextStyle(fontSize: fontSize, color: Colors.black))..addText(block.text)..pop();
 								final paragraph2 = builder2.build();
 								paragraph2.layout(const ui.ParagraphConstraints(width: double.infinity));
-								canvas.drawRect(transformedRect, Paint()..color = Colors.white.withOpacity(1));
+								canvas.drawRect(transformedRect, Paint()..color = Colors.white.withValues(alpha: 1));
 								canvas.drawParagraph(paragraph2, transformedRect.topLeft + Offset(0, max(0, (paragraph2.height - transformedRect.height) / 2)));
 							}
 						}

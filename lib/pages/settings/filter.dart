@@ -61,7 +61,7 @@ class _SettingsFilterPageState extends State<SettingsFilterPage> {
 											AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),
 												borderRadius: BorderRadius.circular(4),
-												minSize: 0,
+												minimumSize: Size.zero,
 												child: const Text('Reset auto-saved'),
 												onPressed: () async {
 													final reset = await showAdaptiveDialog<bool>(
@@ -105,7 +105,7 @@ class _SettingsFilterPageState extends State<SettingsFilterPage> {
 											AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),
 												borderRadius: BorderRadius.circular(4),
-												minSize: 0,
+												minimumSize: Size.zero,
 												child: const Text('Test filter setup'),
 												onPressed: () {
 													Navigator.of(context).push(adaptivePageRoute(

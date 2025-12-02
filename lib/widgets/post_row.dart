@@ -394,9 +394,9 @@ class PostRow extends StatelessWidget {
 			}) ?? []);
 		}
 		final backgroundColor = isSelected ?
-			theme.primaryColor.withOpacity(0.25) :
+			theme.primaryColor.withValues(alpha: 0.25) :
 			(highlight > 0) ?
-				theme.primaryColor.withOpacity(highlight * settings.newPostHighlightBrightness) :
+				theme.primaryColor.withValues(alpha: highlight * settings.newPostHighlightBrightness) :
 				Colors.transparent;
 		final listFilterReason = context.watch<RefreshableListFilterReason?>();
 		final isPostHiddenByThreadState = switch(parentZoneThreadState?.getPostHiding(latestPost.id)) {
@@ -514,7 +514,7 @@ class PostRow extends StatelessWidget {
 									attachment: attachment,
 									child: CupertinoInkwell(
 										padding: EdgeInsets.zero,
-										minSize: 0,
+										minimumSize: Size.zero,
 										onPressed: onThumbnailTap?.bind1(attachment),
 										child: ConstrainedBox(
 											constraints: const BoxConstraints(
@@ -674,7 +674,7 @@ class PostRow extends StatelessWidget {
 																		),
 																	),
 																),
-																minSize: 0,
+																minimumSize: Size.zero,
 																padding: const EdgeInsets.symmetric(horizontal: 4),
 																onPressed: zone.mode == ContextMenuHintMode.longPressDisabled ? () {
 																	zone.open(
@@ -692,7 +692,7 @@ class PostRow extends StatelessWidget {
 												padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
 												child: CupertinoInkwell(
 													padding: EdgeInsets.zero,
-													minSize: 0,
+													minimumSize: Size.zero,
 													onPressed: onThumbnailTap?.bind1(a),
 													child: AttachmentThumbnail(
 														attachment: a,
@@ -744,7 +744,7 @@ class PostRow extends StatelessWidget {
 													end: Alignment.centerLeft,
 													colors: [
 														Color.alphaBlend(backgroundColor, theme.backgroundColor),
-														Color.alphaBlend(backgroundColor, theme.backgroundColor).withOpacity(0)
+														Color.alphaBlend(backgroundColor, theme.backgroundColor).withValues(alpha: 0)
 													]
 												)
 											),
@@ -760,7 +760,7 @@ class PostRow extends StatelessWidget {
 										alignment: Alignment.bottomLeft,
 										child: AdaptiveIconButton(
 											padding: EdgeInsets.zero,
-											minSize: 0,
+											minimumSize: Size.zero,
 											onPressed: openReplies,
 											icon: SizedBox(
 												width: double.infinity,
@@ -771,7 +771,7 @@ class PostRow extends StatelessWidget {
 															describeCount(replyIds.length, 'reply', plural: 'replies'),
 															style: TextStyle(
 																fontSize: 17 + (7 * slideFactor.clamp(0, 1)),
-																color: theme.primaryColor.withOpacity(0.7)
+																color: theme.primaryColor.withValues(alpha: 0.7)
 															)
 														)
 													)

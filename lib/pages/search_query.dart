@@ -85,7 +85,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Spacer(flex: 2),
 				AdaptiveIconButton(
-					minSize: 0,
+					minimumSize: Size.zero,
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
@@ -161,7 +161,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Spacer(),
 				AdaptiveIconButton(
-					minSize: 0,
+					minimumSize: Size.zero,
 					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();

@@ -137,7 +137,7 @@ _IDColor _calculateIdColor(String id) {
 	}
 	final background = Color.fromARGB(255, (hash >> 24) & 0xFF, (hash >> 16) & 0xFF, (hash >> 8) & 0xFF);
 	return _IDColor(
-		foreground: (((background.red * 0.299) + (background.green * 0.587) + (background.blue * 0.114)) > 125) ? Colors.black : Colors.white,
+		foreground: (((background.r * 0.299) + (background.g * 0.587) + (background.b * 0.114)) > 0.49) ? Colors.black : Colors.white,
 		background: background
 	);
 }
@@ -149,7 +149,7 @@ class IDSpan extends WidgetSpan {
 	}) : super(
 		child: CupertinoInkwell(
 			padding: EdgeInsets.zero,
-			minSize: 0,
+			minimumSize: Size.zero,
 			onPressed: onPressed,
 			child: Container(
 				decoration: BoxDecoration(

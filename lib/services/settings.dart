@@ -232,11 +232,11 @@ class ContentSettings {
 }
 
 class ColorFields {
-	static int getValueOnColor(Color x) => x.value;
+	static int getARGB32OnColor(Color x) => x.toARGB32();
 	static const value = ReadOnlyHiveFieldAdapter<Color, int>(
-		getter: getValueOnColor,
+		getter: getARGB32OnColor,
 		fieldNumber: 0,
-		fieldName: 'value',
+		fieldName: 'ARGB32',
 		merger: PrimitiveMerger()
 	);
 }
@@ -261,7 +261,7 @@ class ColorAdapter extends TypeAdapter<Color> {
 
   @override
   void write(BinaryWriter writer, Color obj) {
-    writer.writeInt32(obj.value);
+    writer.writeInt32(obj.toARGB32());
   }
 }
 
@@ -330,27 +330,11 @@ class SavedTheme {
 
 	String encode() {
 		return base64Url.encode([
-			backgroundColor.red,
-			backgroundColor.green,
-			backgroundColor.blue,
-			barColor.red,
-			barColor.green,
-			barColor.blue,
-			primaryColor.red,
-			primaryColor.green,
-			primaryColor.blue,
-			secondaryColor.red,
-			secondaryColor.green,
-			secondaryColor.blue,
-			quoteColor.red,
-			quoteColor.green,
-			quoteColor.blue,
-			titleColor.red,
-			titleColor.green,
-			titleColor.blue,
-			textFieldColor.red,
-			textFieldColor.green,
-			textFieldColor.blue
+			for (final color in [backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, titleColor, textFieldColor]) ...[
+				(color.r * 255.0).round().clamp(0, 255),
+				(color.g * 255.0).round().clamp(0, 255),
+				(color.b * 255.0).round().clamp(0, 255)
+			]
 		]);
 	}
 
@@ -384,11 +368,11 @@ class SavedTheme {
 
 	final Map<double, Color> _primaryColorWithBrightnessCache = {};
 	Color primaryColorWithBrightness(double factor) => _primaryColorWithBrightnessCache.putIfAbsent(factor, () {
-		return Color.fromRGBO(
-			((primaryColor.red * factor) + (backgroundColor.red * (1 - factor))).round(),
-			((primaryColor.green * factor) + (backgroundColor.green * (1 - factor))).round(),
-			((primaryColor.blue * factor) + (backgroundColor.blue * (1 - factor))).round(),
-			primaryColor.opacity
+		return Color.from(
+			red: (primaryColor.r * factor) + (backgroundColor.r * (1 - factor)),
+			green: (primaryColor.g * factor) + (backgroundColor.g * (1 - factor)),
+			blue: (primaryColor.b * factor) + (backgroundColor.b * (1 - factor)),
+			alpha: primaryColor.a
 		);
 	});
 
@@ -444,27 +428,14 @@ class SavedTheme {
 	);
 
 	ThemeData get materialThemeData {
-		final colorScheme = ColorScheme.fromSwatch(
+		final colorScheme = ColorScheme.fromSeed(
 			brightness: brightness,
-			primarySwatch: MaterialColor(primaryColor.value, Map.fromEntries(
-				[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((strength) {
-					final ds = 0.5 - strength;
-					return MapEntry<int, Color>(
-						(strength * 1000).round(),
-						Color.fromRGBO(
-							primaryColor.red + ((ds < 0) ? primaryColor.red : (255 - primaryColor.red) * ds).round(),
-							primaryColor.green + ((ds < 0) ? primaryColor.green : (255 - primaryColor.green) * ds).round(),
-							primaryColor.blue + ((ds < 0) ? primaryColor.blue : (255 - primaryColor.blue) * ds).round(),
-							1
-						)
-					);
-				})
-			)),
-			accentColor: secondaryColor,
-			cardColor: barColor,
-			backgroundColor: backgroundColor
-		).copyWith(
-			onSurface: primaryColor
+			seedColor: primaryColor,
+			primary: primaryColor,
+			secondary: secondaryColor,
+			surface: barColor,
+			onSurface: primaryColor,
+			//background: backgroundColor,
 		);
 		final textTheme = (brightness == Brightness.dark ? Typography.whiteMountainView : Typography.blackMountainView).apply(
 			bodyColor: primaryColor,
@@ -555,7 +526,7 @@ class SavedTheme {
 
 	Color get searchTextFieldColor {
 		if (brightness == Brightness.light) {
-			return textFieldColor.towardsGrey(0.43).withOpacity(0.4);
+			return textFieldColor.towardsGrey(0.43).withValues(alpha: 0.4);
 		}
 		return textFieldColor.towardsGrey(0.43);
 	}

@@ -228,7 +228,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 					Padding(
 						padding: const EdgeInsets.only(left: 8),
 						child: CupertinoButton(
-							minSize: 0,
+							minimumSize: Size.zero,
 							padding: EdgeInsets.zero,
 							onPressed: () => showAdaptiveModalPopup<WebImageSearchMethod>(
 								context: context,

@@ -214,7 +214,7 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 		final overscroll1 = _getOverscroll();
 		await Future.delayed(const Duration(milliseconds: 50));
 		if (mounted) {
-			_backgroundColor.value = backgroundColor.withOpacity(1.0 - max(0, min(overscroll1, _getOverscroll()) / 50).clamp(0, 1));
+			_backgroundColor.value = backgroundColor.withValues(alpha: 1.0 - max(0, min(overscroll1, _getOverscroll()) / 50).clamp(0, 1));
 		}
 	}
 
@@ -288,7 +288,7 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 											searchString = '';
 										});
 									},
-									minSize: 0,
+									minimumSize: Size.zero,
 									padding: EdgeInsets.zero,
 									icon: const Icon(CupertinoIcons.xmark_circle_fill, size: 20, applyTextScaling: true)
 								)
@@ -377,7 +377,7 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 												height: _kRowHeight,
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(4)),
-													color: theme.primaryColor.withOpacity(isSelected ? 0.3 : 0.1)
+													color: theme.primaryColor.withValues(alpha: isSelected ? 0.3 : 0.1)
 												),
 												child: Row(
 													children: [

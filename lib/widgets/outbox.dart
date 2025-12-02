@@ -175,7 +175,7 @@ class QueueEntryWidget extends StatelessWidget {
 									children: [
 										if (!state.isIdle) LinearProgressIndicator(
 											valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-											backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
+											backgroundColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.7)
 										),
 										Padding(
 											padding: const EdgeInsets.symmetric(vertical: 8),
@@ -489,7 +489,7 @@ class OutboxModal extends StatelessWidget {
 													const SizedBox(width: 16),
 													AdaptiveIconButton(
 														padding: EdgeInsets.zero,
-														minSize: 0,
+														minimumSize: Size.zero,
 														icon: const Icon(CupertinoIcons.trash),
 														onPressed: list.length < 2 ? null : () async {
 															final toDelete = list.where((e) => e.$1?.value == queue.value).tryMap((e) => e.$2);

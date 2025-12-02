@@ -187,7 +187,7 @@ class _VideoControlsState extends State<VideoControls> {
 													builder: (context, double? value, _) => LinearProgressIndicator(
 														minHeight: 44,
 														value: value,
-														valueColor: AlwaysStoppedAnimation(primaryColor.withOpacity(0.3)),
+														valueColor: AlwaysStoppedAnimation(primaryColor.withValues(alpha: 0.3)),
 														backgroundColor: Colors.transparent
 													)
 												) : const SizedBox.shrink()
@@ -198,7 +198,7 @@ class _VideoControlsState extends State<VideoControls> {
 													minHeight: 44,
 													value: positionValue.inMilliseconds / value.duration.inMilliseconds.clamp(1, double.maxFinite),
 													valueColor: AlwaysStoppedAnimation(primaryColor),
-													backgroundColor: !widget.controller.cacheCompleted ? Colors.transparent : primaryColor.withOpacity(0.3)
+													backgroundColor: !widget.controller.cacheCompleted ? Colors.transparent : primaryColor.withValues(alpha: 0.3)
 												)
 											)
 										]

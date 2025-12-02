@@ -26,7 +26,7 @@ class AdaptiveSwitch extends StatelessWidget {
 		return CupertinoSwitch(
 			value: value,
 			onChanged: onChanged,
-			activeColor: ChanceTheme.primaryColorOf(context).withMaxValue(0.5)
+			activeTrackColor: ChanceTheme.primaryColorOf(context).withMaxValue(0.5)
 		);
 	}
 }

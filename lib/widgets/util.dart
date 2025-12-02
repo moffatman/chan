@@ -169,7 +169,7 @@ void showToast({
 		button = StatefulBuilder(
 			builder: (context, setState) => AdaptiveIconButton(
 				padding: EdgeInsets.zero,
-				minSize: 0,
+				minimumSize: Size.zero,
 				onPressed: pressed ? null : () {
 					easyButton.$2();
 					setState(() {
@@ -281,7 +281,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 							if (hideable || cancellable) const SizedBox(height: 8),
 							if (hideable) CupertinoButton(
 								padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 8),
-								minSize: 0,
+								minimumSize: Size.zero,
 								onPressed: () {
 									if (!popped && context.mounted) {
 										popped = true;
@@ -292,7 +292,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 							),
 							if (cancellable) CupertinoButton(
 								padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 8),
-								minSize: 0,
+								minimumSize: Size.zero,
 								onPressed: controller.cancelToken.isCancelled ? null : () {
 									controller.cancelToken.cancel();
 									setDialogState(() {});
@@ -722,38 +722,38 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 
 extension ReduceBrightness on CupertinoThemeData {
 	Color primaryColorWithBrightness(double factor) {
-		return Color.fromRGBO(
-			((primaryColor.red * factor) + (scaffoldBackgroundColor.red * (1 - factor))).round(),
-			((primaryColor.green * factor) + (scaffoldBackgroundColor.green * (1 - factor))).round(),
-			((primaryColor.blue * factor) + (scaffoldBackgroundColor.blue * (1 - factor))).round(),
-			primaryColor.opacity
+		return Color.from(
+			red: ((primaryColor.r * factor) + (scaffoldBackgroundColor.r * (1 - factor))),
+			green: ((primaryColor.g * factor) + (scaffoldBackgroundColor.g * (1 - factor))),
+			blue: ((primaryColor.b * factor) + (scaffoldBackgroundColor.b * (1 - factor))),
+			alpha: primaryColor.a
 		);
 	}
 }
 
 extension OffsetBrightness on Color {
 	Color towardsWhite(double factor) {
-		return Color.fromRGBO(
-			red + ((255 - red) * factor).round(),
-			green + ((255 - green) * factor).round(),
-			blue + ((255 - blue) * factor).round(),
-			opacity
+		return Color.from(
+			red: r + ((1 - r) * factor),
+			green: g + ((1 - g) * factor),
+			blue: b + ((1 - b) * factor),
+			alpha: a
 		);
 	}
 	Color towardsBlack(double factor) {
-		return Color.fromRGBO(
-			(red * (1 - factor)).round(),
-			(green * (1 - factor)).round(),
-			(blue * (1 - factor)).round(),
-			opacity
+		return Color.from(
+			red: r * (1 - factor),
+			green: g * (1 - factor),
+			blue: b * (1 - factor),
+			alpha: a
 		);
 	}
 	Color towardsGrey(double factor) {
-		return Color.fromRGBO(
-			(red + ((128 - red) * factor)).round(),
-			(green + ((128 - green) * factor)).round(),
-			(blue  + ((128 - blue) * factor)).round(),
-			opacity
+		return Color.from(
+			red: r + ((0.5 - r) * factor),
+			green: g + ((0.5 - g) * factor),
+			blue: b + ((0.5 - b) * factor),
+			alpha: a
 		);
 	}
 	Color shiftHue(double offset) {
@@ -1327,7 +1327,7 @@ class RenderFixedWidthLayoutBox extends RenderProxyBox {
 
 	Matrix4 get _effectiveTransform {
 		final scale = size.width / child!.size.width;
-		return Matrix4.identity()..scale(scale, scale, 1.0);
+		return Matrix4.identity()..scaleByDouble(scale, scale, 1.0, 1.0);
 	}
 
 	@override
@@ -1515,7 +1515,7 @@ Future<void> editStringList({
 								child: Container(
 									decoration: BoxDecoration(
 										borderRadius: const BorderRadius.all(Radius.circular(4)),
-										color: theme.primaryColor.withOpacity(0.1)
+										color: theme.primaryColor.withValues(alpha: 0.1)
 									),
 									padding: const EdgeInsets.only(left: 16),
 									child: Row(
@@ -1674,7 +1674,7 @@ Future<void> editStringMap({
 								child: Container(
 									decoration: BoxDecoration(
 										borderRadius: const BorderRadius.all(Radius.circular(4)),
-										color: theme.primaryColor.withOpacity(0.1)
+										color: theme.primaryColor.withValues(alpha: 0.1)
 									),
 									padding: const EdgeInsets.only(left: 16),
 									child: Row(
@@ -2187,10 +2187,10 @@ class TestMediaQuery extends StatelessWidget {
 				position: DecorationPosition.foreground,
 				decoration: BoxDecoration(
 					border: Border(
-						top: BorderSide(color: Colors.pink.withOpacity(0.5), width: edgeInsets.top),
-						bottom: BorderSide(color: Colors.pink.withOpacity(0.5), width: edgeInsets.bottom),
-						left: BorderSide(color: Colors.pink.withOpacity(0.5), width: edgeInsets.left),
-						right: BorderSide(color: Colors.pink.withOpacity(0.5), width: edgeInsets.right)
+						top: BorderSide(color: Colors.pink.withValues(alpha: 0.5), width: edgeInsets.top),
+						bottom: BorderSide(color: Colors.pink.withValues(alpha: 0.5), width: edgeInsets.bottom),
+						left: BorderSide(color: Colors.pink.withValues(alpha: 0.5), width: edgeInsets.left),
+						right: BorderSide(color: Colors.pink.withValues(alpha: 0.5), width: edgeInsets.right)
 					)
 				),
 				child: child
@@ -2200,8 +2200,8 @@ class TestMediaQuery extends StatelessWidget {
 }
 
 extension ToCss on Color {
-	String toCssRgba() => 'rgba($red, $green, $blue, $opacity)';
-	String toCssHex() => '#${red.toRadixString(16).padLeft(2, '0')}${green.toRadixString(16).padLeft(2, '0')}${blue.toRadixString(16).padLeft(2, '0')}';
+	String toCssRgba() => 'rgba(${(r * 255.0).round().clamp(0, 255)}, ${(g * 255.0).round().clamp(0, 255)}, ${(b * 255.0).round().clamp(0, 255)}, $a)';
+	String toCssHex() => '#${(r * 255.0).round().clamp(0, 255).toRadixString(16).padLeft(2, '0')}${(g * 255.0).round().clamp(0, 255).toRadixString(16).padLeft(2, '0')}${(b * 255.0).round().clamp(0, 255).toRadixString(16).padLeft(2, '0')}';
 }
 
 extension Inverted on Brightness {

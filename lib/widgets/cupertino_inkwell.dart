@@ -12,7 +12,7 @@ class CupertinoInkwell<T> extends StatefulWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16.0),
-    this.minSize = kMinInteractiveDimensionCupertino,
+    this.minimumSize = const Size.square(kMinInteractiveDimensionCupertino),
     this.pressedOpacity = 0.4,
     this.alignment = Alignment.center,
     required this.onPressed,
@@ -21,7 +21,7 @@ class CupertinoInkwell<T> extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final FutureOr<T> Function()? onPressed;
-  final double? minSize;
+  final Size? minimumSize;
   final double? pressedOpacity;
   final AlignmentGeometry alignment;
   bool get enabled => onPressed != null;
@@ -132,11 +132,11 @@ class _CupertinoInkwellState<T> extends State<CupertinoInkwell<T>> with SingleTi
 				child: Semantics(
 					button: true,
 					child: ConstrainedBox(
-						constraints: widget.minSize == null
+						constraints: widget.minimumSize == null
 							? const BoxConstraints()
 							: BoxConstraints(
-									minWidth: widget.minSize!,
-									minHeight: widget.minSize!,
+									minWidth: widget.minimumSize!.width,
+									minHeight: widget.minimumSize!.height,
 								),
 						child: FadeTransition(
 							opacity: _opacityAnimation,

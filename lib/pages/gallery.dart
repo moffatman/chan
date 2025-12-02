@@ -668,7 +668,7 @@ class _GalleryPageState extends State<GalleryPage> {
 											final isNormalAttachment = widget.overrideSources[attachment.attachment]?.scheme != 'file';
 											return CupertinoInkwell(
 												padding: EdgeInsets.zero,
-												minSize: 0,
+												minimumSize: Size.zero,
 												onPressed: () {
 													if (_scrollSheetController.size > 0.5) {
 														_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
@@ -781,7 +781,7 @@ class _GalleryPageState extends State<GalleryPage> {
 										final isNormalAttachment = widget.overrideSources[attachment.attachment]?.scheme != 'file';
 										return CupertinoInkwell(
 											padding: EdgeInsets.zero,
-											minSize: 0,
+											minimumSize: Size.zero,
 											onPressed: () {
 												_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
 												Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index, overrideRateLimit: true));
@@ -878,7 +878,7 @@ class _GalleryPageState extends State<GalleryPage> {
 														padding: const EdgeInsets.all(16),
 														decoration: BoxDecoration(
 															borderRadius: BorderRadius.circular(8),
-															color: theme.backgroundColor.withOpacity(0.5)
+															color: theme.backgroundColor.withValues(alpha: 0.5)
 														),
 														child: const Row(
 															mainAxisSize: MainAxisSize.min,
@@ -933,7 +933,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				if (!showChrome) {
 					_updateOverlays(factor > 1);
 				}
-				return Colors.black.withOpacity(1 - factor.clamp(0, 1));
+				return Colors.black.withValues(alpha: 1 - factor.clamp(0, 1));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
 				final dragAngle = (details?.velocity ?? Velocity.zero).pixelsPerSecond.direction / pi;

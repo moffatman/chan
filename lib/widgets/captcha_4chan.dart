@@ -1412,7 +1412,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								const SizedBox(height: 8),
 								if (possibleLetterCounts.trySingle != numLetters) ...[
 									Text('Number of letters', style: TextStyle(
-										color: theme.primaryColor.withOpacity(0.7)
+										color: theme.primaryColor.withValues(alpha: 0.7)
 									)),
 									const SizedBox(height: 8),
 									SizedBox(
@@ -1506,7 +1506,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 															final double animValue = Curves.easeInOut.transform(animation.value);
 															return ColorFiltered(
 																colorFilter: ColorFilter.mode(
-																	theme.primaryColor.withOpacity(0.2 * animValue),
+																	theme.primaryColor.withValues(alpha: 0.2 * animValue),
 																	BlendMode.srcOver
 																),
 																child: child
@@ -1641,7 +1641,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 															value: _greyOutPickers ? null : 1,
 															minHeight: 50,
 															valueColor: AlwaysStoppedAnimation(theme.primaryColor),
-															backgroundColor: theme.primaryColor.withOpacity(0.3)
+															backgroundColor: theme.primaryColor.withValues(alpha: 0.3)
 														)
 													),
 													CupertinoButton(

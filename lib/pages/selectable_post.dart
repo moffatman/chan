@@ -136,7 +136,7 @@ class SelectablePostPage extends StatelessWidget {
 									'Link all: Add quotelink, and copy text to reply field into a quote block\nQuote all: Copy text to reply field into a quote block',
 									textAlign: TextAlign.right,
 									style: TextStyle(
-										color: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
+										color: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.7)
 									)
 								),
 								const SizedBox(height: 16),

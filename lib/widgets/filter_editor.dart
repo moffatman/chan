@@ -111,7 +111,7 @@ Future<void> editSiteSet({
 									child: Container(
 										decoration: BoxDecoration(
 											borderRadius: const BorderRadius.all(Radius.circular(4)),
-											color: theme.primaryColor.withOpacity(0.1)
+											color: theme.primaryColor.withValues(alpha: 0.1)
 										),
 										padding: const EdgeInsets.only(left: 16),
 										child: Row(
@@ -218,7 +218,7 @@ Future<void> editBoardSet({
 								child: Container(
 									decoration: BoxDecoration(
 										borderRadius: const BorderRadius.all(Radius.circular(4)),
-										color: theme.primaryColor.withOpacity(0.1)
+										color: theme.primaryColor.withValues(alpha: 0.1)
 									),
 									padding: const EdgeInsets.only(left: 16),
 									child: Row(
@@ -953,7 +953,7 @@ class _FilterEditorState extends State<FilterEditor> {
 						runSpacing: 16,
 						children: [
 							AdaptiveIconButton(
-								minSize: 0,
+								minimumSize: Size.zero,
 								icon: const Icon(CupertinoIcons.question_circle),
 								onPressed: () {
 									showAdaptiveModalPopup(
@@ -1020,7 +1020,7 @@ class _FilterEditorState extends State<FilterEditor> {
 								}
 							),
 							if (dirty) AdaptiveIconButton(
-								minSize: 0,
+								minimumSize: Size.zero,
 								onPressed: _save,
 								icon: const Text('Save')
 							)

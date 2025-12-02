@@ -1988,7 +1988,7 @@ class ThreadPageState extends State<ThreadPage> {
 																					child: child,
 																					builder: (context, factor, child) => NullableColorFiltered(
 																						colorFilter: factor == 0 ? null : ui.ColorFilter.mode(
-																							theme.secondaryColor.withOpacity(factor),
+																							theme.secondaryColor.withValues(alpha: factor),
 																							BlendMode.srcOver
 																						),
 																						child: child
@@ -3098,7 +3098,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														AdaptiveFilledButton(
 															disabledColor: theme.primaryColorWithBrightness(0.4),
 															padding: const EdgeInsets.all(8),
-															minSize: 0,
+															minimumSize: Size.zero,
 															onPressed: button.$3 == null ? null : () {
 																lightHapticFeedback();
 																button.$3?.call();
@@ -3176,7 +3176,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													widget.suggestedThread?.onReject.call();
 												},
 												padding: EdgeInsets.zero,
-												minSize: 0,
+												minimumSize: Size.zero,
 												child: const Icon(CupertinoIcons.xmark, size: 19, applyTextScaling: true)
 											),
 											const SizedBox(width: 4),
@@ -3185,7 +3185,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													widget.suggestedThread?.onAccept.call();
 												},
 												padding: const EdgeInsets.all(8),
-												minSize: 0,
+												minimumSize: Size.zero,
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
 													crossAxisAlignment: CrossAxisAlignment.center,
@@ -3219,7 +3219,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													}
 												},
 												padding: const EdgeInsets.all(8),
-												minSize: 0,
+												minimumSize: Size.zero,
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
 													crossAxisAlignment: CrossAxisAlignment.center,
@@ -3267,17 +3267,17 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											)
 										),
 										if (!widget.blocked && (widget.persistentState.thread?.archiveName != null || (widget.persistentState.thread?.isArchived ?? widget.persistentState.useArchive))) ...[
-											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.5), applyTextScaling: true),
+											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
 											if (widget.persistentState.thread?.archiveName case String archiveName)
-												Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withOpacity(0.5))),
+												Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.5))),
 											const SizedBox(width: 8)
 										]
 										else if (!widget.blocked && (widget.persistentState.thread?.isDeleted ?? false)) ...[
-											Icon(CupertinoIcons.trash, color: theme.primaryColor.withOpacity(0.5), applyTextScaling: true),
+											Icon(CupertinoIcons.trash, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
 											const SizedBox(width: 8)
 										],
 										if (!widget.blocked && (widget.persistentState.thread?.isLocked ?? false)) ...[
-											Icon(CupertinoIcons.lock, color: theme.primaryColor.withOpacity(0.5), applyTextScaling: true),
+											Icon(CupertinoIcons.lock, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
 											const SizedBox(width: 8)
 										],
 										if (widget.listController.state?.error case ValueListenable<(Object, StackTrace)?> listenable when !widget.blocked && widget.listController.itemsLength > 0) ValueListenableBuilder(
@@ -3334,7 +3334,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											CupertinoButton(
 												color: Colors.red,
 												padding: const EdgeInsets.all(8),
-												minSize: 0,
+												minimumSize: Size.zero,
 												onPressed: () => alertError(context, 'Tree too complex!\nLarge reply chains mean this thread can not be shown in tree mode.', null),
 												child: Icon(CupertinoIcons.exclamationmark, color: theme.backgroundColor, size: 19, applyTextScaling: true)
 											),
@@ -3422,7 +3422,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										if (showGalleryGridButton && realImageCount > 1) ...[
 											AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),
-												minSize: 0,
+												minimumSize: Size.zero,
 												onPressed: widget.openGalleryGrid,
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
@@ -3838,7 +3838,7 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 		}
 		final youPaint = ui.Paint()..color = theme.secondaryColor;
 		final replyToYouPaint = ui.Paint()..color = theme.secondaryColor.towardsBlack(0.5);
-		canvas.saveLayer(null, Paint()..color = Colors.white.withOpacity(0.5)..blendMode = BlendMode.multiply);
+		canvas.saveLayer(null, Paint()..color = Colors.white.withValues(alpha: 0.5)..blendMode = BlendMode.multiply);
 		final hd = size.height / (items.length + 1);
 		List<Paint?> slots = items.map((item) {
 			if (youIds.contains(item.id)) {

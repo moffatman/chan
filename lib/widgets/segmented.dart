@@ -28,7 +28,7 @@ class SegmentedWidgetSegment {
 			return Builder(
 				builder: (context) => CupertinoInkwell(
 					padding: EdgeInsets.zero,
-					minSize: 0,
+					minimumSize: Size.zero,
 					onPressed: wrapButtonCallback(context, onPressed),
 					child: child
 				)

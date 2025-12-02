@@ -335,7 +335,7 @@ class ThreadRow extends StatelessWidget {
 		String? threadAsUrl;
 		final firstUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url;
 		final backgroundColor = isSelected ? theme.primaryColorWithBrightness(0.2) : theme.backgroundColor;
-		final opacityBasedBackgroundColor = isSelected ? theme.primaryColor.withOpacity(0.25) : null;
+		final opacityBasedBackgroundColor = isSelected ? theme.primaryColor.withValues(alpha: 0.25) : null;
 		final borderColor = isSelected ? theme.primaryColorWithBrightness(0.8) : theme.primaryColorWithBrightness(0.2);
 		if (firstUrl != null) {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(_leadingWwwPattern, '');
@@ -434,7 +434,7 @@ class ThreadRow extends StatelessWidget {
 					appendLabels: settings.showCountryNameInCatalogHeader,
 					style: TextStyle(
 						fontSize: subheaderFontSize,
-						color: theme.primaryColor.withOpacity(0.75)
+						color: theme.primaryColor.withValues(alpha: 0.75)
 					)
 				),
 				spaceSpan
@@ -497,7 +497,7 @@ class ThreadRow extends StatelessWidget {
 						flag: latestThread.flair!,
 						includeTextOnlyContent: true,
 						appendLabels: false,
-						style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
+						style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.75))
 					));
 				}
 			}
@@ -539,7 +539,7 @@ class ThreadRow extends StatelessWidget {
 							attachment: attachment,
 							child: CupertinoInkwell(
 								padding: EdgeInsets.zero,
-								minSize: 0,
+								minimumSize: Size.zero,
 								onPressed: onThumbnailTap?.bind1(attachment),
 								child: ConstrainedBox(
 									constraints: BoxConstraints(
@@ -787,7 +787,7 @@ class ThreadRow extends StatelessWidget {
 					child: BackdropFilter(
 						filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
 						child: Container(
-							color: backgroundColor.withOpacity(0.8),
+							color: backgroundColor.withValues(alpha: 0.8),
 							width: double.infinity,
 							child: txt
 						)

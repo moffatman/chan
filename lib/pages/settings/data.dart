@@ -77,7 +77,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		return Container(
 			decoration: BoxDecoration(
 				borderRadius: const BorderRadius.all(Radius.circular(8)),
-				color: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
+				color: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.2)
 			),
 			padding: const EdgeInsets.all(16),
 			child: Column(
@@ -193,7 +193,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 				return Container(
 					decoration: BoxDecoration(
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
-						color: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
+						color: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.2)
 					),
 					padding: const EdgeInsets.all(16),
 					child: Table(
@@ -373,7 +373,7 @@ InlineSpan _importFieldValue<T>(T value) => switch (value) {
 				)
 			)
 		),
-		TextSpan(text: ' #${color.red.toRadixString(16).padLeft(2, '0')}${color.green.toRadixString(16).padLeft(2, '0')}${color.blue.toRadixString(16).padLeft(2, '0')}')
+		TextSpan(text: ' ${color.toCssHex()}')
 	]),
 	dynamic x => TextSpan(text: x.toString())
 };

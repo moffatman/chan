@@ -837,7 +837,7 @@ class _SavedPageState extends State<SavedPage> {
 													return NullableColorFiltered(
 														colorFilter:
 															((threadState?.unseenReplyIdsToYouCount() ?? 0) > 0) ?
-																ColorFilter.mode(theme.secondaryColor.withOpacity(0.15), BlendMode.srcOver) : null,
+																ColorFilter.mode(theme.secondaryColor.withValues(alpha: 0.15), BlendMode.srcOver) : null,
 														child: ThreadRow(
 															thread: threadState?.thread ?? watch.item.$2,
 															isSelected: isSelected,
@@ -1823,7 +1823,7 @@ class LocalWatcherControls extends StatelessWidget {
 											builder: (context, value) {
 												return LinearProgressIndicator(
 													value: value,
-													color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
+													color: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.5),
 													backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context),
 													minHeight: 8
 												);

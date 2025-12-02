@@ -1461,7 +1461,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 										const SizedBox(width: 8),
 										AdaptiveIconButton(
 											padding: EdgeInsets.zero,
-											minSize: 30,
+											minimumSize: const Size.square(30),
 											icon: const Icon(CupertinoIcons.xmark),
 											onPressed: () {
 												setState(() {
@@ -1502,7 +1502,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 										),
 										AdaptiveIconButton(
 											padding: EdgeInsets.zero,
-											minSize: 0,
+											minimumSize: Size.zero,
 											icon: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
@@ -1531,7 +1531,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 										),
 										if (board.spoilers == true) AdaptiveIconButton(
 											padding: EdgeInsets.zero,
-											minSize: 0,
+											minimumSize: Size.zero,
 											icon: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
@@ -1659,7 +1659,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							smartQuotesType: SmartQuotesType.disabled,
 							suffix: AdaptiveIconButton(
 								padding: const EdgeInsets.only(right: 8),
-								minSize: 0,
+								minimumSize: Size.zero,
 								onPressed: _previouslyUsedNames.isEmpty ? null : () async {
 									final choice = await showAdaptiveModalPopup<String>(
 										context: context,
@@ -1701,7 +1701,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							controller: _optionsFieldController,
 							suffix: AdaptiveIconButton(
 								padding: const EdgeInsets.only(right: 8),
-								minSize: 0,
+								minimumSize: Size.zero,
 								onPressed: _previouslyUsedOptions.isEmpty ? null : () async {
 									final choice = await showAdaptiveModalPopup<String>(
 										context: context,
@@ -1782,7 +1782,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								TextSpan(
 									text: (_proposedAttachmentUrl?.text).toString(),
 									style: TextStyle(
-										color: ChanceTheme.backgroundColorOf(context).withOpacity(0.7),
+										color: ChanceTheme.backgroundColorOf(context).withValues(alpha: 0.7),
 										fontSize: 14
 									)
 								)
@@ -2316,7 +2316,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 															value: value,
 															minHeight: 20,
 															valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-															backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
+															backgroundColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.2)
 														)
 													)
 												)
@@ -2640,7 +2640,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																	alignment: Alignment.bottomCenter,
 																	child: LinearProgressIndicator(
 																		valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-																		backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
+																		backgroundColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.7)
 																	)
 																)
 															)

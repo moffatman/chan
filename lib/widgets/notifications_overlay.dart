@@ -518,7 +518,7 @@ class CornerNotification extends StatelessWidget {
 										children: [
 											if (!notification.isMuted) ...[
 												CupertinoButton(
-													minSize: 0,
+													minimumSize: Size.zero,
 													padding: const EdgeInsets.all(8),
 													borderRadius: BorderRadius.circular(100),
 													color: ChanceTheme.secondaryColorOf(context),
@@ -528,7 +528,7 @@ class CornerNotification extends StatelessWidget {
 												const SizedBox(width: 8),
 											],
 											CupertinoButton(
-												minSize: 0,
+												minimumSize: Size.zero,
 												padding: EdgeInsets.zero,
 												borderRadius: BorderRadius.circular(100),
 												color: ChanceTheme.secondaryColorOf(context),

@@ -33,10 +33,10 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 	Widget build(BuildContext context) {
 		final onPressed = wrapButtonCallback(context, widget.onPressed);
 		final baseOpacity = onPressed == null ? 0.5 : 1.0;
-		final baseColor = (widget.color ?? ChanceTheme.primaryColorOf(context)).withOpacity(baseOpacity);
+		final baseColor = (widget.color ?? ChanceTheme.primaryColorOf(context)).withValues(alpha: baseOpacity);
 		Color? color;
 		if (_pressed) {
-			color = baseColor.withOpacity((widget.filled ? 0.8 : 0.2) * baseColor.opacity);
+			color = baseColor.withValues(alpha: (widget.filled ? 0.8 : 0.2) * baseColor.a);
 		}
 		else if (widget.filled) {
 			color = baseColor;

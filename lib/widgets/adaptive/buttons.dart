@@ -13,7 +13,7 @@ class AdaptiveFilledButton<T> extends StatelessWidget {
 	final FutureOr<T> Function()? onPressed;
 	final EdgeInsets? padding;
 	final BorderRadius? borderRadius;
-	final double? minSize;
+	final Size? minimumSize;
 	final Alignment alignment;
 	final Color? color;
 	final Color? disabledColor;
@@ -23,7 +23,7 @@ class AdaptiveFilledButton<T> extends StatelessWidget {
 		required this.onPressed,
 		this.padding,
 		this.borderRadius,
-		this.minSize,
+		this.minimumSize,
 		this.alignment = Alignment.center,
 		this.color,
 		this.disabledColor,
@@ -61,7 +61,7 @@ class AdaptiveFilledButton<T> extends StatelessWidget {
 						return color;
 					}),
 					alignment: alignment,
-					minimumSize: WidgetStateProperty.all(minSize.asSquare),
+					minimumSize: WidgetStateProperty.all(minimumSize),
 					tapTargetSize: MaterialTapTargetSize.shrinkWrap,
 					shape: WidgetStateProperty.all(RoundedRectangleBorder(
 						borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(4.0))
@@ -76,7 +76,7 @@ class AdaptiveFilledButton<T> extends StatelessWidget {
 			color: color ?? ChanceTheme.primaryColorOf(context),
 			foregroundColor: ChanceTheme.backgroundColorOf(context),
 			borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(8.0)),
-			minSize: minSize,
+			minimumSize: minimumSize,
 			alignment: alignment,
 			disabledColor: disabledColor ?? CupertinoColors.quaternarySystemFill,
 			child: child
@@ -145,26 +145,17 @@ class AdaptiveThinButton<T> extends StatelessWidget {
 	}
 }
 
-extension _AsSquare on double? {
-	Size? get asSquare {
-		if (this == null) {
-			return null;
-		}
-		return Size.square(this!);
-	}
-}
-
 class AdaptiveIconButton<T> extends StatelessWidget {
 	final Widget icon;
 	final FutureOr<T> Function()? onPressed;
-	final double minSize;
+	final Size? minimumSize;
 	final EdgeInsets padding;
 	final bool dimWhenDisabled;
 
 	const AdaptiveIconButton({
 		required this.icon,
 		required this.onPressed,
-		this.minSize = 44,
+		this.minimumSize = const Size.square(44),
 		this.padding = EdgeInsets.zero,
 		this.dimWhenDisabled = true,
 		super.key
@@ -177,7 +168,7 @@ class AdaptiveIconButton<T> extends StatelessWidget {
 			return IconButton(
 				padding: padding,
 				style: ButtonStyle(
-					minimumSize: WidgetStateProperty.all(minSize.asSquare),
+					minimumSize: WidgetStateProperty.all(minimumSize),
 					tapTargetSize: MaterialTapTargetSize.shrinkWrap
 				),
 				onPressed: onPressed,
@@ -187,7 +178,7 @@ class AdaptiveIconButton<T> extends StatelessWidget {
 		return CupertinoButton(
 			onPressed: onPressed,
 			padding: padding,
-			minSize: minSize,
+			minimumSize: minimumSize,
 			child: (dimWhenDisabled || onPressed != null) ? icon : DefaultTextStyle.merge(
 				style: TextStyle(color: ChanceTheme.primaryColorOf(context)),
 				child: IconTheme.merge(

@@ -161,9 +161,9 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	QueueState<T> get state => _state;
 	bool get useLoginSystem;
 	bool get isArchived;
-	set _useLoginSystem(bool newUseLoginSystem);
+	void setUseLoginSystem(bool newUseLoginSystem);
 	set useLoginSystem(bool newUseLoginSystem) {
-		_useLoginSystem = newUseLoginSystem;
+		setUseLoginSystem(newUseLoginSystem);
 		notifyListeners();
 	}
 
@@ -505,7 +505,7 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 	@override
 	bool get useLoginSystem => post.useLoginSystem ?? true;
 	@override
-	set _useLoginSystem(bool newUseLoginSystem) => post.useLoginSystem = newUseLoginSystem;
+	void setUseLoginSystem(bool newUseLoginSystem) => post.useLoginSystem = newUseLoginSystem;
 
 	@override
 	Future<PostReceipt> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
@@ -568,8 +568,9 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 class QueuedReport extends QueueEntry<void> {
 	final ChoiceReportMethod method;
 	final ChoiceReportMethodChoice choice;
-	@override
 	bool _useLoginSystem;
+	@override
+	void setUseLoginSystem(bool newUseLoginSystem) => _useLoginSystem = newUseLoginSystem;
 	@override
 	bool get useLoginSystem => _useLoginSystem;
 
@@ -616,8 +617,9 @@ class QueuedDeletion extends QueueEntry<void> {
 	@override
 	final ThreadIdentifier thread;
 	final PostReceipt receipt;
-	@override
 	bool _useLoginSystem;
+	@override
+	void setUseLoginSystem(bool newUseLoginSystem) => _useLoginSystem = newUseLoginSystem;
 	@override
 	bool get useLoginSystem => _useLoginSystem;
 	final bool imageOnly;

@@ -760,10 +760,10 @@ class _ContextMenuRoute<T> extends PopupRoute<T> {
 
   @override
   Widget buildModalBarrier() {
-    if (barrierColor.alpha != 0 && !offstage) {
+    if (barrierColor.a != 0 && !offstage) {
       final Animation<Color?> color = animation!.drive(
         ColorTween(
-          begin: barrierColor.withOpacity(0.0),
+          begin: barrierColor.withValues(alpha: 0.0),
           end: barrierColor,
         ).chain(CurveTween(curve: barrierCurve))
       );

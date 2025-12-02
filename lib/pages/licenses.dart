@@ -61,7 +61,7 @@ class _LicensesPageState extends State<LicensesPage> {
 							behavior: HitTestBehavior.opaque,
 							onTap: () => valueSetter(packageNames[i]),
 							child: Container(
-								color: selectedValue(context, packageNames[i]) ? ChanceTheme.primaryColorOf(context).withOpacity(0.2) : null,
+								color: selectedValue(context, packageNames[i]) ? ChanceTheme.primaryColorOf(context).withValues(alpha: 0.2) : null,
 								padding: const EdgeInsets.all(16),
 								child: Text(packageNames[i])
 							)

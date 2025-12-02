@@ -163,7 +163,7 @@ class AdaptiveTextFieldState extends State<AdaptiveTextField> {
 				textCapitalization: widget.textCapitalization
 			);
 		}
-		final placeholderColor = ChanceTheme.primaryColorOf(context).withOpacity(0.75);
+		final placeholderColor = ChanceTheme.primaryColorOf(context).withValues(alpha: 0.75);
 		return Opacity(
 			opacity: widget.enabled ? 1 : 0.5,
 			child: CupertinoTextField(
@@ -301,7 +301,7 @@ class AdaptiveSearchTextField extends StatelessWidget {
 				smartQuotesType: smartQuotesType
 			);
 		}
-		final placeholderColor = ChanceTheme.primaryColorOf(context).withOpacity(0.75);
+		final placeholderColor = ChanceTheme.primaryColorOf(context).withValues(alpha: 0.75);
 		return CupertinoSearchTextField(
 			autocorrect: autocorrect,
 			autofocus: autofocus,

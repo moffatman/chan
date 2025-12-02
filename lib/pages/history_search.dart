@@ -308,7 +308,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 										const SizedBox(width: 8),
 										AdaptiveIconButton(
 											padding: EdgeInsets.zero,
-											minSize: 0,
+											minimumSize: Size.zero,
 											icon: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
@@ -375,7 +375,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 													setDialogState(() {});
 												},
 												icon: const Icon(CupertinoIcons.xmark),
-												minSize: 0,
+												minimumSize: Size.zero,
 												padding: EdgeInsets.zero
 											)
 										)
@@ -744,7 +744,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								margin: const EdgeInsets.only(left: 4, right: 4),
 								padding: const EdgeInsets.all(4),
 								decoration: BoxDecoration(
-									color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
+									color: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.3),
 									borderRadius: const BorderRadius.all(Radius.circular(4))
 								),
 								child: child
@@ -772,8 +772,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								borderRadius: const BorderRadius.all(Radius.circular(8)),
 								child: LinearProgressIndicator(
 									value: denom == 0 ? null : numer / denom,
-									backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
-									color: ChanceTheme.primaryColorOf(context).withOpacity(_scanningPhase ? 0.5 : 1.0),
+									backgroundColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.3),
+									color: ChanceTheme.primaryColorOf(context).withValues(alpha: _scanningPhase ? 0.5 : 1.0),
 									minHeight: 8
 								)
 							),

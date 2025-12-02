@@ -250,7 +250,7 @@ class _CupertinoBackChevron extends StatelessWidget {
     switch (textDirection) {
       case TextDirection.rtl:
         iconWidget = Transform(
-          transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+          transform: Matrix4.identity()..scaleByDouble(-1.0, 1.0, 1.0, 1.0),
           alignment: Alignment.center,
           transformHitTests: false,
           child: iconWidget,
@@ -284,7 +284,7 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 
 	@override
 	bool shouldFullyObstruct(BuildContext context) {
-		return !autoHideOnScroll && backgroundColor?.opacity == 1;
+		return !autoHideOnScroll && backgroundColor?.a == 1;
 	}
 
 	@override
@@ -412,7 +412,7 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 				key: _materialScaffoldKey,
 				drawer: widget.drawer,
 				drawerEdgeDragWidth: _calculateDrawerEdgeDragWidth(context),
-				extendBodyBehindAppBar: autoHideBars || (bar_?.backgroundColor?.opacity ?? 1) < 1,
+				extendBodyBehindAppBar: autoHideBars || (bar_?.backgroundColor?.a ?? 1) < 1,
 				resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
 				backgroundColor: widget.backgroundColor,
 				appBar: bar_ == null ? null : _AppBarWithBackButtonPriority(
@@ -437,7 +437,7 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 				child: _NotifyingDrawerButtonWrapper(
 					child: CupertinoButton(
 						onPressed: () => parentDrawer.key.currentState?.open(),
-						minSize: 0,
+						minimumSize: Size.zero,
 						padding: EdgeInsets.zero,
 						child: const Icon(Icons.menu)
 					)
@@ -452,7 +452,7 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 				child: _NotifyingDrawerButtonWrapper(
 					child: CupertinoButton(
 						onPressed: () => Navigator.pop(context),
-						minSize: 0,
+						minimumSize: Size.zero,
 						padding: EdgeInsets.zero,
 						child: const _CupertinoBackChevron()
 					)

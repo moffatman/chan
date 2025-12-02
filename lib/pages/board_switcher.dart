@@ -267,7 +267,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		final overscroll1 = _getOverscroll();
 		await Future.delayed(const Duration(milliseconds: 50));
 		if (mounted) {
-			_backgroundColor.value = backgroundColor.withOpacity(1.0 - max(0, min(overscroll1, _getOverscroll()) / 50).clamp(0, 1));
+			_backgroundColor.value = backgroundColor.withValues(alpha: 1.0 - max(0, min(overscroll1, _getOverscroll()) / 50).clamp(0, 1));
 		}
 	}
 
@@ -630,7 +630,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											searchString = '';
 										});
 									},
-									minSize: 0,
+									minimumSize: Size.zero,
 									padding: EdgeInsets.zero,
 									icon: const Icon(CupertinoIcons.xmark_circle_fill, size: 20, applyTextScaling: true)
 								)
@@ -740,7 +740,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																					child: Container(
 																						decoration: BoxDecoration(
 																							borderRadius: const BorderRadius.all(Radius.circular(4)),
-																							color: theme.primaryColor.withOpacity(0.1)
+																							color: theme.primaryColor.withValues(alpha: 0.1)
 																						),
 																						padding: const EdgeInsets.only(left: 16),
 																						child: Row(
@@ -970,7 +970,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													height: _kRowHeight,
 													decoration: BoxDecoration(
 														borderRadius: const BorderRadius.all(Radius.circular(4)),
-														color: board.isWorksafe ? Colors.blue.withOpacity(isSelected ? 0.3 : 0.1) : Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
+														color: board.isWorksafe ? Colors.blue.withValues(alpha: isSelected ? 0.3 : 0.1) : Colors.red.withValues(alpha: isSelected ? 0.3 : 0.1)
 													),
 													child: Stack(
 														fit: StackFit.expand,
@@ -1056,7 +1056,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												height: _kRowHeight,
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(4)),
-													color: Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
+													color: Colors.red.withValues(alpha: isSelected ? 0.3 : 0.1)
 												),
 												child: Stack(
 													fit: StackFit.expand,
@@ -1161,7 +1161,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													padding: const EdgeInsets.all(4),
 													decoration: BoxDecoration(
 														borderRadius: const BorderRadius.all(Radius.circular(4)),
-														color: board.isWorksafe ? Colors.blue.withOpacity(isSelected ? 0.3 : 0.1) : Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
+														color: board.isWorksafe ? Colors.blue.withValues(alpha: isSelected ? 0.3 : 0.1) : Colors.red.withValues(alpha: isSelected ? 0.3 : 0.1)
 													),
 													child: Column(
 														mainAxisAlignment: MainAxisAlignment.start,
@@ -1235,7 +1235,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												padding: const EdgeInsets.all(4),
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(4)),
-													color: Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
+													color: Colors.red.withValues(alpha: isSelected ? 0.3 : 0.1)
 												),
 												child: Stack(
 													children: [
@@ -1343,7 +1343,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													crossAxisAlignment: CrossAxisAlignment.center,
 													children: [
 														AdaptiveIconButton(
-															minSize: 0,
+															minimumSize: Size.zero,
 															onPressed: (currentImageboardIndex <= 0) ? null : () {
 																setState(() {
 																	currentImageboardIndex--;
@@ -1355,7 +1355,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														const SizedBox(width: 8),
 														Expanded(
 															child: AdaptiveIconButton(
-																minSize: 0,
+																minimumSize: Size.zero,
 																onPressed: () async {
 																	final newImageboard = await pick(
 																		context: context,
@@ -1397,7 +1397,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														),
 														const SizedBox(width: 8),
 														AdaptiveIconButton(
-															minSize: 0,
+															minimumSize: Size.zero,
 															onPressed: (currentImageboardIndex + 1 >= allImageboards.length) ? null : () {
 																setState(() {
 																	currentImageboardIndex++;

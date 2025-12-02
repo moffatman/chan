@@ -251,9 +251,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				maxWidth: maxWidth + rightPadding
 			),
 			child: CupertinoButton(
-				color: primaryColor.withOpacity(0.3),
+				color: primaryColor.withValues(alpha: 0.3),
 				alignment: Alignment.centerLeft,
-				minSize: 0,
+				minimumSize: Size.zero,
 				padding: EdgeInsets.only(left: 10, right: rightPadding),
 				child: Row(
 					mainAxisSize: MainAxisSize.min,
@@ -651,11 +651,11 @@ class _RawSearchQueryFilterTag extends StatelessWidget {
 			padding: const EdgeInsets.all(4),
 			segments: [
 				SegmentedWidgetSegment(
-					color: ChanceTheme.primaryColorOf(context).withOpacity(invert ? 0.3 : 0.15),
+					color: ChanceTheme.primaryColorOf(context).withValues(alpha: invert ? 0.3 : 0.15),
 					child: field
 				),
 				if (value case final value?) SegmentedWidgetSegment(
-					color: ChanceTheme.primaryColorOf(context).withOpacity(invert ? 0.15 : 0.3),
+					color: ChanceTheme.primaryColorOf(context).withValues(alpha: invert ? 0.15 : 0.3),
 					child: value
 				)
 			]

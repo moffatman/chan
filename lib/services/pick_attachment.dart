@@ -535,7 +535,7 @@ Future<File?> pickAttachment({
 							),
 							if (loadingPick) Positioned.fill(
 								child: Container(
-									color: theme.backgroundColor.withOpacity(0.5),
+									color: theme.backgroundColor.withValues(alpha: 0.5),
 									child: const CircularProgressIndicator.adaptive()
 								)
 							)

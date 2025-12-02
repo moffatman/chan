@@ -335,7 +335,7 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 						attachment: attachment,
 						child: CupertinoButton(
 							padding: EdgeInsets.zero,
-							minSize: 0,
+							minimumSize: Size.zero,
 							onPressed: options.onThumbnailTap?.bind1(attachment),
 							child: ConstrainedBox(
 								constraints: const BoxConstraints(
@@ -2842,13 +2842,13 @@ TextSpan buildPostInfoRow({
 	final children = [
 		if (post.archiveName != null) ...[
 			WidgetSpan(
-				child: Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withOpacity(0.75), size: 15),
+				child: Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withValues(alpha: 0.75), size: 15),
 				alignment: PlaceholderAlignment.middle
 			),
 			TextSpan(
 				text: ' ${post.archiveName} ',
 				style: TextStyle(
-					color: theme.primaryColor.withOpacity(0.75),
+					color: theme.primaryColor.withValues(alpha: 0.75),
 					fontWeight: FontWeight.w600,
 					fontVariations: CommonFontVariations.w600
 				)
@@ -2871,7 +2871,7 @@ TextSpan buildPostInfoRow({
 				flag: thread!.flair!,
 				includeTextOnlyContent: true,
 				appendLabels: false,
-				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
+				style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.75))
 			),
 			const TextSpan(text: ' '),
 		],
@@ -2884,7 +2884,7 @@ TextSpan buildPostInfoRow({
 		for (final field in settings.postDisplayFieldOrder)
 			if (thread != null && showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
 				text: post.id == post.threadId ? '#1 ' : '#${_calculatePostNumber(site, thread, post)} ',
-				style: TextStyle(color: theme.primaryColor.withOpacity(0.5))
+				style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.5))
 			)
 			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
 				WidgetSpan(
@@ -3006,13 +3006,13 @@ TextSpan buildPostInfoRow({
 					flag: post.flag!,
 					includeTextOnlyContent: true,
 					appendLabels: combineFlagNames && settings.showCountryNameOnPosts,
-					style: TextStyle(color: theme.primaryColor.withOpacity(0.75), fontSize: 16)
+					style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.75), fontSize: 16)
 				),
 				const TextSpan(text: ' ')
 			]
 			else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null && !combineFlagNames) TextSpan(
 				text: '${post.flag!.name} ',
-				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
+				style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.75))
 			)
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
 				text: '${formatTime(post.time.toLocal(), forceFullDate: forceAbsoluteTime, withSecondsPrecision: site.hasSecondsPrecision)} '
@@ -3035,7 +3035,7 @@ TextSpan buildPostInfoRow({
 				TextSpan(
 					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.imageboard.site.formatBoardNameWithoutTrailingSlash(post.board)}/' : ''}$postIdNonRepeatingSegment',
 					style: TextStyle(
-						color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.primaryColor).withOpacity(0.5)
+						color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.primaryColor).withValues(alpha: 0.5)
 					),
 					recognizer: (interactive && settings.tapPostIdToReply) ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
 						context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
@@ -3107,7 +3107,7 @@ TextSpan buildDraftInfoRow({
 		for (final field in settings.postDisplayFieldOrder)
 			if (field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && imageboard.site.explicitIds) TextSpan(
 				text: '#${thread?.replyCount ?? 1} ',
-				style: TextStyle(color: theme.primaryColor.withOpacity(0.5))
+				style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.5))
 			)
 			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && uniqueIPCount != null) ...[
 				WidgetSpan(
@@ -3158,13 +3158,13 @@ TextSpan buildDraftInfoRow({
 					flag: post.flag!,
 					includeTextOnlyContent: true,
 					appendLabels: combineFlagNames && settings.showCountryNameOnPosts,
-					style: TextStyle(color: theme.primaryColor.withOpacity(0.75), fontSize: 16)
+					style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.75), fontSize: 16)
 				),
 				const TextSpan(text: ' ')
 			]
 			else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null && !combineFlagNames) TextSpan(
 				text: '${post.flag!.name} ',
-				style: TextStyle(color: theme.primaryColor.withOpacity(0.75))
+				style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.75))
 			)
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts && time != null) TextSpan(
 				text: '${formatTime(time, withSecondsPrecision: imageboard.site.hasSecondsPrecision)} '
@@ -3174,7 +3174,7 @@ TextSpan buildDraftInfoRow({
 				TextSpan(
 					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}$postIdNonRepeatingSegment',
 					style: TextStyle(
-						color: theme.primaryColor.withOpacity(0.5)
+						color: theme.primaryColor.withValues(alpha: 0.5)
 					)
 				),
 				if (postIdRepeatingSegment != null) TextSpan(
