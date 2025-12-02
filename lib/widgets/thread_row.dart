@@ -140,7 +140,7 @@ TextSpan buildThreadCounters({
 				if (latestThread.time.year < 2000) TextSpan(text: '—', style: TextStyle(color: otherMetadataColor))
 				else RelativeTimeSpan(latestThread.time, style: TextStyle(
 					color: otherMetadataColor,
-					fontSize: 18,
+					fontSize: 16,
 					fontFeatures: const [FontFeature.tabularFigures()]
 				)),
 			]
@@ -162,7 +162,7 @@ TextSpan buildThreadCounters({
 					thread.lastUpdatedTime ?? thread.posts_.tryLast?.time ?? thread.time,
 					style: TextStyle(
 						color: replyCountColor,
-						fontSize: 18,
+						fontSize: 16,
 						fontFeatures: const [FontFeature.tabularFigures()]
 					)
 				)
@@ -221,7 +221,7 @@ TextSpan buildThreadCounters({
 		parts.insert(0, space);
 		parts.add(space);
 	}
-	return TextSpan(children: parts);
+	return TextSpan(children: parts, style: const TextStyle(fontSize: 16));
 }
 
 class _ThreadCounters extends StatelessWidget {
