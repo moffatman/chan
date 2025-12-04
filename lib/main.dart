@@ -866,6 +866,7 @@ class ChanTabs extends ChangeNotifier {
 			newActiveTabIndex = browseTabIndex - 1;
 		}
 		browseTabIndex = newActiveTabIndex;
+		notifyListeners();
 	}
 
 	Future<void> showNewTabPopup({
@@ -1633,14 +1634,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget _buildTab(int index) {
 		Widget child;
 		if (index <= 0) {
-			child = ValueListenableBuilder(
-				valueListenable: _tabs.activeBrowserTab,
-				builder: (context, activeBrowserTab, _) => SwitchingView(
-					currentIndex: activeBrowserTab,
-					items: Persistence.tabs,
-					builder: (tabObject) => ImageboardTab(
-						key: tabObject.tabKey,
-						tab: tabObject
+			child = ListenableBuilder(
+				listenable: _tabs,
+				builder: (context, _) => ValueListenableBuilder(
+					valueListenable: _tabs.activeBrowserTab,
+					builder: (context, activeBrowserTab, _) => SwitchingView(
+						currentIndex: activeBrowserTab,
+						items: Persistence.tabs,
+						builder: (tabObject) => ImageboardTab(
+							key: tabObject.tabKey,
+							tab: tabObject
+						)
 					)
 				)
 			);
