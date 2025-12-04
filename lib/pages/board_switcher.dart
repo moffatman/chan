@@ -113,6 +113,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	int currentImageboardIndex = -1;
 	Imageboard? get currentImageboard => currentImageboardIndex < 0 ? null : allImageboards[currentImageboardIndex];
 	late List<ImageboardScoped<ImageboardBoard>> boards;
+	final boardUsage = <(String, BoardKey), int>{};
+	final imageboardUsage = <String, int>{};
 	static final typeaheads = <Imageboard, Trie<List<ImageboardBoard>>>{};
 	static final typeaheadLoadings = <Imageboard, Set<String>>{};
 	static final typeaheadLoadingsNotifier = EasyListenable();
@@ -187,6 +189,23 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			}
 			if(widget.allowDevsite) {
 				boards.add(ImageboardRegistry.instance.dev!.scope(kDevBoard));
+			}
+		}
+		imageboardUsage.clear();
+		boardUsage.clear();
+		for (final st in Persistence.sharedThreadStateBox.values) {
+			if (st.showInHistory == false) {
+				continue;
+			}
+			imageboardUsage.update(st.imageboardKey, (x) => x + 1, ifAbsent: () => 1);
+			final key = (st.imageboardKey, st.boardKey);
+			boardUsage.update(key, (x) => x + 1, ifAbsent: () => 1);
+		}
+		for (final tab in Persistence.tabs) {
+			if ((tab.imageboardKey, tab.board) case (String ib, String board)) {
+				imageboardUsage.update(ib, (x) => x + 1, ifAbsent: () => 1);
+				final key = (ib, ImageboardBoard.getKey(board));
+				boardUsage.update(key, (x) => x + 1, ifAbsent: () => 1);
 			}
 		}
 	}
@@ -315,6 +334,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				keyword: allImageboards.where((i) => i != currentImageboard && i.site.name.toLowerCase().contains(keyword)).toSet()
 		};
 		final imageboards = allImageboards.toList();
+		imageboards.sort((a, b) => (imageboardUsage[b.key] ?? 0) - (imageboardUsage[a.key] ?? 0));
 		if (currentImageboard case final ib?) {
 			imageboards.remove(ib);
 			imageboards.insert(0, ib);
@@ -324,24 +344,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			for (final pair in favsList.asMap().entries)
 				pair.value.imageboard.scope(pair.value.item): pair.key
 		};
-		final imageboardPriority = currentImageboard == null ? <Imageboard, int>{} : {
+		final imageboardPriority = {
 			for (final i in imageboards.asMap().entries)
 				i.value: i.key
 		};
-		final boardUsage = <(String, BoardKey), int>{};
-		for (final st in Persistence.sharedThreadStateBox.values) {
-			if (st.showInHistory == false) {
-				continue;
-			}
-			final key = (st.imageboardKey, st.boardKey);
-			boardUsage.update(key, (x) => x + 1, ifAbsent: () => 1);
-		}
-		for (final tab in Persistence.tabs) {
-			if ((tab.imageboardKey, tab.board) case (String ib, String board)) {
-				final key = (ib, ImageboardBoard.getKey(board));
-				boardUsage.update(key, (x) => x + 1, ifAbsent: () => 1);
-			}
-		}
 		List<_Board> filteredBoards = boards.tryMap((board) {
 			if (!settings.showBoard(board.item)) {
 				return null;
