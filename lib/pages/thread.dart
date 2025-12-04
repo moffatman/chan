@@ -246,7 +246,7 @@ class ThreadPageState extends State<ThreadPage> {
 					else {
 						newLastId = _listController.lastVisibleItem?.id;
 					}
-					if (newLastId != null) {
+					if (newLastId != null && newLastId > 0) {
 						tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, newLastId);
 						tmpPersistentState.save();
 						setState(() {});
