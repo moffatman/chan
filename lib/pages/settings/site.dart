@@ -327,7 +327,7 @@ final siteSettings = [
 											if (postNotFoundOn.isNotEmpty) {
 												throw Exception('Text not found in $postNotFoundOn thread');
 											}
-											throw Exception('Unrecognized/unsupported site');
+											throw Exception('Unrecognized/unsupported site (url: $url)');
 										});
 										Settings.instance.addSiteKey(siteKey);
 									}
