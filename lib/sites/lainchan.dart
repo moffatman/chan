@@ -40,7 +40,11 @@ mixin DecodeGenericUrlMixin {
 		if (url.host != baseUrl) {
 			return null;
 		}
-		final p = url.pathSegments.where((s) => s.isNotEmpty).toList();
+		final p = switch (url.pathSegments) {
+			['mod.php'] when url.queryParameters.keys.length == 1 => url.queryParameters.keys.first.split('/'),
+			List<String> other => other
+		}.where((s) => s.isNotEmpty).toList();
+		print(p);
 		if (basePath.isNotEmpty) {
 			for (final part in basePath.split('/').where((s) => s.isNotEmpty)) {
 				if (p.tryFirst != part) {
