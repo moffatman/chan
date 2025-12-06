@@ -79,6 +79,7 @@ class HistorySearchPage extends StatefulWidget {
 
 class _HistorySearchPageState extends State<HistorySearchPage> {
 	String _query = '';
+	String _username = '';
 	bool _exactMatch = false;
 	RegExp get _queryRegex {
 		if (_exactMatch) {
@@ -218,6 +219,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				_exactMatch
 					? [RegExp(RegExp.escape(_query), caseSensitive: false)]
 					: _query.split(' ').map((q) => RegExp(RegExp.escape(q), caseSensitive: false));
+		final username = _username.toLowerCase();
 		for (final future in firstPass.values.expand((l) => l).map((threadState) async {
 			if (!mounted) return;
 			final thread = await threadState.getThread();
@@ -246,6 +248,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 						}
 					}
 					if (_filterYourPostsOnly == _FilterYourPostsOnly.repliesToYourPosts && !threadState.youIds.any(post.repliedToIds.contains)) {
+						continue;
+					}
+					if (username.isNotEmpty && !(post.name.length >= username.length && post.name.toLowerCase().contains(username))) {
 						continue;
 					}
 					if (
@@ -282,6 +287,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	Future<void> _editQuery() async {
 		bool anyChange = false;
 		final controller = TextEditingController(text: _query);
+		final usernameController = TextEditingController(text: _username);
 		await showAdaptiveModalPopup(
 			context: context,
 			builder: (context) => StatefulBuilder(
@@ -477,7 +483,16 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 										setDialogState(() {});
 										anyChange = true;
 									}
-								)
+								),
+								const SizedBox(height: 16),
+								SizedBox(
+									width: 200,
+									child: AdaptiveTextField(
+										controller: usernameController,
+										placeholder: 'Username',
+										onChanged: (_) => anyChange = true
+									)
+								),
 							]
 						)
 					),
@@ -491,6 +506,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 			)
 		);
 		_query = controller.text;
+		_username = usernameController.text;
 		if (anyChange || (results?.isEmpty ?? true)) {
 			setState(() {
 				results = null;
@@ -739,7 +755,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								if (_filterHasAttachment != null)
 									_filterHasAttachment! ? const Text('With attachment(s)') : const Text('Without attachment(s)'),
 								if (_filterContainsLink != null)
-									_filterContainsLink! ? const Text('Containing link(s)') : const Text('Not containing link(s)')
+									_filterContainsLink! ? const Text('Containing link(s)') : const Text('Not containing link(s)'),
+								if (_username.isNotEmpty) Text('Username: "$_username"')
 							].map((child) => Container(
 								margin: const EdgeInsets.only(left: 4, right: 4),
 								padding: const EdgeInsets.all(4),
