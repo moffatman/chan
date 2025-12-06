@@ -1198,7 +1198,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												animation: _currentAttachmentChanged,
 												builder: (context, child) => Padding(
 													padding: showChrome ? EdgeInsets.only(
-														bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0) - 16,
+														bottom: max(0, (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0) - 16),
 														right: 8
 													) : layoutInsets + const EdgeInsets.only(right: 8),
 													child: child
