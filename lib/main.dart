@@ -2435,6 +2435,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								_tabs._lastIndex = index;
 							}
 						),
+						backgroundColor: ChanceTheme.barColorOf(context),
 						tabBuilder: (context, index) => Stack(
 							children: [
 								Column(
