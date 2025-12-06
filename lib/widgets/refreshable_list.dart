@@ -2711,9 +2711,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				// Include the slashes
 				ImageboardRegistry.instance.getImageboard(imageboardKey)?.site.formatBoardName(item.board) ?? item.board
 			],
-			...defaultPatternFields.map((field) {
-				return item.getFilterFieldText(field) ?? '';
-			}),
+			...allPatternFields.tryMap(item.getFilterFieldText),
 		].join(' ')).contains(query);
 	}
 
