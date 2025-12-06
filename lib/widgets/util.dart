@@ -2447,7 +2447,17 @@ class NullableColorFilterRenderObject extends RenderProxyBox {
   @override
   void paint(PaintingContext context, Offset offset) {
 		if (colorFilter != null) {
-    	layer = context.pushColorFilter(offset, colorFilter!, super.paint, oldLayer: layer as ColorFilterLayer?);
+    	layer = context.pushClipRect(needsCompositing,
+				offset,
+				Offset.zero & size,
+				(context, offset) => context.pushColorFilter(
+					offset,
+					colorFilter!,
+					super.paint,
+					oldLayer: layer?.firstChild as ColorFilterLayer?
+				),
+				oldLayer: layer as ClipRectLayer?
+			);
 			assert(() {
 				layer!.debugCreator = debugCreator;
 				return true;
