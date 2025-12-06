@@ -11,6 +11,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/one_frame_image_provider.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -259,6 +260,9 @@ class AttachmentThumbnail extends StatelessWidget {
 				}
 			}
 		);
+		if (url.endsWith('.gif') || url.endsWith('.webp') /* might be animated WebP */) {
+			image = OneFrameImageProvider(image);
+		}
 		final pixelation = settings.thumbnailPixelation;
 		final FilterQuality filterQuality;
 		if (pixelation > 0 && mayObscure) {
