@@ -1906,7 +1906,7 @@ class AttachmentViewer extends StatelessWidget {
 									// For reddit videos or random hotlinked stuff
 									return Center(
 										child: AspectRatio(
-											aspectRatio: controller.attachment.aspectRatio,
+											aspectRatio: rotate90DegreesClockwise ? (1 / controller.attachment.aspectRatio) : controller.attachment.aspectRatio,
 											child: Container(
 												color: Settings.instance.theme.barColor
 											)
@@ -1937,7 +1937,6 @@ class AttachmentViewer extends StatelessWidget {
 														attachment: attachment,
 														width: attachment.width?.toDouble(),
 														height: attachment.height?.toDouble(),
-														rotate90DegreesClockwise: rotate90DegreesClockwise,
 														gaplessPlayback: true,
 														revealSpoilers: true,
 														site: controller.site,
