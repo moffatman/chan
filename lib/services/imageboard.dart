@@ -209,7 +209,7 @@ class Imageboard extends ChangeNotifier {
 			// Thread
 			ThreadIdentifier(submittedPost.board, receipt.id);
 		final postShowedUpCompleter = Completer<bool>();
-		int? lastPostsCount;
+		({int? postsCount, int? lastPostId})? lastThreadData;
 		// Using listenForThreadChanges so it works on incognito tabs too
 		final listenable = persistence.listenForThreadChanges(threadIdentifier);
 		final forcedCheckFuture = () async {
@@ -242,10 +242,11 @@ class Imageboard extends ChangeNotifier {
 		void listener() async {
 			final posts = (await Persistence.getCachedThread(key, threadIdentifier.board, threadIdentifier.id))?.posts_;
 			bool? found;
-			if (posts?.length == lastPostsCount) {
+			final threadData = (postsCount: posts?.length, lastPostId: posts?.tryLast?.id);
+			if (threadData == lastThreadData) {
 				return;
 			}
-			lastPostsCount = posts?.length;
+			lastThreadData = threadData;
 			for (final post in posts?.reversed ?? <Post>[]) {
 				if (post.id > receipt.id) {
 					found = false;
