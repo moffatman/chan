@@ -2312,211 +2312,223 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						}
 						_backButton();
 					},
-					child: CupertinoTabScaffold(
-						controller: _tabs._tabController,
-						tabBar: ChanceCupertinoTabBar(
-							visible: !androidDrawer,
-							height: androidDrawer ? 0 : 50,
-							inactiveColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.4),
-							items: [
-								BottomNavigationBarItem(
-									icon: GestureDetector(
-										onLongPress: () {
-											mediumHapticFeedback();
-											_popUpDrawer();
-										},
-										child: AnimatedBuilder(
-											animation: _tabs.browseCountListenable,
-											builder: (context, child) => StationaryNotifyingIcon(
-												icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
-												primary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != _tabs.browseTabIndex || _tabs.mainTabIndex > 0).map((x) => x.value.unseenYous.value).reduce((a, b) => a + b),
-												secondary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != _tabs.browseTabIndex || _tabs.mainTabIndex > 0).map((x) => x.value.unseen.value).reduce((a, b) => a + b)
-											)
-										)
-									),
-									label: 'Browse'
+					child: ValueListenableBuilder(
+						valueListenable: _showTabPopup,
+						builder: (context, showTabPopup, child) {
+							final theme = context.watch<SavedTheme>();
+							return DecoratedBox(
+								decoration: BoxDecoration(
+									color: showTabPopup ? theme.barColor : theme.backgroundColor
 								),
-								BottomNavigationBarItem(
-									icon: Builder(
-										builder: (context) => NotifyingIcon(
-											icon: Icon(Adaptive.icons.bookmark, size: 28),
-											primaryCount: CombiningValueListenable<int>(
-												children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
-												combine: (list) => list.fold(0, (a, b) => a + b)
-											),
-											secondaryCount: CombiningValueListenable<int>(
-												children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
-												combine: (list) => list.fold(0, (a, b) => a + b)
-											)
-										)
-									),
-									label: 'Saved'
-								),
-								BottomNavigationBarItem(
-									icon: GestureDetector(
-										onLongPress: _toggleHistory,
-										child: Settings.recordThreadsInHistorySetting.watch(context) ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28)
-									),
-									label: 'History'
-								),
-								const BottomNavigationBarItem(
-									icon: Icon(CupertinoIcons.search, size: 28),
-									label: 'Search'
-								),
-								BottomNavigationBarItem(
-									icon: GestureDetector(
-										onLongPress: () => Settings.instance.runQuickAction(context),
-										child: NotifyingIcon(
-											icon: Icon(
-												CupertinoIcons.settings,
-												size: 28,
-												color: (notificationErrors.isNotEmpty || filterError != null) ? Colors.red : null
-											),
-											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
-											secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
-										)
-									),
-									label: 'Settings'
-								)
-							],
-							onUpSwipe: () {
-								if (_tabs.mainTabIndex != 0) {
-									return;
-								}
-								mediumHapticFeedback();
-								if (_showTabPopup.value) {
-									_popUpDrawer();
-									return;
-								}
-								_showTabPopup.value = true;
-							},
-							onDownSwipe: () {
-								if (!_showTabPopup.value || _tabs.mainTabIndex != 0) {
-									return;
-								}
-								mediumHapticFeedback();
-								_showTabPopup.value = false;
-							},
-							onLeftSwipe: () {
-								mediumHapticFeedback();
-								if (_tabs.mainTabIndex > 0) {
-									_tabs.mainTabIndex--;
-								}
-								else if (_tabs.browseTabIndex > 0) {
-									_tabs.browseTabIndex--;
-								}
-								else {
-									// Not possible, do a second haptic for feedback
-									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-								}
-							},
-							onRightSwipe: () {
-								mediumHapticFeedback();
-								if (_tabs.mainTabIndex > 0 && _tabs.mainTabIndex < 4) {
-									_tabs.mainTabIndex++;
-								}
-								else if (_tabs.mainTabIndex == 0 && _tabs.browseTabIndex < Persistence.tabs.length - 1) {
-									_tabs.browseTabIndex++;
-								}
-								else {
-									// Not possible, do a second haptic for feedback
-									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-								}
-							},
-							beforeCopiedOnTap: (index) async {},
-							onTap: (index) {
-								lightHapticFeedback();
-								if (index == _tabs._lastIndex && index == 0) {
-									_showTabPopup.value = !_showTabPopup.value;
-								}
-								else {
-									_tabs.willActivatePane(index);
-								}
-								_tabs._lastIndex = index;
-							}
-						),
-						backgroundColor: ChanceTheme.barColorOf(context),
-						tabBuilder: (context, index) => Stack(
-							children: [
-								Column(
-									children: [
-										Expanded(
-											child: CupertinoTabView(
-												navigatorKey: _tabs._tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>(debugLabel: '_ChanHomePageState._tabNavigatorKeys[$index]')),
-												navigatorObservers: [
-													ScrollTrackerNavigatorObserver()
-												],
-												builder: (context) {
-													final child = _buildTab(index);
-													if (Settings.materialStyleSetting.watch(context)) {
-														return Material(
-															child: child
-														);
-													}
-													return child;
-												}
+								child: child
+							);
+						},
+						child: CupertinoTabScaffold(
+							controller: _tabs._tabController,
+							tabBar: ChanceCupertinoTabBar(
+								visible: !androidDrawer,
+								height: androidDrawer ? 0 : 50,
+								inactiveColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.4),
+								items: [
+									BottomNavigationBarItem(
+										icon: GestureDetector(
+											onLongPress: () {
+												mediumHapticFeedback();
+												_popUpDrawer();
+											},
+											child: AnimatedBuilder(
+												animation: _tabs.browseCountListenable,
+												builder: (context, child) => StationaryNotifyingIcon(
+													icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
+													primary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != _tabs.browseTabIndex || _tabs.mainTabIndex > 0).map((x) => x.value.unseenYous.value).reduce((a, b) => a + b),
+													secondary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != _tabs.browseTabIndex || _tabs.mainTabIndex > 0).map((x) => x.value.unseen.value).reduce((a, b) => a + b)
+												)
 											)
 										),
-										if (index == 0) ValueListenableBuilder(
-											valueListenable: _showTabPopup,
-											builder: (context, showTabPopup, _) => Expander(
-												bottomSafe: true,
-												expanded: showTabPopup,
-												duration: const Duration(milliseconds: 200),
-												curve: Curves.ease,
-												child: const SizedBox(height: 80)
+										label: 'Browse'
+									),
+									BottomNavigationBarItem(
+										icon: Builder(
+											builder: (context) => NotifyingIcon(
+												icon: Icon(Adaptive.icons.bookmark, size: 28),
+												primaryCount: CombiningValueListenable<int>(
+													children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
+													combine: (list) => list.fold(0, (a, b) => a + b)
+												),
+												secondaryCount: CombiningValueListenable<int>(
+													children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
+													combine: (list) => list.fold(0, (a, b) => a + b)
+												)
 											)
-										)
-									]
-								),
-								if (index == 0) Column(
-									mainAxisAlignment: MainAxisAlignment.end,
-									children: [
-										ValueListenableBuilder(
-											valueListenable: _showTabPopup,
-											builder: (context, showTabPopup, child) => Expander(
-												bottomSafe: false,
-												keepTickersEnabledWhenCollapsed: true,
-												expanded: showTabPopup,
-												duration: const Duration(milliseconds: 200),
-												curve: Curves.ease,
-												child: child!
-											),
-											child: RawGestureDetector(
-												behavior: HitTestBehavior.translucent,
-												gestures: {
-													WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
-														() => WeakVerticalDragGestureRecognizer(debugOwner: this, weakness: 1, sign: 1),
-														(recognizer) {
-															recognizer.onEnd = (details) {
-																if (details.velocity.pixelsPerSecond.dy > 0 && _showTabPopup.value) {
-																	mediumHapticFeedback();
-																	_showTabPopup.value = false;
-																}
-															};
+										),
+										label: 'Saved'
+									),
+									BottomNavigationBarItem(
+										icon: GestureDetector(
+											onLongPress: _toggleHistory,
+											child: Settings.recordThreadsInHistorySetting.watch(context) ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28)
+										),
+										label: 'History'
+									),
+									const BottomNavigationBarItem(
+										icon: Icon(CupertinoIcons.search, size: 28),
+										label: 'Search'
+									),
+									BottomNavigationBarItem(
+										icon: GestureDetector(
+											onLongPress: () => Settings.instance.runQuickAction(context),
+											child: NotifyingIcon(
+												icon: Icon(
+													CupertinoIcons.settings,
+													size: 28,
+													color: (notificationErrors.isNotEmpty || filterError != null) ? Colors.red : null
+												),
+												primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
+												secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
+											)
+										),
+										label: 'Settings'
+									)
+								],
+								onUpSwipe: () {
+									if (_tabs.mainTabIndex != 0) {
+										return;
+									}
+									mediumHapticFeedback();
+									if (_showTabPopup.value) {
+										_popUpDrawer();
+										return;
+									}
+									_showTabPopup.value = true;
+								},
+								onDownSwipe: () {
+									if (!_showTabPopup.value || _tabs.mainTabIndex != 0) {
+										return;
+									}
+									mediumHapticFeedback();
+									_showTabPopup.value = false;
+								},
+								onLeftSwipe: () {
+									mediumHapticFeedback();
+									if (_tabs.mainTabIndex > 0) {
+										_tabs.mainTabIndex--;
+									}
+									else if (_tabs.browseTabIndex > 0) {
+										_tabs.browseTabIndex--;
+									}
+									else {
+										// Not possible, do a second haptic for feedback
+										Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+									}
+								},
+								onRightSwipe: () {
+									mediumHapticFeedback();
+									if (_tabs.mainTabIndex > 0 && _tabs.mainTabIndex < 4) {
+										_tabs.mainTabIndex++;
+									}
+									else if (_tabs.mainTabIndex == 0 && _tabs.browseTabIndex < Persistence.tabs.length - 1) {
+										_tabs.browseTabIndex++;
+									}
+									else {
+										// Not possible, do a second haptic for feedback
+										Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+									}
+								},
+								beforeCopiedOnTap: (index) async {},
+								onTap: (index) {
+									lightHapticFeedback();
+									if (index == _tabs._lastIndex && index == 0) {
+										_showTabPopup.value = !_showTabPopup.value;
+									}
+									else {
+										_tabs.willActivatePane(index);
+									}
+									_tabs._lastIndex = index;
+								}
+							),
+							backgroundColor: Colors.transparent,
+							tabBuilder: (context, index) => Stack(
+								children: [
+									Column(
+										children: [
+											Expanded(
+												child: CupertinoTabView(
+													navigatorKey: _tabs._tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>(debugLabel: '_ChanHomePageState._tabNavigatorKeys[$index]')),
+													navigatorObservers: [
+														ScrollTrackerNavigatorObserver()
+													],
+													builder: (context) {
+														final child = _buildTab(index);
+														if (Settings.materialStyleSetting.watch(context)) {
+															return Material(
+																child: child
+															);
 														}
-													)
-												},
-												child: Container(
-													color: ChanceTheme.barColorOf(context),
-													height: 80,
-													child: Row(
-														children: [
-															Expanded(
-																child: AnimatedBuilder(
-																	animation: _tabs.activeBrowserTab,
-																	builder: (context, _) => _buildTabList(Axis.horizontal, _showTabPopup)
-																)
-															),
-															_buildNewTabIcon(axis: Axis.horizontal)
-														]
+														return child;
+													}
+												)
+											),
+											if (index == 0) ValueListenableBuilder(
+												valueListenable: _showTabPopup,
+												builder: (context, showTabPopup, _) => Expander(
+													bottomSafe: true,
+													expanded: showTabPopup,
+													duration: const Duration(milliseconds: 200),
+													curve: Curves.ease,
+													child: const SizedBox(height: 80)
+												)
+											)
+										]
+									),
+									if (index == 0) Column(
+										mainAxisAlignment: MainAxisAlignment.end,
+										children: [
+											ValueListenableBuilder(
+												valueListenable: _showTabPopup,
+												builder: (context, showTabPopup, child) => Expander(
+													bottomSafe: false,
+													keepTickersEnabledWhenCollapsed: true,
+													expanded: showTabPopup,
+													duration: const Duration(milliseconds: 200),
+													curve: Curves.ease,
+													child: child!
+												),
+												child: RawGestureDetector(
+													behavior: HitTestBehavior.translucent,
+													gestures: {
+														WeakVerticalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakVerticalDragGestureRecognizer>(
+															() => WeakVerticalDragGestureRecognizer(debugOwner: this, weakness: 1, sign: 1),
+															(recognizer) {
+																recognizer.onEnd = (details) {
+																	if (details.velocity.pixelsPerSecond.dy > 0 && _showTabPopup.value) {
+																		mediumHapticFeedback();
+																		_showTabPopup.value = false;
+																	}
+																};
+															}
+														)
+													},
+													child: Container(
+														color: ChanceTheme.barColorOf(context),
+														height: 80,
+														child: Row(
+															children: [
+																Expanded(
+																	child: AnimatedBuilder(
+																		animation: _tabs.activeBrowserTab,
+																		builder: (context, _) => _buildTabList(Axis.horizontal, _showTabPopup)
+																	)
+																),
+																_buildNewTabIcon(axis: Axis.horizontal)
+															]
+														)
 													)
 												)
 											)
-										)
-									]
-								)
-							]
+										]
+									)
+								]
+							)
 						)
 					)
 				)
