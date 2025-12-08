@@ -215,10 +215,18 @@ class Imageboard extends ChangeNotifier {
 		final forcedCheckFuture = () async {
 			await Future.delayed(const Duration(seconds: 15));
 			if (!postShowedUpCompleter.isCompleted) {
+				int attemptsRemaining = 1;
 				while (!postShowedUpCompleter.isCompleted) {
 					try {
 						await threadWatcher.updateThread(threadIdentifier);
-						break;
+						if (attemptsRemaining > 0) {
+							attemptsRemaining--;
+							await Future.delayed(const Duration(seconds: 15));
+						}
+						else {
+							// Give up
+							break;
+						}
 					}
 					catch (e, st) {
 						Future.error(e, st); // crashlytics
@@ -276,7 +284,7 @@ class Imageboard extends ChangeNotifier {
 				forcedCheckFuture.catchError((Object e, StackTrace st) {
 					Future.error(e, st); // crashlytics
 				}),
-				Future.delayed(const Duration(seconds: 20))
+				Future.delayed(const Duration(seconds: 35))
 			]).then((_) => false)
 		]);
 		listenable.removeListener(listener);
