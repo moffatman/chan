@@ -1750,9 +1750,11 @@ class SavedSettings extends HiveObject {
 		final fontFamily = this.fontFamily;
 		if (fontFamily == null) {
 			return platformIsMaterial ? const TextStyle(
-				fontFamily: 'Roboto'
+				fontFamily: 'Roboto',
+				fontSize: 16
 			) : const TextStyle(
-				fontFamily: 'CupertinoSystemText'
+				fontFamily: 'CupertinoSystemText',
+				fontSize: 16
 			);
 		}
 		String name = fontFamily;
@@ -1775,12 +1777,16 @@ class SavedSettings extends HiveObject {
 				// Render the [package] into fontFamily, as it may not be the same as fallback
 				fontFamily: googleFont.fontFamily,
 				package: null,
-				fontFamilyFallback: fallback
+				fontFamilyFallback: fallback,
+				fontSize: 16
 			);
 		}
-		return googleFont ?? TextStyle(
+		return googleFont?.copyWith(
+			fontSize: 16
+		) ?? TextStyle(
 			fontFamily: name,
-			fontFamilyFallback: fallback
+			fontFamilyFallback: fallback,
+			fontSize: 16
 		);
 	}
 }
