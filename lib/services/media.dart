@@ -836,7 +836,7 @@ class MediaConversion {
 						if (removeMetadata) ...['-map_metadata', '-1'],
 						if (sizeFilters.isNotEmpty || contentFilters.isNotEmpty)
 							// For some reason Android png output with transparency is broken
-							if (Platform.isAndroid && outputFileExtension == 'png' && (scan.pixFmt?.contains('a') ?? false)) ...[
+							if (Platform.isAndroid && outputFileExtension == 'png' && (scan.pixFmt?.contains('a') ?? false) && scan.pixFmt != 'pal8') ...[
 								'-filter_complex',
 								'[0:v]${['alphaextract', ...sizeFilters].join(',')}[mask];\n'
 								'[0:v]${[...contentFilters, ...sizeFilters].join(',')}[image];\n'
