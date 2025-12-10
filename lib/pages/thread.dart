@@ -3791,7 +3791,7 @@ class _ThreadScrollbarState extends State<_ThreadScrollbar> {
 		final material = Settings.instance.materialStyle;
 		return AnimatedOpacity(
 			duration: material ? const Duration(milliseconds: 300) : const Duration(milliseconds: 250),
-			opacity: show ? 1 : 0,
+			opacity: show ? 0.99 : 0,
 			curve: Curves.fastOutSlowIn,
 			child: CustomPaint(
 				painter: _ThreadScrollbarCustomPainter(
