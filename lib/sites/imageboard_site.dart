@@ -1491,7 +1491,7 @@ class DraftPost {
 	@HiveField(8)
 	final String? overrideFilenameWithoutExtension;
 	@HiveField(9)
-	final ImageboardBoardFlag? flag;
+	ImageboardBoardFlag? flag;
 	@HiveField(10)
 	bool? useLoginSystem;
 	@HiveField(11, defaultValue: false)

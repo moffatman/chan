@@ -157,6 +157,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	set options(String newOptions) => _optionsFieldController.text = newOptions;
 
 	String get defaultName => context.read<Persistence?>()?.browserState.postingNames[widget.board] ?? '';
+	ImageboardBoardFlag? get defaultFlag => context.read<Persistence?>()?.browserState.postingFlags[widget.board];
 
 	static final _quotelinkPattern = RegExp(r'>>(\d+)');
 	set draft(DraftPost? draft) {
@@ -172,6 +173,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_optionsFieldController.text = draft.options ?? '';
 			_filenameController.text = draft.overrideFilenameWithoutExtension ?? '';
 			_nameFieldController.text = draft.name ?? defaultName;
+			flag = draft.flag ?? defaultFlag;
 			final subject = draft.subject;
 			if (subject != null) {
 				_subjectFieldController.text = subject;
@@ -187,6 +189,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			// Don't clear options
 			_subjectFieldController.clear();
 			_nameFieldController.text = defaultName;
+			flag = defaultFlag;
 			// Don't clear disableLoginSystem
 			_overrideRandomizeFilenames = false;
 		}
@@ -347,7 +350,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		spoiler: spoiler,
 		overrideFilenameWithoutExtension: _filenameController.text,
 		overrideRandomizeFilenames: _overrideRandomizeFilenames,
-		flag: flag,
+		flag: null, // It will be stored in postingFlags[board]
 		useLoginSystem: switch (_disableLoginSystem) {
 			true => false,
 			_ => null
@@ -371,7 +374,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		_filenameController = TextEditingController(text: widget.initialDraft?.overrideFilenameWithoutExtension);
 		_nameFieldController = TextEditingController(text: persistence.browserState.postingNames[widget.board]);
 		spoiler = widget.initialDraft?.spoiler ?? false;
-		flag = widget.initialDraft?.flag;
+		flag = widget.initialDraft?.flag ?? persistence.browserState.postingFlags[widget.board];
 		if (widget.initialDraft?.useLoginSystem == false) {
 			_disableLoginSystem = true;
 		}
@@ -521,6 +524,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				_showOptions = true;
 			}
 		}
+		flag ??= persistence.browserState.postingFlags[widget.board];
 		for (final draft in Outbox.instance.queuedPostsFor(context.read<Imageboard>().key, widget.board.s, widget.threadId)) {
 			if (!_submittingPosts.contains(draft) && draft != postingPost.value) {
 				// This is some message restored from persistence.outbox (previous app launch)
@@ -1003,6 +1007,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		final post = _makeDraft();
 		post.name = _nameFieldController.text;
 		post.useLoginSystem = shouldUseLoginSystem;
+		post.flag = defaultFlag;
 		if (widget.isArchived) {
 			showAdaptiveDialog(
 				barrierDismissible: true,
@@ -1085,6 +1090,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 	void _reset() {
 		_textFieldController.clear();
 		_nameFieldController.text = defaultName;
+		flag = defaultFlag;
 		// Don't clear options field, it should be remembered
 		_subjectFieldController.clear();
 		_filenameController.clear();
@@ -1279,6 +1285,13 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		if (mounted) {
 			setState(() {
 				flag = pickedFlag;
+				if (pickedFlag case final pickedFlag?) {
+					context.read<Persistence>().browserState.postingFlags[widget.board] = pickedFlag;
+				}
+				else {
+					context.read<Persistence>().browserState.postingFlags.remove(widget.board);
+				}
+				context.read<Persistence>().didUpdateBrowserState();
 			});
 		}
 	}

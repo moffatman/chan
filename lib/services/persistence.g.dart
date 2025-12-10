@@ -1404,6 +1404,16 @@ class PersistentBrowserStateFields {
     fieldName: 'downloadSubfoldersPerBoard',
     merger: MapMerger(PrimitiveMerger()),
   );
+  static Map<BoardKey, ImageboardBoardFlag> getPostingFlags(
+          PersistentBrowserState x) =>
+      x.postingFlags;
+  static const postingFlags = ReadOnlyHiveFieldAdapter<PersistentBrowserState,
+      Map<BoardKey, ImageboardBoardFlag>>(
+    getter: getPostingFlags,
+    fieldNumber: 33,
+    fieldName: 'postingFlags',
+    merger: MapMerger(AdaptedMerger(ImageboardBoardFlagAdapter.kTypeId)),
+  );
 }
 
 class PersistentBrowserStateAdapter
@@ -1443,7 +1453,8 @@ class PersistentBrowserStateAdapter
     29: PersistentBrowserStateFields.disabledArchiveNames,
     30: PersistentBrowserStateFields.postSortingMethod,
     31: PersistentBrowserStateFields.postSortingMethodPerBoard,
-    32: PersistentBrowserStateFields.downloadSubfoldersPerBoard
+    32: PersistentBrowserStateFields.downloadSubfoldersPerBoard,
+    33: PersistentBrowserStateFields.postingFlags
   };
 
   @override
@@ -1519,13 +1530,16 @@ class PersistentBrowserStateAdapter
       downloadSubfoldersPerBoard: fields[32] == null
           ? {}
           : (fields[32] as Map).cast<BoardKey, String>(),
+      postingFlags: fields[33] == null
+          ? {}
+          : (fields[33] as Map).cast<BoardKey, ImageboardBoardFlag>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(25)
+      ..writeByte(26)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -1575,7 +1589,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(31)
       ..write(obj.postSortingMethodPerBoard)
       ..writeByte(32)
-      ..write(obj.downloadSubfoldersPerBoard);
+      ..write(obj.downloadSubfoldersPerBoard)
+      ..writeByte(33)
+      ..write(obj.postingFlags);
   }
 
   @override

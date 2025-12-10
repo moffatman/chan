@@ -153,8 +153,10 @@ class DraftPostFields {
     merger: PrimitiveMerger(),
   );
   static ImageboardBoardFlag? getFlag(DraftPost x) => x.flag;
-  static const flag = ReadOnlyHiveFieldAdapter<DraftPost, ImageboardBoardFlag?>(
+  static void setFlag(DraftPost x, ImageboardBoardFlag? v) => x.flag = v;
+  static const flag = HiveFieldAdapter<DraftPost, ImageboardBoardFlag?>(
     getter: getFlag,
+    setter: setFlag,
     fieldNumber: 9,
     fieldName: 'flag',
     merger: NullableMerger(AdaptedMerger(ImageboardBoardFlagAdapter.kTypeId)),
