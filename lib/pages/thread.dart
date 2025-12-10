@@ -3354,6 +3354,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															final pair = postingPost.pair;
 															return AdaptiveFilledButton(
 																padding: const EdgeInsets.all(8),
+																minimumSize: Size.zero,
 																color: theme.primaryColorWithBrightness(0.6),
 																onPressed: pair != null && pair.highPriority ? () => pair.action(context) : replyBoxState.toggleReplyBox,
 																child: AnimatedSize(
@@ -3412,6 +3413,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										if (poll != null) ...[
 											AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),
+												minimumSize: Size.zero,
 												onPressed: () => WeakNavigator.push(context, OverscrollModalPage(
 													child: PollWidget(poll: poll)
 												)),
