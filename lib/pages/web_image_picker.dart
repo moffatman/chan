@@ -456,6 +456,9 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														src = candidate.src
 													}
 												}
+												var target =
+													   document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2)
+													|| document.elementFromPoint((rect.left + rect.right) / 2, (0.8 * rect.top) + (0.2 * rect.bottom))
 												return {
 													src: src,
 													width: img.naturalWidth || img.videoWidth || img.width,
@@ -465,10 +468,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													top: rect.top,
 													left: rect.left,
 													visible1: rect.bottom >= 0 && rect.right >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight) && rect.left <= (window.innerWidth || document.documentElement.clientWidth),
-													visible2: img.paused === false || (
-														document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2) ||
-														document.elementFromPoint((rect.left + rect.right) / 2, (0.8 * rect.top) + (0.2 * rect.bottom))
-													) == img,
+													visible2: img.paused === false || target == img || !!(target && (target.parentElement == img.parentElement || (img.parentElement && target.parentElement == img.parentElement.parentElement))),
 													isVideo: img.localName == 'video'
 												}
 											})'''
