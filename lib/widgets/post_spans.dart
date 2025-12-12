@@ -726,7 +726,8 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		};
 		final enableUnconditionalInteraction = switch(zone.style) {
 			PostSpanZoneStyle.tree => stackCount == 0,
-			_ => !expandedImmediatelyAbove
+			_ => !expandedImmediatelyAbove ||
+			     zone.shouldExpandPost(this) // Always allow re-collapsing
 		};
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () async {
 			if (enableInteraction) {
@@ -792,13 +793,22 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 				_ => stackCount == 0
 			};
 			if (thisPostInThread == null ||
-			    zone.shouldExpandPost(this) == true ||
 					!enableInteraction ||
 					options.showRawSource) {
 				return (span.$1, span.$2);
 			}
+			final Widget child;
+			if (zone.shouldExpandPost(this) == true) {
+				child = KeyedSubtree(
+					key: key ?? ValueKey(this),
+					child: Text.rich(
+						span.$1,
+						textScaler: TextScaler.noScaling
+					)
+				);
+			}
 			else {
-				final popup = HoverPopup(
+				child = HoverPopup(
 					style: HoverPopupStyle.floating,
 					anchor: const Offset(30, -80),
 					alternativeHandler: (HoverPopupPhase phase) {
@@ -842,34 +852,34 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 						textScaler: TextScaler.noScaling
 					)
 				);
-				return (WidgetSpan(
-					child: BuildContextRegistrant(
-						onBuild: (context) {
-							if (span.$3) {
-								zone._registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
-							}
-							else if (zone.style == PostSpanZoneStyle.tree) {
-								zone._registerConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, () {
-									return zone.isPostOnscreen?.call(postId) != true;
-								}, span.$2.onTap ?? () {});
-							}
-						},
-						onDispose: (context) {
-							zone._unregisterLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context);
-							zone._unregisterConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context);
-						},
-						child: TweenAnimationBuilder(
-							tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
-							duration: zone.highlightQuoteLinkId != postId ? const Duration(milliseconds: 750) : const Duration(milliseconds: 250),
-							curve: Curves.ease,
-							builder: (context, c, child) => c == Colors.transparent ? popup : ColorFiltered(
-								colorFilter: ColorFilter.mode(c ?? Colors.transparent, BlendMode.srcATop),
-								child: popup
-							)
+			}
+			return (WidgetSpan(
+				child: BuildContextRegistrant(
+					onBuild: (context) {
+						if (span.$3) {
+							zone._registerLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, span.$2.onTap ?? () {});
+						}
+						else if (zone.style == PostSpanZoneStyle.tree) {
+							zone._registerConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context, () {
+								return zone.isPostOnscreen?.call(postId) != true;
+							}, span.$2.onTap ?? () {});
+						}
+					},
+					onDispose: (context) {
+						zone._unregisterLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context);
+						zone._unregisterConditionalLineTapTarget('$board/$threadId/$postId/${identityHashCode(this)}', context);
+					},
+					child: TweenAnimationBuilder(
+						tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
+						duration: zone.highlightQuoteLinkId != postId ? const Duration(milliseconds: 750) : const Duration(milliseconds: 250),
+						curve: Curves.ease,
+						builder: (context, c, _) => c == Colors.transparent ? child : ColorFiltered(
+							colorFilter: ColorFilter.mode(c ?? Colors.transparent, BlendMode.srcATop),
+							child: child
 						)
 					)
-				), span.$2);
-			}
+				)
+			), span.$2);
 		}
 	}
 	@override
