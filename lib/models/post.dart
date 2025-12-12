@@ -384,9 +384,19 @@ class Post implements Filterable {
 		ipNumber ??= previous.ipNumber;
 		for (final attachment in attachments_) {
 			final otherAttachment = previous.attachments_.tryFirstWhere((a) => a.id == attachment.id);
-			attachment.sizeInBytes ??= otherAttachment?.sizeInBytes;
-			attachment.width ??= otherAttachment?.width;
-			attachment.height ??= otherAttachment?.height;
+			if (attachment.sizeInBytes == null) {
+				// This is probably Reddit
+				// The [otherAttachment] has a much better idea of the width/height
+				attachment.sizeInBytes = otherAttachment?.sizeInBytes;
+				attachment.width = otherAttachment?.width ?? attachment.width;
+				attachment.height = otherAttachment?.height ?? attachment.height;
+			}
+			else {
+				// Naive merge
+				attachment.sizeInBytes ??= otherAttachment?.sizeInBytes;
+				attachment.width ??= otherAttachment?.width;
+				attachment.height ??= otherAttachment?.height;
+			}
 		}
 		if (text == previous.text) {
 			_span ??= previous._span;

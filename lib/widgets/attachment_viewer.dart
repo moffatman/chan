@@ -438,8 +438,11 @@ class AttachmentViewerController extends ChangeNotifier {
 			return;
 		}
 		try {
-			attachment.width ??= dw;
-			attachment.height ??= dh;
+			if (attachment.width != dw || attachment.height != dh) {
+				Future.microtask(notifyListeners);
+			}
+			attachment.width = dw;
+			attachment.height = dh;
 			await _videoPlayerController?.setSize(height: dh, width: dw);
 		}
 		on UnsupportedError {
