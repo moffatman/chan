@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:linkify/linkify.dart';
 
 /// Return value true means retry the captcha, something was done
-Future<bool> showAuthPageHelperPopup(BuildContext context, Imageboard imageboard) async {
+Future<bool> showAuthPageHelperPopup(BuildContext context, Imageboard imageboard, {bool offerRecheck = false}) async {
 	final ret = await showAdaptiveDialog<bool>(
 		context: context,
 		barrierDismissible: true,
@@ -45,7 +45,7 @@ Future<bool> showAuthPageHelperPopup(BuildContext context, Imageboard imageboard
 					},
 					child: const Text('Paste link')
 				),
-				AdaptiveDialogAction(
+				if (offerRecheck) AdaptiveDialogAction(
 					onPressed: () => Navigator.pop(context, true),
 					child: const Text('Recheck status')
 				),

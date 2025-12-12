@@ -267,7 +267,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				return (
 					deadline: queue.captchaAllowedTime,
 					action: (context) async {
-						final authorized = await showAuthPageHelperPopup(context, imageboard);
+						final authorized = await showAuthPageHelperPopup(context, imageboard, offerRecheck: true);
 						if (authorized) {
 							queue.captchaAllowedTime = DateTime.now();
 						}
