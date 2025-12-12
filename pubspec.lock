@@ -172,12 +172,11 @@ packages:
   charset_converter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: master
-      resolved-ref: "01958ab8842badf1024094032439c32f577f17ba"
-      url: "https://github.com/moffatman/charset_converter.git"
-    source: git
-    version: "2.2.0"
+      name: charset_converter
+      sha256: a601f27b78ca86c3d88899d53059786d9c3f3c485b64974e9105c06c2569aef5
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.0"
   checked_yaml:
     dependency: transitive
     description:
@@ -523,6 +522,14 @@ packages:
       url: "https://github.com/moffatman/flutter_exif_rotation"
     source: git
     version: "0.5.2"
+  flutter_heic_to_jpg:
+    dependency: "direct main"
+    description:
+      name: flutter_heic_to_jpg
+      sha256: "98199617b68e5bbaa56be24665f241044e0480907fe4e063cd577e220aeb398a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   flutter_highlight:
     dependency: "direct main"
     description:
@@ -680,10 +687,10 @@ packages:
     dependency: "direct main"
     description:
       name: fluttertoast
-      sha256: "95f349437aeebe524ef7d6c9bde3e6b4772717cf46a0eb6a3ceaddc740b297cc"
+      sha256: "144ddd74d49c865eba47abe31cbc746c7b311c82d6c32e571fd73c4264b740e2"
       url: "https://pub.dev"
     source: hosted
-    version: "8.2.8"
+    version: "9.0.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -709,10 +716,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_fonts
-      sha256: "2776c66b3e97c6cdd58d1bd3281548b074b64f1fd5c8f82391f7456e38849567"
+      sha256: ba03d03bcaa2f6cb7bd920e3b5027181db75ab524f8891c8bc3aa603885b8055
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.5"
+    version: "6.3.3"
   graphs:
     dependency: transitive
     description:
@@ -729,15 +736,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
-  heic_to_jpg:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: main
-      resolved-ref: "8e1a6bcea3933185477d8953674b17ecde1215bb"
-      url: "https://github.com/moffatman/flutter_heic_to_jpg.git"
-    source: git
-    version: "0.2.0"
   hex:
     dependency: transitive
     description:
@@ -1955,4 +1953,4 @@ packages:
     version: "3.1.2"
 sdks:
   dart: ">=3.9.0 <4.0.0"
-  flutter: ">=3.22.0"
+  flutter: ">=3.35.0"

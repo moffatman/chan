@@ -729,7 +729,7 @@ final allowedGoogleFonts = {
 	'Roboto': GoogleFonts.roboto,
 	'Roboto Slab': GoogleFonts.robotoSlab,
 	'Slabo 27px': GoogleFonts.slabo27px,
-	'Source Sans Pro': GoogleFonts.sourceSansPro
+	'Source Sans 3': GoogleFonts.sourceSans3
 };
 
 @HiveType(typeId: 43)
@@ -1736,6 +1736,13 @@ class SavedSettings extends HiveObject {
 				userAgent = null;
 			}
 			this.appliedMigrations.add('tua');
+		}
+		// Google replaced a font
+		if (fontFamily == 'Source Sans Pro') {
+			fontFamily = 'Source Sans 3';
+		}
+		if (fontFamilyFallback == 'Source Sans Pro') {
+			fontFamilyFallback = 'Source Sans 3';
 		}
 	}
 

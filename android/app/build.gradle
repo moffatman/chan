@@ -33,7 +33,9 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 36
+
+    ndkVersion = "29.0.14206865"
 
     namespace "com.moffatman.chan"
 

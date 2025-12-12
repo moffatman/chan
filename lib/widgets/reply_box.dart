@@ -49,7 +49,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:linkify/linkify.dart';
 import 'package:provider/provider.dart';
-import 'package:heic_to_jpg/heic_to_jpg.dart';
+import 'package:flutter_heic_to_jpg/flutter_heic_to_jpg.dart';
 
 /// Some pickers (iOS) put the file in a Chance-owned path that wouldn't be
 /// automatically cleaned up. Move it out of there.
@@ -798,7 +798,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				file = await _moveFileOutOfDocumentsDir(file);
 			}
 			if (ext == 'heic') {
-				final heicPath = await HeicToJpg.convert(file.path);
+				final heicPath = await FlutterHeicToJpg.convert(file.path);
 				if (heicPath == null) {
 					throw Exception('Failed to convert HEIC image to JPEG');
 				}
