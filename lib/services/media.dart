@@ -88,6 +88,10 @@ class MediaScan {
 	final String? format;
 	@HiveField(10, defaultValue: null)
 	final String? pixFmt;
+	@HiveField(11, defaultValue: null)
+	final int? videoBitrate;
+	@HiveField(12, defaultValue: null)
+	final int? audioBitrate;
 
 	MediaScan({
 		required this.hasAudio,
@@ -100,7 +104,9 @@ class MediaScan {
 		required this.sizeInBytes,
 		required this.metadata,
 		required this.format,
-		required this.pixFmt
+		required this.pixFmt,
+		required this.videoBitrate,
+		required this.audioBitrate
 	});
 
 	static final _ffprobeLock = Mutex();
@@ -109,15 +115,16 @@ class MediaScan {
 
 	static Future<MediaScan> _scan(Uri file, {
 		Map<String, String> headers = const {},
-		int tries = 0
+		int tries = 0,
+		bool force = false
 	}) async {
 		try {
-			if (_webScans[file] case MediaScan scan) {
+			if (_webScans[file] case MediaScan scan when !force) {
 				return scan;
 			}
 			return await _ffprobeLock.protect<MediaScan>(() async {
 				// May be two simultaneous scans, so recheck after getting the lock
-				if (_webScans[file] case MediaScan scan) {
+				if (_webScans[file] case MediaScan scan when !force) {
 					return scan;
 				}
 				final result = await FFTools.ffprobe(
@@ -193,10 +200,13 @@ class MediaScan {
 				double? videoFramerate;
 				Map? metadata = format['tags'] as Map?;
 				final streams = (data['streams'] as List).cast<Map>();
+				Map? videoStream;
+				Map? audioStream;
 				for (final stream in streams) {
 					width = max(width, stream['width'] as int? ?? 0);
 					height = max(height, stream['height'] as int? ?? 0);
 					if (stream['codec_type'] == 'video') {
+						videoStream ??= stream;
 						final avgFramerateFractionString = stream['avg_frame_rate'] as String?;
 						final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
 						if (match != null) {
@@ -206,16 +216,21 @@ class MediaScan {
 							(metadata ??= {})[kMetadataFieldRotation] = rotation.toDouble();
 						}
 					}
+					else if (stream['codec_type'] == 'audio') {
+						audioStream ??= stream;
+					}
 				}
 				final scan = MediaScan(
-					hasAudio: streams.any((s) => s['codec_type'] == 'audio'),
+					hasAudio: audioStream != null,
 					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
 					bitrate: (format['bit_rate'] as String?)?.tryParseInt,
+					videoBitrate: (videoStream?['bit_rate'] as String?)?.tryParseInt,
+					audioBitrate: (audioStream?['bit_rate'] as String?)?.tryParseInt,
 					width: width == 0 ? null : width,
 					height: height == 0 ? null : height,
-					codec: (streams.tryFirstWhere((s) => s['codec_type'] == 'video'))?['codec_name'] as String?,
+					codec: videoStream?['codec_name'] as String?,
 					videoFramerate: videoFramerate,
-					pixFmt: (streams.tryFirstWhere((s) => s['codec_type'] == 'video'))?['pix_fmt'] as String?,
+					pixFmt: videoStream?['pix_fmt'] as String?,
 					sizeInBytes: (format['size'] as String?)?.tryParseInt,
 					metadata: metadata,
 					format: format['format_name'] as String?
@@ -228,7 +243,7 @@ class MediaScan {
 		}
 		on FormatException {
 			if (tries < 3) {
-				return _scan(file, headers: headers, tries: tries + 1);
+				return _scan(file, headers: headers, tries: tries + 1, force: force);
 			}
 			else {
 				rethrow;
@@ -264,18 +279,19 @@ class MediaScan {
 	}
 
 	static Future<MediaScan> scan(Uri file, {
-		Map<String, String> headers = const {}
+		Map<String, String> headers = const {},
+		bool force = false
 	}) async {
 		if (file.scheme == 'file') {
 			final peeked = peekCachedFileScan(file.path);
-			if (peeked != null) {
+			if (!force && peeked != null) {
 				return peeked;
 			}
 			// Not cached or file size doesn't match
 			return _boxLock.protect(() async {
 				runWhenIdle(const Duration(seconds: 1), _closeBox);
 				final mediaScanBox = _mediaScanBox ??= await Hive.openLazyBox<MediaScan>('mediaScans');
-				final scan = await _scan(file);
+				final scan = await _scan(file, force: force);
 				final key = _makeKey(file.path);
 				_fileScans[key] = scan;
 				await mediaScanBox.put(key, scan);
@@ -283,7 +299,7 @@ class MediaScan {
 			});
 		}
 		else {
-			return _scan(file, headers: headers);
+			return _scan(file, headers: headers, force: force);
 		}
 	}
 
@@ -365,7 +381,7 @@ class MediaScan {
 	}
 
 	@override
-	String toString() => 'MediaScan(hasAudio: $hasAudio, duration: $duration, bitrate: $bitrate, width: $width, height: $height, codec: $codec, videoFramerate: $videoFramerate)';
+	String toString() => 'MediaScan(hasAudio: $hasAudio, duration: $duration, bitrate: $bitrate, width: $width, height: $height, codec: $codec, videoFramerate: $videoFramerate, sizeInBytes: $sizeInBytes, metadata: $metadata, format: $format, pixFmt: $pixFmt, videoBitrate: $videoBitrate, audioBitrate: $audioBitrate)';
 }
 
 class MediaConversion {
@@ -380,7 +396,7 @@ class MediaConversion {
 	int? maximumDimension;
 	final String cacheKey;
 	final Map<String, String> headers;
-	int _additionalScaleDownFactor = 1;
+	int _additionalScaleDownFactor = 0;
 	int _randomizeChecksumNoiseFactor = 1;
 	int _durationArgumentFactor = 1;
 	final Uri? soundSource;
@@ -395,10 +411,6 @@ class MediaConversion {
 	MediaScan? cachedScan;
 
 	static final pool = Pool(2);
-
-	static final _badVideoToolboxIosVersionPattern = RegExp(r'Version 15\.[01]');
-	static bool get _isVideoToolboxSupported => Platform.isIOS && !_badVideoToolboxIosVersionPattern.hasMatch(Platform.operatingSystemVersion);
-	bool _hasVideoToolboxFailed = false;
 
 	MediaConversion({
 		required this.inputFile,
@@ -521,11 +533,13 @@ class MediaConversion {
 	}
 
 	static MediaConversion toGif(Uri inputFile, {
+		int? maximumDimension,
 		bool randomizeChecksum = false
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'gif',
+			maximumDimension: maximumDimension,
 			randomizeChecksum: randomizeChecksum
 		);
 	}
@@ -646,9 +660,9 @@ class MediaConversion {
 				if (await convertedFile.exists()) {
 					await convertedFile.delete();
 				}
-				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers);
+				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers, force: true);
 				final isVideoOutput = {'mp4', 'webm', 'm3u8'}.contains(outputFileExtension);
-				int outputBitrate = targetBitrate ?? switch(scan.bitrate) {
+				int outputBitrate = targetBitrate ?? switch(scan.videoBitrate ?? scan.bitrate) {
 					int inputBitrate => switch ((scan.codec, outputFileExtension)) {
 						// Higher efficiency formats down to h264, increase target bitrate
 						('vp9' || 'hevc', 'mp4') => (1.5 * inputBitrate).round(),
@@ -664,24 +678,26 @@ class MediaConversion {
 				if (scan.width != null && scan.height != null) {
 					if (maximumSizeInBytes != null) {
 						if (isVideoOutput) {
-							final maximumBitrate = ((7.2 - (_additionalScaleDownFactor / 6)) * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round();
+							final maximumBitrate = ((8 - (_additionalScaleDownFactor / 6)) * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round();
 							if (maximumBitrate < outputBitrate) {
 								// Limit bitrate
 								outputBitrate = maximumBitrate;
 								// May need further scaling down
-								final scaleDownFactorSq = (maximumBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
-								if (scaleDownFactorSq < 1) {
-									final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-									final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-									newSize = (newWidth, newHeight);
+								if (_additionalScaleDownFactor > 0) {
+									final scaleDownFactorSq = (maximumBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
+									if (scaleDownFactorSq < 1) {
+										final newWidth = (scan.width! * sqrt(scaleDownFactorSq)).roundToEven;
+										final newHeight = (scan.height! * (sqrt(scaleDownFactorSq))).roundToEven;
+										newSize = (newWidth, newHeight);
+									}
 								}
 							}
 						}
 						else {
 							final scaleDownFactor = ((scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 3))) * _additionalScaleDownFactor;
 							if (scaleDownFactor > 1) {
-								final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
-								final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
+								final newWidth = (scan.width! / scaleDownFactor).roundToEven;
+								final newHeight = (scan.height! / scaleDownFactor).roundToEven;
 								newSize = (newWidth, newHeight);
 							}
 						}
@@ -689,7 +705,7 @@ class MediaConversion {
 					if (maximumDimension != null) {
 						final fittedSize = applyBoxFit(BoxFit.contain, Size(scan.width!.toDouble(), scan.height!.toDouble()), Size.square(maximumDimension!.toDouble())).destination;
 						if (newSize == null || fittedSize.width < newSize.$1) {
-							newSize = (fittedSize.width.round(), fittedSize.height.round());
+							newSize = (fittedSize.width.roundToEven, fittedSize.height.roundToEven);
 						}
 					}
 				}
@@ -710,7 +726,7 @@ class MediaConversion {
 				final results = await pool.withResource(() async {
 					final contentFilters = <String>[];
 					final sizeFilters = <String>[];
-					if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams && (!_isVideoToolboxSupported || _hasVideoToolboxFailed)) {
+					if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams) {
 						sizeFilters.add('crop=trunc(iw/2)*2:trunc(ih/2)*2');
 					}
 					if (!copyStreams && newSize != null) {
@@ -774,6 +790,7 @@ class MediaConversion {
 						if (bitrateString != null && isVideoOutput) ...[
 							'-minrate', bitrateString,
 							'-maxrate', bitrateString,
+							'-bufsize', '${(outputBitrate / 500).floor()}K'
 						],
 						if (outputFileExtension == 'webm') ...[
 							if (copyStreams && soundSource == null) ...[
@@ -816,8 +833,6 @@ class MediaConversion {
 								...['-c:a', 'aac'],
 							if (copyStreams)
 								...['-vcodec', 'copy']
-							else if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
-								...['-vcodec', 'h264_videotoolbox']
 							else
 								...[
 									'-c:v', 'libx264',
@@ -863,15 +878,6 @@ class MediaConversion {
 				if (results.returnCode != 0) {
 					if (await convertedFile.exists()) {
 						await convertedFile.delete();
-					}
-					if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') &&
-							_isVideoToolboxSupported &&
-							!_hasVideoToolboxFailed &&
-							results.output.contains('Error while opening encoder')) {
-						print('Falling back to libx264');
-						print(results.output);
-						_hasVideoToolboxFailed = true;
-						return await start();
 					}
 					throw MediaConversionFFMpegException(results.returnCode, results.output);
 				}

@@ -85,6 +85,20 @@ class MediaScanFields {
     fieldName: 'pixFmt',
     merger: PrimitiveMerger(),
   );
+  static int? getVideoBitrate(MediaScan x) => x.videoBitrate;
+  static const videoBitrate = ReadOnlyHiveFieldAdapter<MediaScan, int?>(
+    getter: getVideoBitrate,
+    fieldNumber: 11,
+    fieldName: 'videoBitrate',
+    merger: PrimitiveMerger(),
+  );
+  static int? getAudioBitrate(MediaScan x) => x.audioBitrate;
+  static const audioBitrate = ReadOnlyHiveFieldAdapter<MediaScan, int?>(
+    getter: getAudioBitrate,
+    fieldNumber: 12,
+    fieldName: 'audioBitrate',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class MediaScanAdapter extends TypeAdapter<MediaScan> {
@@ -107,7 +121,9 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
     7: MediaScanFields.sizeInBytes,
     8: MediaScanFields.metadata,
     9: MediaScanFields.format,
-    10: MediaScanFields.pixFmt
+    10: MediaScanFields.pixFmt,
+    11: MediaScanFields.videoBitrate,
+    12: MediaScanFields.audioBitrate
   };
 
   @override
@@ -128,13 +144,15 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
       metadata: (fields[8] as Map?)?.cast<dynamic, dynamic>(),
       format: fields[9] as String?,
       pixFmt: fields[10] as String?,
+      videoBitrate: fields[11] as int?,
+      audioBitrate: fields[12] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, MediaScan obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.hasAudio)
       ..writeByte(1)
@@ -156,7 +174,11 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
       ..writeByte(9)
       ..write(obj.format)
       ..writeByte(10)
-      ..write(obj.pixFmt);
+      ..write(obj.pixFmt)
+      ..writeByte(11)
+      ..write(obj.videoBitrate)
+      ..writeByte(12)
+      ..write(obj.audioBitrate);
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:chan/main.dart';
@@ -66,6 +67,13 @@ Future<File> _moveFileOutOfDocumentsDir(File file) async {
 	return file;
 }
 
+typedef PickedAttachment = ({
+	File file,
+	MediaScan scan,
+	FileStat stat,
+	String md5
+});
+
 class ReplyBoxZone {
 	final void Function(int threadId, int id) onTapPostId;
 
@@ -115,9 +123,9 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final FocusNode _textFocusNode;
 	late final ValueNotifier<QueuedPost?> postingPost;
 	bool get loading => postingPost.value != null;
-	(MediaScan, FileStat, String)? _attachmentScan;
-	File? attachment;
-	String? get attachmentExt => attachment?.path.afterLast('.').toLowerCase();
+	PickedAttachment? attachment;
+	PickedAttachment? _originalAttachment;
+	String? get attachmentExt => attachment?.file.path.afterLast('.').toLowerCase();
 	bool _showOptions = false;
 	bool get showOptions => _showOptions && !loading;
 	bool _showAttachmentOptions = false;
@@ -194,13 +202,13 @@ class ReplyBoxState extends State<ReplyBox> {
 			_overrideRandomizeFilenames = false;
 		}
 		final file = draft?.file;
-		if (file == attachment?.path) {
+		if (file == attachment?.file.path) {
 			// Do nothing
 		}
 		else {
 			attachment = null;
+			_originalAttachment = null;
 			_showAttachmentOptions = false;
-			_attachmentScan = null;
 			_filenameController.clear();
 			_tryUsingInitialFile(draft);
 		}
@@ -346,7 +354,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		name: null, // It will be stored in postingNames[board]
 		options: _optionsFieldController.text,
 		text: _textFieldController.text,
-		file: attachment?.path,
+		file: attachment?.file.path,
 		spoiler: spoiler,
 		overrideFilenameWithoutExtension: _filenameController.text,
 		overrideRandomizeFilenames: _overrideRandomizeFilenames,
@@ -420,7 +428,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (path != null) {
 			final file = File(path);
 			if (await file.exists()) {
-				setAttachment(file);
+				setAttachment(true, file);
 			}
 			else if (mounted) {
 				// Clear the bad file
@@ -576,7 +584,8 @@ class ReplyBoxState extends State<ReplyBox> {
 		required bool metadataAllowed,
 		required bool randomizeChecksum,
 		required MediaConversion transcode,
-		required bool showToastIfOnlyRandomizingChecksum
+		required bool force,
+		required bool showToastIfLong,
 	}) async {
 		final ext = source.path.afterLast('.').toLowerCase();
 		final solutions = [
@@ -599,19 +608,23 @@ class ReplyBoxState extends State<ReplyBox> {
 		}) {
 			solutions.add('re-encoding');
 		}
-		transcode.copyStreams = solutions.isEmpty;
+		transcode.copyStreams = !force && solutions.isEmpty;
 		if (metadataPresent && !metadataAllowed) {
 			solutions.add('removing metadata');
 		}
 		if (audioPresent == true && audioAllowed == false) {
 			solutions.add('removing audio');
 		}
-		if (solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm', 'mp4'].contains(ext)) {
+		if (!force && solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm', 'mp4'].contains(ext)) {
 			return source;
 		}
 		final existingResult = await transcode.getDestinationIfSatisfiesConstraints();
 		if (existingResult != null) {
-			if ((audioPresent == true && audioAllowed == true && !existingResult.hasAudio)) {
+			if (force) {
+				// Delete current file
+				await existingResult.file.delete();
+			}
+			else if ((audioPresent == true && audioAllowed == true && !existingResult.hasAudio)) {
 				transcode.requireAudio = true;
 				solutions.add('re-adding audio');
 			}
@@ -625,9 +638,10 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 		try {
 			bool toastedStart = false;
+			final toastSuffix = solutions.isEmpty ? '' : ': ${solutions.join(', ')}';
 			Future.delayed(const Duration(milliseconds: 500), () {
 				if (_attachmentProgress != null && mounted) {
-					showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: Adaptive.icons.photo);
+					showToast(context: context, message: 'Converting$toastSuffix', icon: Adaptive.icons.photo);
 					toastedStart = true;
 				}
 			});
@@ -636,8 +650,8 @@ class ReplyBoxState extends State<ReplyBox> {
 			setState(() {
 				_attachmentProgress = null;
 			});
-			if (toastedStart || showToastIfOnlyRandomizingChecksum || solutions.trySingle != kRandomizingChecksum) {
-				showToast(context: context, message: 'File converted${toastedStart ? '' : ': ${solutions.join(', ')}'}', icon: CupertinoIcons.checkmark);
+			if (toastedStart || showToastIfLong) {
+				showToast(context: context, message: 'File converted${toastedStart ? '' : toastSuffix}', icon: CupertinoIcons.checkmark);
 			}
 			return result.file;
 		}
@@ -655,7 +669,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		try {
 			final file = await getClipboardImageAsFile(context);
 			if (file != null) {
-				setAttachment(file);
+				setAttachment(true, file);
 				return true;
 			}
 			else if (manual && mounted) {
@@ -674,7 +688,11 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		return false;
 	}
 
-	Future<void> setAttachment(File newAttachment, {bool forceRandomizeChecksum = false}) async {
+	Future<void> setAttachment(bool isOriginal, File newAttachment, {
+		bool forceRandomizeChecksum = false,
+		int? forceMaximumDimension,
+		bool forceConvert = false
+	}) async {
 		File? file = newAttachment;
 		final settings = Settings.instance;
 		final randomizeChecksum = forceRandomizeChecksum || settings.randomizeChecksumOnUploadedFiles;
@@ -787,8 +805,23 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				file = File(heicPath);
 				ext = 'jpg';
 			}
-			final size = (await file.stat()).size;
+			final stat = await file.stat();
+			int size = stat.size;
 			final scan = await MediaScan.scan(file.uri);
+			// We may shrink under the size limit just by removing the audio
+			if ((scan.duration, scan.audioBitrate) case (Duration duration, int audioBitrate) when !board.webmAudioAllowed) {
+				final audioSize = ((duration.inMilliseconds / 1000) * (audioBitrate / 8)).round();
+				// Sanity check the estimated size
+				if (audioSize < 0.15 * size) {
+					size -= audioSize;
+				}
+			}
+			final originalAttachment = (
+				file: file,
+				scan: scan,
+				stat: stat,
+				md5: await calculateMD5(file)
+			);
 			if (ext == 'jpg' || ext == 'jpeg' || ext == 'webp' || ext == 'avif') {
 				file = await _showTranscodeWindow(
 					source: file,
@@ -796,18 +829,19 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					maximumSize: board.maxImageSizeBytes,
 					width: scan.width,
 					height: scan.height,
-					maximumDimension: settings.maximumImageUploadDimension,
+					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					transcode: MediaConversion.toJpg(
 						file.uri,
 						maximumSizeInBytes: board.maxImageSizeBytes,
-						maximumDimension: settings.maximumImageUploadDimension,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
-					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
+					force: forceConvert,
+					showToastIfLong: _originalAttachment == null
 				);
 			}
 			else if (ext == 'png') {
@@ -817,18 +851,19 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					maximumSize: board.maxImageSizeBytes,
 					width: scan.width,
 					height: scan.height,
-					maximumDimension: settings.maximumImageUploadDimension,
+					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					transcode: MediaConversion.toPng(
 						file.uri,
 						maximumSizeInBytes: board.maxImageSizeBytes,
-						maximumDimension: settings.maximumImageUploadDimension,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
-					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
+					force: forceConvert,
+					showToastIfLong: _originalAttachment == null
 				);
 			}
 			else if (ext == 'gif') {
@@ -840,7 +875,8 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						size: size,
 						maximumSize: board.maxImageSizeBytes,
 						randomizeChecksum: randomizeChecksum,
-						showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum,
+						force: forceConvert,
+						showToastIfLong: _originalAttachment == null,
 						transcode: MediaConversion.toMp4(
 							file.uri,
 							maximumSizeInBytes: board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
@@ -850,17 +886,20 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						)
 					);
 				}
-				else if (randomizeChecksum) {
+				else {
 					file = await _showTranscodeWindow(
 						source: file,
 						metadataPresent: scan.hasMetadata,
 						metadataAllowed: !settings.removeMetadataOnUploadedFiles,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						randomizeChecksum: randomizeChecksum,
 						transcode: MediaConversion.toGif(
 							file.uri,
+							maximumDimension: forceMaximumDimension,
 							randomizeChecksum: randomizeChecksum
 						),
-						showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
+						force: forceConvert,
+						showToastIfLong: _originalAttachment == null
 					);
 				}
 			}
@@ -875,20 +914,21 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					maximumDurationInSeconds: board.maxWebmDurationSeconds,
 					width: scan.width,
 					height: scan.height,
-					maximumDimension: settings.maximumImageUploadDimension,
+					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					transcode: MediaConversion.toWebm(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
-						maximumDimension: settings.maximumImageUploadDimension,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
-					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
+					force: forceConvert,
+					showToastIfLong: _originalAttachment == null
 				);
 			}
 			else if (ext == 'mp4' || ext == 'mov' || ext == 'm4v' || ext == 'mkv' || ext == 'mpeg' || ext == 'avi' || ext == '3gp' || ext == 'm2ts') {
@@ -902,7 +942,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					maximumDurationInSeconds: board.maxWebmDurationSeconds,
 					width: scan.width,
 					height: scan.height,
-					maximumDimension: settings.maximumImageUploadDimension,
+					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					size: size,
 					maximumSize: board.maxWebmSizeBytes,
 					transcode: MediaConversion.toMp4(
@@ -910,14 +950,15 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
-						maximumDimension: settings.maximumImageUploadDimension,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
-					showToastIfOnlyRandomizingChecksum: forceRandomizeChecksum
+					force: forceConvert,
+					showToastIfLong: _originalAttachment == null
 				);
 			}
 			else {
@@ -927,9 +968,17 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				_attachmentProgress = null;
 			});
 			if (file != null) {
-				_attachmentScan = (await MediaScan.scan(file.uri), await file.stat(), await calculateMD5(file));
+				final newAttachment = (
+					file: file,
+					scan: await MediaScan.scan(file.uri),
+					stat: await file.stat(),
+					md5: await calculateMD5(file)
+				);
 				setState(() {
-					attachment = file;
+					attachment = newAttachment;
+					if (isOriginal) {
+						_originalAttachment = originalAttachment;
+					}
 				});
 				_filenameController.text = file.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), '');
 				_didUpdateDraft();
@@ -1095,7 +1144,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		_subjectFieldController.clear();
 		_filenameController.clear();
 		attachment = null;
-		_attachmentScan = null;
+		_originalAttachment = null;
 		_overrideRandomizeFilenames = false;
 		spoiler = false;
 		_didUpdateDraft();
@@ -1426,14 +1475,14 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			type: attachmentExt == 'webm' ?
 				AttachmentType.webm :
 				(attachmentExt == 'mp4' ? AttachmentType.mp4 : AttachmentType.image),
-			md5: _attachmentScan?.$3 ?? '',
+			md5: attachment?.md5 ?? '',
 			id: '${identityHashCode(attachment)}',
-			filename: attachment?.uri.pathSegments.last ?? '',
+			filename: attachment?.file.uri.pathSegments.last ?? '',
 			thumbnailUrl: '',
 			board: widget.board.s,
-			width: _attachmentScan?.$1.width,
-			height: _attachmentScan?.$1.height,
-			sizeInBytes: _attachmentScan?.$1.sizeInBytes,
+			width: attachment?.scan.width,
+			height: attachment?.scan.height,
+			sizeInBytes: attachment?.stat.size,
 			threadId: null
 		);
 		return Container(
@@ -1458,7 +1507,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												child: AdaptiveTextField(
 													enabled: !loading,
 													controller: _filenameController,
-													placeholder: attachment == null ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+													placeholder: attachment == null ? '' : attachment!.file.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
 													maxLines: 1,
 													textCapitalization: TextCapitalization.none,
 													autocorrect: false,
@@ -1479,7 +1528,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 											onPressed: () {
 												setState(() {
 													attachment = null;
-													_attachmentScan = null;
+													_originalAttachment = null;
 													_showAttachmentOptions = false;
 													_overrideRandomizeFilenames = false;
 													_filenameController.clear();
@@ -1497,22 +1546,6 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									spacing: 8,
 									runSpacing: 8,
 									children: [
-										Text(
-											[
-												if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
-													if (_attachmentScan?.$1.codec != null) _attachmentScan!.$1.codec!.toUpperCase(),
-													if (_attachmentScan?.$1.hasAudio == true) 'with audio'
-													else 'no audio',
-													if (_attachmentScan?.$1.duration != null) formatDuration(_attachmentScan!.$1.duration!),
-													if (_attachmentScan?.$1.bitrate != null) '${(_attachmentScan!.$1.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
-												],
-												if (_attachmentScan?.$1.width != null && _attachmentScan?.$1.height != null) '${_attachmentScan?.$1.width}x${_attachmentScan?.$1.height}',
-												if (_attachmentScan?.$2.size != null) formatFilesize(_attachmentScan?.$2.size ?? 0)
-											].join(', '),
-											style: const TextStyle(color: Colors.grey),
-											maxLines: null,
-											textAlign: TextAlign.right
-										),
 										AdaptiveIconButton(
 											padding: EdgeInsets.zero,
 											minimumSize: Size.zero,
@@ -1526,7 +1559,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																CupertinoIcons.checkmark_square
 															) : CupertinoIcons.square
 													),
-													const Text('Random')
+													const Text('Random filename')
 												]
 											),
 											onPressed: () {
@@ -1558,6 +1591,160 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												});
 											}
 										),
+										if (attachment case final attachment?) AdaptiveThinButton(
+											padding: const EdgeInsets.all(4),
+											onPressed: () async {
+												final originalWidth = (_originalAttachment ?? attachment).scan.width;
+												final originalHeight = (_originalAttachment ?? attachment).scan.height;
+												if (originalWidth == null || originalHeight == null) {
+													throw Exception('Failed to get width and/or height');
+												}
+												double quality = 1.0;
+												final double qualityStep;
+												if (originalWidth > originalHeight) {
+													qualityStep = 2 / originalWidth;
+													if (attachment.scan.width case final newWidth?) {
+														quality = newWidth / originalWidth;
+													}
+												}
+												else {
+													qualityStep = 2 / originalHeight;
+													if (attachment.scan.height case final newHeight?) {
+														quality = newHeight / originalHeight;
+													}
+												}
+												// Minimum 50px width, or 25% width, whichever is lower
+												final minQuality = (25 * qualityStep).clamp(0, 0.25).toDouble();
+												const maxQuality = 1.0;
+												final resize = await showAdaptiveDialog<bool>(
+													context: context,
+													barrierDismissible: true,
+													builder: (context) => StatefulBuilder(
+														builder: (context, setDialogState) => AdaptiveAlertDialog(
+															title: const Text('Resize'),
+															content: Column(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	const SizedBox(height: 8),
+																	ConstrainedBox(
+																		constraints: const BoxConstraints(
+																			maxWidth: 200,
+																			maxHeight: 200
+																		),
+																		child: FittedBox(
+																			fit: BoxFit.contain,
+																			child: Stack(
+																				alignment: Alignment.topLeft,
+																				children: [
+																					Container(
+																						decoration: BoxDecoration(
+																							border: Border.all(
+																								color: Settings.instance.theme.primaryColor,
+																								width: 3
+																							)
+																						),
+																						width: originalWidth.toDouble(),
+																						height: originalHeight.toDouble()
+																					),
+																					Container(
+																						color: Colors.red,
+																						width: originalWidth * quality,
+																						height: originalHeight * quality,
+																						child: MediaThumbnail(uri: attachment.file.uri, fit: BoxFit.contain)
+																					)
+																				]
+																			)
+																		)
+																	),
+																	const SizedBox(height: 8),
+																	Row(
+																		children: [
+																			Expanded(
+																				child: Text('${(originalWidth * quality).roundToEven}x${(originalHeight * quality).roundToEven}')
+																			),
+																			AdaptiveIconButton(
+																				padding: EdgeInsets.zero,
+																				onPressed: quality <= minQuality ? null : () {
+																					setDialogState(() {
+																						quality -= qualityStep;
+																					});
+																				},
+																				icon: const Icon(CupertinoIcons.minus)
+																			),
+																			AdaptiveIconButton(
+																				padding: EdgeInsets.zero,
+																				onPressed: quality >= maxQuality ? null : () {
+																					setDialogState(() {
+																						quality += qualityStep;
+																					});
+																				},
+																				icon: const Icon(CupertinoIcons.plus)
+																			)
+																		]
+																	),
+																	const SizedBox(height: 8),
+																	Slider.adaptive(
+																		value: quality,
+																		min: minQuality,
+																		max: maxQuality,
+																		onChanged: (newValue) {
+																			setDialogState(() {
+																				quality = newValue;
+																			});
+																		}
+																	)
+																]
+															),
+															actions: [
+																AdaptiveDialogAction(
+																	isDefaultAction: true,
+																	onPressed: () => Navigator.pop(context, true),
+																	child: const Text('Resize')
+																),
+																AdaptiveDialogAction(
+																	child: const Text('Cancel'),
+																	onPressed: () => Navigator.pop(context, false)
+																)
+															]
+														)
+													)
+												);
+												if (resize ?? false) {
+													setState(() {
+														this.attachment = null;
+														_showAttachmentOptions = false;
+													});
+													try {
+														await setAttachment(false, _originalAttachment?.file ?? attachment.file, forceMaximumDimension: (math.max(originalWidth, originalHeight) * quality).ceil(), forceConvert: true);
+													}
+													catch (e, st) {
+														Future.error(e, st); // crashlytics
+														if (context.mounted) {
+															alertError(context, e, st);
+														}
+														await setAttachment(false, attachment.file);
+													}
+													setState(() {
+														_showAttachmentOptions = true;
+													});
+												}
+											},
+											child: Text(
+												[
+													if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
+														if (attachment.scan.codec != null) attachment.scan.codec!.toUpperCase(),
+														if (attachment.scan.hasAudio == true) 'with audio'
+														else 'no audio',
+														if (attachment.scan.duration != null) formatDuration(attachment.scan.duration!),
+														if (attachment.scan.bitrate != null) '${(attachment.scan.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+													],
+													if (attachment.scan.width != null && attachment.scan.height != null) '${attachment.scan.width}x${attachment.scan.height}',
+													formatFilesize(attachment.stat.size)
+												].join(', '),
+												maxLines: null,
+												textAlign: TextAlign.right
+											)
+										),
 										AdaptiveThinButton(
 											padding: const EdgeInsets.all(4),
 											child: Row(
@@ -1568,25 +1755,24 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														child: Text('MD5', style: TextStyle(fontSize: 9))
 													),
 													const SizedBox(width: 2),
-													Text('${_attachmentScan?.$3.substring(0, 6)}', textAlign: TextAlign.center)
+													Text('${attachment?.md5.substring(0, 6)}', textAlign: TextAlign.center)
 												]
 											),
 											onPressed: () async {
 												final old = attachment!;
 												setState(() {
 													attachment = null;
-													_attachmentScan = null;
 													_showAttachmentOptions = false;
 												});
 												try {
-													await setAttachment(old, forceRandomizeChecksum: true);
+													await setAttachment(false, _originalAttachment?.file ?? old.file, forceRandomizeChecksum: true);
 												}
 												catch (e, st) {
 													Future.error(e, st); // crashlytics
 													if (context.mounted) {
 														alertError(context, e, st);
 													}
-													await setAttachment(old);
+													await setAttachment(false, old.file);
 												}
 												setState(() {
 													_showAttachmentOptions = true;
@@ -1625,7 +1811,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									}
 									return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 								},
-								child: MediaThumbnail(uri: attachment!.uri, fit: BoxFit.contain)
+								child: MediaThumbnail(uri: attachment!.file.uri, fit: BoxFit.contain)
 							),
 							onTap: () async {
 								showGallery(
@@ -1633,7 +1819,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									context: context,
 									semanticParentIds: [_textFieldController.hashCode],
 									overrideSources: {
-										fakeAttachment: attachment!.uri
+										fakeAttachment: attachment!.file.uri
 									},
 									allowChrome: true,
 									allowContextMenu: true,
@@ -1821,7 +2007,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							if (newFile == null) {
 								return;
 							}
-							setAttachment(newFile);
+							setAttachment(true, newFile);
 							_filenameController.text = proposed.imageUrl.afterLast('/').split('.').reversed.skip(1).toList().reversed.join('.');
 							if (proposed.text == proposed.imageUrl) {
 								final original = _textFieldController.text;
@@ -1882,7 +2068,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						try {
 							final image = await getClipboardImageAsFile(context);
 							if (image != null) {
-								setAttachment(image);
+								setAttachment(true, image);
 							}
 						}
 						catch (e, st) {
@@ -1999,7 +2185,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 													final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}/$filename');
 													await f.create(recursive: true);
 													await f.writeAsBytes(data, flush: true);
-													setAttachment(f);
+													setAttachment(true, f);
 												}
 											),
 											spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
@@ -2299,7 +2485,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														maxWidth: 32,
 														maxHeight: 32
 													),
-													child: MediaThumbnail(uri: attachment!.uri, fontSize: 12)
+													child: MediaThumbnail(uri: attachment!.file.uri, fontSize: 12)
 												)
 											),
 										]
@@ -2349,7 +2535,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 													}
 												},
 												child: AdaptiveIconButton(
-													onPressed: loading ? null : () => setAttachment(File(file)),
+													onPressed: loading ? null : () => setAttachment(true, File(file)),
 													icon: ClipRRect(
 														borderRadius: BorderRadius.circular(4),
 														child: ConstrainedBox(
@@ -2375,7 +2561,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														try {
 															final path = await picker.pick(this.context);
 															if (path != null) {
-																await setAttachment(File(path));
+																await setAttachment(true, File(path));
 															}
 															else {
 																_attachmentProgress = null;

@@ -1083,3 +1083,7 @@ extension ModalValue<T> on Iterable<T> {
 		return ret;
 	}
 }
+
+extension RoundToEven on num {
+	int get roundToEven => (this / 2).round() * 2;
+}
