@@ -164,127 +164,129 @@ Future<String?> selectThemeKey({
 														color: themes[i].value.barColor,
 														borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))
 													),
-													child: Row(
-														mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-														children: [
-															CupertinoButton(
-																child: Icon(Adaptive.icons.share),
-																onPressed: () {
-																	Clipboard.setData(ClipboardData(
-																		text: Uri(
-																			scheme: 'chance',
-																			host: 'theme',
-																			queryParameters: {
-																				'name': themes[i].key,
-																				'data': themes[i].value.encode()
-																			}
-																		).toString()
-																	));
-																	showToast(
-																		context: context,
-																		message: 'Copied ${themes[i].key} to clipboard',
-																		icon: CupertinoIcons.doc_on_clipboard
-																	);
-																}
-															),
-															CupertinoButton(
-																onPressed: themes[i].value.locked ? null : () async {
-																	final controller = TextEditingController(text: themes[i].key);
-																	controller.selection = TextSelection(baseOffset: 0, extentOffset: themes[i].key.length);
-																	final newName = await showAdaptiveDialog<String>(
-																		context: context,
-																		barrierDismissible: true,
-																		builder: (context) => AdaptiveAlertDialog(
-																			title: const Text('Enter new name'),
-																			content: AdaptiveTextField(
-																				autofocus: true,
-																				controller: controller,
-																				smartDashesType: SmartDashesType.disabled,
-																				smartQuotesType: SmartQuotesType.disabled,
-																				onSubmitted: (s) => Navigator.pop(context, s)
-																			),
-																			actions: [
-																				AdaptiveDialogAction(
-																					isDefaultAction: true,
-																					child: const Text('Rename'),
-																					onPressed: () => Navigator.pop(context, controller.text)
-																				),
-																				AdaptiveDialogAction(
-																					child: const Text('Cancel'),
-																					onPressed: () => Navigator.pop(context)
-																				)
-																			]
-																		)
-																	);
-																	if (newName != null) {
-																		final effectiveName = settings.addTheme(newName, themes[i].value);
-																		settings.themes.remove(themes[i].key);
-																		if (settings.lightThemeKey == themes[i].key) {
-																			Settings.lightThemeKeySetting.value = effectiveName;
-																		}
-																		if (settings.darkThemeKey == themes[i].key) {
-																			Settings.darkThemeKeySetting.value = effectiveName;
-																		}
-																		settings.handleThemesAltered();
-																		setDialogState(() {});
-																	}
-																	controller.dispose();
-																},
-																child: const Icon(CupertinoIcons.textformat)
-															),
-															CupertinoButton(
-																child: const Icon(CupertinoIcons.doc_on_doc),
-																onPressed: () {
-																	settings.addTheme(themes[i].key, themes[i].value);
-																	settings.handleThemesAltered();
-																	setDialogState(() {});
-																}
-															),
-															CupertinoButton(
-																onPressed: (themes[i].value.locked || themes[i].key == settings.darkThemeKey || themes[i].key == settings.lightThemeKey) ? null : () async {
-																	final consent = await showAdaptiveDialog<bool>(
-																		context: context,
-																		barrierDismissible: true,
-																		builder: (context) => AdaptiveAlertDialog(
-																			title: Text('Delete ${themes[i].key}?'),
-																			actions: [
-																				AdaptiveDialogAction(
-																					isDestructiveAction: true,
-																					onPressed: () {
-																						Navigator.of(context).pop(true);
-																					},
-																					child: const Text('Delete')
-																				),
-																				AdaptiveDialogAction(
-																					child: const Text('Cancel'),
-																					onPressed: () {
-																						Navigator.of(context).pop();
-																					}
-																				)
-																			]
-																		)
-																	);
-																	if (consent == true) {
-																		final removed = themes[i];
-																		settings.themes.remove(removed.key);
-																		settings.handleThemesAltered();
-																		setDialogState(() {});
-																		if (context.mounted) {
-																			showUndoToast(
-																				context: context,
-																				message: 'Deleted ${removed.key}',
-																				onUndo: () {
-																					settings.themes[removed.key] = removed.value;
-																					settings.handleThemesAltered();
-																					setDialogState(() {});
+													child: FittedBox(
+														child: Row(
+															mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+															children: [
+																CupertinoButton(
+																	child: Icon(Adaptive.icons.share, color: themes[i].value.primaryColor),
+																	onPressed: () {
+																		Clipboard.setData(ClipboardData(
+																			text: Uri(
+																				scheme: 'chance',
+																				host: 'theme',
+																				queryParameters: {
+																					'name': themes[i].key,
+																					'data': themes[i].value.encode()
 																				}
-																			);
-																		}
+																			).toString()
+																		));
+																		showToast(
+																			context: context,
+																			message: 'Copied ${themes[i].key} to clipboard',
+																			icon: CupertinoIcons.doc_on_clipboard
+																		);
 																	}
-																},
-																child: const Icon(CupertinoIcons.delete)
-															)
-														]
+																),
+																CupertinoButton(
+																	onPressed: themes[i].value.locked ? null : () async {
+																		final controller = TextEditingController(text: themes[i].key);
+																		controller.selection = TextSelection(baseOffset: 0, extentOffset: themes[i].key.length);
+																		final newName = await showAdaptiveDialog<String>(
+																			context: context,
+																			barrierDismissible: true,
+																			builder: (context) => AdaptiveAlertDialog(
+																				title: const Text('Enter new name'),
+																				content: AdaptiveTextField(
+																					autofocus: true,
+																					controller: controller,
+																					smartDashesType: SmartDashesType.disabled,
+																					smartQuotesType: SmartQuotesType.disabled,
+																					onSubmitted: (s) => Navigator.pop(context, s)
+																				),
+																				actions: [
+																					AdaptiveDialogAction(
+																						isDefaultAction: true,
+																						child: const Text('Rename'),
+																						onPressed: () => Navigator.pop(context, controller.text)
+																					),
+																					AdaptiveDialogAction(
+																						child: const Text('Cancel'),
+																						onPressed: () => Navigator.pop(context)
+																					)
+																				]
+																			)
+																		);
+																		if (newName != null) {
+																			final effectiveName = settings.addTheme(newName, themes[i].value);
+																			settings.themes.remove(themes[i].key);
+																			if (settings.lightThemeKey == themes[i].key) {
+																				Settings.lightThemeKeySetting.value = effectiveName;
+																			}
+																			if (settings.darkThemeKey == themes[i].key) {
+																				Settings.darkThemeKeySetting.value = effectiveName;
+																			}
+																			settings.handleThemesAltered();
+																			setDialogState(() {});
+																		}
+																		controller.dispose();
+																	},
+																	child: Icon(CupertinoIcons.textformat, color: themes[i].value.primaryColor)
+																),
+																CupertinoButton(
+																	child: Icon(CupertinoIcons.doc_on_doc, color: themes[i].value.primaryColor),
+																	onPressed: () {
+																		settings.addTheme(themes[i].key, themes[i].value);
+																		settings.handleThemesAltered();
+																		setDialogState(() {});
+																	}
+																),
+																CupertinoButton(
+																	onPressed: (themes[i].value.locked || themes[i].key == settings.darkThemeKey || themes[i].key == settings.lightThemeKey) ? null : () async {
+																		final consent = await showAdaptiveDialog<bool>(
+																			context: context,
+																			barrierDismissible: true,
+																			builder: (context) => AdaptiveAlertDialog(
+																				title: Text('Delete ${themes[i].key}?'),
+																				actions: [
+																					AdaptiveDialogAction(
+																						isDestructiveAction: true,
+																						onPressed: () {
+																							Navigator.of(context).pop(true);
+																						},
+																						child: const Text('Delete')
+																					),
+																					AdaptiveDialogAction(
+																						child: const Text('Cancel'),
+																						onPressed: () {
+																							Navigator.of(context).pop();
+																						}
+																					)
+																				]
+																			)
+																		);
+																		if (consent == true) {
+																			final removed = themes[i];
+																			settings.themes.remove(removed.key);
+																			settings.handleThemesAltered();
+																			setDialogState(() {});
+																			if (context.mounted) {
+																				showUndoToast(
+																					context: context,
+																					message: 'Deleted ${removed.key}',
+																					onUndo: () {
+																						settings.themes[removed.key] = removed.value;
+																						settings.handleThemesAltered();
+																						setDialogState(() {});
+																					}
+																				);
+																			}
+																		}
+																	},
+																	child: Icon(CupertinoIcons.delete, color: themes[i].value.primaryColor)
+																)
+															]
+														)
 													)
 												)
 											]
