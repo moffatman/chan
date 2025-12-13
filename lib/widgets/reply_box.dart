@@ -1384,7 +1384,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								border: Border(
 									top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))
 								),
-								color: ChanceTheme.barColorOf(context)
+								color: ChanceTheme.primaryColorWithBrightness10Of(context)
 							),
 							child: AdaptiveButton(
 								onPressed: () async {
@@ -2462,9 +2462,9 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							),
 							if (snippets.isNotEmpty || _flags.isNotEmpty || emotes.isNotEmpty) Container(
 								margin: const EdgeInsets.symmetric(horizontal: 8),
-								width: 2,
+								width: 1,
 								height: 32,
-								color: settings.theme.barColor
+								color: settings.theme.primaryColorWithBrightness(0.2)
 							),
 							AnimatedSize(
 								alignment: Alignment.centerRight,
