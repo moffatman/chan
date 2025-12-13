@@ -428,14 +428,27 @@ class SavedTheme {
 	);
 
 	ThemeData get materialThemeData {
-		final colorScheme = ColorScheme.fromSeed(
+		final colorScheme = ColorScheme.fromSwatch(
 			brightness: brightness,
-			seedColor: primaryColor,
-			primary: primaryColor,
-			secondary: secondaryColor,
-			surface: barColor,
-			onSurface: primaryColor,
-			//background: backgroundColor,
+			primarySwatch: MaterialColor(primaryColor.toARGB32(), Map.fromEntries(
+				[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((strength) {
+					final ds = 0.5 - strength;
+					return MapEntry<int, Color>(
+						(strength * 1000).round(),
+						Color.from(
+							red: primaryColor.r + ((ds < 0) ? primaryColor.r : (1 - primaryColor.r) * ds),
+							green: primaryColor.g + ((ds < 0) ? primaryColor.g : (1 - primaryColor.g) * ds),
+							blue: primaryColor.b + ((ds < 0) ? primaryColor.b : (1 - primaryColor.b) * ds),
+							alpha: 1
+						)
+					);
+				})
+			)),
+			accentColor: secondaryColor,
+			cardColor: barColor,
+			backgroundColor: backgroundColor
+		).copyWith(
+			onSurface: primaryColor
 		);
 		final textTheme = (brightness == Brightness.dark ? Typography.whiteMountainView : Typography.blackMountainView).apply(
 			bodyColor: primaryColor,
