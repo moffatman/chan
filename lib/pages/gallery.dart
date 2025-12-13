@@ -86,10 +86,9 @@ class _VeryFastSnappingPageScrollPhysics extends ScrollPhysics {
   }
 
   @override
-  SpringDescription get spring => const SpringDescription(
-		mass: 80,
-		stiffness: 100,
-		damping: 2,
+  SpringDescription get spring => SpringDescription.withDurationAndBounce(
+		duration: const Duration(milliseconds: 150),
+		bounce: 0,
 	);
 }
 
