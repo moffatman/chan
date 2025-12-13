@@ -523,7 +523,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
   }
 
 	static DateTime _parseTime(dom.Element time) {
-		return DateTime.fromMillisecondsSinceEpoch(int.parse(time.attributes['data-time']!) * 1000);
+		return DateTime.fromMillisecondsSinceEpoch(int.parse(time.attributes['data-timestamp'] ?? time.attributes['data-time']!) * 1000);
 	}
 
 	static final _catalogReplyCountPattern = RegExp(r'^(\d+)(K?)$');
@@ -590,7 +590,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 				flair: label == null ? null : ImageboardFlag.text(label),
 				id: id,
 				board: board,
-				title: e.querySelector('.structItem-title a[data-tp-primary="on"]')?.text,
+				title: e.querySelector('.structItem-title a[data-tp-primary="on"]')?.text.trim(),
 				isSticky: e.querySelector('.structItem-status--sticky') != null,
 				time: time,
 				currentPage: page
@@ -616,9 +616,12 @@ class SiteXenforo extends ImageboardSite with ForumSite {
     throw UnimplementedError();
   }
 
+	static final _absoluteSrcPattern = RegExp(r' src="//');
 	static final _relativeSrcPattern = RegExp(r' src="/');
 	String _fixRelativeUrls(String html) {
-		return html.replaceAllMapped(_relativeSrcPattern, (match) {
+		return html.replaceAllMapped(_absoluteSrcPattern, (match) {
+			return ' src="https://';
+		}).replaceAllMapped(_relativeSrcPattern, (match) {
 			return ' src="https://$baseUrl/';
 		});
 	}
@@ -733,7 +736,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 					title: poll.querySelector('.block-header')!.text.trim(),
 					rows: poll.querySelectorAll('.pollResult').map((e) => ImageboardPollRow(
 						name: e.querySelector('.pollResult-response')!.text,
-						votes: int.parse(_pollVotesPattern.firstMatch(e.querySelector('.fauxBlockLink-blockLink')!.text)!.group(1)!)
+						votes: int.parse(_pollVotesPattern.firstMatch(e.text)!.group(1)!)
 					)).toList()
 				)
 			}

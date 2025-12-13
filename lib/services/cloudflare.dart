@@ -262,7 +262,7 @@ class CloudflareInterceptor extends Interceptor {
 	}
 
 	static bool _responseMatches(Response response) {
-		if ([403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
+		if ([203, 403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
 			if (response.headers.value('server') == 'cloudflare' && response.headers.value('cf-mitigated') == 'challenge') {
 				// Hopefully this catches the streamed ones
 				return true;
