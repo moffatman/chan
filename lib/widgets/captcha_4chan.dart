@@ -1370,6 +1370,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								visible: !useNewCaptchaForm,
 								maintainAnimation: true,
 								maintainState: true,
+								maintainFocusability: true,
 								child: SizedBox(
 									width: 150,
 									child: Actions(
