@@ -1,5 +1,5 @@
-import receive_sharing_intent
+import share_handler_ios_models
 
-class ShareViewController: RSIShareViewController {
+class ShareViewController: ShareHandlerIosViewController {
 
 }

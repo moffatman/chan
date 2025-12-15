@@ -72,7 +72,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
-import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:share_handler/share_handler.dart';
 
 final fakeLinkStream = StreamController<String?>.broadcast();
 bool _initialConsume = false;
@@ -1217,7 +1217,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final Map<String, ({Notifications notifications, StreamSubscription<ThreadOrPostIdentifier> subscription})> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
 	late StreamSubscription<String?> _fakeLinkSubscription;
-	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
+	late StreamSubscription<SharedMedia> _sharedFilesSubscription;
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
 	bool _hideTabPopupAutomatically = false;
@@ -1284,7 +1284,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Future<void> _consumeLink(String? link) async {
 		final settings = Settings.instance;
-		if (link == null) {
+		if (link == null || link.isEmpty) {
 			return;
 		}
 		if (_lastLink != null && link == _lastLink?.link && DateTime.now().isBefore(_lastLink!.time.add(const Duration(seconds: 1)))) {
@@ -1533,23 +1533,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_showTabPopup.value = newShowTabPopup;
 	}
 
-	void _consumeSharedMediaFiles(List<SharedMediaFile> list) {
-		final files = list.tryMap((f) {
-			if (f.type == SharedMediaType.file ||
-				  f.type == SharedMediaType.image ||
-				  f.type == SharedMediaType.video) {
-				return f.path;
+	void _consumeSharedMediaFiles(SharedMedia? media) {
+		final files = (media?.attachments ?? []).tryMap((f) {
+			if (f?.type == SharedAttachmentType.file ||
+				  f?.type == SharedAttachmentType.image ||
+				  f?.type == SharedAttachmentType.video) {
+				return f?.path;
 			}
 		}).toList();
 		if (files.isNotEmpty) {
 			_consumeFiles(files);
 		}
-		list.tryMap((f) {
-			if (f.type == SharedMediaType.text ||
-			    f.type == SharedMediaType.url) {
-				return f.path;
-			}
-		}).forEach(_consumeLink);
+		if (media?.content case final text? when text.isNotEmpty) {
+			_consumeLink(text);
+		}
 	}
 
 	@override
@@ -1559,11 +1556,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_tabs.addListener(_tabsListener);
 		if (!_initialConsume) {
 			AppLinks().getInitialLinkString().then(_consumeLink);
-			ReceiveSharingIntent.instance.getInitialMedia().then(_consumeSharedMediaFiles);
+			ShareHandlerPlatform.instance.getInitialSharedMedia().then(_consumeSharedMediaFiles);
 		}
 		_linkSubscription = AppLinks().stringLinkStream.listen(_consumeLink);
 		_fakeLinkSubscription = fakeLinkStream.stream.listen(_consumeLink);
-		_sharedFilesSubscription = ReceiveSharingIntent.instance.getMediaStream().listen(_consumeSharedMediaFiles);
+		_sharedFilesSubscription = ShareHandlerPlatform.instance.sharedMediaStream.listen(_consumeSharedMediaFiles);
 		_showTabPopup = ValueNotifier(false)
 			..addListener(_setAdditionalSafeAreaInsets)
 			..addListener(() {
