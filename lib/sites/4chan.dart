@@ -1131,7 +1131,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
 		if (url.host == baseUrl || url.host == _alternateBaseUrl) {
 			switch (url.pathSegments) {
-				case [String board, 'thread', String threadId]:
+				case [String board, 'thread', String threadId, ...]:
 					return BoardThreadOrPostIdentifier(board, threadId.tryParseInt, const ['p', 'q'].tryMapOnce(url.fragment.extractPrefixedInt));
 				case [String board, ...]:
 					return BoardThreadOrPostIdentifier(board);
