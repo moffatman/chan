@@ -285,12 +285,13 @@ class SiteJForum extends ImageboardSite with ForumSite {
 				posts_: [
 					Post(
 						board: board,
-						id: id,
+						id: -1,
 						text: '',
 						name: firstPost.querySelector('a')!.text,
 						time: time,
 						threadId: id,
-						spanFormat: PostSpanFormat.jForum,
+						spanFormat: PostSpanFormat.pageStub,
+						hasOmittedReplies: true,
 						attachments_: const []
 					),
 					// Placeholder entry for last new post. Then we can tell if the thread is modified or not.
@@ -302,6 +303,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 						time: _parseTime(lastPostTime)!,
 						threadId: id,
 						spanFormat: PostSpanFormat.pageStub,
+						hasOmittedReplies: true,
 						attachments_: const []
 					),
 				],

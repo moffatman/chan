@@ -565,16 +565,17 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 				posts_: [
 					Post(
 						board: board,
-						id: id,
+						id: -1,
 						text: '',
 						name: _parseUsernameFromLink(e.querySelector('.username')),
 						time: time,
 						threadId: id,
-						spanFormat: PostSpanFormat.xenforo,
+						spanFormat: PostSpanFormat.pageStub,
+						hasOmittedReplies: true,
 						attachments_: const []
 					),
 					// Placeholder entry for last new post. Then we can tell if the thread is modified or not.
-					if (lastPostTime != null) Post(
+					if (replyCount > 0 && lastPostTime != null) Post(
 						board: board,
 						id: -(e.querySelectorAll('.structItem-pageJump a').tryLast?.text.tryParseInt ?? 1),
 						text: '',
@@ -582,6 +583,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 						time: _parseTime(lastPostTime),
 						threadId: id,
 						spanFormat: PostSpanFormat.pageStub,
+						hasOmittedReplies: true,
 						attachments_: const []
 					),
 				],
@@ -925,6 +927,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 						time: time,
 						attachments: [],
 						posts_: [
+							// This isn't quite right. it won't be able to be merged properly
+							// But we don't merge from search results, so no big deal
 							Post(
 								board: board,
 								threadId: threadId,
@@ -943,6 +947,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 								name: name,
 								time: time,
 								spanFormat: PostSpanFormat.pageStub,
+								hasOmittedReplies: true,
 								attachments_: const []
 							)
 						]

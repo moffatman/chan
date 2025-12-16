@@ -187,8 +187,8 @@ class Thread extends HiveObject implements Filterable {
 		}
 	}
 
-	/// If [other] is set, we are the new thread, otherPosts are the old posts
-	/// If [other] is not set, we are the old thread, otherPosts are loaded stubs or archived posts or something
+	/// If [oldThread] is set, we are the new thread, otherPosts are the old posts
+	/// If [oldThread] is not set, we are the old thread, otherPosts are loaded stubs or archived posts or something
 	/// Return whether any change was made
 	bool mergePosts(Thread? oldThread, List<Post> otherPosts, ImageboardSite site) {
 		final weAreOldThread = oldThread == null;
