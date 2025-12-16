@@ -6,6 +6,7 @@ import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/settings/common.dart';
 import 'package:chan/pages/settings/filter.dart';
 import 'package:chan/pages/settings/image_filter.dart';
+import 'package:chan/services/android.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -726,5 +727,19 @@ final behaviorSettings = [
 				}
 			}
 		)
+	),
+	if (Platform.isAndroid) SwitchSettingWidget(
+		description: 'Impeller renderer',
+		icon: CupertinoIcons.speedometer,
+		helpText: 'This is the new and improved Flutter rendering engine. But if you notice worse performance, you could try turning it off.',
+		setting: CustomImmutableSetting(
+			reader: (context) => impellerEnabled ?? true,
+			watcher: (context) => impellerEnabled ?? true,
+			writer: (context, setting) async {
+				await setImpellerEnabled(setting);
+			},
+		),
+		confirm: (context, newValue) =>
+			confirm(context, 'Are you sure? The app will close and you will have to relaunch it.')
 	)
 ];

@@ -17,6 +17,7 @@ import 'package:chan/pages/settings.dart';
 import 'package:chan/pages/saved.dart';
 import 'package:chan/pages/tabs.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/android.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/bad_certificate.dart';
 import 'package:chan/services/default_user_agent.dart';
@@ -88,6 +89,7 @@ Future<void> innerMain() async {
 		await initializeIsDevelopmentBuild();
 		await initializeIsOnMac();
 		await initializeHandoff();
+		await initializeImpeller();
 		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 		imageHttpClient.idleTimeout = const Duration(seconds: 10);

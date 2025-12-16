@@ -1,12 +1,16 @@
 package com.moffatman.chan;
 
+import android.annotation.SuppressLint;
+import android.app.AlarmManager;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.UriPermission;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -17,6 +21,7 @@ import android.graphics.drawable.Drawable;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
@@ -38,19 +43,23 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.flutter.embedding.android.FlutterFragment;
 import io.flutter.embedding.android.FlutterFragmentActivity;
 import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.embedding.engine.FlutterShellArgs;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.StandardMethodCodec;
 
 public class MainActivity extends FlutterFragmentActivity {
     private static final String STORAGE_CHANNEL = "com.moffatman.chan/storage";
+    private static final String ANDROID_CHANNEL = "com.moffatman.chan/android";
     private static final String NOTIFICATIONS_CHANNEL = "com.moffatman.chan/notifications";
     private static final String CLIPBOARD_CHANNEL = "com.moffatman.chan/clipboard";
 
@@ -61,6 +70,7 @@ public class MainActivity extends FlutterFragmentActivity {
 
     private MethodChannel.Result saveFileAsResult;
     private String newDocumentSourcePath;
+    private FlutterFragment lastFragment;
 
     private DocumentFile fastFindFile(DocumentFile parent, String name) {
         try {
@@ -86,6 +96,40 @@ public class MainActivity extends FlutterFragmentActivity {
         return null;
     }
 
+    private static void setFragmentArgsForImpeller(FlutterFragment fragment, boolean impeller) {
+        Bundle arguments = fragment.getArguments();
+        if (arguments == null) {
+            arguments = new Bundle();
+            fragment.setArguments(arguments);
+        }
+        // Stolen from engine
+        final String ARG_FLUTTER_INITIALIZATION_ARGS = "initialization_args";
+        List<String> newShellArgs = new ArrayList<>();
+        String[] existingShellArgs = arguments.getStringArray(ARG_FLUTTER_INITIALIZATION_ARGS);
+        if (existingShellArgs != null) {
+            newShellArgs.addAll(Arrays.asList(existingShellArgs));
+            newShellArgs.remove(FlutterShellArgs.ARG_ENABLE_IMPELLER);
+            newShellArgs.remove(FlutterShellArgs.ARG_DISABLE_IMPELLER);
+        }
+        if (impeller) {
+            newShellArgs.add(FlutterShellArgs.ARG_ENABLE_IMPELLER);
+        }
+        else {
+            newShellArgs.add(FlutterShellArgs.ARG_DISABLE_IMPELLER);
+        }
+        arguments.putStringArray(ARG_FLUTTER_INITIALIZATION_ARGS, newShellArgs.toArray(new String[0]));
+    }
+
+    @NonNull
+    @Override
+    protected FlutterFragment createFlutterFragment() {
+        FlutterFragment fragment = super.createFlutterFragment();
+        setFragmentArgsForImpeller(fragment, getSharedPreferences("impeller", Context.MODE_PRIVATE).getBoolean("impeller", true));
+        lastFragment = fragment;
+        return fragment;
+    }
+
+    @SuppressLint("WrongConstant")
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
         ActivityResultLauncher<Uri> getFolder = registerForActivityResult(new OpenDocumentTree() {
@@ -280,6 +324,25 @@ public class MainActivity extends FlutterFragmentActivity {
                                     "icon", Base64.encodeToString(os.toByteArray(), Base64.NO_WRAP)
                             );
                         }).collect(Collectors.toList()));
+                    }
+                    else {
+                        result.notImplemented();
+                    }
+                }
+        );
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), ANDROID_CHANNEL).setMethodCallHandler(
+                (call, result) -> {
+                    if (call.method.equals("getImpeller")) {
+                        result.success(getSharedPreferences("impeller", Context.MODE_PRIVATE).getBoolean("impeller", true));
+                    }
+                    else if (call.method.equals("setImpeller")) {
+                        SharedPreferences.Editor editor = getSharedPreferences("impeller", Context.MODE_PRIVATE).edit();
+                        boolean enabled = call.argument("enabled");
+                        editor.putBoolean("impeller", enabled);
+                        editor.commit();
+                        result.success(null);
+                        finish();
+                        android.os.Process.killProcess(android.os.Process.myPid());
                     }
                     else {
                         result.notImplemented();

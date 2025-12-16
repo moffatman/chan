@@ -324,7 +324,8 @@ class SwitchSettingWidget extends StandardImmutableSettingWidget<bool> {
 		super.disabled,
 		super.subsetting,
 		super.color,
-		super.injectButton
+		super.injectButton,
+		super.confirm
 	});
 	@override
 	Widget buildImpl(BuildContext context) {
