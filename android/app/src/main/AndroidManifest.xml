@@ -54,15 +54,20 @@
                <data android:scheme="https" android:host="thebarchive.com"/>
                <data android:scheme="https" android:host="archiveofsins.com"/>
                <data android:scheme="https" android:host="warosu.org"/>
+               <!-- 76chan -->
+               <data android:scheme="https" android:host="76chan.org"/>
                <!-- 8chan -->
                <data android:scheme="https" android:host="8chan.moe"/>
                <data android:scheme="https" android:host="8chan.se"/>
+               <data android:scheme="https" android:host="8chan.st"/>
                <!-- 8kun -->
                <data android:scheme="https" android:host="8kun.top"/>
                <!-- 9ch -->
                <data android:scheme="https" android:host="9ch.site"/>
                <!-- alogsspace -->
                <data android:scheme="https" android:host="alogs.space"/>
+               <!-- crbachan -->
+               <data android:scheme="https" android:host="ib.crba.dedyn.io"/>
                <!-- dcurbanmom -->
                <data android:scheme="https" android:host="dcurbanmom.com"/>
                <!-- dvach -->
@@ -84,6 +89,8 @@
                <data android:scheme="https" android:host="karachan.org"/>
                <!-- kissu -->
                <data android:scheme="https" android:host="original.kissu.moe"/>
+               <!-- kiwifarms -->
+               <data android:scheme="https" android:host="kiwifarms.st"/>
                <!-- kohlchan -->
                <data android:scheme="https" android:host="kohlchan.net"/>
                <!-- lainchan  -->
@@ -98,6 +105,8 @@
                <data android:scheme="https" android:host="mintboard.org"/>
                <!-- ourchan -->
                <data android:scheme="https" android:host="ourchan.org"/>
+               <!-- ptchan -->
+               <data android:scheme="https" android:host="ptchan.org"/>
                <!-- reddit -->
                <data android:scheme="https" android:host="reddit.com"/>
                <data android:scheme="https" android:host="*.reddit.com"/>
@@ -105,8 +114,6 @@
                <!-- soyjak -->
                <data android:scheme="https" android:host="soyjak.st"/>
                <data android:scheme="https" android:host="*.soyjak.st"/>
-               <!-- sportschan -->
-               <data android:scheme="https" android:host="sportschan.org"/>
                <!-- thecoli -->
                <data android:scheme="https" android:host="thecoli.com"/>
                <!-- trashchan -->
