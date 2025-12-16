@@ -775,12 +775,12 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		if (thisPostLoaded != null) {
 			actualThreadId = thisPostLoaded.threadId;
 		}
-		if (threadId == null) {
+		if (actualThreadId == null) {
 			// Dead links do not know their thread
 			return _buildDeadLink(context, zone, settings, theme, options);
 		}
 
-		if (actualThreadId != null && (ImageboardBoard.getKey(board) != ImageboardBoard.getKey(zone.board) || zone.findThread(actualThreadId) == null || (actualThreadId != zone.primaryThreadId && actualThreadId == postId))) {
+		if (ImageboardBoard.getKey(board) != ImageboardBoard.getKey(zone.board) || zone.findThread(actualThreadId) == null || (actualThreadId != zone.primaryThreadId && actualThreadId == postId)) {
 			return _buildCrossThreadLink(context, zone, settings, theme, options, actualThreadId);
 		}
 		else {
