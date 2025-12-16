@@ -1,5 +1,6 @@
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/media.dart';
@@ -306,6 +307,15 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 			board: post['board'] as String,
 			text: post['message'] as String? ?? '',
 			name: post['name'] as String,
+			flag: switch (post['country']) {
+				{'code': String code, 'name': String name} => ImageboardFlag(
+					name: name,
+					imageUrl: Uri.https(baseUrl, '/file/flags/${code.toLowerCase()}.png').toString(),
+					imageWidth: 17,
+					imageHeight: 14
+				),
+				_ => null
+			},
 			posterId: post['userId'] as String?,
 			time: DateTime.fromMillisecondsSinceEpoch(post['u'] as int),
 			spanFormat: PostSpanFormat.jsChan,
