@@ -556,7 +556,7 @@ class ChanSplashPage extends StatelessWidget {
 				children: [
 					const SizedBox(height: 50),
 					Transform.scale(
-						scale: 1.5 / (
+						scale: (Platform.isAndroid ? 1 : 1.5) / (
 							2.0 * MediaQuery.of(context).devicePixelRatio *
 							Settings.interfaceScaleSetting.watch(context)
 						),
