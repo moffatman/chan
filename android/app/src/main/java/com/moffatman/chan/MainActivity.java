@@ -26,6 +26,7 @@ import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.util.Base64;
+import android.view.WindowManager;
 import android.webkit.MimeTypeMap;
 import android.util.Log;
 import android.webkit.WebSettings;
@@ -118,6 +119,15 @@ public class MainActivity extends FlutterFragmentActivity {
             newShellArgs.add(FlutterShellArgs.ARG_DISABLE_IMPELLER);
         }
         arguments.putStringArray(ARG_FLUTTER_INITIALIZATION_ARGS, newShellArgs.toArray(new String[0]));
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        // These are "deprecated" but seem to be needed to use transparent bars
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
+                           | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+                           | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        super.onCreate(savedInstanceState);
     }
 
     @NonNull
