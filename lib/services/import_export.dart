@@ -30,7 +30,7 @@ Future<void> _export({
 		await encoder.addFile(File(pair.$1), pair.$2);
 	}
 	for (final path in uncompressibleDirs) {
-		await encoder.addDirectory(Directory(path), level: ZipFileEncoder.STORE);
+		await encoder.addDirectory(Directory(path), level: ZipFileEncoder.store);
 	}
 	encoder.close();
 }
@@ -100,7 +100,8 @@ Future<File> export({
 
 Future<File> exportJson() async {
 	final encoder = ZipFileEncoder();
-	encoder.create(Persistence.temporaryDirectory.child('${DateTime.now().millisecondsSinceEpoch ~/ 1000}.json.zip'));
+	final zipPath = Persistence.temporaryDirectory.child('${DateTime.now().millisecondsSinceEpoch ~/ 1000}.json.zip');
+	encoder.create(zipPath);
 	void dumpOne(String path, dynamic object) {
 		// ArchiveFile.file only works for ascii
 		final buffer = utf8.encode(Hive.encodeJson(object));
@@ -131,7 +132,7 @@ Future<File> exportJson() async {
 	await dumpAll('threadstates', Persistence.sharedThreadStateBox);
 	await dumpAllLazy('threads', Persistence.sharedThreadsBox);
 	encoder.close();
-	return File(encoder.zipPath);
+	return File(zipPath);
 }
 
 sealed class ImportLog {
