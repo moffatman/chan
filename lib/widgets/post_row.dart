@@ -655,7 +655,7 @@ class PostRow extends StatelessWidget {
 												Builder(
 													builder: (context) {
 														final zone = context.watch<ContextMenuHint?>();
-														if (zone == null || zone.mode == ContextMenuHintMode.longPressEnabled) {
+														if (zone == null || zone.mode != ContextMenuHintMode.longPressDisabled) {
 															return const SizedBox.shrink();
 														}
 														return Padding(
