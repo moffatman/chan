@@ -466,7 +466,15 @@ class ThreadWatcher extends ChangeNotifier {
 			if (line.disabled || (!line.outputType.autoSave && line.outputType.autoWatch == null)) {
 				continue;
 			}
-			for (final rawBoard in line.boards) {
+			final boards = [...line.boards];
+			if (line.boardsBySite[imageboardKey] case final b?) {
+				boards.addAll(b);
+			}
+			boards.removeWhere(line.excludeBoards.contains);
+			if (line.excludeBoardsBySite[imageboardKey] case final b?) {
+				boards.removeWhere(b.contains);
+			}
+			for (final rawBoard in boards) {
 				final imageboardBoard = persistence.maybeGetBoard(rawBoard);
 				if (imageboardBoard == null) {
 					continue;
