@@ -123,7 +123,7 @@ Future<CaptchaSolution?> solveCaptcha({
 						challenge: initialChallenge,
 						cancelToken: cancelToken
 					).timeout(const Duration(seconds: 15));
-					if (cloudSolution.confident) {
+					if (cloudSolution != null && cloudSolution.confident) {
 						cloudSolution.challenge.dispose();
 						return cloudSolution.solution;
 					}

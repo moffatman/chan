@@ -130,7 +130,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		NetworkImage('https://www.google.com${img.attributes['src']!}').resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 			challengeImageCompleter.complete(info.image);
 		}, onError: (e, st) {
-			challengeImageCompleter.completeError(e);
+			challengeImageCompleter.completeError(e, st);
 		}));
 		final Set<int> checkboxes = {};
 		for (final checkbox in document.querySelectorAll('input[name="response"]')) {

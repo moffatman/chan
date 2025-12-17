@@ -767,7 +767,6 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
-				'framed': '1',
 				'board': board,
 				if (threadId != null) 'thread_id': threadId.toString()
 			}),
