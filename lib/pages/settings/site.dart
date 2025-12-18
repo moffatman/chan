@@ -6,6 +6,7 @@ import 'package:chan/services/auth_page_helper.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -89,7 +90,8 @@ final siteSettings = [
 															mainAxisSize: MainAxisSize.min,
 															children: [
 																ImageboardSiteLoginSystemIcon(
-																	loginSystem: loginSystem
+																	loginSystem: loginSystem,
+																	color: loginSystem.getSavedLoginFields() != null ? ChanceTheme.backgroundColorOf(context) : ChanceTheme.primaryColorOf(context)
 																),
 																Text(loginSystem.name)
 															]

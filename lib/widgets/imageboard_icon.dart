@@ -85,10 +85,12 @@ class ImageboardIcon extends StatelessWidget {
 class ImageboardSiteLoginSystemIcon extends StatelessWidget {
 	final ImageboardSiteLoginSystem? loginSystem;
 	final double size;
+	final Color? color;
 
 	const ImageboardSiteLoginSystemIcon({
 		required this.loginSystem,
 		this.size = 16,
+		this.color,
 		Key? key
 	}) : super(key: key);
 
@@ -122,7 +124,7 @@ class ImageboardSiteLoginSystemIcon extends StatelessWidget {
 				height: size,
 				cacheWidth: cacheSize,
 				cacheHeight: cacheSize,
-			) : Icon(CupertinoIcons.person, size: size)
+			) : Icon(CupertinoIcons.person, size: size, color: color)
 		);
 	}
 }
