@@ -93,6 +93,7 @@
                <data android:scheme="https" android:host="kiwifarms.st"/>
                <!-- kohlchan -->
                <data android:scheme="https" android:host="kohlchan.net"/>
+               <data android:scheme="https" android:host="kohlchan.top"/>
                <!-- lainchan  -->
                <data android:scheme="https" android:host="lainchan.org"/>
                <!-- leftypol  -->
