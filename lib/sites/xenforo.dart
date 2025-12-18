@@ -130,7 +130,10 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 						// Looks like "@username"
 						yield PostUserLinkSpan('${node.text.substring(1)}.${node.attributes['data-user-id']}');
 					}
-					else if (node.localName == 'a') {
+					else if (node.localName == 'a' && node.classes.contains('u-anchorTarget') || node.classes.contains('hoverLink')) {
+						// Ignore this within-page anchor stuff
+					}
+					else if (node.localName == 'a' && node.attributes.containsKey('href')) {
 						// Note for future:
 						// These links can be target="_blank", path=".../attachments/1000022703-png.539627/".
 						// So the fakeAttachment viewer won't recognize them.
@@ -245,6 +248,11 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 								yield const PostLineBreakSpan();
 							}
 						}
+					}
+					else if (node.localName == 'div' && node.classes.contains('fauxBlockLink') && node.attributes.containsKey('data-embed-content-url')) {
+						// Too much work to really parse this rich tree, just bail to embed system
+						yield PostLinkSpan(node.attributes['data-embed-content-url']!);
+						yield const PostLineBreakSpan();
 					}
 					else if (node.localName == 'pre') {
 						yield PostCodeSpan(node.text.trimRight());
