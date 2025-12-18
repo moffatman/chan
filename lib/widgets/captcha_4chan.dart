@@ -1784,7 +1784,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							Text('Select the ${challenge.tasks.length == 1 ? 'image' : 'images'} that are not like the others'),
+							Text(switch (challenge.tasks.length) {
+									1 => 'Select the image that is not like the others',
+									_ => 'Select the images that are not like the others'
+							}),
 							const SizedBox(height: 16),
 							for (final task in challenge.tasks.indexed) Container(
 								decoration: BoxDecoration(
