@@ -1128,7 +1128,8 @@ class ThreadPageState extends State<ThreadPage> {
 				continue;
 			}
 			loadedAnything = true;
-			final threadState = imageboard.persistence.getThreadState(id, updateOpenedTime: false);
+			// Best to create the threadState so that PostRow stuff works
+			final threadState = imageboard.persistence.getThreadState(id, initiallyHideFromHistory: true);
 			final cachedThread = await threadState.getThread();
 			if (cachedThread != null && postIds.every((neededId) => cachedThread.posts_.any((p) => p.id == neededId))) {
 				// Thread is already cached, and it has all the posts we need
