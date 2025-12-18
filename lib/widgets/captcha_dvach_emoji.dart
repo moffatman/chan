@@ -17,7 +17,7 @@ import 'package:provider/provider.dart';
 
 class CaptchaDvachEmoji extends StatefulWidget {
 	final DvachEmojiCaptchaRequest request;
-	final ValueChanged<DvachEmojiCaptchaSolution> onCaptchaSolved;
+	final ValueChanged<CaptchaSolution> onCaptchaSolved;
 	final ImageboardSite site;
 
 	const CaptchaDvachEmoji({
@@ -101,9 +101,17 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 		if (idResponse.data case {'error': {'message': String error}}) {
 			throw CaptchaDvachEmojiException(error);
 		}
+		final data = idResponse.data as Map;
+		final id = data['id'];
+		if (id == null && data['type'] == 'passcode') {
+			// The server thinks we are logged in. So I guess just go with it.
+			widget.onCaptchaSolved(NoCaptchaSolution(DateTime.now()));
+			await Future.delayed(const Duration(seconds: 1));
+			throw Exception('Logged in to pass');
+		}
 		final chal = CaptchaDvachEmojiChallenge(
 			acquiredAt: DateTime.now(),
-			id: (idResponse.data as Map)['id'] as String,
+			id: id as String,
 			lifetime: widget.request.challengeLifetime
 		);
 		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/emoji/show', {
@@ -135,9 +143,11 @@ class _CaptchaDvachEmojiState extends State<CaptchaDvachEmoji> {
 		catch(e, st) {
 			print(e);
 			print(st);
-			setState(() {
-				error = (e, st);
-			});
+			if (mounted) {
+				setState(() {
+					error = (e, st);
+				});
+			}
 		}
 	}
 
