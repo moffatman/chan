@@ -199,6 +199,15 @@ class SavedThemeFields {
     fieldName: 'textFieldColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
+  static Color getLinkColor(SavedTheme x) => x.linkColor;
+  static void setLinkColor(SavedTheme x, Color v) => x.linkColor = v;
+  static const linkColor = HiveFieldAdapter<SavedTheme, Color>(
+    getter: getLinkColor,
+    setter: setLinkColor,
+    fieldNumber: 9,
+    fieldName: 'linkColor',
+    merger: AdaptedMerger(ColorAdapter.kTypeId),
+  );
 }
 
 class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
@@ -219,7 +228,8 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
     5: SavedThemeFields.copiedFrom,
     6: SavedThemeFields.locked,
     7: SavedThemeFields.titleColor,
-    8: SavedThemeFields.textFieldColor
+    8: SavedThemeFields.textFieldColor,
+    9: SavedThemeFields.linkColor
   };
 
   @override
@@ -242,13 +252,14 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
       locked: fields[6] as bool,
       copiedFrom: fields[5] as SavedTheme?,
       textFieldColor: fields[8] as Color?,
+      linkColor: fields[9] as Color?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedTheme obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.backgroundColor)
       ..writeByte(1)
@@ -266,7 +277,9 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
       ..writeByte(7)
       ..write(obj.titleColor)
       ..writeByte(8)
-      ..write(obj.textFieldColor);
+      ..write(obj.textFieldColor)
+      ..writeByte(9)
+      ..write(obj.linkColor);
   }
 
   @override

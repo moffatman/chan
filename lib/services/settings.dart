@@ -290,6 +290,8 @@ class SavedTheme {
 	Color titleColor;
 	@HiveField(8)
 	Color textFieldColor;
+	@HiveField(9)
+	Color linkColor;
 
 	SavedTheme({
 		required this.backgroundColor,
@@ -300,8 +302,10 @@ class SavedTheme {
 		this.titleColor = _defaultTitleColor,
 		this.locked = false,
 		this.copiedFrom,
-		Color? textFieldColor
-	}) : textFieldColor = textFieldColor ?? (primaryColor.computeLuminance() > backgroundColor.computeLuminance() ? Colors.black : Colors.white);
+		Color? textFieldColor,
+		Color? linkColor
+	}) : textFieldColor = textFieldColor ?? (primaryColor.computeLuminance() > backgroundColor.computeLuminance() ? Colors.black : Colors.white),
+			 linkColor = linkColor ?? secondaryColor;
 
 	factory SavedTheme.decode(String data) {
 		final b = base64Url.decode(data);
@@ -316,6 +320,10 @@ class SavedTheme {
 		if (b.length >= 21) {
 			textFieldColor = Color.fromARGB(255, b[18], b[19], b[20]);
 		}
+		Color? linkColor;
+		if (b.length >= 24) {
+			linkColor = Color.fromARGB(255, b[21], b[22], b[23]);
+		}
 		final theme = SavedTheme(
 			backgroundColor: Color.fromARGB(255, b[0], b[1], b[2]),
 			barColor: Color.fromARGB(255, b[3], b[4], b[5]),
@@ -323,14 +331,15 @@ class SavedTheme {
 			secondaryColor: Color.fromARGB(255, b[9], b[10], b[11]),
 			quoteColor: Color.fromARGB(255, b[12], b[13], b[14]),
 			titleColor: titleColor ?? _defaultTitleColor,
-			textFieldColor: textFieldColor
+			textFieldColor: textFieldColor,
+			linkColor: linkColor
 		);
 		return SavedTheme.copyFrom(theme);
 	}
 
 	String encode() {
 		return base64Url.encode([
-			for (final color in [backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, titleColor, textFieldColor]) ...[
+			for (final color in [backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, titleColor, textFieldColor, linkColor]) ...[
 				(color.r * 255.0).round().clamp(0, 255),
 				(color.g * 255.0).round().clamp(0, 255),
 				(color.b * 255.0).round().clamp(0, 255)
@@ -347,7 +356,8 @@ class SavedTheme {
 		copiedFrom = original,
 		locked = false,
 		titleColor = original.titleColor,
-		textFieldColor = original.textFieldColor;
+		textFieldColor = original.textFieldColor,
+		linkColor = original.linkColor;
 	
 	@override
 	bool operator ==(Object other) =>
@@ -360,11 +370,12 @@ class SavedTheme {
 		quoteColor == other.quoteColor &&
 		locked == other.locked &&
 		titleColor == other.titleColor &&
-		textFieldColor == other.textFieldColor;// &&
+		textFieldColor == other.textFieldColor &&
+		linkColor == other.linkColor;// &&
 		//copiedFrom == other.copiedFrom;
 
 	@override
-	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom, locked, titleColor, textFieldColor);
+	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom, locked, titleColor, textFieldColor, linkColor);
 
 	final Map<double, Color> _primaryColorWithBrightnessCache = {};
 	Color primaryColorWithBrightness(double factor) => _primaryColorWithBrightnessCache.putIfAbsent(factor, () {

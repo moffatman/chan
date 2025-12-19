@@ -1315,7 +1315,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											height: 150,
 											child: SavedThemeThumbnail(
 												theme: theme,
-												showTitleAndTextField: true
+												showAllColors: true
 											)
 										)
 									),

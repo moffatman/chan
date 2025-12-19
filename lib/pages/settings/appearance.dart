@@ -542,6 +542,7 @@ final appearanceSettings = [
 							('Background', theme.backgroundColor, (c) => theme.backgroundColor = c, theme.copiedFrom?.backgroundColor),
 							('Quote', theme.quoteColor, (c) => theme.quoteColor = c, theme.copiedFrom?.quoteColor),
 							('Title', theme.titleColor, (c) => theme.titleColor = c, theme.copiedFrom?.titleColor),
+							('Link', theme.linkColor, (c) => theme.linkColor = c, theme.copiedFrom?.linkColor),
 							('Text Field', theme.textFieldColor, (c) => theme.textFieldColor = c, theme.copiedFrom?.textFieldColor)
 						].map((color) => Column(
 							mainAxisSize: MainAxisSize.min,

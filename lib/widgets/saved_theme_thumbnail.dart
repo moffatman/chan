@@ -4,11 +4,11 @@ import 'package:flutter/widgets.dart';
 
 class SavedThemeThumbnail extends StatelessWidget {
 	final SavedTheme theme;
-	final bool showTitleAndTextField;
+	final bool showAllColors;
 
 	const SavedThemeThumbnail({
 		required this.theme,
-		this.showTitleAndTextField = false,
+		this.showAllColors = false,
 		Key? key
 	}) : super(key: key);
 
@@ -30,11 +30,24 @@ class SavedThemeThumbnail extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									crossAxisAlignment: CrossAxisAlignment.start,
 									children: [
-										if (showTitleAndTextField) Text('Title', style: TextStyle(color: theme.titleColor, fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600)),
+										if (showAllColors) Text('Title', style: TextStyle(color: theme.titleColor, fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600)),
 										Text('>>1 (OP)', style: TextStyle(color: theme.secondaryColor, decoration: TextDecoration.underline)),
 										Text('>Quote', style: TextStyle(color: theme.quoteColor)),
-										Text('Text', style: TextStyle(color: theme.primaryColor)),
-										if (showTitleAndTextField) Container(
+										Text.rich(
+											TextSpan(
+												children: [
+													TextSpan(text: 'Text', style: TextStyle(color: theme.primaryColor)),
+													if (showAllColors) ...[
+														const TextSpan(text: ' '),
+														TextSpan(text: 'https://www.example.com', style: TextStyle(
+															color: theme.linkColor,
+															decoration: TextDecoration.underline
+														))
+													]
+												]
+											)
+										),
+										if (showAllColors) Container(
 											decoration: BoxDecoration(
 												color: theme.textFieldColor,
 												border: Border.all(

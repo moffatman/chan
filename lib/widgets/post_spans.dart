@@ -1476,7 +1476,8 @@ class PostLinkSpan extends PostTerminalSpan {
 		return PostTextSpan(name ?? url).build(context, post, zone, settings, theme, options.copyWith(
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () => openBrowser(context, cleanedUri!)),
 			baseTextStyle: options.baseTextStyle.copyWith(
-				decoration: TextDecoration.underline
+				decoration: TextDecoration.underline,
+				color: theme.linkColor
 			)
 		));
 	}
