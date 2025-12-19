@@ -525,7 +525,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 						tabs.mainTabIndex = 0;
 					}
 					if (settings.openDrawerThreadsInNewTabs) {
-						tabs.goToPost(
+						await tabs.goToPost(
 							imageboardKey: watch.imageboard.key,
 							board: watch.item.board,
 							threadId: watch.item.threadId,
@@ -533,7 +533,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 						);
 					}
 					else {
-						tabs.setCurrentBrowserThread(watch.imageboard.scope(watch.item.threadIdentifier), showAnimationsForward: false);
+						await tabs.setCurrentBrowserThread(watch.imageboard.scope(watch.item.threadIdentifier), showAnimationsForward: false);
 					}
 					_afterUse();
 				},

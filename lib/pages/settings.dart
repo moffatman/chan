@@ -47,7 +47,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
 	Future<List<Thread>> makeStickyFuture() async {
 		final imageboard = context.read<Imageboard>();
-		final list = (await imageboard.site.getCatalog(kDevBoard.name, priority: RequestPriority.interactive)).threads.where((t) => t.isSticky).toList();
+		final threads = imageboard.threadWatcher.peekLastCatalog(kDevBoard.boardKey)
+			?? (await imageboard.site.getCatalog(kDevBoard.name, priority: RequestPriority.interactive)).threads;
+		final list = threads.where((t) => t.isSticky).toList();
 		for (final thread in list) {
 			await thread.preinit(catalog: true);
 			await imageboard.persistence.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
@@ -142,7 +144,6 @@ class _SettingsPageState extends State<SettingsPage> {
 				alignment: Alignment.topCenter,
 				child: FutureBuilder<List<Thread>>(
 					future: stickyFuture,
-					initialData: context.read<ThreadWatcher>().peekLastCatalog(kDevBoard.boardKey)?.where((c) => c.isSticky).toList(),
 					builder: (context, snapshot) {
 						if (snapshot.hasError) {
 							return ErrorMessageCard(

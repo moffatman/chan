@@ -1018,10 +1018,13 @@ class ChanTabs extends ChangeNotifier {
 		return tab.imageboard?.scope(thread);
 	}
 
-	void setCurrentBrowserThread(ImageboardScoped<ThreadIdentifier>? newThread, {
+	Future<void> setCurrentBrowserThread(ImageboardScoped<ThreadIdentifier>? newThread, {
 		bool showAnimationsForward = true
-	}) {
+	}) async {
 		final tab = Persistence.tabs[Persistence.currentTabIndex];
+		if (newThread != null) {
+			await newThread.imageboard.persistence.getThreadStateIfExists(newThread.item)?.ensureThreadLoaded();
+		}
 		if (newThread != null && tab.imageboardKey != newThread.imageboard.key) {
 			tab.imageboardKey = newThread.imageboard.key;
 			// Old master-pane is no longer applicable
@@ -1033,14 +1036,17 @@ class ChanTabs extends ChangeNotifier {
 		runWhenIdle(const Duration(seconds: 1), Persistence.saveTabs);
 	}
 	
-	bool goToPost({
+	Future<bool> goToPost({
 		required String imageboardKey,
 		required String board,
 		required int? threadId,
 		int? postId,
 		required bool openNewTabIfNeeded,
 		String? initiallyUseArchive
-	}) {
+	}) async {
+		if (threadId != null) {
+			await ImageboardRegistry.instance.getImageboard(imageboardKey)?.persistence.getThreadStateIfExists(ThreadIdentifier(board, threadId))?.ensureThreadLoaded();
+		}
 		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.board == board && tab.thread?.id == threadId);
 		final tabAlreadyExisted = tab != null;
 		if (openNewTabIfNeeded) {
@@ -1376,7 +1382,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}
 			}
 			else if (uri.pathSegments.length >= 2 && uri.pathSegments[1] == 'thread') {
-				_tabs.goToPost(
+				await _tabs.goToPost(
 					imageboardKey: uri.host,
 					board: uri.pathSegments[0],
 					threadId: int.parse(uri.pathSegments[2]),
@@ -1469,7 +1475,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}) async {
 		// Close any gallery or other popup
 		Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
-		if (!_tabs.goToPost(
+		if (!await _tabs.goToPost(
 			imageboardKey: imageboard.key,
 			board: notification.board,
 			threadId: notification.threadId,
@@ -1479,7 +1485,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		)) {
 			final watch = imageboard.persistence.browserState.threadWatches[notification.threadIdentifier];
 			if (watch == null) {
-				_tabs.goToPost(
+				await _tabs.goToPost(
 					imageboardKey: imageboard.key,
 					board: notification.board,
 					threadId: notification.threadId,
