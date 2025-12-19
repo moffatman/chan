@@ -415,6 +415,7 @@ Future<Wrapper<CustomFilter?>?> editFilter(BuildContext context, CustomFilter? o
 											'postID': 'Post ID',
 											'posterID': 'Poster ID',
 											'flag': 'Flag',
+											'flair': 'Flair',
 											'capcode': 'Capcode',
 											'trip': 'Trip',
 											'email': 'Email'

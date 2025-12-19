@@ -39,6 +39,7 @@ import 'package:chan/widgets/segmented.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/sliver_staggered_grid.dart';
 import 'package:chan/widgets/thread_row.dart';
+import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:dio/dio.dart';
@@ -83,6 +84,8 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 		final lines = settings.filterConfiguration.split(lineSeparatorPattern);
 		String? nameFilter;
 		String? tripFilter;
+		String? flagFilter;
+		String? flairFilter;
 		String? subjectFilter;
 		String? generalFilter;
 		if (widget.thread.posts_.tryFirst?.name case String name when name.isNotEmpty && name != imageboard.site.defaultUsername) {
@@ -101,11 +104,29 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 				sites: {imageboard.key}
 			).toStringConfiguration();
 		}
+		if (widget.thread.posts_.tryFirst?.flag case final flag? when flag.name.isNotEmpty) {
+			flagFilter = CustomFilter(
+				pattern: RegExp('^${RegExp.escape(flag.name)}\$'),
+				label: 'Flag "${flag.name}"',
+				patternFields: ['flag'],
+				sites: {imageboard.key}
+			).toStringConfiguration();
+		}
+		if (widget.thread.flair case final flair? when flair.name.isNotEmpty) {
+			flairFilter = CustomFilter(
+				pattern: RegExp('^${RegExp.escape(flair.name)}\$'),
+				label: 'Flair "${flair.name}"',
+				patternFields: ['flair'],
+				boardsBySite: {
+					imageboard.key: {widget.thread.boardKey.s}
+				},
+			).toStringConfiguration();
+		}
 		if (widget.thread.title case String title when title.isNotEmpty) {
 			subjectFilter = CustomFilter(
 				pattern: RegExp('^${RegExp.escape(title)}\$', caseSensitive: false),
 				label: 'Subject "$title"',
-				boardsBySite: {imageboard.key: {widget.thread.board}},
+				boardsBySite: {imageboard.key: {widget.thread.boardKey.s}},
 				patternFields: ['subject']
 			).toStringConfiguration();
 		}
@@ -114,7 +135,7 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 			generalFilter = CustomFilter(
 				pattern: RegExp(RegExp.escape(general), caseSensitive: false),
 				label: 'General $general',
-				boardsBySite: {imageboard.key: {widget.thread.board}},
+				boardsBySite: {imageboard.key: {widget.thread.boardKey.s}},
 				patternFields: ['subject', 'text', 'name']
 			).toStringConfiguration();
 		}
@@ -147,22 +168,44 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 					for (final filter in [
 						if (nameFilter case final nameFilter?) (
 							desc: 'Hide by name',
-							data: widget.thread.posts_.tryFirst?.name ?? '',
+							span: TextSpan(text: widget.thread.posts_.tryFirst?.name ?? ''),
 							filter: nameFilter
 						),
 						if (tripFilter case final tripFilter?) (
 							desc: 'Hide by trip',
-							data: widget.thread.posts_.tryFirst?.trip ?? '',
+							span: TextSpan(text: widget.thread.posts_.tryFirst?.trip ?? ''),
 							filter: tripFilter
+						),
+						if (flagFilter case final flagFilter?) (
+							desc: 'Hide by flag',
+							span: makeFlagSpan(
+								context: null,
+								zone: null,
+								flag: widget.thread.posts_.first.flag!,
+								includeTextOnlyContent: true,
+								appendLabels: true
+							),
+							filter: flagFilter
+						),
+						if (flairFilter case final flairFilter?) (
+							desc: 'Hide by flair',
+							span: makeFlagSpan(
+								context: null,
+								zone: null,
+								flag: widget.thread.flair!,
+								includeTextOnlyContent: true,
+								appendLabels: true
+							),
+							filter: flairFilter
 						),
 						if (generalFilter case final generalFilter?) (
 							desc: 'Hide general',
-							data: general ?? '',
+							span: TextSpan(text: general ?? ''),
 							filter: generalFilter
 						),
 						if (subjectFilter case final subjectFilter?) (
 							desc: 'Hide by subject',
-							data: widget.thread.title ?? '',
+							span: TextSpan(text: widget.thread.title ?? ''),
 							filter: subjectFilter
 						)
 					]) Padding(
@@ -182,7 +225,7 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 															borderRadius: const BorderRadius.all(Radius.circular(3))
 														),
 														padding: const EdgeInsets.only(left: 4, right: 4),
-														child: Text(filter.data, style: const TextStyle(fontSize: 17))
+														child: Text.rich(filter.span, style: const TextStyle(fontSize: 17))
 													)
 												)
 											],
@@ -212,7 +255,7 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 							]
 						)
 					),
-					if (widget.thread.attachments.isNotEmpty)
+					if (widget.thread.attachments.any((a) => a.md5.isNotEmpty))
 						if (!Settings.applyImageFilterToThreadsSetting.watch(context)) ...[
 							const SizedBox(height: 16),
 							const Text('Hiding by image in the catalog is disabled'),
@@ -228,7 +271,7 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 						else ...[
 							const SizedBox(height: 16),
 							const Text('Hide by image', style: TextStyle(fontSize: 17)),
-							for (final attachment in widget.thread.attachments) Padding(
+							for (final attachment in widget.thread.attachments.where((a) => a.md5.isNotEmpty)) Padding(
 								padding: const EdgeInsets.all(8),
 								child: Row(
 									mainAxisAlignment: MainAxisAlignment.spaceBetween,

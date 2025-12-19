@@ -389,6 +389,8 @@ class Thread extends HiveObject implements Filterable {
 				return posts_.first.posterId;
 			case 'flag':
 				return posts_.first.flag?.name;
+			case 'flair':
+				return flair?.name;
 			case 'md5':
 				return md5s.join(' ');
 			case 'capcode':

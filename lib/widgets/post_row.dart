@@ -60,6 +60,7 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 		final lines = settings.filterConfiguration.split(lineSeparatorPattern);
 		String? nameFilter;
 		String? tripFilter;
+		String? flagFilter;
 		String? textFilter;
 		if (widget.post.name.isNotEmpty && widget.post.name != imageboard.site.defaultUsername) {
 			nameFilter = CustomFilter(
@@ -74,6 +75,14 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 				pattern: RegExp('^${RegExp.escape(trip)}\$'),
 				label: 'Trip "$trip"',
 				patternFields: ['trip'],
+				sites: {imageboard.key}
+			).toStringConfiguration();
+		}
+		if (widget.post.flag case final flag? when flag.name.isNotEmpty) {
+			flagFilter = CustomFilter(
+				pattern: RegExp('^${RegExp.escape(flag.name)}\$'),
+				label: 'Flag "${flag.name}"',
+				patternFields: ['flag'],
 				sites: {imageboard.key}
 			).toStringConfiguration();
 		}
@@ -143,17 +152,28 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 					for (final filter in [
 						if (nameFilter case final nameFilter?) (
 							desc: 'Hide by name',
-							data: widget.post.name,
+							span: TextSpan(text: widget.post.name),
 							filter: nameFilter
 						),
 						if (tripFilter case final tripFilter?) (
 							desc: 'Hide by trip',
-							data: widget.post.trip ?? '',
+							span: TextSpan(text: widget.post.trip ?? ''),
 							filter: tripFilter
+						),
+						if (flagFilter case final flagFilter?) (
+							desc: 'Hide by flag',
+							span: makeFlagSpan(
+								context: null,
+								zone: null,
+								flag: widget.post.flag!,
+								includeTextOnlyContent: true,
+								appendLabels: true
+							),
+							filter: flagFilter
 						),
 						if (textFilter case final textFilter?) (
 							desc: 'Hide by text',
-							data: nonQuoteText,
+							span: TextSpan(text: nonQuoteText),
 							filter: textFilter
 						)
 					]) Padding(
@@ -174,7 +194,7 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 															borderRadius: const BorderRadius.all(Radius.circular(3))
 														),
 														padding: const EdgeInsets.only(left: 4, right: 4),
-														child: Text(filter.data, style: const TextStyle(fontSize: 17), textAlign: TextAlign.left)
+														child: Text.rich(filter.span, style: const TextStyle(fontSize: 17), textAlign: TextAlign.left)
 													)
 												)
 											],
@@ -204,11 +224,11 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 							]
 						)
 					),
-					if (widget.post.attachments.isNotEmpty) ...[
+					if (widget.post.attachments.any((a) => a.md5.isNotEmpty)) ...[
 						const SizedBox(height: 16),
 						const Text('Hide by image', style: TextStyle(fontSize: 17))
 					],
-					for (final attachment in widget.post.attachments) Padding(
+					for (final attachment in widget.post.attachments.where((a) => a.md5.isNotEmpty)) Padding(
 						padding: const EdgeInsets.all(8),
 						child: Row(
 							mainAxisAlignment: MainAxisAlignment.spaceBetween,
