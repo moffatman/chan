@@ -397,7 +397,10 @@ String formatRelativeTime(DateTime time) {
 	return timeDiff;
 }
 
-String formatDuration(Duration d) {
+String formatDuration(Duration? d) {
+	if (d == null) {
+		return '--:--';
+	}
 	final seconds = (d.inMilliseconds / 1000).round();
 	return '${(seconds / 60).floor()}:${(seconds % 60).toString().padLeft(2, '0')}';
 }

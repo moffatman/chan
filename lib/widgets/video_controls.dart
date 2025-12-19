@@ -29,8 +29,7 @@ class VideoControls extends StatefulWidget {
 
 class _VideoControlsState extends State<VideoControls> {
 	VideoController? videoPlayerController;
-	late PlayerState value;
-	late bool wasAlreadyPlaying;
+	PlayerState? value;
 	StreamSubscription<Duration>? _positionSubscription;
 	StreamSubscription<bool>? _playingSubscription;
 	StreamSubscription<Duration>? _durationSubscription;
@@ -50,9 +49,10 @@ class _VideoControlsState extends State<VideoControls> {
 		_positionSubscription = videoPlayerController?.player.stream.position.listen(_onVideoUpdate);
 		_durationSubscription = videoPlayerController?.player.stream.duration.listen(_onVideoUpdate);
 		_volumeSubscription = videoPlayerController?.player.stream.volume.listen(_onVideoUpdate);
-		value = videoPlayerController?.player.state ?? const PlayerState();
-		position.value = value.position;
-		wasAlreadyPlaying = value.playing;
+		if (videoPlayerController?.player.state case final state?) {
+			value = state;
+			position.value = state.position;
+		}
 		widget.controller.addListener(_onControllerUpdate);
 		Future.delayed(_positionUpdatePeriod, _updatePosition);
 	}
@@ -113,7 +113,7 @@ class _VideoControlsState extends State<VideoControls> {
 	}
 
 	Future<void> _onLongPressStart() => _mutex.protect(() async {
-		_playingBeforeLongPress = value.playing;
+		_playingBeforeLongPress = value?.playing ?? false;
 		_currentlyWithinLongPress = true;
 	});
 
@@ -196,7 +196,10 @@ class _VideoControlsState extends State<VideoControls> {
 												valueListenable: position,
 												builder: (context, Duration positionValue, _) => LinearProgressIndicator(
 													minHeight: 44,
-													value: positionValue.inMilliseconds / value.duration.inMilliseconds.clamp(1, double.maxFinite),
+													value: switch (value?.duration.inMilliseconds) {
+														int ms => positionValue.inMilliseconds / ms.clamp(1, double.maxFinite),
+														null => 0
+													},
 													valueColor: AlwaysStoppedAnimation(primaryColor),
 													backgroundColor: !widget.controller.cacheCompleted ? Colors.transparent : primaryColor.withValues(alpha: 0.3)
 												)
@@ -211,29 +214,32 @@ class _VideoControlsState extends State<VideoControls> {
 						width: 40,
 						child: FittedBox(
 							fit: BoxFit.scaleDown,
-							child: Text(formatDuration(value.duration), style: TextStyle(color: primaryColor))
+							child: Text(formatDuration(value?.duration), style: TextStyle(color: primaryColor))
 						)
 					),
 					if (widget.controller.hasAudio && widget.showMuteButton) AnimatedBuilder(
 						animation: Settings.instance.muteAudio,
-						builder: (context, _) => AdaptiveIconButton(
-							icon: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
-							onPressed: () async {
-								if (value.volume > 0) {
-									await videoPlayerController?.player.setVolume(0);
-									Settings.instance.setMuteAudio(true);
+						builder: (context, _) {
+							final mutedNow = value?.volume == 0 || Settings.instance.muteAudio.value;
+							return AdaptiveIconButton(
+								icon: Icon(mutedNow ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
+								onPressed: value == null ? null : () async {
+									if (!mutedNow) {
+										await videoPlayerController?.player.setVolume(0);
+										Settings.instance.setMuteAudio(true);
+									}
+									else {
+										await videoPlayerController?.player.setVolume(100);
+										Settings.instance.setMuteAudio(false);
+									}
 								}
-								else {
-									await videoPlayerController?.player.setVolume(100);
-									Settings.instance.setMuteAudio(false);
-								}
-							}
-						)
+							);
+						}
 					),
 					AdaptiveIconButton(
-						icon: Icon((_currentlyWithinLongPress ? _playingBeforeLongPress : value.playing) ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
-						onPressed: () async {
-							if (value.playing) {
+						icon: Icon((_currentlyWithinLongPress ? _playingBeforeLongPress : (value?.playing ?? false)) ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
+						onPressed: value == null ? null : () async {
+							if (value?.playing ?? false) {
 								await videoPlayerController?.player.pause();
 							}
 							else {

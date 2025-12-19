@@ -608,7 +608,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (Settings.instance.showThumbnailsInGallery) {
 			return max(0.2, (kMinInteractiveDimensionCupertino + _thumbnailSize + 8 + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height);
 		}
-		if (currentController.videoPlayerController != null) {
+		if (currentController.attachment.type.isVideo) {
 			return (44 + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height;
 		}
 		return 0.0;
@@ -642,16 +642,8 @@ class _GalleryPageState extends State<GalleryPage> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							AnimatedBuilder(
-								animation: currentController,
-								builder: (context, _) {
-									if (currentController.videoPlayerController != null) {
-										return VideoControls(
-											controller: currentController
-										);
-									}
-									return const SizedBox.shrink();
-								}
+							if (currentController.attachment.type.isVideo) VideoControls(
+								controller: currentController
 							),
 							SizedBox(
 								height: _thumbnailSize + 8,
@@ -901,7 +893,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				)
 			);
 				return Padding(
-					padding: currentController.videoPlayerController == null ? const EdgeInsets.only(top: 44) : EdgeInsets.zero,
+					padding: !currentController.attachment.type.isVideo ? const EdgeInsets.only(top: 44) : EdgeInsets.zero,
 					child: SingleChildScrollView(
 						controller: controller,
 						clipBehavior: Clip.none,
@@ -1197,7 +1189,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												animation: _currentAttachmentChanged,
 												builder: (context, child) => Padding(
 													padding: showChrome ? EdgeInsets.only(
-														bottom: max(0, (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0) - 16),
+														bottom: max(0, (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.type.isVideo ? 0 : 44) - 16),
 														right: 8
 													) : layoutInsets + const EdgeInsets.only(right: 8),
 													child: child
@@ -1465,7 +1457,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																	)
 																),
 																if (showChrome) SizedBox(
-																	height: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0),
+																	height: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.type.isVideo ? 0 : 44),
 																)
 															]
 														)
