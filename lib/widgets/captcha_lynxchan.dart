@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:chan/services/cloudflare.dart';
@@ -70,12 +71,12 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		final captchaJsUrl = Uri.https(widget.site.baseUrl, '/captcha.js');
 		await Persistence.currentCookies.deleteWhere(captchaJsUrl, (c) => c.name == 'captchaid', true);
 		final lastSolvedCaptcha = widget.site.persistence?.browserState.loginFields[SiteLynxchan.kLoginFieldLastSolvedCaptchaKey];
-		final idResponse = await widget.site.client.getUri(captchaJsUrl.replace(queryParameters: {
+		final idResponse = await widget.site.client.getUri<List<int>>(captchaJsUrl.replace(queryParameters: {
 			'boardUri': widget.request.board,
 			'd': (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
 			if (lastSolvedCaptcha != null) 'solvedCaptcha': lastSolvedCaptcha
 		}), options: Options(
-			responseType: null, // NB: Do not strictly check response type
+			responseType: ResponseType.bytes,
 			followRedirects: false, // dio loses the cookies in the first 303 response
 			validateStatus: (status) => (status ?? 0) < 400,
 			headers: {
@@ -87,8 +88,8 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			}
 		));
 		final String id;
-		final String imagePath;
-		final redirectPath = idResponse.headers.value('location');
+		String? imagePath;
+		List<int>? imageBytes;
 		final idFromRequestCookies = switch (idResponse.requestOptions.headers['cookie']) {
 			String cookie => RegExp(r'captchaid=([^;]+)').firstMatch(cookie)?.group(1),
 			_ => null
@@ -102,17 +103,27 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		}) ?? idResponse.headers['set-cookie']?.tryMapOnce((cookie) {
 			return RegExp(r'captchaid=([^;]+)').firstMatch(cookie)?.group(1);
 		});
-		if (redirectPath != null && redirectPath.startsWith('/.global/captchas/')) {
+		if (idResponse.headers.value('location') case String redirectPath when redirectPath.startsWith('/.global/captchas/')) {
 			final fromCookie = idFromResponseCookies ?? idFromRequestCookies;
 			// ID may be truncated. Best to get it from cookie
 			id = fromCookie ?? redirectPath.afterLast('/');
 			imagePath = redirectPath;
 		}
-		else if (idResponse.data is String) {
+		else if (idResponse.headers.value(Headers.contentTypeHeader)?.startsWith('image/') ?? false) {
+			id = idFromResponseCookies ?? idFromRequestCookies!;
+			imageBytes = idResponse.data;
+		}
+		else if (idResponse.headers.value(Headers.contentTypeHeader) == 'application/json') {
+			final data = jsonDecode(utf8.decode(idResponse.data!)) as Map;
+			if (data case {'error': {'message': String error}}) {
+				throw CaptchaLynxchanException(error);
+			}
+			id = data['data'] as String;
+		}
+		else {
 			final fromCookie = idFromResponseCookies ?? idFromRequestCookies;
 			if (fromCookie != null) {
 				id = fromCookie;
-				imagePath = '/.global/captchas/${id.substring(0, 24)}';
 			}
 			else {
 				// 8chan has a <html> with <img>
@@ -126,33 +137,26 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 				imagePath = uri.path;
 			}
 		}
-		else if (idResponse.data case Map data) {
-			if (data case {'error': {'message': String error}}) {
-				throw CaptchaLynxchanException(error);
+		if (imageBytes == null) {
+			final imageResponse = await widget.site.client.get('https://${widget.site.baseUrl}${imagePath ?? '/.global/captchas/${id.substring(0, 24)}'}', options: Options(
+				responseType: ResponseType.bytes,
+				headers: {
+					'referer': widget.site.getWebUrl(board: widget.request.board, threadId: widget.request.threadId)
+				},
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			));
+			if (imageResponse.statusCode != 200) {
+				throw CaptchaLynxchanException('Got status code ${idResponse.statusCode}');
 			}
-			id = data['data'] as String;
-			imagePath = '/.global/captchas/${id.substring(0, 24)}';
-		}
-		else {
-			throw Exception('idResponse.data had wrong type: ${idResponse.data}');
-		}
-		final imageResponse = await widget.site.client.get('https://${widget.site.baseUrl}$imagePath', options: Options(
-			responseType: ResponseType.bytes,
-			headers: {
-				'referer': widget.site.getWebUrl(board: widget.request.board, threadId: widget.request.threadId)
-			},
-			extra: {
-				kPriority: RequestPriority.interactive
-			}
-		));
-		if (imageResponse.statusCode != 200) {
-			throw CaptchaLynxchanException('Got status code ${idResponse.statusCode}');
+			imageBytes = imageResponse.data as List<int>;
 		}
 		return CaptchaLynxchanChallenge(
 			id: id,
 			acquiredAt: DateTime.now(),
 			lifetime: const Duration(minutes: 2),
-			imageBytes: Uint8List.fromList(imageResponse.data as List<int>)
+			imageBytes: Uint8List.fromList(imageBytes)
 		);
 	}
 
