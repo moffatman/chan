@@ -108,7 +108,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 
 	static List<PostSpan> parsePlaintext(String text) {
 		return linkify(text, linkifiers: const [ChanceLinkifier(), LooseUrlLinkifier()], options: const LinkifyOptions(
-			defaultToHttps: true
+			defaultToHttps: true,
+			humanize: false
 		)).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url, name: elem.text);

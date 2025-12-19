@@ -264,7 +264,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			LooseUrlLinkifier(),
 			ChanceLinkifier()
 		], options: const LinkifyOptions(
-			defaultToHttps: true
+			defaultToHttps: true,
+			humanize: false
 		)).map((elem) {
 			if (elem is _QuoteLinkElement) {
 				return PostQuoteLinkSpan(

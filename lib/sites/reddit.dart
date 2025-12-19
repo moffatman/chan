@@ -276,7 +276,7 @@ class SiteReddit extends ImageboardSite {
 			markdown.markdownToHtml(
 				const LooseUrlLinkifier(unescapeBackslashes: true, redditSafeMode: true).parse(
 					[TextElement(text)],
-					const LinkifyOptions(defaultToHttps: true)
+					const LinkifyOptions(defaultToHttps: true, humanize: false)
 				).map((e) => switch(e) {
 					UrlElement() => '<a href="${const HtmlEscape(HtmlEscapeMode.attribute).convert(e.url)}">${const HtmlEscape(HtmlEscapeMode.element).convert(e.text)}</a>',
 					_ => e.text
