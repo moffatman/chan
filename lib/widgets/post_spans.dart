@@ -206,8 +206,9 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
-		yield this;
-		yield* children;
+		for (final child in children) {
+			yield* child.traverse(post);
+		}
 	}
 
 	@override
@@ -1789,7 +1790,9 @@ class PostTableSpan extends PostSpan {
 	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
 		for (final row in rows) {
-			yield* row;
+			for (final child in row) {
+				yield* child.traverse(post);
+			}
 		}
 	}
 }

@@ -254,7 +254,7 @@ class Thread extends HiveObject implements Filterable {
 				}
 				postIdToListIndex[newChild.id] = newIndex;
 				// new post may be a child of other posts
-				for (final repliedToId in [newChild.parentId, newChild.repliedToIds]) {
+				for (final int? repliedToId in [newChild.parentId, ...newChild.repliedToIds]) {
 					final parentIndex = postIdToListIndex[repliedToId];
 					if (parentIndex != null) {
 						final parent = posts_[parentIndex];
