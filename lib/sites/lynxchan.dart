@@ -34,8 +34,12 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	final bool hasLinkCookieAuth;
 	@override
 	final bool allowsArbitraryBoards;
+	final bool hasBlockBypassJson;
 
 	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?res\/(\d+).html#(\d+)');
+
+	@protected
+	ImageboardRedirectGateway? get redirectGateway => null;
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parseFragment(data.trimRight());
@@ -98,7 +102,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		required super.videoHeaders,
 		required this.hasLinkCookieAuth,
 		required this.hasPagedCatalog,
-		required this.allowsArbitraryBoards
+		required this.allowsArbitraryBoards,
+		required this.hasBlockBypassJson
 	});
 
 	ImageboardFlag? _makeFlag(Map data) {
@@ -123,8 +128,71 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		return null;
 	}
 
+	@protected
+	Future<Map> handleBlockBypassJson(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		final blockResponse = await client.postUri<Map>(Uri.https(baseUrl, '/blockBypass.js', {'json': '1'}), options: Options(
+			responseType: ResponseType.json,
+			headers: {
+				'referer': getWebUrlImpl(post.board, post.threadId)
+			},
+			extra: {
+				kPriority: RequestPriority.interactive
+			}
+		), cancelToken: cancelToken);
+		final data = blockResponse.data!;
+		if (data case {'status': 'error', 'data': String error}) {
+			throw PostFailedException(error);
+		}
+		if ((data['data'] as Map)['valid'] != true) {
+			if (captchaSolution is LynxchanCaptchaSolution) {
+				// Register the existing captcha
+				final submit1Response = await client.postUri<Map>(Uri.https(baseUrl, '/solveCaptcha.js', {'json': '1'}), data: {
+					'captchaId': captchaSolution.id,
+					'answer': captchaSolution.answer
+				}, options: Options(
+					headers: {
+						'referer': getWebUrlImpl(post.board, post.threadId)
+					},
+					extra: {
+						kPriority: RequestPriority.interactive
+					}
+				), cancelToken: cancelToken);
+				if (submit1Response.data case {'status': 'error', 'data': String error}) {
+					throw PostFailedException(error);
+				}
+			}
+			throw AdditionalCaptchaRequiredException(
+				captchaRequest: LynxchanCaptchaRequest(
+					board: post.board,
+					threadId: post.threadId,
+					redirectGateway: redirectGateway
+				),
+				onSolved: (solution2, cancelToken2) async {
+					final response = await client.postUri<Map>(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
+						if (solution2 is LynxchanCaptchaSolution) 'captcha': solution2.answer
+					}, options: Options(
+						responseType: ResponseType.json,
+						headers: {
+							'referer': getWebUrlImpl(post.board, post.threadId)
+						},
+						extra: {
+							kPriority: RequestPriority.interactive
+						}
+					), cancelToken: cancelToken2);
+					if (response.data case {'status': 'error', 'data': String error}) {
+						throw PostFailedException(error);
+					}
+				}
+			);
+		}
+		return data;
+	}
+
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		if (hasBlockBypassJson) {
+			await handleBlockBypassJson(post, captchaSolution, cancelToken);
+		}
 		final password = makeRandomBase64String(8);
 		String? fileSha256;
 		final file = post.file;
@@ -159,6 +227,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			validateStatus: (x) => true,
 			extra: {
 				kPriority: RequestPriority.interactive
+			},
+			headers: {
+				'referer': getWebUrlImpl(post.board, post.threadId)
 			},
 			responseType: null
 		), cancelToken: cancelToken);
@@ -218,6 +289,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			extra: {
 				kPriority: RequestPriority.interactive
 			},
+			headers: {
+				'referer': getWebUrlImpl(thread.board, thread.id)
+			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
 		if (response.data case {'status': 'ok', 'data': {'removedThreads': int removedThreads, 'removedPosts': int removedPosts}} when removedThreads + removedPosts > 0) {
@@ -234,6 +308,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		}
 		final response = await client.getUri(Uri.https(baseUrl, '/boards.js'), options: Options(
 			responseType: ResponseType.plain,
+			headers: {
+				'referer': 'https://$baseUrl/'
+			},
 			extra: {
 				kPriority: priority
 			}
@@ -289,6 +366,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			'boardUri': query
 		}), options: Options(
 			responseType: ResponseType.plain,
+			headers: {
+				'referer': 'https://$baseUrl/'
+			},
 			extra: {
 				kPriority: RequestPriority.functional
 			}
@@ -304,7 +384,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			return const NoCaptchaRequest();
 		}
 		return LynxchanCaptchaRequest(
-			board: board
+			board: board,
+			threadId: threadId,
+			redirectGateway: redirectGateway
 		);
 	}
 
@@ -350,6 +432,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			validateStatus: (status) => status == 200 || status == 404,
 			extra: {
 				kPriority: priority
+			},
+			headers: {
+				'referer': 'https://$baseUrl/'
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
@@ -402,6 +487,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		=> RequestOptions(
 			baseUrl: 'https://$baseUrl',
 			path: hasPagedCatalog ? '/$board/1.json' : '/$board/catalog.json',
+			headers: {
+				'referer': hasPagedCatalog ? 'https://$baseUrl/' : 'https://$baseUrl/$board/catalog.html'
+			},
 			responseType: ResponseType.json
 		);
 
@@ -422,6 +510,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		=> RequestOptions(
 			baseUrl: 'https://$baseUrl',
 			path: '/$board/catalog.json',
+			headers: {
+				'referer': 'https://$baseUrl/$board/catalog.html'
+			},
 			responseType: ResponseType.json
 		);
 	@override
@@ -553,6 +644,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		=> RequestOptions(
 			path: '/${thread.board}/res/${thread.id}.json',
 			baseUrl: 'https://$baseUrl',
+			headers: {
+				'referer': 'https://$baseUrl/'
+			},
 			responseType: ResponseType.json
 		);
 
@@ -595,6 +689,18 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	@override
 	/// All images hosted in baseUrl anyway
 	String get imageUrl => baseUrl;
+
+	@override
+	Map<String, String> getHeaders(Uri url) {
+		final headers = super.getHeaders(url);
+		if (url.host == imageUrl) {
+			return {
+				...headers,
+				'referer': 'https://$baseUrl/'
+			};
+		}
+		return headers;
+	}
 
 	@override
 	bool operator == (Object other) =>

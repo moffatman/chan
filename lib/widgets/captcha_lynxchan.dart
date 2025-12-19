@@ -78,6 +78,9 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			responseType: null, // NB: Do not strictly check response type
 			followRedirects: false, // dio loses the cookies in the first 303 response
 			validateStatus: (status) => (status ?? 0) < 400,
+			headers: {
+				'referer': widget.site.getWebUrl(board: widget.request.board, threadId: widget.request.threadId)
+			},
 			extra: {
 				kPriority: RequestPriority.interactive,
 				kRedirectGateway: widget.request.redirectGateway
@@ -135,6 +138,9 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		}
 		final imageResponse = await widget.site.client.get('https://${widget.site.baseUrl}$imagePath', options: Options(
 			responseType: ResponseType.bytes,
+			headers: {
+				'referer': widget.site.getWebUrl(board: widget.request.board, threadId: widget.request.threadId)
+			},
 			extra: {
 				kPriority: RequestPriority.interactive
 			}

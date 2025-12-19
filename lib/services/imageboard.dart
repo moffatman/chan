@@ -35,6 +35,11 @@ class ImageboardNotFoundException implements Exception {
 	String toString() => 'Imageboard not found: $board';
 }
 
+class TooManyAdditionalCaptchasException implements Exception {
+	@override
+	String toString() => 'Too many additional captchas requested by site';
+}
+
 class Imageboard extends ChangeNotifier {
 	Map siteData;
 	ImageboardSite? _site;
@@ -442,37 +447,41 @@ class Imageboard extends ChangeNotifier {
 	}
 
 	Future<PostReceipt> _submitPostWithAdditionalCaptchaHandling(DraftPost post, CaptchaSolution captchaSolution, dio.CancelToken cancelToken) async {
-		try {
-			return await site.submitPost(post, captchaSolution, cancelToken);
-		}
-		catch (e) {
-			if (e is AdditionalCaptchaRequiredException) {
-				showToast(
-					context: ImageboardRegistry.instance.context!,
-					message: 'Additional captcha required',
-					icon: CupertinoIcons.exclamationmark_square
-				);
-				final solution2 = await solveCaptcha(
-					context: ImageboardRegistry.instance.context!,
-					site: site,
-					request: e.captchaRequest,
-					cancelToken: cancelToken
-				);
-				if (solution2 == null) {
-					// Just show that another captcha was needed and not provided
-					rethrow;
+		for (int tries = 0; tries < 3; tries++) {
+			try {
+				return await site.submitPost(post, captchaSolution, cancelToken);
+			}
+			catch (e) {
+				if (e is AdditionalCaptchaRequiredException) {
+					showToast(
+						context: ImageboardRegistry.instance.context!,
+						message: 'Additional captcha required',
+						icon: CupertinoIcons.exclamationmark_square
+					);
+					final solution2 = await solveCaptcha(
+						context: ImageboardRegistry.instance.context!,
+						site: site,
+						request: e.captchaRequest,
+						cancelToken: cancelToken
+					);
+					if (solution2 == null) {
+						// Just show that another captcha was needed and not provided
+						rethrow;
+					}
+					await e.onSolved(solution2, cancelToken);
+					// Fallthrough to retry
+					continue;
 				}
-				await e.onSolved(solution2, cancelToken);
-				return await site.submitPost(post, captchaSolution, cancelToken);
+				if (e is WebGatewayException) {
+					// Should pop up cloudflare browser. If user closes it early, it should properly throw
+					await e.openWebGateway(ImageboardRegistry.instance.context!);
+					// Now retry it
+					continue;
+				}
+				rethrow;
 			}
-			if (e is WebGatewayException) {
-				// Should pop up cloudflare browser. If user closes it early, it should properly throw
-				await e.openWebGateway(ImageboardRegistry.instance.context!);
-				// Now retry it
-				return await site.submitPost(post, captchaSolution, cancelToken);
-			}
-			rethrow;
 		}
+		throw TooManyAdditionalCaptchasException();
 	}
 
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, dio.CancelToken cancelToken) async {

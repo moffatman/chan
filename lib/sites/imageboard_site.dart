@@ -862,14 +862,16 @@ class DvachEmojiCaptchaRequest extends CaptchaRequest {
 
 class LynxchanCaptchaRequest extends CaptchaRequest {
 	final String board;
+	final int? threadId;
 	/// Force use of webview/RedirectGateway
 	final ImageboardRedirectGateway? redirectGateway;
 	const LynxchanCaptchaRequest({
 		required this.board,
+		required this.threadId,
 		this.redirectGateway
 	});
 	@override
-	String toString() => 'LynxchanCaptchaRequest(board: $board, redirectGateway: $redirectGateway)';
+	String toString() => 'LynxchanCaptchaRequest(board: $board, threadId: $threadId, redirectGateway: $redirectGateway)';
 }
 
 class SecucapCaptchaRequest extends CaptchaRequest {
@@ -2724,7 +2726,8 @@ ImageboardSite makeSite(Map data) {
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			hasLinkCookieAuth: data['hasLinkCookieAuth'] as bool? ?? false,
 			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true,
-			allowsArbitraryBoards: data['allowsArbitraryBoards'] as bool? ?? false
+			allowsArbitraryBoards: data['allowsArbitraryBoards'] as bool? ?? false,
+			hasBlockBypassJson: data['hasBlockBypassJson'] as bool? ?? false
 		);
 	}
 	else if (data['type'] == '8chan') {

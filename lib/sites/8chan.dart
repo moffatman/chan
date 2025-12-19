@@ -1,7 +1,6 @@
 // ignore_for_file: file_names
 
 import 'package:chan/services/javascript_challenge.dart';
-import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:dio/dio.dart';
@@ -20,74 +19,21 @@ class Site8Chan extends SiteLynxchan {
 		required super.hasLinkCookieAuth,
 		required super.hasPagedCatalog,
 		required super.allowsArbitraryBoards
-	});
+	}) : super(
+		hasBlockBypassJson: true
+	);
 
-	static const _kRedirectGateway = ImageboardRedirectGateway(
+	@override
+	@protected
+	ImageboardRedirectGateway get redirectGateway => const ImageboardRedirectGateway(
 		name: '8chan',
 		alwaysNeedsManualSolving: false,
 		autoClickSelector: 'h1 a'
 	);
 
 	@override
-	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
-		final captchaMode = persistence?.maybeGetBoard(board)?.captchaMode ?? 0;
-		if (captchaMode == 0 ||
-				(captchaMode == 1 && threadId != null)) {
-			return const NoCaptchaRequest();
-		}
-		return LynxchanCaptchaRequest(
-			board: board,
-			redirectGateway: _kRedirectGateway
-		);
-	}
-
-	@override
-	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		final blockResponse = await client.postUri<Map>(Uri.https(baseUrl, '/blockBypass.js', {'json': '1'}), options: Options(
-			responseType: ResponseType.json,
-			extra: {
-				kPriority: RequestPriority.interactive
-			}
-		), cancelToken: cancelToken);
-		final data = blockResponse.data!;
-		if (data case {'status': 'error', 'data': String error}) {
-			throw PostFailedException(error);
-		}
-		if ((data['data'] as Map)['valid'] != true) {
-			if (captchaSolution is LynxchanCaptchaSolution) {
-				// Register the existing captcha
-				final submit1Response = await client.postUri<Map>(Uri.https(baseUrl, '/solveCaptcha.js', {'json': '1'}), data: {
-					'captchaId': captchaSolution.id,
-					'answer': captchaSolution.answer
-				}, options: Options(
-					extra: {
-						kPriority: RequestPriority.interactive
-					}
-				), cancelToken: cancelToken);
-				if (submit1Response.data case {'status': 'error', 'data': String error}) {
-					throw PostFailedException(error);
-				}
-			}
-			throw AdditionalCaptchaRequiredException(
-				captchaRequest: LynxchanCaptchaRequest(
-					board: post.board,
-					redirectGateway: _kRedirectGateway
-				),
-				onSolved: (solution2, cancelToken2) async {
-					final response = await client.postUri<Map>(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
-						if (solution2 is LynxchanCaptchaSolution) 'captcha': solution2.answer
-					}, options: Options(
-						responseType: ResponseType.json,
-						extra: {
-							kPriority: RequestPriority.interactive
-						}
-					), cancelToken: cancelToken2);
-					if (response.data case {'status': 'error', 'data': String error}) {
-						throw PostFailedException(error);
-					}
-				}
-			);
-		}
+	Future<Map> handleBlockBypassJson(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		final data = await super.handleBlockBypassJson(post, captchaSolution, cancelToken);
 		if (data case {'data': {'validated': false}}) {
 			await solveJavascriptChallenge<void>(
 				url: Uri.parse(getWebUrlImpl(post.board, post.threadId)),
@@ -103,13 +49,13 @@ class Site8Chan extends SiteLynxchan {
 					'''
 			);
 		}
-		return await super.submitPost(post, captchaSolution, cancelToken);
+		return data;
 	}
 
 	@override
 	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? Function() title) {
 		if ((uri.host == baseUrl || uri.host == '') && uri.path == '/.static/pages/disclaimer.html') {
-			return _kRedirectGateway;
+			return redirectGateway;
 		}
 		return null;
 	}
