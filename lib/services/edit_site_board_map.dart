@@ -149,7 +149,8 @@ Future<void> editSiteBoardMap<T, S>({
 													CupertinoButton(
 														child: const Icon(CupertinoIcons.delete),
 														onPressed: () {
-															entries.removeAt(i);
+															field.getter(entries[i].$1.persistence.browserState).remove(entry.key);
+															entries[i].$1.persistence.didUpdateBrowserState();
 															setDialogState(() {});
 														}
 													)
