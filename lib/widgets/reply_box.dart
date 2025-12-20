@@ -1768,7 +1768,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 													_showAttachmentOptions = false;
 												});
 												try {
-													await setAttachment(false, _originalAttachment?.file ?? old.file, forceRandomizeChecksum: true);
+													await setAttachment(false, old.file, forceRandomizeChecksum: true);
 												}
 												catch (e, st) {
 													Future.error(e, st); // crashlytics
