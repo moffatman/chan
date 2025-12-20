@@ -605,6 +605,34 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		// Hook for subclasses
 	}
 
+	Future<int> _findNewPostId(DraftPost post, {required DateTime after, int? lastKnownId}) async {
+		// This doesn't work if user has quoted someone, but it shouldn't be needed
+		final threadId = post.threadId;
+		await Future.delayed(const Duration(milliseconds: 500));
+		for (int i = 0; i < 20; i++) {
+			if (threadId == null) {
+				final catalog = await getCatalog(post.board, priority: RequestPriority.interactive);
+				for (final thread in catalog.threads.values) {
+					if (thread.title == post.subject && (thread.posts[0].buildText().similarityTo(post.text) > 0.9) && (thread.time.compareTo(after) >= 0)) {
+						return thread.id;
+					}
+				}
+			}
+			else {
+				for (final p in (await getThread(ThreadIdentifier(post.board, threadId), priority: RequestPriority.interactive)).posts) {
+					if (switch (lastKnownId) {
+						int id => p.id > id,
+						null => p.time.compareTo(after) >= 0
+					} && (p.buildText().similarityTo(post.text) > 0.9)) {
+						return p.id;
+					}
+				}
+			}
+			await Future.delayed(const Duration(seconds: 2));
+		}
+		throw TimeoutException('Could not find post ID after submission', const Duration(seconds: 40));
+	}
+
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
@@ -773,37 +801,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				}
 			);
 		}
-		// This doesn't work if user has quoted someone, but it shouldn't be needed
-		int? newPostId;
-		final threadId = post.threadId;
-		await Future.delayed(const Duration(milliseconds: 500));
-		for (int i = 0; newPostId == null && i < 20; i++) {
-			if (threadId == null) {
-				final threads = (await getCatalog(post.board, priority: RequestPriority.interactive)).threads.values.toList();
-				for (final thread in threads.reversed) {
-					if (thread.title == post.subject && (thread.posts[0].buildText().similarityTo(post.text) > 0.9) && (thread.time.compareTo(now) >= 0)) {
-						newPostId = thread.id;
-					}
-				}
-			}
-			else {
-				for (final p in (await getThread(ThreadIdentifier(post.board, threadId), priority: RequestPriority.interactive)).posts) {
-					if (switch (lastKnownId) {
-						int id => p.id > id,
-						null => p.time.compareTo(now) >= 0
-					} && (p.buildText().similarityTo(post.text) > 0.9)) {
-						newPostId = p.id;
-					}
-				}
-			}
-			await Future.delayed(const Duration(seconds: 2));
-		}
-		if (newPostId == null) {
-			throw TimeoutException('Could not find post ID after submission', const Duration(seconds: 40));
-		}
 		return PostReceipt(
 			post: post,
-			id: newPostId,
+			id: await _findNewPostId(post, after: now, lastKnownId: lastKnownId),
 			password: password,
 			name: post.name ?? '',
 			options: post.options ?? '',
