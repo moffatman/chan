@@ -1084,10 +1084,12 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		await WidgetsBinding.instance.endOfFrame; // Hack - let board win lock first
 		if (!mounted) return;
-		final catalog = await imageboard.site.getCatalog(widget.thread.board, priority: _priority, acceptCachedAfter: DateTime.now().subtract(const Duration(seconds: 30)));
+		final catalog = await imageboard.site.getCatalog(widget.thread.board, priority: _priority, acceptCached: CacheConstraints(
+			fetchedOnOrAfter: DateTime.now().subtract(const Duration(seconds: 30))
+		));
 		if (!mounted) return;
 		ThreadIdentifier candidate = widget.thread;
-		for (final thread in catalog.threads) {
+		for (final thread in catalog.threads.values) {
 			if (thread.id > candidate.id) {
 				final threadPattern = newGeneralPattern.firstMatch('${thread.title} ${thread.posts_.tryFirst?.name} ${thread.posts_.tryFirst?.text}')?.group(0)?.toLowerCase();
 				if (threadPattern == pattern) {
@@ -1177,21 +1179,14 @@ class ThreadPageState extends State<ThreadPage> {
 			try {
 				final lastUpdatedTime = oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time;
 				if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null && oldThread.archiveName == null) {
-					final maybeNewThread = await site.getThreadIfModifiedSince(
+					newThread = await site.getThreadIfModifiedSince(
 						widget.thread,
 						lastUpdatedTime,
 						variant: tmpPersistentState.variant,
 						priority: _priority,
 						cancelToken: cancelToken
-					);
-					if (maybeNewThread != null) {
-						await site.updatePageNumber(maybeNewThread, true, priority: _priority, cancelToken: cancelToken);
-						newThread = maybeNewThread;
-					}
-					else {
-						await site.updatePageNumber(oldThread, false, priority: _priority, cancelToken: cancelToken);
-						newThread = oldThread;
-					}
+					) ?? oldThread;
+					await site.updatePageNumber(newThread, priority: _priority, cancelToken: cancelToken);
 				} 
 				else {
 					newThread = await site.getThread(

@@ -451,6 +451,7 @@ class SiteHackerNews extends ImageboardSite {
 
 	@override
 	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final fetchedTime = DateTime.now();
 		final List<int> data;
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
 			data = await _getSecondChancePoolIds(null, priority: priority, cancelToken: cancelToken);
@@ -473,9 +474,10 @@ class SiteHackerNews extends ImageboardSite {
 		}
 		_lastCatalogIds[variant] = data;
 		final threads = (await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, priority: priority, cancelToken: cancelToken)))).tryMap((e) => e).toList();
-		return Catalog(
+		return Catalog.fromList(
 			threads: threads,
-			lastModified: null // No 304 handling
+			lastModified: null, // No 304 handling
+			fetchedTime: fetchedTime
 		);
 	}
 

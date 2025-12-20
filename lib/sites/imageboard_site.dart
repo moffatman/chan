@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -1631,42 +1632,88 @@ class ImageboardRedirectGateway {
 	String toString() => 'ImageboardRedirectGateway(name: $name, alwaysNeedsManualSolving: $alwaysNeedsManualSolving, autoClickSelector: $autoClickSelector)';
 }
 
-class Catalog {
-	final List<Thread> threads;
-	/// max(threads.posts[].last.time) sometimes is off by 1 second. probably due to server-side processing latencies
-	/// best to use the exact value reported in Last-Modified
+class CacheConstraints {
+	final DateTime fetchedOnOrAfter;
+	final DateTime? dataOnOrAfter;
+
+	const CacheConstraints({
+		required this.fetchedOnOrAfter,
+		this.dataOnOrAfter,
+	});
+
+	CacheConstraints.any() : fetchedOnOrAfter = DateTime(2001), dataOnOrAfter = null;
+}
+
+class Cacheable {
+	/// If server supports it
 	final DateTime? lastModified;
+	final DateTime fetchedTime;
+
+	const Cacheable({
+		required this.lastModified,
+		required this.fetchedTime
+	});
+
+	bool satisfiesConstraints(CacheConstraints constraints) {
+		if (lastModified != null && (constraints.dataOnOrAfter?.isAfter(lastModified!) ?? false)) {
+			// Last-modified is known too old
+			return false;
+		}
+		if (constraints.fetchedOnOrAfter.isAfter(fetchedTime)) {
+			return false;
+		}
+		return true;
+	}
+}
+
+class Catalog extends Cacheable {
+	/// Dart LinkedHashMap has key order
+	final LinkedHashMap<int, Thread> threads;
 
 	const Catalog({
 		required this.threads,
-		required this.lastModified
+		required super.lastModified,
+		required super.fetchedTime
 	});
 
-	Catalog.fromResponse(Response response, this.threads)
-			: lastModified = DateTimeConversion.fromHttpHeader.maybe(
-				response.headers.value(HttpHeaders.lastModifiedHeader)
-			)?.toLocal();
+	Catalog.fromList({
+		required List<Thread> threads,
+		required super.lastModified,
+		required super.fetchedTime
+	}) : threads = LinkedHashMap.fromEntries(threads.map((t) => MapEntry(t.id, t)));
+
+	Catalog.fromResponse(Response response, DateTime fetchedTime, List<Thread> threads)
+			: this.fromList(
+				threads: threads,
+				lastModified: DateTimeConversion.fromHttpHeader.maybe(
+					response.headers.value(HttpHeaders.lastModifiedHeader)
+				)?.toLocal(),
+				fetchedTime: fetchedTime
+			);
 
 	@override
-	String toString() => 'Catalog(threads: $threads, lastModified: $lastModified)';
+	String toString() => 'Catalog(threads: $threads, lastModified: $lastModified, fetchedTime: $fetchedTime)';
 }
 
-class CatalogPageMap {
+class CatalogPageMap extends Cacheable {
 	final Map<int, int> pageMap;
-	final DateTime? lastModified;
 
 	const CatalogPageMap({
 		required this.pageMap,
-		required this.lastModified
+		required super.lastModified,
+		required super.fetchedTime
 	});
 
-	CatalogPageMap.fromResponse(Response response, this.pageMap)
-			: lastModified = DateTimeConversion.fromHttpHeader.maybe(
-				response.headers.value(HttpHeaders.lastModifiedHeader)
-			)?.toLocal();
+	CatalogPageMap.fromResponse(Response response, DateTime fetchedTime, this.pageMap)
+			: super(
+				lastModified: DateTimeConversion.fromHttpHeader.maybe(
+					response.headers.value(HttpHeaders.lastModifiedHeader)
+				)?.toLocal(),
+				fetchedTime: fetchedTime
+			);
 	
 	@override
-	String toString() => 'CatalogPageMap(pageMap: $pageMap, lastModified: $lastModified)';
+	String toString() => 'CatalogPageMap(pageMap: $pageMap, lastModified: $lastModified, fetchedTime: $fetchedTime)';
 }
 
 bool isExceptionReAttemptable(RequestPriority priority, dynamic e) => switch (e) {
@@ -1682,8 +1729,8 @@ abstract class ImageboardSiteArchive {
 		/// 15 seconds should be well long enough for initial TCP handshake
 		connectTimeout: 15000
 	));
-	final Map<String, Map<String?, ({Map<int, Thread> cache, List<int> order, DateTime time, DateTime? lastModified})>> _catalogCache = {};
-	final Map<String, Map<String?, ({CatalogPageMap cache, DateTime time})>> _catalogPageMapCache = {};
+	final Map<String, Map<String?, Catalog>> _catalogCache = {};
+	final Map<String, Map<String?, CatalogPageMap>> _catalogPageMapCache = {};
 	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
 	final String? overrideUserAgent;
 	ImageboardSiteArchive({
@@ -1712,57 +1759,54 @@ abstract class ImageboardSiteArchive {
 	String get baseUrl;
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken});
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
+	/// Exported to handle pageMap with same request as catalog, when pageMap is requested first
+	@protected
+	void insertCatalogIntoCache(String board, CatalogVariant? variant, Catalog catalog) {
+		final oldCatalog = _catalogCache[board]?[variant?.dataId];
+		if (oldCatalog != null) {
+			for (final oldThread in oldCatalog.threads.values) {
+				if (!catalog.threads.containsKey(oldThread.id)) {
+					// Not seen in new catalog
+					oldThread.isArchived = true;
+				}
+			}
+		}
+		(_catalogCache[board] ??= {})[variant?.dataId] = catalog;
+		Timer(const Duration(minutes: 10), () {
+			if (_catalogCache[board]?[variant?.dataId]?.fetchedTime == catalog.fetchedTime) {
+				// Stale now, should be cleared
+				_catalogCache[board]?.remove(variant?.dataId);
+				if (_catalogCache[board]?.isEmpty ?? false) {
+					_catalogCache.remove(board);
+				}
+			}
+		});
+	}
 	@protected
 	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
-	Future<Catalog> getCatalog(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
+	Future<Catalog> getCatalog(String board, {
+		CatalogVariant? variant,
+		required RequestPriority priority,
+		CacheConstraints? acceptCached,
+		CancelToken? cancelToken
+	}) async {
 		return runEphemerallyLocked('getCatalog($name,$board)', (_) async {
 			final entry = _catalogCache[board]?[variant?.dataId];
-			if (acceptCachedAfter != null && entry != null && entry.time.isAfter(acceptCachedAfter)) {
-				return Catalog(
-					// Order is wrong but shouldn't matter
-					threads: entry.cache.values.toList(),
-					lastModified: entry.lastModified
-				);
+			if (acceptCached != null && entry != null && entry.satisfiesConstraints(acceptCached)) {
+				return entry;
 			}
 			Catalog? catalog;
-			if (entry != null) {
-				final lastModified = entry.lastModified;
-				if (lastModified != null) {
-					final freshCatalog = await getCatalogIfModifiedSince(board, lastModified, variant: variant, priority: priority, cancelToken: cancelToken);
-					if (freshCatalog != null) {
-						catalog = freshCatalog;
-					}
-					else {
-						// Reconstruct it
-						catalog = Catalog(
-							threads: entry.order.tryMap((id) => entry.cache[id]).toList(),
-							lastModified: entry.lastModified
-						);
-					}
-				}
+			if (entry?.lastModified case final lastModified? when entry != null) {
+				final fetchedTime = DateTime.now();
+				final freshCatalog = await getCatalogIfModifiedSince(board, lastModified, variant: variant, priority: priority, cancelToken: cancelToken);
+				catalog = freshCatalog ?? Catalog(
+					threads: entry.threads,
+					lastModified: entry.lastModified,
+					fetchedTime: fetchedTime
+				);
 			}
 			catalog ??= await getCatalogImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
-			final oldCache = _catalogCache[board]?[variant?.dataId]?.cache ?? {};
-			final newCache = <int, Thread>{};
-			for (final newThread in catalog.threads) {
-				oldCache.remove(newThread.id);
-				newCache[newThread.id] = newThread;
-			}
-			for (final oldThread in oldCache.values) {
-				// Not in new catalog, it must have been archived
-				oldThread.isArchived = true;
-			}
-			final time = DateTime.now();
-			(_catalogCache[board] ??= {})[variant?.dataId] = (cache: newCache, order: catalog.threads.map((t) => t.id).toList(), time: time, lastModified: catalog.lastModified);
-			Timer(const Duration(minutes: 10), () {
-				if (_catalogCache[board]?[variant?.dataId]?.time == time) {
-					// Stale now, should be cleared
-					_catalogCache[board]?.remove(variant?.dataId);
-					if (_catalogCache[board]?.isEmpty ?? false) {
-						_catalogCache.remove(board);
-					}
-				}
-			});
+			insertCatalogIntoCache(board, variant, catalog);
 			return catalog;
 		});
 	}
@@ -1785,19 +1829,21 @@ abstract class ImageboardSiteArchive {
 	}) async {
 		if (hasPagedCatalog) {
 			// No hope, this needs to be defined per-site if possible
-			return const CatalogPageMap(
+			return CatalogPageMap(
 				pageMap: {},
-				lastModified: null
+				lastModified: null,
+				fetchedTime: DateTime(2000)
 			);
 		}
 		final catalog = await getCatalog(board, variant: variant, priority: priority, cancelToken: cancelToken);
 		return CatalogPageMap(
 			pageMap: {
-				for (final thread in catalog.threads)
+				for (final thread in catalog.threads.values)
 					if (thread.currentPage case int page)
 						thread.id: page
 			},
-			lastModified: null
+			lastModified: catalog.lastModified,
+			fetchedTime: catalog.fetchedTime
 		);
 	}
 	Future<CatalogPageMap?> getCatalogPageMapIfModifiedSince(String board, DateTime lastModified, {
@@ -1810,36 +1856,46 @@ abstract class ImageboardSiteArchive {
 		priority: priority,
 		cancelToken: cancelToken
 	);
-	Future<CatalogPageMap> getCatalogPageMap(String board, {CatalogVariant? variant, required RequestPriority priority, DateTime? acceptCachedAfter, CancelToken? cancelToken}) async {
+	Future<CatalogPageMap> getCatalogPageMap(String board, {
+		CatalogVariant? variant,
+		required RequestPriority priority,
+		CacheConstraints? acceptCached,
+		CancelToken? cancelToken
+	}) async {
 		return runEphemerallyLocked('getCatalogPageMap($name,$board)', (_) async {
 			final entry = _catalogPageMapCache[board]?[variant?.dataId];
-			if (acceptCachedAfter != null) {
-				if (entry != null && entry.time.isAfter(acceptCachedAfter)) {
-					return entry.cache;
+			if (acceptCached != null) {
+				if (entry != null && entry.satisfiesConstraints(acceptCached)) {
+					return entry;
 				}
 				// Try to steal from getCatalog() caching
 				final catalogEntry = _catalogCache[board]?[variant?.dataId];
-				if (catalogEntry != null && catalogEntry.time.isAfter(acceptCachedAfter)) {
+				if (catalogEntry != null && catalogEntry.satisfiesConstraints(acceptCached)) {
 					return CatalogPageMap(
 						pageMap: {
-							for (final thread in catalogEntry.cache.entries)
-								if (thread.value.currentPage case final page?)
-									thread.key: page
+							for (final thread in catalogEntry.threads.values)
+								if (thread.currentPage case final page?)
+									thread.id: page
 						},
-						lastModified: catalogEntry.lastModified
+						lastModified: catalogEntry.lastModified,
+						fetchedTime: catalogEntry.fetchedTime
 					);
 				}
 			}
 			CatalogPageMap? pageMap;
-			if (entry?.cache.lastModified case final lastModified?) {
+			if (entry?.lastModified case final lastModified? when entry != null) {
+				final fetchedTime = DateTime.now();
 				final freshPageMap = await getCatalogPageMapIfModifiedSince(board, lastModified, variant: variant, priority: priority, cancelToken: cancelToken);
-				pageMap = freshPageMap ?? entry?.cache;
+				pageMap = freshPageMap ?? CatalogPageMap(
+					pageMap: entry.pageMap,
+					lastModified: entry.lastModified,
+					fetchedTime: fetchedTime
+				);
 			}
 			pageMap ??= await getCatalogPageMapImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
-			final time = DateTime.now();
-			(_catalogPageMapCache[board] ??= {})[variant?.dataId] = (cache: pageMap, time: time);
+			(_catalogPageMapCache[board] ??= {})[variant?.dataId] = pageMap;
 			Timer(const Duration(minutes: 10), () {
-				if (_catalogPageMapCache[board]?[variant?.dataId]?.time == time) {
+				if (_catalogPageMapCache[board]?[variant?.dataId]?.fetchedTime == pageMap?.fetchedTime) {
 					// Stale now, should be cleared
 					_catalogPageMapCache[board]?.remove(variant?.dataId);
 					if (_catalogPageMapCache[board]?.isEmpty ?? false) {
@@ -1854,16 +1910,20 @@ abstract class ImageboardSiteArchive {
 	@protected
 	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async => [];
 	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final fetchedTime = DateTime.now();
 		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, priority: priority, cancelToken: cancelToken);
-		final entry = (_catalogCache[board] ??= {})[variant?.dataId] ??= (cache: {}, order: [], time: DateTime.now(), lastModified: null);
-		entry.cache.addAll({
+		final entry = (_catalogCache[board] ??= {})[variant?.dataId] ??= Catalog(
+			threads: LinkedHashMap(),
+			lastModified: null,
+			fetchedTime: fetchedTime
+		);
+		entry.threads.addAll({
 			for (final t in moreCatalog)
 				t.id: t
 		});
-		entry.order.addAll(moreCatalog.map((t) => t.id));
 		return moreCatalog;
 	}
-	Thread? getThreadFromCatalogCache(ThreadIdentifier? identifier, {DateTime? ifAfter}) {
+	Thread? getThreadFromCatalogCache(ThreadIdentifier? identifier, {CacheConstraints? constraints}) {
 		if (identifier == null) {
 			return null;
 		}
@@ -1872,12 +1932,23 @@ abstract class ImageboardSiteArchive {
 			return null;
 		}
 		for (final cache in caches.values) {
-			if (ifAfter != null && cache.time.isBefore(ifAfter)) {
+			if (constraints != null && !cache.satisfiesConstraints(constraints)) {
 				continue;
 			}
-			return cache.cache[identifier.id];
+			return cache.threads[identifier.id];
 		}
 		return null;
+	}
+	@protected
+	void bumpCatalogInCache(String board, CatalogVariant? variant, DateTime fetchedTime, DateTime? lastModified) {
+		final oldCatalog = _catalogCache[board]?[variant?.dataId];
+		if (oldCatalog != null && oldCatalog.fetchedTime.isBefore(fetchedTime) && oldCatalog.lastModified == lastModified) {
+			(_catalogCache[board] ??= {})[variant?.dataId] = Catalog(
+				threads: oldCatalog.threads,
+				lastModified: oldCatalog.lastModified,
+				fetchedTime: fetchedTime
+			);
+		}
 	}
 	Future<List<ImageboardBoard>> getBoards({required RequestPriority priority, CancelToken? cancelToken});
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken});
@@ -2000,17 +2071,19 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				if (t0 != null && t0.archiveName == null && t0.isArchived) {
 					return true;
 				}
-				final acceptCachedAfter = DateTime.now().subtract(const Duration(minutes: 1));
+				final acceptCached = CacheConstraints(
+					fetchedOnOrAfter: DateTime.now().subtract(const Duration(minutes: 1))
+				);
 				if (hasPagedCatalog) {
 					// Need to get the actual thread
-					final t = getThreadFromCatalogCache(thread, ifAfter: acceptCachedAfter) ?? await getThread(thread, priority: priority, cancelToken: cancelToken);
+					final t = getThreadFromCatalogCache(thread, constraints: acceptCached) ?? await getThread(thread, priority: priority, cancelToken: cancelToken);
 					return t.isArchived;
 				}
 				else {
 					// 4chan started to put old thread JSONs behind cloudflare
 					// Hopefully they never do that to catalogs
-					final catalog = await getCatalog(thread.board, priority: priority, cancelToken: cancelToken, acceptCachedAfter: acceptCachedAfter);
-					return catalog.threads.tryFirstWhere((t) => t.id == thread.id)?.isArchived ?? true;
+					final catalog = await getCatalog(thread.board, priority: priority, cancelToken: cancelToken, acceptCached: acceptCached);
+					return catalog.threads.values.tryFirstWhere((t) => t.id == thread.id)?.isArchived ?? true;
 				}
 			}
 			catch  (_) {
@@ -2329,11 +2402,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		final time = DateTime.now();
 		Timer(const Duration(minutes: 10), () {
 			_catalogCache.removeWhere((_, map) {
-				map.removeWhere((_, x) => x.time.isBefore(time));
+				map.removeWhere((_, x) => x.fetchedTime.isBefore(time));
 				return map.isEmpty;
 			});
 			_catalogPageMapCache.removeWhere((_, map) {
-				map.removeWhere((_, x) => x.time.isBefore(time));
+				map.removeWhere((_, x) => x.fetchedTime.isBefore(time));
 				return map.isEmpty;
 			});
 		});
@@ -2366,7 +2439,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final theThread = await getThreadImpl(thread, variant: variant, priority: priority, cancelToken: cancelToken);
-		await updatePageNumber(theThread, null, priority: priority, cancelToken: cancelToken);
+		await updatePageNumber(theThread, priority: priority, cancelToken: cancelToken);
 		return theThread;
 	}
 	/// By default, always fetch the thread
@@ -2381,28 +2454,21 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		priority: priority,
 		cancelToken: cancelToken
 	);
-	Future<void> updatePageNumber(Thread thread, bool? hasNewPost, {
+	Future<void> updatePageNumber(Thread thread, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {
 		if (!hasExpiringThreads || thread.isArchived || thread.isDeleted) {
 			return;
 		}
-		// The logic here -- if there is no new post, then page only slowly decays
-		// If there was a new post, page probably jumped to 1. But can't just assume 1,
-		// that's only if we have been updating continuously.
-		final acceptCachedAfter = switch (hasNewPost) {
-			true => thread.lastUpdatedTime?.toLocal() ?? thread.posts_.last.time.toLocal(),
-			false => DateTime.now().subtract(const Duration(minutes: 2)),
-			null => DateTimeConversion.max(
-				thread.lastUpdatedTime?.toLocal() ?? thread.posts_.last.time.toLocal(),
-				DateTime.now().subtract(const Duration(minutes: 2))
-			)
-		};
 		// getCatalogPageMap will not bloat the thread cache
+		final threadTime = thread.lastUpdatedTime?.toLocal() ?? thread.posts_.tryLast?.time.toLocal() ?? thread.time;
 		final map = await getCatalogPageMap(
 			thread.board,
-			acceptCachedAfter: acceptCachedAfter,
+			acceptCached: CacheConstraints(
+				fetchedOnOrAfter: DateTimeConversion.max(DateTime.now().subtract(const Duration(minutes: 2)), threadTime),
+				dataOnOrAfter: threadTime
+			),
 			priority: priority,
 			cancelToken: cancelToken
 		);

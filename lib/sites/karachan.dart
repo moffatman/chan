@@ -377,9 +377,11 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 
 	@override
 	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		return Catalog(
+		final fetchedTime = DateTime.now();
+		return Catalog.fromList(
 			threads: await _getCatalogPage(board, 1, priority: priority, cancelToken: cancelToken),
-			lastModified: null // No 304 handling
+			lastModified: null, // No 304 handling
+			fetchedTime: fetchedTime
 		);
 	}
 
@@ -390,6 +392,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 
 	@override
 	Future<CatalogPageMap> getCatalogPageMapImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final fetchedTime = DateTime.now();
 		final response = await client.getUri(
 			Uri.https(baseUrl, '/$board/catalog.html'),
 			options: Options(
@@ -412,7 +415,8 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 					if (e.id.split('-').last.tryParseInt case int id)
 						id: (i ~/ kThreadsPage) + 1
 			},
-			lastModified: null // No 304 handling
+			lastModified: null, // No 304 handling
+			fetchedTime: fetchedTime
 		);
 	}
 

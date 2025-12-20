@@ -146,7 +146,6 @@ class ThreadWatcher extends ChangeNotifier {
 	final Set<ThreadIdentifier> fixedThreads = {};
 	final Set<ThreadIdentifier> brokenThreads = {};
 	final List<String> watchForStickyOnBoards;
-	final Map<BoardKey, List<Thread>> _lastCatalogs = {};
 	final List<ThreadIdentifier> _unseenStickyThreads = [];
 	final ThreadWatcherController controller;
 	final unseenCount = ValueNotifier<int>(0);
@@ -289,16 +288,25 @@ class ThreadWatcher extends ChangeNotifier {
 	}
 
 	Future<void> updateThread(ThreadIdentifier identifier, {CancelToken? cancelToken}) async {
-		await _updateThread(persistence.getThreadState(identifier), cancelToken);
+		await _updateThread(persistence.getThreadState(identifier), null, cancelToken);
 	}
 
-	late final _updateThreadDebouncer = Debouncer2(__updateThread);
-	Future<bool> _updateThread(PersistentThreadState threadState, [CancelToken? cancelToken])
-		=> _updateThreadDebouncer.debounce(threadState, cancelToken);
-	Future<bool> __updateThread(PersistentThreadState threadState, CancelToken? cancelToken) async {
+	late final _updateThreadDebouncer = Debouncer1Plus1PlusCancel(__updateThread);
+	Future<bool> _updateThread(PersistentThreadState threadState, CacheConstraints? acceptCached, CancelToken? cancelToken)
+		=> _updateThreadDebouncer.debounce(threadState, acceptCached, cancelToken);
+	Future<bool> __updateThread(PersistentThreadState threadState, CacheConstraints? acceptCached, CancelToken? cancelToken) async {
 		Thread newThread;
 		try {
 			final oldThread = await threadState.getThread();
+			if (oldThread != null && acceptCached != null) {
+				if (site.getThreadFromCatalogCache(threadState.identifier, constraints: acceptCached) case final cached?) {
+					if (cached.posts_.tryLast?.id == oldThread.posts_.tryLast?.id || cached.replyCount == oldThread.replyCount) {
+						// We know from catalog cache there are no new posts
+						oldThread.currentPage = cached.currentPage;
+						return false;
+					}
+				}
+			}
 			if (site.isPaged) {
 				if (oldThread != null) {
 					final lastIncompletePageParentId = oldThread.posts_.tryLast?.parentId;
@@ -330,21 +338,14 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 			final lastUpdatedTime = oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time;
 			if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null && oldThread.archiveName == null) {
-				final maybeNewThread = await site.getThreadIfModifiedSince(
+				newThread = await site.getThreadIfModifiedSince(
 					threadState.identifier,
 					lastUpdatedTime,
 					variant: threadState.variant,
 					priority: RequestPriority.functional,
 					cancelToken: cancelToken
-				);
-				if (maybeNewThread != null) {
-					await site.updatePageNumber(maybeNewThread, true, priority: RequestPriority.functional, cancelToken: cancelToken);
-					newThread = maybeNewThread;
-				}
-				else {
-					await site.updatePageNumber(oldThread, false, priority: RequestPriority.functional, cancelToken: cancelToken);
-					newThread = oldThread;
-				}
+				) ?? oldThread;
+				await site.updatePageNumber(newThread, priority: RequestPriority.functional, cancelToken: cancelToken);
 			}
 			else {
 				newThread = await site.getThread(
@@ -406,6 +407,10 @@ class ThreadWatcher extends ChangeNotifier {
 		if (ImageboardRegistry.instance.getImageboard(imageboardKey)?.seemsOk == false) {
 			return;
 		}
+		// Avoid triggering multiple updates in different functions
+		final acceptCached = CacheConstraints(
+			fetchedOnOrAfter: DateTime.now()
+		);
 		// Could be concurrently-modified
 		for (final watch in notifications.threadWatches.values) {
 			if (watch.zombie) {
@@ -418,7 +423,7 @@ class ThreadWatcher extends ChangeNotifier {
 				notifications.removeWatch(watch);
 			}
 			else {
-				await _updateThread(threadState);
+				await _updateThread(threadState, acceptCached, null);
 			}
 		}
 		for (final tab in Persistence.tabs.toList(growable: false)) {
@@ -427,7 +432,7 @@ class ThreadWatcher extends ChangeNotifier {
 				final threadState = persistence.getThreadStateIfExists(tab.thread!);
 				final thread = await threadState?.ensureThreadLoaded(preinit: false);
 				if (threadState != null && thread?.isArchived != true && thread?.isDeleted != true && threadState.threadWatch?.zombie != true) {
-					await _updateThread(threadState);
+					await _updateThread(threadState, acceptCached, null);
 					if (threadState.unseenPostIds.data.isNotEmpty) {
 						tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
 						tab.unseenYous.value = threadState.unseenReplyIdsToYouCount() ?? tab.unseenYous.value;
@@ -435,14 +440,13 @@ class ThreadWatcher extends ChangeNotifier {
 				}
 			}
 		}
-		_lastCatalogs.clear();
 		_unseenStickyThreads.clear();
 		for (final rawBoard in watchForStickyOnBoards) {
 			final board = ImageboardBoard.getKey(rawBoard);
-			_lastCatalogs[board] ??= (await site.getCatalog(board.s, priority: RequestPriority.functional)).threads;
-			_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
+			final catalog = await site.getCatalog(board.s, priority: RequestPriority.functional, acceptCached: acceptCached);
+			_unseenStickyThreads.addAll(catalog.threads.values.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
 			// Update sticky threads for (you)s
-			final stickyThreadStates = _lastCatalogs[board]!.where((t) => t.isSticky).map((t) => persistence.getThreadStateIfExists(t.identifier)).where((s) => s != null).map((s) => s!).toList();
+			final stickyThreadStates = catalog.threads.values.where((t) => t.isSticky).map((t) => persistence.getThreadStateIfExists(t.identifier)).where((s) => s != null).map((s) => s!).toList();
 			for (final threadState in stickyThreadStates) {
 				await threadState.ensureThreadLoaded(preinit: false);
 				if (threadState.youIds.isNotEmpty) {
@@ -480,8 +484,8 @@ class ThreadWatcher extends ChangeNotifier {
 					continue;
 				}
 				final board = ImageboardBoard.getKey(rawBoard);
-				final catalog = _lastCatalogs[board] ??= (await site.getCatalog(board.s, priority: RequestPriority.functional)).threads;
-				for (final thread in catalog) {
+				final catalog = await site.getCatalog(board.s, priority: RequestPriority.functional, acceptCached: acceptCached);
+				for (final thread in catalog.threads.values) {
 					final result = Settings.instance.globalFilter.filter(imageboardKey, thread);
 					if (result?.type.autoSave ?? false) {
 						if (!(persistence.browserState.autosavedIds[board]?.contains(thread.id) ?? false)) {
@@ -537,7 +541,7 @@ class ThreadWatcher extends ChangeNotifier {
 			final state = persistence.getThreadStateIfExists(thread);
 			if (state != null) {
 				try {
-					if (await _updateThread(state)) {
+					if (await _updateThread(state, null, null)) {
 						fixedThreads.add(thread);
 					}
 				}
@@ -548,8 +552,6 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 		});
 	}
-
-	List<Thread>? peekLastCatalog(BoardKey board) => _lastCatalogs[board];
 
 	@override
 	void dispose() {

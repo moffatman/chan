@@ -252,6 +252,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 	@override
 	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final fetchedTime = DateTime.now();
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
 			validateStatus: (x) => true,
 			responseType: ResponseType.plain,
@@ -278,9 +279,10 @@ class FuukaArchive extends ImageboardSiteArchive {
 				e.append(child);
 			}
 		}
-		return Catalog(
+		return Catalog.fromList(
 			threads: threads,
-			lastModified: null // Doesn't matter for archive
+			lastModified: null, // Doesn't matter for archive
+			fetchedTime: fetchedTime
 		);
 	}
 

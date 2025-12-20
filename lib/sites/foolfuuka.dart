@@ -413,10 +413,14 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async => Catalog(
-		threads: await _getCatalog(board, 1, priority: priority, cancelToken: cancelToken),
-		lastModified: null // Doesn't matter for archive
-	);
+	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final fetchedTime = DateTime.now();
+		return Catalog.fromList(
+			threads: await _getCatalog(board, 1, priority: priority, cancelToken: cancelToken),
+			lastModified: null, // Doesn't matter for archive
+			fetchedTime: fetchedTime
+		);
+	}
 
 	@override
 	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) => _getCatalog(board, (after.currentPage ?? 0) + 1, priority: priority, cancelToken: cancelToken);

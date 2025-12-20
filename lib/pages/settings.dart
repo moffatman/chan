@@ -47,9 +47,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
 	Future<List<Thread>> makeStickyFuture() async {
 		final imageboard = context.read<Imageboard>();
-		final threads = imageboard.threadWatcher.peekLastCatalog(kDevBoard.boardKey)
-			?? (await imageboard.site.getCatalog(kDevBoard.name, priority: RequestPriority.interactive)).threads;
-		final list = threads.where((t) => t.isSticky).toList();
+		final catalog = await imageboard.site.getCatalog(
+			kDevBoard.name,
+			priority: RequestPriority.interactive,
+			acceptCached: CacheConstraints.any()
+		);
+		final list = catalog.threads.values.where((t) => t.isSticky).toList();
 		for (final thread in list) {
 			await thread.preinit(catalog: true);
 			await imageboard.persistence.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();

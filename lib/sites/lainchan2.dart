@@ -189,7 +189,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		), cancelToken: cancelToken);
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();
-		for (final attachment in broken.threads.expand((t) => t.attachments)) {
+		for (final attachment in broken.threads.values.expand((t) => t.attachments)) {
 			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id.toString()) ?? false);
 			if (thumbnailUrl != null) {
 				attachment.thumbnailUrl =

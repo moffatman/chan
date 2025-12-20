@@ -1136,6 +1136,7 @@ class SiteReddit extends ImageboardSite {
 			Future.error(e, st);
 		}
 		final suffix = _getCatalogSuffix(variant);
+		final fetchedTime = DateTime.now();
 		final response = await client.getUri<Map>(Uri.https(baseUrl, '/r/$board${suffix.$1}', suffix.$2), options: Options(
 			extra: {
 				kPriority: priority
@@ -1147,9 +1148,10 @@ class SiteReddit extends ImageboardSite {
 			t.currentPage = 1;
 			return t;
 		}));
-		return Catalog(
+		return Catalog.fromList(
 			threads: threads,
-			lastModified: null // No 304 handling
+			lastModified: null, // No 304 handling
+			fetchedTime: fetchedTime
 		);
 	}
 

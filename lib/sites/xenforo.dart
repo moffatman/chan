@@ -610,9 +610,11 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 
   @override
   Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-    return Catalog(
+		final fetchedTime = DateTime.now();
+    return Catalog.fromList(
 			threads: await _getCatalogPage(board, 1, priority: priority, cancelToken: cancelToken),
-			lastModified: null // No 304 handling
+			lastModified: null, // No 304 handling
+			fetchedTime: fetchedTime
 		);
   }
 

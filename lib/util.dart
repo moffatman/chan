@@ -867,6 +867,32 @@ class Debouncer1<T, A1> {
 	}
 }
 
+/// Key is only first argument
+/// First person to call wins second argument
+/// All callers can cancel
+class Debouncer1Plus1PlusCancel<T, A1, A2> {
+	final Future<T> Function(A1, A2, CancelToken?) function;
+	final Map<A1, (Future<T>, CancelToken)> _map = {};
+	Debouncer1Plus1PlusCancel(this.function);
+
+	Future<T> debounce(A1 arg1, A2 arg2, CancelToken? cancelToken) async {
+		final existing = _map[arg1];
+		if (existing != null) {
+			cancelToken?.whenCancel.then(existing.$2.cancel);
+			return existing.$1;
+		}
+		final masterToken = CancelToken();
+		final data = _map[arg1] = (function(arg1, arg2, masterToken), masterToken);
+		cancelToken?.whenCancel.then(masterToken.cancel);
+		try {
+			return await data.$1;
+		}
+		finally {
+			_map.remove(arg1);
+		}
+	}
+}
+
 class Debouncer2<T, A1, A2> {
 	final Future<T> Function(A1, A2) function;
 	final Map<(A1, A2), Future<T>> _futures = {};

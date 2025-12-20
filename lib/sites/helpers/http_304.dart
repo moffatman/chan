@@ -15,7 +15,8 @@ extension _Helper on ImageboardSite {
 		required Future<T> Function(Response) func,
 		required Exception on404,
 		required RequestPriority priority,
-		required CancelToken? cancelToken
+		required CancelToken? cancelToken,
+		void Function()? on304
 	}) async {
 		try {
 			final response = await client.fetch(baseOptions.copyWith(
@@ -32,6 +33,7 @@ extension _Helper on ImageboardSite {
 			));
 			final status = response.statusCode;
 			if (status == 304) {
+				on304?.call();
 				return null;
 			}
 			if (status != null && status >= 200 && status < 400) {
@@ -108,6 +110,7 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 }
 
 mixin Http304CachingCatalogMixin on ImageboardSite {
+	static const _kIsCatalogRequest = 'catalog_request';
 	@protected
 	RequestOptions getCatalogRequest(String board, {CatalogVariant? variant});
 	@protected
@@ -122,39 +125,45 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 		CatalogVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
-	}) async => (await _helper(
-		baseOptions: getCatalogRequest(board, variant: variant),
-		lastModified: null,
-		func: (response) async {
-			final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
-			return Catalog.fromResponse(response, c);
-		},
-		on404: BoardNotFoundException(board),
-		priority: priority,
-		cancelToken: cancelToken
-	))!;
+	}) async {
+		final fetchedTime = DateTime.now();
+		return (await _helper(
+			baseOptions: getCatalogRequest(board, variant: variant),
+			lastModified: null,
+			func: (response) async {
+				final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
+				return Catalog.fromResponse(response, fetchedTime, c);
+			},
+			on404: BoardNotFoundException(board),
+			priority: priority,
+			cancelToken: cancelToken
+		))!;
+	}
 	@override
 	Future<Catalog?> getCatalogIfModifiedSince(String board, DateTime lastModified, {
 		CatalogVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
-	}) => _helper(
-		baseOptions: getCatalogRequest(board, variant: variant),
-		lastModified: lastModified,
-		func: (response) async {
-			final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
-			return Catalog.fromResponse(response, c);
-		},
-		on404: BoardNotFoundException(board),
-		priority: priority,
-		cancelToken: cancelToken
-	);
+	}) async {
+		final fetchedTime = DateTime.now();
+		return await _helper(
+			baseOptions: getCatalogRequest(board, variant: variant),
+			lastModified: lastModified,
+			func: (response) async {
+				final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
+				return Catalog.fromResponse(response, fetchedTime, c);
+			},
+			on404: BoardNotFoundException(board),
+			priority: priority,
+			cancelToken: cancelToken
+		);
+	}
 	@protected
 	RequestOptions? getCatalogPageMapRequest(String board, {CatalogVariant? variant}) {
 		if (hasPagedCatalog) {
 			return null;
 		}
-		return getCatalogRequest(board, variant: variant);
+		return getCatalogRequest(board, variant: variant)..extra[_kIsCatalogRequest] = true;
 	}
 	@protected
 	Future<Map<int, int>> makeCatalogPageMap(String board, Response response, {
@@ -175,17 +184,24 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 		final baseOptions = getCatalogPageMapRequest(board, variant: variant);
 		if (baseOptions == null) {
 			// No hope, getCatalogPageMapRequest needs to be defined per-site if possible
-			return const CatalogPageMap(
+			return CatalogPageMap(
 				pageMap: {},
-				lastModified: null
+				lastModified: null,
+				fetchedTime: DateTime(2000)
 			);
 		}
+		final isSameAsCatalog = baseOptions.extra.containsKey(_kIsCatalogRequest);
+		final fetchedTime = DateTime.now();
 		return (await _helper(
 			baseOptions: baseOptions,
 			lastModified: null,
 			func: (response) async {
 				final pageMap = await makeCatalogPageMap(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
-				return CatalogPageMap.fromResponse(response, pageMap);
+				if (isSameAsCatalog) {
+					final catalog = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
+					insertCatalogIntoCache(board, variant, Catalog.fromResponse(response, fetchedTime, catalog));
+				}
+				return CatalogPageMap.fromResponse(response, fetchedTime, pageMap);
 			},
 			on404: BoardNotFoundException(board),
 			priority: priority,
@@ -198,19 +214,31 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 		final baseOptions = getCatalogPageMapRequest(board, variant: variant);
 		if (baseOptions == null) {
 			// No hope, getCatalogPageMapRequest needs to be defined per-site if possible
-			return const CatalogPageMap(
+			return CatalogPageMap(
 				pageMap: {},
-				lastModified: null
+				lastModified: null,
+				fetchedTime: DateTime(2000)
 			);
 		}
+		final isSameAsCatalog = baseOptions.extra.containsKey(_kIsCatalogRequest);
+		final fetchedTime = DateTime.now();
 		return await _helper(
 			baseOptions: baseOptions,
 			lastModified: lastModified,
 			func: (response) async {
 				final pageMap = await makeCatalogPageMap(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
-				return CatalogPageMap.fromResponse(response, pageMap);
+				if (isSameAsCatalog) {
+					final catalog = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
+					insertCatalogIntoCache(board, variant, Catalog.fromResponse(response, fetchedTime, catalog));
+				}
+				return CatalogPageMap.fromResponse(response, fetchedTime, pageMap);
 			},
 			on404: BoardNotFoundException(board),
+			on304: () {
+				if (isSameAsCatalog) {
+					bumpCatalogInCache(board, variant, fetchedTime, lastModified);
+				}
+			},
 			priority: priority,
 			cancelToken: cancelToken
 		);
