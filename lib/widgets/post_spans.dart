@@ -1957,7 +1957,15 @@ class PostLinkSpan extends PostTerminalSpan {
 								initiallyUseArchive: imageboardTarget?.$3,
 								activate: true
 							);
-						}
+						},
+					'Open archived': () => openBrowser(
+						context,
+						Uri.https('archive.today', '/', {
+							'run': '1',
+							'url': cleanedUrl.toString()
+						}),
+						fromShareOne: true
+					)
 				}
 			);
 		}
