@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 import 'package:mutex/mutex.dart';
+import 'package:pool/pool.dart';
 
 part 'thread_watcher.g.dart';
 
@@ -623,10 +624,12 @@ class ThreadWatcherController extends ChangeNotifier {
 		}
 		else {
 			updateNotificationsBadgeCount();
-			for (final watcher in _watchers.toList()) {
+			// Update up to two sites in parallel
+			final pool = Pool(2);
+			await Future.wait(_watchers.map((watcher) => pool.withResource(() async {
 				if (_doghouse.contains(watcher)) {
 					_doghouse.remove(watcher);
-					continue;
+					return;
 				}
 				try {
 					await watcher.update();
@@ -636,7 +639,7 @@ class ThreadWatcherController extends ChangeNotifier {
 					print(st);
 					_doghouse.add(watcher);
 				}
-			}
+			})));
 			lastUpdate = DateTime.now();
 			nextUpdate = lastUpdate!.add(interval);
 			nextUpdateTimer?.cancel();
