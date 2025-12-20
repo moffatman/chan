@@ -1522,7 +1522,7 @@ class AttachmentViewer extends StatelessWidget {
 				}
 				if (controller._longPressMode == _LongPressMode.zoom) {
 					final anchorBefore = (logicalAnchor * scaleBefore) + offsetBefore;
-					final scaleAfter = (state.gestureDetails!.totalScale! * (1 + (0.005 * details.localDelta.dy))).clamp(1.0, 5.0);
+					final scaleAfter = (state.gestureDetails!.totalScale! * (1 + (0.005 * details.localDelta.dy))).clamp(1.0, state.imageGestureConfig?.maxScale ?? 5.0);
 					final offsetAfter = anchorBefore - (logicalAnchor * scaleAfter);
 					state.gestureDetails = GestureDetails(
 						offset: offsetAfter,
