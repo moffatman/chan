@@ -1560,7 +1560,9 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																CupertinoIcons.checkmark_square
 															) : CupertinoIcons.square
 													),
-													const Text('Random filename')
+													const Flexible(
+														child: Text('Random filename')
+													)
 												]
 											),
 											onPressed: () {
