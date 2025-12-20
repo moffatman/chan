@@ -1510,7 +1510,7 @@ class AttachmentViewer extends StatelessWidget {
 				final logicalAnchor = controller._doubleTapDragAnchor ??= ((details.localPosition - offsetBefore) / scaleBefore);
 				if (controller._longPressMode == null) {
 					if (details.offsetFromOrigin.distance > 24) {
-						if (details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
+						if (attachment.type.isVideo && details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
 							lightHapticFeedback();
 							controller._longPressMode = _LongPressMode.scrub;
 							controller._onLongPressStart();
