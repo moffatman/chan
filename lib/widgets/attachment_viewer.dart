@@ -1511,6 +1511,7 @@ class AttachmentViewer extends StatelessWidget {
 				if (controller._longPressMode == null) {
 					if (details.offsetFromOrigin.distance > 24) {
 						if (details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
+							lightHapticFeedback();
 							controller._longPressMode = _LongPressMode.scrub;
 							controller._onLongPressStart();
 						}
@@ -1539,6 +1540,7 @@ class AttachmentViewer extends StatelessWidget {
 					onDoubleTap(controller.gestureKey.currentState!);
 				}
 				if (controller._longPressMode == _LongPressMode.scrub) {
+					lightHapticFeedback();
 					controller._onLongPressEnd();
 				}
 				controller._doubleTapDragAnchor = null;
@@ -2137,20 +2139,28 @@ class AttachmentViewer extends StatelessWidget {
 								children: [
 									Expanded(
 										child: GestureDetector(
-											onLongPressStart: (x) => controller._videoPlayerController?.player.setRate(2),
-											onLongPressEnd: (x) => controller._videoPlayerController?.player.setRate(1)
+											onLongPressStart: (x) {
+												lightHapticFeedback();
+												controller._videoPlayerController?.player.setRate(2);
+											},
+											onLongPressEnd: (x) {
+												lightHapticFeedback();
+												controller._videoPlayerController?.player.setRate(1);
+											}
 										)
 									),
 									Expanded(
 										flex: 3,
 										child: GestureDetector(
 											onLongPressStart: (x) {
+												lightHapticFeedback();
 												controller._playingBeforeLongPress = controller._videoPlayerController?.player.state.playing ?? false;
 												if (controller._playingBeforeLongPress) {
 													controller._videoPlayerController?.player.pause();
 												}
 											},
 											onLongPressEnd: (x) {
+												lightHapticFeedback();
 												if (controller._playingBeforeLongPress) {
 													controller._videoPlayerController?.player.play();
 												}
@@ -2159,8 +2169,14 @@ class AttachmentViewer extends StatelessWidget {
 									),
 									Expanded(
 										child: GestureDetector(
-											onLongPressStart: (x) => controller._videoPlayerController?.player.setRate(2),
-											onLongPressEnd: (x) => controller._videoPlayerController?.player.setRate(1)
+											onLongPressStart: (x) {
+												lightHapticFeedback();
+												controller._videoPlayerController?.player.setRate(2);
+											},
+											onLongPressEnd: (x) {
+												lightHapticFeedback();
+												controller._videoPlayerController?.player.setRate(1);
+											}
 										)
 									)
 								],
