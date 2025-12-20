@@ -334,6 +334,7 @@ class ThreadWatcher extends ChangeNotifier {
 						if (needToSave) {
 							await threadState.save();
 						}
+						return needToSave;
 					}
 				}
 			}
