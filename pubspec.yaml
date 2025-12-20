@@ -117,6 +117,7 @@ dependencies:
   isolate_pool_2: ^1.0.7
   dio_http2_adapter: ^2.0.0
   argon2: ^1.0.1
+  wakelock_plus: ^1.4.0
 
 dev_dependencies:
   hive_generator: ^2.0.0

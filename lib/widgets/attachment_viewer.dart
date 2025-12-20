@@ -50,6 +50,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:url_launcher/url_launcher.dart'; 
 import 'package:vector_math/vector_math_64.dart' show Vector3, Quaternion;
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 final _domainLoadTimes = <(String, AttachmentType), List<Duration>>{};
 
@@ -231,6 +232,23 @@ enum _LongPressMode {
 	scrub
 }
 
+class Wakelock {
+	static final Set<AttachmentViewerController> _controllers = {};
+	static final _mutex = Mutex();
+	static Future<void> acquire(AttachmentViewerController controller) async => _mutex.protect(() async {
+		final wasEmpty = _controllers.isEmpty;
+		_controllers.add(controller);
+		if (wasEmpty) {
+			await WakelockPlus.enable();
+		}
+	});
+	static release(AttachmentViewerController controller) => _mutex.protect(() async {
+		if (_controllers.remove(controller) && _controllers.isEmpty) {
+			await WakelockPlus.disable();
+		}
+	});
+}
+
 class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
 	final BuildContext context;
@@ -402,6 +420,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		controller.player.stream.error.listen(_onPlayerError);
 		controller.player.stream.log.listen(_onPlayerLog);
 		controller.player.stream.videoParams.listen(_onPlayerVideoParams);
+		controller.player.stream.playing.listen(_onPlayerPlaying);
 		final platformPlayer = player.platform;
 		if (platformPlayer is NativePlayer) {
 			await platformPlayer.setProperty('cache-on-disk', 'no');
@@ -447,6 +466,15 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		on UnsupportedError {
 			// Not supported on all platforms
+		}
+	}
+
+	void _onPlayerPlaying(bool playing) {
+		if (playing) {
+			Wakelock.acquire(this);
+		}
+		else {
+			Wakelock.release(this);
 		}
 	}
 
@@ -1285,6 +1313,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		for (final disposer in _conversionDisposers) {
 			disposer();
 		}
+		Wakelock.release(this);
 		_showLoadingProgress.dispose();
 		_videoPlayerController?.player.pause().then((_) => videoPlayerController?.player.dispose());
 		_longPressFactor.dispose();
