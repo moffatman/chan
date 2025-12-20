@@ -155,7 +155,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 				isPrimary: false
 			);
 			if (Settings.instance.autoloadAttachments && !attachment.attachment.isRateLimited) {
-				if (attachment.attachment.type.isVideo) {
+				if (attachment.attachment.type.usesVideoPlayer) {
 					_queueVideoLoading(controller);
 				}
 				else {
@@ -355,7 +355,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 											AnimatedBuilder(
 												animation: _getController(attachment),
 												builder: (context, child) => Visibility(
-													visible: (attachment.attachment.type.isVideo && !_getController(attachment).isPrimary),
+													visible: (attachment.attachment.type.usesVideoPlayer && !_getController(attachment).isPrimary),
 													child: CupertinoButton(
 														onPressed: () {
 															_lastPrimaryController?.isPrimary = false;

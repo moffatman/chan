@@ -642,7 +642,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			return;
 		}
-		if (attachment.type.isVideo && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
+		if (attachment.type.usesVideoPlayer && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
 			return;
 		}
 		if (force && cacheCompleted) {
@@ -748,7 +748,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 				}
 			}
-			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
+			else if (soundSource != null || attachment.type.usesVideoPlayer) {
 				final url = _goodImageSource = await _getGoodSource(priority: priority, force: force);
 				if (force) {
 					await VideoServer.instance.interruptOngoingDownloadFromUri(url);
@@ -1449,7 +1449,7 @@ class AttachmentViewer extends StatelessWidget {
 				// Don't allow it
 				return;
 			}
-			if (attachment.type.isVideo && Settings.instance.doubleTapToSeekVideo) {
+			if (attachment.type.usesVideoPlayer && Settings.instance.doubleTapToSeekVideo) {
 				final center = state.context.globalPaintBounds?.center ?? MediaQuery.sizeOf(state.context).center(Offset.zero);
 				final tap = state.pointerDownPosition;
 				if (tap != null) {
@@ -1510,7 +1510,7 @@ class AttachmentViewer extends StatelessWidget {
 				final logicalAnchor = controller._doubleTapDragAnchor ??= ((details.localPosition - offsetBefore) / scaleBefore);
 				if (controller._longPressMode == null) {
 					if (details.offsetFromOrigin.distance > 24) {
-						if (attachment.type.isVideo && details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
+						if (attachment.type.usesVideoPlayer && details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
 							lightHapticFeedback();
 							controller._longPressMode = _LongPressMode.scrub;
 							controller._onLongPressStart();
