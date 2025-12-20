@@ -3027,11 +3027,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 										],
 										if (!widget.shrinkWrap && sortedList.isNotEmpty && widget.filterableAdapter != null) SliverToBoxAdapter(
 											child: Padding(
-												padding: const EdgeInsets.only(
+												padding: EdgeInsets.only(
 													top: 16,
 													left: 16,
 													right: 16,
-													bottom: 8
+													bottom: widget.gridDelegate == null ? 8 : 16
 												),
 												child: Row(
 													mainAxisSize: MainAxisSize.min,

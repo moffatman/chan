@@ -902,7 +902,12 @@ class ThreadRow extends StatelessWidget {
 				border: style.isGrid ? Border.all(color: borderColor) : null,
 				borderRadius: borderRadius
 			),
-			margin: (style.isGrid && settings.catalogGridModeCellBorderRadiusAndMargin) ? const EdgeInsets.all(4) : null,
+			margin: (style.isGrid && settings.catalogGridModeCellBorderRadiusAndMargin) ? const EdgeInsets.only(
+				top: 0,
+				left: 4,
+				right: 4,
+				bottom: 8
+			) : null,
 			child: borderRadius != BorderRadius.zero ? ClipRRect(
 				borderRadius: borderRadius,
 				child: child
