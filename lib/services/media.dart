@@ -648,7 +648,7 @@ class MediaConversion {
 
 	Future<MediaConversionResult> start() async {
 		try {
-			cancel();
+			_session?.cancel();
 			progress.value = null;
 			final existingResult = await getDestinationIfSatisfiesConstraints();
 			if (existingResult != null) {
