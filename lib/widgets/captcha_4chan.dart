@@ -1795,12 +1795,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									borderRadius: BorderRadius.circular(8)
 								),
 								margin: const EdgeInsets.only(bottom: 16),
-								child: GridView(
-									shrinkWrap: true,
-									physics: const NeverScrollableScrollPhysics(),
-									gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-										maxCrossAxisExtent: 100
-									),
+								child: Wrap(
 									children: task.$2.indexed.map((choice) => CupertinoInkwell(
 										padding: EdgeInsets.zero,
 										onPressed: () {
@@ -1814,10 +1809,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												color: _taskChoices[task.$1] == choice.$1 ? theme.secondaryColor : null,
 												borderRadius: const BorderRadius.all(Radius.circular(4)),
 											),
+											constraints: const BoxConstraints(
+												minWidth: 100,
+												minHeight: 100
+											),
 											child: RawImage(
 												image: choice.$2,
-												width: 100,
-												height: 100,
 												fit: BoxFit.contain
 											)
 										)
