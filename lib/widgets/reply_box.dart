@@ -2747,110 +2747,122 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						]
 					),
 					child: MaybeScrollbar(
-						child: ListView(
+						child: CustomScrollView(
 							primary: false,
 							shrinkWrap: true,
 							// This will override default AlwaysScrollable
 							physics: ScrollConfiguration.of(context).getScrollPhysics(context),
-							children: [
-								_buildQueueButton(),
-								Expander(
-									expanded: _showSubmittingPosts,
-									bottomSafe: true,
-									child: _buildSubmittingPosts()
+							slivers: [
+								SliverToBoxAdapter(
+									child: _buildQueueButton()
 								),
-								Expander(
-									expanded: showAttachmentOptions && show,
-									bottomSafe: true,
-									child: Focus(
-										descendantsAreFocusable: showAttachmentOptions && show,
-										child: _buildAttachmentOptions(context)
+								SliverToBoxAdapter(
+									child: Expander(
+										expanded: _showSubmittingPosts,
+										bottomSafe: true,
+										child: _buildSubmittingPosts()
 									)
 								),
-								Expander(
-									expanded: showOptions && show,
-									bottomSafe: true,
-									child: Focus(
-										descendantsAreFocusable: showOptions && show,
-										child: _buildOptions(context)
+								SliverToBoxAdapter(
+									child: Expander(
+										expanded: showAttachmentOptions && show,
+										bottomSafe: true,
+										child: Focus(
+											descendantsAreFocusable: showAttachmentOptions && show,
+											child: _buildAttachmentOptions(context)
+										)
 									)
 								),
-								Expander(
-									expanded: show && _proposedAttachmentUrl != null,
-									bottomSafe: true,
-									child: _buildProposedAttachment(context)
+								SliverToBoxAdapter(
+									child: Expander(
+										expanded: showOptions && show,
+										bottomSafe: true,
+										child: Focus(
+											descendantsAreFocusable: showOptions && show,
+											child: _buildOptions(context)
+										)
+									)
 								),
-								Expander(
-									expanded: show,
-									bottomSafe: !show,
-									child: Column(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											GestureDetector(
-												behavior: HitTestBehavior.translucent,
-												supportedDevices: const {
-													PointerDeviceKind.mouse,
-													PointerDeviceKind.stylus,
-													PointerDeviceKind.invertedStylus,
-													PointerDeviceKind.touch,
-													PointerDeviceKind.unknown
-												},
-												onVerticalDragStart: (event) {
-													_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
-													_panStartDy = event.globalPosition.dy;
-												},
-												onVerticalDragUpdate: (event) {
-													final view = PlatformDispatcher.instance.views.first;
-													final r = view.devicePixelRatio;
-													setState(() {
-														_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
-														if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= -50)) {
-															// touch not above keyboard
-															settings.replyBoxHeightOffset = (settings.replyBoxHeightOffset - event.delta.dy).clamp(-50, _maxReplyBoxHeight);
-														}
+								SliverToBoxAdapter(
+									child: Expander(
+										expanded: show && _proposedAttachmentUrl != null,
+										bottomSafe: true,
+										child: _buildProposedAttachment(context)
+									)
+								),
+								PinnedHeaderSliver(
+									child: Expander(
+										expanded: show,
+										bottomSafe: true,
+										child: GestureDetector(
+											behavior: HitTestBehavior.translucent,
+											supportedDevices: const {
+												PointerDeviceKind.mouse,
+												PointerDeviceKind.stylus,
+												PointerDeviceKind.invertedStylus,
+												PointerDeviceKind.touch,
+												PointerDeviceKind.unknown
+											},
+											onVerticalDragStart: (event) {
+												_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
+												_panStartDy = event.globalPosition.dy;
+											},
+											onVerticalDragUpdate: (event) {
+												final view = PlatformDispatcher.instance.views.first;
+												final r = view.devicePixelRatio;
+												setState(() {
+													_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
+													if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= -50)) {
+														// touch not above keyboard
+														settings.replyBoxHeightOffset = (settings.replyBoxHeightOffset - event.delta.dy).clamp(-50, _maxReplyBoxHeight);
+													}
+												});
+											},
+											onVerticalDragEnd: (event) {
+												if (_willHideOnPanEnd) {
+													Future.delayed(const Duration(milliseconds: 350), () {
+														settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
 													});
-												},
-												onVerticalDragEnd: (event) {
-													if (_willHideOnPanEnd) {
-														Future.delayed(const Duration(milliseconds: 350), () {
-															settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
-														});
-														lightHapticFeedback();
-														hideReplyBox();
-														_willHideOnPanEnd = false;
-													}
-													else {
-														settings.finalizeReplyBoxHeightOffset();
-													}
-												},
-												child: Container(
-													decoration: BoxDecoration(
-														border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
-													),
-													height: 40,
-													child: _buildButtons(context),
-												)
-											),
-											Flexible(
-												child: Container(
-													color: ChanceTheme.backgroundColorOf(context),
-													child: Stack(
-														children: [
-															_buildTextField(context),
-															if (loading) Positioned.fill(
-																child: Container(
-																	alignment: Alignment.bottomCenter,
-																	child: LinearProgressIndicator(
-																		valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-																		backgroundColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.7)
-																	)
-																)
-															)
-														]
-													)
-												)
+													lightHapticFeedback();
+													hideReplyBox();
+													_willHideOnPanEnd = false;
+												}
+												else {
+													settings.finalizeReplyBoxHeightOffset();
+												}
+											},
+											child: Container(
+												decoration: BoxDecoration(
+													border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
+													color: ChanceTheme.backgroundColorOf(context)
+												),
+												height: 40,
+												child: _buildButtons(context),
 											)
-										]
+										)
+									)
+								),
+								SliverToBoxAdapter(
+									child: Expander(
+										expanded: show,
+										bottomSafe: !show,
+										child: Container(
+											color: ChanceTheme.backgroundColorOf(context),
+											child: Stack(
+												children: [
+													_buildTextField(context),
+													if (loading) Positioned.fill(
+														child: Container(
+															alignment: Alignment.bottomCenter,
+															child: LinearProgressIndicator(
+																valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+																backgroundColor: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.7)
+															)
+														)
+													)
+												]
+											)
+										)
 									)
 								)
 							]
