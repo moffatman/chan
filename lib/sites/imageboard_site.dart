@@ -1731,6 +1731,8 @@ abstract class ImageboardSiteArchive {
 	));
 	final Map<String, Map<String?, Catalog>> _catalogCache = {};
 	final Map<String, Map<String?, CatalogPageMap>> _catalogPageMapCache = {};
+	static const _kCacheLifetime = Duration(minutes: 10);
+	Timer? _cacheGarbageCollectionTimer;
 	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
 	final String? overrideUserAgent;
 	ImageboardSiteArchive({
@@ -1772,15 +1774,6 @@ abstract class ImageboardSiteArchive {
 			}
 		}
 		(_catalogCache[board] ??= {})[variant?.dataId] = catalog;
-		Timer(const Duration(minutes: 10), () {
-			if (_catalogCache[board]?[variant?.dataId]?.fetchedTime == catalog.fetchedTime) {
-				// Stale now, should be cleared
-				_catalogCache[board]?.remove(variant?.dataId);
-				if (_catalogCache[board]?.isEmpty ?? false) {
-					_catalogCache.remove(board);
-				}
-			}
-		});
 	}
 	@protected
 	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
@@ -1894,15 +1887,6 @@ abstract class ImageboardSiteArchive {
 			}
 			pageMap ??= await getCatalogPageMapImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
 			(_catalogPageMapCache[board] ??= {})[variant?.dataId] = pageMap;
-			Timer(const Duration(minutes: 10), () {
-				if (_catalogPageMapCache[board]?[variant?.dataId]?.fetchedTime == pageMap?.fetchedTime) {
-					// Stale now, should be cleared
-					_catalogPageMapCache[board]?.remove(variant?.dataId);
-					if (_catalogPageMapCache[board]?.isEmpty ?? false) {
-						_catalogPageMapCache.remove(board);
-					}
-				}
-			});
 			return pageMap;
 		});
 	}
@@ -1980,6 +1964,34 @@ abstract class ImageboardSiteArchive {
 	}
 	bool get hasPagedCatalog => false;
 	bool get isArchive => this is! ImageboardSite;
+
+	void _garbageCollectCache(Timer _) {
+		final time = DateTime.now().subtract(_kCacheLifetime);
+		_catalogCache.removeWhere((_, map) {
+			map.removeWhere((_, x) => x.fetchedTime.isBefore(time));
+			return map.isEmpty;
+		});
+		_catalogPageMapCache.removeWhere((_, map) {
+			map.removeWhere((_, x) => x.fetchedTime.isBefore(time));
+			return map.isEmpty;
+		});
+	}
+
+	@mustCallSuper
+	void migrateFromPrevious(covariant ImageboardSiteArchive oldSite) {
+		_catalogCache.addAll(oldSite._catalogCache);
+		_catalogPageMapCache.addAll(oldSite._catalogPageMapCache);
+	}
+
+	@mustCallSuper
+	void initState() {
+		_cacheGarbageCollectionTimer = Timer.periodic(_kCacheLifetime, _garbageCollectCache);
+	}
+	@mustCallSuper
+	void dispose() {
+		_cacheGarbageCollectionTimer?.cancel();
+		_cacheGarbageCollectionTimer = null;
+	}
 
 	@override
 	bool operator == (Object other) =>
@@ -2394,31 +2406,35 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String formatBoardLink(String name) => '>>/$name/';
 	String formatBoardSearchLink(String name, String query) => '>>>/$name/$query';
 	String formatUsername(String name) => name;
-	@mustCallSuper
+	@override
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
-		_catalogCache.addAll(oldSite._catalogCache);
-		_catalogPageMapCache.addAll(oldSite._catalogPageMapCache);
-		// The timers from oldSite will only remove from oldSite's caches
-		final time = DateTime.now();
-		Timer(const Duration(minutes: 10), () {
-			_catalogCache.removeWhere((_, map) {
-				map.removeWhere((_, x) => x.fetchedTime.isBefore(time));
-				return map.isEmpty;
-			});
-			_catalogPageMapCache.removeWhere((_, map) {
-				map.removeWhere((_, x) => x.fetchedTime.isBefore(time));
-				return map.isEmpty;
-			});
-		});
+		super.migrateFromPrevious(oldSite);
 		final oldLoggedIn = oldSite.loginSystem?.loggedIn;
 		if (oldLoggedIn != null) {
 			loginSystem?.loggedIn = oldLoggedIn;
 		}
+		// No keys on archives, so only migrate exact matches
+		for (final archive in archives) {
+			final index = oldSite.archives.indexOf(archive);
+			if (index != -1) {
+				archive.migrateFromPrevious(oldSite.archives[index]);
+			}
+		}
 	}
-	@mustCallSuper
-	void initState() {}
-	@mustCallSuper
-	void dispose() {}
+	@override
+	void initState() {
+		super.initState();
+		for (final archive in archives) {
+			archive.initState();
+		}
+	}
+	@override
+	void dispose() {
+		super.dispose();
+		for (final archive in archives) {
+			archive.dispose();
+		}
+	}
 	@protected
 	Future<Map<int, String>> queryPreferredArchive(String board, List<int> threadIds, {CancelToken? cancelToken}) async {
 		final sorted = threadIds.toList()..sort();
