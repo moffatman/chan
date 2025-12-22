@@ -26,6 +26,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' show parseFragment;
 import 'package:provider/provider.dart';
 
 final _reusableChallenges = <Captcha4ChanCustomChallenge>[];
@@ -194,9 +196,9 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		final challenge = data['challenge'] as String;
 		final lifetime = Duration(seconds: (data['ttl'] as num).toInt());
 		if (data['tasks'] case List rawTasks) {
-			final tasks = <List<ui.Image>>[];
+			final tasks = <Captcha4ChanCustomChallengeTasksTask>[];
 			for (final rawTask in rawTasks) {
-				final task = <ui.Image>[];
+				final choices = <ui.Image>[];
 				for (final item in (rawTask as Map)['items'] as List) {
 					final completer = Completer<ui.Image>();
 					MemoryImage(base64Decode(item as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
@@ -204,9 +206,9 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 					}, onError: (e, st) {
 						completer.completeError(e, st);
 					}));
-					task.add(await completer.future);
+					choices.add(await completer.future);
 				}
-				tasks.add(task);
+				tasks.add((choices: choices, text: rawTask['str'] as String));
 			}
 			return Captcha4ChanCustomChallengeTasks(
 				request: request,
@@ -825,8 +827,10 @@ class Captcha4ChanCustomChallengeText extends Captcha4ChanCustomChallenge {
 	}
 }
 
+typedef Captcha4ChanCustomChallengeTasksTask = ({List<ui.Image> choices, String text});
+
 class Captcha4ChanCustomChallengeTasks extends Captcha4ChanCustomChallenge {
-	final List<List<ui.Image>> tasks;
+	final List<Captcha4ChanCustomChallengeTasksTask> tasks;
 
 	Captcha4ChanCustomChallengeTasks({
 		required super.request,
@@ -845,7 +849,7 @@ class Captcha4ChanCustomChallengeTasks extends Captcha4ChanCustomChallenge {
 	@override
 	void _disposeImpl() {
 		for (final task in tasks) {
-			for (final choice in task) {
+			for (final choice in task.choices) {
 				choice.dispose();
 			}
 		}
@@ -1321,6 +1325,33 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		);
 	}
 
+	TextSpan _rewriteTask(String raw) {
+		String ret = raw.replaceFirst('Use the scroll bar below to ', '');
+		ret = ret.replaceFirst(', then click Next.', '');
+		// recapitalize first letter
+		ret = '${ret[0].toUpperCase()}${ret.substring(1)}';
+		Iterable<InlineSpan> visit(Iterable<dom.Node> nodes) sync* {
+			for (final node in nodes) {
+				if (node is dom.Text) {
+					yield TextSpan(text: node.text);
+				}
+				else if (node is dom.Element) {
+					if (node.localName == 'b') {
+						yield TextSpan(children: visit(node.nodes).toList(), style: const TextStyle(
+							fontWeight: FontWeight.bold,
+							fontVariations: CommonFontVariations.bold
+						));
+					}
+					else {
+						// Give up
+						yield TextSpan(text: node.outerHtml);
+					}
+				}
+			}
+		}
+		return TextSpan(children: visit(parseFragment(ret).nodes).toList());
+	}
+
 	Widget _build(BuildContext context) {
 		if (error != null) {
 			return Center(
@@ -1784,41 +1815,45 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							Text(switch (challenge.tasks.length) {
-									1 => 'Select the image that is not like the others',
-									_ => 'Select the images that are not like the others'
-							}),
-							const SizedBox(height: 16),
 							for (final task in challenge.tasks.indexed) Container(
 								decoration: BoxDecoration(
 									color: theme.primaryColorWithBrightness(0.15),
 									borderRadius: BorderRadius.circular(8)
 								),
 								margin: const EdgeInsets.only(bottom: 16),
-								child: Wrap(
-									children: task.$2.indexed.map((choice) => CupertinoInkwell(
-										padding: EdgeInsets.zero,
-										onPressed: () {
-											setState(() {
-												_taskChoices[task.$1] = choice.$1;
-											});
-										},
-										child: Container(
+								child: Column(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										Padding(
 											padding: const EdgeInsets.all(8),
-											decoration: BoxDecoration(
-												color: _taskChoices[task.$1] == choice.$1 ? theme.secondaryColor : null,
-												borderRadius: const BorderRadius.all(Radius.circular(4)),
-											),
-											constraints: const BoxConstraints(
-												minWidth: 100,
-												minHeight: 100
-											),
-											child: RawImage(
-												image: choice.$2,
-												fit: BoxFit.contain
-											)
+											child: Text.rich(_rewriteTask(task.$2.text))
+										),
+										Wrap(
+											children: task.$2.choices.indexed.map((choice) => CupertinoInkwell(
+												padding: EdgeInsets.zero,
+												onPressed: () {
+													setState(() {
+														_taskChoices[task.$1] = choice.$1;
+													});
+												},
+												child: Container(
+													padding: const EdgeInsets.all(8),
+													decoration: BoxDecoration(
+														color: _taskChoices[task.$1] == choice.$1 ? theme.secondaryColor : null,
+														borderRadius: const BorderRadius.all(Radius.circular(4)),
+													),
+													constraints: const BoxConstraints(
+														minWidth: 100,
+														minHeight: 100
+													),
+													child: RawImage(
+														image: choice.$2,
+														fit: BoxFit.contain
+													)
+												)
+											)).toList()
 										)
-									)).toList()
+									]
 								)
 							),
 							Row(
