@@ -648,7 +648,7 @@ class MediaConversion {
 
 	Future<MediaConversionResult> start() async {
 		try {
-			_session?.cancel();
+			await cancel();
 			progress.value = null;
 			final existingResult = await getDestinationIfSatisfiesConstraints();
 			if (existingResult != null) {
@@ -936,13 +936,16 @@ class MediaConversion {
 	}
 
 	Future<void> cancel() async {
-		await _session?.cancel();
-		try {
-			// Delete partially converted file
-			await getDestination().delete();
-		}
-		on PathNotFoundException {
-			// Fine, it must not have started
+		if (_session case final session?) {
+			_session = null;
+			await session.cancel();
+			try {
+				// Delete partially converted file
+				await getDestination().delete();
+			}
+			on PathNotFoundException {
+				// Fine, it must not have started
+			}
 		}
 	}
 }
