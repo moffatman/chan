@@ -4,19 +4,29 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 final _pattern = RegExp(r'([^/]+).[ot]tf');
 
-Future<List<String>> getInstalledFontFamilies() async {
+Future<List<String>> getInstalledFontFamilies(BuildContext context) async {
 	if (Platform.isAndroid) {
-		return await Directory('/system/fonts').list().expand<String>((file) {
-			final name = _pattern.firstMatch(file.path)?.group(1);
-			if (name != null) {
-				return [name];
+		return await modalLoad(context, 'Searching...', (controller) async {
+			final fonts = <String>[];
+			final list = Directory('/system/fonts').listSync();
+			for (final pair in list.indexed) {
+				final name = _pattern.firstMatch(pair.$2.path)?.group(1);
+				if (name != null) {
+					final loader = FontLoader(name);
+					loader.addFont(File(pair.$2.path).readAsBytes().then((b) => b.buffer.asByteData()));
+					await loader.load();
+					fonts.add(name);
+				}
+				controller.progress.value = ('', (pair.$1 + 1) / list.length);
 			}
-			return [];
-		}).toList();
+			return fonts;
+		});
 	}
 	if (Platform.isIOS) {
 		return getUIFontFamilyNames();
@@ -41,6 +51,25 @@ Future<void> initializeFonts() async {
 				throw FileSystemException('Font file not found', file.path);
 			}
 			final loader = FontLoader(family);
+			final bytes = await file.readAsBytes();
+			loader.addFont(Future.value(ByteData.view(bytes.buffer)));
+			await loader.load();
+		}
+		else if (fontFamilyName != null && Platform.isAndroid) {
+			// Need to load from /system/fonts
+			final ttf = File('/system/fonts/$fontFamilyName.ttf');
+			final otf = File('/system/fonts/$fontFamilyName.otf');
+			final File file;
+			if (ttf.existsSync()) {
+				file = ttf;
+			}
+			else if (otf.existsSync()) {
+				file = otf;
+			}
+			else {
+				throw FileSystemException('Not able to find $fontFamilyName in /system/fonts');
+			}
+			final loader = FontLoader(fontFamilyName);
 			final bytes = await file.readAsBytes();
 			loader.addFont(Future.value(ByteData.view(bytes.buffer)));
 			await loader.load();
