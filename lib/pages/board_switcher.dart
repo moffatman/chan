@@ -177,7 +177,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			}
 			if (widget.allowPickingWholeSites) {
 				for (final imageboard in allImageboards) {
-					if (imageboard.site.supportsMultipleBoards) {
+					if (imageboard.persistence.maybeGetBoard('') == null) {
 						boards.add(imageboard.scope(ImageboardBoard(
 							name: '',
 							title: imageboard.site.name,
@@ -207,6 +207,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				final key = (ib, ImageboardBoard.getKey(board));
 				boardUsage.update(key, (x) => x + 1, ifAbsent: () => 1);
 			}
+		}
+		// For overboards, it should include usage of all other boards
+		for (final entry in imageboardUsage.entries) {
+			boardUsage[(entry.key, ImageboardBoard.getKey(''))] = entry.value;
 		}
 	}
 

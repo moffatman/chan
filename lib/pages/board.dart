@@ -311,6 +311,20 @@ class _ThreadHidingDialogState extends State<_ThreadHidingDialog> {
 	}
 }
 
+/// To account for overboards
+extension _SupportsPosting on ImageboardScoped<ImageboardBoard> {
+	bool get supportsPosting {
+		if (!imageboard.site.supportsPosting) {
+			return false;
+		}
+		if (item.name == '' && imageboard.site.supportsMultipleBoards) {
+			// Overboard
+			return false;
+		}
+		return true;
+	}
+} 
+
 class BoardPage extends StatefulWidget {
 	final int semanticId;
 	final PersistentBrowserTab? tab;
@@ -410,7 +424,7 @@ class BoardPageState extends State<BoardPage> {
 				_listController.scrollController?.jumpTo(0);
 			}
 			_variant = null;
-			if (!newBoard.imageboard.site.supportsPosting && (_replyBoxKey.currentState?.show ?? false)) {
+			if (!newBoard.supportsPosting && (_replyBoxKey.currentState?.show ?? false)) {
 				_replyBoxKey.currentState?.hideReplyBox();
 			}
 			widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
@@ -685,6 +699,10 @@ class BoardPageState extends State<BoardPage> {
 	@override
 	Widget build(BuildContext context) {
 		final imageboard = context.watch<Imageboard?>();
+		final supportsPosting = switch ((imageboard, board)) {
+			(Imageboard i, ImageboardBoard b) => i.scope(b).supportsPosting,
+			_ => false
+		};
 		final site = context.watch<ImageboardSite?>();
 		final settings = context.watch<Settings>();
 		final mouseSettings = context.watch<MouseSettings>();
@@ -1285,7 +1303,7 @@ class BoardPageState extends State<BoardPage> {
 							)
 						)
 					),
-					if (!settings.replyButtonAtBottom && (imageboard?.site.supportsPosting ?? false)) NotifyingIcon(
+					if (!settings.replyButtonAtBottom && supportsPosting) NotifyingIcon(
 						sideBySide: true,
 						sideBySideRightPadding: settings.materialStyle ? 16 : 0,
 						primaryCount: MappingValueListenable(
@@ -1496,7 +1514,7 @@ class BoardPageState extends State<BoardPage> {
 																					),
 																					const SizedBox(width: 8),
 																				],
-																				if (settings.replyButtonAtBottom && (imageboard?.site.supportsPosting ?? false)) ...[
+																				if (settings.replyButtonAtBottom && supportsPosting) ...[
 																					ValueListenableBuilder(
 																						valueListenable: Combining2ValueListenable(
 																							child1: MappingValueListenable(

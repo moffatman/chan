@@ -241,6 +241,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 		final list = <ImageboardBoard>[];
 		int page = 1;
 		int maxPage = 1;
+		int totalPostsCount = 0;
 		while (page <= maxPage) {
 			final response = await client.getUri<Map>(Uri.https(baseUrl, '/boards.json', {'page': page.toString()}), options: Options(
 				responseType: ResponseType.json,
@@ -255,15 +256,21 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 			), cancelToken: cancelToken);
 			page++;
 			maxPage = response.data!['maxPage'] as int;
-			list.addAll((response.data!['boards'] as List).cast<Map>().where((board) => board['webring'] != true).map((board) => ImageboardBoard(
-				name: board['_id'] as String,
-				title: (board['settings'] as Map)['name'] as String,
-				isWorksafe: (board['settings'] as Map)['sfw'] as bool,
-				webmAudioAllowed: true,
-				maxImageSizeBytes: 16000000,
-				maxWebmSizeBytes: 16000000,
-				popularity: board['sequence_value'] as int?
-			)));
+			list.addAll((response.data!['boards'] as List).cast<Map>().where((board) => board['webring'] != true).map((board) {
+				final postsCount = board['sequence_value'] as int?;
+				if (postsCount != null) {
+					totalPostsCount += postsCount;
+				}
+				return ImageboardBoard(
+					name: board['_id'] as String,
+					title: (board['settings'] as Map)['name'] as String,
+					isWorksafe: (board['settings'] as Map)['sfw'] as bool,
+					webmAudioAllowed: true,
+					maxImageSizeBytes: 16000000,
+					maxWebmSizeBytes: 16000000,
+					popularity: postsCount
+				);
+			}));
 			// The server has some bad caching, you will keep getting the same page if you don't wait
 			if (cancelToken != null) {
 				await cancelToken.sleep(const Duration(seconds: 2));
@@ -272,6 +279,15 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 				await Future.delayed(const Duration(seconds: 2));
 			}
 		}
+		list.insert(0, ImageboardBoard(
+			name: '',
+			title: name,
+			isWorksafe: false,
+			webmAudioAllowed: true,
+			maxImageSizeBytes: 16000000,
+			maxWebmSizeBytes: 16000000,
+			popularity: totalPostsCount > 0 ? totalPostsCount : null
+		));
 		return list;
 	}
 
@@ -368,13 +384,16 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 	RequestOptions getCatalogRequest(String board, {CatalogVariant? variant})
 		=> RequestOptions(
 			baseUrl: 'https://$baseUrl',
-			path: '/$board/catalog.json',
+			path: board.isEmpty ? '/catalog.json' : '/$board/catalog.json',
 			responseType: ResponseType.json
 		);
 
 	@override
 	Future<List<Thread>> makeCatalog(String board, Response response, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		return (response.data as List).cast<Map>().map(_makeThread).toList();
+		return switch (board) {
+			'' => (response.data as Map)['threads'] as List,
+			_ => response.data as List
+		}.cast<Map>().map(_makeThread).toList();
 	}
 
 	@override
@@ -483,6 +502,11 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 		}
 		throw _makeException(response.data!);
 	}
+
+	@override
+	String formatBoardName(String name) => name.isEmpty ? this.name : '/$name/';
+	@override
+	String formatBoardNameWithoutTrailingSlash(String name) => name.isEmpty ? this.name : '/$name';
 
 	@override
 	bool operator == (Object other) =>
