@@ -94,6 +94,8 @@
                <!-- kohlchan -->
                <data android:scheme="https" android:host="kohlchan.net"/>
                <data android:scheme="https" android:host="kohlchan.top"/>
+               <!-- krautchan -->
+               <data android:scheme="https" android:host="krautchan.org"/>
                <!-- lainchan  -->
                <data android:scheme="https" android:host="lainchan.org"/>
                <!-- leftypol  -->
