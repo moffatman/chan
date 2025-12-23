@@ -1949,6 +1949,23 @@ class AttachmentViewer extends StatelessWidget {
 								}
 							)
 						),
+						if (controller.videoPlayerController != null && allowGestures && Settings.instance.doubleTapToSeekVideo) Positioned.fill(
+							child: Flex(
+								direction: rotate90DegreesClockwise ? Axis.vertical : Axis.horizontal,
+								children: [
+									Expanded(
+										child: GestureDetector(
+											onDoubleTap: controller.seekBackward
+										)
+									),
+									Expanded(
+										child: GestureDetector(
+											onDoubleTap: controller.seekForward
+										)
+									)
+								],
+							)
+						),
 						Positioned.fill(
 							child: ExtendedImageGestureWidget(
 								heroBuilderForSlidingPage: controller.isPrimary ? _heroBuilder : null,
