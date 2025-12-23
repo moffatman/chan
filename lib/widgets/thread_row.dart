@@ -260,8 +260,10 @@ class _ThreadCounters extends StatelessWidget {
 			decoration: BoxDecoration(
 				borderRadius: settings.useFullWidthForCatalogCounters ? null : (settings.imagesOnRight ? const BorderRadius.only(topRight: Radius.circular(8)) : const BorderRadius.only(topLeft: Radius.circular(8))),
 				color: invert ? theme.primaryColor : theme.backgroundColor,
-				border: settings.useFullWidthForCatalogCounters ? Border(
-					top: BorderSide(color: theme.primaryColorWithBrightness(invert ? 0.8 : 0.2)),
+				border: settings.useFullWidthForCatalogCounters ? (
+					settings.cloverStyleCatalogCounters ? null : Border(
+						top: BorderSide(color: theme.primaryColorWithBrightness(invert ? 0.8 : 0.2)),
+					)
 				) : Border.all(color: theme.primaryColorWithBrightness(invert ? 0.8 : 0.2))
 			),
 			margin: settings.useFullWidthForCatalogCounters ? EdgeInsets.zero : (settings.imagesOnRight ? const EdgeInsets.only(right: 10) : const EdgeInsets.only(left: 10)),
