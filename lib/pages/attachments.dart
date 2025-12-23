@@ -115,24 +115,27 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 		});
 	}
 
+	double get _screenWidth => switch (context.findRenderObject()) {
+		RenderBox box when box.hasSize => box.paintBounds.width,
+		_ => context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width
+	};
+
+	int get _columnCount => max(1, _screenWidth / Settings.instance.attachmentsPageMaxCrossAxisExtent).ceil();
+
 	void _onSlowScroll() {
 		final middleVisibleItem = _controller.middleVisibleItem;
 		if (middleVisibleItem != null) {
 			if (middleVisibleItem != _lastMiddleVisibleItem) {
 				widget.onChange?.call(middleVisibleItem);
 			}
-			final settings = Settings.instance;
-			final maxColumnWidth = settings.attachmentsPageMaxCrossAxisExtent;
-			final screenWidth = (context.findRenderObject() as RenderBox?)?.paintBounds.width ?? double.infinity;
-			final columnCount = max(1, screenWidth / maxColumnWidth).ceil();
-			if (columnCount == 1) {
+			if (_columnCount == 1) {
 				// This is one-column view
 				if (middleVisibleItem != _lastMiddleVisibleItem) {
 					if (_lastMiddleVisibleItem != null) {
 						_getController(_lastMiddleVisibleItem!).isPrimary = false;
 					}
 					_getController(middleVisibleItem).isPrimary = true;
-					if (settings.autoloadAttachments) {
+					if (Settings.instance.autoloadAttachments) {
 						Future.microtask(_getController(middleVisibleItem).loadFullAttachment);
 					}
 				}
@@ -154,7 +157,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 				imageboard: context.read<Imageboard>(),
 				isPrimary: false
 			);
-			if (Settings.instance.autoloadAttachments && !attachment.attachment.isRateLimited) {
+			if ((Settings.instance.fullQualityThumbnails || (_columnCount == 1 && Settings.instance.autoloadAttachments)) && !attachment.attachment.isRateLimited) {
 				if (attachment.attachment.type.usesVideoPlayer) {
 					_queueVideoLoading(controller);
 				}
@@ -337,6 +340,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 															heroOtherEndIsBoxFitCover: true,
 															videoThumbnailMicroPadding: false,
 															onlyRenderVideoWhenPrimary: true,
+															showDownloadButtonWhenThumbnail: false,
 															fit: BoxFit.cover,
 															maxWidth: PlatformDispatcher.instance.views.first.physicalSize.width * PlatformDispatcher.instance.views.first.devicePixelRatio, // no zoom
 															additionalContextMenuActions: [

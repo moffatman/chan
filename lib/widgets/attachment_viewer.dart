@@ -1348,6 +1348,7 @@ class AttachmentViewer extends StatelessWidget {
 	final double? maxWidth;
 	final BoxFit fit;
 	final bool autoRotate;
+	final bool showDownloadButtonWhenThumbnail;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -1366,6 +1367,7 @@ class AttachmentViewer extends StatelessWidget {
 		this.maxWidth,
 		this.fit = BoxFit.contain,
 		this.autoRotate = false,
+		this.showDownloadButtonWhenThumbnail = true,
 		Key? key
 	}) : super(key: key);
 
@@ -1397,7 +1399,7 @@ class AttachmentViewer extends StatelessWidget {
 						key: useRealKey ? controller.loadingSpinnerKey : null,
 						value: value
 					)
-				) : ((controller.cacheCompleted || controller._renderedFirstFrame) ? const SizedBox.shrink() : Icon(
+				) : ((controller.cacheCompleted || controller._renderedFirstFrame || !showDownloadButtonWhenThumbnail) ? const SizedBox.shrink() : Icon(
 					CupertinoIcons.arrow_down_circle,
 					size: 60,
 					color: ChanceTheme.primaryColorOf(context)
