@@ -419,8 +419,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 
 	Future<void> _maybeUpdateBoardInformation(String boardName) async {
 		final board = persistence?.maybeGetBoard(boardName);
-		if (board?.popularity != null && DateTime.now().difference(board?.additionalDataTime ?? DateTime(2000)) > const Duration(days: 3)) {
-			// Not updated recently
+		if (board?.popularity != null && DateTime.now().difference(board?.additionalDataTime ?? DateTime(2000)) < const Duration(days: 3)) {
+			// Updated recently
 			return;
 		}
 		final response = await client.getUri<Map>(Uri.https(baseUrl, '/$boardName/1.json'));
