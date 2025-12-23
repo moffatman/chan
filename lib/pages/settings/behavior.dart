@@ -639,7 +639,7 @@ final behaviorSettings = [
 		}
 	),
 	const SegmentedSettingWidget<bool>(
-		description: 'Double-tap on videos to..',
+		description: 'Double-tap on videos to...',
 		icon: CupertinoIcons.backward,
 		setting: Settings.doubleTapToSeekVideoSetting,
 		children: {
