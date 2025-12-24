@@ -12,7 +12,7 @@ void main() {
 			final text = r[0] as PostTextSpan;
 			expect(text.text, 'soldiers...and child. ');
 			final link = r[1] as PostLinkSpan;
-			expect(link.name, 'www.walkfree.org/global-slavery-index/map/');
+			expect(link.name, 'https://www.walkfree.org/global-slavery-index/map/');
 			expect(link.url, 'https://www.walkfree.org/global-slavery-index/map/');
 		});
 	});
@@ -22,6 +22,13 @@ void main() {
 			final r = SiteReddit.makeSpan('', 0, 'https://www.example.com/image.jpg');
 			final link = r.children.single as PostLinkSpan;
 			expect(link.url, 'https://www.example.com/image.jpg');
+		});
+
+		test('raw link without protocol', () {
+			final r = SiteReddit.makeSpan('', 0, 'www.example.com/image.jpg');
+			final link = r.children.single as PostLinkSpan;
+			expect(link.url, 'www.example.com/image.jpg');
+			expect(link.name, 'www.example.com/image.jpg');
 		});
 
 		test('raw wikipedia link', () {
@@ -110,14 +117,14 @@ void main() {
 			final r = SiteReddit.makeSpan('', 0, 'https://www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:\\~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
 			final link = r.children.single as PostLinkSpan;
 			expect(link.url, 'https://www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
-			expect(link.name, 'www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
+			expect(link.name, 'https://www.toronto.ca/community-people/housing-shelter/rental-housing-tenant-information/rental-housing-standards/#:~:text=Property%20Cleanliness%20(Chapter%20629%2C%20Section,are%20health%20or%20fire%20hazards');
 		});
 
 		test('slash needed to make a link', () {
 			final r = SiteReddit.makeSpan('', 0, '1.to(5)');
 			expect(r.children, hasLength(2));
 			final link = r.children[0] as PostLinkSpan;
-			expect(link.url, 'https://1.to');
+			expect(link.url, '1.to');
 			expect(link.name, '1.to');
 			final text = r.children[1] as PostTextSpan;
 			expect(text.text, '(5)');
@@ -135,7 +142,7 @@ void main() {
 			final code = r.children[0] as PostCodeSpan;
 			expect(code.text, 'code');
 			final link = r.children[1] as PostLinkSpan;
-			expect(link.url, 'https://1.to');
+			expect(link.url, '1.to');
 			expect(link.name, '1.to');
 		});
 
@@ -146,7 +153,7 @@ void main() {
 			expect(start.text, 'text1 (text2 ');
 			final link = r.children[1] as PostLinkSpan;
 			expect(link.url, 'https://m.jpost.com/international/article-806165');
-			expect(link.name, 'm.jpost.com/international/article-806165');
+			expect(link.name, 'https://m.jpost.com/international/article-806165');
 			final end = r.children[2] as PostTextSpan;
 			expect(end.text, ')');
 		});

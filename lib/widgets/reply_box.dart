@@ -283,7 +283,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Future<void> _scanForUrl() async {
 		final original = _textFieldController.text;
-		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier()], options: const LinkifyOptions(
+		final rawUrl = linkify(text, linkifiers: const [LooseUrlLinkifier(fillInProtocol: true)], options: const LinkifyOptions(
 			defaultToHttps: true,
 			humanize: false
 		)).tryMapOnce<String>((element) {

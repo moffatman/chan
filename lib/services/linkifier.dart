@@ -72,9 +72,11 @@ class LooseUrlLinkifier extends Linkifier {
   /// Skip [$link]( (avoid double-linking)
   /// Skip ]($link) (avoid double-linking)
   final bool redditSafeMode;
+  final bool fillInProtocol;
   const LooseUrlLinkifier({
     this.unescapeBackslashes = false,
-    this.redditSafeMode = false
+    this.redditSafeMode = false,
+    this.fillInProtocol = false
   });
 
   String _handleBackslashes(String str) {
@@ -179,7 +181,7 @@ class LooseUrlLinkifier extends Linkifier {
 
           String url = originalUrl;
 
-          if (!originalUrl.startsWith(_protocolIdentifierRegex)) {
+          if (fillInProtocol && !originalUrl.startsWith(_protocolIdentifierRegex)) {
             originalUrl = (options.defaultToHttps ? "https://" : "http://") +
                 originalUrl;
           }

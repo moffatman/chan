@@ -611,9 +611,15 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		return;
 	}
 	if (url.scheme.isEmpty) {
-		url = url.replace(scheme: 'https');
-	}
-	if (url.host.isEmpty) {
+			// Uri.parse is broken without scheme. It just puts everything in path
+			final raw = url.toString();
+			url = Uri.parse('https://$raw');
+			if (url.hasEmptyPath && url.host.isNotEmpty && url.userInfo.isNotEmpty && !url.userInfo.contains(':')) {
+				// This was really an email
+				url = Uri.parse('mailto:$raw');
+			}
+		}
+	if (url.host.isEmpty && url.scheme.startsWith('http')) {
 		url = url.replace(host: context.read<Imageboard?>()?.site.baseUrl);
 	}
 	final settings = Settings.instance;

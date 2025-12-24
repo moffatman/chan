@@ -26,7 +26,7 @@ Future<bool> showAuthPageHelperPopup(BuildContext context, Imageboard imageboard
 					onPressed: () async {
 						final data = await Clipboard.getData(Clipboard.kTextPlain);
 						final text = data?.text?.trim() ?? '';
-						final url = linkify(text, linkifiers: [const LooseUrlLinkifier()]).tryMap((e) => switch (e) {
+						final url = linkify(text, linkifiers: [const LooseUrlLinkifier(fillInProtocol: true)]).tryMap((e) => switch (e) {
 							UrlElement link => Uri.tryParse(link.url),
 							_ => null
 						}).trySingle;
