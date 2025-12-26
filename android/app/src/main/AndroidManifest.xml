@@ -23,9 +23,10 @@
             android:name=".MainActivity"
             android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode|smallestScreenSize"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
+            android:resizeableActivity="true"
             android:exported="true">
             <meta-data
                 android:name="flutterEmbedding"
