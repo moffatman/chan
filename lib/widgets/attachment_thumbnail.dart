@@ -222,7 +222,8 @@ class AttachmentThumbnail extends StatelessWidget {
 			)?.toString() ?? '';
 		}
 		if (url.isEmpty) {
-			final icon = attachment.icon ?? CupertinoIcons.exclamationmark_triangle_fill;
+			final icon = spoiler ? CupertinoIcons.eye_slash : (attachment.icon ?? CupertinoIcons.exclamationmark_triangle_fill);
+			final theme = context.watch<SavedTheme>();
 			return _maybeHero(context, SizedBox(
 				width: effectiveWidth,
 				height: shrinkHeight || expand ? null : effectiveHeight,
@@ -234,7 +235,11 @@ class AttachmentThumbnail extends StatelessWidget {
 					attachment: attachment,
 					afterPaint: _makeKeyedAfterPaint(
 						attachment: attachment,
-						cornerIcon: null,
+						cornerIcon: AttachmentThumbnailCornerIcon(
+							backgroundColor: theme.backgroundColor,
+							borderColor: theme.primaryColorWithBrightness(0.2),
+							size: null
+						),
 						alreadyShowingBigIcon: icon,
 						primaryColor: ChanceTheme.primaryColorOf(context)
 					),
