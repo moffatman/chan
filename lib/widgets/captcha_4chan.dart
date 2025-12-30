@@ -1342,6 +1342,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							fontVariations: CommonFontVariations.bold
 						));
 					}
+					else if (node.localName == 'span' && (node.attributes['style']?.split(';').any((a) => a.toLowerCase().trim().replaceAll(' ', '').contains('display:none')) ?? false)) {
+						// Skip it
+					}
 					else {
 						// Give up
 						yield TextSpan(text: node.outerHtml);
