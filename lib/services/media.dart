@@ -662,7 +662,7 @@ class MediaConversion {
 				}
 				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers, force: true);
 				final isVideoOutput = {'mp4', 'webm', 'm3u8'}.contains(outputFileExtension);
-				int outputBitrate = targetBitrate ?? switch(scan.videoBitrate ?? scan.bitrate) {
+				int outputBitrate = targetBitrate ?? switch(scan.bitrate) {
 					int inputBitrate => switch ((scan.codec, outputFileExtension)) {
 						// Higher efficiency formats down to h264, increase target bitrate
 						('vp9' || 'hevc', 'mp4') => (1.5 * inputBitrate).round(),
