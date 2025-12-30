@@ -351,6 +351,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 					board: post['board'] as String,
 					id: file['filename'] as String,
 					filename: file['originalFilename'] as String,
+					spoiler: file['spoiler'] as bool? ?? post['spoiler'] as bool? ?? false,
 					url: Uri.https(baseUrl, '/file/${file['hash']}${file['extension']}').toString(),
 					thumbnailUrl: Uri.https(baseUrl, '/file/thumb/${file['hash']}${file['thumbextension']}').toString(),
 					width: width,
