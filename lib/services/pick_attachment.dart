@@ -239,7 +239,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 		name: 'Gallery',
 		icon: Adaptive.icons.photo,
 		pick: _galleryPicker,
-		onLongPress: (context) async {
+		onLongPress: Platform.isAndroid ? (context) async {
 			final choice = await chooseAndroidPicker(context);
 			if (choice != null) {
 				Settings.instance.androidGalleryPicker = choice;
@@ -251,7 +251,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 					);
 				}
 			}
-		}
+		} : null
 	);
 	final picker = ImagePicker();
 	final camera = AttachmentPickingSource(
