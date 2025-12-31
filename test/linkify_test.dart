@@ -15,6 +15,25 @@ void main() {
 			expect(link.name, 'https://www.walkfree.org/global-slavery-index/map/');
 			expect(link.url, 'https://www.walkfree.org/global-slavery-index/map/');
 		});
+
+		test('loose linkification heuristic good 1', () {
+			final r = Site4Chan.parsePlaintext('talking about.you too');
+			expect(r, hasLength(3));
+			final text1 = r[0] as PostTextSpan;
+			expect(text1.text, 'talking ');
+			final link = r[1] as PostLinkSpan;
+			expect(link.name, 'about.you');
+			expect(link.url, 'about.you');
+			final text2 = r[2] as PostTextSpan;
+			expect(text2.text, ' too');
+		});
+
+		test('loose linkification heuristic bad 1', () {
+			final r = Site4Chan.parsePlaintext('talking about.You too');
+			expect(r, hasLength(1));
+			final text = r[0] as PostTextSpan;
+			expect(text.text, 'talking about.You too');
+		});
 	});
 
 	group('SiteReddit', () {

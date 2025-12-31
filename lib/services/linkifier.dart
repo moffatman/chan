@@ -48,6 +48,16 @@ const _validTlds = {
   'za', 'zappos', 'zara', 'zero', 'zip', 'zm', 'zone', 'zuerich', 'zw'
 };
 
+const _mostPopularTlds = {
+  'com', 'cn', 'de', 'tk', 'uk', 'net', 'org', 'top', 'ru', 'info', 'xyz', 'br', 'ga', 'nl',
+  'ws', 'ml', 'it', 'cf', 'fr', 'co', 'shop', 'eu', 'in', 'gq', 'au', 'online', 'us', 'ph',
+  'ca', 'club', 'vip', 'pl', 'biz', 'cc', 'za', 'ch', 'store', 'site', 'es', 'se', 'tw', 'loan',
+  'me', 'jp', 'be', 'live', 'buzz', 'at', 'ir', 'work', 'cz', 'bond', 'sbs', 'pro', 'id', 'app',
+  'click', 'dk', 'mx', 'io', 'wang', 'kr', 'no', 'nu', 'hu', 'tr', 'life', 'cfd', 'ua', 'cl', 'ro',
+  'icu', 'asia', 'my', 'cloud', 'ai', 'win', 'nz', 'link', 'ar', 'ltd', 'mobi', 'today', 'world',
+  'vn', 'fun', 'tv', 'lol', 'dev', 'fi', 'sk', 'space', 'gr', 'tech', 'cyou', 'men', 'one'
+};
+
 final _escapeSymbolPattern = RegExp(r'''\\([!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~])''');
 
 extension _LastChar on String {
@@ -100,6 +110,19 @@ class LooseUrlLinkifier extends Linkifier {
           if ((domain?.contains('..') ?? false) || !_validTlds.contains((domain ?? '').afterLast('.').toLowerCase())) {
             // Invalid domain name
             continue;
+          }
+          if (domain != null && domain.length == (match.end - match.start)) {
+            // Only domain name, no path
+            // Try to catch missing space between sentences by checking capitalization
+            // From earlier if branch, we must have a valid TLD. But is it common?
+            final tld = domain.afterLast('.');
+            if (switch(tld.codeUnits.first) {
+              >= 0x41 && <= 0x5A => tld.codeUnits.skip(1).every((c) => c >= 0x61 && c <= 0x7A),
+              _ => false
+            } && !_mostPopularTlds.contains(tld.toLowerCase())) {
+              // Probably a new sentence without space after the period
+              continue;
+            }
           }
           if (redditSafeMode) {
             final before = match.start > 0 ? element.text.substring(0, match.start) : null;
