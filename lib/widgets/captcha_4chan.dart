@@ -1336,14 +1336,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					yield TextSpan(text: node.text);
 				}
 				else if (node is dom.Element) {
-					if (node.localName == 'b') {
+					if (mapEquals(node.attributes, {'style': 'display:none'})) {
+						// Skip it
+					}
+					else if (node.localName == 'b' && node.attributes.isEmpty) {
 						yield TextSpan(children: visit(node.nodes).toList(), style: const TextStyle(
 							fontWeight: FontWeight.bold,
 							fontVariations: CommonFontVariations.bold
 						));
-					}
-					else if (node.localName == 'span' && (node.attributes['style']?.split(';').any((a) => a.toLowerCase().trim().replaceAll(' ', '').contains('display:none')) ?? false)) {
-						// Skip it
 					}
 					else {
 						// Give up
