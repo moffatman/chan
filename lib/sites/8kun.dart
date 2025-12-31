@@ -20,6 +20,7 @@ class Site8Kun extends SiteLainchan2 {
 		required super.imageUrl,
 		required super.name,
 		required super.formBypass,
+		required super.additionalCookies,
 		required super.imageThumbnailExtension,
 		required super.overrideUserAgent,
 		required super.boardsWithHtmlOnlyFlags,

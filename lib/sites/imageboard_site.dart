@@ -2658,7 +2658,8 @@ ImageboardSite makeSite(Map data) {
 			boardsWithCaptcha: (data['boardsWithCaptcha'] as List?)?.cast<String>(),
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
-			captchaQuestion: data['captchaQuestion'] as String?
+			captchaQuestion: data['captchaQuestion'] as String?,
+			additionalCookies: (data['additionalCookies'] as Map?)?.cast<String, String>() ?? {}
 		);
 	}
 	else if (data['type'] == 'frenschan') {
@@ -2672,7 +2673,8 @@ ImageboardSite makeSite(Map data) {
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey'] as String?
+			turnstileSiteKey: data['turnstileSiteKey'] as String?,
+			additionalCookies: (data['additionalCookies'] as Map?)?.cast<String, String>() ?? {}
 		);
 	}
 	else if (data['type'] == 'wizchan') {
@@ -2749,7 +2751,8 @@ ImageboardSite makeSite(Map data) {
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
-			turnstileSiteKey: data['turnstileSiteKey'] as String?
+			turnstileSiteKey: data['turnstileSiteKey'] as String?,
+			additionalCookies: (data['additionalCookies'] as Map?)?.cast<String, String>() ?? {}
 		);
 	}
 	else if (data['type'] == '4chan') {
@@ -2848,7 +2851,8 @@ ImageboardSite makeSite(Map data) {
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()
-			}
+			},
+			additionalCookies: (data['additionalCookies'] as Map?)?.cast<String, String>() ?? {}
 		);
 	}
 	else if (data['type'] == '8kun') {
@@ -2873,7 +2877,8 @@ ImageboardSite makeSite(Map data) {
 			formBypass: {
 				for (final entry in ((data['formBypass'] as Map?) ?? {}).entries)
 					entry.key as String: (entry.value as Map).cast<String, String>()
-			}
+			},
+			additionalCookies: (data['additionalCookies'] as Map?)?.cast<String, String>() ?? {}
 		);
 	}
 	else if (data['type'] == 'xenforo') {

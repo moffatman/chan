@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -16,13 +18,22 @@ const _kExtraBypassLock = 'bypass_lock';
 
 /// Block any processing while form is being submitted, so that the new cookies
 /// can be injected by a later interceptor
-class FormBypassBlockingInterceptor extends Interceptor {
+class SiteLainchan2BlockingInterceptor extends Interceptor {
 	final SiteLainchan2 site;
 
-	FormBypassBlockingInterceptor(this.site);
+	SiteLainchan2BlockingInterceptor(this.site);
 
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+		if (site.additionalCookies[options.uri.host] case final additionalCookie?) {
+			options.headers.update(HttpHeaders.cookieHeader, (existing) {
+				if (existing is String && existing.contains(additionalCookie)) {
+					// Don't re-add on re-entrant request
+					return existing;
+				}
+				return '$existing; $additionalCookie';
+			}, ifAbsent: () => additionalCookie);
+		}
 		if (options.extra[_kExtraBypassLock] == true) {
 			handler.next(options);
 		}
@@ -34,10 +45,10 @@ class FormBypassBlockingInterceptor extends Interceptor {
 	}
 }
 
-class FormBypassInterceptor extends Interceptor {
+class SiteLainchan2Interceptor extends Interceptor {
 	final SiteLainchan2 site;
 
-	FormBypassInterceptor(this.site);
+	SiteLainchan2Interceptor(this.site);
 
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
@@ -48,6 +59,9 @@ class FormBypassInterceptor extends Interceptor {
 					final document = parse(response.data);
 					String? action = document.querySelector('form')?.attributes['action'];
 					if (action != null) {
+						if (response.requestOptions.extra[_kExtraBypassLock] == true) {
+							throw Exception('Failed to log into ${site.name} at ${response.realUri}');
+						}
 						if (action.startsWith('/')) {
 							action = 'https://${site.baseUrl}$action';
 						}
@@ -95,6 +109,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	final String? imageThumbnailExtension;
 	final List<ImageboardBoard>? boards;
 	final Map<String, Map<String, String>> formBypass;
+	final Map<String, String> additionalCookies;
 	final formLock = Mutex();
 	@override
 	final String res;
@@ -107,6 +122,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		required super.imageUrl,
 		required super.name,
 		required this.formBypass,
+		required this.additionalCookies,
 		required this.imageThumbnailExtension,
 		required super.overrideUserAgent,
 		required super.archives,
@@ -121,8 +137,8 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		super.defaultUsername,
 		this.res = 'res'
 	}) {
-		client.interceptors.insert(1, FormBypassBlockingInterceptor(this));
-		client.interceptors.add(FormBypassInterceptor(this));
+		client.interceptors.insert(1, SiteLainchan2BlockingInterceptor(this));
+		client.interceptors.add(SiteLainchan2Interceptor(this));
 	}
 	
 	@override
@@ -246,6 +262,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		identical(this, other) ||
 		(other is SiteLainchan2) &&
 		mapEquals(other.formBypass, formBypass) &&
+		mapEquals(other.additionalCookies, additionalCookies) &&
 		(other.imageThumbnailExtension == imageThumbnailExtension) &&
 		listEquals(other.boards, boards) &&
 		listEquals(other.boardsWithHtmlOnlyFlags, boardsWithHtmlOnlyFlags) &&

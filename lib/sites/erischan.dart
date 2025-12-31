@@ -7,6 +7,7 @@ class SiteErischan extends SiteLainchan2 {
 	SiteErischan({
 		required super.baseUrl,
 		required super.name,
+		required super.additionalCookies,
 		required super.imageUrl,
 		required super.overrideUserAgent,
 		required super.boardsWithHtmlOnlyFlags,

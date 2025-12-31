@@ -128,6 +128,7 @@ void main() async {
         turnstileSiteKey: null,
         basePath: '',
         formBypass: const {},
+        additionalCookies: const {},
         imageThumbnailExtension: null,
         boardsWithHtmlOnlyFlags: const [],
         boardsWithMemeFlags: const [],
