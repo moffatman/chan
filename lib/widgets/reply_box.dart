@@ -2164,87 +2164,90 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								child: IntrinsicHeight(
 									child: WidgetDecoration(
 										// ignore: sort_child_properties_last
-										child: AdaptiveTextField(
-											key: _textFieldKey,
-											enabled: !loading,
-											enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-											smartDashesType: SmartDashesType.disabled,
-											smartQuotesType: SmartQuotesType.disabled,
-											controller: _textFieldController,
-											autofocus: widget.fullyExpanded,
-											contentInsertionConfiguration: ContentInsertionConfiguration(
-												onContentInserted: (content) async {
-													final data = content.data;
-													if (data == null) {
-														return;
-													}
-													if (data.isEmpty) {
-														return;
-													}
-													String filename = Uri.parse(content.uri).pathSegments.last;
-													if (!filename.contains('.')) {
-														filename += '.${content.mimeType.afterLast('/')}';
-													}
-													final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}/$filename');
-													await f.create(recursive: true);
-													await f.writeAsBytes(data, flush: true);
-													setAttachment(true, f);
-												}
-											),
-											spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
-											contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
-												anchors: editableTextState.contextMenuAnchors,
-												buttonItems: [
-													...editableTextState.contextMenuButtonItems.map((item) {
-														if (item.type == ContextMenuButtonType.paste) {
-															return item.copyWith(
-																onPressed: () async {
-																	if (!await _handleImagePaste(manual: false)) {
-																		// Only paste text if image wasn't pasted
-																		item.onPressed?.call();
-																	}
-																}
-															);
+										child: Padding(
+											padding: settings.materialStyle ? const EdgeInsets.only(top: 4) : EdgeInsets.zero,
+											child: AdaptiveTextField(
+												key: _textFieldKey,
+												enabled: !loading,
+												enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled,
+												controller: _textFieldController,
+												autofocus: widget.fullyExpanded,
+												contentInsertionConfiguration: ContentInsertionConfiguration(
+													onContentInserted: (content) async {
+														final data = content.data;
+														if (data == null) {
+															return;
 														}
-														return item;
-													}),
-													ContextMenuButtonItem(
-														onPressed: _handleImagePaste,
-														label: 'Paste image'
-													),
-													if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
-														return ContextMenuButtonItem(
-															onPressed: () {
-																final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
-																editableTextState.userUpdateTextEditingValue(
-																	editableTextState.textEditingValue.replaced(
-																		editableTextState.textEditingValue.selection,
-																		snippet.wrap(selectedText)
-																	),
-																	SelectionChangedCause.toolbar
-																);
-															},
-															label: snippet.name
-														);
-													})
-												]
-											),
-											placeholder: 'Comment',
-											textAlignVertical: TextAlignVertical.top,
-											// The ListView eats bottom padding, we need to re-add it
-											// for auto-scroll hint to work
-											scrollPadding:
-												const EdgeInsets.all(20) +
-												EdgeInsets.only(
-													bottom: MediaQuery.paddingOf(this.context).bottom
+														if (data.isEmpty) {
+															return;
+														}
+														String filename = Uri.parse(content.uri).pathSegments.last;
+														if (!filename.contains('.')) {
+															filename += '.${content.mimeType.afterLast('/')}';
+														}
+														final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}/$filename');
+														await f.create(recursive: true);
+														await f.writeAsBytes(data, flush: true);
+														setAttachment(true, f);
+													}
 												),
-											scrollPhysics: const NeverScrollableScrollPhysics(),
-											expands: true,
-											minLines: null,
-											maxLines: null,
-											focusNode: _textFocusNode,
-											textCapitalization: TextCapitalization.sentences,
-											keyboardAppearance: ChanceTheme.brightnessOf(context),
+												spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
+												contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
+													anchors: editableTextState.contextMenuAnchors,
+													buttonItems: [
+														...editableTextState.contextMenuButtonItems.map((item) {
+															if (item.type == ContextMenuButtonType.paste) {
+																return item.copyWith(
+																	onPressed: () async {
+																		if (!await _handleImagePaste(manual: false)) {
+																			// Only paste text if image wasn't pasted
+																			item.onPressed?.call();
+																		}
+																	}
+																);
+															}
+															return item;
+														}),
+														ContextMenuButtonItem(
+															onPressed: _handleImagePaste,
+															label: 'Paste image'
+														),
+														if (!editableTextState.textEditingValue.selection.isCollapsed) ...snippets.map((snippet) {
+															return ContextMenuButtonItem(
+																onPressed: () {
+																	final selectedText = editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text);
+																	editableTextState.userUpdateTextEditingValue(
+																		editableTextState.textEditingValue.replaced(
+																			editableTextState.textEditingValue.selection,
+																			snippet.wrap(selectedText)
+																		),
+																		SelectionChangedCause.toolbar
+																	);
+																},
+																label: snippet.name
+															);
+														})
+													]
+												),
+												placeholder: 'Comment',
+												textAlignVertical: TextAlignVertical.top,
+												// The ListView eats bottom padding, we need to re-add it
+												// for auto-scroll hint to work
+												scrollPadding:
+													const EdgeInsets.all(20) +
+													EdgeInsets.only(
+														bottom: MediaQuery.paddingOf(this.context).bottom
+													),
+												scrollPhysics: const NeverScrollableScrollPhysics(),
+												expands: true,
+												minLines: null,
+												maxLines: null,
+												focusNode: _textFocusNode,
+												textCapitalization: TextCapitalization.sentences,
+												keyboardAppearance: ChanceTheme.brightnessOf(context),
+											)
 										),
 										position: DecorationPosition.foreground,
 										decoration: postingPost != null ? Wrap(
@@ -2735,7 +2738,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									child: SizedBox(
 										height:
 											((widget.threadId == null) ?
-												150 + (settings.materialStyle ? 14 : 0) :
+												150 + (settings.materialStyle ? 18 : 0) :
 												108)
 											+ 32 // Button row
 											+ 8 // Padding
