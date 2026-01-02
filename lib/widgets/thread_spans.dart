@@ -2,13 +2,17 @@ import 'dart:math';
 
 import 'package:chan/models/flag.dart';
 import 'package:chan/pages/posts.dart';
+import 'package:chan/services/countries.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
+import 'package:extended_image/extended_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +34,14 @@ InlineSpan makeFlagSpan({
 		if (padding) {
 			children.add(const TextSpan(text: ' '));
 		}
+		Widget fallbackWidget() => switch (kCountries.values.tryFirstWhere((c) {
+			return c.name == part.name;
+		}) ?? kCountries.values.tryFirstWhere((c) {
+			return part.name.contains(c.name);
+		})) {
+			CountryFlag country => Text(country.emoji, style: const TextStyle(height: 1)),
+			null => Icon(CupertinoIcons.flag_slash, size: min(part.imageWidth, part.imageHeight))
+		};
 		final onTap = context == null ? null : () {
 			final (String, VoidCallback)? easyButton;
 			if (zone == null) {
@@ -52,13 +64,22 @@ InlineSpan makeFlagSpan({
 				context: context,
 				message: flag.name,
 				icon: null,
-				iconWidget: CNetworkImage(
-					url: part.imageUrl,
-					client: context.read<ImageboardSite>().client,
+				iconWidget: SizedBox(
 					width: part.imageWidth,
 					height: part.imageHeight,
-					cache: true,
-					enableLoadState: false
+					child: CNetworkImage(
+						url: part.imageUrl,
+						client: context.read<ImageboardSite>().client,
+						width: part.imageWidth,
+						height: part.imageHeight,
+						cache: true,
+						enableLoadState: true,
+						loadStateChanged: (state) => switch (state.extendedImageLoadState) {
+							LoadState.completed => null,
+							LoadState.loading => const SizedBox.shrink(),
+							LoadState.failed => fallbackWidget()
+						}
+					)
 				),
 				easyButton: easyButton
 			);
@@ -79,7 +100,12 @@ InlineSpan makeFlagSpan({
 								url: part.imageUrl,
 								client: context.read<ImageboardSite>().client,
 								cache: true,
-								enableLoadState: false
+								enableLoadState: true,
+								loadStateChanged: (state) => switch (state.extendedImageLoadState) {
+									LoadState.completed => null,
+									LoadState.loading => const SizedBox.shrink(),
+									LoadState.failed => fallbackWidget()
+								}
 							)
 						)
 					)
