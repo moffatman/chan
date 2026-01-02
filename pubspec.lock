@@ -275,13 +275,14 @@ packages:
     source: hosted
     version: "3.0.5"
   csslib:
-    dependency: transitive
+    dependency: "direct main"
     description:
-      name: csslib
-      sha256: "706b5707578e0c1b4b7550f64078f0a0f19dec3f50a178ffae7006b0a9ca58fb"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
+      path: "pkgs/csslib"
+      ref: main
+      resolved-ref: d40f3b67610d9dada20b745015dd5d966a5b9b0c
+      url: "https://github.com/moffatman/dart-tools.git"
+    source: git
+    version: "1.0.2"
   cupertino_icons:
     dependency: "direct main"
     description:

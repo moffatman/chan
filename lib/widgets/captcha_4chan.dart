@@ -6,6 +6,7 @@ import 'dart:ui' as ui show Image, ImageByteFormat, PictureRecorder;
 import 'package:chan/services/captcha.dart';
 import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/css.dart';
 import 'package:chan/services/hcaptcha.dart';
 import 'package:chan/services/html_error.dart';
 import 'package:chan/services/persistence.dart';
@@ -18,6 +19,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
+import 'package:chan/widgets/html.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -1325,21 +1327,38 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		);
 	}
 
-	TextSpan _rewriteTask(String raw) {
+	Widget _buildTask(String raw) {
 		String ret = raw.replaceFirst('Use the scroll bar below to ', '');
 		ret = ret.replaceFirst(', then click Next.', '');
 		// recapitalize first letter
 		ret = '${ret[0].toUpperCase()}${ret.substring(1)}';
+		bool unparseable = false;
 		Iterable<InlineSpan> visit(Iterable<dom.Node> nodes) sync* {
 			for (final node in nodes) {
 				if (node is dom.Text) {
 					yield TextSpan(text: node.text);
 				}
 				else if (node is dom.Element) {
-					if (mapEquals(node.attributes, {'style': 'display:none'})) {
-						// Skip it
+					final Map<String, String> styles;
+					if (node.attributes.remove('style') case String style) {
+						styles = resolveInlineCss(style);
 					}
-					else if (node.localName == 'b' && node.attributes.isEmpty) {
+					else {
+						styles = {};
+					}
+					unparseable |= node.attributes.isNotEmpty; // If new attributes are added
+					final display = styles.remove('display');
+					if (display == 'none') {
+						// Skip it
+						continue;
+					}
+					final visibility = styles.remove('visibility');
+					if (visibility == 'hidden' || visibility == 'collapse') {
+						// Skip it
+						continue;
+					}
+					unparseable |= styles.isNotEmpty; // If new CSS is used
+					if (node.localName == 'b') {
 						yield TextSpan(children: visit(node.nodes).toList(), style: const TextStyle(
 							fontWeight: FontWeight.bold,
 							fontVariations: CommonFontVariations.bold
@@ -1347,12 +1366,17 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					}
 					else {
 						// Give up
+						unparseable = true;
 						yield TextSpan(text: node.outerHtml);
 					}
 				}
 			}
 		}
-		return TextSpan(children: visit(parseFragment(ret).nodes).toList());
+		final children = visit(parseFragment(ret).nodes).toList();
+		if (unparseable) {
+			return HTMLWidget(html: ret);
+		}
+		return Text.rich(TextSpan(children: children));
 	}
 
 	Widget _build(BuildContext context) {
@@ -1829,7 +1853,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									children: [
 										Padding(
 											padding: const EdgeInsets.all(8),
-											child: Text.rich(_rewriteTask(task.$2.text))
+											child: _buildTask(task.$2.text)
 										),
 										Wrap(
 											children: task.$2.choices.indexed.map((choice) => CupertinoInkwell(
