@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/web_image_picker.dart';
+import 'package:chan/services/android.dart';
 import 'package:chan/services/basedflare.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
@@ -3055,6 +3056,11 @@ class Settings extends ChangeNotifier {
 
 	bool get isCrashlyticsCollectionEnabled => FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled;
 	set isCrashlyticsCollectionEnabled(bool setting) => FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(setting).then((_) {
+		notifyListeners();
+	});
+
+	bool get androidLegacyStatusBarsEnabled => legacyStatusBarsEnabled ?? false;
+	set androidLegacyStatusBarsEnabled(bool setting) => setLegacyStatusBarsEnabled(setting).then((_) {
 		notifyListeners();
 	});
 

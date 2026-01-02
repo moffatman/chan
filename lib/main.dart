@@ -89,7 +89,7 @@ Future<void> innerMain() async {
 		await initializeIsDevelopmentBuild();
 		await initializeIsOnMac();
 		await initializeHandoff();
-		await initializeImpeller();
+		await initializeAndroid();
 		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 		imageHttpClient.idleTimeout = const Duration(seconds: 10);

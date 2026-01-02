@@ -1372,6 +1372,18 @@ final appearanceSettings = [
 		helpText: 'Some devices have a bug in their Android ROM, where the status bar cannot be properly hidden.\n\nIf this workaround is enabled, the status bar will not be hidden when opening the gallery.',
 		setting: SettingWithFallback(Settings.useStatusBarWorkaroundSetting, false)
 	),
+	if (Platform.isAndroid) SwitchSettingWidget(
+		description: 'Alternative status bar transparency',
+		icon: Icons.cell_wifi,
+		helpText: 'Enable this setting to use an alternative approach to set the status bar to transparent. This is known to be useful on Xiaomi phones.',
+		setting: CustomImmutableSetting(
+			reader: (context) => context.read<Settings>().androidLegacyStatusBarsEnabled,
+			watcher: (context) => context.watch<Settings>().androidLegacyStatusBarsEnabled,
+			writer: (context, setting) async {
+				context.read<Settings>().androidLegacyStatusBarsEnabled = setting;
+			}
+		)
+	),
 	ImageboardScopedSettingGroup(
 		title: 'Thread layout',
 		settings: [

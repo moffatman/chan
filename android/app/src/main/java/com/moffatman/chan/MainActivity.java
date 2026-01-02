@@ -72,6 +72,9 @@ public class MainActivity extends FlutterFragmentActivity {
     private MethodChannel.Result saveFileAsResult;
     private String newDocumentSourcePath;
     private FlutterFragment lastFragment;
+    private static int LEGACY_STATUS_BAR_FLAGS =
+            WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+            | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
 
     private DocumentFile fastFindFile(DocumentFile parent, String name) {
         try {
@@ -123,10 +126,11 @@ public class MainActivity extends FlutterFragmentActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // These are "deprecated" but seem to be needed to use transparent bars
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
-                           | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
-                           | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        if (getSharedPreferences("legacyStatusBars", Context.MODE_PRIVATE).getBoolean("legacyStatusBars", false)) {
+            // These are "deprecated" but seem to be needed to use transparent bars
+            getWindow().addFlags(LEGACY_STATUS_BAR_FLAGS);
+        }
         super.onCreate(savedInstanceState);
     }
 
@@ -353,6 +357,22 @@ public class MainActivity extends FlutterFragmentActivity {
                         result.success(null);
                         finish();
                         android.os.Process.killProcess(android.os.Process.myPid());
+                    }
+                    else if (call.method.equals("getLegacyStatusBars")) {
+                        result.success(getSharedPreferences("legacyStatusBars", Context.MODE_PRIVATE).getBoolean("legacyStatusBars", false));
+                    }
+                    else if (call.method.equals("setLegacyStatusBars")) {
+                        SharedPreferences.Editor editor = getSharedPreferences("legacyStatusBars", Context.MODE_PRIVATE).edit();
+                        boolean enabled = call.argument("enabled");
+                        editor.putBoolean("legacyStatusBars", enabled);
+                        editor.commit();
+                        if (enabled) {
+                            getWindow().addFlags(LEGACY_STATUS_BAR_FLAGS);
+                        }
+                        else {
+                            getWindow().clearFlags(LEGACY_STATUS_BAR_FLAGS);
+                        }
+                        result.success(null);
                     }
                     else {
                         result.notImplemented();
