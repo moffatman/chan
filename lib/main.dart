@@ -2544,7 +2544,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			key: notificationsOverlayKey,
 			imageboards: [
 				...ImageboardRegistry.instance.imageboards,
-				if (devImageboard?.notifications != null) devImageboard!
+				if (devImageboard?.initialized ?? false) devImageboard!
 			],
 			child: child
 		);
