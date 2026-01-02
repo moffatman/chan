@@ -67,6 +67,7 @@ Future<CaptchaSolution?> solveCaptcha({
 		}
 		final solution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
+				increasePopDifficulty: true,
 				child: builder(Navigator.of(context).pop)
 			)
 		));

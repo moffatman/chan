@@ -23,6 +23,7 @@ class OverscrollModalPage extends StatefulWidget {
 	final ValueChanged<AxisDirection>? onPop;
 	final Widget Function(Widget child) selectionAreaBuilder;
 	final VoidCallback? onSlowScroll;
+	final bool increasePopDifficulty;
 
 	const OverscrollModalPage({
 		required this.child,
@@ -34,6 +35,7 @@ class OverscrollModalPage extends StatefulWidget {
 		this.onPop,
 		this.selectionAreaBuilder = identity,
 		this.onSlowScroll,
+		this.increasePopDifficulty = false,
 		super.key
 	}) : sliver = null;
 
@@ -47,6 +49,7 @@ class OverscrollModalPage extends StatefulWidget {
 		this.onPop,
 		this.selectionAreaBuilder = identity,
 		this.onSlowScroll,
+		this.increasePopDifficulty = false,
 		super.key
 	}) : child = null;
 
@@ -60,7 +63,7 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 	final GlobalKey _childKey = GlobalKey(debugLabel: '_OverscrollModalPageState._childKey');
 	final GlobalKey _childWidgetKey = GlobalKey(debugLabel: '_OverscrollModalPageState._childWidgetKey');
 	late double _scrollStopPosition;
-	final Map<int, (Offset position, bool initiallyInSpacer, DateTime globalTime)> _pointersDown = {};
+	final Map<int, (Offset position, bool initiallyInSpacer, DateTime globalTime, ScrollMetrics metrics)> _pointersDown = {};
 	late final ValueNotifierAnimation<double> _opacity;
 	bool _popping = false;
 	bool _finishedPopIn = false;
@@ -101,7 +104,7 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 
 	// To fix behavior when stopping the scroll-in with tap event
 	void _onScrollUpdate() {
-		if (!_popping) {
+		if (!_popping && (!widget.increasePopDifficulty || _pointersDown.values.any((p) => p.$4.atEdge))) {
 			final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
 			final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
 			_opacity.value = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 100).clamp(0, 1);
@@ -128,7 +131,7 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 		final pixelsVisuallyBelow = widget.reverse ? (_controller.tryPosition?.extentBefore ?? 0) : (_controller.tryPosition?.extentAfter ?? 0);
 		final pointerInBottomMargin =
 			(event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - Offset(0, childBoxPadding.bottom)).dy + pixelsVisuallyBelow);
-		_pointersDown[event.pointer] = (event.position, pointerInTopMargin || pointerInBottomMargin, DateTime.now());
+		_pointersDown[event.pointer] = (event.position, pointerInTopMargin || pointerInBottomMargin, DateTime.now(), _controller.position.copyWith());
 		Future.delayed(_kLongPressToPopAllTime, () {
 			if (mounted &&
 			    WeakNavigator.of(context) != null &&
@@ -147,7 +150,10 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 		}
 		final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
 		final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
-		if (max(overscrollTop, overscrollBottom) > 50 - _scrollStopPosition) {
+		if (
+			((overscrollTop > (50 - _scrollStopPosition)) && (!widget.increasePopDifficulty || downData.$4.extentBefore <= 0)) ||
+			((overscrollBottom > (50 - _scrollStopPosition)) && (!widget.increasePopDifficulty || downData.$4.extentAfter <= 0))
+		) {
 			_popping = true;
 			widget.onPop?.call(((overscrollTop > overscrollBottom) ^ widget.reverse) ? AxisDirection.up : AxisDirection.down);
 			WeakNavigator.pop(context);
@@ -247,7 +253,7 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 											lightHapticFeedback();
 											Future.delayed(const Duration(milliseconds: 75), lightHapticFeedback);
 										}
-										_pointersDown[event.pointer] = (downData.$1, false, downData.$3);
+										_pointersDown[event.pointer] = (downData.$1, false, downData.$3, downData.$4);
 									}
 								}
 							},
