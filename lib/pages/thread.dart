@@ -932,7 +932,7 @@ class ThreadPageState extends State<ThreadPage> {
 					}
 				}
 			}
-			attachments.removeWhere((a) => found[a.attachment] != a);
+			attachments.removeWhere((a) => !identical(found[a.attachment], a));
 		}
 		showGalleryPretagged(
 			context: context,
@@ -2810,7 +2810,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															found.putIfAbsent(a.attachment, () => a);
 														}
 														found[initialAttachment.attachment] = initialAttachment;
-														attachments.removeWhere((a) => found[a.attachment] != a);
+														attachments.removeWhere((a) => !identical(found[a.attachment], a));
 														final dest = await Navigator.of(context).push<TaggedAttachment>(adaptivePageRoute(
 															builder: (context) => ImageboardScope(
 																imageboardKey: null,
