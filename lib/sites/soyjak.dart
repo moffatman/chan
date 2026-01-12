@@ -80,7 +80,7 @@ class SiteSoyjak extends SiteLainchan2 {
 
 	@override
 	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? Function() title) {
-		if (title() == 'McChallenge') {
+		if ((uri.host == baseUrl || uri.host == '') && title() == 'McChallenge') {
 			return const ImageboardRedirectGateway(
 				name: 'McChallenge',
 				alwaysNeedsManualSolving: true
