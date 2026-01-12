@@ -136,6 +136,7 @@ class VideoServer {
 	});
 
 	static final _bytesRangePattern = RegExp(r'^bytes=(\d+)-(\d+)?$');
+	static final _contentRangeHeaderPattern = RegExp(r'^bytes (?:(?:\d+-\d+)|\*)\/(\d+)$');
 
 	static _RawRange? _parseRange(HttpHeaders headers) {
 		final match = _bytesRangePattern.firstMatch(headers[HttpHeaders.rangeHeader]?.first ?? '');
@@ -143,6 +144,10 @@ class VideoServer {
 			return (start: match.group(1)!.parseInt, inclusiveEnd: match.group(2)?.tryParseInt);
 		}
 		return null;
+	}
+
+	static int? _parseContentRangeTotalLength(Headers headers) {
+		return _contentRangeHeaderPattern.firstMatch(headers[HttpHeaders.contentRangeHeader]?.first ?? '')?.group(1)?.tryParseInt;
 	}
 
 	Future<void> _serveFile(HttpRequest request, File file) async {
@@ -222,8 +227,10 @@ class VideoServer {
 			await request.response.close();
 			return;
 		}
-		final range = (_parseRange(request.headers) ?? (start: 0, inclusiveEnd: null)).normalize(file.totalBytes);
-		if ((1 + range.inclusiveEnd - range.start) != file.totalBytes) {
+		final parsedRange = _parseRange(request.headers);
+		final range = (parsedRange ?? (start: 0, inclusiveEnd: null)).normalize(file.totalBytes);
+		if (parsedRange != null) {
+			// See ffmpeg http.c about Range header, they always want it, so they request "Range: bytes=0-"
 			request.response.statusCode = HttpStatus.partialContent;
 			request.response.headers.set(HttpHeaders.contentRangeHeader, 'bytes ${range.start}-${range.inclusiveEnd}/${file.totalBytes}');
 		}
@@ -438,31 +445,54 @@ class VideoServer {
 				}
 			}
 			// Now GET the file for real
-			final response = await client.getUri(uri, options: Options(
+			final options = Options(
 				headers: {
 					...headers,
 					if ((cachingFile0?.currentBytes ?? 0) != 0)
-						'Range': 'bytes=${cachingFile0?.currentBytes}-'
+						HttpHeaders.rangeHeader: 'bytes=${cachingFile0?.currentBytes}-'
 				},
 				extra: {
 					// Probably image/video bytes won't work
 					kRetryIfCloudflare: true,
 					kPriority: priority
 				},
-				responseType: ResponseType.stream
-			), cancelToken: interruptibleToken);
+				responseType: ResponseType.stream,
+				validateStatus: (x) => true
+			);
+			Response response = await client.getUri(uri, options: options, cancelToken: interruptibleToken);
+			if (response.statusCode == HttpStatus.requestedRangeNotSatisfiable && (options.headers?.containsKey(HttpHeaders.rangeHeader) ?? false)) {
+				(response.data as ResponseBody).stream.drain(); // throw it away
+				// Catbox will return contentLength: 0 for HEAD, but we can get real length here
+				final contentLength = _parseContentRangeTotalLength(response.headers);
+				if (!force && stat.size == contentLength && !uri.path.endsWith('m3u8') && cachingFile0 != null) {
+					// File is already downloaded and filesize matches
+					cachingFile0.totalBytes = stat.size; // totalBytes was probably zero, correct it
+					cachingFile0.currentBytes = cachingFile0.totalBytes;
+					cachingFile0.completer.complete();
+					return cachingFile0;
+				}
+				// Try again without initialRange, discarding current data, server doesn't support it
+				cachingFile0 = null;
+				await file.delete();
+				options.headers?.remove(HttpHeaders.rangeHeader);
+				response = await client.getUri(uri, options: options, cancelToken: interruptibleToken);
+			}
 			if ((response.statusCode ?? 500) >= 400) {
 				(response.data as ResponseBody).stream.drain(); // throw it away
 				throw HTTPStatusException.fromResponse(response);
 			}
+			final totalBytes = response.headers.value(Headers.contentLengthHeader)?.tryParseInt ?? -1;
 			final cachingFile = cachingFile0 ?? _CachingFile(
 				client: client,
 				file: file,
-				totalBytes: response.headers.value(Headers.contentLengthHeader)?.tryParseInt ?? -1,
+				totalBytes: totalBytes,
 				statusCode: response.statusCode ?? -1,
 				headers: headers,
 				priority: priority
 			);
+			// cachingFile0 may have bad totalBytes from catbox HEAD (always returns 0)
+			// Also, we need to add the initial bytes to the range bytes
+			cachingFile.totalBytes = cachingFile.currentBytes + totalBytes;
 			cachingFile._cancelToken = interruptibleToken;
 			if (!file.existsSync()) {
 				await file.create(recursive: true);
