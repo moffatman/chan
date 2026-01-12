@@ -57,6 +57,9 @@ class Site8Chan extends SiteLynxchan {
 		if ((uri.host == baseUrl || uri.host == '') && uri.path == '/.static/pages/disclaimer.html') {
 			return redirectGateway;
 		}
+		if (uri.host == baseUrl && title() == 'Checking…') {
+			return const ImageboardRedirectGateway(name: '8chan', alwaysNeedsManualSolving: false);
+		}
 		return null;
 	}
 
