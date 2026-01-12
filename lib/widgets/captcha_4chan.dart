@@ -1357,6 +1357,17 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 						// Skip it
 						continue;
 					}
+					final opacity = styles.remove('opacity');
+					if (opacity != null && ((opacity.tryParseDouble ?? 1) < 0.01 || (opacity.beforeFirst('%').tryParseDouble ?? 100) < 1)) {
+						// Skip it
+						continue;
+					}
+					final width = styles.remove('width');
+					if (width == '1px') {
+						// Skip it
+						continue;
+					}
+					unparseable |= width != null; // If new width trick used
 					unparseable |= styles.isNotEmpty; // If new CSS is used
 					if (node.localName == 'b') {
 						yield TextSpan(children: visit(node.nodes).toList(), style: const TextStyle(
