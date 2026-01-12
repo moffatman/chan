@@ -586,12 +586,12 @@ class MediaConversion {
 		return Persistence.webmCacheDirectory.file('$subdir/$filenameWithoutExtension$cacheKey.$outputFileExtension');
 	}
 
-	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints() async {
+	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints({bool tryOriginalFile = true}) async {
 		bool isOriginalFile = false;
 		File file = getDestination();
 		FileStat stat = await file.stat();
 		if (stat.type == FileSystemEntityType.notFound) {
-			if (inputFile.scheme == 'file' && inputFile.path.afterLast('.') == outputFileExtension) {
+			if (tryOriginalFile && inputFile.scheme == 'file' && inputFile.path.afterLast('.') == outputFileExtension) {
 				isOriginalFile = true;
 				file = File(inputFile.toStringFFMPEG());
 				stat = await file.stat();

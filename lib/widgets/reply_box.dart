@@ -619,7 +619,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (!force && solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm', 'mp4'].contains(ext)) {
 			return source;
 		}
-		final existingResult = await transcode.getDestinationIfSatisfiesConstraints();
+		final existingResult = await transcode.getDestinationIfSatisfiesConstraints(tryOriginalFile: false);
 		if (existingResult != null) {
 			if (force) {
 				// Delete current file
