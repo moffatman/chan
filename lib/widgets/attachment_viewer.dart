@@ -529,7 +529,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			return alreadyCached.uri;
 		}
 		final attachmentUrl = Uri.parse(attachment.url);
-		if (!_checkArchives && attachmentUrl.host == site.imageUrl) {
+		if ((!_checkArchives && attachmentUrl.host == site.imageUrl) || site.archives.isEmpty) {
 			// Just assume it's right. Avoid a useless HEAD.
 			return attachmentUrl;
 		}
