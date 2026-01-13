@@ -1080,7 +1080,7 @@ packages:
     description:
       path: media_kit
       ref: main
-      resolved-ref: f1a3039d1a7403445738529d2cf0b08c81aab4fe
+      resolved-ref: ba14af860db0f1c8e9086c5dd08df36568bb7cbf
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.1.11"
@@ -1089,25 +1089,25 @@ packages:
     description:
       path: "libs/android/media_kit_libs_android_video_encoders_gpl"
       ref: main
-      resolved-ref: f1a3039d1a7403445738529d2cf0b08c81aab4fe
+      resolved-ref: ba14af860db0f1c8e9086c5dd08df36568bb7cbf
       url: "https://github.com/moffatman/media-kit.git"
     source: git
-    version: "1.3.6"
+    version: "1.3.7"
   media_kit_libs_ios_video_encoders_gpl:
     dependency: "direct main"
     description:
       path: "libs/ios/media_kit_libs_ios_video_encoders_gpl"
       ref: main
-      resolved-ref: f1a3039d1a7403445738529d2cf0b08c81aab4fe
+      resolved-ref: ba14af860db0f1c8e9086c5dd08df36568bb7cbf
       url: "https://github.com/moffatman/media-kit.git"
     source: git
-    version: "1.1.4"
+    version: "1.1.5"
   media_kit_libs_macos_video_encoders_gpl:
     dependency: "direct main"
     description:
       path: "libs/macos/media_kit_libs_macos_video_encoders_gpl"
       ref: main
-      resolved-ref: f1a3039d1a7403445738529d2cf0b08c81aab4fe
+      resolved-ref: ba14af860db0f1c8e9086c5dd08df36568bb7cbf
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.1.4"
@@ -1116,7 +1116,7 @@ packages:
     description:
       path: "libs/windows/media_kit_libs_windows_video_encoders_gpl"
       ref: main
-      resolved-ref: f1a3039d1a7403445738529d2cf0b08c81aab4fe
+      resolved-ref: ba14af860db0f1c8e9086c5dd08df36568bb7cbf
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.0.9"
@@ -1125,7 +1125,7 @@ packages:
     description:
       path: media_kit_video
       ref: main
-      resolved-ref: f1a3039d1a7403445738529d2cf0b08c81aab4fe
+      resolved-ref: ba14af860db0f1c8e9086c5dd08df36568bb7cbf
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.2.5"
