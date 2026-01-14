@@ -199,7 +199,7 @@ class Thread extends HiveObject implements Filterable {
 		final postIdToListIndex = {
 			for (final pair in posts_.asMap().entries) pair.value.id: pair.key
 		};
-		for (final newChild in otherPosts) {
+		for (Post newChild in otherPosts) {
 			final indexToReplace = postIdToListIndex[newChild.id];
 			if (indexToReplace != null) {
 				final postToReplace = posts_[indexToReplace];
@@ -242,6 +242,8 @@ class Thread extends HiveObject implements Filterable {
 			else {
 				anyChanges = true;
 				final newIndex = site.placeOrphanPost(posts_, newChild);
+				// It may not be the same object (to simplify Filterable system which works off of Identity)
+				newChild = posts_[newIndex];
 				if (newIndex < postIdToListIndex.length) {
 					for (int i = newIndex + 1; i < posts_.length; i++) {
 						final post = posts_[i];
