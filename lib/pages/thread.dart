@@ -932,7 +932,7 @@ class ThreadPageState extends State<ThreadPage> {
 					}
 				}
 			}
-			attachments.removeWhere((a) => !identical(found[a.attachment], a));
+			attachments.removeWhere((a) => found[a.attachment] != a);
 		}
 		showGalleryPretagged(
 			context: context,
@@ -2795,11 +2795,16 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															return widget.listController.items.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.item.attachments.isNotEmpty);
 														});
 														final imageboard = context.read<Imageboard>();
-														final attachments = widget.listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
-															attachment: a,
-															semanticParentIds: commonParentIds.followedBy(item.parentIds),
-															imageboard: imageboard
-														))).toList();
+														final attachments = widget.listController.items.expand((item) {
+															if (item.representsStubChildren || widget.listController.isItemHidden(item).isDuplicate) {
+																return const <TaggedAttachment>[];
+															}
+															return item.item.attachments.map((a) => TaggedAttachment(
+																attachment: a,
+																semanticParentIds: commonParentIds.followedBy(item.parentIds),
+																imageboard: imageboard
+															));
+														}).toList();
 														final initialAttachment = TaggedAttachment(
 															attachment: nextPostWithImage.item.attachments.first,
 															semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds),
@@ -2810,7 +2815,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															found.putIfAbsent(a.attachment, () => a);
 														}
 														found[initialAttachment.attachment] = initialAttachment;
-														attachments.removeWhere((a) => !identical(found[a.attachment], a));
+														attachments.removeWhere((a) => found[a.attachment] != a);
 														final dest = await Navigator.of(context).push<TaggedAttachment>(adaptivePageRoute(
 															builder: (context) => ImageboardScope(
 																imageboardKey: null,
