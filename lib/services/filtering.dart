@@ -312,7 +312,7 @@ class CustomFilter implements Filter {
 				excludeSites: {},
 				pattern: RegExp(match.group(2)!, multiLine: !flags.contains('s'), caseSensitive: !flags.contains('i'))
 			);
-			int i = 5;
+			int i = 4;
 			bool hide = true;
 			bool highlight = false;
 			bool pinToTop = false;
@@ -466,7 +466,7 @@ class CustomFilter implements Filter {
 				else {
 					throw FilterException('Unknown qualifier "$s"');
 				}
-				i += 2;
+				i++;
 			}
 			filter.outputType = FilterResultType(
 				hide: hide,
@@ -807,7 +807,7 @@ class FilterException implements Exception {
 	String toString() => 'Filter Error: $message';
 }
 
-final _configurationLinePattern = RegExp(r'^#?([^\/]*)\/(.*)\/([is]*)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
+final _configurationLinePattern = RegExp(r'^#?([^\/]*)\/(.*)\/([is]*)(?:;([^;\n]+))?(?:;([^;\n]+))?(?:;([^;\n]+))?(?:;([^;\n]+))?(?:;([^;\n]+))?(?:;([^;\n]+))?(?:;([^;\n]+))?(?:;([^;\n]+))?(?:;([^;\n]+))?(?:;([^;\n]+))?;?$');
 
 FilterGroup<CustomFilter> makeFilter(String configuration) {
 	final filters = <CustomFilter>[];
