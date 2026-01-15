@@ -144,7 +144,16 @@ Widget _buildQuestion(String raw) {
 					));
 				}
 				else if (attributes.remove('src') case String src when node.localName == 'img' && src.startsWith('data:image/')) {
-					styles.remove('float'); // TODO: PlaceholderFloating in forked_flutter_engine
+					final float = styles.remove('float')?.string;
+					final floating = switch (float) {
+						'left' => PlaceholderFloating.left,
+						'right' => PlaceholderFloating.right,
+						'inline-start' => PlaceholderFloating.start,
+						'inline-end' => PlaceholderFloating.end,
+						'none' => PlaceholderFloating.none,
+						_ => null
+					};
+					unparseable |= float != null && floating == null; // Outside of match
 					final margin = styles.remove('margin');
 					final edges = margin?.edges ?? const CssEdgeSizes.all(CssEdgeSizePixels(0));
 					double resolvePadding(CssEdgeSize size) => switch (size) {
@@ -153,6 +162,7 @@ Widget _buildQuestion(String raw) {
 						CssEdgeSizeAuto() => 0
 					};
 					yield WidgetSpan(
+						floating: floating ?? PlaceholderFloating.none,
 						child: Padding(
 							padding: EdgeInsets.only(
 								left: resolvePadding(edges.left),
