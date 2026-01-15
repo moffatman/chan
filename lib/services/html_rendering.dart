@@ -56,6 +56,16 @@ class HTMLRendering {
 				return new Promise(function (resolve, reject) {
 					requestAnimationFrame(function() {
 						var rect = span.getBoundingClientRect();
+						function descend(element) {
+							var rect2 = element.getBoundingClientRect();
+							var left = Math.min(rect.left, rect2.left);
+							var top = Math.min(rect.top, rect2.top);
+							var right = Math.max(rect.right, rect2.right);
+							var bottom = Math.max(rect.bottom, rect2.bottom);
+							rect = new DOMRect(left, top, right - left, bottom - top);
+							[...element.children].forEach(descend)
+						}
+						[...span.children].forEach(descend)
 						resolve(rect.x + "," + rect.y + "," + rect.width + "," + rect.height);
 					});
 				});
