@@ -14,7 +14,8 @@ const _kStringValues = {
 		'block flex', 'block flow', 'block flow-root', 'block grid', 'inline flex', 'inline flow', 'inline flow-root', 'inline grid',
 		'table', 'table-row', 'list-item'
 	},
-	'visibility': {'visible', 'hidden', 'collapse'}
+	'visibility': {'visible', 'hidden', 'collapse'},
+	'float': {'left', 'right', 'none', 'inline-start', 'inline-end'}
 };
 const _kGlobalStringValues = {'inherit', 'initial', 'revert', 'revert-layer', 'unset'};
 
