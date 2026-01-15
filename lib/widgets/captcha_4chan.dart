@@ -1345,47 +1345,71 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				else if (node is dom.Element) {
 					// Don't edit DOM in case we need to throw to HTML renderer
 					final attributes = Map.of(node.attributes);
-					final Map<String, String> styles;
+					final Map<String, Expression> styles;
 					if (attributes.remove('style') case String style) {
 						styles = resolveInlineCss(style);
 					}
 					else {
 						styles = {};
 					}
-					unparseable |= attributes.isNotEmpty; // If new attributes are added
-					final display = styles.remove('display');
+					final display = styles.remove('display')?.string;
 					if (display == 'none') {
 						// Skip it
 						continue;
 					}
-					final visibility = styles.remove('visibility');
+					final visibility = styles.remove('visibility')?.string;
 					if (visibility == 'hidden' || visibility == 'collapse') {
 						// Skip it
 						continue;
 					}
-					final opacity = styles.remove('opacity');
-					if (opacity != null && ((opacity.tryParseDouble ?? 1) < 0.01 || (opacity.beforeFirst('%').tryParseDouble ?? 100) < 1)) {
+					final opacity = styles.remove('opacity')?.scalar;
+					if ((opacity ?? 1) < 0.01) {
 						// Skip it
 						continue;
 					}
-					final width = styles.remove('width');
+					final width = styles.remove('width')?.string;
 					if (width == '1px') {
 						// Skip it
 						continue;
 					}
 					unparseable |= width != null; // If new width trick used
-					unparseable |= styles.isNotEmpty; // If new CSS is used
 					if (node.localName == 'b') {
 						yield TextSpan(children: visit(node.nodes).toList(), style: const TextStyle(
 							fontWeight: FontWeight.bold,
 							fontVariations: CommonFontVariations.bold
 						));
 					}
+					else if (attributes.remove('src') case String src when node.localName == 'img' && src.startsWith('data:image/')) {
+						styles.remove('float'); // TODO: PlaceholderFloating in forked_flutter_engine
+						final margin = styles.remove('margin');
+						final edges = margin?.edges ?? const CssEdgeSizes.all(CssEdgeSizePixels(0));
+						double resolvePadding(CssEdgeSize size) => switch (size) {
+							CssEdgeSizePixels(pixels: double px) => px,
+							CssEdgeSizeFractional(fraction: double f) => f * 100,
+							CssEdgeSizeAuto() => 0
+						};
+						yield WidgetSpan(
+							child: Padding(
+								padding: EdgeInsets.only(
+									left: resolvePadding(edges.left),
+									top: resolvePadding(edges.top),
+									right: resolvePadding(edges.right),
+									bottom: resolvePadding(edges.bottom)
+								),
+								child: Image(
+									image: MemoryImage(base64Decode(src.afterLast(','))),
+									fit: BoxFit.contain
+								)
+							)
+						);
+					}
 					else {
 						// Give up
 						unparseable = true;
 						yield TextSpan(text: node.outerHtml);
 					}
+					unparseable |= attributes.isNotEmpty; // If new attributes are added
+					unparseable |= styles.isNotEmpty; // If new CSS is used
 				}
 			}
 		}
