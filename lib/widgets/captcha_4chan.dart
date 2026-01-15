@@ -1330,23 +1330,29 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	Widget _buildTask(String raw) {
 		String ret = raw.replaceFirst('Use the scroll bar below to ', '');
 		ret = ret.replaceFirst(', then click Next.', '');
-		// recapitalize first letter
-		ret = '${ret[0].toUpperCase()}${ret.substring(1)}';
+		bool foundFirstText = false;
 		bool unparseable = false;
 		Iterable<InlineSpan> visit(Iterable<dom.Node> nodes) sync* {
 			for (final node in nodes) {
 				if (node is dom.Text) {
+					if (!foundFirstText && node.text.isNotEmpty) {
+						// recapitalize first letter
+						node.text = '${node.text[0].toUpperCase()}${node.text.substring(1)}';
+						foundFirstText = true;
+					}
 					yield TextSpan(text: node.text);
 				}
 				else if (node is dom.Element) {
+					// Don't edit DOM in case we need to throw to HTML renderer
+					final attributes = Map.of(node.attributes);
 					final Map<String, String> styles;
-					if (node.attributes.remove('style') case String style) {
+					if (attributes.remove('style') case String style) {
 						styles = resolveInlineCss(style);
 					}
 					else {
 						styles = {};
 					}
-					unparseable |= node.attributes.isNotEmpty; // If new attributes are added
+					unparseable |= attributes.isNotEmpty; // If new attributes are added
 					final display = styles.remove('display');
 					if (display == 'none') {
 						// Skip it
@@ -1383,9 +1389,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				}
 			}
 		}
-		final children = visit(parseFragment(ret).nodes).toList();
+		final fragment = parseFragment(ret);
+		final children = visit(fragment.nodes).toList();
 		if (unparseable) {
-			return HTMLWidget(html: ret);
+			// The fragment tree has corrected capitalization
+			return HTMLWidget(html: fragment.outerHtml);
 		}
 		return Text.rich(TextSpan(children: children));
 	}
