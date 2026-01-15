@@ -3,6 +3,7 @@ import 'dart:convert' hide Codec;
 import 'dart:ui';
 
 import 'package:chan/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -39,9 +40,14 @@ class HTMLRendering {
 		await webView.dispose();
 	}
 
-	Future<Uint8List> renderHtml(String html, {double textScaleFactor = 1.0}) async {
+	Future<Uint8List> renderHtml(String html, {double textScaleFactor = 1.0, Color? primaryColor}) async {
 		final imageCompleter = Completer<Uint8List>();
 		_webView.runWithResource((webView) async {
+			if (primaryColor != null) {
+				await webView.webViewController?.evaluateJavascript(
+					source: 'document.body.style.color = "${primaryColor.toCssHex()}"'
+				);
+			}
 			final returnData = await webView.webViewController?.callAsyncJavaScript(functionBody: '''
 				var html = atob("${base64.encode(utf8.encode(html))}");
 				var span = document.createElement("span");
@@ -77,8 +83,9 @@ class HTMLRendering {
 
 class HTMLImageProvider extends ImageProvider<HTMLImageProvider> {
 	final String html;
+	final Color? primaryColor;
 
-	HTMLImageProvider(this.html);
+	HTMLImageProvider(this.html, {this.primaryColor});
 
 	@override
 	ImageStreamCompleter loadImage(HTMLImageProvider key, ImageDecoderCallback decode) {
@@ -90,7 +97,7 @@ class HTMLImageProvider extends ImageProvider<HTMLImageProvider> {
 	}
 
 	Future<Codec> _loadAsync(ImageDecoderCallback decode) async {
-		final image = await HTMLRendering.instance.renderHtml(html);
+		final image = await HTMLRendering.instance.renderHtml(html, primaryColor: primaryColor);
 		return await decode(await ImmutableBuffer.fromUint8List(image));
 	}
 
@@ -103,11 +110,12 @@ class HTMLImageProvider extends ImageProvider<HTMLImageProvider> {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is HTMLImageProvider) &&
-		(other.html == html);
+		(other.html == html) &&
+		(other.primaryColor == primaryColor);
 
 	@override
-	int get hashCode => html.hashCode;
+	int get hashCode => Object.hash(html, primaryColor);
 
 	@override
-	String toString() => '${objectRuntimeType(this, 'HTMLImageProvider')}("$html")';
+	String toString() => '${objectRuntimeType(this, 'HTMLImageProvider')}("$html", primaryColor: $primaryColor)';
 }
