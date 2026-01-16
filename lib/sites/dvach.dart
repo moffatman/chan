@@ -98,7 +98,17 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	}
 
 	static final _iconFlagPattern = RegExp(r'<img.*src="(.*\/([^.]+)\.[^."]+)"');
+    static final _rgbColorPattern = RegExp(r'rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)', caseSensitive: false);
 
+    static String _normalizeCommentHtml(String raw) {
+    	return raw.replaceAllMapped(_rgbColorPattern, (match) {
+    		int clamp(int value) => value.clamp(0, 255).toInt();
+    		final r = clamp(int.tryParse(match.group(1) ?? '') ?? 0);
+    		final g = clamp(int.tryParse(match.group(2) ?? '') ?? 0);
+    		final b = clamp(int.tryParse(match.group(3) ?? '') ?? 0);
+    		return '#${r.toRadixString(16).padLeft(2, '0')}${g.toRadixString(16).padLeft(2, '0')}${b.toRadixString(16).padLeft(2, '0')}';
+    	});
+    }
 	Post _makePost(String board, int threadId, Map data) {
 		String? posterId = data['op'] == 1 ? 'OP' : null;
 		final name = StringBuffer();
@@ -115,7 +125,7 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			board: board,
 			threadId: threadId,
 			id: data['num'] as int,
-			text: data['comment'] as String,
+			text: _normalizeCommentHtml((data['comment'] as String?) ?? ''),
 			name: name.toString().trim(),
 			posterId: posterId,
 			time: DateTime.fromMillisecondsSinceEpoch((data['timestamp'] as int) * 1000),
