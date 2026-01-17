@@ -1382,13 +1382,14 @@ class AttachmentViewer extends StatelessWidget {
 	Widget _centeredLoader({
 		required bool active,
 		required double? value,
-		required bool useRealKey
+		required bool useRealKey,
+		bool force = false
 	}) => Builder(
 		builder: (context) => Center(
 			child: AnimatedSwitcher(
 				duration: const Duration(milliseconds: 300),
 				child: active ? TweenAnimationBuilder<double>(
-					tween: Tween(begin: 0, end: (controller.cacheCompleted || controller._renderedFirstFrame) ? 0 : 1),
+					tween: Tween(begin: 0, end: (!force && (controller.cacheCompleted || controller._renderedFirstFrame)) ? 0 : 1),
 					duration: const Duration(milliseconds: 250),
 					curve: Curves.ease,
 					builder: (context, v, child) => Transform.scale(
@@ -2065,14 +2066,18 @@ class AttachmentViewer extends StatelessWidget {
 						centerWithPage(
 							child: ValueListenableBuilder(
 								valueListenable: controller.showLoadingProgress,
-								builder: (context, showLoadingProgress, _) => (showLoadingProgress && controller._soundSourceDownload == null) ? ValueListenableBuilder(
-									valueListenable: controller.videoLoadingProgress,
-									builder: (context, double? loadingProgress, child) => _centeredLoader(
-										active: controller.isFullResolution,
-										value: loadingProgress,
-										useRealKey: !inContextMenu
-									)
-								) : const SizedBox.shrink()
+								builder: (context, showLoadingProgress, _) => StreamBuilder(
+									stream: controller.videoPlayerController?.player.stream.buffering,
+									builder: (context, buffering) => ((showLoadingProgress || (buffering.data ?? false)) && controller._soundSourceDownload == null) ? ValueListenableBuilder(
+										valueListenable: controller.videoLoadingProgress,
+										builder: (context, double? loadingProgress, child) => _centeredLoader(
+											active: controller.isFullResolution,
+											value: loadingProgress,
+											useRealKey: !inContextMenu,
+											force: buffering.data ?? false
+										)
+									) : const SizedBox.shrink()
+								)
 							)
 						),
 						if (soundSourceDownload != null) centerWithPage(

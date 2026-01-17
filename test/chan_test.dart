@@ -12,9 +12,9 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/priority_queue.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/jforum.dart';
 import 'package:chan/sites/lainchan2.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:test/test.dart';
 import 'package:chan/util.dart';
@@ -272,8 +272,8 @@ void main() async {
           await digestFuture0;
           throw Exception('Did not get expected exception');
         }
-        on DioError catch (e) {
-          expect(e.error, 'Http status error [404]');
+        on HTTPStatusException catch (e) {
+          expect(e.code, equals(404));
         }
         final digestFuture1 = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
         await Future.delayed(const Duration(milliseconds: 100));
@@ -368,6 +368,7 @@ void main() async {
         expect(chunks[0].length, equals(1000));
         try {
           await requests[0].response.close();
+          fail('Closing response should have thrown');
         }
         on HttpException {
           // Expected, we are prematurely closing the stream
@@ -551,6 +552,7 @@ void main() async {
         await requests[0].response.flush();
         try {
           await requests[0].response.close();
+          fail('Closing response should have thrown');
         }
         on HttpException {
           // Expected, we are prematurely closing the stream
@@ -627,6 +629,7 @@ void main() async {
         await requests[1].response.flush();
         try {
           await requests[1].response.close();
+          fail('Closing response should have thrown');
         }
         on HttpException {
           // Expected, we are prematurely closing the stream
@@ -738,6 +741,105 @@ void main() async {
         expect(chunks2[1].length, equals(8999));
         expect(response2StreamSubscriptionIsDone, isTrue);
         expect(response2StreamSubscriptionIsErrored, isFalse);
+      }
+      finally {
+        await root.delete(recursive: true);
+        fakeServer.close();
+        VideoServer.teardownStatic();
+      }
+    });
+    test('reusingEndProxyChunks', () async {
+      final root = await Directory.current.createTemp('caching_server_');
+      final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final client = HttpClient();
+      final requests = <HttpRequest>[];
+      fakeServer.listen((request) {
+        requests.add(request);
+      });
+      try {
+        VideoServer.initializeStatic(root, root, bufferOutput: false, insignificantByteThreshold: 0);
+        final url = Uri.http('localhost:${fakeServer.port}');
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: url, interruptible: true);
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests[0].method, equals('GET'));
+        requests[0].response.bufferOutput = false;
+        requests[0].response.contentLength = 10000;
+        requests[0].response.add(Uint8List(1000));
+        await requests[0].response.flush();
+        final digest = await digestFuture;
+        final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
+        clientRequest.bufferOutput = false;
+        final response = await clientRequest.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(response.contentLength, equals(10000));
+        final chunks = <List<int>>[];
+        bool responseStreamSubscriptionIsErrored = false;
+        bool responseStreamSubscriptionIsDone = false;
+        response.listen(chunks.add, onError: (e) {
+          responseStreamSubscriptionIsErrored = true;
+        }, onDone: () {
+          responseStreamSubscriptionIsDone = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks.length, equals(1));
+        expect(chunks[0].length, equals(1000));
+        final clientRequestEnd = await client.getUrl(VideoServer.instance.getUri(digest));
+        clientRequestEnd.bufferOutput = false;
+        clientRequestEnd.headers.set(HttpHeaders.rangeHeader, 'bytes=9000-');
+        final responseEndFuture = clientRequestEnd.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests[1].method, equals('GET'));
+        expect(requests[1].headers.value(HttpHeaders.rangeHeader), 'bytes=9000-');
+        requests[1].response.bufferOutput = false;
+        requests[1].response.statusCode = HttpStatus.partialContent;
+        requests[1].response.contentLength = 1000;
+        requests[1].response.add(Uint8List(1000));
+        await requests[1].response.close();
+        final responseEnd = await responseEndFuture;
+        expect(responseEnd.contentLength, equals(1000));
+        final chunksEnd = <List<int>>[];
+        bool responseEndStreamSubscriptionIsErrored = false;
+        bool responseEndStreamSubscriptionIsDone = false;
+        responseEnd.listen(chunksEnd.add, onError: (e) {
+          responseEndStreamSubscriptionIsErrored = true;
+        }, onDone: () {
+          responseEndStreamSubscriptionIsDone = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks.length, equals(1));
+        expect(chunksEnd.length, equals(1));
+        expect(chunksEnd[0].length, equals(1000));
+        expect(responseEndStreamSubscriptionIsErrored, isFalse);
+        expect(responseEndStreamSubscriptionIsDone, isTrue);
+        final clientRequestEnd2 = await client.getUrl(VideoServer.instance.getUri(digest));
+        clientRequestEnd2.bufferOutput = false;
+        clientRequestEnd2.headers.set(HttpHeaders.rangeHeader, 'bytes=9500-');
+        // Should be no upstream request here, and it's served directly from cache
+        final responseEnd2 = await clientRequestEnd2.close();
+        expect(responseEnd2.contentLength, equals(500));
+        final chunksEnd2 = <List<int>>[];
+        bool responseEnd2StreamSubscriptionIsErrored = false;
+        bool responseEnd2StreamSubscriptionIsDone = false;
+        responseEnd2.listen(chunksEnd2.add, onError: (e) {
+          responseEnd2StreamSubscriptionIsErrored = true;
+        }, onDone: () {
+          responseEnd2StreamSubscriptionIsDone = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks.length, equals(1));
+        expect(chunksEnd.length, equals(1));
+        expect(chunksEnd2.length, equals(1));
+        expect(chunksEnd2[0].length, equals(500));
+        expect(responseEnd2StreamSubscriptionIsErrored, isFalse);
+        expect(responseEnd2StreamSubscriptionIsDone, isTrue);
+        requests[0].response.add(Uint8List(8000));
+        await requests[0].response.flush();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks.length, equals(3));
+        expect(chunks[1].length, equals(8000));
+        expect(chunks[2].length, equals(1000));
+        expect(responseStreamSubscriptionIsErrored, isFalse);
+        expect(responseStreamSubscriptionIsDone, isTrue);
       }
       finally {
         await root.delete(recursive: true);

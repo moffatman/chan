@@ -844,7 +844,7 @@ class SiteReddit extends ImageboardSite {
 			else if (data case {
 				'subreddit': String subreddit,
 				'name': String name,
-				'secure_media': {'reddit_video': Map redditVideo && {'hls_url': String hlsUrl}}
+				'secure_media': {'reddit_video': Map redditVideo && ({'fallback_url': String url} || {'hls_url': String url})}
 			}) {
 				attachments.add(Attachment(
 					type: AttachmentType.mp4,
@@ -853,7 +853,7 @@ class SiteReddit extends ImageboardSite {
 					id: name,
 					ext: '.mp4',
 					filename: 'video.mp4',
-					url: unescape.convert(hlsUrl),
+					url: unescape.convert(url),
 					thumbnailUrl: switch (data['preview']) {
 						{'images': [{'resolutions': [{'url': String url}, ...]}, ...]} => unescape.convert(url),
 						_ => ''
@@ -870,7 +870,7 @@ class SiteReddit extends ImageboardSite {
 				'preview': Map preview
 			}) {
 				if (preview case {
-					'reddit_video_preview': Map redditVideoPreview && {'hls_url': String hlsUrl}
+					'reddit_video_preview': Map redditVideoPreview && ({'fallback_url': String url} || {'hls_url': String url})
 				}) {
 					attachments.add(Attachment(
 						type: AttachmentType.mp4,
@@ -879,7 +879,7 @@ class SiteReddit extends ImageboardSite {
 						id: name,
 						ext: '.mp4',
 						filename: 'video.mp4',
-						url: unescape.convert(hlsUrl),
+						url: unescape.convert(url),
 						thumbnailUrl: switch (preview) {
 							{'images': [{'resolutions': [{'url': String url}, ...]}, ...]} => unescape.convert(url),
 							_ => ''
