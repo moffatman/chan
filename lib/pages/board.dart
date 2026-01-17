@@ -432,6 +432,12 @@ class BoardPageState extends State<BoardPage> {
 	}
 
 	void _onThreadSelected(ThreadIdentifier identifier) {
+		final thread = _listController.items.tryFirstWhere((t) => t.item.identifier == identifier)?.item;
+		if (thread != null) {
+			// We may be on a stale catalog (over 10 minutes old), and the copy in the site might have been deleted
+			// Try to fill it in to allow thread to open with OP shown during loading
+			context.read<ImageboardSite?>()?.ensureCatalogCached(thread, _listController.state?.lastUpdateTime ?? DateTime.now().subtract(const Duration(minutes: 3)));
+		}
 		_threadPullTabHandlerKey.currentState?.onThreadSelected(identifier);
 		_listController.unfocusSearch();
 		if (widget.onThreadSelected != null) {

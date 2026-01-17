@@ -1716,6 +1716,21 @@ class CatalogPageMap extends Cacheable {
 	String toString() => 'CatalogPageMap(pageMap: $pageMap, lastModified: $lastModified, fetchedTime: $fetchedTime)';
 }
 
+class _TemporaryThread extends Cacheable {
+	final Thread thread;
+	final DateTime insertedTime;
+
+	_TemporaryThread({
+		required this.thread,
+		required super.fetchedTime,
+	}) : insertedTime = DateTime.now(), super(
+		lastModified: thread.lastUpdatedTime ?? thread.posts_.tryLast?.time ?? thread.time
+	);
+
+	@override
+	String toString() => '_TemporaryThread(thread: $thread, fetchedTime: $fetchedTime)';
+}
+
 bool isExceptionReAttemptable(RequestPriority priority, dynamic e) => switch (e) {
 	CloudflareHandlerNotAllowedException() => priority.index > RequestPriority.cosmetic.index,
 	Http429Exception() => priority.index > RequestPriority.lowest.index,
@@ -1731,6 +1746,7 @@ abstract class ImageboardSiteArchive {
 	));
 	final Map<String, Map<String?, Catalog>> _catalogCache = {};
 	final Map<String, Map<String?, CatalogPageMap>> _catalogPageMapCache = {};
+	final Map<ThreadIdentifier, _TemporaryThread> _temporaryThreadCache = {};
 	static const _kCacheLifetime = Duration(minutes: 10);
 	Timer? _cacheGarbageCollectionTimer;
 	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
@@ -1774,6 +1790,16 @@ abstract class ImageboardSiteArchive {
 			}
 		}
 		(_catalogCache[board] ??= {})[variant?.dataId] = catalog;
+	}
+	void ensureCatalogCached(Thread thread, DateTime fetchedTime) {
+		if (_catalogCache[thread.board]?.values.any((c) => c.threads.containsKey(thread.id)) ?? false) {
+			// Already cached
+			return;
+		}
+		_temporaryThreadCache[thread.identifier] = _TemporaryThread(
+			thread: thread,
+			fetchedTime: fetchedTime
+		);
 	}
 	@protected
 	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
@@ -1913,13 +1939,20 @@ abstract class ImageboardSiteArchive {
 		}
 		final caches = _catalogCache[identifier.board];
 		if (caches == null) {
+			final temporary = _temporaryThreadCache[identifier];
+			if (temporary != null && (constraints == null || temporary.satisfiesConstraints(constraints))) {
+				return temporary.thread;
+			}
 			return null;
 		}
 		for (final cache in caches.values) {
 			if (constraints != null && !cache.satisfiesConstraints(constraints)) {
 				continue;
 			}
-			return cache.threads[identifier.id];
+			final thread = cache.threads[identifier.id];
+			if (thread != null) {
+				return thread;
+			}
 		}
 		return null;
 	}
@@ -1975,12 +2008,16 @@ abstract class ImageboardSiteArchive {
 			map.removeWhere((_, x) => x.fetchedTime.isBefore(time));
 			return map.isEmpty;
 		});
+		_temporaryThreadCache.removeWhere((_, thread) {
+			return thread.insertedTime.isBefore(time);
+		});
 	}
 
 	@mustCallSuper
 	void migrateFromPrevious(covariant ImageboardSiteArchive oldSite) {
 		_catalogCache.addAll(oldSite._catalogCache);
 		_catalogPageMapCache.addAll(oldSite._catalogPageMapCache);
+		_temporaryThreadCache.addAll(oldSite._temporaryThreadCache);
 	}
 
 	@mustCallSuper
