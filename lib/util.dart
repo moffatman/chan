@@ -1110,6 +1110,24 @@ extension ModalValue<T> on Iterable<T> {
 	}
 }
 
+extension Split<T> on Iterable<T> {
+	List<List<T>> splitWhere(bool Function(T v) f) {
+		if (isEmpty) {
+			return [];
+		}
+		final out = <List<T>>[[]];
+		for (final item in this) {
+			if (f(item)) {
+				out.add([]);
+			}
+			else {
+				out.last.add(item);
+			}
+		}
+		return out;
+	}
+}
+
 extension RoundToEven on num {
 	int get roundToEven => (this / 2).round() * 2;
 }

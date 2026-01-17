@@ -279,7 +279,7 @@ packages:
     description:
       path: "pkgs/csslib"
       ref: main
-      resolved-ref: d40f3b67610d9dada20b745015dd5d966a5b9b0c
+      resolved-ref: "5d764c34bc8a8028dbf37b82c4aca7b08e81ed68"
       url: "https://github.com/moffatman/dart-tools.git"
     source: git
     version: "1.0.2"

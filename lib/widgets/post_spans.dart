@@ -13,6 +13,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/css.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
@@ -39,6 +40,7 @@ import 'package:chan/widgets/tex.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/user_info.dart';
 import 'package:chan/widgets/weak_navigator.dart';
+import 'package:csslib/visitor.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -162,8 +164,8 @@ class PostSpanRenderOptions {
 sealed class PostSpan {
 	const PostSpan();
 	InlineSpan build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
-	String buildText(Post? post, {bool forQuoteComparison = false});
-	double estimateLines(Post? post, double charactersPerLine) => buildText(post).length / charactersPerLine;
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true});
+	double estimateLines(Post? post, double charactersPerLine) => buildText(post, includeMarkup: false).length / charactersPerLine;
 	@override
 	String toString() {
 		return '$runtimeType(${buildText(null)})';
@@ -183,7 +185,7 @@ abstract class PostSpanWithChild extends PostSpan {
 	final PostSpan child;
 	const PostSpanWithChild(this.child);
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false}) => child.buildText(post, forQuoteComparison: forQuoteComparison);
+	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => child.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
 	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
 		yield this;
@@ -197,7 +199,7 @@ class _PostWrapperSpan extends PostTerminalSpan {
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) => span;
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) => span.toPlainText();
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => span.toPlainText();
 }
 
 class PostNodeSpan extends PostSpan {
@@ -289,8 +291,8 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
-		return children.map((x) => x.buildText(post, forQuoteComparison: forQuoteComparison)).join('');
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		return children.map((x) => x.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup)).join('');
 	}
 
 	@override
@@ -372,7 +374,7 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		if (forQuoteComparison) {
 			// Make it look like a SiteXenforo quote (the only use case)
 			return '${attachments.map((a) => '[View Attachment ${a.id}](${a.url})').join('')}\n';
@@ -434,7 +436,7 @@ class PostTextSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		return text;
 	}
 }
@@ -474,7 +476,7 @@ class PostLineBreakSpan extends PostTerminalSpan {
 	InlineSpan build(context, post, zone, settings, theme, options) =>  const TextSpan(text: '\n');
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) => '\n';
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => '\n';
 
 	@override
 	String toString() => 'PostLineBreakSpan()';
@@ -533,8 +535,8 @@ class PostWeakQuoteLinkSpan extends PostSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
-		return _getSpan(post).buildText(post, forQuoteComparison: forQuoteComparison);
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		return _getSpan(post).buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
 	}
 
 	@override
@@ -558,12 +560,12 @@ class PostQuoteSpan extends PostSpanWithChild {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		if (forQuoteComparison) {
 			// Nested quotes not used
 			return '';
 		}
-		return child.buildText(post);
+		return child.buildText(post, includeMarkup: includeMarkup);
 	}
 
 	@override
@@ -908,7 +910,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		if (forQuoteComparison) {
 			// Xenforo does not nest quotes
 			return '';
@@ -967,12 +969,12 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		if (forQuoteComparison) {
 			// Xenforo does not nest quotes
 			return '';
 		}
-		return '${quoteLink.buildText(post)}\n${context.buildText(post)}';
+		return '${quoteLink.buildText(post, includeMarkup: includeMarkup)}\n${context.buildText(post, includeMarkup: includeMarkup)}';
 	}
 
 	@override
@@ -1017,7 +1019,7 @@ class PostBoardLinkSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		return '>>/$board/';
 	}
 }
@@ -1165,7 +1167,10 @@ class PostCodeSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (!includeMarkup) {
+			return text;
+		}
 		return '[code]$text[/code]';
 	}
 }
@@ -1205,7 +1210,10 @@ class PostSpoilerSpan extends PostSpanWithChild {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (!includeMarkup) {
+			return child.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+		}
 		return '[spoiler]${child.buildText(post, forQuoteComparison: forQuoteComparison)}[/spoiler]';
 	}
 }
@@ -1483,7 +1491,10 @@ class PostLinkSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (includeMarkup) {
+			return name ?? url;
+		}
 		if (name != null && !url.endsWith(name!)) {
 			return '[$name]($url)';
 		}
@@ -1528,7 +1539,7 @@ class PostCatalogSearchSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) {
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		return '>>>/$board/$query';
 	}
 }
@@ -1553,7 +1564,12 @@ class PostTeXSpan extends PostTerminalSpan {
 		);
 	}
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) => '[math]$tex[/math]';
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (!includeMarkup) {
+			return tex;
+		}
+		return '[math]$tex[/math]';
+	}
 }
 
 class PostInlineImageSpan extends PostTerminalSpan {
@@ -1590,7 +1606,7 @@ class PostInlineImageSpan extends PostTerminalSpan {
 		);
 	}
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) => src;
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => src;
 }
 
 class PostColorSpan extends PostSpanWithChild {
@@ -1714,7 +1730,12 @@ class PostPopupSpan extends PostSpanWithChild {
 	}
 
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false}) => '$title\n${child.buildText(post, forQuoteComparison: forQuoteComparison)}';
+	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (!includeMarkup) {
+			return title;
+		}
+		return '$title\n${child.buildText(post, forQuoteComparison: forQuoteComparison)}';
+	}
 }
 
 class IntrinsicColumnWidthWithMaxWidth extends IntrinsicColumnWidth {
@@ -1786,7 +1807,7 @@ class PostTableSpan extends PostSpan {
 		);
 	}
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false}) => rows.map((r) => r.map((r) => r.buildText(post, forQuoteComparison: forQuoteComparison)).join(', ')).join('\n');
+	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => rows.map((r) => r.map((r) => r.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup)).join(', ')).join('\n');
 
 	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
@@ -1806,7 +1827,7 @@ class PostDividerSpan extends PostTerminalSpan {
 	);
 
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false}) => '\n';
+	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => '\n';
 }
 
 class PostShiftJISSpan extends PostTerminalSpan {
@@ -1844,7 +1865,12 @@ class PostShiftJISSpan extends PostTerminalSpan {
 	}
 
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false}) => '[sjis]$text[/sjis]';
+	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (!includeMarkup) {
+			return text;
+		}
+		return '[sjis]$text[/sjis]';
+	}
 }
 
 class PostUserLinkSpan extends PostTerminalSpan {
@@ -1880,7 +1906,7 @@ class PostUserLinkSpan extends PostTerminalSpan {
 	}
 
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false}) => '/u/$username';
+	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => '/u/$username';
 }
 
 class PostCssSpan extends PostSpanWithChild {
@@ -1888,103 +1914,59 @@ class PostCssSpan extends PostSpanWithChild {
 
 	const PostCssSpan(super.child, this.css);
 
-	static double? _strToPx(String str) {
-		if (str.endsWith('px')) {
-			return str.substring(0, str.length - 2).tryParseDouble;
-		}
-		// Could implement more later
-		return str.tryParseDouble;
-	}
-
 	@override
 	build(context, post, zone, settings, theme, options) {
-		final unrecognizedParts = <String>[];
+		final unrecognizedParts = <MapEntry<String, Expression>>[];
 		TextStyle style = options.baseTextStyle;
 		bool foundBackgroundClipText = false;
 		bool foundTextFillColorTransparent = false;
-		for (final part in css.split(';')) {
-			if (part.trim().isEmpty) {
-				continue;
-			}
-			final kv = part.split(':');
-			if (kv.length != 2) {
-				unrecognizedParts.add(part);
-				continue;
-			}
-			final key = kv[0].trim();
-			final value = kv[1].trim();
+		for (final part in resolveInlineCss(css).entries) {
+			final key = part.key;
+			final value = part.value;
 			if ((key == 'background-color' || key == 'background')) {
-				final color = colorToHex(value);
+				final color = value.color;
 				if (color != null) {
 					style = style.copyWith(backgroundColor: color);
 					continue;
 				}
 			}
 			if (key == 'color') {
-				final color = colorToHex(value);
+				final color = value.color;
 				if (color != null) {
 					style = style.copyWith(color: color);
 					continue;
 				}
 			}
-			if (key == 'background' && value.startsWith('linear-gradient(to left,')) {
-				final match = RegExp(r'^linear-gradient\(to left, (.+)\)$').firstMatch(value);
-				if (match == null) {
+			if (value case Expressions(expressions: [FunctionTerm(text: 'linear-gradient')]) when key == 'background') {
+				// Not really possible to construct the proper rect. we don't know where we are
+				// Just do a reasonable few words one and loop it
+				// Smaller children should have tighter loop to make sure all colors seen in uncertain offset intersection
+				final rect = Rect.fromLTWH(0, 0, child.buildText(post, includeMarkup: false).length * 5, 17);
+				final gradient = value.linearGradient(rect, tileMode: ui.TileMode.mirror);
+				if (gradient == null) {
 					unrecognizedParts.add(part);
 					continue;
 				}
-				final colors = match.group(1)?.split(', ').tryMap(colorToHex).toList();
-				if (colors == null || colors.length < 2) {
-					unrecognizedParts.add(part);
-					continue;
-				}
-				style = style.copyWith(background: Paint()..shader = ui.Gradient.linear(
-					const Offset(1, 0.5),
-					const Offset(0, 0.5),
-					colors,
-					List.generate(colors.length, (i) => i / (colors.length - 1))
-				));
+				style = style.copyWith(background: Paint()..shader = gradient);
 			}
-			else if (key == 'font-weight' && value == 'bold') {
+			else if (key == 'font-weight' && value.string == 'bold') {
 				style = style.copyWith(fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold);
 			}
 			else if (key == 'font-family') {
-				style = style.copyWith(fontFamily: value);
+				style = style.copyWith(fontFamily: value.string);
 			}
 			else if (key == 'text-shadow') {
-				final shadows = <Shadow>[];
-				for (final shadow in value.split(',')) {
-					final match = RegExp(r'^(\d+)px (\d+)px (?:(\d+)px )([^ ]+)$').firstMatch(shadow.trim());
-					if (match == null) {
-						unrecognizedParts.add(part);
-						continue;
-					}
-					final offsetXStr = match.group(1);
-					final offsetYStr = match.group(2);
-					final blurRadiusStr = match.group(3);
-					final colorStr = match.group(4);
-					if (offsetXStr == null || offsetYStr == null || colorStr == null) {
-						continue;
-					}
-					final offsetX = _strToPx(offsetXStr);
-					final offsetY = _strToPx(offsetYStr);
-					final blurRadius = _strToPx(blurRadiusStr ?? '');
-					final color = colorToHex(colorStr);
-					if (offsetX == null || offsetY == null || color == null) {
-						continue;
-					}
-					shadows.add(Shadow(
-						offset: Offset(offsetX, offsetY),
-						color: color,
-						blurRadius: blurRadius ?? 0
-					));
+				final shadows = value.shadows;
+				if (shadows == null) {
+					unrecognizedParts.add(part);
+					continue;
 				}
 				style = style.copyWith(shadows: shadows);
 			}
-			else if (key == '-webkit-background-clip' && value == 'text') {
+			else if (key == '-webkit-background-clip' && value.string == 'text') {
 				foundBackgroundClipText = true;
 			}
-			else if (key == '-webkit-text-fill-color' && value == 'transparent') {
+			else if (key == '-webkit-text-fill-color' && value.string == 'transparent') {
 				foundTextFillColorTransparent = true;
 			}
 			else if (key == 'animation' || key == 'padding' || key == 'border-radius') {
@@ -1996,7 +1978,7 @@ class PostCssSpan extends PostSpanWithChild {
 		}
 
 		if (foundBackgroundClipText && foundTextFillColorTransparent) {
-			style = style.copyWith(background: Paint()..color = style.backgroundColor ?? Colors.white, foreground: style.background);
+			style = style.copyWith(background: Paint()..color = Colors.transparent, foreground: style.background);
 		}
 
 		if (unrecognizedParts.isEmpty) {
@@ -2007,7 +1989,7 @@ class PostCssSpan extends PostSpanWithChild {
 		else {
 			return TextSpan(
 				children: [
-					TextSpan(text: '<span style="${unrecognizedParts.join('; ')}">'),
+					TextSpan(text: '<span style="${unrecognizedParts.map((p) => '${p.key}: ${p.value.string}').join('; ')}">'),
 					child.build(context, post, zone, settings, theme, options.copyWith(
 						baseTextStyle: style
 					)),
@@ -2018,7 +2000,12 @@ class PostCssSpan extends PostSpanWithChild {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false}) => '<span style="$css">${child.buildText(post, forQuoteComparison: forQuoteComparison)}</span>';
+	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (!includeMarkup) {
+			return child.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+		}
+		return '<span style="$css">${child.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup)}</span>';
+	}
 }
 
 class PostSmallTextSpan extends PostSpanWithChild {

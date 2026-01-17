@@ -814,9 +814,14 @@ extension Contrast on Color {
 		contrastWith(other) > 3;
 }
 
-Color? colorToHex(String hexString) {
+final _rgbColorPattern = RegExp(r'^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)$');
+
+Color? colorToHex(String hexString, {bool requireHash = false}) {
 	int? color = kCssColors[hexString];
 	if (color == null) {
+		if (requireHash && !hexString.startsWith('#')) {
+			return null;
+		}
 		hexString = hexString.replaceFirst('#', '');
 		final buffer = StringBuffer();
 		if (hexString.length == 3) {
@@ -834,6 +839,15 @@ Color? colorToHex(String hexString) {
 			buffer.write(hexString);
 		}
 		color = int.tryParse(buffer.toString(), radix: 16);
+	}
+	if (color == null && hexString.startsWith('rgb')) {
+		final match = _rgbColorPattern.firstMatch(hexString);
+		if (match != null) {
+			color = 0xFF000000
+								| ((match.group(1)?.tryParseInt?.clamp(0, 255) ?? 0) << 16)
+								| ((match.group(2)?.tryParseInt?.clamp(0, 255) ?? 0) << 8)
+								| (match.group(3)?.tryParseInt?.clamp(0, 255) ?? 0);
+		}
 	}
 	if (color != null) {
 		return Color(color);
