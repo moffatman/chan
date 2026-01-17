@@ -2523,7 +2523,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get hasLargeInlineAttachments => false;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
-	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? Function() title) => null;
+	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri uri, String? Function() title, Future<String?> Function() html) async => null;
 	bool get supportsPinkQuotes => false;
 	bool get supportsBlueQuotes => false;
 	bool embedPossible(Uri url) => false;

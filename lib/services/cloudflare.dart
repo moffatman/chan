@@ -36,8 +36,19 @@ extension CloudflareHandled on Response {
 extension HtmlTitle on Response {
 	String? get htmlTitle {
 		if ((headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false) &&
-				data is String) {
+				(data is String || data is List<int>)) {
 			return parse(data).querySelector('title')?.text;
+		}
+		return null;
+	}
+	String? get html {
+		if (headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false) {
+			if (data case String string) {
+				return string;
+			}
+			if (data case List<int> bytes) {
+				return utf8.decode(bytes);
+			}
 		}
 		return null;
 	}
@@ -261,7 +272,7 @@ class CloudflareInterceptor extends Interceptor {
 		].any((ending) => title.endsWith(ending));
 	}
 
-	static bool _responseMatches(Response response) {
+	static Future<bool> _responseMatches(Response response) async {
 		if ([203, 403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
 			if (response.headers.value('server') == 'cloudflare' && response.headers.value('cf-mitigated') == 'challenge') {
 				// Hopefully this catches the streamed ones
@@ -275,7 +286,7 @@ class CloudflareInterceptor extends Interceptor {
 			final title = document.querySelector('title')?.text ?? '';
 			return _titleMatches(title);
 		}
-		if (ImageboardRegistry.instance.isRedirectGateway(response.realUri, () => response.htmlTitle)) {
+		if (await ImageboardRegistry.instance.isRedirectGateway(response.realUri, () => response.htmlTitle, () async => response.html)) {
 			return true;
 		}
 		return false;
@@ -458,7 +469,7 @@ class CloudflareInterceptor extends Interceptor {
 						return;
 					}
 				}
-				if (!ImageboardRegistry.instance.isRedirectGateway(uri, () => title) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
+				if (!(await ImageboardRegistry.instance.isRedirectGateway(uri, () => title, () => controller.getHtml())) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
 					await Persistence.saveCookiesFromWebView(uri!);
 					try {
 						final value = await handler(controller, uri, false);
@@ -696,7 +707,7 @@ class CloudflareInterceptor extends Interceptor {
 				), true);
 				return;
 			}
-			if (_responseMatches(response)) {
+			if (await _responseMatches(response)) {
 				if (!response.requestOptions.priority.shouldPopupCloudflare) {
 					handler.reject(DioError(
 						requestOptions: response.requestOptions,
@@ -706,7 +717,7 @@ class CloudflareInterceptor extends Interceptor {
 					return;
 				}
 				final _CloudflareResponse data;
-				final gateway = ImageboardRegistry.instance.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri), () => response.htmlTitle);
+				final gateway = await ImageboardRegistry.instance.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri) ?? response.realUri, () => response.htmlTitle, () async => response.html);
 				if (gateway != null) {
 					// Start the request again
 					// We need to ensure cookies are preserved in all navigation sequences
@@ -779,7 +790,7 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			if (err.type == DioErrorType.response &&
 		    err.response != null &&
-				_responseMatches(err.response!)) {
+				await _responseMatches(err.response!)) {
 			if (!err.requestOptions.priority.shouldPopupCloudflare) {
 				handler.reject(DioError(
 					requestOptions: err.requestOptions,

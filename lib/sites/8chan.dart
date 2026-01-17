@@ -53,7 +53,7 @@ class Site8Chan extends SiteLynxchan {
 	}
 
 	@override
-	ImageboardRedirectGateway? getRedirectGateway(Uri uri, String? Function() title) {
+	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri uri, String? Function() title, Future<String?> Function() html) async {
 		if ((uri.host == baseUrl || uri.host == '') && uri.path == '/.static/pages/disclaimer.html') {
 			return redirectGateway;
 		}
