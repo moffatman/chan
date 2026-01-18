@@ -8,6 +8,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/cookie_browser.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/picker.dart';
@@ -1839,6 +1840,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 
 	Widget _buildOptions(BuildContext context) {
 		final settings = context.watch<Settings>();
+		final imageboard = context.watch<Imageboard>();
 		final site = context.watch<ImageboardSite>();
 		final fields = site.loginSystem?.getSavedLoginFields();
 		return Container(
@@ -1929,6 +1931,65 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							onChanged: (s) {
 								_didUpdateDraft();
 							}
+						)
+					),
+					if (site.supportsWebPostingFallback) Padding(
+						padding: const EdgeInsets.only(left: 8),
+						child: AdaptiveThinButton(
+							padding: const EdgeInsets.all(4),
+							onPressed: () async {
+								final draft = _makeDraft();
+								final encoded = await site.encodePostForWeb(draft);
+								if (encoded == null) {
+									throw Exception('Post was not encoded');
+								}
+								if (!context.mounted) {
+									return;
+								}
+								bool submitted = false;
+								final receipt = await Navigator.of(context, rootNavigator: true).push<PostReceipt>(adaptivePageRoute(
+									useFullWidthGestures: false, // Some captchas have sliding thing
+									builder: (context) => CookieBrowser(
+										initialUrl: Uri.parse(site.getWebUrl(board: widget.board.s, threadId: widget.threadId)),
+										formFields: encoded.fields,
+										autoClickSelector: encoded.autoClickSelector,
+										onFormSubmitted: (fields) {
+											submitted = true;
+										},
+										onLoadStop: (url) async {
+											if (!submitted) {
+												return;
+											}
+											final decoded = await site.decodeUrl(url);
+											if (decoded == null || !context.mounted) {
+												return;
+											}
+											final threadId = decoded.threadId;
+											if (threadId != null && (decoded.postId != null || draft.threadId == null)) {
+												Navigator.pop(context, PostReceipt(
+													password: encoded.password,
+													id: decoded.postId ?? threadId,
+													name: draft.name ?? '',
+													options: draft.options ?? '',
+													time: DateTime.now(),
+													post: draft
+												));
+											}
+										}
+									)
+								));
+								if (receipt != null) {
+									await imageboard.didSubmitPost(draft, receipt);
+									widget.onReplyPosted(draft.board, receipt);
+									mediumHapticFeedback();
+									_reset();
+									_rootFocusNode.unfocus();
+									if (Settings.instance.closeReplyBoxAfterSubmitting) {
+										hideReplyBox();
+									}
+								}
+							},
+							child: const Text('Post via web')
 						)
 					),
 					if (fields != null) Padding(

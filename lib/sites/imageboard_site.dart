@@ -2040,6 +2040,8 @@ abstract class ImageboardSiteArchive {
 	int get hashCode => baseUrl.hashCode;
 }
 
+typedef EncodedWebPost = ({Map<String, dynamic> fields, String password, String? autoClickSelector});
+
 abstract class ImageboardSite extends ImageboardSiteArchive {
 	final List<ImageboardSiteArchive> archives;
 	final Map<String, String> imageHeaders;
@@ -2064,6 +2066,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken});
 	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread, {CancelToken? cancelToken}) async => const NoCaptchaRequest();
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken);
+	bool get supportsWebPostingFallback => false;
+	Future<EncodedWebPost?> encodePostForWeb(DraftPost post) async => null;
 	Duration getActionCooldown(String board, ImageboardAction action, CookieJar cookies) => const Duration(seconds: 3);
 	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');

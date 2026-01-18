@@ -497,6 +497,11 @@ class Imageboard extends ChangeNotifier {
 		final receipt = await _submitPostWithAdditionalCaptchaHandling(post, captchaSolution, cancelToken);
 		persistence.browserState.outbox.remove(post);
 		runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
+		await didSubmitPost(post, receipt);
+		return receipt;
+	}
+
+	Future<void> didSubmitPost(DraftPost post, PostReceipt receipt) async {
 		final thread = ThreadIdentifier(post.board, post.threadId ?? receipt.id);
 		final persistentState = persistence.getThreadState(thread);
 		persistentState.receipts = [...persistentState.receipts, receipt];
@@ -523,7 +528,6 @@ class Imageboard extends ChangeNotifier {
 			persistentState.savedTime ??= DateTime.now();
 		}
 		await persistentState.save();
-		return receipt;
 	}
 
 	@override

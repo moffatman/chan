@@ -782,30 +782,42 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		);
 	}
 
-	
 	@override
-	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+	bool get supportsWebPostingFallback => true;
+	@override
+	Future<EncodedWebPost> encodePostForWeb(DraftPost post, {CaptchaSolution? captchaSolution}) async {
 		final password = makeRandomBase64String(88);
-		final file = post.file;
-		final flag = post.flag;
-		final response = await client.postUri(
-			Uri.https(sysUrl, '/${post.board}/post'),
-			data: FormData.fromMap({
-				if (post.threadId != null) 'resto': post.threadId.toString(),
-				if (post.subject != null) 'sub': post.subject,
-				'com': post.text,
-				'mode': 'regist',
+		return (
+			password: password,
+			fields: {
 				'pwd': password,
 				'name': post.name ?? '',
 				'email': post.options ?? '',
+				if (post.subject != null) 'sub': post.subject,
+				'com': post.text,
 				if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
 				else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
 					't-challenge': captchaSolution.challenge,
 					't-response': captchaSolution.response
 				},
-				if (file != null) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename),
+				if (post.flag case final flag?) 'flag': flag.code,
+				if (post.file case final file?) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename),
 				if (post.spoiler == true) 'spoiler': 'on',
-				if (flag != null) 'flag': flag.code
+			},
+			autoClickSelector: '#togglePostFormLink a'
+		);
+	}
+	
+	@override
+	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		final encoded = await encodePostForWeb(post, captchaSolution: captchaSolution);
+		final file = post.file;
+		final response = await client.postUri(
+			Uri.https(sysUrl, '/${post.board}/post'),
+			data: FormData.fromMap({
+				'mode': 'regist',
+				if (post.threadId != null) 'resto': post.threadId.toString(),
+				...encoded.fields
 			}),
 			options: Options(
 				responseType: ResponseType.plain,
@@ -831,7 +843,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			return PostReceipt(
 				post: post,
 				id: id,
-				password: password,
+				password: encoded.password,
 				name: post.name ?? '',
 				options: post.options ?? '',
 				time: DateTime.now(),

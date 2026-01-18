@@ -633,6 +633,27 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	}
 
 	@override
+	bool get supportsWebPostingFallback => true;
+	@override
+	Future<EncodedWebPost> encodePostForWeb(DraftPost post) async {
+		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
+		return (
+			password: password,
+			fields: {
+				'body': post.text,
+				'password': password,
+				if (post.subject case final subject?) 'subject': subject,
+				if (post.file case final file?) 'file': await MultipartFile.fromFile(file, filename: post.overrideFilename),
+				if (post.spoiler == true) 'spoiler': 'on',
+				if (post.name?.nonEmptyOrNull case final name?) 'name': name,
+				if (post.options?.nonEmptyOrNull case final options?) 'email': options,
+				if (post.flag case final flag?) 'flag': flag.code
+			},
+			autoClickSelector: null
+		);
+	}
+
+	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
