@@ -369,7 +369,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				if (context != null && context.mounted) {
 					showToast(
 						context: context,
-						message: 'Need to wait ${formatDuration(e.tryAgainAt.difference(DateTime.now()))} to get captcha',
+						message: 'Waiting ${formatDuration(e.tryAgainAt.difference(DateTime.now()))} to get captcha...',
 						icon: CupertinoIcons.exclamationmark_shield
 					);
 				}
@@ -478,7 +478,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					if (context != null && context.mounted) {
 						showToast(
 							context: context,
-							message: 'Need to wait ${formatDuration(e.tryAgainAt.difference(DateTime.now()))} to ${action.verbSimplePresentLowercase}',
+							message: 'Waiting ${formatDuration(e.tryAgainAt.difference(DateTime.now()))} to ${action.verbSimplePresentLowercase}...',
 							icon: CupertinoIcons.exclamationmark_shield
 						);
 					}
