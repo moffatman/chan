@@ -1,12 +1,114 @@
 // ignore_for_file: file_names
 
+import 'dart:io';
+
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/javascript_challenge.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:mutex/mutex.dart';
+
+const _kBypassLock = '_bypass_8chan_lock';
+
+class Site8ChanPoWBlockFakePngBlockingInterceptor extends Interceptor {
+	final Site8Chan site;
+
+	Site8ChanPoWBlockFakePngBlockingInterceptor(this.site);
+
+
+	@override
+	void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+		if (options.extra.containsKey(_kBypassLock)) {
+			handler.next(options);
+			return;
+		}
+		site._interceptorLock.protect(() async {
+			handler.next(options);
+		});
+	}
+}
+
+class Site8ChanPoWBlockFakePngInterceptor extends Interceptor {
+	final Site8Chan site;
+
+	Site8ChanPoWBlockFakePngInterceptor(this.site);
+
+	bool _responseMatches(Response response) {
+		return response.realUri.host == site.imageUrl
+			&& response.realUri.path.startsWith('/.media/')
+			&& response.headers.value(HttpHeaders.ageHeader) == '0'
+			&& response.headers.value(HttpHeaders.expiresHeader) == '0'
+			&& (response.headers.value(HttpHeaders.cacheControlHeader)?.contains('no-cache') ?? false);
+	}
+
+	Future<Response?> _resolve(Response response) async {
+		final wasLocked = site._interceptorLock.isLocked;
+		await site._interceptorLock.protect(() async {
+			if (wasLocked) {
+				// Assume it was logged into already
+				return;
+			}
+			await site.client.getUri(Uri.https(site.baseUrl, '/'), options: Options(
+				extra: {
+					_kBypassLock: true,
+					kCloudflare: true
+				}
+			));
+		});
+		// Retry the request
+		return await site.client.fetch(response.requestOptions);
+	}
+
+	@override
+	void onResponse(Response response, ResponseInterceptorHandler handler) async {
+		if (_responseMatches(response)) {
+			try {
+				final response2 = await _resolve(response);
+				if (response2 != null) {
+					handler.next(response2);
+					return;
+				}
+			}
+			catch (e, st) {
+				handler.reject(DioError(
+					requestOptions: response.requestOptions,
+					response: response,
+					error: e
+				)..stackTrace = st, true);
+				return;
+			}
+		}
+		handler.next(response);
+	}
+
+	@override
+	void onError(DioError err, ErrorInterceptorHandler handler) async {
+		if (err.response case final response? when _responseMatches(response)) {
+			try {
+				final response2 = await _resolve(response);
+				if (response2 != null) {
+					handler.resolve(response2, true);
+					return;
+				}
+			}
+			catch (e, st) {
+				handler.reject(DioError(
+					requestOptions: response.requestOptions,
+					response: response,
+					error: e
+				)..stackTrace = st, true);
+				return;
+			}
+		}
+		handler.next(err);
+	}
+}
+
 
 class Site8Chan extends SiteLynxchan {
+	final _interceptorLock = Mutex();
   Site8Chan({
 		required super.name,
 		required super.baseUrl,
@@ -21,7 +123,10 @@ class Site8Chan extends SiteLynxchan {
 		required super.allowsArbitraryBoards
 	}) : super(
 		hasBlockBypassJson: true
-	);
+	) {
+		client.interceptors.insert(1, Site8ChanPoWBlockFakePngBlockingInterceptor(this));
+		client.interceptors.add(Site8ChanPoWBlockFakePngInterceptor(this));
+	}
 
 	@override
 	@protected
