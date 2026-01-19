@@ -397,10 +397,6 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
           return
         }
         let sourceUrl = URL(fileURLWithPath: sourcePath)
-        #if targetEnvironment(macCatalyst)
-          result(FlutterError.init(code: "OS", message: "This doesn\'t work on macOS", details: "Blame Apple"))
-          return
-        #endif
         if #available(iOS 14.0, *) {
           let filePicker = UIDocumentPickerViewController(forExporting: [sourceUrl], asCopy: false)
           filePicker.shouldShowFileExtensions = true
