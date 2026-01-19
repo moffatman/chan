@@ -58,7 +58,11 @@ class Site8ChanPoWBlockFakePngInterceptor extends Interceptor {
 			));
 		});
 		// Retry the request
-		return await site.client.fetch(response.requestOptions);
+		final response2 = await site.client.fetch(response.requestOptions);
+		if (_responseMatches(response2)) {
+			throw Exception('8chan PoWBlock bypass failed');
+		}
+		return response2;
 	}
 
 	@override
