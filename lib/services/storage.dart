@@ -169,10 +169,149 @@ Future<String> saveFile({
 
 final bool isSaveFileAsSupported = Platform.isAndroid || Platform.isIOS;
 
+enum SaveAsFileType {
+	image,
+	video,
+	other
+}
+
 Future<String?> saveFileAs({
+	required BuildContext context,
+	required SaveAsFileType type,
 	required String sourcePath,
 	required String destinationName
 }) async {
+	if (Platform.isIOS && (type == SaveAsFileType.image || type == SaveAsFileType.video)) {
+		Future<void> saveToGallery(AssetPathEntity? album) async {
+			final asAsset = (type == SaveAsFileType.image) ? 
+				await PhotoManager.editor.saveImageWithPath(sourcePath, title: destinationName) :
+				await PhotoManager.editor.saveVideo(File(sourcePath), title: destinationName);
+			if (asAsset == null) {
+				throw Exception('Failed to save to gallery');
+			}
+			if (album != null) {
+				await PhotoManager.editor.copyAssetToPath(asset: asAsset, pathEntity: album);
+			}
+		}
+		return await showAdaptiveDialog<String>(
+			context: context,
+			builder: (context) => AdaptiveAlertDialog(
+				title: const Text('Choose save location'),
+				actions: [
+					AdaptiveDialogAction(
+						child: const Text('Gallery (no album)'),
+						onPressed: () async {
+							await saveToGallery(null);
+							if (context.mounted) {
+								Navigator.pop(context, destinationName);
+							}
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Gallery (existing album)'),
+						onPressed: () async {
+							final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
+							if (!context.mounted) {
+								return;
+							}
+							if (existingAlbums.isEmpty) {
+								throw Exception('No albums found');
+							}
+							final album = await showAdaptiveModalPopup<AssetPathEntity>(
+								context: context,
+								builder: (context) => AdaptiveActionSheet(
+									title: const Text('Choose existing album'),
+									actions: [
+										for (final album in existingAlbums) AdaptiveActionSheetAction(
+											child: Text(album.name),
+											onPressed: () => Navigator.pop(context, album)
+										)
+									],
+									cancelButton: AdaptiveActionSheetAction(
+										child: const Text('Cancel'),
+										onPressed: () => Navigator.pop(context)
+									)
+								)
+							);
+							if (album != null) {
+								await saveToGallery(album);
+								if (context.mounted) {
+									Navigator.pop(context, destinationName);
+								}
+							}
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Gallery (new album)'),
+						onPressed: () async {
+							final controller = TextEditingController();
+							final useName = await showAdaptiveDialog<bool>(
+								context: context,
+								builder: (context) => StatefulBuilder(
+									builder: (context, setDialogState) => AdaptiveAlertDialog(
+										title: const Text('New album'),
+										content: AdaptiveTextField(
+											controller: controller,
+											autofocus: true,
+											placeholder: 'Album name',
+											smartDashesType: SmartDashesType.disabled,
+											smartQuotesType: SmartQuotesType.disabled,
+											onChanged: (s) {
+												setDialogState(() {});
+											},
+											onSubmitted: (s) {
+												if (s.isNotEmpty) {
+													Navigator.pop(context, true);
+												}
+											}
+										),
+										actions: [
+											AdaptiveDialogAction(
+												onPressed: controller.text.isNotEmpty ? () => Navigator.pop(context, true) : null,
+												child: const Text('OK')
+											),
+											AdaptiveDialogAction(
+												onPressed: () => Navigator.pop(context),
+												child: const Text('Cancel')
+											)
+										]
+									)
+								)
+							);
+							final enteredName = controller.text;
+							controller.dispose();
+							if (useName == true) {
+								if (enteredName.isEmpty) {
+									throw Exception('No album name entered');
+								}
+								final album = await PhotoManager.editor.darwin.createAlbum(enteredName);
+								await saveToGallery(album);
+								if (context.mounted) {
+									Navigator.pop(context, destinationName);
+								}
+							}
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Files'),
+						onPressed: () async {
+							final name = await _platform.invokeMethod<String>('saveFileAs', {
+								'sourcePath': sourcePath,
+								'destinationName': destinationName
+							});
+							if (context.mounted) {
+								Navigator.pop(context, name);
+							}
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Cancel'),
+						onPressed: () => Navigator.pop(context)
+					)
+				]
+			)
+		);
+	}
 	return await _platform.invokeMethod<String>('saveFileAs', {
 		'sourcePath': sourcePath,
 		'destinationName': destinationName

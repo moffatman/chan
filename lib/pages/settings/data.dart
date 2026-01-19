@@ -828,8 +828,10 @@ final dataSettings = [
 				if (!context.mounted) {
 					return;
 				}
-				if (Platform.isAndroid) {
+				if (isSaveFileAsSupported) {
 					await saveFileAs(
+						context: context,
+						type: SaveAsFileType.other,
 						sourcePath: file.path,
 						destinationName: file.basename
 					);
@@ -900,8 +902,10 @@ final dataSettings = [
 							)),
 							child: const Text('Export')
 						),
-						if (Platform.isAndroid) AdaptiveDialogAction(
+						if (isSaveFileAsSupported) AdaptiveDialogAction(
 							onPressed: () => Navigator.pop<Future<void> Function(File)>(context, (File file) => saveFileAs(
+								context: context,
+								type: SaveAsFileType.other,
 								sourcePath: file.path,
 								destinationName: file.basename
 							)),

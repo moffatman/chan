@@ -1225,8 +1225,14 @@ class AttachmentViewerController extends ChangeNotifier {
 		bool successful = false;
 		try {
 			if (saveAs) {
+				final sourcePath = Platform.isIOS ? (await _moveToShareCache(convertForCompatibility: convertForCompatibility)).path : getFile().path;
+				if (!context.mounted) {
+					return null;
+				}
 				final path = await saveFileAs(
-					sourcePath: Platform.isIOS ? (await _moveToShareCache(convertForCompatibility: convertForCompatibility)).path : getFile().path,
+					context: context,
+					type: _isReallyImage ? SaveAsFileType.image : SaveAsFileType.video,
+					sourcePath: sourcePath,
 					destinationName: filename
 				);
 				successful = path != null;
