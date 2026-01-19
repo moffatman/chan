@@ -18,6 +18,7 @@ import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/request_fixup.dart';
+import 'package:chan/services/storage.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/strict_json.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -726,7 +727,7 @@ enum GallerySavePathOrganizing {
 	@HiveField(3)
 	boardAndThreadNameSubfolders,
 	@HiveField(4)
-	noFolder,
+	deprecatedNoFolder, // Now handled via gallery://
 	@HiveField(5)
 	threadNameSubfolders,
 	@HiveField(6)
@@ -909,7 +910,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(34)
 	bool imagesOnRight;
 	@HiveField(35)
-	String? androidGallerySavePath;
+	String? gallerySavePath;
 	@HiveField(36)
 	double replyBoxHeightOffset;
 	@HiveField(37)
@@ -1295,7 +1296,7 @@ class SavedSettings extends HiveObject {
 		double? interfaceScale,
 		bool? showAnimations,
 		bool? imagesOnRight,
-		this.androidGallerySavePath,
+		this.gallerySavePath,
 		double? replyBoxHeightOffset,
 		bool? blurThumbnails,
 		bool? showTimeInCatalogHeader,
@@ -1768,6 +1769,15 @@ class SavedSettings extends HiveObject {
 		}
 		if (fontFamilyFallback == 'Source Sans Pro') {
 			fontFamilyFallback = 'Source Sans 3';
+		}
+		// Migrate to gallery://
+		if (Platform.isIOS && gallerySavePathOrganizing != null && gallerySavePath == null) {
+			if (gallerySavePathOrganizing == GallerySavePathOrganizing.deprecatedNoFolder) {
+				gallerySavePath = kGallerySavePathGalleryPrefix;
+			}
+			else {
+				gallerySavePath = '${kGallerySavePathGalleryPrefix}Chance';
+			}
 		}
 	}
 
@@ -2483,8 +2493,8 @@ class Settings extends ChangeNotifier {
 
 	static const imagesOnRightSetting = SavedSetting(SavedSettingsFields.imagesOnRight);
 	bool get imagesOnRight => imagesOnRightSetting(this);
-	static const androidGallerySavePathSetting = SavedSetting(SavedSettingsFields.androidGallerySavePath);
-	String? get androidGallerySavePath => androidGallerySavePathSetting(this);
+	static const gallerySavePathSetting = SavedSetting(SavedSettingsFields.gallerySavePath);
+	String? get gallerySavePath => gallerySavePathSetting(this);
 
 	double get replyBoxHeightOffset => _settings.replyBoxHeightOffset;
 	set replyBoxHeightOffset(double setting) {

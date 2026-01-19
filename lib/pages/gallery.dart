@@ -528,7 +528,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		final String? dir;
 		bool force = false;
 		if (saveAs) {
-			dir = await pickDirectory();
+			dir = await pickGallerySavePath(context);
 			if (!mounted || dir == null) {
 				return;
 			}
@@ -558,7 +558,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			context,
 			widget.attachments.length == 1
 					? 'Download?' : 'Download all?',
-			content: '${describeCount(toDownload.length, 'attachment')} will be saved to ${dir ?? 'your library'}',
+			content: '${describeCount(toDownload.length, 'attachment')} will be saved',
 			actionName: 'Download'
 		);
 		if (!mounted || !shouldDownload) {
@@ -1021,12 +1021,12 @@ class _GalleryPageState extends State<GalleryPage> {
 													icon: const Icon(Icons.image_search)
 												),
 												GestureDetector(
-													onLongPress: isSaveFileAsSupported ? () async {
+													onLongPress: isSaveFileAsSupported ? wrapButtonCallback(context, () async {
 														final filename = await currentController.download(force: true, saveAs: true);
 														if (filename != null && context.mounted) {
 															showToast(context: context, message: 'Downloaded $filename', icon: Icons.folder);
 														}
-													} : null,
+													}) : null,
 													child: AdaptiveIconButton(
 														onPressed: currentController.canShare ? () async {
 															final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));

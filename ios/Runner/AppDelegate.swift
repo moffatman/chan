@@ -5,9 +5,70 @@ import Foundation
 import Vision
 import WebKit
 
+class MyFolderPickerDelegate : NSObject, UIDocumentPickerDelegate {
+  private var onResult: ((Any?) -> Void)
+  init(_ onResult: @escaping ((Any) -> Void)) {
+    self.onResult = onResult
+  }
+  
+  func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+    do {
+      guard let url = urls.first else {
+        onResult(nil)
+        return
+      }
+      guard url.startAccessingSecurityScopedResource() else {
+        onResult(FlutterError.init(code: "InsufficientPermission", message: "Directory permissions failed", details: nil))
+        return
+      }
+      defer { url.stopAccessingSecurityScopedResource() }
+      
+      var options: URL.BookmarkCreationOptions = []
+      
+      #if targetEnvironment(macCatalyst)
+        // NSURLBookmarkCreationWithSecurityScope
+        options.update(with: URL.BookmarkCreationOptions(rawValue: 1 << 11))
+        // NSURLBookmarkCreationSecurityScopeAllowOnlyReadAccess
+        options.update(with: URL.BookmarkCreationOptions(rawValue: 1 << 12))
+      #endif
+      
+      let bookmarkData = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+      
+      onResult(bookmarkData.base64EncodedString())
+    }
+    catch {
+      onResult(FlutterError.init(code: "OS", message: "Picking folder failed", details: error.localizedDescription))
+    }
+  }
+
+  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+    onResult(nil)
+  }
+}
+
+class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
+  private var onResult: ((Any?) -> Void)
+  init(_ onResult: @escaping ((Any) -> Void)) {
+    self.onResult = onResult
+  }
+  
+  func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+    onResult(urls.first?.path)
+  }
+  
+  func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentAt url: URL) {
+    onResult(url.path)
+  }
+
+  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+    onResult(nil)
+  }
+}
+
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   var appleChannel: FlutterMethodChannel?
+  var garbageKeepAlive: [any NSObjectProtocol] = []
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -229,6 +290,133 @@ import WebKit
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "getDefaultUserAgent") {
         result(WKWebView().value(forKey: "userAgent"))
+      }
+      else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    let storageChannel = FlutterMethodChannel(name: "com.moffatman.chan/storage", binaryMessenger: controller.binaryMessenger)
+    storageChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if (call.method == "pickDirectory") {
+        if #available(iOS 14.0, *) {
+          let folderPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+          folderPicker.shouldShowFileExtensions = true
+          let delegate = MyFolderPickerDelegate() { (value: Any) in
+            result(value)
+            self.garbageKeepAlive.removeAll(where: { $0.isEqual(folderPicker.delegate) })
+            self.garbageKeepAlive.removeAll(where: { $0.isEqual(folderPicker) })
+          }
+          folderPicker.delegate = delegate
+          self.garbageKeepAlive.append(delegate)
+          self.garbageKeepAlive.append(folderPicker)
+          controller.present(folderPicker, animated: true, completion: nil)
+        } else {
+          result(FlutterError.init(code: "OS", message: "iOS version too low to support picking directory", details: nil))
+        }
+      }
+      else if (call.method == "saveFile") {
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let sourcePath = args["sourcePath"] as? String,
+              let destinationDir = args["destinationDir"] as? String,
+              let destinationSubfolders = args["destinationSubfolders"] as? [String],
+              let destinationName = args["destinationName"] as? String else {
+          result(FlutterError.init(code: "ARGUMENTS", message: "Invalid arguments format", details: nil))
+          return
+        }
+        
+        do {
+          guard let bookmarkData = Data(base64Encoded: destinationDir) else {
+            result(FlutterError.init(code: "InsufficientPermission", message: "Directory permissions invalid", details: nil))
+            return
+          }
+          var isStale = false
+          var options: URL.BookmarkResolutionOptions = []
+          #if targetEnvironment(macCatalyst)
+            // NSURLBookmarkResolutionWithSecurityScope
+            options.update(with: URL.BookmarkResolutionOptions(rawValue: 1 << 10))
+          #endif
+          let url = try URL(resolvingBookmarkData: bookmarkData, options: options, bookmarkDataIsStale: &isStale)
+
+          guard !isStale else {
+            result(FlutterError.init(code: "InsufficientPermission", message: "Directory permissions expired", details: nil))
+            return
+          }
+          
+          guard url.startAccessingSecurityScopedResource() else {
+            result(FlutterError.init(code: "InsufficientPermission", message: "Directory permissions failed", details: nil))
+            return
+          }
+          
+          defer { url.stopAccessingSecurityScopedResource() }
+          
+          var error: NSError? = nil
+          NSFileCoordinator().coordinate(readingItemAt: url, error: &error) { (url) in
+            do {
+              var folderUrl = url
+              for subfolder in destinationSubfolders {
+                folderUrl = folderUrl.appendingPathComponent(subfolder)
+              }
+              try FileManager.default.createDirectory(at: folderUrl, withIntermediateDirectories: true)
+              var fileUrl = folderUrl.appendingPathComponent(destinationName)
+              
+              if (FileManager.default.fileExists(atPath: fileUrl.path)) {
+                var i = 0
+                repeat {
+                  i += 1
+                  fileUrl = folderUrl.appendingPathComponent("\((destinationName as NSString).deletingPathExtension) (\(i)).\((destinationName as NSString).pathExtension)")
+                } while (FileManager.default.fileExists(atPath: fileUrl.path))
+              }
+              
+              let contents = FileManager.default.contents(atPath: sourcePath)
+              
+              guard FileManager.default.createFile(atPath: fileUrl.path, contents: contents) else {
+                result(FlutterError.init(code: "OS", message: "Failed to create file", details: fileUrl.path))
+                return
+              }
+              result(fileUrl.lastPathComponent)
+            }
+            catch {
+              result(FlutterError.init(code: "OS", message: "Problem accessing filesystem", details: error.localizedDescription))
+            }
+          }
+          
+          if let error {
+            result(FlutterError.init(code: "OS", message: "Problem opening directory", details: error.localizedDescription))
+          }
+        }
+        catch {
+          result(FlutterError.init(code: "OS", message: "Saving file failed", details: error.localizedDescription))
+        }
+      }
+      else if (call.method == "saveFileAs") {
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let sourcePath = args["sourcePath"] as? String,
+              let destinationName = args["destinationName"] as? String else {
+          result(FlutterError.init(code: "ARGUMENTS", message: "Invalid arguments format", details: nil))
+          return
+        }
+        let sourceUrl = URL(fileURLWithPath: sourcePath)
+        #if targetEnvironment(macCatalyst)
+          result(FlutterError.init(code: "OS", message: "This doesn\'t work on macOS", details: "Blame Apple"))
+          return
+        #endif
+        if #available(iOS 14.0, *) {
+          let filePicker = UIDocumentPickerViewController(forExporting: [sourceUrl], asCopy: false)
+          filePicker.shouldShowFileExtensions = true
+          let delegate = MyFileExportDelegate() { (value: Any) in
+            result(value)
+            self.garbageKeepAlive.removeAll(where: { $0.isEqual(filePicker.delegate) })
+            self.garbageKeepAlive.removeAll(where: { $0.isEqual(filePicker) })
+          }
+          filePicker.delegate = delegate
+          self.garbageKeepAlive.append(delegate)
+          self.garbageKeepAlive.append(filePicker)
+          controller.present(filePicker, animated: true, completion: nil)
+        }
+        else {
+          result(FlutterError.init(code: "OS", message: "iOS version too low to support saving file", details: nil))
+        }
       }
       else {
         result(FlutterMethodNotImplemented)

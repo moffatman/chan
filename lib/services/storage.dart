@@ -1,18 +1,131 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/rendering.dart';
+import 'package:chan/widgets/adaptive.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 const _platform = MethodChannel('com.moffatman.chan/storage');
 
+const kGallerySavePathGalleryPrefix = 'gallery://';
+
 Future<String?> pickDirectory() async {
-	if (Platform.isAndroid) {
+	if (Platform.isAndroid || Platform.isIOS) {
 		return await _platform.invokeMethod('pickDirectory');
 	}
 	else {
 		throw UnsupportedError('Platform not supported');
 	}
+}
+
+Future<String?> pickGallerySavePath(BuildContext context) async {
+	if (Platform.isIOS) {
+		return await showAdaptiveDialog<String>(
+			context: context,
+			builder: (context) => AdaptiveAlertDialog(
+				title: const Text('Choose save location'),
+				actions: [
+					AdaptiveDialogAction(
+						child: const Text('Gallery (no album)'),
+						onPressed: () => Navigator.pop(context, kGallerySavePathGalleryPrefix)
+					),
+					AdaptiveDialogAction(
+						child: const Text('Gallery (existing album)'),
+						onPressed: () async {
+							final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
+							if (!context.mounted) {
+								return;
+							}
+							if (existingAlbums.isEmpty) {
+								throw Exception('No albums found');
+							}
+							final albumName = await showAdaptiveModalPopup<String>(
+								context: context,
+								builder: (context) => AdaptiveActionSheet(
+									title: const Text('Choose existing album'),
+									actions: [
+										for (final album in existingAlbums) AdaptiveActionSheetAction(
+											child: Text(album.name),
+											onPressed: () => Navigator.pop(context, album.name)
+										)
+									],
+									cancelButton: AdaptiveActionSheetAction(
+										child: const Text('Cancel'),
+										onPressed: () => Navigator.pop(context)
+									)
+								)
+							);
+							if (context.mounted && albumName != null) {
+								Navigator.pop(context, '$kGallerySavePathGalleryPrefix${Uri.encodeFull(albumName)}');
+							}
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Gallery (new album)'),
+						onPressed: () async {
+							final controller = TextEditingController();
+							final useName = await showAdaptiveDialog<bool>(
+								context: context,
+								builder: (context) => StatefulBuilder(
+									builder: (context, setDialogState) => AdaptiveAlertDialog(
+										title: const Text('New album'),
+										content: AdaptiveTextField(
+											controller: controller,
+											autofocus: true,
+											placeholder: 'Album name',
+											smartDashesType: SmartDashesType.disabled,
+											smartQuotesType: SmartQuotesType.disabled,
+											onChanged: (s) {
+												setDialogState(() {});
+											},
+											onSubmitted: (s) {
+												if (s.isNotEmpty) {
+													Navigator.pop(context, true);
+												}
+											}
+										),
+										actions: [
+											AdaptiveDialogAction(
+												onPressed: controller.text.isNotEmpty ? () => Navigator.pop(context, true) : null,
+												child: const Text('OK')
+											),
+											AdaptiveDialogAction(
+												onPressed: () => Navigator.pop(context),
+												child: const Text('Cancel')
+											)
+										]
+									)
+								)
+							);
+							final enteredName = controller.text;
+							controller.dispose();
+							if (context.mounted && useName == true) {
+								if (enteredName.isEmpty) {
+									throw Exception('No album name entered');
+								}
+								Navigator.pop(context, '$kGallerySavePathGalleryPrefix${Uri.encodeFull(enteredName)}');
+							}
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Files'),
+						onPressed: () async {
+							final directory = await pickDirectory();
+							if (context.mounted) {
+								Navigator.pop(context, directory);
+							}
+						}
+					),
+					AdaptiveDialogAction(
+						child: const Text('Cancel'),
+						onPressed: () => Navigator.pop(context)
+					)
+				]
+			)
+		);
+	}
+	return await pickDirectory();
 }
 
 class DirectoryNotFoundException implements Exception {
@@ -54,7 +167,7 @@ Future<String> saveFile({
 	}
 }
 
-final bool isSaveFileAsSupported = Platform.isAndroid;
+final bool isSaveFileAsSupported = Platform.isAndroid || Platform.isIOS;
 
 Future<String?> saveFileAs({
 	required String sourcePath,

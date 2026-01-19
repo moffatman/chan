@@ -76,7 +76,6 @@ extension _BoardKey on Attachment {
 	BoardKey get boardKey => ImageboardBoard.getKey(board);
 }
 
-const _kDeviceGalleryAlbumName = 'Chance';
 
 extension _Current on Playlist {
 	Media? get current {
@@ -166,7 +165,7 @@ extension on GallerySavePathOrganizing {
 		if (attachment.board.isEmpty
 		    && attachment.threadId == null
 				&& attachment.thumbnailUrl.isEmpty
-				&& this != GallerySavePathOrganizing.noFolder
+				&& this != GallerySavePathOrganizing.deprecatedNoFolder
 				&& this != GallerySavePathOrganizing.noSubfolders) {
 			// This is a fake attachment used to browse random images
 			// Just put it in a host specific folder. Like catbox.moe?
@@ -175,7 +174,7 @@ extension on GallerySavePathOrganizing {
 			];
 		}
 		switch (this) {
-			case GallerySavePathOrganizing.noFolder:
+			case GallerySavePathOrganizing.deprecatedNoFolder:
 			case GallerySavePathOrganizing.noSubfolders:
 				return [];
 			case GallerySavePathOrganizing.boardSubfolders:
@@ -198,7 +197,7 @@ extension on GallerySavePathOrganizing {
 				return [controller.imageboard.site.name, controller.boardAndThreadSubfolderName];
 		}
 	}
-	String? albumNameFor(AttachmentViewerController controller) {
+	String? albumNameFor(AttachmentViewerController controller, String? rootAlbumName) {
 		final override = controller.imageboard.persistence.browserState.downloadSubfoldersPerBoard[controller.attachment.boardKey];
 		if (override != null) {
 			return override;
@@ -206,15 +205,36 @@ extension on GallerySavePathOrganizing {
 		if (controller.attachment.board.isEmpty && controller.attachment.threadId == null && controller.attachment.thumbnailUrl.isEmpty) {
 			// This is a fake attachment used to browse random images
 			// Just put it in a general folder
-			return _kDeviceGalleryAlbumName;
+			return rootAlbumName;
 		}
-		return switch (this) {
-			GallerySavePathOrganizing.noFolder => null,
-			GallerySavePathOrganizing.noSubfolders => _kDeviceGalleryAlbumName,
-			GallerySavePathOrganizing.siteSubfolders => '$_kDeviceGalleryAlbumName - ${controller.imageboard.site.name}',
-			GallerySavePathOrganizing.siteAndBoardSubfolders => '$_kDeviceGalleryAlbumName - ${controller.imageboard.site.name} - ${controller.imageboard.site.formatBoardName(controller.attachment.board)}',
-			GallerySavePathOrganizing.boardSubfolders || _ => '$_kDeviceGalleryAlbumName - ${controller.imageboard.site.formatBoardName(controller.attachment.board)}'
-		};
+		switch (this) {
+			case GallerySavePathOrganizing.deprecatedNoFolder:
+				return null;
+			case GallerySavePathOrganizing.noSubfolders:
+			case GallerySavePathOrganizing.threadNameSubfolders:
+				return rootAlbumName;
+			case GallerySavePathOrganizing.siteSubfolders:
+			case GallerySavePathOrganizing.siteAndThreadNameSubfolders:
+				if (rootAlbumName != null) {
+					return '$rootAlbumName - ${controller.imageboard.site.name}';
+				}
+				return controller.imageboard.site.name;
+			case GallerySavePathOrganizing.siteAndBoardSubfolders:
+			case GallerySavePathOrganizing.siteBoardAndThreadSubfolders:
+			case GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders:
+				final content = '${controller.imageboard.site.name} - ${controller.imageboard.site.formatBoardName(controller.attachment.board)}';
+				if (rootAlbumName != null) {
+					return '$rootAlbumName - $content';
+				}
+				return content;
+			case GallerySavePathOrganizing.boardSubfolders:
+			case GallerySavePathOrganizing.boardAndThreadSubfolders:
+			case GallerySavePathOrganizing.boardAndThreadNameSubfolders:
+				if (rootAlbumName != null) {
+					return '$rootAlbumName - ${controller.imageboard.site.formatBoardName(controller.attachment.board)}';
+				}
+				return controller.imageboard.site.formatBoardName(controller.attachment.board);
+		}
 	}
 }
 
@@ -1198,77 +1218,77 @@ class AttachmentViewerController extends ChangeNotifier {
 	Future<String?> download({bool force = false, bool saveAs = false, String? dir}) async {
 		if (_isDownloaded && !force && dir == null) return null;
 		final settings = Settings.instance;
-		String filename;
+		final convertForCompatibility = Platform.isIOS && !_isReallyImage;
+		String filename = _downloadFilename(convertForCompatibility);
 		final isRedownload = _isDownloaded;
 		_isDownloaded = true; // Lazy lock against concurrent download
 		bool successful = false;
-		if (Platform.isIOS) {
-			AssetPathEntity? album;
-			final albumName = settings.gallerySavePathOrganizing.albumNameFor(this);
-			if (albumName != null) {
-				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
-				album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
-				album ??= await PhotoManager.editor.darwin.createAlbum(albumName);
-			}
-			final convertForCompatibility = !_isReallyImage;
-			filename = _downloadFilename(convertForCompatibility);
-			final shareCachedFile = await _moveToShareCache(convertForCompatibility: convertForCompatibility);
-			final asAsset = _isReallyImage ? 
-				await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: filename) :
-				await PhotoManager.editor.saveVideo(shareCachedFile, title: filename);
-			if (asAsset == null) {
-				throw Exception('Failed to save to gallery');
-			}
-			if (album != null) {
-				await PhotoManager.editor.copyAssetToPath(asset: asAsset, pathEntity: album);
-			}
-			successful = true;
-		}
-		else if (Platform.isAndroid) {
-			filename = _downloadFilename(false);
+		try {
 			if (saveAs) {
 				final path = await saveFileAs(
-					sourcePath: getFile().path,
+					sourcePath: Platform.isIOS ? (await _moveToShareCache(convertForCompatibility: convertForCompatibility)).path : getFile().path,
 					destinationName: filename
 				);
 				successful = path != null;
 			}
 			else {
-				final destination = dir ?? (Settings.androidGallerySavePathSetting.value ??= await pickDirectory());
+				final destination = dir ?? (Settings.gallerySavePathSetting.value ??= await pickGallerySavePath(context));
 				if (destination != null) {
-					File source = getFile();
-					try {
-						// saveFile may modify name if there is a collision
-						filename = await saveFile(
-							sourcePath: source.path,
-							destinationDir: destination,
-							destinationSubfolders: dir != null ? [] : settings.gallerySavePathOrganizing.subfoldersFor(this),
-							destinationName: filename
-						);
-						_isDownloaded = true;
+					if (destination.startsWith(kGallerySavePathGalleryPrefix)) {
+						final albumNameFromPath = Uri.decodeFull(destination.substring(kGallerySavePathGalleryPrefix.length)).nonEmptyOrNull;
+						AssetPathEntity? album;
+						final albumName = dir != null ? albumNameFromPath : settings.gallerySavePathOrganizing.albumNameFor(this, albumNameFromPath);
+						if (albumName != null) {
+							final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
+							album = existingAlbums.tryFirstWhere((album) => album.name == albumName);
+							album ??= await PhotoManager.editor.darwin.createAlbum(albumName);
+						}
+						final shareCachedFile = await _moveToShareCache(convertForCompatibility: convertForCompatibility);
+						final asAsset = _isReallyImage ? 
+							await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: filename) :
+							await PhotoManager.editor.saveVideo(shareCachedFile, title: filename);
+						if (asAsset == null) {
+							throw Exception('Failed to save to gallery');
+						}
+						if (album != null) {
+							await PhotoManager.editor.copyAssetToPath(asset: asAsset, pathEntity: album);
+						}
 						successful = true;
 					}
-					on DirectoryNotFoundException {
-						_isDownloaded = isRedownload;
-						if (dir == null) {
-							Settings.androidGallerySavePathSetting.value = null;
+					else {
+						File source = getFile();
+						try {
+							// saveFile may modify name if there is a collision
+							filename = await saveFile(
+								sourcePath: source.path,
+								destinationDir: destination,
+								destinationSubfolders: dir != null ? [] : settings.gallerySavePathOrganizing.subfoldersFor(this),
+								destinationName: filename
+							);
+							_isDownloaded = true;
+							successful = true;
 						}
-						rethrow;
-					}
-					on InsufficientPermissionException {
-						_isDownloaded = isRedownload;
-						if (dir == null) {
-							Settings.androidGallerySavePathSetting.value = null;
+						on DirectoryNotFoundException {
+							_isDownloaded = isRedownload;
+							if (dir == null) {
+								Settings.gallerySavePathSetting.value = null;
+							}
+							rethrow;
 						}
-						rethrow;
+						on InsufficientPermissionException {
+							_isDownloaded = isRedownload;
+							if (dir == null) {
+								Settings.gallerySavePathSetting.value = null;
+							}
+							rethrow;
+						}
 					}
 				}
 			}
 		}
-		else {
-			throw UnsupportedError("Downloading not supported on this platform");
+		finally {
+			_isDownloaded = successful;
 		}
-		_isDownloaded = successful;
 		if (successful) {
 			onDownloaded?.call();
 		}

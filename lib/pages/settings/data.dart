@@ -516,26 +516,48 @@ final dataSettings = [
 			setting: Settings.askForAuthenticationOnLaunchSetting
 		)
 	),
-	if (Platform.isAndroid) ...[
-		ImmutableButtonSettingWidget(
-			description: 'Media save directory',
-			icon: CupertinoIcons.floppy_disk,
-			setting: Settings.androidGallerySavePathSetting,
-			builder: (androidGallerySavePath) => Text(androidGallerySavePath == null ? 'Set' : 'Change'),
-			onPressed: (context, currentPath, setPath) async {
-				setPath(await pickDirectory());
+	ImmutableButtonSettingWidget(
+		description: 'Media save directory',
+		icon: CupertinoIcons.floppy_disk,
+		setting: Settings.gallerySavePathSetting,
+		builder: (gallerySavePath) => Text(gallerySavePath == null ? 'Set' : 'Change'),
+		onPressed: (context, currentPath, setPath) async {
+			final newPath = await pickGallerySavePath(context);
+			if (!context.mounted) {
+				return;
 			}
-		),
-		ImmutableButtonSettingWidget(
-			description: 'Media picker',
-			icon: CupertinoIcons.photo,
-			setting: Settings.androidGalleryPickerSetting,
-			builder: (androidGalleryPicker) => Text(androidGalleryPicker == null ? 'Set' : 'Change'),
-			onPressed: (context, currentPicker, setPicker) async {
-				setPicker(await chooseAndroidPicker(context) ?? currentPicker);
+			if (newPath != null) {
+				if (newPath.startsWith(kGallerySavePathGalleryPrefix)) {
+					final newSavePathOrganizing = switch (Settings.gallerySavePathOrganizingSetting.read(context)) {
+						GallerySavePathOrganizing.boardAndThreadSubfolders
+							|| GallerySavePathOrganizing.boardAndThreadNameSubfolders => (GallerySavePathOrganizing.boardSubfolders, 'Per-board'),
+						GallerySavePathOrganizing.threadNameSubfolders => (GallerySavePathOrganizing.noSubfolders, 'One album'),
+						GallerySavePathOrganizing.siteBoardAndThreadSubfolders
+							|| GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders
+							|| GallerySavePathOrganizing.siteAndThreadNameSubfolders => (GallerySavePathOrganizing.siteSubfolders, 'Per-site'),
+						_ => null
+					};
+					if (newSavePathOrganizing != null) {
+						final reallyChange = await confirm(context, 'Warning', content: 'Your current save path organizing structure is not compatible with gallery saving. It will be changed to ${newSavePathOrganizing.$2}');
+						if (!reallyChange || !context.mounted) {
+							return;
+						}
+						Settings.gallerySavePathOrganizingSetting.write(context, newSavePathOrganizing.$1);
+					}
+				}
+				setPath(newPath);
 			}
-		),
-	],
+		}
+	),
+	if (Platform.isAndroid) ImmutableButtonSettingWidget(
+		description: 'Media picker',
+		icon: CupertinoIcons.photo,
+		setting: Settings.androidGalleryPickerSetting,
+		builder: (androidGalleryPicker) => Text(androidGalleryPicker == null ? 'Set' : 'Change'),
+		onPressed: (context, currentPicker, setPicker) async {
+			setPicker(await chooseAndroidPicker(context) ?? currentPicker);
+		}
+	),
 	const SegmentedSettingWidget(
 		description: 'Media saving filenames',
 		icon: CupertinoIcons.doc_text,
@@ -545,40 +567,49 @@ final dataSettings = [
 			true: (null, 'Server-side')
 		}
 	),
-	SegmentedSettingWidget(
-		description: 'Media saving folder structure',
-		icon: CupertinoIcons.folder,
-		setting: Settings.gallerySavePathOrganizingSetting,
-		children: {
-			if (Platform.isIOS) GallerySavePathOrganizing.noFolder: (null, "No album"),
-			GallerySavePathOrganizing.noSubfolders: (null, Platform.isIOS ? '"Chance" album' : 'No subfolders'),
-			GallerySavePathOrganizing.siteSubfolders: (null, Platform.isIOS ? 'Per-site albums' : 'Per-site subfolders'),
-			GallerySavePathOrganizing.boardSubfolders: (null, Platform.isIOS ? 'Per-board albums' : 'Per-board subfolders'),
-			if (Platform.isAndroid) ...{
-				GallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders'),
-				GallerySavePathOrganizing.boardAndThreadNameSubfolders: (null, 'Per-board and per-thread (with name) subfolders'),
-				GallerySavePathOrganizing.threadNameSubfolders: (null, 'Per-thread (with name) subfolders')
-			},
-			GallerySavePathOrganizing.siteAndBoardSubfolders: (null, Platform.isIOS ? 'Per-site+board albums' : 'Per-site and per-board subfolders'),
-			if (Platform.isAndroid) ...{
-				GallerySavePathOrganizing.siteBoardAndThreadSubfolders: (null, 'Per-site, per-board, and per-thread subfolders'),
-				GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders: (null, 'Per-site, per-board, and per-thread (with name) subfolders'),
-				GallerySavePathOrganizing.siteAndThreadNameSubfolders: (null, 'Per-site and per-thread (with name) subfolders')
+	SettingBuilder(
+		otherSetting: Settings.gallerySavePathSetting,
+		builder: (gallerySavePath) {
+			if (gallerySavePath == null) {
+				return NullSettingWidget();
 			}
-		},
-		injectButton: (context, _, __) {
-			return AdaptiveFilledButton(
-				padding: const EdgeInsets.all(8),
-				onPressed: () async {
-					await editSiteBoardMap(
-						context: context,
-						field: PersistentBrowserStateFields.downloadSubfoldersPerBoard,
-						editor: const TextMapValueEditor(),
-						name: Platform.isIOS ? 'Album' : 'Subfolder',
-						title: Platform.isIOS ? 'Per-board albums' : 'Per-board subfolders'
-					);
+			final usingGallery = gallerySavePath.startsWith(kGallerySavePathGalleryPrefix);
+			final albumName = usingGallery ? Uri.decodeFull(gallerySavePath.substring(kGallerySavePathGalleryPrefix.length)) : '';
+			return SegmentedSettingWidget(
+				description: 'Media saving folder structure',
+				icon: CupertinoIcons.folder,
+				setting: Settings.gallerySavePathOrganizingSetting,
+				children: {
+					GallerySavePathOrganizing.noSubfolders: (null, usingGallery ? (albumName.isEmpty ? 'No album' : '"$albumName" album') : 'No subfolders'),
+					GallerySavePathOrganizing.siteSubfolders: (null, usingGallery ? 'Per-site albums' : 'Per-site subfolders'),
+					GallerySavePathOrganizing.boardSubfolders: (null, usingGallery ? 'Per-board albums' : 'Per-board subfolders'),
+					if (!usingGallery) ...{
+						GallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders'),
+						GallerySavePathOrganizing.boardAndThreadNameSubfolders: (null, 'Per-board and per-thread (with name) subfolders'),
+						GallerySavePathOrganizing.threadNameSubfolders: (null, 'Per-thread (with name) subfolders')
+					},
+					GallerySavePathOrganizing.siteAndBoardSubfolders: (null, usingGallery ? 'Per-site+board albums' : 'Per-site and per-board subfolders'),
+					if (!usingGallery) ...{
+						GallerySavePathOrganizing.siteBoardAndThreadSubfolders: (null, 'Per-site, per-board, and per-thread subfolders'),
+						GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders: (null, 'Per-site, per-board, and per-thread (with name) subfolders'),
+						GallerySavePathOrganizing.siteAndThreadNameSubfolders: (null, 'Per-site and per-thread (with name) subfolders')
+					}
 				},
-				child: const Text('Per-board...')
+				injectButton: (context, _, __) {
+					return AdaptiveFilledButton(
+						padding: const EdgeInsets.all(8),
+						onPressed: () async {
+							await editSiteBoardMap(
+								context: context,
+								field: PersistentBrowserStateFields.downloadSubfoldersPerBoard,
+								editor: const TextMapValueEditor(),
+								name: usingGallery ? 'Album' : 'Subfolder',
+								title: usingGallery ? 'Per-board albums' : 'Per-board subfolders'
+							);
+						},
+						child: const Text('Per-board...')
+					);
+				}
 			);
 		}
 	),

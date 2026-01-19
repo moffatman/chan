@@ -568,16 +568,14 @@ class SavedSettingsFields {
     fieldName: 'imagesOnRight',
     merger: PrimitiveMerger(),
   );
-  static String? getAndroidGallerySavePath(SavedSettings x) =>
-      x.androidGallerySavePath;
-  static void setAndroidGallerySavePath(SavedSettings x, String? v) =>
-      x.androidGallerySavePath = v;
-  static const androidGallerySavePath =
-      HiveFieldAdapter<SavedSettings, String?>(
-    getter: getAndroidGallerySavePath,
-    setter: setAndroidGallerySavePath,
+  static String? getGallerySavePath(SavedSettings x) => x.gallerySavePath;
+  static void setGallerySavePath(SavedSettings x, String? v) =>
+      x.gallerySavePath = v;
+  static const gallerySavePath = HiveFieldAdapter<SavedSettings, String?>(
+    getter: getGallerySavePath,
+    setter: setGallerySavePath,
     fieldNumber: 35,
-    fieldName: 'androidGallerySavePath',
+    fieldName: 'gallerySavePath',
     merger: PrimitiveMerger(),
   );
   static double getReplyBoxHeightOffset(SavedSettings x) =>
@@ -2553,7 +2551,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     32: SavedSettingsFields.interfaceScale,
     33: SavedSettingsFields.showAnimations,
     34: SavedSettingsFields.imagesOnRight,
-    35: SavedSettingsFields.androidGallerySavePath,
+    35: SavedSettingsFields.gallerySavePath,
     36: SavedSettingsFields.replyBoxHeightOffset,
     37: SavedSettingsFields.blurThumbnails,
     38: SavedSettingsFields.showTimeInCatalogHeader,
@@ -2775,7 +2773,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       interfaceScale: fields[32] as double?,
       showAnimations: fields[33] as bool?,
       imagesOnRight: fields[34] as bool?,
-      androidGallerySavePath: fields[35] as String?,
+      gallerySavePath: fields[35] as String?,
       replyBoxHeightOffset: fields[36] as double?,
       blurThumbnails: fields[37] as bool?,
       showTimeInCatalogHeader: fields[38] as bool?,
@@ -3008,7 +3006,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(34)
       ..write(obj.imagesOnRight)
       ..writeByte(35)
-      ..write(obj.androidGallerySavePath)
+      ..write(obj.gallerySavePath)
       ..writeByte(36)
       ..write(obj.replyBoxHeightOffset)
       ..writeByte(37)
@@ -3825,7 +3823,7 @@ class GallerySavePathOrganizingAdapter
       case 3:
         return GallerySavePathOrganizing.boardAndThreadNameSubfolders;
       case 4:
-        return GallerySavePathOrganizing.noFolder;
+        return GallerySavePathOrganizing.deprecatedNoFolder;
       case 5:
         return GallerySavePathOrganizing.threadNameSubfolders;
       case 6:
@@ -3858,7 +3856,7 @@ class GallerySavePathOrganizingAdapter
       case GallerySavePathOrganizing.boardAndThreadNameSubfolders:
         writer.writeByte(3);
         break;
-      case GallerySavePathOrganizing.noFolder:
+      case GallerySavePathOrganizing.deprecatedNoFolder:
         writer.writeByte(4);
         break;
       case GallerySavePathOrganizing.threadNameSubfolders:

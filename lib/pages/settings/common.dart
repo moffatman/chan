@@ -1290,6 +1290,47 @@ class SettingHiding extends SettingWidget {
 	}
 }
 
+class NullSettingWidget extends SettingWidget {
+	@override
+	Widget buildImpl(BuildContext context) {
+		return const SizedBox(width: double.infinity);
+	}
+
+	@override
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) {
+		return const Iterable.empty();
+	}
+}
+
+class SettingBuilder<T> extends SettingWidget {
+	final MutableSetting<T> otherSetting;
+	final SettingWidget Function(T) builder;
+
+	const SettingBuilder({
+		required this.otherSetting,
+		required this.builder
+	});
+
+	@override
+	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
+		yield* builder(otherSetting.read(context)).search(context, query);
+	}
+
+	/// The [builder] will provide the padding
+	@override
+	EdgeInsets get padding => EdgeInsets.zero;
+
+	@override
+	Widget buildImpl(BuildContext context) {
+		return AnimatedSize(
+			duration: const Duration(milliseconds: 250),
+			curve: Curves.ease,
+			alignment: Alignment.topCenter,
+			child: builder(otherSetting.watch(context)).build()
+		);
+	}
+}
+
 class SettingListPage extends StatefulWidget {
 	final String title;
 	final List<SettingWidget> settings;
