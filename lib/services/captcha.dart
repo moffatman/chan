@@ -82,11 +82,11 @@ Future<CaptchaSolution?> solveCaptcha({
 	final settings = Settings.instance;
 	switch (request) {
 		case RecaptchaRequest():
-			return await solveRecaptchaV2(request, cancelToken: cancelToken);
+			return await solveRecaptchaV2(site, request, cancelToken: cancelToken);
 		case Recaptcha3Request():
-			return await solveRecaptchaV3(request, cancelToken: cancelToken);
+			return await solveRecaptchaV3(site, request, cancelToken: cancelToken);
 		case CloudflareTurnstileCaptchaRequest():
-			return await solveCloudflareTurnstile(request, cancelToken: cancelToken);
+			return await solveCloudflareTurnstile(site, request, cancelToken: cancelToken);
 		case Chan4CustomCaptchaRequest():
 			final priority = switch (forceHeadless) {
 				true => RequestPriority.cosmetic,
@@ -217,7 +217,7 @@ Future<CaptchaSolution?> solveCaptcha({
 				site: site
 			));
 		case HCaptchaRequest():
-			return solveHCaptcha(request);
+			return solveHCaptcha(site, request);
 		case SimpleTextCaptchaRequest():
 			final controller = TextEditingController();
 				try {

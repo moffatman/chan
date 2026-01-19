@@ -3224,7 +3224,7 @@ class Settings extends ChangeNotifier {
 			}
 		));
 		client.interceptors.add(BasedFlareInterceptor(client));
-		client.interceptors.add(CloudflareInterceptor());
+		client.interceptors.add(CloudflareInterceptor(null));
 		client.interceptors.add(RetryIfCloudflareInterceptor(client));
 		client.interceptors.add(StrictJsonInterceptor());
 		if (!kInUnitTest) {

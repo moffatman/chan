@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 /// [javascript] should be an expression. could resolve to a Promise.
 Future<T> solveJavascriptChallenge<T>({
+	required ImageboardSite site,
 	required Uri url,
 	required String javascript,
 	/// Will be called for a while until true
@@ -37,6 +38,7 @@ Future<T> solveJavascriptChallenge<T>({
 		priority: priority,
 		headlessTime: headlessTime,
 		gatewayName: name,
+		site: site,
 		cancelToken: cancelToken
 	);
 }

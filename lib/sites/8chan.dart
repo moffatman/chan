@@ -145,6 +145,7 @@ class Site8Chan extends SiteLynxchan {
 		final data = await super.handleBlockBypassJson(post, captchaSolution, cancelToken);
 		if (data case {'data': {'validated': false}}) {
 			await solveJavascriptChallenge<void>(
+				site: this,
 				url: Uri.parse(getWebUrlImpl(post.board, post.threadId)),
 				priority: RequestPriority.interactive,
 				headlessTime: const Duration(seconds: 20),

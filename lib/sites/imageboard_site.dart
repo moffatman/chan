@@ -1765,7 +1765,7 @@ abstract class ImageboardSiteArchive {
 		));
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(BasedFlareInterceptor(client));
-		client.interceptors.add(CloudflareInterceptor());
+		client.interceptors.add(CloudflareInterceptor(this));
 		client.interceptors.add(RetryIfCloudflareInterceptor(client));
 		client.interceptors.add(StrictJsonInterceptor());
 		if (!kInUnitTest) {
@@ -2029,6 +2029,8 @@ abstract class ImageboardSiteArchive {
 		_cacheGarbageCollectionTimer?.cancel();
 		_cacheGarbageCollectionTimer = null;
 	}
+
+	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri uri, String? Function() title, Future<String?> Function() html) async => null;
 
 	@override
 	bool operator == (Object other) =>
@@ -2564,7 +2566,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get hasLargeInlineAttachments => false;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
-	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri uri, String? Function() title, Future<String?> Function() html) async => null;
 	bool get supportsPinkQuotes => false;
 	bool get supportsBlueQuotes => false;
 	bool embedPossible(Uri url) => false;

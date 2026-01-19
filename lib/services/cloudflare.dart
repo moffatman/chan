@@ -257,6 +257,9 @@ class CloudflareBlockingInterceptor extends Interceptor {
 }
 
 class CloudflareInterceptor extends Interceptor {
+	final ImageboardSiteArchive? site;
+	CloudflareInterceptor(this.site);
+
 	static bool _titleMatches(String title) {
 		return [
 			'Cloudflare',
@@ -272,7 +275,7 @@ class CloudflareInterceptor extends Interceptor {
 		].any((ending) => title.endsWith(ending));
 	}
 
-	static Future<bool> _responseMatches(Response response) async {
+	Future<bool> _responseMatches(Response response) async {
 		if ([203, 403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
 			if (response.headers.value('server') == 'cloudflare' && response.headers.value('cf-mitigated') == 'challenge') {
 				// Hopefully this catches the streamed ones
@@ -286,7 +289,7 @@ class CloudflareInterceptor extends Interceptor {
 			final title = document.querySelector('title')?.text ?? '';
 			return _titleMatches(title);
 		}
-		if (await ImageboardRegistry.instance.isRedirectGateway(response.realUri, () => response.htmlTitle, () async => response.html)) {
+		if (await site?.getRedirectGateway(response.realUri, () => response.htmlTitle, () async => response.html) != null) {
 			return true;
 		}
 		return false;
@@ -370,6 +373,7 @@ class CloudflareInterceptor extends Interceptor {
 		required RequestPriority priority,
 		String? autoClickSelector,
 		String gatewayName = _kDefaultGatewayName,
+		required ImageboardSiteArchive? site,
 		CancelToken? cancelToken
 	}) => _webViewLock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
@@ -469,8 +473,8 @@ class CloudflareInterceptor extends Interceptor {
 						return;
 					}
 				}
-				if (!(await ImageboardRegistry.instance.isRedirectGateway(uri, () => title, () => controller.getHtml())) && (!_titleMatches(title) || (uri?.looksLikeWebViewRedirect ?? false))) {
-					await Persistence.saveCookiesFromWebView(uri!);
+				if (uri != null && (await site?.getRedirectGateway(uri, () => title, () => controller.getHtml()) == null) && (!_titleMatches(title) || uri.looksLikeWebViewRedirect)) {
+					await Persistence.saveCookiesFromWebView(uri);
 					try {
 						final value = await handler(controller, uri, false);
 						if (value != null) {
@@ -621,7 +625,7 @@ class CloudflareInterceptor extends Interceptor {
 		}
 	});
 
-	static Future<_CloudflareResponse> _useWebviewForCloudflare({
+	Future<_CloudflareResponse> _useWebviewForCloudflare({
 		required Future<_CloudflareResponse?> Function(InAppWebViewController, Uri?, bool isCancelledMedia) handler,
 		bool skipHeadless = false,
 		InAppWebViewInitialData? initialData,
@@ -647,6 +651,7 @@ class CloudflareInterceptor extends Interceptor {
 			priority: priority,
 			autoClickSelector: autoClickSelector,
 			gatewayName: gatewayName,
+			site: site,
 			cancelToken: cancelToken
 		);
 	});
@@ -717,7 +722,7 @@ class CloudflareInterceptor extends Interceptor {
 					return;
 				}
 				final _CloudflareResponse data;
-				final gateway = await ImageboardRegistry.instance.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri) ?? response.realUri, () => response.htmlTitle, () async => response.html);
+				final gateway = await site?.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri) ?? response.realUri, () => response.htmlTitle, () async => response.html);
 				if (gateway != null) {
 					// Start the request again
 					// We need to ensure cookies are preserved in all navigation sequences
@@ -883,6 +888,7 @@ class RetryIfCloudflareInterceptor extends Interceptor {
 }
 
 Future<T> useCloudflareClearedWebview<T>({
+	required ImageboardSite site,
 	required Future<T> Function(InAppWebViewController, Uri?) handler,
 	required Uri uri,
 	String? userAgent,
@@ -909,6 +915,7 @@ Future<T> useCloudflareClearedWebview<T>({
 	),
 	priority: priority,
 	gatewayName: gatewayName,
+	site: site,
 	skipHeadless: skipHeadless,
 	headlessTime: headlessTime ?? CloudflareInterceptor.kDefaultHeadlessTime,
 	cancelToken: cancelToken

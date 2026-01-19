@@ -751,23 +751,6 @@ class ImageboardRegistry extends ChangeNotifier {
 		}
 	}
 
-	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri? uri, String? Function() title, Future<String?> Function() html) async {
-		if (uri == null) {
-			return null;
-		}
-		final primary = imageboards.tryFirstWhere((i) => i.site.baseUrl == uri.host || i.site.imageUrl == uri.host);
-		if (primary != null) {
-			return primary.site.getRedirectGateway(uri, title, html);
-		}
-		for (final imageboard in imageboards) {
-			final gateway = await imageboard.site.getRedirectGateway(uri, title, html);
-			if (gateway != null) {
-				return gateway;
-			}
-		}
-		return null;
-	}
-
 	void setNotificationError(Imageboard? imageboard, (Object, StackTrace)? pair) {
 		if (pair != notificationErrors[imageboard]) {
 			if (pair != null) {
@@ -779,8 +762,6 @@ class ImageboardRegistry extends ChangeNotifier {
 			notifyListeners();
 		}
 	}
-
-	Future<bool> isRedirectGateway(Uri? uri, String? Function() title, Future<String?> Function() html) async => (await getRedirectGateway(uri, title, html)) != null;
 }
 
 class ImageboardScoped<T> {

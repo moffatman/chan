@@ -2,7 +2,7 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
 
-Future<RecaptchaSolution> solveRecaptchaV2(RecaptchaRequest request, {CancelToken? cancelToken}) async {
+Future<RecaptchaSolution> solveRecaptchaV2(ImageboardSite site, RecaptchaRequest request, {CancelToken? cancelToken}) async {
 	final token = await useCloudflareClearedWebview<String>(
 		handler: (controller, url) async {
 			final result = await controller.callAsyncJavaScript(functionBody: '''
@@ -35,6 +35,7 @@ Future<RecaptchaSolution> solveRecaptchaV2(RecaptchaRequest request, {CancelToke
 		uri: Uri.parse(request.sourceUrl),
 		priority: RequestPriority.interactive,
 		gatewayName: 'reCAPTCHA v2',
+		site: site,
 		cancelToken: cancelToken
 	);
 	return RecaptchaSolution(

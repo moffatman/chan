@@ -163,7 +163,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		if (hCaptchaKey == null) {
 			throw Captcha4ChanCustomChallengeException('Got hCaptcha block, but don\'t know what key to use', challengeResponse.cloudflare);
 		}
-		final solution = await solveHCaptcha(HCaptchaRequest(
+		final solution = await solveHCaptcha(site, HCaptchaRequest(
 			/// Relatively safe page to load and replace
 			hostPage: Uri.https(request.challengeUrl.host, '/robots.txt'),
 			siteKey: hCaptchaKey,

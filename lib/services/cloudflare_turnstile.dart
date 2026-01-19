@@ -2,7 +2,7 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
 
-Future<CloudflareTurnstileCaptchaSolution> solveCloudflareTurnstile(CloudflareTurnstileCaptchaRequest request, {CancelToken? cancelToken}) async {
+Future<CloudflareTurnstileCaptchaSolution> solveCloudflareTurnstile(ImageboardSite site, CloudflareTurnstileCaptchaRequest request, {CancelToken? cancelToken}) async {
 	final token = await useCloudflareClearedWebview<String>(
 		handler: (controller, url) async {
 			final result = await controller.callAsyncJavaScript(functionBody: '''
@@ -34,6 +34,7 @@ Future<CloudflareTurnstileCaptchaSolution> solveCloudflareTurnstile(CloudflareTu
 		uri: request.hostPage,
 		priority: RequestPriority.interactive,
 		gatewayName: 'Turnstile',
+		site: site,
 		skipHeadless: true,
 		cancelToken: cancelToken
 	);
