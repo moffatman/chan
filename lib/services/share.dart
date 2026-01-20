@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/global_pointer_tracker.dart';
 import 'package:chan/services/launch_url_externally.dart';
@@ -20,6 +22,13 @@ Future<void> shareOne({
 		final position = GlobalPointerTracker.instance.value?.position ?? Offset.zero;
 		sharePositionOrigin ??= Rect.fromLTWH(position.dx, position.dy, 1, 1);
 	}
+	final screenSize = PlatformDispatcher.instance.views.first.physicalSize / PlatformDispatcher.instance.views.first.display.devicePixelRatio;
+	sharePositionOrigin = Rect.fromLTRB(
+		sharePositionOrigin.left.clamp(0, screenSize.width - 1),
+		sharePositionOrigin.top.clamp(0, screenSize.height - 1),
+		sharePositionOrigin.right.clamp(1, screenSize.width),
+		sharePositionOrigin.bottom.clamp(1, screenSize.height)
+	);
 	lightHapticFeedback();
 	if (type == 'file') {
 		await Share.shareXFiles(
