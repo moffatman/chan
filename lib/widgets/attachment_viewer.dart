@@ -2094,15 +2094,19 @@ class AttachmentViewer extends StatelessWidget {
 								valueListenable: controller.showLoadingProgress,
 								builder: (context, showLoadingProgress, _) => StreamBuilder(
 									stream: controller.videoPlayerController?.player.stream.buffering,
-									builder: (context, buffering) => ((showLoadingProgress || (buffering.data ?? false)) && controller._soundSourceDownload == null) ? ValueListenableBuilder(
-										valueListenable: controller.videoLoadingProgress,
-										builder: (context, double? loadingProgress, child) => _centeredLoader(
-											active: controller.isFullResolution,
-											value: loadingProgress,
-											useRealKey: !inContextMenu,
-											force: buffering.data ?? false
-										)
-									) : const SizedBox.shrink()
+									builder: (context, buffering) => LatchedBuilder(
+										value: buffering.data ?? false,
+										period: const Duration(milliseconds: 300),
+										builder: (context, buffering) => ((showLoadingProgress || buffering) && controller._soundSourceDownload == null) ? ValueListenableBuilder(
+											valueListenable: controller.videoLoadingProgress,
+											builder: (context, double? loadingProgress, child) => _centeredLoader(
+												active: controller.isFullResolution,
+												value: (loadingProgress == 1 && buffering) ? null : loadingProgress,
+												useRealKey: !inContextMenu,
+												force: buffering
+											)
+										) : const SizedBox.shrink()
+									)
 								)
 							)
 						),

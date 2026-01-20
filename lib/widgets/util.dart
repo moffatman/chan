@@ -2574,6 +2574,71 @@ class _DebouncedBuilderState<T> extends State<DebouncedBuilder<T>> {
 	}
 }
 
+/// Usually false, will trip to true after [duration]
+class LatchedBuilder extends StatefulWidget {
+	final Widget Function(BuildContext, bool) builder;
+	final bool value;
+	final Duration period;
+
+	const LatchedBuilder({
+		required this.builder,
+		required this.value,
+		required this.period,
+		super.key
+	});
+
+	@override
+	createState() => _LatchedBuilderState();
+}
+
+class _LatchedBuilderState extends State<LatchedBuilder> {
+	Timer? _timer;
+	bool _value = false;
+
+	@override
+	void initState() {
+		super.initState();
+		_value = widget.value;
+		if (widget.value) {
+			_timer = Timer(widget.period, _onTimerFire);
+		}
+	}
+
+	void _onTimerFire() {
+		_value = true;
+		_timer = null;
+		setState(() {});
+	}
+
+	@override
+	void didUpdateWidget(LatchedBuilder oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.value != oldWidget.value) {
+			if (widget.value) {
+				// false -> true after timeout
+				_timer = Timer(widget.period, _onTimerFire);
+			}
+			else {
+				_timer?.cancel();
+				_timer = null;
+				// true -> false immediately
+				_value = false;
+			}
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return widget.builder(context, _value);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_timer?.cancel();
+	}
+}
+
 class ConditionalShortcut implements ShortcutActivator {
 	final ShortcutActivator parent;
 	final bool Function() condition;
