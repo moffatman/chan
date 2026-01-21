@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:chan/services/base64_image.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -318,7 +318,7 @@ Future<String?> saveFileAs({
 	});
 }
 
-typedef AndroidPickerIntent = ({String label, MemoryImage? icon, String package});
+typedef AndroidPickerIntent = ({String label, ImageProvider? icon, String package});
 
 Future<List<AndroidPickerIntent>> getPickerList() async {
 	if (!Platform.isAndroid) {
@@ -329,7 +329,7 @@ Future<List<AndroidPickerIntent>> getPickerList() async {
 		package: intent['package'] as String,
 		icon: switch (intent['icon']) {
 			'' => null,
-			String base64 => MemoryImage(base64Decode(base64)),
+			String base64 => Base64ImageProvider(base64),
 			_ => null
 		}
 	)).toList();

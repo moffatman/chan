@@ -172,7 +172,7 @@ Future<String?> chooseAndroidPicker(BuildContext context) async {
 				actions: list.map((intent) => AdaptiveActionSheetAction(
 						onPressed: () => Navigator.pop(context, intent.package),
 						trailing: switch (intent.icon) {
-							MemoryImage image => Image(
+							ImageProvider image => Image(
 								image: image,
 								width: 30,
 								height: 30

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui show Image, ImageByteFormat, PictureRecorder;
 
+import 'package:chan/services/base64_image.dart';
 import 'package:chan/services/captcha.dart';
 import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
@@ -203,7 +204,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 				final choices = <ui.Image>[];
 				for (final item in (rawTask as Map)['items'] as List) {
 					final completer = Completer<ui.Image>();
-					MemoryImage(base64Decode(item as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+					Base64ImageProvider(item as String).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 						completer.complete(info.image);
 					}, onError: (e, st) {
 						completer.completeError(e, st);
@@ -226,7 +227,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		Completer<ui.Image>? foregroundImageCompleter;
 		if (data['img'] != null) {
 			foregroundImageCompleter = Completer<ui.Image>();
-			MemoryImage(base64Decode(data['img'] as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+			Base64ImageProvider(data['img'] as String).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 				foregroundImageCompleter!.complete(info.image);
 			}, onError: (e, st) {
 				foregroundImageCompleter!.completeError(e, st);
@@ -235,7 +236,7 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		Completer<ui.Image>? backgroundImageCompleter;
 		if (data['bg'] != null) {
 			backgroundImageCompleter = Completer<ui.Image>();
-			MemoryImage(base64Decode(data['bg'] as String)).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+			Base64ImageProvider(data['bg'] as String).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 				backgroundImageCompleter!.complete(info.image);
 			}, onError: (e, st) {
 				backgroundImageCompleter!.completeError(e, st);
@@ -1397,7 +1398,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									bottom: resolvePadding(edges.bottom)
 								),
 								child: Image(
-									image: MemoryImage(base64Decode(src.afterLast(','))),
+									image: Base64ImageProvider(src.afterLast(',')),
 									fit: BoxFit.contain
 								)
 							)
