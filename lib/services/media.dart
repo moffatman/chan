@@ -52,6 +52,13 @@ class MediaConversionFFMpegException implements Exception {
 	String toString() => 'MediaConversionFFMpegException(exitCode: $exitCode, output: $output)';
 }
 
+class MediaConversionCancelledException implements Exception {
+	const MediaConversionCancelledException();
+
+	@override
+	String toString() => 'MediaConversionCancelledException()';
+}
+
 class MediaConversionResult {
 	final File file;
 	final bool hasAudio;
@@ -872,10 +879,13 @@ class MediaConversion {
 							passedFirstEvent = true;
 						}
 					);
-					return operation.value;
+					return operation.valueOrCancellation();
 				});
 				_session = null;
-				if (results.returnCode != 0) {
+				if (results == null) {
+					throw const MediaConversionCancelledException();
+				}
+ 				if (results.returnCode != 0) {
 					if (await convertedFile.exists()) {
 						await convertedFile.delete();
 					}

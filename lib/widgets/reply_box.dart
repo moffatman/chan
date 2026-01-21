@@ -671,7 +671,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		try {
 			final file = await getClipboardImageAsFile(context);
 			if (file != null) {
-				setAttachment(true, file);
+				await setAttachment(true, file);
 				return true;
 			}
 			else if (manual && mounted) {
@@ -966,9 +966,6 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			else {
 				throw Exception('Unsupported file type: $ext');
 			}
-			setState(() {
-				_attachmentProgress = null;
-			});
 			if (file != null) {
 				final newAttachment = (
 					file: file,
@@ -986,14 +983,13 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				_didUpdateDraft();
 			}
 		}
-		catch (e, st) {
-			print(e);
-			print(st);
+		on MediaConversionCancelledException {
+			// Don't throw, the user started it
+		}
+		finally {
+			_attachmentProgress = null;
 			if (mounted) {
-				alertError(context, e, st);
-				setState(() {
-					_attachmentProgress = null;
-				});
+				setState(() {});
 			}
 		}
 	}
@@ -1715,22 +1711,16 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												);
 												if (resize ?? false) {
 													setState(() {
-														this.attachment = null;
 														_showAttachmentOptions = false;
 													});
 													try {
 														await setAttachment(false, _originalAttachment?.file ?? attachment.file, forceMaximumDimension: (math.max(originalWidth, originalHeight) * quality).ceil(), forceConvert: true);
 													}
-													catch (e, st) {
-														Future.error(e, st); // crashlytics
-														if (context.mounted) {
-															alertError(context, e, st);
-														}
-														await setAttachment(false, attachment.file);
+													finally {
+														setState(() {
+															_showAttachmentOptions = true;
+														});
 													}
-													setState(() {
-														_showAttachmentOptions = true;
-													});
 												}
 											},
 											child: Text(
@@ -1763,24 +1753,17 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												]
 											),
 											onPressed: () async {
-												final old = attachment!;
 												setState(() {
-													attachment = null;
 													_showAttachmentOptions = false;
 												});
 												try {
-													await setAttachment(false, old.file, forceRandomizeChecksum: true);
+													await setAttachment(false, attachment!.file, forceRandomizeChecksum: true);
 												}
-												catch (e, st) {
-													Future.error(e, st); // crashlytics
-													if (context.mounted) {
-														alertError(context, e, st);
-													}
-													await setAttachment(false, old.file);
+												finally {
+													setState(() {
+														_showAttachmentOptions = true;
+													});
 												}
-												setState(() {
-													_showAttachmentOptions = true;
-												});
 											}
 										)
 									]
@@ -2071,7 +2054,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							if (newFile == null) {
 								return;
 							}
-							setAttachment(true, newFile);
+							await setAttachment(true, newFile);
 							_filenameController.text = proposed.imageUrl.afterLast('/').split('.').reversed.skip(1).toList().reversed.join('.');
 							if (proposed.text == proposed.imageUrl) {
 								final original = _textFieldController.text;
@@ -2132,7 +2115,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						try {
 							final image = await getClipboardImageAsFile(context);
 							if (image != null) {
-								setAttachment(true, image);
+								await setAttachment(true, image);
 							}
 						}
 						catch (e, st) {
@@ -2237,21 +2220,28 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												autofocus: widget.fullyExpanded,
 												contentInsertionConfiguration: ContentInsertionConfiguration(
 													onContentInserted: (content) async {
-														final data = content.data;
-														if (data == null) {
-															return;
+														try {
+															final data = content.data;
+															if (data == null) {
+																return;
+															}
+															if (data.isEmpty) {
+																return;
+															}
+															String filename = Uri.parse(content.uri).pathSegments.last;
+															if (!filename.contains('.')) {
+																filename += '.${content.mimeType.afterLast('/')}';
+															}
+															final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}/$filename');
+															await f.create(recursive: true);
+															await f.writeAsBytes(data, flush: true);
+															await setAttachment(true, f);
 														}
-														if (data.isEmpty) {
-															return;
+														catch (e, st) {
+															if (context.mounted) {
+																alertError(context, e, st);
+															}
 														}
-														String filename = Uri.parse(content.uri).pathSegments.last;
-														if (!filename.contains('.')) {
-															filename += '.${content.mimeType.afterLast('/')}';
-														}
-														final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}/$filename');
-														await f.create(recursive: true);
-														await f.writeAsBytes(data, flush: true);
-														setAttachment(true, f);
 													}
 												),
 												spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
@@ -2537,27 +2527,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								alignment: Alignment.centerRight,
 								duration: const Duration(milliseconds: 250),
 								curve: Curves.ease,
-								child: attachment != null ? AdaptiveIconButton(
-									padding: const EdgeInsets.only(left: 8, right: 8),
-									onPressed: loading ? null : expandAttachmentOptions,
-									icon: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											showAttachmentOptions ? const Icon(CupertinoIcons.chevron_down) : const Icon(CupertinoIcons.chevron_up),
-											const SizedBox(width: 8),
-											ClipRRect(
-												borderRadius: BorderRadius.circular(4),
-												child: ConstrainedBox(
-													constraints: const BoxConstraints(
-														maxWidth: 32,
-														maxHeight: 32
-													),
-													child: MediaThumbnail(uri: attachment!.file.uri, fontSize: 12)
-												)
-											),
-										]
-									)
-								) : _attachmentProgress != null ? Row(
+								child:  _attachmentProgress != null ? Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [
 										Text(_attachmentProgress!.$1),
@@ -2589,6 +2559,26 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 											)
 										)
 									]
+								) : attachment != null ? AdaptiveIconButton(
+									padding: const EdgeInsets.only(left: 8, right: 8),
+									onPressed: loading ? null : expandAttachmentOptions,
+									icon: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											showAttachmentOptions ? const Icon(CupertinoIcons.chevron_down) : const Icon(CupertinoIcons.chevron_up),
+											const SizedBox(width: 8),
+											ClipRRect(
+												borderRadius: BorderRadius.circular(4),
+												child: ConstrainedBox(
+													constraints: const BoxConstraints(
+														maxWidth: 32,
+														maxHeight: 32
+													),
+													child: MediaThumbnail(uri: attachment!.file.uri, fontSize: 12)
+												)
+											),
+										]
+									)
 								) : AnimatedBuilder(
 									animation: attachmentSourceNotifier,
 									builder: (context, _) => Row(
