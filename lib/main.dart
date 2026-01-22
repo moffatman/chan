@@ -1255,6 +1255,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		// Close any gallery or other popup
 		Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
 		_tabs.mainTabIndex = 4;
+		await ImageboardRegistry.instance.dev?.persistence.getThreadStateIfExists(id.threadIdentifier)?.ensureThreadLoaded();
 		for (int i = 0; i < 200 && _tabs._settingsNavigatorKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
 		}
