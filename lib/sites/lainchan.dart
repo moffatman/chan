@@ -642,12 +642,15 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			fields: {
 				'body': post.text,
 				'password': password,
-				if (post.subject case final subject?) 'subject': subject,
-				if (post.file case final file?) 'file': await MultipartFile.fromFile(file, filename: post.overrideFilename),
-				if (post.spoiler == true) 'spoiler': 'on',
-				if (post.name?.nonEmptyOrNull case final name?) 'name': name,
-				if (post.options?.nonEmptyOrNull case final options?) 'email': options,
+				if (post.threadId == null) 'subject': post.subject,
+				if (post.file case final file?) 'file': await MultipartFile.fromFile(file, filename: post.overrideFilename)
+				else 'file': null,
+				if (post.spoiler == true) 'spoiler': 'on'
+				else 'spoiler': null,
+				'name': post.name,
+				'email': post.options,
 				if (post.flag case final flag?) 'flag': flag.code
+				else 'flag': null
 			},
 			autoClickSelector: null
 		);

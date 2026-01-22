@@ -793,16 +793,19 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				'pwd': password,
 				'name': post.name ?? '',
 				'email': post.options ?? '',
-				if (post.subject != null) 'sub': post.subject,
+				if (post.threadId == null) 'sub': post.subject,
 				'com': post.text,
 				if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
 				else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
 					't-challenge': captchaSolution.challenge,
 					't-response': captchaSolution.response
 				},
-				if (post.flag case final flag?) 'flag': flag.code,
-				if (post.file case final file?) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename),
-				if (post.spoiler == true) 'spoiler': 'on',
+				if (post.flag case final flag?) 'flag': flag.code
+				else 'flag': null,
+				if (post.file case final file?) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename)
+				else 'upfile': null,
+				if (post.spoiler == true) 'spoiler': 'on'
+				else 'spoiler': null,
 			},
 			autoClickSelector: '#togglePostFormLink a'
 		);

@@ -206,26 +206,24 @@ class _CookieBrowserState extends State<CookieBrowser> {
 											var formFields = ${jsonEncode(stringFields)}
 											for (var name of Object.keys(formFields)) {
 												var value = formFields[name]
-												if (value) {
-													for (var elem of [...document.querySelectorAll("[name='" + name + "']")]) {
-														if (elem.type == "checkbox") {
-															elem.checked = elem.value == value
-														}
-														else {
-															elem.value = value
-														}
+												for (var elem of [...document.querySelectorAll("[name='" + name + "']")]) {
+													if (elem.type == "checkbox") {
+														elem.checked = elem.value == value
+													}
+													else {
+														elem.value = value
 													}
 												}
 											}
 											var formFiles = {${fileFields.entries.map((f) => '"${f.key}": new File([Uint8Array.fromBase64("${f.value.base64}")], "${f.value.filename}", {options: {type: "${f.value.mimeType}"}})').join(', ')}}
 											for (var name of Object.keys(formFiles)) {
 												var file = formFiles[name]
-												if (file) {
-													for (var elem of [...document.querySelectorAll("[name='" + name + "']")]) {
-														var container = new DataTransfer()
+												for (var elem of [...document.querySelectorAll("[name='" + name + "']")]) {
+													var container = new DataTransfer()
+													if (file) {
 														container.items.add(file)
-														elem.files = container.files
 													}
+													elem.files = container.files
 												}
 											}
 											function onSubmit(e) {
