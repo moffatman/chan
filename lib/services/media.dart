@@ -403,7 +403,7 @@ class MediaConversion {
 	int? maximumDimension;
 	final String cacheKey;
 	final Map<String, String> headers;
-	int _additionalScaleDownFactor = 0;
+	({int attempts, double factor}) _scaleDownRetry = (attempts: 0, factor: 1);
 	int _randomizeChecksumNoiseFactor = 1;
 	int _durationArgumentFactor = 1;
 	final Uri? soundSource;
@@ -682,37 +682,28 @@ class MediaConversion {
 					outputDurationInMilliseconds = min((maximumDurationInSeconds! * 1000).round(), outputDurationInMilliseconds!);
 				}
 				(int, int)? newSize;
-				if (scan.width != null && scan.height != null) {
-					if (maximumSizeInBytes != null) {
-						if (isVideoOutput) {
-							final maximumBitrate = ((8 - (_additionalScaleDownFactor / 6)) * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round();
+				if ((scan.width, scan.height) case (int width, int height)) {
+					if (maximumDimension case final maximumDimension?) {
+						// Apply this first, because the _scaleDownRetry.factor applies from the
+						// first conversion. Which means the shrunken width/height
+						final fittedSize = applyBoxFit(BoxFit.contain, Size(width.toDouble(), height.toDouble()), Size.square(maximumDimension.toDouble())).destination;
+						newSize = (fittedSize.width.roundToEven, fittedSize.height.roundToEven);
+					}
+					if (maximumSizeInBytes case final maximumSizeInBytes?) {
+						if (outputDurationInMilliseconds case final ms? when isVideoOutput) {
+							// Just a way to try and not get stuck, slowly reduce bitrate target over attempts
+							final bitsPerByte = 8 - (_scaleDownRetry.attempts / 6);
+							final maximumBitrate = (bitsPerByte * (maximumSizeInBytes / (ms / 1000))).round();
 							if (maximumBitrate < outputBitrate) {
 								// Limit bitrate
 								outputBitrate = maximumBitrate;
-								// May need further scaling down
-								if (_additionalScaleDownFactor > 0) {
-									final scaleDownFactorSq = (maximumBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
-									if (scaleDownFactorSq < 1) {
-										final newWidth = (scan.width! * sqrt(scaleDownFactorSq)).roundToEven;
-										final newHeight = (scan.height! * (sqrt(scaleDownFactorSq))).roundToEven;
-										newSize = (newWidth, newHeight);
-									}
-								}
 							}
 						}
-						else {
-							final scaleDownFactor = ((scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 3))) * _additionalScaleDownFactor;
-							if (scaleDownFactor > 1) {
-								final newWidth = (scan.width! / scaleDownFactor).roundToEven;
-								final newHeight = (scan.height! / scaleDownFactor).roundToEven;
-								newSize = (newWidth, newHeight);
-							}
-						}
-					}
-					if (maximumDimension != null) {
-						final fittedSize = applyBoxFit(BoxFit.contain, Size(scan.width!.toDouble(), scan.height!.toDouble()), Size.square(maximumDimension!.toDouble())).destination;
-						if (newSize == null || fittedSize.width < newSize.$1) {
-							newSize = (fittedSize.width.roundToEven, fittedSize.height.roundToEven);
+						if (_scaleDownRetry.factor > 1) {
+							// Further scaledown with retries
+							final newWidth = ((newSize?.$1 ?? width) / _scaleDownRetry.factor).roundToEven;
+							final newHeight = ((newSize?.$2 ?? height) / _scaleDownRetry.factor).roundToEven;
+							newSize = (newWidth, newHeight);
 						}
 					}
 				}
@@ -730,6 +721,7 @@ class MediaConversion {
 						maximumDurationInSeconds = ms / 1000;
 					}
 				}
+				double? earlyDetectionEstimatedNormalizedSize;
 				final results = await pool.withResource(() async {
 					final contentFilters = <String>[];
 					final sizeFilters = <String>[];
@@ -870,11 +862,18 @@ class MediaConversion {
 						convertedFile.path
 					];
 					print(args);
-					final operation = _session = FFTools.ffmpeg(
+					CancelableOperation<FFToolsOutput>? operation;
+					operation = _session = FFTools.ffmpeg(
 						arguments: args,
 						statisticsCallback: (packet) {
 							if (passedFirstEvent && outputDurationInMilliseconds != null) {
-								progress.value = (packet.time / outputDurationInMilliseconds).clamp(0, 1);
+								final completion = progress.value = (packet.time / outputDurationInMilliseconds).clamp(0, 1);
+								if (maximumSizeInBytes case final maxBytes? when packet.size > maxBytes) {
+									// We don't need to wait for full conversion
+									// Cancel it as soon as we exceed size limit
+									earlyDetectionEstimatedNormalizedSize = (1 / completion) * (packet.size / maxBytes);
+									operation?.cancel();
+								}
 							}
 							passedFirstEvent = true;
 						}
@@ -883,6 +882,10 @@ class MediaConversion {
 				});
 				_session = null;
 				if (results == null) {
+					if (earlyDetectionEstimatedNormalizedSize case final normalizedSize?) {
+						await convertedFile.delete();
+						return await _retryWithAdditionalScaleDownFactor(normalizedSize);
+					}
 					throw const MediaConversionCancelledException();
 				}
  				if (results.returnCode != 0) {
@@ -892,15 +895,11 @@ class MediaConversion {
 					throw MediaConversionFFMpegException(results.returnCode, results.output);
 				}
 				else {
-					if (maximumSizeInBytes != null) {
+					if (maximumSizeInBytes case final maxSize?) {
 						final outputSize = (await convertedFile.stat()).size;
-						if (outputSize > maximumSizeInBytes!) {
-							_additionalScaleDownFactor += 2;
-							if (_additionalScaleDownFactor > 32) {
-								throw Exception('Failed to shrink image to fit in ${formatFilesize(maximumSizeInBytes!)}');
-							}
-							print('Too big (${formatFilesize(outputSize)} > ${formatFilesize(maximumSizeInBytes!)}), retrying with factor $_additionalScaleDownFactor');
-							return await start();
+						if (outputSize > maxSize) {
+							await convertedFile.delete();
+							return await _retryWithAdditionalScaleDownFactor(outputSize / maxSize);
 						}
 					}
 					if (soundSource != null && (outputDurationInMilliseconds ?? 0) > 0) {
@@ -943,6 +942,24 @@ class MediaConversion {
 				}
 			});
 		}
+	}
+
+	Future<MediaConversionResult> _retryWithAdditionalScaleDownFactor(double normalizedSize) async {
+		if (_scaleDownRetry.attempts > 10) {
+			throw Exception('Failed to shrink media to fit in ${formatFilesize(maximumSizeInBytes ?? -1)}');
+		}
+		final minimumStep = switch ((cachedScan?.width, cachedScan?.height)) {
+			// Because of roundToEven
+			(int width, int height) => 2.0 / min(max(width, height), maximumDimension ?? double.infinity),
+			_ => 0.05
+		};
+		final additionalScaleDownFactor = pow(sqrt(normalizedSize) * 1.02, _scaleDownRetry.attempts + 1);
+		_scaleDownRetry = (
+			attempts: _scaleDownRetry.attempts + 1,
+			factor: _scaleDownRetry.factor * max(1/(1 - minimumStep), additionalScaleDownFactor)
+		);
+		print('Too big (normalizedSize=$normalizedSize), retrying with additional factor $additionalScaleDownFactor (total=$_scaleDownRetry)');
+		return await start();
 	}
 
 	Future<void> cancel() async {
