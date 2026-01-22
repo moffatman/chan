@@ -540,13 +540,17 @@ class MediaConversion {
 	}
 
 	static MediaConversion toGif(Uri inputFile, {
+		int? maximumSizeInBytes,
 		int? maximumDimension,
+		bool removeMetadata = false,
 		bool randomizeChecksum = false
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'gif',
+			maximumSizeInBytes: maximumSizeInBytes,
 			maximumDimension: maximumDimension,
+			removeMetadata: removeMetadata,
 			randomizeChecksum: randomizeChecksum
 		);
 	}
@@ -673,6 +677,8 @@ class MediaConversion {
 					int inputBitrate => switch ((scan.codec, outputFileExtension)) {
 						// Higher efficiency formats down to h264, increase target bitrate
 						('vp9' || 'hevc', 'mp4') => (1.5 * inputBitrate).round(),
+						// GIFs are ultra trash efficiency
+						(String codec, 'gif') when codec != 'gif' => (10 * inputBitrate).round(),
 						_ => inputBitrate
 					},
 					null => 2000000

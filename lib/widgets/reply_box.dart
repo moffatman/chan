@@ -86,6 +86,8 @@ class ReplyBoxZone {
 	});
 }
 
+const _kNonWebmVideoExts = {'mp4', 'mov', 'm4v', 'mkv', 'mpeg', 'avi', '3gp', 'm2ts'};
+
 class ReplyBox extends StatefulWidget {
 	final BoardKey board;
 	final int? threadId;
@@ -577,7 +579,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		bool? audioPresent,
 		bool? audioAllowed,
 		String? codec,
-		Set<String>? allowedCodecs,
+		Map<String, Set<String>> allowedCodecs = const {},
 		int? durationInSeconds,
 		int? maximumDurationInSeconds,
 		int? width,
@@ -605,7 +607,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (randomizeChecksum) {
 			solutions.add(kRandomizingChecksum);
 		}
-		if (switch((codec, allowedCodecs)) {
+		if (switch((codec, allowedCodecs[ext])) {
 			(String codec_, Set<String> allowedCodecs_) => !allowedCodecs_.contains(codec_),
 			_ => false
 		}) {
@@ -615,7 +617,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (metadataPresent && !metadataAllowed) {
 			solutions.add('removing metadata');
 		}
-		if (audioPresent == true && audioAllowed == false) {
+		if (audioPresent == true && audioAllowed == false && transcode.outputFileExtension != 'gif') {
 			solutions.add('removing audio');
 		}
 		if (!force && solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm', 'mp4'].contains(ext)) {
@@ -694,6 +696,11 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 	Future<void> setAttachment(bool isOriginal, File newAttachment, {
 		bool forceRandomizeChecksum = false,
 		int? forceMaximumDimension,
+		bool forcePngToJpg = false,
+		bool forceWebpToPng = false,
+		bool forceMp4ToWebm = false,
+		bool forceVideoToGif = false,
+		bool forceGifToMp4 = false,
 		bool forceConvert = false
 	}) async {
 		File? file = newAttachment;
@@ -833,7 +840,13 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					width: scan.width,
 					height: scan.height,
 					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
-					transcode: MediaConversion.toJpg(
+					transcode: forceWebpToPng ? MediaConversion.toPng(
+						file.uri,
+						maximumSizeInBytes: board.maxImageSizeBytes,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: randomizeChecksum
+					): MediaConversion.toJpg(
 						file.uri,
 						maximumSizeInBytes: board.maxImageSizeBytes,
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
@@ -855,7 +868,13 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					width: scan.width,
 					height: scan.height,
 					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
-					transcode: MediaConversion.toPng(
+					transcode: forcePngToJpg ? MediaConversion.toJpg(
+						file.uri,
+						maximumSizeInBytes: board.maxImageSizeBytes,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: randomizeChecksum
+					) : MediaConversion.toPng(
 						file.uri,
 						maximumSizeInBytes: board.maxImageSizeBytes,
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
@@ -870,41 +889,30 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				);
 			}
 			else if (ext == 'gif') {
-				if ((board.maxImageSizeBytes != null) && (size > board.maxImageSizeBytes!)) {
-					file = await _showTranscodeWindow(
-						source: file,
-						metadataPresent: scan.hasMetadata,
-						metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-						size: size,
-						maximumSize: board.maxImageSizeBytes,
-						randomizeChecksum: randomizeChecksum,
-						force: forceConvert,
-						showToastIfLong: _originalAttachment == null,
-						transcode: MediaConversion.toMp4(
-							file.uri,
-							maximumSizeInBytes: board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
-							maximumDimension: settings.maximumImageUploadDimension,
-							removeMetadata: settings.removeMetadataOnUploadedFiles,
-							randomizeChecksum: randomizeChecksum
-						)
-					);
-				}
-				else {
-					file = await _showTranscodeWindow(
-						source: file,
-						metadataPresent: scan.hasMetadata,
-						metadataAllowed: !settings.removeMetadataOnUploadedFiles,
-						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
-						randomizeChecksum: randomizeChecksum,
-						transcode: MediaConversion.toGif(
-							file.uri,
-							maximumDimension: forceMaximumDimension,
-							randomizeChecksum: randomizeChecksum
-						),
-						force: forceConvert,
-						showToastIfLong: _originalAttachment == null
-					);
-				}
+				file = await _showTranscodeWindow(
+					source: file,
+					metadataPresent: scan.hasMetadata,
+					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
+					size: size,
+					maximumSize: board.maxImageSizeBytes,
+					randomizeChecksum: randomizeChecksum,
+					force: forceConvert,
+					showToastIfLong: _originalAttachment == null,
+					transcode: forceGifToMp4 ? MediaConversion.toMp4(
+						file.uri,
+						maximumSizeInBytes: board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
+						maximumDimension: settings.maximumImageUploadDimension,
+						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: randomizeChecksum
+					) : MediaConversion.toGif(
+						file.uri,
+						maximumSizeInBytes: board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
+						maximumDimension: settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: randomizeChecksum
+					)
+				);
 			}
 			else if (ext == 'webm') {
 				file = await _showTranscodeWindow(
@@ -918,7 +926,13 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					width: scan.width,
 					height: scan.height,
 					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
-					transcode: MediaConversion.toWebm(
+					transcode: forceVideoToGif ? MediaConversion.toGif(
+						file.uri,
+						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: randomizeChecksum
+					) : MediaConversion.toWebm(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
@@ -934,13 +948,13 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					showToastIfLong: _originalAttachment == null
 				);
 			}
-			else if (ext == 'mp4' || ext == 'mov' || ext == 'm4v' || ext == 'mkv' || ext == 'mpeg' || ext == 'avi' || ext == '3gp' || ext == 'm2ts') {
+			else if (_kNonWebmVideoExts.contains(ext)) {
 				file = await _showTranscodeWindow(
 					source: file,
 					audioAllowed: board.webmAudioAllowed,
 					audioPresent: scan.hasAudio,
 					codec: scan.codec,
-					allowedCodecs: {'h264'},
+					allowedCodecs: {'mp4': {'h264'}},
 					durationInSeconds: scan.duration?.inSeconds,
 					maximumDurationInSeconds: board.maxWebmDurationSeconds,
 					width: scan.width,
@@ -948,7 +962,13 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					size: size,
 					maximumSize: board.maxWebmSizeBytes,
-					transcode: MediaConversion.toMp4(
+					transcode: forceVideoToGif ? MediaConversion.toGif(
+						file.uri,
+						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: randomizeChecksum
+					) : (forceMp4ToWebm ? MediaConversion.toWebm(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
@@ -956,7 +976,15 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
-					),
+					) : MediaConversion.toMp4(
+						file.uri,
+						stripAudio: !board.webmAudioAllowed,
+						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
+						removeMetadata: settings.removeMetadataOnUploadedFiles,
+						randomizeChecksum: randomizeChecksum
+					)),
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
@@ -1620,15 +1648,30 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														quality = newHeight / originalHeight;
 													}
 												}
+												quality = math.min(quality, 1.0); // Floating point error or rounding or idk
+												final initialQuality = quality;
+												final currentExt = attachment.file.path.afterLast('.').toLowerCase();
+												final originalExt = _originalAttachment?.file.path.afterLast('.').toLowerCase();
+												final offerJpg = (originalExt ?? currentExt) == 'png';
+												final offerPng = (originalExt ?? currentExt) == 'webp';
+												final offerWebm = _kNonWebmVideoExts.contains(originalExt ?? currentExt);
+												final offerGif = offerWebm || (originalExt ?? currentExt) == 'webm';
+												final offerMp4 = (originalExt ?? currentExt) == 'gif';
+												bool forcePngToJpg = offerJpg && currentExt == 'jpg';
+												bool forceWebpToPng = offerPng && currentExt == 'png';
+												bool forceMp4ToWebm = offerWebm && currentExt == 'webm';
+												bool forceVideoToGif = offerGif && currentExt == 'gif';
+												bool forceGifToMp4 = offerMp4 && currentExt == 'mp4';
 												// Minimum 50px width, or 25% width, whichever is lower
 												final minQuality = (25 * qualityStep).clamp(0, 0.25).toDouble();
 												const maxQuality = 1.0;
-												final resize = await showAdaptiveDialog<bool>(
+												bool forceConvert = false;
+												final reencode = await showAdaptiveDialog<bool>(
 													context: context,
 													barrierDismissible: true,
 													builder: (context) => StatefulBuilder(
 														builder: (context, setDialogState) => AdaptiveAlertDialog(
-															title: const Text('Resize'),
+															title: Text((offerJpg || offerWebm) ? 'Re-encode' : 'Resize'),
 															content: Column(
 																mainAxisSize: MainAxisSize.min,
 																children: [
@@ -1674,6 +1717,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																				onPressed: quality <= minQuality ? null : () {
 																					setDialogState(() {
 																						quality -= qualityStep;
+																						forceConvert = quality != initialQuality;
 																					});
 																				},
 																				icon: const Icon(CupertinoIcons.minus)
@@ -1683,6 +1727,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																				onPressed: quality >= maxQuality ? null : () {
 																					setDialogState(() {
 																						quality += qualityStep;
+																						forceConvert = quality != initialQuality;
 																					});
 																				},
 																				icon: const Icon(CupertinoIcons.plus)
@@ -1697,15 +1742,69 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																		onChanged: (newValue) {
 																			setDialogState(() {
 																				quality = newValue;
+																				forceConvert = quality != initialQuality;
 																			});
 																		}
 																	)
 																]
 															),
 															actions: [
+																if (offerWebm) AdaptiveDialogAction(
+																	onPressed: () {
+																		forceMp4ToWebm = !forceMp4ToWebm;
+																		forceVideoToGif = false;
+																		if (!forceMp4ToWebm) {
+																			quality = 1.0;
+																		}
+																		Navigator.pop(context, true);
+																	},
+																	child: forceMp4ToWebm ? const Text('Restore to MP4') : const Text('Convert to WEBM')
+																),
+																if (offerMp4) AdaptiveDialogAction(
+																	onPressed: () {
+																		forceGifToMp4 = !forceGifToMp4;
+																		if (!forceGifToMp4) {
+																			quality = 1.0;
+																		}
+																		Navigator.pop(context, true);
+																	},
+																	child: forceGifToMp4 ? const Text('Restore to GIF') : const Text('Convert to MP4')
+																),
+																if (offerGif) AdaptiveDialogAction(
+																	onPressed: () {
+																		forceVideoToGif = !forceVideoToGif;
+																		forceMp4ToWebm = false;
+																		if (!forceVideoToGif) {
+																			quality = 1.0;
+																		}
+																		Navigator.pop(context, true);
+																	},
+																	child: forceVideoToGif ? Text('Restore to ${originalExt?.toUpperCase()}') : const Text('Convert to GIF')
+																),
+																if (offerPng) AdaptiveDialogAction(
+																	onPressed: () {
+																		forceWebpToPng = !forceWebpToPng;
+																		if (!forceWebpToPng) {
+																			quality = 1.0;
+																		}
+																		Navigator.pop(context, true);
+																	},
+																	// WEBP without force will be JPEG
+																	child: forceWebpToPng ? const Text('Restore to JPEG') : const Text('Convert to PNG')
+																),
+																if (offerJpg) AdaptiveDialogAction(
+																	onPressed: () {
+																		forcePngToJpg = !forcePngToJpg;
+																		if (!forcePngToJpg) {
+																			quality = 1.0;
+																		}
+																		Navigator.pop(context, true);
+																	},
+																	child: forcePngToJpg ? const Text('Restore to PNG') : const Text('Convert to JPEG')
+																),
 																AdaptiveDialogAction(
 																	isDefaultAction: true,
-																	onPressed: () => Navigator.pop(context, true),
+																	onPressed: forceConvert ? () => Navigator.pop(context, true) : null,
 																	child: const Text('Resize')
 																),
 																AdaptiveDialogAction(
@@ -1716,12 +1815,22 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														)
 													)
 												);
-												if (resize ?? false) {
+												if (reencode ?? false) {
 													setState(() {
 														_showAttachmentOptions = false;
 													});
 													try {
-														await setAttachment(false, _originalAttachment?.file ?? attachment.file, forceMaximumDimension: (math.max(originalWidth, originalHeight) * quality).ceil(), forceConvert: true);
+														await setAttachment(
+															false,
+															_originalAttachment?.file ?? attachment.file,
+															forceMaximumDimension: (math.max(originalWidth, originalHeight) * quality).ceil(),
+															forcePngToJpg: forcePngToJpg,
+															forceWebpToPng: forceWebpToPng,
+															forceMp4ToWebm: forceMp4ToWebm,
+															forceVideoToGif: forceVideoToGif,
+															forceGifToMp4: forceGifToMp4,
+															forceConvert: forceConvert
+														);
 													}
 													finally {
 														setState(() {
