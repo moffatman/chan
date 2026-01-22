@@ -2038,7 +2038,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						padding: const EdgeInsets.only(left: 8),
 						child: AdaptiveThinButton(
 							padding: const EdgeInsets.all(4),
-							onPressed: () async {
+							onPressed: (_attachmentProgress != null || (!kDebugMode && _textIsEmpty && attachment == null)) ? null : () async {
 								final draft = _makeDraft();
 								draft.name = _nameFieldController.text;
 								final encoded = await site.encodePostForWeb(draft);
