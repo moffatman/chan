@@ -2040,6 +2040,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							padding: const EdgeInsets.all(4),
 							onPressed: () async {
 								final draft = _makeDraft();
+								draft.name = _nameFieldController.text;
 								final encoded = await site.encodePostForWeb(draft);
 								if (encoded == null) {
 									throw Exception('Post was not encoded');
