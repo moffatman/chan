@@ -1521,6 +1521,7 @@ final appearanceSettings = [
 	),
 	const SwitchSettingWidget(
 		description: 'Show filtered posts/threads at bottom of lists',
+		keywords: ['hidden'],
 		icon: CupertinoIcons.eye_slash,
 		setting: Settings.showHiddenItemsFooterSetting
 	),
