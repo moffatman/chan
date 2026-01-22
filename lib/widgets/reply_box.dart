@@ -124,6 +124,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final FocusNode _textFocusNode;
 	late final ValueNotifier<QueuedPost?> postingPost;
 	bool get loading => postingPost.value != null;
+	Size _lastAttachmentSize = const Size(1, 1);
 	PickedAttachment? attachment;
 	PickedAttachment? _originalAttachment;
 	String? get attachmentExt => attachment?.file.path.afterLast('.').toLowerCase();
@@ -975,6 +976,9 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				);
 				setState(() {
 					attachment = newAttachment;
+					if ((scan.width, scan.height) case (int width, int height)) {
+						_lastAttachmentSize = Size(width.toDouble(), height.toDouble());
+					}
 					if (isOriginal) {
 						_originalAttachment = originalAttachment;
 					}
@@ -1483,11 +1487,14 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			sizeInBytes: attachment?.stat.size,
 			threadId: null
 		);
+		final decoration = BoxDecoration(
+			border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
+			color: ChanceTheme.backgroundColorOf(context)
+		);
 		return Container(
-			decoration: BoxDecoration(
-				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
-				color: ChanceTheme.backgroundColorOf(context)
-			),
+			decoration: decoration,
+			// Blank out the widget during collapse animation
+			foregroundDecoration: _showAttachmentOptions ? null : decoration,
 			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
 			child: Row(
 				children: [
@@ -1815,7 +1822,9 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								);
 							}
 						)
-					) : const SizedBox.shrink()
+					) : SizedBox.fromSize(
+						size: applyBoxFit(BoxFit.contain, _lastAttachmentSize, const Size.square(100)).destination
+					)
 				]
 			)
 		);
