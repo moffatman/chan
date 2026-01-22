@@ -356,7 +356,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			if (!settings.showBoard(board.item)) {
 				return null;
 			}
-			final target = board.item.name.isEmpty ? board.imageboard.site.name : board.item.boardKey.s;
+			final target = board.item.boardKey.s.nonEmptyOrNull ?? board.imageboard.site.name.toLowerCase();
 			_ExactMatchType? exactMatch;
 			int bestMatchIndex = -1;
 			for (final (str: keyword, fin:isEnd) in keywords) {
