@@ -1505,7 +1505,8 @@ class ThreadPageState extends State<ThreadPage> {
 		if (autoUpdateDuration.inDays > 1) {
 			autoUpdateDuration = null;
 		}
-		final variant = persistentState.variant ?? persistentState.thread?.suggestedVariant;
+		final bestEffortThread = persistentState.thread ?? site.getThreadFromCatalogCache(persistentState.identifier);
+		final variant = persistentState.variant ?? bestEffortThread?.suggestedVariant;
 		return PopScope(
 			canPop: !(_replyBoxKey.currentState?.show ?? false),
 			onPopInvokedWithResult: (didPop, result) async {
@@ -1554,7 +1555,7 @@ class ThreadPageState extends State<ThreadPage> {
 														boardName: widget.thread.board
 													)
 												),
-												if (persistentState.thread?.isNsfw ?? false) const Padding(
+												if (bestEffortThread?.isNsfw ?? false) const Padding(
 													padding: EdgeInsets.only(right: 6),
 													child: NSFWLabel()
 												),
@@ -1665,7 +1666,7 @@ class ThreadPageState extends State<ThreadPage> {
 																	child: Text(
 																		variant.name,
 																		textAlign: TextAlign.left,
-																		style: variant == (persistentState.variant ?? persistentState.thread?.suggestedVariant ?? site.threadVariants.first) ? CommonTextStyles.bold : null
+																		style: variant == (persistentState.variant ?? bestEffortThread?.suggestedVariant ?? site.threadVariants.first) ? CommonTextStyles.bold : null
 																	)
 																)
 															]
