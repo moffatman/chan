@@ -2091,7 +2091,14 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									}
 								}
 							},
-							child: const Text('Post via web')
+							child: const Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Icon(CupertinoIcons.globe),
+									SizedBox(width: 4),
+									Icon(CupertinoIcons.paperplane)
+								]
+							)
 						)
 					),
 					if (fields != null) Padding(
