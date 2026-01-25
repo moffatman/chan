@@ -126,6 +126,9 @@ class SiteFutaba extends ImageboardSite {
 				else if (node.localName == 'a') {
 					elements.add(PostLinkSpan(node.attributes['href']!.replaceFirst(RegExp(r'^\/bin\/jump\.php\?'), ''), name: node.text.nonEmptyOrNull));
 				}
+				else if (node.localName == 'b') {
+					elements.add(PostBoldSpan(makeSpan(board, threadId, node.innerHtml)));
+				}
 				else {
 					elements.add(PostTextSpan(node.outerHtml));
 				}
