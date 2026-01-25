@@ -41,6 +41,7 @@ import 'package:chan/services/storage.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/version.dart';
@@ -107,6 +108,7 @@ Future<void> innerMain() async {
 		await Notifications.initializeStatic();
 		await updateDynamicColors();
 		await initializeFonts();
+		await initializeNativeTranslation();
 		MediaKit.ensureInitialized();
 		await JsonCache.instance.initialize();
 		await MediaScan.initializeStatic();

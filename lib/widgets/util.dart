@@ -8,6 +8,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/android.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/launch_url_externally.dart';
@@ -86,8 +87,11 @@ Future<void> alert(BuildContext context, String title, String message, {
 								translating = true;
 							});
 							try {
-								translatedTitle = await translateHtml(title, toLanguage: Settings.instance.translationTargetLanguage);
-								translatedMessage = await translateHtml(message, toLanguage: Settings.instance.translationTargetLanguage);
+								translatedTitle = await translateHtml(title, toLanguage: Settings.instance.translationTargetLanguage, interactive: true);
+								translatedMessage = await translateHtml(message, toLanguage: Settings.instance.translationTargetLanguage, interactive: true);
+							}
+							on NativeTranslationCancelledException {
+								// Don't do anything
 							}
 							catch (e, st) {
 								Future.error(e, st); // crashlytics
@@ -95,7 +99,8 @@ Future<void> alert(BuildContext context, String title, String message, {
 									showToast(
 										context: context,
 										icon: CupertinoIcons.exclamationmark_triangle,
-										message: 'Translation failed: ${e.toStringDio()}'
+										message: 'Translation failed: ${e.toStringDio()}',
+										easyButton: canOpenGoogleTranslate ? ('Google Translate', () => openGoogleTranslate('$title\n$message')) : null
 									);
 								}
 							}

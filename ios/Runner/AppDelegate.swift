@@ -4,6 +4,9 @@ import Flutter
 import Foundation
 import Vision
 import WebKit
+import SwiftUI
+import Translation
+import NaturalLanguage
 
 class MyFolderPickerDelegate : NSObject, UIDocumentPickerDelegate {
   private var onResult: ((Any?) -> Void)
@@ -69,6 +72,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
 @objc class AppDelegate: FlutterAppDelegate {
   var appleChannel: FlutterMethodChannel?
   var garbageKeepAlive: [any NSObjectProtocol] = []
+  private var translationHelper: any TranslationHelper = DummyTranslationHelper()
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -77,6 +81,25 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
       UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
+    if #available(iOS 18.0, *) {
+      let myBridge = TranslationBridge()
+      let myTranslationHelper = RealTranslationHelper(bridge: myBridge)
+      translationHelper = myTranslationHelper
+      let hostVC = UIHostingController(rootView: TranslationTaskHost(bridge: myBridge))
+      controller.addChild(hostVC)
+      controller.view.addSubview(hostVC.view)
+      hostVC.didMove(toParent: controller)
+      hostVC.view.backgroundColor = .clear
+      hostVC.view.isUserInteractionEnabled = false
+      hostVC.view.translatesAutoresizingMaskIntoConstraints = false
+      NSLayoutConstraint.activate([
+        hostVC.view.widthAnchor.constraint(equalToConstant: 1),
+        hostVC.view.heightAnchor.constraint(equalToConstant: 1),
+        hostVC.view.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor),
+        hostVC.view.bottomAnchor.constraint(equalTo: controller.view.bottomAnchor),
+      ])
+      hostVC.view.alpha = 0.01
+    }
     var currentActivity: NSUserActivity?
     appleChannel = FlutterMethodChannel(name: "com.moffatman.chan/apple", binaryMessenger: controller.binaryMessenger)
     appleChannel!.setMethodCallHandler({
@@ -412,6 +435,94 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         }
         else {
           result(FlutterError.init(code: "OS", message: "iOS version too low to support saving file", details: nil))
+        }
+      }
+      else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    let translationChannel = FlutterMethodChannel(name: "com.moffatman.chan/translation", binaryMessenger: controller.binaryMessenger)
+    translationChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if (call.method == "isSupported") {
+        if #available(iOS 18.0, *) {
+          result(true)
+        }
+        result(false)
+      }
+      else if (call.method == "translate") {
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let text = args["text"] as? String,
+              let to = args["to"] as? String,
+              let interactive = args["interactive"] as? Bool else {
+          result(FlutterError.init(code: "ARGUMENTS", message: "Invalid arguments format", details: nil))
+          return
+        }
+        if #available(iOS 18.0, *) {
+          let toLanguage = Locale.Language(languageCode: Locale.LanguageCode(to))
+          let recognizer = NLLanguageRecognizer()
+          // This seems to get confused with the HTML tags. So detect language without them
+          let htmlPattern = /<\/?[a-z0-9]+\/?>/
+          recognizer.processString(text.replacing(htmlPattern, with: ""))
+          guard let dominantLanguage = recognizer.dominantLanguage?.rawValue else {
+            result(nil)
+            return
+          }
+          if dominantLanguage == toLanguage.languageCode?.identifier {
+            result(text)
+            return
+          }
+          let topLanguages = recognizer.languageHypotheses(withMaximum: 3)
+          let fromLanguageCodes =
+            ((topLanguages.values.max() ?? 1) > 0.6)
+                ? [dominantLanguage]
+          : topLanguages.filter{ $0.value > 0.15 }.sorted { $0.value > $1.value }.map { $0.key.rawValue }
+          Task {
+            var firstError: FlutterError?
+            for fromLanguageCode in fromLanguageCodes {
+              let fromLanguage = Locale.Language(languageCode: Locale.LanguageCode(fromLanguageCode))
+              let la = LanguageAvailability()
+              let status = await la.status(from: fromLanguage, to: toLanguage)
+              if status == .unsupported {
+                // Maybe try other language
+                continue
+              }
+              if #available(iOS 26.0, *), status == .installed {
+                let session = TranslationSession(installedSource: fromLanguage, target: toLanguage)
+                do {
+                  let translated = try await session.translate(text)
+                  result(translated.targetText)
+                  return
+                } catch TranslationError.notInstalled, TranslationError.unsupportedLanguagePairing, TranslationError.unsupportedSourceLanguage, TranslationError.unsupportedTargetLanguage {
+                  continue
+                } catch {
+                  result(FlutterError.init(code: "OS", message: "Translation failed", details: error.localizedDescription))
+                  return
+                }
+              }
+              if !interactive {
+                firstError = firstError ?? FlutterError.init(code: "INTERACTION_NEEDED", message: "Language download required", details: fromLanguage.languageCode?.identifier)
+                continue
+              }
+              let translationResult = await self.translationHelper.translate(text: text, source: fromLanguage, target: .init(identifier: to))
+              switch translationResult {
+              case .success(let translated):
+                result(translated)
+                return
+              case .failure (let error as NSError) where error.code == 3072:
+                // TODO: Test on iOS
+                firstError = firstError ?? FlutterError.init(code: "CANCELLED", message: "Translation cancelled", details: nil)
+                continue
+              case .failure(let error):
+                result(FlutterError.init(code: "OS", message: "Translation failed", details: error.localizedDescription))
+                return
+              }
+            }
+            result(firstError)
+          }
+        }
+        else {
+          result(nil)
         }
       }
       else {

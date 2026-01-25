@@ -1207,7 +1207,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> translate() async {
 		final rawBlocks = await recognizeText(_cachedFile!);
-		final translated = await batchTranslate(rawBlocks.map((r) => r.text).toList(), toLanguage: Settings.instance.translationTargetLanguage);
+		final translated = await batchTranslate(rawBlocks.map((r) => r.text).toList(), toLanguage: Settings.instance.translationTargetLanguage, interactive: true);
 		_textBlocks = rawBlocks.asMap().entries.map((e) => (
 			text: e.key >= translated.length ? 'Nothing for ${e.key} (${translated.length}' : translated[e.key],
 			rect: e.value.rect

@@ -189,5 +189,6 @@
             <action android:name="android.intent.action.SENDTO" />
             <data android:scheme="mailto" />
         </intent>
+        <package android:name="com.google.android.apps.translate" />
     </queries>
 </manifest>

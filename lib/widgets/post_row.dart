@@ -1,4 +1,5 @@
 import 'package:chan/pages/selectable_post.dart';
+import 'package:chan/services/android.dart';
 import 'package:chan/services/delete_post.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
@@ -9,6 +10,7 @@ import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/report_post.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
@@ -852,7 +854,9 @@ class PostRow extends StatelessWidget {
 												children: [
 													if (translatedPostSnapshot != null) const Icon(Icons.translate),
 													if (translatedPostSnapshot?.hasError ?? false) GestureDetector(
-														onTap: () => alertError(context, translatedPostSnapshot?.error?.toStringDio() ?? 'Unknown', translatedPostSnapshot?.stackTrace),
+														onTap: () => alertError(context, translatedPostSnapshot?.error ?? 'Unknown', translatedPostSnapshot?.stackTrace, actions: {
+															if (canOpenGoogleTranslate) 'Open Google Translate': () => openGoogleTranslate(post.buildText())
+														}),
 														child: const Icon(CupertinoIcons.exclamationmark_triangle)
 													)
 													else if (translatedPostSnapshot?.hasData == false) const CircularProgressIndicator.adaptive(),
@@ -1234,11 +1238,16 @@ class PostRow extends StatelessWidget {
 					trailingIcon: Icons.translate,
 					onPressed: () async {
 						try {
-							await parentZone.translatePost(post);
+							await parentZone.translatePost(post, interactive: true);
+						}
+						on NativeTranslationCancelledException {
+							// Don't do anything
 						}
 						catch (e, st) {
 							if (context.mounted) {
-								alertError(context, e, st);
+								alertError(context, e, st, actions: {
+									if (canOpenGoogleTranslate) 'Open Google Translate': () => openGoogleTranslate(post.buildText())
+								});
 							}
 						}
 					}

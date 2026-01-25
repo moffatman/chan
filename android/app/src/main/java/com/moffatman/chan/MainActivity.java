@@ -374,6 +374,28 @@ public class MainActivity extends FlutterFragmentActivity {
                         }
                         result.success(null);
                     }
+                    else if (call.method.equals("canOpenGoogleTranslate")) {
+                        try {
+                            getApplicationContext().getPackageManager().getPackageInfo("com.google.android.apps.translate", 0);
+                            result.success(true);
+                        } catch (PackageManager.NameNotFoundException e) {
+                            result.success(false);
+                        } catch (Exception e) {
+                            result.error("JAVA_EXCEPTION", e.getMessage(), null);
+                        }
+                    }
+                    else if (call.method.equals("openGoogleTranslate")) {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_PROCESS_TEXT);
+                            intent.setType("text/plain");
+                            intent.putExtra(Intent.EXTRA_PROCESS_TEXT, (String) call.argument("text"));
+                            intent.putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true);
+                            startActivity(intent);
+                            result.success(null);
+                        } catch (Exception e) {
+                            result.error("JAVA_EXCEPTION", e.getMessage(), null);
+                        }
+                    }
                     else {
                         result.notImplemented();
                     }

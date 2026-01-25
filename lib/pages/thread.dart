@@ -25,6 +25,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
@@ -193,6 +194,7 @@ class ThreadPageState extends State<ThreadPage> {
 	final _scrollLock = Mutex();
 	final _threadStateListenableUpdateMutex = Mutex();
 	late final StreamSubscription<(Attachment, Object)> _cacheSubscription;
+	(Object, StackTrace)? _ensureAllTranslatedError;
 
 	static const _kHighlightZero = 0.0;
 	static const _kHighlightPartial = 0.35;
@@ -665,6 +667,12 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
+	Future<void> _maybeInitialAutoTranslate(Thread? thread) async {
+		if (thread != null && persistentState.autoTranslate && persistentState.identifier == thread.identifier) {
+			_ensureAllTranslated(thread.posts_.toList(), interactive: false);
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -672,8 +680,14 @@ class ThreadPageState extends State<ThreadPage> {
 		_listController = RefreshableListController();
 		persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 		_lastPersistentThreadStateSnapshot = _PersistentThreadStateSnapshot.of(persistentState);
-		if (persistentState.thread == null) {
-			persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
+		if (persistentState.thread case final thread?) {
+			Future.microtask(() => _maybeInitialAutoTranslate(thread));
+		}
+		else {
+			persistentState.ensureThreadLoaded().then((thread) {
+				_onThreadStateListenableUpdate();
+				_maybeInitialAutoTranslate(thread);
+			});
 		}
 		persistentState.useArchive |= widget.initiallyUseArchive != null;
 		persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] != null;
@@ -791,6 +805,7 @@ class ThreadPageState extends State<ThreadPage> {
 			_cached.clear();
 			_cachingQueue.clear();
 			_passedFirstLoad = false;
+			_ensureAllTranslatedError = null;
 			_threadStateListenable?.removeListener(_onThreadStateListenableUpdate);
 			(_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread))
 				.addListener(_onThreadStateListenableUpdate);
@@ -799,7 +814,10 @@ class ThreadPageState extends State<ThreadPage> {
 			_weakNavigatorKey.currentState!.popAllExceptFirst();
 			persistentState.save(); // Save old state in case it had pending scroll update to save
 			persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
-			persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
+			persistentState.ensureThreadLoaded().then((thread) {
+				_onThreadStateListenableUpdate();
+				_maybeInitialAutoTranslate(thread);
+			});
 			persistentState.useArchive |= widget.initiallyUseArchive != null;
 			persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] != null;
 			final oldZone = zone;
@@ -1155,6 +1173,71 @@ class ThreadPageState extends State<ThreadPage> {
 		return loadedAnything;
 	}
 
+	Future<void> _ensureAllTranslated(List<Post> posts, {required bool interactive}) async {
+		final originalError = _ensureAllTranslatedError;
+		if (originalError?.$1 case e when !interactive && (e is TranslationQuotaExhaustedException || e is NativeTranslationNeedsInteractionException)) {
+			// No reason to change the situation
+			throw e;
+		}
+		try {
+			_ensureAllTranslatedError = null;
+			setState(() {});
+			for (final method in zone.postSortingMethods) {
+				mergeSort(posts, compare: method);
+			}
+			for (final post in posts) {
+				final current = zone.translatedPost(post.id);
+				// Maybe retry if they downloaded the model again
+				if (current == null || current.error is NativeTranslationNeedsInteractionException || current.error is NativeTranslationCancelledException) {
+					try {
+						await zone.translatePost(post, interactive: interactive);
+					}
+					on TranslationQuotaExhaustedException {
+						// Maybe try rest, they could be translated locally
+						if (!nativeTranslationSupported) {
+							rethrow;
+						}
+					}
+					on NativeTranslationNeedsInteractionException catch (e, st) {
+						// Save the missing language, but continue to translate other posts
+						_ensureAllTranslatedError ??= (e, st);
+					}
+				}
+			}
+		}
+		on NativeTranslationCancelledException {
+			// Probably they went from needsInteraction -> cancel
+			_ensureAllTranslatedError = originalError;
+			if (mounted) setState(() {});
+		}
+		catch (e, st) {
+			_ensureAllTranslatedError = (e, st);
+		}
+		finally {
+			if (_ensureAllTranslatedError case (Object e, StackTrace st) when mounted && e is! NativeTranslationNeedsInteractionException) {
+				if (interactive) {
+					alertError(context, e, st, actions: {
+						if (e is! TranslationQuotaExhaustedException) 'Retry': () => _ensureAllTranslated(posts, interactive: true)
+					});
+				}
+				else if (_foreground) {
+					showToast(
+						context: context,
+						icon: Icons.translate,
+						message: 'Translation failed',
+						easyButton: switch (e) {
+							 NativeTranslationNeedsInteractionException e2 => ('Download ${e2.fromLanguageFull ?? e2.fromLanguageCode} model', () => _ensureAllTranslated(posts, interactive: true)),
+							 Object e => ('Details', () => alertError(context, e, st, actions: {
+									if (e is! TranslationQuotaExhaustedException) 'Retry': () => _ensureAllTranslated(posts, interactive: true)
+							 }))
+						}
+					);
+				}
+				setState(() {});
+			}
+		}
+	}
+
 	Future<Thread> _getUpdatedThread(CancelToken? cancelToken) async {
 		final tmpPersistentState = persistentState;
 		final site = context.read<ImageboardSite>();
@@ -1232,17 +1315,7 @@ class ThreadPageState extends State<ThreadPage> {
 				if (firstLoad) shouldScroll = true;
 				if (persistentState.autoTranslate) {
 					// Translate new posts
-					() async {
-						final posts = newThread.posts.toList();
-						for (final method in zone.postSortingMethods) {
-							mergeSort(posts, compare: method);
-						}
-						for (final post in posts) {
-							if (zone.translatedPost(post.id) == null) {
-								await zone.translatePost(post);
-							}
-						}
-					}();
+					_ensureAllTranslated(newThread.posts.toList(), interactive: false);
 				}
 			}
 			await tmpPersistentState.save();
@@ -2233,7 +2306,12 @@ class ThreadPageState extends State<ThreadPage> {
 																				}
 																			),
 																			replyBoxKey: _replyBoxKey,
-																			popOutReplyBox: _popOutReplyBox
+																			popOutReplyBox: _popOutReplyBox,
+																			ensureAllTranslated: _ensureAllTranslated,
+																			ensureAllTranslatedError: _ensureAllTranslatedError,
+																			resetEnsureAllTranslatedError: () => setState(() {
+																				_ensureAllTranslatedError = null;
+																			})
 																		)
 																	)
 																)
@@ -2325,6 +2403,9 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final VoidCallback forceThreadRebuild;
 	final VoidCallback resetLayoutIndexes;
 	final Future<void> Function(ValueChanged<ReplyBoxState>? onInitState) popOutReplyBox;
+	final Future<void> Function(List<Post>, {required bool interactive}) ensureAllTranslated;
+	final (Object, StackTrace)? ensureAllTranslatedError;
+	final VoidCallback resetEnsureAllTranslatedError;
 	
 	const _ThreadPositionIndicator({
 		required this.persistentState,
@@ -2350,6 +2431,9 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.forceThreadRebuild,
 		required this.resetLayoutIndexes,
 		required this.popOutReplyBox,
+		required this.ensureAllTranslated,
+		required this.ensureAllTranslatedError,
+		required this.resetEnsureAllTranslatedError,
 		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
@@ -2715,7 +2799,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.where((a) => a.type != AttachmentType.url).length);
 		final postSortingMethod = widget.persistentState.effectivePostSortingMethod;
 		final poll = widget.thread?.poll;
-		final site = context.read<ImageboardSite>();
+		final site = context.watch<ImageboardSite>();
+		final persistence = context.watch<Persistence>();
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
 			children: [
@@ -2918,28 +3003,16 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												if (widget.persistentState.autoTranslate) [('Original', const Icon(Icons.translate, size: 19, applyTextScaling: true), () {
 													widget.persistentState.autoTranslate = false;
 													widget.persistentState.translatedPosts.clear();
+													widget.resetEnsureAllTranslatedError();
 													widget.zone.clearTranslatedPosts();
 													widget.persistentState.save();
 													setState(() {});
 												})]
 												else [('Translate', const Icon(Icons.translate, size: 19, applyTextScaling: true), () async {
 													widget.persistentState.autoTranslate = true;
-													final posts = widget.persistentState.thread?.posts.toList() ?? <Post>[];
-													for (final method in widget.zone.postSortingMethods) {
-														mergeSort(posts, compare: method);
-													}
-													for (final post in posts) {
-														if (widget.zone.translatedPost(post.id) == null) {
-															try {
-																await widget.zone.translatePost(post);
-															}
-															catch (e) {
-																// ignore, it will be shown on the post widget anyway
-															}
-														}
-													}
 													widget.persistentState.save();
-													setState(() {});
+													final posts = widget.persistentState.thread?.posts.toList() ?? <Post>[];
+													widget.ensureAllTranslated(posts, interactive: true);
 												})],
 												[
 													('${postSortingMethod == PostSortingMethod.none ? 'Sort' : postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19, applyTextScaling: true), () async {
@@ -3345,6 +3418,34 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												minimumSize: Size.zero,
 												onPressed: () => alertError(context, 'Tree too complex!\nLarge reply chains mean this thread can not be shown in tree mode.', null),
 												child: Icon(CupertinoIcons.exclamationmark, color: theme.backgroundColor, size: 19, applyTextScaling: true)
+											),
+											const SizedBox(width: 8)
+										],
+										if (widget.ensureAllTranslatedError case final error? when !widget.blocked) ...[
+											AdaptiveFilledButton(
+												color: Colors.red,
+												padding: const EdgeInsets.all(8),
+												minimumSize: Size.zero,
+												onPressed: () async {
+													final posts = widget.persistentState.thread?.posts.toList() ?? <Post>[];
+													if (error.$1 is NativeTranslationCancelledException || error.$1 is NativeTranslationNeedsInteractionException) {
+														await widget.ensureAllTranslated(posts, interactive: true);
+														return;
+													}
+													await alertError(context, error.$1, error.$2, actions: {
+														if (error.$1 is! TranslationQuotaExhaustedException) 'Retry': () => widget.ensureAllTranslated(posts, interactive: true)
+													});
+												},
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(Icons.translate, color: theme.backgroundColor, size: 19, applyTextScaling: true),
+														if (error.$1 is NativeTranslationCancelledException || error.$1 is NativeTranslationNeedsInteractionException) ...[
+															const SizedBox(width: 8),
+															Text('Download', style: TextStyle(color: theme.backgroundColor))
+														]
+													]
+												)
 											),
 											const SizedBox(width: 8)
 										],

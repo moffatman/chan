@@ -2280,7 +2280,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 
 	AsyncSnapshot<Post>? translatedPost(int postId);
 	AsyncSnapshot<String>? translatedTitle(int threadId);
-	Future<void> translatePost(Post post);
+	Future<void> translatePost(Post post, {required bool interactive});
 	void clearTranslatedPosts([int? postId]);
 
 	Thread? findThread(int threadId);
@@ -2387,9 +2387,9 @@ class _PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	AsyncSnapshot<String>? translatedTitle(int threadId) => parent.translatedTitle(threadId);
 	@override
-	Future<void> translatePost(Post post) async {
+	Future<void> translatePost(Post post, {required bool interactive}) async {
 		try {
-			final x = parent.translatePost(post);
+			final x = parent.translatePost(post, interactive: interactive);
 			notifyListeners();
 			await x;
 		}
@@ -2565,7 +2565,11 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	AsyncSnapshot<String>? translatedTitle(int threadId) => _translatedTitleSnapshots[threadId];
 	@override
-	Future<void> translatePost(Post post) async {
+	Future<void> translatePost(Post post, {required bool interactive}) async {
+		final originalMissingLanguageSnapshot = switch (_translatedPostSnapshots[post.id]) {
+			AsyncSnapshot<Post> s when s.error is NativeTranslationNeedsInteractionException => s,
+			_ => null
+		};
 		_translatedPostSnapshots[post.id] = const AsyncSnapshot.waiting();
 		final title = findThread(post.threadId)?.title?.nonEmptyOrNull;
 		if (post.id == post.threadId && title != null) {
@@ -2574,7 +2578,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		notifyListeners();
 		final threadState = imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		try {
-			final translated = await translateHtml(post.text, toLanguage: Settings.instance.translationTargetLanguage);
+			final translated = await translateHtml(post.text, toLanguage: Settings.instance.translationTargetLanguage, interactive: interactive);
 			final translatedPost = Post(
 				board: post.board,
 				text: translated,
@@ -2596,12 +2600,16 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			threadState?.translatedPosts[post.id] = translatedPost;
 			if (post.id == post.threadId) {
 				if (title != null) {
-					final translatedTitle = await translateHtml(title, toLanguage: Settings.instance.translationTargetLanguage);
+					final translatedTitle = await translateHtml(title, toLanguage: Settings.instance.translationTargetLanguage, interactive: interactive);
 					_translatedTitleSnapshots[post.threadId] = AsyncSnapshot.withData(ConnectionState.done, translatedTitle);
 					threadState?.translatedTitle = translatedTitle;
 				}
 			}
 			threadState?.save();
+		}
+		on NativeTranslationCancelledException catch (e, st) {
+			_translatedPostSnapshots[post.id] = originalMissingLanguageSnapshot ?? AsyncSnapshot.withError(ConnectionState.done, e, st);
+			rethrow;
 		}
 		catch (e, st) {
 			_translatedPostSnapshots[post.id] = AsyncSnapshot.withError(ConnectionState.done, e, st);

@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:chan/models/post.dart';
+import 'package:chan/services/android.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/translation.dart';
@@ -67,35 +69,49 @@ List<ContextMenuButtonItem> makeCommonContextMenuItems({
 	ContextMenuButtonItem(
 		onPressed: () {
 			final text = getSelection()?.plainText ?? '';
-			final future = translateHtml(text, toLanguage: Settings.instance.translationTargetLanguage);
+			final future = translateHtml(text, toLanguage: Settings.instance.translationTargetLanguage, interactive: true);
 			selectableRegionState?.hideToolbar();
 			showAdaptiveDialog(
 				context: contextMenuContext,
 				barrierDismissible: true,
-				builder: (context) => AdaptiveAlertDialog(
-					title: const Text('Translation'),
-					content: FutureBuilder(
-						future: future,
-						builder: (context, snapshot) {
-							final data = snapshot.data;
-							if (data != null) {
-								return Text(data, style: const TextStyle(fontSize: 16));
-							}
-							final error = snapshot.error;
-							if (error != null) {
-								return Text('Error: ${error.toStringDio()}');
-							}
-							return const Center(
+				builder: (context) => FutureBuilder(
+					future: future,
+					builder: (context, snapshot) {
+						final Widget content;
+						if (snapshot.data case String translation) {
+							return Text(translation, style: const TextStyle(fontSize: 16));
+						}
+						else if (snapshot.error case Object error) {
+							content = Text('Error: ${error.toStringDio()}');
+						}
+						else {
+							content = const Center(
 								child: CircularProgressIndicator.adaptive()
 							);
 						}
-					),
-					actions: [
-						AdaptiveDialogAction(
-							onPressed: () => Navigator.pop(context),
-							child: const Text('Close')
-						)
-					],
+						return AdaptiveAlertDialog(
+							title: const Text('Translation'),
+							content: content,
+							actions: [
+								if (snapshot.error case final e?) ...[
+									if (canOpenGoogleTranslate) AdaptiveDialogAction(
+										onPressed: () => openGoogleTranslate(text),
+										child: const Text('Open Google Translate')
+									),
+									if (snapshot.stackTrace case final st?)
+										for (final remedy in generateBugRemedies(e, st, context).entries)
+											AdaptiveDialogAction(
+												onPressed: remedy.value,
+												child: Text(remedy.key)
+											)
+								],
+								AdaptiveDialogAction(
+									onPressed: () => Navigator.pop(context),
+									child: const Text('Close')
+								)
+							]
+						);
+					}
 				)
 			);
 		},
