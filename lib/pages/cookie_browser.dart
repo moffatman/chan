@@ -54,7 +54,7 @@ class _CookieBrowserState extends State<CookieBrowser> {
 	@override
 	void initState() {
 		super.initState();
-		_progress = ValueNotifier<double?>(0);
+		_progress = ValueNotifier<double?>(null);
 		_initialize();
 	}
 
@@ -113,7 +113,7 @@ class _CookieBrowserState extends State<CookieBrowser> {
 							valueListenable: _progress,
 							builder: (context, progress, _) => LinearProgressIndicator(
 								minHeight: 5,
-								value: progress,
+								value: dprint(progress),
 								valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
 								backgroundColor: ChanceTheme.backgroundColorOf(context)
 							)
