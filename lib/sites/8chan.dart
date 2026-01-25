@@ -11,6 +11,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:mutex/mutex.dart';
 
 const _kBypassLock = '_bypass_8chan_lock';
+const _kThrowOnBlock = '_8chan_throw_on_block';
+
+class Site8ChanPoWBlockBypassFailed implements Exception {
+	const Site8ChanPoWBlockBypassFailed();
+	@override
+	String toString() => 'Failed to clear 8chan PoWBlock firewall';
+}
 
 class Site8ChanPoWBlockFakePngBlockingInterceptor extends Interceptor {
 	final Site8Chan site;
@@ -58,17 +65,17 @@ class Site8ChanPoWBlockFakePngInterceptor extends Interceptor {
 			));
 		});
 		// Retry the request
-		final response2 = await site.client.fetch(response.requestOptions);
-		if (_responseMatches(response2)) {
-			throw Exception('8chan PoWBlock bypass failed');
-		}
-		return response2;
+		response.requestOptions.extra[_kThrowOnBlock] = true;
+		return await site.client.fetch(response.requestOptions);
 	}
 
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
 		if (_responseMatches(response)) {
 			try {
+				if (response.requestOptions.extra.containsKey(_kThrowOnBlock)) {
+					throw const Site8ChanPoWBlockBypassFailed();
+				}
 				final response2 = await _resolve(response);
 				if (response2 != null) {
 					handler.next(response2);
@@ -91,6 +98,9 @@ class Site8ChanPoWBlockFakePngInterceptor extends Interceptor {
 	void onError(DioError err, ErrorInterceptorHandler handler) async {
 		if (err.response case final response? when _responseMatches(response)) {
 			try {
+				if (err.requestOptions.extra.containsKey(_kThrowOnBlock)) {
+					throw const Site8ChanPoWBlockBypassFailed();
+				}
 				final response2 = await _resolve(response);
 				if (response2 != null) {
 					handler.resolve(response2, true);
