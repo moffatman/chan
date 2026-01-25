@@ -1412,25 +1412,28 @@ class AttachmentViewer extends StatelessWidget {
 		bool force = false
 	}) => Builder(
 		builder: (context) => Center(
-			child: AnimatedSwitcher(
-				duration: const Duration(milliseconds: 300),
-				child: active ? TweenAnimationBuilder<double>(
-					tween: Tween(begin: 0, end: (!force && (controller.cacheCompleted || controller._renderedFirstFrame)) ? 0 : 1),
-					duration: const Duration(milliseconds: 250),
-					curve: Curves.ease,
-					builder: (context, v, child) => Transform.scale(
-						scale: v,
-						child: child
-					),
-					child: CircularLoadingIndicator(
-						key: useRealKey ? controller.loadingSpinnerKey : null,
-						value: value
-					)
-				) : ((controller.cacheCompleted || controller._renderedFirstFrame || !showDownloadButtonWhenThumbnail) ? const SizedBox.shrink() : Icon(
-					CupertinoIcons.arrow_down_circle,
-					size: 60,
-					color: ChanceTheme.primaryColorOf(context)
-				))
+			child: RotatedBox(
+				quarterTurns: _rotate90DegreesClockwise(context) ? 1 : 0,
+				child: AnimatedSwitcher(
+					duration: const Duration(milliseconds: 300),
+					child: active ? TweenAnimationBuilder<double>(
+						tween: Tween(begin: 0, end: (!force && (controller.cacheCompleted || controller._renderedFirstFrame)) ? 0 : 1),
+						duration: const Duration(milliseconds: 250),
+						curve: Curves.ease,
+						builder: (context, v, child) => Transform.scale(
+							scale: v,
+							child: child
+						),
+						child: CircularLoadingIndicator(
+							key: useRealKey ? controller.loadingSpinnerKey : null,
+							value: value
+						)
+					) : ((controller.cacheCompleted || controller._renderedFirstFrame || !showDownloadButtonWhenThumbnail) ? const SizedBox.shrink() : Icon(
+						CupertinoIcons.arrow_down_circle,
+						size: 60,
+						color: ChanceTheme.primaryColorOf(context)
+					))
+				)
 			)
 		)
 	);
