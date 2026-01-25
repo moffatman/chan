@@ -6,6 +6,25 @@ import 'package:html/parser.dart';
 
 abstract class CompressedNode {
 	Node reconstruct();
+	bool get remapDescendants;
+}
+
+class LiteralNode implements CompressedNode {
+	final Node node;
+	LiteralNode(this.node);
+	@override
+	Node reconstruct() => node;
+	@override
+	bool get remapDescendants => false;
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		(other is LiteralNode) &&
+		(other.node == node);
+	@override
+	int get hashCode => node.hashCode;
+	@override
+	String toString() => 'LiteralNode(node: $node)';
 }
 
 class CompressedTag implements CompressedNode {
@@ -14,6 +33,8 @@ class CompressedTag implements CompressedNode {
 	const CompressedTag(this.localName, this.attributes);
 	@override
 	Node reconstruct() => Element.tag(localName)..attributes = attributes;
+	@override
+	bool get remapDescendants => true;
 	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
@@ -26,33 +47,19 @@ class CompressedTag implements CompressedNode {
 	String toString() => 'CompressedTag(<$localName${attributes.isNotEmpty ? ' ' : ''}${attributes.entries.map((a) => '${a.key}="${a.value}"').join(' ')}>)';
 }
 
-class CompressedText implements CompressedNode {
-	final String text;
-	const CompressedText(this.text);
-	@override
-	Node reconstruct() => Text(text);
-	@override
-	bool operator == (Object other) =>
-		identical(this, other) ||
-		(other is CompressedText) &&
-		(other.text == text);
-	@override
-	int get hashCode => text.hashCode;
-	@override
-	String toString() => 'CompressedText($text)';
-}
-
 class CompressedHTML {
 	final String html;
 	final Map<String, CompressedNode> codex;
+	final bool isCompletelyCompressed;
 
 	const CompressedHTML({
 		required this.html,
-		required this.codex
+		required this.codex,
+		required this.isCompletelyCompressed
 	});
 
-	void _remapChildren(Element element) {
-		for (final child in element.children) {
+	void _remap(List<Element> elements) {
+		for (final child in elements) {
 			if (child.localName == 'br') {
 				continue;
 			}
@@ -61,20 +68,18 @@ class CompressedHTML {
 				throw FormatException('Unexpected translated HTML tag', child.localName);
 			}
 			final newChild = replacement.reconstruct();
-			if (child.innerHtml.isNotEmpty && newChild is Element) {
-				newChild.innerHtml = child.innerHtml;
-			}
+			child.reparentChildren(newChild);
 			child.replaceWith(newChild);
-			if (newChild is Element) {
-				_remapChildren(newChild);
+			if (replacement.remapDescendants) {
+				_remap(newChild.children);
 			}
 		}
 	}
 
 	String decompressTranslation(String translation) {
-		final body = parse(translation.replaceAll('<br></br>', '<br>')).body!;
-		_remapChildren(body);
-		return body.innerHtml;
+		final body = parseFragment(translation.replaceAll('<br></br>', '<br>'));
+		_remap(body.children);
+		return body.outerHtml;
 	}
 }
 
@@ -88,7 +93,7 @@ const _tagBlacklist = {
 };
 
 CompressedHTML compressHTML(String html) {
-	final body = parse(html).body!;
+	final body = parseFragment(html);
 	final reverseCodex = <CompressedNode, String>{};
 	String currentShortform = 'c';
 	String getNextCharacter(int code) {
@@ -120,37 +125,52 @@ CompressedHTML compressHTML(String html) {
 		} while (_tagBlacklist.contains(currentShortform));
 		return ret;
 	}
-	mapChildren(Element element) {
-		if (element.localName == 'br') {
-			return;
-		}
-		if (element.children.isEmpty) {
-			final text = element.text;
-			if (_compressiblePatterns.any((r) => r.hasMatch(text))) {
-				final key = CompressedText(element.text);
-				final shortform = reverseCodex.putIfAbsent(key, getNextShortform);
-				element.innerHtml = '<$shortform></$shortform>';
+	final Set<Node> compressibleCache = {};
+	bool firstPass(List<Node> nodes) {
+		bool allCompressible = true;
+		for (final node in nodes) {
+			final compressible = switch (node) {
+				Element e => firstPass(e.nodes),
+				Text(data: final text) => _compressiblePatterns.any((r) => r.hasMatch(text)),
+				_ => false // Unknown node type
+			};
+			if (compressible) {
+				compressibleCache.add(node);
+			}
+			else {
+				allCompressible = false;
 			}
 		}
-		else {
-			for (final child in element.children) {
-				if (child.localName == 'br') {
-					// <br> is already optimally short
-					continue;
-				}
+		return allCompressible;
+	}
+	void secondPass(List<Node> nodes) {
+		for (final node in nodes) {
+			if (node case Element(localName: 'br')) {
+				// <br> is already optimally short
+			}
+			else if (compressibleCache.contains(node)) {
+				final key = LiteralNode(node);
+				final shortform = reverseCodex.putIfAbsent(key, getNextShortform);
+				final newChild = Element.tag(shortform);
+				node.replaceWith(newChild);
+			}
+			else if (node case Element child) {
 				final key = CompressedTag(child.localName!, child.attributes);
-				String? shortform = reverseCodex.putIfAbsent(key, getNextShortform);
-				final newChild = Element.tag(shortform)..innerHtml = child.innerHtml;
+				final shortform = reverseCodex.putIfAbsent(key, getNextShortform);
+				final newChild = Element.tag(shortform);
+				child.reparentChildren(newChild);
 				child.replaceWith(newChild);
-				mapChildren(newChild);
+				secondPass(newChild.nodes);
 			}
 		}
 	}
-	mapChildren(body);
+	final isCompletelyCompressed = firstPass(body.nodes);
+	secondPass(body.nodes);
 	return CompressedHTML(
-		html: body.innerHtml.replaceAll('<br>', '<br></br>'),
+		html: body.outerHtml.replaceAll('<br>', '<br></br>'),
 		codex: {
 			for (final entry in reverseCodex.entries) entry.value: entry.key
-		}
+		},
+		isCompletelyCompressed : isCompletelyCompressed
 	);
 }
