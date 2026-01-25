@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/board.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
@@ -2850,7 +2851,12 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														final archives = await modalLoad(context, 'Scanning archives...', (controller) async {
 															return (await Future.wait(
 																site.archives.map(
-																	(s) async => (s, await s.getBoards(priority: RequestPriority.interactive))
+																	(s) async {
+																		if (persistence.browserState.disabledArchiveNames.contains(s.name)) {
+																			return (s, <ImageboardBoard>[]);
+																		}
+																		return (s, await s.getBoards(priority: RequestPriority.interactive));
+																	}
 																)
 															)).tryMap((e) {
 																if (e.$2.any((b) => b.boardKey == widget.persistentState.boardKey)) {

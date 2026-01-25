@@ -2171,7 +2171,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		};
 		final completer = Completer<Thread>();
 		final timeout = ExtendableTimeoutException.forKey(thread, const Duration(seconds: 15));
-		if (archiveName != null) {
+		if (archiveName != null && persistence?.browserState.disabledArchiveNames.contains(archiveName) != true) {
 			final archive = archives.tryFirstWhere((a) => a.name == archiveName);
 			if (archive != null) {
 				try {
