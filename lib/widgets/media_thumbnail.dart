@@ -8,12 +8,14 @@ import 'package:flutter/material.dart';
 
 class MediaThumbnail extends StatefulWidget {
 	final Uri uri;
-	final Map<String, String>? headers;
+	final Map<String, String> headers;
+	final String extraCookie;
 	final BoxFit? fit;
 	final double? fontSize;
 	const MediaThumbnail({
 		required this.uri,
-		this.headers,
+		this.headers = const {},
+		this.extraCookie = '',
 		this.fit,
 		this.fontSize,
 		Key? key
@@ -34,7 +36,7 @@ class _MediaThumbnailState extends State<MediaThumbnail> {
 
 	Future<void> _scan() async {
 		if (isVideo) {
-			scan = await MediaScan.scan(widget.uri);
+			scan = await MediaScan.scan(widget.uri, headers: widget.headers, extraCookie: widget.extraCookie);
 			if (mounted) setState(() {});
 		}
 	}
@@ -77,7 +79,8 @@ class _MediaThumbnailState extends State<MediaThumbnail> {
 				final image = Image(
 					image: ThumbnailImageProvider(
 						uri: widget.uri,
-						headers: widget.headers
+						headers: widget.headers,
+						extraCookie: widget.extraCookie
 					),
 					loadingBuilder: (context, child, progress) =>
 						progress == null ? child :

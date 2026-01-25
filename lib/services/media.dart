@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:async/async.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/html_error.dart';
 import 'package:chan/services/md5.dart';
 import 'package:chan/services/persistence.dart';
@@ -122,6 +123,7 @@ class MediaScan {
 
 	static Future<MediaScan> _scan(Uri file, {
 		Map<String, String> headers = const {},
+		String extraCookie = '',
 		int tries = 0,
 		bool force = false
 	}) async {
@@ -134,6 +136,10 @@ class MediaScan {
 				if (_webScans[file] case MediaScan scan when !force) {
 					return scan;
 				}
+				final headers2 = Map.of(headers);
+				if (file.scheme != 'file') {
+					headers2[HttpHeaders.cookieHeader] = await SeparatedCookieManager.getCookies(file, extraCookie);
+				}
 				final result = await FFTools.ffprobe(
 					arguments: [
 						"-v",
@@ -144,9 +150,9 @@ class MediaScan {
 						"-show_format",
 						"-show_streams",
 						"-show_chapters",
-						if (headers.isNotEmpty) ...[
+						if (headers2.isNotEmpty) ...[
 							"-headers",
-							headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+							headers2.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
 						],
 						"-i",
 						file.toStringFFMPEG(),
@@ -287,6 +293,7 @@ class MediaScan {
 
 	static Future<MediaScan> scan(Uri file, {
 		Map<String, String> headers = const {},
+		String extraCookie = '',
 		bool force = false
 	}) async {
 		if (file.scheme == 'file') {
@@ -306,7 +313,7 @@ class MediaScan {
 			});
 		}
 		else {
-			return _scan(file, headers: headers, force: force);
+			return _scan(file, headers: headers, extraCookie: extraCookie, force: force);
 		}
 	}
 
@@ -403,10 +410,11 @@ class MediaConversion {
 	int? maximumDimension;
 	final String cacheKey;
 	final Map<String, String> headers;
+	final String extraCookie;
 	({int attempts, double factor}) _scaleDownRetry = (attempts: 0, factor: 1);
 	int _randomizeChecksumNoiseFactor = 1;
 	int _durationArgumentFactor = 1;
-	final Uri? soundSource;
+	final (Uri, Map<String, String>, String)? soundSource;
 	final bool requiresSubdirectory;
 	bool copyStreams;
 	final bool removeMetadata;
@@ -429,6 +437,7 @@ class MediaConversion {
 		this.extraOptions = const [],
 		this.cacheKey = '',
 		this.headers = const {},
+		this.extraCookie = '',
 		this.soundSource,
 		this.requiresSubdirectory = false,
 		this.copyStreams = false,
@@ -440,7 +449,8 @@ class MediaConversion {
 
 	static MediaConversion toMp4(Uri inputFile, {
 		Map<String, String> headers = const {},
-		Uri? soundSource,
+		String extraCookie = '',
+		(Uri, Map<String, String>, String)? soundSource,
 		bool copyStreams = false,
 		bool stripAudio = false,
 		int? maximumSizeInBytes,
@@ -453,6 +463,7 @@ class MediaConversion {
 			inputFile: inputFile,
 			outputFileExtension: 'mp4',
 			headers: headers,
+			extraCookie: extraCookie,
 			soundSource: soundSource,
 			stripAudio: stripAudio,
 			maximumSizeInBytes: maximumSizeInBytes,
@@ -466,13 +477,15 @@ class MediaConversion {
 
 	static MediaConversion toHLS(Uri inputFile, {
 		Map<String, String> headers = const {},
-		Uri? soundSource,
+		String extraCookie = '',
+		(Uri, Map<String, String>, String)? soundSource,
 		required bool copyStreams
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'm3u8',
 			headers: headers,
+			extraCookie: extraCookie,
 			soundSource: soundSource,
 			requiresSubdirectory: true,
 			copyStreams: copyStreams
@@ -485,7 +498,8 @@ class MediaConversion {
 		required bool stripAudio,
 		int? maximumDimension,
 		Map<String, String> headers = const {},
-		Uri? soundSource,
+		String extraCookie = '',
+		(Uri, Map<String, String>, String)? soundSource,
 		bool removeMetadata = false,
 		bool randomizeChecksum = false,
 		bool copyStreams = false,
@@ -500,6 +514,7 @@ class MediaConversion {
 			stripAudio: stripAudio,
 			copyStreams: copyStreams,
 			headers: headers,
+			extraCookie: extraCookie,
 			soundSource: soundSource,
 			removeMetadata: removeMetadata,
 			randomizeChecksum: randomizeChecksum,
@@ -555,7 +570,10 @@ class MediaConversion {
 		);
 	}
 
-	static MediaConversion extractThumbnail(Uri inputFile, {Map<String, String>? headers}) {
+	static MediaConversion extractThumbnail(Uri inputFile, {
+		Map<String, String> headers = const {},
+		String extraCookie = ''
+	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: switch (inputFile.path.afterLast('.')) {
@@ -566,7 +584,8 @@ class MediaConversion {
 			maximumDimension: 250,
 			extraOptions: ['-frames:v', '1'],
 			cacheKey: 'thumb',
-			headers: headers ?? const {}
+			headers: headers,
+			extraCookie: extraCookie
 		);
 	}
 
@@ -616,7 +635,7 @@ class MediaConversion {
 		}
 		MediaScan? scan;
 		try {
-			scan = await MediaScan.scan(file.uri, headers: headers);
+			scan = await MediaScan.scan(file.uri, headers: headers, extraCookie: extraCookie);
 		}
 		catch (e, st) {
 			print('Error scanning existing file: $e');
@@ -671,7 +690,7 @@ class MediaConversion {
 				if (await convertedFile.exists()) {
 					await convertedFile.delete();
 				}
-				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers, force: true);
+				final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers, extraCookie: extraCookie, force: true);
 				final isVideoOutput = {'mp4', 'webm', 'm3u8'}.contains(outputFileExtension);
 				int outputBitrate = targetBitrate ?? switch(scan.bitrate) {
 					int inputBitrate => switch ((scan.codec, outputFileExtension)) {
@@ -714,12 +733,12 @@ class MediaConversion {
 					}
 				}
 				bool passedFirstEvent = false;
-				if (soundSource != null) {
+				if (soundSource case (final url, final headers, final extraCookie)) {
 					// Ideally this could be smarter, but it looks ok
 					// and works well enough to avoid huge file due to looping
 					// a high-res source with long audio.
 					outputBitrate = 400000;
-					final soundScan = await MediaScan.scan(soundSource!);
+					final soundScan = await MediaScan.scan(url, headers: headers, extraCookie: extraCookie);
 					final soundDuration = soundScan.duration;
 					if (soundDuration != null) {
 						final ms = outputDurationInMilliseconds = max(outputDurationInMilliseconds ?? soundDuration.inMilliseconds, soundDuration.inMilliseconds);
@@ -755,19 +774,29 @@ class MediaConversion {
 						contentFilters.add('noise=alls=$_randomizeChecksumNoiseFactor:allf=t+u:all_seed=${random.nextInt(1 << 30)}');
 					}
 					Uri inputUri = inputFile;
-					Map<String, String> inputHeaders = headers;
+					Map<String, String> inputHeaders = Map.of(headers);
+					if (inputFile.scheme != 'file') {
+						inputHeaders[HttpHeaders.cookieHeader] = await SeparatedCookieManager.getCookies(inputFile, extraCookie);
+					}
 					if (soundSource != null && inputFile.toStringFFMPEG().startsWith('http')) {
 						// Proxy cache the video file, FFMPEG will try to read it repeatedly if looping
-						final digest = await VideoServer.instance.startCachingDownload(uri: inputUri, headers: headers);
+						final digest = await VideoServer.instance.startCachingDownload(uri: inputUri, headers: headers, extraCookie: extraCookie);
 						inputUri = VideoServer.instance.getUri(digest);
 						inputHeaders = {};
+					}
+					Map<String, String> soundSourceHeaders = {};
+					if (soundSource case (final uri, final headers, final extraCookie) when uri.scheme != 'file') {
+						soundSourceHeaders = {
+							...headers,
+							HttpHeaders.cookieHeader: await SeparatedCookieManager.getCookies(uri, extraCookie)
+						};
 					}
 					final bitrateString = copyStreams || outputBitrate == 0 ? null : '${(outputBitrate / 1000).floor()}K';
 					final args = [
 						'-hwaccel', 'auto',
 						if (inputHeaders.isNotEmpty && inputFile.scheme != 'file') ...[
 							"-headers",
-							inputHeaders.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+							inputHeaders.entries.map((h) => "${h.key}: ${h.value}").join('\r\n'),
 						],
 						if (soundSource != null)
 							if (scan.hasVideo) ...[
@@ -778,8 +807,12 @@ class MediaConversion {
 								'-framerate', '1'
 							],
 						'-i', inputUri.toStringFFMPEG(),
-						if (soundSource != null) ...[
-							'-i', soundSource!.toStringFFMPEG(),
+						if (soundSource case (final url, _, _)) ...[
+							if (soundSourceHeaders.isNotEmpty) ...[
+								'-headers',
+								soundSourceHeaders.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+							],
+							'-i', url.toStringFFMPEG(),
 							if (maximumDurationInSeconds == null) ...[
 								'-shortest',
 								'-fflags', '+shortest',

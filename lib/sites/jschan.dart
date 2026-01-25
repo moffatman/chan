@@ -3,6 +3,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
@@ -202,10 +203,10 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 				headers: {
 					'accept': '*/*',
 					'referer': getWebUrlImpl(thread.board, thread.id),
-					if (captchaSolution is JsChanCaptchaSolution) 'cookie': 'captchaid=${captchaSolution.id}'
 				},
 				extra: {
-					kPriority: RequestPriority.interactive
+					kPriority: RequestPriority.interactive,
+					if (captchaSolution is JsChanCaptchaSolution) kExtraCookie: 'captchaid=${captchaSolution.id}'
 				},
 				contentType: Headers.formUrlEncodedContentType,
 				validateStatus: (_) => true,
@@ -460,11 +461,11 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 				headers: {
 					'accept': '*/*',
 					'referer': getWebUrlImpl(post.board, post.threadId),
-					if (captchaSolution is JsChanCaptchaSolution) 'cookie': 'captchaid=${captchaSolution.id}',
 					'x-using-xhr': true
 				},
 				extra: {
-					kPriority: RequestPriority.interactive
+					kPriority: RequestPriority.interactive,
+					if (captchaSolution is JsChanCaptchaSolution) kExtraCookie: 'captchaid=${captchaSolution.id}'
 				},
 				responseType: ResponseType.json,
 				validateStatus: (_) => true
@@ -495,8 +496,10 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 					contentType: Headers.formUrlEncodedContentType,
 					headers: {
 						'origin': 'https://$baseUrl',
-						'referer': Uri.parse(getWebUrlImpl(post.board, post.threadId)).resolve(href).toString(),
-						if (captchaSolution2 is JsChanCaptchaSolution) 'cookie': 'captchaid=${captchaSolution2.id}'
+						'referer': Uri.parse(getWebUrlImpl(post.board, post.threadId)).resolve(href).toString()
+					},
+					extra: {
+						if (captchaSolution2 is JsChanCaptchaSolution) kExtraCookie: 'captchaid=${captchaSolution2.id}'
 					}
 				), cancelToken: cancelToken);
 			});

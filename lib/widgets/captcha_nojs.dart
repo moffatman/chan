@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui show Image;
 
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -34,9 +35,10 @@ const Map<String, String> _headers = {
 	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36',
 	'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
 	'Accept-Language': 'en-US',
-	'Accept-Encoding': 'deflate, br',
-	'Cookie': 'NID=87=gkOAkg09AKnvJosKq82kgnDnHj8Om2pLskKhdna02msog8HkdHDlasDf'
+	'Accept-Encoding': 'deflate, br'
 };
+
+const _extraCookie = 'NID=87=gkOAkg09AKnvJosKq82kgnDnHj8Om2pLskKhdna02msog8HkdHDlasDf';
 
 class CaptchaNoJSException implements Exception {
 	String message;
@@ -171,7 +173,8 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 				},
 				extra: {
 					if (widget.request.cloudflare) kCloudflare: true,
-					kPriority: RequestPriority.interactive
+					kPriority: RequestPriority.interactive,
+					kExtraCookie: _extraCookie
 				},
 				responseType: ResponseType.plain
 			)
@@ -223,7 +226,8 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 					..._headers
 				},
 				extra: {
-					if (widget.request.cloudflare) kCloudflare: true
+					if (widget.request.cloudflare) kCloudflare: true,
+					kExtraCookie: _extraCookie
 				}
 			)
 		);

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
@@ -31,16 +30,15 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 	static const _kCookie = 'regulamin=accepted';
 
 	@override
-	Map<String, String> getHeaders(Uri url) {
-		final headers = super.getHeaders(url);
+	String getExtraCookie(Uri url) {
+		final cookie = super.getExtraCookie(url);
 		if (url.host == baseUrl) {
-			headers.update(
-				'cookie',
-				(cookies) => '$cookies; $_kCookie',
-				ifAbsent: () => _kCookie
-			);
+			if (cookie.isNotEmpty) {
+				return '$cookie; $_kCookie';
+			}
+			return _kCookie;
 		}
-		return headers;
+		return cookie;
 	}
 
 	SiteKarachan({
@@ -52,20 +50,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders
-	}) {
-		client.interceptors.add(InterceptorsWrapper(
-			onRequest: (options, handler) {
-				options.headers.update(HttpHeaders.cookieHeader, (existing) {
-					if (existing is String && existing.contains(_kCookie)) {
-						// Don't re-add on re-entrant request
-						return existing;
-					}
-					return '$existing; $_kCookie';
-				}, ifAbsent: () => _kCookie);
-				handler.next(options);
-			}
-		));
-	}
+	});
 
 	static final _quoteLinkHrefPattern = RegExp(r'/([^/]+)/res/(\d+)\.html(?:#p(\d+))?$');
 	static final _quoteLinkTextPattern = RegExp(r'>>(?:/([a-zA-Z0-9]+)/)?(\d+)');

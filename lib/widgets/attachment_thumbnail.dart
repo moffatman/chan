@@ -247,12 +247,13 @@ class AttachmentThumbnail extends StatelessWidget {
 				)
 			));
 		}
+		final uri = Uri.parse(url);
 		ImageProvider image = CNetworkImageProvider(
 			url,
 			client: s.client,
 			cache: true,
 			headers: {
-				...s.getHeaders(Uri.parse(url)),
+				...s.getHeaders(uri),
 				if (attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 			},
 			afterFirstLoad: () {

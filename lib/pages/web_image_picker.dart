@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/pages/overscroll_modal.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
@@ -428,9 +429,10 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										final headers = {
 											'user-agent': useDesktopUserAgent ? _kDesktopUserAgent : _kMobileUserAgent
 										};
+										String extraCookie = '';
 										if (await webViewController?.getUrl() case WebUri url) {
 											final cookies = await CookieManager.instance().getCookies(url: url);
-											headers['cookie'] = cookies.map((c) => '${c.name}=${c.value}').join('; ');
+											extraCookie = cookies.map((c) => '${c.name}=${c.value}').join('; ');
 											headers['referer'] = 'https://${url.authority}/';
 										}
 										final returnedResults = await webViewController?.evaluateJavascript(
@@ -516,6 +518,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												Widget imageWidget = CNetworkImage(
 													url: image.src,
 													headers: headers,
+													extraCookie: extraCookie,
 													client: null,
 													cache: true,
 													fit: BoxFit.contain,
@@ -559,7 +562,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																	responseType: ResponseType.bytes,
 																	headers: headers,
 																	extra: {
-																		kPriority: RequestPriority.interactive
+																		kPriority: RequestPriority.interactive,
+																		kExtraCookie: extraCookie
 																	}
 																), cancelToken: controller.cancelToken);
 																if (response.data is Uint8List) {
@@ -571,7 +575,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																	responseType: ResponseType.bytes,
 																	headers: headers,
 																	extra: {
-																		kPriority: RequestPriority.interactive
+																		kPriority: RequestPriority.interactive,
+																		kExtraCookie: extraCookie
 																	}
 																), cancelToken: controller.cancelToken);
 															}, cancellable: true);
@@ -591,7 +596,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															Expanded(
 																child: image.isVideo ? MediaThumbnail(
 																	uri: Uri.parse(image.src),
-																	headers: headers
+																	headers: headers,
+																	extraCookie: extraCookie
 																) : imageWidget
 															),
 															const SizedBox(height: 4),

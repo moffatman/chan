@@ -532,14 +532,6 @@ class AttachmentViewerController extends ChangeNotifier {
 		};
 	}
 
-	Future<Map<String, String>> getHeadersWithCookies(Uri url) async {
-		return {
-			...getHeaders(url),
-			'cookie': (await Persistence.currentCookies.loadForRequest(url))
-										.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
-		};
-	}
-
 	Future<Uri> _getGoodSource({required RequestPriority priority, bool force = false}) async {
 		if (overrideSource != null) {
 			return overrideSource!;
@@ -714,18 +706,22 @@ class AttachmentViewerController extends ChangeNotifier {
 			_showLoadingProgress.value = true;
 		});
 		try {
-			Uri? soundSource = attachment.soundSource;
+			(Uri, Map<String, String>, String)? soundSource = switch (attachment.soundSource) {
+				Uri url => (url, getHeaders(url), site.getExtraCookie(url)),
+				_ => null
+			};
 			if (soundSource != null) {
 				try {
 					final currentBytes = ValueNotifier<int>(0);
 					_soundSourceDownload = (
 						currentBytes: currentBytes,
 						totalBytes: null,
-						uri: soundSource
+						uri: soundSource.$1
 					);
 					final soundFile = await VideoServer.instance.cachingDownload(
 						client: imageboard.site.client,
-						uri: soundSource,
+						headers: soundSource.$2,
+						uri: soundSource.$1,
 						interruptible: true,
 						force: force,
 						onProgressChanged: (current, total) {
@@ -734,7 +730,7 @@ class AttachmentViewerController extends ChangeNotifier {
 								_soundSourceDownload = (
 									currentBytes: currentBytes,
 									totalBytes: total,
-									uri: soundSource!
+									uri: soundSource!.$1
 								);
 								notifyListeners();
 							}
@@ -742,7 +738,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					);
 					if (_isDisposed) return;
 					await MediaScan.scan(soundFile.uri); // Validate file
-					soundSource = soundFile.uri;
+					soundSource = (soundFile.uri, {}, '');
 				}
 				catch (e) {
 					if (context.mounted) {
@@ -809,7 +805,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				transcode |= url.path.endsWith('.m3u8');
 				transcode |= soundSource != null;
 				if (!transcode && Settings.featureWebmTranscodingForPlayback && settings.webmTranscoding == WebmTranscodingSetting.vp9 && attachment.type == AttachmentType.webm) {
-					final scan = await MediaScan.scan(url, headers: await getHeadersWithCookies(url));
+					final scan = await MediaScan.scan(url, headers: getHeaders(url), extraCookie: site.getExtraCookie(url));
 					if (_isDisposed) {
 						return;
 					}
@@ -831,7 +827,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							client: imageboard.site.client,
 							priority: priority,
 							uri: url,
-							headers: await getHeadersWithCookies(url),
+							headers: getHeaders(url),
 							onCached: _onCacheCompleted,
 							onProgressChanged: (currentBytes, totalBytes) {
 								progressNotifier.value = currentBytes / totalBytes;
@@ -865,7 +861,8 @@ class AttachmentViewerController extends ChangeNotifier {
 					_ongoingConversion = StreamingMP4Conversion(
 						imageboard.site.client,
 						url,
-						headers: await getHeadersWithCookies(url),
+						headers: getHeaders(url),
+						extraCookie: site.getExtraCookie(url),
 						soundSource: soundSource
 					);
 					final result = await _ongoingConversion!.start(force: force);

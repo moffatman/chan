@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -67,6 +68,7 @@ class _CachingFile extends EasyListenable {
 	final completer = Completer<void>();
 	final lock = Mutex();
 	final Map<String, String> headers;
+	final String extraCookie;
 	CancelToken? _cancelToken;
 	bool _interrupted = false;
 	final RequestPriority? priority;
@@ -78,11 +80,12 @@ class _CachingFile extends EasyListenable {
 		required this.totalBytes,
 		required this.statusCode,
 		this.headers = const {},
+		this.extraCookie = '',
 		this.priority
 	});
 
 	@override
-	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, headers: $headers, priority: $priority, endRange.fromByte: ${endRange?.fromByte})';
+	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, headers: $headers, extraCookie: $extraCookie priority: $priority, endRange.fromByte: ${endRange?.fromByte})';
 }
 
 typedef _RawRange = ({int start, int? inclusiveEnd});
@@ -204,7 +207,8 @@ class VideoServer {
 				extra: {
 					// Probably image/video bytes won't work
 					kRetryIfCloudflare: true,
-					kPriority: file.priority
+					kPriority: file.priority,
+					kExtraCookie: file.extraCookie
 				},
 				responseType: ResponseType.stream
 			), cancelToken: file._cancelToken);
@@ -358,6 +362,7 @@ class VideoServer {
 							sibling?.client ?? Settings.instance.client,
 							subUri,
 							sibling?.headers ?? {},
+							sibling?.extraCookie ?? '',
 							force: false,
 							interruptible: false,
 							priority: sibling?.priority
@@ -416,7 +421,7 @@ class VideoServer {
 		return Uri.parse(utf8.decode(base64Url.decode(digest)));
 	}
 
-	Future<_CachingFile> _startCaching(Dio client, Uri uri, Map<String, String> headers, {
+	Future<_CachingFile> _startCaching(Dio client, Uri uri, Map<String, String> headers, String extraCookie, {
 		required bool force,
 		required bool interruptible,
 		RequestPriority? priority
@@ -431,7 +436,11 @@ class VideoServer {
 			if (stat.type == FileSystemEntityType.file) {
 				// First HEAD, to see if we have the right size file cached
 				final headResponse = await client.headUri(uri, options: Options(
-					headers: headers
+					headers: headers,
+					extra: {
+						kExtraCookie: extraCookie,
+						kPriority: priority
+					}
 				), cancelToken: interruptibleToken);
 				if ((headResponse.statusCode ?? 500) >= 400) {
 					throw HTTPStatusException.fromResponse(headResponse);
@@ -442,6 +451,7 @@ class VideoServer {
 					totalBytes: headResponse.headers.value(Headers.contentLengthHeader)?.tryParseInt ?? -1,
 					statusCode: headResponse.statusCode ?? -1,
 					headers: headers,
+					extraCookie: extraCookie,
 					priority: priority
 				);
 				if (!force && stat.size == cachingFile0.totalBytes && !uri.path.endsWith('m3u8')) {
@@ -468,7 +478,8 @@ class VideoServer {
 				extra: {
 					// Probably image/video bytes won't work
 					kRetryIfCloudflare: true,
-					kPriority: priority
+					kPriority: priority,
+					kExtraCookie: extraCookie
 				},
 				responseType: ResponseType.stream,
 				validateStatus: (x) => true
@@ -502,6 +513,7 @@ class VideoServer {
 				totalBytes: totalBytes,
 				statusCode: response.statusCode ?? -1,
 				headers: headers,
+				extraCookie: extraCookie,
 				priority: priority
 			);
 			// cachingFile0 may have bad totalBytes from catbox HEAD (always returns 0)
@@ -573,6 +585,7 @@ class VideoServer {
 		RequestPriority? priority,
 		required Uri uri,
 		Map<String, String> headers = const {},
+		String extraCookie = '',
 		void Function(File file)? onCached,
 		void Function(int currentBytes, int totalBytes)? onProgressChanged,
 		bool force = false,
@@ -588,6 +601,7 @@ class VideoServer {
 					client ?? Settings.instance.client,
 					uri,
 					headers,
+					extraCookie,
 					force: force,
 					interruptible: interruptible,
 					priority: priority
@@ -638,7 +652,7 @@ class VideoServer {
 	Future<File> cachingDownload({
 		required Dio client,
 		required Uri uri,
-		Map<String, String> headers = const {},
+		required Map<String, String> headers,
 		void Function(int currentBytes, int totalBytes)? onProgressChanged,
 		bool force = false,
 		bool interruptible = false
@@ -756,7 +770,8 @@ class StreamingMP4Conversion {
 	final Dio client;
 	final Uri inputFile;
 	final Map<String, String> headers;
-	final Uri? soundSource;
+	final String extraCookie;
+	final (Uri, Map<String, String>, String)? soundSource;
 
 	MediaConversion? _streamingConversion;
 	MediaConversion? _joinedConversion;
@@ -765,7 +780,8 @@ class StreamingMP4Conversion {
 	String? _cachingServerDigest;
 
 	StreamingMP4Conversion(this.client, this.inputFile, {
-		this.headers = const {},
+		required this.headers,
+		required this.extraCookie,
 		this.soundSource
 	});
 
@@ -773,7 +789,7 @@ class StreamingMP4Conversion {
 		final joinedConversion = _joinedConversion = MediaConversion.toMp4(hlsUri, copyStreams: true);
 		() async {
 			final joined = await joinedConversion.start();
-			final expected = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource).getDestination();
+			final expected = MediaConversion.toMp4(inputFile, headers: headers, extraCookie: extraCookie, soundSource: soundSource).getDestination();
 			await expected.parent.create(recursive: true);
 			await joined.file.rename(expected.path);
 			_joinedCompleter.complete(expected);
@@ -803,7 +819,7 @@ class StreamingMP4Conversion {
 		final inputExtension = inputFile.path.afterLast('.').toLowerCase();
 		if (inputExtension == 'gif' && soundSource != null) {
 			// Two stages, to avoid network + performance hit of ffmpeg looping unconvered input gif
-			final conversion1 = _streamingConversion = MediaConversion.toWebm(inputFile, headers: headers, stripAudio: false, targetBitrate: 400000);
+			final conversion1 = _streamingConversion = MediaConversion.toWebm(inputFile, headers: headers, extraCookie: extraCookie, stripAudio: false, targetBitrate: 400000);
 			final conversion2 = _joinedConversion = MediaConversion.toWebm(conversion1.getDestination().uri, soundSource: soundSource, stripAudio: false, copyStreams: true);
 			return StreamingMP4ConvertingFile(
 				mp4File: conversion1.start().then((r) async {
@@ -824,15 +840,15 @@ class StreamingMP4Conversion {
 			);
 		}
 		else if (['jpg', 'jpeg', 'png', 'webm'].contains(inputExtension) && (soundSource != null || Platform.isAndroid)) {
-			final scan = await MediaScan.scan(inputFile, headers: headers);
-			final conversion = _directConversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false, copyStreams: soundSource != null && inputExtension == 'webm');
+			final scan = await MediaScan.scan(inputFile, headers: headers, extraCookie: extraCookie);
+			final conversion = _directConversion = MediaConversion.toWebm(inputFile, headers: headers, extraCookie: extraCookie, soundSource: soundSource, stripAudio: false, copyStreams: soundSource != null && inputExtension == 'webm');
 			return StreamingMP4ConvertingFile(
 				mp4File: conversion.start().then((r) => r.file),
 				hasAudio: scan.hasAudio || soundSource != null,
 				progress: conversion.progress
 			);
 		}
-		final mp4Conversion = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource);
+		final mp4Conversion = MediaConversion.toMp4(inputFile, headers: headers, extraCookie: extraCookie, soundSource: soundSource);
 		final existingResult = await mp4Conversion.getDestinationIfSatisfiesConstraints();
 		if (existingResult != null) {
 			return StreamingMP4ConvertedFile(existingResult.file, existingResult.hasAudio);
@@ -857,6 +873,7 @@ class StreamingMP4Conversion {
 		final streamingConversion = _streamingConversion = MediaConversion.toHLS(
 			inputFile,
 			headers: headers,
+			extraCookie: extraCookie,
 			soundSource: soundSource,
 			copyStreams: inputExtension == 'm3u8' || (soundSource != null && inputExtension == 'mp4')
 		);

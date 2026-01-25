@@ -4,8 +4,8 @@ import 'package:chan/services/persistence.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 
+const kExtraCookie = 'extraCookie';
 const kExcludeCookies = 'excludeCookies';
-const _kLastCookie = 'lastCookie';
 
 class SeparatedCookieManager extends Interceptor {
 
@@ -14,32 +14,13 @@ class SeparatedCookieManager extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
 		try {
-      final cookies = await cookieJar.loadForRequest(options.uri);
-      if (options.extra[kExcludeCookies] case List toRemove) {
-        cookies.removeWhere((c) => toRemove.contains(c.name));
-      }
-      final cookie = getCookies(cookies);
-      if (cookie.isNotEmpty) {
-        if (
-          (options.headers[HttpHeaders.cookieHeader], options.extra[_kLastCookie])
-          case
-          (String cookies, String lastCookie)
-        ) {
-          // We are re-entrant. Someone must have copied our options. Remove the last application.
-          if (cookies == lastCookie) {
-            options.headers.remove(HttpHeaders.cookieHeader);
-          }
-          else {
-            options.headers[HttpHeaders.cookieHeader] = cookies.replaceAll('; $lastCookie', '');
-          }
-        }
-        options.headers.update(
-          HttpHeaders.cookieHeader,
-          (cookies) => '$cookies; $cookie',
-          ifAbsent: () => cookie
-        );
-        options.extra[_kLastCookie] = cookie;
-      }
+      options.headers[HttpHeaders.cookieHeader] = await getCookies(options.uri, switch (options.extra[kExtraCookie]) {
+        String extra => extra,
+        _ => ''
+      }, toRemove: switch (options.extra[kExcludeCookies]) {
+        List<String> exclude => exclude,
+        _ => []
+      });
       handler.next(options);
 		}
 		catch (e, st) {
@@ -93,8 +74,14 @@ class SeparatedCookieManager extends Interceptor {
     }
   }
 
-  static String getCookies(List<Cookie> cookies) {
-    return cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
+  static Future<String> getCookies(Uri uri, String extraCookie, {List<String> toRemove = const []}) async {
+    final cookies = await Persistence.currentCookies.loadForRequest(uri);
+    cookies.removeWhere((c) => toRemove.contains(c.name));
+    final cookie = cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
+    return [
+      if (extraCookie.isNotEmpty) extraCookie,
+      if (cookie.isNotEmpty) cookie,
+    ].join('; ');
   }
 }
 

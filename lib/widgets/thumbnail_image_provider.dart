@@ -6,12 +6,14 @@ import 'package:flutter/rendering.dart';
 
 class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 	final Uri uri;
-	final Map<String, String>? headers;
+	final Map<String, String> headers;
+	final String extraCookie;
 	final double scale;
 
 	ThumbnailImageProvider({
 		required this.uri,
-		this.headers,
+		this.headers = const {},
+		this.extraCookie = '',
 		this.scale = 1.0
 	});
 
@@ -20,7 +22,7 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 		return MultiFrameImageStreamCompleter(
 			codec: () async {
 				assert(key == this);
-				final conversion = MediaConversion.extractThumbnail(uri, headers: headers);
+				final conversion = MediaConversion.extractThumbnail(uri, headers: headers, extraCookie: extraCookie);
 				Uint8List bytes;
 				if (await conversion.getDestination().exists()) {
 					bytes = await conversion.getDestination().readAsBytes();
@@ -43,6 +45,8 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 		identical(this, other) ||
 		(other is ThumbnailImageProvider) &&
 		(other.uri == uri) &&
+		mapEquals(other.headers, headers) &&
+		(other.extraCookie == extraCookie) &&
 		(other.scale == scale);
 
 	@override

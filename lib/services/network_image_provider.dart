@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
@@ -11,12 +12,14 @@ import 'package:flutter/widgets.dart';
 class CNetworkImageProvider extends ExtendedNetworkImageProvider {
 	final Dio? client;
 	final RequestPriority priority;
+	final String extraCookie;
 	final VoidCallback? afterFirstLoad;
 
   CNetworkImageProvider(super.url, {
 		required this.client,
 		super.cache,
 		super.headers,
+		this.extraCookie = '',
 		this.afterFirstLoad,
 		this.priority = RequestPriority.cosmetic
 	});
@@ -38,6 +41,7 @@ class CNetworkImageProvider extends ExtendedNetworkImageProvider {
 			responseType: ResponseType.bytes,
 			headers: headers,
 			extra: {
+				kExtraCookie: extraCookie,
 				kPriority: priority,
 				kRetryIfCloudflare: true
 			}

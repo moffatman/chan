@@ -8,6 +8,7 @@ class CNetworkImage extends StatelessWidget {
 	final String url;
 	final Dio? client;
 	final Map<String, String>? headers;
+	final String extraCookie;
 	final bool cache;
 	final BoxFit? fit;
 	final bool enableLoadState;
@@ -23,6 +24,7 @@ class CNetworkImage extends StatelessWidget {
 		required this.url,
 		required this.client,
 		this.headers,
+		this.extraCookie = '',
 		this.cache = false,
 		this.fit,
 		this.enableLoadState = false,
@@ -44,6 +46,7 @@ class CNetworkImage extends StatelessWidget {
 					url,
 					client: client,
 					headers: headers,
+					extraCookie: extraCookie,
 					cache: cache,
 					priority: priority
 				),

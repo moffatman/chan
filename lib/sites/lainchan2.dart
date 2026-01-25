@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -25,15 +23,6 @@ class SiteLainchan2BlockingInterceptor extends Interceptor {
 
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-		if (site.additionalCookies[options.uri.host] case final additionalCookie?) {
-			options.headers.update(HttpHeaders.cookieHeader, (existing) {
-				if (existing is String && existing.contains(additionalCookie)) {
-					// Don't re-add on re-entrant request
-					return existing;
-				}
-				return '$existing; $additionalCookie';
-			}, ifAbsent: () => additionalCookie);
-		}
 		if (options.extra[_kExtraBypassLock] == true) {
 			handler.next(options);
 		}
@@ -139,6 +128,18 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	}) {
 		client.interceptors.insert(1, SiteLainchan2BlockingInterceptor(this));
 		client.interceptors.add(SiteLainchan2Interceptor(this));
+	}
+
+	@override
+	String getExtraCookie(Uri url) {
+		final cookie = super.getExtraCookie(url);
+		if (additionalCookies[url.host] case final additionalCookie?) {
+			if (cookie.isNotEmpty) {
+				return '$cookie; $additionalCookie';
+			}
+			return additionalCookie;
+		}
+		return cookie;
 	}
 	
 	@override

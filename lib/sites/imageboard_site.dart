@@ -1760,6 +1760,17 @@ abstract class ImageboardSiteArchive {
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
 				options.headers['user-agent'] ??= userAgent;
+				final extraCookie = getExtraCookie(options.uri);
+				options.extra.update(kExtraCookie, (existing) {
+					if (existing is String && existing.contains(extraCookie)) {
+						// Don't re-add on re-entrant request
+						return existing;
+					}
+					if (existing is String && existing.isEmpty) {
+						return extraCookie;
+					}
+					return '$existing; $extraCookie';
+				}, ifAbsent: () => extraCookie);
 				handler.next(options);
 			}
 		));
@@ -2032,6 +2043,8 @@ abstract class ImageboardSiteArchive {
 
 	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri uri, String? Function() title, Future<String?> Function() html) async => null;
 
+	String getExtraCookie(Uri url) => '';
+
 	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
@@ -2153,15 +2166,17 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			}
 			final opAttachment = thread.attachments.tryFirst ?? thread.posts_.tryFirst?.attachments.tryFirst;
 			if (opAttachment != null) {
+				final url = Uri.parse(opAttachment.url);
 				final response = await client.head(opAttachment.url, options: Options(
 					headers: {
-						...getHeaders(Uri.parse(opAttachment.url)),
+						...getHeaders(url),
 						if (opAttachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 					},
 					followRedirects: false,
 					validateStatus: (_) => true,
 					extra: {
-						kPriority: priority
+						kPriority: priority,
+						kExtraCookie: getExtraCookie(url)
 					}
 				), cancelToken: cancelToken);
 				if ((response.statusCode ?? 400) >= 400) {
