@@ -152,8 +152,12 @@ List<TabMenuAction> getWatchedThreadsActions(BuildContext context, {VoidCallback
 	TabMenuAction(
 		icon: CupertinoIcons.xmark,
 		title: 'Remove all',
-		onPressed: anyWatches() ? () {
-			removeAllWatches(context, onMutate: onMutate);
+		onPressed: anyWatches() ? () async {
+			final numWatches = ImageboardRegistry.instance.imageboards.fold(0, (s, i) => s + i.persistence.browserState.threadWatches.length);
+			final ok = await confirm(context, 'Really remove ${describeCount(numWatches, 'watched thread')}?', actionName: 'Remove all');
+			if (ok && context.mounted) {
+				await removeAllWatches(context, onMutate: onMutate);
+			}
 		} : null,
 		isDestructiveAction: true
 	)

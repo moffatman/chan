@@ -577,21 +577,21 @@ class _SavedPageState extends State<SavedPage> {
 									child: const Icon(CupertinoIcons.archivebox),
 									onPressed: () => showAdaptiveModalPopup(
 										context: context,
-										builder: (context) => AdaptiveActionSheet(
+										builder: (popupContext) => AdaptiveActionSheet(
 											actions: [
 												...thread_actions.getWatchedThreadsActions(context)
 													.where((a) => a.onPressed != null)
 													.map((a) => AdaptiveActionSheetAction(
 														onPressed: () {
+															Navigator.pop(popupContext);
 															a.onPressed?.call();
-															Navigator.pop(context);
 														},
 														child: Text(a.title)
 													)),
 											],
 											cancelButton: AdaptiveActionSheetAction(
 												child: const Text('Cancel'),
-												onPressed: () => Navigator.pop(context)
+												onPressed: () => Navigator.pop(popupContext)
 											)
 										)
 									)
