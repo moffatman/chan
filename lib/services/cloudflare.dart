@@ -571,7 +571,17 @@ class CloudflareInterceptor extends Interceptor {
 				navigator.popUntil((r) => r.settings != settings);
 			});
 			final stackTrace = StackTrace.current;
-			callback_ = navigator.pop;
+			callback_ = (snapshot) {
+				// The user might have popped it already
+				bool okToPop = false;
+				navigator.popUntil((r) {
+					okToPop = r.settings == settings;
+					return true;
+				});
+				if (okToPop) {
+					navigator.pop(snapshot);
+				}
+			};
 			final ret = await navigator.push<AsyncSnapshot<T>>(adaptivePageRoute(
 				builder: (context) => AdaptiveScaffold(
 					bar: AdaptiveBar(
