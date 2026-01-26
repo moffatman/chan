@@ -1756,7 +1756,6 @@ abstract class ImageboardSiteArchive {
 	}) {
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
-		client.interceptors.add(SeparatedCookieManager());
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
 				options.headers['user-agent'] ??= userAgent;
@@ -1774,6 +1773,7 @@ abstract class ImageboardSiteArchive {
 				handler.next(options);
 			}
 		));
+		client.interceptors.add(SeparatedCookieManager());
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(BasedFlareInterceptor(client));
 		client.interceptors.add(CloudflareInterceptor(this));
