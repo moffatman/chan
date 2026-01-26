@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/javascript_challenge.dart';
+import 'package:chan/services/webview_introspection.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lynxchan.dart';
 import 'package:dio/dio.dart';
@@ -26,7 +27,18 @@ class Site8ChanPoWBlockFakePngBlockingInterceptor extends Interceptor {
 
 
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+		try {
+			options.headers.addAll(await WebViewIntrospection.instance.getDefaultHeaders());
+		}
+		catch (e, st) {
+			handler.reject(DioError(
+				requestOptions: options,
+				response: null,
+				error: e
+			)..stackTrace = st, false);
+			return;
+		}
 		if (options.extra.containsKey(_kBypassLock)) {
 			handler.next(options);
 			return;
