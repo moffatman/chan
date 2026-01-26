@@ -1325,6 +1325,11 @@ final appearanceSettings = [
 		icon: CupertinoIcons.reply,
 		setting: Settings.showYousInScrollbarSetting
 	),
+	const SwitchSettingWidget(
+		description: 'Highlight popular posts in scrollbar',
+		icon: CupertinoIcons.flame,
+		setting: Settings.showHotPostsInScrollbarSetting
+	),
 	SegmentedSettingWidget(
 		description: 'List position indicator location',
 		iconBuilder: (color) => Builder(

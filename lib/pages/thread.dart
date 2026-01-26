@@ -195,6 +195,7 @@ class ThreadPageState extends State<ThreadPage> {
 	final _threadStateListenableUpdateMutex = Mutex();
 	late final StreamSubscription<(Attachment, Object)> _cacheSubscription;
 	(Object, StackTrace)? _ensureAllTranslatedError;
+	final Set<int> _hotPostIds = {};
 
 	static const _kHighlightZero = 0.0;
 	static const _kHighlightPartial = 0.35;
@@ -214,6 +215,36 @@ class ThreadPageState extends State<ThreadPage> {
 			_highlightPosts[newId] ??= (newId > lastSeenId) ? _kHighlightFull : value;
 		}
 		return anyRemoved;
+	}
+
+	void _updateHotPostIds() {
+		_hotPostIds.clear();
+		if (persistentState.imageboard?.site.supportsPostUpvotes ?? false) {
+			final upvotes = <int, int>{};
+			for (final post in persistentState.thread?.posts_ ?? <Post>[]) {
+				if (post.upvotes case final upv?) {
+					upvotes[post.id] = upv;
+					if (upvotes[post.parentId] case final parentUpv? when upv > (parentUpv * 1.4)) {
+						_hotPostIds.add(post.id);
+					}
+				}
+			}
+		}
+		else {
+			int totalPostsWithReplyCount = 0;
+			int totalReplyCount = 0;
+			for (final post in persistentState.thread?.posts_ ?? <Post>[]) {
+				if (post.id != post.threadId && post.replyCount > 0) {
+					totalPostsWithReplyCount++;
+					totalReplyCount += post.replyCount;
+				}
+			}
+			if (totalPostsWithReplyCount == 0) {
+				return;
+			}
+			final threshold = (totalReplyCount / totalPostsWithReplyCount) * 3;
+			_hotPostIds.addAll(persistentState.thread?.posts_.where((p) => p.id != p.threadId && p.replyCount > threshold).map((p) => p.id) ?? []);
+		}
 	}
 
 	Future<void> _onThreadStateListenableUpdate() => _threadStateListenableUpdateMutex.protect(() async {
@@ -256,6 +287,7 @@ class ThreadPageState extends State<ThreadPage> {
 					}
 				}
 			});
+			_updateHotPostIds();
 		}
 		lastSavedPostsLength = savedPostsLength;
 		lastHiddenMD5sLength = hiddenMD5sLength;
@@ -762,6 +794,7 @@ class ThreadPageState extends State<ThreadPage> {
 				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
 			}
 		);
+		_updateHotPostIds();
 		Future.delayed(const Duration(milliseconds: 50), () {
 			if (mounted) {
 				_threadStateListenable?.removeListener(_onThreadStateListenableUpdate);
@@ -841,6 +874,7 @@ class ThreadPageState extends State<ThreadPage> {
 				semanticRootIds: [widget.boardSemanticId, 0],
 				style: oldZone.style
 			);
+			_updateHotPostIds();
 			_maybeUpdateWatch();
 			persistentState.save();
 			if ((persistentState.firstVisiblePostAlignment ?? 0) < 0) {
@@ -1021,6 +1055,7 @@ class ThreadPageState extends State<ThreadPage> {
 				persistentState.unseenPostIds.data.add(asArchived.id);
 			}
 			zone.addThread(thread);
+			_updateHotPostIds();
 			await persistentState.didMutateThread();
 			await _listController.state?.acceptNewList(thread.posts);
 			setState(() {});
@@ -1417,6 +1452,9 @@ class ThreadPageState extends State<ThreadPage> {
 			thread.posts_.tryFirstWhere((p) => p.id == ids.single.childId)?.hasOmittedReplies = false;
 		}
 		zone.addThread(thread);
+		if (anyNew) {
+			_updateHotPostIds();
+		}
 		if (anyNew) {
 			persistentState.didMutateThread();
 		}
@@ -2076,6 +2114,7 @@ class ThreadPageState extends State<ThreadPage> {
 																					));
 																				},
 																				hideThumbnails: options.hideThumbnails,
+																				highlightReplyCount: settings.showHotPostsInScrollbar && !site.supportsPostUpvotes ? _hotPostIds.contains(post.id) : false,
 																				baseOptions: PostSpanRenderOptions(
 																					highlightPattern: options.queryPattern
 																				),
@@ -2233,7 +2272,9 @@ class ThreadPageState extends State<ThreadPage> {
 																		child: SafeArea(
 																			child: _ThreadScrollbar(
 																				persistentState: persistentState,
-																				listController: _listController
+																				listController: _listController,
+																				hotPostIds: settings.showHotPostsInScrollbar ? _hotPostIds : const {},
+																				highlightedPostIds: _listController.items.where((i) => i.highlighted).map((i) => i.id).toSet()
 																			)
 																		)
 																	) : null
@@ -3809,10 +3850,14 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 class _ThreadScrollbar extends StatefulWidget {
 	final PersistentThreadState persistentState;
 	final RefreshableListController<Post> listController;
+	final Set<int> hotPostIds;
+	final Set<int> highlightedPostIds;
 
 	const _ThreadScrollbar({
 		required this.persistentState,
-		required this.listController
+		required this.listController,
+		required this.hotPostIds,
+		required this.highlightedPostIds
 	});
 
 	@override
@@ -3830,7 +3875,7 @@ class _ThreadScrollbarState extends State<_ThreadScrollbar> {
 		super.initState();
 		widget.listController.slowScrolls.addListener(_onSlowScroll);
 		widget.persistentState.addListener(_onPersistentStateUpdate);
-		things = widget.persistentState.youIds.length + (widget.persistentState.replyIdsToYou()?.length ?? 0);
+		things = Object.hash(widget.persistentState.youIds.length, widget.persistentState.replyIdsToYou()?.length ?? 0, widget.hotPostIds.length, widget.highlightedPostIds.length);
 	}
 	
 	void _onSlowScroll() {
@@ -3844,7 +3889,7 @@ class _ThreadScrollbarState extends State<_ThreadScrollbar> {
 	}
 
 	void _onPersistentStateUpdate() {
-		final newThings = widget.persistentState.youIds.length + (widget.persistentState.replyIdsToYou()?.length ?? 0);
+		final newThings = Object.hash(widget.persistentState.youIds.length, widget.persistentState.replyIdsToYou()?.length ?? 0, widget.hotPostIds.length, widget.highlightedPostIds.length);
 		if (newThings != things) {
 			setState(() {
 				things = newThings;
@@ -3888,13 +3933,13 @@ class _ThreadScrollbarState extends State<_ThreadScrollbar> {
 		if (widget.persistentState != oldWidget.persistentState) {
 			oldWidget.persistentState.removeListener(_onPersistentStateUpdate);
 			widget.persistentState.addListener(_onPersistentStateUpdate);
-			_onPersistentStateUpdate();
 		}
+		_onPersistentStateUpdate();
 	}
 
 	@override
 	Widget build(BuildContext context) {
-		if (things == 0) {
+		if (things == Object.hash(0, 0, 0, 0)) {
 			return const SizedBox();
 		}
 		final theme = context.watch<SavedTheme>();
@@ -3909,6 +3954,8 @@ class _ThreadScrollbarState extends State<_ThreadScrollbar> {
 					items: widget.listController.items.toList(),
 					youIds: widget.persistentState.youIds.toSet(),
 					replyIdsToYou: widget.persistentState.replyIdsToYou()?.toSet() ?? const {},
+					highlightedIds: widget.highlightedPostIds,
+					hotIds: widget.hotPostIds,
 					theme: theme
 				),
 				child: SizedBox(width: scrollbarThickness + (material ? 0 : 6 /* crossAxisMargin */))
@@ -3929,12 +3976,16 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 	final List<RefreshableListItem<Post>> items;
 	final Set<int> youIds;
 	final Set<int> replyIdsToYou;
+	final Set<int> highlightedIds;
+	final Set<int> hotIds;
 	final SavedTheme theme;
 
 	_ThreadScrollbarCustomPainter({
 		required this.items,
 		required this.youIds,
 		required this.replyIdsToYou,
+		required this.highlightedIds,
+		required this.hotIds,
 		required this.theme
 	});
 
@@ -3949,14 +4000,22 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 		}
 		final youPaint = ui.Paint()..color = theme.secondaryColor;
 		final replyToYouPaint = ui.Paint()..color = theme.secondaryColor.towardsBlack(0.5);
+		final highlightedPaint = ui.Paint()..color = theme.secondaryColor;
+		final hotPaint = ui.Paint()..color = theme.secondaryColor.shiftHue(90);
 		canvas.saveLayer(null, Paint()..color = Colors.white.withValues(alpha: 0.5)..blendMode = BlendMode.multiply);
 		final hd = size.height / (items.length + 1);
 		List<Paint?> slots = items.map((item) {
 			if (youIds.contains(item.id)) {
 				return youPaint;
 			}
-			else if (replyIdsToYou.contains(item.id)) {
+			if (replyIdsToYou.contains(item.id)) {
 				return replyToYouPaint;
+			}
+			if (highlightedIds.contains(item.id)) {
+				return highlightedPaint;
+			}
+			if (hotIds.contains(item.id)) {
+				return hotPaint;
 			}
 			return null;
 		}).toList();
@@ -4020,6 +4079,8 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 		return
 			!setEquals(youIds, oldDelegate.youIds) ||
 			!setEquals(replyIdsToYou, oldDelegate.replyIdsToYou) ||
+			!setEquals(highlightedIds, oldDelegate.highlightedIds) ||
+			!setEquals(hotIds, oldDelegate.hotIds) ||
 			!listEquals(items, oldDelegate.items) ||
 			theme != oldDelegate.theme;
 	}

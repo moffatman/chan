@@ -2513,6 +2513,17 @@ class SavedSettingsFields {
     fieldName: 'doubleTapToSeekVideo',
     merger: PrimitiveMerger(),
   );
+  static bool getShowHotPostsInScrollbar(SavedSettings x) =>
+      x.showHotPostsInScrollbar;
+  static void setShowHotPostsInScrollbar(SavedSettings x, bool v) =>
+      x.showHotPostsInScrollbar = v;
+  static const showHotPostsInScrollbar = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getShowHotPostsInScrollbar,
+    setter: setShowHotPostsInScrollbar,
+    fieldNumber: 211,
+    fieldName: 'showHotPostsInScrollbar',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2723,7 +2734,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     207: SavedSettingsFields.thumbnailOpacity,
     208: SavedSettingsFields.replyButtonAtBottom,
     209: SavedSettingsFields.videoContextMenuInGallery,
-    210: SavedSettingsFields.doubleTapToSeekVideo
+    210: SavedSettingsFields.doubleTapToSeekVideo,
+    211: SavedSettingsFields.showHotPostsInScrollbar
   };
 
   @override
@@ -2948,13 +2960,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       replyButtonAtBottom: fields[208] as bool?,
       videoContextMenuInGallery: fields[209] as bool?,
       doubleTapToSeekVideo: fields[210] as bool?,
+      showHotPostsInScrollbar: fields[211] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(198)
+      ..writeByte(199)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3350,7 +3363,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(209)
       ..write(obj.videoContextMenuInGallery)
       ..writeByte(210)
-      ..write(obj.doubleTapToSeekVideo);
+      ..write(obj.doubleTapToSeekVideo)
+      ..writeByte(211)
+      ..write(obj.showHotPostsInScrollbar);
   }
 
   @override

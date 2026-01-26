@@ -1260,6 +1260,8 @@ class SavedSettings extends HiveObject {
 	bool videoContextMenuInGallery;
 	@HiveField(210)
 	bool doubleTapToSeekVideo;
+	@HiveField(211)
+	bool showHotPostsInScrollbar;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1472,6 +1474,7 @@ class SavedSettings extends HiveObject {
 		bool? replyButtonAtBottom,
 		bool? videoContextMenuInGallery,
 		bool? doubleTapToSeekVideo,
+		bool? showHotPostsInScrollbar,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1703,7 +1706,8 @@ class SavedSettings extends HiveObject {
 		thumbnailOpacity = thumbnailOpacity ?? -0.5,
 		replyButtonAtBottom = replyButtonAtBottom ?? false,
 		videoContextMenuInGallery = videoContextMenuInGallery ?? false,
-		doubleTapToSeekVideo = doubleTapToSeekVideo ?? false {
+		doubleTapToSeekVideo = doubleTapToSeekVideo ?? false,
+		showHotPostsInScrollbar = showHotPostsInScrollbar ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -3042,6 +3046,9 @@ class Settings extends ChangeNotifier {
 
 	static const doubleTapToSeekVideoSetting = SavedSetting(SavedSettingsFields.doubleTapToSeekVideo);
 	bool get doubleTapToSeekVideo => doubleTapToSeekVideoSetting(this);
+
+	static const showHotPostsInScrollbarSetting = SavedSetting(SavedSettingsFields.showHotPostsInScrollbar);
+	bool get showHotPostsInScrollbar => showHotPostsInScrollbarSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

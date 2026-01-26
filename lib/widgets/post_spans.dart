@@ -2284,7 +2284,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	void clearTranslatedPosts([int? postId]);
 
 	Thread? findThread(int threadId);
-	Post? findPost(int postId);
+	Post? findPost(int? postId);
 
 	int? _highlightQuoteLinkId;
 	int? get highlightQuoteLinkId => _highlightQuoteLinkId;
@@ -2329,7 +2329,7 @@ class _PostSpanChildZoneData extends PostSpanZoneData {
 	Thread? findThread(int threadId) => parent.findThread(threadId);
 
 	@override
-	Post? findPost(int postId) => parent.findPost(postId);
+	Post? findPost(int? postId) => parent.findPost(postId);
 
 	@override
 	ValueChanged<Post>? get onNeedScrollToPost => _onNeedScrollToPost ?? parent.onNeedScrollToPost;
@@ -2642,7 +2642,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	Thread? findThread(int threadId) => _threads[threadId];
 
 	@override
-	Post? findPost(int postId) => _postLookupTable[postId];
+	Post? findPost(int? postId) => _postLookupTable[postId];
 
 	@override
 	PostSpanZoneData get _root => this;
@@ -3074,12 +3074,16 @@ TextSpan buildPostInfoRow({
 		children.removeLast();
 	}
 	if (site.supportsPostUpvotes || post.upvotes != null) {
+		final hot = settings.showHotPostsInScrollbar && switch((post.upvotes, zone.findPost(post.parentId)?.upvotes)) {
+			(int upv, int parentUpv) => upv > (parentUpv * 1.4),
+			_ => false
+		};
 		children.addAll([
 			WidgetSpan(
-				child: Icon(CupertinoIcons.arrow_up, size: 15, color: theme.primaryColorWithBrightness(0.5)),
+				child: Icon(CupertinoIcons.arrow_up, size: 15, color: hot ? theme.secondaryColor.shiftHue(90) : theme.primaryColorWithBrightness(0.5)),
 				alignment: PlaceholderAlignment.middle
 			),
-			TextSpan(text: '${post.upvotes ?? '—'} ', style: TextStyle(color: theme.primaryColorWithBrightness(0.5)))
+			TextSpan(text: '${post.upvotes ?? '—'} ', style: TextStyle(color: hot ? theme.secondaryColor.shiftHue(90) : theme.primaryColorWithBrightness(0.5)))
 		]);
 	}
 	return TextSpan(

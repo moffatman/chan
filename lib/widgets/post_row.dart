@@ -296,6 +296,7 @@ class PostRow extends StatelessWidget {
 	final PostQuoteLinkSpan? expandedInlineWithin;
 	final bool forceAbsoluteTime;
 	final bool hideThumbnails;
+	final bool highlightReplyCount;
 
 	const PostRow({
 		required this.post,
@@ -323,6 +324,7 @@ class PostRow extends StatelessWidget {
 		this.expandedInlineWithin,
 		this.forceAbsoluteTime = false,
 		this.hideThumbnails = false,
+		this.highlightReplyCount = false,
 		Key? key
 	}) : super(key: key);
 
@@ -431,6 +433,7 @@ class PostRow extends StatelessWidget {
 		);
 		final isPostHidden = isPostHiddenByThreadState || listFilterReason != null;
 		final cloverStyleRepliesButton = (settings.cloverStyleRepliesButton && replyIds.isNotEmpty && parentZone.style != PostSpanZoneStyle.tree);
+		final replyCountColor = highlightReplyCount ? theme.secondaryColor.shiftHue(90) : theme.secondaryColor;
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
@@ -817,7 +820,7 @@ class PostRow extends StatelessWidget {
 													children: [
 														Icon(
 															CupertinoIcons.reply_thick_solid,
-															color: theme.secondaryColor,
+															color: replyCountColor,
 															size: 14
 														),
 														const SizedBox(width: 4),
@@ -825,7 +828,7 @@ class PostRow extends StatelessWidget {
 															child: Text(
 																replyIds.length.toString(),
 																style: TextStyle(
-																	color: theme.secondaryColor,
+																	color: replyCountColor,
 																	fontWeight: FontWeight.bold,
 																	fontVariations: CommonFontVariations.bold
 																)
