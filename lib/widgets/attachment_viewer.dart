@@ -1278,7 +1278,7 @@ class AttachmentViewerController extends ChangeNotifier {
 								type: _isReallyImage ? SaveAsFileType.image : SaveAsFileType.video,
 								sourcePath: sourcePath,
 								destinationName: filename,
-								filesOnly: true,
+								destination: SaveAsDestination.files,
 								destinationDir: promptDirectory
 							);
 							successful = path != null;
