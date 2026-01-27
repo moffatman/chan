@@ -66,8 +66,10 @@ final behaviorSettings = [
 					if (errors.isNotEmpty) CupertinoButton(
 						onPressed: () {
 							// TODO: Pick which one to show?
-							final pair = errors.values.first;
-							alertError(context, pair.$1, pair.$2);
+							final entry = errors.entries.first;
+							alertError(context, entry.value.$1, entry.value.$2, actions: {
+								if (entry.key case final i?) 'Retry': () => i.notifications.initialize(allowDeleteAll: false)
+							});
 						},
 						child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)
 					),
