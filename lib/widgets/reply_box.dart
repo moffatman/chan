@@ -2059,7 +2059,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									builder: (context) => CookieBrowser(
 										initialUrl: Uri.parse(site.getWebUrl(board: widget.board.s, threadId: widget.threadId)),
 										formFields: encoded.fields,
-										autoClickSelector: encoded.autoClickSelector,
+										javascript: encoded.javascript,
 										onFormSubmitted: (fields) {
 											submitted = true;
 										},

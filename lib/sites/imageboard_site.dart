@@ -2055,7 +2055,7 @@ abstract class ImageboardSiteArchive {
 	int get hashCode => baseUrl.hashCode;
 }
 
-typedef EncodedWebPost = ({Map<String, dynamic> fields, String password, String? autoClickSelector});
+typedef EncodedWebPost = ({Map<String, dynamic> fields, String password, String? javascript});
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
 	final List<ImageboardSiteArchive> archives;

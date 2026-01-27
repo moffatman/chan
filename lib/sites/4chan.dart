@@ -807,7 +807,13 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				if (post.spoiler == true) 'spoiler': 'on'
 				else 'spoiler': null,
 			},
-			autoClickSelector: '#togglePostFormLink a'
+			javascript: '''
+				document.querySelector("#togglePostFormLink a").click();
+				let mobile = document.querySelector("#mpostform a");
+				if (mobile.checkVisibility()) {
+					mobile.click();
+				}
+			'''
 		);
 	}
 	

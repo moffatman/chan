@@ -652,7 +652,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				if (post.flag case final flag?) 'flag': flag.code
 				else 'flag': null
 			},
-			autoClickSelector: null
+			javascript: null
 		);
 	}
 

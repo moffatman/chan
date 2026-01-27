@@ -23,7 +23,7 @@ class CookieBrowser extends StatefulWidget {
 	final ValueChanged<Map<String, String>>? onFormSubmitted;
 	final ValueChanged<List<Cookie>>? onCookiesSaved;
 	final ValueChanged<Uri>? onLoadStop;
-	final String? autoClickSelector;
+	final String? javascript;
 
 	const CookieBrowser({
 		required this.initialUrl,
@@ -31,7 +31,7 @@ class CookieBrowser extends StatefulWidget {
 		this.onFormSubmitted,
 		this.onCookiesSaved,
 		this.onLoadStop,
-		this.autoClickSelector,
+		this.javascript,
 		super.key
 	});
 
@@ -176,8 +176,8 @@ class _CookieBrowserState extends State<CookieBrowser> {
 									widget.onLoadStop?.call(webUrl);
 								}
 								if (!_loadedOnce) {
-									if (widget.autoClickSelector case final selector?) {
-										await controller.evaluateJavascript(source: 'document.querySelector("$selector").click()');
+									if (widget.javascript case final javascript?) {
+										await controller.evaluateJavascript(source: javascript);
 									}
 									_loadedOnce = true;
 								}
