@@ -34,6 +34,7 @@ class WebViewIntrospection {
 			out.remove(HttpHeaders.hostHeader);
 			out.remove(HttpHeaders.cookieHeader);
 			out.remove(HttpHeaders.userAgentHeader);
+			out.remove(HttpHeaders.connectionHeader);
 			// Because we are using http
 			out.remove('upgrade-insecure-requests');
 			return out;
