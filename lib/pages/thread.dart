@@ -224,7 +224,7 @@ class ThreadPageState extends State<ThreadPage> {
 			for (final post in persistentState.thread?.posts_ ?? <Post>[]) {
 				if (post.upvotes case final upv?) {
 					upvotes[post.id] = upv;
-					if (upvotes[post.parentId] case final parentUpv? when upv > (parentUpv * 1.4)) {
+					if (upvotes[post.parentId] case final parentUpv? when parentUpv > 0 && upv > (parentUpv + min(parentUpv * 1.4, 15))) {
 						_hotPostIds.add(post.id);
 					}
 				}
