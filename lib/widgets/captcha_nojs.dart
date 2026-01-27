@@ -227,6 +227,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 				},
 				extra: {
 					if (widget.request.cloudflare) kCloudflare: true,
+					kPriority: RequestPriority.interactive,
 					kExtraCookie: _extraCookie
 				}
 			)

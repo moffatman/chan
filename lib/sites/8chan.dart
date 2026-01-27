@@ -3,6 +3,7 @@
 import 'dart:io';
 
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/javascript_challenge.dart';
 import 'package:chan/services/webview_introspection.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -72,9 +73,11 @@ class Site8ChanPoWBlockFakePngInterceptor extends Interceptor {
 			await site.client.getUri(Uri.https(site.baseUrl, '/'), options: Options(
 				extra: {
 					_kBypassLock: true,
-					kCloudflare: true
+					kCloudflare: true,
+					kPriority: response.requestOptions.extra[kPriority],
+					kExcludeCookies: response.requestOptions.extra[kExcludeCookies]
 				}
-			));
+			), cancelToken: response.requestOptions.cancelToken);
 		});
 		// Retry the request
 		response.requestOptions.extra[_kThrowOnBlock] = true;
