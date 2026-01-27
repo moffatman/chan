@@ -143,49 +143,53 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		if (data case {'status': 'error', 'data': String error}) {
 			throw PostFailedException(error);
 		}
-		if ((data['data'] as Map)['valid'] != true) {
-			if (captchaSolution is LynxchanCaptchaSolution) {
-				// Register the existing captcha
-				final submit1Response = await client.postUri<Map>(Uri.https(baseUrl, '/solveCaptcha.js', {'json': '1'}), data: {
-					'captchaId': captchaSolution.id,
-					'answer': captchaSolution.answer
+		if ((data['data'] as Map)['valid'] != true && (data['data'] as Map)['mode'] == 2) {
+			await renewBlockBypassJson(post, captchaSolution, cancelToken);
+		}
+		return data;
+	}
+
+	Future<void> renewBlockBypassJson(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		if (captchaSolution is LynxchanCaptchaSolution) {
+			// Register the existing captcha
+			final submit1Response = await client.postUri<Map>(Uri.https(baseUrl, '/solveCaptcha.js', {'json': '1'}), data: {
+				'captchaId': captchaSolution.id,
+				'answer': captchaSolution.answer
+			}, options: Options(
+				headers: {
+					'referer': getWebUrlImpl(post.board, post.threadId)
+				},
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			), cancelToken: cancelToken);
+			if (submit1Response.data case {'status': 'error', 'data': String error}) {
+				throw PostFailedException(error);
+			}
+		}
+		throw AdditionalCaptchaRequiredException(
+			captchaRequest: LynxchanCaptchaRequest(
+				board: post.board,
+				threadId: post.threadId,
+				redirectGateway: redirectGateway
+			),
+			onSolved: (solution2, cancelToken2) async {
+				final response = await client.postUri<Map>(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
+					if (solution2 is LynxchanCaptchaSolution) 'captcha': solution2.answer
 				}, options: Options(
+					responseType: ResponseType.json,
 					headers: {
 						'referer': getWebUrlImpl(post.board, post.threadId)
 					},
 					extra: {
 						kPriority: RequestPriority.interactive
 					}
-				), cancelToken: cancelToken);
-				if (submit1Response.data case {'status': 'error', 'data': String error}) {
+				), cancelToken: cancelToken2);
+				if (response.data case {'status': 'error', 'data': String error}) {
 					throw PostFailedException(error);
 				}
 			}
-			throw AdditionalCaptchaRequiredException(
-				captchaRequest: LynxchanCaptchaRequest(
-					board: post.board,
-					threadId: post.threadId,
-					redirectGateway: redirectGateway
-				),
-				onSolved: (solution2, cancelToken2) async {
-					final response = await client.postUri<Map>(Uri.https(baseUrl, '/renewBypass.js', {'json': '1'}), data: {
-						if (solution2 is LynxchanCaptchaSolution) 'captcha': solution2.answer
-					}, options: Options(
-						responseType: ResponseType.json,
-						headers: {
-							'referer': getWebUrlImpl(post.board, post.threadId)
-						},
-						extra: {
-							kPriority: RequestPriority.interactive
-						}
-					), cancelToken: cancelToken2);
-					if (response.data case {'status': 'error', 'data': String error}) {
-						throw PostFailedException(error);
-					}
-				}
-			);
-		}
-		return data;
+		);
 	}
 
 	@override
@@ -254,6 +258,10 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		}
 		final data = response.data as Map;
 		if (data['status'] != 'ok') {
+			if (data['status'] == 'bypassable') {
+				// This will throw AdditionalCaptchaRequiredException and we will restart the whole function
+				await renewBlockBypassJson(post, captchaSolution, cancelToken);
+			}
 			final error = data['error'] as String? ?? data.toString();
 			if (RegExp(r'Flood detected, wait (\d+) more seconds.').firstMatch(error)?.group(1)?.tryParseInt case int seconds) {
 				throw PostCooldownException(error, DateTime.now().add(Duration(seconds: seconds)));
