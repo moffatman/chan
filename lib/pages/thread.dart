@@ -3414,7 +3414,9 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														segments: [
 															SegmentedWidgetSegment(
 																color: theme.primaryColorWithBrightness(0.6),
-																onPressed: () => alertError(context, error.$1, error.$2, barrierDismissible: true, afterFix: widget.listController.update),
+																onPressed: () => alertError(context, error.$1, error.$2, barrierDismissible: true, actions: {
+																	'Retry': () {} // The afterFix will do everything
+																}, afterFix: widget.listController.update),
 																child: Row(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
