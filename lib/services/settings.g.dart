@@ -3851,6 +3851,10 @@ class GallerySavePathOrganizingAdapter
         return GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders;
       case 10:
         return GallerySavePathOrganizing.siteAndThreadNameSubfolders;
+      case 11:
+        return GallerySavePathOrganizing.filesPromptLastDirectory;
+      case 12:
+        return GallerySavePathOrganizing.filesPromptSaveDirectory;
       default:
         return GallerySavePathOrganizing.noSubfolders;
     }
@@ -3891,6 +3895,12 @@ class GallerySavePathOrganizingAdapter
         break;
       case GallerySavePathOrganizing.siteAndThreadNameSubfolders:
         writer.writeByte(10);
+        break;
+      case GallerySavePathOrganizing.filesPromptLastDirectory:
+        writer.writeByte(11);
+        break;
+      case GallerySavePathOrganizing.filesPromptSaveDirectory:
+        writer.writeByte(12);
         break;
     }
   }

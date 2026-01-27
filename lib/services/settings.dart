@@ -739,7 +739,11 @@ enum GallerySavePathOrganizing {
 	@HiveField(9)
 	siteBoardAndThreadNameSubfolders,
 	@HiveField(10)
-	siteAndThreadNameSubfolders
+	siteAndThreadNameSubfolders,
+	@HiveField(11)
+	filesPromptLastDirectory,
+	@HiveField(12)
+	filesPromptSaveDirectory
 }
 
 final allowedGoogleFonts = {
@@ -1782,6 +1786,11 @@ class SavedSettings extends HiveObject {
 			else {
 				gallerySavePath = '${kGallerySavePathGalleryPrefix}Chance';
 			}
+		}
+		if ((!Platform.isIOS || (gallerySavePath?.startsWith(kGallerySavePathGalleryPrefix) ?? false))
+		    && (gallerySavePathOrganizing == GallerySavePathOrganizing.filesPromptLastDirectory
+		        || gallerySavePathOrganizing == GallerySavePathOrganizing.filesPromptSaveDirectory)) {
+			gallerySavePathOrganizing = GallerySavePathOrganizing.noSubfolders;
 		}
 	}
 

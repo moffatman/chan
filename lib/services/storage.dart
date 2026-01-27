@@ -179,9 +179,18 @@ Future<String?> saveFileAs({
 	required BuildContext context,
 	required SaveAsFileType type,
 	required String sourcePath,
-	required String destinationName
+	required String destinationName,
+	bool filesOnly = false,
+	String? destinationDir
 }) async {
 	if (Platform.isIOS && (type == SaveAsFileType.image || type == SaveAsFileType.video)) {
+		if (filesOnly) {
+			return await _platform.invokeMethod<String>('saveFileAs', {
+				'sourcePath': sourcePath,
+				'destinationName': destinationName,
+				if (destinationDir != null) 'destinationDir': destinationDir
+			});
+		}
 		Future<void> saveToGallery(AssetPathEntity? album) async {
 			final asAsset = (type == SaveAsFileType.image) ? 
 				await PhotoManager.editor.saveImageWithPath(sourcePath, title: destinationName) :
@@ -297,7 +306,8 @@ Future<String?> saveFileAs({
 						onPressed: () async {
 							final name = await _platform.invokeMethod<String>('saveFileAs', {
 								'sourcePath': sourcePath,
-								'destinationName': destinationName
+								'destinationName': destinationName,
+								if (destinationDir != null) 'destinationDir': destinationDir
 							});
 							if (context.mounted) {
 								Navigator.pop(context, name);
@@ -314,7 +324,8 @@ Future<String?> saveFileAs({
 	}
 	return await _platform.invokeMethod<String>('saveFileAs', {
 		'sourcePath': sourcePath,
-		'destinationName': destinationName
+		'destinationName': destinationName,
+		if (destinationDir != null) 'destinationDir': destinationDir
 	});
 }
 

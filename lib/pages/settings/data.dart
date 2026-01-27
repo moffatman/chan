@@ -535,6 +535,8 @@ final dataSettings = [
 						GallerySavePathOrganizing.siteBoardAndThreadSubfolders
 							|| GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders
 							|| GallerySavePathOrganizing.siteAndThreadNameSubfolders => (GallerySavePathOrganizing.siteSubfolders, 'Per-site'),
+						GallerySavePathOrganizing.filesPromptLastDirectory
+							|| GallerySavePathOrganizing.filesPromptSaveDirectory => (GallerySavePathOrganizing.noSubfolders, 'One album'),
 						_ => null
 					};
 					if (newSavePathOrganizing != null) {
@@ -581,6 +583,10 @@ final dataSettings = [
 				setting: Settings.gallerySavePathOrganizingSetting,
 				children: {
 					GallerySavePathOrganizing.noSubfolders: (null, usingGallery ? (albumName.isEmpty ? 'No album' : '"$albumName" album') : 'No subfolders'),
+					if (!usingGallery && Platform.isIOS) ...{
+						GallerySavePathOrganizing.filesPromptLastDirectory: (null, 'Prompt at last directory'),
+						GallerySavePathOrganizing.filesPromptSaveDirectory: (null, 'Prompt at save directory')
+					},
 					GallerySavePathOrganizing.siteSubfolders: (null, usingGallery ? 'Per-site albums' : 'Per-site subfolders'),
 					GallerySavePathOrganizing.boardSubfolders: (null, usingGallery ? 'Per-board albums' : 'Per-board subfolders'),
 					if (!usingGallery) ...{
