@@ -101,7 +101,6 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 							md5: '',
 							width: img.attributes['width']?.tryParseInt,
 							height: img.attributes['height']?.tryParseInt,
-							inlineWithinPostId: postId, // to avoid duplicate Heros when quoted
 							sizeInBytes: null
 						));
 						continue;
@@ -287,7 +286,6 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 							md5: '',
 							width: video.attributes['width']?.tryParseInt,
 							height: video.attributes['height']?.tryParseInt,
-							inlineWithinPostId: postId, // to avoid duplicate Heros when quoted
 							sizeInBytes: null
 						));
 					}

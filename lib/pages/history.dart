@@ -10,6 +10,7 @@ import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_collection_actions.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -220,8 +221,13 @@ class HistoryPageState extends State<HistoryPage> {
 															highlightPattern: options.queryPattern
 														),
 														onThumbnailTap: (initialAttachment) {
-															final attachments = _listController.items.expand((_) => _.item.thread!.attachments).toList();
-															showGallery(
+															final attachments = _listController.items.where((item) => item.item.imageboard != null).expand((item) => item.item.thread!.attachments.map((attachment) => TaggedAttachment(
+																imageboard: item.item.imageboard!,
+																attachment: attachment,
+																semanticParentIds: [-3],
+																postId: item.item.id
+															))).toList();
+															showGalleryPretagged(
 																context: context,
 																attachments: attachments,
 																threads: {
@@ -229,11 +235,10 @@ class HistoryPageState extends State<HistoryPage> {
 																		for (final attachment in state.item.thread!.attachments)
 																			attachment: state.item.imageboard!.scope(state.item.thread!)
 																},
-																initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																initialAttachment: initialAttachment,
 																onChange: (attachment) {
-																	_listController.animateTo((p) => p.thread!.attachments.any((a) => a.id == attachment.id));
+																	_listController.animateTo((p) => p.imageboard == attachment.imageboard && p.board.toLowerCase() == attachment.attachment.board.toLowerCase() && p.id == attachment.postId);
 																},
-																semanticParentIds: [-3],
 																heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 															);
 														},

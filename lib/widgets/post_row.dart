@@ -272,7 +272,7 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 
 class PostRow extends StatelessWidget {
 	final Post post;
-	final ValueChanged<Attachment>? onThumbnailTap;
+	final ValueChanged<TaggedAttachment>? onThumbnailTap;
 	final bool propagateOnThumbnailTap;
 	final VoidCallback? onTap;
 	final VoidCallback? onDoubleTap;
@@ -535,38 +535,42 @@ class PostRow extends StatelessWidget {
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
 							children: [
-								...smallAttachments.map((attachment) => PopupAttachment(
-									attachment: attachment,
-									child: CupertinoInkwell(
-										padding: EdgeInsets.zero,
-										minimumSize: Size.zero,
-										onPressed: onThumbnailTap?.bind1(attachment),
-										child: ConstrainedBox(
-											constraints: const BoxConstraints(
-												minHeight: 75
-											),
-											child: AttachmentThumbnail(
-												attachment: attachment,
-												revealSpoilers: revealSpoilerImages,
-												onLoadError: onThumbnailLoadError,
-												hero: TaggedAttachment(
-													attachment: attachment,
-													semanticParentIds: parentZone.stackIds,
-													imageboard: imageboard
+								...smallAttachments.map((attachment) {
+									final taggedAttachment = TaggedAttachment(
+										attachment: attachment,
+										semanticParentIds: parentZone.stackIds,
+										imageboard: imageboard,
+										postId: post.id
+									);
+									return PopupAttachment(
+										attachment: attachment,
+										child: CupertinoInkwell(
+											padding: EdgeInsets.zero,
+											minimumSize: Size.zero,
+											onPressed: onThumbnailTap?.bind1(taggedAttachment),
+											child: ConstrainedBox(
+												constraints: const BoxConstraints(
+													minHeight: 75
 												),
-												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-												shrinkHeight: !settings.squareThumbnails,
-												mayObscure: true,
-												hide: hideThumbnails,
-												cornerIcon: AttachmentThumbnailCornerIcon(
-													backgroundColor: theme.backgroundColor,
-													borderColor: theme.primaryColorWithBrightness(0.2),
-													size: null
+												child: AttachmentThumbnail(
+													attachment: attachment,
+													revealSpoilers: revealSpoilerImages,
+													onLoadError: onThumbnailLoadError,
+													hero: taggedAttachment,
+													fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+													shrinkHeight: !settings.squareThumbnails,
+													mayObscure: true,
+													hide: hideThumbnails,
+													cornerIcon: AttachmentThumbnailCornerIcon(
+														backgroundColor: theme.backgroundColor,
+														borderColor: theme.primaryColorWithBrightness(0.2),
+														size: null
+													)
 												)
 											)
 										)
-									)
-								)).expand((x) => [const SizedBox(height: 8), x]),
+									);
+								}).expand((x) => [const SizedBox(height: 8), x]),
 								cloverStyleRepliesButton ? const SizedBox(height: 24) : const SizedBox(height: 8)
 							]
 						)
@@ -712,37 +716,41 @@ class PostRow extends StatelessWidget {
 												)
 											]
 										),
-										if (largeAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) ...largeAttachments.map((a) => Align(
-											child: Padding(
-												padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
-												child: CupertinoInkwell(
-													padding: EdgeInsets.zero,
-													minimumSize: Size.zero,
-													onPressed: onThumbnailTap?.bind1(a),
-													child: AttachmentThumbnail(
-														attachment: a,
-														revealSpoilers: revealSpoilerImages,
-														onLoadError: onThumbnailLoadError,
-														width: largeImageWidth,
-														height: largeImageWidth,
-														shrinkHeight: true,
-														overrideFullQuality: true,
-														mayObscure: true,
-														hero: TaggedAttachment(
+										if (largeAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) ...largeAttachments.map((a) {
+											final taggedAttachment = TaggedAttachment(
+												imageboard: imageboard,
+												attachment: a,
+												semanticParentIds: parentZone.stackIds,
+												postId: post.id
+											);
+											return Align(
+												child: Padding(
+													padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
+													child: CupertinoInkwell(
+														padding: EdgeInsets.zero,
+														minimumSize: Size.zero,
+														onPressed: onThumbnailTap?.bind1(taggedAttachment),
+														child: AttachmentThumbnail(
 															attachment: a,
-															semanticParentIds: parentZone.stackIds,
-															imageboard: imageboard
-														),
-														hide: hideThumbnails,
-														cornerIcon: AttachmentThumbnailCornerIcon(
-															backgroundColor: theme.backgroundColor,
-															borderColor: theme.primaryColorWithBrightness(0.2),
-															size: (largeImageWidth ?? 300) / 10
+															revealSpoilers: revealSpoilerImages,
+															onLoadError: onThumbnailLoadError,
+															width: largeImageWidth,
+															height: largeImageWidth,
+															shrinkHeight: true,
+															overrideFullQuality: true,
+															mayObscure: true,
+															hero: taggedAttachment,
+															hide: hideThumbnails,
+															cornerIcon: AttachmentThumbnailCornerIcon(
+																backgroundColor: theme.backgroundColor,
+																borderColor: theme.primaryColorWithBrightness(0.2),
+																size: (largeImageWidth ?? 300) / 10
+															)
 														)
 													)
 												)
-											)
-										))
+											);
+										})
 										else const SizedBox(height: 2),
 										Flexible(
 											child: Row(

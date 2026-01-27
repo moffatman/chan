@@ -1,15 +1,16 @@
 import 'dart:math';
 
-import 'package:chan/models/attachment.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/draft_post.dart';
 import 'package:chan/widgets/outbox.dart';
@@ -47,7 +48,7 @@ class PostsPage extends StatefulWidget {
 	final int? postIdForBackground;
 	final List<int> postsIdsToShow;
 	final ValueChanged<Post>? onTap;
-	final ValueChanged<Attachment>? onThumbnailTap;
+	final ValueChanged<TaggedAttachment>? onThumbnailTap;
 	final int? isRepliesForPostId;
 	final bool clearStack;
 	final Widget? header;
@@ -71,7 +72,6 @@ class PostsPage extends StatefulWidget {
 class _PostsPageState extends State<PostsPage> {
 	int _forceRebuildId = 0;
 	final List<_PostsPageItem> replies = [];
-	final Map<Attachment, int> attachmentsToPostIds = {};
 	final Map<int, BuildContext> postContexts = {};
 	final Set<int> unseenPostIds = {};
 
@@ -143,9 +143,6 @@ class _PostsPageState extends State<PostsPage> {
 					)));
 				}
 				else {
-					for (final attachment in matchingPost.attachments) {
-						attachmentsToPostIds[attachment] = id;
-					}
 					replies.add(_PostsPageItem.post(matchingPost));
 				}
 			}
@@ -155,9 +152,6 @@ class _PostsPageState extends State<PostsPage> {
 			else {
 				final archivedPost = widget.zone.crossThreadPostFromArchive(widget.zone.board, id);
 				if (archivedPost != null) {
-					for (final attachment in archivedPost.attachments) {
-						attachmentsToPostIds[attachment] = id;
-					}
 					replies.add(_PostsPageItem.post(archivedPost));
 				}
 				else if (context.read<ImageboardSite?>()?.isPaged ?? false) {
@@ -181,8 +175,14 @@ class _PostsPageState extends State<PostsPage> {
 	@override
 	Widget build(BuildContext context) {
 		final outerContext = context;
-		final attachments = replies.expand<Attachment>((a) => a.post?.attachments ?? []).toList();
 		final subzone = widget.zone.hoistFakeRootZoneFor(0, style: PostSpanZoneStyle.linear, clearStack: widget.clearStack); // To avoid conflict with same semanticIds in tree
+		final imageboard = context.read<Imageboard>();
+		final attachments = replies.expand<TaggedAttachment>((r) => r.post?.attachments.map((a) => TaggedAttachment(
+			imageboard: imageboard,
+			attachment: a,
+			semanticParentIds: subzone.stackIds,
+			postId: r.post!.id
+		)) ?? []).toList();
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.findPost(widget.postIdForBackground!);
 		final doubleTapScrollToReplies = Settings.doubleTapScrollToRepliesSetting.watch(context);
 		final isRepliesForPostId = widget.isRepliesForPostId;
@@ -364,7 +364,7 @@ class _PostsPageState extends State<PostsPage> {
 											onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
 																		? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
 											onThumbnailTap: widget.onThumbnailTap ?? (attachment) {
-												showGallery(
+												showGalleryPretagged(
 													context: context,
 													attachments: attachments,
 													posts: {
@@ -374,9 +374,8 @@ class _PostsPageState extends State<PostsPage> {
 																	attachment: widget.zone.imageboard.scope(post)
 													},
 													initialAttachment: attachment,
-													semanticParentIds: subzone.stackIds,
 													onChange: (attachment) {
-														final context = postContexts[attachmentsToPostIds[attachment]];
+														final context = postContexts[attachment.postId];
 														if (context != null) {
 															Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
 														}

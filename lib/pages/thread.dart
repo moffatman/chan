@@ -946,14 +946,16 @@ class ThreadPageState extends State<ThreadPage> {
 			return item.item.attachments.map((a) => TaggedAttachment(
 				attachment: a,
 				semanticParentIds: commonParentIds.followedBy(item.parentIds),
-				imageboard: imageboard
+				imageboard: imageboard,
+				postId: item.item.id
 			));
 		}).toList();
 		if (!attachments.contains(initialAttachment)) {
 			final hiddenAttachments = _listController.state?.filteredValues.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
 				attachment: a,
 				semanticParentIds: commonParentIds.followedBy(item.parentIds),
-				imageboard: imageboard
+				imageboard: imageboard,
+				postId: item.item.id
 			))).toList() ?? [];
 			if (hiddenAttachments.contains(initialAttachment)) {
 				attachments = hiddenAttachments;
@@ -1007,9 +1009,7 @@ class ThreadPageState extends State<ThreadPage> {
 				if (_listController.state?.searching ?? false) {
 					return;
 				}
-				_listController.animateToIfOffscreen((p) => p.attachments.any((a) {
-					return a.id == attachment.attachment.id;
-				}));
+				_listController.animateToIfOffscreen((p) => p.id == attachment.postId);
 			},
 			heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 		);
@@ -1026,7 +1026,8 @@ class ThreadPageState extends State<ThreadPage> {
 					initialAttachment: TaggedAttachment(
 						attachment: nextPostWithImage.item.attachments.first,
 						semanticParentIds: [widget.boardSemanticId, 0].followedBy(nextPostWithImage.parentIds),
-						imageboard: context.read<Imageboard>()
+						imageboard: context.read<Imageboard>(),
+						postId: nextPostWithImage.item.id
 					),
 					initiallyShowGrid: initiallyShowGrid
 				);
@@ -2107,11 +2108,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			child: PostRow(
 																				post: post,
 																				onThumbnailTap: (attachment) {
-																					_showGallery(initialAttachment: TaggedAttachment(
-																						attachment: attachment,
-																						semanticParentIds: context.read<PostSpanZoneData>().stackIds,
-																						imageboard: imageboard
-																					));
+																					_showGallery(initialAttachment: attachment);
 																				},
 																				hideThumbnails: options.hideThumbnails,
 																				highlightReplyCount: settings.showHotPostsInScrollbar && !site.supportsPostUpvotes ? _hotPostIds.contains(post.id) : false,
@@ -2170,11 +2167,7 @@ class ThreadPageState extends State<ThreadPage> {
 																					dim: !alreadyDim && (isDeletedStub || peekContentHeight.isFinite),
 																					highlight: _shouldHighlightPost(value.id),
 																					onThumbnailTap: (attachment) {
-																						_showGallery(initialAttachment: TaggedAttachment(
-																							attachment: attachment,
-																							semanticParentIds: context.read<PostSpanZoneData>().stackIds,
-																							imageboard: imageboard
-																						));
+																						_showGallery(initialAttachment: attachment);
 																					},
 																					overrideReplyCount: Row(
 																						mainAxisSize: MainAxisSize.min,
@@ -2930,13 +2923,15 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															return item.item.attachments.map((a) => TaggedAttachment(
 																attachment: a,
 																semanticParentIds: commonParentIds.followedBy(item.parentIds),
-																imageboard: imageboard
+																imageboard: imageboard,
+																postId: item.item.id
 															));
 														}).toList();
 														final initialAttachment = TaggedAttachment(
 															attachment: nextPostWithImage.item.attachments.first,
 															semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds),
-															imageboard: imageboard
+															imageboard: imageboard,
+															postId: nextPostWithImage.item.id
 														);
 														final found = <Attachment, TaggedAttachment>{};
 														for (final a in attachments) {

@@ -862,24 +862,27 @@ class _SavedPageState extends State<SavedPage> {
 																final attachments = {
 																	for (final w in _watchedListController.items)
 																		for (final attachment in w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																			attachment: w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)!
+																			TaggedAttachment(
+																				imageboard: w.item.imageboard,
+																				attachment: attachment,
+																				semanticParentIds: [-4],
+																				postId: w.item.item.$2.id
+																			): w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.$1.threadIdentifier)!
 																	};
-																showGallery(
+																showGalleryPretagged(
 																	context: context,
 																	attachments: attachments.keys.toList(),
 																	threads: {
-																		for (final item in attachments.entries) item.key: item.value.imageboard!.scope(item.value.thread!)
+																		for (final item in attachments.entries) item.key.attachment: item.value.imageboard!.scope(item.value.thread!)
 																	},
 																	onThreadSelected: (t) {
 																		final x = _watchedListController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.$1.threadIdentifier == t.item.identifier).item;
 																		setter(x.imageboard.scope(x.item.$1));
 																	},
-																	initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
+																	initialAttachment: initialAttachment,
 																	onChange: (attachment) {
-																		final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
-																		_watchedListController.animateTo((p) => p.item.$1.threadIdentifier == threadId);
+																		_watchedListController.animateTo((p) => p.imageboard == attachment.imageboard && p.item.$1.board.toLowerCase() == attachment.attachment.board.toLowerCase() && p.item.$1.threadId == attachment.postId);
 																	},
-																	semanticParentIds: [-4],
 																	heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
 																);
 															}
@@ -1109,8 +1112,13 @@ class _SavedPageState extends State<SavedPage> {
 													},
 													semanticParentIds: const [-12],
 													onThumbnailTap: (initialAttachment) {
-														final attachments = _threadListController.items.expand((_) => _.item.$2.attachments).toList();
-														showGallery(
+														final attachments = _threadListController.items.expand((item) => item.item.$2.attachments.map((attachment) => TaggedAttachment(
+															imageboard: item.item.$1.imageboard!,
+															attachment: attachment,
+															semanticParentIds: [-12],
+															postId: item.item.$2.id
+														))).toList();
+														showGalleryPretagged(
 															context: context,
 															attachments: attachments,
 															threads: {
@@ -1119,11 +1127,10 @@ class _SavedPageState extends State<SavedPage> {
 																		attachment: state.item.$1.imageboard!.scope(state.item.$2)
 															},
 															onThreadSelected: (t) => threadSetter(t.imageboard.scope(t.item.identifier.threadOrPostIdentifier)),
-															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+															initialAttachment: initialAttachment,
 															onChange: (attachment) {
-																_threadListController.animateTo((p) => p.$2.attachments.any((a) => a.id == attachment.id));
+																_threadListController.animateTo((p) => p.$1.imageboard == attachment.imageboard && p.$1.board.toLowerCase() == attachment.attachment.board.toLowerCase() && p.$1.id == attachment.postId);
 															},
-															semanticParentIds: [-12],
 															heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
 														);
 													}
@@ -1273,8 +1280,13 @@ class _SavedPageState extends State<SavedPage> {
 												await item.imageboard.threadWatcher.fixBrokenThread(item.thread.identifier);
 											},
 											onThumbnailTap: (initialAttachment) {
-												final attachments = _yourPostsListController.items.expand((_) => _.item.post.attachments).toList();
-												showGallery(
+												final attachments = _yourPostsListController.items.expand((item) => item.item.post.attachments.map((attachment) => TaggedAttachment(
+													imageboard: item.item.imageboard,
+													attachment: attachment,
+													semanticParentIds: [-8],
+													postId: item.item.post.id
+												))).toList();
+												showGalleryPretagged(
 													context: context,
 													attachments: attachments,
 													posts: {
@@ -1282,11 +1294,10 @@ class _SavedPageState extends State<SavedPage> {
 															for (final attachment in state.item.post.attachments)
 																attachment: state.item.imageboard.scope(state.item.post)
 													},
-													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+													initialAttachment: initialAttachment,
 													onChange: (attachment) {
-														_yourPostsListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+														_yourPostsListController.animateTo((p) => p.imageboard == attachment.imageboard && p.post.board.toLowerCase() == attachment.attachment.board.toLowerCase() && p.post.id == attachment.postId);
 													},
-													semanticParentIds: [-8],
 													heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 												);
 											}
@@ -1435,8 +1446,13 @@ class _SavedPageState extends State<SavedPage> {
 													}
 												},
 												onThumbnailTap: (initialAttachment) {
-													final attachments = _postListController.items.expand((_) => _.item.item.$1.post.attachments).toList();
-													showGallery(
+													final attachments = _postListController.items.expand((item) => item.item.item.$1.post.attachments.map((attachment) => TaggedAttachment(
+														imageboard: item.item.imageboard,
+														attachment: attachment,
+														semanticParentIds: [-2],
+														postId: item.item.item.$1.post.id
+													))).toList();
+													showGalleryPretagged(
 														context: context,
 														attachments: attachments,
 														posts: {
@@ -1444,11 +1460,10 @@ class _SavedPageState extends State<SavedPage> {
 																for (final attachment in state.item.item.$1.post.attachments)
 																	attachment: state.item.imageboard.scope(state.item.item.$1.post)
 														},
-														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+														initialAttachment: initialAttachment,
 														onChange: (attachment) {
-															_postListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.item.$1.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+															_postListController.animateTo((p) => p.imageboard == attachment.imageboard && p.item.$1.post.board.toLowerCase() == attachment.attachment.board.toLowerCase() && p.item.$1.post.id == attachment.postId);
 														},
-														semanticParentIds: [-2],
 														heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 													);
 												}
@@ -1677,7 +1692,8 @@ class _SavedPageState extends State<SavedPage> {
 													tag: TaggedAttachment(
 														attachment: item.item.attachment,
 														semanticParentIds: [-5, imageboardIds.putIfAbsent(item.imageboard.key, () => imageboardIds.length)],
-														imageboard: item.imageboard
+														imageboard: item.imageboard,
+														postId: 0
 													),
 													child: MediaThumbnail(
 														uri: item.item.file.uri,
@@ -1722,7 +1738,8 @@ class _SavedPageState extends State<SavedPage> {
 							final attachment = TaggedAttachment(
 								attachment: selectedValue.item.attachment,
 								semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId],
-								imageboard: selectedValue.imageboard
+								imageboard: selectedValue.imageboard,
+								postId: 0
 							);
 							child = ImageboardScope(
 								imageboardKey: selectedValue.imageboard.key,
@@ -1734,7 +1751,8 @@ class _SavedPageState extends State<SavedPage> {
 											return TaggedAttachment(
 												attachment: l.item.item.attachment,
 												semanticParentIds: poppedOut ? [-5, thisImageboardId] : [-6, thisImageboardId],
-												imageboard: l.item.imageboard
+												imageboard: l.item.imageboard,
+												postId: 0
 											);
 										}).toList(),
 										overrideSources: {

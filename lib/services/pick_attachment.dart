@@ -343,13 +343,15 @@ List<AttachmentPickingSource> getAttachmentSources({
 												initialAttachment: TaggedAttachment(
 													imageboard: attachment.imageboard,
 													semanticParentIds: [-999],
-													attachment: attachment.item.attachment
+													attachment: attachment.item.attachment,
+													postId: 0
 												),
 												context: context,
 												attachments: savedAttachments.map((a) => TaggedAttachment(
 													imageboard: a.imageboard,
 													semanticParentIds: [-999],
-													attachment: a.item.attachment
+													attachment: a.item.attachment,
+													postId: 0
 												)).toList(),
 												overrideSources: {
 													for (final l in savedAttachments)
@@ -372,7 +374,8 @@ List<AttachmentPickingSource> getAttachmentSources({
 													tag: TaggedAttachment(
 														imageboard: attachment.imageboard,
 														attachment: attachment.item.attachment,
-														semanticParentIds: [-999]
+														semanticParentIds: [-999],
+														postId: 0
 													),
 													child: MediaThumbnail(
 														uri: attachment.item.file.uri,

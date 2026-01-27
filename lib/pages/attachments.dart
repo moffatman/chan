@@ -336,6 +336,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 															controller: _getController(attachment),
 															allowGestures: false,
 															semanticParentIds: const [-101],
+															postId: attachment.postId,
 															useHeroDestinationWidget: true,
 															heroOtherEndIsBoxFitCover: true,
 															videoThumbnailMicroPadding: false,

@@ -1159,6 +1159,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																			}
 																		},
 																		semanticParentIds: attachment.semanticParentIds,
+																		postId: attachment.postId,
 																		onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
 																			_getController(attachment).loadFullAttachment().then((x) {
 																				if (!mounted) return;
@@ -1204,9 +1205,9 @@ class _GalleryPageState extends State<GalleryPage> {
 																final post = zone.findThread(currentAttachment.attachment.threadId ?? zone.primaryThreadId)?.posts_.tryFirstWhere((p) => p.attachments.contains(currentAttachment.attachment));
 																final navigator = Navigator.of(context);
 																final currentRoute = navigator.currentRoute;
-																void onThumbnailTap(Attachment attachment) {
+																void onThumbnailTap(TaggedAttachment attachment) {
 																	navigator.popUntil((r) => r == currentRoute);
-																	final index = widget.attachments.indexWhere((a) => a.attachment == attachment);
+																	final index = widget.attachments.indexWhere((a) => a == attachment);
 																	if (index == -1) {
 																		showToast(
 																			context: context,
@@ -1617,54 +1618,3 @@ Future<Attachment?> showGalleryPretagged({
 	await showStatusBar();
 	return lastSelected;
 }
-
-Future<Attachment?> showGallery({
-	required BuildContext context,
-	required List<Attachment> attachments,
-	Map<Attachment, Uri> overrideSources = const {},
-	Map<Attachment, Uri> initialGoodSources = const {},
-	PostSpanZoneData? zone,
-	Map<Attachment, ImageboardScoped<Thread>> threads = const {},
-	Map<Attachment, ImageboardScoped<Post>> posts = const {},
-	ValueChanged<ImageboardScoped<Thread>>? onThreadSelected,
-	ReplyBoxZone? replyBoxZone,
-	required Iterable<int> semanticParentIds,
-	Attachment? initialAttachment,
-	bool initiallyShowChrome = false,
-	bool initiallyShowGrid = false,
-	bool allowChrome = true,
-	bool allowContextMenu = true,
-	ValueChanged<Attachment>? onChange,
-	bool fullscreen = true,
-	bool allowScroll = true,
-	required bool heroOtherEndIsBoxFitCover,
-	List<ContextMenuAction> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
-}) => showGalleryPretagged(
-	context: context,
-	attachments: attachments.map((attachment) => TaggedAttachment(
-		attachment: attachment,
-		semanticParentIds: semanticParentIds,
-		imageboard: context.read<Imageboard>()
-	)).toList(),
-	overrideSources: overrideSources,
-	initialGoodSources: initialGoodSources,
-	zone: zone,
-	threads: threads,
-	posts: posts,
-	onThreadSelected: onThreadSelected,
-	replyBoxZone: replyBoxZone,
-	initialAttachment: initialAttachment == null ? null : TaggedAttachment(
-		attachment: initialAttachment,
-		semanticParentIds: semanticParentIds,
-		imageboard: context.read<Imageboard>()
-	),
-	initiallyShowChrome: initiallyShowChrome,
-	initiallyShowGrid: initiallyShowGrid,
-	allowChrome: allowChrome,
-	allowContextMenu: allowContextMenu,
-	onChange: onChange == null ? null : (x) => onChange(x.attachment),
-	fullscreen: fullscreen,
-	allowScroll: allowScroll,
-	heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover,
-	additionalContextMenuActionsBuilder: additionalContextMenuActionsBuilder
-);

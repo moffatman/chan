@@ -15,6 +15,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -180,17 +181,21 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		);
 	}
 
-	Future<void> _showGallery(BuildContext context, Attachment initialAttachment) async {
+	Future<void> _showGallery(BuildContext context, TaggedAttachment initialAttachment) async {
 		final imageboard = context.read<Imageboard>();
-		await showGallery(
+		await showGalleryPretagged(
 			context: context,
 			attachments: [
 				for (final item in result.data!.posts)
 					for (final attachment in (item.post?.attachments ?? item.thread?.attachments ?? const <Attachment>[]))
-						attachment
+						TaggedAttachment(
+							imageboard: imageboard,
+							attachment: attachment,
+							semanticParentIds: [-7],
+							postId: item.post?.id ?? item.thread?.id ?? 0
+						)
 			],
 			initialAttachment: initialAttachment,
-			semanticParentIds: [-7],
 			threads: {
 				for (final item in result.data!.posts)
 					if (item.thread case Thread thread)

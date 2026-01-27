@@ -288,7 +288,7 @@ class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
 	final Function(Object?, StackTrace?)? onThumbnailLoadError;
-	final ValueChanged<Attachment>? onThumbnailTap;
+	final ValueChanged<TaggedAttachment>? onThumbnailTap;
 	final Iterable<int> semanticParentIds;
 	final ThreadRowStyle style;
 	final bool showSiteIcon;
@@ -537,38 +537,42 @@ class ThreadRow extends StatelessWidget {
 				child: ClippingBox(
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
-						children: latestThread.attachments.map((attachment) => PopupAttachment(
-							attachment: attachment,
-							child: CupertinoInkwell(
-								padding: EdgeInsets.zero,
-								minimumSize: Size.zero,
-								onPressed: onThumbnailTap?.bind1(attachment),
-								child: ConstrainedBox(
-									constraints: BoxConstraints(
-										minHeight: 75,
-										maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
-									),
-									child: AttachmentThumbnail(
-										onLoadError: onThumbnailLoadError,
-										attachment: attachment,
-										mayObscure: true,
-										hero: TaggedAttachment(
-											attachment: attachment,
-											semanticParentIds: semanticParentIds,
-											imageboard: imageboard
+						children: latestThread.attachments.map((attachment) {
+							final taggedAttachment = TaggedAttachment(
+								attachment: attachment,
+								semanticParentIds: semanticParentIds,
+								postId: latestThread.id,
+								imageboard: imageboard
+							);
+							return PopupAttachment(
+								attachment: attachment,
+								child: CupertinoInkwell(
+									padding: EdgeInsets.zero,
+									minimumSize: Size.zero,
+									onPressed: onThumbnailTap?.bind1(taggedAttachment),
+									child: ConstrainedBox(
+										constraints: BoxConstraints(
+											minHeight: 75,
+											maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
 										),
-										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-										shrinkHeight: !settings.squareThumbnails,
-										hide: hideThumbnails,
-										cornerIcon: AttachmentThumbnailCornerIcon(
-											backgroundColor: backgroundColor,
-											borderColor: borderColor,
-											size: null
+										child: AttachmentThumbnail(
+											onLoadError: onThumbnailLoadError,
+											attachment: attachment,
+											mayObscure: true,
+											hero: taggedAttachment,
+											fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+											shrinkHeight: !settings.squareThumbnails,
+											hide: hideThumbnails,
+											cornerIcon: AttachmentThumbnailCornerIcon(
+												backgroundColor: backgroundColor,
+												borderColor: borderColor,
+												size: null
+											)
 										)
 									)
 								)
-							)
-						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+							);
+						}).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
 					)
 				)
 			)
@@ -659,8 +663,16 @@ class ThreadRow extends StatelessWidget {
 			)
 		];
 		Widget buildContentFocused() {
-			final attachment = latestThread.attachments.tryFirst;
-			Widget? att = attachment == null || !settings.showImages(context, thread.board) ? null : Column(
+			final taggedAttachment = switch (latestThread.attachments.tryFirst) {
+				final attachment? => TaggedAttachment(
+					attachment: attachment,
+					semanticParentIds: semanticParentIds,
+					postId: latestThread.id,
+					imageboard: imageboard
+				),
+				_ => null
+			};
+			Widget? att = taggedAttachment == null || !settings.showImages(context, thread.board) ? null : Column(
 				crossAxisAlignment: CrossAxisAlignment.stretch,
 				mainAxisSize: MainAxisSize.min,
 				mainAxisAlignment: MainAxisAlignment.center,
@@ -680,16 +692,16 @@ class ThreadRow extends StatelessWidget {
 							}
 						},
 						child: PopupAttachment(
-							attachment: attachment,
+							attachment: taggedAttachment.attachment,
 							child: GestureDetector(
-								onTap: onThumbnailTap?.bind1(attachment),
+								onTap: onThumbnailTap?.bind1(taggedAttachment),
 								child: ConstrainedBox(
 									constraints: BoxConstraints(
-										maxHeight: settings.useStaggeredCatalogGrid && attachment.type == AttachmentType.url ? settings.thumbnailSize : double.infinity
+										maxHeight: settings.useStaggeredCatalogGrid && taggedAttachment.attachment.type == AttachmentType.url ? settings.thumbnailSize : double.infinity
 									),
 									child: AttachmentThumbnail(
-										fit: attachment.type == AttachmentType.url || settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
-										attachment: attachment,
+										fit: taggedAttachment.attachment.type == AttachmentType.url || settings.catalogGridModeCropThumbnails ? BoxFit.cover : BoxFit.contain,
+										attachment: taggedAttachment.attachment,
 										expand: settings.catalogGridModeShowMoreImageIfLessText || settings.catalogGridModeAttachmentInBackground,
 										height: style == ThreadRowStyle.staggeredGrid ? settings.catalogGridHeight / 2 : null,
 										onLoadError: onThumbnailLoadError,
@@ -722,11 +734,7 @@ class ThreadRow extends StatelessWidget {
 												]
 											) : null
 										),
-										hero: TaggedAttachment(
-											attachment: attachment,
-											semanticParentIds: semanticParentIds,
-											imageboard: imageboard
-										)
+										hero: taggedAttachment
 									)
 								)
 							)

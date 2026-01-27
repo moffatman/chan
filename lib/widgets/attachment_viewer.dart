@@ -1357,6 +1357,7 @@ class AttachmentViewerController extends ChangeNotifier {
 class AttachmentViewer extends StatelessWidget {
 	final AttachmentViewerController controller;
 	final Iterable<int> semanticParentIds;
+	final int postId;
 	final ValueChanged<double>? onScaleChanged;
 	final bool fill;
 	final VoidCallback? onTap;
@@ -1376,6 +1377,7 @@ class AttachmentViewer extends StatelessWidget {
 	const AttachmentViewer({
 		required this.controller,
 		required this.semanticParentIds,
+		required this.postId,
 		this.onScaleChanged,
 		this.onTap,
 		this.fill = true,
@@ -1399,7 +1401,8 @@ class AttachmentViewer extends StatelessWidget {
 	Object get _tag => TaggedAttachment(
 		imageboard: controller.imageboard,
 		attachment: attachment,
-		semanticParentIds: semanticParentIds
+		semanticParentIds: semanticParentIds,
+		postId: postId
 	);
 
 	Widget _centeredLoader({

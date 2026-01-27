@@ -12,6 +12,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -515,6 +516,17 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		}
 	}
 
+	Map<TaggedAttachment, ImageboardScoped<HistorySearchResult>> _getAttachments() => {
+		for (final r in _listController.items)
+			for (final attachment in r.item.item.post?.attachments ?? r.item.item.thread.attachments)
+				TaggedAttachment(
+					imageboard: r.item.imageboard,
+					attachment: attachment,
+					semanticParentIds: [-11],
+					postId: r.item.item.post?.id ?? r.item.item.thread.id
+				): r.item
+	};
+
 	@override
 	Widget build(BuildContext context) {
 		final queryPattern = _queryRegex;
@@ -534,33 +546,27 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					builder: (context, _) => PostRow(
 						post: row.item.post!,
 						onThumbnailTap: (initialAttachment) {
-							final attachments = {
-								for (final w in _listController.items)
-									for (final attachment in w.item.item.post?.attachments ?? w.item.item.thread.attachments)
-										attachment: w.item
-							};
-							showGallery(
+							final attachments = _getAttachments();
+							showGalleryPretagged(
 								context: context,
 								attachments: attachments.keys.toList(),
 								threads: {
 									for (final item in attachments.entries)
-										item.key: item.value.imageboard.scope(item.value.item.thread)
+										item.key.attachment: item.value.imageboard.scope(item.value.item.thread)
 								},
 								posts: {
 									for (final item in attachments.entries)
 										if (item.value.item.post case Post post)
-											item.key: item.value.imageboard.scope(post)
+											item.key.attachment: item.value.imageboard.scope(post)
 								},
 								onThreadSelected: (t) {
 									final x = _listController.items.firstWhere((w) => w.item.imageboard == t.imageboard && w.item.item.thread.identifier == t.item.identifier).item;
 									widget.onResultSelected(x.imageboard.scope(x.item.identifier));
 								},
-								initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
+								initialAttachment: initialAttachment,
 								onChange: (attachment) {
-									final value = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value;
-									_listController.animateTo((p) => p == value);
+									_listController.animateTo((p) => p.imageboard == attachment.imageboard && p.item.identifier.board.toLowerCase() == attachment.attachment.board.toLowerCase() && (p.item.post?.id ?? p.item.thread.id) == attachment.postId);
 								},
-								semanticParentIds: [-11],
 								heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 							);
 						},
@@ -673,24 +679,22 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 							child: ThreadRow(
 								thread: row.item.thread,
 								onThumbnailTap: (attachment) {
-									final attachments = {
-										for (final w in _listController.items)
-											for (final attachment in w.item.item.post?.attachments ?? w.item.item.thread.attachments)
-												attachment: w.item
-									};
-									showGallery(
+									final attachments = _getAttachments();
+									showGalleryPretagged(
 										context: context,
 										attachments: attachments.keys.toList(),
 										initialAttachment: attachment,
-										semanticParentIds: [-11],
 										threads: {
 											for (final item in attachments.entries)
-												item.key: item.value.imageboard.scope(item.value.item.thread)
+												item.key.attachment: item.value.imageboard.scope(item.value.item.thread)
 										},
 										posts: {
 											for (final item in attachments.entries)
 												if (item.value.item.post case Post post)
-													item.key: item.value.imageboard.scope(post)
+													item.key.attachment: item.value.imageboard.scope(post)
+										},
+										onChange: (attachment) {
+											_listController.animateTo((p) => p.imageboard == attachment.imageboard && p.item.identifier.board.toLowerCase() == attachment.attachment.board.toLowerCase() && (p.item.post?.id ?? p.item.thread.id) == attachment.postId);
 										},
 										heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 									);

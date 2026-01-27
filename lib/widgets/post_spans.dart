@@ -73,7 +73,7 @@ class PostSpanRenderOptions {
 	final bool revealYourPosts;
 	final bool ensureTrailingNewline;
 	final bool hiddenWithinSpoiler;
-	final ValueChanged<Attachment>? onThumbnailTap;
+	final ValueChanged<TaggedAttachment>? onThumbnailTap;
 	final bool propagateOnThumbnailTap;
 	final void Function(Object?, StackTrace?)? onThumbnailLoadError;
 	final bool revealSpoilerImages;
@@ -125,7 +125,7 @@ class PostSpanRenderOptions {
 		bool removePostInject = false,
 		bool? ensureTrailingNewline,
 		bool? hiddenWithinSpoiler,
-		ValueChanged<Attachment>? onThumbnailTap,
+		ValueChanged<TaggedAttachment>? onThumbnailTap,
 		bool? propagateOnThumbnailTap,
 		void Function(Object?, StackTrace?)? onThumbnailLoadError,
 		bool? revealSpoilerImages,
@@ -334,12 +334,18 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 				spacing: 16,
 				runSpacing: 16,
 				children: attachments.map((attachment) {
+					final taggedAttachment = TaggedAttachment(
+						attachment: attachment,
+						semanticParentIds: stackIds,
+						imageboard: zone.imageboard,
+						postId: post?.id ?? 0 /* Only in ReplyBox weird state */
+					);
 					return PopupAttachment(
 						attachment: attachment,
 						child: CupertinoButton(
 							padding: EdgeInsets.zero,
 							minimumSize: Size.zero,
-							onPressed: options.onThumbnailTap?.bind1(attachment),
+							onPressed: options.onThumbnailTap?.bind1(taggedAttachment),
 							child: ConstrainedBox(
 								constraints: const BoxConstraints(
 									minHeight: 75
@@ -348,11 +354,7 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 									attachment: attachment,
 									revealSpoilers: options.revealSpoilerImages,
 									onLoadError: options.onThumbnailLoadError,
-									hero: TaggedAttachment(
-										attachment: attachment,
-										semanticParentIds: stackIds,
-										imageboard: zone.imageboard
-									),
+									hero: taggedAttachment,
 									fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 									shrinkHeight: !settings.squareThumbnails,
 									width: zone.imageboard.site.hasLargeInlineAttachments ? 250 : null,
@@ -1296,13 +1298,10 @@ class PostLinkSpan extends PostTerminalSpan {
 								attachments: attachments.item.map((a) => TaggedAttachment(
 									attachment: a,
 									imageboard: attachments.imageboard,
-									semanticParentIds: stackIds
+									semanticParentIds: stackIds,
+									postId: post?.id ?? 0 /* Only in ReplyBox weird state */
 								)).toList(),
-								initialAttachment: TaggedAttachment(
-									attachment: attachment,
-									imageboard: attachments.imageboard,
-									semanticParentIds: stackIds
-								),
+								initialAttachment: attachment,
 								heroOtherEndIsBoxFitCover: settings.squareThumbnails
 							);
 						}
@@ -2679,12 +2678,11 @@ class ExpandingPost extends StatelessWidget {
 									child: PostRow(
 										post: post,
 										onThumbnailTap: (attachment) {
-											showGallery(
+											showGalleryPretagged(
 												context: context,
 												attachments: [attachment],
-												semanticParentIds: zone.stackIds,
 												posts: {
-													attachment: zone.imageboard.scope(post)
+													attachment.attachment: zone.imageboard.scope(post)
 												},
 												heroOtherEndIsBoxFitCover: Settings.instance.squareThumbnails
 											);
@@ -2832,7 +2830,7 @@ TextSpan buildPostInfoRow({
 	bool interactive = true,
 	bool showPostNumber = true,
 	bool forceAbsoluteTime = false,
-	ValueChanged<Attachment>? propagatedOnThumbnailTap,
+	ValueChanged<TaggedAttachment>? propagatedOnThumbnailTap,
 	RegExp? highlightPattern
 }) {
 	final thread = zone.findThread(post.threadId);

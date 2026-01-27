@@ -637,8 +637,13 @@ class BoardPageState extends State<BoardPage> {
 				return _listController.items.firstWhere((t) => t.item.attachments.isNotEmpty);
 			});
 			final imageboard = context.read<Imageboard>();
-			final attachments = _listController.items.expand((_) => _.item.attachments).toList();
-			showGallery(
+			final attachments = _listController.items.expand((item) => item.item.attachments.map((attachment) => TaggedAttachment(
+				imageboard: imageboard,
+				attachment: attachment,
+				semanticParentIds: [widget.semanticId],
+				postId: item.item.id
+			))).toList();
+			showGalleryPretagged(
 				context: context,
 				attachments: attachments,
 				threads: {
@@ -647,14 +652,13 @@ class BoardPageState extends State<BoardPage> {
 							attachment: imageboard.scope(thread.item)
 				},
 				onThreadSelected: (t) => _onThreadSelected(t.item.identifier),
-				initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.item.attachments.any((a2) => a2.id == a.id)),
+				initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.id == a.postId),
 				onChange: (attachment) {
 					if (_listController.state?.searching ?? false) {
 						return;
 					}
-					_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
+					_listController.animateToIfOffscreen((p) => p.id == attachment.postId, alignment: 0.5);
 				},
-				semanticParentIds: [widget.semanticId],
 				initiallyShowGrid: initiallyShowGrid,
 				heroOtherEndIsBoxFitCover: true//settings.useCatalogGrid
 			);
@@ -1085,16 +1089,22 @@ class BoardPageState extends State<BoardPage> {
 						showPageNumber: options.inFilterFooter || variant.sortingMethod != null,
 						hideThumbnails: options.hideThumbnails,
 						onThumbnailTap: (initialAttachment) {
-							final attachments = _listController.items.expand((_) => _.item.attachments).toList();
+							final imageboard = context.read<Imageboard>();
+							final attachments = _listController.items.expand((item) => item.item.attachments.map((attachment) => TaggedAttachment(
+								imageboard: imageboard,
+								attachment: attachment,
+								semanticParentIds: [widget.semanticId],
+								postId: item.item.id
+							))).toList();
 							// It might not be in the list if the thread has been filtered
-							final initialAttachmentInList = attachments.tryFirstWhere((a) => a.id == initialAttachment.id);
-							showGallery(
+							final initialAttachmentInList = attachments.tryFirstWhere((a) => a.attachment.id == initialAttachment.attachment.id);
+							showGalleryPretagged(
 								context: context,
 								attachments: initialAttachmentInList == null ? [initialAttachment] : attachments,
 								threads: {
 									for (final thread in _listController.items)
 										for (final attachment in thread.item.attachments)
-											attachment: imageboard!.scope(thread.item)
+											attachment: imageboard.scope(thread.item)
 								},
 								onThreadSelected: (t) => _onThreadSelected(t.item.identifier),
 								initialAttachment: initialAttachmentInList ?? initialAttachment,
@@ -1102,9 +1112,8 @@ class BoardPageState extends State<BoardPage> {
 									if (_listController.state?.searching ?? false) {
 										return;
 									}
-									_listController.animateToIfOffscreen((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
+									_listController.animateToIfOffscreen((p) => p.board.toLowerCase() == attachment.attachment.board.toLowerCase() && p.id == attachment.postId, alignment: 0.5);
 								},
-								semanticParentIds: [widget.semanticId],
 								heroOtherEndIsBoxFitCover: useCatalogGrid ? settings.catalogGridModeCropThumbnails : settings.squareThumbnails
 							);
 						},

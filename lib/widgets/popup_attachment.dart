@@ -40,6 +40,7 @@ class PopupAttachment extends StatelessWidget {
 					child: AttachmentViewer(
 						controller: controller,
 						semanticParentIds: const [-1, -1],
+						postId: 0,
 						fill: isWithinScalerBlurrer,
 						heroOtherEndIsBoxFitCover: false
 					)

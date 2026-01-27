@@ -683,13 +683,17 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				sizeInBytes: null,
 				threadId: null
 			);
-			await showGallery(
+			await showGalleryPretagged(
 				context: context,
-				attachments: [attachment],
+				attachments: [TaggedAttachment(
+					imageboard: context.read<Imageboard>(),
+					attachment: attachment,
+					semanticParentIds: [],
+					postId: 0
+				)],
 				overrideSources: {
 					attachment: url
 				},
-				semanticParentIds: [],
 				heroOtherEndIsBoxFitCover: false
 			);
 		}
@@ -708,11 +712,15 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				sizeInBytes: null,
 				threadId: null
 			);
-			showGallery(
+			showGalleryPretagged(
 				context: context,
-				attachments: [fakeAttachment],
+				attachments: [TaggedAttachment(
+					imageboard: context.read<Imageboard>(),
+					attachment: fakeAttachment,
+					semanticParentIds: [],
+					postId: 0
+				)],
 				allowChrome: false,
-				semanticParentIds: [],
 				fullscreen: false,
 				allowScroll: false,
 				heroOtherEndIsBoxFitCover: false

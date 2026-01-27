@@ -1898,7 +1898,8 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								tag: TaggedAttachment(
 									attachment: fakeAttachment,
 									semanticParentIds: [_textFieldController.hashCode],
-									imageboard: context.read<Imageboard>()
+									imageboard: context.read<Imageboard>(),
+									postId: 0
 								),
 								flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
 									return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
@@ -1917,10 +1918,14 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								child: MediaThumbnail(uri: attachment!.file.uri, fit: BoxFit.contain)
 							),
 							onTap: () async {
-								showGallery(
-									attachments: [fakeAttachment],
+								showGalleryPretagged(
+									attachments: [TaggedAttachment(
+										attachment: fakeAttachment,
+										semanticParentIds: [_textFieldController.hashCode],
+										imageboard: context.read<Imageboard>(),
+										postId: 0
+									)],
 									context: context,
-									semanticParentIds: [_textFieldController.hashCode],
 									overrideSources: {
 										fakeAttachment: attachment!.file.uri
 									},

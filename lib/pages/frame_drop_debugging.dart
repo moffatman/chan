@@ -90,11 +90,10 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 							isSelected: false,
 							semanticParentIds: const [-99],
 							onThumbnailTap: (initialAttachment) {
-								showGallery(
+								showGalleryPretagged(
 									context: context,
 									attachments: [initialAttachment],
 									initialAttachment: initialAttachment,
-									semanticParentIds: [-99],
 									heroOtherEndIsBoxFitCover: settings.useCatalogGrid
 								);
 							}

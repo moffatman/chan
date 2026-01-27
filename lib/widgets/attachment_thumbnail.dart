@@ -23,12 +23,14 @@ class TaggedAttachment {
 	final Imageboard imageboard;
 	final Attachment attachment;
 	final Iterable<int> semanticParentIds;
+	final int postId;
 	final String _tag;
 	TaggedAttachment({
 		required this.imageboard,
 		required this.attachment,
-		required this.semanticParentIds
-	}) : _tag = '${imageboard.key}/${semanticParentIds.join('/')}/${attachment.id}/${attachment.inlineWithinPostId}';
+		required this.semanticParentIds,
+		required this.postId
+	}) : _tag = '${imageboard.key}/${semanticParentIds.join('/')}/$postId/${attachment.id}';
 
 	@override
 	bool operator == (Object other) {
