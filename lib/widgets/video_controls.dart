@@ -222,7 +222,7 @@ class _VideoControlsState extends State<VideoControls> {
 						builder: (context, _) {
 							final mutedNow = value?.volume == 0 || Settings.instance.muteAudio.value;
 							return AdaptiveIconButton(
-								icon: Icon(mutedNow ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
+								icon: Icon(mutedNow ? CupertinoIcons.volume_off : CupertinoIcons.volume_up),
 								onPressed: value == null ? null : () async {
 									if (!mutedNow) {
 										await videoPlayerController?.player.setVolume(0);
