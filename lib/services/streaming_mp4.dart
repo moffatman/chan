@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
+import 'package:chan/services/m3u8.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -73,6 +74,7 @@ class _CachingFile extends EasyListenable {
 	bool _interrupted = false;
 	final RequestPriority? priority;
 	({int fromByte, Uint8List buffer, Map<String, List<String>> headers})? endRange;
+	String Function(String)? patchFileAsString;
 
 	_CachingFile({
 		required this.client,
@@ -81,11 +83,12 @@ class _CachingFile extends EasyListenable {
 		required this.statusCode,
 		this.headers = const {},
 		this.extraCookie = '',
-		this.priority
+		this.priority,
+		this.patchFileAsString
 	});
 
 	@override
-	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, headers: $headers, extraCookie: $extraCookie priority: $priority, endRange.fromByte: ${endRange?.fromByte})';
+	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, headers: $headers, extraCookie: $extraCookie priority: $priority, endRange.fromByte: ${endRange?.fromByte}, patchFileAsString: $patchFileAsString)';
 }
 
 typedef _RawRange = ({int start, int? inclusiveEnd});
@@ -379,7 +382,12 @@ class VideoServer {
 			}
 			final file = getFile(digest);
 			final currentlyDownloading = _caches[digest];
-			if (currentlyDownloading?.completer.isCompleted == false) {
+			if (currentlyDownloading?.patchFileAsString != null) {
+				// Wait for patch to apply
+				await currentlyDownloading!.completer.future;
+				await _serveFile(request, file);
+			}
+			else if (currentlyDownloading?.completer.isCompleted == false) {
 				// File is still downloading
 				final range = _parseRange(request.headers);
 				if (range != null && range.start > (currentlyDownloading!.currentBytes + insignificantByteThreshold) && range.inclusiveEnd == null) {
@@ -424,7 +432,8 @@ class VideoServer {
 	Future<_CachingFile> _startCaching(Dio client, Uri uri, Map<String, String> headers, String extraCookie, {
 		required bool force,
 		required bool interruptible,
-		RequestPriority? priority
+		RequestPriority? priority,
+		String Function(String)? patchFileAsString
 	}) async {
 		final digest = _encodeDigest(uri);
 		final file = getFile(digest);
@@ -452,7 +461,8 @@ class VideoServer {
 					statusCode: headResponse.statusCode ?? -1,
 					headers: headers,
 					extraCookie: extraCookie,
-					priority: priority
+					priority: priority,
+					patchFileAsString: patchFileAsString
 				);
 				if (!force && stat.size == cachingFile0.totalBytes && !uri.path.endsWith('m3u8')) {
 					// File is already downloaded and filesize matches
@@ -514,7 +524,8 @@ class VideoServer {
 				statusCode: response.statusCode ?? -1,
 				headers: headers,
 				extraCookie: extraCookie,
-				priority: priority
+				priority: priority,
+				patchFileAsString: patchFileAsString
 			);
 			// cachingFile0 may have bad totalBytes from catbox HEAD (always returns 0)
 			// Also, we need to add the initial bytes to the range bytes
@@ -553,6 +564,20 @@ class VideoServer {
 					}
 					await handle.close();
 					cachingFile._cancelToken = null;
+					if (cachingFile.patchFileAsString case final patch?) {
+						try {
+							final unpatched = await file.readAsString();
+							final patched = patch(unpatched);
+							await file.writeAsString(patched, flush: true);
+							final newState = await file.stat();
+							cachingFile.currentBytes = newState.size;
+							cachingFile.totalBytes = newState.size;
+							cachingFile.endRange = null;
+						}
+						catch (e, st) {
+							Future.error(e, st); // Crashlytics
+						}
+					}
 					cachingFile.completer.complete();
 				}
 				catch (e, st) {
@@ -589,7 +614,8 @@ class VideoServer {
 		void Function(File file)? onCached,
 		void Function(int currentBytes, int totalBytes)? onProgressChanged,
 		bool force = false,
-		bool interruptible = false
+		bool interruptible = false,
+		String Function(String)? patchFileAsString
 	}) async {
 		await ensureRunning();
 		final digest = _encodeDigest(uri);
@@ -604,7 +630,8 @@ class VideoServer {
 					extraCookie,
 					force: force,
 					interruptible: interruptible,
-					priority: priority
+					priority: priority,
+					patchFileAsString: patchFileAsString
 				);
 				void listener() {
 					onProgressChanged?.call(cachingFile.currentBytes, cachingFile.totalBytes);
@@ -859,7 +886,8 @@ class StreamingMP4Conversion {
 				client: client,
 				uri: inputFile,
 				headers: headers,
-				force: force
+				force: force,
+				patchFileAsString: trimM3u8
 			);
 			final bouncedUri = VideoServer.instance.getUri(digest);
 			final joinProgress = _handleJoining(bouncedUri);
