@@ -1080,7 +1080,7 @@ packages:
     description:
       path: media_kit
       ref: main
-      resolved-ref: d86be0826ec237737c7d27b5528216862f4f111a
+      resolved-ref: e0d05c34a69ed38bc6447de919a8cacbccd051ed
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.1.11"
@@ -1089,7 +1089,7 @@ packages:
     description:
       path: "libs/android/media_kit_libs_android_video_encoders_gpl"
       ref: main
-      resolved-ref: d86be0826ec237737c7d27b5528216862f4f111a
+      resolved-ref: e0d05c34a69ed38bc6447de919a8cacbccd051ed
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.3.8"
@@ -1098,7 +1098,7 @@ packages:
     description:
       path: "libs/ios/media_kit_libs_ios_video_encoders_gpl"
       ref: main
-      resolved-ref: d86be0826ec237737c7d27b5528216862f4f111a
+      resolved-ref: e0d05c34a69ed38bc6447de919a8cacbccd051ed
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.1.5"
@@ -1107,7 +1107,7 @@ packages:
     description:
       path: "libs/macos/media_kit_libs_macos_video_encoders_gpl"
       ref: main
-      resolved-ref: d86be0826ec237737c7d27b5528216862f4f111a
+      resolved-ref: e0d05c34a69ed38bc6447de919a8cacbccd051ed
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.1.4"
@@ -1116,7 +1116,7 @@ packages:
     description:
       path: "libs/windows/media_kit_libs_windows_video_encoders_gpl"
       ref: main
-      resolved-ref: d86be0826ec237737c7d27b5528216862f4f111a
+      resolved-ref: e0d05c34a69ed38bc6447de919a8cacbccd051ed
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.0.9"
@@ -1125,7 +1125,7 @@ packages:
     description:
       path: media_kit_video
       ref: main
-      resolved-ref: d86be0826ec237737c7d27b5528216862f4f111a
+      resolved-ref: e0d05c34a69ed38bc6447de919a8cacbccd051ed
       url: "https://github.com/moffatman/media-kit.git"
     source: git
     version: "1.2.5"
