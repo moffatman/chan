@@ -463,20 +463,27 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
           let recognizer = NLLanguageRecognizer()
           // This seems to get confused with the HTML tags. So detect language without them
           let htmlPattern = /<\/?[a-z0-9]+\/?>/
-          recognizer.processString(text.replacing(htmlPattern, with: ""))
+          let strippedText = text.replacing(htmlPattern, with: "")
+          recognizer.processString(strippedText)
           guard let dominantLanguage = recognizer.dominantLanguage?.rawValue else {
             result(nil)
             return
           }
-          if dominantLanguage == toLanguage.languageCode?.identifier {
+          let simpleLanguage = detectLanguageSimple(strippedText)
+          if dominantLanguage == toLanguage.languageCode?.identifier && dominantLanguage == simpleLanguage {
             result(text)
             return
           }
           let topLanguages = recognizer.languageHypotheses(withMaximum: 3)
-          let fromLanguageCodes =
+          var fromLanguageCodes =
             ((topLanguages.values.max() ?? 1) > 0.6)
                 ? [dominantLanguage]
           : topLanguages.filter{ $0.value > 0.15 }.sorted { $0.value > $1.value }.map { $0.key.rawValue }
+          if let simpleLanguage {
+            if !fromLanguageCodes.contains(where: { $0 == simpleLanguage }) {
+              fromLanguageCodes.insert(simpleLanguage, at: 0)
+            }
+          }
           Task {
             var firstError: FlutterError?
             for fromLanguageCode in fromLanguageCodes {
