@@ -79,7 +79,7 @@ List<ContextMenuButtonItem> makeCommonContextMenuItems({
 					builder: (context, snapshot) {
 						final Widget content;
 						if (snapshot.data case String translation) {
-							return Text(translation, style: const TextStyle(fontSize: 16));
+							content = Text(translation, style: const TextStyle(fontSize: 16));
 						}
 						else if (snapshot.error case Object error) {
 							content = Text('Error: ${error.toStringDio()}');
