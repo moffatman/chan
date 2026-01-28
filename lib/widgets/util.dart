@@ -148,9 +148,8 @@ VoidCallback? wrapButtonCallback<T>(BuildContext context, FutureOr<T> Function()
 		}
 		catch (e, st) {
 			Future.error(e, st);
-			if (context.mounted) {
-				alertError(context, e, st);
-			}
+			// ignore: use_build_context_synchronously
+			alertError(context.ifMounted ?? ImageboardRegistry.instance.context!, e, st);
 		}
 	};
 }
