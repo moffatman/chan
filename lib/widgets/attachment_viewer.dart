@@ -166,9 +166,7 @@ extension on GallerySavePathOrganizing {
 		    && attachment.threadId == null
 				&& attachment.thumbnailUrl.isEmpty
 				&& this != GallerySavePathOrganizing.deprecatedNoFolder
-				&& this != GallerySavePathOrganizing.noSubfolders
-				&& this != GallerySavePathOrganizing.filesPromptLastDirectory
-				&& this != GallerySavePathOrganizing.filesPromptSaveDirectory) {
+				&& this != GallerySavePathOrganizing.noSubfolders) {
 			// This is a fake attachment used to browse random images
 			// Just put it in a host specific folder. Like catbox.moe?
 			return [
@@ -178,8 +176,6 @@ extension on GallerySavePathOrganizing {
 		switch (this) {
 			case GallerySavePathOrganizing.deprecatedNoFolder:
 			case GallerySavePathOrganizing.noSubfolders:
-			case GallerySavePathOrganizing.filesPromptLastDirectory:
-			case GallerySavePathOrganizing.filesPromptSaveDirectory:
 				return [];
 			case GallerySavePathOrganizing.boardSubfolders:
 				return [attachment.board];
@@ -216,8 +212,6 @@ extension on GallerySavePathOrganizing {
 				return null;
 			case GallerySavePathOrganizing.noSubfolders:
 			case GallerySavePathOrganizing.threadNameSubfolders:
-			case GallerySavePathOrganizing.filesPromptLastDirectory:
-			case GallerySavePathOrganizing.filesPromptSaveDirectory:
 				return rootAlbumName;
 			case GallerySavePathOrganizing.siteSubfolders:
 			case GallerySavePathOrganizing.siteAndThreadNameSubfolders:
@@ -1236,7 +1230,8 @@ class AttachmentViewerController extends ChangeNotifier {
 					context: context,
 					type: _isReallyImage ? SaveAsFileType.image : SaveAsFileType.video,
 					sourcePath: sourcePath,
-					destinationName: filename
+					destinationName: filename,
+					menuDestinations: settings.saveAsMenuDestinations
 				);
 				successful = path != null;
 			}
@@ -1265,51 +1260,31 @@ class AttachmentViewerController extends ChangeNotifier {
 						successful = true;
 					}
 					else {
-						final shouldPromptForFiles = Platform.isIOS
-							&& dir == null
-							&& (settings.gallerySavePathOrganizing == GallerySavePathOrganizing.filesPromptLastDirectory
-								|| settings.gallerySavePathOrganizing == GallerySavePathOrganizing.filesPromptSaveDirectory);
-						if (shouldPromptForFiles) {
-							final sourcePath = (await _moveToShareCache(convertForCompatibility: convertForCompatibility)).path;
-							if (!context.mounted) return null;
-							final promptDirectory = settings.gallerySavePathOrganizing == GallerySavePathOrganizing.filesPromptSaveDirectory ? destination : null;
-							final path = await saveFileAs(
-								context: context,
-								type: _isReallyImage ? SaveAsFileType.image : SaveAsFileType.video,
-								sourcePath: sourcePath,
-								destinationName: filename,
-								destination: SaveAsDestination.files,
-								destinationDir: promptDirectory
+						File source = getFile();
+						try {
+							// saveFile may modify name if there is a collision
+							filename = await saveFile(
+								sourcePath: source.path,
+								destinationDir: destination,
+								destinationSubfolders: dir != null ? [] : settings.gallerySavePathOrganizing.subfoldersFor(this),
+								destinationName: filename
 							);
-							successful = path != null;
+							_isDownloaded = true;
+							successful = true;
 						}
-						else {
-							File source = getFile();
-							try {
-								// saveFile may modify name if there is a collision
-								filename = await saveFile(
-									sourcePath: source.path,
-									destinationDir: destination,
-									destinationSubfolders: dir != null ? [] : settings.gallerySavePathOrganizing.subfoldersFor(this),
-									destinationName: filename
-								);
-								_isDownloaded = true;
-								successful = true;
+						on DirectoryNotFoundException {
+							_isDownloaded = isRedownload;
+							if (dir == null) {
+								Settings.gallerySavePathSetting.value = null;
 							}
-							on DirectoryNotFoundException {
-								_isDownloaded = isRedownload;
-								if (dir == null) {
-									Settings.gallerySavePathSetting.value = null;
-								}
-								rethrow;
+							rethrow;
+						}
+						on InsufficientPermissionException {
+							_isDownloaded = isRedownload;
+							if (dir == null) {
+								Settings.gallerySavePathSetting.value = null;
 							}
-							on InsufficientPermissionException {
-								_isDownloaded = isRedownload;
-								if (dir == null) {
-									Settings.gallerySavePathSetting.value = null;
-								}
-								rethrow;
-							}
+							rethrow;
 						}
 					}
 				}

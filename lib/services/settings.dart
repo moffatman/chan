@@ -739,11 +739,51 @@ enum GallerySavePathOrganizing {
 	@HiveField(9)
 	siteBoardAndThreadNameSubfolders,
 	@HiveField(10)
-	siteAndThreadNameSubfolders,
-	@HiveField(11)
-	filesPromptLastDirectory,
-	@HiveField(12)
-	filesPromptSaveDirectory
+	siteAndThreadNameSubfolders
+}
+
+enum FilesOpenLocation {
+	lastLocation,
+	mediaSaveDirectory,
+	organizedPath
+}
+
+FilesOpenLocation filesOpenLocationFromIndex(int index) {
+	if (index < 0 || index >= FilesOpenLocation.values.length) {
+		return FilesOpenLocation.lastLocation;
+	}
+	return FilesOpenLocation.values[index];
+}
+
+int filesOpenLocationToIndex(FilesOpenLocation location) => location.index;
+
+const List<SaveAsDestination> _defaultSaveAsMenuDestinations = [
+	SaveAsDestination.galleryNoAlbum,
+	SaveAsDestination.galleryExistingAlbum,
+	SaveAsDestination.galleryNewAlbum,
+	SaveAsDestination.files
+];
+
+List<SaveAsDestination> saveAsMenuDestinationsFromIndexes(List<int> indexes) {
+	final allowed = <SaveAsDestination>{};
+	for (final index in indexes) {
+		if (index >= 0 && index < SaveAsDestination.values.length) {
+			allowed.add(SaveAsDestination.values[index]);
+		}
+	}
+	allowed.remove(SaveAsDestination.ask);
+	if (allowed.isEmpty) {
+		return List<SaveAsDestination>.from(_defaultSaveAsMenuDestinations);
+	}
+	return _defaultSaveAsMenuDestinations.where(allowed.contains).toList();
+}
+
+List<int> saveAsMenuDestinationsToIndexes(List<SaveAsDestination> destinations) {
+	final allowed = destinations.where((destination) => destination != SaveAsDestination.ask).toSet();
+	if (allowed.isEmpty) {
+		return _defaultSaveAsMenuDestinations.map((destination) => destination.index).toList();
+	}
+	return _defaultSaveAsMenuDestinations.where(allowed.contains).map((destination) => destination.index).toList();
 }
 
 final allowedGoogleFonts = {
@@ -1266,6 +1306,10 @@ class SavedSettings extends HiveObject {
 	bool doubleTapToSeekVideo;
 	@HiveField(211)
 	bool showHotPostsInScrollbar;
+	@HiveField(212)
+	int filesOpenLocationIndex;
+	@HiveField(213, merger: OrderedSetLikePrimitiveListMerger<int>())
+	List<int> saveAsMenuDestinationIndexes;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1479,6 +1523,8 @@ class SavedSettings extends HiveObject {
 		bool? videoContextMenuInGallery,
 		bool? doubleTapToSeekVideo,
 		bool? showHotPostsInScrollbar,
+		int? filesOpenLocationIndex,
+		List<int>? saveAsMenuDestinationIndexes,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1711,7 +1757,9 @@ class SavedSettings extends HiveObject {
 		replyButtonAtBottom = replyButtonAtBottom ?? false,
 		videoContextMenuInGallery = videoContextMenuInGallery ?? false,
 		doubleTapToSeekVideo = doubleTapToSeekVideo ?? false,
-		showHotPostsInScrollbar = showHotPostsInScrollbar ?? false {
+		showHotPostsInScrollbar = showHotPostsInScrollbar ?? false,
+		filesOpenLocationIndex = filesOpenLocationIndex ?? FilesOpenLocation.lastLocation.index,
+		saveAsMenuDestinationIndexes = saveAsMenuDestinationIndexes ?? _defaultSaveAsMenuDestinations.map((destination) => destination.index).toList() {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1786,11 +1834,6 @@ class SavedSettings extends HiveObject {
 			else {
 				gallerySavePath = '${kGallerySavePathGalleryPrefix}Chance';
 			}
-		}
-		if ((!Platform.isIOS || (gallerySavePath?.startsWith(kGallerySavePathGalleryPrefix) ?? false))
-		    && (gallerySavePathOrganizing == GallerySavePathOrganizing.filesPromptLastDirectory
-		        || gallerySavePathOrganizing == GallerySavePathOrganizing.filesPromptSaveDirectory)) {
-			gallerySavePathOrganizing = GallerySavePathOrganizing.noSubfolders;
 		}
 	}
 
@@ -2247,7 +2290,7 @@ class HookedSetting<T> extends ImmutableSetting<T> {
 	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
-		other is HookedSetting &&
+		other is HookedSetting<T> &&
 		other.setting == setting &&
 		other.beforeChange == beforeChange;
 	
@@ -2758,6 +2801,22 @@ class Settings extends ChangeNotifier {
 
 	static const gallerySavePathOrganizingSetting = SavedSetting(SavedSettingsFields.gallerySavePathOrganizing);
 	GallerySavePathOrganizing get gallerySavePathOrganizing => gallerySavePathOrganizingSetting(this);
+
+	static const filesOpenLocationIndexSetting = SavedSetting(SavedSettingsFields.filesOpenLocationIndex);
+	static const filesOpenLocationSetting = MappedSetting(
+		filesOpenLocationIndexSetting,
+		filesOpenLocationFromIndex,
+		filesOpenLocationToIndex
+	);
+	FilesOpenLocation get filesOpenLocation => filesOpenLocationFromIndex(_settings.filesOpenLocationIndex);
+
+	static const saveAsMenuDestinationIndexesSetting = SavedSetting(SavedSettingsFields.saveAsMenuDestinationIndexes);
+	static final saveAsMenuDestinationsSetting = MappedSetting(
+		saveAsMenuDestinationIndexesSetting,
+		saveAsMenuDestinationsFromIndexes,
+		saveAsMenuDestinationsToIndexes
+	);
+	List<SaveAsDestination> get saveAsMenuDestinations => saveAsMenuDestinationsFromIndexes(_settings.saveAsMenuDestinationIndexes);
 
 	static const fullQualityThumbnailsSettingSetting = SavedSetting(SavedSettingsFields.fullQualityThumbnails);
 	AutoloadAttachmentsSetting get fullQualityThumbnailsSetting => fullQualityThumbnailsSettingSetting(this);

@@ -189,7 +189,8 @@ Future<String?> saveFileAs({
 	required String sourcePath,
 	required String destinationName,
 	SaveAsDestination destination = SaveAsDestination.ask,
-	String? destinationDir
+	String? destinationDir,
+	List<SaveAsDestination>? menuDestinations
 }) async {
 	Future<String?> saveToFiles() async {
 		return await _platform.invokeMethod<String>('saveFileAs', {
@@ -293,7 +294,11 @@ Future<String?> saveFileAs({
 		return null;
 	}
 
-	switch (destination) {
+	final filteredMenuDestinations = menuDestinations?.where((menuDestination) => menuDestination != SaveAsDestination.ask).toList();
+	final effectiveMenuDestinations = (filteredMenuDestinations == null || filteredMenuDestinations.isEmpty) ? null : filteredMenuDestinations;
+	final effectiveDestination = (destination == SaveAsDestination.ask && effectiveMenuDestinations?.length == 1) ? effectiveMenuDestinations!.single : destination;
+
+	switch (effectiveDestination) {
 		case SaveAsDestination.files:
 			return await saveToFiles();
 		case SaveAsDestination.galleryNoAlbum:
@@ -309,47 +314,67 @@ Future<String?> saveFileAs({
 
 	if (!context.mounted) return null;
 
+	const defaultMenuDestinations = [
+		SaveAsDestination.galleryNoAlbum,
+		SaveAsDestination.galleryExistingAlbum,
+		SaveAsDestination.galleryNewAlbum,
+		SaveAsDestination.files
+	];
+	final menuChoices = effectiveMenuDestinations ?? defaultMenuDestinations;
+
 	return await showAdaptiveDialog<String>(
 		context: context,
 		builder: (context) => AdaptiveAlertDialog(
 			title: const Text('Choose save location'),
 			actions: [
-				AdaptiveDialogAction(
-					child: const Text('Gallery (no album)'),
-					onPressed: () async {
-						await saveToGallery(null);
-						if (context.mounted) {
-							Navigator.pop(context, destinationName);
-						}
-					}
-				),
-				AdaptiveDialogAction(
-					child: const Text('Gallery (existing album)'),
-					onPressed: () async {
-						final name = await saveToExistingAlbum();
-						if (context.mounted && name != null) {
-							Navigator.pop(context, name);
-						}
-					}
-				),
-				AdaptiveDialogAction(
-					child: const Text('Gallery (new album)'),
-					onPressed: () async {
-						final name = await saveToNewAlbum();
-						if (context.mounted && name != null) {
-							Navigator.pop(context, name);
-						}
-					}
-				),
-				AdaptiveDialogAction(
-					child: const Text('Files'),
-					onPressed: () async {
-						final name = await saveToFiles();
-						if (context.mounted) {
-							Navigator.pop(context, name);
-						}
-					}
-				),
+				for (final menuDestination in menuChoices)
+					switch (menuDestination) {
+						SaveAsDestination.galleryNoAlbum => AdaptiveDialogAction(
+							child: const Text('Gallery (no album)'),
+							onPressed: () async {
+								await saveToGallery(null);
+								if (context.mounted) {
+									Navigator.pop(context, destinationName);
+								}
+							}
+						),
+						SaveAsDestination.galleryExistingAlbum => AdaptiveDialogAction(
+							child: const Text('Gallery (existing album)'),
+							onPressed: () async {
+								final name = await saveToExistingAlbum();
+								if (context.mounted && name != null) {
+									Navigator.pop(context, name);
+								}
+							}
+						),
+						SaveAsDestination.galleryNewAlbum => AdaptiveDialogAction(
+							child: const Text('Gallery (new album)'),
+							onPressed: () async {
+								final name = await saveToNewAlbum();
+								if (context.mounted && name != null) {
+									Navigator.pop(context, name);
+								}
+							}
+						),
+						SaveAsDestination.files => AdaptiveDialogAction(
+							child: const Text('Files'),
+							onPressed: () async {
+								final name = await saveToFiles();
+								if (context.mounted) {
+									Navigator.pop(context, name);
+								}
+							}
+						),
+						SaveAsDestination.ask => AdaptiveDialogAction(
+							child: const Text('Files'),
+							onPressed: () async {
+								final name = await saveToFiles();
+								if (context.mounted) {
+									Navigator.pop(context, name);
+								}
+							}
+						)
+					},
 				AdaptiveDialogAction(
 					child: const Text('Cancel'),
 					onPressed: () => Navigator.pop(context)

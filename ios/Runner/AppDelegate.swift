@@ -51,20 +51,34 @@ class MyFolderPickerDelegate : NSObject, UIDocumentPickerDelegate {
 
 class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
   private var onResult: ((Any?) -> Void)
-  init(_ onResult: @escaping ((Any) -> Void)) {
+  private var onFinish: (() -> Void)?
+  private var didFinish = false
+  init(_ onResult: @escaping ((Any) -> Void), onFinish: (() -> Void)? = nil) {
     self.onResult = onResult
+    self.onFinish = onFinish
+  }
+  
+  private func finish() {
+    if (didFinish) {
+      return
+    }
+    didFinish = true
+    onFinish?()
   }
   
   func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
     onResult(urls.first?.path)
+    finish()
   }
   
   func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentAt url: URL) {
     onResult(url.path)
+    finish()
   }
 
   func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
     onResult(nil)
+    finish()
   }
 }
 
@@ -421,13 +435,39 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         }
         let sourceUrl = URL(fileURLWithPath: sourcePath)
         if #available(iOS 14.0, *) {
+          let destinationDir = args["destinationDir"] as? String
+          var initialDirectoryUrl: URL? = nil
+          var stopAccess: (() -> Void)? = nil
+          if let destinationDir = destinationDir,
+             let bookmarkData = Data(base64Encoded: destinationDir) {
+            var isStale = false
+            var options: URL.BookmarkResolutionOptions = []
+            #if targetEnvironment(macCatalyst)
+              // NSURLBookmarkResolutionWithSecurityScope
+              options.update(with: URL.BookmarkResolutionOptions(rawValue: 1 << 10))
+            #endif
+            do {
+              let url = try URL(resolvingBookmarkData: bookmarkData, options: options, bookmarkDataIsStale: &isStale)
+              if (!isStale) {
+                initialDirectoryUrl = url
+                if (url.startAccessingSecurityScopedResource()) {
+                  stopAccess = { url.stopAccessingSecurityScopedResource() }
+                }
+              }
+            }
+            catch {
+            }
+          }
           let filePicker = UIDocumentPickerViewController(forExporting: [sourceUrl], asCopy: false)
           filePicker.shouldShowFileExtensions = true
-          let delegate = MyFileExportDelegate() { (value: Any) in
+          if let initialDirectoryUrl {
+            filePicker.directoryURL = initialDirectoryUrl
+          }
+          let delegate = MyFileExportDelegate({ (value: Any) in
             result(value)
             self.garbageKeepAlive.removeAll(where: { $0.isEqual(filePicker.delegate) })
             self.garbageKeepAlive.removeAll(where: { $0.isEqual(filePicker) })
-          }
+          }, onFinish: stopAccess)
           filePicker.delegate = delegate
           self.garbageKeepAlive.append(delegate)
           self.garbageKeepAlive.append(filePicker)

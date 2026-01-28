@@ -25,6 +25,34 @@ import 'package:provider/provider.dart';
 
 bool _exportIncludeSavedAttachments = true;
 
+ImmutableSetting<bool> _saveAsMenuOptionSetting(SaveAsDestination destination) {
+	return CustomImmutableSetting(
+		reader: (context) => Settings.saveAsMenuDestinationsSetting.read(context).contains(destination),
+		watcher: (context) => Settings.saveAsMenuDestinationsSetting.watch(context).contains(destination),
+		writer: (context, enabled) async {
+			final current = Settings.saveAsMenuDestinationsSetting.read(context);
+			if (!enabled && current.contains(destination) && current.length <= 1) {
+				showToast(
+					context: context,
+					icon: CupertinoIcons.exclamationmark_triangle,
+					message: 'Keep at least one save-as option'
+				);
+				return;
+			}
+			final next = current.toList();
+			if (enabled) {
+				if (!next.contains(destination)) {
+					next.add(destination);
+				}
+			}
+			else {
+				next.remove(destination);
+			}
+			await Settings.saveAsMenuDestinationsSetting.write(context, next);
+		}
+	);
+}
+
 class SettingsCachePanel extends StatefulWidget {
 	const SettingsCachePanel({
 		Key? key
@@ -535,8 +563,6 @@ final dataSettings = [
 						GallerySavePathOrganizing.siteBoardAndThreadSubfolders
 							|| GallerySavePathOrganizing.siteBoardAndThreadNameSubfolders
 							|| GallerySavePathOrganizing.siteAndThreadNameSubfolders => (GallerySavePathOrganizing.siteSubfolders, 'Per-site'),
-						GallerySavePathOrganizing.filesPromptLastDirectory
-							|| GallerySavePathOrganizing.filesPromptSaveDirectory => (GallerySavePathOrganizing.noSubfolders, 'One album'),
 						_ => null
 					};
 					if (newSavePathOrganizing != null) {
@@ -583,10 +609,6 @@ final dataSettings = [
 				setting: Settings.gallerySavePathOrganizingSetting,
 				children: {
 					GallerySavePathOrganizing.noSubfolders: (null, usingGallery ? (albumName.isEmpty ? 'No album' : '"$albumName" album') : 'No subfolders'),
-					if (!usingGallery && Platform.isIOS) ...{
-						GallerySavePathOrganizing.filesPromptLastDirectory: (null, 'Prompt at last directory'),
-						GallerySavePathOrganizing.filesPromptSaveDirectory: (null, 'Prompt at save directory')
-					},
 					GallerySavePathOrganizing.siteSubfolders: (null, usingGallery ? 'Per-site albums' : 'Per-site subfolders'),
 					GallerySavePathOrganizing.boardSubfolders: (null, usingGallery ? 'Per-board albums' : 'Per-board subfolders'),
 					if (!usingGallery) ...{
@@ -618,6 +640,62 @@ final dataSettings = [
 				}
 			);
 		}
+	),
+	SettingBuilder(
+		otherSetting: Settings.gallerySavePathSetting,
+		builder: (gallerySavePath) {
+			final usingFiles = gallerySavePath != null
+				&& !gallerySavePath.startsWith(kGallerySavePathGalleryPrefix);
+			return SegmentedSettingWidget(
+				description: 'Files open location',
+				icon: CupertinoIcons.folder_open,
+				setting: HookedSetting(
+					setting: Settings.filesOpenLocationSetting,
+					beforeChange: (context, oldValue, newValue) {
+						if ((newValue == FilesOpenLocation.mediaSaveDirectory
+								|| newValue == FilesOpenLocation.organizedPath)
+							&& !usingFiles) {
+							if (context.mounted) {
+								showToast(
+									context: context,
+									icon: CupertinoIcons.folder,
+									message: 'Set media save directory to Files first'
+								);
+							}
+							return Future.value(false);
+						}
+						return Future.value(true);
+					}
+				),
+				children: {
+					FilesOpenLocation.lastLocation: (null, 'Last location'),
+					FilesOpenLocation.mediaSaveDirectory: (null, 'Media save directory'),
+					FilesOpenLocation.organizedPath: (null, 'Organized path')
+				}
+			);
+		}
+	),
+	PopupSubpageSettingWidget(
+		description: 'Save-as menu options',
+		icon: CupertinoIcons.square_list,
+		settings: [
+			SwitchSettingWidget(
+				description: 'Gallery (no album)',
+				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryNoAlbum)
+			),
+			SwitchSettingWidget(
+				description: 'Gallery (existing album)',
+				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryExistingAlbum)
+			),
+			SwitchSettingWidget(
+				description: 'Gallery (new album)',
+				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryNewAlbum)
+			),
+			SwitchSettingWidget(
+				description: 'Files',
+				setting: _saveAsMenuOptionSetting(SaveAsDestination.files)
+			)
+		]
 	),
 	const SwitchSettingWidget(
 		description: 'Use cloud captcha solver',
