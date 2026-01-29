@@ -2524,6 +2524,41 @@ class SavedSettingsFields {
     fieldName: 'showHotPostsInScrollbar',
     merger: PrimitiveMerger(),
   );
+  static int getFilesOpenLocationIndex(SavedSettings x) =>
+      x.filesOpenLocationIndex;
+  static void setFilesOpenLocationIndex(SavedSettings x, int v) =>
+      x.filesOpenLocationIndex = v;
+  static const filesOpenLocationIndex = HiveFieldAdapter<SavedSettings, int>(
+    getter: getFilesOpenLocationIndex,
+    setter: setFilesOpenLocationIndex,
+    fieldNumber: 212,
+    fieldName: 'filesOpenLocationIndex',
+    merger: PrimitiveMerger(),
+  );
+  static List<int> getSaveAsMenuDestinationIndexes(SavedSettings x) =>
+      x.saveAsMenuDestinationIndexes;
+  static void setSaveAsMenuDestinationIndexes(SavedSettings x, List<int> v) =>
+      x.saveAsMenuDestinationIndexes = v;
+  static const saveAsMenuDestinationIndexes =
+      HiveFieldAdapter<SavedSettings, List<int>>(
+    getter: getSaveAsMenuDestinationIndexes,
+    setter: setSaveAsMenuDestinationIndexes,
+    fieldNumber: 213,
+    fieldName: 'saveAsMenuDestinationIndexes',
+    merger: OrderedSetLikePrimitiveListMerger<int>(),
+  );
+  static String? getFilesOpenLocationCustomDir(SavedSettings x) =>
+      x.filesOpenLocationCustomDir;
+  static void setFilesOpenLocationCustomDir(SavedSettings x, String? v) =>
+      x.filesOpenLocationCustomDir = v;
+  static const filesOpenLocationCustomDir =
+      HiveFieldAdapter<SavedSettings, String?>(
+    getter: getFilesOpenLocationCustomDir,
+    setter: setFilesOpenLocationCustomDir,
+    fieldNumber: 214,
+    fieldName: 'filesOpenLocationCustomDir',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2735,7 +2770,10 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     208: SavedSettingsFields.replyButtonAtBottom,
     209: SavedSettingsFields.videoContextMenuInGallery,
     210: SavedSettingsFields.doubleTapToSeekVideo,
-    211: SavedSettingsFields.showHotPostsInScrollbar
+    211: SavedSettingsFields.showHotPostsInScrollbar,
+    212: SavedSettingsFields.filesOpenLocationIndex,
+    213: SavedSettingsFields.saveAsMenuDestinationIndexes,
+    214: SavedSettingsFields.filesOpenLocationCustomDir
   };
 
   @override
@@ -2961,13 +2999,16 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       videoContextMenuInGallery: fields[209] as bool?,
       doubleTapToSeekVideo: fields[210] as bool?,
       showHotPostsInScrollbar: fields[211] as bool?,
+      filesOpenLocationIndex: fields[212] as int?,
+      saveAsMenuDestinationIndexes: (fields[213] as List?)?.cast<int>(),
+      filesOpenLocationCustomDir: fields[214] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(199)
+      ..writeByte(202)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3365,7 +3406,13 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(210)
       ..write(obj.doubleTapToSeekVideo)
       ..writeByte(211)
-      ..write(obj.showHotPostsInScrollbar);
+      ..write(obj.showHotPostsInScrollbar)
+      ..writeByte(212)
+      ..write(obj.filesOpenLocationIndex)
+      ..writeByte(213)
+      ..write(obj.saveAsMenuDestinationIndexes)
+      ..writeByte(214)
+      ..write(obj.filesOpenLocationCustomDir);
   }
 
   @override

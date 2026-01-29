@@ -25,6 +25,34 @@ import 'package:provider/provider.dart';
 
 bool _exportIncludeSavedAttachments = true;
 
+ImmutableSetting<bool> _saveAsMenuOptionSetting(SaveAsDestination destination) {
+	return CustomImmutableSetting(
+		reader: (context) => Settings.saveAsMenuDestinationsSetting.read(context).contains(destination),
+		watcher: (context) => Settings.saveAsMenuDestinationsSetting.watch(context).contains(destination),
+		writer: (context, enabled) async {
+			final current = Settings.saveAsMenuDestinationsSetting.read(context);
+			if (!enabled && current.contains(destination) && current.length <= 1) {
+				showToast(
+					context: context,
+					icon: CupertinoIcons.exclamationmark_triangle,
+					message: 'Keep at least one save-as option'
+				);
+				return;
+			}
+			final next = current.toList();
+			if (enabled) {
+				if (!next.contains(destination)) {
+					next.add(destination);
+				}
+			}
+			else {
+				next.remove(destination);
+			}
+			await Settings.saveAsMenuDestinationsSetting.write(context, next);
+		}
+	);
+}
+
 class SettingsCachePanel extends StatefulWidget {
 	const SettingsCachePanel({
 		Key? key
@@ -537,12 +565,26 @@ final dataSettings = [
 							|| GallerySavePathOrganizing.siteAndThreadNameSubfolders => (GallerySavePathOrganizing.siteSubfolders, 'Per-site'),
 						_ => null
 					};
+					final filesOpenLocation = Settings.filesOpenLocationSetting.read(context);
+					final needsFilesOpenLocationReset = filesOpenLocation == FilesOpenLocation.mediaSaveDirectory
+						|| filesOpenLocation == FilesOpenLocation.organizedPath;
 					if (newSavePathOrganizing != null) {
 						final reallyChange = await confirm(context, 'Warning', content: 'Your current save path organizing structure is not compatible with gallery saving. It will be changed to ${newSavePathOrganizing.$2}');
 						if (!reallyChange || !context.mounted) {
 							return;
 						}
+					}
+					if (needsFilesOpenLocationReset) {
+						final reallyChange = await confirm(context, 'Warning', content: 'Your current files open location is not compatible with gallery saving. It will be changed to Last location.');
+						if (!reallyChange || !context.mounted) {
+							return;
+						}
+					}
+					if (newSavePathOrganizing != null) {
 						Settings.gallerySavePathOrganizingSetting.write(context, newSavePathOrganizing.$1);
+					}
+					if (needsFilesOpenLocationReset) {
+						Settings.filesOpenLocationSetting.write(context, FilesOpenLocation.lastLocation);
 					}
 				}
 				setPath(newPath);
@@ -612,6 +654,75 @@ final dataSettings = [
 				}
 			);
 		}
+	),
+	SettingBuilder(
+		otherSetting: Settings.gallerySavePathSetting,
+		builder: (gallerySavePath) {
+			final usingFiles = gallerySavePath != null
+				&& !gallerySavePath.startsWith(kGallerySavePathGalleryPrefix);
+			return SegmentedSettingWidget(
+				description: 'Files open location',
+				icon: CupertinoIcons.folder_open,
+				setting: HookedSetting(
+					setting: Settings.filesOpenLocationSetting,
+					beforeChange: (context, oldValue, newValue) async {
+						if ((newValue == FilesOpenLocation.mediaSaveDirectory
+								|| newValue == FilesOpenLocation.organizedPath)
+							&& !usingFiles) {
+							if (context.mounted) {
+								showToast(
+									context: context,
+									icon: CupertinoIcons.folder,
+									message: 'Set media save directory to Files first'
+								);
+							}
+							return false;
+						}
+						if (newValue == FilesOpenLocation.custom) {
+							final directory = await pickDirectory();
+							if (!context.mounted) {
+								return false;
+							}
+							if (directory == null) {
+								return false;
+							}
+							await Settings.filesOpenLocationCustomDirSetting.write(context, directory);
+						}
+						return true;
+					}
+				),
+				children: {
+					FilesOpenLocation.lastLocation: (null, 'Last location'),
+					FilesOpenLocation.custom: (null, 'Custom'),
+					if (usingFiles)
+						FilesOpenLocation.mediaSaveDirectory: (null, 'Media save directory'),
+					if (usingFiles)
+						FilesOpenLocation.organizedPath: (null, 'Organized path')
+				}
+			);
+		}
+	),
+	PopupSubpageSettingWidget(
+		description: 'Save-as menu options',
+		icon: CupertinoIcons.square_list,
+		settings: [
+			SwitchSettingWidget(
+				description: 'Gallery (no album)',
+				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryNoAlbum)
+			),
+			SwitchSettingWidget(
+				description: 'Gallery (existing album)',
+				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryExistingAlbum)
+			),
+			SwitchSettingWidget(
+				description: 'Gallery (new album)',
+				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryNewAlbum)
+			),
+			SwitchSettingWidget(
+				description: 'Files',
+				setting: _saveAsMenuOptionSetting(SaveAsDestination.files)
+			)
+		]
 	),
 	const SwitchSettingWidget(
 		description: 'Use cloud captcha solver',

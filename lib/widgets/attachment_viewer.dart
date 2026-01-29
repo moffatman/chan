@@ -1226,11 +1226,36 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (!context.mounted) {
 					return null;
 				}
+				final gallerySavePath = Settings.gallerySavePathSetting.value;
+				final filesSavePath = (gallerySavePath != null && !gallerySavePath.startsWith(kGallerySavePathGalleryPrefix))
+					? gallerySavePath
+					: null;
+				String? saveAsDestinationDir;
+				List<String> saveAsDestinationSubfolders = const [];
+				switch (settings.filesOpenLocation) {
+					case FilesOpenLocation.mediaSaveDirectory:
+						saveAsDestinationDir = filesSavePath;
+						break;
+					case FilesOpenLocation.organizedPath:
+						saveAsDestinationDir = filesSavePath;
+						if (saveAsDestinationDir != null) {
+							saveAsDestinationSubfolders = settings.gallerySavePathOrganizing.subfoldersFor(this);
+						}
+						break;
+					case FilesOpenLocation.custom:
+						saveAsDestinationDir = settings.filesOpenLocationCustomDir;
+						break;
+					case FilesOpenLocation.lastLocation:
+						break;
+				}
 				final path = await saveFileAs(
 					context: context,
 					type: _isReallyImage ? SaveAsFileType.image : SaveAsFileType.video,
 					sourcePath: sourcePath,
-					destinationName: filename
+					destinationName: filename,
+					destinationDir: saveAsDestinationDir,
+					destinationSubfolders: saveAsDestinationSubfolders,
+					menuDestinations: settings.saveAsMenuDestinations
 				);
 				successful = path != null;
 			}
