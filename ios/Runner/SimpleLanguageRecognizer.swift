@@ -9,9 +9,6 @@ private enum SimpleLanguage: String, CaseIterable, Hashable {
     case korean              = "ko"
     // Cyrillic (Unicode cannot disambiguate ru vs uk)
     case russian             = "ru"
-    case ukrainian           = "uk"
-    // Latin-script bucket (covers en/fr/de/…)
-    case latin               = "en"
 }
 
 private func languageForBMPScalar(_ v: UInt32) -> SimpleLanguage? {
@@ -46,10 +43,6 @@ private func languageForBMPScalar(_ v: UInt32) -> SimpleLanguage? {
     case 0x0400...0x052F:
         return .russian
 
-    // Latin (all Latin-script languages)
-    case 0x0000...0x024F, 0x1E00...0x1EFF:
-        return .latin
-
     default:
         return nil
     }
@@ -67,10 +60,6 @@ private struct UnicodeSanityCounts {
         if (map.isEmpty) {
             return nil
         }
-        if (map.count == 1) {
-            return map.first?.key.rawValue
-        }
-        map.removeValue(forKey: .latin)
         if (map.count == 1) {
             return map.first?.key.rawValue
         }
