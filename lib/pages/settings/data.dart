@@ -31,11 +31,12 @@ ImmutableSetting<bool> _saveAsMenuOptionSetting(SaveAsDestination destination) {
 		watcher: (context) => Settings.saveAsMenuDestinationsSetting.watch(context).contains(destination),
 		writer: (context, enabled) async {
 			final current = Settings.saveAsMenuDestinationsSetting.read(context);
-			if (!enabled && current.contains(destination) && current.length <= 1) {
+			final availableDestinations = Platform.isIOS ? defaultMenuDestinations : const [SaveAsDestination.files];
+			if (!enabled && current.contains(destination) && current.where(availableDestinations.contains).length <= 1) {
 				showToast(
 					context: context,
 					icon: CupertinoIcons.exclamationmark_triangle,
-					message: 'Keep at least one save-as option'
+					message: 'At least one save-as option must be enabled'
 				);
 				return;
 			}
@@ -706,18 +707,20 @@ final dataSettings = [
 		description: 'Save-as menu options',
 		icon: CupertinoIcons.square_list,
 		settings: [
-			SwitchSettingWidget(
-				description: 'Gallery (no album)',
-				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryNoAlbum)
-			),
-			SwitchSettingWidget(
-				description: 'Gallery (existing album)',
-				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryExistingAlbum)
-			),
-			SwitchSettingWidget(
-				description: 'Gallery (new album)',
-				setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryNewAlbum)
-			),
+			if (Platform.isIOS) ...[
+				SwitchSettingWidget(
+					description: 'Gallery (no album)',
+					setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryNoAlbum)
+				),
+				SwitchSettingWidget(
+					description: 'Gallery (existing album)',
+					setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryExistingAlbum)
+				),
+				SwitchSettingWidget(
+					description: 'Gallery (new album)',
+					setting: _saveAsMenuOptionSetting(SaveAsDestination.galleryNewAlbum)
+				)
+			],
 			SwitchSettingWidget(
 				description: 'Files',
 				setting: _saveAsMenuOptionSetting(SaveAsDestination.files)
