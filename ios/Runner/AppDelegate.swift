@@ -436,6 +436,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         let sourceUrl = URL(fileURLWithPath: sourcePath)
         if #available(iOS 14.0, *) {
           let destinationDir = args["destinationDir"] as? String
+          let destinationSubfolders = args["destinationSubfolders"] as? [String] ?? []
           var initialDirectoryUrl: URL? = nil
           var stopAccess: (() -> Void)? = nil
           if let destinationDir = destinationDir,
@@ -452,6 +453,18 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
                 initialDirectoryUrl = url
                 if (url.startAccessingSecurityScopedResource()) {
                   stopAccess = { url.stopAccessingSecurityScopedResource() }
+                }
+                if (!destinationSubfolders.isEmpty) {
+                  var folderUrl = url
+                  for subfolder in destinationSubfolders {
+                    folderUrl = folderUrl.appendingPathComponent(subfolder, isDirectory: true)
+                  }
+                  do {
+                    try FileManager.default.createDirectory(at: folderUrl, withIntermediateDirectories: true)
+                    initialDirectoryUrl = folderUrl
+                  }
+                  catch {
+                  }
                 }
               }
             }

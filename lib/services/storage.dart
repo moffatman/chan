@@ -190,13 +190,16 @@ Future<String?> saveFileAs({
 	required String destinationName,
 	SaveAsDestination destination = SaveAsDestination.ask,
 	String? destinationDir,
+	List<String> destinationSubfolders = const [],
 	List<SaveAsDestination>? menuDestinations
 }) async {
 	Future<String?> saveToFiles() async {
 		return await _platform.invokeMethod<String>('saveFileAs', {
 			'sourcePath': sourcePath,
 			'destinationName': destinationName,
-			if (destinationDir != null) 'destinationDir': destinationDir
+			if (destinationDir != null) 'destinationDir': destinationDir,
+			if (destinationDir != null && destinationSubfolders.isNotEmpty)
+				'destinationSubfolders': destinationSubfolders
 		});
 	}
 
