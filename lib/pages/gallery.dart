@@ -528,7 +528,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		final String? dir;
 		bool force = false;
 		if (saveAs) {
-			dir = await pickGallerySavePath(context);
+			dir = await pickGallerySavePath(context, menuDestinations: Settings.instance.saveAsMenuDestinations);
 			if (!mounted || dir == null) {
 				return;
 			}

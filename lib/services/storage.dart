@@ -19,104 +19,131 @@ Future<String?> pickDirectory() async {
 	}
 }
 
-Future<String?> pickGallerySavePath(BuildContext context) async {
+Future<String?> pickGallerySavePath(BuildContext context, {List<SaveAsDestination>? menuDestinations}) async {
 	if (Platform.isIOS) {
+		final menuChoices = (menuDestinations == null || menuDestinations.isEmpty) ? defaultMenuDestinations : menuDestinations;
+		Future<String?> pickForDestination(SaveAsDestination menuDestination) async {
+			switch (menuDestination) {
+				case SaveAsDestination.galleryNoAlbum:
+					return kGallerySavePathGalleryPrefix;
+				case SaveAsDestination.galleryExistingAlbum:
+					final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
+					if (!context.mounted) {
+						return null;
+					}
+					if (existingAlbums.isEmpty) {
+						throw Exception('No albums found');
+					}
+					final albumName = await showAdaptiveModalPopup<String>(
+						context: context,
+						builder: (context) => AdaptiveActionSheet(
+							title: const Text('Choose existing album'),
+							actions: [
+								for (final album in existingAlbums) AdaptiveActionSheetAction(
+									child: Text(album.name),
+									onPressed: () => Navigator.pop(context, album.name)
+								)
+							],
+							cancelButton: AdaptiveActionSheetAction(
+								child: const Text('Cancel'),
+								onPressed: () => Navigator.pop(context)
+							)
+						)
+					);
+					if (context.mounted && albumName != null) {
+						return '$kGallerySavePathGalleryPrefix${Uri.encodeFull(albumName)}';
+					}
+					return null;
+				case SaveAsDestination.galleryNewAlbum:
+					final controller = TextEditingController();
+					final useName = await showAdaptiveDialog<bool>(
+						context: context,
+						builder: (context) => StatefulBuilder(
+							builder: (context, setDialogState) => AdaptiveAlertDialog(
+								title: const Text('New album'),
+								content: AdaptiveTextField(
+									controller: controller,
+									autofocus: true,
+									placeholder: 'Album name',
+									smartDashesType: SmartDashesType.disabled,
+									smartQuotesType: SmartQuotesType.disabled,
+									onChanged: (s) {
+										setDialogState(() {});
+									},
+									onSubmitted: (s) {
+										if (s.isNotEmpty) {
+											Navigator.pop(context, true);
+										}
+									}
+								),
+								actions: [
+									AdaptiveDialogAction(
+										onPressed: controller.text.isNotEmpty ? () => Navigator.pop(context, true) : null,
+										child: const Text('OK')
+									),
+									AdaptiveDialogAction(
+										onPressed: () => Navigator.pop(context),
+										child: const Text('Cancel')
+									)
+								]
+							)
+						)
+					);
+					final enteredName = controller.text;
+					controller.dispose();
+					if (context.mounted && useName == true) {
+						if (enteredName.isEmpty) {
+							throw Exception('No album name entered');
+						}
+						return '$kGallerySavePathGalleryPrefix${Uri.encodeFull(enteredName)}';
+					}
+					return null;
+				case SaveAsDestination.files:
+					return await pickDirectory();
+			}
+		}
+		if (menuChoices.length == 1) {
+			return await pickForDestination(menuChoices.single);
+		}
 		return await showAdaptiveDialog<String>(
 			context: context,
 			builder: (context) => AdaptiveAlertDialog(
 				title: const Text('Choose save location'),
 				actions: [
-					AdaptiveDialogAction(
-						child: const Text('Gallery (no album)'),
-						onPressed: () => Navigator.pop(context, kGallerySavePathGalleryPrefix)
-					),
-					AdaptiveDialogAction(
-						child: const Text('Gallery (existing album)'),
-						onPressed: () async {
-							final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
-							if (!context.mounted) {
-								return;
-							}
-							if (existingAlbums.isEmpty) {
-								throw Exception('No albums found');
-							}
-							final albumName = await showAdaptiveModalPopup<String>(
-								context: context,
-								builder: (context) => AdaptiveActionSheet(
-									title: const Text('Choose existing album'),
-									actions: [
-										for (final album in existingAlbums) AdaptiveActionSheetAction(
-											child: Text(album.name),
-											onPressed: () => Navigator.pop(context, album.name)
-										)
-									],
-									cancelButton: AdaptiveActionSheetAction(
-										child: const Text('Cancel'),
-										onPressed: () => Navigator.pop(context)
-									)
-								)
-							);
-							if (context.mounted && albumName != null) {
-								Navigator.pop(context, '$kGallerySavePathGalleryPrefix${Uri.encodeFull(albumName)}');
-							}
-						}
-					),
-					AdaptiveDialogAction(
-						child: const Text('Gallery (new album)'),
-						onPressed: () async {
-							final controller = TextEditingController();
-							final useName = await showAdaptiveDialog<bool>(
-								context: context,
-								builder: (context) => StatefulBuilder(
-									builder: (context, setDialogState) => AdaptiveAlertDialog(
-										title: const Text('New album'),
-										content: AdaptiveTextField(
-											controller: controller,
-											autofocus: true,
-											placeholder: 'Album name',
-											smartDashesType: SmartDashesType.disabled,
-											smartQuotesType: SmartQuotesType.disabled,
-											onChanged: (s) {
-												setDialogState(() {});
-											},
-											onSubmitted: (s) {
-												if (s.isNotEmpty) {
-													Navigator.pop(context, true);
-												}
-											}
-										),
-										actions: [
-											AdaptiveDialogAction(
-												onPressed: controller.text.isNotEmpty ? () => Navigator.pop(context, true) : null,
-												child: const Text('OK')
-											),
-											AdaptiveDialogAction(
-												onPressed: () => Navigator.pop(context),
-												child: const Text('Cancel')
-											)
-										]
-									)
-								)
-							);
-							final enteredName = controller.text;
-							controller.dispose();
-							if (context.mounted && useName == true) {
-								if (enteredName.isEmpty) {
-									throw Exception('No album name entered');
+					for (final menuDestination in menuChoices)
+						switch (menuDestination) {
+							SaveAsDestination.galleryNoAlbum => AdaptiveDialogAction(
+								child: const Text('Gallery (no album)'),
+								onPressed: () => Navigator.pop(context, kGallerySavePathGalleryPrefix)
+							),
+							SaveAsDestination.galleryExistingAlbum => AdaptiveDialogAction(
+								child: const Text('Gallery (existing album)'),
+								onPressed: () async {
+									final path = await pickForDestination(menuDestination);
+									if (context.mounted && path != null) {
+										Navigator.pop(context, path);
+									}
 								}
-								Navigator.pop(context, '$kGallerySavePathGalleryPrefix${Uri.encodeFull(enteredName)}');
-							}
-						}
-					),
-					AdaptiveDialogAction(
-						child: const Text('Files'),
-						onPressed: () async {
-							final directory = await pickDirectory();
-							if (context.mounted) {
-								Navigator.pop(context, directory);
-							}
-						}
-					),
+							),
+							SaveAsDestination.galleryNewAlbum => AdaptiveDialogAction(
+								child: const Text('Gallery (new album)'),
+								onPressed: () async {
+									final path = await pickForDestination(menuDestination);
+									if (context.mounted && path != null) {
+										Navigator.pop(context, path);
+									}
+								}
+							),
+							SaveAsDestination.files => AdaptiveDialogAction(
+								child: const Text('Files'),
+								onPressed: () async {
+									final path = await pickForDestination(menuDestination);
+									if (context.mounted) {
+										Navigator.pop(context, path);
+									}
+								}
+							)
+						},
 					AdaptiveDialogAction(
 						child: const Text('Cancel'),
 						onPressed: () => Navigator.pop(context)
@@ -176,19 +203,25 @@ enum SaveAsFileType {
 }
 
 enum SaveAsDestination {
-	ask,
 	galleryNoAlbum,
 	galleryExistingAlbum,
 	galleryNewAlbum,
 	files
 }
 
+const List<SaveAsDestination> defaultMenuDestinations = [
+	SaveAsDestination.galleryNoAlbum,
+	SaveAsDestination.galleryExistingAlbum,
+	SaveAsDestination.galleryNewAlbum,
+	SaveAsDestination.files
+];
+
 Future<String?> saveFileAs({
 	required BuildContext context,
 	required SaveAsFileType type,
 	required String sourcePath,
 	required String destinationName,
-	SaveAsDestination destination = SaveAsDestination.ask,
+	SaveAsDestination? destination,
 	String? destinationDir,
 	List<String> destinationSubfolders = const [],
 	List<SaveAsDestination>? menuDestinations
@@ -297,33 +330,24 @@ Future<String?> saveFileAs({
 		return null;
 	}
 
-	final filteredMenuDestinations = menuDestinations?.where((menuDestination) => menuDestination != SaveAsDestination.ask).toList();
-	final effectiveMenuDestinations = (filteredMenuDestinations == null || filteredMenuDestinations.isEmpty) ? null : filteredMenuDestinations;
-	final effectiveDestination = (destination == SaveAsDestination.ask && effectiveMenuDestinations?.length == 1) ? effectiveMenuDestinations!.single : destination;
+	final menuChoices = (menuDestinations == null || menuDestinations.isEmpty) ? defaultMenuDestinations : menuDestinations;
+	final effectiveDestination = (destination == null && menuChoices.length == 1) ? menuChoices.single : destination;
 
-	switch (effectiveDestination) {
-		case SaveAsDestination.files:
-			return await saveToFiles();
-		case SaveAsDestination.galleryNoAlbum:
-			await saveToGallery(null);
-			return destinationName;
-		case SaveAsDestination.galleryExistingAlbum:
-			return await saveToExistingAlbum();
-		case SaveAsDestination.galleryNewAlbum:
-			return await saveToNewAlbum();
-		case SaveAsDestination.ask:
-			break;
+	if (effectiveDestination != null) {
+		switch (effectiveDestination) {
+			case SaveAsDestination.files:
+				return await saveToFiles();
+			case SaveAsDestination.galleryNoAlbum:
+				await saveToGallery(null);
+				return destinationName;
+			case SaveAsDestination.galleryExistingAlbum:
+				return await saveToExistingAlbum();
+			case SaveAsDestination.galleryNewAlbum:
+				return await saveToNewAlbum();
+		}
 	}
 
 	if (!context.mounted) return null;
-
-	const defaultMenuDestinations = [
-		SaveAsDestination.galleryNoAlbum,
-		SaveAsDestination.galleryExistingAlbum,
-		SaveAsDestination.galleryNewAlbum,
-		SaveAsDestination.files
-	];
-	final menuChoices = effectiveMenuDestinations ?? defaultMenuDestinations;
 
 	return await showAdaptiveDialog<String>(
 		context: context,
@@ -360,15 +384,6 @@ Future<String?> saveFileAs({
 							}
 						),
 						SaveAsDestination.files => AdaptiveDialogAction(
-							child: const Text('Files'),
-							onPressed: () async {
-								final name = await saveToFiles();
-								if (context.mounted) {
-									Navigator.pop(context, name);
-								}
-							}
-						),
-						SaveAsDestination.ask => AdaptiveDialogAction(
 							child: const Text('Files'),
 							onPressed: () async {
 								final name = await saveToFiles();

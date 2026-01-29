@@ -758,12 +758,7 @@ FilesOpenLocation filesOpenLocationFromIndex(int index) {
 
 int filesOpenLocationToIndex(FilesOpenLocation location) => location.index;
 
-const List<SaveAsDestination> _defaultSaveAsMenuDestinations = [
-	SaveAsDestination.galleryNoAlbum,
-	SaveAsDestination.galleryExistingAlbum,
-	SaveAsDestination.galleryNewAlbum,
-	SaveAsDestination.files
-];
+const List<SaveAsDestination> _defaultSaveAsMenuDestinations = defaultMenuDestinations;
 
 List<SaveAsDestination> saveAsMenuDestinationsFromIndexes(List<int> indexes) {
 	final allowed = <SaveAsDestination>{};
@@ -772,7 +767,6 @@ List<SaveAsDestination> saveAsMenuDestinationsFromIndexes(List<int> indexes) {
 			allowed.add(SaveAsDestination.values[index]);
 		}
 	}
-	allowed.remove(SaveAsDestination.ask);
 	if (allowed.isEmpty) {
 		return List<SaveAsDestination>.from(_defaultSaveAsMenuDestinations);
 	}
@@ -780,7 +774,7 @@ List<SaveAsDestination> saveAsMenuDestinationsFromIndexes(List<int> indexes) {
 }
 
 List<int> saveAsMenuDestinationsToIndexes(List<SaveAsDestination> destinations) {
-	final allowed = destinations.where((destination) => destination != SaveAsDestination.ask).toSet();
+	final allowed = destinations.toSet();
 	if (allowed.isEmpty) {
 		return _defaultSaveAsMenuDestinations.map((destination) => destination.index).toList();
 	}
@@ -1764,6 +1758,16 @@ class SavedSettings extends HiveObject {
 		showHotPostsInScrollbar = showHotPostsInScrollbar ?? false,
 		filesOpenLocationIndex = filesOpenLocationIndex ?? FilesOpenLocation.lastLocation.index,
 		saveAsMenuDestinationIndexes = saveAsMenuDestinationIndexes ?? _defaultSaveAsMenuDestinations.map((destination) => destination.index).toList() {
+		if (!this.appliedMigrations.contains('saveAsDestinationsNoAsk')) {
+			final existingDestinations = this.saveAsMenuDestinationIndexes;
+			if (existingDestinations.isNotEmpty && !existingDestinations.contains(0)) {
+				this.saveAsMenuDestinationIndexes = existingDestinations
+					.map((index) => index - 1)
+					.where((index) => index >= 0 && index < SaveAsDestination.values.length)
+					.toList();
+			}
+			this.appliedMigrations.add('saveAsDestinationsNoAsk');
+		}
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2817,7 +2821,7 @@ class Settings extends ChangeNotifier {
 	String? get filesOpenLocationCustomDir => filesOpenLocationCustomDirSetting(this);
 
 	static const saveAsMenuDestinationIndexesSetting = SavedSetting(SavedSettingsFields.saveAsMenuDestinationIndexes);
-	static final saveAsMenuDestinationsSetting = MappedSetting(
+	static const saveAsMenuDestinationsSetting = MappedSetting(
 		saveAsMenuDestinationIndexesSetting,
 		saveAsMenuDestinationsFromIndexes,
 		saveAsMenuDestinationsToIndexes
