@@ -97,7 +97,11 @@ Future<CaptchaSolution?> solveCaptcha({
 			(Object, StackTrace)? initialChallengeException;
 			try {
 				// Grab the challenge without popping up, to process initial cooldown without interruption
-				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority, cancelToken: cancelToken).timeout(const Duration(minutes: 1));
+				const timeout = Duration(minutes: 1);
+				final cancelToken2 = CancelToken();
+				cancelToken?.whenCancel.then(cancelToken2.cancel);
+				Future.delayed(timeout, () => cancelToken2.cancel(TimeoutException('Timed out waiting for captcha solution', timeout)));
+				initialChallenge = await requestCaptcha4ChanCustomChallenge(site: site, request: request, priority: priority, cancelToken: cancelToken2);
 			}
 			on Exception catch (e, st) {
 				if (e is dio.DioError && e.type == DioErrorType.cancel) {
@@ -117,13 +121,17 @@ Future<CaptchaSolution?> solveCaptcha({
 			}
 			if (initialChallengeException == null && (settings.useCloudCaptchaSolver ?? false) && (settings.useHeadlessCloudCaptchaSolver ?? false) && (forceHeadless ?? true)) {
 				try {
+					const timeout = Duration(seconds: 15);
+					final cancelToken2 = CancelToken();
+					cancelToken?.whenCancel.then(cancelToken2.cancel);
+					Future.delayed(timeout, () => cancelToken2.cancel(TimeoutException('Timed out waiting for captcha solution', timeout)));
 					final cloudSolution = await headlessSolveCaptcha4ChanCustom(
 						request: request,
 						site: site,
 						priority: priority,
 						challenge: initialChallenge,
-						cancelToken: cancelToken
-					).timeout(const Duration(seconds: 15));
+						cancelToken: cancelToken2
+					);
 					if (cloudSolution != null && cloudSolution.confident) {
 						cloudSolution.challenge.dispose();
 						return cloudSolution.solution;
